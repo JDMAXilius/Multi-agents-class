@@ -45,6 +45,7 @@ trust boundary. Every discipline's boundary is drawn to protect that line.
 | D5 | **UI / UX Systems** | CommonUI stack, MVVM, GAS-driven HUD | `Source/SR/UI` | `ui-builder` |
 | D6 | **Audio Systems** | MetaSounds via GameplayCues, rollback-safe | `Source/SR/Audio` + cue assets | folds into `builder` (thin) |
 | D7 | **Tools / Build / LiveOps** | Perforce, CI, Gauntlet, Steam depots, telemetry | `Tools/`, `.github/`, build scripts | `verifier` + `builder` |
+| D8 | **AI Systems** | Bot decision-making, perception, runtime LLM integration | `Source/SR/AI` | *new:* `ai-builder` |
 | — | **Technical Direction** (you) | Cross-cutting architecture, the final call, seam arbitration | repo-wide (read), contracts (write) | `game-lead` (lead session) |
 | — | **Adversarial review** | Breaking any dangerous-domain change before it lands | read-only | `critic` |
 
@@ -265,6 +266,63 @@ trust boundary. Every discipline's boundary is drawn to protect that line.
 - **Maps to:** the `verifier` (runs the ladder, read-only) plus `builder`
   for the harness/scripts.
 
+### D8 — AI Systems Engineer
+
+- **Mandate:** own the game's artificial opponents and the runtime LLM
+  integration — the two AI surfaces that are the project's signature. Bots
+  make the game playable solo and never dead on arrival; the runtime agent
+  makes the arena feel broadcast. Both must obey the same iron rule: **AI
+  decides intent, it never bypasses the sim or the server.**
+- **Owned systems (Slash Roller):** the deterministic bot decision layer
+  (`AOSBotController`, `UOSBotBrainComponent`, the `Hunt/Engage/Punish/
+  Disengage` stance machine), bot perception wiring (consuming gameplay
+  messages, not raycasting per tick), difficulty-tier consumption of
+  `DT_BotTuning`, slot-fill/backfill policy, and the runtime **Caster
+  Agent** HTTP client (`UOSCasterSubsystem`, host-side, async, canned
+  fallback).
+- **Key types:** `AAIController`, event-driven C++ state machine (no
+  behavior-tree tick), `DT_BotTuning` rows, `FHttpModule` async client,
+  `FOS_MatchTelemetry` (read).
+- **Doctrine (non-obvious laws):**
+  - **Bots are players the AI drives.** A bot activates abilities through
+    the **same input-buffer path a human uses**, on its own PlayerState
+    ASC, with the same `DT_ClassLoadouts` kit. No side-channel damage, no
+    privileged attributes, no cheating. This is also what makes bot-vs-bot
+    soaks exercise the *real* combat code (D7's QA leans on it).
+  - **Determinism is law** (shared with D1). Within a match, bot behavior
+    is a pure function of (tuning row, match seed, observed events);
+    reaction delays are quantized and seeded once at match start. No
+    wall-clock, no `RandRange` — reproducible for QA, fair for players, and
+    replayable for any disputed result.
+  - **No LLM in the simulation path — ever.** The runtime agent is
+    fire-and-forget, host-side, asynchronous, and its only output is
+    replicated *strings*. There is no path from a model reply to damage,
+    movement, spawns, or bot tuning *mid-match*. (Deathmatch has no safe
+    between-rounds pause, so the earlier "LLM adjusts bots between rounds"
+    hook is deleted, not made unsafe.)
+  - **Decision, not perception, not math.** Perception is *reading*
+    gameplay messages D2 already emits (no per-tick raycasts); the combat
+    *math* a bot triggers is D1's; the *outcome* is D2's on the server.
+    D8 owns only the *choice* of what intent to send.
+  - **Bots run server-side only.** Backfill/slot-fill is a server authority
+    decision; clients see a replicated fighter like any other (no bot logic
+    ships to clients).
+  - **The API key never leaves the host.** Clients receive replicated
+    strings; the runtime agent's HTTP client early-outs on non-authority.
+- **Does NOT own:** the combat math a bot invokes (D1), the replication of
+  a bot pawn or the authority of its actions (D2), the animation it plays
+  (D3), or the *values* in `DT_BotTuning` (those are curated data —
+  produced by the Bot Trainer data-curator, reviewed, landed as CSV).
+- **Seam:** consumes D2's gameplay messages (perception) and D1's abilities
+  (action); sends intent through the same path a human PlayerController
+  does; the runtime agent hands D4/D2 replicated strings.
+- **Why its own discipline:** meets both tests decisively — a bot that
+  desyncs or a runtime call that blocks the sim is a *silent-confident*
+  failure (fine in a local PIE test, broken or unfair online), and the
+  determinism + no-LLM-in-hot-path doctrine is exactly the kind of
+  non-obvious law a generalist would violate. And it is the project's
+  differentiator; it deserves a named owner.
+
 ### Technical Direction (you — the lead)
 
 - **Mandate:** own the cross-cutting architecture, arbitrate seams, and make
@@ -293,13 +351,15 @@ trust boundary. Every discipline's boundary is drawn to protect that line.
    Services                              ▲   │                               │
       │                                  │   │ (authority + prediction)      │ (intent)
       │(IOSServerLifecycle)              │   ▼                               ▼
-      ▼                            D1 Sim (pure math) ◄──(seeded inputs)── D-AI bots
-   GameLift (future)                     ▲
-                                         │(warp targets: SoftLockTarget)
+      ▼                            D1 Sim (pure math) ◄──(same input path)── D8 AI
+   GameLift (future)                     ▲                                   (bots +
+                                         │(warp targets: SoftLockTarget)      Caster)
                                    D3 Animation ──(notify windows → gameplay events)
                                          │
                                    D6 Audio (GameplayCues on confirmed events)
 
+   D8 AI sends INTENT only — through the same path a human PlayerController uses.
+   Its runtime LLM output is replicated STRINGS (via D2), never simulation state.
    D7 Tools/Build proves ALL of the above via the ladder.
    Technical Direction arbitrates every ──► ; Critic attacks every dangerous ──►.
 ```
@@ -313,7 +373,10 @@ trust boundary. Every discipline's boundary is drawn to protect that line.
    computes damage (D1) or confirms a hit (D2).
 4. **D4↔D2:** services deliver players into a match; in-match authority is
    D2's. The lobby/sessions boundary is a named contract.
-5. **Everyone↔D2:** any new replicated surface is a D2 packet. Others file a
+5. **D8↔D1/D2:** AI sends *intent* through the human input path; it never
+   inlines combat math (D1), never bypasses server authority (D2), and its
+   runtime LLM output is replicated strings, never simulation state.
+6. **Everyone↔D2:** any new replicated surface is a D2 packet. Others file a
    `contract_gap`, never wing a `Server` RPC.
 
 ---
@@ -331,21 +394,23 @@ trust boundary. Every discipline's boundary is drawn to protect that line.
 | Locomotion / combat anim layers | D3 | — |
 | Steam listen-server host / invite | D4 | D2 |
 | Lobby + loadout select (backend) | D4 | D5 |
-| Deterministic bots (GAS-native state machine) | D1 + a bot owner | D2 |
+| Deterministic bots (GAS-native state machine) | D8 | D1 (abilities), D2 (authority) |
 | CommonUI stack + GAS HUD | D5 | D2 |
 | MetaSounds combat cues | D6 | D1/D2 (cue triggers) |
-| Caster Agent (runtime LLM, host-side HTTP) | D4 | D2 (replicate strings) |
-| Telemetry ingestion → Balance | D7 | D1 |
+| Caster Agent (runtime LLM, host-side HTTP) | D8 | D2 (replicate strings) |
+| Telemetry ingestion → Balance | D7 | D1, D8 |
 | Gauntlet ladder + Steam depot | D7 | all |
 
 Two notes this table surfaces:
-- **Bots** sit across D1 (deterministic decision logic, seeded, testable)
-  and a thin bot-owner for perception wiring — they are a *player the AI
-  drives*, so they live mostly in the sim discipline, not a separate AI
-  engine.
-- **The Caster Agent** (runtime LLM) is a **D4/services** concern, not
-  gameplay: it's an async host-side HTTP call whose only output is
-  replicated strings. It deliberately touches nothing D1/D2 own.
+- **Bots** are owned by **D8 (AI)** as *decision logic* — but they invoke
+  D1's abilities and obey D2's authority. The determinism guarantee is
+  shared law between D8 and D1: a bot is a *player the AI drives*, seeded
+  and reproducible, so bot-vs-bot soaks exercise the real combat code.
+- **The Caster Agent** (runtime LLM) is also **D8**, not gameplay: an async
+  host-side HTTP call whose only output is replicated strings. It
+  deliberately touches nothing D1/D2 own — the AI discipline owns both the
+  in-world opponents and the out-of-band commentary, unified by one rule:
+  AI produces intent and strings, never simulation state.
 
 ---
 
@@ -357,12 +422,18 @@ already written above:
 
 - D1 → `sim-builder`, D2 → `netcode-builder`, D5 → `ui-builder` — already
   in the kit; we fill their owner_paths and Slash Roller doctrine.
-- D3 → **new `anim-builder`**, D4 → **new `services-builder`** — mint these
-  two (both pass the silent-confident + real-doctrine test).
+- D3 → **new `anim-builder`**, D4 → **new `services-builder`**, D8 → **new
+  `ai-builder`** — mint these three (all pass the silent-confident +
+  real-doctrine test).
 - D6 → folds into `builder` under a cue-discipline contract.
 - D7 → `verifier` (ladder) + `builder` (harness).
-- Direction → `game-lead`; Review → `critic`; bulk content (bot tables,
-  arena manifests) → the **data-curator** pattern when we import it.
+- Direction → `game-lead`; Review → `critic`; bulk content (the **Bot
+  Trainer** tuning tables, **Arena Architect** manifests, **Balance
+  Analyst** diffs) → the **data-curator** pattern — read-only agents that
+  RETURN structured data against a schema, the critic refutes samples, a
+  builder lands it. Note the clean split this creates: **`ai-builder` owns
+  the bot *code*; the Bot Trainer curator owns the bot *numbers*** — code
+  in C++, numbers in `DT_BotTuning` CSV, exactly per the data contract.
 
 The contracts (`netcode.md`, `data-and-assets.md`, `testing.md`) get their
 `[ ]` fill-ins from this doc: net topology = **listen servers allowed**
@@ -370,7 +441,11 @@ The contracts (`netcode.md`, `data-and-assets.md`, `testing.md`) get their
 prediction keys**; prefix = `OS`; source of truth for numbers = DataTable
 CSVs in `Content/Data/` + `Source/SR/*/Data/`.
 
-**Decision needed before we formulate:** confirm the seven-discipline split
-(especially minting `anim-builder` and `services-builder` as their own
-agents vs. folding animation into sim and services into netcode). Once you
-approve the boundaries, the crew authoring is a direct transcription of §3.
+**Decision needed before we formulate:** confirm the **eight-discipline
+split** — in particular minting `anim-builder` (D3), `services-builder`
+(D4), and `ai-builder` (D8) as their own agents. The AI discipline is
+deliberately drawn to own *both* the in-world bots and the runtime LLM
+commentary under one rule (AI produces intent + strings, never simulation
+state), with the bot *numbers* living in the Bot Trainer curator, not the
+`ai-builder`. Once you approve the boundaries, the crew authoring is a
+direct transcription of §3.
