@@ -34,8 +34,9 @@ with 3. BP00 step 2 (combat spec) lands against this ticket's output.
    `GE_Damage` (SetByCaller + dynamic tags), `GE_Regen` (periodic, SetByCaller.RegenRate,
    activation-blocked by RecentDamage — configured for shields at 60/s after 2.5 s),
    `GE_Cooldown` (SetByCaller.CooldownDuration), `GE_InitStats` (curve row),
-   `GE_RecentDamage` (2.5 s tag). `CT_Combat.csv` + `DT_MatchRules.csv` schemas into
-   `BRDataRows.h`. Owner: **sim-builder**. Contract: `data-and-assets.md`.
+   `GE_RecentDamage` (2.5 s tag), `GE_Death` (infinite `State.Dead`; ability base blocks
+   activation on it — the one death mechanism). `CT_Combat.csv` + `DT_MatchRules.csv` schemas into
+   `BRDataRows.h`. Owner: **sim-builder**. Contracts: `data-and-assets.md`, `gas-purity.md`.
 5. Verify + refute: rungs 1–2 (BP00's spec now runs against real code, red→green);
    **critic REFUTER** on the attribute pipeline: negative damage, damage while dead,
    regen-while-damaged race, double-death event. Owner: **verifier**, **critic**.
@@ -45,8 +46,9 @@ with 3. BP00 step 2 (combat spec) lands against this ticket's output.
 - [ ] Damage applied via `GE_Damage` breaks shields then health, exactly per `CT_Combat`
       (spec-proven, red-then-green)
 - [ ] Shield regen starts at 2.5 s, 60/s, blocked by RecentDamage (spec-proven)
-- [ ] Death fires exactly one `Event.Death`; attributes clamp; no direct attribute writes
-      anywhere (grep-audited)
+- [ ] Death fires exactly one `Event.Death` and applies `GE_Death`/`State.Dead` (all verbs
+      blocked while dead — spec-proven); attributes clamp; no direct attribute writes and no
+      engine-damage-API calls anywhere (grep-audited per `gas-purity.md`)
 - [ ] ASC survives pawn destruction (PlayerState-owned, re-inits on possess — PIE-proven)
 - [ ] Sprint: WhileHeld flows input → ASC → tag → CMC speed, predicted, and replays
       correctly through a forced server correction (multi-process PIE + net emulation)

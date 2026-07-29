@@ -17,7 +17,7 @@ Breachpoint/
 │   └── skills/          ← game-lead (operating mode) + tickets (handoff board)
 └── docs/
     ├── CREW_PLAYBOOK.md ← the methodology — read this first
-    ├── contracts/       ← netcode, data-and-assets, testing, animation, online-services
+    ├── contracts/       ← netcode, data-and-assets, testing, animation, online-services, gas-purity
     └── tickets/         ← TICKET_BP00–BP04 are the Week-1/2 set; BP01 is the first pickup
 ```
 

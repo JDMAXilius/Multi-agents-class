@@ -139,7 +139,7 @@ into the same ASC path — human and bot input are literally one API.
 | `BRAbilitySystemComponent.h/.cpp` | PORTED: input-buffered tag activation, prediction-window helpers, `ReplicationMode::Mixed` (owner gets full GEs; others get tags/cues — the correct player-ASC setting, bots included since they are player-shaped). Enables `ServerAbilityRPCBatch` for single-RPC fire (activate + TargetData + end in one packet — the GAS-shooter optimization). |
 | `BRAbilitySet.h/.cpp` | `UDataAsset`: `{TSoftClassPtr<GameplayAbility>, Level, InputTag}` + granted effects/attributes; returns grant handles for clean revoke. One per loadout, one per weapon. |
 | `BRAttributeSet.h/.cpp` | THE set: Shields/MaxShields, Health/MaxHealth, IncomingDamage (meta). `PreAttributeChange` clamps; `PostGameplayEffectExecute`: shields-first application, RecentDamage tag application, death → `Event.Death` + delegate. |
-| `BRGameplayAbility.h/.cpp` | Base: activation-policy enum (OnPressed / WhileHeld / Toggle), cost/cooldown via the generic GEs, cancel hygiene, typed accessors. |
+| `BRGameplayAbility.h/.cpp` | Base: activation-policy enum (OnPressed / WhileHeld / Toggle), cost/cooldown via the generic GEs, `State.Dead` in ActivationBlockedTags (death disables every verb through one mechanism), cancel hygiene, typed accessors. |
 | `BRDamageExecCalc.h/.cpp` | ONE execution for all damage: reads `SetByCaller.BaseDamage` + `Damage.*` tags → headshot ×2, rear-melee lethal, shields absorb → overflow to health. Coefficients from `CT_Combat` curve table. |
 | `Abilities/BRGA_WeaponFire.h/.cpp` | Client trace → `FGameplayAbilityTargetDataHandle` in a scoped prediction window → batched RPC → **server validates** (rate/ammo/cone/range) → applies the one damage GE. |
 | `Abilities/BRGA_WeaponUtility.h/.cpp` | *(v2: merged)* `UBRGA_Reload` + `UBRGA_WeaponSwap` — two tiny sibling abilities, one pair. |
@@ -148,7 +148,7 @@ into the same ASC path — human and bot input are literally one API.
 | `Abilities/BRGA_Grapple.h/.cpp` | THE netcode packet: three modes by hit; self-pull via **root-motion source through CMC** (predicted by CMC machinery); rejection leaves zero state. Critic REFUTER gate. |
 | `Abilities/BRGA_Sprint.h/.cpp` | The movement-state ability, and the pattern-prover for **WhileHeld** activation: hold `InputTag.Sprint` → activate; release → end. Grants `State.Movement.Sprinting` via ActivationOwnedTags (predicted + replicated by GAS); the CMC reads it into the `FSavedMove_BR` sprint flag and applies the speed multiplier from `CT_Combat`. **No cost** (Halo sprint is free); `BRGA_WeaponFire`/`Melee`/`Grenade` list it in CancelAbilitiesWithTags — firing ends the sprint, Halo-style, with zero code in the sprint ability itself. |
 
-**The generic-effect library (Content assets, ~5 total — law #7 made real):**
+**The generic-effect library (Content assets, 6 total — law #7 made real; purity law: `crew/docs/contracts/gas-purity.md`):**
 
 | GE asset | Parameterized by | Reused by |
 |---|---|---|
@@ -157,6 +157,7 @@ into the same ASC path — human and bot input are literally one API.
 | `GE_Cooldown` | `SetByCaller.CooldownDuration` + per-ability cooldown tag | **every** ability cooldown (grapple, swap, magic-slot Phase 2) |
 | `GE_InitStats` | curve table row per archetype | attribute init on spawn |
 | `GE_RecentDamage` | 2.5 s tag application | shield-regen gate; (Phase-2: "in combat" logic) |
+| `GE_Death` | infinite; applies `State.Dead` | the ONE death mechanism: ability base blocks activation on `State.Dead`; respawn removes it + re-applies `GE_InitStats` |
 
 ### 3.4 `Character/` — 2
 
@@ -389,7 +390,7 @@ Content/
 ├── Data/            DT_Weapons.csv · CT_Combat.csv · DT_BotTuning.csv ·
 │                    DT_MatchRules.csv · DT_SpotterLines.csv
 ├── Maps/            BR_Arena01 · BR_Entry
-├── AbilitySystem/   Effects/ (the 5 generic GEs) · Cues/ · Sets/ (AS_Loadout, AS_Weapon_*)
+├── AbilitySystem/   Effects/ (the 6 generic GEs) · Cues/ · Sets/ (AS_Loadout, AS_Weapon_*)
 ├── Input/           IMC_Default · IA_* actions (incl. IA_Sprint) · DA_InputConfig
 ├── Characters/      sourced meshes + FPS anim sets + ABP assets
 ├── Weapons/         sourced meshes/anims
