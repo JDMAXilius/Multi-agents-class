@@ -103,7 +103,7 @@ still cheap.**
 
 | Pod | Deliverable | Tickets |
 |---|---|---|
-| ① Combat | Magnum + 2-weapon carry/swap · grenades · melee + rear-kill · equipment component | BP03 |
+| ① Combat | Magnum + 2-weapon carry/swap · equipment (BP03) · grenades · melee + rear-kill (BP05) | BP03, BP05 |
 | ② Netcode & Match | Fire-path validation + **the four cheat tests** · match frame (mode/state/scoring/respawn) | BP03, BP04 |
 | ③ AI | One scripted target bot (walks, shoots back crudely) for the fun test | prep |
 | ④ Experience | Debug HUD (shields/health/ammo real, ugly on purpose) · hit markers (shield vs flesh) | — |
@@ -117,17 +117,18 @@ combat into movement-combat.**
 
 | Pod | Deliverable | Tickets |
 |---|---|---|
-| ① Combat | Rocket Launcher (shares projectile/radial with grenades) · power spawner (90 s) | new |
-| ② Netcode & Match | **`BRGA_Grapple`** (the netcode packet: RMS through CMC, prediction, REFUTER gate) | new |
-| ③ AI | Bot brain v1: StateTree states + EQS cover queries + perception (vs static layout) | new |
-| ④ Experience | HUD v1 real (ViewModels wired) · grapple cooldown ring · killfeed | new |
-| ⑤ World | **BR_Arena01 blockout landed** from manifest (grapple points, spawns, rocket node) · anim sets integrated on both meshes | new |
+| ① Combat | Rocket Launcher (shares projectile/radial with grenades) · power spawner (90 s) | BP09 |
+| ② Netcode & Match | **`BRGA_Grapple`** (the netcode packet: RMS through CMC, prediction, REFUTER gate) | BP06 |
+| ③ AI | Bot brain v1: StateTree states + EQS cover queries + perception (vs static layout) | BP08 |
+| ④ Experience | HUD v1 real (ViewModels wired) · grapple cooldown ring · killfeed | BP10 |
+| ⑤ World | **BR_Arena01 blockout landed** from manifest (grapple points, spawns, rocket node) · anim sets integrated on both meshes | BP07 |
 | ⑥ Platform | Nightly soak harness ready (bot-vs-bot once ③ lands) | — |
 | Gate | **Grapple used offensively in playtest; full match completes solo** | |
 
 ### Phase 4 · Week 4 — M4 "First Match" ⚠️ GO/NO-GO
 **Main goal: alpha — every shipped system present and connected; a full 4v4
-vs bots plays end-to-end, or the cut order executes now.**
+vs bots plays end-to-end, or the cut order executes now.** *(Tickets: BP08
+completes; BP10 front-end scope.)*
 
 | Pod | Deliverable |
 |---|---|
@@ -141,7 +142,8 @@ vs bots plays end-to-end, or the cut order executes now.**
 
 ### Phase 5 · Week 5 — M5 "Two Boxes"
 **Main goal: beta — feature complete across a real network; two machines,
-Steam invites, full match, telemetry flowing.**
+Steam invites, full match, telemetry flowing.** *(Ticket: BP11 — sessions,
+depot, Spotter, CI.)*
 
 | Pod | Deliverable |
 |---|---|
@@ -155,7 +157,7 @@ Steam invites, full match, telemetry flowing.**
 
 ### Phase 6 · Week 6 — M6 "Steam Demo Live"
 **Main goal: gold — only bugs change; the demo ships on Steam and the
-capstone presents.**
+capstone presents.** *(Ticket: BP12.)*
 
 | Pod | Deliverable |
 |---|---|
@@ -214,6 +216,10 @@ integration, tools) floats — that float is what the pods spend.
 ---
 
 ## 5. Risk Register (roadmap-level)
+
+*(Gate thresholds, perf/net budgets, the definition-of-done card, the playtest
+protocol, and the Steam ship checklist live in `QUALITY-BARS.md` — the verifier
+reads that doc for rung 5.)*
 
 | Risk | Phase | Mitigation |
 |---|---|---|
