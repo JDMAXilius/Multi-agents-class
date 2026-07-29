@@ -1,13 +1,17 @@
 # Crew Operations — the ultra plan
-## How the 12-agent studio actually runs, day to day, for six weeks
+## How the 11-agent studio actually runs, day to day, for six weeks
 
-**Companion to:** `CREW-ROSTER.md` (who) · `crew/CREW_PLAYBOOK.md` (method) ·
-`breachpoint/BREACHPOINT-ROADMAP.md` (when). This doc is the **operational layer**: session topology,
-model economics, enforcement, escalation, and the metrics that tell us the crew is working.
+**Companion to:** `crew/docs/CREW_MAP.md` (who — the living roster + invocation matrix) ·
+`crew/docs/CREW_PLAYBOOK.md` (method, §9–13 run-proven) · `crew/docs/DESIGN-RULINGS.md`
+(the ledger reviews judge against) · `breachpoint/BREACHPOINT-ROADMAP.md` (when). This doc
+is the **operational layer**: session topology, model economics, enforcement, escalation,
+and the metrics that tell us the crew is working.
 **Grounded in:** the 2026 production framework for agent teams — *enforced rules → hooks;
 contextual knowledge → skills; delegation boundaries → subagents; always-on guidance → a
 short CLAUDE.md* — plus Anthropic's orchestration findings already in
-`ARCHITECTURE-VALIDATION.md`.
+`ARCHITECTURE-VALIDATION.md`. *(v2 note: the hooks layer is no longer a plan — 
+`crew/.claude/hooks/guard_laws.py` blocks owner-path escapes and banned APIs at
+tool-call time, armed per-ticket by the claim file.)*
 
 ---
 
@@ -16,7 +20,7 @@ short CLAUDE.md* — plus Anthropic's orchestration findings already in
 | Layer | Mechanism | What lives there |
 |---|---|---|
 | **Always-on memory** | `CLAUDE.md` (short, at game-repo root — NEW) | The laws in one page, workflow, pointers. Every session reads it free. |
-| **Enforced rules** | Hooks + permissions + CI | The grep gates (banned damage API, hard refs, NativeTick widgets, direct attribute writes) run as a `Tools/purity-gate` script: wired as a pre-commit hook and a CI step (BP11). **A rule enforced by goodwill is a suggestion** — until CI lands, the verifier runs the gate every rung-2. |
+| **Enforced rules** | Hooks + permissions + CI | **LIVE (v2):** `crew/.claude/hooks/guard_laws.py` (PreToolUse) blocks out-of-owner-path writes and banned APIs (engine damage API, `ConstructorHelpers`, unseeded `RandRange`) at the keystroke — armed by `.claude/active-packet.json` on ticket claim. Still to land: the repo-wide `Tools/purity-gate` grep sweep (NativeTick widgets, direct attribute writes) as pre-commit + CI (BP11); until then the verifier runs that sweep every rung-2. **A rule enforced by goodwill is a suggestion.** |
 | **Contextual knowledge** | Skills (`game-lead`, `tickets`) + contracts | Loaded when relevant; contracts are named per-ticket so a builder loads only what binds it. |
 | **Delegation boundaries** | Subagent definitions (`.claude/agents/`) | One owner path, one doctrine, scoped tools (reviewers read-only *by capability*). |
 
@@ -110,7 +114,8 @@ becomes a rule; a rule nobody hits by W4 gets reviewed for deletion).
 
 ## 8. Open items (decisions logged when made)
 
-1. Hook wiring (`Tools/purity-gate` as pre-commit + PostToolUse) lands with BP00 wrappers;
-   until then the verifier runs it — tracked in BP00's Log.
+1. ~~Hook wiring~~ **partially closed (v2, 29 Jul 2026):** the PreToolUse guard is live and
+   block-tested (owner-path + banned APIs). Remaining: `Tools/purity-gate` repo-wide grep
+   sweep as pre-commit + CI — lands with BP00 wrappers; until then the verifier runs it.
 2. Parallel-session count above the cap requires a TD decision, logged.
 3. Weekly retro slot: end of each gate playtest (same sitting, data fresh).

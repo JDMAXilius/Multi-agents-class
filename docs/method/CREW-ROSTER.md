@@ -1,11 +1,25 @@
-# Slash Roller — Crew Roster & File Structure
-## The complete agent framework: what exists, what we add, what each does
+# Crew Roster & File Structure — DESIGN HISTORY (superseded)
+
+> **SUPERSEDED, kept honestly.** This was the planning inventory that staffed D1–D8
+> (written in the Slash Roller era; the capstone is now **Breachpoint**). Everything
+> "proposed" below has been **built** — and then upgraded to **crew v2**. The living
+> authority is:
+> - **`crew/docs/CREW_MAP.md`** — the current roster (11 agents), diagrams, invocation matrix
+> - **`crew/README.md`** — the install tree, incl. hooks + rulings ledger
+> - **`crew/docs/CREW_PLAYBOOK.md`** §9–13 — the run-proven operating rules
+>
+> Deltas vs. this doc: `bot-trainer` + `balance-analyst` were consolidated into
+> **`tuning-curator`** (11 agents, not 12); the "Caster" runtime client is named
+> **Spotter** (`UBRSpotterSubsystem`); D8 grew its own design doc
+> (`breachpoint/BREACHPOINT-AI-BOTS.md` — the three-layer GOAP/StateTree/GAS brain);
+> all 5 contracts exist (none "proposed"); and every agent now carries
+> ROUTING / I/O / KICKOFF sections enforced by hooks. Read on only for the
+> *reasoning* that produced the roster.
 
 **Reads with:** `ENGINEERING-DISCIPLINES.md` (the D1–D8 boundaries this
 roster staffs) and the UE5 Crew Kit (`CREW_PLAYBOOK.md`, contracts).
-**Status:** inventory + plan — the six kit agents exist; five are proposed
-(3 discipline builders + reference to curators). Nothing here is minted
-until the eight-discipline split is confirmed.
+**Status at time of writing:** inventory + plan — the six kit agents exist; five are proposed
+(3 discipline builders + reference to curators).
 
 ---
 
