@@ -15,7 +15,7 @@
 **Course:** Multi-Agent AI for Game Development (ELVTR)
 **Purpose:** Concept B — alternative capstone scope, written to the same
 standard as *Slash Roller: Arena* for a head-to-head 6-week feasibility
-comparison (see `SCOPE-COMPARISON.md`)
+comparison (see `../../docs/decisions/SCOPE-COMPARISON.md`)
 **Author:** Juan Diego Lugo
 **Date:** 24 July 2026
 **Engine:** Unreal Engine 5.8 — pure native C++ / Gameplay Ability System

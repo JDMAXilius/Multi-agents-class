@@ -1,3 +1,10 @@
+> ⚠️ **ARCHIVED — the capstone build pivoted to BREACHPOINT** (see
+> `../../docs/decisions/SCOPE-COMPARISON.md` and `../../breachpoint/`).
+> *Slash Roller: Arena* remains the game of record for the course
+> assignments (`../../assignments/`), and this spec remains the reference
+> for the studio's OnSight-era GAS patterns — but nothing here is current
+> build scope.
+
 # Slash Roller: Arena — Technical Specification
 ## GAS-First Engineering Spec for the Capstone Cut
 

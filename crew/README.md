@@ -2,7 +2,7 @@
 
 The **formulated crew for Breachpoint** — the UE5 Multiplayer Agent Crew Kit adapted
 to this project: contracts filled with Breachpoint values, three discipline builders and
-three curators added per `docs/ENGINEERING-DISCIPLINES.md` (D1–D8), first ticket cut.
+three curators added per `docs/method/ENGINEERING-DISCIPLINES.md` (D1–D8), first ticket cut.
 The kit's methodology was battle-tested on a shipped production app (adversarial review
 caught five real defects — two confidently-wrong — in a single working day).
 

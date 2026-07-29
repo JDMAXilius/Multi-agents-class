@@ -442,7 +442,7 @@ Nothing here is silently dropped. Each cut has a named restore path.
 ### 7.1 The estimate
 
 Re-derived line-by-line from the build inventory in
-`../SCOPE-COMPARISON.md`, with the Option-C cuts applied:
+`../docs/decisions/SCOPE-COMPARISON.md`, with the Option-C cuts applied:
 
 | | Weeks |
 |---|---|

@@ -4,7 +4,7 @@
 **Course:** Multi-Agent AI for Game Development (ELVTR)
 **Purpose:** Concept B — written to the house GDD standard for a
 head-to-head 6-week feasibility comparison against *Slash Roller: Arena*
-(see `../SCOPE-COMPARISON.md`)
+(see `../docs/decisions/SCOPE-COMPARISON.md`)
 **Author:** Juan Diego Lugo
 **Date:** 29 July 2026
 **Engine:** Unreal Engine 5.8 — pure native C++ / Gameplay Ability System
@@ -305,7 +305,7 @@ Caps enforced server-side; fallback is canned lines.
 2. **Constraint: no Lyra, no third-party gameplay code.** *Therefore*
    every system Lyra would have donated (weapons, teams, CommonUI spine,
    bot framework) is authored — which is the honest source of this
-   concept's schedule risk (§4.5, and `SCOPE-COMPARISON.md`).
+   concept's schedule risk (§4.5, and `../docs/decisions/SCOPE-COMPARISON.md`).
 3. **Constraint: hidden information in a shooter.** A client that knows
    enemy positions is a wallhack. *Therefore* radar contacts are computed
    server-side, and replication uses the tightest conditions and relevancy
