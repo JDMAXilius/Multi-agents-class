@@ -16,7 +16,7 @@ ships from.
 
 | Path | What it is |
 |---|---|
-| **`breachpoint/`** | **The active project.** [Vertical-slice GDD](breachpoint/GDD-VERTICAL-SLICE.md) (the six-week build) · [full Concept-B GDD](breachpoint/GDD.md) (Phase-2 target) · [Architecture](breachpoint/ARCHITECTURE.md) (42 class-units, file-by-file) · [Roadmap](breachpoint/ROADMAP.md) (six pods, six milestones) · [Quality Bars](breachpoint/QUALITY-BARS.md) (budgets, DoD, playtest protocol, ship checklist) |
+| **`breachpoint/`** | **The active project.** [Vertical-slice GDD](breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md) (the six-week build) · [full-concept GDD](breachpoint/BREACHPOINT-GDD-FULL-CONCEPT.md) (Phase-2 target) · [Architecture](breachpoint/BREACHPOINT-ARCHITECTURE.md) (42 class-units, file-by-file) · [Roadmap](breachpoint/BREACHPOINT-ROADMAP.md) (six pods, six milestones) · [Quality Bars](breachpoint/BREACHPOINT-QUALITY-BARS.md) (budgets, DoD, playtest protocol, ship checklist) |
 | **`crew/`** | **The drop-in agent studio** — copy its contents to the game repo root. 11 agents (7 builders, 2 reviewers, 2 curators), 2 skills (`game-lead`, `tickets`), 6 contracts (netcode, data-and-assets, testing, animation, online-services, **gas-purity**), and the executable board: [tickets BP00–BP12](crew/docs/tickets/) covering Week 1 → ship. Start here: [`crew/README.md`](crew/README.md) |
 | **`assignments/`** | Course submissions of record — [Assignment #1](assignments/01-gdd-first-draft/) and [#2](assignments/02-gdd-final-draft/) (*Slash Roller: Arena* GDDs, Markdown + styled PDFs) |
 | **`docs/course/`** | Course-wide references — [the GDD writing standard](docs/course/GDD-FORMAT-GUIDE.md) · [Game Developers Conference overview](docs/course/GDC-overview.md) |

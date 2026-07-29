@@ -9,7 +9,7 @@
 gameplay code (own GAS core ported from OnSight). **No Lyra, no
 third-party gameplay code.** Marketplace/free **art and animation**
 permitted and expected.
-**Supersedes for build purposes:** `GDD.md` (full Concept B) — that
+**Supersedes for build purposes:** `BREACHPOINT-GDD-FULL-CONCEPT.md` — that
 document remains the Phase-2 target; **this** is the six-week build.
 
 ---

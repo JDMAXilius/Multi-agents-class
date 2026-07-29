@@ -1,7 +1,7 @@
 # BREACHPOINT — Architecture & File Structure (v2)
 ## The complete C++ framework layout for the vertical slice
 
-**Companion to:** `GDD-VERTICAL-SLICE.md` (what we build) — this is **how
+**Companion to:** `BREACHPOINT-GDD-VERTICAL-SLICE.md` (what we build) — this is **how
 it is laid out on disk and why**.
 **Engine:** UE 5.8 · pure native C++ · GAS · Steam listen server behind
 `IBRServerLifecycle` · GameLift as a Phase-2 swap

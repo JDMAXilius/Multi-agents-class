@@ -4,8 +4,8 @@
 **Prepared:** 29 July 2026 · **Author:** Juan Diego Lugo
 **Window:** 6 weeks · **Team:** 1 principal engineer + the 12-agent crew
 **Hard requirement:** deploy on Steam
-**Documents compared:** `assignments/02-gdd-final-draft/GDD.md` (A) ·
-`breachpoint/GDD.md` (B)
+**Documents compared:** the Arena GDD (A — see `archive/slashroller/`) ·
+`breachpoint/BREACHPOINT-GDD-FULL-CONCEPT.md` (B)
 
 ---
 
@@ -223,7 +223,7 @@ change the *deliverable*, not the *scope*:
 - **Corrected estimate:** ≈ **8.4 w raw → ≈ 6.3 w compressed.** *(A first
   pass here read ≈5.5–6 w; re-deriving line-by-line gives 6.3. **The
   authoritative figure and its schedule live in
-  `breachpoint/GDD-VERTICAL-SLICE.md` §7**, which plans around the
+  `breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md` §7**, which plans around the
   gap with a pre-declared cut order and a Week-4 go/no-go.)* It fits six
   weeks with near-zero slippage, seven comfortably.
 - **Steam:** upload the slice as a **playable demo depot on listen

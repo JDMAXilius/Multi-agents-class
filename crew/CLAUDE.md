@@ -35,6 +35,6 @@ lost — it goes in the Log or it didn't happen.
 
 ## Quality bars
 
-Perf/net budgets, definition-of-done, playtest protocol: `docs/QUALITY-BARS.md`
+Perf/net budgets, definition-of-done, playtest protocol: `docs/BREACHPOINT-QUALITY-BARS.md`
 (copied from the planning repo). Suites: `Breachpoint.Sim.*`, `Breachpoint.Bots.*`.
 Gauntlet smoke: `BRGauntlet.SmokeTS2C`. All three build targets compile on every rung-1.

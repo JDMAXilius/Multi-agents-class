@@ -1,7 +1,7 @@
 # BREACHPOINT — Project Roadmap
 ## The full development plan, structured as a studio of parallel pods
 
-**Companion to:** `GDD-VERTICAL-SLICE.md` (what) · `ARCHITECTURE.md` (how/where) ·
+**Companion to:** `BREACHPOINT-GDD-VERTICAL-SLICE.md` (what) · `BREACHPOINT-ARCHITECTURE.md` (how/where) ·
 `crew/` (who) — this document is **when, by whom, in parallel**.
 **Horizon:** 6 weeks to the Steam demo (Phase 1), then the Phase-2 expansion.
 **Method:** researched against how real studios structure this — Halo Studios'
@@ -218,7 +218,7 @@ integration, tools) floats — that float is what the pods spend.
 ## 5. Risk Register (roadmap-level)
 
 *(Gate thresholds, perf/net budgets, the definition-of-done card, the playtest
-protocol, and the Steam ship checklist live in `QUALITY-BARS.md` — the verifier
+protocol, and the Steam ship checklist live in `BREACHPOINT-QUALITY-BARS.md` — the verifier
 reads that doc for rung 5.)*
 
 | Risk | Phase | Mitigation |

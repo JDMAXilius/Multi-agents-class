@@ -1,7 +1,7 @@
 # BREACHPOINT — Quality Bars
 ## The numbers behind "good": budgets, definitions of done, playtest protocol, ship checklist
 
-**Companion to:** `ROADMAP.md` (when) · `ARCHITECTURE.md` (where) · crew contracts (law).
+**Companion to:** `BREACHPOINT-ROADMAP.md` (when) · `BREACHPOINT-ARCHITECTURE.md` (where) · crew contracts (law).
 This doc exists so no gate ever argues about what "fast enough," "tested," or "shippable"
 means — the bar is written before the work, and the verifier reads THIS doc for rung 5.
 

@@ -2,7 +2,7 @@
 ## How the 12-agent studio actually runs, day to day, for six weeks
 
 **Companion to:** `CREW-ROSTER.md` (who) · `crew/CREW_PLAYBOOK.md` (method) ·
-`breachpoint/ROADMAP.md` (when). This doc is the **operational layer**: session topology,
+`breachpoint/BREACHPOINT-ROADMAP.md` (when). This doc is the **operational layer**: session topology,
 model economics, enforcement, escalation, and the metrics that tell us the crew is working.
 **Grounded in:** the 2026 production framework for agent teams — *enforced rules → hooks;
 contextual knowledge → skills; delegation boundaries → subagents; always-on guidance → a
