@@ -1,29 +1,29 @@
-# Slash Roller — Agent Crew (UE 5.8)
+# Breachpoint — Agent Crew (UE 5.8)
 
-The **formulated crew for Slash Roller: Arena** — the UE5 Multiplayer Agent Crew Kit adapted
-to this project: contracts filled with Slash Roller values, three discipline builders and
+The **formulated crew for Breachpoint** — the UE5 Multiplayer Agent Crew Kit adapted
+to this project: contracts filled with Breachpoint values, three discipline builders and
 three curators added per `docs/ENGINEERING-DISCIPLINES.md` (D1–D8), first ticket cut.
 The kit's methodology was battle-tested on a shipped production app (adversarial review
 caught five real defects — two confidently-wrong — in a single working day).
 
 ## Install
 
-Drop the contents of this folder at the **game repo's root** (`SlashRoller/`):
+Drop the contents of this folder at the **game repo's root** (`Breachpoint/`):
 
 ```
-SlashRoller/
+Breachpoint/
 ├── .claude/
 │   ├── agents/          ← 9 agents + curators/ (3 data curators)
 │   └── skills/          ← game-lead (operating mode) + tickets (handoff board)
 └── docs/
     ├── CREW_PLAYBOOK.md ← the methodology — read this first
     ├── contracts/       ← netcode, data-and-assets, testing, animation, online-services
-    └── tickets/         ← TICKET_BOOTSTRAP_LADDER.md is the first pickup
+    └── tickets/         ← TICKET_BP00–BP04 are the Week-1/2 set; BP01 is the first pickup
 ```
 
 Claude Code picks up `.claude/agents/*.md` and `.claude/skills/` automatically. Contracts are
-already filled for Slash Roller (UE 5.8 · listen server · GAS prediction keys · `OS` prefix /
-`SR` modules · DataTable CSVs in `Content/Data/`).
+already filled for Breachpoint (UE 5.8 · listen server behind IBRServerLifecycle · GAS
+prediction keys · `BR` prefix, one module · soft-refs + generic-GE laws · CSVs in `Content/Data/`).
 
 ## The crew at a glance
 

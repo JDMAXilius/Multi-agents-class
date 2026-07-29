@@ -29,11 +29,11 @@ contracts, and keep the tickets board true. Read `docs/CREW_PLAYBOOK.md` once pe
 - Numbers come from DataTables; a hardcoded gameplay constant is a finding even when the
   feature works.
 
-## Verification recipe — SLASH ROLLER
-- Editor: `UnrealEditor SlashRoller.uproject` (UE 5.8, `<ENGINE_ROOT>` from
-  `Tools/env.local`) · headless specs: `Tools/run-specs.ps1` (suites `SlashRoller.Sim.*`,
-  `SlashRoller.Bots.*`) · Gauntlet: `Tools/run-gauntlet.ps1 SRGauntlet.SmokeDM2C` — see
-  `docs/contracts/testing.md` (rungs 2 and 4).
+## Verification recipe — BREACHPOINT
+- Editor: `UnrealEditor Breachpoint.uproject` (UE 5.8, `<ENGINE_ROOT>` from
+  `Tools/env.local`) · headless specs: `Tools/run-specs.ps1` (suites `Breachpoint.Sim.*`,
+  `Breachpoint.Bots.*`) · Gauntlet: `Tools/run-gauntlet.ps1 BRGauntlet.SmokeTS2C` — see
+  `docs/contracts/testing.md` (rungs 2 and 4). All three targets on rung 1.
 - Fast multiplayer sanity DURING work (not a rung): PIE with **Run Under One Process OFF**,
   Net Mode = Play As Client, 2+ players, then dedicated-server PIE. Rung-honest: report it as
   "editor multi-process," not as the Gauntlet rung.

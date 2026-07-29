@@ -1,6 +1,6 @@
 # Contract — Animation (feel is measured; threads are law)
 
-Status: v1 · Owner: anim-builder · Binds every packet touching `Source/SR/Animation`, the AL
+Status: v1 · Owner: anim-builder · Binds every packet touching `Source/Breachpoint/Character (+ anim assets)`, the AL
 Framework, AnimGraph nodes, montages, or motion warping.
 The boundary in one line: **animation requests and presents; it never decides gameplay.**
 
@@ -10,13 +10,13 @@ The boundary in one line: **animation requests and presents; it never decides ga
    pattern allows. Inside evaluate: no allocation, no locks, no UObject mutation, no
    game-thread reads outside the proxy's cached data. A game-thread anim hack is a finding
    even when it "works" — it is a hitch that hasn't happened yet.
-2. **The AL Framework is the spine.** New animation behavior goes through the linked-anim-layer
-   architecture and the PoseSearch schema. Per-feature AnimInstance forks, hand-picked clip
-   bypasses, and "temporary" state machines outside the framework are findings with a named
-   home to move to.
-3. **Warp targets come from replicated truth.** Motion warping on strikes targets
-   `SoftLockTarget` (replicated, netcode-owned). A warp target sourced from a client-only
-   trace or a local guess is a netcode finding, not a feel tweak.
+2. **One AnimInstance spine per mesh.** First-person arms and third-person body each get ONE
+   ABP built on shared C++ base state; per-feature AnimInstance forks, hand-picked clip
+   bypasses, and "temporary" state machines outside it are findings with a named home to
+   move to.
+3. **Sourced sets are the fixed constraint.** Ability timings (fire cadence, reload length,
+   melee windows, grapple pull) are authored TO the acquired animation sets — never stretch
+   or hand-retime a sourced clip to fit a number; change the number (it lives in a table).
 4. **Notifies raise events; the sim decides.** Montage notify windows emit gameplay events;
    damage, cost, and hit decisions happen in sim code on the authority. Any gameplay number or
    branch living in a notify, AnimInstance, or AnimBP graph is a violation
@@ -32,11 +32,14 @@ The boundary in one line: **animation requests and presents; it never decides ga
    networked check with a simulated proxy (rung 4 scenario or editor multi-process, reported
    as which).
 
-## Slash Roller specifics
+## Breachpoint specifics
 
-- Framework: AL Framework (KLS-derivative, 16 files), 7 custom C++ AnimGraph nodes,
-  Lyra-style linked layers — locomotion / traversal / combat.
-- Strike alignment: soft-lock (`SoftLockTarget`) → score-based target assist → motion warping,
-  in that order; warping layers on top, never replaces, target assist.
-- Montage → gameplay seam: notify windows raise `GameplayEvent.Combat.*`; hit confirmation is
-  server-side in the damage GE execution (see `netcode.md` law 3).
+- Framework: **sourced FPS animation sets** (arms + weapons, marketplace) on one first-person
+  ABP + one third-person ABP, shared C++ base; the anim pack is chosen in Week 1 and becomes
+  the timing constraint for every ability (GDD risk register).
+- Grapple presentation: the pull is a **root-motion source through the CMC** — animation
+  layers reaction poses on top; it never drives the movement itself.
+- Montage → gameplay seam: notify windows raise `GameplayEvent.Combat.*` (melee trace window,
+  reload commit point); hit confirmation is server-side in the damage GE execution
+  (see `netcode.md`). Reload cancel before the commit notify refunds nothing and costs
+  nothing — cancel-clean by construction.

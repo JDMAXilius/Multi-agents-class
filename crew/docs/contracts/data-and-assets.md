@@ -36,16 +36,24 @@ actor graph is a finding with a named home to move it to.
 3. Binary changes are reviewed by BEHAVIOR (ladder rungs + PIE walkthrough/screenshots named
    in the ticket), and the review says so explicitly.
 
-## Repo hygiene fill-ins — SLASH ROLLER (filled 2026-07-22)
+## Repo hygiene fill-ins — BREACHPOINT (refilled 2026-07-29; supersedes the Slash Roller fill)
 
 - [x] **Perforce** is the binary authority: P4 checkout IS the lock; the typemap marks
   `*.uasset *.umap` exclusive-checkout. (Any git mirror used for cloud/agent sessions tracks
   binaries via Git LFS **with locks enabled** — same one-owner law, different mechanism.)
 - [x] `Saved/`, `Intermediate/`, `DerivedDataCache/`, `Binaries/` ignored (P4 ignore +
   `.gitignore` kept in sync).
-- [x] Naming convention: **`OS` class prefix** (`OSSessionsSubsystem`, `FOS_AoEData`,
-  `IOSServerLifecycle`), **`SR` module folders** (`Source/SR/<Domain>`: Combat, Sim, Net,
-  Animation, Online, UI, Audio, AI), folder-per-feature under `Content/SR/`.
-- [x] DataTable source CSVs live at: **`Content/Data/*.csv`** with row-struct definitions in
-  **`Source/SR/<Domain>/Data/`** (`DT_ClassLoadouts`, `DT_BotTuning`, `DT_CasterCannedLines`)
-  · reimport is scripted via commandlet (`Tools/reimport-tables.ps1`), never manual.
+- [x] Naming convention: **`BR` class prefix** (`ABRCharacter`, `UBRAttributeSet`,
+  `IBRServerLifecycle` — never "BP", which collides with Blueprint vocabulary), **one runtime
+  module** `Source/Breachpoint/<Domain>` (Core, Input, AbilitySystem, Character, Weapons,
+  Match, AI, Online, UI, Telemetry, Data, Tests — the folders ARE the crew owner_paths).
+- [x] **Soft references only at the data boundary:** every asset reference in row structs and
+  data assets is `TSoftObjectPtr`/`TSoftClassPtr`, resolved via the streamable manager at
+  load points. A hard `UPROPERTY` asset ref (or `ConstructorHelpers`) in C++ is a finding.
+- [x] **Generic-effect law:** GameplayEffects are parameterized templates (SetByCaller +
+  dynamic tags) — `GE_Damage`, `GE_Regen`, `GE_Cooldown`, `GE_InitStats`, `GE_RecentDamage`
+  are the library; new content adds rows/parameters, not effect assets.
+- [x] DataTable source CSVs live at: **`Content/Data/*.csv`** with ALL row structs in the one
+  header **`Source/Breachpoint/Data/BRDataRows.h`** (`DT_Weapons`, `CT_Combat`,
+  `DT_BotTuning`, `DT_MatchRules`, `DT_SpotterLines`) · reimport is scripted via commandlet
+  (`Tools/reimport-tables.ps1`), never manual.

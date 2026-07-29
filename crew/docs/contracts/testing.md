@@ -51,19 +51,20 @@ budget in `netcode.md`, tick-count deltas for new actors/widgets.
 - CI runs rungs 1–3 on every push; rung 4 on netcode-touching branches (or nightly if runner
   capacity demands); rung 5 tracked per milestone.
 
-## Fill-ins — SLASH ROLLER (filled 2026-07-22)
+## Fill-ins — BREACHPOINT (refilled 2026-07-29; supersedes the Slash Roller fill)
 
 - Engine path / UAT wrapper scripts: **UE 5.8** install rooted at `<ENGINE_ROOT>` (set per
   machine in `Tools/env.local`, never committed); wrappers: `Tools/run-ubt.ps1`,
-  `Tools/run-specs.ps1`, `Tools/run-gauntlet.ps1`. Targets: `SlashRollerEditor`,
-  `SlashRoller`, `SlashRollerServer`.
-- Gauntlet test project + first smoke scenario: **`SRGauntlet.SmokeDM2C`** — dedicated server
-  + 2 clients join `SR_Arena01`; client A lands a light attack on client B; assert in threes
-  (server HP truth, A's view, B's view agree); repeat under `-PktLag=120 -PktLoss=5`.
-  Bootstrapping this IS the first crew ticket — see `docs/tickets/TICKET_BOOTSTRAP_LADDER.md`.
-- Headless spec suite prefix: `SlashRoller.Sim.*` (pinned combat/stamina suites) +
-  `SlashRoller.Bots.*` (determinism: same seed + tuning row ⇒ identical action trace).
+  `Tools/run-specs.ps1`, `Tools/run-gauntlet.ps1`. Targets: `BreachpointEditor`,
+  `Breachpoint`, `BreachpointServer` — **all three compile on every rung-1 run.**
+- Gauntlet test project + first smoke scenario: **`BRGauntlet.SmokeTS2C`** — dedicated server
+  + 2 clients join `BR_Arena01`; client A shoots client B; assert in threes (server truth,
+  A's view, B's view agree); repeat under `-PktLag=120 -PktLoss=5`.
+  Bootstrapping this IS the first crew ticket — see `docs/tickets/TICKET_BP00_LADDER.md`.
+- Headless spec suite prefix: `Breachpoint.Sim.*` (pinned combat/shield/match suites — values
+  asserted against `DT_Weapons`/`CT_Combat`, never literals) + `Breachpoint.Bots.*`
+  (determinism: same seed + tuning row ⇒ identical action trace).
 - CI runner realities: rungs 1–3 on every push (cloud runner, `-nullrhi`); rung 4 nightly and
-  on any branch touching `Source/SR/Net/**` or a replicated header (local runner with engine
+  on any branch touching a replicated header or `Server` RPC (local runner with engine
   install); rung 5 per milestone. Overnight bot-vs-bot soak (20 matches, seeds logged) runs
-  with the nightly rung 4.
+  with the nightly rung 4 once bots land.

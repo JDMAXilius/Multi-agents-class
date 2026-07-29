@@ -26,7 +26,7 @@ builder — and if a balance fix would require CODE, that is a finding
 - **One knob per proposal.** A diff touching three values is three
   proposals with three pieces of evidence — coupled changes hide which
   knob worked.
-- **Respect pinned suites:** any value asserted by `SlashRoller.Sim.*`
+- **Respect pinned suites:** any value asserted by `Breachpoint.Sim.*`
   pins is flagged in the proposal so the landing builder moves the pin
   loudly in the same packet — you never propose a silent pin drift.
 - Sample honesty: bot-vs-bot soak telemetry and human telemetry are

@@ -33,20 +33,26 @@ results.** There is no second line of defense.
    test (forged RPC, out-of-range value, spam) whose REJECTION is the acceptance criterion.
    The critic re-attacks independently at V2.
 
-## Per-project fill-ins — SLASH ROLLER (filled 2026-07-22)
+## Per-project fill-ins — BREACHPOINT (refilled 2026-07-29; supersedes the Slash Roller fill)
 
 - Replication system: **[x] classic property replication** (Iris not enabled; revisit at UE6).
-- Net topology: **[x] listen servers allowed** — host-advantage review is a STANDING item on
-  every netcode packet: the host shares a process with a client, so every claim is tested
-  separately for host and remote client ("works for the host" is half a claim).
-- Movement/ability stack: **[x] GAS (prediction keys) on the PlayerState-owned ASC + CMC for
-  movement.** Reconciliation mechanism packets must use: `FPredictionKey` scoped windows;
-  predicted GameplayEffects roll back on server rejection; cosmetic prediction via GameplayCues
-  (`OnActive` removed on rollback). No custom prediction paths outside GAS/CMC.
-- Tick + bandwidth budgets: server tick target **30 Hz** · per-connection budget **15 KB/s**
-  (2–4 fighters + listen host; melee intent is small — budget forces `COND_OwnerOnly` stamina
-  and dormant scoreboard actors). Track per-class numbers here as classes land.
+- Net topology: **[x] listen servers allowed** (slice ships listen; dedicated behind
+  `IBRServerLifecycle` is the Phase-2 swap) — host-advantage review is a STANDING item on
+  every netcode packet: every claim is tested separately for host and remote client.
+- Movement/ability stack: **[x] GAS (prediction keys) on the PlayerState-owned ASC
+  (`ReplicationMode::Mixed`, `ServerAbilityRPCBatch` on fire) + CMC for movement — the
+  Grappleshot is a root-motion source THROUGH the CMC** so it predicts/reconciles via saved
+  moves. Reconciliation: `FScopedPredictionWindow` for TargetData; predicted GEs roll back on
+  rejection; cosmetic prediction via cues (`OnActive` removed on rollback). No custom
+  prediction paths outside GAS/CMC.
+- Hitscan trust model: **client-traced TargetData, server-validated** (rate ≤ RPM+tolerance,
+  ammo > 0, cone-from-server-muzzle, range ≤ table max) — Lyra parity; server rewind is a
+  named Phase-2 packet. Radar/wallhack class: hidden information is culled at replication
+  (relevancy/conditions), never at render.
+- Tick + bandwidth budgets: server tick target **30 Hz** · per-connection budget **20 KB/s**
+  (8 fighters + projectiles; ammo is `COND_OwnerOnly`, killfeed is a ring buffer, clock is
+  one replicated float). Track per-class numbers here as classes land.
 - Session/matchmaking boundary: **Steam OSS is trusted for identity and session membership
-  only** (`OSSessionsSubsystem`). ALL gameplay state is validated in-game; a session token
-  never grants gameplay authority; the Caster Agent API key lives host-side only and its
-  output enters the game exclusively as replicated strings.
+  only** (`BRSessionsSubsystem`). ALL gameplay state is validated in-game; a session token
+  never grants gameplay authority; the Spotter API key lives host-side only and its output
+  enters the game exclusively as replicated strings.
