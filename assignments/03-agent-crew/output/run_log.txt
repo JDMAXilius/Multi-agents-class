@@ -1,0 +1,4 @@
+BREACHPOINT agent crew — mode: LIVE — agents: /home/user/Multi-agents-class/crew/.claude/agents
+
+=== JOB: weapons → DT_Weapons.csv ===
+  tuning-curator: 3 rows proposed (TTKs: 2.4, 3.75, 1.0 s)
