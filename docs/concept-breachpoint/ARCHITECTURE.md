@@ -159,11 +159,46 @@ into the same ASC path — human and bot input are literally one API.
 
 ### 3.4 `Character/` — 2
 
-`BRCharacter.h/.cpp` (FPS-template pawn stripped: mesh1P + socket,
-`IAbilitySystemInterface` → PlayerState ASC, `BRInputComponent` wiring,
-death ragdoll + cue, rear-arc helper) ·
-`BRCharacterMovementComponent.h/.cpp` (sprint + grapple movement mode via
-root-motion source — the only movement code we own).
+**`BRCharacter.h/.cpp` — the pawn is a body, not a brain.** Rebased from
+the FPS template with its gameplay deleted. What it owns:
+
+- **Dual-mesh setup (the pro-FPS standard):** `Mesh1P` (arms + weapon,
+  `OnlyOwnerSee`, no shadow) for the owning client; `Mesh3P` (full body,
+  `OwnerNoSee`, casts shadow) — what everyone else and the death cam see.
+  Weapon mesh attaches to both via socket. anim-builder's two ABPs drive
+  one mesh each; remote aim pitch reads the replicated `RemoteViewPitch`.
+- **The GAS init dance:** ASC lives on PlayerState; the pawn implements
+  `IAbilitySystemInterface` by forwarding, and calls
+  `InitAbilityActorInfo(PS, this)` in `PossessedBy` (server) **and**
+  `OnRep_PlayerState` (client) — the canonical respawn-safe wiring.
+- Input wiring (`BRInputComponent` from `DA_InputConfig`): native
+  move/look/jump/crouch handled by CMC; ability tags forwarded to the ASC.
+- Death is a **consequence, not a decision**: on `Event.Death` it plays
+  the cue, ragdolls `Mesh3P`, disables collision/input, and waits for
+  GameMode's respawn — no scoring, no health, no weapon logic on the pawn,
+  ever (attributes/PlayerState/equipment own those).
+- One combat helper: the server-side rear-arc check for melee.
+
+**`BRCharacterMovementComponent.h/.cpp` — subclass, NOT from scratch.**
+Rewriting CMC means rewriting the most battle-tested networked prediction
+code in the engine (saved moves, corrections, smoothing) — that is
+engine-tier, like the renderer; "100% our gameplay code" does not include
+re-implementing engine subsystems. (Epic's replacement, **Mover**, is
+still experimental — rejected on the same grounds as MassAI.) What the
+subclass owns:
+
+- **`FSavedMove_BR` + `FNetworkPredictionData_Client_BR`** (same files):
+  compressed flags for sprint/grapple so our state replays correctly
+  through CMC's own prediction/reconciliation — the standard advanced
+  CMC extension pattern.
+- **Grapple execution:** `BRGA_Grapple` (server-validated target) asks
+  this component to apply a **root-motion source** for the pull; RMS
+  rides CMC's saved-move pipeline, so the grapple is client-predicted
+  and server-reconciled with zero bespoke reconciliation code. Detach
+  rules (arrival, jump-cancel) live here; the *decision* to grapple
+  stays in the ability.
+- Sprint speed handling; Halo-feel numbers (high air control, jump
+  velocity, gravity scale) are **config on CMC defaults, not code**.
 
 ### 3.5 `Weapons/` — 3
 
