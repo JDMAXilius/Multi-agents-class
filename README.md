@@ -41,6 +41,10 @@ ships from.
 
 ## Status & next action
 
+**⏳ Due today — [submit Assignment #3](assignments/03-agent-crew/TICKET_SUBMIT.md).** The
+crew is built, run, and pushed; that ticket is the submission checklist. Everything below it
+is game-build work and can wait.
+
 **M0 — pre-production complete.** ✅
 The data crew has **run**: `DT_Weapons.csv` and `arena_manifest.json` are authored, reviewed,
 and verifier-proven ([BP13 Log](crew/docs/tickets/TICKET_BP13_DATA_CREW.md#log)).

@@ -159,6 +159,8 @@ verifier, so no agent ever grades its own work.
 
 ```
 run_crew.py        the orchestrator + 4-agent pipeline (one file, stdlib only)
+make_submission.sh builds the standalone zip (bundles the agents, self-tests first)
+TICKET_SUBMIT.md   the submission checklist for this assignment
 recording.json     the committed live run — 18 agent exchanges, prompts included
 output/
   DT_Weapons.csv          game-ready weapon tuning table   ← the deliverable
