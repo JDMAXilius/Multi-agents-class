@@ -25,7 +25,11 @@ with 3. BP00 step 2 (combat spec) lands against this ticket's output.
 3. `BRGameplayAbility` base (activation policy enum, cost/cooldown hooks, cancel hygiene) +
    `BRAbilitySet` (UDataAsset, **soft** class refs + InputTag, grant/revoke handles) +
    `BRDamageExecCalc` (SetByCaller.BaseDamage + `Damage.*` tag multipliers from `CT_Combat`,
-   shields absorb → overflow). Owner: **sim-builder**.
+   shields absorb → overflow) + **`BRGA_Sprint`** — the first concrete ability and the
+   WhileHeld-policy prover: hold InputTag.Sprint → activate, release → end; grants
+   `State.Movement.Sprinting` (ActivationOwnedTags); CMC reads it via the `FSavedMove_BR`
+   flag and applies the `CT_Combat` speed multiplier; no cost. Proves the whole
+   input → tag → ASC → ability → CMC chain end to end. Owner: **sim-builder**.
 4. The generic-GE assets (thin data containers, `Content/AbilitySystem/Effects/`):
    `GE_Damage` (SetByCaller + dynamic tags), `GE_Regen` (periodic, SetByCaller.RegenRate,
    activation-blocked by RecentDamage — configured for shields at 60/s after 2.5 s),
@@ -44,6 +48,8 @@ with 3. BP00 step 2 (combat spec) lands against this ticket's output.
 - [ ] Death fires exactly one `Event.Death`; attributes clamp; no direct attribute writes
       anywhere (grep-audited)
 - [ ] ASC survives pawn destruction (PlayerState-owned, re-inits on possess — PIE-proven)
+- [ ] Sprint: WhileHeld flows input → ASC → tag → CMC speed, predicted, and replays
+      correctly through a forced server correction (multi-process PIE + net emulation)
 - [ ] Critic findings addressed or waived in the Log
 
 ## Notes

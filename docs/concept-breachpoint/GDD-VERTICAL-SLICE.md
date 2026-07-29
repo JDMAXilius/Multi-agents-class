@@ -511,6 +511,7 @@ shipping nothing** — that is the entire lesson of the scope analysis.
 | Frag grenade | 90 dmg centre, radius 5 m, 2 carried |
 | Melee | 70 dmg; **rear = instant kill** |
 | Grappleshot | 20 s cooldown, 20 m range |
+| Sprint | +20% move speed, no cost; ends on fire/melee/grenade |
 | Weapon swap | 0.4 s |
 | Respawn | 5 s, scored spawn |
 | Match | 25 kills or 8:00; sudden death 60 s cap |

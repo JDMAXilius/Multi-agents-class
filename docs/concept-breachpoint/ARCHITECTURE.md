@@ -74,7 +74,7 @@ Source/
 
 ---
 
-## 3. The Runtime Module — `Source/Breachpoint/` (41 class-units)
+## 3. The Runtime Module — `Source/Breachpoint/` (42 class-units)
 
 ```
 Source/Breachpoint/
@@ -87,7 +87,7 @@ Source/Breachpoint/
 │
 ├── Core/          (2)   builder
 ├── Input/         (2)   builder (+ sim-builder at the ASC seam)
-├── AbilitySystem/ (10)  sim-builder (+ netcode-builder on replication)
+├── AbilitySystem/ (11)  sim-builder (+ netcode-builder on replication)
 ├── Character/     (2)   builder → anim-builder
 ├── Weapons/       (3)   sim-builder
 ├── Match/         (4)   netcode-builder (authority) + builder (flow)
@@ -103,7 +103,7 @@ Source/Breachpoint/
 
 | File | Job |
 |---|---|
-| `BRGameplayTags.h/.cpp` | ALL native tags (`UE_DEFINE_GAMEPLAY_TAG`): `Ability.*`, `InputTag.*` (Fire, ADS?, no — Fire, Reload, Swap, Grenade, Melee, Grapple, Move, Look, Jump, Crouch), `State.*` (Shields.Broken, Combat.RecentDamage, Dead), `GameplayCue.*`, `Damage.*` (Kinetic, Explosive, Melee, Headshot, Rear), `SetByCaller.*` (BaseDamage, RegenRate, CooldownDuration), `Event.*` (Death, Kill). One authoritative header. |
+| `BRGameplayTags.h/.cpp` | ALL native tags (`UE_DEFINE_GAMEPLAY_TAG`): `Ability.*`, `InputTag.*` (Move, Look, Jump, Crouch, Sprint, Fire, Reload, Swap, Grenade, Melee, Grapple), `State.*` (Shields.Broken, Combat.RecentDamage, Movement.Sprinting, Dead), `GameplayCue.*`, `Damage.*` (Kinetic, Explosive, Melee, Headshot, Rear), `SetByCaller.*` (BaseDamage, RegenRate, CooldownDuration), `Event.*` (Death, Kill). One authoritative header. |
 | `BRCore.h/.cpp` | Log channels (LogBRCombat/Net/AI/Online/UI) + collision channel aliases matching DefaultEngine.ini. *(v2: merged from two files — same audience, one include.)* |
 
 ### 3.2 `Input/` — 2 *(v2: new — the owned input layer)*
@@ -113,7 +113,7 @@ zero Lyra code):
 
 | File | Job |
 |---|---|
-| `BRInputConfig.h/.cpp` | `UDataAsset`: rows of `{TSoftObjectPtr<UInputAction>, FGameplayTag InputTag}` in two lists — native actions (Move/Look/Jump/Crouch) and **ability actions**. Loadout-agnostic: the config maps hardware to tags, never to abilities. |
+| `BRInputConfig.h/.cpp` | `UDataAsset`: rows of `{TSoftObjectPtr<UInputAction>, FGameplayTag InputTag}` in two lists — native actions (Move/Look/Jump/Crouch) and **ability actions** (Sprint, Fire, Reload, Swap, Grenade, Melee, Grapple). Loadout-agnostic: the config maps hardware to tags, never to abilities. |
 | `BRInputComponent.h/.cpp` | `UEnhancedInputComponent` subclass with `BindNativeAction(...)` and `BindAbilityActions(config, this, &Pressed, &Released)` templates. Every ability action routes to exactly two functions carrying the tag. |
 
 **The input flow (the whole design in five arrows):**
@@ -132,7 +132,7 @@ InputTag), no input code changes; press/release reach the ASC so
 game grade) sits at the one choke point; and bots inject the *same tags*
 into the same ASC path — human and bot input are literally one API.
 
-### 3.3 `AbilitySystem/` — 10
+### 3.3 `AbilitySystem/` — 11
 
 | File | Job |
 |---|---|
@@ -146,6 +146,7 @@ into the same ASC path — human and bot input are literally one API.
 | `Abilities/BRGA_Grenade.h/.cpp` | Cook → server-authoritative projectile spawn (client ghost for feel); explosion applies the same damage GE with `Damage.Explosive`. |
 | `Abilities/BRGA_Melee.h/.cpp` | Notify-window trace; rear-arc validated server-side; same damage GE with `Damage.Melee[.Rear]`. |
 | `Abilities/BRGA_Grapple.h/.cpp` | THE netcode packet: three modes by hit; self-pull via **root-motion source through CMC** (predicted by CMC machinery); rejection leaves zero state. Critic REFUTER gate. |
+| `Abilities/BRGA_Sprint.h/.cpp` | The movement-state ability, and the pattern-prover for **WhileHeld** activation: hold `InputTag.Sprint` → activate; release → end. Grants `State.Movement.Sprinting` via ActivationOwnedTags (predicted + replicated by GAS); the CMC reads it into the `FSavedMove_BR` sprint flag and applies the speed multiplier from `CT_Combat`. **No cost** (Halo sprint is free); `BRGA_WeaponFire`/`Melee`/`Grenade` list it in CancelAbilitiesWithTags — firing ends the sprint, Halo-style, with zero code in the sprint ability itself. |
 
 **The generic-effect library (Content assets, ~5 total — law #7 made real):**
 
@@ -197,8 +198,11 @@ subclass owns:
   and server-reconciled with zero bespoke reconciliation code. Detach
   rules (arrival, jump-cancel) live here; the *decision* to grapple
   stays in the ability.
-- Sprint speed handling; Halo-feel numbers (high air control, jump
-  velocity, gravity scale) are **config on CMC defaults, not code**.
+- Sprint: the CMC applies the `CT_Combat` speed multiplier while
+  `State.Movement.Sprinting` is present (set by `BRGA_Sprint`, carried in
+  the saved-move flag so corrections replay it). Halo-feel numbers (high
+  air control, jump velocity, gravity scale) are **config on CMC
+  defaults, not code**.
 
 ### 3.5 `Weapons/` — 3
 
@@ -287,9 +291,10 @@ rear-melee, shields-first — asserted **against the DataTable**) ·
 | `BRTelemetry` / `BRSpotter` as two files | **KEPT** | Different trust profiles (collector vs. HTTP client); merging couples an always-on system to an optional one |
 | Everything in the v1 "does NOT exist" ledger | **STILL OUT** | Per-system modules, asset manager, inventory system, message router, per-weapon actors, rewind, save/settings — reasons unchanged |
 | Target Actors (`AGameplayAbilityTargetActor`) | **REJECTED** | Built for confirm/cancel targeting flows; wrong for hitscan — we build TargetData from the client trace in a prediction window (Lyra parity) |
+| Sprint ability | **ADDED** (`BRGA_Sprint`) | Sprint is gameplay *state*, not just speed — GAS owns the decision (tag, cancel rules), the CMC owns the motion; it doubles as the WhileHeld-policy prover |
 
-**v2 budget: 41 class-units ≈ 78 source files + 3 targets.** (v1: 44 —
-five merged/cut, two added for input.)
+**v2 budget: 42 class-units ≈ 80 source files + 3 targets.** (v1: 44 —
+five merged/cut, two added for input, one added for sprint.)
 
 ---
 
@@ -385,7 +390,7 @@ Content/
 │                    DT_MatchRules.csv · DT_SpotterLines.csv
 ├── Maps/            BR_Arena01 · BR_Entry
 ├── AbilitySystem/   Effects/ (the 5 generic GEs) · Cues/ · Sets/ (AS_Loadout, AS_Weapon_*)
-├── Input/           IMC_Default · IA_* actions · DA_InputConfig
+├── Input/           IMC_Default · IA_* actions (incl. IA_Sprint) · DA_InputConfig
 ├── Characters/      sourced meshes + FPS anim sets + ABP assets
 ├── Weapons/         sourced meshes/anims
 ├── AI/              ST_Bot.st · EQS query assets
