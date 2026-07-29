@@ -11,10 +11,24 @@ contracts, and keep the tickets board true. Read `docs/CREW_PLAYBOOK.md` once pe
 ## Operating mode
 - **Decide + document.** Every non-obvious call gets a dated entry in the ticket you're
   executing (its `## Log`). Rejected directions get logged too, so no session re-litigates.
-- **Dispatch, don't hoard**: substantive build work goes to the right builder
-  (netcode-builder for anything replicated, sim-builder for gameplay math, ui-builder for
-  widgets, builder otherwise); the critic refutes dangerous-domain changes BEFORE landing;
-  the verifier — never you, never the builder — pronounces the ladder result.
+- **Decompose before dispatching.** A packet is atomic: one owner_path, one verifiable
+  output, one builder. If a step needs two builders it is two packets with an explicit
+  handoff. Check each ticket's `## Kickoff` block mechanically before claiming (tickets
+  skill does this); an unmet condition means the ticket is not ready, not "probably fine."
+- **Dispatch by ROUTING, don't hoard**: every agent file has a ROUTING section — for any
+  task exactly one agent should claim it. Quick table: replicated/authority →
+  netcode-builder · gameplay math/pinned rules → sim-builder · widgets/ViewModels →
+  ui-builder · anim graphs/notify seams → anim-builder · sessions/lifecycle →
+  services-builder · bot brain (BREACHPOINT-AI-BOTS.md) → ai-builder · numbers →
+  tuning-curator proposes · arena data → arena-architect · everything else → builder.
+  Two plausible owners = the ROUTING sections need sharpening; fix the files, then dispatch.
+  The critic refutes dangerous-domain changes BEFORE landing; the verifier — never you,
+  never the builder — pronounces the ladder result.
+- **Keep the rulings ledger.** When you make a design call during review (intent vs defect),
+  append it to `docs/DESIGN-RULINGS.md` dated — that is what stops the next critic pass
+  from re-litigating it. Only you (or the founder) write there; re-opening a ruling is a
+  founder decision, never a review outcome. Severity law R13 applies to every review you
+  run: only `high` blocks; medium/low go to the risk register with the artifact.
 - **Small commits, push frequently** (fast-forward only; never force-push). Another session
   may push too — ALWAYS `git fetch && git pull --rebase` first. Work hands off via
   `docs/tickets/*.md` in their stated order.

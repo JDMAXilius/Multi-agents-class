@@ -108,3 +108,68 @@ local ↔ another machine) is the **tickets board** (`docs/tickets/`, tickets sk
 with a STATUS line, log findings in the ticket's `## Log`, check boxes as you land. Git is
 the channel; the ticket is the shared memory. Every non-obvious decision gets written down
 WHERE THE NEXT SESSION WILL LOOK — a decision that lives only in a chat transcript is lost.
+
+*(Sections 9–12 were added after the first live pipeline run — every rule below was paid
+for by an observed failure, not theorized.)*
+
+## 9. The severity gate and printed exits (why reviews converge)
+
+The first data-crew run deadlocked: the critic found *something* every round and nothing
+ever shipped. Two mechanisms fixed it, now law:
+
+- **Only `high` severity blocks a landing** (ruling R13): a demonstrated exploit, a broken
+  hard constraint, or internally contradicting numbers. Medium/low land WITH the artifact in
+  a risk register (`open_risks_*.json`) — accepted risk the lead inherits, never silently
+  dropped, never blocking. A reviewer with no ship gate is a reviewer that never ships.
+- **Every review cycle prints its exit**: bounded rounds (default 3); on the final round
+  only hard violations may block; a producer's conceded doubt is closed and not re-raisable;
+  refusal to converge escalates to the lead as a signal. The rulings ledger
+  (`DESIGN-RULINGS.md`) removes the other failure mode — a REFUTER with no statement of
+  intent attacks the design itself and never converges.
+
+## 10. Gates are cost-ordered, and errors route to their author
+
+The bridge between agents and the engine is a sequence of gates ordered by cost, cheapest
+first — never burn an expensive check proving something a cheap one already disproves:
+
+parse/schema (ms) → deterministic validators (ms) → critic (one model call) →
+verifier recompute (one model call) → compile (minutes) → headless specs →
+functional → Gauntlet networked (the expensive tail) → perf.
+
+Two routing rules: a failed gate feeds the exact error back to the **agent that produced
+it** (one bounded self-correction for *form* errors — malformed output, schema misses);
+*design* disagreements go through the critic loop and can escalate to a human. Collapsing
+those two lets an agent "self-correct" past a design objection — never merge them.
+
+## 11. Memory: many readers, one writer, decisions survive compression
+
+The class calls it a shared memory pool; ours is git, and the discipline has three parts:
+
+- **Reader/writer asymmetry**: any number of agents read shared state (contracts, rulings,
+  GDD, tables) simultaneously; every artifact has exactly ONE writer (owner_path, binary
+  locks). That asymmetry is the whole trick.
+- **Summarize-and-archive**: a ticket's Log keeps the *decisions and numbers* (what the
+  next session needs); raw transcripts/recordings exist but are never required reading.
+  Closed tickets move to `archive/`. Key decisions survive compression; chatter doesn't.
+- **Context minimalism**: an agent gets its ticket + its named contracts + (reviewers) the
+  rulings ledger. Never "the repo so far." Overfeeding is how context collapses.
+
+## 12. Parallel pods — running builders simultaneously
+
+When a milestone opens multiple non-overlapping tickets, run one **git worktree per active
+builder** (`git worktree add ../bp-<ticket> <branch>`), each session claiming a different
+ticket. Safety is layered, not hoped for: disjoint owner_paths (the PreToolUse hook blocks
+escapes mechanically), one owner per binary with `git lfs lock`, fast-forward-only pushes,
+and the board as the single coordination point — every session syncs before and pushes
+after every meaningful step. The lead session reconciles by reading Logs, not by watching.
+Two tickets that would touch one file are not parallel tickets; re-cut them.
+
+## 13. The laws are hooks, not vibes
+
+`.claude/hooks/guard_laws.py` (wired in `.claude/settings.json`) enforces at tool-call
+time what the contracts state in prose: writes outside the claimed packet's owner_path are
+BLOCKED (law 5), banned engine APIs never enter `Source/` (laws 2–3: `TakeDamage`/
+`ApplyRadialDamage`, `ConstructorHelpers`, unseeded `FMath::RandRange`). The claim file is
+`.claude/active-packet.json` — written by the tickets skill on pickup, removed on done.
+Doctrine tells an agent what right looks like; the hook makes wrong physically fail. Test
+the guard the way you test any gate: prove it blocks (three cases are recorded in BP14).

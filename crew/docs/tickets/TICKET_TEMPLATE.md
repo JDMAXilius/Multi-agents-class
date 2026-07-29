@@ -8,6 +8,14 @@ bind this ticket (e.g. "server-authoritative only", "numbers in DataTables").>
 **Ordering law:** <what gates what, if anything — e.g. "Step 1's contract fill-in gates all
 code steps.">
 
+## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
+
+- <condition a script can check: "`Content/Data/DT_Weapons.csv` exists and re-validates",
+  "ticket BP0X is DONE (all boxes)", "`BRDataRows.h` compiles". An output existing is not
+  enough — name the validator that must pass. No conditions? Write "- none (root ticket)".>
+- owner_path: <the exact folders this ticket's builders may write — copied into
+  `.claude/active-packet.json` on claim; the guard hook enforces it on every write>
+
 ## Steps (in order)
 
 1. <Concrete step. Name exact files/modules/commands. Every step a fresh session could

@@ -222,13 +222,23 @@ mirror, killfeed ring buffer) · `BRPlayerState.h/.cpp` (**ASC + set
 live here**; TeamID, K/D/A) · `BRPlayerController.h/.cpp` (input→ASC
 relay, death cam, UI intent boundary).
 
-### 3.7 `AI/` — 4
+### 3.7 `AI/` — 6
 
-`BRBotController.h/.cpp` (StateTree + perception; seeded jitter; presses
+Full design: **`BREACHPOINT-AI-BOTS.md`** (three layers, one brain — GOAP-style
+ambitions over a StateTree spine over GAS; rulings R8–R12).
+
+`BRBotBrain.h/.cpp` (**layer 1** — pure, headless: `DT_BotAmbitions` utility
+scoring, hysteresis, bounded ≤3-step plans with ASC-query preconditions) ·
+`BRBotFacts.h` (the typed fact struct) ·
+`BRBotController.h/.cpp` (glue: events → brain; plan → StateTree params; presses
 InputTags on its ASC — aim error applied *before* the fire ability; no
-privileged paths) · `BRStateTreeTasks.h/.cpp` (all tasks/conditions) ·
-`BREnvQueryContexts.h/.cpp` (cover/threat/rocket scoring) ·
+privileged paths) · `BRStateTreeTasks.h/.cpp` (**layer 2** — all tasks/conditions;
+Engage internals are a BT-shaped priority selector; no second BehaviorTree asset) ·
+`BREnvQueryContexts.h/.cpp` (cover/threat/rocket/perch scoring over the arena
+manifest's authored vocabulary) ·
 `BRBotManagerComponent.h/.cpp` (fill/backfill on GameMode).
+*(v2: was 4 units — the GOAP layer adds `BRBotBrain` + `BRBotFacts`, both
+headless-testable; `DT_BotAmbitions.csv` joins `Content/Data/`.)*
 
 ### 3.8 `Online/` — 3 (+1 reserved)
 

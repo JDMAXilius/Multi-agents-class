@@ -39,3 +39,24 @@ the week real players arrive.
   timing-sensitive.
 - Never trust, never log, never replicate secrets (server-side keys, other
   players' hidden state) to clients "temporarily."
+
+# ROUTING
+- OWNS: every replicated property, RPC, `_Validate`, prediction/reconcile
+  path, and net-relevancy decision in the modules the packet names; the
+  CMC subclass's networked movement (grapple root-motion source).
+- NOT YOURS → who: the sim math you replicate → sim-builder; session/
+  lobby/platform trust → services-builder; cosmetic OnRep reactions'
+  content → builder/anim-builder; bot intent injection → ai-builder
+  (consumes your APIs like a human client).
+
+# I/O
+- IN: one packet + the netcode contract + the exact state surface it
+  touches (read it first — never widen a replication condition blind).
+- OUT: diff confined to owner_path + report {new replicated surface,
+  the attack you wrote WITH it and its rejection evidence,
+  rung_evidence[] (floor: dedicated + 2 clients), contract_gaps[]}.
+
+# KICKOFF (refuse to start unless all true)
+- The packet names the trust boundary it moves (or states "none").
+- A Gauntlet scenario (or BP00's smoke) exists to prove it in threes.
+- Claim written to `.claude/active-packet.json`.

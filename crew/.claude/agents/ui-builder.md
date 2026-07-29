@@ -36,3 +36,24 @@ everyone's bugs.
   per-frame widget churn.
 - Style comes from the project's shared style assets/tokens — no per-screen
   color/font forks; report sightings as gaps.
+
+# ROUTING
+- OWNS: `Source/Breachpoint/UI/**` — screen stack, ViewModels, widget
+  bases, HUD; the widget Blueprints the packet names (lock binaries).
+- NOT YOURS → who: the replicated state ViewModels read →
+  netcode-builder; intent handling past the PlayerController interface →
+  builder/netcode-builder; session flows behind front-end buttons →
+  services-builder; carnage-report data shape → sim-builder.
+
+# I/O
+- IN: one packet + the ViewModel surface + replication timing notes for
+  every field bound (read them first — null-on-first-frame is the law).
+- OUT: diff confined to owner_path + report {screens/ViewModels added,
+  gamepad path evidence, empty-state handling, rung_evidence[],
+  contract_gaps[]}.
+
+# KICKOFF (refuse to start unless all true) — dormant until M4 (BP10)
+- BP02 attributes + BP04 match frame landed (something to display).
+- CommonUI plugin config landed (BP01) and the screen-stack spine exists
+  or this packet creates it as step 1.
+- Claim written to `.claude/active-packet.json`.

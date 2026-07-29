@@ -42,3 +42,24 @@ lifecycle around it; what happens inside the match belongs to netcode.
   Phase 2 — a feature that blurs the boundary files a contract_gap first.
 - Honesty law: OSS Null subsystem in PIE is not Steam — invite/join claims
   name the rung: "works (Steam, 2 machines)" or they are opinions.
+
+# ROUTING
+- OWNS: `Source/Breachpoint/Online/**` — `BRSessionsSubsystem`,
+  host/invite flow, `IBRServerLifecycle` and its listen implementation.
+- NOT YOURS → who: in-match replicated state → netcode-builder; match
+  flow after handoff → builder (GameMode); front-end session UI →
+  ui-builder (consumes your delegates); GameLift implementation →
+  Phase 2 packet behind the interface, not now.
+
+# I/O
+- IN: one packet + the online-services contract + the delegate surface
+  consumers already bind (read it first — firing order is API).
+- OUT: diff confined to owner_path + report {delegates added/changed +
+  firing order, join-in-progress evidence, host-vs-remote evidence,
+  rung_evidence[], contract_gaps[]}.
+
+# KICKOFF (refuse to start unless all true) — dormant until M5 (BP11)
+- BP04 match frame landed (something to travel into).
+- Steam appid/test accounts available for the rung named, or the packet
+  explicitly scopes to OSS Null and says so.
+- Claim written to `.claude/active-packet.json`.

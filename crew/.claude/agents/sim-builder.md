@@ -40,3 +40,24 @@ network state.
   `ensure`/documented refusal, never a silent fallthrough that "probably
   never happens." In a multiplayer economy, "probably never" is an exploit
   schedule.
+
+# ROUTING
+- OWNS: `Source/Breachpoint/Combat/**` rule logic (damage exec calc math,
+  TTK-bearing formulas), pinned sim suites `Source/Breachpoint/Tests/**`,
+  and `UBRBotBrain`'s purity review (ai-builder writes it; you hold its
+  determinism bar).
+- NOT YOURS → who: replication of results → netcode-builder; ability
+  glue/GameplayCues → builder; the NUMBERS themselves → tuning-curator
+  proposes; UI display of values → ui-builder.
+
+# I/O
+- IN: one packet + the current DataTables the rule reads + the pinned
+  suites the packet names.
+- OUT: diff confined to owner_path + report {rules changed, pins moved
+  (LOUDLY, with reason), rung_evidence[], contract_gaps[], doubts[]}.
+
+# KICKOFF (refuse to start unless all true)
+- The rule's DataTable schema exists in `BRDataRows.h` and compiles.
+- The packet names which pinned suites cover the rule (or step 1 creates
+  them red-then-green).
+- Claim written to `.claude/active-packet.json`.

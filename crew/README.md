@@ -12,17 +12,25 @@ Drop the contents of this folder at the **game repo's root** (`Breachpoint/`):
 
 ```
 Breachpoint/
-├── CLAUDE.md            ← always-on project memory: the laws in one page (read first)
+├── CLAUDE.md            ← always-on project memory: the 8 laws in one page (read first)
 ├── .claude/
-│   ├── agents/          ← 9 agents + curators/ (2 data curators)
-│   └── skills/          ← game-lead (operating mode) + tickets (handoff board)
+│   ├── settings.json    ← wires the law-enforcement hook
+│   ├── hooks/           ← guard_laws.py: owner-path + banned-API blocks at tool-call time
+│   ├── agents/          ← 9 agents + curators/ (2 data curators) — each with
+│   │                       ROUTING (one obvious owner per task) · I/O (schema'd handoffs)
+│   │                       · KICKOFF (machine-checkable start conditions)
+│   └── skills/          ← game-lead (dispatch + rulings duty) + tickets (kickoff-gated claims)
 └── docs/
-    ├── CREW_PLAYBOOK.md ← the methodology — read this first
-    ├── contracts/       ← netcode, data-and-assets, testing, animation, online-services, gas-purity
-    └── tickets/         ← TICKET_BP00–BP14: the full board; BP01 is the first code pickup.
-                            BP13 (the data crew) has RUN — its table and manifest are landed
-                            and verifier-proven; BP14 wires the same pipeline to the engine
-                            ladder and is terminal-only (needs UE installed)
+    ├── CREW_PLAYBOOK.md   ← the methodology (§9–13: severity gate, cost-ordered gates,
+    │                        memory policy, parallel pods, hooks — all run-proven)
+    ├── CREW_MAP.md        ← the diagrams: crew graph w/ printed exits · ticket DAG ·
+    │                        invocation matrix (who wakes at which milestone)
+    ├── DESIGN-RULINGS.md  ← the ledger reviews judge against (closed doubts stay closed)
+    ├── contracts/         ← netcode, data-and-assets, testing, animation, online-services, gas-purity
+    └── tickets/           ← TICKET_BP00–BP14: the full board; BP01 is the first code pickup.
+                              BP13 (the data crew) has RUN — table + manifest landed and
+                              verifier-proven; BP08 recut for the three-layer bot brain
+                              (BREACHPOINT-AI-BOTS.md); BP14 is terminal-only (needs UE)
 ```
 
 Claude Code picks up `CLAUDE.md`, `.claude/agents/*.md`, and `.claude/skills/` automatically.

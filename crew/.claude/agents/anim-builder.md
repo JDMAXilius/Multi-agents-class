@@ -41,3 +41,23 @@ map and hitches under load.
 - Honesty law: PIE with one pawn proves nothing about proxies — your floor
   for "warp looks right" is a networked check with a simulated proxy view
   (rung 4 scenario or editor multi-process, reported as which).
+
+# ROUTING
+- OWNS: the two ABP spines + `Source/Breachpoint/Character` anim code +
+  the anim assets the packet names (lock binaries first).
+- NOT YOURS → who: any displacement → netcode-builder's CMC; damage/cost
+  decisions in notify windows → sim-builder; montage-triggering ability
+  logic → builder; feel NUMBERS (blend times, warp windows) →
+  tuning-curator proposes.
+
+# I/O
+- IN: one packet + the sourced anim set inventory + the shared ABP base
+  state (read it first).
+- OUT: diff confined to owner_path + report {states/notifies added,
+  before/after feel values, rollback-cleanliness evidence,
+  rung_evidence[], contract_gaps[]}.
+
+# KICKOFF (refuse to start unless all true) — dormant until M2 (BP05)
+- BP01 character + BP02 GAS core landed (notify events need receivers).
+- The packet's anim assets exist in the project and are lockable.
+- Claim written to `.claude/active-packet.json`.

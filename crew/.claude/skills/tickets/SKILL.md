@@ -30,8 +30,16 @@ git fetch && git pull --rebase   # never skip; other sessions push too
 ## `/tickets <name>` — pick up and execute
 
 1. Sync (above). Read the ticket fully; read any contracts it names.
-2. Add directly under the ticket's H1:
+2. **KICKOFF gate — check before claiming, refuse on failure.** If the ticket has a
+   `## Kickoff` block, verify every line mechanically (file exists, validator passes,
+   gating ticket DONE — run the checks, don't read prose optimistically). Any line false →
+   do NOT claim; report which condition failed and stop. An output *existing* is not the
+   gate; the gate is the output existing AND its validator passing.
+3. Add directly under the ticket's H1:
    `> STATUS: in-progress — <machine/side> <date> (<short sha>)`.
+   **Write the claim file** `.claude/active-packet.json`:
+   `{"ticket": "<name>", "owner_path": [<the ticket's owner paths>]}` — this arms the
+   owner-path hook (`guard_laws.py`) for every write in this session.
    Commit + push immediately (`tickets: pick up <name>`) so other sessions see the claim.
 3. Execute per the `game-lead` skill: dispatch the crew per the ticket's crew line, honesty
    laws, ladder rungs as written.
@@ -41,5 +49,6 @@ git fetch && git pull --rebase   # never skip; other sessions push too
 
 ## `/tickets done <name>`
 
-All boxes checked → `> STATUS: done — <side> <date>`, closing Log entry, move the file to
+All boxes checked → `> STATUS: done — <side> <date>`, closing Log entry, **delete
+`.claude/active-packet.json`** (disarm the hook), move the file to
 `docs/tickets/archive/`, push.

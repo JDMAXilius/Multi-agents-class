@@ -55,5 +55,17 @@ actor graph is a finding with a named home to move it to.
   are the library; new content adds rows/parameters, not effect assets.
 - [x] DataTable source CSVs live at: **`Content/Data/*.csv`** with ALL row structs in the one
   header **`Source/Breachpoint/Data/BRDataRows.h`** (`DT_Weapons`, `CT_Combat`,
-  `DT_BotTuning`, `DT_MatchRules`, `DT_SpotterLines`) · reimport is scripted via commandlet
-  (`Tools/reimport-tables.ps1`), never manual.
+  `DT_BotTuning`, `DT_BotAmbitions`, `DT_MatchRules`, `DT_SpotterLines`) · reimport is
+  scripted via commandlet (`Tools/reimport-tables.ps1`), never manual.
+- [x] **`FBRWeaponRow` carries two distinct enums** (schema split forced by the verifier in
+  the 29 Jul 2026 data-crew run): `FireMode` = trigger cadence ({Automatic, SemiAuto});
+  `DamageDelivery` = how the shot reaches the target ({Hitscan, Projectile}). Invariant,
+  asserted at import and in `Breachpoint.Sim.*`: `ProjectileSpeed == 0` **iff**
+  `DamageDelivery == Hitscan`. Conflating them again is a finding.
+- [x] **`arena_manifest.json` is a data artifact under this contract**: schema per the
+  arena-architect's doctrine (`bounds`, `spawn_points[]` with scoring_hints, named
+  `landmarks[]`, `cover[]`, `sightlines`, `hazards[]`, `doubts[]`); it is the source of
+  truth the blockout `.umap` projects (one owner per binary, law 7), and the bots' spatial
+  vocabulary (EQS scores its landmarks — `BREACHPOINT-AI-BOTS.md` §4). Hard floors the
+  validators enforce: ≥ 8 spawns, ≥ 8 m min pairwise spacing, ≤ 35 m sightlines, a named
+  rocket landmark.

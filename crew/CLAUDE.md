@@ -24,6 +24,14 @@ the method is `docs/CREW_PLAYBOOK.md`; the law is `docs/contracts/`.
    editor ≠ packaged. Every "works" names its rung; multiplayer claims come in threes
    (server, acting client, observing client).
 7. **Binary assets:** one owner per `.uasset`/`.umap` per ticket; lock before editing.
+8. **Design rulings are closed** (`docs/DESIGN-RULINGS.md`): reviews judge against the
+   ledger, never re-litigate it. Only `high`-severity findings block a landing; the rest
+   land in the risk register with the artifact.
+
+Laws 2, 3, and 5 are ALSO enforced mechanically: `.claude/hooks/guard_laws.py` blocks
+banned APIs and out-of-owner-path writes at tool-call time (claim file:
+`.claude/active-packet.json`, written by the tickets skill). A hook block is not an
+obstacle to route around — it is the law firing; file the contract_gap.
 
 ## Workflow
 
@@ -32,6 +40,13 @@ the method is `docs/CREW_PLAYBOOK.md`; the law is `docs/contracts/`.
 `run-specs.ps1`, `run-gauntlet.ps1`) → write findings to the ticket's `## Log` → push.
 Small commits, fast-forward only, never force-push. A decision that lives only in chat is
 lost — it goes in the Log or it didn't happen.
+
+## Memory (many readers, one writer)
+
+Shared state is git: contracts, rulings, tables, tickets — any agent reads; every artifact
+has ONE writer. Your context is your ticket + its named contracts (+ the rulings ledger if
+you review) — never "the repo so far." Decisions outlive transcripts: numbers and calls go
+in the ticket's Log; closed tickets archive. Full policy: `CREW_PLAYBOOK.md` §11.
 
 ## Quality bars
 
