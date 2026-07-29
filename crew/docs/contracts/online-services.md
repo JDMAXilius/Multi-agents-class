@@ -1,6 +1,7 @@
 # Contract — Online Services (seams are abstract; platform trust ends at the match)
 
-Status: v1 · Owner: services-builder · Binds every packet touching `Source/Breachpoint/Online`:
+Status: v1.1 (seam shape fixed for the GameLift swap — `BREACHPOINT-GAMELIFT-PLAN.md`) ·
+Owner: services-builder · Binds every packet touching `Source/Breachpoint/Online`:
 sessions, lobby, host/invite flow, server lifecycle.
 The boundary in one line: **services deliver players into a match and manage the server
 around it; authority inside the match is netcode's.**
@@ -49,3 +50,26 @@ around it; authority inside the match is netcode's.**
 - Dedicated-server future: GameLift arrives behind `IBRServerLifecycle` as a Phase-2 swap;
   nothing at this scope may assume the host has a local player *except* explicitly-marked
   listen-server-only code behind the interface.
+
+## Seam shape v1.1 — three gaps the slice MUST build (GameLift-proofing, zero AWS code)
+
+Discovered by mapping the managed-GameLift stack onto the seam (`BREACHPOINT-GAMELIFT-PLAN.md`
+§4). All three are interface shape only; retrofitting any of them after PlayerController and
+travel flows harden is expensive. BP11 builds them; the listen implementations are trivial.
+
+1. **Per-player admission hook.** `IBRServerLifecycle::ValidateJoin(player, join_credential)
+   → accept|reject`, called on every join before the player enters the match. Listen impl:
+   accept-always (one line). GameLift impl: `AcceptPlayerSession(playerSessionId)`. A join
+   path that bypasses this hook is a finding.
+2. **Outbound lifecycle events.** The seam emits server→game signals — `OnHostingEnding`
+   (scale-down / `ProcessEnding` / host-quit all map to the SAME event) and a health-check
+   pulse — not just game→server calls (`MatchComplete`). Host-quit consuming `OnHostingEnding`
+   is law 4's "defined, never discovered" made structural.
+3. **Join target is a variant.** `FindAndJoinBestSession` results carry
+   `{SessionHandle | Address(ip:port) + JoinCredential}` from day one. A caller that
+   pattern-matches on which variant it got (beyond passing it to the travel/connect layer)
+   is a finding — the variant exists so the swap never leaks upward.
+
+Phase-2 identity (ruling R15): Steam-derived only — client's Steam session ticket validated
+server-side (Steam Web API) → OUR short-lived token; no first-party account creation, ever.
+Cognito, if used at all, is token machinery in custom-auth mode — never a login UI.

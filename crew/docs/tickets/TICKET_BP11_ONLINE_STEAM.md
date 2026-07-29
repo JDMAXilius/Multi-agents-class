@@ -12,7 +12,11 @@ running the ladder without a human. Host-quit behavior is defined here, not disc
 1. Port `BRSessionsSubsystem` (Steam OSS): host listen server + travel to BR_Arena01,
    invite/accept → `FindAndJoinBestSession` → travel; Warmup-phase roster assembly;
    host-quit = match end with defined UI state on remotes. `IBRServerLifecycle` listen impl
-   final. Owner: **services-builder**. Contract: `online-services.md` (twice-tested law).
+   final **to seam shape v1.1** (`online-services.md` — per-player `ValidateJoin` hook
+   [listen: accept-always], outbound `OnHostingEnding` [host-quit routes through it], and
+   the join-target variant in `FindAndJoinBestSession` results). These three make the
+   Phase-2 GameLift swap (`BREACHPOINT-GAMELIFT-PLAN.md`) a swap instead of a retrofit.
+   Owner: **services-builder**. Contract: `online-services.md` (twice-tested law).
 2. Steam depot: App ID config, `Tools/steam/app_build.vdf` + depot; packaged Win64 demo
    build uploads and boots on a second machine. Owner: **builder** (tools),
    **services-builder** consults. TD holds upload credentials.

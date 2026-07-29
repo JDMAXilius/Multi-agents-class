@@ -62,3 +62,15 @@ The lead appends; nobody else writes here. A doubt this ledger closes is closed.
 - **R14. The orchestrator holds no opinions.** Managers are deterministic (script + lead
   session); intelligence lives inside the boxes. A proposal to add an LLM manager reargues
   a closed ruling.
+
+## Online services & Phase 2 (from the GameLift plan, 29 Jul 2026)
+
+- **R15. Identity is Steam-derived; there is no first-party account creation.** Phase-2 auth
+  validates the client's Steam session ticket server-side and issues our own short-lived
+  token. Any flow that asks a Steam player to sign up (Cognito login UI included) is a
+  defect, not an option. Cognito may serve as token machinery only.
+- **R16. Managed fleets (real money) are telemetry-triggered, never date-triggered.**
+  GL-3 opens only when demo telemetry shows the listen-server pain: host-quit abandonment,
+  NAT/join failure rate, host-advantage complaints. Low numbers = the fleet money stays
+  unspent and listen + GL-2 keeps shipping. Billing alarms and fleet caps are acceptance
+  criteria on any fleet ticket (denial-of-wallet is an exploit class).
