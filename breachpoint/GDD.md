@@ -231,11 +231,11 @@ change:
 
 | Agent | Product for Breachpoint |
 |---|---|
-| **Arena Architect** | `arena_manifest.json` — three-level layout, grapple points, spawn scoring, power-weapon nodes, 35 m sightline cap |
-| **Bot Trainer** | `DT_BotTuning` rows per tier (accuracy, reaction, grenade policy, power-weapon timing) |
-| **Combat QA** | Nightly bot-vs-bot matches; flags stuck navmesh, unreachable grapple points, spawn-kill loops |
-| **Balance Analyst** | Weapon TTK and win-rate bands; power-weapon control vs. win correlation |
-| **Weapon Curator** | `DT_Weapons` + `DT_DamageTypes` rows with trade-off analysis (the bot-trainer pattern applied to the sandbox) |
+| **Arena Architect** *(One Wow)* | `arena_manifest.json` — three-level layout, grapple points, spawn scoring, power-weapon nodes, 35 m sightline cap |
+| **Tuning Curator** | ALL gameplay numbers: `DT_Weapons` + `DT_DamageTypes` rows (TTK-defended), `DT_BotTuning` per tier, balance diffs outside the 45–55% band |
+
+*(Nightly bot-vs-bot soak QA is the verifier's automated testing, not a
+content agent — roster consolidated per the S03 "5+ agent types" red flag.)*
 
 Every output is reviewable data (JSON/DataTables), refuted by the critic,
 landed by a builder. Agents never commit directly.
@@ -412,5 +412,5 @@ power_weapon_timing (bool), cover_preference (0..1), push_threshold
 `FOS_MatchTelemetry`: kills, deaths, assists, accuracy per weapon, TTK
 distribution, shield-break→kill conversion, grenade kills, melee kills,
 grapple uses/kills, power-weapon holds, fights lost under 40% shields,
-medals. Consumed by: Spotter (coach lines), Balance Analyst (TTK/win
+medals. Consumed by: Spotter (coach lines), the tuning-curator (TTK/win
 bands), Combat QA (regression baselines).

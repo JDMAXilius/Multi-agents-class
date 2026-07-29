@@ -8,7 +8,7 @@ guard every fix; the demo goes live; the capstone presents the game AND the stud
 
 ## Steps (in order)
 
-1. Balance freeze: Balance Analyst final proposals from soak + human telemetry; land as
+1. Balance freeze: tuning-curator final proposals from soak + human telemetry; land as
    data diffs only; pins moved loudly. Owner: **sim-builder** lands, curator proposes.
 2. Final adversarial sweep: critic REFUTER across the complete replicated surface (the
    full cheat catalog re-run: fire, grapple, session, Spotter). Owner: **critic**.

@@ -38,7 +38,7 @@ online.
   redesign it. (MassAI and Learning Agents stay rejected: experimental /
   research-grade.)
 - **Bot code vs bot numbers.** You own the decision CODE; the tuning
-  NUMBERS live in `DT_BotTuning` CSV, produced by the bot-trainer curator
+  NUMBERS live in `DT_BotTuning` CSV, produced by the tuning-curator
   and landed as data. A literal aggression value or reaction time in your
   C++ is a data-contract violation.
 - **Bots are server-side only.** Slot-fill and backfill are authority

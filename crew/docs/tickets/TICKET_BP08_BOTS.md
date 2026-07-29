@@ -17,7 +17,7 @@ action trace. StateTree + EQS; MassAI and Learning Agents stay rejected.
 2. `BRStateTreeTasks` + `ST_Bot` asset (Seek/Engage/Flush/Reposition/Retreat/ContestRocket)
    + `BREnvQueryContexts` cover/threat/rocket scoring + EQS assets. Owner: **ai-builder**.
 3. `BRBotManagerComponent`: fill to roster at start, 10 s backfill, difficulty scalar
-   application. **bot-trainer** curator returns the baseline row + 3 scalar sets
+   application. **tuning-curator** returns the baseline row + 3 scalar sets
    (reaction_ms ≥ 200 schema-enforced); critic refutes samples. Owner: **ai-builder**.
 4. **Nightly soaks live from this ticket**: 20 bot-vs-bot matches, seeds logged, Combat QA
    report to the board each morning. Owner: **verifier** (runs), **builder** (harness).
@@ -32,7 +32,7 @@ action trace. StateTree + EQS; MassAI and Learning Agents stay rejected.
 - [ ] Three difficulty settings from ONE StateTree via scalars only
 - [ ] Nightly soak report posting to the board
 - [ ] Critic findings addressed or waived in the Log
-- Crew: ai-builder owns · bot-trainer curates · verifier proves+soaks · critic refutes
+- Crew: ai-builder owns · tuning-curator curates · verifier proves+soaks · critic refutes
 - Out of scope: distinct per-tier StateTrees (Phase 2), Spotter (BP11)
 
 ## Log

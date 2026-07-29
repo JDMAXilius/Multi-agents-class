@@ -218,7 +218,7 @@ SlashRoller/                         ← game repo root
 
 ## 9. Summary — the roster in one breath
 
-**12 agents total:** 7 producers (4 kit + 3 new), 2 reviewers (kit), 3
+**11 agents total (v2 — curators consolidated per the S03 scope red-flag: bot-trainer + balance-analyst → tuning-curator):** 7 producers (4 kit + 3 new), 2 reviewers (kit), 3
 curators (new) — governed by 2 skills, bound by 3–5 contracts, coordinated
 through 1 tickets board. Every producer owns exactly one discipline
 (D1–D8); no producer verifies its own work; both reviewers are read-only;

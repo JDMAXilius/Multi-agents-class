@@ -2,7 +2,7 @@
 
 The **formulated crew for Breachpoint** — the UE5 Multiplayer Agent Crew Kit adapted
 to this project: contracts filled with Breachpoint values, three discipline builders and
-three curators added per `docs/method/ENGINEERING-DISCIPLINES.md` (D1–D8), first ticket cut.
+the curators added per `docs/method/ENGINEERING-DISCIPLINES.md` (D1–D8), first ticket cut.
 The kit's methodology was battle-tested on a shipped production app (adversarial review
 caught five real defects — two confidently-wrong — in a single working day).
 
@@ -14,12 +14,12 @@ Drop the contents of this folder at the **game repo's root** (`Breachpoint/`):
 Breachpoint/
 ├── CLAUDE.md            ← always-on project memory: the laws in one page (read first)
 ├── .claude/
-│   ├── agents/          ← 9 agents + curators/ (3 data curators)
+│   ├── agents/          ← 9 agents + curators/ (2 data curators)
 │   └── skills/          ← game-lead (operating mode) + tickets (handoff board)
 └── docs/
     ├── CREW_PLAYBOOK.md ← the methodology — read this first
     ├── contracts/       ← netcode, data-and-assets, testing, animation, online-services, gas-purity
-    └── tickets/         ← TICKET_BP00–BP04 are the Week-1/2 set; BP01 is the first pickup
+    └── tickets/         ← TICKET_BP00–BP12: the full board; BP01 is the first pickup
 ```
 
 Claude Code picks up `CLAUDE.md`, `.claude/agents/*.md`, and `.claude/skills/` automatically.
@@ -53,9 +53,8 @@ prediction keys · `BR` prefix, one module · soft-refs + generic-GE laws · CSV
 
 | Agent | Returns |
 |---|---|
-| `bot-trainer` | `DT_BotTuning` rows per difficulty tier |
 | `arena-architect` | `arena_manifest.json` (bounds, scored spawns, landmarks) |
-| `balance-analyst` | tuning diffs when telemetry breaks the 45–55% band |
+| `tuning-curator` | ALL gameplay numbers: `DT_Weapons` + `DT_BotTuning` rows and balance diffs (proposes only outside the 45–55% band) |
 
 ## The five laws (from the playbook — the part that must survive any adaptation)
 

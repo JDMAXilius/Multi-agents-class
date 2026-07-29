@@ -259,7 +259,7 @@ replicated strings only).
 write these — **the crew does**. The 3 spec files are what the verifier's
 ladder *runs*; without them "works" is an opinion and the whole
 separation-of-powers loop is theater. Telemetry is 2 files feeding 3
-consumers (Spotter, Balance Analyst, Combat QA baselines). Both are
+consumers (Spotter, tuning-curator balance bands, QA soak baselines). Both are
 ticketed to Claude terminal from day one; your cost is reading green/red,
 not authoring.
 

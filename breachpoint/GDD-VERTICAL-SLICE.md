@@ -256,13 +256,17 @@ The formulated 12-agent crew carries over unchanged; only its products
 change. Every output is reviewable data (JSON/DataTables), refuted by the
 critic, landed by a builder. **Agents never commit directly.**
 
+The content crew is **three agents** (consolidated per the S03 scope
+red-flag — see the Assignment #2 GDD §5.4):
+
 | Agent | Product for the slice |
 |---|---|
-| **Arena Architect** | `arena_manifest.json` — three-level layout, grapple points (≥2 per upper position), scored spawns, rocket node, 35 m sightline cap |
-| **Bot Trainer** | `DT_BotTuning` — the baseline profile + the three difficulty scalars |
-| **Weapon Curator** | `DT_Weapons` rows (AR/Magnum/Rocket) with TTK analysis against the shield+health model |
-| **Combat QA** | Nightly bot-vs-bot soaks: stuck navmesh, unreachable grapple points, spawn-kill loops, TTK regressions |
-| **Balance Analyst** | Weapon win-rate/TTK bands; rocket-control vs. match-win correlation |
+| **Arena Architect** *(the One Wow agent)* | `arena_manifest.json` — three-level layout, grapple points (≥2 per upper position), scored spawns, rocket node, 35 m sightline cap |
+| **Tuning Curator** | ALL gameplay numbers: `DT_Weapons` rows with TTK analysis, `DT_BotTuning` profiles + difficulty scalars, and balance diffs (proposes only outside the 45–55% band) |
+| **Spotter** | The runtime agent (§3.3) — coach + killfeed strings, moderated before display |
+
+*(Nightly bot-vs-bot soaks — stuck navmesh, spawn-kill loops, TTK
+regressions — are the verifier's automated testing, not a content agent.)*
 
 ### 3.3 The Runtime Agent — Spotter
 
@@ -532,5 +536,5 @@ asserted in `Breachpoint.Bots.*`).
 accuracy per weapon, TTK distribution, shield-break→kill conversion,
 grenade kills, melee kills (front/rear), grapple uses and grapple kills,
 rocket holds and rocket kills, **fights lost below 40% shields**, medals,
-time alive. Consumed by: Spotter (coach lines), Balance Analyst
+time alive. Consumed by: Spotter (coach lines), the tuning-curator
 (TTK/win bands), Combat QA (regression baselines).

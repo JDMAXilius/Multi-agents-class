@@ -48,17 +48,17 @@ surface; two pods never write the same file (owner-path law + binary locks).
 
 | Pod | Main goal (the one sentence) | Staff (agents) | Owner paths |
 |---|---|---|---|
-| **① Combat** | Every verb feels right and every number is provable | sim-builder · weapon-curator | `AbilitySystem/`, `Weapons/`, `Data/`, `Tests/` |
+| **① Combat** | Every verb feels right and every number is provable | sim-builder · tuning-curator | `AbilitySystem/`, `Weapons/`, `Data/`, `Tests/` |
 | **② Netcode & Match** | Truth lives on the server and nobody can cheat it | netcode-builder | `Match/`, every replicated surface, `BRGA_Grapple` |
-| **③ AI** | Opponents that play like players, deterministically | ai-builder · bot-trainer | `AI/`, `Telemetry/` (Spotter) |
+| **③ AI** | Opponents that play like players, deterministically | ai-builder · tuning-curator | `AI/`, `Telemetry/` (Spotter) |
 | **④ Experience** | The game reads instantly and sounds like Halo | ui-builder · builder (audio) | `UI/`, `Input/`, cues/MetaSounds |
 | **⑤ World** | One arena worth fighting over | arena-architect · builder (integration) · anim-builder (sets) | `BR_Arena01`, `Character/` anim, sourced assets |
 | **⑥ Platform & Release** | Always launchable, provably working, one-click shippable | services-builder · verifier · builder (tools) | `Online/`, `Tools/`, Steam depot, CI/ladder |
 | **Production office** | The board is true and the seams are arbitrated | game-lead (terminal session) · **Juan (TD — final call)** · critic (floats: review board) | tickets, contracts |
 
 **The critic belongs to no pod** — it is the studio's review board, pulled into
-any pod's dangerous-domain packet (netcode, sim math, schemas). **Balance
-Analyst** activates in Week 5 when telemetry exists.
+any pod's dangerous-domain packet (netcode, sim math, schemas). **The tuning-curator's
+balance duty** activates in Week 5 when telemetry exists.
 
 ---
 
@@ -147,7 +147,7 @@ depot, Spotter, CI.)*
 
 | Pod | Deliverable |
 |---|---|
-| ① Combat | Freeze mechanics; data-only balance via **Balance Analyst** (now live on soak telemetry) |
+| ① Combat | Freeze mechanics; data-only balance via the **tuning-curator** (now live on soak telemetry) |
 | ② Netcode & Match | Rung-4 under emulation green on every packet · host-quit behavior defined + tested |
 | ③ AI | **Spotter agent** (async, canned fallback first) · telemetry consumers wired |
 | ④ Experience | MetaSounds pass (footsteps = the information system) · medals · UI polish |
