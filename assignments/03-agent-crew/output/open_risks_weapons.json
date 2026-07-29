@@ -1,0 +1,18 @@
+{
+  "job": "weapons",
+  "accepted_non_blocking_findings": [
+    {
+      "row": "Rocket",
+      "failure_scenario": "The combat-model canon states headshot multiplier applies universally to 'the whole shot (x2)', and both AR and Magnum rows apply HeadshotMult=2.0 accordingly. Rocket's row sets HeadshotMult=1.0, a silent per-weapon exception to a rule stated as universal in the canon paragraph. A designer or player reading only the canon combat model would expect a rocket headshot to deal 240 (one-shot kill regardless of shields), but the row delivers no such bonus \u2014 an unexplained inconsistency between the stated combat model and this weapon's implementation. The row's own doubts flag this as 'my inference, not stated in the GDD... needs explicit sign-off', i.e. the curator flags it as unresolved rather than accepted, so it remains an open contradiction rather than a closed/accepted risk.",
+      "severity": "medium",
+      "suggested_fix": "Get explicit sign-off that AoE/projectile weapons are excluded from the universal x2 headshot rule, and amend the combat-model canon paragraph to state the exception explicitly (e.g. 'headshot multiplier applies to hitscan weapons only') so the exception is documented canon rather than a silent per-row deviation."
+    },
+    {
+      "row": "Rocket",
+      "failure_scenario": "The Rocket row's evidence asserts a direct hit deals 120 dmg, leaving the target at 80 EHP so a second hit is required (the intended '2-shot, scarce power weapon' economy). But the same row also carries SplashRadius_m=4 and SplashDamage=90 with no falloff curve and no field/flag stating splash is suppressed on the actor that already took the direct hit. If the weapon's radial-damage application (a common default for explosive projectiles) applies SplashDamage to every actor inside the radius, including the point of impact, a single direct hit becomes 120 (direct) + 90 (splash, flat/no falloff per the row's own SplashDamage field) = 210 dmg in one shot -- exceeding the full 200 EHP pool outright. In a live 4v4 that silently converts the intended 2-shot power weapon into a guaranteed one-shot kill on every direct hit, doubling its practical ammo-efficiency (1 kill per shot instead of per 2 shots against 2 reserve-less rounds) and breaking the 90s-timer scarcity balance the design explicitly leans on ('scarcity is the balance, not its damage'). Notably, the AR and Magnum rows both documented an analogous modeling-assumption risk (shield-carryover-on-break) as a doubts[] entry pending sim confirmation; the Rocket row has no equivalent doubt for direct+splash stacking, even though that single unconfirmed assumption is what decides whether this weapon kills in 1 shot or 2.",
+      "severity": "medium",
+      "suggested_fix": "Add a doubts[] entry (or an explicit schema flag, e.g. bExcludeDirectHitActorFromSplash=true) stating the directly-hit actor receives DamagePerShot only and is excluded from its own SplashDamage application, then confirm against the actual radial-damage implementation in BRDataRows.h/combat code before this row lands -- do not let the '2-shot' framing stand unverified."
+    }
+  ],
+  "note": "Raised by the critic, judged non-blocking (severity < high). Landed with the artifact; the lead resolves or accepts them when real playtest data exists."
+}

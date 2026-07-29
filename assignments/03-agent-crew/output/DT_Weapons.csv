@@ -1,0 +1,4 @@
+Name,DisplayName,FireMode,DamageDelivery,DamagePerShot,RPM,MagSize,ReserveMags,ReloadTime_s,HeadshotMult,ProjectileSpeed,SplashRadius_m,SplashDamage,EquipTime_s,MeshSoftPath,FireCueTag
+AR,Assault Rifle,Automatic,Hitscan,8,600,32,5,2.2,1.0,0,0,0,0.4,/Game/Weapons/AR/SM_AR.SM_AR,GameplayCue.Weapon.AR.Fire
+Magnum,Magnum,SemiAuto,Hitscan,22,180,8,4,2.0,2.0,0,0,0,0.4,/Game/Weapons/Magnum/SM_Magnum.SM_Magnum,GameplayCue.Weapon.Magnum.Fire
+Rocket,Rocket Launcher,SemiAuto,Projectile,120,30,2,0,0,1.0,30,4,90,0.4,/Game/Weapons/Rocket/SM_Rocket.SM_Rocket,GameplayCue.Weapon.Rocket.Fire

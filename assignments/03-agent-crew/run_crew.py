@@ -51,7 +51,47 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 OUTPUT_DIR = HERE / "output"
 RECORDING_PATH = HERE / "recording.json"
-MAX_BOUNCES = 2
+MAX_BOUNCES = 3
+
+# A REFUTER with an attack surface but no statement of intent will attack the
+# design itself, escalating every round and never converging. These are the
+# rulings the critic judges against — deliberate trade-offs are not defects.
+REVIEW_DOCTRINE = """\
+# DESIGN INTENT (rulings already made — attacking these is out of scope)
+- Precision weapons SHOULD reward aim: the Magnum's headshot TTK beating every
+  other path is the intended fantasy, paid for by an 8-round mag, per-shot
+  accuracy pressure, and no forgiveness on a miss. "Skilled Magnum play is
+  strong" is the design working, not a finding.
+- The AR is the shield-stripper, not a finisher; being slower solo is intended.
+- The Magnum is the FINISHER. It is NOT required to kill a full-200-EHP target
+  from one magazine on body shots alone — the intended line is AR-strip, swap,
+  Magnum finish. "The Magnum cannot solo a full-health target without
+  reloading" is the two-weapon carry doing its job, not a defect.
+- Geometry claims — mutual visibility, line-of-sight breakage, what a given
+  wall occludes — CANNOT be settled from a manifest's coordinates alone. They
+  are editor-rung (walkthrough) checks. A manifest that records them in
+  doubts[] with that caveat has handled them CORRECTLY. Only flag geometry when
+  the manifest's own numbers contradict each other: a coordinate collision, a
+  distance past a stated cap, a spawn without any assigned cover entry.
+- The Rocket is a map pickup on a 90 s timer with 2 shots — it is SUPPOSED to
+  win the fight it is present for; scarcity is the balance, not its damage.
+- The arena is one compact map for a vertical slice, not a competitive-ranked
+  layout. Imperfect spawn distribution is acceptable if the hard constraints
+  hold and the imbalance is documented.
+
+# WHAT COUNTS AS A FINDING
+A finding shows a violation of a HARD CONSTRAINT or an internal contradiction:
+a number that contradicts another number in the same set, a stated claim the
+values disprove, a mag that cannot complete its weapon's stated job, a GDD
+constraint breached (35 m sightline, >= 8 spawns, 200 ms bot floor), or a
+schema/units error. Restating an intended trade-off is NOT a finding, and
+neither is a preference for different tuning.
+
+# CONVERGENCE
+Consider the producer's `doubts[]` — a risk they already documented and
+accepted is closed, not re-openable. Residual risk that only real playtest data
+can settle belongs in doubts[], not in a finding. This review exists to catch
+defects before they land, not to design the game."""
 DEFAULT_MODEL = "claude-sonnet-5"
 
 # ---------------------------------------------------------------------------
@@ -71,11 +111,14 @@ GDD first-pass values (complete and defend them — do not silently change them)
   Rocket Launcher: 120 dmg, 4 m splash radius, 2 shots, projectile
 """
 
+# FireMode is trigger cadence; DamageDelivery is how the shot reaches the
+# target. They were one column until the verifier proved the hitscan invariant
+# was unverifiable against a field that only ever held {Automatic, SemiAuto}.
 WEAPON_COLUMNS = [
-    "Name", "DisplayName", "FireMode", "DamagePerShot", "RPM", "MagSize",
-    "ReserveMags", "ReloadTime_s", "HeadshotMult", "ProjectileSpeed",
-    "SplashRadius_m", "SplashDamage", "EquipTime_s", "MeshSoftPath",
-    "FireCueTag",
+    "Name", "DisplayName", "FireMode", "DamageDelivery", "DamagePerShot",
+    "RPM", "MagSize", "ReserveMags", "ReloadTime_s", "HeadshotMult",
+    "ProjectileSpeed", "SplashRadius_m", "SplashDamage", "EquipTime_s",
+    "MeshSoftPath", "FireCueTag",
 ]
 
 ARENA_BRIEF = """\
@@ -142,9 +185,13 @@ class LiveEngine:
                 messages=[{"role": "user", "content": prompt}])
             text = "".join(b.text for b in resp.content if b.type == "text")
         else:
+            # Strip the parent's Bun tuning: when this script is itself launched
+            # from a Claude Code session, the inherited BUN_OPTIONS breaks the
+            # nested CLI with a bare ENOENT.
+            env = {k: v for k, v in os.environ.items() if k != "BUN_OPTIONS"}
             proc = subprocess.run(
                 ["claude", "-p", prompt, "--model", self.model],
-                capture_output=True, text=True, timeout=600)
+                capture_output=True, text=True, timeout=900, env=env)
             if proc.returncode != 0:
                 sys.exit(f"error: claude CLI failed at {meta}: {proc.stderr.strip()[:500]}")
             text = proc.stdout.strip()
@@ -211,6 +258,32 @@ def extract_json(text: str):
         return json.loads(text[start:end + 1])
 
 
+def write_risk_register(job: str, open_risks: list):
+    """Accepted findings are not discarded — they land beside the artifact so
+    the human lead inherits them. A risk that vanishes silently is worse than
+    one that blocked."""
+    path = OUTPUT_DIR / f"open_risks_{job}.json"
+    path.write_text(json.dumps(
+        {"job": job, "accepted_non_blocking_findings": open_risks,
+         "note": "Raised by the critic, judged non-blocking (severity < high). "
+                 "Landed with the artifact; the lead resolves or accepts them "
+                 "when real playtest data exists."},
+        indent=2), encoding="utf-8")
+    log(f"  risk register: {len(open_risks)} accepted finding(s) → {path.name}")
+
+
+def split_findings(review):
+    """Blocking vs non-blocking, as in any real review: only `high` stops a
+    landing. Medium/low are recorded as accepted risk and carried into the
+    artifact — otherwise a reviewer that always finds *something* never lets
+    anything ship."""
+    if review["verdict"] == "PASS":
+        return [], []
+    findings = review["findings"]
+    blocking = [f for f in findings if f.get("severity") == "high"]
+    return blocking, [f for f in findings if f.get("severity") != "high"]
+
+
 def ask(eng, agent_def: str, agent: str, stage: str, job: str, task: str, validate):
     """One agent call with a single self-correction retry (Class-04 error bridge):
     if the response fails to parse or fails schema validation, the exact error
@@ -251,6 +324,16 @@ def validate_weapon_proposals(data):
         for col in ("DamagePerShot", "RPM", "MagSize", "HeadshotMult"):
             if not (isinstance(row[col], (int, float)) and row[col] > 0):
                 return f"{row.get('Name', '?')}.{col} must be a positive number"
+        if row["FireMode"] not in ("Automatic", "SemiAuto"):
+            return f"{row.get('Name', '?')}.FireMode must be Automatic or SemiAuto (trigger cadence)"
+        if row["DamageDelivery"] not in ("Hitscan", "Projectile"):
+            return f"{row.get('Name', '?')}.DamageDelivery must be Hitscan or Projectile"
+        # The invariant the verifier proved unverifiable — now enforced here.
+        hitscan = row["DamageDelivery"] == "Hitscan"
+        if hitscan != (float(row["ProjectileSpeed"]) == 0):
+            return (f"{row.get('Name', '?')}: ProjectileSpeed must be 0 iff "
+                    f"DamageDelivery is Hitscan (got {row['DamageDelivery']}, "
+                    f"speed {row['ProjectileSpeed']})")
         for key in ("evidence", "implied_ttk_s", "risk", "doubts"):
             if key not in p:
                 return f"proposal for {row.get('Name', '?')} missing `{key}`"
@@ -282,10 +365,17 @@ def validate_built_csv(data):
     for r in rows[1:]:
         if len(r) != len(WEAPON_COLUMNS):
             return f"row {r[0] if r else '?'} has {len(r)} cells, expected {len(WEAPON_COLUMNS)}"
+        cell = dict(zip(WEAPON_COLUMNS, r))
         try:
-            float(r[3]), float(r[4]), float(r[5])  # DamagePerShot, RPM, MagSize
+            for col in ("DamagePerShot", "RPM", "MagSize", "ProjectileSpeed"):
+                float(cell[col])
         except ValueError:
-            return f"row {r[0]}: DamagePerShot/RPM/MagSize must be numeric"
+            return f"row {r[0]}: {col} must be numeric"
+        if cell["DamageDelivery"] not in ("Hitscan", "Projectile"):
+            return f"row {r[0]}: DamageDelivery must be Hitscan or Projectile"
+        if (cell["DamageDelivery"] == "Hitscan") != (float(cell["ProjectileSpeed"]) == 0):
+            return (f"row {r[0]}: ProjectileSpeed must be 0 iff DamageDelivery "
+                    f"is Hitscan")
     return None
 
 
@@ -304,6 +394,7 @@ def job_weapons(eng, agents_dir):
     builder = load_agent(agents_dir, "builder")
     verifier = load_agent(agents_dir, "verifier")
     job = "weapons"
+    open_risks = []
     log("\n=== JOB: weapons → DT_Weapons.csv ===")
 
     schema = ",".join(WEAPON_COLUMNS)
@@ -313,7 +404,12 @@ Combat model (canon, from the GDD):
 Schema (UE DataTable CSV columns): {schema}
 `Name` is the UE row name (AR, Magnum, Rocket). `MeshSoftPath` is a soft object
 path under /Game/Weapons/. `FireCueTag` is a GameplayCue tag
-(GameplayCue.Weapon.<Name>.Fire). ProjectileSpeed is 0 for hitscan.
+(GameplayCue.Weapon.<Name>.Fire).
+Two distinct columns, do not conflate them:
+  `FireMode` = trigger cadence, exactly one of {{Automatic, SemiAuto}}.
+  `DamageDelivery` = how the shot reaches the target, exactly one of
+  {{Hitscan, Projectile}}. AR and Magnum are Hitscan; Rocket is Projectile.
+`ProjectileSpeed` (m/s) must be 0 if and only if DamageDelivery is Hitscan.
 Complete the table: keep the GDD first-pass values, propose the missing columns
 (reserve mags, reload, equip, splash, paths, tags), and defend every number
 against the shields+health model per your doctrine — state the implied
@@ -332,13 +428,16 @@ Return ONLY a JSON object:
         f"(TTKs: {', '.join(str(p['implied_ttk_s']) for p in proposals['proposals'])} s)")
 
     for bounce in range(MAX_BOUNCES + 1):
+        last_round = (bounce == MAX_BOUNCES)
         critic_task = f"""# TASK — REFUTER mode: attack these proposed DT_Weapons rows
 Combat model (canon):
 {COMBAT_MODEL}
+{REVIEW_DOCTRINE}
+{"# FINAL ROUND — only hard-constraint violations or internal contradictions may block now. Anything softer goes to doubts[] and PASSes." if last_round else ""}
 Proposed rows with the curator's evidence:
 {json.dumps(proposals, indent=2)}
 
-Attack the design, not the formatting. Candidate attacks: a TTK that breaks the
+Attack the numbers, not the formatting. Candidate attacks: a TTK that breaks the
 strip-then-finish sandbox (AR should strip shields in ~1.3 s but never
 out-finish the Magnum; Magnum headshots must reward aim without making body
 shots pointless); a weapon that dominates or invalidates another slot; a mag
@@ -355,22 +454,26 @@ Return ONLY a JSON object:
 "severity": "high|medium|low", "suggested_fix": "..."}}]}}"""
 
         review = ask(eng, critic, "critic", "refute", job, critic_task, validate_verdict)
-        if review["verdict"] == "PASS":
-            log(f"  critic: PASS (bounce {bounce})")
-            break
-        log(f"  critic: {len(review['findings'])} finding(s) — bouncing to curator")
-        for f in review["findings"]:
+        blocking, accepted = split_findings(review)
+        for f in review.get("findings", []):
             log(f"    - [{f.get('severity', '?')}] {f.get('row', '?')}: {f['failure_scenario'][:110]}")
+        open_risks.extend(accepted)
+        if not blocking:
+            log(f"  critic: no blocking findings (bounce {bounce}; "
+                f"{len(accepted)} non-blocking recorded as accepted risk)")
+            break
+        log(f"  critic: {len(blocking)} BLOCKING finding(s) — bouncing to curator")
         if bounce == MAX_BOUNCES:
-            log("REFUTED: max bounces reached — escalating to the human lead")
+            log("REFUTED: blocking findings survived every bounce — escalating to the human lead")
             sys.exit(2)
         revise_task = curator_task + f"""
 
 # REVISION REQUIRED (bounce {bounce + 1})
-The critic refuted your previous proposals with these findings:
-{json.dumps(review['findings'], indent=2)}
-Address every finding (fix the value or rebut with better evidence in
-`doubts`) and return the full corrected JSON object."""
+The critic raised these BLOCKING findings against your previous proposals:
+{json.dumps(blocking, indent=2)}
+Address every one (fix the value, or rebut with evidence in `doubts`) and
+return the full corrected JSON object. Change only what these findings require
+— churning unrelated numbers creates new inconsistencies."""
         proposals = ask(eng, curator, "tuning-curator", "revise", job, revise_task,
                         validate_weapon_proposals)
         log("  tuning-curator: revised proposals returned")
@@ -407,7 +510,9 @@ Run these checks and report verbatim results, showing your arithmetic:
    sandbox job (AR: strip 100 shields; Magnum: finish 100 health on headshots).
 3. Headshot math: Magnum headshot damage and shots-to-finish 100 health.
 4. UE importability: soft paths well-formed (/Game/...), cue tags match
-   GameplayCue.Weapon.<Name>.Fire, ProjectileSpeed 0 iff FireMode Hitscan.
+   GameplayCue.Weapon.<Name>.Fire, FireMode in {{Automatic, SemiAuto}},
+   DamageDelivery in {{Hitscan, Projectile}}, and ProjectileSpeed == 0 if and
+   only if DamageDelivery == Hitscan.
 A check you cannot run is BLOCKED with the reason — never silently skipped.
 
 # OUTPUT
@@ -426,6 +531,7 @@ Return ONLY a JSON object:
     out = OUTPUT_DIR / "DT_Weapons.csv"
     out.write_text(built["csv_text"], encoding="utf-8")
     log(f"  LANDED: {out.relative_to(HERE)} (written only after verifier PASS)")
+    write_risk_register(job, open_risks)
 
 
 # ---------------------------------------------------------------------------
@@ -482,6 +588,7 @@ def job_arena(eng, agents_dir):
     builder = load_agent(agents_dir, "builder")
     verifier = load_agent(agents_dir, "verifier")
     job = "arena"
+    open_risks = []
     log("\n=== JOB: arena → arena_manifest.json ===")
 
     architect_task = f"""# TASK — design the vertical-slice arena for BREACHPOINT
@@ -489,9 +596,18 @@ Brief:
 {ARENA_BRIEF}
 Coordinates in metres, z = floor height (three levels). Follow your doctrine's
 manifest shape exactly; scoring_hints per spawn = {{"min_dist_to_combat_m":
-<number>, "last_used_cooldown_s": <number>}}. Cover entries justify why no
-spawn pair is mutually visible. Honest uncertainty goes in doubts[] — geometry
-claims that need the editor rung say so.
+<number>, "last_used_cooldown_s": <number>}}.
+
+CLAIM DISCIPLINE (this is what gets manifests rejected):
+- `sightlines.notes` states ONLY what the coordinates prove — a measured
+  distance, a footprint that provably spans a segment. NEVER write a blanket
+  claim like "the Core blocks every corner-to-corner line": a reviewer will
+  test it with arithmetic and find the diagonal it misses.
+- Occlusion, mutual visibility, and 5 m line-of-sight breakage CANNOT be proven
+  from coordinates. Each belongs in `doubts[]` phrased as a claim to be
+  confirmed at the editor walkthrough rung — not asserted as fact.
+- Before submitting, check your own numbers: no two landmarks or cover volumes
+  may occupy the same (x,y) footprint, and no spawn may sit inside one.
 
 # OUTPUT
 Return ONLY a JSON object: {{"manifest": {{...arena_manifest...}},
@@ -504,9 +620,12 @@ Return ONLY a JSON object: {{"manifest": {{...arena_manifest...}},
         f"{len(man['landmarks'])} landmarks, max sightline {man['sightlines']['max_length_m']} m")
 
     for bounce in range(MAX_BOUNCES + 1):
+        last_round = (bounce == MAX_BOUNCES)
         critic_task = f"""# TASK — REFUTER mode: attack this arena manifest
 Brief (the law, not inspiration):
 {ARENA_BRIEF}
+{REVIEW_DOCTRINE}
+{"# FINAL ROUND — only hard-constraint violations or internal contradictions may block now. Anything softer goes to doubts[] and PASSes." if last_round else ""}
 Manifest:
 {json.dumps(result, indent=2)}
 Candidate attacks: a spawn pair the stated cover does not actually separate;
@@ -525,22 +644,26 @@ Return ONLY a JSON object:
 "...", "severity": "high|medium|low", "suggested_fix": "..."}}]}}"""
 
         review = ask(eng, critic, "critic", "refute", job, critic_task, validate_verdict)
-        if review["verdict"] == "PASS":
-            log(f"  critic: PASS (bounce {bounce})")
-            break
-        log(f"  critic: {len(review['findings'])} finding(s) — bouncing to architect")
-        for f in review["findings"]:
+        blocking, accepted = split_findings(review)
+        for f in review.get("findings", []):
             log(f"    - [{f.get('severity', '?')}] {f.get('target', '?')}: {f['failure_scenario'][:110]}")
+        open_risks.extend(accepted)
+        if not blocking:
+            log(f"  critic: no blocking findings (bounce {bounce}; "
+                f"{len(accepted)} non-blocking recorded as accepted risk)")
+            break
+        log(f"  critic: {len(blocking)} BLOCKING finding(s) — bouncing to architect")
         if bounce == MAX_BOUNCES:
-            log("REFUTED: max bounces reached — escalating to the human lead")
+            log("REFUTED: blocking findings survived every bounce — escalating to the human lead")
             sys.exit(2)
         revise_task = architect_task + f"""
 
 # REVISION REQUIRED (bounce {bounce + 1})
-The critic refuted your previous manifest with these findings:
-{json.dumps(review['findings'], indent=2)}
-Address every finding (move geometry, add cover, or concede the point into
-doubts[] with the editor-rung caveat) and return the full corrected JSON."""
+The critic raised these BLOCKING findings against your previous manifest:
+{json.dumps(blocking, indent=2)}
+Address every one (move geometry, add cover, or concede into doubts[] with the
+editor-rung caveat) and return the full corrected JSON. Change only what these
+findings require — churning unrelated coordinates creates new collisions."""
         result = ask(eng, architect, "arena-architect", "revise", job, revise_task,
                      validate_arena_manifest)
         man = result["manifest"]
@@ -597,6 +720,7 @@ Return ONLY a JSON object:
     out = OUTPUT_DIR / "arena_manifest.json"
     out.write_text(built["json_text"], encoding="utf-8")
     log(f"  LANDED: {out.relative_to(HERE)} (written only after verifier PASS)")
+    write_risk_register(job, open_risks)
 
 
 # ---------------------------------------------------------------------------
@@ -611,7 +735,10 @@ def main():
                     help="recording file to write (--live) or replay from")
     args = ap.parse_args()
 
+    # Absolute: an aborted run must still save the exchanges it earned, even if
+    # the process cwd has moved.
     rec = Path(args.recording)
+    rec = rec if rec.is_absolute() else (HERE / rec)
     agents_dir = find_agents_dir()
     eng = LiveEngine(args.model, rec) if args.live else ReplayEngine(rec)
     mode = "LIVE" if args.live else "REPLAY (recorded exchanges, same pipeline code)"

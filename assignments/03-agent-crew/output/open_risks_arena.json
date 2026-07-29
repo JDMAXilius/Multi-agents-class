@@ -1,0 +1,24 @@
+{
+  "job": "arena",
+  "accepted_non_blocking_findings": [
+    {
+      "target": "manifest.cover for SP1, SP4, SP5, SP6, SP7, SP8",
+      "failure_scenario": "These six spawns each have only a 'chest-high' cover object (~4 m away) as their sole nearby obstruction, while SP2/SP3 get dedicated full-obstruction landmarks (Bar/Pit) explicitly flagged in doubts[] for confirmation. A standing player at SP5 can look over chest-high cover 4 m away with an unbroken sightline out immediately on spawn \u2014 satisfying 'something within 5 m' on paper but not necessarily breaking LOS, and unlike SP2/SP3 this is never flagged as a doubt.",
+      "severity": "medium",
+      "suggested_fix": "Upgrade these breakers to full-height (matching the corridor baffle / Gantry post pattern) or add a doubts[] entry stating chest-high cover is assumed to break spawn LOS pending walkthrough, same as given to Bar/Pit."
+    },
+    {
+      "target": "manifest.sightlines.notes (SP1-SP4/SP2-SP3 and SP5-SP7/SP6-SP8 figures)",
+      "failure_scenario": "The notes state the SP1-SP4/SP2-SP3 diagonal is '56.6 m raw,' but from the actual coordinates (4,4)-(36,36) it is 32\u221a2 \u2248 45.25 m \u2014 56.6 m matches the full bounds-corner diagonal (0,0)-(40,40), not the spawns. The derived '22.6 m unobstructed segment' inherits this error (0.4\u00d756.6\u224822.6); using the correct 45.25 m total and the Core's real entry point, the actual unobstructed piece is \u224817 m. Similarly, SP5-SP7/SP6-SP8 are claimed capped at 16 m, but the Core's x/y 16-24 span blocks 8 m of the 32 m line, leaving 12 m per side, not 16 m.",
+      "severity": "medium",
+      "suggested_fix": "Recompute the SP1-SP4/SP2-SP3 raw diagonal (45.25 m) and the SP5-SP7/SP6-SP8 segment caps (12 m per side) from the actual spawn coordinates and correct the sightline notes."
+    },
+    {
+      "target": "Rocket Launcher Pad placement ('cantilevered off the Pylon's west face') vs. its billing as 'central contested landmark'",
+      "failure_scenario": "The pad footprint x[16,18],y[19,21] sits only on the west side of the centered Pylon (x[19,21],y[19,21]) \u2014 it is not radially centered, it is attached to one face. Ground-floor distance from west-side spawns to the pad center (~17,20) is markedly shorter than from east-side spawns: SP1 (4,4,0) is ~20.6 m away vs. SP2 (36,4,0) at ~24.8 m (and the same gap repeats for SP3/SP4 and the SP5-SP8 gantry mirrors). Whichever team ends up anchored to the west spawns (SP1,SP3,SP5,SP7) reaches every 90 s rocket cycle first as a standing structural fact of the layout, not as a contested race \u2014 directly undercutting the GDD's framing of the pad as the map's central, evenly-contested landmark. This asymmetry is real from the manifest's own coordinates (no walkthrough needed to see it) and it is not listed anywhere in doubts[], so it hasn't been accepted as a documented, known risk the way the brief allows for 'imperfect spawn distribution.'",
+      "severity": "medium",
+      "suggested_fix": "Either recenter the pad symmetrically (e.g. suspend it at the Pylon's exact center on its own mini-platform rather than cantilevered off one face), or explicitly document the west/east proximity gap in doubts[] as an accepted asymmetry, and confirm whether team-to-spawn-side assignment rotates/swaps across a match to cancel out the advantage."
+    }
+  ],
+  "note": "Raised by the critic, judged non-blocking (severity < high). Landed with the artifact; the lead resolves or accepts them when real playtest data exists."
+}

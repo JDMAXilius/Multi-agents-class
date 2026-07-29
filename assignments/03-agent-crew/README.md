@@ -15,7 +15,8 @@ that authors that data:
 | Artifact | What the game does with it |
 |---|---|
 | `output/DT_Weapons.csv` | Imported as the UE DataTable behind every weapon — damage, RPM, mags, reload, headshot multiplier, soft asset paths, GameplayCue tags. The sandbox's tuning source of truth. |
-| `output/arena_manifest.json` | The spec a level builder executes into the vertical-slice arena blockout — bounds, ≥8 scored spawn points (farthest-from-combat respawns), named callout landmarks, cover, the contested rocket pad. |
+| `output/arena_manifest.json` | The spec a level builder executes into the vertical-slice arena blockout — bounds, 8 scored spawn points (farthest-from-combat respawns), named callout landmarks, cover, the contested rocket pad. |
+| `output/open_risks_*.json` | Findings the critic raised and judged non-blocking, carried forward so the human lead inherits them instead of losing them. |
 
 These aren't demo artifacts invented for the assignment — they are the actual
 first-pass data for the capstone's vertical slice, generated from the GDD's canon
@@ -40,6 +41,35 @@ whether the numbers are *good* (design), the verifier proves the file is
 *correct* (artifact). And because the verifier cannot write, it structurally
 cannot patch a failing check into a pass — a stronger separation than a manager
 validating its own crew's work.
+
+**Only `high`-severity findings block a landing.** Medium and low are recorded
+in `output/open_risks_*.json` and carried forward. Without that split a reviewer
+that always finds *something* never lets anything ship — the first version of
+this crew deadlocked exactly that way.
+
+### What the crew actually caught (from the committed run)
+
+Not hypotheticals — these are findings from `recording.json`:
+
+- **Rocket one-shot exploit.** The curator's first pass gave the Rocket
+  `HeadshotMult=2.0`. The critic computed 120 × 2 = 240 damage against 200 EHP —
+  a guaranteed one-shot kill on a full-shield target, destroying the two-shot
+  power-weapon fantasy. Fixed to 1.0 before landing.
+- **The AR headshot bug.** An AR at `HeadshotMult=2.0` and 600 RPM gave an
+  accurate player a faster kill than the Magnum — inverting the sandbox, where
+  the AR strips and the Magnum finishes. The crew converged on `1.0`: headshot
+  bonuses belong to precision weapons. That is the correct Halo answer, reached
+  by the pipeline rather than handed to it.
+- **A schema defect the verifier found.** `FireMode` originally held
+  `{Automatic, SemiAuto}` while also being the field meant to distinguish
+  hitscan from projectile — so the "ProjectileSpeed is 0 for hitscan" invariant
+  was *unverifiable at import*. The verifier failed the artifact and named the
+  gap. The schema was split into `FireMode` + `DamageDelivery`, and the
+  invariant is now enforced deterministically in `run_crew.py`.
+- **Deterministic gates firing.** Gate A rejected an arena manifest whose
+  spawns sat 7.8 m apart (below the 8 m anti-spawn-camp floor) and the architect
+  self-corrected; malformed JSON from the critic triggered the one-retry
+  self-correction bridge.
 
 ## Architecture
 
@@ -129,10 +159,15 @@ verifier, so no agent ever grades its own work.
 
 ```
 run_crew.py        the orchestrator + 4-agent pipeline (one file, stdlib only)
-recording.json     the recorded live run (powers replay mode; full prompts inspectable)
+recording.json     the committed live run — 18 agent exchanges, prompts included
 output/
-  DT_Weapons.csv        game-ready weapon tuning table   ← the deliverable
-  arena_manifest.json   game-ready arena blockout spec   ← the deliverable
-  run_log.txt           transcript of the committed run
+  DT_Weapons.csv          game-ready weapon tuning table   ← the deliverable
+  arena_manifest.json     game-ready arena blockout spec   ← the deliverable
+  open_risks_weapons.json  non-blocking findings, carried to the lead
+  open_risks_arena.json    non-blocking findings, carried to the lead
+  run_log.txt             transcript of the committed run
 README.md          this file
 ```
+
+Everything in `output/` was produced by the crew — nothing there was written
+by hand.
