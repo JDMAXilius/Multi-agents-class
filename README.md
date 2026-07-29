@@ -17,7 +17,7 @@ ships from.
 | Path | What it is |
 |---|---|
 | **`breachpoint/`** | **The active project.** [Vertical-slice GDD](breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md) (the six-week build) · [full-concept GDD](breachpoint/BREACHPOINT-GDD-FULL-CONCEPT.md) (Phase-2 target) · [Architecture](breachpoint/BREACHPOINT-ARCHITECTURE.md) (42 class-units, file-by-file) · [Roadmap](breachpoint/BREACHPOINT-ROADMAP.md) (six pods, six milestones) · [Quality Bars](breachpoint/BREACHPOINT-QUALITY-BARS.md) (budgets, DoD, playtest protocol, ship checklist) |
-| **`crew/`** | **The drop-in agent studio** — copy its contents to the game repo root. 11 agents (7 builders, 2 reviewers, 2 curators), 2 skills (`game-lead`, `tickets`), 6 contracts (netcode, data-and-assets, testing, animation, online-services, **gas-purity**), and the executable board: [tickets BP00–BP13](crew/docs/tickets/) covering Week 1 → ship, including [BP13](crew/docs/tickets/TICKET_BP13_DATA_CREW.md) — the runnable data crew that authors the weapon table and arena manifest. Start here: [`crew/README.md`](crew/README.md) |
+| **`crew/`** | **The drop-in agent studio** — copy its contents to the game repo root. 11 agents (7 builders, 2 reviewers, 2 curators), 2 skills (`game-lead`, `tickets`), 6 contracts (netcode, data-and-assets, testing, animation, online-services, **gas-purity**), and the executable board: [tickets BP00–BP14](crew/docs/tickets/) covering Week 1 → ship, including [BP13](crew/docs/tickets/TICKET_BP13_DATA_CREW.md) — the data crew that **has run**, landing the weapon table and arena manifest — and [BP14](crew/docs/tickets/TICKET_BP14_ENGINE_BRIDGE.md), which wires the same pipeline to the engine ladder (terminal-only). Start here: [`crew/README.md`](crew/README.md) |
 | **`assignments/`** | Course submissions of record — [Assignment #1](assignments/01-gdd-first-draft/) (*Slash Roller: Arena* first-draft GDD) · [#2](assignments/02-gdd-final-draft/) (**Breachpoint** final GDD, Markdown + styled PDF) · [#3](assignments/03-agent-crew/) (**the runnable agent crew** — 4 agents producing Breachpoint's `DT_Weapons.csv` + `arena_manifest.json`, with replay mode and Mermaid architecture) |
 | **`docs/course/`** | Course-wide references — [the GDD writing standard](docs/course/GDD-FORMAT-GUIDE.md) · [Game Developers Conference overview](docs/course/GDC-overview.md) |
 | **`docs/method/`** | The crew methodology — [engineering disciplines D1–D8](docs/method/ENGINEERING-DISCIPLINES.md) · [crew roster & agent kinds](docs/method/CREW-ROSTER.md) · [researched best-practice validation](docs/method/ARCHITECTURE-VALIDATION.md) · [crew operations plan](docs/method/CREW-OPERATIONS.md) |
@@ -37,15 +37,21 @@ ships from.
    the Breachpoint vertical slice — does**, and it was chosen as the build.
 4. **Pre-production completed (M0)** — GDD, architecture (with GAS-purity law, soft-ref
    modularity, the owned input layer), roadmap (six parallel pods, Halo-Studios-style),
-   quality bars, and all 13 tickets.
+   quality bars, and all 15 tickets.
 
 ## Status & next action
 
 **M0 — pre-production complete.** ✅
-Next: create the game repo, copy `crew/` contents to its root, then in a Claude terminal:
+The data crew has **run**: `DT_Weapons.csv` and `arena_manifest.json` are authored, reviewed,
+and verifier-proven ([BP13 Log](crew/docs/tickets/TICKET_BP13_DATA_CREW.md#log)).
+
+Next: create the game repo, copy `crew/` contents to its root, then in a Claude terminal
+(everything below needs UE 5.8 installed — it cannot run in a cloud container):
 
 ```
-/tickets TICKET_BP01_SKELETON_INPUT
+/tickets TICKET_BP01_SKELETON_INPUT   # the first code pickup
+/tickets TICKET_BP13_DATA_CREW        # step 6 only: import the landed data
+/tickets TICKET_BP14_ENGINE_BRIDGE    # wire the crew to the real ladder
 ```
 
 The milestone ladder from there: M1 Foundry → **M2 Golden Triangle (fun gate)** → M3

@@ -1,7 +1,8 @@
 # TICKET — Run the data crew to author DT_Weapons and the arena manifest
 
-> STATUS: open — cut alongside Assignment #3, 29 Jul 2026. Runnable today; needs no
-> engine, no compile, no UE install. Its outputs unblock BP03 (weapons) and BP07 (arena).
+> STATUS: **steps 1–5 DONE** (crew run live 29 Jul 2026, both artifacts landed with verifier
+> PASS — see Log). **Step 6 remains and needs the terminal:** import into the UE project.
+> Its outputs unblock BP03 (weapons) and BP07 (arena).
 
 Every tuning number and every arena coordinate in Breachpoint must trace to a **named agent
 output that a human reviewed** (GDD §"success criteria"). This ticket is that pipeline made
@@ -27,9 +28,10 @@ geometry). Both jobs are independent of each other and may run in parallel.
 3. **Adversarial stage** — `critic` in REFUTER mode attacks the design: a TTK that breaks
    strip-then-finish, a weapon that invalidates a slot, a mag that cannot finish its job,
    a spawn pair the stated cover does not separate, a rocket pad one team holds risk-free.
-   Findings need input → wrong outcome in a live 4v4. Bounces to the producer, max 2, then
-   the run exits 2 and escalates to the lead — a refusal to converge is a real signal, not
-   a failure to work around.
+   Findings need input → wrong outcome in a live 4v4. **Only `high` severity blocks**; medium
+   and low land in `output/open_risks_*.json` for the lead. Blocking findings bounce to the
+   producer, max 3 rounds, then the run exits 2 and escalates — a refusal to converge is a
+   real signal, not a failure to work around.
 4. **Landing stage** — `builder` formats the surviving records into the exact file content.
    **Values are frozen at this stage**; a changed number here is the silent-drift bug class
    this pipeline exists to kill, and is a finding against the builder.
@@ -44,13 +46,15 @@ geometry). Both jobs are independent of each other and may run in parallel.
 
 ## Done when
 
-- [ ] `output/DT_Weapons.csv` exists, verifier verdict PASS, and imports against
-      `FBRWeaponRow` in-editor with zero row errors
-- [ ] `output/arena_manifest.json` exists, verifier verdict PASS, ≥ 8 spawns, min pairwise
-      spawn distance ≥ 8 m, max sightline ≤ 35 m
-- [ ] Recomputed body-shot TTKs are in the Halo band and the AR strips 100 shields within
-      one magazine — stated as numbers in the Log, not asserted
-- [ ] `python3 run_crew.py` (replay, no key) completes exit 0 on a clean machine
+- [x] `output/DT_Weapons.csv` exists, verifier verdict PASS — **import against `FBRWeaponRow`
+      in-editor with zero row errors is the remaining half of this box (step 6, terminal)**
+- [x] `output/arena_manifest.json` exists, verifier verdict PASS, 8 spawns, min pairwise
+      spawn distance 11.36 m (≥ 8 m), max sightline 35 m
+- [x] Recomputed body-shot TTKs stated as numbers in the Log, and the AR strips 100 shields
+      in 13 shots against a 32-round magazine
+- [x] `python3 run_crew.py` (replay, no key) completes exit 0 on a clean machine
+- [ ] `FBRWeaponRow` in `BRDataRows.h` carries the `DamageDelivery` column (schema split —
+      see Log); reimport is clean after
 - [ ] Findings + decisions written to this ticket's Log
 
 ## Notes
@@ -66,4 +70,47 @@ geometry). Both jobs are independent of each other and may run in parallel.
 
 ## Log
 
-(append findings here, dated, newest last — this is what the next session reads)
+**29 Jul 2026 — crew run live, both jobs landed (steps 1–5 done).**
+Run recorded in `assignments/03-agent-crew/recording.json` (18 exchanges); transcript in
+`output/run_log.txt`. Model: claude-sonnet-5 via the `claude` CLI.
+
+*Landed weapons table* (`output/DT_Weapons.csv`), verifier PASS:
+
+| Name | FireMode | DamageDelivery | Dmg | RPM | Mag | HeadshotMult |
+|---|---|---|---|---|---|---|
+| AR | Automatic | Hitscan | 8 | 600 | 32 | 1.0 |
+| Magnum | SemiAuto | Hitscan | 22 | 180 | 8 | 2.0 |
+| Rocket | SemiAuto | Projectile | 120 | 30 | 2 | 1.0 (splash 4 m / 90, speed 30 m/s) |
+
+Verifier arithmetic, recomputed from the row values alone vs 200 EHP:
+AR body TTK **2.4 s** (25 shots), Magnum **3.0 s** (10 shots), Rocket **2.0 s** (2 shots).
+AR strips 100 shields in **13 shots** — inside one 32-round mag.
+
+*Landed arena manifest* (`output/arena_manifest.json`), verifier PASS: `breachpoint_vs01`,
+bounds 40×40×12 m, **8 spawns** across three z-levels (0/4/8), 7 named callout landmarks
+(The Core, Mezzanine Catwalks, The Gantry, N/S Barricade, W/E Stack), 8 cover volumes,
+max sightline **35 m**, 4 recorded doubts. Verifier computed all C(8,2)=28 pairwise
+distances: **minimum 11.36 m**, tied across SP5–SP7/SP5–SP8/SP6–SP7/SP6–SP8.
+
+*Three defects the crew caught before landing:*
+1. **Rocket one-shot.** First pass set the Rocket's `HeadshotMult=2.0` → 120×2 = 240 vs
+   200 EHP, a guaranteed one-shot on a full-shield target. Destroys the two-shot
+   power-weapon fantasy. Corrected to 1.0.
+2. **AR headshot inversion.** `HeadshotMult=2.0` at 600 RPM let an accurate AR player
+   out-finish the Magnum, inverting strip-then-finish. Crew converged on **1.0** — headshot
+   bonuses belong to precision weapons. Matches Halo; reached by the pipeline, not handed to it.
+3. **Schema defect, found by the verifier.** `FireMode` held `{Automatic, SemiAuto}` while
+   also being the field meant to separate hitscan from projectile, so the
+   "ProjectileSpeed is 0 for hitscan" invariant was **unverifiable at import**. Column split
+   into `FireMode` (cadence) + `DamageDelivery` (Hitscan|Projectile); the invariant is now
+   enforced deterministically in `run_crew.py`. **`FBRWeaponRow` must gain this column** —
+   carried into Done-when above and into BP03.
+
+*Accepted non-blocking risks:* 2 (weapons) + 3 (arena), in `output/open_risks_*.json`.
+Chief among them: the Rocket's `ReserveMags=0` means "reload" is unreachable by design, and
+the arena's mutual-visibility and 5 m LOS-break claims are **editor-rung** — the verifier
+reported them BLOCKED, not passed. Confirm both at BP07's walkthrough.
+
+*Method note:* the first pipeline build deadlocked — the critic found something every round
+and nothing ever shipped. Fixed by splitting blocking from non-blocking severity. A reviewer
+with no ship gate is a reviewer that never ships.

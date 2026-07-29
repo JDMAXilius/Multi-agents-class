@@ -19,8 +19,10 @@ Breachpoint/
 └── docs/
     ├── CREW_PLAYBOOK.md ← the methodology — read this first
     ├── contracts/       ← netcode, data-and-assets, testing, animation, online-services, gas-purity
-    └── tickets/         ← TICKET_BP00–BP13: the full board; BP01 is the first code pickup,
-                            BP13 (the data crew) runs today with no engine installed
+    └── tickets/         ← TICKET_BP00–BP14: the full board; BP01 is the first code pickup.
+                            BP13 (the data crew) has RUN — its table and manifest are landed
+                            and verifier-proven; BP14 wires the same pipeline to the engine
+                            ladder and is terminal-only (needs UE installed)
 ```
 
 Claude Code picks up `CLAUDE.md`, `.claude/agents/*.md`, and `.claude/skills/` automatically.
