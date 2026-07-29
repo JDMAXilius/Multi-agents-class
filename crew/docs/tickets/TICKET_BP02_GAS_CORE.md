@@ -57,7 +57,7 @@ with 3. BP00 step 2 (combat spec) lands against this ticket's output.
 - Crew: sim-builder leads · netcode-builder reviews replication settings · verifier proves ·
   critic refutes
 - Binary files owned: `Content/AbilitySystem/Effects/*`, `Content/Data/CT_Combat.csv`
-- Out of scope: any weapon, any specific ability beyond the base class, UI
+- Out of scope: any weapon, any ability beyond the base class and BRGA_Sprint, UI
 
 ## Log
 
