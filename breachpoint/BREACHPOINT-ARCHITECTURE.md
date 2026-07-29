@@ -74,7 +74,7 @@ Source/
 
 ---
 
-## 3. The Runtime Module — `Source/Breachpoint/` (42 class-units)
+## 3. The Runtime Module — `Source/Breachpoint/` (44 class-units)
 
 ```
 Source/Breachpoint/
@@ -304,8 +304,11 @@ rear-melee, shields-first — asserted **against the DataTable**) ·
 | Target Actors (`AGameplayAbilityTargetActor`) | **REJECTED** | Built for confirm/cancel targeting flows; wrong for hitscan — we build TargetData from the client trace in a prediction window (Lyra parity) |
 | Sprint ability | **ADDED** (`BRGA_Sprint`) | Sprint is gameplay *state*, not just speed — GAS owns the decision (tag, cancel rules), the CMC owns the motion; it doubles as the WhileHeld-policy prover |
 
-**v2 budget: 42 class-units ≈ 80 source files + 3 targets.** (v1: 44 —
-five merged/cut, two added for input, one added for sprint.)
+**Budget: 44 class-units ≈ 84 source files + 3 targets.** (v1 was 44; v2's
+consolidation took it to 42 — five merged/cut, two added for input, one for
+sprint — and the GOAP goal layer then added `BRBotBrain` + `BRBotFacts`,
+both headless-testable. Same total, different shape: fewer glue classes,
+more provable ones.)
 
 ---
 

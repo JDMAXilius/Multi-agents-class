@@ -239,4 +239,4 @@ A stranger installs the Steam demo and gets a kill inside two minutes,
 unaided. Playtesters grapple offensively and run it back unprompted. Every
 arena decision, bot value, and weapon number traces to a named agent output a
 human reviewed. And the capstone presents both artifacts: **the game, and the
-studio that built it** — six pods, twelve agents, one principal, six weeks.
+studio that built it** — six pods, eleven agents, one principal, six weeks.

@@ -2,7 +2,7 @@
 ## Which capstone is actually buildable in C++, with an agent crew, and shippable on Steam?
 
 **Prepared:** 29 July 2026 · **Author:** Juan Diego Lugo
-**Window:** 6 weeks · **Team:** 1 principal engineer + the 12-agent crew
+**Window:** 6 weeks · **Team:** 1 principal engineer + the 11-agent crew
 **Hard requirement:** deploy on Steam
 **Documents compared:** the Arena GDD (A — see `archive/slashroller/`) ·
 `breachpoint/BREACHPOINT-GDD-FULL-CONCEPT.md` (B)
@@ -20,7 +20,7 @@
   server on GameLift.
 
 **Shared:** UE 5.8, pure native C++, GAS, MetaSounds, CommonUI, the same
-12-agent crew, the same contracts, sourced art. **No vehicles, no Lyra
+11-agent crew, the same contracts, sourced art. **No vehicles, no Lyra
 project** (art/animation may be sourced).
 
 ---

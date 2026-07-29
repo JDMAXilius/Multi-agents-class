@@ -2,7 +2,7 @@
 
 **Course:** Multi-Agent AI for Game Development (ELVTR) · **Author:** Juan Diego Lugo
 **Capstone:** **BREACHPOINT** — a Halo-inspired 4v4 arena FPS, built in UE 5.8 / pure
-native C++ / GAS by one principal engineer directing a 12-agent AI crew, shipping a Steam
+native C++ / GAS by one principal engineer directing an 11-agent AI crew, shipping a Steam
 demo in six weeks.
 
 This repo is the course work **and** the capstone's complete pre-production studio: design
@@ -30,7 +30,7 @@ ships from.
    (third-person melee deathmatch on the studio's shipped GAS core), stress-tested by an
    agent review crew per the Class-03 method.
 2. **The crew was formulated** — disciplines D1–D8 were drawn as real ownership
-   boundaries, validated against industry practice, and minted into the 12-agent kit with
+   boundaries, validated against industry practice, and minted into the agent kit with
    binding contracts.
 3. **The scope comparison** — a second concept (Halo-inspired FPS) was designed and both
    were costed line-by-line. Verdict: full Concept B doesn't fit six weeks; **Option C —
