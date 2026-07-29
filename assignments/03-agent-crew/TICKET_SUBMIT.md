@@ -67,4 +67,10 @@ the grader's machine?) and **Architecture Diagram /1.0** (does the Mermaid actua
 
 ## Log
 
-(append here — submission format, timestamp, confirmation)
+**29 Jul 2026 — verification run.** `python3 run_crew.py` (replay, stdlib only, no API key)
+→ **exit 0**; full pipeline executed (producer → gate A → critic REFUTER → builder → gate B
+→ verifier PASS). Both deliverables (`DT_Weapons.csv`, `arena_manifest.json`) regenerated
+**byte-for-byte identical** to the committed copies — replay is deterministic. Manifest
+validates as well-formed JSON (8 spawns). Architecture diagram rendered via
+`@mermaid-js/mermaid-cli` (exit 0, valid SVG/PNG) — confirmed it renders, not assumed.
+Working tree clean; `main` in sync with `origin/main`.
