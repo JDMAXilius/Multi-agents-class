@@ -12,6 +12,7 @@ Drop the contents of this folder at the **game repo's root** (`Breachpoint/`):
 
 ```
 Breachpoint/
+├── CLAUDE.md            ← always-on project memory: the laws in one page (read first)
 ├── .claude/
 │   ├── agents/          ← 9 agents + curators/ (3 data curators)
 │   └── skills/          ← game-lead (operating mode) + tickets (handoff board)
@@ -21,7 +22,9 @@ Breachpoint/
     └── tickets/         ← TICKET_BP00–BP04 are the Week-1/2 set; BP01 is the first pickup
 ```
 
-Claude Code picks up `.claude/agents/*.md` and `.claude/skills/` automatically. Contracts are
+Claude Code picks up `CLAUDE.md`, `.claude/agents/*.md`, and `.claude/skills/` automatically.
+Day-to-day operations (session topology, model assignment, escalation, metrics):
+`docs/method/CREW-OPERATIONS.md` in the planning repo. Contracts are
 already filled for Breachpoint (UE 5.8 · listen server behind IBRServerLifecycle · GAS
 prediction keys · `BR` prefix, one module · soft-refs + generic-GE laws · CSVs in `Content/Data/`).
 
