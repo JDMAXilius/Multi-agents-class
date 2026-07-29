@@ -217,9 +217,15 @@ over and does not fit even after its own pre-declared cuts.
 If B is the game you actually want to make, the way to make it real is to
 change the *deliverable*, not the *scope*:
 
-- **Ship target:** a polished **vertical slice** — 1 map, 2 weapons
-  (AR + Magnum), grenades, melee, **Grappleshot**, 1 bot tier, Team
-  Slayer, listen server. ≈ **5.5–6 w** — this fits.
+- **Ship target:** a polished **vertical slice** — 1 map, 3 weapons
+  (AR + Magnum + Rocket), grenades, melee, **Grappleshot**, 1 scaled bot
+  profile, Team Slayer, listen server.
+- **Corrected estimate:** ≈ **8.4 w raw → ≈ 6.3 w compressed.** *(A first
+  pass here read ≈5.5–6 w; re-deriving line-by-line gives 6.3. **The
+  authoritative figure and its schedule live in
+  `concept-breachpoint/GDD-VERTICAL-SLICE.md` §7**, which plans around the
+  gap with a pre-declared cut order and a Week-4 go/no-go.)* It fits six
+  weeks with near-zero slippage, seven comfortably.
 - **Steam:** upload the slice as a **playable demo depot on listen
   server** (still satisfies "deployed on Steam"), with `IOSServerLifecycle`
   already in place so the GameLift fleet is a post-course swap.
