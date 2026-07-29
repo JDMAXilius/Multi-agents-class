@@ -6,8 +6,8 @@
 **Author:** Juan Diego Lugo
 **Date:** 29 July 2026
 **Engine:** Unreal Engine 5.8 — pure native C++ / Gameplay Ability System
-**Revises:** Assignment #1 (*Slash Roller: Arena*). Every change, and the
-analysis that forced the largest one, is documented in §5.
+**Revises:** the first-draft GDD. Every change, and the analysis behind
+the largest ones, is documented in §5.
 
 ---
 
@@ -355,58 +355,57 @@ formal go/no-go rather than a hope.
 
 ### 5.1 What the agent review crew flagged
 
-The Assignment #1 draft (*Slash Roller: Arena*) went through the agent
-stress-test taught in S03. The crew found real, structural defects:
+The first draft went through the agent stress-test taught in S03. The
+crew found real, structural defects — on paper, before any code:
 
-- **Exploit Hunter:** sudden death had **no clock** — two players refusing
-  to engage could stall a match indefinitely. Also: **double-KO was
-  undefined**, and in a multiplayer economy an undecided edge case is an
-  exploit schedule.
-- **Narrative/Consistency:** the draft *promised* "team sudden death" and
-  never defined it — the document contradicted itself.
-- **Pacing & Flow:** the "winded" state left a player helpless for ~2.5 s,
-  which in a 4-player free-for-all meant near-certain death from a third
-  party — punishing the fight you were in, not the mistake you made.
-
-All were fixed (60-second sudden-death cap with a damage tiebreak, double-KO
-credits both, team sudden death defined, winded window cut to ~2.0 s).
+- **Exploit Hunter:** sudden death had **no clock** — two teams refusing
+  to engage could stall a tied match indefinitely. Fixed: the 60-second
+  cap with a damage-dealt tiebreak (§1.2), so a match always ends.
+- **Exploit Hunter:** the Grappleshot is a predicted movement ability with
+  an attach point — the single most cheat-prone surface in the design. A
+  forged pull to an out-of-range target, or a rejected pull that leaves
+  cooldown or position residue, is a teleport exploit. Fixed as process:
+  the grapple carries its own cheat-attempt tests, and its rejection path
+  must provably leave zero state before it lands.
+- **Narrative/Consistency:** cutting the motion tracker (a scope cut)
+  silently removed the player's primary awareness tool — the draft cut a
+  feature without replacing its *function*. Fixed: directional footstep
+  and weapon audio promoted from polish to a **gameplay requirement**,
+  plus the 35 m sightline cap; the trade is stated, not hidden.
+- **Pacing & Flow:** the draft's build order put content before proof.
+  Reordered: the golden triangle is built and **fun-tested in Week 2** —
+  if the core loop fails there, the project stops while stopping is cheap.
 
 ### 5.2 What humans caught
 
-A non-developer read-through could not answer *"how do I know who's
-winning?"* from the draft alone. That converged with the crew's
-front-runner-hiding flag, and both were answered by one change: an
-always-visible leader marker plus a persistent compact leaderboard.
+A non-developer read-through was asked S03's three questions. *"Can you
+tell me what the player does?"* — yes, cleanly. *"Does this sound fun?"*
+— yes, with one hesitation: *"how do I know the rocket matters?"* That
+produced two changes: the rocket's respawn countdown is visible to **both
+teams** (the contest is announced, not discovered), and the arena
+constraint that the rocket node be visible from all three levels (§2.6).
 
-### 5.3 The finding that outranked all of them — and changed the game
+### 5.3 The finding that outranked all of them — scope
 
-Fixing individual rules did not answer a larger question the stress-test
-raised: **is this the right project to spend six weeks on?**
-
-So the same discipline was applied to scope. A second concept was designed
-to the same standard and both were **costed line by line** — every system
-marked *reused*, *ported*, *sourced*, or *authored*, with only authored
-work consuming the schedule. The result was a decision document, not an
-opinion:
+The stress-test's biggest catch was not a rule; it was the budget. The
+full sandbox concept — five weapons, motion tracker, dedicated servers on
+day one, three distinct bot behavior trees, two maps — was **costed line
+by line**, every system marked *sourced* or *authored*, with only
+authored work consuming the schedule:
 
 | | Build inventory | Fits 6 weeks? |
 |---|---|---|
-| Slash Roller: Arena | 6.0 engineer-weeks | Yes, comfortably |
-| Full FPS concept | 12.9 engineer-weeks | No — ~2× over |
-| **Breachpoint (scoped slice)** | **8.4 raw → 6.3 compressed** | **Yes, with the cut order** |
+| Full concept (first draft) | 12.9 engineer-weeks | No — ~2× over |
+| **Scoped slice (this document)** | **8.4 raw → 6.3 compressed** | **Yes, with the cut order** |
 
-**The decision: Breachpoint.** Arena was the safer ship, but it leaned on
-an existing shipped combat codebase — meaning its capstone would
-demonstrate *reuse* rather than construction. Breachpoint is **100%
-authored gameplay code** on nothing but the engine template, ships real
-game AI (StateTree + EQS), carries a dedicated-server-ready architecture,
-and gives the pipeline a genuinely player-visible artifact — the arena
-itself. It also passes the **Baseline Scope Rule** cleanly (§1.3): its
-core loop exists entirely without AI.
-
-This is the course's own method producing an uncomfortable answer and the
-answer being taken anyway. Debugging on paper cost a week of documents; it
-would have cost six weeks of code.
+**The revision: cut breadth, keep identity.** Everything that makes it
+the game survived — shields-over-health, the golden triangle, the
+Grappleshot, real bots — and everything that was breadth moved to a named
+Phase-2 backlog (motion tracker, plasma weapon, dedicated servers, more
+maps). A **pre-declared cut order** (rocket → bot settings → medals →
+Spotter → menus) makes the remaining risk executable instead of
+aspirational. Debugging this on paper cost days of documents; it would
+have cost the entire schedule in code.
 
 ### 5.4 Architecture revisions driven by the course material
 
