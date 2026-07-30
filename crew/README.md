@@ -19,7 +19,10 @@ Breachpoint/
 │   ├── agents/          ← 9 agents + curators/ (2 data curators) — each with
 │   │                       ROUTING (one obvious owner per task) · I/O (schema'd handoffs)
 │   │                       · KICKOFF (machine-checkable start conditions)
-│   └── skills/          ← game-lead (dispatch + rulings duty) + tickets (kickoff-gated claims)
+│   └── skills/          ← game-lead (dispatch + rulings duty) · tickets (kickoff-gated claims)
+│                          · gas-purity (HOW the lawful GAS patterns are built; contract wins)
+│                          · ue-editor (Python/commandlet automation; generated-scripts-over-
+│                            live-MCP doctrine for blockouts, reimports, screenshots)
 └── docs/
     ├── CREW_PLAYBOOK.md   ← the methodology (§9–13: severity gate, cost-ordered gates,
     │                        memory policy, parallel pods, hooks — all run-proven)
