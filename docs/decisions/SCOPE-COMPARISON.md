@@ -47,7 +47,7 @@ doesn't change the conclusion.
 | GAS core (PlayerState ASC, input buffer, prediction) | **Reused — shipped** | 0 |
 | Melee combat, `SoftLockTarget`, target assist, motion warping | **Reused — shipped** | 0 |
 | Animation: AL Framework, Motion Matching, AnimGraph nodes | **Reused — shipped** | 0 |
-| `OSSessionsSubsystem` (Steam sessions) | **Reused — shipped** | 0 |
+| `BRSessionsSubsystem` (Steam sessions) | **Reused — shipped** | 0 |
 | Validation-ladder bootstrap (specs + Gauntlet) | Authored | 0.5 |
 | Match/round flow, scoring, respawn | Authored | 0.5 |
 | Stamina + winded (GAS attributes/effects) | Authored | 0.5 |
@@ -64,7 +64,7 @@ doesn't change the conclusion.
 | System | Origin | Weeks |
 |---|---|---|
 | FPS template setup, project skeleton, module layout | Given/authored | 0.2 |
-| GAS core **ported from OnSight** (own code, not Lyra) | **Ported** | 0.5 |
+| GAS core **ported** from our existing C++ (own code, not Lyra) | **Ported** | 0.5 |
 | Validation-ladder bootstrap (specs + Gauntlet) | Authored | 0.5 |
 | Shields + health two-layer damage model | Authored | 0.5 |
 | Weapon sandbox: 4 weapons, hitscan + projectile, two-weapon carry, ammo/reload/swap, damage-type table | Authored | 1.5 |
@@ -171,7 +171,7 @@ past work — which is legitimate, but worth naming honestly.
 | Build targets | Client only | Client **+ Server** |
 | Hosting | Listen server (host + invite) | Dedicated fleet (GameLift Managed Containers) |
 | Backend service | None | Session placement service required |
-| Identity | Steam sessions (`OSSessionsSubsystem`, shipped) | Steam auth ticket **validated server-side** |
+| Identity | Steam sessions (`BRSessionsSubsystem`, shipped) | Steam auth ticket **validated server-side** |
 | Container/image pipeline | None | Required |
 | Cert/infra surface | Minimal | Substantial |
 | Cost at idle | $0 | Fleet hosting costs |
@@ -227,7 +227,7 @@ change the *deliverable*, not the *scope*:
   gap with a pre-declared cut order and a Week-4 go/no-go.)* It fits six
   weeks with near-zero slippage, seven comfortably.
 - **Steam:** upload the slice as a **playable demo depot on listen
-  server** (still satisfies "deployed on Steam"), with `IOSServerLifecycle`
+  server** (still satisfies "deployed on Steam"), with `IBRServerLifecycle`
   already in place so the GameLift fleet is a post-course swap.
 - **What you lose:** the full sandbox (plasma, rockets, radar, 3 bot
   tiers) and the dedicated-server story — both **post-course phase 2**.

@@ -19,7 +19,7 @@ with 3. BP00 step 2 (combat spec) lands against this ticket's output.
 
 ## Steps (in order)
 
-1. Port `BRAbilitySystemComponent` from OnSight: input-buffered tag activation
+1. Port `BRAbilitySystemComponent` from our existing GAS codebase: input-buffered tag activation
    (`AbilityInputTagPressed/Released`), prediction-window helpers. Set
    `ReplicationMode::Mixed`; enable `ServerAbilityRPCBatch`. Wire `BRPlayerState` to own
    ASC + set (NetUpdateFrequency raised per ARCHITECTURE §5.4); `BRCharacter` forwards

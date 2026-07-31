@@ -37,7 +37,7 @@ not a Phase-2 surprise.*
 | Cognito + access tokens | **adapted — see §3**: Steam-ticket validation, not account signup | GL-2 |
 | Lobbies + timers | `BRLobbySubsystem` (already contract-flagged Phase 2) | GL-5 |
 | Accepting player sessions | the trust boundary: server-side admission (`ValidateJoin`) | GL-3 |
-| DynamoDB | where `FOS_MatchTelemetry` rows land | GL-5 |
+| DynamoDB | where `FBRMatchTelemetry` rows land | GL-5 |
 | Leaderboards | read path over **server-written** results only | GL-5 |
 
 ## 3. Identity: the one deliberate deviation (ruling R15)
@@ -83,7 +83,7 @@ Cheap now, expensive later — all three are interface shape only, no AWS code:
 | **GL-2** | API Gateway + Lambdas (`/auth/steam`, `/sessions/find-or-create`) · Steam ticket validation · short-lived tokens | pennies (free tiers) | services-builder; critic REFUTER on the token path |
 | **GL-3** | ONE managed fleet (small instance, Spot where tolerable) · build-upload pipeline · admission live end-to-end · **billing alarms in the Done-when** | first real $ — **R16 trigger required** | services-builder + netcode-builder (trust boundary) |
 | **GL-4** | queues, latency-based placement, backfill signal into `BRBotManagerComponent` | fleet-scale $ | services-builder, ai-builder consult |
-| **GL-5** | DynamoDB (`FOS_MatchTelemetry` rows, server-written only) · leaderboards read path · `BRLobbySubsystem` if the player base justifies it | low | services-builder, ui-builder |
+| **GL-5** | DynamoDB (`FBRMatchTelemetry` rows, server-written only) · leaderboards read path · `BRLobbySubsystem` if the player base justifies it | low | services-builder, ui-builder |
 
 **The R16 trigger for GL-3 (real money):** demo telemetry, not enthusiasm — host-quit
 match-abandonment rate, NAT/join failure rate, host-advantage complaints. If those read

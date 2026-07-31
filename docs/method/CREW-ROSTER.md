@@ -100,8 +100,8 @@ Plus one **operating mode** (not an agent — a skill the lead session runs):
   from `SoftLockTarget` (D2); animation requests, never decides damage.
 
 **`services-builder`** — D4 Online Services / Backend. *(new)*
-- **Owns:** `OSSessionsSubsystem`, `OSLobbySubsystem`, listen-server host/
-  invite, `IOSServerLifecycle` (the GameLift migration seam), platform
+- **Owns:** `BRSessionsSubsystem`, `BRLobbySubsystem`, listen-server host/
+  invite, `IBRServerLifecycle` (the GameLift migration seam), platform
   trust boundary.
 - **Guards against:** "works for the host" bugs; unvalidated platform trust;
   join-in-progress null state.

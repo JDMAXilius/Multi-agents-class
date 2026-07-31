@@ -1,7 +1,7 @@
 # Slash Roller — Engineering Disciplines & Responsibilities
 ## Architecture Decomposition (pre-crew)
 
-**Project:** Slash Roller (codename OnSight) — UE 5.8, pure native C++, GAS
+**Project:** Slash Roller — UE 5.8, pure native C++, GAS
 **Purpose:** define the engineering disciplines as **ownership boundaries**
 — who owns which systems, what doctrine binds each, and where the seams are
 — so that the agent crew (next step) is minted *onto* real boundaries, not
@@ -102,7 +102,7 @@ trust boundary. Every discipline's boundary is drawn to protect that line.
   topology).
 - **Key types:** `UFUNCTION(Server, Reliable, WithValidation)` + real
   `_Validate` bodies, `DOREPLIFETIME_CONDITION`, `OnRep_` (cosmetic only),
-  `FPredictionKey`, `IOSServerLifecycle` (the listen-server → GameLift
+  `FPredictionKey`, `IBRServerLifecycle` (the listen-server → GameLift
   migration seam).
 - **Doctrine (full law: `contracts/netcode.md`):**
   - **Authority gate on every mutation** — `HasAuthority()` at the top of
@@ -165,13 +165,13 @@ trust boundary. Every discipline's boundary is drawn to protect that line.
 - **Mandate:** own everything between the platform and the match — session
   lifecycle, lobby, the listen-server host path, and the abstraction seam
   that lets dedicated servers arrive later without a rewrite.
-- **Owned systems (Slash Roller):** `OSSessionsSubsystem` (Steam OSS,
-  `FindAndJoinBestSession`), the planned `OSLobbySubsystem`, listen-server
-  host/invite flow, `IOSServerLifecycle` (listen → GameLift/FlexMatch
+- **Owned systems (Slash Roller):** `BRSessionsSubsystem` (Steam OSS,
+  `FindAndJoinBestSession`), the planned `BRLobbySubsystem`, listen-server
+  host/invite flow, `IBRServerLifecycle` (listen → GameLift/FlexMatch
   migration seam), the session/matchmaking trust boundary (what is trusted
   from Steam vs validated in-game).
 - **Key types:** `UGameInstanceSubsystem`, OSS delegates,
-  `IOSServerLifecycle`, `OSSessionsSubsystem::FindAndJoinBestSession`.
+  `IBRServerLifecycle`, `BRSessionsSubsystem::FindAndJoinBestSession`.
 - **Doctrine:**
   - **Abstraction at migration seams** — anything that swaps vendor later
     (Steam sessions → FlexMatch, listen → GameLift) hides behind an
@@ -187,10 +187,10 @@ trust boundary. Every discipline's boundary is drawn to protect that line.
     standing review item.
 - **Does NOT own:** in-match authority (D2 owns gameplay replication; D4
   owns getting players *into* the match and the server's lifecycle around
-  it). The boundary between `OSLobbySubsystem` and `OSSessionsSubsystem` is
+  it). The boundary between `BRLobbySubsystem` and `BRSessionsSubsystem` is
   a named contract, not ambient.
 - **Seam:** hands a running, populated session to D2's match flow; exposes
-  lifecycle events (`IOSServerLifecycle`) the rest of the game consumes.
+  lifecycle events (`IBRServerLifecycle`) the rest of the game consumes.
 
 ### D5 — UI / UX Systems Engineer
 
@@ -274,15 +274,15 @@ trust boundary. Every discipline's boundary is drawn to protect that line.
   makes the arena feel broadcast. Both must obey the same iron rule: **AI
   decides intent, it never bypasses the sim or the server.**
 - **Owned systems (Slash Roller):** the deterministic bot decision layer
-  (`AOSBotController`, `UOSBotBrainComponent`, the `Hunt/Engage/Punish/
+  (`ABRBotController`, `UBRBotBrain`, the `Hunt/Engage/Punish/
   Disengage` stance machine), bot perception wiring (consuming gameplay
   messages, not raycasting per tick), difficulty-tier consumption of
   `DT_BotTuning`, slot-fill/backfill policy, and the runtime **Caster
-  Agent** HTTP client (`UOSCasterSubsystem`, host-side, async, canned
+  Agent** HTTP client (`UBRSpotterSubsystem`, host-side, async, canned
   fallback).
 - **Key types:** `AAIController`, event-driven C++ state machine (no
   behavior-tree tick), `DT_BotTuning` rows, `FHttpModule` async client,
-  `FOS_MatchTelemetry` (read).
+  `FBRMatchTelemetry` (read).
 - **Doctrine (non-obvious laws):**
   - **Bots are players the AI drives.** A bot activates abilities through
     the **same input-buffer path a human uses**, on its own PlayerState
@@ -350,7 +350,7 @@ trust boundary. Every discipline's boundary is drawn to protect that line.
    D4 Online ──(populated session)──► D2 Netcode ──(replicated results)──► D5 UI
    Services                              ▲   │                               │
       │                                  │   │ (authority + prediction)      │ (intent)
-      │(IOSServerLifecycle)              │   ▼                               ▼
+      │(IBRServerLifecycle)              │   ▼                               ▼
       ▼                            D1 Sim (pure math) ◄──(same input path)── D8 AI
    GameLift (future)                     ▲                                   (bots +
                                          │(warp targets: SoftLockTarget)      Caster)

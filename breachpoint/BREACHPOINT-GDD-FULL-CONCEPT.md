@@ -9,7 +9,7 @@ head-to-head 6-week feasibility comparison against *Slash Roller: Arena*
 **Date:** 29 July 2026
 **Engine:** Unreal Engine 5.8 — pure native C++ / Gameplay Ability System
 **Foundation:** UE 5.8 **First Person template** only. 100% own gameplay
-code (own GAS core ported from OnSight). Marketplace/free **art and
+code (own GAS core, ported from our existing C++ codebase). Marketplace/free **art and
 animation** permitted; **no third-party gameplay code, no Lyra project.**
 
 ---
@@ -55,7 +55,7 @@ config, not a second game.
   Enhanced Input, projectile scaffold) — everything above it is written
   in-house. **No Lyra**, no third-party gameplay plugins.
 - **Networking:** server-authoritative, **dedicated server** target from
-  day one behind `IOSServerLifecycle`; listen server during development;
+  day one behind `IBRServerLifecycle`; listen server during development;
   **Amazon GameLift Servers** fleet as the deploy target.
 - **Identity/Store:** Steam (auth ticket validated server-side).
 - **Audio:** engine-native **MetaSounds** via GameplayCues.
@@ -275,13 +275,13 @@ load-bearing.
 | Layer | Origin |
 |---|---|
 | First-person character, camera, Enhanced Input | **UE 5.8 FPS template** |
-| GAS core (PlayerState ASC, input buffer, prediction) | **Ported from OnSight** (own code) |
+| GAS core (PlayerState ASC, input buffer, prediction) | **Ported** — our own existing C++ |
 | Shields/health, weapons, grenades, melee, Grappleshot | **Authored** — GAS abilities + effects |
 | Bot AI | **Authored** — StateTree + EQS |
 | Game mode, scoring, respawn, power-weapon timers | **Authored** |
 | UI | **Authored** — CommonUI, C++ base classes + BP visuals |
 | Audio | **Authored** — MetaSounds via GameplayCues |
-| Networking | **Authored** — dedicated server behind `IOSServerLifecycle` |
+| Networking | **Authored** — dedicated server behind `IBRServerLifecycle` |
 | Hosting | **Amazon GameLift Servers** (Server SDK 5 C++, containerized) |
 | Meshes, animations, environment kits, VFX | **Sourced** (marketplace/free) |
 
@@ -311,7 +311,7 @@ Caps enforced server-side; fallback is canned lines.
    server-side, and replication uses the tightest conditions and relevancy
    culling available.
 4. **Constraint: GameLift plugin support lags UE 5.8.** *Therefore* we
-   integrate **Server SDK 5 in C++** behind `IOSServerLifecycle` and use
+   integrate **Server SDK 5 in C++** behind `IBRServerLifecycle` and use
    the Managed Containers workflow rather than depending on the versioned
    plugin — and dev runs on listen/local-dedicated so infra never blocks
    gameplay work.
@@ -322,7 +322,7 @@ Caps enforced server-side; fallback is canned lines.
 
 | Phase | Week | Deliverable |
 |---|---|---|
-| Architect | 1 | `Server` build target compiles; `IOSServerLifecycle` in place; local dedicated server runs |
+| Architect | 1 | `Server` build target compiles; `IBRServerLifecycle` in place; local dedicated server runs |
 | Containerize | 2 | Server packaged into a container image; runs locally in Docker |
 | Backend | 4 | Minimal backend: session placement request → server IP returned |
 | Fleet | 5 | GameLift Servers fleet live (Managed Containers); Server SDK 5 lifecycle hooks (`InitSDK`/`ProcessReady`/`OnStartGameSession`) |
@@ -330,7 +330,7 @@ Caps enforced server-side; fallback is canned lines.
 | Ship | 6 | Steam demo depot uploaded; client connects → matchmaking → live fleet server |
 
 **Fallback (pre-declared):** if the fleet slips, ship on **listen server**
-— it's an interface swap behind `IOSServerLifecycle`, not a rewrite.
+— it's an interface swap behind `IBRServerLifecycle`, not a rewrite.
 
 ### 4.5 Scope and Schedule
 
@@ -409,7 +409,7 @@ power_weapon_timing (bool), cover_preference (0..1), push_threshold
 
 ## Appendix C — Telemetry Schema
 
-`FOS_MatchTelemetry`: kills, deaths, assists, accuracy per weapon, TTK
+`FBRMatchTelemetry`: kills, deaths, assists, accuracy per weapon, TTK
 distribution, shield-break→kill conversion, grenade kills, melee kills,
 grapple uses/kills, power-weapon holds, fights lost under 40% shields,
 medals. Consumed by: Spotter (coach lines), the tuning-curator (TTK/win

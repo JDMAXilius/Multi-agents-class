@@ -6,11 +6,16 @@
 **Date:** 29 July 2026
 **Engine:** Unreal Engine 5.8 — pure native C++ / Gameplay Ability System
 **Foundation:** UE 5.8 **First Person template** only. 100% authored
-gameplay code (own GAS core ported from OnSight). **No Lyra, no
-third-party gameplay code.** Marketplace/free **art and animation**
-permitted and expected.
+gameplay code (own GAS core, ported from our existing C++ codebase).
+**No Lyra, no third-party gameplay code.** Marketplace/free **art and
+animation** permitted and expected.
 **Supersedes for build purposes:** `BREACHPOINT-GDD-FULL-CONCEPT.md` — that
 document remains the Phase-2 target; **this** is the six-week build.
+**Authority split (this doc is not authoritative for everything):**
+schedule and milestone sequencing are owned by `BREACHPOINT-ROADMAP.md`;
+bot architecture is owned by `BREACHPOINT-AI-BOTS.md`; file/class layout is
+owned by `BREACHPOINT-ARCHITECTURE.md`. Where this document and one of those
+disagree, **the named doc wins** and the split is a defect to fix here.
 
 ---
 
@@ -57,7 +62,7 @@ game** — it is the same code with the roster changed.
 - **Foundation:** stock **First Person template** (character, camera,
   Enhanced Input). Everything above it is authored in-house.
 - **Networking:** server-authoritative, **Steam listen server**
-  (host + invite), built behind **`IOSServerLifecycle`** so the
+  (host + invite), built behind **`IBRServerLifecycle`** so the
   dedicated-server/GameLift migration is a swap, not a rewrite.
 - **Audio:** engine-native **MetaSounds** via GameplayCues.
 - **Art:** sourced marketplace/free environment kit, weapon models, FPS
@@ -230,6 +235,12 @@ actually experiences. The LLM stays out of the simulation entirely.
 
 ### 3.1 In-Game AI — StateTree + EQS (no LLM)
 
+> **Superseded in detail by `BREACHPOINT-AI-BOTS.md`** (binding for BP08,
+> rulings R8–R12): the shipped brain is **three layers** — a GOAP-style
+> ambition layer decides *what*, the StateTree below decides *how*, GAS is
+> the only hand. This section stays accurate on the execution spine, the
+> EQS role, and the no-LLM/determinism laws; it predates the ambition layer.
+
 **Bot Brain — StateTree.** States: `Seek → Engage → Flush → Reposition →
 Retreat → ContestRocket`. StateTree is UE 5.8's production-ready default
 and merges behavior-tree selectors with state-machine transitions —
@@ -305,14 +316,14 @@ load-bearing.
 | Layer | Origin |
 |---|---|
 | First-person character, camera, Enhanced Input | **UE 5.8 FPS template** |
-| GAS core (PlayerState ASC, input buffer, prediction) | **Ported from OnSight** — own code |
-| Steam sessions | **Ported from OnSight** (`OSSessionsSubsystem`) |
+| GAS core (PlayerState ASC, input buffer, prediction) | **Ported** — our own existing C++ |
+| Steam sessions | **Ported** — our own existing C++ (`BRSessionsSubsystem`) |
 | Shields/health, weapons, grenades, melee, **Grappleshot** | **Authored** — GAS abilities + effects |
 | Bot AI | **Authored** — StateTree + EQS |
 | Team Slayer, scoring, respawn scoring, rocket timer | **Authored** |
 | HUD + front end | **Authored** — CommonUI, C++ base classes + BP visuals |
 | Audio | **Authored** — MetaSounds via GameplayCues |
-| Server lifecycle abstraction | **Authored** — `IOSServerLifecycle` |
+| Server lifecycle abstraction | **Authored** — `IBRServerLifecycle` |
 | Meshes, animations, environment kit, VFX | **Sourced** |
 
 ### 4.2 Token Budget (runtime, per match)
@@ -342,7 +353,7 @@ Caps enforced server-side; every failure path falls back to canned lines.
    Gauntlet run under 120 ms emulation before landing.
 4. **Constraint: GameLift plugin support lags UE 5.8, and infra work in
    Week 1 kills capstones.** *Therefore* the slice ships on **listen
-   server** behind `IOSServerLifecycle`, with the dedicated-server/
+   server** behind `IBRServerLifecycle`, with the dedicated-server/
    GameLift fleet as a **post-course swap** rather than a six-week
    dependency.
 5. **Constraint: LLM latency (1–4 s).** *Therefore* medals and killfeed
@@ -391,9 +402,15 @@ combat and footstep audio; Steam listen server + demo depot.
 
 ### 5.2 Schedule — six weeks, each ending runnable
 
+> **`BREACHPOINT-ROADMAP.md` is authoritative for sequencing.** The table
+> below is the original week-by-week sketch; the roadmap re-cut it into six
+> parallel pods and moved work accordingly (Rocket and HUD v1 pull into W3,
+> bots start W3 and complete at M4, Steam holds at W5). Where the two
+> disagree, follow the roadmap.
+
 | Wk | Deliverable | Gate |
 |---|---|---|
-| **1** | Ladder bootstrap (specs + Gauntlet skeleton); FPS template + module layout; **GAS core ported**; **shields/health**; AR firing; `IOSServerLifecycle` stub | Breaking a dummy's shields feels good |
+| **1** | Ladder bootstrap (specs + Gauntlet skeleton); FPS template + module layout; **GAS core ported**; **shields/health**; AR firing; `IBRServerLifecycle` stub | Breaking a dummy's shields feels good |
 | **2** | Magnum + two-weapon carry + swap; **grenades**; **melee + rear-kill** | ⚠️ **THE GOLDEN TRIANGLE FUN TEST** — see §7.2 |
 | **3** | **Grappleshot** (netcode packet + REFUTER pass); map blockout from Arena Architect manifest | Traversal is fun; grapple is used offensively |
 | **4** | Bots (StateTree + EQS + 3 scalars); Team Slayer scoring, teams, scored respawns; nightly soaks begin | ⚠️ **GO / NO-GO** — a full 4v4 match vs. bots plays end-to-end |
@@ -434,7 +451,7 @@ Nothing here is silently dropped. Each cut has a named restore path.
 | Motion tracker | 0.5 w; awareness carried by audio + sightlines (§2.7) | First restore post-slice; needs server-computed contacts |
 | Plasma Rifle + damage-type layer | With only kinetic weapons the damage table is trivial | Add with weapon #4; table already schema'd |
 | Bot tiers 2–3 as distinct behaviors | One scaled profile delivers 3 difficulties | Author distinct StateTrees per tier |
-| **Dedicated server + GameLift fleet** | 1.5 w of infra that blocks gameplay work | **Interface already in place** (`IOSServerLifecycle`) — a swap, not a rewrite |
+| **Dedicated server + GameLift fleet** | 1.5 w of infra that blocks gameplay work | **Interface already in place** (`IBRServerLifecycle`) — a swap, not a rewrite |
 | FFA + Firefight modes | Mode variety is not the slice's thesis | Both are roster/team-assignment configs |
 | Second map | Content, not systems | Arena Architect produces from the same manifest schema |
 | Vehicles | Networked multi-occupant physics — the genre's biggest scope trap | Not planned; Grappleshot carries traversal permanently |
@@ -532,7 +549,7 @@ asserted in `Breachpoint.Bots.*`).
 
 ## Appendix C — Telemetry Schema
 
-`FOS_MatchTelemetry` (per player, per match): kills, deaths, assists,
+`FBRMatchTelemetry` (per player, per match): kills, deaths, assists,
 accuracy per weapon, TTK distribution, shield-break→kill conversion,
 grenade kills, melee kills (front/rear), grapple uses and grapple kills,
 rocket holds and rocket kills, **fights lost below 40% shields**, medals,

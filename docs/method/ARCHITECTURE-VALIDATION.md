@@ -42,8 +42,8 @@ made:
 - **GAS set up in C++, abilities/effects authorable in Blueprint by
   designers** — precisely our "C++ for logic, Blueprints thin" line. [4]
 - **Lyra is the canonical reference** for abilities, linked anim layers, and
-  modular gameplay — which is the exact reference corpus in the OnSight
-  context doc. [4]
+  modular gameplay — which is the exact reference corpus our engine-doctrine
+  notes already cite. [4]
 
 **Verdict: CONFIRMED, strongly.** Our engine doctrine is the mainstream
 best practice as published by Epic and the GAS community, not a bespoke
