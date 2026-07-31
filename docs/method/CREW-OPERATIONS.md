@@ -52,14 +52,18 @@ Juan (TD) ──reviews diffs, plays gates, holds P4/Steam creds, arbitrates
 
 ## 3. Model & effort assignment (the economics)
 
+**Only two agents pin a model in frontmatter; everyone else inherits the session's —
+deliberately.** A pin is a structural claim ("this role is wrong at any other tier"), not a
+preference. Ten inherited agents mean the lead picks one model for the session and the whole
+crew follows; pinning them would silently override that choice and make cost impossible to
+reason about.
+
 | Role | Model | Why |
 |---|---|---|
 | Lead session | **Strongest available** (Opus-class) | Decomposition and arbitration are where wrong is expensive |
-| netcode-builder, sim-builder | **Strong** (Opus/Sonnet-class, high effort) | The silent-confident domains — quality dominates cost |
-| builder, ui-builder, services-builder, anim-builder, ai-builder | **Sonnet-class** | Well-specified packets against contracts; excellent cost/quality |
-| critic (REFUTER) | **Strong, high effort** | A weak critic is review theater — this is the last line |
-| verifier | **Haiku** (already pinned) | Runs commands verbatim; capability-limited by design |
-| curators | Sonnet-class | Structured data against schemas |
+| `critic` | **PINNED: opus** | A weak critic is review theater — structurally the last line before landing |
+| `verifier` | **PINNED: haiku** | Runs commands verbatim and reports; capability-limited by design, so tier buys nothing |
+| everyone else (7 builders, 3 curators) | **inherits the session** | Raise the session model for a silent-confident packet (netcode, sim math); the whole crew follows. That is the knob — not eleven frontmatter pins that drift. |
 
 **Cost order of magnitude** (estimates, tracked weekly against reality): a heavy packet
 chain (build → verify → refute) ≈ 1–3 M tokens; a typical week ≈ 15–30 M ≈ **tens of
