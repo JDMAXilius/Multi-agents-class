@@ -5,6 +5,18 @@ description: CommonUI + MVVM implementation patterns for BREACHPOINT (UE 5.8). L
 
 # UE5 UI Architecture — the lawful CommonUI/MVVM patterns
 
+> ## ⚠️ UNVERIFIED DRAFT — correct it in the packet that first uses it
+> **This skill has never been run against a build.** It was written from UE documentation and
+> this project's architecture, not from a HUD that compiled and rendered. The *doctrine* —
+> zero polling, ViewModels as the only feed, honest join-in-progress states, BP-holds-layout —
+> follows from `CLAUDE.md` and `ARCHITECTURE §3.9` and is sound. The **API specifics are the
+> risk**: CommonUI's activation and input-routing surface has moved across 5.x, and the MVVM
+> plugin's `FieldNotify` macros are the kind of detail that is either exactly right or a
+> compile error.
+>
+> **BP10 is its first use and owns correcting it** in the same packet, with the delta in the
+> ticket Log. When this skill and a working build disagree, the build is right.
+
 **Authority note (read first):** unlike `gas-purity`, this skill has no contract file behind it.
 Its law comes from `CLAUDE.md` (law 3 soft refs · law 4 no gameplay Tick · law 5 owner paths) and
 `BREACHPOINT-ARCHITECTURE.md` §3.9. Where this skill and those disagree, **they win** and the

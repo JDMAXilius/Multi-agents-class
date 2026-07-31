@@ -7,6 +7,12 @@ pipeline, and the **generic-GE library** — one damage GE, one regen GE, one co
 parameterized by SetByCaller + tags. GAS purity is law: costs/cooldowns are GEs, cues carry
 all FX, nothing touches an attribute directly.
 
+**Reference skills:** `gas-purity` throughout · `cmc-prediction` for step 3's `BRGA_Sprint`,
+which is the first saved-move work in the project. **`cmc-prediction` is an UNVERIFIED draft
+and carries an open decision this packet should settle:** compressed flags (4 custom bits
+total, sprint and grapple spend two) vs. the structured move-data path. Record the choice as a
+ruling — switching later touches every movement state at once.
+
 **Ordering law:** Steps 1→2→3 strictly (each compiles against the previous). Step 4 parallel
 with 3. BP00 step 2 (combat spec) lands against this ticket's output.
 

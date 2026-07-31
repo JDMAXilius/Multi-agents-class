@@ -8,6 +8,10 @@ compile on all three targets, pinned headless sim specs, and a real dedicated-se
 Gauntlet smoke. Founder laws: server-authoritative only; numbers in DataTables; no feature
 work rides along.
 
+**Reference skill:** `gauntlet-testing` for step 3 — load it before writing the test node.
+**It is an UNVERIFIED draft** (written from docs, never run): this ticket is its first use, so
+correcting it is part of step 3, and the delta goes in the Log.
+
 **Ordering law:** Step 1 gates all. Steps 2 and 3 may then run in parallel (different owners).
 BP01 step 1 (project + targets exist) gates this ticket's step 1.
 

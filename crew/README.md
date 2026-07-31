@@ -24,7 +24,14 @@ Breachpoint/
 │                          · ue-editor (Python/commandlet automation; generated-scripts-over-
 │                            live-MCP doctrine for blockouts, reimports, screenshots)
 │                          · ue5-ui-architecture (CommonUI layer stack + MVVM ViewModels;
-│                            BP10's reference layer — zero-polling, honest join-in-progress)
+│                            BP10's reference layer — zero-polling, honest join-in-progress) ⚠
+│                          · gauntlet-testing (HOW rung 4 is built: roles, assert-in-threes
+│                            via role artifacts, emulation, BLOCKED) ⚠ — BP00 step 3
+│                          · cmc-prediction (saved moves, compressed-flag budget, grapple
+│                            root-motion source, zero-residue rejection) ⚠ — BP02/BP06
+│                          ⚠ = UNVERIFIED draft: written from docs, never run against a
+│                            build. The packet that first uses one corrects it in that
+│                            same packet and drops the banner.
 └── docs/
     ├── CREW_PLAYBOOK.md   ← the methodology (§9–13: severity gate, cost-ordered gates,
     │                        memory policy, parallel pods, hooks — all run-proven)

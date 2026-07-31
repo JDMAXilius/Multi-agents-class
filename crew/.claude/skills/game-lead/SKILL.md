@@ -25,11 +25,18 @@ contracts, and keep the tickets board true. Read `docs/CREW_PLAYBOOK.md` once pe
   The critic refutes dangerous-domain changes BEFORE landing; the verifier — never you,
   never the builder — pronounces the ladder result.
 - **Reference skills load on demand, contracts stay law**: `gas-purity` for any
-  AbilitySystem work, `ue-editor` for anything driving the editor from outside
-  (blockout scripts, reimports, screenshots, MCP evaluation), `ue5-ui-architecture`
-  for BP10. All four ship in `.claude/skills/` — nothing here depends on a skill
-  installed at the account level. On any conflict the contract wins and the skill
-  gets fixed in the same packet.
+  AbilitySystem work · `ue-editor` for anything driving the editor from outside
+  (blockout scripts, reimports, screenshots, MCP evaluation) · `ue5-ui-architecture`
+  for BP10 · `gauntlet-testing` for BP00 step 3 and any new rung-4 scenario ·
+  `cmc-prediction` for BP02's sprint and BP06's grapple. All ship in
+  `.claude/skills/` — nothing here depends on a skill installed at the account level.
+  On any conflict the contract wins and the skill gets fixed in the same packet.
+- **Three skills carry an UNVERIFIED banner** (`ue5-ui-architecture`, `gauntlet-testing`,
+  `cmc-prediction`): written from documentation, never run against a build. Their doctrine
+  is sound; their API specifics may not be. The packet that first uses one **owns correcting
+  it in the same packet**, with the delta in the ticket Log. When a banner-carrying skill and
+  a working build disagree, the build is right — and the correction is not optional cleanup,
+  it is how the banner comes off.
 - **Keep the rulings ledger.** When you make a design call during review (intent vs defect),
   append it to `docs/DESIGN-RULINGS.md` dated — that is what stops the next critic pass
   from re-litigating it. Only you (or the founder) write there; re-opening a ruling is a

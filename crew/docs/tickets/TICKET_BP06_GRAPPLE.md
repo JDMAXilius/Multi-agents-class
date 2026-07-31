@@ -8,6 +8,10 @@ The pull is a **root-motion source through the CMC** so prediction/reconciliatio
 moves. A rejected grapple leaves ZERO state. This ticket does not land without the REFUTER
 pass and the emulation rung.
 
+**Reference skill:** `cmc-prediction` (saved moves, the compressed-flag budget, the pull as a
+root-motion source, and why zero-residue rejection comes free from three lawful choices).
+**UNVERIFIED draft** — if BP02 has not already corrected it, this packet does.
+
 **Ordering law:** 1 → 2 → 3 strictly; 4 and 5 gate landing.
 
 ## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
