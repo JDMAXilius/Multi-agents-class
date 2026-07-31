@@ -874,10 +874,15 @@ def main():
                 log(f"  {e}")
     finally:
         eng.save_recording()
-        if not args.dry_run:
+        # A smoke test must never overwrite the real run's evidence: the dry run
+        # writes its own log, leaving run_log.txt as the committed transcript.
+        if args.dry_run:
+            (OUTPUT_DIR / "dry_run_log.txt").write_text("\n".join(LOG_LINES) + "\n",
+                                                        encoding="utf-8")
+        else:
             report_usage(getattr(eng, "exchanges", []))
-        (OUTPUT_DIR / "run_log.txt").write_text("\n".join(LOG_LINES) + "\n",
-                                                encoding="utf-8")
+            (OUTPUT_DIR / "run_log.txt").write_text("\n".join(LOG_LINES) + "\n",
+                                                    encoding="utf-8")
     if args.dry_run:
         log("\nDry run complete — prompts assemble and the wiring holds. "
             "Nothing was landed. Run without --dry-run for the real pipeline.")
