@@ -7,6 +7,14 @@ running the ladder without a human. Host-quit behavior is defined here, not disc
 
 **Ordering law:** 1 → 2; 3, 4, 5 parallel after 1.
 
+## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
+
+- Ticket BP08 is DONE **and the M4 first-match go/no-go passed**, recorded in BP08's Log
+- A Steam App ID and two test accounts are available (or the packet explicitly scopes to
+  OSS Null and says so — an invite claim needs Steam, per the twice-tested law)
+- owner_path: `Source/Breachpoint/Online/`, `Source/Breachpoint/Telemetry/`,
+  `Tools/steam/`
+
 ## Steps (in order)
 
 1. Port `BRSessionsSubsystem` (Steam OSS): host listen server + travel to BR_Arena01,

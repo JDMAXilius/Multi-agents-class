@@ -6,6 +6,13 @@
 Founder directive: gold discipline. Every change this week cites a defect; pinned suites
 guard every fix; the demo goes live; the capstone presents the game AND the studio.
 
+## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
+
+- Ticket BP11 is DONE and the M5 two-box Steam test passed, recorded in BP11's Log
+- The full ladder (rungs 1-4) runs unattended and green on the packaged build
+- owner_path: **per-fix, declared at claim time** — this ticket lands only cited defects,
+  each in the owner_path its defect names; no blanket write scope
+
 ## Steps (in order)
 
 1. Balance freeze: tuning-curator final proposals from soak + human telemetry; land as

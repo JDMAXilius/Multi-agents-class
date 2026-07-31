@@ -14,6 +14,14 @@ is not code — these files are the source of truth the C++ reads, never inline 
 arena job gates BP07's blockout (the builder executes the manifest, it does not invent
 geometry). Both jobs are independent of each other and may run in parallel.
 
+## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
+
+- Steps 1-5 are DONE (see Log). For the remaining **step 6** only:
+- `Source/Breachpoint/Data/BRDataRows.h` defines `FBRWeaponRow` **including the
+  `DamageDelivery` column** (the schema split the verifier forced — reimport fails without it)
+- A UE 5.8 editor can open the project (this step is the import, and needs the engine)
+- owner_path: `Content/Data/`
+
 ## Steps (in order)
 
 1. **Run the crew.** From `assignments/03-agent-crew/` (planning repo) or the copied

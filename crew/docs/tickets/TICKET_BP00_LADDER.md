@@ -11,6 +11,14 @@ work rides along.
 **Ordering law:** Step 1 gates all. Steps 2 and 3 may then run in parallel (different owners).
 BP01 step 1 (project + targets exist) gates this ticket's step 1.
 
+## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
+
+- `Tools/env.local` exists and its `ENGINE_ROOT` points at a **source-built UE 5.8**
+  (launcher installs cannot build the server target — this ticket builds all three)
+- Ticket BP01 step 1 is landed: `Breachpoint.uproject` plus all three `*.Target.cs`
+  files exist (there is nothing to compile otherwise)
+- owner_path: `Tools/`, `Source/Breachpoint/Tests/`
+
 ## Steps (in order)
 
 1. Author `Tools/env.local.example`, `Tools/run-ubt.ps1` (all three targets: BreachpointEditor,

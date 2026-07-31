@@ -10,6 +10,13 @@ all FX, nothing touches an attribute directly.
 **Ordering law:** Steps 1→2→3 strictly (each compiles against the previous). Step 4 parallel
 with 3. BP00 step 2 (combat spec) lands against this ticket's output.
 
+## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
+
+- Ticket BP01 is DONE and rung 1 is green (all three targets compile from clean)
+- `Source/Breachpoint/Core/BRGameplayTags.h` exists and defines the `Ability.*`,
+  `State.*`, `SetByCaller.*` and `Event.*` families this ticket applies
+- owner_path: `Source/Breachpoint/AbilitySystem/`, `Source/Breachpoint/Data/`
+
 ## Steps (in order)
 
 1. Port `BRAbilitySystemComponent` from OnSight: input-buffered tag activation

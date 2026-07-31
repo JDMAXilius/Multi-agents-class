@@ -9,6 +9,14 @@ MetaSounds cues are a gameplay requirement in this ticket, not polish.
 
 **Ordering law:** 1 → 2; 3–4 parallel after 2.
 
+## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
+
+- Ticket BP03 is DONE (HUD v1 scope: there are attributes and ammo to display)
+- Ticket BP04 is DONE for the full scope (match state, scoreboard, carnage report)
+- CommonUI + ModelViewViewModel plugins are enabled in `DefaultEngine.ini` and rung 1
+  is green with them on
+- owner_path: `Source/Breachpoint/UI/`, `Content/UI/`
+
 ## Steps (in order)
 
 1. `BRUIManagerSubsystem` (CommonUI layers: GameHUD/Menu/Modal) + `BRActivatableWidget`

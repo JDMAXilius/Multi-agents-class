@@ -8,6 +8,14 @@ this ticket is not done until the forged-fire cheats are written and rejected.
 
 **Ordering law:** Steps 1→2 strictly. Step 3 (cheats) is written WITH step 2, not after.
 
+## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
+
+- Ticket BP02 is DONE: `BRAttributeSet` and the generic GE library compile, and
+  `Breachpoint.Sim.Combat` is green
+- `Content/Data/DT_Weapons.csv` exists (landed by BP13) and re-imports clean against
+  `FBRWeaponRow` — including the `DamageDelivery` column
+- owner_path: `Source/Breachpoint/Weapons/`, `Content/Data/DT_Weapons.csv`
+
 ## Steps (in order)
 
 1. `BRWeaponInstance` (replicated UObject: `FBRWeaponRow` handle, ammo mag/reserve

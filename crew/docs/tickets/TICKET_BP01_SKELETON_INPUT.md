@@ -9,6 +9,13 @@ Input → InputTag → ASC, no per-ability binding code, ever.
 
 **Ordering law:** Step 1 gates everything in every ticket. Steps 2–4 in order.
 
+## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
+
+- none (root ticket — nothing gates it), but the environment must be real:
+  a **source-built UE 5.8** is installed and its path is known, and the game repo has
+  `crew/`'s contents at its root (`CLAUDE.md`, `.claude/`, `docs/` all present)
+- owner_path: `Source/Breachpoint/`, `Config/`
+
 ## Steps (in order)
 
 1. Create `Breachpoint` from the UE 5.8 **First Person C++ template**. Strip template gameplay

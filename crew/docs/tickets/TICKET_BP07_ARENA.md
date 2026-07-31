@@ -8,6 +8,14 @@ manifest is the source of truth; the .umap is its projection. One owner per bina
 
 **Ordering law:** 1 → 2; 3 parallel with 2; 4 closes.
 
+## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
+
+- `Content/Data/arena_manifest.json` exists (landed by BP13) and re-validates:
+  >= 8 spawns, min pairwise spacing >= 8 m, max sightline <= 35 m, named rocket landmark
+- Ticket BP01 is DONE (a project to open) and `git lfs` is installed — this ticket owns
+  a binary `.umap` and must lock it
+- owner_path: `Content/Maps/`, `Tools/py/`
+
 ## Steps (in order)
 
 1. **arena-architect** returns `arena_manifest.json` v2 against the GDD constraints: bounds,

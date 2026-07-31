@@ -10,6 +10,13 @@ the ONE damage pipeline (`GE_Damage` + tags) — the engine damage API stays ban
 
 **Ordering law:** steps 1 and 2 parallel (different files); 3 needs both; 4–5 close.
 
+## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
+
+- Tickets BP02 and BP03 are DONE (grenade/melee reuse the fire path's damage
+  pipeline and the cost/cooldown GEs)
+- `Content/Data/CT_Combat.csv` exists and re-imports clean (the triangle's coefficients)
+- owner_path: `Source/Breachpoint/AbilitySystem/Abilities/`, `Content/Data/CT_Combat.csv`
+
 ## Steps (in order)
 
 1. `BRGA_Grenade`: cook (WhileHeld reuse), server-authoritative projectile spawn (client

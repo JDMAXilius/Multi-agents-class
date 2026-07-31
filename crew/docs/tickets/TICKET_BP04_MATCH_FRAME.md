@@ -9,6 +9,13 @@ one replicated end-time (clients render the clock locally), scored respawns.
 
 **Ordering law:** Steps 1→2→3. Step 4 after 2.
 
+## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
+
+- Ticket BP02 is DONE and the `Event.Death` path fires from
+  `PostGameplayEffectExecute` (this ticket consumes it)
+- BP00 rung 4 (`BRGauntlet.SmokeTS2C`) can run — match flow claims are networked claims
+- owner_path: `Source/Breachpoint/Match/`
+
 ## Steps (in order)
 
 1. `BRGameState`: `EBRMatchPhase` (Warmup→Live→SuddenDeath→PostMatch) RepNotify,

@@ -7,6 +7,14 @@ Founder directive: the rocket is a ROW plus a spawner, not a system: projectile 
 damage already exist (BP05); this ticket adds the row, the 90 s contested node, and the
 two-weapon trade moment. **This is also the first cut if W5 slips** — keep it detachable.
 
+## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
+
+- Ticket BP05 is DONE (shares the explosive damage path and cook/throw shape)
+- `DT_Weapons` contains the `Rocket` row and re-imports clean (`DamageDelivery=Projectile`,
+  `ProjectileSpeed > 0` — the invariant this weapon's existence depends on)
+- owner_path: `Source/Breachpoint/Weapons/`,
+  `Source/Breachpoint/AbilitySystem/Abilities/`
+
 ## Steps (in order)
 
 1. `DT_Weapons` Rocket row (120 dmg, r=4 m, 2 shots, projectile speed/arc) + `AS_Weapon_RKT`

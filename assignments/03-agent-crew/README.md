@@ -130,6 +130,18 @@ gates, the bounce logic, and validation actually execute; only the LLM calls
 are served from `recording.json`. This is so the crew demonstrably runs
 end-to-end on any machine.
 
+**Dry run (seconds — do this before any live pipeline):**
+
+```bash
+python3 run_crew.py --dry-run          # assemble every agent's prompt, call nothing
+python3 run_crew.py --dry-run --live   # + one tiny round trip per agent (model/auth/transport)
+```
+
+Class 04's "test with a small batch before running at scale," made concrete: it walks
+the real code paths a call travels — prompt assembly, engine wiring, the recording
+writer — and stops before the gates. A prompt-formatting bug surfaces here in seconds
+instead of forty minutes into a live run.
+
 **Live (calls Claude for real, re-records):**
 
 ```bash

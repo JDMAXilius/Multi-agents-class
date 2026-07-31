@@ -10,6 +10,15 @@ pass and the emulation rung.
 
 **Ordering law:** 1 → 2 → 3 strictly; 4 and 5 gate landing.
 
+## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
+
+- Ticket BP05 is DONE **and the M2 golden-triangle fun gate passed**, with the verdict
+  written in BP05's Log (this is a human judgment gate, not a green suite)
+- BP00 rung 4 runs under net emulation (`-PktLag`/`-PktLoss`) — a predicted movement
+  source is unprovable without it
+- owner_path: `Source/Breachpoint/Character/`,
+  `Source/Breachpoint/AbilitySystem/Abilities/`
+
 ## Steps (in order)
 
 1. CMC side: `FSavedMove_BR` grapple flag + RMS apply/clear helpers in

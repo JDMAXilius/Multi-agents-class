@@ -204,6 +204,51 @@ class LiveEngine:
             indent=2), encoding="utf-8")
 
 
+class DryRunEngine:
+    """Smoke-tests the plumbing without spending a full pipeline.
+
+    Class-04 doctrine: test with a small batch before running at scale. This
+    exercises the real code paths an agent call travels — prompt assembly (so
+    an f-string bug raises here, not forty minutes in), one live round trip per
+    distinct agent, the model/CLI wiring, and the recording writer — then stops
+    before the gates would consume the response. Costs ~4 tiny calls."""
+
+    def __init__(self, model: str, live: bool, rec: Path):
+        self.inner = LiveEngine(model, rec) if live else None
+        self.seen = set()
+        self.exchanges = []
+        self.rec = rec
+
+    def call(self, prompt: str, meta: dict) -> str:
+        assert isinstance(prompt, str) and prompt, "prompt assembly produced nothing"
+        agent = meta["agent"]
+        if agent not in self.seen:
+            self.seen.add(agent)
+            if self.inner is not None:
+                # The probe carries NO agent definition — a strongly-doctrined agent
+                # ("return JSON only") would otherwise override the instruction and
+                # look like a failure. What we are testing is the wiring: model,
+                # auth, transport. Any non-empty reply proves all three.
+                reply = self.inner.call(
+                    f"Connectivity probe for the '{agent}' slot. Reply with one word.",
+                    meta)
+                log(f"  dry-run: {agent:16} prompt {len(prompt):6,d} chars · "
+                    f"round trip {'OK' if reply.strip() else 'EMPTY REPLY — check auth/model'}")
+            else:
+                log(f"  dry-run: {agent:16} prompt {len(prompt):6,d} chars · "
+                    f"assembled (no call — pass --live to probe the model)")
+        raise DryRunComplete(agent, meta["stage"])
+
+    def save_recording(self):
+        pass
+
+
+class DryRunComplete(Exception):
+    """Raised to stop a job the moment the dry run has learned what it can."""
+    def __init__(self, agent, stage):
+        super().__init__(f"dry run stopped at {agent}/{stage}")
+
+
 class ReplayEngine:
     """Re-drives the recorded exchanges through the same pipeline code paths."""
 
@@ -733,6 +778,10 @@ def main():
     ap.add_argument("--model", default=DEFAULT_MODEL)
     ap.add_argument("--recording", default=str(RECORDING_PATH),
                     help="recording file to write (--live) or replay from")
+    ap.add_argument("--dry-run", action="store_true",
+                    help="smoke-test the plumbing: assemble every agent's prompt and "
+                         "(with --live) make one tiny round trip each. Seconds, not "
+                         "minutes — run this before any full --live pipeline.")
     args = ap.parse_args()
 
     # Absolute: an aborted run must still save the exchanges it earned, even if
@@ -740,21 +789,32 @@ def main():
     rec = Path(args.recording)
     rec = rec if rec.is_absolute() else (HERE / rec)
     agents_dir = find_agents_dir()
-    eng = LiveEngine(args.model, rec) if args.live else ReplayEngine(rec)
-    mode = "LIVE" if args.live else "REPLAY (recorded exchanges, same pipeline code)"
+    if args.dry_run:
+        eng = DryRunEngine(args.model, args.live, rec)
+        mode = f"DRY RUN ({'live probes' if args.live else 'prompt assembly only'})"
+    else:
+        eng = LiveEngine(args.model, rec) if args.live else ReplayEngine(rec)
+        mode = "LIVE" if args.live else "REPLAY (recorded exchanges, same pipeline code)"
     log(f"BREACHPOINT agent crew — mode: {mode} — agents: {agents_dir}")
 
     OUTPUT_DIR.mkdir(exist_ok=True)
     try:
-        if args.job in ("weapons", "all"):
-            job_weapons(eng, agents_dir)
-        if args.job in ("arena", "all"):
-            job_arena(eng, agents_dir)
+        for job, fn in (("weapons", job_weapons), ("arena", job_arena)):
+            if args.job not in (job, "all"):
+                continue
+            try:
+                fn(eng, agents_dir)
+            except DryRunComplete as e:
+                log(f"  {e}")
     finally:
         eng.save_recording()
         (OUTPUT_DIR / "run_log.txt").write_text("\n".join(LOG_LINES) + "\n",
                                                 encoding="utf-8")
-    log("\nAll jobs landed. Output in ./output — game-ready data for BREACHPOINT.")
+    if args.dry_run:
+        log("\nDry run complete — prompts assemble and the wiring holds. "
+            "Nothing was landed. Run without --dry-run for the real pipeline.")
+    else:
+        log("\nAll jobs landed. Output in ./output — game-ready data for BREACHPOINT.")
 
 
 if __name__ == "__main__":

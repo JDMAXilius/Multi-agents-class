@@ -16,6 +16,15 @@ that cannot run is BLOCKED, never silently skipped.
 gates everything here — the orchestrator shells out to those wrappers, it does not reinvent
 them. Step 1 below gates steps 2–4.
 
+## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
+
+- Ticket BP00 is DONE: `Tools/run-ubt.ps1`, `run-specs.ps1`, `run-gauntlet.ps1` exist
+  and each produces a real pass/fail artifact (this ticket shells out to them; it does
+  not reinvent them)
+- Ticket BP01 step 1 is landed (a `.uproject` and build targets exist to compile)
+- `python3 Tools/data-crew/run_crew.py` (replay) exits 0 from the game repo
+- owner_path: `Tools/data-crew/`
+
 ## Steps (in order)
 
 1. **Relocate the crew into the game repo.** Copy `assignments/03-agent-crew/run_crew.py`

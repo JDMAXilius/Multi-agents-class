@@ -164,7 +164,16 @@ and the board as the single coordination point — every session syncs before an
 after every meaningful step. The lead session reconciles by reading Logs, not by watching.
 Two tickets that would touch one file are not parallel tickets; re-cut them.
 
-## 13. The laws are hooks, not vibes
+## 13. Smoke-test the wiring before you spend the pipeline
+
+Before any long agent run, exercise the plumbing with a throwaway pass: assemble every
+prompt, make one trivial round trip per distinct agent, then stop. `run_crew.py --dry-run`
+is the reference implementation. This exists because we learned it the expensive way — a
+full live pipeline burned real wall-clock discovering two prompt-formatting bugs that a
+ten-second pass would have caught. The same rule applies to any harness the crew grows:
+**cheap proof that the wiring holds, before expensive proof that the work is right.**
+
+## 14. The laws are hooks, not vibes
 
 `.claude/hooks/guard_laws.py` (wired in `.claude/settings.json`) enforces at tool-call
 time what the contracts state in prose: writes outside the claimed packet's owner_path are
