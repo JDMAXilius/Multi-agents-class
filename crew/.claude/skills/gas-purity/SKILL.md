@@ -37,18 +37,27 @@ and the conflict is a finding against this skill — fix the skill in the same p
 
 ## 3. Generic GameplayEffects (law 7: parameterize, never proliferate)
 
+> **R18: the six generic GEs are C++ `UGameplayEffect` subclasses, not Content assets.**
+> Constructor-authored, referenced by class, living in
+> `Source/Breachpoint/AbilitySystem/Effects/`. Read "asset" below as "the one generic GE
+> class" — the pattern is identical, only the authoring surface changed. `AddDynamicAssetTag`
+> keeps its name (it is engine API for the *spec*, unrelated to `.uasset` files).
+
 - One `GE_Damage` (Instant): magnitude = `SetByCaller.BaseDamage`, execution =
-  `BRDamageExecCalc`. EVERY damage source applies this one asset with its own
+  `BRDamageExecCalc`. EVERY damage source applies this one GE class with its own
   SetByCaller value + dynamic `Damage.*` tags added to the **spec** at apply time
-  (`AddDynamicAssetTag` on the spec — the asset itself stays generic).
+  (`AddDynamicAssetTag` on the spec — the GE itself stays generic).
 - `MakeOutgoingSpec` on the SOURCE ASC (correct attribution/context), then
   `ApplyGameplayEffectSpecToTarget` **on the server** (the exec calc is server truth;
   clients see results via replication + cues).
 - In 5.8, effect behaviors are **GE components** (target-tags, granted-tags, immunity,
-  chance) — configure the generic assets with components; new content never adds assets.
+  chance). Under R18 these are constructed in the GE class's constructor
+  (`CreateDefaultSubobject` per component, added to `GEComponents`) rather than configured
+  in the editor — **this is the riskiest part of R18 and BP02 proves it on one GE before
+  writing six.** New content never adds a GE either way; it adds rows and parameters.
 - `GE_Cooldown` (Duration, SetByCaller `SetByCaller.CooldownDuration`): the generic-
   cooldown pattern — the ABILITY injects its own cooldown tag into the spec's granted
-  tags and overrides `GetCooldownTags()` to return {its tag} ∪ base. One asset, every
+  tags and overrides `GetCooldownTags()` to return {its tag} ∪ base. One GE class, every
   ability, per-ability durations from the weapon/ability table.
 
 ## 4. Abilities (`BRGameplayAbility` subclasses)
@@ -124,7 +133,8 @@ decision/tag/cancel rules; the CMC reads the tag for speed.
 `TakeDamage`/`ApplyRadialDamage`/`ApplyPointDamage` anywhere · `ConstructorHelpers` ·
 unseeded `FMath::RandRange` · a literal gameplay number next to a gameplay noun ·
 `SetBaseAttributeValue` outside init · FX played from an ability body instead of a cue
-· a new GE asset that a SetByCaller parameter could have expressed · an ability
+· a new GE class that a SetByCaller parameter could have expressed (or ANY GE authored as
+a `.uasset` — R18) · an ability
 without `EndAbility` on every path · client-built TargetData applied without server
 re-validation · `State.*` set by hand instead of granted by a GE.
 

@@ -155,9 +155,9 @@ into the same ASC path — human and bot input are literally one API.
 | `Abilities/BRGA_Grapple.h/.cpp` | THE netcode packet: three modes by hit; self-pull via **root-motion source through CMC** (predicted by CMC machinery); rejection leaves zero state. Critic REFUTER gate. |
 | `Abilities/BRGA_Sprint.h/.cpp` | The movement-state ability, and the pattern-prover for **WhileHeld** activation: hold `InputTag.Sprint` → activate; release → end. Grants `State.Movement.Sprinting` via ActivationOwnedTags (predicted + replicated by GAS); the CMC reads it into the `FSavedMove_BR` sprint flag and applies the speed multiplier from `CT_Combat`. **No cost** (Halo sprint is free); `BRGA_WeaponFire`/`Melee`/`Grenade` list it in CancelAbilitiesWithTags — firing ends the sprint, Halo-style, with zero code in the sprint ability itself. |
 
-**The generic-effect library (Content assets, 6 total — law #7 made real; purity law: `crew/docs/contracts/gas-purity.md`):**
+**The generic-effect library (6 total, **C++ `UGameplayEffect` subclasses — not Content assets**, per ruling R18 and `BREACHPOINT-AUTHORING-MATRIX.md` Tier 1; law #7 made real; purity law: `crew/docs/contracts/gas-purity.md`). They live in `Source/Breachpoint/AbilitySystem/Effects/`, are constructor-authored, and are referenced by class — which is what keeps them diffable and critic-readable:**
 
-| GE asset | Parameterized by | Reused by |
+| GE class | Parameterized by | Reused by |
 |---|---|---|
 | `GE_Damage` | `SetByCaller.BaseDamage` + dynamic `Damage.*` tags | **every** damage source: AR, Magnum, Rocket, grenade, melee, (Phase-2 hazards) |
 | `GE_Regen` | attribute (curve row) + `SetByCaller.RegenRate`, activation-blocked by a tag | shield recharge now; any future regen (health pickups, overshield) |
@@ -410,7 +410,10 @@ Content/
 ├── Data/            DT_Weapons.csv · CT_Combat.csv · DT_BotTuning.csv ·
 │                    DT_MatchRules.csv · DT_SpotterLines.csv
 ├── Maps/            BR_Arena01 · BR_Entry
-├── AbilitySystem/   Effects/ (the 6 generic GEs) · Cues/ · Sets/ (AS_Loadout, AS_Weapon_*)
+├── AbilitySystem/   Cues/ (VFX/SFX only — the cue CLASSES are C++, R18) ·
+│                    Sets/ (AS_Loadout, AS_Weapon_* — see AUTHORING-MATRIX §4,
+│                    DataTable-vs-DataAsset is an open decision for BP01/BP02)
+│                    NOTE: no Effects/ — the 6 generic GEs are C++ classes (R18)
 ├── Input/           IMC_Default · IA_* actions (incl. IA_Sprint) · DA_InputConfig
 ├── Characters/      sourced meshes + FPS anim sets + ABP assets
 ├── Weapons/         sourced meshes/anims

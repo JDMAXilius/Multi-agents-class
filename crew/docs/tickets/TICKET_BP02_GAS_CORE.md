@@ -43,7 +43,16 @@ with 3. BP00 step 2 (combat spec) lands against this ticket's output.
    `State.Movement.Sprinting` (ActivationOwnedTags); CMC reads it via the `FSavedMove_BR`
    flag and applies the `CT_Combat` speed multiplier; no cost. Proves the whole
    input → tag → ASC → ability → CMC chain end to end. Owner: **sim-builder**.
-4. The generic-GE assets (thin data containers, `Content/AbilitySystem/Effects/`):
+4. The generic-GE **C++ classes** (`UGameplayEffect` subclasses in
+   `Source/Breachpoint/AbilitySystem/Effects/` — **not Content assets**, ruling R18):
+   > ⚠️ **Prove one before writing six.** Constructor-authoring a `UGameplayEffect` is
+   > legal but runs against Epic's grain — since UE 5.3 effect behaviour lives in
+   > `UGameplayEffectComponent` instanced subobjects the editor is built to author, so a
+   > C++ version means `CreateDefaultSubobject` per component and populating `GEComponents`
+   > by hand. **Land `GE_RecentDamage` first** (the simplest: one duration, one granted
+   > tag), prove it compiles and applies at runtime, and record the pattern in the Log.
+   > If it does not work cleanly, that is a `contract_gap` against R18 — stop and escalate;
+   > do not quietly fall back to assets.
    `GE_Damage` (SetByCaller + dynamic tags), `GE_Regen` (periodic, SetByCaller.RegenRate,
    activation-blocked by RecentDamage — configured for shields at 60/s after 2.5 s),
    `GE_Cooldown` (SetByCaller.CooldownDuration), `GE_InitStats` (curve row),
@@ -73,7 +82,8 @@ with 3. BP00 step 2 (combat spec) lands against this ticket's output.
 
 - Crew: sim-builder leads · netcode-builder reviews replication settings · verifier proves ·
   critic refutes
-- Binary files owned: `Content/AbilitySystem/Effects/*`, `Content/Data/CT_Combat.csv`
+- Binary files owned: **none** — the six generic GEs are C++ classes under R18, so this
+  ticket adds no `.uasset`. `Content/Data/CT_Combat.csv` is text (a CurveTable source).
 - Out of scope: any weapon, any ability beyond the base class and BRGA_Sprint, UI
 
 ## Log
