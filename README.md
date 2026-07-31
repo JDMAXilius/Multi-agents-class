@@ -44,7 +44,9 @@ ships from.
 **Coursework: complete.** Assignments [#1](assignments/01-gdd-first-draft/),
 [#2](assignments/02-gdd-final-draft/), and [#3](assignments/03-agent-crew/) are all
 submitted. **From here this repo is a Breachpoint project, not a course project** — the
-crew, the board, and the docs serve the build.
+crew, the board, and the docs serve the build. The board is
+[`crew/docs/tickets/`](crew/docs/tickets/) (BP00–BP14); `assignments/` is a record, not a
+workstream.
 
 **M0 — pre-production complete.** ✅
 The data crew has **run**: `DT_Weapons.csv` and `arena_manifest.json` are authored, reviewed,
