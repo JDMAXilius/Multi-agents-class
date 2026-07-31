@@ -23,6 +23,8 @@ Breachpoint/
 │                          · gas-purity (HOW the lawful GAS patterns are built; contract wins)
 │                          · ue-editor (Python/commandlet automation; generated-scripts-over-
 │                            live-MCP doctrine for blockouts, reimports, screenshots)
+│                          · ue5-ui-architecture (CommonUI layer stack + MVVM ViewModels;
+│                            BP10's reference layer — zero-polling, honest join-in-progress)
 └── docs/
     ├── CREW_PLAYBOOK.md   ← the methodology (§9–13: severity gate, cost-ordered gates,
     │                        memory policy, parallel pods, hooks — all run-proven)

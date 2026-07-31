@@ -289,9 +289,13 @@ load-bearing.
 
 | Call | Model | Calls / match | Tokens in | Tokens out | Total |
 |---|---|---|---|---|---|
-| Spotter (events, batched) | Claude Haiku | ≤ 12 | 600 | 60 | ≈ 7,900 |
-| Coach (match end, per human) | Claude Haiku | ≤ 8 | 900 | 80 | ≈ 7,800 |
-| **Total** | | | | | **≈ 15,700 ≈ $0.013** |
+| Spotter (events, batched) | `claude-haiku-4-5` | ≤ 12 | 600 | 60 | ≈ 7,900 |
+| Coach (match end, per human) | `claude-haiku-4-5` | ≤ 8 | 900 | 80 | ≈ 7,800 |
+| **Total** | | | | | **≈ 15,700 ≈ $0.021** |
+
+Priced at Haiku 4.5's current rates ($1.00 / 1M input, $5.00 / 1M output): 14,400 input
+tokens = $0.0144, 1,360 output tokens = $0.0068. Model ID pinned — see the vertical-slice
+GDD §4.2 for the full note.
 
 Caps enforced server-side; fallback is canned lines.
 

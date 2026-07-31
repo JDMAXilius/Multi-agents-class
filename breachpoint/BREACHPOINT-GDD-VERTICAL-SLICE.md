@@ -330,9 +330,15 @@ load-bearing.
 
 | Call | Model | Calls / match | Tokens in | Tokens out | Total |
 |---|---|---|---|---|---|
-| Spotter (events, batched ≥ 10 s) | Claude Haiku | ≤ 12 | 600 | 60 | ≈ 7,900 |
-| Coach (match end, per human) | Claude Haiku | ≤ 8 | 900 | 80 | ≈ 7,800 |
-| **Total** | | | | | **≈ 15,700 ≈ $0.013 / match** |
+| Spotter (events, batched ≥ 10 s) | `claude-haiku-4-5` | ≤ 12 | 600 | 60 | ≈ 7,900 |
+| Coach (match end, per human) | `claude-haiku-4-5` | ≤ 8 | 900 | 80 | ≈ 7,800 |
+| **Total** | | | | | **≈ 15,700 ≈ $0.021 / match** |
+
+Priced at Haiku 4.5's current rates — **$1.00 / 1M input, $5.00 / 1M output** — the split
+matters: 14,400 input tokens cost $0.0144 and 1,360 output tokens cost $0.0068. The model ID
+is pinned (`claude-haiku-4-5`, 200K context) because "Claude Haiku" alone is ambiguous across
+generations and the price differs by generation. Worst case at the caps is ~2¢ a match; the
+caps, not the price, are the control. Re-check both against current pricing at BP11.
 
 Caps enforced server-side; every failure path falls back to canned lines.
 

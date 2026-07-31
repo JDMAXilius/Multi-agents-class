@@ -26,9 +26,10 @@ contracts, and keep the tickets board true. Read `docs/CREW_PLAYBOOK.md` once pe
   never the builder — pronounces the ladder result.
 - **Reference skills load on demand, contracts stay law**: `gas-purity` for any
   AbilitySystem work, `ue-editor` for anything driving the editor from outside
-  (blockout scripts, reimports, screenshots, MCP evaluation), the account-level
-  `ue5-ui-architecture` for BP10. On any conflict the contract wins and the skill gets
-  fixed in the same packet.
+  (blockout scripts, reimports, screenshots, MCP evaluation), `ue5-ui-architecture`
+  for BP10. All four ship in `.claude/skills/` — nothing here depends on a skill
+  installed at the account level. On any conflict the contract wins and the skill
+  gets fixed in the same packet.
 - **Keep the rulings ledger.** When you make a design call during review (intent vs defect),
   append it to `docs/DESIGN-RULINGS.md` dated — that is what stops the next critic pass
   from re-litigating it. Only you (or the founder) write there; re-opening a ruling is a

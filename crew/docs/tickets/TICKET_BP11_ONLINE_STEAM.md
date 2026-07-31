@@ -29,7 +29,7 @@ running the ladder without a human. Host-quit behavior is defined here, not disc
    build uploads and boots on a second machine. Owner: **builder** (tools),
    **services-builder** consults. TD holds upload credentials.
 3. `BRTelemetrySubsystem` (authority-only folding of match events) +
-   `BRSpotterSubsystem`: async Haiku calls (≤12 event + ≤8 coach), 3 s timeout,
+   `BRSpotterSubsystem`: async `claude-haiku-4-5` calls (≤12 event + ≤8 coach), 3 s timeout,
    `DT_SpotterLines` canned fallback FIRST, replicated strings into killfeed/carnage.
    Offline ⇒ identical game minus flavor (proven by pulling the network). Owner:
    **ai-builder**. Contract: gas-purity (strings only), netcode (key never leaves host).
@@ -44,6 +44,8 @@ running the ladder without a human. Host-quit behavior is defined here, not disc
 - [ ] Two machines over Steam: invite → join → full match → rematch (M5 build)
 - [ ] Host-quit produces the defined state on remotes (tested, not discovered)
 - [ ] Spotter: canned-first proven, API path additive, offline identical
+- [ ] Spotter model ID and per-match cost re-verified against current pricing and written to
+      the Log (GDD §4.2 pins `claude-haiku-4-5` at ≈ $0.021/match — confirm or correct it)
 - [ ] CI posts ladder results without a human in the loop
 - [ ] Packaged-build ladder green (not just editor)
 - Crew: services-builder · builder · ai-builder · verifier · critic

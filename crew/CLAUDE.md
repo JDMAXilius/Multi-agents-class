@@ -5,6 +5,12 @@ UE 5.8 · pure native C++ · GAS · 4v4 arena FPS · Steam listen server behind
 Class prefix `BR`. You are one agent in a crew — your definition is in `.claude/agents/`;
 the method is `docs/CREW_PLAYBOOK.md`; the law is `docs/contracts/`.
 
+**The game repo root is the working root.** Several crew agents carry generic names
+(`builder`, `critic`, `verifier`) that any account-level agent of the same name would shadow.
+Project-level definitions win only when the session's working root is this repo — so start
+every session here, and if a dispatched agent's behaviour doesn't match `.claude/agents/`,
+suspect a name collision before you suspect the agent.
+
 ## The laws (violations are findings, not style notes)
 
 1. **Server-authoritative; clients send intent.** New replicated property or `Server` RPC

@@ -8,6 +8,8 @@ information, not decoration. With radar cut, FOOTSTEP/WEAPON AUDIO is the awaren
 MetaSounds cues are a gameplay requirement in this ticket, not polish.
 
 **Ordering law:** 1 → 2; 3–4 parallel after 2.
+**Reference skill:** `ue5-ui-architecture` (layer stack, ViewModel feeds, killfeed pooling,
+gamepad routing, join-in-progress states) — load it before step 1.
 
 ## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
 
