@@ -4,12 +4,15 @@
 > (written in the Slash Roller era; the capstone is now **Breachpoint**). Everything
 > "proposed" below has been **built** — and then upgraded to **crew v2**. The living
 > authority is:
-> - **`crew/docs/CREW_MAP.md`** — the current roster (11 agents), diagrams, invocation matrix
+> - **`crew/docs/CREW_MAP.md`** — the current roster (12 agents), diagrams, invocation matrix
 > - **`crew/README.md`** — the install tree, incl. hooks + rulings ledger
 > - **`crew/docs/CREW_PLAYBOOK.md`** §9–13 — the run-proven operating rules
 >
 > Deltas vs. this doc: `bot-trainer` + `balance-analyst` were consolidated into
-> **`tuning-curator`** (11 agents, not 12); the "Caster" runtime client is named
+> **`tuning-curator`**, taking this doc's 12 down to 11 — then `spotter` was minted as the
+> crew's first *divergent* curator (playbook §13), bringing it back to **12 for a different
+> reason**: not the three narrow curators below, but two convergent + one divergent. The
+> "Caster" runtime client is named
 > **Spotter** (`UBRSpotterSubsystem`); D8 grew its own design doc
 > (`breachpoint/BREACHPOINT-AI-BOTS.md` — the three-layer GOAP/StateTree/GAS brain);
 > all 5 contracts exist (none "proposed"); and every agent now carries
@@ -232,7 +235,7 @@ SlashRoller/                         ← game repo root
 
 ## 9. Summary — the roster in one breath
 
-**11 agents total (v2 — curators consolidated per the S03 scope red-flag: bot-trainer + balance-analyst → tuning-curator):** 7 producers (4 kit + 3 new), 2 reviewers (kit), 3
+**12 agents total (v2 — curators consolidated per the S03 scope red-flag: bot-trainer + balance-analyst → tuning-curator; `spotter` added later as the first divergent curator):** 7 producers (4 kit + 3 new), 2 reviewers (kit), 3
 curators (new) — governed by 2 skills, bound by 3–5 contracts, coordinated
 through 1 tickets board. Every producer owns exactly one discipline
 (D1–D8); no producer verifies its own work; both reviewers are read-only;
