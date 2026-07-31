@@ -530,8 +530,12 @@ combo plays out including the 0.4 s swap.
 # OUTPUT
 Return ONLY a JSON object:
 {{"proposals": [{{"full_row": {{<every schema column>}}, "evidence": "...",
+"sources": [{{"claim": "...", "source": "...", "what_it_says": "..."}}],
 "implied_ttk_s": <number>, "expected_effect": "...", "risk": "...",
-"doubts": ["..."]}}, ...3 records...]}}"""
+"doubts": ["..."]}}, ...3 records...]}}
+
+`evidence` is the arithmetic; `sources` is what you READ to get it — the
+ruling, the GDD section, or the seed set behind each non-obvious number."""
 
     proposals = ask(eng, curator, "tuning-curator", "propose", job, curator_task,
                     validate_weapon_proposals)
@@ -721,8 +725,13 @@ CLAIM DISCIPLINE (this is what gets manifests rejected):
   may occupy the same (x,y) footprint, and no spawn may sit inside one.
 
 # OUTPUT
-Return ONLY a JSON object: {{"manifest": {{...arena_manifest...}},
-"blockout_notes": "..."}}"""
+Return ONLY a JSON object: {{"manifest": {{...arena_manifest..., "sources":
+[{{"claim": "...", "source": "...", "what_it_says": "..."}}]}},
+"blockout_notes": "..."}}
+
+`sources` cites what you READ for each non-obvious layout decision — the
+brief, the GDD arena section, or a ruling. A decision with no source is
+either derived from the brief (say so) or invented."""
 
     result = ask(eng, architect, "arena-architect", "propose", job, architect_task,
                  validate_arena_manifest)

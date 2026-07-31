@@ -16,8 +16,19 @@ survives review.
 # DOCTRINE
 - Output shape, one record per proposal: `{ table, row, column (or full
   row for new entries), current_value, proposed_value, evidence (quoted
-  numbers, match count, seeds if soak data), expected_effect, risk,
-  doubts[] }`.
+  numbers, match count, seeds if soak data), sources[], expected_effect,
+  risk, doubts[] }`.
+- **Read before you write** (playbook §14, your retrieval set): the combat
+  model (GDD Appendix A) · the current tables in `Content/Data/` · the row
+  schema in `BRDataRows.h` · telemetry, soak and human **labeled
+  separately** · `DESIGN-RULINGS.md` (R1–R5 bind weapons, R11–R12 bind
+  bots) · pinned values in `Breachpoint.Sim.*`.
+  **`sources[]` names which of these the proposal rests on**
+  (`{claim, source, what_it_says}`) — it is distinct from `evidence`:
+  evidence is the arithmetic, sources is what you read to get it. A
+  proposal citing a ruling must quote the ruling; one citing telemetry
+  must name the seed set. A number with neither is a guess wearing a
+  decimal point.
 - **One knob per proposal.** A diff touching three values is three
   proposals with three pieces of evidence.
 - **Weapon rows** defend themselves against the shields+health model:
@@ -60,9 +71,11 @@ survives review.
 - IN: brief + current tables + telemetry (soak and human, labeled
   separately) + DESIGN-RULINGS.md + prior-round findings if revising.
 - OUT: `{proposals: [{table, row, column|full_row, current_value,
-  proposed_value, evidence, implied_ttk_s (weapon rows), expected_effect,
-  risk, doubts[]}]}` — JSON only. In-band telemetry → "in band", propose
-  NOTHING; restraint is a deliverable.
+  proposed_value, evidence, sources[], implied_ttk_s (weapon rows),
+  expected_effect, risk, doubts[]}]}` — JSON only. In-band telemetry →
+  "in band", propose NOTHING; restraint is a deliverable. `sources[]`
+  makes retrieval auditable: a reviewer can check the cited ruling or seed
+  set against the proposed number without re-deriving it.
 
 # KICKOFF (refuse to start unless all true)
 - The target table's schema exists in `BRDataRows.h` (or the brief is the

@@ -19,7 +19,16 @@ the actual asset landing (binary-asset law: one owner per .umap).
   `{ arena_id, bounds {x,y,z}, spawn_points[] {id, location, facing,
   scoring_hints {min_dist_to_combat, last_used_cooldown_s}},
   landmarks[] {name, purpose}, cover[] {location, height_class},
-  sightlines {max_length_m, notes}, hazards[], doubts[] }`.
+  sightlines {max_length_m, notes}, hazards[], sources[], doubts[] }`.
+- **Read before you write** (playbook §14, your retrieval set): the brief ·
+  the GDD's arena section (three levels, 35 m sightline cap, rocket node
+  visible from all levels, ≥ 2 grapple points per upper position) ·
+  `DESIGN-RULINGS.md` (R6–R7) · the current manifest and blockout
+  screenshots if revising. **`sources[]` names which of these each
+  non-obvious decision came from** — one entry per claim that a reviewer
+  would otherwise have to take on trust (`{claim, source, what_it_says}`).
+  A layout decision with no source is either derived from the brief (say
+  so) or invented (a finding).
 - **The design constraints are law, not inspiration:** 2–4 fighters means
   compact; every spawn point needs line-of-sight breakage within 5 m
   (anti-spawn-kill); no sightline may exceed the brief's max; the manifest
@@ -59,7 +68,10 @@ the actual asset landing (binary-asset law: one owner per .umap).
 # I/O
 - IN: one-paragraph brief + GDD constraints (35 m sightlines, ≥ 8 spawns,
   ≥ 8 m spacing) + DESIGN-RULINGS.md + prior-round findings if revising.
-- OUT: `{manifest: {...doctrine shape...}, blockout_notes}` — JSON only.
+- OUT: `{manifest: {...doctrine shape, incl. sources[]...}, blockout_notes}`
+  — JSON only. `sources[]` makes retrieval auditable: a reviewer can put
+  the cited constraint and the resulting geometry side by side without
+  re-deriving your reasoning.
 
 # KICKOFF (refuse to start unless all true)
 - The brief states player count, level count, and the sightline cap.
