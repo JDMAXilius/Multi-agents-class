@@ -1,54 +1,11 @@
-BREACHPOINT agent crew — mode: REPLAY (recorded exchanges, same pipeline code) — agents: /home/user/Multi-agents-class/crew/.claude/agents
+BREACHPOINT agent crew — mode: DRY RUN (live probes) — agents: /home/user/Multi-agents-class/crew/.claude/agents
 
 === JOB: weapons → DT_Weapons.csv ===
-  tuning-curator: 3 rows proposed (TTKs: 2.5, 3.1, 0.67 s)
-    - [high] Rocket: Rocket sets ReloadTime_s=3.5s while ReserveMags=0. With MagSize=2 and zero reserve, there is no ammo pool for 
-    - [medium] Rocket: The combat-model canon states headshot multiplier applies universally to 'the whole shot (x2)', and both AR an
-  critic: 1 BLOCKING finding(s) — bouncing to curator
-  tuning-curator: revised proposals returned
-    - [high] AR / Magnum (HeadshotMult cross-check): AR row sets HeadshotMult=2.0 (8dmg -> 16dmg headshot) at RPM=600 (0.1s/shot, 32-round mag). An all-headshot AR
-  critic: 1 BLOCKING finding(s) — bouncing to curator
-  tuning-curator: revised proposals returned
-    - [medium] Rocket: The Rocket row's evidence asserts a direct hit deals 120 dmg, leaving the target at 80 EHP so a second hit is 
-  critic: no blocking findings (bounce 2; 1 non-blocking recorded as accepted risk)
-  builder: CSV formatted (gate B: header + 3 rows verified deterministically)
-  verifier: [pass] 1. Schema: header + type parse: Header verbatim: Name,DisplayName,FireMode,DamageDelivery,DamagePerShot,RPM,MagSize,ReserveMags,ReloadTime_s,H
-  verifier: [pass] 2. TTK recompute (EHP=200): AR: shots=ceil(200/8)=25, bodyTTK=(25-1)*(60/600)=24*0.1=2.4s. Magnum: shots=ceil(200/22)=ceil(9.09)=10, bodyT
-  verifier: [pass] 3. Headshot math (Magnum): Headshot damage = DamagePerShot * HeadshotMult = 22 * 2.0 = 44. Shots to finish 100 health via headshots = cei
-  verifier: [pass] 4. UE importability: Soft paths: /Game/Weapons/AR/SM_AR.SM_AR, /Game/Weapons/Magnum/SM_Magnum.SM_Magnum, /Game/Weapons/Rocket/SM_Ro
-  verifier: [blocked] 5. Clean compile (UBT): No .uproject, Source/, or build targets found under the repo (searched to depth 4); this packet is a standalon
-  verifier: [blocked] 6. Headless Automation Specs (-nullrhi -unattended): No docs/contracts/testing.md found in repo, so the packet's named suite list and pinned sim suites are undefin
-  verifier: [blocked] 7. Functional tests (packet maps, single-instance): No map assets or functional test framework present in this checkout; DT_Weapons.csv carries no map reference. 
-  verifier: [blocked] 8. Networked smoke (dedicated server + 2 clients, Gauntlet): This packet touches replicated combat state (weapon damage/shields/health), so this rung applies per doctrine,
-  verifier: [blocked] 9. Perf spot-checks (tick counts, Stat Net, bandwidth budget): No running instance, Stat Net capture tooling, or bandwidth budget doc available in this checkout. Cannot run.
-  LANDED: output/DT_Weapons.csv (written only after verifier PASS)
-  risk register: 2 accepted finding(s) → open_risks_weapons.json
+      tokens: in 2 · out 95 · cached 35,833 · $0.0128
+  dry-run: tuning-curator   prompt  5,565 chars · round trip OK
+  dry run stopped at tuning-curator/propose
 
 === JOB: arena → arena_manifest.json ===
-  arena-architect: 'breachpoint_core_arena_v1' — 8 spawns, 7 landmarks, max sightline 35 m
-    - [high] spawn_points: SP1/SP3 (west wall) and SP2/SP4 (east wall) mutual visibility: SP1(4,4,0) and SP3(4,36,0) sit on a straight x=4 line, 32 m apart. Checking every cover/landmark footprint in 
-    - [high] spawn_points: SP5/SP6, SP6/SP7, SP7/SP8, SP8/SP5 (top-level adjacent pairs): Each adjacent top-platform pair is 22.6 m apart (e.g. SP5(20,4,10)-SP6(36,20,10)). Tracing that diagonal again
-  critic: 2 BLOCKING finding(s) — bouncing to architect
-  arena-architect: revised manifest returned
-    - [high] manifest.sightlines / landmarks["The Core"] / hazards["Core Shaft Fall"]: The Core is defined as an 'open vertical shaft ... connecting all three levels,' and its own hazard entry conf
-    - [high] manifest.spawn_points SP1/SP2 and SP3/SP4: SP1(4,4,0)-SP2(36,4,0) and SP3(4,36,0)-SP4(36,36,0) are each a clear 32 m straight line with zero cover or lan
-    - [medium] manifest.cover for SP1, SP4, SP5, SP6, SP7, SP8: These six spawns each have only a 'chest-high' cover object (~4 m away) as their sole nearby obstruction, whil
-    - [medium] manifest.sightlines.notes (SP1-SP4/SP2-SP3 and SP5-SP7/SP6-SP8 figures): The notes state the SP1-SP4/SP2-SP3 diagonal is '56.6 m raw,' but from the actual coordinates (4,4)-(36,36) it
-  critic: 2 BLOCKING finding(s) — bouncing to architect
-  arena-architect: revised manifest returned
-    - [high] sightlines.notes vertical-pair claim (SP1-SP5 / SP2-SP6 / SP3-SP7 / SP4-SP8) vs. 'Mezzanine Catwalks' landmark description: sightlines.notes asserts the four same-(x,y)-different-z spawn pairs are blocked because the midpoint 'sits on
-    - [medium] Rocket Launcher Pad placement ('cantilevered off the Pylon's west face') vs. its billing as 'central contested landmark': The pad footprint x[16,18],y[19,21] sits only on the west side of the centered Pylon (x[19,21],y[19,21]) — it 
-  critic: 1 BLOCKING finding(s) — bouncing to architect
-  arena-architect: revised manifest returned
-  critic: no blocking findings (bounce 3; 0 non-blocking recorded as accepted risk)
-  builder: manifest formatted (gate B: parse + schema + spawn spacing re-verified)
-  verifier: [pass] schema: All required top-level keys present: arena_id, bounds, spawn_points, landmarks, cover, sightlines, hazards, do
-  verifier: [pass] spawn_spacing_min_pairwise: Computed all C(8,2)=28 pairwise 3D distances by hand. Coordinates: SP1(4,4,0) SP2(36,4,0) SP3(4,36,0) SP4(36,3
-  verifier: [pass] constraint_spawn_count>=8: spawn_points array has exactly 8 entries (SP1..SP8). 8>=8 satisfied.
-  verifier: [pass] constraint_max_sightline<=35m: Re-derived the manifest's cited figures: (1) diagonal SP1(4,4)->SP4(36,36) is y=x, enters Core footprint x[16,
-  verifier: [pass] constraint_named_rocket_landmark: landmarks[0] 'The Core' purpose text explicitly states: 'housing the Rocket Launcher pad (90 s respawn timer) 
-  verifier: [pass] constraint_three_distinct_z_levels_used: Spawn z-values observed: 0 (SP1-SP4), 4 (SP5,SP6), 8 (SP7,SP8) -- three distinct levels, all populated with sp
-  verifier: [blocked] constraint_mutual_visibility_and_5m_LOS_break: Brief requires 'no pair mutually visible' and 'every spawn breaks LOS within 5 m,' but this cannot be checked 
-  verifier: [pass] honesty_audit: Checked doubts[] (4 items) and landing_note against every claim in sightlines.notes and landmarks. The manifes
-  LANDED: output/arena_manifest.json (written only after verifier PASS)
-  risk register: 3 accepted finding(s) → open_risks_arena.json
+      tokens: in 2 · out 4 · cached 35,832 · $0.0114
+  dry-run: arena-architect  prompt  5,049 chars · round trip OK
+  dry run stopped at arena-architect/propose

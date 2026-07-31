@@ -179,28 +179,55 @@ class LiveEngine:
                      "or the `claude` CLI on PATH")
 
     def call(self, prompt: str, meta: dict) -> str:
+        # `usage` is the one thing a framework like CrewAI hides that we otherwise
+        # lack (Class 04). Recording it per exchange makes pipeline bloat VISIBLE —
+        # a stage whose input grows every bounce shows up as a number, not a hunch.
+        usage = {}
         if self._api is not None:
             resp = self._api.messages.create(
                 model=self.model, max_tokens=8000,
                 messages=[{"role": "user", "content": prompt}])
             text = "".join(b.text for b in resp.content if b.type == "text")
+            u = getattr(resp, "usage", None)
+            if u is not None:
+                usage = {"input_tokens": getattr(u, "input_tokens", 0),
+                         "output_tokens": getattr(u, "output_tokens", 0)}
         else:
             # Strip the parent's Bun tuning: when this script is itself launched
             # from a Claude Code session, the inherited BUN_OPTIONS breaks the
             # nested CLI with a bare ENOENT.
             env = {k: v for k, v in os.environ.items() if k != "BUN_OPTIONS"}
             proc = subprocess.run(
-                ["claude", "-p", prompt, "--model", self.model],
+                ["claude", "-p", prompt, "--model", self.model,
+                 "--output-format", "json"],
                 capture_output=True, text=True, timeout=900, env=env)
             if proc.returncode != 0:
                 sys.exit(f"error: claude CLI failed at {meta}: {proc.stderr.strip()[:500]}")
-            text = proc.stdout.strip()
-        self.exchanges.append({**meta, "prompt": prompt, "response": text})
+            try:
+                payload = json.loads(proc.stdout)
+                text = (payload.get("result") or "").strip()
+                u = payload.get("usage") or {}
+                usage = {k: u.get(k, 0) for k in
+                         ("input_tokens", "output_tokens",
+                          "cache_read_input_tokens", "cache_creation_input_tokens")}
+                if payload.get("total_cost_usd") is not None:
+                    usage["cost_usd"] = payload["total_cost_usd"]
+            except json.JSONDecodeError:
+                text = proc.stdout.strip()   # tolerate a CLI without --output-format
+        self.exchanges.append({**meta, "prompt": prompt, "response": text,
+                               "usage": usage})
+        if usage:
+            log(f"      tokens: in {usage.get('input_tokens', 0):,} · "
+                f"out {usage.get('output_tokens', 0):,}"
+                + (f" · cached {usage['cache_read_input_tokens']:,}"
+                   if usage.get("cache_read_input_tokens") else "")
+                + (f" · ${usage['cost_usd']:.4f}" if usage.get("cost_usd") else ""))
         return text
 
     def save_recording(self):
         self.recording_path.write_text(json.dumps(
-            {"model": self.model, "exchanges": self.exchanges},
+            {"model": self.model, "exchanges": self.exchanges,
+             "totals": summarize_usage(self.exchanges)},
             indent=2), encoding="utf-8")
 
 
@@ -258,6 +285,8 @@ class ReplayEngine:
         data = json.loads(recording_path.read_text(encoding="utf-8"))
         self.exchanges = data["exchanges"]
         self.i = 0
+        # Replay reports the ORIGINAL run's spend, so the committed pipeline's
+        # cost stays auditable on a machine that never made a paid call.
 
     def call(self, prompt: str, meta: dict) -> str:
         if self.i >= len(self.exchanges):
@@ -301,6 +330,43 @@ def extract_json(text: str):
         if start == -1 or end <= start:
             raise
         return json.loads(text[start:end + 1])
+
+
+def summarize_usage(exchanges: list) -> dict:
+    """Per-agent and total token spend. Replay carries the recorded numbers
+    forward, so the committed run's cost is auditable without re-running it."""
+    per_agent, totals = {}, {"input_tokens": 0, "output_tokens": 0, "cost_usd": 0.0,
+                             "calls": 0}
+    for e in exchanges:
+        u = e.get("usage") or {}
+        if not u:
+            continue
+        a = per_agent.setdefault(e["agent"], {"calls": 0, "input_tokens": 0,
+                                              "output_tokens": 0, "cost_usd": 0.0})
+        a["calls"] += 1
+        totals["calls"] += 1
+        for k in ("input_tokens", "output_tokens"):
+            a[k] += u.get(k, 0)
+            totals[k] += u.get(k, 0)
+        a["cost_usd"] += u.get("cost_usd", 0.0)
+        totals["cost_usd"] += u.get("cost_usd", 0.0)
+    return {"per_agent": per_agent, "totals": totals}
+
+
+def report_usage(exchanges: list):
+    s = summarize_usage(exchanges)
+    if not s["totals"]["calls"]:
+        return
+    log("\n  token spend (the part CrewAI hides — here it is a number):")
+    for agent, a in sorted(s["per_agent"].items(),
+                           key=lambda kv: -kv[1]["output_tokens"]):
+        log(f"    {agent:17} {a['calls']:2d} calls · in {a['input_tokens']:8,d} · "
+            f"out {a['output_tokens']:7,d}"
+            + (f" · ${a['cost_usd']:.3f}" if a["cost_usd"] else ""))
+    t = s["totals"]
+    log(f"    {'TOTAL':17} {t['calls']:2d} calls · in {t['input_tokens']:8,d} · "
+        f"out {t['output_tokens']:7,d}"
+        + (f" · ${t['cost_usd']:.3f}" if t["cost_usd"] else ""))
 
 
 def write_risk_register(job: str, open_risks: list):
@@ -808,6 +874,8 @@ def main():
                 log(f"  {e}")
     finally:
         eng.save_recording()
+        if not args.dry_run:
+            report_usage(getattr(eng, "exchanges", []))
         (OUTPUT_DIR / "run_log.txt").write_text("\n".join(LOG_LINES) + "\n",
                                                 encoding="utf-8")
     if args.dry_run:

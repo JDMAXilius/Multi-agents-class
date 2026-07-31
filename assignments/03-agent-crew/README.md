@@ -153,6 +153,14 @@ python3 run_crew.py --live --job weapons   # one job only
 `output/run_log.txt` holds the transcript of the committed run, including the
 critic's findings and the verifier's arithmetic.
 
+**Token telemetry.** Live runs record per-call usage (input/output tokens, cache
+reads, cost) into `recording.json` and print a per-agent rollup at the end. Class 04
+lists context-window tracking first among the things CrewAI hides; here it is a number
+you can read. A stage whose input grows every review round shows up as data instead of
+a hunch. *(The committed recording predates this and carries no usage — re-recording it
+would change verified artifacts, so it stays as-is; telemetry applies from the next
+live run on.)*
+
 ## Why raw orchestration instead of CrewAI
 
 The assignment allows "CrewAI **or raw orchestration code**", and this crew is
