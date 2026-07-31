@@ -35,7 +35,9 @@ def main():
         return 0
     project = Path(data.get("cwd", "."))
     try:
-        rel = str(Path(path).resolve().relative_to(project.resolve()))
+        # as_posix(): on Windows str(PurePath) yields backslashes, which silently
+        # defeats every "Source/" prefix test below and makes this guard inert.
+        rel = Path(path).resolve().relative_to(project.resolve()).as_posix()
     except ValueError:
         return 0  # outside the project — not this guard's jurisdiction
 
