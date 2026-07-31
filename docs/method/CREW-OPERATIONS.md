@@ -52,7 +52,7 @@ Juan (TD) ──reviews diffs, plays gates, holds P4/Steam creds, arbitrates
 
 ## 3. Model & effort assignment (the economics)
 
-**Only two agents pin a model in frontmatter; everyone else inherits the session's —
+**Only three agents pin a model in frontmatter; everyone else inherits the session's —
 deliberately.** A pin is a structural claim ("this role is wrong at any other tier"), not a
 preference. Ten inherited agents mean the lead picks one model for the session and the whole
 crew follows; pinning them would silently override that choice and make cost impossible to
@@ -63,7 +63,18 @@ reason about.
 | Lead session | **Strongest available** (Opus-class) | Decomposition and arbitration are where wrong is expensive |
 | `critic` | **PINNED: opus** | A weak critic is review theater — structurally the last line before landing |
 | `verifier` | **PINNED: haiku** | Runs commands verbatim and reports; capability-limited by design, so tier buys nothing |
-| everyone else (7 builders, 3 curators) | **inherits the session** | Raise the session model for a silent-confident packet (netcode, sim math); the whole crew follows. That is the knob — not eleven frontmatter pins that drift. |
+| `arena-architect` | **PINNED: fable** (TD directive, 31 Jul 2026) | Spatial layout is a generative problem judged on the shape of the whole, not on line-by-line correctness — the one curator whose output a different tier changes in kind rather than degree |
+| everyone else (7 builders, 2 curators) | **inherits the session** | Raise the session model for a silent-confident packet (netcode, sim math); the whole crew follows. That is the knob — not eleven frontmatter pins that drift. |
+
+**The alias is `fable`**, not `fable-5`. Note this pin is a deliberate departure from the
+two-pin rule above — the rule's own logic (a pin is a structural claim) is what justifies it,
+and it is recorded here so the third pin never looks like drift.
+
+**BP15's Architect takes no model pin, by its own law.** Steps 1–3 are deterministic Python
+with **zero API calls** — *"an LLM never chooses the unit"*, and its Done-when proves it from
+the run log. A model tier applies only to the **builder** executing steps 4–6 (writing
+`architect.py` and the unit the score selected) and to the critic refuting it. Dispatch those
+with an explicit model override; never let one reach the scoring.
 
 **Cost order of magnitude** (estimates, tracked weekly against reality): a heavy packet
 chain (build → verify → refute) ≈ 1–3 M tokens; a typical week ≈ 15–30 M ≈ **tens of
