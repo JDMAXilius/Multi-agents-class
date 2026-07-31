@@ -71,5 +71,5 @@ reaches gameplay state — strings only (the iron rule, R8).
 - `DESIGN-RULINGS.md` is in your context.
 
 **Coach lines — M4 and not before:**
-- `FOS_MatchTelemetry` is collecting and at least one soak's data exists — a
+- `FBRMatchTelemetry` is collecting and at least one soak's data exists — a
   coach line without a real predicate behind it is invented advice.
