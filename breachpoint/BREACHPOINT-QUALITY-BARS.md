@@ -43,12 +43,22 @@ A packet is DONE when ALL of these hold (the verifier's checklist, quoted in eve
    BLOCKED rungs are reported, never skipped.
 4. **Zero grep-gate hits** (engine damage API, direct attribute writes, hard asset refs,
    `ConstructorHelpers`, NativeTick in widgets, loose gameplay tags outside cosmetics).
+   Three of these — the damage API, `ConstructorHelpers`, unseeded `RandRange` — are now
+   blocked live by `guard_laws.py` at tool-call time; the sweep still runs, because a hook
+   only guards writes an agent makes *through it* (hand edits, merges, and imports bypass it).
 5. **Cancel/rollback hygiene proven** for anything predicted (zero state residue).
 6. **The ticket Log is written** — findings, decisions, rejected paths, seeds used.
 7. **Multiplayer claims come in threes** (server, acting client, observing client) and name
    their rung.
 8. **Dangerous domains carry a critic verdict** — REFUTER findings addressed or explicitly
-   waived with rationale in the Log.
+   waived with rationale in the Log. **Only `high` severity blocks a landing** (R13);
+   medium/low travel with the artifact in its risk register and are inherited by the lead,
+   never silently dropped.
+9. **Determinism claims name their seed** — any packet whose behavior is seeded (bots,
+   spread, jitter) proves *same seed + same data row ⇒ identical trace*, and reports the
+   seed list so the verifier can reproduce it. For bots this is all three layers:
+   ambition, plan, and action traces (`Breachpoint.Bots.*`). A "it behaved fine in my run"
+   claim without a seed is an opinion.
 
 ## 4. Playtest protocol (the human side of the gates — Class-03 method)
 

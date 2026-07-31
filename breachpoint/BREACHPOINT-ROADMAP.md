@@ -90,9 +90,9 @@ satisfying shot — before any feature commitment.**
 |---|---|---|
 | ① Combat | ASC port · attribute set · generic-GE library (incl. GE_Death) · damage exec · `BRGA_Sprint` · AR fire vs dummy | BP02 |
 | ② Netcode & Match | Reviews ①'s replication settings; Match-frame design prep | BP02 (review) |
-| ③ AI | — (prep: StateTree/EQS research spike, tuning schema) | — |
+| ③ AI | Design **landed** (`BREACHPOINT-AI-BOTS.md` — three-layer brain); prep = `DT_BotAmbitions` schema + consideration list for the curator | — |
 | ④ Experience | Skeleton + **the input layer** (config, component, tags) | BP01 |
-| ⑤ World | **Anim pack + environment kit selection** (the Week-1 decision that binds ability timings) · arena brief to curator | — |
+| ⑤ World | **Anim pack + environment kit selection** (the Week-1 decision that binds ability timings) · arena manifest **already landed** by the data crew — this pod reviews it, not re-briefs it | BP13 ✅ |
 | ⑥ Platform | Three targets compile · wrappers · Gauntlet skeleton · specs red→green | BP00 |
 | Gate | **Breaking a dummy's shields feels good; all rungs runnable** | |
 
@@ -119,7 +119,7 @@ combat into movement-combat.**
 |---|---|---|
 | ① Combat | Rocket Launcher (shares projectile/radial with grenades) · power spawner (90 s) | BP09 |
 | ② Netcode & Match | **`BRGA_Grapple`** (the netcode packet: RMS through CMC, prediction, REFUTER gate) | BP06 |
-| ③ AI | Bot brain v1: StateTree states + EQS cover queries + perception (vs static layout) | BP08 |
+| ③ AI | Bot brain v1, all three layers: `UBRBotBrain` ambitions (headless, seed-pinned) → `ST_Bot` StateTree states → GAS activation; EQS scores the arena manifest's landmarks | BP08 |
 | ④ Experience | HUD v1 real (ViewModels wired) · grapple cooldown ring · killfeed | BP10 |
 | ⑤ World | **BR_Arena01 blockout landed** from manifest (grapple points, spawns, rocket node) · anim sets integrated on both meshes | BP07 |
 | ⑥ Platform | Nightly soak harness ready (bot-vs-bot once ③ lands) | — |
@@ -174,8 +174,11 @@ capstone presents.** *(Ticket: BP12.)*
 1. **Motion tracker** (most-missed cut; server-computed contacts)
 2. **FFA Slayer** (near-free: team assignment off)
 3. **Plasma Rifle + damage-type layer** (the kinetic/plasma counter-game)
-4. **Dedicated servers on GameLift** (SDK5 behind `IBRServerLifecycle` — the
-   swap the whole architecture pre-paid for) + Steam auth validation
+4. **Dedicated servers on GameLift** — planned in full:
+   **`BREACHPOINT-GAMELIFT-PLAN.md`** (five cost-gated rungs GL-1…GL-5, the
+   Anywhere fleet as the ~$0 verification rung, Steam-ticket identity per R15,
+   managed fleets telemetry-triggered per R16). The seam it swaps into is
+   built in the slice at shape v1.1 — the architecture pre-paid for this.
 5. **Firefight PvE** (wave/threat-budget design imported from the Gauntlet
    draft) · 6. Server-side rewind · 7. Second arena · 8. Bot tiers as
    distinct StateTrees · 9. Ranked/quickmatch — *then* the full Concept-B GDD
@@ -199,6 +202,11 @@ Claude sessions coordinated only through git + tickets**:
 - **The rhythm (per working session):** `git pull --rebase` → `/tickets list`
   → claim → execute per contracts → ladder → log findings in the ticket →
   push. Nightly: soaks run; morning: verifier report is the standup.
+
+- **The laws are hooks, not goodwill.** `guard_laws.py` blocks out-of-owner-path
+  writes and banned engine APIs at tool-call time; the tickets skill arms it by
+  writing the claim file from the ticket's Kickoff block. A blocked write is the
+  law firing — file the `contract_gap`, never route around it.
 
 **Three rules from the research, enforced:**
 1. **WIP cap: max 3 heavy packets in flight** (TD review is the bottleneck;

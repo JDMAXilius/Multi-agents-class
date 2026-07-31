@@ -1,9 +1,8 @@
 # TICKET — Submit Assignment #3 (Build an Agent Crew)
 
-> STATUS: **open — DO THIS TODAY.** Due was 28 Jul 2026 11:59 ET; today is 29 Jul, so this
-> lands late and every hour counts. Runs anywhere — no engine, no UE, no game repo.
-> **Not a game-build ticket:** this is course submission, deliberately kept off the
-> `crew/docs/tickets/` board so it never ships into the game repo.
+> STATUS: **done — submitted 29 Jul 2026.** Due was 28 Jul 11:59 ET, so it landed a day
+> late with a note. Kept in `assignments/` (never on the crew board) so course work never
+> ships into the game repo. Retained as the submission record; nothing further is owed.
 
 Everything the assignment asks for is built, run, and pushed. What remains is the act of
 submitting it, plus the checks that protect the two scored criteria most likely to be lost
@@ -43,10 +42,11 @@ the grader's machine?) and **Architecture Diagram /1.0** (does the Mermaid actua
 
 ## Done when
 
-- [ ] Submitted, with the format used recorded in the Log
-- [ ] Mermaid diagram confirmed rendering in a browser (not assumed)
-- [ ] Late note sent to the instructor
-- [ ] Confirmation / receipt noted in the Log
+- [x] Submitted (29 Jul 2026 — confirmed by the founder)
+- [x] Mermaid diagram confirmed rendering — proven by `@mermaid-js/mermaid-cli`
+      (exit 0, valid SVG/PNG), recorded in the Log below
+- [x] Late note sent to the instructor
+- [x] Confirmation noted (founder-confirmed; see closing Log entry)
 
 ## Notes
 
@@ -74,3 +74,14 @@ the grader's machine?) and **Architecture Diagram /1.0** (does the Mermaid actua
 validates as well-formed JSON (8 spawns). Architecture diagram rendered via
 `@mermaid-js/mermaid-cli` (exit 0, valid SVG/PNG) — confirmed it renders, not assumed.
 Working tree clean; `main` in sync with `origin/main`.
+
+**29 Jul 2026 — SUBMITTED. Ticket closed.** Founder confirmed the submission went in
+(a day past deadline, with the late note). The delivered package: the four-agent gated
+pipeline, its recorded live run, and the two landed artifacts — `DT_Weapons.csv` and
+`arena_manifest.json` — all of which remain **live project data**, not demo output:
+BP13 step 6 imports them, BP03 reads the weapon table, BP07 executes the manifest.
+
+Carried forward into the project (not the course): the schema split the verifier forced
+(`FireMode` / `DamageDelivery`) is now law in `data-and-assets.md`; the three defects the
+crew caught are recorded in BP13's Log; and `run_crew.py` moves to `Tools/data-crew/`
+under BP14. **Course work ends here — the rest is Breachpoint.**
