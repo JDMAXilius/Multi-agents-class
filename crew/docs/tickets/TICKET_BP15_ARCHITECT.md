@@ -37,10 +37,28 @@ path; if BP14 has not run, step 4 carries a minimal path of its own and says so 
    §9's owner-path map). Scan `Source/Breachpoint/` and classify each unit **BUILT / STUB /
    MISSING** (STUB = header exists with no `.cpp` or an empty body). Emit
    `Tools/architect/state/perception.json`.
-   *Self-check that must pass:* the parse yields **44** units and the per-folder counts match
-   §3's printed numbers (Core 2 · Input 2 · AbilitySystem 11 · Character 2 · Weapons 3 ·
-   Match 4 · AI 6 · Online 3 · UI 4 · Telemetry 2 · Data 1 · Tests 3). A mismatch exits nonzero
-   — the doc and the scanner disagree, and that is a finding, not a rounding error.
+   *Self-check that must pass:* the per-folder counts match §3's printed numbers
+   (Core 2 · Input 2 · AbilitySystem 11 · Character 2 · Weapons 3 · Match 4 · AI 6 ·
+   Online 3 · UI 4 · Telemetry 2 · Data 1 · Tests 3) — these sum to **43** — plus the one
+   Phase-2 reserved unit (`BRGameLiftLifecycle`, §3.8) for the **44** of §4's budget.
+   A mismatch exits nonzero — the doc and the scanner disagree, and that is a finding, not a
+   rounding error.
+
+   > **Corrected 31 Jul 2026.** This self-check previously demanded 44 units *and* per-folder
+   > counts that sum to 43, without saying where the 44th came from — it could not pass as
+   > written. §3's composition table now states it. Two exclusions the parser must handle,
+   > both real C++ under `Source/` that the per-folder counts do not cover:
+   > - **The six generic GE classes** (`GE_Damage`, `GE_Regen`, `GE_Cooldown`, `GE_InitStats`,
+   >   `GE_RecentDamage`, `GE_Death`) in `AbilitySystem/Effects/`. Counting files on disk
+   >   finds 17 in `AbilitySystem/` against an expected 11. They are a named library under
+   >   R18, not numbered units — exclude them and say so in the run log.
+   > - **`BRGameLiftLifecycle`** is expected MISSING for the entire slice. Its GDD-tier term
+   >   must rank it last: a perpetually-MISSING unit that scored high would be selected to
+   >   build, which inverts the ledger's intent.
+   >
+   > Also fixed: §3's ASCII tree printed `AI/ (4)`, stale from v1 — §3.7 lists six units and
+   > says so (*"v2: was 4 units — the GOAP layer adds `BRBotBrain` + `BRBotFacts`"*). A parser
+   > reading the tree and a parser reading the section headers would have disagreed by two.
    Owner: **builder**. Contracts: `data-and-assets.md`.
 2. **Utility scoring — deterministic, zero API calls.** `priority_score(unit)` over four printed
    terms: **dependency depth** (ticket DAG BP00–BP14 + declared include edges), **blocker count**
@@ -83,8 +101,10 @@ path; if BP14 has not run, step 4 carries a minimal path of its own and says so 
 
 ## Done when
 
-- [ ] `python3 Tools/architect/architect.py --scan` reproduces 44 units and every per-folder
-      count from §3; exits nonzero on any mismatch
+- [ ] `python3 Tools/architect/architect.py --scan` reproduces every per-folder count from §3
+      (43 in-slice units) plus the one Phase-2 reserved unit = 44, matching §4's composition
+      table; exits nonzero on any mismatch. The six generic GE classes and
+      `BRGameLiftLifecycle` are excluded/expected-MISSING per §4, and the run log says so
 - [ ] Ranked table prints all four score terms; the same input produces the same order twice
       (run twice, diff is empty)
 - [ ] Steps 1–2 make **zero API calls**, proven by the run log
@@ -114,3 +134,43 @@ path; if BP14 has not run, step 4 carries a minimal path of its own and says so 
 ## Log
 
 (append findings here, dated, newest last — this is what the next session reads)
+
+**31 Jul 2026 — step 1's self-check could not pass as written. Fixed before claim.**
+
+Found while reading the board, not while running it — no engine needed, and it would have
+red-lighted this ticket's first step.
+
+*Defect 1 — the self-check contradicted itself.* It demanded the parse yield **44** units
+*and* that per-folder counts match §3's printed numbers. Those printed numbers
+(2+2+11+2+3+4+6+3+4+2+1+3) sum to **43**. Nothing said where the 44th came from, so any
+faithful implementation exits nonzero on its own acceptance criterion.
+
+*Resolution:* 44 is correct as a **budget** — §4 reaches it as 42 after v2 consolidation plus
+`BRBotBrain` + `BRBotFacts`, and the 44th is §3.8's *"reserved, Phase 2"* `BRGameLiftLifecycle`.
+The number stays (it appears in §4, `README.md`, and `CLASS-07-AUTONOMOUS-AGENCY.md`); the
+*composition* is now printed in §4 as a table, and step 1 cites it. Changing 44→43 would have
+been the smaller edit and the wrong one — it would desync three other documents.
+
+*Defect 2 — §3's ASCII tree was stale.* It printed `AI/ (4)` while §3.7's header printed 6 and
+its body listed six units, with a parenthetical stating the change (*"v2: was 4 units — the
+GOAP layer adds `BRBotBrain` + `BRBotFacts`"*). The tree was never updated. A parser reading
+the tree and one reading the section headers disagree by two — and §3's tree is the more
+obvious thing to parse. Fixed to `(6)`.
+
+*Defect 3 — two unit-manifest ambiguities that would fail the per-folder assertion.* Both are
+real C++ under `Source/` that §3's counts exclude:
+- The **six generic GE classes** live in `AbilitySystem/Effects/` under R18, but §3.3's count
+  of 11 covers only its file table. A scanner counting files on disk finds **17** in
+  `AbilitySystem/` against an expected 11. They are a named library, not numbered units.
+- **`BRGameLiftLifecycle`** is expected MISSING for the whole slice. It must carry Phase-2
+  GDD tier so the score ranks it last — otherwise a permanently-MISSING unit scores high on
+  the "current state" term and gets *selected to build*, which inverts the ledger.
+
+Both are now stated in §4 and in step 1, and the run log must record the exclusions rather
+than silently applying them (`game-lead`: a silent cap reads as "covered everything").
+
+*Not changed, flagged for the builder:* §3's counts are the manifest per this ticket's own
+out-of-scope line (*"ARCHITECTURE §3 is our manifest — parse it, don't infer it"*). Whether
+the six GE classes should eventually become numbered units is a founder call, not a scanner
+detail — if BP02 step 4 hits the `UGameplayEffectComponent` problem and files its
+`contract_gap` against R18, that call gets made there, and this count moves with it.

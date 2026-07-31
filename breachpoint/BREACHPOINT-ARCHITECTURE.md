@@ -98,7 +98,7 @@ Source/Breachpoint/
 ├── Character/     (2)   builder → anim-builder
 ├── Weapons/       (3)   sim-builder
 ├── Match/         (4)   netcode-builder (authority) + builder (flow)
-├── AI/            (4)   ai-builder
+├── AI/            (6)   ai-builder
 ├── Online/        (3)   services-builder
 ├── UI/            (4)   ui-builder
 ├── Telemetry/     (2)   ai-builder (Spotter) + builder (collection)
@@ -316,6 +316,31 @@ consolidation took it to 42 — five merged/cut, two added for input, one for
 sprint — and the GOAP goal layer then added `BRBotBrain` + `BRBotFacts`,
 both headless-testable. Same total, different shape: fewer glue classes,
 more provable ones.)
+
+**How the 44 composes** *(added 31 Jul 2026 — §3's per-folder headers sum to
+43, not 44, and a scanner that does not know why exits nonzero; BP15 step 1
+parses these numbers, so the composition is stated rather than inferred):*
+
+| | Count |
+|---|---|
+| §3.1–§3.12 per-folder headers (Core 2 · Input 2 · AbilitySystem 11 · Character 2 · Weapons 3 · Match 4 · AI 6 · Online 3 · UI 4 · Telemetry 2 · Data 1 · Tests 3) | **43** |
+| `BRGameLiftLifecycle` — §3.8's *"reserved, Phase 2"* unit, inside the budget but never built in the slice | **1** |
+| **Total budget** | **44** |
+
+Two exclusions a manifest parser must handle explicitly, because both are
+real C++ under `Source/` that the per-folder counts do **not** include:
+
+1. **The six generic GE classes** (`GE_Damage`, `GE_Regen`, `GE_Cooldown`,
+   `GE_InitStats`, `GE_RecentDamage`, `GE_Death`) live in
+   `Source/Breachpoint/AbilitySystem/Effects/` as C++ `UGameplayEffect`
+   subclasses under R18 — but §3.3's count of **11** covers only its file
+   table, not the effect library beneath it. A scanner counting files on
+   disk finds 17 in `AbilitySystem/`; the expected count is 11. They are a
+   named library, not numbered units.
+2. **`BRGameLiftLifecycle`** is expected MISSING for the whole slice. It is
+   Phase-2 tier, so BP15's GDD-tier score term must rank it last — a
+   perpetually-MISSING unit that scores high would be picked to build, which
+   is the opposite of what the ledger intends.
 
 ---
 
