@@ -43,7 +43,9 @@ Breachpoint/
     │                         CLAUDE.md 3/4 + ARCHITECTURE §3.9, its patterns are the
     │                         ue5-ui-architecture skill, and its grep gates are enforced from
     │                         testing.md. Cut one only if that split starts costing packets.)
-    └── tickets/           ← TICKET_BP00–BP14: the full board; BP01 is the first code pickup.
+    └── tickets/           ← TICKET_BP00–BP15: the full board; BP01 is the first code pickup.
+                              BP15 is the Architect — deterministic perception + scoring in
+                              front of the gates; an LLM never chooses the unit.
                               BP13 (the data crew) has RUN — table + manifest landed and
                               verifier-proven; BP08 recut for the three-layer bot brain
                               (BREACHPOINT-AI-BOTS.md); BP14 is terminal-only (needs UE)

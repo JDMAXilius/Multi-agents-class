@@ -45,8 +45,10 @@ ships from.
 [#2](assignments/02-gdd-final-draft/), and [#3](assignments/03-agent-crew/) are all
 submitted. **From here this repo is a Breachpoint project, not a course project** — the
 crew, the board, and the docs serve the build. The board is
-[`crew/docs/tickets/`](crew/docs/tickets/) (BP00–BP14); `assignments/` is a record, not a
-workstream.
+[`crew/docs/tickets/`](crew/docs/tickets/) (BP00–BP15); `assignments/` is a record, not a
+workstream. **Exception:** Assignment #5 (goal-oriented coding agent, due 6 Aug) is unstarted
+and is served by BP15 below — the course deliverable and the project's next capability are the
+same artifact.
 
 **M0 — pre-production complete.** ✅
 The data crew has **run**: `DT_Weapons.csv` and `arena_manifest.json` are authored, reviewed,
@@ -59,7 +61,15 @@ Next: create the game repo, copy `crew/` contents to its root, then in a Claude 
 /tickets TICKET_BP01_SKELETON_INPUT   # the first code pickup
 /tickets TICKET_BP13_DATA_CREW        # step 6 only: import the landed data
 /tickets TICKET_BP14_ENGINE_BRIDGE    # wire the crew to the real ladder
+/tickets TICKET_BP15_ARCHITECT        # the layer that scores what to build next
 ```
+
+[**BP15 — the Architect**](crew/docs/tickets/TICKET_BP15_ARCHITECT.md) is the crew's missing
+planning layer, cut from [Class 07](docs/course/CLASS-07-AUTONOMOUS-AGENCY.md): deterministic
+perception (ARCHITECTURE §3's 44 class-units vs. what's on disk) and utility scoring in front of
+the existing gates, so the crew can be pointed at the architecture instead of at a ticket. **An
+LLM never chooses the unit** — scoring is auditable Python, and the architect never writes game
+code. Its steps 1–3 need no engine; it also satisfies ELVTR Assignment #5.
 
 The milestone ladder from there: M1 Foundry → **M2 Golden Triangle (fun gate)** → M3
 Playground → **M4 First Match (go/no-go)** → M5 Two Boxes → **M6 Steam Demo Live**.
