@@ -18,13 +18,31 @@ value into a Blueprint graph or a C++ literal, stop — it belongs in a DataTabl
 Derived artifacts (cooked builds, generated headers, compiled shaders) are never hand-edited —
 fix the source and regenerate.
 
-## The Blueprint-vs-C++ line
+## The Blueprint-vs-C++ line (R18 — stricter than "thin")
 
-Blueprints are THIN by law: glue, cosmetic reaction, layout, designer iteration. Not because
-BP is bad — because **binary assets are invisible to review**: no diff, no merge, no
-grep-audit, and the crew's critic cannot read them. Everything that needs an audit trail
-(logic, numbers, replication) lives in text. A gameplay branch discovered inside a widget or
-actor graph is a finding with a named home to move it to.
+**There are no Blueprint classes.** Not thin ones, not "just glue." Actors, components,
+abilities, effects, controllers, game modes, cues — all C++, spawned by class reference
+from data. An engine asset exists ONLY where UE 5.8 offers no C++ authoring path, and the
+complete list of those is Tier 4 in **`breachpoint/BREACHPOINT-AUTHORING-MATRIX.md`**:
+AnimBlueprint graphs · materials/instances · Niagara · MetaSounds · UMG layout (WBP) ·
+`ST_Bot` · EQS query assets · sourced art. **Nothing else gets an asset.**
+
+Not because BP is bad — because **binary assets are invisible to review**: no diff, no
+merge, no grep-audit, and the crew's critic cannot read them. Adding a Tier-4 asset means
+adding a part of the game only a human staring at the editor can review.
+
+What survives in those assets is a wiring diagram or a picture, never a decision:
+- an AnimGraph carrying a gameplay number or branch → violation (numbers are `CT_Combat`;
+  notifies announce a *moment* per R17, the sim decides the consequence)
+- a WBP carrying anything but layout/anchors/animation → violation (state and binding live
+  in the C++ parent + ViewModel)
+- a GameplayEffect authored as an asset → violation (the six generic GEs are C++ classes;
+  SetByCaller + dynamic tags cover the game)
+- a GameplayCue authored as anything but a C++ handler class → violation (the asset is only
+  the VFX/SFX the C++ cue plays)
+
+**The standing question for any new asset:** *which tier, and if Tier 4, why can't C++
+express it?* No crisp answer ⇒ no asset.
 
 ## Binary-asset discipline (the merge-conflict law)
 
