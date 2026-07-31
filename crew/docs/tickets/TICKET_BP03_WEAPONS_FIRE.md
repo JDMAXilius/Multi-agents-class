@@ -28,7 +28,9 @@ this ticket is not done until the forged-fire cheats are written and rejected.
    prediction window → batched RPC → **server validation** (rate ≤ RPM+tolerance, ammo > 0,
    direction within cone of server muzzle, range ≤ row max) → `GE_Damage` w/ row damage +
    `Damage.Kinetic[.Headshot]` tags. Predicted cues for muzzle/tracer (`OnActive`), confirmed
-   impact cues (`Executed`). `BRGA_WeaponUtility` (reload + swap, cancel-clean).
+   impact cues (`Executed`). `BRGA_WeaponUtility` (reload + swap, cancel-clean) — both commit
+   on their montage notify events, `Event.Weapon.ReloadCommit` / `Event.Weapon.SwapCommit`
+   (ruling R17, declared by BP01); a cancel before the commit event costs and refunds nothing.
    Owner: **sim-builder** (ability flow) + **netcode-builder** (validation + replication).
 3. **Write the cheats** (test client hooks or spec-level): fire faster than RPM, fire with 0
    ammo, fire 180° off-muzzle, fire beyond range ×2. Acceptance = every one REJECTED

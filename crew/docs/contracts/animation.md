@@ -53,16 +53,16 @@ The boundary in one line: **animation requests and presents; it never decides ga
   Reload cancel before the commit notify refunds nothing and costs nothing — cancel-clean by
   construction.
 
-> ⚠️ **OPEN GAP — the notify event tags are not named yet (founder ruling required).**
-> This contract previously wrote these events as `GameplayEvent.Combat.*`. **That namespace
-> does not exist:** `ARCHITECTURE §3.1` — "the one authoritative list", landed by BP01 step 2 —
-> defines `Event.*` with only `Death` and `Kill`, and no melee-window or reload-commit tag
-> under any namespace. BP03 (reload commit) and BP05 (melee window) both need them, and both
-> land after BP01, so neither can add them without writing into `Core/` — which is builder's
-> owner path, not sim-builder's.
->
-> **Do not invent them in a packet.** Naming them is a change to the authoritative tag header
-> and belongs to the founder/lead. Until that ruling lands, a packet needing one of these
-> events files a `contract_gap` and stops (CLAUDE.md law 5). The ruling should decide: the
-> namespace (extend `Event.*` vs. a new one), the exact tag names, and whether BP01's
-> Done-when grows to include them.
+**The seam's tags (ruling R17, closed 31 Jul 2026 — do not re-litigate):**
+
+| Tag | The moment it announces |
+|---|---|
+| `Event.Melee.WindowBegin` / `Event.Melee.WindowEnd` | melee trace window opens / closes |
+| `Event.Weapon.ReloadCommit` | the point ammo actually moves |
+| `Event.Weapon.SwapCommit` | the point the active slot flips |
+
+All four are declared in `BRGameplayTags` by **BP01 step 2** — `Core/` closes with that
+ticket, so a packet needing a *new* seam tag files a `contract_gap` rather than adding one.
+Extension rule for that follow-up: `Event.<Verb>.<Moment>`, where the moment is what just
+happened in the animation, never what should result from it. (This contract previously wrote
+these as `GameplayEvent.Combat.*` — a namespace that existed in no header; R17 rejected it.)

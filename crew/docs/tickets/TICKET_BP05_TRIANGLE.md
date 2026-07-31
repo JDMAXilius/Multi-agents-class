@@ -51,8 +51,8 @@ the ONE damage pipeline (`GE_Damage` + tags) — the engine damage API stays ban
 - Crew: sim-builder leads · netcode-builder consults · verifier proves · critic refutes
 - Contracts: `gas-purity.md` (law 3 — radial damage is OUR overlap query; the engine damage
   API stays banned) · `netcode.md` (server-authoritative projectile spawn, dormancy at rest) ·
-  `animation.md` (melee notify window — **see its OPEN GAP: the notify event tags are
-  unnamed; file a `contract_gap` rather than inventing one**) · `testing.md` (rung 4 in threes)
+  `animation.md` (melee notify window raises `Event.Melee.WindowBegin`/`WindowEnd` — ruling
+  R17; declared by BP01, consumed here) · `testing.md` (rung 4 in threes)
 - Binary files owned: grenade/melee GA assets, `Content/VFX/` grenade set
 - Out of scope: Rocket (BP09), grapple (BP06), any UI beyond debug HUD
 

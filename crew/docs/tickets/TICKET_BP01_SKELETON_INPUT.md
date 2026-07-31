@@ -27,13 +27,12 @@ Input → InputTag → ASC, no per-ability binding code, ever.
    authoritative list; includes `InputTag.*` and `SetByCaller.*`) and `BRCore.h/.cpp` (log
    channels + collision aliases; add matching channels to `DefaultEngine.ini`).
    Owner: **builder**.
-   > ⚠️ **Known gap, needs a founder ruling before BP03/BP05 — do not improvise it here.**
-   > §3.1 defines no tag for the montage→gameplay notify seam (melee trace window, reload
-   > commit), which BP05 and BP03 both need. `contracts/animation.md` documents the gap.
-   > `Core/` is builder's owner path and closes with this ticket, so a later packet cannot add
-   > them without a `contract_gap` and a stop. If the ruling lands before this ticket is
-   > claimed, add the tags here and note it in the Log; if not, expect the stop and cut a
-   > follow-up packet for `Core/`.
+   > **Includes the montage→gameplay notify seam (ruling R17) — these are needed by BP03 and
+   > BP05, and `Core/` closes with this ticket, so they land HERE or those packets stop:**
+   > `Event.Melee.WindowBegin` · `Event.Melee.WindowEnd` · `Event.Weapon.ReloadCommit` ·
+   > `Event.Weapon.SwapCommit`. They are declared and nothing consumes them yet — that is
+   > correct; an unconsumed native tag is free, and a missing one is a `contract_gap` after
+   > this folder is closed. Extension rule for later seams: `Event.<Verb>.<Moment>`.
 3. `Input/`: `BRInputConfig` (UDataAsset; **soft** `TSoftObjectPtr<UInputAction>` refs +
    InputTag pairs, native and ability lists) and `BRInputComponent` (`BindNativeAction`,
    `BindAbilityActions` templates → two handlers carrying the tag). Content: `IMC_Default`,
@@ -51,6 +50,10 @@ Input → InputTag → ASC, no per-ability binding code, ever.
 
 - [ ] All three targets compile clean from scratch
 - [ ] Folder skeleton matches ARCHITECTURE §3 exactly (crew owner_paths depend on it)
+- [ ] `BRGameplayTags` declares every tag in ARCHITECTURE §3.1 **including the four R17 notify
+      tags** (`Event.Melee.WindowBegin/WindowEnd`, `Event.Weapon.ReloadCommit/SwapCommit`) —
+      grep the header against §3.1 and paste the diff (expected: empty) into the Log. Missing
+      one is not caught by the compiler; it is caught by BP03 or BP05 stopping.
 - [ ] Native input flows IMC → BRInputComponent → tags → controller stubs (log-proven)
 - [ ] Zero hard asset references in any new C++ (grep-audited: no `ConstructorHelpers`,
       no hard `UPROPERTY` asset pointers)

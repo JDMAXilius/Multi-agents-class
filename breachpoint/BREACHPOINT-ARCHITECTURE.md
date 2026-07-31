@@ -103,7 +103,7 @@ Source/Breachpoint/
 
 | File | Job |
 |---|---|
-| `BRGameplayTags.h/.cpp` | ALL native tags (`UE_DEFINE_GAMEPLAY_TAG`): `Ability.*`, `InputTag.*` (Move, Look, Jump, Crouch, Sprint, Fire, Reload, Swap, Grenade, Melee, Grapple), `State.*` (Shields.Broken, Combat.RecentDamage, Movement.Sprinting, Dead), `GameplayCue.*`, `Damage.*` (Kinetic, Explosive, Melee, Headshot, Rear), `SetByCaller.*` (BaseDamage, RegenRate, CooldownDuration), `Event.*` (Death, Kill). One authoritative header. |
+| `BRGameplayTags.h/.cpp` | ALL native tags (`UE_DEFINE_GAMEPLAY_TAG`): `Ability.*`, `InputTag.*` (Move, Look, Jump, Crouch, Sprint, Fire, Reload, Swap, Grenade, Melee, Grapple), `State.*` (Shields.Broken, Combat.RecentDamage, Movement.Sprinting, Dead), `GameplayCue.*`, `Damage.*` (Kinetic, Explosive, Melee, Headshot, Rear), `SetByCaller.*` (BaseDamage, RegenRate, CooldownDuration), `Event.*` (Death, Kill, **Melee.WindowBegin, Melee.WindowEnd, Weapon.ReloadCommit, Weapon.SwapCommit** — the montage→gameplay notify seam, ruling R17; `Event.<Verb>.<Moment>` is the extension rule). One authoritative header. |
 | `BRCore.h/.cpp` | Log channels (LogBRCombat/Net/AI/Online/UI) + collision channel aliases matching DefaultEngine.ini. *(v2: merged from two files — same audience, one include.)* |
 
 ### 3.2 `Input/` — 2 *(v2: new — the owned input layer)*

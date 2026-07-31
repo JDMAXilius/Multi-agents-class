@@ -63,6 +63,41 @@ The lead appends; nobody else writes here. A doubt this ledger closes is closed.
   session); intelligence lives inside the boxes. A proposal to add an LLM manager reargues
   a closed ruling.
 
+## Tags & engine seams (31 Jul 2026, from the contract audit)
+
+- **R17. Montage-raised gameplay events extend `Event.*`; there is no `GameplayEvent.*`.**
+  The authoritative native-tag header (`ARCHITECTURE §3.1`, landed by BP01) already owns
+  `Event.*` for sim-facing gameplay events (`Event.Death`, `Event.Kill`). The
+  montage→gameplay notify seam joins it rather than opening a parallel namespace — a second
+  top-level namespace meaning the same thing is how a header stops being authoritative.
+  `GameplayEvent.Combat.*`, which `animation.md` previously used, is **rejected**: it existed
+  in no header, no ticket, and no other document.
+
+  **The four tags, landed by BP01 step 2:**
+
+  | Tag | The moment it announces | Consumed by |
+  |---|---|---|
+  | `Event.Melee.WindowBegin` | melee trace window opens | `BRGA_Melee` (BP05) |
+  | `Event.Melee.WindowEnd` | melee trace window closes | `BRGA_Melee` (BP05) |
+  | `Event.Weapon.ReloadCommit` | the point ammo actually moves | `BRGA_WeaponUtility` (BP03) |
+  | `Event.Weapon.SwapCommit` | the point the active slot flips | `BRGA_WeaponUtility` (BP03) |
+
+  **Extension rule (so the next one needs no ruling):** montage-raised events are
+  `Event.<Verb>.<Moment>` — the verb is the ability's noun (`Melee`, `Weapon`, `Grapple`),
+  the moment is what just happened in the animation, never what should result from it.
+  A new tag under this rule is a normal `Core/` change, not a re-opening of R17.
+
+  **The boundary this preserves (`animation.md` law 4):** a notify announces a *moment*; the
+  sim decides the *consequence*, on the authority. A notify never carries a number, a branch,
+  or a damage call. `Event.Weapon.ReloadCommit` says "the hands reached the magazine" — it
+  does not say how many rounds, which is a `DT_Weapons` row, and it does not move them, which
+  is the ability's job on the server.
+
+  *Why four and not two:* BP03 builds reload **and** swap in one ability (`BRGA_WeaponUtility`)
+  and `animation.md` law 3 authors both timings to the sourced pack, so both need a commit
+  moment. An unused native tag costs nothing; a missing one costs a `contract_gap` and a stop
+  after `Core/` has closed — the asymmetry decides it.
+
 ## Online services & Phase 2 (from the GameLift plan, 29 Jul 2026)
 
 - **R15. Identity is Steam-derived; there is no first-party account creation.** Phase-2 auth
