@@ -61,3 +61,19 @@ BP01 step 1 (project + targets exist) gates this ticket's step 1.
 ## Log
 
 (append findings here, dated, newest last)
+
+**31 Jul 2026 — Kickoff condition 1 confirmed necessary, and currently UNMET.**
+
+The Kickoff's requirement that `ENGINE_ROOT` point at a *source-built* UE 5.8 was verified
+against this machine rather than taken on faith. It holds: the launcher 5.8.1 at
+`D:\Program Files\UE_5.8` ships precompiled `UnrealEditor` and `UnrealGame` targets only —
+no `UnrealServer` under `Engine/Intermediate/Build/Win64/x64/`, no `UnrealServer.exe`.
+Three targets cannot be built from it. Full evidence in BP01's Log.
+
+Machine inventory at time of writing — no source-built 5.8 existed:
+`C:\UnrealEngine` is a source build but **5.5.1**; every other root (`D:\UE_5.5`,
+`C:\Program Files\Epic Games\UE_5.0`–`5.6`, `D:\Program Files\UE_5.4`) is launcher-installed.
+Source build of `5.8.1-release` started 31 Jul 2026 → `D:\UnrealEngine_5.8`.
+
+This ticket stays BLOCKED on that build plus BP01 step 1. Rung 1 is not runnable before then,
+and per the honesty law it is reported BLOCKED with this reason, never skipped.
