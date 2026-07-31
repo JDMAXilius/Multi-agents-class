@@ -27,6 +27,13 @@ Input → InputTag → ASC, no per-ability binding code, ever.
    authoritative list; includes `InputTag.*` and `SetByCaller.*`) and `BRCore.h/.cpp` (log
    channels + collision aliases; add matching channels to `DefaultEngine.ini`).
    Owner: **builder**.
+   > ⚠️ **Known gap, needs a founder ruling before BP03/BP05 — do not improvise it here.**
+   > §3.1 defines no tag for the montage→gameplay notify seam (melee trace window, reload
+   > commit), which BP05 and BP03 both need. `contracts/animation.md` documents the gap.
+   > `Core/` is builder's owner path and closes with this ticket, so a later packet cannot add
+   > them without a `contract_gap` and a stop. If the ruling lands before this ticket is
+   > claimed, add the tags here and note it in the Log; if not, expect the stop and cut a
+   > follow-up packet for `Core/`.
 3. `Input/`: `BRInputConfig` (UDataAsset; **soft** `TSoftObjectPtr<UInputAction>` refs +
    InputTag pairs, native and ability lists) and `BRInputComponent` (`BindNativeAction`,
    `BindAbilityActions` templates → two handlers carrying the tag). Content: `IMC_Default`,

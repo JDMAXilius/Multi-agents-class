@@ -46,6 +46,7 @@ one replicated end-time (clients render the clock locally), scored respawns.
 ## Notes
 
 - Crew: netcode-builder leads · builder assists · verifier proves · critic refutes
+- Contracts: `netcode.md` (authority gate, RepNotify-as-cosmetic, one replicated clock float) · `gas-purity.md` (match meta is a NAMED exception — server-only, never read by combat sim) · `testing.md` (rungs 2 + 4)
 - Binary files owned: none (BR_Arena01 blockout belongs to the arena ticket)
 - Out of scope: bots (own ticket), teams UI, medals, Spotter
 

@@ -67,6 +67,7 @@ traces. Legibility outranks win-rate. MassAI and Learning Agents stay rejected.
 
 - Crew: ai-builder owns · sim-builder purity review · tuning-curator curates ·
   verifier proves+soaks · critic refutes
+- Contracts: `gas-purity.md` (bots press InputTags on their own ASC — no privileged path) · `data-and-assets.md` (`DT_BotAmbitions`/`DT_BotTuning`, zero literals) · `testing.md` (determinism suites + soak) · plus `breachpoint/BREACHPOINT-AI-BOTS.md` and rulings R8–R12, already binding above
 - Binary files this ticket OWNS (lock before editing): `Content/AI/ST_Bot.uasset`,
   EQS assets under `Content/AI/`
 - Out of scope: full GOAP A* planning (rejected, R10) · a second BehaviorTree asset (R9) ·

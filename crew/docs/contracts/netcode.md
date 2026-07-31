@@ -1,6 +1,7 @@
 # Contract — Netcode (server authority is law)
 
-Status: v1 template · Owner: netcode-builder · Every replicated surface is bound by this file.
+Status: v1 (filled for BREACHPOINT) · Owner: netcode-builder · Every replicated surface is
+bound by this file.
 The trust model in one line: **clients send intent, the server simulates truth, clients render
 results.** There is no second line of defense.
 
@@ -18,8 +19,9 @@ results.** There is no second line of defense.
    removing every OnRep body changed a gameplay outcome, the design is wrong.
 4. **Minimum replication.** Tightest `DOREPLIFETIME_CONDITION` that works; `COND_OwnerOnly`
    for private state (loadout internals, cooldown timers others don't need); dormancy for
-   rarely-changing actors; relevancy/NetCullDistance tuned per class. Track the per-class
-   bandwidth budget in this file as classes are added.
+   rarely-changing actors; relevancy/NetCullDistance tuned per class. **The per-class
+   bandwidth numbers live in `docs/BREACHPOINT-QUALITY-BARS.md` §2** — one home, which the
+   verifier reads for rung 5. This contract owns the laws; that doc owns the thresholds.
 5. **Hidden state stays hidden.** Never replicate to a client what its player must not know
    (enemy positions through walls, other players' hands/inventory, upcoming spawns) — wall-hack
    prevention happens at replication, not at rendering.
@@ -49,9 +51,13 @@ results.** There is no second line of defense.
   ammo > 0, cone-from-server-muzzle, range ≤ table max) — Lyra parity; server rewind is a
   named Phase-2 packet. Radar/wallhack class: hidden information is culled at replication
   (relevancy/conditions), never at render.
-- Tick + bandwidth budgets: server tick target **30 Hz** · per-connection budget **20 KB/s**
-  (8 fighters + projectiles; ammo is `COND_OwnerOnly`, killfeed is a ring buffer, clock is
-  one replicated float). Track per-class numbers here as classes land.
+- Tick + bandwidth budgets: **the numbers are in `docs/BREACHPOINT-QUALITY-BARS.md` §2, not
+  here** — currently 30 Hz server tick and ≤ 20 KB/s sustained per connection with a
+  ≤ 35 KB/s burst allowance (rocket volley). Quoting a flat sustained figure without the
+  burst allowance is how a legal volley gets failed; read the table, don't recall it. The
+  design choices that keep the budget reachable are this contract's business: ammo is
+  `COND_OwnerOnly`, killfeed is a ring buffer, the match clock is one replicated float, and
+  projectiles go dormant at rest.
 - Session/matchmaking boundary: **Steam OSS is trusted for identity and session membership
   only** (`BRSessionsSubsystem`). ALL gameplay state is validated in-game; a session token
   never grants gameplay authority; the Spotter API key lives host-side only and its output

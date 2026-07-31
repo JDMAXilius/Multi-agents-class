@@ -1,8 +1,17 @@
 # Contract — Animation (feel is measured; threads are law)
 
-Status: v1 · Owner: anim-builder · Binds every packet touching `Source/Breachpoint/Character (+ anim assets)`, the AL
-Framework, AnimGraph nodes, montages, or motion warping.
+Status: v1 (filled for BREACHPOINT) · Owner: anim-builder · Binds every packet touching the
+character's AnimBlueprints, AnimGraph nodes, montages, notify seams, or motion warping —
+i.e. `Content/Characters/` anim assets plus the anim-facing members of
+`Source/Breachpoint/Character/`.
 The boundary in one line: **animation requests and presents; it never decides gameplay.**
+
+> **Owner-path note (`Character/` is shared).** `ARCHITECTURE §9` assigns `Source/Breachpoint/
+> Character/` to **builder**; anim-builder joins at anim. So a packet that touches this folder
+> names ONE of them as its owner and the other as a consult — never both as writers. In BP07
+> step 3 the writer is **anim-builder** (ABPs + the C++ base's anim members); `BRCharacter`'s
+> non-anim surface stays builder's. If a packet needs both, it is two packets with a handoff
+> (game-lead skill, "decompose before dispatching").
 
 ## Laws
 
@@ -39,7 +48,21 @@ The boundary in one line: **animation requests and presents; it never decides ga
   the timing constraint for every ability (GDD risk register).
 - Grapple presentation: the pull is a **root-motion source through the CMC** — animation
   layers reaction poses on top; it never drives the movement itself.
-- Montage → gameplay seam: notify windows raise `GameplayEvent.Combat.*` (melee trace window,
-  reload commit point); hit confirmation is server-side in the damage GE execution
-  (see `netcode.md`). Reload cancel before the commit notify refunds nothing and costs
-  nothing — cancel-clean by construction.
+- Montage → gameplay seam: notify windows raise gameplay events (melee trace window, reload
+  commit point); hit confirmation is server-side in the damage GE execution (see `netcode.md`).
+  Reload cancel before the commit notify refunds nothing and costs nothing — cancel-clean by
+  construction.
+
+> ⚠️ **OPEN GAP — the notify event tags are not named yet (founder ruling required).**
+> This contract previously wrote these events as `GameplayEvent.Combat.*`. **That namespace
+> does not exist:** `ARCHITECTURE §3.1` — "the one authoritative list", landed by BP01 step 2 —
+> defines `Event.*` with only `Death` and `Kill`, and no melee-window or reload-commit tag
+> under any namespace. BP03 (reload commit) and BP05 (melee window) both need them, and both
+> land after BP01, so neither can add them without writing into `Core/` — which is builder's
+> owner path, not sim-builder's.
+>
+> **Do not invent them in a packet.** Naming them is a change to the authoritative tag header
+> and belongs to the founder/lead. Until that ruling lands, a packet needing one of these
+> events files a `contract_gap` and stops (CLAUDE.md law 5). The ruling should decide: the
+> namespace (extend `Event.*` vs. a new one), the exact tag names, and whether BP01's
+> Done-when grows to include them.

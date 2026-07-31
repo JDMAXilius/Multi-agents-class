@@ -1,6 +1,6 @@
 # Contract — Data & Assets (one source of truth per kind; text over binary)
 
-Status: v1 template · Rule of thumb: **a number tied to a gameplay noun is data (owned by a
+Status: v1 (filled for BREACHPOINT) · Rule of thumb: **a number tied to a gameplay noun is data (owned by a
 table); a rule that applies across nouns is logic (owned by C++).** If you are typing a damage
 value into a Blueprint graph or a C++ literal, stop — it belongs in a DataTable row.
 
@@ -38,9 +38,13 @@ actor graph is a finding with a named home to move it to.
 
 ## Repo hygiene fill-ins — BREACHPOINT (refilled 2026-07-29; supersedes the Slash Roller fill)
 
-- [x] **Perforce** is the binary authority: P4 checkout IS the lock; the typemap marks
-  `*.uasset *.umap` exclusive-checkout. (Any git mirror used for cloud/agent sessions tracks
-  binaries via Git LFS **with locks enabled** — same one-owner law, different mechanism.)
+- [x] **Git + Git LFS with locks enabled is the binary authority** — `git lfs lock` IS the
+  lock required by law 7, and `*.uasset *.umap` are LFS-tracked and lockable. This is the
+  mechanism that actually exists: the planning repo is git, and the game repo will be too.
+  *(If a Perforce server is ever stood up, P4 exclusive-checkout via the typemap replaces LFS
+  locks as the mechanism — the one-owner law is unchanged either way. Naming P4 as primary
+  before a server exists made law 7 unenforceable at BP07, the first `.umap`, which is
+  exactly when it first bites.)* **Decision deadline: before BP07 is claimed.**
 - [x] `Saved/`, `Intermediate/`, `DerivedDataCache/`, `Binaries/` ignored (P4 ignore +
   `.gitignore` kept in sync).
 - [x] Naming convention: **`BR` class prefix** (`ABRCharacter`, `UBRAttributeSet`,
@@ -53,10 +57,19 @@ actor graph is a finding with a named home to move it to.
 - [x] **Generic-effect law:** GameplayEffects are parameterized templates (SetByCaller +
   dynamic tags) — `GE_Damage`, `GE_Regen`, `GE_Cooldown`, `GE_InitStats`, `GE_RecentDamage`
   are the library; new content adds rows/parameters, not effect assets.
-- [x] DataTable source CSVs live at: **`Content/Data/*.csv`** with ALL row structs in the one
-  header **`Source/Breachpoint/Data/BRDataRows.h`** (`DT_Weapons`, `CT_Combat`,
-  `DT_BotTuning`, `DT_BotAmbitions`, `DT_MatchRules`, `DT_SpotterLines`) · reimport is
-  scripted via commandlet (`Tools/reimport-tables.ps1`), never manual.
+- [x] Table source CSVs live at **`Content/Data/*.csv`**; reimport is scripted via commandlet
+  (`Tools/reimport-tables.ps1`), never manual. **Two kinds, and the `DT_`/`CT_` prefix is the
+  tell — they do not import the same way:**
+  - **DataTables (`DT_`)** — `DT_Weapons`, `DT_BotTuning`, `DT_BotAmbitions`, `DT_MatchRules`,
+    `DT_SpotterLines`. Each needs a `USTRUCT` row type, and ALL of them live in the one header
+    `Source/Breachpoint/Data/BRDataRows.h`.
+  - **CurveTables (`CT_`)** — `CT_Combat`, the damage/movement coefficient table
+    (`BRDamageExecCalc` multipliers, sprint speed, radial falloff). A CurveTable imports as
+    **named curves and has no row struct** — do not author an `FBRCombatRow` for it, and do
+    not add it to `BRDataRows.h`. It is addressed by curve name + input value.
+
+  Getting this backwards fails at first import, not at review — the importer rejects the
+  asset type mismatch.
 - [x] **`FBRWeaponRow` carries two distinct enums** (schema split forced by the verifier in
   the 29 Jul 2026 data-crew run): `FireMode` = trigger cadence ({Automatic, SemiAuto});
   `DamageDelivery` = how the shot reaches the target ({Hitscan, Projectile}). Invariant,

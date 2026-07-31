@@ -35,6 +35,7 @@ guard every fix; the demo goes live; the capstone presents the game AND the stud
 - [ ] All pinned suites green on the live build; soak green overnight
 - [ ] Capstone presented; ticket archive complete (every Log closed)
 - Crew: everyone, under gold rules · TD owns publish + presentation
+- Contracts: `testing.md` (the FULL ladder on the PACKAGED build — editor ≠ packaged) · `netcode.md` (final REFUTER sweep across the replicated surface) · `data-and-assets.md` (balance lands as data diffs only, pins moved loudly)
 - Out of scope: ANY feature. The Phase-2 backlog is the parking lot.
 
 ## Log

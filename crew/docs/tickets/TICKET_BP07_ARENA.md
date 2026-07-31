@@ -40,6 +40,7 @@ manifest is the source of truth; the .umap is its projection. One owner per bina
 - [ ] Both ABPs live on the character; montage timings match pack (no retimed clips)
 - [ ] Reachability sweep green; screenshots in Log
 - Crew: arena-architect · builder (.umap owner) · anim-builder · verifier · critic
+- Contracts: `data-and-assets.md` (the manifest is a data artifact; one owner per binary — and read its LFS-lock fill-in, the mechanism decision lands here) · `animation.md` (step 3 ABPs; `Character/` owner-path note applies) · `testing.md` (rung 3 walk + screenshots)
 - Out of scope: art dressing (W4–5 pass), second arena (Phase 2)
 
 ## Log

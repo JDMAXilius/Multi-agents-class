@@ -32,6 +32,10 @@ Breachpoint/
     │                        invocation matrix (who wakes at which milestone)
     ├── DESIGN-RULINGS.md  ← the ledger reviews judge against (closed doubts stay closed)
     ├── contracts/         ← netcode, data-and-assets, testing, animation, online-services, gas-purity
+    │                        (D5 UI and D6 audio have no contract of their own: UI's law is
+    │                         CLAUDE.md 3/4 + ARCHITECTURE §3.9, its patterns are the
+    │                         ue5-ui-architecture skill, and its grep gates are enforced from
+    │                         testing.md. Cut one only if that split starts costing packets.)
     └── tickets/           ← TICKET_BP00–BP14: the full board; BP01 is the first code pickup.
                               BP13 (the data crew) has RUN — table + manifest landed and
                               verifier-proven; BP08 recut for the three-layer bot brain

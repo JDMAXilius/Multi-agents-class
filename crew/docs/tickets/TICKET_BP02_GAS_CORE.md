@@ -42,8 +42,10 @@ with 3. BP00 step 2 (combat spec) lands against this ticket's output.
    activation-blocked by RecentDamage — configured for shields at 60/s after 2.5 s),
    `GE_Cooldown` (SetByCaller.CooldownDuration), `GE_InitStats` (curve row),
    `GE_RecentDamage` (2.5 s tag), `GE_Death` (infinite `State.Dead`; ability base blocks
-   activation on it — the one death mechanism). `CT_Combat.csv` + `DT_MatchRules.csv` schemas into
-   `BRDataRows.h`. Owner: **sim-builder**. Contracts: `data-and-assets.md`, `gas-purity.md`.
+   activation on it — the one death mechanism). Tables: `DT_MatchRules` gets a row struct in
+   `BRDataRows.h`; **`CT_Combat` is a CurveTable — named curves, no row struct, not in
+   `BRDataRows.h`** (`data-and-assets.md`). Owner: **sim-builder**.
+   Contracts: `data-and-assets.md`, `gas-purity.md`.
 5. Verify + refute: rungs 1–2 (BP00's spec now runs against real code, red→green);
    **critic REFUTER** on the attribute pipeline: negative damage, damage while dead,
    regen-while-damaged race, double-death event. Owner: **verifier**, **critic**.

@@ -51,6 +51,7 @@ this ticket is not done until the forged-fire cheats are written and rejected.
 ## Notes
 
 - Crew: sim-builder + netcode-builder co-own · verifier proves · critic re-attacks
+- Contracts: `gas-purity.md` (abilities + the ONE damage GE) · `netcode.md` (server validation, `COND_OwnerOnly` ammo, the attack ships with the feature) · `data-and-assets.md` (`DT_Weapons` rows, soft refs) · `testing.md` (rungs 2 + 4)
 - Binary files owned: `Content/Weapons/*` (sourced meshes), `Content/Data/DT_Weapons.csv`
 - Out of scope: grenades, melee, grapple, Rocket row, pickup spawner placement in the map
 

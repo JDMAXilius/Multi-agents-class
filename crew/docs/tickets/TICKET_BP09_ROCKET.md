@@ -33,6 +33,7 @@ two-weapon trade moment. **This is also the first cut if W5 slips** — keep it 
 - [ ] Splash falloff spec-proven; countdown identical in threes
 - [ ] Detachable: reverting this ticket alone leaves a green build (proven once)
 - Crew: sim-builder · netcode-builder (review) · verifier · critic
+- Contracts: `gas-purity.md` (reuses `GE_Damage` + the grenade radial path) · `data-and-assets.md` (a row, not a system) · `netcode.md` (spawner countdown replication) · `testing.md` (rung 4 in threes)
 - Out of scope: Plasma Rifle (Phase 2), additional power weapons
 
 ## Log

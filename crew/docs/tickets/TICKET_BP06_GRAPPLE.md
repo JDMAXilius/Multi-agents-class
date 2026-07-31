@@ -50,6 +50,7 @@ pass and the emulation rung.
 ## Notes
 
 - Crew: netcode-builder owns · anim-builder feel pass · verifier proves · critic gates
+- Contracts: `netcode.md` (prediction reconciles; rejection leaves zero state — the binding law here) · `gas-purity.md` (movement is a NAMED exception: GAS decides, CMC moves) · `animation.md` (step 3 feel pass, proxy honesty) · `testing.md` (rung 4 + emulation)
 - Binary files owned: grapple GA/cue assets
 - Out of scope: two-body enemy pull (Phase 2), grapple-swing (never — not Halo)
 

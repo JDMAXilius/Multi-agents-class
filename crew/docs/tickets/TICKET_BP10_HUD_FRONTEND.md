@@ -46,6 +46,7 @@ gamepad routing, join-in-progress states) — load it before step 1.
 - [ ] Menu → match → death → rematch fully gamepad-navigable
 - [ ] Join-in-progress shows honest states, never stale/garbage frames
 - Crew: ui-builder owns · builder (audio) · verifier · critic
+- Contracts: `data-and-assets.md` (BP is THIN — layout only, no gameplay branch in a widget graph; soft widget-class refs) · `netcode.md` (law 7 join-in-progress: the UI is a consumer of late-arriving state) · `testing.md` (rung-2 grep gates: no `NativeTick`, no property bindings) · reference skill: `ue5-ui-architecture`
 - Out of scope: settings screens, radar (Phase 2), cosmetics
 
 ## Log

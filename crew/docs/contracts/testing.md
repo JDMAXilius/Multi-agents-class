@@ -1,7 +1,7 @@
 # Contract — Testing (the validation ladder)
 
-Status: v1 template · Runner: verifier (read-only) · A rung skipped is a lie waiting to
-surface. Every packet names which rungs apply; netcode packets always include rung 4.
+Status: v1 (filled for BREACHPOINT) · Runner: verifier (read-only) · A rung skipped is a lie
+waiting to surface. Every packet names which rungs apply; netcode packets always include rung 4.
 
 ## The ladder
 
@@ -37,8 +37,29 @@ RunUAT RunUnreal -project=<uproject> -platform=Win64 -configuration=Development 
   -build=editor -test=<YourGauntletTestName>
 ```
 
-**5. Perf spot-checks** the packet names: `stat unit`, `stat net`, per-class bandwidth vs the
-budget in `netcode.md`, tick-count deltas for new actors/widgets.
+**5. Perf spot-checks** the packet names: `stat unit`, `stat net`, per-class bandwidth and
+tick-count deltas for new actors/widgets. **The budget numbers live in
+`docs/BREACHPOINT-QUALITY-BARS.md` §1–2 — that document is the single home for rung-5
+thresholds.** `netcode.md` states the replication *laws*; it does not restate the numbers.
+
+## Grep gates (run on every rung-2 pass — a hit is a reported finding)
+
+The gates are part of the ladder, not a separate ritual, and the verifier runs them because
+this contract says so. **`BREACHPOINT-QUALITY-BARS.md` §3 item 4 is the canonical list**;
+it is reproduced here so the runner never has to leave its own contract to know what to run:
+
+| Gate | Law behind it |
+|---|---|
+| `TakeDamage` · `ApplyRadialDamage` · `ApplyPointDamage` · `FDamageEvent` | `gas-purity.md` law 3 — the engine damage API is banned |
+| Direct attribute setter calls outside the AttributeSet's own hooks | `gas-purity.md` law 1 |
+| `AddLooseGameplayTag` outside cosmetic-marked sites | `gas-purity.md` law 5 |
+| `ConstructorHelpers` · hard `UPROPERTY` asset refs | `data-and-assets.md` — soft refs at the data boundary |
+| A gameplay literal next to a gameplay noun | `data-and-assets.md` — numbers are rows |
+| `NativeTick` in widgets · UMG property bindings | `CLAUDE.md` law 4; `ue5-ui-architecture` skill §8 |
+| Gameplay Tick outside timers/delegates/events/cue notifies | `CLAUDE.md` law 4 |
+
+A gate that has never fired has not been tested — prove each one once against a deliberate
+violation, the same way rung 2 is proven red-then-green, and record it in the ticket Log.
 
 ## Cross-cutting rules
 
@@ -64,7 +85,15 @@ budget in `netcode.md`, tick-count deltas for new actors/widgets.
 - Headless spec suite prefix: `Breachpoint.Sim.*` (pinned combat/shield/match suites — values
   asserted against `DT_Weapons`/`CT_Combat`, never literals) + `Breachpoint.Bots.*`
   (determinism: same seed + tuning row ⇒ identical action trace).
-- CI runner realities: rungs 1–3 on every push (cloud runner, `-nullrhi`); rung 4 nightly and
-  on any branch touching a replicated header or `Server` RPC (local runner with engine
-  install); rung 5 per milestone. Overnight bot-vs-bot soak (20 matches, seeds logged) runs
-  with the nightly rung 4 once bots land.
+- CI runner realities: rungs 1–3 on every push (`-nullrhi`); rung 4 nightly and on any branch
+  touching a replicated header or `Server` RPC; rung 5 per milestone. Overnight bot-vs-bot
+  soak (20 matches, seeds logged) runs with the nightly rung 4 once bots land.
+- ⚠️ **Every rung needs an engine — "cloud runner" is not a cheap tier.** Rung 1 is UBT across
+  three targets and rung 2 is `UnrealEditor-Cmd`; both require a full UE 5.8 install, and the
+  `BreachpointServer` target requires a **source-built** engine, not the launcher install
+  (`BREACHPOINT-GAMELIFT-PLAN.md` §1). So there is no runner tier that skips the engine —
+  only runners that skip the *second process* (rung 4). Provisioning and cost for a
+  source-built-UE runner are **unpriced**; BP11 step 4 owns that call, and its Done-when
+  ("CI posts ladder results without a human") is not satisfiable until it is made. Until then
+  CI is a local/self-hosted runner and the ticket says so, rather than assuming a cloud tier
+  that cannot compile the project.
