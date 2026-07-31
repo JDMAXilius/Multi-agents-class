@@ -16,7 +16,7 @@ Breachpoint/
 ├── .claude/
 │   ├── settings.json    ← wires the law-enforcement hook
 │   ├── hooks/           ← guard_laws.py: owner-path + banned-API blocks at tool-call time
-│   ├── agents/          ← 9 agents + curators/ (2 data curators) — each with
+│   ├── agents/          ← 9 agents + curators/ (3: 2 convergent, 1 divergent) — each with
 │   │                       ROUTING (one obvious owner per task) · I/O (schema'd handoffs)
 │   │                       · KICKOFF (machine-checkable start conditions)
 │   └── skills/          ← game-lead (dispatch + rulings duty) · tickets (kickoff-gated claims)
@@ -68,7 +68,8 @@ prediction keys · `BR` prefix, one module · soft-refs + generic-GE laws · CSV
 | Agent | Returns |
 |---|---|
 | `arena-architect` | `arena_manifest.json` (bounds, scored spawns, landmarks) |
-| `tuning-curator` | ALL gameplay numbers: `DT_Weapons` + `DT_BotTuning` rows and balance diffs (proposes only outside the 45–55% band) |
+| `tuning-curator` | ALL gameplay numbers: `DT_Weapons` + `DT_BotTuning` + `DT_BotAmbitions` rows and balance diffs (**convergent**: proposes only outside the 45–55% band — restraint is a deliverable) |
+| `spotter` | Every line the game speaks: `DT_SpotterLines` fallback, coach lines, medal names (**divergent**: returns a pool of ~10 per slot, critic ranks, top ~3 land) |
 
 ## The five laws (from the playbook — the part that must survive any adaptation)
 

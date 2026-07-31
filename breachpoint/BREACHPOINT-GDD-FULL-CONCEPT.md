@@ -226,7 +226,7 @@ soaks reproduce exactly.
 
 ### 3.2 The Dev-Time Crew (Claude + Unreal MCP)
 
-The formulated 11-agent crew carries over unchanged; only its products
+The formulated 12-agent crew carries over unchanged; only its products
 change:
 
 | Agent | Product for Breachpoint |

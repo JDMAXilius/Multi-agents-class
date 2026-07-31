@@ -63,7 +63,7 @@ game** — it is the same code with the roster changed.
 - **Art:** sourced marketplace/free environment kit, weapon models, FPS
   arms + weapon animation sets, VFX. **Art is sourced; code is authored.**
 - **Team & timeline:** one principal engineer / technical director plus
-  the 11-agent crew, **6 weeks** (see §7 for the honest estimate).
+  the 12-agent crew, **6 weeks** (see §7 for the honest estimate).
 - **Exit criterion:** playable **Steam demo depot**.
 
 ### 1.5 Elevator Pitch
@@ -252,7 +252,7 @@ soaks reproduce exactly and any disputed result is replayable.
 
 ### 3.2 The Dev-Time Crew (Claude + Unreal MCP)
 
-The formulated 11-agent crew carries over unchanged; only its products
+The formulated 12-agent crew carries over unchanged; only its products
 change. Every output is reviewable data (JSON/DataTables), refuted by the
 critic, landed by a builder. **Agents never commit directly.**
 

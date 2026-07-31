@@ -5,7 +5,7 @@ dependencies before they cause failures). Two graphs and one matrix. **Every int
 cycle prints its exit condition on the edge** — a cycle without one is the deadlock the
 first pipeline build actually hit.
 
-## 1. The crew graph — 11 agents, 3 powers, exits printed
+## 1. The crew graph — 12 agents, 3 powers, exits printed
 
 ```mermaid
 flowchart TD
@@ -26,7 +26,7 @@ flowchart TD
     subgraph CUR["CURATORS (read-only, RETURN data)"]
         C1["arena-architect<br/>arena_manifest"]
         C2["tuning-curator<br/>ALL numbers incl. DT_BotAmbitions"]
-        C3["spotter — DEFERRED<br/>kickoff: telemetry exists (M4)"]
+        C3["spotter — DIVERGENT<br/>pool of ~10 → critic ranks → top 3 land<br/>fallback+medals: NOW · coach lines: M4"]
     end
 
     subgraph REV["REVIEWERS (read-only)"]
@@ -79,7 +79,8 @@ one (X needs Y, Y needs X) gets split at cut time, not discovered mid-milestone.
 | M1 Foundry (BP00–BP04) | builder · sim-builder · netcode-builder (+critic, verifier always) | terminal |
 | M2 Triangle (BP05–BP06) | + **anim-builder wakes** | terminal |
 | M3 Playground (BP07–BP09) | + **ai-builder wakes** (brain per BREACHPOINT-AI-BOTS.md) | terminal |
-| M4 First Match (BP08/BP10) | + **ui-builder wakes** · **spotter gets created** (telemetry now exists) · nightly soaks start | terminal + cron |
+| Flavor text the game ships (`DT_SpotterLines`, medals) | **spotter — fallback half, available now** (its inputs are the GDD, the manifest's callouts, and `DT_Weapons` — no telemetry involved) | pipeline |
+| M4 First Match (BP08/BP10) | + **ui-builder wakes** · **spotter's coach half wakes** (telemetry finally exists) · nightly soaks start | terminal + cron |
 | M5 Two Boxes (BP11) | + **services-builder wakes** | terminal + 2 machines |
 | Any replicated surface, any time | netcode-builder + critic-writes-the-cheat, non-negotiable | — |
 | A ruling is questioned | founder/lead edits DESIGN-RULINGS.md — never a review outcome | — |
@@ -88,5 +89,5 @@ one (X needs Y, Y needs X) gets split at cut time, not discovered mid-milestone.
 to a different ticket (different owner_paths — the hook enforces non-collision), binaries
 locked per law 7, lead session reconciles by pulling the board. Recipe: CREW_PLAYBOOK §12.
 
-**Standing rule:** at any moment you run 4–7 agents, not 11. Dormant ≠ deleted — a dormant
+**Standing rule:** at any moment you run 4–7 agents, not 12. Dormant ≠ deleted — a dormant
 agent costs nothing until its KICKOFF conditions turn true.

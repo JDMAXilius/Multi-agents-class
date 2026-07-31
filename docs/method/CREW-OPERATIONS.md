@@ -1,5 +1,5 @@
 # Crew Operations — the ultra plan
-## How the 11-agent studio actually runs, day to day, for six weeks
+## How the 12-agent studio actually runs, day to day, for six weeks
 
 **Companion to:** `crew/docs/CREW_MAP.md` (who — the living roster + invocation matrix) ·
 `crew/docs/CREW_PLAYBOOK.md` (method, §9–13 run-proven) · `crew/docs/DESIGN-RULINGS.md`

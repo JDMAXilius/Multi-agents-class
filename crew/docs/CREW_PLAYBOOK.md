@@ -164,7 +164,45 @@ and the board as the single coordination point — every session syncs before an
 after every meaningful step. The lead session reconciles by reading Logs, not by watching.
 Two tickets that would touch one file are not parallel tickets; re-cut them.
 
-## 13. Smoke-test the wiring before you spend the pipeline
+## 13. Two kinds of curation — convergent and divergent
+
+Curators return data against a schema; the critic refutes; a builder lands. That shape is
+constant. The **instinct inside it inverts** with the kind of content, and mixing them up
+produces either bland flavor text or churned tuning numbers:
+
+| | **Convergent** (numbers, geometry, schemas) | **Divergent** (flavor text, names, variations) |
+|---|---|---|
+| Goal | the ONE defensible answer | a POOL worth choosing from |
+| Volume | fewest changes defensible | generate N (~10), keep the best K (~3) |
+| Restraint | **is a deliverable** — in-band telemetry ⇒ propose nothing | **is failure** — one option is not a choice |
+| Evidence | arithmetic (implied TTK, pairwise distance) | fit against the retrieval set (tone, callouts, canon) |
+| Critic asks | "do these numbers contradict each other or a hard constraint?" | "does this contradict canon, or sound like a different game?" |
+| Examples | `tuning-curator`, `arena-architect` | `spotter` (lines, coach text, medal names) |
+
+Divergent jobs add ONE stage to the standard pipeline — **generate → score → select** —
+before the critic. The scorer is the critic in JUDGE mode ranking candidates; the REFUTER
+pass still runs on the survivors. Everything else (gates, verifier, landing) is unchanged:
+a pool is not an excuse to skip proof.
+
+## 14. What an agent reads before it writes (the retrieval set)
+
+Class-05's thesis: output sounds like your game only when the agent read your game first.
+Context minimalism says *how little*; this says **which little** — and the answer differs by
+kind of work. Every packet names its retrieval set; an agent that generates from the ticket
+text alone produces content that could belong to any game.
+
+| Work | Retrieval set |
+|---|---|
+| Code | the ticket + its named contracts + the current state of every file the diff touches |
+| Tuning numbers | the combat model (GDD Appendix A), current tables, telemetry (soak and human, labeled separately), `DESIGN-RULINGS.md` |
+| Arena data | the brief + GDD spatial constraints (35 m sightlines, ≥ 8 spawns) + rulings R6–R7 |
+| **Flavor text** | the GDD's tone section · the arena manifest's **named callouts** (a line can only say "rocket denied at the Pad" because the manifest named the Pad) · weapon and ability names from `DT_Weapons` · existing lines in the same table (voice consistency) · rulings |
+
+No vector store: at this project's scale the corpus fits in context, and a folder of
+version-controlled docs beats a database you have to keep in sync. Revisit only if the
+corpus outgrows a context window — it does not today.
+
+## 15. Smoke-test the wiring before you spend the pipeline
 
 Before any long agent run, exercise the plumbing with a throwaway pass: assemble every
 prompt, make one trivial round trip per distinct agent, then stop. `run_crew.py --dry-run`
@@ -173,7 +211,7 @@ full live pipeline burned real wall-clock discovering two prompt-formatting bugs
 ten-second pass would have caught. The same rule applies to any harness the crew grows:
 **cheap proof that the wiring holds, before expensive proof that the work is right.**
 
-## 14. The laws are hooks, not vibes
+## 16. The laws are hooks, not vibes
 
 `.claude/hooks/guard_laws.py` (wired in `.claude/settings.json`) enforces at tool-call
 time what the contracts state in prose: writes outside the claimed packet's owner_path are
