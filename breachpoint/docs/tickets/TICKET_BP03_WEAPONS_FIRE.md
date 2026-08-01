@@ -60,3 +60,43 @@ this ticket is not done until the forged-fire cheats are written and rejected.
 ## Log
 
 (append findings here, dated, newest last)
+
+**31 Jul 2026 — PRE-FILED CONTRACT_GAP (lead, from the BP01 session): `owner_path` misses this
+ticket's headline deliverable, plus the systematic `Tests/` hole.**
+
+Current: `Source/Breachpoint/Weapons/`, `Content/Data/DT_Weapons.csv`
+
+| Deliverable | Lives in | Status |
+|---|---|---|
+| `BRGA_WeaponFire` + `BRGA_WeaponUtility` (step 2 — **the fire path, this ticket's point**) | `Source/Breachpoint/AbilitySystem/Abilities/` | BLOCKED |
+| weapon `BRAbilitySet` granted on equip (step 1) | `Source/Breachpoint/AbilitySystem/` | BLOCKED |
+| `FBRWeaponRow` — law 3 puts row structs in `BRDataRows.h` (step 1) | `Source/Breachpoint/Data/` | BLOCKED |
+| The cheats (step 3) and fire-path specs (step 4) | `Source/Breachpoint/Tests/` | BLOCKED |
+
+Step 1's actors are fine: `BREquipmentComponent`, `BRWeaponInstance`, `BRWeaponPickup` /
+`ABRPowerWeaponSpawner` are all §3.5 `Weapons/` residents, and `DT_Weapons.csv` is granted
+by exact file.
+
+---
+
+**SYSTEMATIC FINDING — `Source/Breachpoint/Tests/` belongs to nobody.** Recorded here once and
+cross-referenced from BP02/BP05/BP06 rather than repeated four times.
+
+ARCHITECTURE §3.12 puts three spec files in `Source/Breachpoint/Tests/` and says
+*"sim-builder authors, verifier runs."* But **no ticket's `owner_path` contains `Tests/`**, and
+four tickets must write there: BP02 (rung-2 red→green), BP03 (cheats + fire-path specs), BP05
+(radial falloff, rear-lethal, grenade refund), BP06 (cooldown-not-consumed-on-rejection).
+Every one of those writes is blocked as the board stands.
+
+This is the same defect class as BP01's two corrections, but it is *shared* rather than local,
+so fixing it per-ticket four times would be the wrong answer — the second packet to claim would
+collide with the first over `BRCombatSpec.cpp`, and law 7's one-owner-per-file rule has no
+answer for a file four packets append to.
+
+*Escalated to the lead as a real decision, deliberately NOT settled inline* (options, cost
+noted, no recommendation being enacted without the founder): (a) one spec file per packet with
+a naming convention, so ownership is per-file and the collision disappears; (b) `Tests/` is
+granted to whichever packet is in flight, serialized by the board; (c) specs become their own
+follow-on packet per feature, authored by the verifier's counterpart — which collides with the
+verifier having no write tools by capability. Option (a) looks cheapest and preserves one-owner,
+but it changes §3.12's three-file layout, so it is an ARCHITECTURE amendment, not a ticket edit.

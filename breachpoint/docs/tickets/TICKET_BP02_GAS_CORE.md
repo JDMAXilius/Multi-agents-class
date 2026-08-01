@@ -89,3 +89,34 @@ with 3. BP00 step 2 (combat spec) lands against this ticket's output.
 ## Log
 
 (append findings here, dated, newest last)
+
+**31 Jul 2026 — PRE-FILED CONTRACT_GAP (lead, from the BP01 session): this ticket's
+`owner_path` cannot reach five of its own deliverables.** Filed before the packet claims so it
+is not rediscovered mid-build. Derived mechanically from `guard_laws.py`, not from memory: an
+owner entry `o` matches only when `rel == o` or `rel.startswith(o + "/")`, and confinement
+fires on every path under `Source/` or `Content/`.
+
+Current: `Source/Breachpoint/AbilitySystem/`, `Source/Breachpoint/Data/`
+
+| Deliverable | Lives in | Status |
+|---|---|---|
+| `BRPlayerState` (step 1) — ARCHITECTURE §3.6 says **"ASC + set live here"** | `Source/Breachpoint/Match/` | BLOCKED |
+| `BRCharacter` `IAbilitySystemInterface` forward + `InitAbilityActorInfo` (step 1) | `Source/Breachpoint/Character/` | BLOCKED |
+| `BRGA_Sprint`'s CMC half — `FSavedMove_BR` flag + speed multiplier (step 3) | `Source/Breachpoint/Character/` | BLOCKED |
+| Rung-2 specs, red→green (step 5) | `Source/Breachpoint/Tests/` | BLOCKED |
+| `CT_Combat` CurveTable + `DT_MatchRules` values (step 4) | `Content/Data/` | BLOCKED |
+
+`Source/Breachpoint/Data/` IS owned, so `BRDataRows.h` is reachable — the row structs are fine;
+only the CSV/CurveTable *values* are out of reach.
+
+The first row is the sharp one: the ASC this ticket exists to port lives in a folder it does not
+own. This is not a scoping quibble — it is the packet's center.
+
+*Not fixed here.* The lead amends `owner_path` at claim time, when the packet's real shape is
+settled, and records the amendment in the Kickoff block the way BP01 did twice. Two candidate
+shapes, to be decided then, not now: grant the exact files (tight, verbose, precedent set by
+BP01's three `.Target.cs` entries), or split the CMC/Character work into a handoff packet for
+the builder who owns `Character/`. Do not widen to `Source/Breachpoint/`.
+
+See also the systematic note in BP03's Log: **`Tests/` is in no packet's `owner_path` at all**,
+and four separate tickets need to write there.
