@@ -269,6 +269,7 @@ void ABRCharacter::InitializeAbilitySystem(const TCHAR* CallSite)
 	// be dead code wearing the costume of a safety gate, which is the single most common defect
 	// this project has catalogued today. One gate, at the entry, covering the whole function.
 	ASC->ApplyInitStats();
+}
 
 UBRCharacterMovementComponent* ABRCharacter::GetBRCharacterMovement() const
 {
