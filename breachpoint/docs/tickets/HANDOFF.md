@@ -132,3 +132,65 @@ editor. Half a box is not a box.)
 
 The honest statement is: **no box anywhere on this board rests on a ladder rung above 1**, and
 rung 1 itself has no clean owned pass at current HEAD.
+
+---
+
+# Session 2 — 1 Aug 2026, cloud (Context A, files only). Read this before `/tickets list`.
+
+**Nothing is claimed and `.claude/active-packet.json` does not exist.** Law-5 confinement is
+therefore OFF until the next pickup writes one. That is the normal resting state, not a bug —
+but it is also why the hook must be armed *before* a packet starts writing, not after.
+
+## The through-line of everything below
+
+Three audits ran against the board, the doctrine, and the disk. Every real defect they found
+was the same shape: **a rule that read as enforced and was not.** Worth stating because it
+predicts where the next one is — not in the rules nobody follows, but in the ones everybody
+assumes are working.
+
+- A gate that gated a ticket on its **own** step-1 output, so it was never reached (BP14).
+- A hook that checked **two folders** and silently returned 0 for every other owner_path.
+- Two rulings pointing **opposite ways** on the same action (R17 vs R23).
+- Three documents citing **"R21"** for a rule R21 does not contain.
+
+All four are invisible from the passing side. **An enforcement mechanism proves nothing until
+it is tested with a case it should REJECT** — that is the operating lesson of this session.
+
+## What landed (all pushed)
+
+1. **BP14 step 1 — DONE.** The crew lives at `Tools/data-crew/`; `python3 run_crew.py` (replay)
+   exits 0 from the game repo; `find_agents_dir()` now walks parents for `.claude/agents/`.
+   `Tools/data-crew/output/` is gitignored — the replay re-derives `DT_Weapons.csv`
+   byte-identical to `Content/Data/`, and a committed scratch copy is a second source of truth.
+2. **`guard_laws.py` confines the whole repo now**, not just `Source/`+`Content/`. Proven with
+   nine cases (evidence table in BP01's Log). One hole left deliberately and written down: the
+   banned-API check still keys on `Source/`, so a generator under `Tools/` that *emits* C++
+   containing `TakeDamage(` is not caught. Narrow today; **real the moment BP14 step 2 lands.**
+3. **R17 amended by R23** — a new `Event.*` tag is a `contract_gap`, not a `Core/` edit.
+4. **R26's exception written into CLAUDE.md, the authoring matrix, and `data-and-assets.md`.**
+   All three said "zero Blueprint classes" absolutely; an agent obeying them filed a `high`
+   finding against the five assets R26 permits.
+5. **R29 cut** — one editor, one driver; an editor session and a build must not overlap.
+6. **BP15's Kickoff now passes**, and its GE-class exclusion was corrected (seven classes in
+   one header, not six classes across 17 files — count `UCLASS` declarations, not files).
+
+## Pick this up first on the terminal
+
+- **BP15 steps 1–3** need no engine and the gate is green. Better here than in the cloud:
+  step 4 continues straight on from step 3 on the same machine.
+- Then the three from Session 1, unchanged: **run the input generator** (nothing moves in PIE
+  without it), **restart BP03 step 2**, **import the CSVs**.
+
+## Open, not fixed — one needs a ruling
+
+**Rung 4 forbids the topology the slice ships.** `contracts/testing.md` and the
+`gauntlet-testing` skill both specify rung 4 as *dedicated server, not listen*. The slice ships
+a **listen server**, and `netcode.md` makes host-vs-remote-client a standing item on every
+netcode packet. As specified, **rung 4 never exercises the host path** — the one path the demo
+actually runs on. This needs a ruling before BP00 step 3 wires Gauntlet, or the harness gets
+built against a topology we do not ship. Not fixed here: it touches `docs/contracts/`, which the
+active BP15 claim correctly blocked.
+
+Smaller, also open: `ARCHITECTURE §3` is stale against disk (`UI/` holds 7 units vs 4 listed;
+`BRCombatCurves` unlisted; `Tests/` empty vs 3) — BP15 step 1 will surface all of it
+mechanically, which is a better fix than doing it by hand.
