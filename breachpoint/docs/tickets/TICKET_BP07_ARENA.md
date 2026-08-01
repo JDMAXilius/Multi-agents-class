@@ -10,6 +10,7 @@ manifest is the source of truth; the .umap is its projection. One owner per bina
 
 ## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
 
+- requires: engine-installed  — the blockout generator is a headless commandlet; the **walkthrough that closes this ticket is editor-live**
 - `Content/Data/arena_manifest.json` exists (landed by BP13) and re-validates:
   >= 8 spawns, min pairwise spacing >= 8 m, max sightline <= 35 m, named rocket landmark
 - Ticket BP01 is DONE (a project to open) and `git lfs` is installed — this ticket owns

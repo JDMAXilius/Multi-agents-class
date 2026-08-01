@@ -10,6 +10,14 @@ code steps.">
 
 ## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
 
+- requires: <files-only | engine-installed | editor-live>
+  <!-- The execution context this packet needs (AUTHORING-MATRIX §5). Checked FIRST, before
+       any other condition — it is the cheapest gate and the most expensive to discover late.
+       files-only = any session incl. cloud · engine-installed = local, headless, source-built
+       UE 5.8 · editor-live = a UE editor must be OPEN before the claim (MCP / in-editor asset
+       surface; R21: one editor, one driver, and no overlapping build). -->
+
+
 - <condition a script can check: "`Content/Data/DT_Weapons.csv` exists and re-validates",
   "ticket BP0X is DONE (all boxes)", "`BRDataRows.h` compiles". An output existing is not
   enough — name the validator that must pass. No conditions? Write "- none (root ticket)".>

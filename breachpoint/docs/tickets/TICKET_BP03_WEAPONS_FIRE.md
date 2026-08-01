@@ -10,6 +10,7 @@ this ticket is not done until the forged-fire cheats are written and rejected.
 
 ## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
 
+- requires: engine-installed
 - Ticket BP02 is DONE: `BRAttributeSet` and the generic GE library compile, and
   `Breachpoint.Sim.Combat` is green
 - `Content/Data/DT_Weapons.csv` exists (landed by BP13) and re-imports clean against

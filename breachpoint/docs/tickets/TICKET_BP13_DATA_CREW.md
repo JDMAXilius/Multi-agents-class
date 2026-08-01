@@ -16,6 +16,7 @@ geometry). Both jobs are independent of each other and may run in parallel.
 
 ## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
 
+- requires: engine-installed  — step 6 is the reimport commandlet, not an editor session
 - Steps 1-5 are DONE (see Log). For the remaining **step 6** only:
 - `Source/Breachpoint/Data/BRDataRows.h` defines `FBRWeaponRow` **including the
   `DamageDelivery` column** (the schema split the verifier forced — reimport fails without it)

@@ -9,6 +9,7 @@ two-weapon trade moment. **This is also the first cut if W5 slips** — keep it 
 
 ## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
 
+- requires: engine-installed
 - Ticket BP05 is DONE (shares the explosive damage path and cook/throw shape)
 - `DT_Weapons` contains the `Rocket` row and re-imports clean (`DamageDelivery=Projectile`,
   `ProjectileSpeed > 0` — the invariant this weapon's existence depends on)

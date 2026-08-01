@@ -25,6 +25,7 @@ path; if BP14 has not run, step 4 carries a minimal path of its own and says so 
 
 ## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
 
+- requires: **files-only** for steps 1–3 (the ticket states they need no engine) → claimable from Context A or B; step 4+ is engine-installed
 - `python3 Tools/data-crew/run_crew.py` (replay) exits 0 from the game repo (BP14 step 1)
 - `BREACHPOINT-ARCHITECTURE.md` §3 is present and its per-folder counts parse
 - owner_path: `Tools/architect/` (generated output `docs/BUILD-STATE.md` is the one exception,

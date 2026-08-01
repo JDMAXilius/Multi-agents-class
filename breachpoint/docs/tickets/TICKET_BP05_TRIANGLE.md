@@ -12,6 +12,7 @@ the ONE damage pipeline (`GE_Damage` + tags) — the engine damage API stays ban
 
 ## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
 
+- requires: engine-installed
 - Tickets BP02 and BP03 are DONE (grenade/melee reuse the fire path's damage
   pipeline and the cost/cooldown GEs)
 - `Content/Data/CT_Combat.csv` exists and re-imports clean (the triangle's coefficients)

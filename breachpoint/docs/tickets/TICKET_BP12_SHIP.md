@@ -8,6 +8,7 @@ guard every fix; the demo goes live; the capstone presents the game AND the stud
 
 ## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
 
+- requires: engine-installed  — packaged build, full ladder unattended
 - Ticket BP11 is DONE and the M5 two-box Steam test passed, recorded in BP11's Log
 - The full ladder (rungs 1-4) runs unattended and green on the packaged build
 - owner_path: **per-fix, declared at claim time** — this ticket lands only cited defects,

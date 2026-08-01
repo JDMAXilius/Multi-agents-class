@@ -18,6 +18,7 @@ them. Step 1 below gates steps 2–4.
 
 ## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
 
+- requires: engine-installed
 - Ticket BP00 is DONE: `Tools/run-ubt.ps1`, `run-specs.ps1`, `run-gauntlet.ps1` exist
   and each produces a real pass/fail artifact (this ticket shells out to them; it does
   not reinvent them)

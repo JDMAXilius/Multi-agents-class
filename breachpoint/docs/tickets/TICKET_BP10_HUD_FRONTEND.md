@@ -13,6 +13,7 @@ gamepad routing, join-in-progress states) — load it before step 1.
 
 ## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
 
+- requires: editor-live  — ViewModels and widget classes are engine-installed; the WBP **layout** assets are Tier-4, editor-authored
 - Ticket BP03 is DONE (HUD v1 scope: there are attributes and ammo to display)
 - Ticket BP04 is DONE for the full scope (match state, scoreboard, carnage report)
 - CommonUI + ModelViewViewModel plugins are enabled in `DefaultEngine.ini` and rung 1

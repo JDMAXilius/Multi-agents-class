@@ -16,6 +16,7 @@ root-motion source, and why zero-residue rejection comes free from three lawful 
 
 ## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
 
+- requires: engine-installed
 - Ticket BP05 is DONE **and the M2 golden-triangle fun gate passed**, with the verdict
   written in BP05's Log (this is a human judgment gate, not a green suite)
 - BP00 rung 4 runs under net emulation (`-PktLag`/`-PktLoss`) — a predicted movement

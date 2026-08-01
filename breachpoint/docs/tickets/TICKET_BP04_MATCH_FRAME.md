@@ -11,6 +11,7 @@ one replicated end-time (clients render the clock locally), scored respawns.
 
 ## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
 
+- requires: engine-installed
 - Ticket BP02 is DONE and the `Event.Death` path fires from
   `PostGameplayEffectExecute` (this ticket consumes it)
 - BP00 rung 4 (`BRGauntlet.SmokeTS2C`) can run — match flow claims are networked claims

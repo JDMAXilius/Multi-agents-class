@@ -13,6 +13,7 @@ traces. Legibility outranks win-rate. MassAI and Learning Agents stay rejected.
 
 ## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
 
+- requires: editor-live  — the C++ half is engine-installed, but `ST_Bot` and the EQS queries are Tier-4 assets and only exist inside an editor
 - Ticket BP04 is DONE (match frame — bots need a match to join)
 - Ticket BP07 is DONE and `Content/Data/arena_manifest.json` re-validates (EQS vocabulary)
 - `DT_BotTuning` row struct exists in `BRDataRows.h` and rung 1 is green on it

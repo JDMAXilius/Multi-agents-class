@@ -18,6 +18,7 @@ with 3. BP00 step 2 (combat spec) lands against this ticket's output.
 
 ## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
 
+- requires: engine-installed
 - Ticket BP01 is DONE and rung 1 is green (all three targets compile from clean)
 - `Source/Breachpoint/Core/BRGameplayTags.h` exists and defines the `Ability.*`,
   `State.*`, `SetByCaller.*` and `Event.*` families this ticket applies

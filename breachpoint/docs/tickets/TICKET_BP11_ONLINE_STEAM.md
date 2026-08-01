@@ -9,6 +9,7 @@ running the ladder without a human. Host-quit behavior is defined here, not disc
 
 ## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
 
+- requires: engine-installed  — plus a SECOND machine for the Steam rung (law: listen ≠ dedicated, and an invite claim needs two boxes)
 - Ticket BP08 is DONE **and the M4 first-match go/no-go passed**, recorded in BP08's Log
 - A Steam App ID and two test accounts are available (or the packet explicitly scopes to
   OSS Null and says so — an invite claim needs Steam, per the twice-tested law)

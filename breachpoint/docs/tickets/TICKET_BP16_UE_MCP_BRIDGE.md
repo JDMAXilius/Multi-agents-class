@@ -20,6 +20,7 @@ against a live editor). Steps 2–3 in order. Step 4 needs steps 1–3. Step 5 c
 
 ## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
 
+- requires: editor-live  — the MCP server is hosted INSIDE a running editor; an installed engine is not enough
 - `Breachpoint.uproject` exists and `BreachpointEditor` **currently builds** — verified by
   `Tools/run-ubt.ps1 -Targets BreachpointEditor` exiting 0 with an R19 timestamp proof, not by
   a stale binary sitting in `Binaries/Win64/`

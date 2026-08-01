@@ -18,6 +18,7 @@ Input → InputTag → ASC, no per-ability binding code, ever.
 
 ## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
 
+- requires: engine-installed
 - none (root ticket — nothing gates it), but the environment must be real:
   a **source-built UE 5.8** is installed and its path is known, and the game repo has
   `crew/`'s contents at its root (`CLAUDE.md`, `.claude/`, `docs/` all present)
