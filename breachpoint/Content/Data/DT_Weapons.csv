@@ -1,4 +1,4 @@
 Name,DisplayName,FireMode,DamageDelivery,DamagePerShot,RPM,MagSize,ReserveMags,ReloadTime_s,HeadshotMult,ProjectileSpeed,SplashRadius_m,SplashDamage,EquipTime_s,Range_m,Spread_deg,AbilitySet,MeshSoftPath,FireCueTag
-AR,Assault Rifle,Automatic,Hitscan,8,600,32,5,2.2,1.0,0,0,0,0.4,45.0,1.5,/Game/AbilitySets/DA_AbilitySet_AR.DA_AbilitySet_AR,/Game/Weapons/AR/SM_AR.SM_AR,GameplayCue.Weapon.AR.Fire
-Magnum,Magnum,SemiAuto,Hitscan,22,180,8,4,2.0,2.0,0,0,0,0.4,60.0,0.5,/Game/AbilitySets/DA_AbilitySet_Magnum.DA_AbilitySet_Magnum,/Game/Weapons/Magnum/SM_Magnum.SM_Magnum,GameplayCue.Weapon.Magnum.Fire
-Rocket,Rocket Launcher,SemiAuto,Projectile,120,30,2,0,0,1.0,30,4,90,0.4,0.0,0.0,/Game/AbilitySets/DA_AbilitySet_Rocket.DA_AbilitySet_Rocket,/Game/Weapons/Rocket/SM_Rocket.SM_Rocket,GameplayCue.Weapon.Rocket.Fire
+AR,Assault Rifle,Automatic,Hitscan,8,600,32,5,2.2,1.0,0,0,0,0.4,45.0,1.5,/Game/Abilities/DA_AbilitySet_AR.DA_AbilitySet_AR,/Game/Weapons/Rifle/Meshes/SM_Rifle.SM_Rifle,GameplayCue.Weapon.AR.Fire
+Magnum,Magnum,SemiAuto,Hitscan,22,180,8,4,2.0,2.0,0,0,0,0.4,60.0,0.5,/Game/Abilities/DA_AbilitySet_Magnum.DA_AbilitySet_Magnum,/Game/Weapons/Pistol/Meshes/SM_Pistol.SM_Pistol,GameplayCue.Weapon.Magnum.Fire
+Rocket,Rocket Launcher,SemiAuto,Projectile,120,30,2,0,0,1.0,30,4,90,0.4,0.0,0.0,/Game/Abilities/DA_AbilitySet_Rocket.DA_AbilitySet_Rocket,/Game/Weapons/GrenadeLauncher/Meshes/SM_GrenadeLauncher.SM_GrenadeLauncher,GameplayCue.Weapon.Rocket.Fire
