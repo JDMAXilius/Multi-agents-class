@@ -1,5 +1,10 @@
 # TICKET — BP15: The Architect — score what to build next, then build it
 
+> STATUS: **steps 1-3 DONE 1 Aug 2026 (terminal, Windows) — steps 4-6 OPEN, claim released.**
+> `Tools/architect/` holds architect.py + test_selfcheck.py + state + one blackboard; 3 of 10
+> Done-when boxes checked. Steps 4-6 are `engine-installed` and were NOT started. See the Log's
+> 1 Aug entry — the score was wrong twice before it was right, and both are recorded.
+
 > STATUS: **open — claim RELEASED 1 Aug 2026, nothing landed.** Claimed by a cloud session for
 > steps 1–3, then released un-started when the founder moved to the terminal. `Tools/architect/`
 > is empty and `.claude/active-packet.json` is deleted. **The Kickoff now passes** — pick it up
