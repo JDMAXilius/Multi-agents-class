@@ -260,6 +260,62 @@ of the lead's, not a discovery the builder makes mid-packet.
 packet `Source/Breachpoint/AI/`, `…/Online/`, and every other discipline's folder for the sake
 of three files — trading a false block for a real hole.
 
+**31 Jul 2026 — FOUNDER DECISION (reverses a locked TD directive): the UE template STAYS.**
+
+The directive recorded two entries above — *"the project regenerates as `Breachpoint` … and all 49
+`breachpoint*`/`Variant_Horror`/`Variant_Shooter` gameplay sources are deleted"* — is **reversed by
+the founder this session.** Nothing is deleted. Recorded here, not in a transcript, because it
+contradicts a line this ticket previously called locked.
+
+*The new shape:* the template C++ and ALL Content stay on disk. Our project is built **from
+scratch on new files** — nothing of ours reuses, subclasses, or is rebased from any template
+class. Content **assets** (meshes, anims, weapon meshes, materials, level geometry) are the one
+inheritance.
+
+*What the lead landed to make this cheap* (commit `65d8b13`): `Source/breachpoint/` →
+`Source/Breachpoint/` as a **case-only** `git mv` — 47 renames at 100% similarity, **zero
+deletions**, all Content untouched.
+
+Why that one commit replaced a 70-occurrence sweep across 27 files: `guard_laws.py` matches on
+the **directory path**, not the module name, and `Path.resolve()` returns the **on-disk** casing.
+NTFS here is case-insensitive (`fsutil` confirms), so `Source/breachpoint` and `Source/Breachpoint`
+were one directory with two spellings — and the hook saw the lowercase one. Proven both directions
+by live tool calls, not by reading the source:
+
+| Probe | Result |
+|---|---|
+| `Write Source/breachpoint/GuardProbe.cpp` (pre-fix) | **BLOCKED** — "outside this packet's owner_path" |
+| `Write Source/Breachpoint/GuardProbe2.cpp` (post-fix) | **ALLOWED** (probe removed) |
+
+**The trap this closes:** had the module stayed lowercase, law 5 would have blocked *every
+legitimate builder write into the module, forever, while reporting it as the law working
+correctly.* The same silent-and-confident failure class as the inert-hook defect above — one day
+later, one layer over. Every ticket's `owner_path` now resolves as written; no ticket, contract,
+agent definition, or ARCHITECTURE edit was needed.
+
+*Accepted debt, entered here rather than discovered by a later review* — both are consequences of
+keeping the template, and neither is a defect:
+1. **The 47 template sources still compile.** Anything under `Source/Breachpoint/` is in the
+   module, so they build on every rung-1 run whether or not we call them. `Breachpoint.Build.cs`
+   must therefore keep the dependencies they need, on top of the §3 list.
+2. **Non-BR classes live in our module permanently** (`breachpointCharacter`, `ShooterNPC`,
+   `HorrorGameMode`, …), sitting beside `Core/`, `AbilitySystem/`, etc. This is real BR-prefix
+   debt (law: class prefix `BR`); it is accepted, not overlooked. Reviews should cite this entry
+   rather than re-raise it.
+3. The module rename `breachpoint` → `Breachpoint` is carried by
+   `+ActiveGameNameRedirects=(OldGameName="/Script/breachpoint",NewGameName="/Script/Breachpoint")`
+   in `DefaultEngine.ini` — the same mechanism the template itself used for `TP_FirstPerson`.
+   Without that line every template Blueprint loses its parent class.
+
+*Option left open, not taken:* relocating the template to a `Build.cs`-free folder (e.g.
+`Source/_TemplateReference/`) would make it present-but-inert — on disk, never compiled, zero
+build cost, and item 1 and 2 above both evaporate. The cost is that template **Blueprints** break,
+their parent classes no longer existing in any module. Template *art* is unaffected either way,
+and R18 (zero Blueprint classes) means those Blueprints were never going to be used. Revisit if
+the compile cost or the prefix debt starts to bite.
+
+---
+
 **Honesty note on the guard's reach (recorded so no one over-trusts it):** `guard_laws.py` is a
 PreToolUse hook keyed on `tool_input.file_path`, so it sees **Edit and Write only**. A `Bash`
 `rm`/`git rm`/`mv` is not checked. Step 1 deletes the 49 template sources via shell, and that
