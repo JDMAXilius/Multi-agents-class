@@ -76,6 +76,15 @@ namespace BRGameplayTags
 	BREACHPOINT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Weapon_Reload);
 	BREACHPOINT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Weapon_Swap);
 
+	/**
+	 * `UBRGA_Grapple`'s asset tag (BP06). Also its COOLDOWN tag — the generic-cooldown pattern
+	 * has the ability inject its own tag into `GE_Cooldown`'s granted tags, which is what makes
+	 * the 20 s cooldown a PREDICTED GE that GAS rolls back for free on server rejection. A
+	 * hand-tracked float would not roll back, and "rejection leaves zero state" is this
+	 * ticket's acceptance criterion.
+	 */
+	BREACHPOINT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Grapple);
+
 	// -------------------------------------------------------------------------
 	// InputTag.*  -- hardware -> tag. Consumed by BRInputConfig/BRInputComponent (step 3)
 	// and relayed to the ASC; bots press the same tags on their own ASC.
