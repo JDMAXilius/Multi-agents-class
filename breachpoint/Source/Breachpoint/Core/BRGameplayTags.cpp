@@ -14,6 +14,7 @@ namespace BRGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Weapon_Reload, "Ability.Weapon.Reload", "UBRGA_Reload's asset tag (BP03); firing cancels a reload by listing THIS tag.");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Weapon_Swap, "Ability.Weapon.Swap", "UBRGA_WeaponSwap's asset tag (BP03); firing cancels a swap by listing THIS tag.");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Grapple, "Ability.Grapple", "UBRGA_Grapple's asset tag AND its cooldown tag (BP06); the cooldown is a predicted GE so it rolls back on rejection.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Melee, "Ability.Melee", "UBRGA_Melee's asset tag (BP05); firing cancels a melee by listing THIS tag.");
 
 	// --- GameplayCue.* (open family, R23) ------------------------------------
 	// The three strings below are byte-for-byte what DT_Weapons.csv's FireCueTag column

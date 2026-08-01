@@ -85,6 +85,14 @@ namespace BRGameplayTags
 	 */
 	BREACHPOINT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Grapple);
 
+	/**
+	 * `UBRGA_Melee`'s asset tag (BP05). Declared here rather than left to a
+	 * `RequestGameplayTag("Ability.Melee", false)` in the ability, which compiles today and
+	 * silently yields an INVALID tag — a melee that no `CancelAbilitiesWithTag` can ever match.
+	 * That is the failure this project keeps cataloguing: a mechanism that looks armed and is not.
+	 */
+	BREACHPOINT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Melee);
+
 	// -------------------------------------------------------------------------
 	// InputTag.*  -- hardware -> tag. Consumed by BRInputConfig/BRInputComponent (step 3)
 	// and relayed to the ASC; bots press the same tags on their own ASC.

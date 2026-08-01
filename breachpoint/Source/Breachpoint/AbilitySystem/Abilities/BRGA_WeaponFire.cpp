@@ -448,7 +448,14 @@ FHitResult UBRGA_WeaponFire::TraceShot(const FBRWeaponRow& Row, const FVector& F
 	Params.bReturnPhysicalMaterial = true;
 
 	// bTraceComplex so BoneName comes back populated — headshot detection depends on it.
-	World->LineTraceSingleByChannel(Hit, From, To, ECC_GameTraceChannel1, Params);
+	//
+	// `BRCollision::WeaponTrace`, NOT a raw `ECC_GameTraceChannel*`. This line originally read
+	// `ECC_GameTraceChannel1`, which is `BRCollision::Projectile` — the First Person template's
+	// own object channel, aliased in BRCore.h precisely so nobody reuses the slot. The failure
+	// mode is SILENT: the trace still runs and simply stops hitting the things a weapon should
+	// hit, which is exactly what BRCore.h's own warning predicts. Caught by the BP05 melee
+	// packet reading this file, not by the author. Use the alias, never the number.
+	World->LineTraceSingleByChannel(Hit, From, To, BRCollision::WeaponTrace, Params);
 
 	if (!Hit.bBlockingHit)
 	{

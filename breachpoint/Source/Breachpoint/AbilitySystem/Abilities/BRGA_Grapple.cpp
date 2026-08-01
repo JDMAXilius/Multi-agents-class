@@ -171,7 +171,10 @@ bool UBRGA_Grapple::TraceForTarget(FHitResult& OutHit) const
 	FCollisionQueryParams Params(SCENE_QUERY_STAT(BRGrapple), /*bTraceComplex=*/false);
 	Params.AddIgnoredActor(Avatar);
 
-	return World->LineTraceSingleByChannel(OutHit, ViewLocation, End, ECC_GameTraceChannel1, Params)
+	// BRCollision::GrappleTrace, never a raw channel number. See the note in BRGA_WeaponFire:
+	// the raw enum silently traces on the template's Projectile channel and simply stops
+	// hitting things. BRCore.h aliases all four channels so this cannot happen by typo.
+	return World->LineTraceSingleByChannel(OutHit, ViewLocation, End, BRCollision::GrappleTrace, Params)
 		&& OutHit.bBlockingHit;
 }
 
@@ -229,7 +232,7 @@ bool UBRGA_Grapple::ValidateTarget(const FHitResult& Claim, EBRGrappleMode Claim
 	{
 		Params.AddIgnoredActor(Claim.GetActor());
 	}
-	if (World->LineTraceSingleByChannel(LosHit, ServerLocation, Claim.ImpactPoint, ECC_GameTraceChannel1, Params)
+	if (World->LineTraceSingleByChannel(LosHit, ServerLocation, Claim.ImpactPoint, BRCollision::GrappleTrace, Params)
 		&& LosHit.bBlockingHit)
 	{
 		OutReason = FString::Printf(TEXT("no line of sight — '%s' blocks the path to the target"),
