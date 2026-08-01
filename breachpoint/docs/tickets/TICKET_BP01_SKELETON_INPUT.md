@@ -166,3 +166,60 @@ Pre-fix 2/6, and both "passes" were vacuous — everything passed. Post-fix 6/6.
 steps ask ("can a builder land a diff outside `owner_path`?") had a **yes** answer this whole
 time, for a reason no prompt-level review would have found. Re-run `test_guard_laws.py` as part
 of those passes rather than reasoning about the hook's source.
+
+---
+
+**31 Jul 2026 — SESSION LAW: the crew binds to the launch directory, not to the repo.**
+A lead session was attempted and **aborted before the claim.** No code was written.
+
+A Claude Code session resolves agents, skills, and hooks from the directory it was **launched
+in** — not from wherever its files happen to be readable. The session was launched in
+`C:\Users\juand`, one level outside the game repo, and the result was total:
+
+| Expected | Actually loaded in that session |
+|---|---|
+| 12 crew agents | **none** — only account-level `general-purpose`, `Explore`, `Plan`, … |
+| `game-lead`, `tickets` skills | **neither** — no `/tickets list`, no Kickoff verification |
+| `guard_laws.py` PreToolUse hook | **not registered** — `.claude/settings.json` is project-scoped and never loaded; its `$CLAUDE_PROJECT_DIR` would have resolved to the home directory regardless |
+
+This is worse than the name-collision hazard `CLAUDE.md` warns about. There, a generic-named
+agent (`builder`, `critic`, `verifier`) is *shadowed* by an account-level twin and misbehaves
+subtly. Here they are simply **absent**, and — the part that matters — **the hook is absent with
+them.** Dispatching BP01 from that session would have put writes into `Source/Breachpoint/` with
+the laws sitting in the repo enforcing nothing: the exact condition proven dead and fixed in the
+entry above, re-created one day later by a different mechanism. Law 5 does not fail loudly when
+it fails this way. It just stops existing.
+
+*Ruling:* **every crew session starts with the working directory at the game repo root.** Not
+`--add-dir`, which grants file access (already sufficient) but not project identity — there is no
+mid-session command that re-binds agents, skills, or hooks. Wrong root ⇒ exit and relaunch.
+
+*Cheap pre-flight, before any claim:* ask for `/tickets list`. If the skill does not exist, the
+hook does not either, and the session is not a crew session no matter what it can read.
+
+*Verified this date on the Windows box (by execution, not by reading this Log):*
+
+| Check | Result |
+|---|---|
+| `.claude/` contents committed | **22 files** — 12 agents (9 + 3 curators), 7 skills, 2 hooks, `settings.json`. Nothing machine-local; a clean clone gets the whole crew |
+| `python3` resolves | Python 3.11.9 (real interpreter, not the Store stub) — the hook's `python3` command executes |
+| `test_guard_laws.py` | **6/6 passed** — the `.as_posix()` fix holds on this machine |
+
+*Cross-machine note (macOS):* the crew kit is plain text and portable — a Mac clone can read the
+board, edit docs, and land Log entries. It **cannot** run this ticket. Steps 1–5 need the Win64
+source-built engine at `ENGINE_ROOT` and `BreachpointServer` is a Win64 target; rung 1 exists
+only on the Windows box. A Mac session may prepare, never pronounce — honesty ladder unchanged:
+the rung belongs to the machine that ran it.
+
+*Still unlanded, carried to the real session's first act* (TD directive, recorded here so it does
+not die in a transcript): open item 2 above is **closed** — the project regenerates as
+`Breachpoint` with the `BR` prefix from the UE 5.8 First Person C++ template, and all 49
+`breachpoint*`/`Variant_Horror`/`Variant_Shooter` gameplay sources are deleted; only Content
+(meshes, anims, weapon meshes, input assets) and project scaffolding survive. `.uasset`/`.umap`
+track via **Git LFS**. The `EngineAssociation` GUID is in the table above and is not yet written
+into any `.uproject`.
+
+*Open, unrecorded elsewhere:* the four owner_path mismatches for **BP02/03/05/06** — expected as
+`contract_gap`s once those packets claim — are **not written down in this repo.** Only BP01's own
+correction (`Content/Input/`, above) exists. Whoever holds that analysis should land it in the
+respective tickets before the packets run, or it will be rediscovered the hard way.
