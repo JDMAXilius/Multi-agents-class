@@ -59,3 +59,44 @@ the ONE damage pipeline (`GE_Damage` + tags) — the engine damage API stays ban
 ## Log
 
 (append findings here, dated, newest last)
+
+**31 Jul 2026 — PRE-FILED CONTRACT_GAP (lead, from the BP01 session), plus an ARCHITECTURE
+gap that is NOT an owner_path problem and cannot be fixed at claim time.**
+
+Current: `Source/Breachpoint/AbilitySystem/Abilities/`, `Content/Data/CT_Combat.csv`
+
+| Deliverable | Lives in | Status |
+|---|---|---|
+| Rear-arc check — the ticket says **"character helper"** in so many words (step 2) | `Source/Breachpoint/Character/` | BLOCKED |
+| Grenade count as a cost, reset on respawn via the `GE_InitStats` path (step 1) | `Source/Breachpoint/AbilitySystem/Effects/` | BLOCKED |
+| Radial-falloff / rear-lethal / grenade-refund specs (step 4) | `Source/Breachpoint/Tests/` | BLOCKED |
+
+Note the second row: owning `AbilitySystem/Abilities/` does **not** grant `AbilitySystem/Effects/`
+— `guard_laws.py` matches on a `startswith(o + "/")` prefix, and `Effects/` is a sibling of
+`Abilities/`, not a child. Sibling folders under a shared parent are a recurring trap in this
+board's owner_paths; check for it at every claim.
+
+`CT_Combat.csv` is granted by exact file, so the falloff numbers are reachable. Good.
+
+---
+
+**ARCHITECTURE GAP — the grenade projectile has no home, and neither does the rocket's.**
+
+Step 1 requires a server-authoritative projectile with bounce physics and a fuse. ARCHITECTURE
+§3.5 `Weapons/` enumerates exactly three units — `BREquipmentComponent`, `BRWeaponInstance`,
+`BRWeaponPickup`(+`ABRPowerWeaponSpawner`) — and **none of them is a projectile.** No other §3
+folder claims one either. BP09 (rocket) inherits the same hole: its ticket says the rocket "is a
+ROW plus a spawner, not a system: projectile + radial damage already exist (BP05)" — so BP09 is
+explicitly relying on a class that §3 never allocates.
+
+This is **not** fixable by amending `owner_path` at claim time, which is why it is filed
+separately and loudly: you cannot grant a path to a file the architecture never named. It needs
+an ARCHITECTURE §3 amendment naming the projectile's home (`Weapons/` is the natural reading,
+taking the folder from 3 units to 4) and an owner assigned — likely **sim-builder** for the
+ballistics with **netcode-builder** on spawn/replication/dormancy, matching how step 1 already
+splits its owners.
+
+*Escalated to the lead; deliberately not decided inline.* A packet that invents a home for a
+class the architecture does not name is exactly the improvisation law 5 exists to prevent.
+
+See BP03's Log for the systematic `Tests/` finding — four tickets need it, no ticket owns it.

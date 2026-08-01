@@ -61,3 +61,35 @@ root-motion source, and why zero-residue rejection comes free from three lawful 
 ## Log
 
 (append findings here, dated, newest last)
+
+**31 Jul 2026 — PRE-FILED CONTRACT_GAP (lead, from the BP01 session).** Fourth and last of the
+four mismatches BP01's Log flagged as *"not written down in this repo"*; all four are now filed
+in the tickets that will hit them.
+
+Current: `Source/Breachpoint/Character/`, `Source/Breachpoint/AbilitySystem/Abilities/`
+
+| Deliverable | Lives in | Status |
+|---|---|---|
+| Weapon-attract mode — the pickup "flies to hand via **its own replicated motion**" (step 2) | `Source/Breachpoint/Weapons/` | BLOCKED |
+| Feel-pass numbers land in `CT_Combat` (step 3) | `Content/Data/CT_Combat.csv` | BLOCKED |
+| The zero-residue spec — cooldown NOT consumed on server rejection (step 4) | `Source/Breachpoint/Tests/` | BLOCKED |
+
+This ticket's core is well-scoped: `FSavedMove_BR` + the RMS helpers are `Character/`, and
+`BRGA_Grapple` is `AbilitySystem/Abilities/` — both owned. The gaps are all at the edges where
+the grapple reaches into someone else's system, which is the honest shape of the feature.
+
+The first row is the one to think about before claiming rather than during. Grapple-a-weapon
+means motion code on `ABRWeaponPickup`, a class **BP03 authors and owns**. That is not merely an
+owner_path amendment — it is two packets writing the same file across a milestone boundary, which
+law 7's one-owner rule exists to forbid. Cleanest resolution is probably that BP03 lands the
+pickup's replicated-motion seam (an interface or a server-called `AttractTo`) as part of its own
+packet, and BP06 only *calls* it — but that is a design call for the lead, and it has to be made
+**before BP03 closes**, or BP06 arrives to find the seam absent and its owner archived.
+
+*Unowned, not blocked:* step 4's rung-4 scenario `SmokeTS2C_Grapple` lives with the Gauntlet
+harness, outside `Source/` and `Content/`, so the hook does not confine it — but no ticket's
+`owner_path` names it either. BP00 owns the harness; whoever adds a scenario is writing in BP00's
+folder. Worth settling when BP00 lands rather than at BP06's claim.
+
+See BP03's Log for the systematic `Tests/` finding, and BP05's for the projectile-has-no-home
+ARCHITECTURE gap.
