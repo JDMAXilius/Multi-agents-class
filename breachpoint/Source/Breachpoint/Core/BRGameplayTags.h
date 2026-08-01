@@ -93,6 +93,18 @@ namespace BRGameplayTags
 	 */
 	BREACHPOINT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Melee);
 
+	/**
+	 * `UBRGA_Grenade`'s asset tag (BP05).
+	 *
+	 * Declared rather than left as a `RequestGameplayTag(..., ErrorIfNotFound=false)` string,
+	 * for a reason sharper than the melee case: that lookup in an ABILITY CONSTRUCTOR races the
+	 * native tag registry at module load. It would fail during CDO construction, succeed later,
+	 * and produce a grenade whose asset tag exists on some instances and not others. **A tag
+	 * that starts working intermittently is worse than one that never works** — the second is a
+	 * bug report, the first is three days of confusion.
+	 */
+	BREACHPOINT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Grenade);
+
 	// -------------------------------------------------------------------------
 	// InputTag.*  -- hardware -> tag. Consumed by BRInputConfig/BRInputComponent (step 3)
 	// and relayed to the ASC; bots press the same tags on their own ASC.
