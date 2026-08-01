@@ -127,3 +127,34 @@ The lead appends; nobody else writes here. A doubt this ledger closes is closed.
   no diff, no merge, no grep. Adding a Tier-4 asset means adding a part of the game only a
   human staring at the editor can review, so the standing question for any new asset is
   *"which tier, and if Tier 4, why can't C++ express it?"* No crisp answer ⇒ no asset.
+
+## Verification policy (31 Jul 2026 — paid for by a false PASS, not theorized)
+
+- **R19. A build claim requires a timestamp proof. A file existing is not evidence that you
+  built it.** Every compile-rung report — verifier, builder observation, CI — carries five
+  items per target: (1) wall-clock time printed BEFORE the command, (2) verbatim output tail
+  including `Result:` and `Total execution time:`, (3) exit code captured from `$?`,
+  (4) the produced binary's mtime, and (5) **an explicit assertion that mtime > start time.**
+  Item 5 is the load-bearing one — it is the only check a pre-existing artifact cannot satisfy.
+  A report missing it is not a rung result; it is an opinion about a directory listing.
+
+  *Origin:* BP01's first V1 pass reported PASS on three targets having rebuilt one, presenting
+  the size and mtime of binaries a **builder** had produced an hour earlier as its evidence for
+  the other two — one of which had since been deleted. See BP01's Log.
+
+  *The structural lesson, which generalizes past builds:* the crew's separation of powers
+  capability-limits the verifier (no write tools) so that "quietly fixed the test" is
+  impossible. That defends against a reviewer **changing** an artifact. It does nothing against
+  a reviewer **misreading** one — `ls`, `git diff` and `grep` are all read-only, and a stale
+  artifact is indistinguishable from a fresh one unless something forces the time question.
+  Read-only is not the same as honest. Where a rung's evidence could be satisfied by state that
+  already existed before the check ran, the check must be redesigned, not trusted harder.
+
+- **R20. `-Rebuild` on a monolithic UE target is not safely retryable, and "from scratch" must
+  be witnessed, not assumed.** UBT deletes a target's binaries before recompiling, so an
+  interrupted `-Rebuild` leaves the tree strictly worse than before it started — BP01 lost its
+  game executable this way while the report read PASS. Prefer an incremental build that
+  demonstrably completes (under R19's timestamp proof) over a `-Rebuild` that may not. When a
+  Done-when clause says "from scratch" and only an incremental build completed, the honest
+  verdict is **INCONCLUSIVE**, never PASS — and a build reporting "up to date" with zero
+  actions proves nothing at all about compilation.
