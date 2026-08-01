@@ -14,8 +14,6 @@
 
 namespace
 {
-	/** Metres -> Unreal units. Structural; nobody balances this number. */
-	constexpr float MetresToUU = 100.f;
 }
 
 int32 BRExplosion::ApplyExplosionDamage(
@@ -74,7 +72,7 @@ int32 BRExplosion::ApplyExplosionDamage(
 		return 0;
 	}
 
-	const float RadiusUU = BlastRadiusMetres * MetresToUU;
+	const float RadiusUU = BlastRadiusMetres * BRUnits::MetresToUU;
 
 	// ------------------------------------------------------------------------------------------
 	// 1. THE OVERLAP. This is what "radial damage" means in this project.

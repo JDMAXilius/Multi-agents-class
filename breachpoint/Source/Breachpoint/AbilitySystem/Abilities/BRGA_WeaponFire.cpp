@@ -17,9 +17,6 @@
 
 namespace
 {
-	/** Metres -> Unreal units. Rows are authored in metres (`data-and-assets.md`); the engine
-	 *  traces in centimetres. Structural, not tuning — nobody balances this number. */
-	constexpr float MetresToUU = 100.f;
 
 	/**
 	 * The bone whose hits count as headshots. STRUCTURAL, not tuning: it names a skeleton
@@ -317,7 +314,7 @@ bool UBRGA_WeaponFire::ValidateClaim(const FHitResult& Claim, const FBRWeaponRow
 	}
 
 	// 1. RANGE. The claim must be inside the row's reach, measured from the SERVER's muzzle.
-	const float MaxRangeUU = Row.Range_m * MetresToUU + RangeToleranceUU;
+	const float MaxRangeUU = Row.Range_m * BRUnits::MetresToUU + RangeToleranceUU;
 	const float ClaimedDistance = FVector::Dist(ServerLocation, Claim.ImpactPoint);
 	if (ClaimedDistance > MaxRangeUU)
 	{
@@ -457,7 +454,7 @@ FHitResult UBRGA_WeaponFire::TraceShot(const FBRWeaponRow& Row, const FVector& F
 		return Hit;
 	}
 
-	const FVector To = From + Direction * (Row.Range_m * MetresToUU);
+	const FVector To = From + Direction * (Row.Range_m * BRUnits::MetresToUU);
 
 	FCollisionQueryParams Params(SCENE_QUERY_STAT(BRWeaponFire), /*bTraceComplex=*/true);
 	Params.AddIgnoredActor(GetAvatarActorFromActorInfo());

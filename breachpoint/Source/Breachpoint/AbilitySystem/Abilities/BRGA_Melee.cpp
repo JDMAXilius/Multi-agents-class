@@ -18,9 +18,6 @@
 
 namespace
 {
-	/** Metres -> Unreal units. Curves are authored in metres (`data-and-assets.md`); the engine
-	 *  queries in centimetres. Structural, not tuning — nobody balances this number. */
-	constexpr float MetresToUU = 100.f;
 
 	/**
 	 * THE FOUR CURVE NAMES THIS ABILITY READS FROM `CT_Combat`.
@@ -121,8 +118,8 @@ namespace
 			return false;
 		}
 
-		OutRangeUU = RangeMetres * MetresToUU;
-		OutSweepRadiusUU = SweepRadiusMetres * MetresToUU;
+		OutRangeUU = RangeMetres * BRUnits::MetresToUU;
+		OutSweepRadiusUU = SweepRadiusMetres * BRUnits::MetresToUU;
 
 		// A present-but-degenerate row is refused as loudly as a missing one. A zero reach is not
 		// "melee with no range", it is a table that was filled in wrong, and a zero-radius sphere

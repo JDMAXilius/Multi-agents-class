@@ -116,7 +116,7 @@ void UBRGA_Reload::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 		// zero-length reload is a data gap wearing the costume of a working feature.
 		UE_LOG(LogBRCombat, Warning,
 			TEXT("UBRGA_Reload: ReloadTime_s is 0 and no montage raised %s — committing immediately."),
-			*BRGameplayTags::Event_Weapon_ReloadCommit.GetTagName().ToString());
+			*BRGameplayTags::Event_Weapon_ReloadCommit.GetTag().GetTagName().ToString());
 		Commit();
 		return;
 	}
@@ -142,7 +142,7 @@ void UBRGA_Reload::OnFallbackElapsed()
 		UE_LOG(LogBRCombat, Warning,
 			TEXT("UBRGA_Reload committed on the ReloadTime_s timer, not on %s. No reload montage "
 				 "exists yet (BP18 owns Content); the notify is authoritative once it does."),
-			*BRGameplayTags::Event_Weapon_ReloadCommit.GetTagName().ToString());
+			*BRGameplayTags::Event_Weapon_ReloadCommit.GetTag().GetTagName().ToString());
 	}
 	Commit();
 }
@@ -239,7 +239,7 @@ void UBRGA_WeaponSwap::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
 			TEXT("UBRGA_WeaponSwap: EquipTime_s is 0 and no montage raised %s — committing "
 				 "immediately. R3 balances the sandbox around a 0.4 s swap, so a 0 here is a data "
 				 "gap, not a fast weapon."),
-			*BRGameplayTags::Event_Weapon_SwapCommit.GetTagName().ToString());
+			*BRGameplayTags::Event_Weapon_SwapCommit.GetTag().GetTagName().ToString());
 		Commit();
 		return;
 	}
@@ -263,7 +263,7 @@ void UBRGA_WeaponSwap::OnFallbackElapsed()
 		UE_LOG(LogBRCombat, Warning,
 			TEXT("UBRGA_WeaponSwap committed on the EquipTime_s timer, not on %s. No swap montage "
 				 "exists yet (BP18 owns Content)."),
-			*BRGameplayTags::Event_Weapon_SwapCommit.GetTagName().ToString());
+			*BRGameplayTags::Event_Weapon_SwapCommit.GetTag().GetTagName().ToString());
 	}
 	Commit();
 }

@@ -63,6 +63,21 @@ BREACHPOINT_API DECLARE_LOG_CATEGORY_EXTERN(LogBRInput, Log, All);
  * Channel 1 is the First Person template's own object channel and predates this project;
  * it is aliased here rather than redefined so nobody reuses the slot. Channels 2-4 are ours.
  */
+/**
+ * Unit conversions. Structural constants — nobody balances these.
+ *
+ * `MetresToUU` lives HERE, once, because five ability/weapon .cpp files each defined it in an
+ * anonymous namespace and UE's UNITY BUILD concatenates translation units — five anonymous
+ * namespaces become one, and the definitions collide (C2374/C2086). Correct C++ per file,
+ * broken in aggregate, and invisible in a non-unity build.
+ *
+ * Data is authored in METRES (`data-and-assets.md`); the engine works in centimetres.
+ */
+namespace BRUnits
+{
+	inline constexpr float MetresToUU = 100.f;
+}
+
 namespace BRCollision
 {
 	/** Object channel for projectile actors (grenades, rockets). ini Name="Projectile". */

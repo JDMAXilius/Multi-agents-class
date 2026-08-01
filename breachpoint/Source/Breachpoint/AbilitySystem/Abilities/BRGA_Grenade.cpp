@@ -22,8 +22,6 @@
 
 namespace
 {
-	/** Metres -> Unreal units. Structural; nobody balances this number. */
-	constexpr float MetresToUU = 100.f;
 
 	/**
 	 * ============================================================================================
@@ -240,11 +238,36 @@ bool UBRGA_Grenade::CheckCost(const FGameplayAbilitySpecHandle Handle, const FGa
 	}
 
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
-	// This is where "cannot throw at zero grenades" actually comes from — the modifier is
-	// AddBase with a negative magnitude, so CanApplyAttributeModifiers refuses when the result
-	// would go below zero. No branch in CanActivateAbility, and nothing for anyone to forget.
-	return ASC && ASC->CanApplyAttributeModifiers(
-		*Spec.Data.Get(), 1.f, ASC->MakeEffectContext());
+	if (!ASC)
+	{
+		return false;
+	}
+
+	// WHY NOT `CanApplyAttributeModifiers`, which is the obvious call and is what the first
+	// version used: its signature is `(const UGameplayEffect*, float Level, context)` — it takes
+	// the effect's CDO and evaluates the modifiers ON THE CLASS. Our magnitude is a SetByCaller
+	// supplied per-spec, so the CDO evaluates it as **0** and the check would pass at zero
+	// grenades. It is the same trap as wiring `CostGameplayEffectClass` and stopping: a check
+	// that compiles, reads as a real cost check, and always says yes.
+	//
+	// So ask the attribute directly. `Grenades` is clamped to >= 0 by `PreAttributeChange`, so
+	// "can I afford one throw" is exactly "do I hold at least the cost".
+	const FGameplayAttribute GrenadeAttribute = UBRGE_GrenadeCost::ResolveGrenadeCountAttribute();
+	if (!GrenadeAttribute.IsValid())
+	{
+		return false;
+	}
+
+	bool bFound = false;
+	const float Held = ASC->GetGameplayAttributeValue(GrenadeAttribute, bFound);
+	if (!bFound)
+	{
+		return false;
+	}
+
+	float CostPerThrow = 0.f;
+	BRCombatCurves::Evaluate(GrenadeCostPerThrowCurve, CostPerThrow);
+	return Held >= CostPerThrow;
 }
 
 void UBRGA_Grenade::ApplyCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) const
@@ -454,7 +477,7 @@ void UBRGA_Grenade::ThrowGrenade(float SecondsCooked)
 	// belong to the projectile. This ability supplies a direction and a speed, which are the two
 	// things only it knows.
 	const FTransform ReleaseTransform(ViewDirection.Rotation(), ViewLocation);
-	const FVector LaunchVelocity = ViewDirection * (Tuning.ThrowSpeedMetresPerSecond * MetresToUU);
+	const FVector LaunchVelocity = ViewDirection * (Tuning.ThrowSpeedMetresPerSecond * BRUnits::MetresToUU);
 
 	// ==========================================================================================
 	// THE GHOST — a CUE, never a client-spawned actor.

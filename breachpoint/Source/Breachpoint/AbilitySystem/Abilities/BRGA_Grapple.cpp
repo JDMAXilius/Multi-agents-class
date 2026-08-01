@@ -15,8 +15,6 @@
 
 namespace
 {
-	/** Metres -> Unreal units. Structural; nobody balances this number. */
-	constexpr float MetresToUU = 100.f;
 
 	/**
 	 * CT_Combat curve names this ability needs. **NEITHER ROW EXISTS TODAY** — `CT_Combat.csv`
@@ -166,7 +164,7 @@ bool UBRGA_Grapple::TraceForTarget(FHitResult& OutHit) const
 	FRotator ViewRotation;
 	Avatar->GetActorEyesViewPoint(ViewLocation, ViewRotation);
 
-	const FVector End = ViewLocation + ViewRotation.Vector() * (GetMaxRangeMetres() * MetresToUU);
+	const FVector End = ViewLocation + ViewRotation.Vector() * (GetMaxRangeMetres() * BRUnits::MetresToUU);
 
 	FCollisionQueryParams Params(SCENE_QUERY_STAT(BRGrapple), /*bTraceComplex=*/false);
 	Params.AddIgnoredActor(Avatar);
@@ -215,7 +213,7 @@ bool UBRGA_Grapple::ValidateTarget(const FHitResult& Claim, EBRGrappleMode Claim
 	Avatar->GetActorEyesViewPoint(ServerLocation, ServerRotation);
 
 	// 1. RANGE, from the SERVER's eyes.
-	const float MaxUU = GetMaxRangeMetres() * MetresToUU;
+	const float MaxUU = GetMaxRangeMetres() * BRUnits::MetresToUU;
 	const float Distance = FVector::Dist(ServerLocation, Claim.ImpactPoint);
 	if (Distance > MaxUU)
 	{
