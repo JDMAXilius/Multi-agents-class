@@ -261,3 +261,158 @@ here rather than amended unilaterally: R29 is a closed ruling (law 8), and widen
 — enumerating the real MCP surface, which no other context can do. Everything else on the board
 either needs the editor closed or does not need it at all. Note also that step 1 is **read-only**
 by nature, so it can proceed before step 2's law-7 ruling exists; **landing an asset cannot.**
+
+---
+
+**1 Aug 2026 — step 2 PROPOSAL — not a ruling.**
+(Lead. Desk work against `SURFACE.md`; **no editor touched, no MCP tool called** — T2 holds the
+editor under R29.2. Nothing outside this Log was written: no ruling number was assigned, no line
+of `docs/DESIGN-RULINGS.md` or `docs/contracts/` was edited. **Per law 8 the R-number and the
+acceptance are the founder's**, and step 2 also owes a critic REFUTER before it is settled. Read
+everything below as *proposed*.)
+
+**Proposed answer: (a) — the MCP is an executor. The committed, reviewable artifact stays a
+committed script, plus a committed receipt that projects the binary result into text.**
+
+*What the enumerated surface makes cheap.* `ProgrammaticToolset.execute_tool_script` takes a
+Python script that defines `run() -> dict` and batches calls to the other 253 tools, and its
+importable set is the closed frozenset `{time, datetime, math, json, re, copy}` — **no `unreal`,
+no `os`, no `open()`**. That is not a coincidence we are exploiting; it is the generated-script
+doctrine's own shape, shipped by Epic. The script can only orchestrate declared tools, so a
+reviewer reading the script text knows the complete set of effects it can have. Option (a) needs
+**no new machinery at all** — the executor exists, the artifact is the file we already commit,
+and the file arrives through `Write`, which is the one jurisdiction the hook actually has.
+
+*What the surface makes impossible — and it is (b).* Three independent blockers, each fatal on
+its own:
+
+1. **There is no transcript facility.** The surface has no MCP call journal: `initialize`
+   advertises `resources` as an empty object and no prompts (`SURFACE.md` §Provenance, §3), and
+   `LogsToolset.GetLogEntries` reads the *editor's* log by pattern — nothing in the enumeration
+   says MCP calls appear there. So the transcript would be **written by the same agent that made
+   the calls**, describing calls only it observed. That is not a reviewable artifact; it is a
+   self-report, and it is strictly weaker than the self-report we already accept in a Log.
+2. **Replay cannot be made a controlled experiment.** Proving determinism by replay requires
+   restoring the initial state and re-running. The surface has **no undo, no transaction, no
+   revert, no snapshot, and no source-control toolset** — `can_edit_asset` is documented as
+   always True when source control is disabled (§2 AssetTools), so it is not even a lock check.
+   Worse, the mutating tools are explicitly *not* idempotent: `write_file` "overwrites silently",
+   `set_keys` "replaces all", `duplicate`/`create` collide on an existing path,
+   `delete` takes a folder. A second run lands on a project the first run already changed, so a
+   matching outcome proves nothing and a differing outcome localises nothing.
+3. **A transcript records the calls, not the failures.** `SceneTools.add_to_scene_from_class` and
+   `add_to_scene_from_asset` "return nothing if creation was unsuccessful" — a documented
+   silent-null. A replay of a recorded call list reproduces the *calls* and can silently not
+   reproduce the *actors*. And `execute_tool_script`'s sandbox imports `time` and `datetime`, so
+   determinism is not guaranteed even on the script path — but a script's branch on the clock is
+   **visible in a diff**, whereas a transcript records the branch it happened to take and hides
+   that a branch existed.
+
+The deeper objection is about *when* review happens. Law 7 wants the reviewable thing to exist
+**before** the asset does; a transcript exists only after. So (b) is not chosen — not on taste,
+on the absence of a record, a rollback, and a failure signal.
+
+*Why not (c).* (c) is not wrong so much as **strictly dominated**. (a) already permits everything
+(c) permits — reading, `CaptureViewport` with annotations, `trace_world`, `get_asset_class`,
+`get_schema` — and additionally permits the one thing that pays for this ticket. And (c) buys no
+enforcement in exchange: **the server has no read-only mode, no auth, and no per-tool
+permission.** The same three tool names front all 255 tools, so "exploratory only" is a promise
+with nothing behind it, which is the same footing (a) is on while delivering less. (c) would also
+kill step 4 outright, and with it the only measurement that would tell us whether any of this
+was worth doing.
+
+**The jurisdiction hole — consequence of choosing (a), stated without softening.**
+
+**(a) does not close the hole. Nothing available today closes it.** What (a) does is *relocate
+the reviewable act back into the jurisdiction the hook already has*: under (a) the artifact is a
+file under `Tools/<generator>/`, so it arrives via `Write`/`Edit` with a `file_path`, and
+`guard_laws.py` sees it, owner-path confinement applies, and the banned-API and law-5 checks fire
+normally. Under (b) or (c) the reviewable act happens *inside* `call_tool`, where the hook is
+blind by shape. **That is the whole mechanical argument for (a), and it is bigger than the
+convenience argument.**
+
+The residual hole, named so a builder meets it written down: `AssetTools.write_file` is confined
+by the server to `/Game/`, plugin `Content/`, and `Saved/` — it cannot reach `Source/`, `docs/`,
+`Config/`, `Tools/` — but it **can** silently overwrite `Content/Data/DT_Weapons.csv`. One piece
+of luck worth banking: **that confinement box is text.** `Content/Data/*.csv` is diffable, so
+`git status` is a real backstop exactly where the hook is blind. The binary case
+(`.uasset`/`.umap`) is where git shows a changed blob and says nothing about what changed — which
+is what the receipt below exists for. *And note `SURFACE.md` §5 records that the confinement is
+quoted from the tool's own description and **has never been tested with a rejecting case**.*
+Every assumption in this paragraph inherits that caveat.
+
+**RESEARCH.md §4's tool-name gating does not work. Two findings, the second is structural.**
+
+*Finding 1 — the verbatim prefix is NOT recorded in `SURFACE.md`, and cannot be, yet.* §1 records
+the wire-level names reached over raw JSON-RPC — `list_toolsets`, `describe_toolset`, `call_tool`
+— and the file states at the top that **the tools were never registered in a Claude Code
+session**. `serverInfo` name/title/version are all **empty strings**, so the server supplies no
+name to prefix with. In Claude Code the registered name is `mcp__<key from .mcp.json>__<tool>`,
+which for the committed `.mcp.json` would be `mcp__unreal-mcp__call_tool` — **but that string has
+never been observed, only derived.** RESEARCH.md §4 proposes matching `mcp__unreal__*`, which
+does not match `unreal-mcp` at all; §4 was written before the config key existed. Worse: the
+matcher's key would live in `.mcp.json` **at the repo working root, which this ticket's own Log
+records as outside every `owner_path`** and which no hook guards. A gate whose key is a
+one-line edit to an unguarded file is not a gate. Recording the observed tool name verbatim is
+already owed as `SURFACE.md` §5 item 1; **it is now a prerequisite for any mechanism, not a
+tidiness item.**
+
+*Finding 2 — even with the correct string, name gating cannot express the rule we want.* The
+surface is **a gateway, not a flat tool list**. All 255 tools — every `R`, every `E`, every `M` —
+reach the editor through **one** name, `call_tool`. The read/mutate distinction lives in the
+*arguments* (`toolset_name`, `tool_name`), not in the name a matcher sees. So a name-based hook
+is all-or-nothing: allow `call_tool` and `write_graph_dsl` is allowed; block it and read-only
+enumeration is blocked too. RESEARCH.md §4's "read-only MCP tools can stay ungated" is **not
+achievable by name on this surface.** A working gate must parse `tool_input.arguments` — and
+against `execute_tool_script` even that is insufficient, because its argument is an arbitrary
+Python string; a hook would have to parse Python to know what it calls. **Conclusion: the
+mechanical fix is meaningfully more expensive than §4 assumed, and (a) is the option that needs
+it least** — because under (a) the script is committed and reviewed *before* it is handed to the
+executor.
+
+**What the critic gets to review, given `.uasset`/`.umap` cannot be diffed.** This is the part
+that makes (a) a real answer rather than a restatement of law 7. The surface hands us **text
+projections of binary state**, and the proposal is that a landing commits them:
+
+| Reviewable artifact | Produced by | Why it is reviewable |
+|---|---|---|
+| The generator script, verbatim, exactly as passed to `execute_tool_script` | committed by `Write` | text; hook-visible; reviewed **before** it runs |
+| Its input plan/manifest | committed | text; carries every decision |
+| A **receipt**: script SHA-256, date, editor build + PID, `run()`'s returned dict | the run | ties a specific text to a specific binary |
+| Blueprint graphs as S-expressions | `BlueprintTools.read_graph_dsl` (R) — **round-trippable** | **turns the undiffable BP into diffable text**; also the mechanical read of R26 condition 2 (zero nodes) |
+| Variable/replication state | `list_variables`, `get_variable_replication` (R) | catches `SURFACE.md` §4(c) — a replicated property with no netcode packet |
+| Generated-class identity | `AssetTools.get_asset_class` (R) — `_C` suffix | the R18/R26 audit primitive |
+| Table schema + rows | `DataTableTools.get_schema`, `get_rows` (R) — JSON | "schema declared ≠ schema live" becomes checkable |
+| Object defaults | `ObjectTools.get_properties` (R) — JSON | how an R26 default-value container is actually reviewed |
+| Actor/level state | `SceneTools.find_actors`, `ActorTools.get_tags`, `trace_world` (R) | the blockout idempotency handle, and geometry as measurements |
+
+**Proposed rule, in the words I would put to the founder** (numbering is the founder's to assign):
+
+1. **An asset lands only if a committed script reproduces it.** The MCP is the executor; the
+   script is the artifact. Freehand `call_tool` is permitted for **R** (read) and **E**
+   (editor-state: selection, camera, content-browser path) work — inspection, screenshots,
+   measurement — and **never for M**. Every `M` goes through `execute_tool_script` running a
+   script that is in git first.
+2. **A landing commits a receipt** with the script hash and the text projections above for every
+   asset touched. Binary in the tree with no script and no receipt = `high` finding.
+3. **A committed script does not launder a forbidden outcome.** `BlueprintTools.write_graph_dsl`
+   (populates *and* compiles), `set_variable_replication`, and `AgentSkillToolset.CreateSkill` /
+   `UpdateSkill` stay prohibited through the MCP **regardless of whether a script calls them** —
+   R18/R26 and law 1 forbid the artifact, not the hand that made it.
+4. **Writes into `Content/Data/` are checked by git, not by the hook**, and the reviewer is told
+   so explicitly rather than trusting a confinement nobody has tested.
+5. **The mechanism is owed and is not name-based.** If the founder wants mechanism rather than
+   honesty here, the sequence is: observe and record the verbatim registered tool name
+   (`SURFACE.md` §5 item 1) → fire one rejecting `write_file` case (§5 item 2) → then an
+   argument-parsing PreToolUse hook. Until all three exist, **an MCP-driven session is operating
+   on goodwill, the same footing R26 is on**, and that should be said in the contract in those
+   words.
+
+**Honesty flags on this entry.** (i) It is a proposal; step 2 is not closed until the critic
+refutes it and the founder accepts and numbers it, and the ticket's Done-when needs *both* the
+ruling and the `data-and-assets.md` fill-in (step 3), neither of which this entry performed.
+(ii) Every `R`/`E`/`M` mark I reasoned from is `SURFACE.md`'s, and `SURFACE.md` says plainly that
+those marks come from tool *descriptions*, not from firing the tools. The argument above is
+therefore only as good as the enumeration — **if a tool marked R turns out to mutate, this
+proposal is wrong in a way no amount of doctrine catches.** That is the first thing step 5
+should attack.

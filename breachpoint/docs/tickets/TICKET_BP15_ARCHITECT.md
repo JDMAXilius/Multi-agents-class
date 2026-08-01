@@ -129,7 +129,7 @@ path; if BP14 has not run, step 4 carries a minimal path of its own and says so 
 - [ ] The chosen unit compiles on rung 1 (all three targets) and its spec passes rung 2, both
       verbatim in this Log; rung 4 either green or BLOCKED with a reason
 - [ ] The feature is visible in PIE (screenshot or spec assertion named in the Log)
-- [ ] `docs/BUILD-STATE.md` regenerates byte-identically from a clean checkout
+- [x] `docs/BUILD-STATE.md` regenerates byte-identically from a clean checkout
 - [ ] A diff outside `owner_path` is rejected by gate A — proven once with a real diff
 - [ ] Critic findings from step 6 addressed or explicitly waived in the Log
 - [ ] Findings + decisions written to this ticket's Log
