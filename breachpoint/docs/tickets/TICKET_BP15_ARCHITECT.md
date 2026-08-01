@@ -1,8 +1,10 @@
 # TICKET — BP15: The Architect — score what to build next, then build it
 
-> STATUS: in-progress — **steps 1–3 only**, cloud session (Context A) 1 Aug 2026 (715e455).
-> Steps 4–6 remain `engine-installed` and are NOT claimed. `docs/BUILD-STATE.md` is step 5's
-> output and is deliberately left OUT of this claim's `owner_path`.
+> STATUS: **open — claim RELEASED 1 Aug 2026, nothing landed.** Claimed by a cloud session for
+> steps 1–3, then released un-started when the founder moved to the terminal. `Tools/architect/`
+> is empty and `.claude/active-packet.json` is deleted. **The Kickoff now passes** — pick it up
+> clean. See the Log for the two spec corrections made before the release; they are the useful
+> part of that attempt.
 
 > STATUS: open — cut 31 Jul 2026 from Class 07 (Autonomous Agency). **Mixed-machine:**
 > steps 1–3 and 7 run anywhere (no engine); steps 4–6 need the Windows box with UE 5.8,
@@ -220,3 +222,15 @@ not a correction the lead should make from outside it.
 
 *Still true:* steps 1–3 need no engine. With the gate now passing, this is **the most
 claimable ticket on the board from a cloud or phone session.**
+
+**1 Aug 2026 — claimed, then released with nothing landed. Recorded so the next session does
+not wonder.** A cloud session claimed steps 1–3 and dispatched a builder; the founder moved to
+the terminal before it wrote a file, so the agent was stopped and the claim released. **No
+partial work exists** — `Tools/architect/` was never created, and `.claude/active-packet.json`
+is deleted, so law-5 confinement is off and the next claim starts clean.
+
+What survives from the attempt is in the entry above: the Kickoff gate now passes (BP14 step 1
+ran), and the GE-class exclusion was corrected from six-classes/17-files to seven-classes in
+one header. **Steps 1–3 still need no engine, so this remains the cheapest ticket on the board**
+— but running it on the terminal is strictly better, because step 4 continues straight on from
+step 3 there instead of handing off across machines.

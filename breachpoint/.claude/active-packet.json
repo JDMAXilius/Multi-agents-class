@@ -1,5 +1,0 @@
-{
-  "ticket": "BP15_ARCHITECT",
-  "steps": "1-3 only (files-only per requires:); steps 4-6 need the engine",
-  "owner_path": ["Tools/architect/"]
-}
