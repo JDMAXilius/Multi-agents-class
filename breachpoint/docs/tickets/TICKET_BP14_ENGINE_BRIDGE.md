@@ -68,7 +68,9 @@ them. Step 1 below gates steps 2–4.
 
 - [x] `python3 Tools/data-crew/run_crew.py` (replay) exits 0 from the game repo — **step 1
       only; done 1 Aug 2026, see Log.** No engine claim is attached to this box: it proves a
-      Python pipeline runs, nothing about a rung.
+      Python pipeline runs, nothing about a rung. **Re-proven on Windows 1 Aug** after the
+      cp1252 defect below — the box was checked on Linux-only evidence and was FALSE on the
+      workstation that runs steps 2–5.
 - [ ] One real code ticket lands end-to-end through the pipeline with rungs 1/2/4 green,
       the transcript in that ticket's Log
 - [ ] Rung outputs are verbatim in the log — command, exit code, failing output
@@ -130,3 +132,48 @@ three times before converging, so the pipeline is genuinely executing, not short
 steps 2–5 (the `code` job type, the real ladder, the deliberate failures) is started.
 
 *Still open on this ticket:* everything else. Steps 2–5 remain `engine-installed`.
+
+---
+
+**1 Aug 2026 (terminal, Windows) — the step-1 box was FALSE on the machine that matters.
+`UnicodeEncodeError`, exit 1. Fixed and re-proven.**
+
+Found by running BP15's Kickoff gate, which cites this box. It does not reproduce in the cloud
+and it is not intermittent — it fails on the **first** banner line, every time, on Windows:
+
+```
+$ python Tools/data-crew/run_crew.py            # no PYTHONIOENCODING
+  File "run_crew.py", line 522, in job_weapons
+    log("\n=== JOB: weapons → DT_Weapons.csv ===")
+UnicodeEncodeError: 'charmap' codec can't encode character '→' in position 19
+EXIT=1
+```
+
+The cause is one asymmetry: **every file write in this script already pins
+`encoding="utf-8"`** (7 of 7 — `save_recording`, the risk register, both artifacts, both run
+logs) — *only the streams were left to the platform*. On Windows a redirected stdout defaults
+to the cp1252 console codepage, and the log lines carry `→` and `—`. Fixed by reconfiguring
+`sys.stdout`/`sys.stderr` to UTF-8 with `errors="replace"` at import time (guarded by
+`hasattr`, since a plain pipe object may not expose `reconfigure`).
+
+*Verification, stated at its real rung:*
+
+| Check | Result |
+|---|---|
+| `python Tools/data-crew/run_crew.py`, `PYTHONIOENCODING` **unset** | **exit 0**, both jobs landed |
+| Arena job still genuinely executing | critic bounced **3×** before converging — not short-circuited |
+| Replay output vs. landed source of truth | `output/DT_Weapons.csv` **byte-identical** to `Content/Data/DT_Weapons.csv` (sha256 `d919fc37ccc65c82…`, 585 B both) |
+
+**This still proves only that a Python program runs. It is not a rung.**
+
+*The generalisable finding — this is why the entry is long.* The box was checked from a Linux
+cloud container, and `Tools/` is the one place in this repo where **the cloud and the
+workstation run the same file**. Everything under `Source/` is compiled only on Windows, so a
+platform gap there is caught by rung 1 on the first build. A Python tool has no rung that
+notices. **A `files-only` box proven in Context A is not proven in Context B** — and the
+authoring matrix's context routing currently reads as if files-only means machine-independent.
+Concretely: BP14 step 2 makes this script *emit C++ into a builder packet*, so the same class
+of defect there lands silently in generated source rather than exiting 1.
+
+*Cheap standing check, not filed as a new rule because it costs nothing to just do:* any
+`Tools/**.py` box claimed from the cloud gets one re-run on Windows before it is checked.

@@ -48,6 +48,16 @@ import subprocess
 import sys
 from pathlib import Path
 
+# The pipeline's log lines carry non-ASCII (→ in job banners, — in findings). On
+# Windows a piped/redirected stdout defaults to the cp1252 console codepage, so the
+# FIRST banner raises UnicodeEncodeError and the whole replay exits 1 — on the very
+# machine that runs steps 2-5. Every file write below already pins encoding="utf-8";
+# only the streams were left to the platform. errors="replace" so a future exotic
+# glyph degrades to '?' instead of failing a run whose real work already succeeded.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):        # py3.7+; a plain pipe may lack it
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+
 HERE = Path(__file__).resolve().parent
 OUTPUT_DIR = HERE / "output"
 RECORDING_PATH = HERE / "recording.json"

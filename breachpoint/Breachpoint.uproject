@@ -92,6 +92,14 @@
 			"TargetAllowList": [
 				"Editor"
 			]
+		},
+		{
+			"Name": "Terminal",
+			"Enabled": true
+		},
+		{
+			"Name": "EditorToolset",
+			"Enabled": true
 		}
 	]
 }

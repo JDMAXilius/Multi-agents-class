@@ -232,6 +232,39 @@ mid-session command that re-binds agents, skills, or hooks. Wrong root ⇒ exit 
 *Cheap pre-flight, before any claim:* ask for `/tickets list`. If the skill does not exist, the
 hook does not either, and the session is not a crew session no matter what it can read.
 
+> ⚠️ **AMENDED 1 Aug 2026 — that pre-flight gives a FALSE PASS on the current harness. Do not
+> rely on it.** A session launched **one level above** the game repo
+> (`D:\Documents\Claude\Multi-agents-class`, with `breachpoint/` as a subdirectory) loaded the
+> project `CLAUDE.md` **and** all 7 skills — `/tickets` answered normally — while the hook was
+> inert. The harness discovers skills and memory by *directory scope*; it binds hooks and
+> `$CLAUDE_PROJECT_DIR` to the *launch root*. Those two mechanisms disagree, so the three
+> signals no longer move together and the cheap proxy is measuring the wrong one.
+>
+> **The check that actually works is to fire the hook at a case it must REJECT:**
+>
+> ```bash
+> echo '{"cwd":"<launch-root>","tool_input":{"file_path":"<repo>/Source/Breachpoint/Core/x.cpp",
+>        "content":"TakeDamage("}}' | python breachpoint/.claude/hooks/guard_laws.py; echo $?
+> ```
+>
+> | `cwd` passed | Result |
+> |---|---|
+> | `…/Multi-agents-class` (parent — this session) | **exit 0 — ALLOWED.** Law 2/3 dead |
+> | `…/Multi-agents-class/breachpoint` (repo root) | **exit 2 — BLOCKED.** Law 2/3 live |
+>
+> Law 5 dies the same way and more quietly: `guard_laws.py` looks for the claim at
+> `cwd/.claude/active-packet.json`, so from the parent it reads the **parent's** `.claude/`,
+> which does not exist — and "no claim file" is the script's documented *no-confinement*
+> branch. **A packet could write a claim, see it committed, and be confined by nothing.**
+> `test_guard_laws.py` cannot catch this: it passes `cwd` itself, so it proves the logic and
+> never the binding. 6/6 green is compatible with a completely inert hook.
+>
+> The ruling above is unchanged and now has teeth: **wrong root ⇒ exit and relaunch.** What
+> changes is that "am I at the right root?" must be answered by executing the reject case, not
+> by observing that the crew's *text* loaded. Same lesson as session 2's four defects — an
+> enforcement mechanism proves nothing until it is tested with a case it should REJECT — except
+> here the thing that read as enforced was the check on the enforcement.
+
 *Verified this date on the Windows box (by execution, not by reading this Log):*
 
 | Check | Result |
