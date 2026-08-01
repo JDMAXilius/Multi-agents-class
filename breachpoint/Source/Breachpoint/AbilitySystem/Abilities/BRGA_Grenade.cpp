@@ -132,7 +132,7 @@ UBRGA_Grenade::UBRGA_Grenade(const FObjectInitializer& ObjectInitializer)
 	// lands, this MUST become `BRGameplayTags::Ability_Grenade` — a string that starts working
 	// intermittently is worse than one that never works.
 	// RESOLVED 1 Aug 2026: `Ability.Grenade` is now declared natively, so this uses the handle
-	rather than the string lookup. The packet was right to refuse the string here — a
+	// rather than the string lookup. The packet was right to refuse the string here — a
 	// constructor-time RequestGameplayTag races the registry at module load and would give a
 	// grenade whose asset tag exists on some instances and not others.
 	const FGameplayTag GrenadeTag = BRGameplayTags::Ability_Grenade;
