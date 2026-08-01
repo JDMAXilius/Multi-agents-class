@@ -37,6 +37,18 @@ void UBRAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 	DOREPLIFETIME_CONDITION_NOTIFY(UBRAttributeSet, Health, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UBRAttributeSet, MaxHealth, COND_None, REPNOTIFY_Always);
 
+	// COND_OwnerOnly, and the difference from the four above is the point: a shield bar is public
+	// information the mode is built around, a grenade count is not. Only the owner's HUD reads it,
+	// and only the owner predicts spending it — so only the owner is sent it.
+	//
+	// REPNOTIFY_Always matters MORE here than above, not less. The grenade spend is a PREDICTED
+	// Instant cost: the client has already decremented locally by the time the server's value
+	// arrives, so the two are frequently equal and OnChanged would skip the notify — leaving the
+	// predicted modification unresolved on the exact attribute whose whole point is that a rejected
+	// throw refunds itself.
+	DOREPLIFETIME_CONDITION_NOTIFY(UBRAttributeSet, Grenades, COND_OwnerOnly, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UBRAttributeSet, MaxGrenades, COND_OwnerOnly, REPNOTIFY_Always);
+
 	// IncomingDamage is absent on purpose. See its declaration.
 }
 
@@ -56,7 +68,20 @@ void UBRAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, fl
 	{
 		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxShields());
 	}
-	else if (Attribute == GetMaxHealthAttribute() || Attribute == GetMaxShieldsAttribute())
+	else if (Attribute == GetGrenadesAttribute())
+	{
+		// THE WHOLE RULE FOR GRENADES IS THIS LINE. A floor of zero is what makes "you cannot throw
+		// what you do not have" true even if something ever applies the cost without checking it
+		// first, and the MaxGrenades ceiling is what stops a pickup from over-filling the pouch.
+		//
+		// Note what is NOT here and must not be added: rounding to an integer. A count reads like an
+		// int, but a clamp is the wrong place to decide that — GE_GrenadeCost spends whole numbers
+		// from data, and quantising here would silently absorb a fractional cost bug instead of
+		// letting it show. If partial grenades ever become expressible, that is a ruling, not a
+		// FMath::RoundToFloat someone added to a clamp.
+		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxGrenades());
+	}
+	else if (Attribute == GetMaxHealthAttribute() || Attribute == GetMaxShieldsAttribute() || Attribute == GetMaxGrenadesAttribute())
 	{
 		// A negative capacity would make every clamp above invert (Clamp with Min > Max is
 		// undefined-ish and certainly not what anyone meant). Floor at zero and let the invariant
@@ -65,12 +90,17 @@ void UBRAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, fl
 	}
 
 	// NOTE FOR STEP 4, AND IT IS A REAL TRAP, NOT A STYLE NOTE: because Health is clamped to
-	// GetMaxHealth() *as it currently is*, GE_InitStats MUST order its modifiers so MaxHealth and
-	// MaxShields are set BEFORE Health and Shields. Set Health first on a fresh set and it clamps
-	// to MaxHealth == 0 — a fighter that spawns at zero health, from a table with correct numbers
-	// in it. The alternative (skip the clamp while Max is zero) was considered and rejected: it
-	// would leave "Health <= MaxHealth" conditionally true, and that invariant is exactly what the
-	// pinned suites assert.
+	// GetMaxHealth() *as it currently is*, GE_InitStats MUST order its modifiers so MaxHealth,
+	// MaxShields and MaxGrenades are set BEFORE Health, Shields and Grenades. Set Health first on a
+	// fresh set and it clamps to MaxHealth == 0 — a fighter that spawns at zero health, from a table
+	// with correct numbers in it. The alternative (skip the clamp while Max is zero) was considered
+	// and rejected: it would leave "Health <= MaxHealth" conditionally true, and that invariant is
+	// exactly what the pinned suites assert.
+	//
+	// GRENADES INHERIT THE TRAP EXACTLY, and it bites harder because it is quieter: a fighter who
+	// spawns at zero health dies instantly and someone files a bug in the first minute, while a
+	// fighter who spawns with zero grenades just... never throws one, and it reads as a missing
+	// feature rather than an ordering bug. The order is asserted in GE_InitStats' constructor.
 	//
 	// Equally deliberate: raising MaxHealth does NOT scale current Health, and lowering it clamps
 	// Health down on the next change rather than immediately. Breachpoint has no max-health
@@ -149,6 +179,20 @@ void UBRAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallback
 		CheckForDeath(Data);
 		return;
 	}
+
+	// THERE IS DELIBERATELY NO `Grenades` BRANCH, and its absence is a decision rather than an
+	// omission — stated here because the next reader will otherwise "complete the pattern".
+	//
+	// Every branch above exists because an attribute change has a CONSEQUENCE the rest of the game
+	// must learn about: shields hitting zero grants a tag, health hitting zero fires a death. A
+	// grenade spend has none. The count going down means the fighter has fewer grenades, and the
+	// clamp in PreAttributeChange is the entire rule — nothing is applied, nothing is removed,
+	// nothing is broadcast. A branch here would be a reaction point with no reaction in it, and the
+	// first person to need one would put it somewhere this file could not see.
+	//
+	// The one thing that DOES need to know is the owner's HUD, and it learns through OnRep_Grenades
+	// and the ASC's attribute-change delegate — on the client, where the HUD is. Reacting on the
+	// server here would tell nobody anything.
 }
 
 // ---------------------------------------------------------------------------
@@ -295,4 +339,14 @@ void UBRAttributeSet::OnRep_Health(const FGameplayAttributeData& OldValue)
 void UBRAttributeSet::OnRep_MaxHealth(const FGameplayAttributeData& OldValue)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UBRAttributeSet, MaxHealth, OldValue);
+}
+
+void UBRAttributeSet::OnRep_Grenades(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UBRAttributeSet, Grenades, OldValue);
+}
+
+void UBRAttributeSet::OnRep_MaxGrenades(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UBRAttributeSet, MaxGrenades, OldValue);
 }

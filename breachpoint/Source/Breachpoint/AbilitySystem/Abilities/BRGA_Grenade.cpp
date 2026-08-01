@@ -146,22 +146,95 @@ UBRGA_Grenade::UBRGA_Grenade(const FObjectInitializer& ObjectInitializer)
 	CancelAbilitiesWithTag.AddTag(BRGameplayTags::Ability_Sprint);
 
 	// ==========================================================================================
-	// NO COOLDOWN TAG, NO COST GE — and this is a gap, not a design position.
+	// THE COST — a CARRIED COUNT, not a cooldown. Gap closed 1 Aug 2026.
 	// ==========================================================================================
 	//
-	// BP05 step 1 says the cost is a CARRIED COUNT ("2 carried, reset on respawn via the
-	// `GE_InitStats` path"), not a cooldown. A count that GAS can predict and roll back is an
-	// attribute plus a cost GE, and both live in `AbilitySystem/Effects/` — which this packet may
-	// NOT write. BP05's own pre-filed contract_gap says so in as many words, and warns that owning
-	// `Abilities/` does not grant the sibling `Effects/`.
+	// BP05 step 1 specifies "2 carried, reset on respawn via the `GE_InitStats` path". That is an
+	// attribute plus a cost GE, and both now exist: `UBRAttributeSet::Grenades`/`MaxGrenades` and
+	// `UBRGE_GrenadeCost`. This ability was written while they did not and said so loudly rather
+	// than quietly shipping a free grenade.
 	//
-	// So **the grenade is free today.** Stated in a comment because "no cost" and "someone forgot
-	// the cost" look identical in code — the same reason BRGA_Sprint spells out that sprint is free
-	// by design. This one is NOT by design, and the difference is the whole point of writing it
-	// down. Consequence for BP05's Done-when box 3 ("cook-cancel and whiff rollback leave zero
-	// state (count, cooldown, cues)"): the COUNT leg cannot be proven until the cost exists, and no
-	// amount of care in this file substitutes for it.
+	// **Setting `CostGameplayEffectClass` ALONE WOULD BE A TRAP**, and it is the trap a reader is
+	// most likely to walk into, so it is named here: the engine's default `CheckCost`/`ApplyCost`
+	// build their OWN spec and set no SetByCaller. `UBRGE_GrenadeCost`'s magnitude IS a
+	// SetByCaller, so it would evaluate to **0** — the check would pass at zero grenades and the
+	// apply would deduct nothing. A cost that is wired, looks wired, and costs nothing.
+	//
+	// So both are overridden below and routed through `UBRGE_GrenadeCost::MakeSpec`. It is still
+	// the GE cost path — same prediction, same automatic rollback on server rejection, same
+	// atomicity with `CommitAbility` — it only supplies the number the engine's convenience path
+	// cannot know.
+	CostGameplayEffectClass = UBRGE_GrenadeCost::StaticClass();
+
 	bCommitOnActivate = true;
+}
+
+// ================================================================================================
+// Cost — the GE path, with the magnitude the engine's default cannot supply
+// ================================================================================================
+
+namespace
+{
+	/** `CT_Combat` row for what one throw costs. Absent = refuse, never a default (law 3). */
+	const FName GrenadeCostPerThrowCurve(TEXT("Grenade.CostPerThrow"));
+}
+
+FGameplayEffectSpecHandle UBRGA_Grenade::MakeCostSpec() const
+{
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+	if (!ASC || !UBRGE_GrenadeCost::IsOperational())
+	{
+		return FGameplayEffectSpecHandle();
+	}
+
+	float CostPerThrow = 0.f;
+	if (!BRCombatCurves::Evaluate(GrenadeCostPerThrowCurve, CostPerThrow) || CostPerThrow <= 0.f)
+	{
+		// REFUSE rather than assume 1. A grenade that costs nothing because a CSV row is missing
+		// is unlimited grenades, which is the loudest possible balance defect and the quietest
+		// possible code path.
+		UE_LOG(LogBRCombat, Error,
+			TEXT("UBRGA_Grenade: CT_Combat has no '%s' row, so the throw cost is unknown. Refusing "
+				 "rather than defaulting — a free grenade is not a safe fallback."),
+			*GrenadeCostPerThrowCurve.ToString());
+		return FGameplayEffectSpecHandle();
+	}
+
+	// MakeSpec takes a POSITIVE count and applies the sign itself, in one place, because a
+	// forgotten minus does not cost a grenade — it grants one.
+	return UBRGE_GrenadeCost::MakeSpec(ASC, CostPerThrow, ASC->MakeEffectContext());
+}
+
+bool UBRGA_Grenade::CheckCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, OUT FGameplayTagContainer* OptionalRelevantTags) const
+{
+	const FGameplayEffectSpecHandle Spec = MakeCostSpec();
+	if (!Spec.IsValid())
+	{
+		// No usable cost spec means we cannot prove the player can pay. Refusing is the safe
+		// direction: the alternative is a free throw whenever the data is broken.
+		return false;
+	}
+
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+	// This is where "cannot throw at zero grenades" actually comes from — the modifier is
+	// AddBase with a negative magnitude, so CanApplyAttributeModifiers refuses when the result
+	// would go below zero. No branch in CanActivateAbility, and nothing for anyone to forget.
+	return ASC && ASC->CanApplyAttributeModifiers(
+		*Spec.Data.Get(), 1.f, ASC->MakeEffectContext());
+}
+
+void UBRGA_Grenade::ApplyCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) const
+{
+	const FGameplayEffectSpecHandle Spec = MakeCostSpec();
+	if (!Spec.IsValid())
+	{
+		return;
+	}
+
+	// Applied through the ability's own path so it lands under the activation's prediction key:
+	// that is what makes a cook-cancel or a server rejection refund the grenade automatically,
+	// which is BP05's Done-when box 3 with no custom rollback code.
+	ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, Spec);
 }
 
 // ================================================================================================
@@ -229,7 +302,8 @@ bool UBRGA_Grenade::ResolveTuning(FBRGrenadeTuning& OutTuning, FString& OutReaso
 
 void UBRGA_Grenade::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
-	// The base commits (free today — see the constructor's cost note) and will have ended us if the
+	// The base commits — which now COSTS A GRENADE through the overridden ApplyCost — and will
+	// have ended us if the
 	// commit failed. Skipping it is the subclass-contract violation BRGameplayAbility.h warns about.
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 	if (!IsActive())

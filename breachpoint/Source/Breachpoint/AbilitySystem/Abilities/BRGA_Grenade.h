@@ -169,7 +169,24 @@ public:
 	 */
 	static int32 ApplyExplosionDamage(UAbilitySystemComponent* InstigatorASC, AActor* InstigatorActor, const FVector& Epicentre, float BlastRadiusMetres, float BlastCentreDamage);
 
+protected:
+	/**
+	 * THE COST, overridden rather than inherited — and the override is the whole point.
+	 *
+	 * `CostGameplayEffectClass` alone would be a trap: the engine's default CheckCost/ApplyCost
+	 * build their own spec and set no SetByCaller, so `UBRGE_GrenadeCost`'s magnitude evaluates
+	 * to 0 — a cost that is wired, looks wired, and costs nothing. These supply the number.
+	 */
+	virtual bool CheckCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, OUT FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
+
+	virtual void ApplyCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) const override;
+
 private:
+	/** One builder for both cost paths, so CheckCost and ApplyCost can never disagree about the
+	 *  magnitude. Invalid handle = refuse; never a default cost. */
+	FGameplayEffectSpecHandle MakeCostSpec() const;
+
+
 	/** The cook's release half. UFUNCTION because `OnRelease` is a dynamic delegate. */
 	UFUNCTION()
 	void HandleCookReleased(float TimeHeld);

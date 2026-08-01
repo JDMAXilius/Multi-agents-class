@@ -13,6 +13,25 @@
 #include "Core/BRCore.h"
 #include "Core/BRGameplayTags.h"
 
+namespace
+{
+	/**
+	 * `Fighter.MaxGrenades` — the fighter's grenade capacity, read from `CT_Combat` by ApplyInitStats.
+	 *
+	 * WHY IT IS HERE AND NOT IN `BRCombatCurves::Names`, where its two siblings `Fighter.MaxHealth`
+	 * and `Fighter.MaxShields` live and where it plainly belongs: `AbilitySystem/BRCombatCurves.h` is
+	 * NOT this packet's file to write, and law 5 says a blocked path is a contract_gap and a stop,
+	 * not a shared-header edit. The precedent is `BRGrappleCurveNames` in
+	 * `BRCharacterMovementComponent.cpp`, which is the same constant in the same position for the
+	 * same reason.
+	 *
+	 * A NAME IS NOT A NUMBER — nothing here decides how many grenades a fighter carries; the row
+	 * `Fighter.MaxGrenades,2.0,2.0,2.0` in `CT_Combat.csv` does. When `BRCombatCurves.h` is next
+	 * open, this constant moves up beside its siblings and this comment goes away.
+	 */
+	const FName FighterMaxGrenadesCurve(TEXT("Fighter.MaxGrenades"));
+}
+
 UBRAbilitySystemComponent::UBRAbilitySystemComponent(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
@@ -356,8 +375,10 @@ bool UBRAbilitySystemComponent::ApplyInitStats()
 
 	float MaxHealth = 0.f;
 	float MaxShields = 0.f;
+	float MaxGrenades = 0.f;
 	const bool bHaveHealth = BRCombatCurves::Evaluate(BRCombatCurves::Names::FighterMaxHealth, MaxHealth);
 	const bool bHaveShields = BRCombatCurves::Evaluate(BRCombatCurves::Names::FighterMaxShields, MaxShields);
+	const bool bHaveGrenades = BRCombatCurves::Evaluate(FighterMaxGrenadesCurve, MaxGrenades);
 
 	if (!bHaveHealth || !bHaveShields || MaxHealth <= 0.f)
 	{
@@ -368,6 +389,27 @@ bool UBRAbilitySystemComponent::ApplyInitStats()
 		return false;
 	}
 
+	if (!bHaveGrenades || MaxGrenades < 0.f)
+	{
+		// REFUSED, and the SAME refusal health and shields get, for the same reason: the count is a
+		// gameplay number and this file may not invent one. Two grenades is a design decision that
+		// lives in `Fighter.MaxGrenades`; a `2.f` typed here would be a law-3 violation AND a second
+		// source of truth that silently beats the CSV on every spawn.
+		//
+		// THE WHOLE SPEC IS ABANDONED, not just the grenade half. Applying GE_InitStats with the
+		// grenade keys unset would not leave grenades untouched — both modifiers are `Override` and a
+		// missing SetByCaller evaluates to ZERO, so a fighter would be initialised to a full health
+		// bar and an empty pouch, every respawn, quietly. Refusing the whole effect means the fighter
+		// is visibly uninitialised, which is the failure this function already knows how to report.
+		//
+		// Note `< 0.f` and not `<= 0.f`, unlike MaxHealth: a capacity of zero grenades is ABSURD for
+		// health (a fighter who cannot exist) but is a legal design for a mode that ships without
+		// grenades. Zero here means "the row says none"; a missing row means "nobody decided".
+		UE_LOG(LogBRCombat, Error, TEXT("BRAbilitySystemComponent '%s': CT_Combat is missing a usable '%s' (read %.2f); GE_InitStats NOT applied and this fighter is UNINITIALISED. The grenade count is data and is not invented here."),
+			*GetNameSafe(GetOwner()), *FighterMaxGrenadesCurve.ToString(), MaxGrenades);
+		return false;
+	}
+
 	const FGameplayEffectSpecHandle SpecHandle = MakeOutgoingSpec(InitStatsEffectClass, /*Level=*/1.f, MakeEffectContext());
 	if (!SpecHandle.IsValid() || !SpecHandle.Data.IsValid())
 	{
@@ -375,13 +417,21 @@ bool UBRAbilitySystemComponent::ApplyInitStats()
 		return false;
 	}
 
-	// All four, always. A partial set would leave one attribute at whatever the last life left it,
+	// All SIX, always. A partial set would leave one attribute at whatever the last life left it,
 	// and GE_InitStats' whole job is that a respawn is not "the previous life minus the damage".
-	// Spawning at FULL health and shields is the design (Halo); it is not a separate number.
+	// Spawning at FULL health, shields and grenades is the design (Halo); it is not a separate
+	// number, which is why MaxGrenades is written to both keys exactly as MaxHealth is.
+	//
+	// ORDER IS IRRELEVANT HERE and load-bearing in the effect. These are named key/value writes onto
+	// a spec, not modifiers; the ordering that matters (capacities before current values) is the
+	// Modifiers array in UBRGE_InitStats' constructor. Rearranging these six lines changes nothing —
+	// rearranging those six changes everything.
 	SpecHandle.Data->SetSetByCallerMagnitude(UBRGE_InitStats::MaxHealthName, MaxHealth);
 	SpecHandle.Data->SetSetByCallerMagnitude(UBRGE_InitStats::MaxShieldsName, MaxShields);
+	SpecHandle.Data->SetSetByCallerMagnitude(UBRGE_InitStats::MaxGrenadesName, MaxGrenades);
 	SpecHandle.Data->SetSetByCallerMagnitude(UBRGE_InitStats::HealthName, MaxHealth);
 	SpecHandle.Data->SetSetByCallerMagnitude(UBRGE_InitStats::ShieldsName, MaxShields);
+	SpecHandle.Data->SetSetByCallerMagnitude(UBRGE_InitStats::GrenadesName, MaxGrenades);
 
 	ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 

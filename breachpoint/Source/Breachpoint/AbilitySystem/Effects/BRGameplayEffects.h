@@ -189,14 +189,19 @@ public:
 // ===========================================================================================
 
 /**
- * Sets MaxHealth, MaxShields, Health and Shields from `CT_Combat`, in THAT ORDER, and the order
- * is the whole design of this class.
+ * Sets MaxHealth, MaxShields, MaxGrenades, Health, Shields and Grenades from `CT_Combat` — ALL
+ * CAPACITIES FIRST, ALL CURRENT VALUES SECOND — and that order is the whole design of this class.
  *
  * `UBRAttributeSet::PreAttributeChange` clamps Health to `GetMaxHealth()` **as it currently is**.
  * On a fresh ASC that is zero. Write Health before MaxHealth and a fighter spawns at zero health
  * from a table with correct numbers in it — a bug that looks like a spawn-system bug, a
  * replication bug, or a data bug, and is none of them. Modifiers execute in array order, so the
  * fix is the array order below, asserted by a pinned spec.
+ *
+ * Grenades joined the list under exactly that rule and not as an afterthought: `MaxGrenades` sits
+ * in the capacity block and `Grenades` in the value block, because the same clamp applies and the
+ * same zero would result. The grenade version of the bug is worse only in that it is quieter — an
+ * empty pouch on every spawn reads as "the grenade doesn't work", not as an ordering mistake.
  *
  * `Override`, not `Additive`: respawn re-applies this effect, and an additive version would hand
  * a player 200 health on their second life.
@@ -215,11 +220,20 @@ class BREACHPOINT_API UBRGE_InitStats : public UGameplayEffect
 public:
 	UBRGE_InitStats();
 
-	/** SetByCaller keys. The applier sets all four or the spec is wrong — there is no partial init. */
+	/** SetByCaller keys. The applier sets all SIX or the spec is wrong — there is no partial init. */
 	static const FName MaxHealthName;
 	static const FName MaxShieldsName;
 	static const FName HealthName;
 	static const FName ShieldsName;
+
+	/**
+	 * The grenade pair. A missing SetByCaller evaluates to ZERO with a log, and these two modifiers
+	 * are `Override` — so an applier that adds the attribute and forgets these keys does not leave
+	 * grenades alone, it sets them to zero on every single respawn. That is why the attribute, these
+	 * modifiers and `UBRAbilitySystemComponent::ApplyInitStats` landed as one change.
+	 */
+	static const FName MaxGrenadesName;
+	static const FName GrenadesName;
 };
 
 // ===========================================================================================
@@ -269,7 +283,8 @@ public:
 };
 
 // ===========================================================================================
-// GE_GrenadeCost — the eighth effect, the library's first COST, and the one that is INERT today
+// GE_GrenadeCost — the eighth effect and the library's first COST. Now OPERATIONAL: the
+// `Grenades`/`MaxGrenades` attributes it was written against have landed.
 // ===========================================================================================
 
 /**
@@ -306,38 +321,40 @@ public:
  * exists to buy.
  *
  * -------------------------------------------------------------------------------------------
- * *** THIS EFFECT IS INERT UNTIL `UBRAttributeSet` DECLARES THE ATTRIBUTE ***
+ * THE ATTRIBUTE HAS LANDED — this effect is OPERATIONAL, and the by-name bridge STAYS for now
  * -------------------------------------------------------------------------------------------
  *
- * `UBRAttributeSet` has five attributes — Shields, MaxShields, Health, MaxHealth, IncomingDamage
- * — and no grenade count. That file belongs to another owner this session, so this packet does
- * NOT add the attribute, and it emphatically does not stub one on a second attribute set to make
- * this file self-contained: a second set is the "tiny fix" that becomes a permanent fork of the
- * one place `PreAttributeChange` and `PostGameplayEffectExecute` live.
+ * `UBRAttributeSet` now has SEVEN attributes — Shields, MaxShields, Health, MaxHealth, Grenades,
+ * MaxGrenades, IncomingDamage. `Grenades` and `MaxGrenades` landed atomically with this effect's
+ * clamp, their rep notifies, the two `GE_InitStats` override rows and the `ApplyInitStats` reads
+ * that fill them from `Fighter.MaxGrenades`. So `IsOperational()` is now true at module load, the
+ * constructor DOES add its modifier, and `MakeSpec` builds real specs.
  *
- * So the modifier's attribute is resolved BY NAME (`ResolveGrenadeCountAttribute`), the same
- * honest bridge `UBRGA_Grenade::RequestOwedTag` uses for its owed tags, and for the same reason:
- * the alternative — naming `UBRAttributeSet::GetGrenadesAttribute()` before it exists — does not
- * fail loudly, it fails to COMPILE, and it takes the whole module and every other lane down with
- * it. Note the bridge is not exotic here: `ATTRIBUTE_ACCESSORS_BASIC` generates a getter that is
- * itself a `FindFieldChecked` by name performed at this exact moment. Ours is that call with
- * `FindFProperty` instead, so an absent attribute is a refusal instead of a fatal check.
+ * THE BRIDGE (`ResolveGrenadeCountAttribute`) IS DELIBERATELY NOT COLLAPSED YET. The one-line
+ * version — `return UBRAttributeSet::GetGrenadesAttribute();` — is correct and is the right end
+ * state, but it converts "the attribute is missing" from a logged refusal into a COMPILE failure
+ * that takes the whole module and every concurrent lane with it. Until this tree has compiled once
+ * with the attribute present, the refusal is worth more than the directness. It costs one
+ * `FindFProperty` per CDO construction — once per class, at module load, never in gameplay.
  *
- * WHEN THE ATTRIBUTE LANDS the bridge collapses to one line — `ResolveGrenadeCountAttribute`
- * becomes `return UBRAttributeSet::GetGrenadesAttribute();` — and the exact specification its
- * owner needs (name, accessors, rep notify, clamp, `GE_InitStats` order) is in this packet's
- * report and in the ticket Log. Until then:
+ * COLLAPSE IT on the first green rung-1 build, in a change that touches nothing else, so that if
+ * the direct reference does not resolve the failure has exactly one candidate cause. The bridge is
+ * not exotic in the meantime: `ATTRIBUTE_ACCESSORS_BASIC` generates a getter that is itself a
+ * `FindFieldChecked` by name performed at this exact moment. Ours is that call with `FindFProperty`
+ * instead, so an absent attribute is a refusal instead of a fatal check.
  *
- *   - the constructor adds NO modifier and logs an Error at module load. An effect carrying a
- *     modifier with an invalid attribute is worse than an empty one — it is a live effect that
- *     charges an attribute nobody named.
+ * The refusal machinery below stays regardless, because it is what makes the bridge safe:
+ *
+ *   - with no attribute the constructor adds NO modifier and logs an Error at module load. An
+ *     effect carrying a modifier with an invalid attribute is worse than an empty one — it is a
+ *     live effect that charges an attribute nobody named.
  *   - `MakeSpec` refuses and returns an invalid handle, so no caller can apply a cost that
  *     silently costs nothing.
  *   - `IsOperational()` exists so the grenade ability can refuse to wire itself to a cost that
- *     cannot charge. **This is the residual hole and it is stated rather than papered over:** if
- *     this class is set as `CostGameplayEffectClass` while the attribute is still owed, GAS's own
- *     `CheckCost` sees a GE with no modifiers, finds nothing to refuse, and the grenade is free
- *     again — with an Error in the log instead of silence, which is the whole difference.
+ *     cannot charge. It answers TRUE today, which means the residual hole it guarded — this class
+ *     wired as `CostGameplayEffectClass` while the attribute was owed, GAS finding no modifiers to
+ *     refuse, and the grenade silently free — is CLOSED. Trap 2 below is not: the engine's default
+ *     cost path still sets no SetByCaller, so an ability must override `CheckCost`/`ApplyCost`.
  *
  * -------------------------------------------------------------------------------------------
  * THE TWO TRAPS FOR WHOEVER WIRES THIS UP

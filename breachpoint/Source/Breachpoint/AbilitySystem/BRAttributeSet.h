@@ -28,12 +28,21 @@ struct FGameplayEffectSpec;
 DECLARE_MULTICAST_DELEGATE_FourParams(FBROnDeathSignature, AActor* /*Victim*/, AActor* /*Instigator*/, AActor* /*Causer*/, const FGameplayEffectSpec& /*KillingSpec*/);
 
 /**
- * UBRAttributeSet — THE attribute set (BREACHPOINT-ARCHITECTURE.md §3.3). One set, five attributes,
+ * UBRAttributeSet — THE attribute set (BREACHPOINT-ARCHITECTURE.md §3.3). One set, seven attributes,
  * and no second set will be added: attribute proliferation is what the named exceptions in
  * docs/contracts/gas-purity.md exist to prevent (ammo is per-weapon state, not an attribute).
  *
- * THE SHAPE OF THE FIGHTER: Shields sit in front of Health and absorb first. Nothing else is
- * modelled here, because nothing else is a per-fighter continuous quantity.
+ * THE SHAPE OF THE FIGHTER: Shields sit in front of Health and absorb first. Grenades sit beside
+ * them as the fighter's one carried consumable. Nothing else is modelled here, because nothing else
+ * is a per-fighter continuous quantity.
+ *
+ * WHY GRENADES ARE HERE AND AMMO IS NOT, since the ledger's ammo exception looks like it should
+ * cover both: ammo is per-WEAPON state, and the exception's stated bound is exactly that — two
+ * mags modelled as attributes means a new attribute per weapon slot, which is the proliferation
+ * this class refuses. A grenade count is per-FIGHTER: ONE number on the ASC that exists whether the
+ * fighter holds the AR, the Magnum, or nothing. That is the shape an attribute is for, so the count
+ * goes through the front door and the named-exception ledger is untouched. The full argument lives
+ * on UBRGE_GrenadeCost, which is the effect that spends it.
  *
  * THE ONE ENTRY POINT FOR DAMAGE is IncomingDamage — a META attribute. Meta means: never
  * replicated, never persistent, never read by UI, and zero between executions. A damage source
@@ -94,6 +103,37 @@ public:
 	ATTRIBUTE_ACCESSORS_BASIC(UBRAttributeSet, MaxHealth);
 
 	/**
+	 * Carried grenades. Spent by GE_GrenadeCost (an AddBase of a negative magnitude), refilled by
+	 * GE_InitStats on every spawn and respawn — so "a fresh life starts with a full pouch" is the
+	 * same mechanism that refills shields, not a second one.
+	 *
+	 * THE NAME IS A CONTRACT: UBRGE_GrenadeCost::GrenadeCountAttributeName is the FName "Grenades"
+	 * and that class resolves this property BY NAME. A rename here — even to a synonym — turns the
+	 * grenade cost inert at module load with an Error, which is the loud half of a bargain whose
+	 * quiet half would have been free grenades.
+	 *
+	 * COND_OwnerOnly, unlike Shields/Health: a fighter's remaining grenade count is not public
+	 * information the way a shield bar is (§6.1 makes those COND_None deliberately). Only the owner
+	 * needs it — for their own HUD and their own prediction — and sending it to seven other clients
+	 * would be bandwidth spent on an aim-assist-grade tell.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Attributes", ReplicatedUsing = OnRep_Grenades)
+	FGameplayAttributeData Grenades;
+	ATTRIBUTE_ACCESSORS_BASIC(UBRAttributeSet, Grenades);
+
+	/**
+	 * Grenade capacity. Set by GE_InitStats from data; the clamp ceiling for Grenades.
+	 *
+	 * An attribute rather than a constant for the same reason MaxShields is one: it comes from
+	 * CT_Combat, it arrives through GE_InitStats, and it replicates — so the client's clamp and the
+	 * server's clamp agree without either of them knowing a number. A pickup that raises the pouch
+	 * size is then a modifier, not a code change.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Attributes", ReplicatedUsing = OnRep_MaxGrenades)
+	FGameplayAttributeData MaxGrenades;
+	ATTRIBUTE_ACCESSORS_BASIC(UBRAttributeSet, MaxGrenades);
+
+	/**
 	 * META. The one entry point for damage — see the class comment.
 	 *
 	 * NOT a UPROPERTY with Replicated, and that omission is the design: a replicated meta attribute
@@ -132,6 +172,12 @@ protected:
 
 	UFUNCTION()
 	void OnRep_MaxHealth(const FGameplayAttributeData& OldValue);
+
+	UFUNCTION()
+	void OnRep_Grenades(const FGameplayAttributeData& OldValue);
+
+	UFUNCTION()
+	void OnRep_MaxGrenades(const FGameplayAttributeData& OldValue);
 
 private:
 	/**

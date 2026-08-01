@@ -209,6 +209,8 @@ const FName UBRGE_InitStats::MaxHealthName(TEXT("MaxHealth"));
 const FName UBRGE_InitStats::MaxShieldsName(TEXT("MaxShields"));
 const FName UBRGE_InitStats::HealthName(TEXT("Health"));
 const FName UBRGE_InitStats::ShieldsName(TEXT("Shields"));
+const FName UBRGE_InitStats::MaxGrenadesName(TEXT("MaxGrenades"));
+const FName UBRGE_InitStats::GrenadesName(TEXT("Grenades"));
 
 UBRGE_InitStats::UBRGE_InitStats()
 {
@@ -224,10 +226,21 @@ UBRGE_InitStats::UBRGE_InitStats()
 		return Mod;
 	};
 
+	// --- CAPACITIES FIRST. Every ceiling, before any value that is clamped against one. ---------
 	Modifiers.Add(MakeOverrideMod(UBRAttributeSet::GetMaxHealthAttribute(), MaxHealthName));
 	Modifiers.Add(MakeOverrideMod(UBRAttributeSet::GetMaxShieldsAttribute(), MaxShieldsName));
+	Modifiers.Add(MakeOverrideMod(UBRAttributeSet::GetMaxGrenadesAttribute(), MaxGrenadesName));
+
+	// --- CURRENT VALUES SECOND. Each one clamps against the ceiling written above. --------------
 	Modifiers.Add(MakeOverrideMod(UBRAttributeSet::GetHealthAttribute(), HealthName));
 	Modifiers.Add(MakeOverrideMod(UBRAttributeSet::GetShieldsAttribute(), ShieldsName));
+
+	// Grenades goes LAST and MaxGrenades goes in the block above — not because grenades are less
+	// important, but because `PreAttributeChange` clamps Grenades to `GetMaxGrenades()` as it
+	// currently is. Reversed, MaxGrenades is still 0 when Grenades is written and every fighter
+	// spawns with an empty pouch from a table that says 2. The failure is silent, survives respawn,
+	// and looks like the grenade ability is broken.
+	Modifiers.Add(MakeOverrideMod(UBRAttributeSet::GetGrenadesAttribute(), GrenadesName));
 }
 
 // ===========================================================================================
