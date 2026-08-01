@@ -49,10 +49,15 @@ path; if BP14 has not run, step 4 carries a minimal path of its own and says so 
    > counts that sum to 43, without saying where the 44th came from — it could not pass as
    > written. §3's composition table now states it. Two exclusions the parser must handle,
    > both real C++ under `Source/` that the per-folder counts do not cover:
-   > - **The six generic GE classes** (`GE_Damage`, `GE_Regen`, `GE_Cooldown`, `GE_InitStats`,
-   >   `GE_RecentDamage`, `GE_Death`) in `AbilitySystem/Effects/`. Counting files on disk
-   >   finds 17 in `AbilitySystem/` against an expected 11. They are a named library under
-   >   R18, not numbered units — exclude them and say so in the run log.
+   > - **The generic GE classes** in `AbilitySystem/Effects/BRGameplayEffects.h`. They are a
+   >   named library under R18, not numbered units — exclude them and say so in the run log.
+   >   **Corrected 1 Aug 2026: there are SEVEN, not six, and they share ONE header.**
+   >   `UBRGE_RecentDamage`, `UBRGE_Damage`, `UBRGE_Regen`, `UBRGE_Cooldown`, `UBRGE_InitStats`,
+   >   `UBRGE_Death`, `UBRGE_ShieldsBroken` (`BRGameplayEffects.h:77,103,157,179,211,239,263`).
+   >   The old wording also said "counting files on disk finds 17 in `AbilitySystem/`" — the
+   >   folder holds **8** headers. **So the scanner must count CLASSES, not files**: one header
+   >   declaring seven classes is why a file-count premise was wrong twice over, and it is the
+   >   single most useful thing step 1 can learn before writing a line of the parser.
    > - **`BRGameLiftLifecycle`** is expected MISSING for the entire slice. Its GDD-tier term
    >   must rank it last: a perpetually-MISSING unit that scored high would be selected to
    >   build, which inverts the ledger's intent.
@@ -104,7 +109,7 @@ path; if BP14 has not run, step 4 carries a minimal path of its own and says so 
 
 - [ ] `python3 Tools/architect/architect.py --scan` reproduces every per-folder count from §3
       (43 in-slice units) plus the one Phase-2 reserved unit = 44, matching §4's composition
-      table; exits nonzero on any mismatch. The six generic GE classes and
+      table; exits nonzero on any mismatch. The **seven** generic GE classes and
       `BRGameLiftLifecycle` are excluded/expected-MISSING per §4, and the run log says so
 - [ ] Ranked table prints all four score terms; the same input produces the same order twice
       (run twice, diff is empty)
@@ -160,9 +165,11 @@ obvious thing to parse. Fixed to `(6)`.
 
 *Defect 3 — two unit-manifest ambiguities that would fail the per-folder assertion.* Both are
 real C++ under `Source/` that §3's counts exclude:
-- The **six generic GE classes** live in `AbilitySystem/Effects/` under R18, but §3.3's count
-  of 11 covers only its file table. A scanner counting files on disk finds **17** in
-  `AbilitySystem/` against an expected 11. They are a named library, not numbered units.
+- The **seven generic GE classes** live in `AbilitySystem/Effects/BRGameplayEffects.h` under
+  R18, but §3.3's count of 11 covers only its file table. They are a named library, not
+  numbered units. *Corrected 1 Aug 2026 — this read "six … a scanner counting files on disk
+  finds 17"; both numbers were wrong. Seven classes, and `AbilitySystem/` holds 8 headers, not
+  17 files. The exclusion is by class name, not by file.*
 - **`BRGameLiftLifecycle`** is expected MISSING for the whole slice. It must carry Phase-2
   GDD tier so the score ranks it last — otherwise a permanently-MISSING unit scores high on
   the "current state" term and gets *selected to build*, which inverts the ledger.
@@ -175,3 +182,37 @@ out-of-scope line (*"ARCHITECTURE §3 is our manifest — parse it, don't infer 
 the six GE classes should eventually become numbered units is a founder call, not a scanner
 detail — if BP02 step 4 hits the `UGameplayEffectComponent` problem and files its
 `contract_gap` against R18, that call gets made there, and this count moves with it.
+
+**1 Aug 2026 — Kickoff is now satisfiable, and the GE exclusion rested on two wrong numbers.**
+(Cloud session, Context A. Not a claim — this is the lead correcting the packet's premises
+before a builder spends its first hour on them.)
+
+*The gate.* This ticket's Kickoff requires `python3 Tools/data-crew/run_crew.py` (replay) to
+exit 0 from the game repo, citing "(BP14 step 1)". **That was unsatisfiable until today** —
+BP14's own Kickoff gated BP14 on the same line, so the condition depended on work that was
+itself gated behind the condition. BP14 step 1 has now been executed (see its Log): the crew
+lives at `Tools/data-crew/`, `find_agents_dir()` resolves the game repo's `.claude/agents/`,
+and replay exits 0. **This gate now passes.**
+
+*The premise defect.* Step 1's self-check excludes "the six generic GE classes" from the unit
+count and justifies it with *"counting files on disk finds 17 in `AbilitySystem/` against an
+expected 11."* Both numbers are wrong against HEAD:
+
+- There are **seven** GE classes, not six — the sixth-and-seventh are `UBRGE_Death` **and
+  `UBRGE_ShieldsBroken`** (`AbilitySystem/Effects/BRGameplayEffects.h:77,103,157,179,211,239,263`).
+- `AbilitySystem/` holds **8** headers, not 17 files. All seven GE classes are declared in a
+  **single** header.
+
+*Why this is worth a Log entry and not a silent edit:* the scanner "exits nonzero on any
+mismatch," so it is a machine that will confidently report a defect that isn't there. And the
+two errors have the same root — **the exclusion was conceived as a file-count adjustment when
+it is a class-count adjustment.** A UE header routinely declares several `UCLASS`es; any unit
+scanner for this codebase must parse declarations, not `ls`. That is the reusable finding.
+
+Corrected in the Kickoff self-check, the Done-when line, and Defect 3 above. `BRCombatCurves`
+is a second, separate case the audit flagged (present on disk, absent from `ARCHITECTURE §3`) —
+**left for the packet**, because deciding whether it is a numbered unit is the ticket's own job,
+not a correction the lead should make from outside it.
+
+*Still true:* steps 1–3 need no engine. With the gate now passing, this is **the most
+claimable ticket on the board from a cloud or phone session.**
