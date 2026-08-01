@@ -147,8 +147,64 @@ void ABRCharacter::OnRep_PlayerState()
 	InitializeAbilitySystem(TEXT("OnRep_PlayerState (client)"));
 }
 
+EBRGasStage ABRCharacter::GetConfiguredGasStage()
+{
+	// The CDO, not `this` — see the property's comment. GetDefault<> is what UE filled from
+	// [/Script/Breachpoint.BRCharacter] GasStage; a Blueprint child cannot have touched it.
+	return GetDefault<ABRCharacter>()->GasStage;
+}
+
 void ABRCharacter::InitializeAbilitySystem(const TCHAR* CallSite)
 {
+	// ---------------------------------------------------------------------
+	// STAGE GATE — `AttributesOnly` (docs/GAS-INTEGRATION-ROADMAP.md, stage 1)
+	//
+	// FIRST STATEMENT IN THE FUNCTION, before even the PlayerState read, so that at `Off` this
+	// function is a single comparison and a return: no ASC is touched, no avatar is pointed at
+	// this pawn, and nothing below can run at all. That is the roadmap's `Off` — *"nothing
+	// GAS-side runs. The template, exactly as it plays today."*
+	//
+	// WHY GATING THIS IS SAFE RATHER THAN A REGRESSION, and the argument is the acceptance
+	// criterion for the whole gate: `InitAbilityActorInfo(PlayerState, this)` has exactly two
+	// effects today — it sets the ASC's avatar pointer, and it logs. Nothing reads that avatar
+	// yet, because nothing is granted (no `DA_AbilitySet_*` assets exist), no attribute is
+	// initialised (`ApplyInitStats` has no gameplay caller anywhere in the module), no
+	// GameplayEffect is applied to a pawn, and no cue is played. Movement — the only thing the
+	// founder's playtest exercises — never consults the ASC on any path. So at `Off` the
+	// difference between gated and ungated is one avatar pointer nobody dereferences and one
+	// `Log`-verbosity line. The owner-side init on `ABRPlayerState::PostInitializeComponents`
+	// is deliberately NOT gated, so the ASC still has its owner and stays in the same
+	// well-defined state an unpossessed ASC is in.
+	//
+	// The bypassed path is not removed and not made unreachable: one ini line brings it back.
+	//
+	// HOOKS FOR THE STAGES THIS LANE DOES NOT OWN — named so the next builder does not re-derive
+	// them, and left UNWIRED so no two stages can land in one test run (the roadmap's one rule):
+	//   - `Granting`     — `UBREquipmentComponent`'s ability-set grant path. Weapons/ lane.
+	//                      Blocked on assets besides: the three `DA_AbilitySet_*` do not exist.
+	//   - `InputRouted`  — `ABRPlayerController::AbilityInputTagPressed/Released`, where the tag
+	//                      reaches the ASC. Match/ + Input/ lane (PHASE2-RELAYER step 4). The
+	//                      BINDING in SetupPlayerInputComponent below is intentionally left
+	//                      ungated: it is inert without grants, and gating it would change what
+	//                      the pawn does at `Off`, which the acceptance criterion forbids.
+	//   - `Sprint`       — `UBRCharacterMovementComponent`'s sprint intent + `BRGA_Sprint`.
+	//                      Character-movement lane (BP02).
+	//   - `Weapons`      — `BRGA_WeaponFire` / reload / swap activation. AbilitySystem/ lane.
+	//   - `FullSandbox`  — melee, grenade, grapple activation. AbilitySystem/ lane.
+	//   - `Cues`         — cue handler execution. AbilitySystem/ lane.
+	// Each is one `if (!BRGas::IsStageEnabled(EBRGasStage::X)) { return; }` at the top of the
+	// owning function. None of them belongs in this file.
+	// ---------------------------------------------------------------------
+	if (!BRGas::IsStageEnabled(EBRGasStage::AttributesOnly))
+	{
+		// Verbose, so a default-verbosity playtest log stays byte-for-byte what it is today apart
+		// from the one `BRGas: stage = ...` line. Present at all because "the gate refused" must be
+		// discoverable by turning up the channel, not by reading this source file.
+		UE_LOG(LogBRCombat, Verbose, TEXT("BRCharacter '%s': %s — GAS stage gate is '%s'; ASC init skipped (needs at least 'AttributesOnly'). Set GasStage in Config/DefaultGame.ini."),
+			*GetName(), CallSite, BRGas::ToString(BRGas::GetStage()));
+		return;
+	}
+
 	ABRPlayerState* BRPlayerState = GetPlayerState<ABRPlayerState>();
 	if (!BRPlayerState)
 	{
@@ -174,6 +230,24 @@ void ABRCharacter::InitializeAbilitySystem(const TCHAR* CallSite)
 
 	UE_LOG(LogBRCombat, Log, TEXT("BRCharacter '%s': %s — InitAbilityActorInfo(owner='%s', avatar='%s')."),
 		*GetName(), CallSite, *BRPlayerState->GetName(), *GetName());
+
+	// ---------------------------------------------------------------------
+	// STAGE 1's SECOND HALF — `GE_InitStats` — IS DOCUMENTED HERE AND DELIBERATELY NOT WIRED.
+	//
+	// `UBRAbilitySystemComponent::ApplyInitStats()` is written, compiles, and is exercised by
+	// `BRShieldSpec`, but it has NO gameplay caller anywhere in the module. Adding one here would
+	// be adding a feature under cover of building a gate, and worse, an UNCOORDINATED one: the
+	// spawn/respawn stat write belongs to whoever owns spawning, and `BRShieldSpec.cpp:538`
+	// already records what a second caller costs — "ApplyInitStats would silently apply a SECOND
+	// infinite regen later in the match". Two callers is a defect that a green PIE run cannot see.
+	//
+	// WHOEVER WIRES IT (spawn owner — Match/BRGameMode's spawn path, or this function under a
+	// coordinated ruling) needs exactly:
+	//     if (HasAuthority() && BRGas::IsStageEnabled(EBRGasStage::AttributesOnly)) { ASC->ApplyInitStats(); }
+	// `ApplyInitStats` is already server-only and refuses loudly without authority, so the gate is
+	// the only thing missing. The roadmap's stage-1 exit line ("BRAttributeSet: init — Health=…")
+	// is owed by `ApplyInitStats` itself, which today logs a refusal shape but no success shape.
+	// ---------------------------------------------------------------------
 }
 
 UBRCharacterMovementComponent* ABRCharacter::GetBRCharacterMovement() const

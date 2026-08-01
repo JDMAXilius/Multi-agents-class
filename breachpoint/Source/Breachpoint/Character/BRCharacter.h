@@ -6,6 +6,10 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 
+// EBRGasStage — the stage gate's enum. Included in the HEADER (not just the .cpp) because
+// GasStage below is a UPROPERTY of that type and UHT must see the UENUM to generate for it.
+#include "Core/BRCore.h"
+
 #include "BRCharacter.generated.h"
 
 class UBRCharacterMovementComponent;
@@ -116,6 +120,66 @@ public:
 
 	/** The movement component, already typed. Sprint (BP02) and grapple (BP06) will want this. */
 	UBRCharacterMovementComponent* GetBRCharacterMovement() const;
+
+	// -------------------------------------------------------------------------
+	// The GAS stage gate — docs/GAS-INTEGRATION-ROADMAP.md
+	// -------------------------------------------------------------------------
+
+	/**
+	 * The configured stage, read off this class's C++ CDO — i.e. straight out of
+	 * `[/Script/Breachpoint.BRCharacter] GasStage` in `Config/DefaultGame.ini`.
+	 *
+	 * CALL `BRGas::IsStageEnabled()`, NOT THIS. This exists so `BRCore.cpp` has one way to reach
+	 * the config-loaded value without every call site in every discipline folder having to include
+	 * a pawn header to ask a question that has nothing to do with pawns. `BRGas::GetStage()` calls
+	 * it exactly once per process and caches the answer; nothing else should call it at all.
+	 *
+	 * Static, and reads the CDO rather than `this`, because the gate is a PROCESS-wide fact: two
+	 * pawns at two different stages is not a state this project ever wants to be able to reach.
+	 */
+	static EBRGasStage GetConfiguredGasStage();
+
+protected:
+	// -------------------------------------------------------------------------
+	// THE GAS STAGE SWITCH — the same idiom as bBindNativeVerbsFromInputConfig below
+	// -------------------------------------------------------------------------
+
+	/**
+	 * How far the GAS integration is switched on. Defaults to `Off`: the template, exactly as it
+	 * plays today, with nothing GAS-side executing.
+	 *
+	 * WHY IT LIVES ON THIS CLASS. It needs a `config = Game` UCLASS to be ini-loadable at all, and
+	 * `ABRCharacter` is (a) already one, (b) already the owner of the ini section the founder
+	 * edits, and (c) the class that owns the first gated call site (`InitializeAbilitySystem`).
+	 * Putting it on a new settings class would have meant a new file, a new ini section and a
+	 * second place to look — and the roadmap's whole premise is that reverting is ONE edit.
+	 *
+	 * HOW IT DIFFERS FROM `bBindNativeVerbsFromInputConfig`, AND WHY THE ONE DIFFERENCE MATTERS:
+	 * that switch is `EditDefaultsOnly, Config`; this one is `Config` ONLY, with no edit specifier,
+	 * so it does not appear on any details panel and `BP_BRcharacter` cannot serialise a value for
+	 * it. `docs/PHASE2-RELAYER.md` step 1 records the rule that makes that necessary — "a
+	 * Blueprint's *serialised* property beats the ini-loaded C++ CDO" — and a stage gate the
+	 * founder can set in the ini while a Blueprint quietly overrides it would be worse than no gate
+	 * at all. The ini is not the preferred place to set this; it is the only place.
+	 *
+	 * READ THROUGH `BRGas::IsStageEnabled()`. This property is never read directly by an instance —
+	 * not even by this class — because the CDO is the value the ini actually filled.
+	 *
+	 * MARKERS (line numbers in the PHASE2-RELAYER style, so the next reader does not have to grep):
+	 *   - `Source/Breachpoint/Core/BRCore.h:125`            — `EBRGasStage`, the ordered stages.
+	 *   - `Source/Breachpoint/Core/BRCore.h:199`            — `BRGas::IsStageEnabled`, the gate.
+	 *   - `Source/Breachpoint/Core/BRCore.cpp:50`           — the CDO read and the once-per-process cache.
+	 *   - `Source/Breachpoint/Core/BRCore.cpp:93`           — the startup announcer (prints even at `Off`).
+	 *   - `Source/Breachpoint/Character/BRCharacter.h:182`  — this property, THE SWITCH.
+	 *   - `Source/Breachpoint/Character/BRCharacter.cpp:150`— `GetConfiguredGasStage`, the one CDO reader.
+	 *   - `Source/Breachpoint/Character/BRCharacter.cpp:198`— the ONLY gated call site today
+	 *                                                          (`AttributesOnly`); the unwired hooks
+	 *                                                          for every other stage are named in the
+	 *                                                          comment block immediately above it.
+	 *   - `Config/DefaultGame.ini:107`                      — the one line the founder edits.
+	 */
+	UPROPERTY(Config)
+	EBRGasStage GasStage = EBRGasStage::Off;
 
 protected:
 	// -------------------------------------------------------------------------
