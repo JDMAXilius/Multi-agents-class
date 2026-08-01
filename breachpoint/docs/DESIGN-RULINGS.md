@@ -243,3 +243,29 @@ The lead appends; nobody else writes here. A doubt this ledger closes is closed.
   *Rule:* a discipline folder that needs to speak gets `LogBR<Folder>`, added to `BRCore.h/.cpp`
   by the packet that first needs it, under the same exact-file `owner_path` grant R23 defines
   for `BRGameplayTags.h/.cpp`. No new ruling per channel — this one covers all of them.
+
+- **R25. `Source/Breachpoint/Tests/` holds ONE spec file per feature packet, named
+  `BR<Feature>Spec.cpp`, each with exactly one owner. §3.12's three files are the initial set,
+  not the complete set.** The folder appears in no ticket's `owner_path` while BP02, BP03, BP05
+  and BP06 all must write specs there — surfaced at BP01 and deferred twice because the obvious
+  per-ticket fix collides with law 7 (one owner per artifact) over a shared `BRCombatSpec.cpp`.
+
+  *The resolution turns on a fact about UE automation that removes the conflict:* a suite name
+  is a property of each **test**, not of the **file**. `Breachpoint.Sim.Combat` can be declared
+  across many `.cpp` files, so "one pinned suite" and "one file per packet" are not in tension.
+  BP03's fire-path tests live in `BRWeaponFireSpec.cpp` and still register under
+  `Breachpoint.Sim.Combat`; BP05's radial-falloff cases live in `BRTriangleSpec.cpp` and do the
+  same. Law 7 holds unbroken — every file has one owner — and no packet waits on another to
+  release a folder.
+
+  *Grant shape at claim time:* the packet takes its **own spec file by exact path**, never the
+  `Tests/` folder. Same device as R23's `BRGameplayTags.h/.cpp` and BP01's three `.Target.cs`
+  entries. A packet that needs to *read* a sibling spec may read it; the hook only gates writes.
+
+  *ARCHITECTURE §3.12 is amended by this ruling* — it names three files and says "3 (cpp only)",
+  which was a snapshot of the first three suites, not a cap. Anyone reading §3.12 as a closed
+  list should read this ruling instead.
+
+  *What this does NOT license:* a packet quietly adding a spec file that asserts nothing so a
+  rung goes green. `testing.md`'s grep gates and BP00 step 5's critic pass ("can a spec pass
+  asserting nothing?") still apply, and a spec file with no meaningful assertion is a finding.
