@@ -122,22 +122,17 @@ $moduleDll = Join-Path $RepoRoot 'Binaries\Win64\UnrealEditor-Breachpoint.dll'
 if (-not (Test-Path -LiteralPath $moduleDll)) {
     $blockers += ("The project's editor module is not built ({0} absent). Rung 2 runs on rung 1's output - run Tools\run-ubt.ps1 first." -f $moduleDll)
 }
-if ($blockers.Count -gt 0) {
-    Write-BRBlocked -Rung 'RUNG 2' -Reasons $blockers
-    exit $BR_EXIT_BLOCKED
-}
-
 # R21 - a live build makes any spec result meaningless.
 $live = @(Get-BRLiveBuildProcesses -EngineRoot $EngineRoot)
 if ($live.Count -gt 0) {
-    $reasons = @('A build is in flight; binaries are being rewritten under this run (R21). Live now:')
-    foreach ($o in $live) { $reasons += ("  - {0}" -f $o) }
-    Write-BRBlocked -Rung 'RUNG 2' -Reasons $reasons
-    exit $BR_EXIT_BLOCKED
+    $blockers += 'A build is in flight; binaries are being rewritten under this run (R21). Live now:'
+    foreach ($o in $live) { $blockers += ("  - {0}" -f $o) }
 }
 
 # ---------------------------------------------------------------------------------------
 # Authoring pre-check: is there anything to discover at all?
+# Reported alongside the other preflight results rather than after them - a reader who
+# is blocked wants the WHOLE gap list in one pass, not one item per re-run.
 # ---------------------------------------------------------------------------------------
 $specFiles = @()
 if (Test-Path -LiteralPath $SpecDir) {
@@ -147,6 +142,14 @@ Write-Host ''
 Write-Host ("spec source dir : {0}" -f $SpecDir)
 Write-Host ("spec .cpp files : {0}" -f $specFiles.Count)
 foreach ($f in $specFiles) { Write-Host ("   - {0}" -f $f.Name) }
+if ($specFiles.Count -eq 0) {
+    Write-Host ''
+    Write-Host 'NO SUITES AUTHORED YET:'
+    Write-Host ("  {0} contains no *.cpp - there is no Breachpoint.Sim.* or Breachpoint.Bots.*" -f $SpecDir)
+    Write-Host '  test in the module. Owner: BP00 step 2 (sim-builder) - first suite'
+    Write-Host '  Breachpoint.Sim.Combat in Source/Breachpoint/Tests/BRCombatSpec.cpp, pinned'
+    Write-Host '  against DT_Weapons/CT_Combat, blocked in turn on BP02''s attribute set.'
+}
 
 $ReportDir = Join-Path (New-BRLogDir -ToolsDir $ToolsDir) ('specs-report-' + (Get-BRRunStamp))
 $filterArg = ($Filter -join '+')
@@ -175,19 +178,23 @@ if ($DryRun) {
     exit $BR_EXIT_PASS
 }
 
-if ($specFiles.Count -eq 0 -and -not $Force) {
-    $reasons = @()
-    $reasons += 'NO SUITES AUTHORED YET.'
-    $reasons += ("{0} contains no *.cpp - there is no Breachpoint.Sim.* or Breachpoint.Bots.* test in the module." -f $SpecDir)
-    $reasons += 'Launching the editor would burn minutes to discover zero tests and print a'
-    $reasons += 'green-looking "0 failed". This script refuses to manufacture that sentence.'
-    $reasons += 'Owner: BP00 step 2 (sim-builder) - first suite Breachpoint.Sim.Combat in'
-    $reasons += 'Source/Breachpoint/Tests/BRCombatSpec.cpp, pinned against DT_Weapons/CT_Combat,'
-    $reasons += 'blocked in turn on BP02''s attribute set.'
-    $reasons += 'Re-run with -Force to launch anyway and watch discovery return zero.'
-    Write-BRBlocked -Rung 'RUNG 2' -Reasons $reasons
+$authoringBlocked = ($specFiles.Count -eq 0)
+if ($authoringBlocked -and -not $Force) {
+    $blockers += 'NO SUITES AUTHORED YET.'
+    $blockers += ("  {0} contains no *.cpp - there is no Breachpoint.Sim.* or Breachpoint.Bots.* test in the module." -f $SpecDir)
+    $blockers += '  Launching the editor would burn minutes to discover zero tests and print a'
+    $blockers += '  green-looking "0 failed". This script refuses to manufacture that sentence.'
+    $blockers += '  Owner: BP00 step 2 (sim-builder) - first suite Breachpoint.Sim.Combat in'
+    $blockers += '  Source/Breachpoint/Tests/BRCombatSpec.cpp, pinned against DT_Weapons/CT_Combat,'
+    $blockers += '  blocked in turn on BP02''s attribute set.'
+    $blockers += '  Re-run with -Force to launch anyway and watch discovery return zero.'
+}
+if ($blockers.Count -gt 0) {
+    Write-BRBlocked -Rung 'RUNG 2' -Reasons $blockers
     Write-Host ''
-    Write-Host 'RUNG2|discovered=0|passed=0|failed=0|verdict=BLOCKED|reason=no-suites-authored'
+    $reasonTag = 'preflight'
+    if ($authoringBlocked) { $reasonTag = 'no-suites-authored' }
+    Write-Host ('RUNG2|filters={0}|discovered=0|passed=0|failed=0|verdict=BLOCKED|reason={1}' -f $filterArg, $reasonTag)
     exit $BR_EXIT_BLOCKED
 }
 

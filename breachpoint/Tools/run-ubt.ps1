@@ -64,6 +64,7 @@ param(
     [switch]$DryRun,
     [int]$TailLines = 0,
     [int]$TimeoutMinutes = 0,
+    [int]$LockWaitSeconds = 120,
     [switch]$Help
 )
 
@@ -96,6 +97,10 @@ if ($Help) {
     Write-Host '  -DryRun              Print the exact UBT command lines and exit 0. Runs nothing.'
     Write-Host '  -TailLines <n>       Print only the last n lines of each build log (0 = all).'
     Write-Host '  -TimeoutMinutes <n>  Kill a target build after n minutes (0 = no timeout).'
+    Write-Host '  -LockWaitSeconds <n> How long to wait for UBT''s global mutex before each'
+    Write-Host '                       target (default 120). The mutex outlives the process'
+    Write-Host '                       that held it; a target that never gets it is BLOCKED,'
+    Write-Host '                       not FAIL - it never compiled anything.'
     Write-Host '  -Help                This text.'
     Write-Host ''
     Write-Host 'EXIT CODES  0 PASS | 1 FAIL | 2 INCONCLUSIVE | 3 BLOCKED   (only 0 is green)'
@@ -172,8 +177,18 @@ if ($live.Count -gt 0) {
     foreach ($o in $live) { $reasons += ("  - {0}" -f $o) }
     $reasons += 'Wait for it to finish, or kill that process TREE deliberately, then re-run.'
     $reasons += 'Note: stopping the agent that started a build does NOT stop the build.'
-    Write-BRBlocked -Rung 'RUNG 1' -Reasons $reasons
-    exit $BR_EXIT_BLOCKED
+    if ($DryRun) {
+        # A dry run launches nothing, so it cannot contend for the lock. Report the
+        # state and carry on printing the commands - being unable to READ the plan while
+        # somebody else compiles would just teach people to bypass the guard.
+        Write-Host '!! NOTE: a build is in flight right now (listed below). This dry run launches'
+        Write-Host '!! nothing, so it proceeds - but a real run would be BLOCKED here.'
+        foreach ($o in $live) { Write-Host ("!!   - {0}" -f $o) }
+    }
+    else {
+        Write-BRBlocked -Rung 'RUNG 1' -Reasons $reasons
+        exit $BR_EXIT_BLOCKED
+    }
 }
 Write-Host '  build lock: FREE (no cl.exe / link.exe / UnrealBuildTool; Build.bat lock unheld)'
 
@@ -288,6 +303,24 @@ foreach ($target in $Targets) {
 
     Write-BRRule ("TARGET {0} | {1} | {2}" -f $target, $Platform, $Configuration)
 
+    # --- R21 per-target gate: the mutex outlives the process that held it ---------------
+    # Checked before EVERY target, not once per run. See Wait-BRBuildLockFree's comment:
+    # this wrapper's own second run lost a target to a mutex held by the previous
+    # target's already-exited UBT.
+    $lockFree = Wait-BRBuildLockFree -EngineRoot $EngineRoot -TimeoutSeconds $LockWaitSeconds
+    if (-not $lockFree) {
+        Write-Host ("R21 GATE: build lock still held after {0}s - refusing to launch {1}." -f $LockWaitSeconds, $target)
+        Write-Host '         This target is BLOCKED, not failed: it never compiled anything.'
+        $results += @{
+            Target = $target; Exit = -1; Start = (Get-Date); Artifact = $artifact
+            Exists = (Test-Path -LiteralPath $artifact); Mtime = '(not attempted)'; Newer = $false
+            UpToDate = $false; Actions = 0; Verdict = 'BLOCKED'
+            Reason = 'build lock held by another process (R21) - target never launched'
+            Log = '(not launched)'; Duration = 0
+        }
+        continue
+    }
+
     # --- R19 item 1: wall clock captured and PRINTED BEFORE the build launches ----------
     $startTime = Get-Date
     Write-Host ("R19(1) start time (before launch) : {0}" -f (Format-BRTime $startTime))
@@ -371,7 +404,14 @@ foreach ($target in $Targets) {
 
     $verdict = 'FAIL'
     $reason = ''
-    if ($run.TimedOut) {
+    if (Test-BRConflictingInstance -LogPath $logPath) {
+        # R21: UBT never got the global mutex, so it never compiled. That is BLOCKED.
+        # Calling it FAIL would be a compile claim about a build that did not happen -
+        # the mirror image of calling a stale artifact a PASS.
+        $verdict = 'BLOCKED'
+        $reason = 'UBT lost the global mutex race (ConflictingInstance) - another build held the lock, so nothing was compiled here. R21: report BLOCKED, never a compile verdict.'
+    }
+    elseif ($run.TimedOut) {
         $verdict = 'FAIL'
         $reason = ("build exceeded -TimeoutMinutes {0} and was killed" -f $TimeoutMinutes)
     }
@@ -437,14 +477,25 @@ foreach ($target in $Targets) {
         Duration  = $run.DurationSeconds
     }
 
-    # R21 again between targets: if something else grabbed the lock mid-run, the remaining
-    # targets' evidence is not ours to claim.
-    $liveNow = @(Get-BRLiveBuildProcesses -EngineRoot $EngineRoot)
-    if ($liveNow.Count -gt 0) {
-        Write-Host ''
-        Write-Host '!! WARNING: a build process is live after this target finished:'
-        foreach ($o in $liveNow) { Write-Host ("!!   - {0}" -f $o) }
-        Write-Host '!! If it is not ours, the remaining targets'' timestamps may not belong to this run.'
+    # Cross-target artifact census. Observed 31 Jul 2026, on this wrapper's own runs:
+    # BreachpointServer.exe existed at 23:41:58 and was GONE by 23:59:12, and
+    # Breachpoint.exe vanished the same way - neither deleted by anything this script did.
+    # Cause, per commit 8f21056: a concurrent MSBuild-driven build in the same tree
+    # deleted them. That is R21 in the wild, and it is the point of printing this census:
+    # binaries you did not just build can disappear WHILE you are building, so a
+    # directory listing taken at the end of a run does not tell you what this run
+    # produced. Only the per-target start-time-vs-mtime assertion does (R19).
+    Write-Host ''
+    Write-Host '       cross-target artifact census (which target binaries exist right now):'
+    foreach ($other in $AllTargets) {
+        $otherArtifact = Get-BRTargetArtifact -RepoRoot $RepoRoot -Target $other -Platform $Platform -Configuration $Configuration
+        if (Test-Path -LiteralPath $otherArtifact) {
+            $om = (Get-Item -LiteralPath $otherArtifact).LastWriteTime
+            Write-Host ('         {0,-18} present  mtime {1}' -f $other, (Format-BRTime $om))
+        }
+        else {
+            Write-Host ('         {0,-18} ABSENT   <- deleted or never built' -f $other)
+        }
     }
 }
 
@@ -453,9 +504,11 @@ foreach ($target in $Targets) {
 # ---------------------------------------------------------------------------------------
 $fails = 0
 $inconclusive = 0
+$blocked = 0
 foreach ($r in $results) {
     if ($r.Verdict -eq 'FAIL') { $fails = $fails + 1 }
     if ($r.Verdict -eq 'INCONCLUSIVE') { $inconclusive = $inconclusive + 1 }
+    if ($r.Verdict -eq 'BLOCKED') { $blocked = $blocked + 1 }
 }
 
 Write-BRRule 'RUNG 1 SUMMARY (paste into the ticket Log)'
@@ -489,6 +542,10 @@ $overallText = 'PASS'
 if ($fails -gt 0) {
     $overall = $BR_EXIT_FAIL
     $overallText = ("FAIL ({0} target(s))" -f $fails)
+}
+elseif ($blocked -gt 0) {
+    $overall = $BR_EXIT_BLOCKED
+    $overallText = ("BLOCKED ({0} target(s) never compiled - build lock, R21)" -f $blocked)
 }
 elseif ($inconclusive -gt 0) {
     $overall = $BR_EXIT_INCONCLUSIVE

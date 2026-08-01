@@ -246,6 +246,53 @@ function Get-BRBuildBatLockPath {
     return (Join-Path $env:TEMP ($mangled + '.lock'))
 }
 
+function Wait-BRBuildLockFree {
+    <#
+      Waits until no build process is live, up to $TimeoutSeconds. Returns $true if the
+      lock went free, $false if it was still held when we gave up.
+
+      Why this exists (observed 31 Jul 2026, on this wrapper's own second run): the
+      BreachpointServer target died 13 seconds after the previous target finished, with
+          "A conflicting instance of Global\UnrealBuildTool_Mutex_... is already running.
+           Result: Failed (ConflictingInstance)"
+      A concurrent build actor in the same tree held the mutex (see commit 8f21056 - the
+      same actor deleted two target binaries). Whether the holder is somebody else's
+      build or a straggler of your own does not change the remedy: a one-shot check
+      before the FIRST target is not enough, the lock has to be re-checked and waited on
+      before EVERY target, and a target that never gets the lock is BLOCKED, not FAIL.
+    #>
+    param(
+        [string]$EngineRoot = '',
+        [int]$TimeoutSeconds = 120,
+        [int]$PollSeconds = 3
+    )
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    $announced = $false
+    while ($true) {
+        $live = @(Get-BRLiveBuildProcesses -EngineRoot $EngineRoot)
+        if ($live.Count -eq 0) {
+            if ($announced) { Write-Host '  build lock: now FREE' }
+            return $true
+        }
+        if (-not $announced) {
+            Write-Host ("  build lock HELD - waiting up to {0}s for it to clear (R21):" -f $TimeoutSeconds)
+            foreach ($o in $live) { Write-Host ("    - {0}" -f $o) }
+            $announced = $true
+        }
+        if ((Get-Date) -gt $deadline) { return $false }
+        Start-Sleep -Seconds $PollSeconds
+    }
+}
+
+function Test-BRConflictingInstance {
+    # UBT's own words when it loses the mutex race, plus Build.bat's queueing message.
+    # A run that never got the lock did not fail to compile - it never compiled, and the
+    # honest verdict for that is BLOCKED (R21), not FAIL.
+    param([Parameter(Mandatory = $true)][string]$LogPath)
+    $hits = @(Select-BRLogLines -LogPath $LogPath -Pattern '(ConflictingInstance|conflicting instance of Global\\UnrealBuildTool_Mutex|is already running, waiting for existing script)' -Max 5)
+    return ($hits.Count -gt 0)
+}
+
 function Get-BRLiveEditorProcesses {
     # A running editor holds UnrealEditor-<Project>.dll open: the editor target's link
     # step WILL fail, and any Live Coding patch it applied makes every binary suspect
@@ -273,8 +320,24 @@ function Get-BRLiveCodingArtifacts {
 # ---- logs ------------------------------------------------------------------------------
 
 function New-BRLogDir {
+    <#
+      Default Tools\Logs (self-gitignored). Overridable with LOG_DIR in Tools/env.local.
+
+      Why the override matters: UBT watches the project tree and invalidates a target's
+      makefile when files appear in it ("Invalidating makefile for X (source file added)"
+      was observed on this wrapper's own runs, caused by these very log files). That
+      costs a module recompile per run. Harmless for correctness - it makes runs MORE
+      likely to really compile, not less - but if you want quiet incremental builds,
+      point LOG_DIR outside the repo.
+    #>
     param([Parameter(Mandatory = $true)][string]$ToolsDir)
     $dir = Join-Path $ToolsDir 'Logs'
+    $envMap = Read-BREnvLocal -ToolsDir $ToolsDir
+    if ($null -ne $envMap) {
+        if ($envMap.ContainsKey('LOG_DIR')) {
+            if ($envMap['LOG_DIR'] -ne '') { $dir = $envMap['LOG_DIR'] }
+        }
+    }
     if (-not (Test-Path -LiteralPath $dir)) {
         New-Item -ItemType Directory -Path $dir -Force | Out-Null
     }
@@ -424,7 +487,10 @@ function Select-BRLogLines {
 function Write-BRBlocked {
     param(
         [Parameter(Mandatory = $true)][string]$Rung,
-        [Parameter(Mandatory = $true)][string[]]$Reasons
+        # AllowEmptyString: a blank line inside a BLOCKED explanation is legitimate
+        # formatting, and losing the whole report to a parameter-binding error over one
+        # is exactly the kind of failure that makes people stop reading the output.
+        [Parameter(Mandatory = $true)][AllowEmptyString()][AllowEmptyCollection()][string[]]$Reasons
     )
     Write-BRRule ("{0}: BLOCKED" -f $Rung)
     foreach ($r in $Reasons) { Write-Host ("  BLOCKED: {0}" -f $r) }
