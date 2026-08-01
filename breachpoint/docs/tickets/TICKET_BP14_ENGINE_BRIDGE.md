@@ -18,12 +18,17 @@ them. Step 1 below gates steps 2–4.
 
 ## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
 
-- requires: engine-installed
+- requires: engine-installed **for steps 2–5**. **Step 1 is `files-only`** and was executed
+  separately from a cloud session on 1 Aug 2026 (see Log) precisely because two other tickets
+  gate on its output.
 - Ticket BP00 is DONE: `Tools/run-ubt.ps1`, `run-specs.ps1`, `run-gauntlet.ps1` exist
   and each produces a real pass/fail artifact (this ticket shells out to them; it does
   not reinvent them)
 - Ticket BP01 step 1 is landed (a `.uproject` and build targets exist to compile)
 - `python3 Tools/data-crew/run_crew.py` (replay) exits 0 from the game repo
+  <!-- DEFECT FIXED 1 Aug 2026: this line gated the ticket on an artifact that only this
+       ticket's OWN step 1 creates — unsatisfiable by construction, and BP15's Kickoff
+       inherited it. It now reads as a gate on steps 2–5 only, and step 1 has been run. -->
 - owner_path: `Tools/data-crew/`
 
 ## Steps (in order)
@@ -61,7 +66,9 @@ them. Step 1 below gates steps 2–4.
 
 ## Done when
 
-- [ ] `python3 Tools/data-crew/run_crew.py` (replay) exits 0 from the game repo
+- [x] `python3 Tools/data-crew/run_crew.py` (replay) exits 0 from the game repo — **step 1
+      only; done 1 Aug 2026, see Log.** No engine claim is attached to this box: it proves a
+      Python pipeline runs, nothing about a rung.
 - [ ] One real code ticket lands end-to-end through the pipeline with rungs 1/2/4 green,
       the transcript in that ticket's Log
 - [ ] Rung outputs are verbatim in the log — command, exit code, failing output
@@ -86,3 +93,40 @@ them. Step 1 below gates steps 2–4.
 ## Log
 
 (append findings here, dated, newest last — this is what the next session reads)
+
+**1 Aug 2026 — STEP 1 DONE (cloud session, Context A). The Kickoff gate was circular.**
+
+*The defect first, because it is the reusable lesson.* This ticket's Kickoff required
+`python3 Tools/data-crew/run_crew.py` to exit 0 **from the game repo** — but that path is
+created by this ticket's own **step 1**. The gate could never pass before the work it gates.
+Worse, it propagated: `TICKET_BP15_ARCHITECT.md`'s Kickoff cites the same line as "(BP14 step
+1)", so the Architect packet was gated behind an unsatisfiable condition and nobody noticed,
+because a gate that is never *reached* is indistinguishable from a gate that passes.
+
+*Why a cloud session could close it:* step 1 is a file copy and a path fix. It needs no engine,
+no editor, no build. The ticket was marked `engine-installed` as a whole, which is true of steps
+2–5 and false of step 1 — the `requires:` line now says so per-step. **Generalisable:** a ticket
+whose steps span two execution contexts should say which is which, or the cheap step waits on
+the expensive machine for no reason.
+
+*What landed* (all inside `owner_path: Tools/data-crew/`):
+- `run_crew.py` and `recording.json` copied from `../assignments/03-agent-crew/`.
+- **`find_agents_dir()` was wrong for this repo and the ticket's own text was wrong about it.**
+  Step 1 asserts the script "already resolves agents from `.claude/agents/` when dropped at the
+  root." It does not — it checked exactly two fixed paths, `./agents` (zip layout) and
+  `../../crew/.claude/agents` (planning repo). From `Tools/data-crew/` the second resolves to
+  `breachpoint/crew/.claude/agents`, which does not exist, so the script would have exited with
+  "agent definitions not found." Fixed by walking `HERE.parents` for `.claude/agents/critic.md`
+  — a walk, not a third fixed depth, so moving the script again cannot silently break it.
+- `Tools/data-crew/output/` added to `.gitignore`. The replay re-derives `DT_Weapons.csv`
+  byte-identical to `Content/Data/DT_Weapons.csv`; committing the scratch copy would put a
+  **second, silently drifting** copy of the source of truth in the tree.
+
+*Verification, stated at its real rung:* `python3 run_crew.py` (replay, no API key) from
+`breachpoint/Tools/data-crew/` — **exit 0**, both jobs landed, agents resolved from
+`breachpoint/.claude/agents/`. The weapons job ran its gates and the arena job bounced the critic
+three times before converging, so the pipeline is genuinely executing, not short-circuiting.
+**This proves a Python program runs. It is not a rung** — no engine was involved and none of
+steps 2–5 (the `code` job type, the real ladder, the deliberate failures) is started.
+
+*Still open on this ticket:* everything else. Steps 2–5 remain `engine-installed`.

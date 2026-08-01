@@ -25,6 +25,11 @@ Saved/Autosaves/
 # Machine-local ladder config (testing.md: never committed)
 Tools/env.local
 
+# Crew scratch output. The crew re-derives these on every run; the LANDED copies
+# live in Content/Data/ and are the only source of truth. Committing this folder
+# would put a second, silently drifting DT_Weapons.csv next to the real one.
+Tools/data-crew/output/
+
 # Python tool caches
 __pycache__/
 *.pyc
