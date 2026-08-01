@@ -1,0 +1,13 @@
+{
+  "ticket": "BP03+BP05+BP06",
+  "owner_path": [
+    "Source/Breachpoint/Weapons/",
+    "Source/Breachpoint/Character/",
+    "Source/Breachpoint/AbilitySystem/Abilities/",
+    "Source/Breachpoint/Core/BRGameplayTags.h",
+    "Source/Breachpoint/Core/BRGameplayTags.cpp",
+    "Source/Breachpoint/Data/BRDataRows.h",
+    "Content/Data/DT_Weapons.csv"
+  ],
+  "note": "R31 window claim: three tickets share one code window (the ability layer). owner_path is their union. Core/BRGameplayTags.* is the R23 exact-file grant for the Ability.*/GameplayCue.* open families; Data/BRDataRows.h is BP03's exact-file grant for the two trace fields. Corrected 1 Aug after a BP06 packet found the claim named BP03 only while writing lawfully inside BP06's ticket owner_path."
+}
