@@ -1,5 +1,5 @@
 {
-  "ticket": "BP02+BP04+BP07+BP10 (parallel pod, 31 Jul 2026)",
+  "ticket": "BP02+BP03+BP08+BP11 (parallel pod, 01 Aug 2026)",
   "owner_path": [
     "Source/Breachpoint/AbilitySystem/",
     "Source/Breachpoint/Data/",
@@ -7,12 +7,16 @@
     "Source/Breachpoint/Weapons/",
     "Source/Breachpoint/Match/",
     "Source/Breachpoint/Character/",
+    "Source/Breachpoint/AI/",
+    "Source/Breachpoint/Online/",
+    "Source/Breachpoint/Telemetry/",
     "Source/Breachpoint/Core/BRGameplayTags.h",
     "Source/Breachpoint/Core/BRGameplayTags.cpp",
     "Source/Breachpoint/Core/BRCore.h",
     "Source/Breachpoint/Core/BRCore.cpp",
     "Content/Data/",
     "Content/Maps/",
-    "Content/UI/"
+    "Content/UI/",
+    "Source/Breachpoint/Breachpoint.Build.cs"
   ]
 }
