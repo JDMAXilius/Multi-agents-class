@@ -306,3 +306,35 @@ The lead appends; nobody else writes here. A doubt this ledger closes is closed.
   `[/Script/Breachpoint.<Class>]`, which is diffable, greppable, and survives a clone with
   nobody opening the editor. Prefer ini for anything a script can set; use a BP child where the
   editor is genuinely the better authoring surface.
+
+- **R27. The middle bot tier is named `Marine`. Not `Regular`.** Two sources disagreed and the
+  disagreement was invisible: GDD §2.8's tier table, §5.3's cut order (which names Marine as the
+  surviving profile), and `BREACHPOINT-GDD-FULL-CONCEPT.md:178` all say **Marine**; comments in
+  `BRDataRows.h:617` and `BRBotBrain.h:250` say Regular. Design documents win over code comments.
+
+  *Why this was worth a ruling rather than a shrug:* `LoadBotTables(..., TierPerSlot)` resolves a
+  tier **by row name**, and tier names — unlike ambition names — are matched against no C++ enum.
+  So either spelling imports perfectly cleanly and the failure appears at runtime as
+  `LoadBotTables` returning false, which spawns **zero bots** while reporting nothing about why.
+  A one-cell typo would have looked exactly like the bug BP08 already has.
+
+  Both comment sites are to be corrected in the packet that lands `DT_BotTuning.csv`, or this
+  recurs the next time someone reads the header instead of the GDD.
+
+- **R28. A bot tier may differ ONLY on levers a player can read.** `sight_radius_m` (35.0) and
+  `sight_fov_deg` (90.0) are identical across all three tiers and stay that way. Tier difference
+  lives in reaction time, aim error, commitment duration and re-aim interval — things a human can
+  observe and learn to beat.
+
+  Three reasons, in increasing order of how much they cost to violate: "no privileged state" is a
+  GDD §2.8 promise and perception radius is its closest analogue; 35.0 m is the arena's own
+  `sightlines.max_length_m`, so a bot sees exactly as far as the map ever offers and never
+  further; and — the mechanical one — **`sight_radius_m` is also the normaliser for
+  `dist_to_target_norm` and `dist_to_rocket_norm`**, so varying it per tier would make identical
+  world geometry produce different facts per tier, and every consideration weight would silently
+  mean something different for each. That is precisely the illegibility R12 exists to forbid.
+
+  *Corollary:* `sight_fov_deg = 90` currently rests on UE's **default** camera FOV, because
+  `BRCharacter` sets `FirstPersonFieldOfView = 70` for the arms only and never sets the world FOV.
+  If anyone sets the player's FOV explicitly, this column silently becomes a privilege or a
+  handicap. Pin the player FOV, or this ruling is resting on an engine default nobody chose.
