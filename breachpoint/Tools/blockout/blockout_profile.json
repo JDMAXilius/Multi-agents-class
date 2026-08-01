@@ -1,0 +1,65 @@
+{
+  "_comment": [
+    "BREACHPOINT - blockout CONSTRUCTION profile (Tools/blockout/, ticket BP07).",
+    "",
+    "These are BUILD constants, not gameplay tuning: how thick a deck slab is, how big a",
+    "'chest' crate is, what the eye height used for the static sightline test is. They live",
+    "here because arena_manifest.json does not name them (see contract_gaps in the BP07 Log)",
+    "and because a number a script needs must be reviewable text, never a literal buried in",
+    "code. They are NOT law-3 tuning values: nothing here is read at runtime by the game.",
+    "",
+    "The KICKOFF THRESHOLDS (>=8 spawns, >=8 m spacing, <=35 m sightline, named rocket node)",
+    "are deliberately NOT in this file. They are the ticket's acceptance numbers and live as",
+    "constants in arena_plan.py so that no profile override can quietly weaken a gate.",
+    "",
+    "Units are metres everywhere. The metre -> centimetre conversion happens exactly once,",
+    "in arena_plan.M_TO_CM, at the editor boundary."
+  ],
+
+  "profile_id": "breachpoint_blockout_v1",
+
+  "eye_height_m": 1.7,
+  "floor_thickness_m": 0.5,
+  "deck_thickness_m": 0.4,
+  "perimeter_wall_thickness_m": 1.0,
+  "landmark_default_height_m": 3.0,
+  "spawn_lift_m": 0.05,
+  "nav_margin_m": 2.0,
+  "adjacency_tolerance_m": 0.5,
+  "colocation_tolerance_m": 0.5,
+
+  "cover_dims_m": {
+    "full":  { "x": 2.0, "y": 2.0, "z": 3.0 },
+    "chest": { "x": 2.0, "y": 2.0, "z": 1.2 },
+    "low":   { "x": 2.0, "y": 2.0, "z": 0.6 }
+  },
+
+  "assets": {
+    "cube": "/Engine/BasicShapes/Cube",
+    "cube_base_size_m": 1.0,
+    "nav_brush_base_uu": 200.0
+  },
+
+  "classes": {
+    "spawn": "/Script/Engine.PlayerStart",
+    "marker": "/Script/Engine.TargetPoint",
+    "power_weapon_spawner": "/Script/Breachpoint.BRPowerWeaponSpawner",
+    "power_weapon_spawner_fallback": "/Script/Engine.TargetPoint",
+    "nav_bounds": "/Script/NavigationSystem.NavMeshBoundsVolume",
+    "directional_light": "/Script/Engine.DirectionalLight",
+    "sky_light": "/Script/Engine.SkyLight"
+  },
+
+  "lighting": {
+    "directional_pitch_deg": -48.0,
+    "directional_yaw_deg": -35.0,
+    "directional_intensity_lux": 6.0,
+    "sky_light_intensity": 1.0,
+    "note": "Test lighting only - player-clamped blockout readability, not an art pass (BP07 out-of-scope: art dressing)."
+  },
+
+  "map": {
+    "package": "/Game/Maps/BR_Arena01",
+    "generated_tag": "BlockoutGenerated"
+  }
+}
