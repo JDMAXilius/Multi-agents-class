@@ -10,6 +10,14 @@ namespace BRGameplayTags
 {
 	// --- Ability.* (open family, R23) ---------------------------------------
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Sprint, "Ability.Sprint", "BRGA_Sprint's asset tag; what CancelAbilitiesWithTag must list to end a sprint.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Weapon_Fire, "Ability.Weapon.Fire", "BRGA_WeaponFire's asset tag (BP03); what a future ability would list to cancel firing.");
+
+	// --- GameplayCue.* (open family, R23) ------------------------------------
+	// The three strings below are byte-for-byte what DT_Weapons.csv's FireCueTag column
+	// already contains. If either side is edited, both must move together -- see BP03's Log.
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayCue_Weapon_AR_Fire, "GameplayCue.Weapon.AR.Fire", "AR fire FX; named by DT_Weapons.csv row AR.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayCue_Weapon_Magnum_Fire, "GameplayCue.Weapon.Magnum.Fire", "Magnum fire FX; named by DT_Weapons.csv row Magnum.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayCue_Weapon_Rocket_Fire, "GameplayCue.Weapon.Rocket.Fire", "Rocket fire FX; named by DT_Weapons.csv row Rocket.");
 
 	// --- InputTag.* ---------------------------------------------------------
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Move, "InputTag.Move", "Native action: planar movement, handled by the CMC.");

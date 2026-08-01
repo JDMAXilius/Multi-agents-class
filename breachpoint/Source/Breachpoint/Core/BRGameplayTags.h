@@ -20,11 +20,22 @@
  *    need no entry in DefaultGameplayTags.ini.
  *  - Extension rule for future montage->gameplay seams (ruling R17): Event.<Verb>.<Moment>.
  *
- * NOTE ON TWO FAMILIES DELIBERATELY LEFT EMPTY — see this file's contract_gap in the
- * BP01 Log. §3.1 names `Ability.*` and `GameplayCue.*` as families but enumerates no
- * leaf tags for either, unlike the other five families. This packet declares exactly
- * what §3.1 enumerates and does not invent leaves. Whoever needs `Ability.Weapon.Fire`
- * or `GameplayCue.Weapon.Fire` must first get §3.1 amended with the enumeration.
+ * NOTE ON THE TWO OPEN FAMILIES. §3.1 names `Ability.*` and `GameplayCue.*` as families
+ * but enumerates no leaf tags for either, unlike the other five families. That is not an
+ * omission: the leaves cannot exist at BP01 time because the abilities and cues do not
+ * exist yet.
+ *
+ * **Ruling R23 governs: these two families are OPEN.** The packet that authors an ability
+ * or a cue declares its own tag here, under an exact-file `owner_path` grant to this file
+ * and its `.cpp` — never a grant to the `Core/` folder. The other five families are CLOSED;
+ * a packet needing a new `Event.*`, `State.*`, `Damage.*`, `InputTag.*` or `SetByCaller.*`
+ * tag files a `contract_gap` and stops.
+ *
+ * *Corrected 1 Aug 2026.* This paragraph previously read "must first get §3.1 amended with
+ * the enumeration" — written before R23 and left stale, so it contradicted the `Ability.*`
+ * block twelve lines below, which already cited R23 as OPEN. BP15 step 4 quoted this half
+ * and filed a `contract_gap` against BP01 that R23 says does not exist. **No §3.1 amendment
+ * is required for a leaf in these two families.**
  */
 namespace BRGameplayTags
 {
@@ -44,6 +55,13 @@ namespace BRGameplayTags
 
 	/** BRGA_Sprint's asset tag. Fire/melee/grenade cancel sprint by listing THIS tag. */
 	BREACHPOINT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Sprint);
+
+	/**
+	 * BRGA_WeaponFire's asset tag (BP03). Declared by the packet that authors the ability,
+	 * per R23. Firing cancels sprint by listing `Ability.Sprint` in CancelAbilitiesWithTags;
+	 * this tag is what a FUTURE ability would list to cancel firing.
+	 */
+	BREACHPOINT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Weapon_Fire);
 
 	// -------------------------------------------------------------------------
 	// InputTag.*  -- hardware -> tag. Consumed by BRInputConfig/BRInputComponent (step 3)
@@ -70,8 +88,30 @@ namespace BRGameplayTags
 	BREACHPOINT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Dead);
 
 	// -------------------------------------------------------------------------
-	// GameplayCue.*  -- §3.1 names the family; it enumerates NO leaves. See the note above.
+	// GameplayCue.*  -- OPEN family (ruling R23). §3.1 names it and enumerates no leaves;
+	// the packet that authors the cue declares its tag here, one per cue.
+	//
+	// THESE THREE WERE ALREADY NAMED BY DATA BEFORE ANY C++ DECLARED THEM. `DT_Weapons.csv`
+	// has carried a `FireCueTag` column since the data crew landed it on 29 Jul 2026 --
+	// with verifier PASS -- holding exactly these three strings. The verifier checked the
+	// CSV's schema, not whether the symbols it names exist on the other side, so a
+	// cross-artifact dangling reference passed every gate for three days (BP15 step 4's
+	// finding). Declaring them here closes it; the durable fix is a validator that resolves
+	// tag-valued CSV columns against the native tag registry, filed in BP03's Log.
+	//
+	// The leaf is per-WEAPON, not per-ability: one fire ability plays a different cue for
+	// the AR, the Magnum and the Rocket, chosen by the weapon row -- which is why the tag
+	// travels in data and not in the ability's C++.
 	// -------------------------------------------------------------------------
+
+	/** AR fire FX. Named by DT_Weapons.csv row `AR`, column `FireCueTag`. */
+	BREACHPOINT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_AR_Fire);
+
+	/** Magnum fire FX. Named by DT_Weapons.csv row `Magnum`, column `FireCueTag`. */
+	BREACHPOINT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_Magnum_Fire);
+
+	/** Rocket fire FX. Named by DT_Weapons.csv row `Rocket`, column `FireCueTag`. */
+	BREACHPOINT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_Rocket_Fire);
 
 	// -------------------------------------------------------------------------
 	// Damage.*  -- dynamic tags read by BRDamageExecCalc alongside SetByCaller.BaseDamage.

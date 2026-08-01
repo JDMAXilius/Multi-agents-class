@@ -167,3 +167,54 @@ days and every gate passed.** Worth a validator, not just a fix.
 `Spread_deg`, `AbilitySet` → BP02 adds the row fields → **then** step 2 restarts with its inputs
 present. Restarting before that means the fire path's first act is editing three other owners'
 files, which is what law 5 forbids.
+
+**1 Aug 2026 — the four tags are DECLARED. And the gap above named the wrong owner; corrected.**
+
+*The correction first, because it changes who does the work.* The entry above routed the tags to
+**BP01 / `Core/`**. **That was wrong.** **R23** rules `Ability.*` and `GameplayCue.*` **OPEN
+families**: the packet that authors an ability or cue declares its own tag, under an **exact-file
+`owner_path` grant** to `BRGameplayTags.h`/`.cpp` — never a grant to the `Core/` folder. So these
+tags were always BP03's to declare, and no BP01 packet or §3.1 amendment was ever required.
+
+*Where the wrong owner came from — this is the useful part.* `BRGameplayTags.h`'s **file-level
+comment contradicted its own `Ability.*` block twelve lines below it.** The file comment said
+*"Whoever needs `Ability.Weapon.Fire` or `GameplayCue.Weapon.Fire` must first get §3.1 amended
+with the enumeration"* — written before R23 and never updated — while the block beneath already
+read *"OPEN family (ruling R23)."* BP15 step 4 read the top of the file, believed it, and filed a
+`contract_gap` that R23 says does not exist. **Fixed in the file**, so the next reader cannot make
+the same call: the stale paragraph now states R23, names the exact-file grant, and records that it
+was corrected. Same shape as session 2's four defects and this session's own — two documents
+pointing opposite ways, and the one a reader hits *first* won.
+
+*Landed, all inside the claim's `owner_path` (proven by `git status`: only these two files):*
+
+| Tag | Why |
+|---|---|
+| `Ability.Weapon.Fire` | `BRGA_WeaponFire`'s asset tag. Firing cancels sprint by listing `Ability.Sprint`; this is what a future ability would list to cancel firing |
+| `GameplayCue.Weapon.AR.Fire` | named by `DT_Weapons.csv` row `AR` |
+| `GameplayCue.Weapon.Magnum.Fire` | named by row `Magnum` |
+| `GameplayCue.Weapon.Rocket.Fire` | named by row `Rocket` |
+
+The cue leaf is **per-weapon, not per-ability** — one fire ability plays a different cue for each
+weapon, chosen by the row, which is why the tag travels in data rather than in the ability's C++.
+
+*Verification (this machine, stated at its real rung):*
+
+| Check | Result |
+|---|---|
+| EXTERN/DEFINE balance | **34 declared, 34 defined**, zero declared-but-undefined, zero defined-but-undeclared |
+| `DT_Weapons.csv` `FireCueTag` → native registry | all three **RESOLVE**; unresolved set empty |
+| Law-5 confinement | only `BRGameplayTags.h`/`.cpp` + the claim file |
+| **Rung 1** | **NOT RUN — BLOCKED.** A UE editor is live (MCP session); R29.3. **These four declarations have never been compiled.** Declaration-only, no logic, but that is an argument about risk, not evidence |
+
+**PROPOSAL, filed not built (outside this claim's `owner_path`).** `DT_Weapons.csv` named three
+tags that no C++ declared, and it passed **every gate for three days** — the data crew's verifier
+checked the CSV's *schema*, not whether the symbols it names resolve. Declaring the tags closes
+today's instance; it does not close the class. The durable fix is a validator that resolves
+**tag-valued CSV columns against the native tag registry** and fails the reimport when one
+dangles. It belongs in `Tools/` (builder's owner_path per §9), which this claim does not grant —
+so it is filed here rather than written. Cheap, and it would have caught this on 29 Jul.
+
+*Still blocking `BRGA_WeaponFire`* — two of the three gaps are untouched: `FBRWeaponRow` still has
+**no trace range and no spread**, and `DT_Weapons.csv` still has **no `AbilitySet` column**. Both
+are `Data/` + curator, not this packet.

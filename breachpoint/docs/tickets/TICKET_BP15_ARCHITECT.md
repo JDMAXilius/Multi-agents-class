@@ -456,3 +456,32 @@ by this ticket, and adding a fifth is a founder call, not a builder's.
 curator proposes `Range_m` + `Spread_deg` + `AbilitySet` for `DT_Weapons.csv` and BP02 adds the
 row fields → BP03 step 2 restarts with `BRGA_WeaponFire` and its inputs present. Then BP15
 step 4 re-runs against a unit that can actually be built.
+
+**1 Aug 2026 — CORRECTION to step 4's gap 1: it named the wrong owner, and one third of the
+blocker was not a blocker.**
+
+Step 4 filed `Ability.Weapon.Fire` + the three cue tags as a `contract_gap` against **BP01 /
+`Core/`**. **R23 says otherwise:** `Ability.*` and `GameplayCue.*` are **OPEN families**, and the
+packet authoring the ability declares its own tag under an **exact-file grant** to
+`BRGameplayTags.h`/`.cpp`. No BP01 packet, no §3.1 amendment. The tags have now been declared
+under a BP03 claim (see that ticket's Log) — 34 EXTERN/34 DEFINE balanced, and all three
+`FireCueTag` values resolve.
+
+*Why the packet got it wrong, which is worth more than the correction:* it read
+`BRGameplayTags.h`'s **file-level comment**, which said the opposite of the `Ability.*` block
+twelve lines below it. The comment predated R23 and was never updated. **The builder read the
+top of the file and stopped there** — and a stop is exactly what law 5 asks for, so nothing
+misbehaved; the packet was correctly obedient to a stale instruction. Fixed at the source.
+
+**The generalisable finding, and it sharpens step 6's adversarial list.** Step 4 proved the
+pipeline *stops* rather than editing shared code. It did **not** prove the pipeline stops for
+**true** reasons. A `contract_gap` filed against a rule that no longer exists is indistinguishable
+from a real one at the moment it is filed — both look like a well-behaved packet halting at a
+boundary. **Obedience is not correctness**, and a board that measures only "did it stop?" cannot
+tell a real blocker from a stale comment. Suggested addition to step 6's REFUTER questions:
+*can the architect halt on a constraint that the rulings ledger has already lifted?* Today: yes,
+and it did.
+
+*Net effect on step 4:* one of three blockers dissolved. **Two remain and are real** — no trace
+range or spread in `FBRWeaponRow` or `CT_Combat`, and no `AbilitySet` column in `DT_Weapons.csv`.
+`BRGA_WeaponFire` is still not startable, and step 4's boxes stay unchecked.
