@@ -2,9 +2,13 @@
 
 #include "Match/BRPlayerController.h"
 
+#include "CommonGameViewportClient.h"
+#include "EnhancedActionKeyMapping.h"
 #include "EnhancedInputSubsystems.h"
+#include "Engine/Engine.h"
 #include "Engine/LocalPlayer.h"
 #include "GameFramework/Pawn.h"
+#include "InputAction.h"
 #include "InputMappingContext.h"
 
 #include "AbilitySystem/BRAbilitySystemComponent.h"
@@ -83,6 +87,21 @@ const UBRInputConfig* ABRPlayerController::GetInputConfig() const
 	return InputConfig.LoadSynchronous();
 }
 
+const UInputAction* ABRPlayerController::GetMouseLookAction() const
+{
+	if (MouseLookAction.IsNull())
+	{
+		return nullptr;
+	}
+
+	if (const UInputAction* Resident = MouseLookAction.Get())
+	{
+		return Resident;
+	}
+
+	return MouseLookAction.LoadSynchronous();
+}
+
 // ---------------------------------------------------------------------------
 // Arrow one: the mapping context
 // ---------------------------------------------------------------------------
@@ -106,6 +125,19 @@ void ABRPlayerController::AddDefaultMappingContext()
 		return;
 	}
 
+	// CommonUI sits in FRONT of the player controller. Wrong viewport client => every binding
+	// logs success and every keypress dies before Enhanced Input — the exact "cannot move"
+	// symptom. Config/DefaultEngine.ini pins CommonGameViewportClient; this check catches a
+	// stale editor session that never picked the ini up (needs a full editor restart).
+	// Read GEngine->GameViewport directly: in PIE GEngine is the editor engine, not UGameEngine.
+	if (GEngine && GEngine->GameViewport
+		&& !GEngine->GameViewport->IsA(UCommonGameViewportClient::StaticClass()))
+	{
+		UE_LOG(LogBRInput, Error,
+			TEXT("BRPlayerController '%s': GameViewportClient is '%s', not CommonGameViewportClient. CommonUI will swallow gameplay input — keys appear dead while bindings succeed. Restart the editor after Config/DefaultEngine.ini sets GameViewportClientClassName."),
+			*GetName(), *GetNameSafe(GEngine->GameViewport->GetClass()));
+	}
+
 	UEnhancedInputLocalPlayerSubsystem* Subsystem = LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
 	if (!Subsystem)
 	{
@@ -114,25 +146,148 @@ void ABRPlayerController::AddDefaultMappingContext()
 		return;
 	}
 
-	if (DefaultMappingContext.IsNull())
+	// Every context that actually reached the subsystem, for the key census below. The census asks
+	// a question no other log line answers: do these contexts contain a KEY for the actions the
+	// pawn is about to bind? See LogMappingKeyCensus.
+	TArray<const UInputMappingContext*> AddedContexts;
+
+	// ContextRole, not Role: AActor::Role is a member and C4458 (shadowing) is an error here.
+	auto AddOneContext = [this, Subsystem, &AddedContexts](const TSoftObjectPtr<UInputMappingContext>& SoftContext, const TCHAR* ContextRole) -> bool
 	{
-		UE_LOG(LogBRInput, Warning, TEXT("BRPlayerController '%s': no DefaultMappingContext assigned; no key is mapped to any action (expected until Content/Input/IMC_Default exists and is assigned)."),
+		if (SoftContext.IsNull())
+		{
+			UE_LOG(LogBRInput, Warning, TEXT("BRPlayerController '%s': no %s assigned; that mapping context will not be added."),
+				*GetName(), ContextRole);
+			return false;
+		}
+
+		UInputMappingContext* Context = SoftContext.LoadSynchronous();
+		if (!Context)
+		{
+			UE_LOG(LogBRInput, Error, TEXT("BRPlayerController '%s': %s '%s' failed to load."),
+				*GetName(), ContextRole, *SoftContext.ToSoftObjectPath().ToString());
+			return false;
+		}
+
+		Subsystem->AddMappingContext(Context, DefaultMappingContextPriority);
+		AddedContexts.Add(Context);
+		UE_LOG(LogBRInput, Log, TEXT("BRPlayerController '%s': added mapping context '%s' (%s) at priority %d, %d key mapping(s)."),
+			*GetName(), *Context->GetName(), ContextRole, DefaultMappingContextPriority, Context->GetMappings().Num());
+		return true;
+	};
+
+	AddOneContext(DefaultMappingContext, TEXT("DefaultMappingContext"));
+
+	// Shooter template pattern: Default IMCs always, then the mouse-look IMC that touch builds
+	// omit. AdditionalMappingContexts is that second list — today IMC_MouseLook.
+	//
+	// AN EMPTY LIST HERE IS NOT NECESSARILY FINE, and the loop cannot say so, so this does: on a
+	// keyboard/mouse build IMC_Default carries no Mouse2D/MouseX mapping at all (verified against
+	// the asset's name table), so with no second context the player cannot TURN. "Cannot turn"
+	// reads to a playtester as "cannot move", which is why this is an explicit line and not a
+	// silent zero-iteration loop.
+	if (AdditionalMappingContexts.IsEmpty())
+	{
+		UE_LOG(LogBRInput, Warning,
+			TEXT("BRPlayerController '%s': AdditionalMappingContexts is EMPTY. If IMC_Default carries no mouse mapping, mouse look is dead — pin IMC_MouseLook via [/Script/Breachpoint.BRPlayerController] +AdditionalMappingContexts in Config/DefaultGame.ini (this class is config=Game, so that section is read) or on the PC Blueprint's defaults."),
 			*GetName());
-		return;
 	}
 
-	UInputMappingContext* Context = DefaultMappingContext.LoadSynchronous();
-	if (!Context)
+	for (const TSoftObjectPtr<UInputMappingContext>& Extra : AdditionalMappingContexts)
 	{
-		UE_LOG(LogBRInput, Error, TEXT("BRPlayerController '%s': DefaultMappingContext '%s' failed to load."),
-			*GetName(), *DefaultMappingContext.ToSoftObjectPath().ToString());
+		AddOneContext(Extra, TEXT("AdditionalMappingContext"));
+	}
+
+	LogMappingKeyCensus(AddedContexts);
+}
+
+void ABRPlayerController::LogMappingKeyCensus(const TArray<const UInputMappingContext*>& AddedContexts) const
+{
+	const UBRInputConfig* Config = GetInputConfig();
+	if (!Config)
+	{
+		// GetInputConfig already said so, loudly. Without a config there is nothing to cross-check
+		// the contexts against — and nothing the pawn will bind either.
 		return;
 	}
 
-	Subsystem->AddMappingContext(Context, DefaultMappingContextPriority);
+	// Count, per InputAction asset, how many keys the ADDED contexts give it. An action with zero
+	// is the silent-dead-key case: the row exists, the bind succeeds, no hardware reaches it.
+	TMap<const UInputAction*, int32> KeysPerAction;
+	for (const UInputMappingContext* Context : AddedContexts)
+	{
+		if (!Context)
+		{
+			continue;
+		}
 
-	UE_LOG(LogBRInput, Log, TEXT("BRPlayerController '%s': added mapping context '%s' at priority %d."),
-		*GetName(), *Context->GetName(), DefaultMappingContextPriority);
+		for (const FEnhancedActionKeyMapping& Mapping : Context->GetMappings())
+		{
+			if (const UInputAction* Action = Mapping.Action.Get())
+			{
+				KeysPerAction.FindOrAdd(Action) += 1;
+			}
+		}
+	}
+
+	// Report both lists, because the two halves fail for different reasons and the reader needs to
+	// know which one they are looking at: a dead native verb is a broken movement/camera control,
+	// a dead ability verb is one unreachable ability.
+	auto CensusOneList = [this, &KeysPerAction](const TArray<FBRInputAction>& Rows, const TCHAR* ListName)
+	{
+		TArray<FString> Entries;
+		Entries.Reserve(Rows.Num());
+		int32 Unmapped = 0;
+
+		for (const FBRInputAction& Row : Rows)
+		{
+			const UInputAction* Action = Row.GetInputAction();
+			if (!Action)
+			{
+				Entries.Add(FString::Printf(TEXT("%s=NO-ASSET"), *Row.InputTag.ToString()));
+				++Unmapped;
+				continue;
+			}
+
+			const int32 Keys = KeysPerAction.FindRef(Action);
+			Entries.Add(FString::Printf(TEXT("%s(%s)=%dkey"), *Row.InputTag.ToString(), *Action->GetName(), Keys));
+			if (Keys == 0)
+			{
+				++Unmapped;
+			}
+		}
+
+		const FString Report = FString::Join(Entries, TEXT(", "));
+
+		if (Unmapped > 0)
+		{
+			UE_LOG(LogBRInput, Error,
+				TEXT("BRPlayerController '%s': %d %s row(s) have NO KEY in the mapping contexts that were added. Those verbs will bind successfully and never fire. Census: %s"),
+				*GetName(), Unmapped, ListName, *Report);
+		}
+		else
+		{
+			UE_LOG(LogBRInput, Log, TEXT("BRPlayerController '%s': %s key census — %s"),
+				*GetName(), ListName, *Report);
+		}
+	};
+
+	CensusOneList(Config->GetNativeInputActions(), TEXT("native"));
+	CensusOneList(Config->GetAbilityInputActions(), TEXT("ability"));
+
+	// MouseLookAction is not a config row (the eleven-action contract forbids a second
+	// InputTag.Look), so it needs its own line or its absence is invisible.
+	if (const UInputAction* MouseLook = GetMouseLookAction())
+	{
+		UE_LOG(LogBRInput, Log, TEXT("BRPlayerController '%s': MouseLookAction '%s' has %d key(s) in the added contexts."),
+			*GetName(), *MouseLook->GetName(), KeysPerAction.FindRef(MouseLook));
+	}
+	else
+	{
+		UE_LOG(LogBRInput, Warning,
+			TEXT("BRPlayerController '%s': no MouseLookAction assigned — mouse look will not be bound. Expected pin: [/Script/Breachpoint.BRPlayerController] MouseLookAction=/Game/Input/Actions/IA_MouseLook.IA_MouseLook in Config/DefaultGame.ini."),
+			*GetName());
+	}
 }
 
 // ---------------------------------------------------------------------------

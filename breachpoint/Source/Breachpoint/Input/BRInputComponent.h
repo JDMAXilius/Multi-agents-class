@@ -51,13 +51,25 @@ public:
 	 * handler already knows what it is, so it takes the usual Enhanced Input signature
 	 * (e.g. void Move(const FInputActionValue& Value)).
 	 *
+	 * STATIC, AND TAKING THE COMPONENT AS A PARAMETER, since 1 Aug 2026. It binds through nothing
+	 * but `UEnhancedInputComponent::BindAction`, so requiring a `UBRInputComponent` bought no
+	 * capability and cost the whole control scheme if `DefaultInputComponentClass` in
+	 * `Config/DefaultInput.ini` ever stopped naming our class: the pawn's cast would fail and
+	 * every key on every pawn would die at once. The surviving template pawns cast to the stock
+	 * `UEnhancedInputComponent` and are immune to that, which is exactly the asymmetry that made
+	 * "the template moves and we don't" possible. Ours is now immune the same way.
+	 *
 	 * @param TriggerEvent  usually ETriggerEvent::Triggered for Move/Look, and
 	 *                      Started / Completed for a press/release pair like Crouch.
 	 * @param bEnsureIfNotFound  ensure (development builds) when the config has no such row;
 	 *                      leave true, because the failure mode is a silently dead key.
+	 * @return how many bindings were created — 0 means the tag names no usable row, i.e. that verb
+	 *         is dead. RETURNED RATHER THAN DISCARDED because the caller's success log used to
+	 *         print a hardcoded "4 native verbs" whatever happened, which is a log line that reads
+	 *         like proof and is not one.
 	 */
 	template<class UserClass, typename FuncType>
-	void BindNativeAction(const UBRInputConfig* InputConfig, const FGameplayTag& InputTag, ETriggerEvent TriggerEvent, UserClass* Object, FuncType Func, bool bEnsureIfNotFound = true);
+	static int32 BindNativeAction(UEnhancedInputComponent* InputComponent, const UBRInputConfig* InputConfig, const FGameplayTag& InputTag, ETriggerEvent TriggerEvent, UserClass* Object, FuncType Func, bool bEnsureIfNotFound = true);
 
 	/**
 	 * Bind EVERY ability action in the config to exactly two handlers on Object, each handler
@@ -90,7 +102,7 @@ public:
 	 *                     as the component.
 	 */
 	template<class UserClass, typename PressedFuncType, typename ReleasedFuncType>
-	void BindAbilityActions(const UBRInputConfig* InputConfig, UserClass* Object, PressedFuncType PressedFunc, ReleasedFuncType ReleasedFunc, TArray<uint32>* BindHandles = nullptr, ETriggerEvent PressedEvent = ETriggerEvent::Triggered, ETriggerEvent ReleasedEvent = ETriggerEvent::Completed);
+	static void BindAbilityActions(UEnhancedInputComponent* InputComponent, const UBRInputConfig* InputConfig, UserClass* Object, PressedFuncType PressedFunc, ReleasedFuncType ReleasedFunc, TArray<uint32>* BindHandles = nullptr, ETriggerEvent PressedEvent = ETriggerEvent::Triggered, ETriggerEvent ReleasedEvent = ETriggerEvent::Completed);
 
 	/** Remove bindings previously collected into BindHandles, and empty the array. */
 	void RemoveBinds(TArray<uint32>& BindHandles);
@@ -101,22 +113,52 @@ public:
 // ---------------------------------------------------------------------------
 
 template<class UserClass, typename FuncType>
-void UBRInputComponent::BindNativeAction(const UBRInputConfig* InputConfig, const FGameplayTag& InputTag, ETriggerEvent TriggerEvent, UserClass* Object, FuncType Func, bool bEnsureIfNotFound)
+int32 UBRInputComponent::BindNativeAction(UEnhancedInputComponent* InputComponent, const UBRInputConfig* InputConfig, const FGameplayTag& InputTag, ETriggerEvent TriggerEvent, UserClass* Object, FuncType Func, bool bEnsureIfNotFound)
 {
+	if (!ensureMsgf(InputComponent != nullptr, TEXT("BRInputComponent::BindNativeAction called with no input component; every key on this pawn is dead.")))
+	{
+		return 0;
+	}
+
 	if (!ensureMsgf(InputConfig != nullptr, TEXT("BRInputComponent::BindNativeAction called with no input config; every key on this pawn is dead.")))
+	{
+		return 0;
+	}
+
+	// Bind EVERY native row carrying this tag, not just the first. The First Person template
+	// maps gamepad look to IA_Look and mouse look to IA_MouseLook — both must reach Input_Look.
+	// A single Find* return would leave the mouse IMC silently dead after we add it.
+	int32 Bound = 0;
+	for (const FBRInputAction& Row : InputConfig->GetNativeInputActions())
+	{
+		if (Row.InputTag != InputTag)
+		{
+			continue;
+		}
+
+		if (const UInputAction* Action = Row.GetInputAction())
+		{
+			InputComponent->BindAction(Action, TriggerEvent, Object, Func);
+			++Bound;
+		}
+	}
+
+	if (Bound == 0 && bEnsureIfNotFound)
+	{
+		ensureMsgf(false, TEXT("BRInputComponent::BindNativeAction: no native InputAction for tag '%s'."), *InputTag.ToString());
+	}
+
+	return Bound;
+}
+
+template<class UserClass, typename PressedFuncType, typename ReleasedFuncType>
+void UBRInputComponent::BindAbilityActions(UEnhancedInputComponent* InputComponent, const UBRInputConfig* InputConfig, UserClass* Object, PressedFuncType PressedFunc, ReleasedFuncType ReleasedFunc, TArray<uint32>* BindHandles, ETriggerEvent PressedEvent, ETriggerEvent ReleasedEvent)
+{
+	if (!ensureMsgf(InputComponent != nullptr, TEXT("BRInputComponent::BindAbilityActions called with no input component; no ability is reachable from hardware.")))
 	{
 		return;
 	}
 
-	if (const UInputAction* Action = InputConfig->FindNativeInputActionForTag(InputTag, bEnsureIfNotFound))
-	{
-		BindAction(Action, TriggerEvent, Object, Func);
-	}
-}
-
-template<class UserClass, typename PressedFuncType, typename ReleasedFuncType>
-void UBRInputComponent::BindAbilityActions(const UBRInputConfig* InputConfig, UserClass* Object, PressedFuncType PressedFunc, ReleasedFuncType ReleasedFunc, TArray<uint32>* BindHandles, ETriggerEvent PressedEvent, ETriggerEvent ReleasedEvent)
-{
 	if (!ensureMsgf(InputConfig != nullptr, TEXT("BRInputComponent::BindAbilityActions called with no input config; no ability is reachable from hardware.")))
 	{
 		return;
@@ -141,7 +183,7 @@ void UBRInputComponent::BindAbilityActions(const UBRInputConfig* InputConfig, Us
 		{
 			// Row.InputTag is the trailing payload — see the header comment. This is the whole
 			// mechanism by which a nameless config row reaches a named ability.
-			FEnhancedInputActionEventBinding& Binding = BindAction(Action, PressedEvent, Object, PressedFunc, Row.InputTag);
+			FEnhancedInputActionEventBinding& Binding = InputComponent->BindAction(Action, PressedEvent, Object, PressedFunc, Row.InputTag);
 			if (BindHandles)
 			{
 				BindHandles->Add(Binding.GetHandle());
@@ -150,7 +192,7 @@ void UBRInputComponent::BindAbilityActions(const UBRInputConfig* InputConfig, Us
 
 		if (ReleasedFunc)
 		{
-			FEnhancedInputActionEventBinding& Binding = BindAction(Action, ReleasedEvent, Object, ReleasedFunc, Row.InputTag);
+			FEnhancedInputActionEventBinding& Binding = InputComponent->BindAction(Action, ReleasedEvent, Object, ReleasedFunc, Row.InputTag);
 			if (BindHandles)
 			{
 				BindHandles->Add(Binding.GetHandle());

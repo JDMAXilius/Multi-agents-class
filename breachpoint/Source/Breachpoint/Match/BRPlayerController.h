@@ -11,6 +11,7 @@
 
 class UBRAbilitySystemComponent;
 class UBRInputConfig;
+class UInputAction;
 class UInputMappingContext;
 
 /**
@@ -37,7 +38,19 @@ class UInputMappingContext;
  * where the key was pressed and hand a tag onward. Authority is the ASC's (BP02) and the
  * server's; nothing here decides whether an ability may run.
  */
-UCLASS(meta = (DisplayName = "BR Player Controller"))
+/**
+ * `config = Game` IS LOAD-BEARING, NOT DECORATION. Without it, plus a `Config` specifier on each
+ * property below, UE never reads `[/Script/Breachpoint.BRPlayerController]` out of
+ * `Config/DefaultGame.ini` and every ini pin in that section is silently inert — the properties
+ * keep their C++ initialisers (null) and only a Blueprint child's saved details panel can supply
+ * them. That was the state of this class until 1 Aug 2026, and it was PROVEN inert from a PIE log:
+ * the section pinned `MouseLookAction` and `+AdditionalMappingContexts`, yet the pawn's bind line
+ * printed without " + MouseLook" and no `IMC_MouseLook` was ever added. Compare
+ * `AShooterPlayerController`, which is `UCLASS(abstract, config="Game")` with
+ * `UPROPERTY(EditAnywhere, Config, ...)` — the template's ini pins work because of exactly these
+ * two specifiers.
+ */
+UCLASS(config = Game, meta = (DisplayName = "BR Player Controller"))
 class BREACHPOINT_API ABRPlayerController : public APlayerController
 {
 	GENERATED_BODY()
@@ -89,7 +102,7 @@ public:
 	 * generation script (law 7 — input assets are generated, never hand-placed). Unassigned
 	 * until that packet lands, which is why every consumer here logs and survives a null.
 	 */
-	UPROPERTY(EditDefaultsOnly, Category = "Breachpoint|Input")
+	UPROPERTY(EditDefaultsOnly, Config, Category = "Breachpoint|Input")
 	TSoftObjectPtr<UBRInputConfig> InputConfig;
 
 	/**
@@ -97,11 +110,32 @@ public:
 	 * subsystem. Arrow one of the five; with no context added, every UInputAction in the config
 	 * is bound to a key that never fires, and the whole chain is silently dead.
 	 */
-	UPROPERTY(EditDefaultsOnly, Category = "Breachpoint|Input")
+	UPROPERTY(EditDefaultsOnly, Config, Category = "Breachpoint|Input")
 	TSoftObjectPtr<UInputMappingContext> DefaultMappingContext;
 
+	/**
+	 * Extra mapping contexts added AFTER DefaultMappingContext (same priority).
+	 *
+	 * Learned from the First Person / Shooter template's split: IMC_Default holds Move/Jump and
+	 * the ability keys; IMC_MouseLook holds the mouse->IA_MouseLook mapping so touch builds can
+	 * omit it. Missing this list is how "WASD works, mouse does nothing" shows up after Move is
+	 * fixed. Soft refs only (law 3); pinned from Config/DefaultGame.ini so a C++-class PC still aims.
+	 */
+	UPROPERTY(EditDefaultsOnly, Config, Category = "Breachpoint|Input")
+	TArray<TSoftObjectPtr<UInputMappingContext>> AdditionalMappingContexts;
+
+	/**
+	 * IA_MouseLook — the template's mouse-only look action, consumed by IMC_MouseLook.
+	 *
+	 * NOT in DA_InputConfig: the eleven-action contract forbids a second native row with
+	 * InputTag.Look, and IA_MouseLook is listed unmanaged in Tools/gen_input. Bound beside
+	 * InputTag.Look to the same Input_Look handler (Shooter/FP template parity). Soft, ini-pinned.
+	 */
+	UPROPERTY(EditDefaultsOnly, Config, Category = "Breachpoint|Input")
+	TSoftObjectPtr<UInputAction> MouseLookAction;
+
 	/** Priority the context is added at. Higher wins a key conflict; menus/UI layer above this. */
-	UPROPERTY(EditDefaultsOnly, Category = "Breachpoint|Input")
+	UPROPERTY(EditDefaultsOnly, Config, Category = "Breachpoint|Input")
 	int32 DefaultMappingContextPriority = 0;
 
 	/**
@@ -112,6 +146,9 @@ public:
 	 *         config is the expected state until the generation packet lands).
 	 */
 	const UBRInputConfig* GetInputConfig() const;
+
+	/** Resolve MouseLookAction for the pawn's SetupPlayerInputComponent bind. Null if unassigned. */
+	const UInputAction* GetMouseLookAction() const;
 
 protected:
 	virtual void SetupInputComponent() override;
@@ -125,8 +162,28 @@ protected:
 	virtual void SetPawn(APawn* InPawn) override;
 
 private:
-	/** Add DefaultMappingContext to this local player's Enhanced Input subsystem. Idempotent. */
+	/**
+	 * Add DefaultMappingContext + AdditionalMappingContexts to this local player's Enhanced Input
+	 * subsystem. Idempotent per context. Also screams if CommonUI's viewport client is wrong —
+	 * that failure looks identical to "bindings succeeded, keys do nothing" (BP18).
+	 */
 	void AddDefaultMappingContext();
+
+	/**
+	 * Log, once per possession, which InputActions named by InputConfig actually have a KEY in the
+	 * mapping contexts this controller just added.
+	 *
+	 * THIS IS THE LINE THAT MAKES THE NEXT PIE RUN DIAGNOSTIC, and it exists because the previous
+	 * log set could not tell two very different failures apart. "Bindings created" and "context
+	 * added" were both being printed while WASD was dead, because neither of them answers the
+	 * question in between: does the context the controller loaded contain a key for the action the
+	 * pawn bound? A row in DA_InputConfig with no mapping in the IMC is a bound delegate that
+	 * nothing can ever fire, and it logs as total success at both ends of the gap.
+	 *
+	 * Data query only — it walks UInputMappingContext::GetMappings() and counts. It touches no
+	 * subsystem state, adds nothing, and is called exactly once (law 4: no per-frame anything).
+	 */
+	void LogMappingKeyCensus(const TArray<const UInputMappingContext*>& AddedContexts) const;
 
 	// DELETED BY BP02 STEP 1: LoggedHeldInputTags, BP01's transient diagnostic de-duplicator.
 	// It was never gameplay state and it is not promoted to any — the authoritative held-input set
