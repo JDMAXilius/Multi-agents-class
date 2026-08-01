@@ -70,9 +70,21 @@ nodes · **R27** the middle bot tier is `Marine` · **R28** tiers differ only on
   **jurisdiction**: `guard_laws.py` gates `Edit`/`Write` by `file_path`, and an MCP tool call has
   neither — so every mechanical protection this project has is blind to it. Decide the law-7
   boundary before an agent lands its first `.uasset` that way.
-- **The founder's Blueprints don't match R26's naming.** `GM_BR` / `GS_BR` / `PC_BR` / `PS_BR` /
-  `BP_BRcharacter` are landed; R26 specifies `BP_<CppClass>`. Either rename them or amend R26 —
-  but the audit script will flag them as written, so the mismatch should not just sit there.
+- **The founder's Blueprints don't match R26's naming — the fix is written, not run.**
+  `GM_BR` / `GS_BR` / `PC_BR` / `PS_BR` / `BP_BRcharacter` are landed; R26 condition 5
+  specifies `BP_<CppClassWithoutPrefix>`. **Decision taken: rename, don't amend** (the
+  ruling's naming rule is what makes an off-name asset findable at a glance).
+  `Tools/rename_r26/rename-r26.ps1` does it — **needs a free editor and has never been
+  run.** `git mv` is NOT an alternative: a `.uasset` stores its package name inside the
+  file, so renaming on disk leaves it stale and the editor refuses to load it; only
+  `EditorAssetLibrary.rename_asset` rewrites the package and fixes up referencers.
+  - `-PlanOnly` prints the five renames and the ini edit with no editor.
+  - It repoints `Config/DefaultEngine.ini`'s `GlobalDefaultGameMode`
+    (`GM_BR.GM_BR_C` → `BP_BRGameMode.BP_BRGameMode_C`) **only after all five renames
+    succeed**, so the repo is never in a state where the ini names a missing asset. Until
+    it runs, ini and assets agree on the OLD names and PIE is unaffected.
+  - Idempotent; R21 editor guard; law-7 lfs-lock check. `git lfs unlock` the five paths
+    afterwards, then re-run the audit — condition 5 should be clean.
 
 ## Honesty ladder position
 

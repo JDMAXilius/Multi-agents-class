@@ -30,8 +30,10 @@
 #        -> compared, case-sensitively, against the resolved parent class name.
 #
 # SCOPE IS BY PARENT, NOT BY FILENAME. Auditing only files called BP_BR* would be evaded
-# by naming the asset GM_BR - which is exactly what exists in Content/Core today. In scope:
-# any Blueprint whose ancestry reaches a BR C++ class, PLUS anything named BP_BR* (so a
+# by naming the asset GM_BR - which is exactly what Content/Core held until Tools/rename_r26
+# renamed the five founder Blueprints to their R26 condition-5 names. The scope rule stays
+# parent-based anyway: that is what makes the NEXT off-name asset findable. In scope: any
+# Blueprint whose ancestry reaches a BR C++ class, PLUS anything named BP_BR* (so a
 # mis-parented BP_BR* asset is still caught).
 #
 # EXIT CODES (Tools/_BRLadderCommon.ps1 vocabulary; only 0 is green):
