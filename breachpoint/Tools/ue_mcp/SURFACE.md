@@ -271,7 +271,7 @@ a binary the critic cannot diff. See §4.
 | Tool | Kind | Required args | Notes / refusals |
 |---|---|---|---|
 | `import_file` | M | `folder_path, asset_name, source_file, schema` | **the CSV reimport.** "The file's columns must match the property names in schema" — a schema mismatch is the documented failure |
-| `search_row_structs` | R | *(opt)* `struct_name` | **structs derived from `TableRowBase`** — this is how you discover `FBRWeaponRow` etc. from `BRDataRows.h` without guessing |
+| `search_row_structs` | R | *(opt)* `struct_name` | **structs derived from `TableRowBase`.** The filter is **EXACT NAME MATCH, not substring** — fired 1 Aug: `"BR"` → `[]`, `"WeaponRow"` → `[]`, `"BRWeaponRow"` → hit, omitted → all 26. **Omit the arg to enumerate.** A prefix search returns empty and reads exactly like "the struct is missing"; it cost this session a near-false-alarm |
 | `get_schema` | R | `data_table` | JSON: column → type info. **"schema declared ≠ schema live" becomes checkable** |
 | `create` | M | `folder_path, asset_name, schema` | |
 | `list_rows` / `get_rows` | R | `data_table[, row_names]` | `get_rows` returns JSON |
@@ -445,8 +445,18 @@ conflict as an MCP session and a build.**
 
 - [ ] Register `.mcp.json` and confirm the tools **resolve by name in a session's tool list**.
       Until then this file documents a transport, not a capability.
-- [ ] Fire one **rejecting** case at the confinement rule (`write_file` to a path outside
-      `/Game/`) and record the refusal verbatim. *Every defect the last three sessions found was
-      a rule that read as enforced and was not — this file asserts a confinement it has not
-      tested, which is precisely that shape.*
+- [x] **DONE 1 Aug — the rejecting case was fired and the confinement HELD.** `write_file` to a
+      path outside `/Game/` (the session scratchpad) returned `"isError": true` with *"Path ... is
+      not within an allowed root"*, and `Test-Path` confirmed **the file was never created**.
+      §4(a)'s bounded-hole claim is now empirical and can stop hedging.
+      **But the refusal enumerated ~80 allowed roots, and only two are ours** —
+      `<project>\Content` and `<project>\Saved`. **Every other root is inside the ENGINE
+      INSTALL** (`UE_5.8_Source\Engine\Plugins\*\Content` — Niagara, StateTree, ControlRig,
+      CommonUI, MetaSound, Paper2D, Water, …). The tool's phrase *"an enabled plugin's
+      `Content/` directory"* reads like project plugins; it means engine plugins too.
+      **Consequence for step 2's ruling: an MCP call can write into the engine install, which is
+      outside the repo and therefore invisible to git.** Nothing diffs it, no hook sees it, and a
+      corrupted engine plugin presents as "works on my machine." That is the one direction
+      version control cannot cover, and it is a wider blast radius than "the project's Content
+      folder."
 - [ ] Steps 2–5 of the ticket. Nothing in this file is a ruling.

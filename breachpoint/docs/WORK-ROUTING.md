@@ -139,7 +139,7 @@ MCP tools against a live editor, and each of the three has an apparent OPEN-mode
 
 | CLOSED batch item | Today | Candidate OPEN-mode path |
 |---|---|---|
-| **2. R26 rename** | `-run=pythonscript` | `AssetTools.move` — rewrites the package name and fixes up referencers, same as `EditorAssetLibrary.rename_asset` |
+| **2. R26 rename** | `-run=pythonscript` | `AssetTools.move` — **exists, but referencer fixup is UNPROVEN.** See the correction below |
 | **3. Input generator** | `-run=pythonscript` | `DataAssetTools.create` + `ObjectTools.set_properties` |
 | **4. CSV reimport** | `-run=pythonscript` | `DataTableTools.import_file` + `CurveTableTools.import_file` |
 
@@ -148,6 +148,21 @@ MCP tools against a live editor, and each of the three has an apparent OPEN-mode
 so `DataAssetTools.create` is type-compatible with everything `Tools/gen_input/` produces. And all
 six BR row structs **resolve live in the editor** via `DataTableTools.search_row_structs`, so the
 reimport path is not blocked on schema availability.
+
+> **CORRECTION, 1 Aug — this table overstated one cell, and the overstatement was load-bearing.**
+> Row 2 originally read that `AssetTools.move` *"rewrites the package name and fixes up
+> referencers, same as `EditorAssetLibrary.rename_asset`."* **That was inference from UE
+> semantics, not from the tool.** Its complete description is: *"Moves or renames an asset or
+> folder. Returns: True if the rename happened successfully. False otherwise."* It says nothing
+> about package names or referencers. R26 needs exactly `rename_asset` semantics — a rename that
+> does not rewrite the package name leaves the asset unloadable — so this is the one cell that
+> decides whether row 2 is real, and it is **unproven**. Surfaced by T1 asking, correctly,
+> whether each read/mutate mark came from a description or from evidence. Nearly every mark in
+> `SURFACE.md` is description-derived; only four tools have been fired at.
+>
+> The same caveat applies to rows 3 and 4 one hop down: `DataAssetTools.create` accepting
+> `UInputAction`, and `ObjectTools.set_properties` populating `UBRInputConfig`'s tag→action maps,
+> are both **unverified** — each needs a mutating call, and BP16 step 2 has no R-number yet.
 
 **If it holds, the scheduling consequence is large:** three of the six CLOSED items move into the
 OPEN window that BP16/BP08/BP10 already need, and the board stops paying a mode switch to reach
