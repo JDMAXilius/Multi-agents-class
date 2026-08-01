@@ -602,6 +602,73 @@ contract it was handed. That is the argument for R19 in one sentence.
 
 ---
 
+**31 Jul 2026 — STEP 4 WRITTEN (builder). `Character/` + `Match/BRPlayerController` + `LogBRInput`.
+NOT COMPILED — no rung claimed, by instruction.**
+
+Authored fresh per §3.4/§3.6 under the founder decision: no template header is included by any of
+these files, and none was opened. Grep across the six new files for `breachpointCharacter`,
+`Variant_*`, `TP_FirstPerson` returns **empty**.
+
+*Files:* `Character/BRCharacter.h/.cpp` (dual mesh; `IAbilitySystemInterface` stub; input wiring;
+no Tick) · `Character/BRCharacterMovementComponent.h/.cpp` (empty subclass) ·
+`Match/BRPlayerController.h/.cpp` (the two tag stubs + soft `InputConfig` /
+`DefaultMappingContext`) · `Core/BRCore.h/.cpp` (**`LogBRInput`**, ruling R24, one channel, none
+speculative) · `Config/DefaultInput.ini` (one line — see the deviation below).
+
+*Decisions a later reader would otherwise have to re-derive:*
+1. **`Mesh3P` is ACharacter's inherited mesh, not a second component.** §3.4 names two meshes; the
+   engine's crouch offset, root motion, ragdoll (§3.4's own death path) and every `GetMesh()`-based
+   system target the inherited one, so a rival component would leave the engine driving the wrong
+   body. §3.4's *name* is honoured by a `GetMesh3P()` accessor; the identity is the engine's.
+2. **`bCastHiddenShadow = true` on Mesh3P** — builder's call, not in §3.4's words. `OwnerNoSee` +
+   "casts shadow" without it means the owning player has no shadow of their own.
+3. **Ability bindings target the CONTROLLER, not the pawn** (`BindAbilityActions(Config,
+   BRController, …)`) — §3.2's flow routes the tag through the controller, and the controller
+   outlives the pawn across respawns.
+4. **Zero movement numbers typed.** No walk speed, jump velocity, air control or capsule size.
+   `NavAgentProps.bCanCrouch` is set because it is a capability flag, not a tuning number —
+   without it `Crouch()` is a silent no-op.
+
+*DEVIATION, flagged rather than buried — `Config/DefaultInput.ini`:*
+`DefaultInputComponentClass` changed from `/Script/EnhancedInput.EnhancedInputComponent` to
+`/Script/Breachpoint.BRInputComponent`. Inside `owner_path`, but outside step 4's wording, so it is
+named here. It is **load-bearing, not tidying**: `APawn::CreatePlayerInputComponent` instantiates
+that class, so step 4's required cast (`Cast<UBRInputComponent>(PlayerInputComponent)`) succeeds
+only because of this line, and Done-when box 4 is unreachable without it. The surviving template
+pawns cast to the base `UEnhancedInputComponent`, which `UBRInputComponent` derives from, so they
+are unaffected. If this line is ever lost, every key on every pawn dies at once — `BRCharacter`
+logs an Error naming this ini key for exactly that reason.
+
+*What box 4 can and cannot be proven with today.* The channel exists and every seam speaks on it
+(bind setup, mapping-context add, first Move/Look, jump/crouch edges, each ability tag's press and
+release edge). But **arrow one is still missing**: `IMC_Default` and `DA_InputConfig` do not exist,
+so with nothing assigned the run logs the two Warnings above and binds nothing. Box 4 becomes
+provable when step 3's generation packet lands the assets and they are assigned to
+`ABRPlayerController`'s defaults. That is a sequencing fact, not a defect in this step.
+
+*Contract gaps named, not fixed:*
+- **BP02 (the ASC seam left open):** author `ABRPlayerState` with the ASC + attribute set;
+  implement `ABRCharacter::GetAbilitySystemComponent()` as a forward to it; call
+  `InitAbilityActorInfo(PS, this)` from **both** `PossessedBy` (server) and `OnRep_PlayerState`
+  (client); route `ABRPlayerController::AbilityInputTagPressed/Released` into that ASC. All four
+  steps are written on the declarations. BP02 also needs `Match/` in its `owner_path` (it owns
+  three of that folder's four files) and must **not** re-declare the two handlers — their
+  signature is fixed by the binding mechanism.
+- **BP02, idempotency:** the pressed handler is bound to `Triggered` and therefore fires every
+  frame the key is held. The ASC-side buffer must be `AddUnique`-shaped. The stub's
+  `LoggedHeldInputTags` set is a *diagnostic* de-duplicator so the log shows edges, not frames;
+  BP02 deletes it rather than promoting it to state.
+- **BP04 owns `GameMode`/`GameState`/`PlayerState`,** and nothing yet sets `ABRCharacter` /
+  `ABRPlayerController` as any GameMode's default classes. Until a BR GameMode exists, PIE spawns
+  the template pawn and none of this code runs — the verifier needs that to reach a PIE smoke.
+
+**Not compiled, deliberately** (lead instruction: a build racing these writes produces exactly the
+garbage evidence this ticket has spent the night deleting). No `Build.bat`, no UBT, no `dotnet`, no
+`UnrealEditor-Cmd` was invoked by this packet. **Every claim above is a claim about text on disk —
+rung zero.** The hook blocked nothing; all nine touched paths are inside `owner_path`.
+
+---
+
 **Honesty note on the guard's reach (recorded so no one over-trusts it):** `guard_laws.py` is a
 PreToolUse hook keyed on `tool_input.file_path`, so it sees **Edit and Write only**. A `Bash`
 `rm`/`git rm`/`mv` is not checked. Step 1 deletes the 49 template sources via shell, and that

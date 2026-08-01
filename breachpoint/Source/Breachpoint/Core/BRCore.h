@@ -15,12 +15,36 @@
 // ---------------------------------------------------------------------------
 // Log channels — one per discipline, so a filtered log reads as one subsystem.
 // Defined in BRCore.cpp. The template's own Logbreachpoint is untouched and unused by us.
+//
+// EXTENSION RULE (ruling R24, no new ruling needed per channel): a §3 discipline folder
+// that needs to speak gets LogBR<Folder>, added HERE by the packet that first needs it,
+// under an exact-file owner_path grant on BRCore.h/.cpp (the same device R23 defines for
+// BRGameplayTags.h/.cpp). §3.1's five channels cover twelve folders; that is an oversight,
+// not a design position. Add on demand, never speculatively.
 // ---------------------------------------------------------------------------
 BREACHPOINT_API DECLARE_LOG_CATEGORY_EXTERN(LogBRCombat, Log, All);
 BREACHPOINT_API DECLARE_LOG_CATEGORY_EXTERN(LogBRNet, Log, All);
 BREACHPOINT_API DECLARE_LOG_CATEGORY_EXTERN(LogBRAI, Log, All);
 BREACHPOINT_API DECLARE_LOG_CATEGORY_EXTERN(LogBROnline, Log, All);
 BREACHPOINT_API DECLARE_LOG_CATEGORY_EXTERN(LogBRUI, Log, All);
+
+/**
+ * LogBRInput — the Input/ folder's channel (ruling R24; added by BP01 step 4).
+ *
+ * It carries the five-arrow flow of §3.2 end to end: IMC -> UInputAction ->
+ * UBRInputComponent -> InputTag -> ABRPlayerController::AbilityInputTag*(Tag) -> (BP02) ASC.
+ * Without it, step 3a could only reach for development-only ensureMsgf, and BP01's Done-when
+ * box 4 ("native input flows ... log-proven") had no channel on which to be proven.
+ *
+ * Verbosity policy for everything that logs here (law 4's spirit — no per-frame spam):
+ *   Log         — one-shot seams: bind setup, mapping-context add, first Move/Look received,
+ *                 and each ability tag's press/release EDGE.
+ *   Verbose     — repeat traffic: every Triggered while a key is held.
+ *   VeryVerbose — per-frame axis values.
+ * A verifier proving box 4 runs `log LogBRInput Verbose` (or VeryVerbose) in the console; the
+ * channel's compiled-in level is All, so nothing is stripped from a development build.
+ */
+BREACHPOINT_API DECLARE_LOG_CATEGORY_EXTERN(LogBRInput, Log, All);
 
 /**
  * Collision channel aliases.

@@ -10,3 +10,6 @@ DEFINE_LOG_CATEGORY(LogBRNet);
 DEFINE_LOG_CATEGORY(LogBRAI);
 DEFINE_LOG_CATEGORY(LogBROnline);
 DEFINE_LOG_CATEGORY(LogBRUI);
+
+// Input/ (§3.2). Added by BP01 step 4 under ruling R24 — see the header comment.
+DEFINE_LOG_CATEGORY(LogBRInput);

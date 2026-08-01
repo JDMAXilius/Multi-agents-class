@@ -1,0 +1,162 @@
+// Breachpoint. The pawn: a body, not a brain.
+
+#pragma once
+
+#include "AbilitySystemInterface.h"
+#include "CoreMinimal.h"
+#include "GameFramework/Character.h"
+
+#include "BRCharacter.generated.h"
+
+class UBRCharacterMovementComponent;
+class UCameraComponent;
+class USkeletalMeshComponent;
+struct FInputActionValue;
+
+/**
+ * ABRCharacter — "the pawn is a body, not a brain" (BREACHPOINT-ARCHITECTURE.md §3.4).
+ *
+ * AUTHORED FRESH from §3.4. This class is not the First Person template's pawn rebased, copied,
+ * subclassed or read for structure: the founder decision recorded in BP01's Log keeps all 47
+ * template sources on disk and forbids reusing them, and no template header is included here or
+ * in the .cpp. If a later reader finds a similarity, it is because §3.4 describes the pro-FPS
+ * standard that the template also implements — not because anything was inherited.
+ *
+ * WHAT BP01 STEP 4 AUTHORS (all of it below is the shell, and the shell is the deliverable):
+ *   - the dual-mesh setup,
+ *   - the IAbilitySystemInterface seam, forwarding to nothing yet,
+ *   - the input wiring: native verbs handled here, ability tags relayed to the controller,
+ *   - the registration of UBRCharacterMovementComponent as the movement component.
+ *
+ * WHAT IT DELIBERATELY DOES NOT HAVE, AND WHY THE ABSENCE IS THE DESIGN (§3.4): no health, no
+ * scoring, no weapon logic, no ammo, no death decision. Attributes live on the ASC, score on
+ * PlayerState, equipment in Weapons/. Death is a *consequence* — the pawn reacts to Event.Death
+ * by playing a cue and ragdolling Mesh3P; it never decides it. And no Tick (law 4): every
+ * function in this class is called by a delegate, an override, or an input binding.
+ *
+ * STILL OWED BY §3.4, NOT BY THIS PACKET (named so the next builder does not re-derive them):
+ *   - BP02: the GAS init dance — InitAbilityActorInfo(PS, this) in PossessedBy (server) AND
+ *     OnRep_PlayerState (client), and a real GetAbilitySystemComponent(). See that function.
+ *   - BP03/anim-builder: two ABPs, one per mesh; remote aim pitch from replicated RemoteViewPitch.
+ *   - BP05: the server-side rear-arc melee helper, and the weapon mesh socket attach on both
+ *     meshes.
+ */
+UCLASS(meta = (DisplayName = "BR Character"))
+class BREACHPOINT_API ABRCharacter : public ACharacter, public IAbilitySystemInterface
+{
+	GENERATED_BODY()
+
+public:
+	/**
+	 * The FObjectInitializer form is mandatory, not stylistic: it is the only place a subclass can
+	 * substitute the movement component class (SetDefaultSubobjectClass), and §3.4 requires
+	 * UBRCharacterMovementComponent to be the component that exists on this pawn from the first
+	 * spawn onward. See the .cpp for the one line that does it.
+	 */
+	ABRCharacter(const FObjectInitializer& ObjectInitializer);
+
+	// -------------------------------------------------------------------------
+	// IAbilitySystemInterface — A SEAM, NOT AN IMPLEMENTATION (BP01 leaves it null)
+	// -------------------------------------------------------------------------
+
+	/**
+	 * §3.4: "the ASC lives on PlayerState; the pawn implements IAbilitySystemInterface by
+	 * forwarding". BP01 owns neither, so this returns nullptr today, and that is the correct
+	 * BP01 state rather than a defect to be worked around.
+	 *
+	 * WHAT BP02 MUST DO TO CLOSE THIS SEAM (the whole of it, in one place):
+	 *   1. author ABRPlayerState with the ASC + attribute set (§3.6: "ASC + set live here");
+	 *   2. implement this as
+	 *        ABRPlayerState* PS = GetPlayerState<ABRPlayerState>();
+	 *        return PS ? PS->GetAbilitySystemComponent() : nullptr;
+	 *   3. call InitAbilityActorInfo(PS, this) from BOTH PossessedBy (server) and
+	 *      OnRep_PlayerState (client) — the canonical respawn-safe wiring; either one alone
+	 *      leaves a client-side ASC with no avatar, which fails only under a real client;
+	 *   4. route ABRPlayerController::AbilityInputTagPressed/Released into that ASC.
+	 * None of that is BP01's to guess: it is replicated, authority-bearing wiring.
+	 *
+	 * Callers must therefore null-check. Every GAS caller already does — a pawn without an ASC
+	 * is the normal state during travel and between possessions.
+	 */
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+
+	// -------------------------------------------------------------------------
+	// Dual-mesh accessors (§3.4)
+	// -------------------------------------------------------------------------
+
+	/** Arms + weapon, OnlyOwnerSee, no shadow. Seen by the owning client only. */
+	USkeletalMeshComponent* GetMesh1P() const { return Mesh1P; }
+
+	/**
+	 * Full body, OwnerNoSee, casts shadow — what everyone else and the death cam see.
+	 *
+	 * This is ACharacter's OWN inherited mesh, configured as the third-person mesh rather than a
+	 * second skeletal mesh component created beside it. That is a deliberate reading of §3.4:
+	 * the engine's crouch offset, root motion, ragdoll (§3.4's death path) and
+	 * GetMesh()-based animation all target the inherited component, so introducing a rival
+	 * "Mesh3P" component would leave the engine driving the wrong body. §3.4's name is honoured
+	 * by this accessor; the identity is the engine's.
+	 */
+	USkeletalMeshComponent* GetMesh3P() const { return GetMesh(); }
+
+	/** The first-person camera. Mesh1P hangs off it; the view is the pawn's control rotation. */
+	UCameraComponent* GetFirstPersonCamera() const { return FirstPersonCamera; }
+
+	/** The movement component, already typed. Sprint (BP02) and grapple (BP06) will want this. */
+	UBRCharacterMovementComponent* GetBRCharacterMovement() const;
+
+protected:
+	// -------------------------------------------------------------------------
+	// Input (§3.2 arrows three and four)
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Casts to UBRInputComponent, binds the four native verbs to the functions below, and binds
+	 * EVERY ability row wholesale to the controller's two tag handlers.
+	 *
+	 * The asymmetry is the whole point of §3.2: the native verbs are named here because the pawn
+	 * really does own them, while NO ability is named anywhere in this file. Adding Grapple is a
+	 * row in DA_InputConfig plus a row in an ability set — never an edit here.
+	 */
+	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+
+	/** Native: planar movement, in control-rotation space. Bound to Triggered. */
+	void Input_Move(const FInputActionValue& Value);
+
+	/** Native: look/aim. Bound to Triggered. Axis inversion belongs to the IMC, not to code. */
+	void Input_Look(const FInputActionValue& Value);
+
+	/** Native: jump. Bound to Started / Completed — hold to hold the jump, release to cut it. */
+	void Input_JumpStarted();
+	void Input_JumpCompleted();
+
+	/** Native: crouch, HOLD semantics (Started crouches, Completed stands). */
+	void Input_CrouchStarted();
+	void Input_CrouchCompleted();
+
+private:
+	/** Arms + weapon; owning client only. Attached to the camera so it rides the view exactly. */
+	UPROPERTY(VisibleAnywhere, Category = "Breachpoint|Character")
+	TObjectPtr<USkeletalMeshComponent> Mesh1P;
+
+	/** The first-person view. bUsePawnControlRotation — the controller aims, the pawn carries. */
+	UPROPERTY(VisibleAnywhere, Category = "Breachpoint|Character")
+	TObjectPtr<UCameraComponent> FirstPersonCamera;
+
+	/**
+	 * Handles for the ability-tag bindings, so a loadout or possession change can drop them via
+	 * UBRInputComponent::RemoveBinds without touching the native verbs. Nothing removes them in
+	 * BP01 — the bindings live as long as the pawn's input component — but collecting them is
+	 * free and re-deriving them later is not.
+	 */
+	TArray<uint32> AbilityInputBindHandles;
+
+	/**
+	 * One-shot log latches. Move and Look fire every frame a key is held, so the *arrival* of
+	 * each is logged once at Log and the traffic thereafter at VeryVerbose. This is what lets a
+	 * verifier prove BP01's Done-when box 4 from a default-verbosity log without drowning in it
+	 * (law 4's spirit: nothing this class does is per-frame chatter).
+	 */
+	uint8 bLoggedFirstMoveInput : 1;
+	uint8 bLoggedFirstLookInput : 1;
+};
