@@ -12,6 +12,8 @@
 #include "GameplayCueSet.h"
 #include "GameFramework/Actor.h"
 #include "Kismet/GameplayStatics.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraSystem.h"
 #include "Particles/ParticleSystem.h"
 #include "Sound/SoundBase.h"
 #include "UObject/UObjectHash.h"
@@ -126,19 +128,28 @@ bool UBRGameplayCue_Base::SpawnFXSoft(const UObject* WorldContext, const TSoftOb
 		return true;
 	}
 
-	// A Niagara system landed here and this module cannot spawn it: `UNiagaraFunctionLibrary`
-	// lives in the `Niagara` module, which is not in `Breachpoint.Build.cs` and cannot be added
-	// from this packet's owner path. Named loudly, once, rather than returning false and letting
-	// it read as "no asset authored" — those are different problems with different fixes.
-	static TSet<FName> ReportedNiagara;
-	const FName AssetName = FX->GetFName();
-	if (!ReportedNiagara.Contains(AssetName))
+	if (UNiagaraSystem* Niagara = Cast<UNiagaraSystem>(FX))
 	{
-		ReportedNiagara.Add(AssetName);
+		// `Niagara` became a PRIVATE dependency of Breachpoint.Build.cs on 1 Aug 2026 (see the
+		// dated note there); before that this branch could only name the asset in a Warning.
+		// Same contract as Cascade above: the ref was already resolved with Get(), so nothing
+		// here loads, and bAutoDestroy leaves no component to own — a one-shot, like the cue.
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(WorldContext, Niagara, Location, Rotation);
+		return true;
+	}
+
+	// Some third UFXSystemAsset subclass landed here. Named loudly, once, rather than returning
+	// false and letting it read as "no asset authored" — those are different problems with
+	// different fixes, and the whole point of ReportSilentCue is that they never look the same.
+	static TSet<FName> ReportedUnknownFX;
+	const FName AssetName = FX->GetFName();
+	if (!ReportedUnknownFX.Contains(AssetName))
+	{
+		ReportedUnknownFX.Add(AssetName);
 		UE_LOG(LogBRCombat, Warning,
-			TEXT("BRGameplayCues: '%s' is a non-Cascade FX system and cannot be spawned — the "
-				 "`Niagara` module is not a dependency of Breachpoint.Build.cs. contract_gap, not "
-				 "a missing asset."),
+			TEXT("BRGameplayCues: '%s' is neither a Cascade UParticleSystem nor a UNiagaraSystem, "
+				 "so this module has no way to spawn it. Not a missing asset — an unhandled FX "
+				 "system type."),
 			*AssetName.ToString());
 	}
 	return false;

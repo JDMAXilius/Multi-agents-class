@@ -150,12 +150,13 @@ protected:
 	/**
 	 * Spawn a soft-referenced FX system if it is resident. Same contract as PlaySoundSoft.
 	 *
-	 * ONLY CASCADE (`UParticleSystem`) CAN ACTUALLY BE SPAWNED FROM THIS MODULE TODAY. The
-	 * reference type is `UFXSystemAsset` (the Engine-module base that both Cascade and Niagara
-	 * derive from) so the DATA shape is already right, but spawning a `UNiagaraSystem` needs
-	 * `UNiagaraFunctionLibrary`, which needs the `Niagara` module in `Breachpoint.Build.cs` —
-	 * outside this packet's owner path. Recorded as a contract_gap in the report rather than
-	 * worked around; a Niagara asset arriving here is reported by name, not dropped.
+	 * BOTH FX BACKENDS SPAWN. The reference type is `UFXSystemAsset` (the Engine-module base that
+	 * both Cascade and Niagara derive from), and the implementation branches on the concrete type:
+	 * `UParticleSystem` -> `UGameplayStatics::SpawnEmitterAtLocation`, `UNiagaraSystem` ->
+	 * `UNiagaraFunctionLibrary::SpawnSystemAtLocation`. The Niagara half was a contract_gap until
+	 * 1 Aug 2026, when `Niagara` was added to `Breachpoint.Build.cs` as a PRIVATE dependency — no
+	 * public header names a Niagara type, and this signature deliberately still does not.
+	 * Any other `UFXSystemAsset` subclass is reported by name, once, not dropped.
 	 */
 	bool SpawnFXSoft(const UObject* WorldContext, const TSoftObjectPtr<UFXSystemAsset>& SoftFX, const FVector& Location, const FRotator& Rotation) const;
 

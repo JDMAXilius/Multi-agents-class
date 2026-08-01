@@ -41,7 +41,16 @@ public class Breachpoint : ModuleRules
 			"OnlineSubsystem",
 			"OnlineSubsystemUtils",
 			"HTTP",
-			"Json"
+			"Json",
+			// Niagara added 1 Aug 2026: AbilitySystem/Cues/BRGameplayCues.cpp spawns cue FX with
+			// UNiagaraFunctionLibrary::SpawnSystemAtLocation. Its soft refs are typed
+			// TSoftObjectPtr<UFXSystemAsset> -- the Engine-module base of BOTH Cascade and Niagara --
+			// so the module compiled and linked clean without this and simply REFUSED to play every
+			// Niagara system that reached the handler, naming it in a one-shot Warning. The failure
+			// mode is invisible until an FX asset exists, which is later than anyone will look.
+			// PRIVATE, not Public: no public header names a Niagara type (BRGameplayCues.h
+			// forward-declares only UFXSystemAsset), so no dependent module needs the include path.
+			"Niagara"
 		});
 
 		PublicIncludePaths.AddRange(new string[] {

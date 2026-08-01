@@ -529,6 +529,35 @@ re-litigated inside a packet.
   trustworthy as the tree, and `check_authorisation.py` is what catches a landing it did not
   authorise.
 
+- **R38. One log channel per §3 DISCIPLINE FOLDER. A sub-folder inherits its parent's; it does
+  not get its own.** Asked by the cue-library packet, which wanted `LogBRCues` for
+  `AbilitySystem/Cues/` and — correctly — refused to widen R24 by writing it in.
+
+  R24's rule is *"a discipline folder that needs to speak gets `LogBR<Folder>`"*, and its own
+  arithmetic names the unit: *"five channels for twelve discipline folders."* §3's tree
+  enumerates exactly twelve, all top level. `AbilitySystem/Cues/` is a sub-folder of §3.3, so
+  the channel R24 would mint for it is `LogBRAbilitySystem`, not `LogBRCues`.
+
+  **Decided against the sub-folder channel for a reason that is not tidiness.** R24 exists
+  because `Input/` could not speak *at all* — BP01 fell back to development-only `ensureMsgf`
+  and its Done-when box 4 ("log-proven") was unsatisfiable. `AbilitySystem/` speaks fine;
+  `LogBRCombat` carries all eleven files of §3.3. Granting a second channel there makes
+  `BRCore.h`'s own claim — *a filtered log reads as one subsystem* — **worse**, because a reader
+  filtering `LogBRCombat` would silently stop seeing cue diagnostics and would not know a second
+  stream existed. And it sets the precedent by which `Abilities/` and `Effects/` each claim one,
+  leaving §3.3 with four.
+
+  *The real pain is real, and it is a verbosity problem, not a channel problem:* a cue's
+  empty-slot warning currently lands in the same stream as the damage pipeline. The cue library
+  already bounds it to **once per (tag, slot)**, which is the right shape. If it still drowns
+  the stream, the answer is verbosity or a message prefix — not a channel a filter can miss.
+
+  *Recorded, not fixed:* R24's premise is already only approximately true. `LogBRCombat` and
+  `LogBRNet` map to no §3 folder and both span several, so the existing five are **discipline
+  -themed**, not folder-named. That inconsistency predates this ruling and is left alone
+  deliberately — renaming live channels to satisfy a rule about new ones would be the tail
+  wagging the dog.
+
 - **R36. R29.3 is widened: an editor session must not overlap ANYTHING THAT TAKES THE PROJECT
   LOCK, not merely "a build".** R29.3 named the operation this project rarely runs and missed the
   one it runs constantly — every editor-driving tool we own is a `-run=pythonscript` commandlet
