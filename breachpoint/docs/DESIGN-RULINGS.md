@@ -185,3 +185,44 @@ The lead appends; nobody else writes here. A doubt this ledger closes is closed.
   4. A wait for a build to end must exit on **failure as well as success** — poll for the
      build processes disappearing, not for the success artifact appearing. Waiting on the
      happy-path marker alone makes a crash indistinguishable from slow progress.
+
+## Gameplay tag structure (31 Jul 2026 — resolved at BP01 step 2, before Core/ closed)
+
+- **R22. `Damage.*` is FLAT: types and modifiers are siblings that compose. The tag is
+  `Damage.Rear`, never `Damage.Melee.Rear`.** ARCHITECTURE §3.1 — the one authoritative tag
+  list — enumerates `Damage.*` as `Kinetic, Explosive, Melee, Headshot, Rear`. §3.3 and
+  `TICKET_BP05_TRIANGLE.md` both write `Damage.Melee[.Rear]`; **that notation is shorthand for
+  the pair `{Damage.Melee, Damage.Rear}`, not a nested tag,** and the tickets are corrected to
+  say so.
+
+  *Why flat wins on the merits, not just on authority:* `Kinetic / Explosive / Melee` are damage
+  **types** and `Headshot / Rear` are **modifiers**. A hit carries one type plus zero or more
+  modifiers, so the ExecCalc queries each axis independently. Nesting `Rear` under `Melee`
+  permanently forbids a rear-arc bonus on any non-melee source, and by symmetry would force
+  `Damage.Kinetic.Headshot` — which no source proposes. Flat costs nothing: GAS tag containers
+  hold both tags at once, and a query for "was this a rear hit" stays one comparison.
+
+  *Consequence for BP05:* its ExecCalc asserts BOTH `Damage.Melee` and `Damage.Rear` for the
+  lethal rear-melee case. A builder that greps for `Damage.Melee.Rear` will not find it — that
+  is correct, and this ruling is why.
+
+- **R23. `Ability.*` and `GameplayCue.*` are OPEN families. `Core/` closes for the other five
+  and stays open for these two, and the packet that introduces an ability or cue declares its
+  tag — under an exact-file owner_path grant.** §3.1 names both families and enumerates no
+  leaves, unlike the five closed families. That is not an omission to be "fixed" by guessing:
+  the leaves cannot exist at BP01 time because the abilities and cues do not exist yet. One tag
+  per ability, one per cue, authored by the packet that authors the thing.
+
+  *The mechanical half, which is the part that actually bites:* BP02/BP03/BP05 own
+  `AbilitySystem/`, `Weapons/`, `Abilities/` — **not `Core/`** — so the hook blocks them from
+  adding their own tag to the one authoritative header. At claim time each such packet's
+  `owner_path` gains the two exact files `Source/Breachpoint/Core/BRGameplayTags.h` and
+  `.cpp` — the same exact-file device BP01 used for its three `.Target.cs` entries, and for the
+  same reason: grant the file, never widen to the folder.
+
+  *Law 7 tension, recorded rather than waved away:* this means several packets append to one
+  file, which one-owner-per-artifact otherwise forbids. Accepted because the file is append-only
+  text in per-family blocks, conflicts are line-level and reviewable, and the board serializes
+  claims anyway. If two packets ever do collide here, the answer is to split the header by
+  family — not to let a packet declare its tags somewhere else, which would end §3.1's "one
+  authoritative header" guarantee and with it the grep that proves nothing is missing.
