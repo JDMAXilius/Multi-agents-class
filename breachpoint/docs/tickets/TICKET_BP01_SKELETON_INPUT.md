@@ -676,3 +676,53 @@ PreToolUse hook keyed on `tool_input.file_path`, so it sees **Edit and Write onl
 deletion is governed by the ticket, not by the hook. Law 5 is enforced on *writes*; on
 *removals* it is still goodwill. Worth a follow-up in BP14/BP15's adversarial pass — "can a
 builder delete outside `owner_path`?" currently answers **yes**.
+
+**1 Aug 2026 — `guard_laws.py` law-5 confinement was scoped to two folders; every other
+owner_path on the board was unenforced.** (Cloud session, Context A. Found by a board-vs-disk
+audit; filed here because BP01's Log is where this hook was built and proven.)
+
+The confinement check read `if owners and rel.startswith(("Source/", "Content/"))`. Everything
+outside those two trees fell through to `return 0` — **silently, with no message**, which is
+the property that made it survive. The tickets that declared a write scope the hook never
+looked at:
+
+| Ticket | `owner_path` it declares | Checked before today |
+|---|---|---|
+| BP00 | `Tools/` | no |
+| BP01 | `Config/` (plus its `Source/` entries) | `Config/` no |
+| BP14 | `Tools/data-crew/` | no |
+| BP15 | `Tools/architect/` | no |
+| BP16 | `Tools/ue_mcp/`, `docs/contracts/` | no |
+
+So a packet claiming BP14 could have rewritten `Tools/run-ubt.ps1` — the ladder every other
+ticket's verification depends on — and the hook would have returned 0. **This is the same
+class of defect as the kickoff-gate hole found on 31 Jul: a law that reads as enforced and is
+not.** The earlier one was "the gate is never reached"; this one is "the gate is reached and
+waves everything through." Both are invisible from the passing side, which is the lesson worth
+keeping: *an enforcement mechanism has to be tested with a case it should REJECT, or all it
+proves is that it doesn't crash.*
+
+*Fix:* confinement now covers every path in the repo. A claim names the folders a packet may
+write; anything else is outside it, wherever it sits. `ALWAYS_ALLOWED` is unchanged and is the
+escape hatch that keeps this workable — `docs/tickets/` (so a blocked packet can file its
+contract_gap in the Log), `docs/DESIGN-RULINGS.md`, and the claim file itself.
+
+*Proven, nine cases, claim = `{"ticket":"BP14","owner_path":["Tools/data-crew/"]}`:*
+
+| Write | Expected | Got |
+|---|---|---|
+| `Tools/data-crew/run_crew.py` | allow | exit 0 |
+| `Tools/run-ubt.ps1` (BP00's) | **block** | exit 2 — *was 0* |
+| `Config/DefaultEngine.ini` (BP01's) | **block** | exit 2 — *was 0* |
+| `docs/contracts/testing.md` (BP16's) | **block** | exit 2 — *was 0* |
+| `Source/Breachpoint/Match/X.cpp` | block | exit 2 (already worked) |
+| `docs/tickets/TICKET_BP14_*.md` | allow (Log) | exit 0 |
+| `docs/DESIGN-RULINGS.md` | allow (ledger) | exit 0 |
+| `TakeDamage(` into `Tools/…/x.cpp` | allow — law 2/3 gates `Source/` only | exit 0 |
+| `TakeDamage(` into `Source/…/Match/X.cpp` | block | exit 2 |
+
+The eighth row is a **deliberate remaining hole, not an oversight**: the banned-API check keys
+on `Source/`, so a generator under `Tools/` that *emits* C++ containing `TakeDamage(` is not
+caught. Narrow today (no generator emits gameplay C++), and it becomes real the moment BP14
+step 2's `code` job type lands. Recorded rather than fixed, because widening the API check to
+every file type would fire on this very ticket Log — which names the banned API in prose.
