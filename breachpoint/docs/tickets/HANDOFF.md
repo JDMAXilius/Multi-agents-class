@@ -260,3 +260,94 @@ the **mode window**, not the ticket. That is also the source of the one decision
 session 2's four — a rule that read as enforced and was not — and one of them was **the check
 on the enforcement**. When looking for the next one, prefer the mechanisms nobody has fired a
 rejecting case at over the rules nobody follows.
+
+---
+
+# Session 4 — 1 Aug 2026, terminal (T1) + MCP terminal (T2), in parallel. Read this first.
+
+**Two sessions ran simultaneously all day and handed each other work over a file bus.** T1 (this
+one) wrote code; T2 drove a live editor via the UE 5.8 MCP. That split was a founder ruling
+mid-session and it worked — but the coordination facts below are load-bearing, not colour.
+
+## The one thing that matters tomorrow
+
+**NOTHING WRITTEN TODAY HAS BEEN COMPILED.** Six abilities, a CMC rewrite, a GameplayCue
+subsystem, a cost GE, a projectile, an attribute pair and 25 tuning rows are all at **rung 0**.
+An editor has been live since ~13:44 and R36 forbids overlapping it with a build.
+
+The full three-target rung 1 **did pass at 13:42** (`BreachpointEditor` 18 s, `Breachpoint` 744 s,
+`BreachpointServer` 800 s, all with R19 timestamp proofs) — **the project's first clean owned
+rung-1 pass at a single HEAD.** But that was *before* every ability landed. It proves the tree
+compiled an hour before the day's real work existed.
+
+**The queue behind the editor, in order — this is the whole plan:**
+1. `Tools/run-ubt.ps1` — all three targets. First compile of everything below.
+2. `Tools/rename_r26/rename-r26.ps1` — T2's BP18 step 1, blocked because the MCP cannot answer a
+   modal dialog.
+3. Reopen the editor → the three `DA_AbilitySet_*` assets → **PIE**, which answers the question
+   nobody can answer yet: *can anyone actually move in that arena?*
+
+## What exists now that did not this morning
+
+| | |
+|---|---|
+| Abilities | fire · reload · swap · melee · grenade · grapple (+ the CMC's grapple half) |
+| Granting | `AbilitySet` column + resolver — **before this, all six were unreachable code** |
+| Cues | handler library + a binding that actually works (see below) |
+| Data | `/Game/Data` went **zero → seven** imported tables; `CT_Combat` 11 → 25 rows |
+| Assets | 21 landed by T2, incl. `DA_InputConfig`, 8 `IA_*`, the arena `.umap` (44 elements) |
+| Rulings | R32–R36 (founder-delegated), R37 (MCP boundary, T2) |
+
+## Three findings that will save you a day each
+
+1. **Setting `GameplayCueTag` on a NATIVE cue class binds nothing.** `UGameplayCueManager` fills
+   its runtime set by scanning **Blueprint assets** for an asset-registry tag; a native `UClass`
+   is never in that scan, and the tag-derivation that would write it is `#if WITH_EDITOR`. The
+   obvious route compiles, looks armed, and silently never fires. `BRGameplayCueRegistrar`
+   registers via `UGameplayCueSet::AddCues` at `OnWorldBeginPlay` **and reads the map back to
+   verify**.
+2. **`PC_BR` had `inputConfig=None` AND `defaultMappingContext=None`.** The board believed nobody
+   could move because `DA_InputConfig` did not exist. That was half the story — the controller
+   was never wired either. T2 found it and fixed it *in the editor*.
+3. **Use `BRCollision::` aliases, never a raw `ECC_GameTraceChannel*`.** `Channel1` is the
+   template's `Projectile` channel. I used the raw enum in the fire path and the grapple; both
+   silently traced on the wrong channel, and the failure mode is "things just stop colliding".
+
+## What is still owed, most valuable first
+
+- **`BRGA_Grenade` needs `CostGameplayEffectClass` wiring**, and it must override
+  `CheckCost`/`ApplyCost` to supply the `SetByCaller` — the engine's convenience path sets no
+  value, so the magnitude evaluates to 0 and the cost silently passes at zero grenades.
+- **`ST_Bot.uasset` is committed but is an EMPTY SHELL** — no schema, no states. It is a stub, not
+  a brain. Do not read its existence as BP08 progress.
+- **`DECISIONS-OWED.md`** — ~14 open, three of which gate the **6 August** course deliverable
+  (`docs/ASSIGNMENT-5.md` currently answers them with "this is the project owner's call").
+- Cue FX assets (every cue routes correctly and draws a placeholder marker), a swing montage, the
+  reload/swap montages.
+
+## How the two sessions coordinated, and the two rules that came out of it
+
+`Tools/bus/bus.py` — one message per file in `docs/bus/`, routed by **lock mode**
+(`OPEN`/`CLOSED`/`FILES`), so a terminal is only shown work it can actually run. T2 found two real
+bugs in it within minutes of it existing, over the bus itself.
+
+- **ONE working tree, two sessions.** Never `git add -A` while another session is live. Stage
+  explicit paths.
+- **READ-THEN-UNION the claim file, never rewrite it.** I rewrote `.claude/active-packet.json`
+  twice and dropped T2's paths mid-write, both times blocking a live packet. `owner_path` is a
+  union under R31, and it is 20 paths now.
+
+## The pattern this session kept proving
+
+**Three defects in my own code were found by other lanes, none by me:** the collision channel
+(twice), a dropped `//` that broke compilation outright, and cue params with no hit result so a
+tracer could not be drawn. Every one was caught by a second reader *following the pattern* rather
+than reviewing it. The "builder does not grade its own output" split is not ceremony — it is
+where the defects actually surfaced.
+
+And the day's recurring shape, now at six instances: **a mechanism that reads as enforced and is
+not.** `guard_laws.py` inert from the wrong launch root · a stale `Ability.*` comment that
+misrouted a `contract_gap` · `ARCHITECTURE §4`'s "six GE classes" · `WORK-ROUTING §7` written
+after R31 already ruled it · a register built from Logs inheriting every Log's expiry date · and
+the native cue tag above. **When looking for the next one, prefer the mechanisms nobody has fired
+a rejecting case at over the rules nobody follows.**
