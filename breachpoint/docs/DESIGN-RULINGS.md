@@ -269,3 +269,40 @@ The lead appends; nobody else writes here. A doubt this ledger closes is closed.
   *What this does NOT license:* a packet quietly adding a spec file that asserts nothing so a
   rung goes green. `testing.md`'s grep gates and BP00 step 5's critic pass ("can a spec pass
   asserting nothing?") still apply, and a spec file with no meaningful assertion is a finding.
+
+- **R26. Blueprint children of BR C++ classes are permitted as DEFAULT-VALUE CONTAINERS ONLY.
+  Zero graph nodes. This narrows R18; it does not repeal it.** Founder decision, 1 Aug 2026,
+  after `BP_BRGameMode` / `BP_BRCharacter` / `BP_BRPlayerController` / `BP_BRPlayerState` /
+  `BP_BRGameState` were created in the editor to assign assets.
+
+  *What made this reasonable:* assigning a mesh, an `InputConfig` or a mapping context through
+  a Blueprint child is the ordinary UE workflow, and a designer opening the editor to point a
+  soft pointer at an asset is not the hazard R18 exists for.
+
+  **A conforming BP child, all five conditions:**
+  1. It is a direct child of a `BR`-prefixed C++ class and adds **no** new parent in between.
+  2. **Its EventGraph and ConstructionScript are empty.** Zero nodes. Not "only cosmetic
+     nodes" — zero, because "only cosmetic" is not a state anyone can verify at a glance.
+  3. It declares **no** new variables, functions, macros, interfaces, or components. It sets
+     values on properties the C++ class already declares `EditDefaultsOnly`/`EditAnywhere`.
+  4. **No gameplay NUMBER is set here.** Law 3 is untouched: damage, cooldowns, speeds, score
+     limits and timers come from `Content/Data/*.csv`. A BP default that mirrors a table value
+     is the silent-drift class R19/R20 exist to kill, wearing a different hat.
+  5. Named `BP_<CppClassWithoutPrefix>` — `BP_BRGameMode`, not `BP_GameModeFinal2`.
+
+  **What it still may NOT be:** a place to branch, to hold state, to react to an event, to
+  override a virtual, or to carry a value the sim reads at runtime. The moment a BP child
+  contains a decision, it is a Tier-4 asset holding gameplay the critic cannot diff — which is
+  exactly R18's original target, and that instance is a `high`-severity finding, not a style note.
+
+  **Enforcement is owed, not assumed.** R18 was reviewable because there were no assets to
+  review; this exception spends that. A `Tools/audit_blueprints.py` must assert conditions 1–3
+  mechanically (node count, added-member count, parent chain) over every `BP_BR*` asset and run
+  in rung 2, or condition 2 erodes to "only a little logic" within a month. **Until that script
+  exists this ruling is enforced by goodwill, and that is stated here rather than assumed.**
+
+  *Corollary — the config path stays available and is preferred where it works:* every
+  `EditDefaultsOnly` soft pointer can also be set from `Config/DefaultGame.ini` under
+  `[/Script/Breachpoint.<Class>]`, which is diffable, greppable, and survives a clone with
+  nobody opening the editor. Prefer ini for anything a script can set; use a BP child where the
+  editor is genuinely the better authoring surface.
