@@ -51,6 +51,21 @@ project has written.**
 *Exit:* the founder plays for 60 seconds. Record `movement ready` numbers; every later stage
 compares against them.
 
+**1 Aug, evening — PARTIALLY MET. The founder reports the character moving.** That is the first
+such report in the project's life and it is taken at face value. What is NOT yet true is the
+*mechanical* half of this gate:
+
+- `FIRST Move input` has **still never appeared in any log**, and that is not evidence of
+  failure — the diagnostic lives at `BRCharacter.cpp:513`, committed **18:17**, while the loaded
+  binary was built **16:57**. The probe is blind, not negative.
+- So the layer doing the moving is **unidentified**. Template path or `ABRCharacter`'s phase-1
+  binder are indistinguishable from the chair, and they are exactly what Step 1 onward needs to
+  tell apart.
+
+**Stage 0 closes when a build newer than 18:17 prints `FIRST Move input` on a keypress.** Until
+then this gate is "observed, unattributed", and Stage 1 must not start — not because movement is
+doubted, but because every later stage compares against a baseline nobody has read yet.
+
 ---
 
 ## Stage 1 — `AttributesOnly`. Numbers, and nothing that can move a character.
