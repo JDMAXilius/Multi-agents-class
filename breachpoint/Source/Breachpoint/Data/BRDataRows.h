@@ -179,6 +179,45 @@ struct BREACHPOINT_API FBRWeaponRow : public FTableRowBase
 	float EquipTime_s = 0.f;
 
 	/**
+	 * Maximum hitscan trace length in METRES. Beyond this the shot simply misses.
+	 * CSV: Range_m. Added by BP03 step 2 (1 Aug 2026).
+	 *
+	 * WHY IT HAD TO BE A ROW FIELD: `BRGA_WeaponFire` cannot trace without a length, and a
+	 * literal in the ability body is a law-3 violation AND item four of `gas-purity` §9's
+	 * self-check list. It is not in `CT_Combat` either — that table's 11 rows are all
+	 * multipliers and rates. Per-weapon, so it belongs in the per-weapon row, not a curve.
+	 *
+	 * The SERVER uses this as a rejection bound, not just a client trace length: a client
+	 * claiming a hit beyond `Range_m` is rejected (client TargetData is a CLAIM, never truth).
+	 *
+	 * ** VALUES ARE PROVISIONAL — curator confirmation owed. ** The schema is BP03's; the
+	 * numbers are the tuning-curator's, and BP03 filed rather than invented them. They are
+	 * sane starting points for a 40 m arena, not balanced figures.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	float Range_m = 0.f;
+
+	/**
+	 * Half-angle in DEGREES of the cone the SERVER accepts around the shooter's view direction.
+	 * CSV: Spread_deg. Added by BP03 step 2 (1 Aug 2026).
+	 *
+	 * READ THIS BEFORE USING IT AS VISUAL SPREAD. This field is a **server validation
+	 * tolerance**, not a per-shot random deviation. `BRGA_WeaponFire` traces down the camera
+	 * centre and the server rejects any claimed direction outside this cone — which is what
+	 * the ticket's "direction within cone of server muzzle" asks for.
+	 *
+	 * If per-shot random spread is added later it MUST come from a **seeded stream shared by
+	 * client and server**, never `FMath::RandRange` — that is a banned API the pre-tool hook
+	 * blocks outright, and here it is not merely a law: unseeded spread on a LocalPredicted
+	 * ability makes client and server disagree about where the shot went on every single shot.
+	 * The law and the netcode want the same thing.
+	 *
+	 * ** VALUES ARE PROVISIONAL — curator confirmation owed. ** See Range_m.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	float Spread_deg = 0.f;
+
+	/**
 	 * SOFT reference to the weapon's world/first-person mesh, resolved by
 	 * BREquipmentComponent through the streamable manager at equip time.
 	 * Soft is law (`data-and-assets.md`): a hard UPROPERTY asset ref or ConstructorHelpers
