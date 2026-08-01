@@ -87,7 +87,12 @@ ref resolves to the CDO and grants nothing while looking correct.
 
 `PHASE2-RELAYER` Step 4. Press → `AbilityInputTagPressed` → ASC input buffer → activation.
 
-*Log:* `BRPlayerController: ability input tag 'InputTag.Fire' pressed → ASC`.
+*Log (CORRECTED 1 Aug — the line this originally named does not exist and could not be written):*
+the press edge is logged by the **ASC**, not the controller — `BRAbilitySystemComponent … 'InputTag.Fire' PRESSED (edge)`. `BRPlayerController` logs only its *failure* path today.
+The exit criterion that actually matters is the **negative** one, which is new:
+`… 'InputTag.Fire' PRESSED and matched NO granted ability (N ability(ies) granted on this ASC in total)`.
+It names the total granted count because **zero-granted (no set landed) and non-zero (set landed,
+tag misspelled) are different bugs** that look identical from the chair.
 *Exit:* the tag line prints on keypress, **and movement is unaffected.** Abilities that refuse
 (no ammo, no row) must refuse LOUDLY here — this is the stage where a silent refusal would be
 mistaken for a dead key, and we have already burned a day on exactly that confusion.

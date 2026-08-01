@@ -554,9 +554,40 @@ void UBREquipmentComponent::GrantAbilitySetForSlot(int32 SlotIndex)
 	AbilitySet->GiveToAbilitySystem(ASC, /*SourceObject=*/ Instance,
 		Grant.AbilityHandles, Grant.EffectHandles);
 
-	UE_LOG(LogBRCombat, Verbose,
-		TEXT("BREquipmentComponent: granted %d ability(ies) and %d effect(s) from '%s' for slot %d."),
-		Grant.AbilityHandles.Num(), Grant.EffectHandles.Num(), *GetNameSafe(AbilitySet), SlotIndex);
+	const int32 GrantedAbilities = Grant.AbilityHandles.Num();
+	const int32 GrantedEffects = Grant.EffectHandles.Num();
+	const FName WeaponRowName = Instance->GetWeaponRowHandle().RowName;
+
+	if (GrantedAbilities == 0)
+	{
+		// STAGE 2's TRAP, MADE AUDIBLE. Nothing upstream failed: the row resolved, the soft ref
+		// loaded, GiveToAbilitySystem returned normally. The weapon simply cannot fire, and at
+		// Verbose that read as success — which is the roadmap's own warning about a set that
+		// "grants nothing while looking correct". A set that grants zero abilities is either empty
+		// or its entries name no ability class; both are authoring defects in the .uasset, which is
+		// why this says WHERE to look and does not guess at a fix.
+		//
+		// Warning and not Error: an equip is still a legal, playable state with no abilities on it,
+		// and this file does not get to decide the weapon is broken — it reports that it is silent.
+		UE_LOG(LogBRCombat, Warning,
+			TEXT("BREquipmentComponent: granted 0 ability(ies) and %d effect(s) from '%s' for slot %d (weapon row '%s'). The set RESOLVED and LOADED — it is empty, or its entries name no ability class. This weapon equips and can never fire."),
+			GrantedEffects, *GetNameSafe(AbilitySet), SlotIndex, *WeaponRowName.ToString());
+		return;
+	}
+
+	// STAGE 2's EXIT CRITERION (docs/GAS-INTEGRATION-ROADMAP.md): the grant line, naming the SET,
+	// the COUNTS and the slot. The sentence itself is unchanged — it is a named exit criterion and
+	// the grep for it must keep working — but two things about it did change:
+	//
+	//   Verbose -> Log. An equip is a discrete, once-per-life-ish event, not per-frame traffic, and
+	//   at Verbose the roadmap's exit could not print on a default PIE run. A stage whose exit
+	//   criterion is invisible by default is a stage that reads as failed when it passed.
+	//
+	//   The weapon row is named. "Granted 3 abilities from DA_AbilitySet_AR" does not say which
+	//   weapon asked, and the first question after a wrong grant is always which weapon.
+	UE_LOG(LogBRCombat, Log,
+		TEXT("BREquipmentComponent: granted %d ability(ies) and %d effect(s) from '%s' for slot %d (weapon row '%s')."),
+		GrantedAbilities, GrantedEffects, *GetNameSafe(AbilitySet), SlotIndex, *WeaponRowName.ToString());
 }
 
 void UBREquipmentComponent::ClearAbilitySetForSlot(int32 SlotIndex)

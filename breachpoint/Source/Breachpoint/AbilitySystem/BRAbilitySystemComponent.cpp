@@ -8,6 +8,7 @@
 #include "GameplayPrediction.h"
 
 #include "AbilitySystem/Abilities/BRGameplayAbility.h"
+#include "AbilitySystem/BRAttributeSet.h"
 #include "AbilitySystem/BRCombatCurves.h"
 #include "AbilitySystem/Effects/BRGameplayEffects.h"
 #include "Core/BRCore.h"
@@ -30,6 +31,28 @@ namespace
 	 * open, this constant moves up beside its siblings and this comment goes away.
 	 */
 	const FName FighterMaxGrenadesCurve(TEXT("Fighter.MaxGrenades"));
+
+	/**
+	 * The "this input tag matched no granted ability" report is ONCE PER (owner, tag) for the life of
+	 * the process, and everything after the first is Verbose.
+	 *
+	 * WHY IT IS BOUNDED AT ALL: the report fires on the PRESS EDGE, so a held key is already one
+	 * line — but a semi-auto Magnum is pressed as fast as a finger moves, and a tag that is
+	 * permanently ungranted (no ability set authored yet, which is the state this project is in
+	 * today) would otherwise emit a Warning per click for the whole session and bury the stream the
+	 * reader opened to find it.
+	 *
+	 * The pattern, deliberately, is the cue library's `GetSilentCueReportLedger` in
+	 * `AbilitySystem/Cues/BRGameplayCues.cpp` — same problem, same shape, same file-static answer.
+	 * A file-static and not a member because this header is not this task's to write, and because a
+	 * log throttle is not gameplay state and must never become replicated, saved, or read by anything
+	 * that decides something. Game thread only, like every input route.
+	 */
+	TSet<FName>& GetUnmatchedInputTagLedger()
+	{
+		static TSet<FName> Ledger;
+		return Ledger;
+	}
 }
 
 UBRAbilitySystemComponent::UBRAbilitySystemComponent(const FObjectInitializer& ObjectInitializer)
@@ -93,6 +116,11 @@ void UBRAbilitySystemComponent::AbilityInputTagPressed(FGameplayTag InputTag)
 	UE_LOG(LogBRInput, Log, TEXT("BRAbilitySystemComponent '%s': %s PRESSED (edge) -> matching granted abilities."),
 		*GetNameSafe(GetOwner()), *InputTag.ToString());
 
+	// Counts the specs this tag actually reached. Nothing branches on it and nothing outside this
+	// function sees it — it exists so the "matched nothing" report below can tell the difference
+	// between a tag with no home and a tag whose ability simply refused.
+	int32 MatchedSpecs = 0;
+
 	// The list must not be reallocated while we hold references into it — activation can grant or
 	// revoke abilities re-entrantly. This is the engine's own guard, used the engine's own way.
 	ABILITYLIST_SCOPE_LOCK();
@@ -103,6 +131,7 @@ void UBRAbilitySystemComponent::AbilityInputTagPressed(FGameplayTag InputTag)
 			continue;
 		}
 
+		++MatchedSpecs;
 		Spec.InputPressed = true;
 
 		if (Spec.IsActive())
@@ -124,6 +153,48 @@ void UBRAbilitySystemComponent::AbilityInputTagPressed(FGameplayTag InputTag)
 			// of them, and must not: a branch here would be a second, divergent rule set.
 			TryActivateAbility(Spec.Handle);
 		}
+	}
+
+	if (MatchedSpecs > 0)
+	{
+		return;
+	}
+
+	// -----------------------------------------------------------------------------------------
+	// STAGE 3's OTHER HALF (docs/GAS-INTEGRATION-ROADMAP.md). THE LINE THIS PROJECT LOST A DAY TO.
+	//
+	// A key that was never bound and a key whose tag arrives here and matches NOTHING produce the
+	// SAME observable: no activation, no complaint, nothing in the log. They have opposite fixes.
+	// The "PRESSED (edge)" line above proves the tag reached the ASC; this line proves it had
+	// nowhere to go once it did — which makes it a GRANT problem (roadmap Stage 2: the three
+	// DA_AbilitySet_* assets, or a set whose tag does not match InputTag.*), never a binding one.
+	//
+	// It reports the granted count too, because zero-granted and wrong-tag are also different
+	// problems: zero means no ability set landed at all, non-zero means the set landed and its
+	// InputTag does not spell what the input config spells.
+	//
+	// NOT AN ERROR, and that is a judgement rather than caution: an ungranted tag is the CORRECT
+	// state for a fighter holding nothing, or before the first equip completes. Warning is the
+	// level for "this is almost certainly not what you wanted"; Error is reserved in this file for
+	// states that are wrong no matter what the player is doing.
+	// -----------------------------------------------------------------------------------------
+	const FName LedgerKey(*FString::Printf(TEXT("%s|%s"), *GetNameSafe(GetOwner()), *InputTag.ToString()));
+	TSet<FName>& Ledger = GetUnmatchedInputTagLedger();
+
+	if (!Ledger.Contains(LedgerKey))
+	{
+		Ledger.Add(LedgerKey);
+		UE_LOG(LogBRInput, Warning,
+			TEXT("BRAbilitySystemComponent '%s': %s PRESSED and matched NO granted ability (%d ability(ies) granted on this ASC in total). The key is ALIVE and the tag reached the ASC — nothing on this fighter answers to that tag. Look at the GRANT (the equipped weapon's ability set, or the InputTag on its entries), not at the input bindings. Reported once per owner+tag; repeats are Verbose."),
+			*GetNameSafe(GetOwner()), *InputTag.ToString(), ActivatableAbilities.Items.Num());
+	}
+	else
+	{
+		// The repeat, so "is it STILL unmatched?" stays answerable for the rest of the session
+		// without the first answer being drowned by the ninetieth.
+		UE_LOG(LogBRInput, Verbose,
+			TEXT("BRAbilitySystemComponent '%s': %s PRESSED and matched NO granted ability (repeat; %d granted in total)."),
+			*GetNameSafe(GetOwner()), *InputTag.ToString(), ActivatableAbilities.Items.Num());
 	}
 }
 
@@ -434,6 +505,46 @@ bool UBRAbilitySystemComponent::ApplyInitStats()
 	SpecHandle.Data->SetSetByCallerMagnitude(UBRGE_InitStats::GrenadesName, MaxGrenades);
 
 	ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+
+	// -----------------------------------------------------------------------------------------
+	// STAGE 1's EXIT CRITERION (docs/GAS-INTEGRATION-ROADMAP.md).
+	//
+	// Every other log in this function is a REFUSAL, so until this line existed a successful
+	// initialisation was byte-for-byte indistinguishable from one that never ran — and on a fresh
+	// binary "never ran" is by far the likelier of the two. Silence was the wrong success shape.
+	//
+	// READ BACK, DO NOT RESTATE, and this is the whole value of the line. The six numbers below
+	// come from the ATTRIBUTE SET after application, not from the three floats this function read
+	// out of CT_Combat. PreAttributeChange clamps Health to GetMaxHealth() *as it currently is*,
+	// so a perfectly good table still resolves to `Health=0/100` if GE_InitStats' modifier order
+	// ever regresses (the trap written up in UBRAttributeSet::PreAttributeChange and asserted in
+	// UBRGE_InitStats' constructor). Echoing MaxHealth back would have printed 100/100 and hidden
+	// exactly the failure this stage exists to catch. The CT_Combat values are printed too, in
+	// their own clause, so "the table is wrong" and "the effect is wrong" are told apart on one
+	// line instead of two runs.
+	//
+	// Log, not Verbose: this happens once per life, on a spawn — it is not traffic.
+	// -----------------------------------------------------------------------------------------
+	if (const UBRAttributeSet* Attributes = GetSet<UBRAttributeSet>())
+	{
+		UE_LOG(LogBRCombat, Log,
+			TEXT("BRAbilitySystemComponent '%s': BRAttributeSet init — Health=%g/%g Shields=%g/%g Grenades=%g/%g (CT_Combat gave MaxHealth=%g MaxShields=%g MaxGrenades=%g)."),
+			*GetNameSafe(GetOwner()),
+			Attributes->GetHealth(), Attributes->GetMaxHealth(),
+			Attributes->GetShields(), Attributes->GetMaxShields(),
+			Attributes->GetGrenades(), Attributes->GetMaxGrenades(),
+			MaxHealth, MaxShields, MaxGrenades);
+	}
+	else
+	{
+		// GE_InitStats applied against an ASC that has no UBRAttributeSet registered. The effect
+		// "succeeds" and modifies nothing, which is the quietest possible total failure: every
+		// number the rest of the game reads off this fighter is zero, CheckForDeath refuses to
+		// kill it, and nothing else in the project would ever say why.
+		UE_LOG(LogBRCombat, Error,
+			TEXT("BRAbilitySystemComponent '%s': GE_InitStats was applied but this ASC has NO UBRAttributeSet registered — the effect modified NOTHING and every attribute is still zero. The set is a PlayerState subobject; this is a construction problem, not a data one."),
+			*GetNameSafe(GetOwner()));
+	}
 
 	// Shields are full again, so the broken state must go with the same call that filled them —
 	// otherwise a respawned fighter carries State.Shields.Broken with full shields.
