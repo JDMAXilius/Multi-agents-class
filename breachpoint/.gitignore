@@ -24,3 +24,7 @@ Saved/Autosaves/
 
 # Machine-local ladder config (testing.md: never committed)
 Tools/env.local
+
+# Python tool caches
+__pycache__/
+*.pyc
