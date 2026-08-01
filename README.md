@@ -16,11 +16,11 @@ ships from.
 
 | Path | What it is |
 |---|---|
-| **`breachpoint/`** | **The active project.** [Vertical-slice GDD](breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md) (the six-week build) · [full-concept GDD](breachpoint/BREACHPOINT-GDD-FULL-CONCEPT.md) (Phase-2 target) · [Architecture](breachpoint/BREACHPOINT-ARCHITECTURE.md) (44 class-units, file-by-file) · [Authoring Matrix](breachpoint/BREACHPOINT-AUTHORING-MATRIX.md) (**R18: zero Blueprint classes** — the four tiers and who authors each: crew C++/text · generated script · you in the editor) · [Bot AI](breachpoint/BREACHPOINT-AI-BOTS.md) (**GOAP ambitions → StateTree spine → GAS hand** — the Halo-researched three-layer brain) · [GameLift Plan](breachpoint/BREACHPOINT-GAMELIFT-PLAN.md) (Phase-2 dedicated servers: the seam gaps fixed in-slice, five cost-gated rungs, Steam-derived identity) · [Roadmap](breachpoint/BREACHPOINT-ROADMAP.md) (six pods, six milestones) · [Quality Bars](breachpoint/BREACHPOINT-QUALITY-BARS.md) (budgets, DoD, playtest protocol, ship checklist) |
-| **`crew/`** | **The drop-in agent studio, v2** — copy its contents to the game repo root. 12 agents (7 builders, 2 reviewers, 3 curators — each with ROUTING/I-O/KICKOFF sections), **law-enforcement hooks** (owner-path + banned-API blocks at tool-call time), the [rulings ledger](crew/docs/DESIGN-RULINGS.md), the [crew map](crew/docs/CREW_MAP.md) (diagrams + invocation matrix), 7 skills (game-lead · tickets · **gas-purity** · **ue-editor** · **ue5-ui-architecture** · **gauntlet-testing** · **cmc-prediction** — the last three are unverified drafts, corrected by the packet that first uses them), 6 contracts, and the executable board: [tickets BP00–BP14](crew/docs/tickets/), including [BP13](crew/docs/tickets/TICKET_BP13_DATA_CREW.md) — the data crew that **has run** — and [BP08](crew/docs/tickets/TICKET_BP08_BOTS.md) recut for the three-layer bot brain. Start here: [`crew/README.md`](crew/README.md) |
+| **`breachpoint/`** | **The active project.** [Vertical-slice GDD](breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md) (the six-week build) · [full-concept GDD](breachpoint/BREACHPOINT-GDD-FULL-CONCEPT.md) (Phase-2 target) · [Architecture](breachpoint/BREACHPOINT-ARCHITECTURE.md) (44 class-units, file-by-file) · [Authoring Matrix](breachpoint/BREACHPOINT-AUTHORING-MATRIX.md) (**R18: zero Blueprint classes** — the four tiers and who authors each: crew C++/text · generated script · you in the editor) · [Bot AI](breachpoint/BREACHPOINT-AI-BOTS.md) (**GOAP ambitions → StateTree spine → GAS hand** — the Halo-researched three-layer brain) · [GameLift Plan](breachpoint/BREACHPOINT-GAMELIFT-PLAN.md) (Phase-2 dedicated servers: the seam gaps fixed in-slice, five cost-gated rungs, Steam-derived identity) · [Roadmap](breachpoint/BREACHPOINT-ROADMAP.md) (six pods, six milestones) · [Quality Bars](breachpoint/docs/BREACHPOINT-QUALITY-BARS.md) (budgets, DoD, playtest protocol, ship checklist) |
+| **`breachpoint/` (cont.)** | **The crew studio now lives INSIDE the game repo** — `breachpoint/.claude/` (12 agents, 7 skills, law-enforcement hooks) and `breachpoint/docs/` ([rulings ledger](breachpoint/docs/DESIGN-RULINGS.md) · [crew map](breachpoint/docs/CREW_MAP.md) · [playbook](breachpoint/docs/CREW_PLAYBOOK.md) · contracts · [the board](breachpoint/docs/tickets/), BP00–BP16). `crew/` at the root is an empty leftover of the move. Start here: [`breachpoint/README.md`](breachpoint/README.md) |
 | **`assignments/`** | Course submissions of record — [Assignment #1](assignments/01-gdd-first-draft/) (*Slash Roller: Arena* first-draft GDD) · [#2](assignments/02-gdd-final-draft/) (**Breachpoint** final GDD, Markdown + styled PDF) · [#3](assignments/03-agent-crew/) (**the runnable agent crew** — 4 agents producing Breachpoint's `DT_Weapons.csv` + `arena_manifest.json`, with replay mode and Mermaid architecture) |
 | **`docs/course/`** | Course-wide references — [the GDD writing standard](docs/course/GDD-FORMAT-GUIDE.md) · [Game Developers Conference overview](docs/course/GDC-overview.md) |
-| **`docs/method/`** | The crew methodology — [engineering disciplines D1–D8](docs/method/ENGINEERING-DISCIPLINES.md) · [crew operations plan](docs/method/CREW-OPERATIONS.md) (topology, model economics, metrics — v2-synced) · [researched best-practice validation](docs/method/ARCHITECTURE-VALIDATION.md) · [roster design history](docs/method/CREW-ROSTER.md) (superseded by [`crew/docs/CREW_MAP.md`](crew/docs/CREW_MAP.md)) |
+| **`docs/method/`** | The crew methodology — [engineering disciplines D1–D8](docs/method/ENGINEERING-DISCIPLINES.md) · [crew operations plan](docs/method/CREW-OPERATIONS.md) (topology, model economics, metrics — v2-synced) · [researched best-practice validation](docs/method/ARCHITECTURE-VALIDATION.md) · [roster design history](docs/method/CREW-ROSTER.md) (superseded by [`breachpoint/docs/CREW_MAP.md`](breachpoint/docs/CREW_MAP.md)) |
 | **`docs/decisions/`** | Decision records — [the A/B scope comparison](docs/decisions/SCOPE-COMPARISON.md) that chose Breachpoint's vertical slice (Option C) |
 | **`archive/`** | Superseded work, kept honestly — the [Slash Roller: Arena tech spec](archive/slashroller/) (pre-pivot capstone) · the [Gauntlet single-player draft](archive/concept-gauntlet/) (its wave/AI-Director design feeds Phase-2 Firefight) |
 
@@ -45,16 +45,18 @@ ships from.
 [#2](assignments/02-gdd-final-draft/), and [#3](assignments/03-agent-crew/) are all
 submitted. **From here this repo is a Breachpoint project, not a course project** — the
 crew, the board, and the docs serve the build. The board is
-[`crew/docs/tickets/`](crew/docs/tickets/) (BP00–BP15); `assignments/` is a record, not a
+[`breachpoint/docs/tickets/`](breachpoint/docs/tickets/) (BP00–BP15); `assignments/` is a record, not a
 workstream. **Exception:** Assignment #5 (goal-oriented coding agent, due 6 Aug) is unstarted
 and is served by BP15 below — the course deliverable and the project's next capability are the
 same artifact.
 
 **M0 — pre-production complete.** ✅
 The data crew has **run**: `DT_Weapons.csv` and `arena_manifest.json` are authored, reviewed,
-and verifier-proven ([BP13 Log](crew/docs/tickets/TICKET_BP13_DATA_CREW.md#log)).
+and verifier-proven ([BP13 Log](breachpoint/docs/tickets/TICKET_BP13_DATA_CREW.md#log)).
 
-Next: create the game repo, copy `crew/` contents to its root, then in a Claude terminal
+The game repo **exists** — `breachpoint/` is its root, the module compiles, and PIE runs our
+GameMode. Read [`breachpoint/docs/tickets/HANDOFF.md`](breachpoint/docs/tickets/HANDOFF.md)
+first; it records where every ticket actually stands. Then, in a local Claude terminal
 (everything below needs UE 5.8 installed — it cannot run in a cloud container):
 
 ```
@@ -64,7 +66,7 @@ Next: create the game repo, copy `crew/` contents to its root, then in a Claude 
 /tickets TICKET_BP15_ARCHITECT        # the layer that scores what to build next
 ```
 
-[**BP15 — the Architect**](crew/docs/tickets/TICKET_BP15_ARCHITECT.md) is the crew's missing
+[**BP15 — the Architect**](breachpoint/docs/tickets/TICKET_BP15_ARCHITECT.md) is the crew's missing
 planning layer, cut from [Class 07](docs/course/CLASS-07-AUTONOMOUS-AGENCY.md): deterministic
 perception (ARCHITECTURE §3's 44 class-units vs. what's on disk) and utility scoring in front of
 the existing gates, so the crew can be pointed at the architecture instead of at a ticket. **An
