@@ -485,3 +485,400 @@ and it did.
 *Net effect on step 4:* one of three blockers dissolved. **Two remain and are real** — no trace
 range or spread in `FBRWeaponRow` or `CT_Combat`, and no `AbilitySet` column in `DT_Weapons.csv`.
 `BRGA_WeaponFire` is still not startable, and step 4's boxes stay unchecked.
+
+---
+
+**1 Aug 2026 — step 6 — adversarial review of the architect itself (critic, REFUTER).**
+
+All five of step 6's questions answer **yes**, and so does the sixth the ticket does not ask.
+Every answer below is an executed input → wrong outcome; where I could not construct a failing
+input I say so and the answer is no. Nothing under `Tools/architect/` was modified — the probes
+copy `architect.py`/`build_state.py` byte-identically into throwaway repos under the OS temp dir
+and drive the real code. No build, UBT or editor command was run (R29.3; the editor is live).
+
+Step 5 landed while this review was running, so `build_state.py` and `docs/BUILD-STATE.md` are in
+scope and Q4 is answered against the real generator rather than against a plan.
+
+| # | Question | Answer | Severity |
+|---|---|---|---|
+| 1 | Can a unit be landed that the score did not pick? | **yes** | high |
+| 2 | Can the blackboard be written *after* the generated file? | **yes** | medium |
+| 3 | Can any score term be made to depend on model output? | **yes — two of the four** | high |
+| 4 | Can `BUILD-STATE.md` report BUILT for a unit that is only a STUB? | **yes** | high |
+| 5 | Can `architect.py` be made to write inside `Source/`? | **yes** | high |
+| 6 | Any *other* missing term producing a confidently wrong ranking? | **yes — two** | high |
+
+---
+
+**F1 (high) — a unit the score did not pick lands, and `BUILD-STATE.md` attests it.**
+
+*Input.* In a copy of this repo: run `architect.py --all`; the blackboard authorises exactly
+`2026-08-01-BRGA_WeaponFire.md`. Then land a **different** unit — `BRGA_Grapple.h/.cpp`, ranked
+**#6**, never authorised — inside the owner path the blackboard itself prints
+(`Source/Breachpoint/AbilitySystem/`). Re-run `architect.py --all` and `build_state.py`.
+
+*Outcome.* Both exit 0. `docs/BUILD-STATE.md` lists `BRGA_Grapple` in the **BUILT** table
+(`| \`BRGA_Grapple\` | AbilitySystem/ | BP06 | … |`, tally `BUILT 32`). The blackboard directory
+still contains one file and it names `BRGA_WeaponFire`. **No output anywhere names the
+discrepancy.** `grep -rn blackboard` over the repo returns `architect.py`, the blackboard file,
+docs, and `build_state.py` — where the only use is `run_date()` reading the *filename* for a date
+string. Nothing compares a landing to an authorisation.
+
+Gate A cannot catch it either: `guard_laws.py` tests `rel.startswith(owner + "/")` over
+`.claude/active-packet.json`'s `owner_path`, which names **folders**. The blackboard's own
+`owner_path` row is `Source/Breachpoint/AbilitySystem/` — a scope containing six abilities. Any
+of them passes gate A. Worse, the architect then *erases the trace*: `--scan` reclassifies the
+unauthorised unit BUILT, state scores −1000, and it drops out of `NEXT` entirely.
+
+*Fix.* `build_state.py` already reads `blackboard/`. Have it diff the BUILT set against the union
+of units any blackboard ever authorised and print an **UNAUTHORISED** section — the same shape as
+the existing UNDECLARED section, and for the same reason. Nonzero exit optional; the report is the
+point.
+
+---
+
+**F2 (medium) — the blackboard's "written BEFORE generation" is unverifiable and trivially false.**
+
+*Input.* Write `Source/.../BRGA_WeaponFire.cpp` first, sleep 1.1s, then run the advertised entry
+point `python architect.py --blackboard` (docstring line 6), which re-reads `state/ranking.json`
+off disk.
+
+*Outcome.* exit 0. source mtime `12:19:21.98`, blackboard mtime `12:19:23.17` — the authorisation
+postdates the artefact it authorises, and the file it wrote still says *"Written by … BEFORE any
+generation. If this file is absent, nothing was authorised."* The only timestamp **inside** the
+file is `2026-08-01` — day granularity, so file content can never establish ordering within a day.
+`architect.py` records no run time, no source-tree hash, no lock, and never checks whether the
+target files already exist.
+
+The Done-when box *"the blackboard file exists and its mtime predates the generated source file's"*
+therefore rests on mtime alone, and mtime is **not append-only**: the filename is
+`{date}-{unit}.md`, so a second `--blackboard` run the same day silently overwrites the first and
+resets the mtime forward. This Log already records that two blackboards were deleted by hand — the
+directory is fully mutable, unordered and unsigned.
+
+Live and adjacent, now that BP17 (session bus) has landed: two terminals running `--blackboard` on
+the same day for the same unit write the **same filename**, and the second erases the first
+session's authorisation record with no trace.
+
+*Fix.* Write the blackboard first-wins (`open(..., "x")` — refuse if it exists), stamp the file
+with a full UTC timestamp and the `git rev-parse HEAD` it was computed against, and have
+`--blackboard` refuse when the target `.h`/`.cpp` already exist. That converts the Done-when box
+from an mtime assertion into something the file itself can prove.
+
+---
+
+**F3 (high) — two of the four score terms are computed from model-written source. One
+non-compiling line moves the pick.**
+
+The law this file exists to enforce is *"an LLM never chooses the unit."* Deterministic Python is
+necessary and not sufficient: **`depth` and `blockers` are parsed out of `Source/`, and `Source/`
+is what the model writes.** The scorer is in a feedback loop with its own output.
+
+*Input.* Copy `Source/Breachpoint/` byte-identically; add **one line** to `Core/BRCore.h`:
+`#include "AbilitySystem/Abilities/BRGA_Grenade.h"`. Recompute with the real
+`include_edges` / `transitive_includers` / `dependents_of`.
+
+*Outcome.*
+
+| | before | after one line |
+|---|---|---|
+| 1 | `BRGA_WeaponFire` depth 2 block 4 **106** | `BRGA_Grenade` depth 2 block **28** **130** |
+| 2 | `BRGA_WeaponUtility` **106** | `BRGA_WeaponFire` **106** |
+| 3 | `BRSpotterSubsystem` **104** | `BRGA_WeaponUtility` **106** |
+| 4 | `BRGA_Grenade` depth 2 block 1 **103** | `BRSpotterSubsystem` **104** |
+
+The top-ranked unit changes, and `blackboard()` follows it without comment. `INCLUDE_RE` only
+checks that the captured name is a **declared unit** — it never checks the header exists. In the
+probe `BRGA_Grenade.h` does not exist, so that include **cannot compile**; rung 1 would reject it
+and the scorer accepts it anyway. A stale include, a speculative forward include, or a builder
+tidying headers is enough. No corruption, no bad faith, no API call — and the run log prints
+`28 real #include edges` with the same confident tone either way.
+
+*The compound case is worse, and it nearly happened in step 4.* `state` is also model-derived,
+via `classify()` reading model-written files, and it is the **1100-point** term. A builder that
+writes a header plus a boilerplate `.cpp` and then stops at a `contract_gap` flips its unit
+MISSING (100) → BUILT (−1000): **106 → −994, permanently out of the queue.** Step 4 stopped
+*before* writing a file, which is the only reason `BRGA_WeaponFire` is still rankable. Had it
+written the shell it filed the gap about, the architect would never propose it again — and
+`BUILD-STATE.md` would report the fire path as built (see F4).
+
+*Fix.* Two separable changes. (a) Compute `depth`/`blockers` from the ticket DAG and the
+**manifest's** declared relationships only, and demote the include graph to a *printed
+cross-check* that flags disagreement instead of feeding the total — the ticket calls it "declared
+include edges", and an include a model just wrote is not declared. (b) If the include graph stays
+a term, require the included header to exist on disk, so a term can never be moved by a line that
+does not compile.
+
+---
+
+**F4 (high) — `BUILD-STATE.md` reports BUILT for an empty shell, and reports three complete units
+as STUB. Proven end-to-end, today.**
+
+`build_state.py`'s docstring answers this question **no**: *"this file has no opinion about state;
+it prints `perception.json`'s state field verbatim. Corrupt the scanner and this lies; edit this
+and it cannot."* The copy-not-restate discipline is right and the conclusion does not follow —
+**the scanner does not need corrupting. It is wrong as written**, and `build_state.py` faithfully
+copies the wrong answer.
+
+*Input (BUILT for a STUB).* Full repo copy; add the exact shell a builder leaves when it stops at
+a `contract_gap` — `BRGA_WeaponFire.h` (UCLASS, empty body) and a `.cpp` containing an include, a
+comment reading *"BLOCKED … Nothing implemented"*, an empty constructor and an empty
+`ActivateAbility()`. Run the unmodified `architect.py --all` then `build_state.py`.
+
+*Outcome.* exit 0, 0, and `docs/BUILD-STATE.md` reads:
+
+> `| tally | **BUILT 32** · **STUB 3** · **MISSING 9** |`
+> `## BUILT` — *"32 units the scanner classified BUILT (a header plus a `.cpp` with a real body)"*
+> `| \`BRGA_WeaponFire\` | AbilitySystem/ | BP03 | … |`
+
+`classify()`'s heuristic is `len(stripped) > 3` over lines that are non-blank and do not *start
+with* `#include`, `//`, `/*`, `*`. Bare braces are lines. So an empty ctor plus one empty override
+is six "implementation" lines. Three probes against the real function:
+
+| probe `.cpp` | contains | `classify()` |
+|---|---|---|
+| empty ctor + empty `ActivateAbility()` | zero statements | **BUILT** |
+| one block comment, 4 prose lines | zero code — interior lines start with letters, so the comment filter misses them | **BUILT** |
+| three functions wrapped in `#if 0 … #endif` | nothing the compiler sees | **BUILT** |
+
+*Input (the inverse, and it is live in the repo right now).* No probe needed — read
+`docs/BUILD-STATE.md` lines 121–123:
+
+> `| 10 | \`BRDataRows\` | BP02 | STUB | 1 | 28 | 0 | 50 | **79** |`
+> `| 11 | \`BRBotFacts\` | BP08 | STUB | … | **64** |`
+> `| 12 | \`BRServerLifecycle\` | BP11 | STUB | … | **57** |`
+
+`BRDataRows.h` is **889 lines / 35,333 bytes / 8 `USTRUCT`s**, and its own header comment declares
+it *"the ONE header for every `DT_` DataTable row struct in the project."* Pure `USTRUCT`s need no
+translation unit, so it has no `.cpp` **by design**. `BRBotFacts.h` is 14.8 KB / 4 `USTRUCT`s;
+`BRServerLifecycle.h` is 20.6 KB / 10 declarations (a `UINTERFACE` seam — also `.cpp`-less by
+design). `classify()`'s `if has_h and not cpps: return "STUB"` calls all three unimplemented.
+The state of record therefore tells the reader that the project's DataTable schema is a stub and
+offers it as the tenth thing to build. All three are complete.
+
+**Both errors are one root: `classify()` measures the presence and line count of a `.cpp`, which
+is a fact about the C++ build model, not about whether the unit is implemented.** In UE, absence
+of a `.cpp` is often *correct*, and presence of one proves nothing.
+
+*Fix.* Header-only is not STUB: if a `.h` declares a `USTRUCT`/`UINTERFACE`/`UENUM` and no
+`UCLASS` with out-of-line members, it is BUILT — or, cheaper and honest, add a fourth state
+`HEADER_ONLY` and stop scoring it as buildable work. For the other direction, replace the
+line-count threshold with a body test (a `{` … `}` containing at least one statement-terminating
+`;` outside a comment, ignoring `#if 0` regions), and treat a `.cpp` whose functions are all empty
+as STUB. And **`classify()` needs `test_selfcheck.py` cases** — see F7.
+
+---
+
+**F5 (high) — `architect.py --blackboard` writes inside `Source/`, and overwrites arbitrary `.md`
+anywhere in the repo, including this ticket.**
+
+`blackboard()` builds its output path as `BLACKBOARD_DIR / f"{stamp}-{top['unit']}.md"`, where
+`top` comes from `state/ranking.json` **re-read off disk** on the `--blackboard`-only path. The
+unit name is validated when the *manifest* is parsed (`UNIT_RE` + `.split("/")[-1]`) and **never
+re-validated when it comes back out of JSON**. `ranking.json` is a committed file that lives
+outside `Source/` and `Content/`, so gate A and every review habit on this board treat it as
+generated noise.
+
+*Input.* Unmodified `architect.py` in a fake repo; the only change is one string in
+`ranking.json`: `ranked[0]["unit"] = "x/../../../../Source/Breachpoint/AbilitySystem/BRGA_WeaponFire"`.
+Run `python architect.py --blackboard`.
+
+*Outcome.* **exit 0**, and the run log prints
+`wrote Tools/architect/blackboard/2026-08-01-x/../../../../Source/Breachpoint/AbilitySystem/BRGA_WeaponFire.md`.
+A 2,821-byte file now exists at `Source/Breachpoint/AbilitySystem/BRGA_WeaponFire.md`. The
+docstring's second law — *"Nothing under `Source/` is ever opened for writing here"* — is false.
+
+*The escalation, also executed.* The extension is hardcoded `.md`, so a `.cpp` cannot be clobbered
+— but every `.md` in the repo can. With
+`ranked[0]["unit"] = "x/../../../../docs/tickets/TICKET_BP15_ARCHITECT"`, exit 0 and the ticket's
+495 lines are replaced by a blackboard: `# Blackboard — x/../../../../docs/tickets/… — 2026-08-01`,
+2,751 bytes. **The same one-line input destroys this Log, `CLAUDE.md`, `docs/contracts/*.md`, or
+`BREACHPOINT-ARCHITECTURE.md` — the manifest the scanner parses.** `guard_laws.py` cannot help:
+it is a tool-call hook on Edit/Write and is blind to a Python process writing through `pathlib`.
+
+*Windows detail worth recording, because it makes the bug look absent.* The naive payload
+`"../../../../Source/…"` **fails** with `FileNotFoundError` — the leading component becomes
+`2026-08-01-..` and Win32 strips trailing dots, so it is read as a directory name, not a parent
+ref. One character (`x/` in front) restores clean `..` components and Win32 canonicalises them
+lexically before touching the filesystem. *A failed traversal attempt on this platform is not
+evidence the traversal is impossible.*
+
+*Fix.* Two lines in `blackboard()`: reject any `top["unit"]` not matching `^BR[A-Za-z0-9_]+$`, and
+assert `path.resolve().is_relative_to(BLACKBOARD_DIR.resolve())` before the write. More generally,
+`ranking.json` re-read from disk is **untrusted input** on the `--blackboard` and `--rank` paths
+and should be schema-checked at load, not trusted because architect.py usually writes it.
+
+---
+
+**F6 (high) — the sixth question: two more absent terms, and one of them is the whole margin of
+the current pick.**
+
+The step-4 entry filed *readiness* as the missing fifth term. Two more are missing, and unlike
+readiness they do not merely fail to demote — they actively produce the wrong order.
+
+***6a. `blockers` counts units that are already BUILT as "waiting on this one."*** `dependents_of()`
+returns downstream **tickets** and the loop adds *every* unit of those tickets regardless of state.
+
+*Input.* Ask who is recorded as waiting on the selected unit. `BRGA_WeaponFire`'s four blockers
+are, in full:
+
+| waiter | state | ticket |
+|---|---|---|
+| `BRActivatableWidget` | **BUILT** | BP10 |
+| `BRHUDLayout` | **BUILT** | BP10 |
+| `BRUIManagerSubsystem` | **BUILT** | BP10 |
+| `BRViewModels` | **BUILT** | BP10 |
+
+**All four are already built. Nothing is waiting on `BRGA_WeaponFire`.** Its blocker term is 4/4
+fictional, and 4 is exactly the margin that put it first.
+
+*Outcome, recomputing blockers over non-BUILT waiters only and changing nothing else:*
+
+| # | now | with the fix |
+|---|---|---|
+| 1 | `BRGA_WeaponFire` **106** | `BRSpotterSubsystem` **104** |
+| 2 | `BRGA_WeaponUtility` **106** | `BRGA_Grenade` **103** |
+| 3 | `BRSpotterSubsystem` **104** | `BRGA_Melee` **103** |
+| 4 | `BRGA_Grenade` **103** | `BRGA_Grapple` **103** |
+| 5 | `BRGA_Melee` **103** | `BRGA_WeaponFire` **102** |
+
+The selection inverts. `BRDataRows`' 28 blockers become 9; `BRBotFacts`' 11 become 3. **The Log's
+strongest claim — *"a deterministic scorer with no knowledge of the handoff reproduced the human
+board's next move"* — does not survive this.** The agreement with HANDOFF is produced by counting
+four finished UI widgets as blocked work; correct the term and the scorer picks
+`BRSpotterSubsystem`, which the human board is not proposing. That does not make the scorer
+useless, but the coincidence must not be cited as evidence it measures something real until 6a is
+fixed and the agreement either survives or does not.
+
+***6b. `depth` is added, so the score rewards being far from startable.*** `score = depth +
+blockers + tier + state`. `ticket_depth` is *distance from the roots of the DAG* — how many
+tickets must finish first. Adding it means **the more prerequisites a unit has, the higher it
+scores.** For a "what to build next" scorer that is a sign error.
+
+*Input → wrong outcome, live in `BUILD-STATE.md` right now.* The three BP00 test specs
+(`BRCombatSpec`, `BRShieldSpec`, `BRBotDeterminismSpec`) have `depth 0` — BP00 gates on nothing,
+they are startable today, and `Source/Breachpoint/Tests/` is empty. They rank **7, 8, 9** at 100.
+`BRGA_Grapple` — BP06, gated behind BP05, gated behind BP02, *"THE netcode packet"* — ranks **6**
+at 103, ahead of all three, **because it has three more prerequisites**. Meanwhile the same
+generated file's own *Ladder blockers* table says rung 2 is `BLOCKED — Source/Breachpoint/Tests/
+holds only .gitkeep`. **The scorer ranks the three units whose absence blocks rung 2 for the entire
+project below the hardest unblockable unit in the codebase, and it does so as a reward for their
+having no dependencies.** Combined with 6a, the current #1 has both an inflated blocker count and
+a depth bonus.
+
+*Fix.* Both are small and both are inside `architect.py`. 6a: filter `waiters` to
+`state != "BUILT"` — one line, and the run log should print the waiter names, not just the count,
+because a printed 4 that is four built widgets is exactly the kind of number a printed-terms
+scorer is supposed to make impossible to hide. 6b: subtract depth, or drop it and let `blockers`
+carry criticality — but **whichever way it goes, the sign is a founder call and belongs in
+`DESIGN-RULINGS.md`, not in a builder's diff**, on the same reasoning that kept readiness a
+proposal.
+
+---
+
+**F7 (medium) — the red-then-green evidence covers one of the three steps.**
+
+`test_selfcheck.py`'s five cases all transform `BREACHPOINT-ARCHITECTURE.md` and all exercise
+`parse_manifest()`. **`classify()`, `rank()` and `blackboard()` have zero cases.** The Log's own
+justification for the file — *"an enforcement mechanism proves nothing until it is tested with a
+case it should REJECT"* — applies hardest to `classify()`, which produces the term worth 1100
+points and the central claim of `BUILD-STATE.md`, and which F4 shows to be wrong in **both**
+directions. The four probes in F4 are the missing cases nearly verbatim: empty-shell `.cpp` → must
+not be BUILT; comment-only `.cpp` → must not be BUILT; `#if 0` `.cpp` → must not be BUILT;
+header-only `USTRUCT` → must not be STUB. F5's traversal string is a fifth. *Severity medium only
+because it is the absence of a test, not a defect; the defects it would have caught are F4 and F5.*
+
+---
+
+**What I could not break, stated so the absence of a finding is not read as an absence of
+looking.** Each of these I tried to construct a failing input for and could not:
+
+- **Path injection through the manifest.** `SECTION_RE`'s folder group is `[A-Za-z]+` and
+  `UNIT_RE` is `BR[A-Za-z0-9_]+` followed by `.split("/")[-1]`. No separator, dot or drive letter
+  survives. The `--all` path is clean; **only the JSON re-read path (F5) is exploitable.**
+- **Zero API calls.** `architect.py` imports `argparse, json, re, sys, datetime, pathlib` and
+  nothing else; `build_state.py` adds `subprocess`, used only for `git`. There is no network
+  import and no model consulted. **The claim is true.**
+- **The GE exclusion.** `count_ge_classes()` asserts against the header itself and exits 2 on
+  drift. It does not read §4's prose. Correcting five documents moved no number, as the Log said.
+- **Tie-breaking.** `(-total, int(ticket digits), unit)` is a total order over the unit set with no
+  model input and no dictionary-order dependence.
+- **`build_state.py`'s own determinism.** No clock, no host, no cwd; SHAs truncated in Python,
+  `--date=short` pinned, every list explicitly sorted, `cell()` escapes `|`, undeterminable
+  commits print `-`. I could not make it fabricate. **The lie in F4 enters upstream of it, which
+  is exactly what its docstring predicted and exactly why "corrupt the scanner and this lies" is
+  not a defence — the scanner ships wrong.**
+
+---
+
+**What this means for the Done-when boxes.** No box moves on this entry. F1 and F2 bear directly
+on *"the blackboard file exists and its mtime predates the generated source file's"* — that box
+cannot be honestly checked while ordering is provable only by a resettable mtime. F4 bears on
+*"`docs/BUILD-STATE.md` regenerates byte-identically"*: it does, and it regenerates a wrong number
+byte-identically. **Byte-identical is a determinism property, not a truth property, and this
+ticket should not let the first stand in for the second.**
+
+*Recommended order to address, cheapest first, all inside `Tools/architect/`:* F5 (two lines,
+stops the architect destroying this Log) → F6a (one line, changes the pick) → F4 (`classify()`
+rewrite + F7's cases) → F1 (UNAUTHORISED section in `build_state.py`) → F2 (first-wins write +
+in-file timestamp) → F3 (demote the include graph). **F6b's sign and F3's demotion are founder
+calls**, per this ticket's own precedent for the readiness term.
+
+**1 Aug 2026 — step 6's F5, F4 and F6a FIXED. The ranking changed, and a headline claim in this
+Log is now RETRACTED.**
+
+*The retraction first, because it was the most-repeated line in this ticket.* An earlier entry
+said the score *"independently landed on the fire path, which is exactly what HANDOFF's 'restart
+BP03 step 2' says to do next"* and called it **"the strongest evidence this ticket can produce
+that the scoring is measuring something real."* **It does not survive F6a.** `BRGA_WeaponFire`'s
+**entire** blocker score of 4 was four **already-BUILT** BP10 widgets — `BRActivatableWidget`,
+`BRHUDLayout`, `BRUIManagerSubsystem`, `BRViewModels`. Nothing was waiting on it. Counting only
+unbuilt waiters drops it 106 → 102 and it is no longer first. The agreement with the human board
+was **an artifact of the defect**, and it was reported as corroboration. Recorded at length
+because a number that flatters the thing that produced it is the one to distrust.
+
+| Fix | Was | Now |
+|---|---|---|
+| **F5** path traversal (high) | `blackboard()` interpolated `ranked[0]["unit"]` into a path with no re-validation; a crafted name overwrote any `.md` in the repo, this ticket included | `safe_unit_name()` requires a bare `BR*` identifier; the probe payload now exits 1 with a refusal |
+| **F4** BUILT-for-STUB, both directions (high) | `>3 non-include lines` called an empty ctor, a 100%-comment file and a file inside `#if 0` **BUILT**; and demanded a `.cpp` from units that owe none | statements counted by semicolons outside comments/dead-blocks/preprocessor; and the expected **form** is parsed from §3 (`BRDataRows.h` vs `BRGA_Sprint.h/.cpp`) |
+| **F6a** blockers (high) | counted BUILT units as waiters | only unbuilt waiters count |
+
+*F4's inverse mattered as much as F4.* `BRDataRows` (889 lines, 8 `USTRUCT`s, *"the ONE header
+for every DT_ row struct"*), `BRBotFacts` and `BRServerLifecycle` were reported **STUB and offered
+as work**. All three are header-only **by design**, and §3 says so in the only place that counts —
+it writes `BRDataRows.h`, not `BRDataRows.h/.cpp`. The form was in the manifest the whole time;
+the scanner inferred instead of parsing, against this ticket's own out-of-scope line. **Disk now
+reads BUILT 34 · STUB 0 · MISSING 10**, and zero STUBs is the correct answer, not a suspicious one.
+
+*The new ranking, and the reason it is worse rather than better:*
+
+```
+ 1  BRSpotterSubsystem   BP11  MISSING  depth 4  block 0  tier 0  state 100  = 104
+ 2  BRGA_Grenade         BP05  MISSING  depth 2  block 1                     = 103
+ 5  BRGA_WeaponFire      BP03  MISSING  depth 2  block 0                     = 102
+```
+
+**The corrected score now picks the LEAST startable unit on the board.** `BRSpotterSubsystem` is
+BP11 — gated by BP08, gated by BP02+BP04 — and it wins on **depth 4** alone. That is **F6b**,
+which step 6 filed and this entry does not fix: `depth` is **added**, so the score rewards
+distance from a root. The same generated `BUILD-STATE.md` reports rung 2 BLOCKED because
+`Tests/` is empty, while ranking the three test specs (depth 0, genuinely startable) at 7–9.
+**Flagged, not fixed: the sign of the depth term is a founder call**, on the same precedent as
+the readiness term — step 2's four terms are this ticket's spec, and inverting one is not a
+builder's call to make.
+
+*Blackboard:* `2026-08-01-BRGA_WeaponFire.md` **deleted**, same rule as the two before it — a
+blackboard is an *authorisation*, and the corrected score does not select that unit. The Log is
+the record; the blackboard is the authorisation.
+
+*Verification after the fixes:* `--all` exit 0 · `test_selfcheck.py` **5/5** · `build_state.py`
+double-run **byte-identical** · F5 payload **refused, exit 1** · `BUILD-STATE.md` regenerated
+(142 lines) and now carries the corrected states and ranking.
+
+*Not fixed, still open from step 6:* **F1** (a unit the score did not pick can land, and
+`BUILD-STATE.md` will attest it — nothing compares a landing to an authorisation), **F2**
+(blackboard can be written after the source; the filename is day-granular so a re-run resets
+mtime), **F3** (include edges are model-written, and a one-line `#include` of a **non-existent**
+header moved a unit +27 and to #1), **F6b** above, and **F7** (`test_selfcheck.py` exercises only
+`parse_manifest`; `classify`, `rank` and `blackboard` still have zero cases — F4 and F5 were both
+found in exactly that gap). **Step 6's box stays unchecked**: findings are addressed only in part.

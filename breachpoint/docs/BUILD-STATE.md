@@ -17,12 +17,12 @@ inputs. Two runs from a clean checkout are byte-identical.
 | state of record | **2026-08-01** (from `Tools/architect/blackboard/`) |
 | manifest | `BREACHPOINT-ARCHITECTURE.md §3` |
 | budget | 43 in-slice + 1 reserved = **44** units |
-| tally | **BUILT 31** · **STUB 3** · **MISSING 10** |
+| tally | **BUILT 34** · **STUB 0** · **MISSING 10** |
 | API calls that produced this | **0** (perception) · **0** (ranking) |
 
 ## BUILT
 
-31 units the scanner classified BUILT (a header plus a `.cpp` with a real body).
+34 units the scanner classified BUILT (a header plus a `.cpp` with a real body).
 `commit` is the commit that **added** the unit's files (`git log --diff-filter=A`, oldest
 entry). A unit whose landing commit cannot be determined shows `-` — never a guessed SHA.
 
@@ -30,6 +30,7 @@ entry). A unit whose landing commit cannot be determined shows `-` — never a g
 |---|---|---|---|---|---|
 | `BRBotBrain` | AI/ | BP08 | `abfef2f` | 2026-08-01 | BP08: the three-layer bot brain -- one function is the whole AI->world surface |
 | `BRBotController` | AI/ | BP08 | `abfef2f` | 2026-08-01 | BP08: the three-layer bot brain -- one function is the whole AI->world surface |
+| `BRBotFacts` | AI/ | BP08 | `abfef2f` | 2026-08-01 | BP08: the three-layer bot brain -- one function is the whole AI->world surface |
 | `BRBotManagerComponent` | AI/ | BP08 | `abfef2f` | 2026-08-01 | BP08: the three-layer bot brain -- one function is the whole AI->world surface |
 | `BREnvQueryContexts` | AI/ | BP08 | `abfef2f` | 2026-08-01 | BP08: the three-layer bot brain -- one function is the whole AI->world surface |
 | `BRStateTreeTasks` | AI/ | BP08 | `abfef2f` | 2026-08-01 | BP08: the three-layer bot brain -- one function is the whole AI->world surface |
@@ -43,6 +44,7 @@ entry). A unit whose landing commit cannot be determined shows `-` — never a g
 | `BRCharacterMovementComponent` | Character/ | BP01 | `103e6a4` | 2026-07-31 | BP01 step 4: BRCharacter, CMC, BRPlayerController + LogBRInput (R24) |
 | `BRCore` | Core/ | BP01 | `cf3cae3` | 2026-07-31 | BP01 step 2: Core/ -- 29 native gameplay tags + log channels + collision aliases |
 | `BRGameplayTags` | Core/ | BP01 | `cf3cae3` | 2026-07-31 | BP01 step 2: Core/ -- 29 native gameplay tags + log channels + collision aliases |
+| `BRDataRows` | Data/ | BP02 | `fb9ddb2` | 2026-08-01 | BP03 step 1: equipment, weapon instance, pickups -- ammo is owner-only |
 | `BRInputComponent` | Input/ | BP01 | `ce48871` | 2026-07-31 | BP01 step 3a: the owned input layer, C++ half (assets deferred) |
 | `BRInputConfig` | Input/ | BP01 | `ce48871` | 2026-07-31 | BP01 step 3a: the owned input layer, C++ half (assets deferred) |
 | `BRGameMode` | Match/ | BP04 | `d60fa6d` | 2026-08-01 | BP04: match frame -- phases, kill attribution, one replicated end-time |
@@ -50,6 +52,7 @@ entry). A unit whose landing commit cannot be determined shows `-` — never a g
 | `BRPlayerController` | Match/ | BP04 | `103e6a4` | 2026-07-31 | BP01 step 4: BRCharacter, CMC, BRPlayerController + LogBRInput (R24) |
 | `BRPlayerState` | Match/ | BP04 | `3bbc530` | 2026-08-01 | BP02 steps 1-2: the ASC, BRPlayerState, and the attribute set |
 | `BRListenServerLifecycle` | Online/ | BP11 | `c83d077` | 2026-08-01 | BP11 (partial): IBRServerLifecycle seam, sessions, telemetry, host-quit DEFINED |
+| `BRServerLifecycle` | Online/ | BP11 | `c83d077` | 2026-08-01 | BP11 (partial): IBRServerLifecycle seam, sessions, telemetry, host-quit DEFINED |
 | `BRSessionsSubsystem` | Online/ | BP11 | `c83d077` | 2026-08-01 | BP11 (partial): IBRServerLifecycle seam, sessions, telemetry, host-quit DEFINED |
 | `BRTelemetrySubsystem` | Telemetry/ | BP11 | `c83d077` | 2026-08-01 | BP11 (partial): IBRServerLifecycle seam, sessions, telemetry, host-quit DEFINED |
 | `BRActivatableWidget` | UI/ | BP10 | `2075f8b` | 2026-08-01 | BP10: UI layer + MVVM ViewModels, C++ only, zero polling |
@@ -72,7 +75,7 @@ checked against.
 
 ## DECISIONS
 
-**Selected: `BRGA_WeaponFire`** — BP03, MISSING, total **106**.
+**Selected: `BRSpotterSubsystem`** — BP11, MISSING, total **104**.
 
 The terms, not the reasoning. `score = depth + blockers + tier + state`; ties break on
 lowest ticket number, then unit name — never on a model's preference. An LLM did not
@@ -80,23 +83,16 @@ choose this unit and cannot: the numbers below came out of deterministic Python.
 
 | term | value | what it measures |
 |---|---|---|
-| depth | **2** | ticket-DAG depth ∪ `#include` depth |
-| blockers | **4** | units that transitively wait on this one |
+| depth | **4** | ticket-DAG depth ∪ `#include` depth |
+| blockers | **0** | units that transitively wait on this one |
 | tier | **0** | GDD tier — slice `0`, Phase-2 `-100` |
 | state | **100** | MISSING `100` · STUB `50` · BUILT `-1000` |
-| **TOTAL** | **106** | |
+| **TOTAL** | **104** | |
 
 State is a **gate**, not a nudge, and tier is the same mechanism. The blocker term reaches
 37, so a state term of 2/1/0 was swamped by it and the first draft ranked a BUILT unit
 first — a *what to build next* scorer selecting something already built. The magnitudes
 above make that arithmetically impossible.
-
-**Tied at the top, broken by the rule and not by a preference:**
-
-| unit | ticket | total | broken by |
-|---|---|---|---|
-| `BRGA_WeaponFire` | BP03 | 106 | selected |
-| `BRGA_WeaponUtility` | BP03 | 106 | same ticket number, later unit name |
 
 **What the score does not measure:** whether the unit's *inputs* exist. Depth, blockers,
 tier and state are the four terms this ticket specifies; readiness is not among them. See
@@ -105,23 +101,20 @@ Those are different questions and only the first is scored.
 
 ## NEXT
 
-The ranked remainder — 12 selectable units below the selection, in score
+The ranked remainder — 9 selectable units below the selection, in score
 order. BUILT units are omitted: they score `-1000` on state and can never be selected.
 
 | # | unit | ticket | state | depth | blockers | tier | state | TOTAL |
 |---|---|---|---|---|---|---|---|---|
-| 2 | `BRGA_WeaponUtility` | BP03 | MISSING | 2 | 4 | 0 | 100 | **106** |
-| 3 | `BRSpotterSubsystem` | BP11 | MISSING | 4 | 0 | 0 | 100 | **104** |
-| 4 | `BRGA_Grenade` | BP05 | MISSING | 2 | 1 | 0 | 100 | **103** |
-| 5 | `BRGA_Melee` | BP05 | MISSING | 2 | 1 | 0 | 100 | **103** |
-| 6 | `BRGA_Grapple` | BP06 | MISSING | 3 | 0 | 0 | 100 | **103** |
+| 2 | `BRGA_Grenade` | BP05 | MISSING | 2 | 1 | 0 | 100 | **103** |
+| 3 | `BRGA_Melee` | BP05 | MISSING | 2 | 1 | 0 | 100 | **103** |
+| 4 | `BRGA_Grapple` | BP06 | MISSING | 3 | 0 | 0 | 100 | **103** |
+| 5 | `BRGA_WeaponFire` | BP03 | MISSING | 2 | 0 | 0 | 100 | **102** |
+| 6 | `BRGA_WeaponUtility` | BP03 | MISSING | 2 | 0 | 0 | 100 | **102** |
 | 7 | `BRBotDeterminismSpec` | BP00 | MISSING | 0 | 0 | 0 | 100 | **100** |
 | 8 | `BRCombatSpec` | BP00 | MISSING | 0 | 0 | 0 | 100 | **100** |
 | 9 | `BRShieldSpec` | BP00 | MISSING | 0 | 0 | 0 | 100 | **100** |
-| 10 | `BRDataRows` | BP02 | STUB | 1 | 28 | 0 | 50 | **79** |
-| 11 | `BRBotFacts` | BP08 | STUB | 3 | 11 | 0 | 50 | **64** |
-| 12 | `BRServerLifecycle` | BP11 | STUB | 4 | 3 | 0 | 50 | **57** |
-| 13 | `BRGameLiftLifecycle` | BP11 | MISSING | 4 | 0 | -100 | 100 | **4** |
+| 10 | `BRGameLiftLifecycle` | BP11 | MISSING | 4 | 0 | -100 | 100 | **4** |
 
 ### Known blockers
 

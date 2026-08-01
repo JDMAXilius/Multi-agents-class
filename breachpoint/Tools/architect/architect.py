@@ -124,7 +124,7 @@ SECTION_RE = re.compile(r"^### 3\.(\d+)\s+`([A-Za-z]+)/`\s+—\s+(\d+)", re.M)
 # A declared unit is a backticked path with a real extension. `BRAbilitySet` (no extension,
 # prose mention) and `FSavedMove_BR` are correctly NOT matched -- the extension is what
 # distinguishes a declaration from a reference.
-UNIT_RE = re.compile(r"`((?:[A-Za-z]+/)?BR[A-Za-z0-9_]+)\.(?:h/\.cpp|h|cpp)`")
+UNIT_RE = re.compile(r"`((?:[A-Za-z]+/)?BR[A-Za-z0-9_]+)\.(h/\.cpp|h|cpp)`")
 
 
 def parse_manifest():
@@ -150,29 +150,64 @@ def parse_manifest():
             name = u.group(1).split("/")[-1]      # Abilities/BRGA_Sprint -> BRGA_Sprint
             if name not in seen:
                 seen.add(name)
-                units.append(name)
+                # The declared FORM is data: `BRDataRows.h` is header-only BY DESIGN (row
+                # structs), `BRCombatSpec.cpp` is cpp-only, `BRGA_Sprint.h/.cpp` is a pair.
+                # Reporting a by-design header-only unit as STUB offered BRDataRows (889
+                # lines, 8 USTRUCTs) as work to do. F4, step 6.
+                form = {"h/.cpp": "both", "h": "header", "cpp": "cpp"}[u.group(2)]
+                units.append({"name": name, "form": form})
         out[folder] = {"declared": declared, "units": units}
     return out
 
 
-def classify(folder, unit):
-    """BUILT / STUB / MISSING. STUB = a header with no .cpp, or a .cpp with no real body."""
+def has_statements(path, need=2):
+    """Does this .cpp actually implement anything?
+
+    The first version counted lines that were not blank/include/comment and required >3. F4
+    (step 6) landed BUILT for all three of: an empty constructor with an empty override, a
+    file that is 100% comments, and a file entirely inside `#if 0`. A body with no statement
+    in it is not an implementation, so count SEMICOLONS outside comments, dead preprocessor
+    blocks, and include lines -- an empty ctor has none, and every real translation unit has
+    several.
+    """
+    src = path.read_text(encoding="utf-8", errors="replace")
+    src = re.sub(r"/\*.*?\*/", "", src, flags=re.DOTALL)          # block comments
+    src = re.sub(r"^\s*#if\s+0.*?^\s*#(?:endif|else).*?$", "", src,
+                 flags=re.DOTALL | re.M)                          # dead code
+    n = 0
+    for line in src.splitlines():
+        line = line.split("//")[0].strip()
+        if not line or line.startswith("#"):
+            continue
+        if ";" in line:
+            n += 1
+    return n >= need
+
+
+def classify(folder, unit, form="both"):
+    """BUILT / STUB / MISSING, judged against the form ARCHITECTURE §3 declares for the unit.
+
+    `form` is parsed from the manifest, not guessed: `BRDataRows.h` is header-only by design
+    and owes no .cpp, so demanding one reported an 889-line finished header as a STUB and
+    offered it as work (F4's inverse, step 6).
+    """
     root = SRC / folder
-    hits = list(root.rglob(f"{unit}.h")) + list(root.rglob(f"{unit}.cpp"))
-    if not hits:
+    hdr = list(root.rglob(f"{unit}.h"))
+    cpp = list(root.rglob(f"{unit}.cpp"))
+
+    if form == "header":
+        return "BUILT" if hdr and len(hdr[0].read_text(encoding="utf-8", errors="replace")
+                                       .splitlines()) > 8 else ("STUB" if hdr else "MISSING")
+    if form == "cpp":
+        if not cpp:
+            return "MISSING"
+        return "BUILT" if has_statements(cpp[0]) else "STUB"
+
+    if not hdr and not cpp:
         return "MISSING"
-    has_h = any(p.suffix == ".h" for p in hits)
-    cpps = [p for p in hits if p.suffix == ".cpp"]
-    if has_h and not cpps:
-        return "STUB"                             # header-only declaration, nothing implemented
-    for c in cpps:
-        body = c.read_text(encoding="utf-8", errors="replace")
-        # Strip includes/comments/blank lines; what remains is real implementation or nothing.
-        stripped = [ln for ln in body.splitlines()
-                    if ln.strip() and not ln.strip().startswith(("#include", "//", "/*", "*"))]
-        if len(stripped) > 3:
-            return "BUILT"
-    return "STUB"
+    if not cpp:
+        return "STUB"                       # header declared a pair; the .cpp never arrived
+    return "BUILT" if any(has_statements(c) for c in cpp) else "STUB"
 
 
 def undeclared_files(manifest):
@@ -184,7 +219,7 @@ def undeclared_files(manifest):
     cp1252 one in Tools/data-crew (BP14 Log, 1 Aug): `Tools/` is where the cloud and the
     workstation run the same file, and nothing compiles it. Hence the explicit prefix test.
     """
-    declared = {u for f in manifest.values() for u in f["units"]}
+    declared = {e["name"] for f in manifest.values() for e in f["units"]}
     skip = declared | {GE_HEADER.stem}          # the GE library is an announced exclusion
     found = {}
     for p in SRC.rglob("*.h"):
@@ -258,10 +293,11 @@ def scan():
     log("\n-- Disk scan: Source/Breachpoint/ -------------------------------------------")
     units, tally = [], {"BUILT": 0, "STUB": 0, "MISSING": 0}
     for folder, d in manifest.items():
-        for name in d["units"]:
-            state = "MISSING" if name in PHASE2_UNITS else classify(folder, name)
+        for entry in d["units"]:
+            name, form = entry["name"], entry["form"]
+            state = "MISSING" if name in PHASE2_UNITS else classify(folder, name, form)
             tally[state] += 1
-            units.append({"unit": name, "folder": folder, "state": state,
+            units.append({"unit": name, "folder": folder, "state": state, "form": form,
                           "ticket": UNIT_TICKET.get(name, FOLDER_TICKET.get(folder, "?")),
                           "tier": "phase2" if name in PHASE2_UNITS else "slice"})
     for name in sorted(PHASE2_UNITS):
@@ -401,6 +437,11 @@ def rank(perception=None):
         for dep_ticket in dependents_of(t):
             waiters |= {x["unit"] for x in units if x["ticket"] == dep_ticket}
         waiters.discard(u["unit"])
+        # F6a (step 6): the first version counted BUILT units as waiters. BRGA_WeaponFire's
+        # ENTIRE blocker score of 4 was four already-BUILT BP10 widgets -- nothing was waiting
+        # on it at all. A BUILT unit is not blocked by anything; counting it inflates exactly
+        # the units whose consumers are already done.
+        waiters = {w for w in waiters if by_unit.get(w, {}).get("state") != "BUILT"}
         blockers = len(waiters)
         tier = TIER_SCORE[u["tier"]]
         state = STATE_SCORE[u["state"]]
@@ -427,12 +468,30 @@ def rank(perception=None):
 # Step 3 -- the blackboard, written BEFORE anything else happens
 # --------------------------------------------------------------------------------------
 
+# F5 (step 6, high): `blackboard()` re-reads ranking.json and interpolated ranked[0]["unit"]
+# straight into a path. A crafted name traverses out of blackboard/ and overwrites any .md in
+# the repo -- this ticket's own file and BREACHPOINT-ARCHITECTURE.md were both hit in the
+# probe. guard_laws.py cannot see it: it hooks TOOL CALLS, and this is a Python process
+# writing through pathlib. Unit names come from UNIT_RE and are always bare identifiers, so
+# validating that is free and closes the JSON-re-read path too.
+UNIT_NAME_RE = re.compile(r"^BR[A-Za-z0-9_]+$")
+
+
+def safe_unit_name(name):
+    if not UNIT_NAME_RE.match(name or ""):
+        log(f"FATAL: refusing to build a path from unit name {name!r} -- not a bare BR* "
+            f"identifier. The architect never writes outside Tools/architect/.")
+        sys.exit(1)
+    return name
+
+
 def blackboard(rows=None):
     rows = rows or json.loads((STATE_DIR / "ranking.json").read_text(encoding="utf-8"))["ranked"]
     top = rows[0]
+    safe_unit_name(top.get("unit"))
     BLACKBOARD_DIR.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    path = BLACKBOARD_DIR / f"{stamp}-{top['unit']}.md"
+    path = BLACKBOARD_DIR / f"{stamp}-{safe_unit_name(top['unit'])}.md"
 
     folder = top["folder"]
     owner = f"Source/Breachpoint/{folder}/"
