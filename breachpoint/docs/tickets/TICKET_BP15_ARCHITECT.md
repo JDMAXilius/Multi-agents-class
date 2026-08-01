@@ -382,3 +382,77 @@ Unchanged is the result worth stating: the scanner asserts the GE class count ag
 rather than reading §4's prose, so correcting the prose moved no number. That is the design
 working — **the doc and the code now agree, and they agree because the code never trusted the
 doc.**
+
+---
+
+**1 Aug 2026 — STEP 4 ATTEMPTED with `BRGA_WeaponFire`. STOPPED at law 5 before writing a line
+of C++, and separately BLOCKED on the rungs. Zero Done-when boxes added.**
+
+This is a real step-4 result, not a deferral — but it is **not** a completed step 4, and the
+boxes stay unchecked. What follows is what the pipeline actually did.
+
+*The architect's half worked.* Step 3's blackboard (`blackboard/2026-08-01-BRGA_WeaponFire.md`)
+authorised the unit before anything else happened, exactly as designed. The builder packet then
+opened `BREACHPOINT-ARCHITECTURE.md` §3.3's spec for the unit and stopped.
+
+**CONTRACT_GAP — three of them, none resolvable inside the packet's `owner_path`.** Verified by
+execution, not by reading:
+
+| # | What is missing | Evidence | Owner |
+|---|---|---|---|
+| 1 | `Ability.Weapon.Fire` and `GameplayCue.Weapon.{AR,Magnum,Rocket}.Fire` are **not declared** | `BRGameplayTags.h` declares 31 tags; none of these. `InputTag.Fire`, `Damage.Kinetic`, `Damage.Headshot` **do** exist | **BP01** (`Core/`) |
+| 2 | `FBRWeaponRow` has **no trace range and no spread** | Row has DamagePerShot, RPM, MagSize, ReserveMags, ReloadTime_s, HeadshotMult, ProjectileSpeed, SplashRadius_m, SplashDamage, EquipTime_s, MeshSoftPath. `grep -E "Range\|Spread"` over `BRDataRows.h` returns **one hit, inside an unrelated comment**. `CT_Combat` has 11 rows, none of them range or spread | **BP02** (`Data/`) + curator for values |
+| 3 | `DT_Weapons.csv` has **no `AbilitySet` column** | header is `Name,DisplayName,FireMode,DamageDelivery,DamagePerShot,RPM,MagSize,ReserveMags,ReloadTime_s,HeadshotMult,ProjectileSpeed,SplashRadius_m,SplashDamage,EquipTime_s,MeshSoftPath,FireCueTag` | curator proposes → builder lands |
+
+**Why each one stops the packet rather than slowing it:**
+
+1. `BRGameplayTags.h`'s own header comment states the rule: *"Whoever needs `Ability.Weapon.Fire`
+   or `GameplayCue.Weapon.Fire` must first get §3.1 amended with the enumeration."* The file
+   anticipated this exact packet and pre-refused it. **`Core/` is BP01's `owner_path`, not this
+   packet's.**
+2. A hitscan ability with no range and no spread has to invent both. A literal cone angle or
+   trace length in the ability body is a **law-3 violation** and is item four on `gas-purity`
+   §9's self-check list (*"a literal gameplay number next to a gameplay noun"*) — it would be
+   written specifically to be caught. There is no lawful value to read.
+3. Even a perfect `BRGA_WeaponFire` would **never be granted to anyone**: equip has nothing to
+   grant, so the step-4 Done-when *"the feature is visible in PIE"* is unreachable by
+   construction, independent of the code.
+
+> **`DT_Weapons.csv` already names three tags that no C++ declares** — its `FireCueTag` column
+> holds `GameplayCue.Weapon.AR.Fire`, `.Magnum.Fire`, `.Rocket.Fire`. Data referencing symbols
+> the code has never declared is the sharper half of gap 1, and it was **landed by the data crew
+> on 29 Jul with verifier PASS** — because the verifier checked the CSV's *schema*, not whether
+> the tags on the other end exist. A cross-artifact reference nothing validates.
+
+*Rungs, reported per axis rather than skipped:*
+
+| Rung | Status |
+|---|---|
+| 1 (UBT, three targets) | **BLOCKED** — a UE editor is live (`UnrealEditor` pid 44352, the MCP session). R29.3: an editor session and a build must not overlap |
+| 2 (specs) | **BLOCKED** — same lock, and `Source/Breachpoint/Tests/` still holds only `.gitkeep` |
+| 4a dedicated | **REQUIRED and not run.** This unit has a networked surface by definition — client TargetData that the server must re-validate |
+| 4b listen + 1 remote | **REQUIRED** per R30 — a `LocalPredicted` fire ability is precisely a path that differs host-vs-remote. Also blocked upstream by BP00's Gauntlet/NuGet failure |
+
+*Gate A:* trivially passed — **no diff was produced.** Nothing was written under `Source/`.
+*Critic REFUTER:* not reached; there is no code to refute.
+
+**The finding that matters for BP15 itself, and it is a good one.** The architect selected a
+unit, authorised it on the blackboard, and the builder packet then **stopped at the law instead
+of editing three other owners' files to unblock itself.** That is the behaviour law 5 exists to
+produce, and step 6 asks *"can a unit be landed that the score did not pick?"* — the adjacent
+question this run answers is *"can a unit the score DID pick force an out-of-owner-path edit?"*
+**No.** It filed and stopped.
+
+**The finding that matters for the board.** The score ranks by dependency depth, blocker count,
+tier and state — **it has no term for whether a unit's inputs exist.** `BRGA_WeaponFire` is
+correctly the most valuable next unit *and* is not startable today. Those are different
+questions and the scorer only answers the first. A fifth term — *readiness*, computed from
+declared-but-missing tags, row fields and columns — would have ranked it below
+`BRGA_WeaponUtility` (which ties it at 106) and surfaced this before a builder was dispatched
+rather than after. **Filed as a proposal, not implemented:** step 2's four terms are specified
+by this ticket, and adding a fifth is a founder call, not a builder's.
+
+*Unblocking sequence, cheapest first (all three are small):* BP01 declares the four tags →
+curator proposes `Range_m` + `Spread_deg` + `AbilitySet` for `DT_Weapons.csv` and BP02 adds the
+row fields → BP03 step 2 restarts with `BRGA_WeaponFire` and its inputs present. Then BP15
+step 4 re-runs against a unit that can actually be built.

@@ -134,3 +134,36 @@ contract_gaps opened by this step — each blocks something later, none worked a
    silently replicates nothing, but the pawn's flag decides which runs. Character/ is BP04's.
 6. Ticket text says `DT_Weapons.csv` carries "AR + Magnum rows; Rocket row lands in its own
    later ticket" — the landed CSV already has all three. Not a defect; the ticket text is stale.
+
+---
+
+**1 Aug 2026 — CONTRACT_GAP filed FROM OUTSIDE, by BP15 step 4. Read this before restarting
+step 2.** (Cross-filed: BP15's architect selected `BRGA_WeaponFire` as the highest-value next
+unit, dispatched a builder packet, and it stopped here. Full context in BP15's Log.)
+
+HANDOFF says *"restart BP03 step 2 — the fire path"* and notes the packet *"also has to add an
+`AbilitySet` column and declare the three `GameplayCue.Weapon.*.Fire` tags."* **Verified against
+disk today, and it is worse than that line implies — there are three gaps, not two, and none is
+inside this packet's `owner_path`:**
+
+1. **Tags do not exist.** `BRGameplayTags.h` declares 31 tags. `InputTag.Fire`, `Damage.Kinetic`
+   and `Damage.Headshot` are there; **`Ability.Weapon.Fire` and `GameplayCue.Weapon.{AR,Magnum,
+   Rocket}.Fire` are not.** The header's own comment pre-refuses this packet: *"Whoever needs
+   `Ability.Weapon.Fire` or `GameplayCue.Weapon.Fire` must first get §3.1 amended."*
+   → **BP01 / `Core/`.**
+2. **`FBRWeaponRow` carries no trace range and no spread.** Not in the row, not in `CT_Combat`
+   (11 rows, none of them). A hitscan ability cannot trace without them, and inventing either as
+   a literal is a law-3 violation and a `gas-purity` §9 self-check hit.
+   → **BP02 / `Data/`** for the fields, curator for the values.
+3. **No `AbilitySet` column in `DT_Weapons.csv`**, so equip grants nothing — the ability would
+   never reach a player even if it existed.
+
+**The sharpest one:** `DT_Weapons.csv`'s `FireCueTag` column **already contains all three cue
+tags**, landed 29 Jul with verifier PASS. The verifier checked the CSV's schema, not whether the
+symbols it names exist on the other side. **Data has been referencing undeclared tags for three
+days and every gate passed.** Worth a validator, not just a fix.
+
+*Suggested order (all small):* BP01 declares the four tags → curator proposes `Range_m`,
+`Spread_deg`, `AbilitySet` → BP02 adds the row fields → **then** step 2 restarts with its inputs
+present. Restarting before that means the fire path's first act is editing three other owners'
+files, which is what law 5 forbids.
