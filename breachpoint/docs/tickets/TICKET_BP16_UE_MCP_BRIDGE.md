@@ -21,6 +21,13 @@ against a live editor). Steps 2–3 in order. Step 4 needs steps 1–3. Step 5 c
 ## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
 
 - requires: editor-live  — the MCP server is hosted INSIDE a running editor; an installed engine is not enough
+- **ORDERING (added 1 Aug 2026 — these two conditions cannot be satisfied at the same instant).**
+  The line below wants a **fresh build proof**; R29.3 forbids a build while an editor is open;
+  and the tickets skill says an `editor-live` ticket opens the editor **before** the claim. Read
+  as a simultaneous checklist this gate is unsatisfiable. It is satisfiable **in one order only**:
+  **(1) editor CLOSED → run the build proof → (2) open the editor → (3) claim.** If the editor is
+  already open when you reach this gate, close it and start at (1); do not reason from the
+  binary's mtime, which is the failure mode the next line names.
 - `Breachpoint.uproject` exists and `BreachpointEditor` **currently builds** — verified by
   `Tools/run-ubt.ps1 -Targets BreachpointEditor` exiting 0 with an R19 timestamp proof, not by
   a stale binary sitting in `Binaries/Win64/`
@@ -133,3 +140,51 @@ transport, it is **jurisdiction**. `guard_laws.py` enforces law 5 on `Edit`/`Wri
 `file_path`. An MCP tool call has neither, so **every mechanical protection this project built
 tonight is blind to it.** That is not a reason to refuse the MCP — it is a reason to decide the
 boundary deliberately, in a ticket, before an agent lands its first `.uasset` through it.
+
+---
+
+**1 Aug 2026 (terminal) — an MCP-connected session now EXISTS. Two corrections before it acts.**
+(Lead, pre-claim — correcting the packet's premises before a builder spends its first hour on
+them, per the BP15 precedent. Not a claim; nothing in `Tools/ue_mcp/` was written.)
+
+The founder reports a second terminal running Claude Code connected to a UE 5.8 editor MCP. The
+Log entry above — *"no Unreal server is connected to this session"* — is **superseded as of this
+date**, for that session only. This session (no MCP, wrong root) is not the driver, and under
+**R29.2 must not become one**.
+
+*Correction 1 — the Kickoff could not be satisfied as written.* Written into the Kickoff above.
+Short form: it demands a **fresh** `BreachpointEditor` build proof, R29.3 forbids building while
+an editor is open, and the tickets skill opens the editor **before** the claim. Three true rules,
+no simultaneous solution — only an order: **close → build → open → claim.** Same family as BP14's
+self-gating Kickoff and BP15's self-contradicting self-check; that is now three, so the pattern is
+the board's, not those tickets'.
+
+*Correction 2 — the founder's three "do first" items are BLOCKED by the very editor that unblocks
+this ticket, and they will fail loudly rather than silently.* All three are headless commandlets,
+not MCP work:
+
+| Task | Invocation | With an editor open |
+|---|---|---|
+| Input generator (`Tools/gen_input/build-input.ps1`) | `UnrealEditor-Cmd -run=pythonscript` | **refuses** — its own R21 guard, `build-input.ps1:180` |
+| R26 rename (`Tools/rename_r26/rename-r26.ps1`) | `UnrealEditor-Cmd -run=pythonscript` | **refuses** — R21 guard, `rename-r26.ps1:88` |
+| CSV reimport (`Tools/reimport-tables.ps1`) | `UnrealEditor-Cmd` | project lock (R29.1) |
+
+**The editor being open and the three highest-priority tasks are mutually exclusive.** Good news
+first: the two generators *already enforce* this themselves and print `BLOCKED (R21)`, so this is
+a scheduling fact, not a hazard — a rare case on this board where the mechanism was armed before
+anyone needed it.
+
+*The finding worth keeping:* **R29.3 names the wrong operation.** It says an editor session and a
+**build** must not overlap. The real constraint is the **project lock**, and
+`-run=pythonscript` takes it too without being a build. Every editor-driving script we own is a
+commandlet, so R29.3's literal wording covers the case we rarely hit and misses the case we hit
+every time. It happens to bite nobody today only because both scripts guard on *"any editor
+process is live"* — the correct test — rather than on R29.3's text. **A ruling whose wording is
+narrower than the guards implementing it will eventually be read instead of the guards.** Filed
+here rather than amended unilaterally: R29 is a closed ruling (law 8), and widening
+*build* → *anything that takes the project lock* is the founder's call, not a lead's edit.
+
+*Recommended routing while that editor is open:* the only work it uniquely unblocks is **step 1**
+— enumerating the real MCP surface, which no other context can do. Everything else on the board
+either needs the editor closed or does not need it at all. Note also that step 1 is **read-only**
+by nature, so it can proceed before step 2's law-7 ruling exists; **landing an asset cannot.**
