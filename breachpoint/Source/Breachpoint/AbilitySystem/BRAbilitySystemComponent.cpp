@@ -91,6 +91,66 @@ UBRAbilitySystemComponent::UBRAbilitySystemComponent(const FObjectInitializer& O
 
 void UBRAbilitySystemComponent::AbilityInputTagPressed(FGameplayTag InputTag)
 {
+	// ---------------------------------------------------------------------
+	// STAGE GATE — `InputRouted` (docs/GAS-INTEGRATION-ROADMAP.md, stage 3).
+	//
+	// This is the hook `BRCharacter.cpp` names as *"`InputRouted` — where the tag reaches the
+	// ASC"*. The idiom is that file's, unchanged: FIRST STATEMENT IN THE FUNCTION, before even
+	// the tag-validity test, so that below the stage this function is one comparison and a
+	// return. `HeldInputTags` is not touched, no spec is walked, nothing is activated, and no
+	// prediction key is opened.
+	//
+	// WHY THE **ASC** AND NOT `ABRPlayerController::AbilityInputTagPressed`, which is the other
+	// end of the same relay and the more obvious place to put it. Three reasons, and the third
+	// is the one that decides it:
+	//
+	//   1. THE REFUSAL HAS TO COME FROM THE FAR END OR IT PROVES NOTHING. Stage 3 exists to tell
+	//      "the key is dead" apart from "the key is alive and the tag has nowhere to go" — this
+	//      file's own `matched NO granted ability` block, twenty lines down, is written for
+	//      exactly that and says so. A controller-side gate makes the log below the stage read
+	//      *"the controller was reached"* and stop there, which leaves the untested half of the
+	//      chain — the PlayerState arriving, `GetBRAbilitySystemComponent()` resolving, this
+	//      component existing at all — unproven. That untested half IS stage 3. Refusing HERE
+	//      prints a line that can only have been printed by an ASC that the tag actually reached,
+	//      so the founder's first keypress below the stage still proves five of the six arrows in
+	//      §3.2 are alive and names the one thing holding the sixth.
+	//
+	//   2. IT IS THE CHOKE POINT, so the gate is one edit and cannot be half-applied. Everything
+	//      that routes ability input in this project converges on this function: the human path
+	//      (`ABRPlayerController::AbilityInputTagPressed`), and `ABRBotController::PressInputTag`,
+	//      whose own comment already promises *"same function, same component, same gates as
+	//      ABRPlayerController's human path."*
+	//
+	//   3. AND THAT SECOND CALLER IS WHY THE CONTROLLER IS THE WRONG ANSWER, not merely the
+	//      weaker one. At stage `Granting` the roadmap's contract is *"abilities exist; no input
+	//      reaches them"* — and grants land on a BOT's ASC exactly as they land on a human's. Gate
+	//      only the player controller and a bot at stage `Granting` routes its intent straight
+	//      into this function and activates the abilities that stage just granted. Stage 2 and
+	//      stage 3 would then land in one test run, with a bot as the second suspect, which is
+	//      precisely the hole the roadmap's one rule was written to keep shut.
+	//
+	// WHAT THIS COSTS AT `Off`, stated because the acceptance criterion demands it: the two log
+	// lines this function prints today for an ungranted tag — `PRESSED (edge)` at Log and
+	// `matched NO granted ability` at Warning — become one line at Verbose. No gameplay changes,
+	// because below `Granting` nothing is granted for a press to match in the first place. The
+	// one diagnostic that moves below the gate with it is the INVALID-tag Warning below, and that
+	// is acceptable rather than lost: an empty `InputTag` is an authoring defect in
+	// `DA_InputConfig` that `UBRInputConfig::IsDataValid` reports at author time, the runtime
+	// Warning is its second copy, and the gate line names the (empty) tag anyway.
+	//
+	// The bypassed path is not removed and not made unreachable: one ini line brings it back.
+	// ---------------------------------------------------------------------
+	if (!BRGas::IsStageEnabled(EBRGasStage::InputRouted))
+	{
+		// Verbose, so a default-verbosity playtest log stays byte-for-byte what it is today apart
+		// from the one `BRGas: stage = ...` line. Present at all — and phrased to say what it
+		// PROVES, not just what it refused — because a silent drop is indistinguishable from a
+		// dead key, and that is the exact confusion that cost this project a day.
+		UE_LOG(LogBRInput, Verbose, TEXT("BRAbilitySystemComponent '%s': %s PRESSED and reached the ASC, but the GAS stage gate is '%s'; NOT routed to any ability (needs at least 'InputRouted'). The key, the mapping context, the binding and the controller relay are all ALIVE — only the stage is holding it. Set GasStage in Config/DefaultGame.ini."),
+			*GetNameSafe(GetOwner()), *InputTag.ToString(), BRGas::ToString(BRGas::GetStage()));
+		return;
+	}
+
 	if (!InputTag.IsValid())
 	{
 		// A row with no tag has no destination. UBRInputConfig::IsDataValid reports the authoring
@@ -200,6 +260,33 @@ void UBRAbilitySystemComponent::AbilityInputTagPressed(FGameplayTag InputTag)
 
 void UBRAbilitySystemComponent::AbilityInputTagReleased(FGameplayTag InputTag)
 {
+	// ---------------------------------------------------------------------
+	// STAGE GATE — `InputRouted`. The press half above carries the argument for gating the ASC
+	// rather than the controller; this half exists so the pair is SYMMETRIC, which is the whole
+	// of its safety case.
+	//
+	// A GATE ON PRESS BUT NOT RELEASE WOULD BE THE SAME MISTAKE STAGE 2 REFUSES TO MAKE — except
+	// that here the symmetric pairing is the safe one and the asymmetry is the leak, because
+	// press and release are two ends of ONE piece of state (`HeldInputTags`) rather than two ends
+	// of a lifetime. Gating both means nothing can enter the held set below the stage, so nothing
+	// needs to leave it: the set is provably empty and `ClearAbilityInput`'s `IsEmpty` early-out
+	// covers the flush. Gating only press would leave release walking the spec list and firing
+	// `AbilitySpecInputReleased` on every key-up for a press this component never saw — work
+	// below the stage, which the acceptance criterion forbids outright.
+	//
+	// There is no window in which the two halves can disagree: `BRGas::GetStage()` resolves once
+	// per process, so the stage cannot change between a press and its release.
+	//
+	// AT `Off` this costs one Verbose line in place of the `RELEASED but was not held` Verbose
+	// line it would otherwise have printed. Nothing else in this function runs.
+	// ---------------------------------------------------------------------
+	if (!BRGas::IsStageEnabled(EBRGasStage::InputRouted))
+	{
+		UE_LOG(LogBRInput, Verbose, TEXT("BRAbilitySystemComponent '%s': %s RELEASED and reached the ASC, but the GAS stage gate is '%s'; NOT routed to any ability (needs at least 'InputRouted'). Nothing was held — the matching press was refused by this same gate. Set GasStage in Config/DefaultGame.ini."),
+			*GetNameSafe(GetOwner()), *InputTag.ToString(), BRGas::ToString(BRGas::GetStage()));
+		return;
+	}
+
 	if (!InputTag.IsValid())
 	{
 		return;

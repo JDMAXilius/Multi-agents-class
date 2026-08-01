@@ -515,6 +515,45 @@ const UBRAbilitySet* UBREquipmentComponent::ResolveAbilitySetForRow(const FDataT
 
 void UBREquipmentComponent::GrantAbilitySetForSlot(int32 SlotIndex)
 {
+	// ---------------------------------------------------------------------
+	// STAGE GATE — `Granting` (docs/GAS-INTEGRATION-ROADMAP.md, stage 2).
+	//
+	// This is the hook `BRCharacter.cpp` names as *"`Granting` — `UBREquipmentComponent`'s
+	// ability-set grant path. Weapons/ lane."* The idiom is that file's, unchanged: FIRST
+	// STATEMENT IN THE FUNCTION, before even the authority test, so that below the stage this
+	// function is one comparison and a return. No ASC is looked up, no weapon row is resolved,
+	// no soft ability-set reference is loaded off disk, and `SlotGrants` is never written.
+	//
+	// WHY GATING THIS IS SAFE RATHER THAN A REGRESSION — the same acceptance argument stage 1
+	// had to make. Below the stage a weapon still equips: `HandleActiveWeaponChanged` continues
+	// to run `RefreshEquippedMesh` and broadcast `OnEquippedWeaponChanged`, so the model is in
+	// the hands and the HUD is told. The ONLY thing that stops is the ability grant — and today
+	// that grant already achieves nothing, because the three `DA_AbilitySet_*` assets the rows
+	// name do not exist (the roadmap's own Stage 2 blocker). So at `Off` the difference between
+	// gated and ungated is a `ResolveAbilitySetForRow` call that ends in an `Error` log about a
+	// missing asset, and one `Verbose` line instead. Nothing the founder's playtest touches —
+	// movement, equip, mesh, swap, drop, pickup — consults a grant on any path.
+	//
+	// The bypassed path is not removed and not made unreachable: one ini line brings it back.
+	//
+	// AND THE COUNTERPART IS DELIBERATELY *NOT* GATED. See `ClearAbilitySetForSlot` below for
+	// the asymmetry argument in full; the short form is that a gate belongs on the ACQUIRE side
+	// and never on the RELEASE side, because the worst case of a refused grant is a weapon that
+	// cannot fire (loud, at the ASC, on the first keypress) while the worst case of a refused
+	// clear is an ability stranded on the ASC after the weapon that granted it is gone.
+	// ---------------------------------------------------------------------
+	if (!BRGas::IsStageEnabled(EBRGasStage::Granting))
+	{
+		// Verbose, so a default-verbosity playtest log stays byte-for-byte what it is today apart
+		// from the one `BRGas: stage = ...` line. Present at all because "the gate refused" must be
+		// discoverable by turning up the channel, not by reading this source file — a silent drop
+		// and a broken grant are the same observable from the chair, and that confusion has already
+		// cost this project a day.
+		UE_LOG(LogBRCombat, Verbose, TEXT("BREquipmentComponent '%s': GAS stage gate is '%s'; ability-set grant for slot %d skipped (needs at least 'Granting'). The weapon still equips and renders; it simply has no abilities. Set GasStage in Config/DefaultGame.ini."),
+			*GetNameSafe(GetOwner()), BRGas::ToString(BRGas::GetStage()), SlotIndex);
+		return;
+	}
+
 	if (!HasServerAuthority() || !Slots.IsValidIndex(SlotIndex))
 	{
 		return;
@@ -590,6 +629,40 @@ void UBREquipmentComponent::GrantAbilitySetForSlot(int32 SlotIndex)
 		GrantedAbilities, GrantedEffects, *GetNameSafe(AbilitySet), SlotIndex, *WeaponRowName.ToString());
 }
 
+// ---------------------------------------------------------------------------------------------
+// THE STAGE-2 ASYMMETRY, ARGUED ONCE, HERE, BECAUSE HERE IS WHERE THE NEXT READER WILL LOOK FOR
+// THE MISSING GATE (docs/GAS-INTEGRATION-ROADMAP.md, stage 2).
+//
+// `GrantAbilitySetForSlot` is gated at `Granting`. `ClearAbilitySetForSlot` IS NOT, and that is a
+// decision rather than an oversight. Both directions of the asymmetry are real bugs, so the choice
+// is between them and not between "gate" and "safe":
+//
+//   GATE CLEAR, NOT GRANT — leaks. A grant that landed can never be handed back. A dropped or
+//   swapped weapon keeps its fire ability as a live spec on an ASC that outlives the pawn, so a
+//   swap becomes a way to hold two guns' abilities and a drop becomes a way to keep one for free.
+//   `SetActiveSlot` and `DropWeapon` both depend on this function actually revoking (see their
+//   call sites, and the "never stack grants" clear at the top of the grant path). Worse, the leak
+//   is INVISIBLE: nothing logs, nothing looks wrong, and the first symptom is a player firing a
+//   weapon they are not holding.
+//
+//   GATE GRANT, NOT CLEAR — refuses. The fighter equips a weapon with no abilities on it. That is
+//   loud on the very first keypress, from the ASC, by name: *"PRESSED and matched NO granted
+//   ability (N ability(ies) granted on this ASC in total)"*. It is also EXACTLY the state the
+//   roadmap describes for every stage below `Granting`, so it is not a defect at all — it is the
+//   stage working.
+//
+// SO: THE GATE GOES ON THE ACQUIRE SIDE AND NEVER ON THE RELEASE SIDE. A release path must be
+// unconditional, so that whatever the acquire path managed to do can always be undone — including
+// across a stage change, which is a real event here (`BRGas::GetStage` is read once per PROCESS,
+// so the founder changes it by restarting the editor, and a `SlotGrants` array is not carried
+// across that restart — but this function is also the teardown that `EndPlay` runs over every
+// slot, and a teardown that can be switched off by a feature flag is not a teardown).
+//
+// IT ALSO COSTS `Off` NOTHING, which settles the second constraint. Below the stage nothing is
+// ever granted, so `Grant.IsEmpty()` is always true here and this function returns after two index
+// checks and a bool — no ASC lookup, no log line, not one GAS call. Adding a gate would make `Off`
+// NOISIER (a Verbose line per clear, on every equip, swap and drop) in exchange for nothing.
+// ---------------------------------------------------------------------------------------------
 void UBREquipmentComponent::ClearAbilitySetForSlot(int32 SlotIndex)
 {
 	if (!HasServerAuthority() || !SlotGrants.IsValidIndex(SlotIndex))

@@ -30,6 +30,30 @@ ABRPlayerController::ABRPlayerController()
 // No de-duplication here, no state here, no logging of the held stream here. All three moved to
 // the ASC when BP02 step 1 landed, and none of them may come back: the controller's whole job in
 // §3.2 is to know which ASC the tag belongs to.
+//
+// ---------------------------------------------------------------------------
+// AND THE STAGE-3 GATE IS NOT HERE EITHER — DELIBERATELY. Recorded at the site where the next
+// reader will look for it, so nobody re-derives the decision or "fixes" the omission.
+//
+// `BRCharacter.cpp` names this file's two handlers as the `InputRouted` hook
+// (docs/GAS-INTEGRATION-ROADMAP.md, stage 3). The gate that hook asks for LANDED ONE LEVEL DOWN,
+// as the first statement of `UBRAbilitySystemComponent::AbilityInputTagPressed/Released`, where
+// the full argument is written out. The three-line version:
+//
+//   - A refusal logged HERE proves only that the controller was reached. A refusal logged at the
+//     ASC proves the whole relay — PlayerState replicated, `GetBRAbilitySystemComponent()`
+//     resolved, the component alive — and that untested half of the chain IS what stage 3 exists
+//     to observe. Gating here would hide the press at exactly the point the roadmap needs it
+//     visible, and "the tag never left the controller" reads identically to a dead binding.
+//   - The ASC is the choke point. `ABRBotController::PressInputTag` routes to the same two
+//     functions and bypasses this file entirely, so a gate here is a gate with a hole in it.
+//   - That hole is not theoretical: at stage `Granting` the roadmap promises *"abilities exist;
+//     no input reaches them"*, and grants land on a bot's ASC exactly as on a human's. A
+//     controller-only gate lets a bot activate stage 2's grants during stage 2's test run.
+//
+// So the relay below is UNCHANGED and stays a relay. Its own `no ASC yet` Verbose line is not a
+// stage refusal and must not be read as one — it reports a PlayerState that has not replicated,
+// which is a different failure with a different fix, and it keeps that meaning at every stage.
 // ---------------------------------------------------------------------------
 
 void ABRPlayerController::AbilityInputTagPressed(FGameplayTag InputTag)
