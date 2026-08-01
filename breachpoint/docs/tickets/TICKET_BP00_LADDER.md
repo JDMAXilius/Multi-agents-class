@@ -77,3 +77,38 @@ Source build of `5.8.1-release` started 31 Jul 2026 → `D:\UnrealEngine_5.8`.
 
 This ticket stays BLOCKED on that build plus BP01 step 1. Rung 1 is not runnable before then,
 and per the honesty law it is reported BLOCKED with this reason, never skipped.
+
+---
+
+**31 Jul 2026 — TICKET DEFECT: Kickoff condition 1 was unsatisfiable by any packet. Resolved;
+both conditions now MET and this ticket is claimable.**
+
+Verifying the Kickoff mechanically before a claim (as the tickets skill requires) surfaced a
+circular gate rather than an unmet one:
+
+| Condition | Result |
+|---|---|
+| BP01 step 1 landed — `Breachpoint.uproject` + all three `*.Target.cs` | **MET** (commit `97b423e`) |
+| `Tools/env.local` exists, `ENGINE_ROOT` → source-built UE 5.8 | was **UNMET, and unmeetable** |
+
+`Tools/env.local` cannot exist before `Tools/` exists, and **`Tools/` is created by this
+ticket's own step 1** — the step the Kickoff gates. Compounding it, `testing.md` declares
+`env.local` machine-local and never committed, so no clone or fresh machine will ever satisfy
+the condition either. Any agent obeying the skill's "refuse on failure" rule would have
+correctly refused to claim BP00 **forever**.
+
+*Resolution:* the condition describes **environment setup, not a packet deliverable** — a human
+act the ticket assumed and never assigned to anyone. The lead wrote `Tools/env.local` by hand
+with the `ENGINE_ROOT` already recorded in BP01's Log, and added it to `.gitignore` per
+`testing.md`. Verified rather than assumed: `git check-ignore` confirms it is ignored, and
+`Engine/Build/SourceDistribution.txt` confirms the target is a **source** build (which is what
+makes `BreachpointServer` compilable at all).
+
+*Why this was not treated as a law-5 violation despite `Tools/` being this ticket's `owner_path`:*
+the file is machine-local, gitignored, contains no logic, and ships to nobody. Writing it is
+configuring a workstation, not landing a deliverable. `Tools/env.local.example` — the committed,
+reviewable artifact — remains step 1's job and is untouched.
+
+*Carried to step 1:* `env.local.example` must document this, or the next machine repeats the
+deadlock. The Kickoff wording should also be amended to "`ENGINE_ROOT` is known and points at a
+source-built UE 5.8" — a condition about the *environment*, which is what it always meant.
