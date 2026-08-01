@@ -1,8 +1,8 @@
-// BREACHPOINT — BP05 step 1. The grenade: cook, throw, and OUR radial damage.
+// BREACHPOINT — BP05 step 1. The grenade: cook, throw, and the server-only projectile spawn.
+// (OUR radial damage moved to Weapons/BRExplosion.h when D6 closed — see the header.)
 
 #include "AbilitySystem/Abilities/BRGA_Grenade.h"
 
-#include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "Abilities/Tasks/AbilityTask_WaitInputRelease.h"
 #include "AbilitySystem/BRAbilitySystemComponent.h"
@@ -10,9 +10,15 @@
 #include "AbilitySystem/Effects/BRGameplayEffects.h"
 #include "Core/BRCore.h"
 #include "Core/BRGameplayTags.h"
-#include "Engine/OverlapResult.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
+
+// THE DEPENDENCY ARROW, and it points one way. `AbilitySystem/Abilities/` includes `Weapons/`;
+// nothing in `Weapons/` includes `Abilities/`. This one include is the whole of D6's cost, and it
+// is why the blast rule moved to `Weapons/BRExplosion.h` instead of staying here — the projectile
+// calls the blast, so the blast had to be on the projectile's side of the arrow. Note this file
+// does NOT include `BRExplosion.h`: the ability never detonates anything.
+#include "Weapons/BRProjectile.h"
 
 namespace
 {
@@ -74,10 +80,28 @@ namespace
 	const FName GrenadeBlastFalloffCurve(TEXT("Grenade.BlastFalloff"));
 
 	/**
+	 * BOUNCE, and the two rows that DO NOT EXIST YET.
+	 *
+	 * `CT_Combat.csv` carries eight `Grenade.*` rows as of 1 Aug 2026 — cook, fuse, throw speed,
+	 * blast radius, centre damage, the falloff curve, the carried max and the per-throw cost — and
+	 * neither of these two. They are read OPTIONALLY (see `ResolveTuning`): a missing bounce row
+	 * leaves the tuning's negative sentinel in place and the projectile then leaves
+	 * `UProjectileMovementComponent`'s own value standing and warns, rather than this file typing a
+	 * restitution.
+	 *
+	 * That is a WEAKER position than the five required rows get, and it is taken deliberately rather
+	 * than by omission: `ABRProjectile::InitializeProjectile` argues it in full. The short form is
+	 * that a grenade with the engine's restitution is playable and visibly wrong within one throw,
+	 * whereas a grenade with a zero radius is nothing at all — so the two failures do not deserve
+	 * the same answer. Add the rows and this softness disappears.
+	 */
+	const FName GrenadeBouncinessCurve(TEXT("Grenade.Bounciness"));
+	const FName GrenadeBounceFrictionCurve(TEXT("Grenade.BounceFriction"));
+
+	/**
 	 * Tag strings this packet needs and may not declare. See `UBRGA_Grenade::RequestOwedTag`.
 	 * Constants rather than literals at three call sites: a misspelling then fails once, visibly.
 	 */
-	const TCHAR* AbilityGrenadeTagString = TEXT("Ability.Grenade");
 	const TCHAR* GrenadeThrowCueTagString = TEXT("GameplayCue.Grenade.Throw");
 	const TCHAR* GrenadeExplodeCueTagString = TEXT("GameplayCue.Grenade.Explode");
 }
@@ -287,6 +311,14 @@ bool UBRGA_Grenade::ResolveTuning(FBRGrenadeTuning& OutTuning, FString& OutReaso
 		return false;
 	}
 
+	// The two bounce numbers, read OPTIONALLY. `Evaluate` writes nothing when the row is missing, so
+	// a failed read leaves the struct's negative sentinel exactly where the constructor put it —
+	// which is the value that means "unauthored" all the way down to the projectile. There is no
+	// `OutReason` write and no early return here on purpose; see the curve names above for why these
+	// two do not refuse the throw the way the five above do.
+	BRCombatCurves::Evaluate(GrenadeBouncinessCurve, Resolved.Bounciness);
+	BRCombatCurves::Evaluate(GrenadeBounceFrictionCurve, Resolved.BounceFriction);
+
 	// NOTE, deliberately NOT clamped: nothing here asserts CookSeconds < FuseSeconds. A data set
 	// where the cook ceiling meets or exceeds the fuse is a grenade that goes off in your hand at
 	// the end of a long hold — which is a DESIGN POSITION the curator may want to author, not a
@@ -474,267 +506,91 @@ void UBRGA_Grenade::ThrowGrenade(float SecondsCooked)
 void UBRGA_Grenade::RequestProjectileSpawn(const FTransform& ReleaseTransform, const FVector& LaunchVelocity, float RemainingFuseSeconds) const
 {
 	// ==========================================================================================
-	// *** THE SEAM. THIS IS THE BLOCKER, AND IT IS THE WHOLE OF IT. ***
+	// THE SEAM. It was the blocker for a packet; D6 closed and it is now four lines and a log.
 	// ==========================================================================================
 	//
-	// There is no projectile class, and ARCHITECTURE §3 has no home for one:
-	// `docs/DECISIONS-OWED.md` **D6** (RULING, unanswered) — §3.5 `Weapons/` enumerates three units
-	// and none is a projectile; no other §3 folder claims one. It blocks BP05 step 1 and all of
-	// BP09, and BP05's Log states why it cannot be routed around at claim time: *"you cannot grant
-	// a path to a file the architecture never named."*
+	// `Weapons/BRProjectile.h` is the far side, and its class comment IS the specification this
+	// function used to carry — authority, attribution, bandwidth/dormancy, `BRCollision::Projectile`,
+	// bounce, the fuse timer, the detonation call. Nothing was lost in the move; it was relocated to
+	// the object that has to honour it.
 	//
-	// This function is deliberately the ONLY place that would change. When D6 lands, its body
-	// becomes a `SpawnActorDeferred` + `FinishSpawning` and nothing else in this file moves.
-	//
-	// WHAT THE PROJECTILE OWES — written out so the ruling arrives at a specification rather than
-	// at a blank page. Each line is a requirement this packet already knows and would otherwise
-	// lose:
-	//
-	//   AUTHORITY     Spawned on the server only, from here. `bReplicates = true`, replicated
-	//                 movement. Clients never spawn it; they saw the cue ghost.
-	//   ATTRIBUTION   `Instigator` = the thrower's pawn, `Owner` = the thrower. Kill credit,
-	//                 `Event.Kill`, the killfeed and the effect context all read from these; a
-	//                 projectile with no instigator produces a kill with no killer.
-	//   BANDWIDTH     Low NetUpdateFrequency and NETWORK DORMANCY once it comes to rest
-	//                 (`netcode.md`, named by BP05's ticket). A grenade at rest that keeps
-	//                 replicating is 4v4 x N grenades of nothing.
-	//   COLLISION     `BRCollision::Projectile` (ECC_GameTraceChannel1, ini Name "Projectile").
-	//                 `BRCore.h`'s alias table already names grenades as its user — the channel
-	//                 exists and is waiting for the actor.
-	//   PHYSICS       Bounce. Restitution/friction are TUNING and belong in data, not in the
-	//                 projectile's constructor — the same law that keeps them out of this file.
-	//   FUSE          `RemainingFuseSeconds`, as a TIMER (law 4). It is already net-corrected by
-	//                 construction: the server's copy carries the server's own cook time.
-	//   DETONATION    On the authority, at rest or at fuse-out, call
-	//                 `UBRGA_Grenade::ApplyExplosionDamage(ThrowerASC, Thrower, GetActorLocation(),
-	//                 RadiusMetres, CentreDamage)` — the radial rule below, which is written,
-	//                 static, and does not need an ability instance precisely so this call works.
-	//
-	// The two data numbers the projectile needs at detonation (radius, centre damage) are read by
-	// this ability at activation and would travel with the spawn. They are NOT re-read at
-	// detonation from a different place — one grenade, one set of numbers, resolved once.
-	UE_LOG(LogBRCombat, Error,
-		TEXT("UBRGA_Grenade: BLOCKED at the projectile spawn. Throw was authorised on the authority "
-			 "(release at %s, launch %.0f uu/s, %.2f s of fuse left) but NO PROJECTILE CLASS EXISTS "
-			 "— ARCHITECTURE §3 allocates no home for one (DECISIONS-OWED D6, unanswered; blocks "
-			 "BP05 step 1 and all of BP09). Nothing was spawned and no actor was invented."),
-		*ReleaseTransform.GetLocation().ToCompactString(), LaunchVelocity.Size(), RemainingFuseSeconds);
-}
-
-// ================================================================================================
-// OUR radial damage — the one thing here that is finished
-// ================================================================================================
-
-int32 UBRGA_Grenade::ApplyExplosionDamage(UAbilitySystemComponent* InstigatorASC, AActor* InstigatorActor, const FVector& Epicentre, float BlastRadiusMetres, float BlastCentreDamage)
-{
-	if (!InstigatorASC || !InstigatorActor)
-	{
-		// A projectile that outlives its thrower (disconnect, respawn, travel) lands here. Refusing
-		// is right: damage with no source cannot be attributed, and an unattributed kill is a
-		// scoring bug that surfaces three systems away.
-		UE_LOG(LogBRCombat, Warning, TEXT("UBRGA_Grenade::ApplyExplosionDamage refused: the blast has no instigator ASC or actor."));
-		return 0;
-	}
-
-	UWorld* World = InstigatorActor->GetWorld();
+	// THE NUMBERS TRAVEL WITH THE SPAWN. Radius, centre damage, the falloff curve's NAME and the
+	// explode cue tag are all resolved on THIS side — the first two at activation, by
+	// `ResolveTuning`, out of the same read that the cook and the throw used. The projectile does
+	// not re-read `CT_Combat` at detonation and must not: a mid-match table swap would otherwise
+	// detonate a grenade with numbers its thrower never agreed to, and two grenades in the air would
+	// behave differently for no visible reason.
+	UWorld* World = GetWorld();
 	if (!World)
 	{
-		return 0;
+		UE_LOG(LogBRCombat, Error,
+			TEXT("UBRGA_Grenade: no world at the spawn; the throw was authorised and nothing left the hand."));
+		return;
 	}
 
-	if (InstigatorASC->GetOwnerRole() != ROLE_Authority)
+	AActor* Thrower = GetAvatarActorFromActorInfo();
+	UAbilitySystemComponent* ThrowerASC = GetAbilitySystemComponentFromActorInfo();
+	if (!Thrower || !ThrowerASC)
 	{
-		// SERVER ONLY BY CONTRACT (`BRGameplayEffects.h`: the exec calc is server truth). A client
-		// running this would apply a GE that replication then contradicts, and every client would
-		// compute a slightly different overlap set from its own approximate positions.
-		UE_LOG(LogBRCombat, Error, TEXT("UBRGA_Grenade::ApplyExplosionDamage called off the authority; refused."));
-		return 0;
+		// A projectile with no thrower produces a kill with no killer. Refuse rather than spawn one
+		// that cannot attribute its own damage.
+		UE_LOG(LogBRCombat, Error,
+			TEXT("UBRGA_Grenade: no avatar actor or no ASC at the spawn (avatar '%s'); nothing was "
+				 "spawned, because an unattributable grenade is a scoring bug three systems away."),
+			*GetNameSafe(Thrower));
+		return;
 	}
 
-	if (BlastRadiusMetres <= 0.f || BlastCentreDamage <= 0.f)
-	{
-		UE_LOG(LogBRCombat, Warning,
-			TEXT("UBRGA_Grenade::ApplyExplosionDamage refused: radius %.2f m / centre damage %.2f. "
-				 "Both come from data and neither may be invented here."),
-			BlastRadiusMetres, BlastCentreDamage);
-		return 0;
-	}
-
-	const float RadiusUU = BlastRadiusMetres * MetresToUU;
-
-	// ------------------------------------------------------------------------------------------
-	// 1. THE OVERLAP. This is what "radial damage" means in this project.
-	// ------------------------------------------------------------------------------------------
-	//
-	// `AActor::TakeDamage`, `UGameplayStatics::ApplyRadialDamage` and `ApplyPointDamage` are BANNED
-	// (law 2/3, and a PreToolUse hook blocks them outright). The ban is not a stylistic preference:
-	// the engine's radial helper computes its own damage number, applies it through its own event,
-	// and lands OUTSIDE `BRDamageExecCalc` — so shields would not absorb it, `GE_RecentDamage`
-	// would not gate regen after it, and `Damage.Explosive.Multiplier` would not touch it. Radial
-	// damage means gathering the targets ourselves and applying the ONE GE per target. That is all
-	// this function is.
-	TArray<FOverlapResult> Overlaps;
-	FCollisionQueryParams OverlapParams(SCENE_QUERY_STAT(BRGrenadeBlast), /*bTraceComplex=*/false);
-	World->OverlapMultiByObjectType(
-		Overlaps,
-		Epicentre,
-		FQuat::Identity,
-		FCollisionObjectQueryParams(ECC_Pawn),
-		FCollisionShape::MakeSphere(RadiusUU),
-		OverlapParams);
-
-	// The world blockers for the line-of-sight step, built once. STATIC AND DYNAMIC WORLD ONLY, and
-	// that is a stated design position reached structurally rather than by a filter: **a body never
-	// shields another body from a blast.** Querying only world object types makes it impossible to
-	// change that by accident later — a `Visibility` trace would have silently made teammates into
-	// cover, which is a real gameplay rule nobody would have decided to add.
-	FCollisionObjectQueryParams BlastBlockers;
-	BlastBlockers.AddObjectTypesToQuery(ECC_WorldStatic);
-	BlastBlockers.AddObjectTypesToQuery(ECC_WorldDynamic);
-
+	// *** CUE TAG OWED (BP05): `GameplayCue.Grenade.Explode`, plus its C++ handler class. ***
+	// Resolved HERE, at the spawn, rather than at the detonation — same rule as the numbers, and it
+	// also makes the gap audible seconds earlier. An invalid tag does NOT stop the throw: the blast
+	// still applies damage and is merely silent, because FX and gameplay are separate legs.
 	const FGameplayTag ExplodeCueTag = RequestOwedTag(GrenadeExplodeCueTagString);
-	if (ExplodeCueTag.IsValid())
+	if (!ExplodeCueTag.IsValid())
 	{
-		// A confirmed one-shot on the server path, which is what `gas-purity` §6 asks for: the
-		// detonation is not predicted by anyone, so there is nothing to roll back and an `Executed`
-		// cue is correct.
-		FGameplayCueParameters CueParams;
-		CueParams.Location = Epicentre;
-		CueParams.RawMagnitude = BlastCentreDamage;
-		CueParams.Instigator = InstigatorActor;
-		InstigatorASC->ExecuteGameplayCue(ExplodeCueTag, CueParams);
-	}
-	else
-	{
-		// *** CUE TAG OWED (BP05): `GameplayCue.Grenade.Explode`, plus its C++ handler class. ***
-		// Same one-unit-of-work filing as the throw cue above.
 		UE_LOG(LogBRCombat, Warning,
-			TEXT("UBRGA_Grenade: '%s' is not declared and has no C++ handler; the explosion is "
-				 "silent and invisible. Damage still applies — FX and gameplay are separate legs."),
+			TEXT("UBRGA_Grenade: '%s' is not declared and has no C++ handler, so this grenade's "
+				 "detonation will be silent and invisible. Damage is unaffected."),
 			GrenadeExplodeCueTagString);
 	}
 
-	// One actor produces many overlap hits (capsule, mesh, hitboxes). Without this set, a target
-	// takes one grenade's damage once per collider it happens to own — which is a damage bug whose
-	// size depends on art.
-	TSet<AActor*> Considered;
-	int32 DamagedCount = 0;
+	FBRProjectileSpawnParams Params;
+	Params.InstigatorActor = Thrower;
+	Params.InstigatorASC = ThrowerASC;
+	Params.LaunchVelocity = LaunchVelocity;
+	Params.FuseSeconds = RemainingFuseSeconds;
+	Params.Bounciness = Tuning.Bounciness;
+	Params.BounceFriction = Tuning.BounceFriction;
+	Params.BlastRadiusMetres = Tuning.BlastRadiusMetres;
+	Params.BlastCentreDamage = Tuning.BlastCentreDamage;
+	Params.BlastFalloffCurveName = GrenadeBlastFalloffCurve;
+	Params.ExplodeCueTag = ExplodeCueTag;
 
-	for (const FOverlapResult& Overlap : Overlaps)
+	// `ABRProjectile::StaticClass()` and not an `EditDefaultsOnly TSubclassOf`: R18 means there is
+	// no Blueprint projectile to point at, and R26's default-only BP child would carry nothing this
+	// grenade needs. This is a CLASS reference, not an ASSET reference, so law 3's soft-ref rule and
+	// the `ConstructorHelpers` ban do not reach it. BP09 passes its own class through the same
+	// parameter without this file learning about rockets.
+	const ABRProjectile* Spawned = ABRProjectile::SpawnProjectile(
+		World, ABRProjectile::StaticClass(), ReleaseTransform, Params);
+
+	if (!Spawned)
 	{
-		AActor* Target = Overlap.GetActor();
-		if (!Target || Considered.Contains(Target))
-		{
-			continue;
-		}
-		Considered.Add(Target);
-
-		UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Target);
-		if (!TargetASC)
-		{
-			// No ASC means it is scenery that happens to sit on the Pawn channel, not a fighter.
-			continue;
-		}
-
-		// ----------------------------------------------------------------------------------
-		// SELF-DAMAGE: the thrower is a target like anyone else. STATED, per BP05 step 5.
-		// ----------------------------------------------------------------------------------
-		//
-		// `BRGA_WeaponFire` drops self-hits (`TargetASC == SourceASC`) because a hitscan shot that
-		// hits its own shooter is a bug. An explosion that hits its own thrower is the mechanic:
-		// the risk of standing near your own grenade is half of what makes grenade play a decision,
-		// and it is the arena convention this game is built on. There is deliberately NO
-		// `TargetASC == InstigatorASC` skip here, and its absence is the rule.
-		//
-		// NOT DECIDED HERE, and named rather than assumed: FRIENDLY FIRE. Nothing in this function
-		// asks which team the target is on, because that is a MATCH rule (`DT_MatchRules` /
-		// GameMode), not a property of an explosion, and inventing a team check here would put a
-		// second owner on it. A blast currently damages teammates. If the match rules say
-		// otherwise, the filter belongs where the rule lives, not in this loop.
-
-		// ----------------------------------------------------------------------------------
-		// 2. LINE OF SIGHT. Without this, an overlap sphere damages through walls.
-		// ----------------------------------------------------------------------------------
-		//
-		// BP05 step 5's critic case is literally "grenade through walls (overlap vs LOS)". A sphere
-		// overlap answers "is it within R" and nothing else; the wall between is invisible to it.
-		// Re-deriving reachability from the epicentre is what makes this a BLAST rather than a
-		// radius, and it happens on the authority for the same reason the whole function does.
-		const FVector TargetCentre = Target->GetActorLocation();
-		FHitResult Blocker;
-		FCollisionQueryParams LosParams(SCENE_QUERY_STAT(BRGrenadeBlastLOS), /*bTraceComplex=*/false);
-		LosParams.AddIgnoredActor(Target);
-		if (World->LineTraceSingleByObjectType(Blocker, Epicentre, TargetCentre, BlastBlockers, LosParams))
-		{
-			UE_LOG(LogBRCombat, Verbose,
-				TEXT("UBRGA_Grenade blast: '%s' is in radius but '%s' blocks the path; no damage."),
-				*GetNameSafe(Target), *GetNameSafe(Blocker.GetActor()));
-			continue;
-		}
-
-		// ----------------------------------------------------------------------------------
-		// 3. FALLOFF, from the curve. Not from an expression typed here.
-		// ----------------------------------------------------------------------------------
-		//
-		// Distance is measured to the target's ACTOR CENTRE, not to the nearest point on its
-		// capsule. That is a decision: nearest-point would quietly reward crouching and lying down
-		// with extra blast damage, and it would make the authored falloff shape mean something
-		// different for a tall pawn than a short one. One distance per target, one curve.
-		const float Distance = FVector::Dist(Epicentre, TargetCentre);
-		const float NormalisedDistance = FMath::Clamp(Distance / RadiusUU, 0.f, 1.f);
-
-		float FalloffScale = 0.f;
-		if (!BRCombatCurves::Evaluate(GrenadeBlastFalloffCurve, NormalisedDistance, FalloffScale))
-		{
-			// REFUSE, do not substitute. A linear falloff typed here would be a law-3 violation and
-			// a second source of truth that silently outranks the CSV. The ability already refuses
-			// at activation when this curve is missing; reaching here means the table changed
-			// mid-match, which is worth its own line.
-			UE_LOG(LogBRCombat, Warning,
-				TEXT("UBRGA_Grenade blast: CT_Combat has no '%s' curve. No falloff shape means no "
-					 "damage number this file is allowed to compute; blast aborted."),
-				*GrenadeBlastFalloffCurve.ToString());
-			return DamagedCount;
-		}
-
-		const float BaseDamage = BlastCentreDamage * FalloffScale;
-		if (BaseDamage <= 0.f)
-		{
-			// A curve may legitimately author zero at the edge. That is "out of the blast", not an
-			// error, and applying a zero-damage GE would still fire the RecentDamage regen gate.
-			continue;
-		}
-
-		// ----------------------------------------------------------------------------------
-		// 4. THE ONE PIPELINE. One GE per target, one type tag, FLAT (R22).
-		// ----------------------------------------------------------------------------------
-		//
-		// `{Damage.Explosive}` — never a nested leaf, and never `Damage.Explosive.Something`.
-		// This file does NOT read `Damage.Explosive.Multiplier`: `BRDamageExecCalc` derives that
-		// curve name from the tag itself and composes it, so the explosive multiplier is applied
-		// exactly once, in the one place that owns the damage rule. Reading it here as well would
-		// square it — the D8 headshot defect in a different costume.
-		FGameplayTagContainer DamageTags;
-		DamageTags.AddTag(BRGameplayTags::Damage_Explosive);
-
-		FGameplayEffectContextHandle Context = InstigatorASC->MakeEffectContext();
-		Context.AddInstigator(InstigatorActor, InstigatorActor);
-		// The epicentre travels on the context so impact cues and any future knockback know which
-		// way "away" is, without a second parameter channel.
-		Context.AddOrigin(Epicentre);
-
-		const FGameplayEffectSpecHandle Spec = UBRGE_Damage::MakeSpec(InstigatorASC, BaseDamage, DamageTags, Context);
-		if (UBRGE_Damage::ApplyToTarget(Spec, InstigatorASC, TargetASC))
-		{
-			++DamagedCount;
-		}
+		// The factory already named the field it refused over; this line says which throw it was, so
+		// a log reader can tell "one grenade failed" from "grenades are broken".
+		UE_LOG(LogBRCombat, Error,
+			TEXT("UBRGA_Grenade: the projectile spawn FAILED (release at %s, launch %.0f uu/s, %.2f s "
+				 "of fuse left). The throw was authorised on the authority and nothing is in the air; "
+				 "the refusal above names the reason."),
+			*ReleaseTransform.GetLocation().ToCompactString(), LaunchVelocity.Size(), RemainingFuseSeconds);
+		return;
 	}
 
 	UE_LOG(LogBRCombat, Verbose,
-		TEXT("UBRGA_Grenade blast at %s: %d of %d overlapped actors damaged (radius %.2f m)."),
-		*Epicentre.ToCompactString(), DamagedCount, Considered.Num(), BlastRadiusMetres);
-
-	return DamagedCount;
+		TEXT("UBRGA_Grenade: thrown by '%s' — release at %s, launch %.0f uu/s, %.2f s of fuse, blast "
+			 "%.2f m / %.1f centre."),
+		*GetNameSafe(Thrower), *ReleaseTransform.GetLocation().ToCompactString(), LaunchVelocity.Size(),
+		RemainingFuseSeconds, Tuning.BlastRadiusMetres, Tuning.BlastCentreDamage);
 }
 
 // ================================================================================================

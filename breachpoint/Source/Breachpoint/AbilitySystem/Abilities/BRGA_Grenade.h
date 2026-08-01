@@ -1,4 +1,5 @@
-// BREACHPOINT — BP05 step 1. The grenade: cook, throw, and OUR radial damage.
+// BREACHPOINT — BP05 step 1. The grenade: cook, throw, and the server-only projectile spawn.
+// (OUR radial damage moved to Weapons/BRExplosion.h when D6 closed — see the class comment.)
 
 #pragma once
 
@@ -13,16 +14,21 @@ class UAbilitySystemComponent;
 class UAbilityTask_WaitInputRelease;
 
 /**
- * The six numbers a grenade IS. Gathered from data once at activation, never typed.
+ * The numbers a grenade IS. Gathered from data once at activation, never typed.
  *
- * A struct rather than six locals so that the resolve step has ONE success/failure answer: a
- * grenade that knows its radius but not its fuse is not a partially-configured grenade, it is a
+ * A struct rather than a fistful of locals so that the resolve step has ONE success/failure answer:
+ * a grenade that knows its radius but not its fuse is not a partially-configured grenade, it is a
  * refusal. `UBRGA_Grapple` takes the same position about its two missing curve rows and it is the
  * position law 3 forces — a plausible default here would be a balance change nobody can see.
  *
- * ZERO IS THE SENTINEL FOR EVERY FIELD, and that is deliberate: every one of these numbers is
- * meaningless at zero (a zero radius damages nobody, a zero speed drops the grenade at the
- * thrower's feet), so "unset" and "absurd" are the same value and one check covers both.
+ * ZERO IS THE SENTINEL FOR THE FIVE REQUIRED FIELDS, and that is deliberate: every one of those
+ * numbers is meaningless at zero (a zero radius damages nobody, a zero speed drops the grenade at
+ * the thrower's feet), so "unset" and "absurd" are the same value and one check covers both.
+ *
+ * THE TWO BOUNCE FIELDS ARE THE EXCEPTION and their sentinel is NEGATIVE, because zero restitution
+ * is a meaningful authored value (a grenade that lands dead where it hits) and must be tellable
+ * from an unauthored one. Their rows do not exist in `CT_Combat` yet; `ABRProjectile` explains at
+ * length what a negative one means and why that case is a loud warning rather than a refusal.
  */
 USTRUCT()
 struct FBRGrenadeTuning
@@ -44,11 +50,22 @@ struct FBRGrenadeTuning
 
 	/** Damage at the epicentre, BEFORE falloff and before `BRDamageExecCalc`'s multipliers. */
 	float BlastCentreDamage = 0.f;
+
+	/**
+	 * Bounce restitution, 0..1. **NEGATIVE = the `Grenade.Bounciness` row does not exist**, which is
+	 * the state of `CT_Combat` today; `ABRProjectile` then leaves the engine's own value standing and
+	 * says so. Unlike the five above, its absence does NOT refuse the throw — the reasoning is at
+	 * `ABRProjectile::InitializeProjectile` and it is stated there once rather than twice.
+	 */
+	float Bounciness = -1.f;
+
+	/** Bounce/slide friction. Negative = the `Grenade.BounceFriction` row does not exist. As above. */
+	float BounceFriction = -1.f;
 };
 
 /**
  * ================================================================================================
- * THE GRENADE — BP05's first leg, and the one ability whose main deliverable has no home
+ * THE GRENADE — BP05's first leg
  * ================================================================================================
  *
  * ARCHITECTURE §3.3 states the shape in one sentence: *"Cook -> server-authoritative projectile
@@ -61,8 +78,9 @@ struct FBRGrenadeTuning
  *     -> the CLIENT raises the throw cue (the "ghost") inside the prediction window
  *     -> the SERVER — and only the server — spawns the projectile
  *     -> EndAbility, on the frame of the throw. The fuse outlives the ability.
- *     -> ... later, on the authority, the projectile detonates and calls ApplyExplosionDamage,
- *        which gathers targets ITSELF and applies ONE GE_Damage per target with {Damage.Explosive}
+ *     -> ... later, on the authority, `ABRProjectile` detonates and calls
+ *        `BRExplosion::ApplyExplosionDamage`, which gathers targets ITSELF and applies ONE
+ *        GE_Damage per target with {Damage.Explosive}
  *
  * ================================================================================================
  * WHY THERE IS NO `ValidateClaim` IN THIS FILE, unlike `BRGA_WeaponFire`
@@ -92,24 +110,30 @@ struct FBRGrenadeTuning
  * nothing to keep.
  *
  * ================================================================================================
- * *** THE BLOCKER: THERE IS NO PROJECTILE CLASS, AND §3 HAS NO HOME FOR ONE ***
+ * D6 IS CLOSED — the projectile exists, and the blast rule moved out with it
  * ================================================================================================
  *
- * `docs/DECISIONS-OWED.md` **D6** (RULING, unanswered): ARCHITECTURE §3.5 `Weapons/` enumerates
- * three units and none of them is a projectile; no other §3 folder claims one. BP05's own Log
- * escalated it and said why it cannot be fixed at claim time: *"you cannot grant a path to a file
- * the architecture never named."*
+ * This file spent a packet blocked on `docs/DECISIONS-OWED.md` **D6** ("which §3 folder owns the
+ * projectile?"), with `RequestProjectileSpawn` as a named seam that logged what the projectile
+ * owed instead of spawning one. D6 took option (a): **`Weapons/BRProjectile`**, §3.5's fourth unit,
+ * sim-builder's. The seam is now a call and its old specification is that class's comment.
  *
- * **This packet therefore does not create one.** `RequestProjectileSpawn` is a single, named seam
- * that runs on the authority and today logs exactly what the projectile owes. The alternative —
- * inventing `ABRGrenadeProjectile` in some folder and hoping — is the improvisation law 5 exists
- * to prevent, and it would make D6 harder to answer rather than easier, because the ruling would
- * arrive to find a fait accompli in the wrong place.
+ * TWO CONSEQUENCES LAND HERE, and the second is the one worth reading:
  *
- * The seam's contract is written out in full at `RequestProjectileSpawn`. Everything on the far
- * side of it is blocked; everything on this side — cook, throw, and the whole radial damage rule —
- * is written, and `ApplyExplosionDamage` is deliberately callable without an ability instance so
- * the projectile can call it the day it exists and a spec can call it today.
+ * 1. `RequestProjectileSpawn` builds an `FBRProjectileSpawnParams` and spawns. Everything the
+ *    projectile needs at detonation — radius, centre damage, the falloff curve's NAME, the explode
+ *    cue tag — is resolved on THIS side and travels WITH the spawn. It is never re-read at
+ *    detonation: one grenade, one set of numbers, agreed at the moment it left the hand.
+ *
+ * 2. **`ApplyExplosionDamage` IS GONE FROM THIS FILE.** It now lives at
+ *    `Weapons/BRExplosion.h`, as a free function both the grenade's projectile and BP09's rocket
+ *    call. This file had already filed the reason against itself: a projectile in `Weapons/`
+ *    calling `UBRGA_Grenade::ApplyExplosionDamage` would REVERSE the dependency arrow. Four files
+ *    in `AbilitySystem/Abilities/` include `Weapons/` — `BRGA_WeaponFire`, `BRGA_WeaponUtility`,
+ *    `BRGA_Grapple` and this one — and nothing in `Weapons/` includes `Abilities/`. Moving the
+ *    blast preserved that, and `BRExplosion.h`'s header carries the rest of the argument along with
+ *    every decision the function made (LOS through world geometry only, distance to actor centre,
+ *    the thrower is a target, friendly fire deliberately undecided).
  */
 UCLASS()
 class BREACHPOINT_API UBRGA_Grenade : public UBRGameplayAbility
@@ -123,51 +147,13 @@ public:
 
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
-	/**
-	 * ============================================================================================
-	 * OUR RADIAL DAMAGE — the ticket's actual deliverable, and the reason `ApplyRadialDamage` is
-	 * not merely banned but unnecessary.
-	 * ============================================================================================
-	 *
-	 * `gas-purity.md` law 3: *"Radial = our own overlap query -> per-target GE application (grenade
-	 * and rocket share it)."* Radial damage in this project is four steps, all of them here:
-	 *
-	 *   1. overlap a sphere for pawns, on the AUTHORITY
-	 *   2. drop anything the blast cannot see (an overlap alone damages through walls)
-	 *   3. scale the centre damage by the falloff curve at the normalised distance
-	 *   4. apply ONE `UBRGE_Damage` per surviving target, tagged `{Damage.Explosive}` — FLAT (R22)
-	 *
-	 * **STATIC, AND THAT IS THE DESIGN.** By the time a grenade detonates, this ability has ended
-	 * (the throw is the end; the fuse is seconds later, and an ability instance that outlives its
-	 * own verb would survive a death and respawn holding blast state — `BRGameplayAbility`'s "holds
-	 * no per-life state" contract forbids exactly that). The detonating actor is the projectile, and
-	 * it must be able to call the rule without owning an ability. Static also makes the rule
-	 * reachable from a headless spec, which is what BP05 step 4 needs for "radial falloff exact
-	 * cases".
-	 *
-	 * **KNOWN ARROW PROBLEM, filed not hidden.** If D6 rules the projectile into `Weapons/` (its
-	 * recommendation), that folder calling into `AbilitySystem/Abilities/` reverses the arrow
-	 * `BRGA_WeaponFire` establishes (ability -> weapon). The honest resolution when the projectile
-	 * lands is to move this function onto the projectile, or into a shared explosion helper that
-	 * both the grenade and the rocket (BP09) call. It lives here today because
-	 * `AbilitySystem/Abilities/` is the only folder this packet may write, and the radial-damage
-	 * deliverable has to exist somewhere real rather than be promised.
-	 *
-	 * SERVER ONLY. Refuses loudly off the authority rather than half-applying a blast that the
-	 * clients would each compute differently.
-	 *
-	 * @param InstigatorASC       the THROWER's ASC — the source of the spec, so kill credit,
-	 *                            instigator tags and the effect context all attribute correctly.
-	 *                            A projectile that outlives its thrower passes null and is refused.
-	 * @param InstigatorActor     the thrower's avatar, for the effect context's instigator pair.
-	 * @param Epicentre           world-space detonation point.
-	 * @param BlastRadiusMetres   from data; see FBRGrenadeTuning. Zero or negative is refused.
-	 * @param BlastCentreDamage   from data; damage at distance 0, before falloff and before the
-	 *                            exec calc's `Damage.Explosive.Multiplier`.
-	 * @return the number of targets the blast actually damaged. Zero is a legitimate answer (a
-	 *         grenade in an empty room) — the log distinguishes it from a refusal.
-	 */
-	static int32 ApplyExplosionDamage(UAbilitySystemComponent* InstigatorASC, AActor* InstigatorActor, const FVector& Epicentre, float BlastRadiusMetres, float BlastCentreDamage);
+	// OUR RADIAL DAMAGE MOVED. `UBRGA_Grenade::ApplyExplosionDamage` is now
+	// `BRExplosion::ApplyExplosionDamage` in `Weapons/BRExplosion.h` — same body, same decisions,
+	// on the correct side of the dependency arrow. It was always static precisely because the
+	// detonating object is the projectile and not an ability instance; the move is that fact
+	// finishing its sentence. Nothing calls it from this file any more: the projectile does, with
+	// the numbers this ability resolved and handed it at the spawn. It is still reachable from a
+	// headless spec, which is what BP05 step 4 needs for "radial falloff exact cases".
 
 protected:
 	/**
@@ -195,8 +181,9 @@ private:
 	void HandleCookExpired();
 
 	/**
-	 * Gather all six numbers from their lawful homes, or say which one is missing.
-	 * @return false with a human-readable reason; never a partially-filled tuning.
+	 * Gather the numbers from their lawful homes, or say which one is missing.
+	 * @return false with a human-readable reason; never a partially-filled tuning. The two bounce
+	 *         fields are the one exception and cannot cause a false — see `FBRGrenadeTuning`.
 	 */
 	bool ResolveTuning(FBRGrenadeTuning& OutTuning, FString& OutReason) const;
 
@@ -209,7 +196,7 @@ private:
 	 */
 	void ThrowGrenade(float SecondsCooked);
 
-	/** THE SEAM. Authority only. Blocked on D6 — read the contract at the definition. */
+	/** THE SEAM, and it is now a real spawn. Authority only. `Weapons/BRProjectile.h` is the far side. */
 	void RequestProjectileSpawn(const FTransform& ReleaseTransform, const FVector& LaunchVelocity, float RemainingFuseSeconds) const;
 
 	/** Tear down the cook. Idempotent, and called from every exit including cancellation. */

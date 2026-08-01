@@ -24,3 +24,5 @@ Grenade.BlastCentreDamage,130.0,130.0,130.0
 Grenade.BlastFalloff,1.0,0.55,0.15
 Fighter.MaxGrenades,2.0,2.0,2.0
 Grenade.CostPerThrow,1.0,1.0,1.0
+Grenade.Bounciness,0.35,0.35,0.35
+Grenade.BounceFriction,0.4,0.4,0.4
