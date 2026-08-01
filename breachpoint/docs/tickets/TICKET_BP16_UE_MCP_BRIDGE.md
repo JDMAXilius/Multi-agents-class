@@ -141,6 +141,79 @@ transport, it is **jurisdiction**. `guard_laws.py` enforces law 5 on `Edit`/`Wri
 tonight is blind to it.** That is not a reason to refuse the MCP — it is a reason to decide the
 boundary deliberately, in a ticket, before an agent lands its first `.uasset` through it.
 
+**1 Aug 2026 — step 1 enumerated against a LIVE editor. `Tools/ue_mcp/SURFACE.md` landed.**
+
+Editor was already open (PID 44352, `UE_5.8_Source`) with the server listening on
+`127.0.0.1:8000/mcp`. Completed an MCP `initialize` → `notifications/initialized` →
+`tools/list` → `describe_toolset` ×19 handshake over raw JSON-RPC/HTTP. **Only read-only calls
+were made; nothing was mutated.**
+
+**The surface: a gateway of 3 meta-tools (`list_toolsets` / `describe_toolset` / `call_tool`)
+fronting 19 toolsets and 255 tools.** Full per-tool table with read-only/editor-state/mutating
+marks and recorded refusals is in `SURFACE.md`.
+
+Corrections to `RESEARCH.md`, which guessed nine documented *categories*: **"inspecting Slate
+widgets" and "running automation tests" do not exist.** Neither does Niagara, MetaSound,
+AnimGraph, StateTree, EQS, or source control. Consequences that touch other tickets:
+- **BP10's WBP layout stays Tier-4 human work** — there is no widget toolset.
+- **BP08's `editor-live` justification gets no help** — `ST_Bot` and EQS are untouched.
+- **The ladder stays headless** — no automation toolset exists, confirming (not asserting) this
+  ticket's out-of-scope line.
+- **There is no console-command execution and no CVar setter.** So
+  `ModelContextProtocol.GenerateClientConfig ClaudeCode` **cannot be run through the MCP** —
+  which is why the `.mcp.json` below is hand-written rather than generated.
+
+**Step 2 has a mechanism, and it points at option (a).** `ProgrammaticToolset.execute_tool_script`
+runs a Python script defining `run() -> dict` that batches calls to the other 253 tools. Its
+sandbox imports **only** `{time, datetime, math, json, re, copy}` — no `unreal`, no `os`, no
+`open()`. That is the generated-script doctrine's own shape: the committed script is the
+reviewable artifact, the MCP is the executor, and the sandbox's refusal of arbitrary I/O is what
+keeps the script reviewable. **Consequence for step 4:** a ported generator cannot read its
+manifest from disk — it must go through `AssetTools.read_file("/Game/Data/...")`.
+
+**Step 5 inputs found during enumeration (not rulings — the critic still owns these):**
+- The jurisdiction hole is **real but bounded by the server**: `AssetTools.write_file` is
+  invisible to `guard_laws.py`, but is confined to `/Game/`, plugin `Content/`, and `Saved/`.
+  It **cannot** reach `Source/`, `docs/`, `Config/`, `Tools/`. It **can** silently overwrite
+  `Content/Data/DT_Weapons.csv`.
+- `BlueprintTools.write_graph_dsl` populates a graph **and compiles** — R26's forbidden artifact
+  in one call, as an undiffable binary.
+- `BlueprintTools.set_variable_replication` creates a replicated property (auto-generating
+  `OnRep_`) with no netcode packet and no REFUTER. Law 1, bypassed by shape.
+- `AgentSkillToolset.CreateSkill`/`UpdateSkill` let the editor rewrite agent instructions,
+  guarded only by a sentence in their own descriptions.
+- **R29 has a second edge:** `StartPIE`/`StopPIE` mean an MCP session can run PIE in the editor
+  holding the project lock — same conflict class as MCP-vs-build.
+
+**Three tools would close open problems elsewhere, and none is new machinery:**
+`AssetTools.get_asset_class` returns `_C`-suffixed generated-class names (the R18/R26 audit
+primitive `Tools/audit_blueprints/` never got working) · `SceneTools.trace_world` turns R7's
+editor-rung geometry doubts into measurements · `DataTableTools.get_schema` +
+`search_row_structs` make "schema declared ≠ schema live" mechanically checkable against
+`BRDataRows.h`.
+
+**`.mcp.json` written at the repo working root** — `{"mcpServers":{"unreal-mcp":{"type":"http",
+"url":"http://127.0.0.1:8000/mcp"}}}`. Not gitignored, so it will commit; it points at loopback,
+so committing is harmless and saves the next machine a step.
+
+**Two honesty flags on this entry:**
+1. **The Kickoff's "tools resolve by name" line is NOT ticked.** The surface was reached over raw
+   HTTP, never as registered session tools. By this ticket's own rule — *a tool that does not
+   appear in the session's tool list does not exist* — **the transport and schemas are verified,
+   the client integration is not.** Ticking it needs a Claude Code restart with the `.mcp.json`
+   in place. The same applies to the build-proof line: the editor was **already open** on
+   arrival, so the editor-closed → build → open → claim order in the Kickoff was not followed,
+   and no claim file was written.
+2. **`SURFACE.md` asserts a confinement it did not test.** The `/Game/`-only rule on `write_file`
+   is quoted from the tool's own description, not proven with a rejecting case. Every defect the
+   last three sessions found was a rule that read as enforced and was not — this is that exact
+   shape, and it is listed as owed in `SURFACE.md` §5.
+
+**Owner-path note:** `Tools/ue_mcp/SURFACE.md` is inside this ticket's `owner_path`. **`.mcp.json`
+at the repo root is NOT** — it was written on direct founder instruction with no claim file
+active (so `guard_laws.py` was inert and did not fire). Recorded rather than quietly done: if the
+lead wants owner_path to cover it, that is a one-line ticket edit, not a precedent.
+
 ---
 
 **1 Aug 2026 (terminal) — an MCP-connected session now EXISTS. Two corrections before it acts.**
