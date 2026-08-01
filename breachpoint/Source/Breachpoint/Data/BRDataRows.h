@@ -614,7 +614,7 @@ struct BREACHPOINT_API FBRBotAmbitionRow : public FTableRowBase
 };
 
 /**
- * FBRBotTuningRow — one tier row of `Content/Data/DT_BotTuning.csv` (Recruit / Regular / Veteran).
+ * FBRBotTuningRow — one tier row of `Content/Data/DT_BotTuning.csv` (Recruit / Marine / Veteran).
  *
  * COLUMN MAP — the `CSV:` comments on FBRBotTierScalars (AI/BRBotBrain.h), one member each:
  *

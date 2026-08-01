@@ -247,7 +247,7 @@ struct BREACHPOINT_API FBRBotTierScalars
 {
 	GENERATED_BODY()
 
-	/** DT_BotTuning row key: Recruit / Regular / Veteran. */
+	/** DT_BotTuning row key: Recruit / Marine / Veteran. */
 	UPROPERTY()
 	FName TierName;
 

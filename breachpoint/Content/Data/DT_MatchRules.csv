@@ -1,0 +1,2 @@
+Name,ScoreLimit,MatchDuration_s,SuddenDeathCap_s,Warmup_s,RespawnDelay_s,KillCreditWindow_s
+Default,25,480,60,15,5,5

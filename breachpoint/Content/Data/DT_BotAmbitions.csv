@@ -1,0 +1,7 @@
+Name,base_utility,considerations,personality_scalar,requires,forbids
+ControlRocket,1.4,"((Consideration=""rocket_timer_norm"",Weight=1.0,bInvert=false),(Consideration=""dist_to_rocket_norm"",Weight=0.5,bInvert=false),(Consideration=""my_shield_norm"",Weight=0.3,bInvert=false))",rocket_contest,PowerWeaponAvailable,
+WinThisFight,1.0,"((Consideration=""enemy_shield_norm"",Weight=0.5,bInvert=true),(Consideration=""my_shield_norm"",Weight=0.6,bInvert=false),(Consideration=""dist_to_target_norm"",Weight=0.3,bInvert=false))",push_threshold,TargetKnown,
+Survive,1.0,"((Consideration=""my_health_norm"",Weight=0.5,bInvert=true),(Consideration=""cover_quality_norm"",Weight=0.4,bInvert=true),(Consideration=""teammates_alive_norm"",Weight=0.2,bInvert=false))",cover_preference,MyShieldsBroken,
+TakeGround,0.9,"((Consideration=""cover_quality_norm"",Weight=0.25,bInvert=true),(Consideration=""my_shield_norm"",Weight=0.4,bInvert=false))",,,
+HuntWeapon,0.8,"((Consideration=""my_ammo_norm"",Weight=0.7,bInvert=true),(Consideration=""dist_to_rocket_norm"",Weight=0.4,bInvert=false))",,,HoldingPowerWeapon|TargetVisible
+Roam,2.0,,,Warmup,
