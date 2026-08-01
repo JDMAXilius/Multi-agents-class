@@ -121,6 +121,64 @@ actually worked.
 > BP10's HUD, any PIE claim) is verifying against a game that cannot move and reads no tuning
 > data until both have run. **That is why the CLOSED batch outranks more OPEN work.**
 
+**Those two premises are no longer assumed.** A read-only MCP pass on 1 Aug checked them against
+the running editor: `/Game/Input/DA_InputConfig` **does not exist** (only 4 of the needed `IA_*`
+are present), and `/Game/Data` holds **zero assets** — the folder is there, the seven CSVs are
+loose files, no DataTable or CurveTable has ever been imported. Items 3 and 4 are real. Evidence
+and two concrete reimport risks are in BP16's Log.
+
+### 4a. Hypothesis — items 2, 3 and 4 may not be CLOSED-mode at all
+
+**Status: unproven. Do not reschedule on it.** Recorded here because it targets the exact
+premise §4 is built on, and because BP16 step 4 is the measurement that settles it.
+
+§1 classifies the input generator, the R26 rename, and the CSV reimport as CLOSED **because they
+are `UnrealEditor-Cmd -run=pythonscript` today** — that is a fact about how the scripts are
+invoked, not about what the work needs. BP16 step 1 (`Tools/ue_mcp/SURFACE.md`) enumerated 255
+MCP tools against a live editor, and each of the three has an apparent OPEN-mode equivalent:
+
+| CLOSED batch item | Today | Candidate OPEN-mode path |
+|---|---|---|
+| **2. R26 rename** | `-run=pythonscript` | `AssetTools.move` — rewrites the package name and fixes up referencers, same as `EditorAssetLibrary.rename_asset` |
+| **3. Input generator** | `-run=pythonscript` | `DataAssetTools.create` + `ObjectTools.set_properties` |
+| **4. CSV reimport** | `-run=pythonscript` | `DataTableTools.import_file` + `CurveTableTools.import_file` |
+
+**Two structural facts make this more than a guess.** `UInputAction`, `UInputMappingContext`, and
+`UBRInputConfig` are **all `UDataAsset` subclasses** (engine headers + `Input/BRInputConfig.h:92`),
+so `DataAssetTools.create` is type-compatible with everything `Tools/gen_input/` produces. And all
+six BR row structs **resolve live in the editor** via `DataTableTools.search_row_structs`, so the
+reimport path is not blocked on schema availability.
+
+**If it holds, the scheduling consequence is large:** three of the six CLOSED items move into the
+OPEN window that BP16/BP08/BP10 already need, and the board stops paying a mode switch to reach
+its own top three priorities.
+
+**Four reasons not to act on it yet:**
+
+1. **Item 1 is CLOSED forever.** There is no build tool and no automation toolset on the MCP —
+   `run-ubt.ps1` and the whole ladder can never move. **The CLOSED window never disappears**; at
+   best it gets shorter, and R29.3 still forbids a build during any OPEN window.
+2. **The MCP path loses the lfs-lock check.** `rename_r26.ps1` does a law-7 lock check;
+   `AssetTools.can_edit_asset` **returns True whenever source control is disabled**, so it is not
+   a substitute. Moving item 2 to OPEN mode without replacing that check trades a scheduling win
+   for a law-7 hole.
+3. **Law 7 still wants a committed script**, and the MCP does not repeal it. The lawful shape is
+   `ProgrammaticToolset.execute_tool_script` running a committed Python script — its sandbox
+   imports only `{time, datetime, math, json, re, copy}`, so it cannot read a manifest from disk
+   and must go through `AssetTools.read_file("/Game/...")`. A port is a rewrite of the executor
+   half, not a flag change.
+4. **The MCP is not yet verified as a session capability.** `.mcp.json` is committed but the
+   tools have never resolved by name in a session's tool list — the surface was reached over raw
+   HTTP. Until a session restart proves otherwise, this is a transport, not a capability.
+
+**The order in §4 stays load-bearing either way.** Rename before creating assets, input before
+reimport, both before any PIE claim — that is a dependency argument, not a mode argument, and
+running the three in OPEN mode does not reorder them.
+
+**How this gets settled:** BP16 step 4 retrofits **one** generator (`Tools/gen_input/`) and
+records wall-clock vs. the `UnrealEditor-Cmd` path, lines deleted, and any behaviour the MCP
+could not reproduce. Until that number exists, §4 is the schedule.
+
 ---
 
 ## 5. The rules that make parallel sessions safe

@@ -436,3 +436,56 @@ The lead appends; nobody else writes here. A doubt this ledger closes is closed.
   *Ordering note:* this ruling lands **before** BP00 step 3 wires Gauntlet, deliberately. Wiring
   a harness against a topology we do not ship and retrofitting the other one later costs more
   than building both role configurations once, while the test node is still being written.
+
+## Crew coordination (1 Aug 2026 — paid for by three blocked packets in ninety minutes)
+
+- **R31. A claim may name a SET of tickets sharing one window. `owner_path` is their union, and
+  amendments are ADDITIVE ONLY.** Founder ruling, 1 Aug 2026, resolving the decision
+  `WORK-ROUTING.md` §7 filed as owed. §7 offered two candidates; this takes **(a) window claims**.
+
+  **The problem it solves, stated from what happened rather than from theory.**
+  `.claude/active-packet.json` is ONE file in ONE shared working tree. `WORK-ROUTING.md` §5.6
+  says *"a claim is per session."* It is not — it is per tree, last-writer-wins, with no
+  ownership and no arbitration. In one session on 1 Aug:
+  1. A BP15 claim silently confined an unrelated BP16 session to BP15's paths.
+  2. A BP16 claim, written while free and verified live with a rejecting case, was **silently
+     overwritten by a BP03 claim ~90 seconds later** while the BP16 packet was mid-edit.
+
+  Instance 2 is the one that makes this a correctness ruling and not a scheduling preference:
+  **two sessions can each believe they hold the claim**, and the hook faithfully enforces
+  whichever was written last against whichever session calls a tool next. Neither session can
+  see the other. The failure is silent on both sides.
+
+  **The mechanics are already in place — verified against `guard_laws.py`, not assumed:**
+  - `owner_path` is read as a **list** and matched with `any(...)` (lines 71–73), so a union of
+    several tickets' paths works with **no code change**.
+  - `ticket` is used **only** in the block message's f-string (line 76), so a list value renders
+    as `['BP03', 'BP16']` and is harmless.
+  - §7 predicted exactly this ("only the `ticket` field's meaning changes"). It was right.
+
+  **The obligations, which are the actual content of this ruling:**
+  1. **Additive only.** A session joining a window **adds** its ticket and its paths. Removing
+     or replacing another packet's paths is forbidden — that is the instance-2 harm pointed the
+     other way, and it would block a live packet mid-write for a reason it cannot see.
+  2. **Read before you write.** Never write the claim file blind. Read it, union, write.
+  3. **Leave additively too.** A session finishing its packet removes **its own** ticket and
+     paths; if it was the last, it deletes the file. It never truncates the file to "release".
+  4. **A window is one lock mode.** `WORK-ROUTING.md` §1's OPEN/CLOSED modes are exclusive; a
+     window claim may not span both, because the resource — not the claim — is what serializes.
+
+  **What this ruling does NOT do, said out loud because the ledger's job is naming the gap:**
+  a union **weakens confinement**. Under a BP03+BP16 window, the BP03 lane is mechanically free
+  to write `Tools/ue_mcp/`. Nothing stops it. The union exists so two lanes can **coexist**, not
+  so either may write the other's files — that remains law 5, enforced by the agent's own
+  discipline and by review, exactly as it was before there was a hook at all. **Precision was
+  traded for coexistence, deliberately.** If that trade later proves wrong, §7 option (b) — a
+  separate lock-holder file with an explicit owner — is the fallback, and it was rejected today
+  for moving parts, not for being unsound.
+
+  **A correction this ruling carries, because it was asserted in this session and was false:**
+  a blocked packet is **never** unable to file its `contract_gap`. `guard_laws.py`'s
+  `ALWAYS_ALLOWED` (line 31) exempts `docs/tickets/`, `docs/DESIGN-RULINGS.md`, and the claim
+  file itself from confinement **regardless of claim** — the docstring says so explicitly. A
+  session that reports "I could not even file the gap" has read the block message instead of the
+  hook. *That mistake is the same shape as the four this project has already catalogued: a
+  mechanism's behaviour inferred rather than fired at.*
