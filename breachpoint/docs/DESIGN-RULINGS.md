@@ -226,3 +226,20 @@ The lead appends; nobody else writes here. A doubt this ledger closes is closed.
   claims anyway. If two packets ever do collide here, the answer is to split the header by
   family — not to let a packet declare its tags somewhere else, which would end §3.1's "one
   authoritative header" guarantee and with it the grep that proves nothing is missing.
+
+- **R24. Log channels track the §3 discipline folders, one per folder. `LogBRInput` is added
+  now; the extension rule is mechanical, not case-by-case.** ARCHITECTURE §3.1 enumerates
+  `LogBRCombat/Net/AI/Online/UI` — five channels for twelve discipline folders. That is an
+  oversight, not a design position: `Input/` is a §3.2 folder with no channel, so the step-3a
+  builder had to fall back to development-only `ensureMsgf` for every diagnostic and could log
+  nothing at all.
+
+  This is not cosmetic. **BP01's Done-when box 4 requires "Native input flows IMC →
+  BRInputComponent → tags → controller stubs (**log-proven**)"** — a clause no one can satisfy
+  with no channel to log on. A missing log channel does not fail a compile; it fails an
+  acceptance check months later, which is the same shape as the missing-gameplay-tag hazard R17
+  and §3.1's grep exist to prevent.
+
+  *Rule:* a discipline folder that needs to speak gets `LogBR<Folder>`, added to `BRCore.h/.cpp`
+  by the packet that first needs it, under the same exact-file `owner_path` grant R23 defines
+  for `BRGameplayTags.h/.cpp`. No new ruling per channel — this one covers all of them.

@@ -70,8 +70,21 @@ Input → InputTag → ASC, no per-ability binding code, ever.
 3. `Input/`: `BRInputConfig` (UDataAsset; **soft** `TSoftObjectPtr<UInputAction>` refs +
    InputTag pairs, native and ability lists) and `BRInputComponent` (`BindNativeAction`,
    `BindAbilityActions` templates → two handlers carrying the tag). Content: `IMC_Default`,
-   `IA_Move/Look/Jump/Crouch/Fire/Reload/Swap/Grenade/Melee/Grapple`, `DA_InputConfig`.
+   `IA_Move/Look/Jump/Crouch/`**`Sprint`**`/Fire/Reload/Swap/Grenade/Melee/Grapple`,
+   `DA_InputConfig`.
    Owner: **builder**. Contract: `data-and-assets.md` (soft refs law).
+   > **`IA_Sprint` added 31 Jul 2026** — this list said TEN assets and omitted Sprint, while
+   > §3.2's ability list has SEVEN entries including it, `BRGameplayTags.h` declares
+   > `InputTag_Sprint`, and §3.3 makes `BRGA_Sprint` the WhileHeld pattern-prover. **Eleven
+   > `IA_` assets, not ten.** Caught by the step-3a builder reading §3.2 against this text.
+   >
+   > **Trigger contract for the seven ability actions (load-bearing, not style):** they must use
+   > the default/empty trigger set or an explicit **Down** trigger. An explicit **Pressed**
+   > trigger ends the action one frame after the press and delivers `Completed` *while the key
+   > is still held* — it reports a release that never happened, silently breaking
+   > `WaitInputRelease`, `WhileHeld` (sprint, held fire) and every toggle ability. The
+   > generation packet must assert this, and `UBRInputConfig::IsDataValid` is its acceptance
+   > test.
 4. `Character/` shell: `BRCharacter` (template pawn rebased; `IAbilitySystemInterface`
    forwarding stub — PlayerState ASC arrives in BP02; wires `BRInputComponent`; native actions
    move/look/jump work) + `BRCharacterMovementComponent` (empty subclass, registered).
