@@ -25,13 +25,35 @@ the ticket.
 spawning, triggers. Honest scope note: engine functional tests are effectively single-process;
 they prove PIE behavior, NOT multiplayer behavior.
 
-**4. Networked smoke — the rung that actually proves multiplayer.** Dedicated server + 2
-clients via **Gauntlet** (the engine's C# automation driver; the ShooterGame sample is the
-reference implementation). Minimum scenario per netcode packet: both clients join → client A
-performs the packet's core action → assert server state, client A view, and client B view
-AGREE → run once more under net emulation (e.g. `-PktLag=120 -PktLoss=5` or the Network
-Emulation profile) for anything timing-sensitive. Single-process PIE is NOT a substitute; if
-Gauntlet isn't wired yet, this rung reports BLOCKED — never quietly passed.
+**4. Networked smoke — the rung that actually proves multiplayer. TWO topologies (R30).**
+Run via **Gauntlet** (the engine's C# automation driver; the ShooterGame sample is the
+reference implementation). Single-process PIE is NOT a substitute; if Gauntlet isn't wired yet,
+the rung reports BLOCKED — never quietly passed, **and BLOCKED is reported per axis.**
+
+- **4a — dedicated server + 2 clients. The default; every netcode packet runs it.** Minimum
+  scenario: both clients join → client A performs the packet's core action → assert server
+  state, client A view, and client B view AGREE → run once more under net emulation (e.g.
+  `-PktLag=120 -PktLoss=5` or the Network Emulation profile) for anything timing-sensitive.
+  4a exists to prove authority does not depend on a local player — which is what keeps the
+  Phase-2 dedicated move a config change instead of a rewrite.
+- **4b — listen server (host has a local player) + 1 remote client. REQUIRED when the claim's
+  path differs between host and remote.** That is: predicted abilities / CMC prediction ·
+  session lifecycle (create, invite, join, leave, **host-quit**, backfill, travel) · any claim
+  using the word "host", host advantage included · any `NM_ListenServer` branch. Assert in
+  threes across **two processes** — server-authority view, host-local view, remote-client view
+  — and assert the first two *separately* even though they share a process; collapsing them is
+  the mistake this axis exists to catch.
+
+  *Why it cannot be skipped:* on a dedicated server **no player is ever the authority**, so
+  predicted code paths only ever run on the client side of the predict/confirm split. On a
+  listen server the host runs prediction and authority in one call stack. A bug there is
+  invisible to 4a by construction, not merely unlikely to be caught. Host-quit has no
+  dedicated analogue at all. This is also the topology the slice actually ships
+  (`online-services.md`: Steam listen server, invite-first).
+
+Everything else — pure server sim, damage arithmetic, match phase, scoring, bot decisions — is
+**4a only**. 4b is a targeted second run, not a doubling of the ladder. **4a green is not 4b
+evidence:** a packet that names both and reports one has an incomplete rung, not a pass.
 ```
 RunUAT RunUnreal -project=<uproject> -platform=Win64 -configuration=Development \
   -build=editor -test=<YourGauntletTestName>

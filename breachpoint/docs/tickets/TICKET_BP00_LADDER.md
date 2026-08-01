@@ -41,10 +41,21 @@ BP01 step 1 (project + targets exist) gates this ticket's step 1.
    never regens, damage never negative) — all asserted AGAINST `DT_Weapons`/`CT_Combat`
    values, zero literals. Prove red-then-green with a deliberate broken value. Owner:
    **sim-builder**. (Depends on BP02's attribute set compiling — coordinate in Log.)
-3. Gauntlet skeleton + smoke `BRGauntlet.SmokeTS2C`: dedicated server + 2 clients join
-   `BR_Arena01` (blockout box is fine), client A damages client B, assert in threes (server
-   truth, A's view, B's view), rerun under `-PktLag=120 -PktLoss=5`. Owner: **builder**,
-   **netcode-builder** consults assertions.
+3. Gauntlet skeleton + **both rung-4 axes (R30, ruled 1 Aug 2026 — read it before writing the
+   test node)**. Owner: **builder**, **netcode-builder** consults assertions.
+   - **`BRGauntlet.SmokeTS2C` (4a)** — dedicated server + 2 clients join `BR_Arena01` (blockout
+     box is fine), client A damages client B, assert in threes (server truth, A's view, B's
+     view), rerun under `-PktLag=120 -PktLoss=5`.
+   - **`BRGauntlet.SmokeLS1C` (4b)** — listen server (host has a local player) + 1 remote
+     client, same damage scenario, assert in threes across **two processes**: authority view,
+     host-local view, remote view. The first two share a process and must still be asserted
+     separately — collapsing them is the defect the axis exists to catch.
+   > **Why both are built now rather than 4a now and 4b later:** the slice ships a *listen*
+   > server, so 4a alone never runs the shipping topology, and on a dedicated server no player
+   > is ever the authority — predicted ability/CMC paths for a host are structurally
+   > uncatchable there. Retrofitting a second role configuration into a written harness costs
+   > more than adding it while the node is still being written. `gauntlet-testing` §3a and §3b
+   > carry both.
 4. Verifier runs rungs 1/2/4 from clean state, reports verbatim; rung 3 reported NOT WIRED
    (honest gap). Owner: **verifier**.
 5. Critic prompt-hole review (REFUTER): can a spec pass asserting nothing? Can the smoke pass
@@ -54,8 +65,11 @@ BP01 step 1 (project + targets exist) gates this ticket's step 1.
 
 - [ ] Rung 1: real pass/fail artifact from clean state, all three targets
 - [ ] Rung 2: `Breachpoint.Sim.Combat` runs `-nullrhi -unattended`, proven red-then-green
-- [ ] Rung 4: `BRGauntlet.SmokeTS2C` green incl. emulation variant; a deliberately broken
+- [ ] Rung 4a: `BRGauntlet.SmokeTS2C` green incl. emulation variant; a deliberately broken
       replication change makes it fail (proven once)
+- [ ] Rung 4b: `BRGauntlet.SmokeLS1C` green — three viewpoints reported, with `AUTH` and
+      `HOSTLOCAL` proven to be *distinct log lines from one process* (two viewpoints = the
+      axis did not run). Deliberate-break proof required here too
 - [ ] Critic findings addressed or explicitly waived in the Log
 - [ ] Findings + decisions in this ticket's Log
 
@@ -166,3 +180,23 @@ lesson: an artifact is not a result, and this time the artifact did not even sur
 571,904 → **836,608 bytes**, which is BP01 step 4's `BRCharacter`, `BRPlayerController` and
 `BRCharacterMovementComponent` clearing the compiler — including the three signatures the step-4
 builder explicitly flagged as unverifiable without a build.
+
+**1 Aug 2026 — R30 lands before step 3 is written, deliberately (cloud session, lead).**
+
+A doctrine audit found rung 4 specified two ways at once: `testing.md` and the
+`gauntlet-testing` skill said *dedicated server, not listen* (the skill's §8 self-check
+**failed** a packet that added a listen role), while `online-services.md` law 4 and
+`netcode.md` both make host-vs-remote testing a standing requirement on every netcode packet.
+The requirement was unsatisfiable at the only rung meant to satisfy it, and the slice's
+shipping topology — Steam listen server — was the one configuration rung 4 could never run.
+
+**R30 splits the rung: 4a dedicated (default, always) + 4b listen (required when the path
+differs host-vs-remote).** Step 3 and the Done-when above are updated. Neither side of the old
+contradiction was wrong: 4a proves authority does not depend on a local player, which is what
+keeps GL-3 a config change; 4b is the only place a host's *predicted* path executes at all.
+
+*Why this is in BP00's Log and not just the ledger:* this ticket writes the harness. A ruling
+that arrives after the test node exists is a retrofit; arriving before, it is one extra
+`GetConfiguration()` override. **Step 3 is blocked on Gauntlet not compiling here (see 31 Jul
+entry), so the cost of deciding now is exactly zero** — which is the best moment to spend a
+ruling.

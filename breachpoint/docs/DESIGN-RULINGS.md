@@ -384,3 +384,55 @@ The lead appends; nobody else writes here. A doubt this ledger closes is closed.
   *Enforcement is honesty, not mechanism.* `guard_laws.py` gates `Edit`/`Write` by `file_path`;
   an MCP tool call has neither, and nothing in the repo can see whether an editor is open. This
   ruling is a rule the driver follows, and it is stated that way rather than assumed.
+
+- **R30. Rung 4 has TWO topologies. 4a dedicated is the default; 4b listen is REQUIRED for any
+  claim whose code path differs between host and remote client — and "the host is a client" is
+  not one of the paths it differs on.** Founder ruling, 1 Aug 2026, resolving a contradiction
+  the doctrine audit surfaced: `testing.md` and the `gauntlet-testing` skill specify rung 4 as
+  *dedicated server, not listen* (the skill's §8 self-check **fails** a packet that adds a
+  listen role), while `online-services.md` law 4 and `netcode.md` both make host-vs-remote
+  testing a standing requirement on every netcode packet. **The requirement was unsatisfiable
+  at the only rung meant to satisfy it**, and the slice's shipping topology — Steam listen
+  server, invite-first — was the one configuration rung 4 could never run.
+
+  **Neither side was wrong, which is why the answer is two configurations and not a swap.**
+
+  *Why 4a (dedicated) stays the default:* it proves authority does not secretly depend on a
+  local player. That is the exact bug class that turns the Phase-2 GameLift move (GL-3) into a
+  rewrite instead of a config change, and it is why the skill's comment argued for it.
+
+  *Why 4b (listen) is not optional:* **on a dedicated server no player is ever the authority.**
+  Every client is remote, so predicted-ability and CMC code paths only ever execute on the
+  client side of the predict/confirm split. On a listen server the host runs prediction **and**
+  authority in one call stack. A `BRGA_*` whose prediction path silently never runs for the
+  host, or an `FSavedMove_BR` flag that is only correct when a correction round-trips, is
+  **invisible to 4a by construction** — not unlikely to be caught, structurally uncatchable.
+  Host-quit has no dedicated analogue at all: there is nothing to quit.
+
+  **When 4b is required (the test, not a vibe):** the claim touches a path that differs on a
+  listen server. Those paths, enumerated so nobody has to judge:
+  1. **Ability prediction / CMC prediction** — anything with a predicted client path (BP02's
+     `BRGA_Sprint`, BP03's fire path, BP05, BP06's grapple).
+  2. **Session lifecycle** — create, invite, join, leave, **host-quit**, backfill, travel.
+     `online-services.md` law 4 already demanded this; 4b is where it becomes runnable.
+  3. **Any claim phrased with the word "host"**, including host advantage.
+  4. **Anything asserting a local player exists or does not** — `NM_ListenServer` branches.
+
+  Everything else — pure server sim, damage arithmetic, match phase, scoring, bot decisions —
+  is **4a only**. This is a targeted second run, not a doubling of the ladder.
+
+  **What changes in the harness:** 4b is `RequireRole(Server)` with a local player (listen) +
+  **one** remote client, not two. Assert-in-threes becomes assert-in-threes across **two
+  processes**: server-authority view, host-local view, remote-client view — the first two share
+  a process and must still be asserted separately, because collapsing them is precisely the
+  mistake this rung exists to catch. A 4b scenario that only compares two viewpoints has not
+  run rung 4b.
+
+  **BLOCKED still applies, per axis.** A packet needing 4b reports **4b BLOCKED with the reason**
+  rather than passing on 4a alone. 4a green is not 4b evidence, and a ticket that names both and
+  reports one is an incomplete rung, not a pass. (Both are BLOCKED today anyway — Gauntlet does
+  not compile on the workstation, `BP00` Log 31 Jul.)
+
+  *Ordering note:* this ruling lands **before** BP00 step 3 wires Gauntlet, deliberately. Wiring
+  a harness against a topology we do not ship and retrofitting the other one later costs more
+  than building both role configurations once, while the test node is still being written.

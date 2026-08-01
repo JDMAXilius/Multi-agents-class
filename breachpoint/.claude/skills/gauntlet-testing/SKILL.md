@@ -58,7 +58,7 @@ referencing the engine's `Gauntlet` and `AutomationUtils`. The class name is wha
 > automatically or must be registered are the **first things to verify** — they vary by engine
 > version and are the most common reason `-test=` reports "test not found".
 
-## 3. Role configuration — dedicated server + 2 clients
+## 3a. Role configuration — 4a, dedicated server + 2 clients
 
 The shape: subclass the test node, override the configuration, require the roles, put each
 role's flags on its own command line.
@@ -72,8 +72,10 @@ public class SmokeTS2C : UnrealTestNode<UnrealTestConfig>
     {
         UnrealTestConfig Config = base.GetConfiguration();
 
-        // Dedicated server — NOT a listen server. The slice ships listen, but the rung
-        // exists to prove authority independent of a local player (see netcode.md).
+        // 4a: dedicated server. This axis exists to prove authority does not depend on a
+        // local player (netcode.md) — which is what keeps the Phase-2 dedicated move a config
+        // change instead of a rewrite. It is NOT the whole rung: R30 adds 4b (listen + 1
+        // remote client) for any claim whose path differs between host and remote. See §3b.
         var Server = Config.RequireRole(UnrealTargetRole.Server);
         Server.CommandLine += " -BR_Arena01 -nosteam";
 
@@ -92,6 +94,63 @@ public class SmokeTS2C : UnrealTestNode<UnrealTestConfig>
 > project subclass, and how controllers attach to a role are the specific names to check
 > against the engine tree. The *structure* — require roles, per-role command lines, bounded
 > duration — is stable; the identifiers may not be.
+
+## 3b. Role configuration — 4b, listen server + 1 remote client (R30)
+
+Required whenever the claim's path differs between host and remote: **predicted abilities /
+CMC prediction · session lifecycle (create, invite, join, leave, host-quit, backfill, travel) ·
+any claim using the word "host" · any `NM_ListenServer` branch.** Not required for pure server
+sim, damage arithmetic, match phase, scoring, or bot decisions.
+
+The shape difference that matters: **there is no separate server process.** The host role is
+both the authority and a player, so you require a *client* role that hosts, plus one remote.
+
+```csharp
+public class SmokeLS1C : UnrealTestNode<UnrealTestConfig>
+{
+    public SmokeLS1C(UnrealTestContext c) : base(c) { }
+
+    public override UnrealTestConfig GetConfiguration()
+    {
+        UnrealTestConfig Config = base.GetConfiguration();
+
+        // The HOST: a client role that opens the map as a listen server. Authority and a
+        // local player in ONE process — the configuration the slice actually ships.
+        var Host = Config.RequireRole(UnrealTargetRole.Client);
+        Host.CommandLine += " BR_Arena01?listen -nosteam";
+
+        // ONE remote client, not two. The second remote adds no path 4a doesn't already cover;
+        // the host is the viewpoint 4a structurally cannot produce.
+        var Remote = Config.RequireRole(UnrealTargetRole.Client);
+        Remote.CommandLine += " -nosteam";   // joins via the harness's connect step
+
+        Config.MaxDuration = 10 * 60;
+        return Config;
+    }
+}
+```
+
+**Assert in threes across TWO processes.** The three viewpoints are *server-authority*,
+*host-local*, and *remote-client* — and the first two share a process. **Assert them
+separately anyway.** Collapsing "the server says X" into "the host sees X" is exactly the
+defect this axis exists to catch: a predicted ability that never runs its prediction path for
+the host looks identical to a working one if you only read the authoritative value.
+
+Concretely, emit three distinct `BRTEST|` line prefixes from ordinary gameplay code:
+
+| Viewpoint | Emitted where | What it proves |
+|---|---|---|
+| `BRTEST\|AUTH\|` | `HasAuthority()` branch | the authoritative outcome |
+| `BRTEST\|HOSTLOCAL\|` | host's `IsLocallyControlled()` branch | the host's *predicted/local* view ran |
+| `BRTEST\|REMOTE\|` | remote client's local branch | the remote's replicated view |
+
+`AUTH` and `HOSTLOCAL` coming from one process is expected; **them being the same log line is
+the bug.** A 4b scenario reporting two viewpoints has not run 4b.
+
+> ⚠️ `?listen` on the host's map URL, and whether your harness connects the remote via
+> `open <hostaddr>` or a session join, are the specific mechanics to check against the engine
+> tree and `online-services.md`'s invite-first flow. The *structure* — one hosting client, one
+> remote, three asserted viewpoints — is what R30 fixes.
 
 ## 4. Driving the scenario and harvesting the result
 
@@ -158,7 +217,8 @@ smoke go red, record it. A gate that has never failed is a gate nobody has teste
 ## 8. Self-check before handoff
 
 Structured `BRTEST|` log lines emitted by **ordinary gameplay code**, not test-only paths ·
-three roles reporting, assertions comparing them · dedicated server, not listen · clean run
-AND emulation run, both recorded · `MaxDuration` set so a hang fails instead of wedging CI ·
+three viewpoints reporting, assertions comparing them · **the right axis for the claim (R30):
+4a always; 4b as well whenever the path differs host-vs-remote — and a 4b scenario that
+compares only two viewpoints has not run 4b** · clean run AND emulation run, both recorded · `MaxDuration` set so a hang fails instead of wedging CI ·
 wrapper propagates exit code and verbatim output · the deliberate-break proof recorded in the
 Log · every claim names its rung.
