@@ -250,3 +250,196 @@ two patches were (a) renaming BP10's `FBRKillfeedEntry`, (b) adding `"SlateCore"
   is not in this packet's owner_path, so no `LogBRAbility` was added.
 - **Another packet wrote `Source/Breachpoint/Data/BRDataRows.h`**, which is inside BP02's granted
   `owner_path`. Not touched here; flagged because it means two claims overlap on `Data/`.
+
+---
+
+**1 Aug 2026 — STEPS 3 AND 4 BUILT (sim-builder).** Ability base, AbilitySet, ExecCalc, BRGA_Sprint
++ the CMC half, and the generic-GE library. **No rung is pronounced**; the build results below are
+observations. Two of three targets compiled — `BreachpointServer` was not built (it has never been
+built on this machine and a from-scratch monolithic build would have held the global lock against
+two live builders, R21).
+
+*Files.* NEW: `AbilitySystem/BRCombatCurves.h/.cpp`, `AbilitySystem/BRDamageExecCalc.h/.cpp`,
+`AbilitySystem/BRAbilitySet.h/.cpp`, `AbilitySystem/Abilities/BRGameplayAbility.h/.cpp`,
+`AbilitySystem/Abilities/BRGA_Sprint.h/.cpp`, `AbilitySystem/Effects/BRGameplayEffects.h/.cpp`,
+`Content/Data/CT_Combat.csv`. EDITED: `AbilitySystem/BRAbilitySystemComponent.h/.cpp`,
+`AbilitySystem/BRAttributeSet.h/.cpp`, `Character/BRCharacterMovementComponent.h/.cpp`,
+`Core/BRGameplayTags.h/.cpp` (one tag: `Ability.Sprint`, R23).
+
+---
+
+### RULING — saved moves: COMPRESSED FLAGS, and the premise for deferring was false
+
+`cmc-prediction` asked BP02 to choose between compressed flags and the structured move-data path
+"because switching later touches every movement state at once". **That premise does not hold in the
+direction that matters**, and checking it is what made the decision cheap:
+`FCharacterNetworkMoveData` — the structured path — **carries `CompressedMoveFlags` as one of its own
+fields**. Adopting the container later is therefore ADDITIVE: every boolean already riding a custom
+bit keeps riding it, untouched, and the container adds room for typed fields beside them. The painful
+migration is the reverse (typed fields down into four bits), which nobody performs.
+
+**Decision:** boolean movement INTENT rides the custom bits starting now. The structured container
+arrives in its own packet the first time a movement state needs a field that is not a boolean —
+BP06's grapple is the likely trigger (a target point or surface class does not fit in a bit) — and
+that packet **does not have to touch sprint**.
+
+**Bit budget, recorded because there are only four and running out silently is the failure mode:**
+
+| bit | owner |
+|---|---|
+| `FLAG_Custom_0` | sprint (BP02, landed) |
+| `FLAG_Custom_1` | RESERVED for grapple (BP06) — reserved, not used |
+| `FLAG_Custom_2` | free |
+| `FLAG_Custom_3` | free |
+
+All four saved-move hooks are implemented (`Clear`, `SetMoveFor`, `PrepMoveFor`, `CanCombineWith`)
+plus `GetCompressedFlags`/`UpdateFromCompressedFlags` symmetrically. `cmc-prediction` should be
+corrected with this ruling; its section 3 code sketch is otherwise accurate for 5.8 (compressed flags
+are NOT deprecated in 5.8 — checked against the engine).
+
+---
+
+### THE `GE_RecentDamage` PATTERN (R18 proved, with one crack — see contract_gaps)
+
+Landed first, as the boxed warning required, then applied mechanically to the other six. Four moves:
+
+1. **`CreateDefaultSubobject<TComponent>(TEXT("UniqueName"))` in the constructor — NOT the engine's
+   `AddComponent<T>()`.** That helper calls `NewObject(this, NAME_None)`, and `NewObject` with the
+   currently-constructing object as Outer is a **FATAL check** (`FObjectInitializer::
+   AssertIfInConstructor`, `UObjectGlobals.cpp:4880`). `AddComponent` is for runtime-built effects.
+2. **`GEComponents.Add(Component)`** — the array is `protected`, so a subclass may write it.
+3. **Configure through the component's own public API.** For tags that means
+   `SetAndApplyTargetTagChanges(FInheritedTagContainer)`, which is what writes the effect's
+   `CachedGrantedTags`. **Setting `InheritableGrantedTagsContainer` and skipping that call yields an
+   effect that debug-prints correctly and grants nothing** — the one silent failure in the pattern.
+4. **Set the plain properties directly** (`DurationPolicy`, `DurationMagnitude`, `Modifiers`,
+   `Executions`, stacking).
+
+**Epic supports this deliberately.** `UGameplayEffect::PostInitProperties` has a native-class branch
+("easy-to-overlook issues when implementing a Gameplay Effect as a native class") that scoops up any
+default subobject you forgot to register (behind an `ensureMsgf`) and runs `IsDataValid` immediately,
+so a misconfigured native GE reports itself at editor startup rather than at first application.
+
+**Native tags in a CDO constructor are safe** — checked, not assumed: `FNativeGameplayTag`'s
+constructor sets `InternalTag` immediately during module static init, which precedes CDO creation.
+
+**No gameplay number appears in any of the seven effects.** Every magnitude is SetByCaller (filled by
+the applier from `CT_Combat`) or an execution. `GE_Regen`'s tick period is written onto the SPEC
+(`FGameplayEffectSpec::Period` is public and `GetPeriod()` returns it for anything non-Instant), so
+period and rate are separate CSV cells and changing the period does not move the rate per second.
+
+**`GE_InitStats` modifier order is fixed and is the class's whole design:** MaxHealth, MaxShields,
+Health, Shields — capacities before current values, `Override` not `Additive` (respawn re-applies).
+Modifiers execute in array order. The trap steps 1-2 flagged is closed.
+
+**`State.Shields.Broken` landed as a SEVENTH effect, `GE_ShieldsBroken`** (infinite, one granted
+tag), applied/removed by `UBRAbilitySystemComponent::SetShieldsBrokenState` from the attribute set's
+one reaction point, on both the damage path and the regen path, as an idempotent state ASSERTION
+rather than a transition event. Refuses while `MaxShields == 0` for the same reason `CheckForDeath`
+refuses: that is "uninitialised", not "broken". Named loudly because it is outside the ticket's list
+of six.
+
+---
+
+### Decided edge cases (recorded because "probably never" is an exploit schedule)
+
+- **A `Damage.*` tag with no `<Tag>.Multiplier` curve contributes the identity 1.0**, logged once per
+  curve name per process. Refusing the hit instead would turn a missing CSV row into an invulnerable
+  player — a worse failure and a harder one to diagnose. `CT_Combat` ships a row for all five tags,
+  so the identity path is unreachable in practice.
+- **The exec calc does NOT split shields/health.** The packet describes the pipeline as "shields
+  absorb -> overflow"; that half belongs to `UBRAttributeSet` (which already owns it, loudly), and
+  duplicating it in the execution would give the shield seam two masters. The execution computes ONE
+  number and writes `IncomingDamage`.
+- **The curve name is DERIVED from the tag** (`Damage.Headshot` -> `Damage.Headshot.Multiplier`), so a
+  new damage modifier is a tag plus a CSV row and **zero lines of code**. No switch, no tag-to-curve map.
+- **A zero-length cooldown is REFUSED, loudly**, not applied: it succeeds, blocks nothing, and looks
+  applied. Same for a zero-length RecentDamage gate (no gate + one Error beats a gate that lies).
+- **`GE_Regen` is blocked by `State.Dead` as well as `State.Combat.RecentDamage`** — without the
+  second tag a corpse waiting out a respawn timer silently recharges shields it never earned.
+- **`ApplyDeathEffect` cancels running abilities**, because `ActivationBlockedTags` blocks activation
+  and says nothing about an ability already active — a sprint started before death would otherwise
+  hold the CMC at sprint speed on a corpse.
+- **`ApplyInitStats` refuses rather than inventing a starting health** when `CT_Combat` is missing:
+  an uninitialised fighter is a bug report, an invented health pool is a balance change nobody made.
+- **WhileInputHeld uses `WaitInputRelease`, not an `InputReleased()` override.** On the SERVER an
+  ability's `InputReleased()` only fires when `bReplicateInputDirectly` is set, which costs an RPC per
+  press; the task listens to the replicated generic event the ASC already sends. `bTestAlreadyReleased
+  = true` closes the tap case (a key released before a predicted activation completes would otherwise
+  sprint forever).
+
+---
+
+### contract_gaps (named, not fixed)
+
+- **`Source/Breachpoint/Tests/` is not in this claim's `owner_path`, so THESE RULES LANDED WITH ZERO
+  PINNED SPECS.** This is the sharpest gap in the packet and it is against my own doctrine: a
+  TTK-bearing formula with no golden suite. Mitigated structurally, not waved away —
+  `UBRDamageExecCalc::ComputeFinalDamage(BaseDamage, Tags, CurveLookup, OutMissing)` is a **pure
+  static function with no world, no ASC and no assets**, and `BRCombatCurves::SetTableOverrideForTests`
+  lets a spec state its own coefficients. Both exist so the suite is about thirty minutes' work the
+  moment `Tests/BRCombatSpec.cpp` is granted (R25 shape). Step 5 must not be closed without it.
+- **R18 CRACK: `UGameplayEffect::StackingType` is `UE_DEPRECATED(5.7)` and its setter
+  `SetStackingType` is `WITH_EDITOR` only.** There is therefore NO non-deprecated way for a native GE
+  class to declare stacking in a packaged build — the API assumes effects are editor-authored assets.
+  `GE_RecentDamage` writes the property inside a three-line
+  `PRAGMA_DISABLE_DEPRECATION_WARNINGS` scope so that when Epic privatises it this fails to compile
+  THERE, loudly, instead of silently losing the gate's stacking. Someone should decide before 5.9.
+- **Section 3.3 IS WRONG ABOUT HOW FIRING CANCELS SPRINT.** It says `BRGA_WeaponFire` lists
+  `State.Movement.Sprinting` in `CancelAbilitiesWithTag`. That field is matched against the target
+  ability's **asset tags**, and `State.Movement.Sprinting` is granted to the ACTOR, not owned by the
+  ability — so as written, firing would not cancel sprint and nothing would error. BP03/BP05/BP09 must
+  list **`Ability.Sprint`** (declared this packet under R23). Not patched by giving the ability a
+  `State.*` asset tag, which would have hidden the error.
+- **TWO SOURCES OF TRUTH FOR THE HEADSHOT MULTIPLIER.** `FBRWeaponRow::HeadshotMult` is per-weapon
+  (AR 1.0, Magnum 2.0 — rulings R1/R2/R4) *and* the exec calc composes a global
+  `Damage.Headshot.Multiplier` curve. Shipping both live would multiply them. **`CT_Combat` therefore
+  ships `Damage.Headshot.Multiplier = 1.0`** (identity — the modifier axis exists and is switched
+  off), and BP03's fire path is expected to fold the weapon's `HeadshotMult` into
+  `SetByCaller.BaseDamage` **on the server, after it validates the hit bone**. Raising the global curve
+  would silently buff every weapon including the two whose 1.0 is a design position. Needs a ruling.
+- **`SetByCaller.*` is a CLOSED tag family (R23), so `GE_InitStats` uses FName-keyed SetByCaller**
+  (`MaxHealth`/`MaxShields`/`Health`/`Shields`) — first-class engine API, no invented tags. If the
+  crew prefers tag-keyed magnitudes, section 3.1 gains four leaves and the class changes two lines.
+- **The sprint bit is trusted.** `UpdateFromCompressedFlags` accepts the client's sprint bit and
+  `GetMaxSpeed` acts on it without checking that the client has an active sprint ability, so a
+  modified client can assert the bit and move faster without activating `BRGA_Sprint`. This is the
+  standard UE arrangement (`bWantsToCrouch` has the same property) and it is bounded, but it is real.
+  **The obvious closure was tried on paper and rejected, not overlooked:** requiring
+  `State.Movement.Sprinting` before applying the multiplier would make the server routinely process a
+  sprint move BEFORE the activation RPC that authorises it (different actor channels, no ordering
+  guarantee) and correct the client at the start of every honest sprint. The gate belongs in
+  `UBRCharacterMovementComponent::IsSprintIntentValid()`, which exists so the closure is one function.
+  **netcode-builder rules on this.**
+- **`Movement.Sprint.SpeedMultiplier = 1.2` is the GDD's "+20% move speed"**; every other CT_Combat
+  value traces to a ruling or the ticket (100/100 EHP, 60/s, 2.5 s). `Shields.Regen.PeriodSeconds =
+  0.25` is the one value with **no source** — it is tick granularity, not balance (rate per second is
+  independent of it), and it is tuning-curator's to confirm.
+- **`ActivationOwnedTags` replicate `CountToOwner`**, so a SIMULATED PROXY does not see another
+  player's `State.Movement.Sprinting`. Fine today (observers read sprint from velocity), but any UI or
+  cue that wants to show "that enemy is sprinting" needs a different channel. Named for BP10/BP11.
+- **`AbilitySystem/` still has no `LogBRAbility` channel (R24)** — `BRCore.h` was in this claim's
+  `owner_path` this time, but adding a channel mid-wave to a file three packets include was not worth
+  the rebuild; everything logs on `LogBRCombat`.
+
+---
+
+**BUILD OBSERVATIONS (not a rung verdict).** `Tools\run-ubt.ps1`, build lock verified free first
+(no `cl.exe`/`link.exe`/`UnrealBuildTool`/`UnrealHeaderTool` — only idle MSBuild node-reuse workers):
+
+- `BreachpointEditor` — start 2026-08-01T01:23:22.441, exit **0**, `Result: Succeeded`, 6.43 s,
+  artifact newer than start (R19 PASS). **Zero warnings** after the deprecation scope above; the
+  first run of the same target (01:22:12, 12 actions, `Link UnrealEditor-Breachpoint.dll`) compiled
+  all ten changed .cpp files and ran UHT over all six new headers.
+- `Breachpoint` (Game, monolithic) — exit **0**, `Result: Succeeded`, 93.22 s,
+  `Link [x64] Breachpoint.exe`. Run deliberately because it is the target that catches
+  `WITH_EDITOR`-only mistakes the editor build cannot see (`UBRAbilitySet::IsDataValid`).
+- `BreachpointServer` — **NOT BUILT.** Never built on this machine; a from-scratch monolithic build
+  would have held the global lock against two live builders (R21). Rung 1 is therefore **not** claimed
+  and cannot be claimed from this Log.
+
+Nothing here has been run: **compiles is not works.** No PIE, no multi-process, no correction test,
+and `CT_Combat.csv` has not been imported to a CurveTable asset yet (`Tools/reimport-tables.ps1
+-Tables CT_Combat` is now unblocked — its precondition was this CSV existing). BP02's Done-when boxes
+for sprint prediction and for the damage/regen/death numbers all still require step 5's specs and a
+multi-process run.

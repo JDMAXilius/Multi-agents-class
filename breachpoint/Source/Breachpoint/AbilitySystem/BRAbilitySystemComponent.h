@@ -112,21 +112,18 @@ public:
 	 *
 	 * @return whether activation was attempted successfully (the SERVER still decides the outcome).
 	 *
-	 * DELIBERATELY MISSING, AND NAMED RATHER THAN FAKED: the `bEndAbilityImmediately` half of the
-	 * canonical helper. Ending someone else's ability from here requires a public end on the
-	 * ability, and UE 5.8 has none — UGameplayAbility::EndAbility and K2_EndAbility are both
-	 * PROTECTED, and CancelAbilityHandle is a cancel, which is a different thing with different
-	 * consequences (bWasCancelled propagates into every task's cleanup). The GAS-shooter recipe
-	 * everyone copies gets around this with an ExternalEndAbility() they added to their OWN ability
-	 * base — which is BP02 step 3's UBRGameplayAbility, and is not this packet's to write.
+	 * CLOSED IN STEP 3 (1 Aug 2026). `bEndAbilityImmediately` is back, and it works because
+	 * UBRGameplayAbility now carries the public `ExternalEndAbility()` that UE 5.8's own API does
+	 * not provide (EndAbility and K2_EndAbility are PROTECTED; CancelAbilityHandle is a cancel,
+	 * which is a different event with different consequences — bWasCancelled propagates into every
+	 * task's cleanup). The parameter defaults to false, so the step-1 call shape still compiles.
 	 *
-	 * STEP 3 CLOSES THIS: add `void ExternalEndAbility()` to UBRGameplayAbility (body:
-	 * `EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false)`), then
-	 * give this function its bEndAbilityImmediately parameter back. Until then a caller that needs
-	 * the one-RPC round trip gets the batch, and ends its own ability from inside itself — which is
-	 * where an ability should be ended from anyway.
+	 * @param bEndAbilityImmediately end the ability inside the batch, so activate + TargetData +
+	 *        end travel as ONE packet. Only meaningful for an ability that has already done its
+	 *        work by the time activation returns — a hitscan shot. An ability that ends itself is
+	 *        still the better shape; this is for the ones that cannot.
 	 */
-	bool BatchRPCTryActivateAbility(FGameplayAbilitySpecHandle AbilityHandle);
+	bool BatchRPCTryActivateAbility(FGameplayAbilitySpecHandle AbilityHandle, bool bEndAbilityImmediately = false);
 
 	/** §3.3: batching is ON for this project. The engine default is off. */
 	virtual bool ShouldDoServerAbilityRPCBatch() const override { return true; }
@@ -148,16 +145,71 @@ public:
 	bool ApplyRecentDamageGate();
 
 	/**
+	 * Shields just hit zero (or just came back). Applies or removes GE_ShieldsBroken, which is the
+	 * only thing that grants `State.Shields.Broken`.
+	 *
+	 * Server-only, called from the attribute set's one reaction point on the TRANSITION — not
+	 * polled, and idempotent, so a second hit on an already-broken shield does not stack a second
+	 * effect. Steps 1-2 filed the gap ("the tag is declared and nothing applies it"); this is where
+	 * it landed. See UBRGE_ShieldsBroken.
+	 */
+	void SetShieldsBrokenState(bool bBroken);
+
+	// -------------------------------------------------------------------------
+	// Life-cycle effects — the lawful one-liners GameMode calls
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Apply GE_InitStats with MaxHealth/MaxShields/Health/Shields read from CT_Combat, then make
+	 * sure GE_Regen is running. THE spawn/respawn stat write (gas-purity.md law 1: no
+	 * SetBaseAttributeValue anywhere).
+	 *
+	 * Server-only. Idempotent for regen (an already-active regen is not applied twice) and
+	 * deliberately NOT idempotent for the stats — re-applying is exactly what a respawn wants.
+	 *
+	 * @return false, loudly, when a required CT_Combat curve is missing. It does NOT invent a
+	 *         starting health: a fighter with MaxHealth 0 is refused by CheckForDeath as
+	 *         "uninitialised" and shows up as a bug, which is what a missing table should do.
+	 */
+	bool ApplyInitStats();
+
+	/** Apply GE_Death (infinite `State.Dead`). Server-only, idempotent. The one death mechanism. */
+	bool ApplyDeathEffect();
+
+	/** Remove GE_Death. Respawn's half; pair it with ApplyInitStats. Server-only. */
+	void ClearDeathEffect();
+
+	/**
 	 * The GE class that grants State.Combat.RecentDamage. A CLASS reference, not an asset path:
-	 * under ruling R18 the six generic GEs are C++ UGameplayEffect subclasses in
+	 * under ruling R18 the generic GEs are C++ UGameplayEffect subclasses in
 	 * AbilitySystem/Effects/, so there is nothing to soft-load and nothing to cook.
 	 *
-	 * Null until BP02 step 4 lands GE_RecentDamage and assigns it on this class's defaults.
+	 * Defaulted to UBRGE_RecentDamage in the constructor (step 4). Left as a property so a spec can
+	 * substitute a test effect without touching the damage path.
 	 */
 	UPROPERTY(EditDefaultsOnly, Category = "Breachpoint|Abilities")
 	TSubclassOf<UGameplayEffect> RecentDamageEffectClass;
 
+	/** GE_ShieldsBroken. Same shape and the same reasoning as RecentDamageEffectClass. */
+	UPROPERTY(EditDefaultsOnly, Category = "Breachpoint|Abilities")
+	TSubclassOf<UGameplayEffect> ShieldsBrokenEffectClass;
+
+	/** GE_InitStats — the spawn stat write. */
+	UPROPERTY(EditDefaultsOnly, Category = "Breachpoint|Abilities")
+	TSubclassOf<UGameplayEffect> InitStatsEffectClass;
+
+	/** GE_Regen — infinite periodic shield regen, gated by State.Combat.RecentDamage. */
+	UPROPERTY(EditDefaultsOnly, Category = "Breachpoint|Abilities")
+	TSubclassOf<UGameplayEffect> ShieldRegenEffectClass;
+
+	/** GE_Death — infinite State.Dead. */
+	UPROPERTY(EditDefaultsOnly, Category = "Breachpoint|Abilities")
+	TSubclassOf<UGameplayEffect> DeathEffectClass;
+
 private:
+	/** Is an effect of this class currently active on this ASC? The idempotency test for the infinite ones. */
+	bool HasActiveEffectOfClass(TSubclassOf<UGameplayEffect> EffectClass) const;
+
 	/**
 	 * Send InputPressed/InputReleased for an ACTIVE spec, keyed off the live instance's activation
 	 * prediction key. Factored out because getting that key from the right place is the subtle part

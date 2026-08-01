@@ -29,8 +29,21 @@
 namespace BRGameplayTags
 {
 	// -------------------------------------------------------------------------
-	// Ability.*  -- §3.1 names the family; it enumerates NO leaves. See the note above.
+	// Ability.*  -- OPEN family (ruling R23): §3.1 names it and enumerates no leaves,
+	// because the leaves cannot exist before the abilities do. ONE tag per ability,
+	// declared by the packet that authors the ability, appended here in ability order.
+	//
+	// WHAT AN Ability.* TAG IS FOR, precisely — it is the ability's ASSET tag, and it is
+	// the ONLY thing UGameplayAbility::CancelAbilitiesWithTag matches against. §3.3's
+	// sentence "BRGA_WeaponFire lists State.Movement.Sprinting in CancelAbilitiesWithTags"
+	// does NOT work as written: that field is compared against the target ability's asset
+	// tags, and State.Movement.Sprinting is a tag on the ACTOR (granted by activation),
+	// not on the ability. Firing cancels sprint by listing `Ability.Sprint` — see
+	// BRGA_Sprint.h. Recorded as a BP02 finding against §3.3 rather than worked around.
 	// -------------------------------------------------------------------------
+
+	/** BRGA_Sprint's asset tag. Fire/melee/grenade cancel sprint by listing THIS tag. */
+	BREACHPOINT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Sprint);
 
 	// -------------------------------------------------------------------------
 	// InputTag.*  -- hardware -> tag. Consumed by BRInputConfig/BRInputComponent (step 3)

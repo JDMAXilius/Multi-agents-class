@@ -126,7 +126,18 @@ void UBRAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallback
 		UE_LOG(LogBRCombat, Verbose, TEXT("BRAttributeSet '%s': %.2f damage -> shields now %.2f/%.2f, health now %.2f/%.2f (%.2f overflowed to health)."),
 			*GetNameSafe(GetOwningActor()), RawDamage, GetShields(), GetMaxShields(), GetHealth(), GetMaxHealth(), OverflowToHealth);
 
+		UpdateShieldsBrokenState();
 		CheckForDeath(Data);
+		return;
+	}
+
+	if (Data.EvaluatedData.Attribute == GetShieldsAttribute())
+	{
+		// A DIRECT shields modifier — GE_Regen's periodic tick, GE_InitStats on spawn. Damage never
+		// arrives here (it arrives as IncomingDamage above), but the broken-state assertion must
+		// still run: this is the path that clears State.Shields.Broken when regen brings shields
+		// back, and it is the ONLY one.
+		UpdateShieldsBrokenState();
 		return;
 	}
 
@@ -167,6 +178,29 @@ float UBRAttributeSet::ApplyIncomingDamageShieldsFirst(float RawDamage)
 	}
 
 	return OverflowToHealth;
+}
+
+void UBRAttributeSet::UpdateShieldsBrokenState()
+{
+	UBRAbilitySystemComponent* BRASC = Cast<UBRAbilitySystemComponent>(GetOwningAbilitySystemComponent());
+	if (!BRASC)
+	{
+		return;
+	}
+
+	if (GetMaxShields() <= 0.f)
+	{
+		// EXPLICIT REFUSAL, the same one CheckForDeath makes and for the same reason: MaxShields == 0
+		// means GE_InitStats has not run, so Shields == 0 is "uninitialised", not "broken". Applying
+		// the tag here would mark every fighter shields-broken for the instant between spawning and
+		// being initialised, and anything reacting to the tag (a cue, a bot's aggression) would fire.
+		return;
+	}
+
+	// A state assertion, not a transition: the ASC's setter compares against the live effect and
+	// does nothing when they already agree. That is what makes "shields hit zero twice in one
+	// frame" and "regen crossed zero upward" the same code path.
+	BRASC->SetShieldsBrokenState(GetShields() <= 0.f);
 }
 
 // ---------------------------------------------------------------------------

@@ -7,11 +7,25 @@
 #include "GameplayEffect.h"
 #include "GameplayPrediction.h"
 
+#include "AbilitySystem/Abilities/BRGameplayAbility.h"
+#include "AbilitySystem/BRCombatCurves.h"
+#include "AbilitySystem/Effects/BRGameplayEffects.h"
 #include "Core/BRCore.h"
+#include "Core/BRGameplayTags.h"
 
 UBRAbilitySystemComponent::UBRAbilitySystemComponent(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
+	// The generic-GE library, wired by CLASS (ruling R18 — these are C++ classes, so there is
+	// nothing to soft-load and nothing to cook). Assigned here rather than left for a designer
+	// because there is no designer surface: abilities and effects are code in this project, and an
+	// unassigned class would be a runtime hole that compiles.
+	RecentDamageEffectClass = UBRGE_RecentDamage::StaticClass();
+	ShieldsBrokenEffectClass = UBRGE_ShieldsBroken::StaticClass();
+	InitStatsEffectClass = UBRGE_InitStats::StaticClass();
+	ShieldRegenEffectClass = UBRGE_Regen::StaticClass();
+	DeathEffectClass = UBRGE_Death::StaticClass();
+
 	// §5.4, and it is a decision rather than a default: Mixed sends the OWNER full GameplayEffect
 	// replication (so its UI, prediction and rollback are exact) while everyone else receives only
 	// tags and cues (so a 4v4 does not pay 8x for effect bookkeeping nobody can see).
@@ -195,16 +209,41 @@ void UBRAbilitySystemComponent::ExecuteInPredictionWindow(TFunctionRef<void()> W
 	Work();
 }
 
-bool UBRAbilitySystemComponent::BatchRPCTryActivateAbility(FGameplayAbilitySpecHandle AbilityHandle)
+bool UBRAbilitySystemComponent::BatchRPCTryActivateAbility(FGameplayAbilitySpecHandle AbilityHandle, bool bEndAbilityImmediately)
 {
+	if (!AbilityHandle.IsValid())
+	{
+		return false;
+	}
+
 	// The batcher accumulates the activate/TargetData/end RPCs and flushes them as ONE on scope
 	// exit. It only does anything when ShouldDoServerAbilityRPCBatch() is true — which it is, above.
-	// An ability that ends itself before this scope closes therefore rides the same packet, which is
-	// how the whole optimization is meant to be reached: from inside the ability, not from here.
-	// See the header for why the bEndAbilityImmediately parameter is absent until step 3.
 	FScopedServerAbilityRPCBatcher Batcher(this, AbilityHandle);
 
-	return TryActivateAbility(AbilityHandle, /*bAllowRemoteActivation=*/true);
+	const bool bActivated = TryActivateAbility(AbilityHandle, /*bAllowRemoteActivation=*/true);
+
+	if (bActivated && bEndAbilityImmediately)
+	{
+		if (FGameplayAbilitySpec* Spec = FindAbilitySpecFromHandle(AbilityHandle))
+		{
+			// The primary instance, not the CDO: InstancedPerActor abilities keep their state on the
+			// instance, and ending the CDO would end nothing.
+			if (UBRGameplayAbility* BRAbility = Cast<UBRGameplayAbility>(Spec->GetPrimaryInstance()))
+			{
+				// The reason UBRGameplayAbility::ExternalEndAbility exists at all — see its comment.
+				BRAbility->ExternalEndAbility();
+			}
+			else
+			{
+				// Refused rather than fudged with CancelAbilityHandle: a cancel is not an end, and
+				// substituting one here would silently change what every task's cleanup sees.
+				UE_LOG(LogBRCombat, Warning, TEXT("BRAbilitySystemComponent '%s': bEndAbilityImmediately requested for an ability that is not a UBRGameplayAbility; NOT ended. Only our base has a public external end."),
+					*GetNameSafe(GetOwner()));
+			}
+		}
+	}
+
+	return bActivated;
 }
 
 // ---------------------------------------------------------------------------
@@ -215,11 +254,22 @@ bool UBRAbilitySystemComponent::ApplyRecentDamageGate()
 {
 	if (!RecentDamageEffectClass)
 	{
-		// LOUD, not silent. Until step 4 authors GE_RecentDamage, damage lands and nothing gates
-		// regen — a difference a playtester would feel and never be able to name. Warning-level so
-		// it survives a default-verbosity log.
-		UE_LOG(LogBRCombat, Warning, TEXT("BRAbilitySystemComponent '%s': damage landed but RecentDamageEffectClass is UNSET — State.Combat.RecentDamage was NOT applied and shield regen is UNGATED. Expected until BP02 step 4 authors GE_RecentDamage."),
+		// LOUD, not silent: with no gate effect, damage lands and shields regenerate through
+		// sustained fire — a difference a playtester would feel and never be able to name.
+		UE_LOG(LogBRCombat, Warning, TEXT("BRAbilitySystemComponent '%s': damage landed but RecentDamageEffectClass is UNSET — State.Combat.RecentDamage was NOT applied and shield regen is UNGATED."),
 			*GetNameSafe(GetOwner()));
+		return false;
+	}
+
+	// The gate duration is a gameplay number, so it comes from CT_Combat and not from the effect.
+	float DelaySeconds = 0.f;
+	if (!BRCombatCurves::Evaluate(BRCombatCurves::Names::ShieldsRegenDelaySeconds, DelaySeconds) || DelaySeconds <= 0.f)
+	{
+		// REFUSED. A zero-length gate applies successfully and blocks nothing: shields would
+		// regenerate mid-fight and the log would say the gate was applied. Better to have no gate
+		// and one Error than a gate that lies.
+		UE_LOG(LogBRCombat, Error, TEXT("BRAbilitySystemComponent '%s': CT_Combat has no usable '%s' curve; the RecentDamage gate was NOT applied. Shield regen is UNGATED."),
+			*GetNameSafe(GetOwner()), *BRCombatCurves::Names::ShieldsRegenDelaySeconds.ToString());
 		return false;
 	}
 
@@ -236,6 +286,191 @@ bool UBRAbilitySystemComponent::ApplyRecentDamageGate()
 		return false;
 	}
 
+	SpecHandle.Data->SetSetByCallerMagnitude(UBRGE_RecentDamage::DurationSetByCallerName, DelaySeconds);
+
 	ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 	return true;
+}
+
+// ---------------------------------------------------------------------------
+// Shields-broken state, and the life-cycle effects
+// ---------------------------------------------------------------------------
+
+bool UBRAbilitySystemComponent::HasActiveEffectOfClass(TSubclassOf<UGameplayEffect> EffectClass) const
+{
+	if (!EffectClass)
+	{
+		return false;
+	}
+
+	FGameplayEffectQuery Query;
+	Query.EffectDefinition = EffectClass;
+	return GetActiveEffects(Query).Num() > 0;
+}
+
+void UBRAbilitySystemComponent::SetShieldsBrokenState(bool bBroken)
+{
+	if (!ShieldsBrokenEffectClass)
+	{
+		UE_LOG(LogBRCombat, Warning, TEXT("BRAbilitySystemComponent '%s': ShieldsBrokenEffectClass is UNSET — State.Shields.Broken is never applied."), *GetNameSafe(GetOwner()));
+		return;
+	}
+
+	const bool bCurrentlyBroken = HasActiveEffectOfClass(ShieldsBrokenEffectClass);
+	if (bCurrentlyBroken == bBroken)
+	{
+		// The idempotency gate. Called from a transition, but transitions can be reported twice
+		// (two hits in one frame), and a second infinite effect would need two removals to clear.
+		return;
+	}
+
+	if (bBroken)
+	{
+		const FGameplayEffectSpecHandle SpecHandle = MakeOutgoingSpec(ShieldsBrokenEffectClass, /*Level=*/1.f, MakeEffectContext());
+		if (SpecHandle.IsValid() && SpecHandle.Data.IsValid())
+		{
+			ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+		}
+	}
+	else
+	{
+		RemoveActiveGameplayEffectBySourceEffect(ShieldsBrokenEffectClass, this);
+	}
+
+	UE_LOG(LogBRCombat, Verbose, TEXT("BRAbilitySystemComponent '%s': shields %s."), *GetNameSafe(GetOwner()), bBroken ? TEXT("BROKEN") : TEXT("restored"));
+}
+
+bool UBRAbilitySystemComponent::ApplyInitStats()
+{
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+	{
+		UE_LOG(LogBRCombat, Error, TEXT("BRAbilitySystemComponent '%s': ApplyInitStats without authority — REFUSED. Attribute initialisation is server truth."), *GetNameSafe(GetOwner()));
+		return false;
+	}
+
+	if (!InitStatsEffectClass)
+	{
+		UE_LOG(LogBRCombat, Error, TEXT("BRAbilitySystemComponent '%s': InitStatsEffectClass is UNSET; attributes stay at zero."), *GetNameSafe(GetOwner()));
+		return false;
+	}
+
+	float MaxHealth = 0.f;
+	float MaxShields = 0.f;
+	const bool bHaveHealth = BRCombatCurves::Evaluate(BRCombatCurves::Names::FighterMaxHealth, MaxHealth);
+	const bool bHaveShields = BRCombatCurves::Evaluate(BRCombatCurves::Names::FighterMaxShields, MaxShields);
+
+	if (!bHaveHealth || !bHaveShields || MaxHealth <= 0.f)
+	{
+		// REFUSED rather than defaulted. A fighter that spawns with an invented health pool is a
+		// balance change nobody made; a fighter that spawns uninitialised is a bug report.
+		UE_LOG(LogBRCombat, Error, TEXT("BRAbilitySystemComponent '%s': CT_Combat is missing '%s' or '%s' (read %.2f / %.2f); GE_InitStats NOT applied and this fighter is UNINITIALISED."),
+			*GetNameSafe(GetOwner()), *BRCombatCurves::Names::FighterMaxHealth.ToString(), *BRCombatCurves::Names::FighterMaxShields.ToString(), MaxHealth, MaxShields);
+		return false;
+	}
+
+	const FGameplayEffectSpecHandle SpecHandle = MakeOutgoingSpec(InitStatsEffectClass, /*Level=*/1.f, MakeEffectContext());
+	if (!SpecHandle.IsValid() || !SpecHandle.Data.IsValid())
+	{
+		UE_LOG(LogBRCombat, Error, TEXT("BRAbilitySystemComponent '%s': failed to build a GE_InitStats spec."), *GetNameSafe(GetOwner()));
+		return false;
+	}
+
+	// All four, always. A partial set would leave one attribute at whatever the last life left it,
+	// and GE_InitStats' whole job is that a respawn is not "the previous life minus the damage".
+	// Spawning at FULL health and shields is the design (Halo); it is not a separate number.
+	SpecHandle.Data->SetSetByCallerMagnitude(UBRGE_InitStats::MaxHealthName, MaxHealth);
+	SpecHandle.Data->SetSetByCallerMagnitude(UBRGE_InitStats::MaxShieldsName, MaxShields);
+	SpecHandle.Data->SetSetByCallerMagnitude(UBRGE_InitStats::HealthName, MaxHealth);
+	SpecHandle.Data->SetSetByCallerMagnitude(UBRGE_InitStats::ShieldsName, MaxShields);
+
+	ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+
+	// Shields are full again, so the broken state must go with the same call that filled them —
+	// otherwise a respawned fighter carries State.Shields.Broken with full shields.
+	SetShieldsBrokenState(false);
+
+	// --- and the regen that runs for the rest of the life -------------------------------------
+	if (!ShieldRegenEffectClass)
+	{
+		UE_LOG(LogBRCombat, Warning, TEXT("BRAbilitySystemComponent '%s': ShieldRegenEffectClass is UNSET; shields will never recharge."), *GetNameSafe(GetOwner()));
+		return true;
+	}
+
+	if (HasActiveEffectOfClass(ShieldRegenEffectClass))
+	{
+		// GE_Regen is INFINITE. Applying a second one on respawn would double the regen rate for
+		// the rest of the match, and nothing would look wrong until someone timed a recharge.
+		return true;
+	}
+
+	float RatePerSecond = 0.f;
+	float PeriodSeconds = 0.f;
+	if (!BRCombatCurves::Evaluate(BRCombatCurves::Names::ShieldsRegenRatePerSecond, RatePerSecond) || RatePerSecond <= 0.f
+		|| !BRCombatCurves::Evaluate(BRCombatCurves::Names::ShieldsRegenPeriodSeconds, PeriodSeconds) || PeriodSeconds <= 0.f)
+	{
+		UE_LOG(LogBRCombat, Error, TEXT("BRAbilitySystemComponent '%s': CT_Combat is missing a usable '%s' or '%s' (read %.2f / %.2f); GE_Regen NOT applied and shields will never recharge."),
+			*GetNameSafe(GetOwner()), *BRCombatCurves::Names::ShieldsRegenRatePerSecond.ToString(), *BRCombatCurves::Names::ShieldsRegenPeriodSeconds.ToString(), RatePerSecond, PeriodSeconds);
+		return true;
+	}
+
+	const FGameplayEffectSpecHandle RegenSpec = MakeOutgoingSpec(ShieldRegenEffectClass, /*Level=*/1.f, MakeEffectContext());
+	if (RegenSpec.IsValid() && RegenSpec.Data.IsValid())
+	{
+		// PERIOD AND RATE ARE SEPARATE DATA and this is where they meet: the CSV states points per
+		// SECOND, the effect ticks every Period, so the per-tick magnitude is the product. Change
+		// the period in the CSV and the rate per second does not move — which is what makes the
+		// period a fidelity knob and not a balance knob.
+		RegenSpec.Data->Period = PeriodSeconds;
+		RegenSpec.Data->SetSetByCallerMagnitude(BRGameplayTags::SetByCaller_RegenRate, RatePerSecond * PeriodSeconds);
+		ApplyGameplayEffectSpecToSelf(*RegenSpec.Data.Get());
+	}
+
+	return true;
+}
+
+bool UBRAbilitySystemComponent::ApplyDeathEffect()
+{
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+	{
+		UE_LOG(LogBRCombat, Error, TEXT("BRAbilitySystemComponent '%s': ApplyDeathEffect without authority — REFUSED."), *GetNameSafe(GetOwner()));
+		return false;
+	}
+
+	if (!DeathEffectClass)
+	{
+		UE_LOG(LogBRCombat, Error, TEXT("BRAbilitySystemComponent '%s': DeathEffectClass is UNSET; State.Dead is never applied and NOTHING blocks a dead fighter's abilities."), *GetNameSafe(GetOwner()));
+		return false;
+	}
+
+	if (HasActiveEffectOfClass(DeathEffectClass))
+	{
+		// Already dead. One death, one effect — the attribute set's latch makes this unreachable in
+		// the normal path, and this makes it harmless in the abnormal one.
+		return false;
+	}
+
+	const FGameplayEffectSpecHandle SpecHandle = MakeOutgoingSpec(DeathEffectClass, /*Level=*/1.f, MakeEffectContext());
+	if (!SpecHandle.IsValid() || !SpecHandle.Data.IsValid())
+	{
+		return false;
+	}
+
+	ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+
+	// Every verb is now blocked by ActivationBlockedTags on UBRGameplayAbility. Cancel what is
+	// already RUNNING — blocking activation says nothing about an ability already active, and a
+	// sprint started before death would otherwise hold the CMC at sprint speed on a corpse.
+	CancelAbilities(/*WithTags=*/nullptr, /*WithoutTags=*/nullptr, /*Ignore=*/nullptr);
+
+	return true;
+}
+
+void UBRAbilitySystemComponent::ClearDeathEffect()
+{
+	if (!GetOwner() || !GetOwner()->HasAuthority() || !DeathEffectClass)
+	{
+		return;
+	}
+
+	RemoveActiveGameplayEffectBySourceEffect(DeathEffectClass, this);
 }

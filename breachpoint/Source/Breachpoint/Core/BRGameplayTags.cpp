@@ -8,6 +8,9 @@
 
 namespace BRGameplayTags
 {
+	// --- Ability.* (open family, R23) ---------------------------------------
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Sprint, "Ability.Sprint", "BRGA_Sprint's asset tag; what CancelAbilitiesWithTag must list to end a sprint.");
+
 	// --- InputTag.* ---------------------------------------------------------
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Move, "InputTag.Move", "Native action: planar movement, handled by the CMC.");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Look, "InputTag.Look", "Native action: look/aim, handled by the controller.");

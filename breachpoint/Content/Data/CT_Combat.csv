@@ -1,0 +1,12 @@
+---,0
+Damage.Kinetic.Multiplier,1.0
+Damage.Explosive.Multiplier,1.0
+Damage.Melee.Multiplier,1.0
+Damage.Headshot.Multiplier,1.0
+Damage.Rear.Multiplier,1.0
+Movement.Sprint.SpeedMultiplier,1.2
+Shields.Regen.RatePerSecond,60.0
+Shields.Regen.DelaySeconds,2.5
+Shields.Regen.PeriodSeconds,0.25
+Fighter.MaxHealth,100.0
+Fighter.MaxShields,100.0

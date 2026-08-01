@@ -147,6 +147,16 @@ private:
 	void CheckForDeath(const FGameplayEffectModCallbackData& Data);
 
 	/**
+	 * Tell the ASC whether shields are down, so it can apply or remove GE_ShieldsBroken — the one
+	 * thing that grants `State.Shields.Broken` (law 5: state tags come from GEs, never from here).
+	 *
+	 * Called from every path that changes Shields: the damage split AND regen. The ASC's setter is
+	 * idempotent, so this is a state ASSERTION, not a transition event — which is what makes it
+	 * impossible to miss an edge.
+	 */
+	void UpdateShieldsBrokenState();
+
+	/**
 	 * Server-only latch guarding against a double Event.Death — two damage effects landing in the
 	 * same frame, or a corpse taking a second hit before GE_Death has been applied.
 	 *
