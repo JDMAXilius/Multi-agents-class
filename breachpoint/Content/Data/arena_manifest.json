@@ -1,0 +1,224 @@
+{
+  "arena_id": "breachpoint_vs01",
+  "bounds": {
+    "x": 40,
+    "y": 40,
+    "z": 12
+  },
+  "spawn_points": [
+    {
+      "id": "SP1",
+      "location": {
+        "x": 4,
+        "y": 4,
+        "z": 0
+      },
+      "facing": 45,
+      "scoring_hints": {
+        "min_dist_to_combat_m": 15,
+        "last_used_cooldown_s": 8
+      }
+    },
+    {
+      "id": "SP2",
+      "location": {
+        "x": 36,
+        "y": 4,
+        "z": 0
+      },
+      "facing": 135,
+      "scoring_hints": {
+        "min_dist_to_combat_m": 15,
+        "last_used_cooldown_s": 8
+      }
+    },
+    {
+      "id": "SP3",
+      "location": {
+        "x": 4,
+        "y": 36,
+        "z": 0
+      },
+      "facing": 315,
+      "scoring_hints": {
+        "min_dist_to_combat_m": 15,
+        "last_used_cooldown_s": 8
+      }
+    },
+    {
+      "id": "SP4",
+      "location": {
+        "x": 36,
+        "y": 36,
+        "z": 0
+      },
+      "facing": 225,
+      "scoring_hints": {
+        "min_dist_to_combat_m": 15,
+        "last_used_cooldown_s": 8
+      }
+    },
+    {
+      "id": "SP5",
+      "location": {
+        "x": 20,
+        "y": 13,
+        "z": 4
+      },
+      "facing": 0,
+      "scoring_hints": {
+        "min_dist_to_combat_m": 20,
+        "last_used_cooldown_s": 10
+      }
+    },
+    {
+      "id": "SP6",
+      "location": {
+        "x": 20,
+        "y": 27,
+        "z": 4
+      },
+      "facing": 180,
+      "scoring_hints": {
+        "min_dist_to_combat_m": 20,
+        "last_used_cooldown_s": 10
+      }
+    },
+    {
+      "id": "SP7",
+      "location": {
+        "x": 12,
+        "y": 20,
+        "z": 8
+      },
+      "facing": 90,
+      "scoring_hints": {
+        "min_dist_to_combat_m": 22,
+        "last_used_cooldown_s": 12
+      }
+    },
+    {
+      "id": "SP8",
+      "location": {
+        "x": 28,
+        "y": 20,
+        "z": 8
+      },
+      "facing": 270,
+      "scoring_hints": {
+        "min_dist_to_combat_m": 22,
+        "last_used_cooldown_s": 12
+      }
+    }
+  ],
+  "landmarks": [
+    {
+      "name": "The Core",
+      "purpose": "Central drum housing the Rocket Launcher pad (90 s respawn timer) at ground level. Solid, footprint x[16,24] y[16,24], z[0,9] — every route loops around it, and it is the map's central contest and the primary sightline-breaker."
+    },
+    {
+      "name": "Mezzanine Catwalks",
+      "purpose": "Partial ring at z=4 outside the Core's south face (segment x[14,26] y[12,15]) and north face (segment x[14,26] y[25,28]), plus two stair connectors (x[13,15] y[19,21] and x[25,27] y[19,21]) linking ground floor to the Gantry. Open on the east/west sides by design — SP5 and SP6 sit on these two segments."
+    },
+    {
+      "name": "The Gantry",
+      "purpose": "Walkway at z=8 around the Core opening: west segment x[10,14] y[18,22] and east segment x[26,30] y[18,22]. Reached by an 8 m rise from ground level — well inside the Grappleshot's 20 m range — making it the map's primary vertical route. SP7 and SP8 sit on these two segments."
+    },
+    {
+      "name": "South Barricade",
+      "purpose": "Full-height cover block at x[18,22] y[3,5], centered on the SP1-SP2 edge corridor (y=4) to split its sightline."
+    },
+    {
+      "name": "North Barricade",
+      "purpose": "Full-height cover block at x[18,22] y[35,37], centered on the SP3-SP4 edge corridor (y=36) to split its sightline."
+    },
+    {
+      "name": "West Stack",
+      "purpose": "Full-height cover block at x[3,5] y[18,22], centered on the SP1-SP3 edge corridor (x=4) to split its sightline."
+    },
+    {
+      "name": "East Stack",
+      "purpose": "Full-height cover block at x[35,37] y[18,22], centered on the SP2-SP4 edge corridor (x=36) to split its sightline."
+    }
+  ],
+  "cover": [
+    {
+      "location": {
+        "x": 20,
+        "y": 4,
+        "z": 0
+      },
+      "height_class": "full"
+    },
+    {
+      "location": {
+        "x": 20,
+        "y": 36,
+        "z": 0
+      },
+      "height_class": "full"
+    },
+    {
+      "location": {
+        "x": 4,
+        "y": 20,
+        "z": 0
+      },
+      "height_class": "full"
+    },
+    {
+      "location": {
+        "x": 36,
+        "y": 20,
+        "z": 0
+      },
+      "height_class": "full"
+    },
+    {
+      "location": {
+        "x": 7,
+        "y": 7,
+        "z": 0
+      },
+      "height_class": "chest"
+    },
+    {
+      "location": {
+        "x": 33,
+        "y": 7,
+        "z": 0
+      },
+      "height_class": "chest"
+    },
+    {
+      "location": {
+        "x": 7,
+        "y": 33,
+        "z": 0
+      },
+      "height_class": "chest"
+    },
+    {
+      "location": {
+        "x": 33,
+        "y": 33,
+        "z": 0
+      },
+      "height_class": "chest"
+    }
+  ],
+  "sightlines": {
+    "max_length_m": 35,
+    "notes": "Both floor diagonals (SP1-SP4 and SP2-SP3, 45.25 m corner-to-corner) cross the Core footprint x[16,24] y[16,24] exactly on the diagonal (SP1-SP4 line is y=x; SP2-SP3 line is y=-x+40, both pass through the square for x in [16,24]), so the longest unobstructed run along either diagonal is corner-to-Core-edge: sqrt(12^2+12^2)=16.97 m. The four edge corridors (SP1-SP2 and SP3-SP4 at y=4/y=36; SP1-SP3 and SP2-SP4 at x=4/x=36, each 32 m corner-to-corner) are each bisected by their named barricade/stack at the edge midpoint, giving unobstructed segments of 16 m corner-to-cover. The Mezzanine pair SP5-SP6 (x=20, y from 13 to 27, 14 m apart) and the Gantry pair SP7-SP8 (y=20, x from 12 to 28, 16 m apart) both run at a constant coordinate that passes through the Core footprint (x=20 is within [16,24]; y=20 is within [16,24]) while the Core is solid through z=4 and z=8, so neither is an open line. All measured/provable unobstructed segments are <=16.97 m, under the 35 m cap. This does not constitute a full sweep of every possible line in the blockout — see doubts[]."
+  },
+  "hazards": [
+    "The Gantry has no railing on its Core-facing inner edge — a fall from z=8 to z=0 is possible without using the stairs or a grapple to descend."
+  ],
+  "doubts": [
+    "Mutual visibility for the 20 cross-level spawn pairs (each of SP1-SP4 paired with each of SP5-SP8, and SP5/SP6 paired with SP7/SP8) is not provable from coordinates: none of these lines are forced through the Core footprint by construction (checked algebraically for the closest case, SP1-SP7: parametrizing (4,4,0)->(12,20,8), x never exceeds 12, so it can't reach the Core's x>=16 face). These pairs rely on the Mezzanine's partial-ring geometry, stair structure, and the Core's own bulk to break LoS obliquely — needs confirmation at the editor walkthrough (rung 3).",
+    "sightlines.notes proves specific spawn-to-spawn and spawn-to-cover segments are <=16.97 m; it does not prove that every possible unobstructed line anywhere in the blockout (e.g. an oblique line skirting the Core and a barricade at once) stays under 35 m. Needs a full walkthrough sweep, not just the cited segments.",
+    "The 8 m ground-to-Gantry rise via the Core's exterior wall or the Mezzanine stairs is well inside the Grappleshot's 20 m range on paper, but whether the Core's exterior surface actually registers as a valid grapple target (vs. reading as too smooth or too thin) is an editor/gameplay question, not a geometry one.",
+    "The four corner crates (height_class 'chest') are assumed tall enough to break standing eye-height LoS at their measured 4.24 m distance from SP1-SP4 — needs a walkthrough check against actual character eye height, since 'chest' height alone doesn't guarantee it blocks a taller camera."
+  ],
+  "landing_note": "Build this blockout to the geometry in this file exactly — bounds, all 8 spawn locations/facings, the 7 landmark footprints and z-ranges, and the 12 cover placements — with zero deviation; any adjustment here is a silent drift from the validated manifest and must instead go back through review as a new revision. This file's claims sit on rung 1 (static/algebraic spec-check) only: the cited sightline segments (<=16.97 m, under the 35 m cap) are proven from coordinates, not from a running level. Compiling the level or a PIE pass does NOT close out the doubts[] list. Before this arena is signed off, the builder must do an editor walkthrough (rung 3) to confirm, one by one: (1) mutual visibility across the 20 cross-level spawn pairs listed in doubts[0], (2) no oblique unbroken line anywhere in the blockout exceeds 35 m (doubts[1]), (3) the Core's exterior surface actually registers as a valid Grappleshot target for the 8 m Gantry ascent (doubts[2]), and (4) the four chest-height corner crates actually break standing eye-height LoS at their 4.24 m range (doubts[3]). None of the four doubts may be marked resolved on the strength of geometry or compilation alone."
+}
