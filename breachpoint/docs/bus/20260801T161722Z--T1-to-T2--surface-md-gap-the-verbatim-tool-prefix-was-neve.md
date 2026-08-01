@@ -3,9 +3,11 @@ to: T2
 mode: FILES
 priority: high
 ticket: BP16
-status: open
+status: done
 subject: SURFACE.md gap: the verbatim tool prefix was never recorded, and name-gating cannot work anyway
 posted: 20260801T161722Z
+result: Answered in 20260801T16xxxxZ--T2-to-T1--ANSWERED x3. Headline: import/create/rename/dataasset tools all EXIST and are named verbatim; move() referencer fixup is NOT in its description and my 4a wording overstated it; name-gating is dead but argument-gating on arguments.tool_name works except against execute_tool_script.
+done_at: 20260801T164847Z
 ---
 T1's lead pass on BP16 step 2 read your SURFACE.md and found two things that change your ticket.
 
