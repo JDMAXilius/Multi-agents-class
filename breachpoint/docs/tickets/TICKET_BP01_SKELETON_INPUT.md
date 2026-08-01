@@ -85,7 +85,11 @@ Input → InputTag → ASC, no per-ability binding code, ever.
    > `WaitInputRelease`, `WhileHeld` (sprint, held fire) and every toggle ability. The
    > generation packet must assert this, and `UBRInputConfig::IsDataValid` is its acceptance
    > test.
-4. `Character/` shell: `BRCharacter` (template pawn rebased; `IAbilitySystemInterface`
+4. `Character/` shell: `BRCharacter` (~~template pawn rebased~~ **authored FRESH per §3.4 —
+   corrected 31 Jul 2026: the founder decision keeps the template but forbids reusing it, so
+   `BRCharacter` is a new `ACharacter` subclass with the §3.4 dual-mesh setup, NOT
+   `AbreachpointCharacter` rebased. The template pawn stays on disk, untouched and unused.**;
+   `IAbilitySystemInterface`
    forwarding stub — PlayerState ASC arrives in BP02; wires `BRInputComponent`; native actions
    move/look/jump work) + `BRCharacterMovementComponent` (empty subclass, registered).
    `Match/` shell: `BRPlayerController` with `AbilityInputTagPressed/Released` forwarding
@@ -553,6 +557,48 @@ entire packet (R21 — the lead's own doing; see the entry above). The builder c
 found it held, and stopped rather than colliding — the correct behaviour, and worth noting that
 it also correctly rebutted the lead's mistaken claim that it had been building. Step 2 therefore
 has **no compile evidence of any kind** and no rung is claimed.
+
+---
+
+**31 Jul 2026 — FIRST ACCEPTED RUNG RESULT: `BreachpointServer` PASS, R19-proven. Box 1 still
+not checked.**
+
+The timestamp-gated verifier launched its Server build at **22:39:10**, was parked on UE's global
+`Build.bat` mutex behind the orphaned rebuild for 33 minutes, and ran the moment it released.
+That also identifies the 23:12 binary — it was **owned** evidence, not another orphan.
+
+| Item | Value |
+|---|---|
+| Start (printed before the command) | 22:39:10 |
+| Binary mtime | **23:12:13** → NEWER ✓ |
+| Exit code | 0 |
+| Result | `Succeeded`, 37.87 s |
+| Errors / warnings | 0 / 0 |
+
+Actions, verbatim: `[1/5] Compile BRInputComponent.cpp` · `[2/5] Compile BRInputConfig.cpp` ·
+`[3/5] Compile Module.Breachpoint.cpp` · `[4/5] Link BreachpointServer.exe` · `[5/5] WriteMetadata`.
+
+**The part that matters more than the compile:** this is the first owned evidence that **step 2's
+`Core/` and step 3a's `Input/` code compile** — `BRGameplayTags`, `BRCore`, `BRInputConfig` and
+`BRInputComponent`, in the **Server** configuration, zero warnings. Three consecutive
+written-not-compiled packets are now compiled. (`BRGameplayTags.cpp`/`BRCore.cpp` rode the unity
+blob `Module.Breachpoint.cpp`; the two Input files were adaptive-unity-excluded and compiled
+individually, which is why they appear by name.)
+
+*Target A (`Breachpoint` Game): **INCONCLUSIVE**, honestly reported* — the build found the target
+up to date and took 0 actions, so it proves nothing about compilation. That is R20 behaving
+exactly as written, and it is the right verdict rather than a convenient one.
+
+**Box 1 stays unchecked.** Its wording is "all three targets compile clean **from scratch**", and
+no single owned run has yet done that for all three: the Server's owned run was incremental (5
+actions), its 999-action from-scratch run was the unowned orphan, and the Editor's 3951-action
+rebuild was also unowned. What is owed remains one clean owned pass over all three — which is
+step 5's job, and it should run AFTER step 4 lands so it covers the whole ticket at once rather
+than being redone.
+
+*Process note worth keeping:* the verifier that produced this was the same role, same model tier,
+same repo as the one that produced the night's false PASS. The only difference was the evidence
+contract it was handed. That is the argument for R19 in one sentence.
 
 ---
 
