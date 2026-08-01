@@ -249,6 +249,22 @@ void UBRGA_WeaponFire::OnTargetDataReady(const FGameplayAbilityTargetDataHandle&
 		FGameplayCueParameters CueParams;
 		CueParams.Location = Claim ? Claim->TraceStart : FVector::ZeroVector;
 		CueParams.Instigator = GetAvatarActorFromActorInfo();
+
+		// THE HIT RESULT TRAVELS WITH THE CUE, and this is not optional decoration. A tracer is a
+		// beam and a beam needs BOTH ends: `Location` is only the muzzle. Without the hit result
+		// the handler has no impact point, and the sole alternative — extrapolating from the
+		// shooter's CURRENT aim at draw time — is a convincing lie about where the bullet went,
+		// because the shot was fired at the aim of an earlier frame.
+		// Found by the cue-library packet, which correctly reports the tracer slot SILENT rather
+		// than drawing a plausible one (BP03 Log).
+		if (Claim)
+		{
+			FGameplayEffectContextHandle CueContext = ASC->MakeEffectContext();
+			CueContext.AddInstigator(GetAvatarActorFromActorInfo(), GetAvatarActorFromActorInfo());
+			CueContext.AddHitResult(*Claim);
+			CueParams.EffectContext = CueContext;
+		}
+
 		ASC->ExecuteGameplayCue(Row->FireCueTag, CueParams);
 	}
 
