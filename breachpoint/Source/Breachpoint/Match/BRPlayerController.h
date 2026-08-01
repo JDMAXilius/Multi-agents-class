@@ -9,6 +9,7 @@
 
 #include "BRPlayerController.generated.h"
 
+class UBRAbilitySystemComponent;
 class UBRInputConfig;
 class UInputMappingContext;
 
@@ -19,8 +20,13 @@ class UInputMappingContext;
  * destination in §3.2's five-arrow flow:
  *
  *   IMC_Default -> UInputAction -> UBRInputComponent -> InputTag.Fire
- *     -> ABRPlayerController::AbilityInputTagPressed(Tag)      <- THIS FILE (stub)
- *     -> UBRAbilitySystemComponent::AbilityInputTagPressed(Tag) <- BP02, does not exist yet
+ *     -> ABRPlayerController::AbilityInputTagPressed(Tag)      <- THIS FILE (relay)
+ *     -> UBRAbilitySystemComponent::AbilityInputTagPressed(Tag) <- where the buffer lives
+ *
+ * BP02 step 1 closed the relay. The two handlers below are now four lines each and will never be
+ * more: everything interesting — idempotency, activation, prediction, the server's say — is the
+ * ASC's. A controller that starts deciding things is a controller that has to be kept in sync with
+ * the ASC, and §3.2 exists so that never happens.
  *
  * It also owns the two authored data references the flow starts from — the mapping context and
  * the input config — because the controller outlives the pawn: repossession must not lose the
@@ -56,14 +62,20 @@ public:
 	 * shapes and fails overload resolution at the BindAction call — a template error in
 	 * BRInputComponent.h, far from whoever "cleaned up" this line. Do not change it.
 	 *
-	 * BP02: replace the log with
-	 *   if (UBRAbilitySystemComponent* ASC = GetBRAbilitySystemComponent()) { ASC->AbilityInputTagPressed(InputTag); }
-	 * and nothing else — the buffer, the prediction window and the server's say all live there.
+	 * The idempotency this comment demands is provided BY THE ASC (its AddUnique-shaped
+	 * HeldInputTags), not here. That is the whole point of the relay being a relay: there is exactly
+	 * one place that knows what is held.
 	 */
 	void AbilityInputTagPressed(FGameplayTag InputTag);
 
 	/** An ability InputTag was released. Same signature law as the pressed handler above. */
 	void AbilityInputTagReleased(FGameplayTag InputTag);
+
+	/**
+	 * This player's ASC, via its ABRPlayerState. Null before the PlayerState exists or replicates —
+	 * a real window on a joining client, so callers null-check rather than assert.
+	 */
+	UBRAbilitySystemComponent* GetBRAbilitySystemComponent() const;
 
 	// -------------------------------------------------------------------------
 	// The authored data the input flow starts from. SOFT refs only (law 3 /
@@ -106,18 +118,18 @@ protected:
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void OnUnPossess() override;
 
+	/**
+	 * Runs on the server AND on the owning client (via OnRep_Pawn), which is why the held-input
+	 * flush lives here and not in OnUnPossess. See the .cpp.
+	 */
+	virtual void SetPawn(APawn* InPawn) override;
+
 private:
 	/** Add DefaultMappingContext to this local player's Enhanced Input subsystem. Idempotent. */
 	void AddDefaultMappingContext();
 
-	/**
-	 * Tags currently held, per this controller's own view of the input stream.
-	 *
-	 * TRANSIENT DIAGNOSTIC, NOT GAMEPLAY STATE, and NOT the input buffer. It exists so the log
-	 * shows one line per press and one per release instead of one per frame, given that the
-	 * pressed handler is bound to Triggered. BP02 deletes it: the real, authoritative
-	 * held-input set belongs to the ASC (Lyra's AddUnique-into-InputHeld), and two copies of
-	 * that state is exactly the drift this project keeps paying for.
-	 */
-	TSet<FGameplayTag> LoggedHeldInputTags;
+	// DELETED BY BP02 STEP 1: LoggedHeldInputTags, BP01's transient diagnostic de-duplicator.
+	// It was never gameplay state and it is not promoted to any — the authoritative held-input set
+	// is UBRAbilitySystemComponent::HeldInputTags, and there is now exactly one of it. Recorded
+	// here rather than silently removed so a reader of BP01's Log finds the disposition.
 };

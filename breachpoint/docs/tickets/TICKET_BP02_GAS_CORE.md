@@ -166,3 +166,87 @@ needs specs there; the folder is currently inside **BP00's** `owner_path` and fo
 it. See BP03's Log for the full analysis and the three options. If BP00 has closed by the time
 BP02 claims, the folder is free and this is a simple grant; if not, it is a genuine collision and
 the lead sequences it.
+
+---
+
+**1 Aug 2026 — STEPS 1 AND 2 BUILT (sim-builder).** ASC + attribute set + PlayerState authored;
+all five of BP01's handoff items closed. No rung is pronounced here — build results below are
+observations.
+
+Files: `AbilitySystem/BRAbilitySystemComponent.h/.cpp`, `AbilitySystem/BRAttributeSet.h/.cpp`,
+`Match/BRPlayerState.h/.cpp` (new); `Character/BRCharacter.h/.cpp`,
+`Match/BRPlayerController.h/.cpp` (edited). `Core/BRGameplayTags.h/.cpp` NOT touched — steps 1–2
+introduce no ability and no cue, so R23 grants nothing to spend yet. `CT_Combat.csv` /
+`DT_MatchRules.csv` NOT touched — no gameplay number appears in step 1 or 2 code.
+
+*Seam closures, exactly as BP01's builder specified.* (1) `ABRCharacter::GetAbilitySystemComponent`
+forwards to `ABRPlayerState`, caching nothing. (2) `InitAbilityActorInfo` is called from **three**
+sites, not two: `ABRPlayerState::PostInitializeComponents` sets the OWNER with a null avatar (so
+GameMode can grant a loadout before a body exists), then `ABRCharacter::PossessedBy` (server) and
+`ABRCharacter::OnRep_PlayerState` (client) each re-point the AVATAR. (3) Controller stubs replaced
+by a four-line relay; signature untouched (`FGameplayTag` by value). (4) Buffer is
+`TArray<FGameplayTag>` + `AddUnique`, activation on the press edge only; TArray not TSet because
+TSet iteration order depends on hashing and a pinned spec must not. (5) `LoggedHeldInputTags`
+deleted — **note: it lived in `BRPlayerController`, not `BRCharacter` as the packet said**; both
+were in owner_path so the disposition is unambiguous.
+
+*Decided edge cases, recorded because "probably never" is an exploit schedule:* negative
+IncomingDamage is REFUSED at Error level, never reinterpreted as healing · zero damage applies no
+regen gate (a harmless source must not be able to suppress shields) · the meta attribute is
+consumed BEFORE any branch that can return · `MaxHealth == 0` means uninitialised, not dead, and
+`CheckForDeath` refuses to fire there · double death is guarded by a server-only latch that re-arms
+when Health rises above zero, NOT by a `State.Dead` tag query (the tag is applied by whoever reacts
+to `Event.Death`, so a tag query loses the race by construction) · an ability cancelled while its
+key is still held does not auto-restart on the next `Triggered` (Halo sprint behaviour, chosen).
+
+*Held-input flush moved from `OnUnPossess` to `SetPawn`* — `OnUnPossess` is authority-only, and the
+buffer being flushed is the LOCAL client's. A remote client only ever sees `OnRep_Pawn -> SetPawn`.
+
+*`BatchRPCTryActivateAbility` ships WITHOUT its `bEndAbilityImmediately` half, named not faked.*
+UE 5.8 has no public external end: `UGameplayAbility::EndAbility` and `K2_EndAbility` are both
+protected, and `CancelAbilityHandle` is a cancel, which is a different thing. **Step 3 closes it**
+by adding `void ExternalEndAbility()` to `UBRGameplayAbility`.
+
+*`FGameplayAbilitySpec::ActivationInfo` is `UE_DEPRECATED(5.5)`* and only ever applied to
+non-instanced abilities. The prediction key for InputPressed/InputReleased is read from the live
+instance instead (`GetCurrentActivationInfoRef()`), via a private `InvokeInputEventForSpec`.
+
+**BUILD OBSERVATION (not a rung verdict).** `Tools\run-ubt.ps1 -Targets BreachpointEditor`,
+started 2026-08-01T00:27:36.620, exit **6**, `Result: Failed (OtherCompilationError)` — and the
+one error is **not in this packet's code**. Verbatim:
+
+```
+Source\Breachpoint\UI\BRUITypes.h(139): Error: Struct 'FBRKillfeedEntry' shares engine name
+'BRKillfeedEntry' with struct 'FBRKillFeedEntry' in Source\Breachpoint\Match\BRGameState.h(78)
+```
+
+UHT aborts before this packet's headers are reached, so the repo build proves nothing either way
+about BP02. To get an honest observation anyway, the whole tree was copied to a scratch directory
+OUTSIDE the repo (no repo file touched, no owner_path crossed), the two foreign blockers were
+patched THERE ONLY, and `BreachpointEditor` was built: **`Result: Succeeded`, 191.48 s,
+`[961/989] Link [x64] UnrealEditor-Breachpoint.dll`.** UHT clean, module compiled and linked. The
+two patches were (a) renaming BP10's `FBRKillfeedEntry`, (b) adding `"SlateCore"` to
+`Breachpoint.Build.cs`. Both are filed below; neither was applied to the repo.
+
+**contract_gaps (named, not fixed — all outside this packet's owner_path):**
+- **BP04 × BP10 UHT name collision.** `FBRKillfeedEntry` (`UI/BRUITypes.h`) vs `FBRKillFeedEntry`
+  (`Match/BRGameState.h`). UHT compares engine names case-insensitively. **Nothing in the module
+  compiles until one is renamed.** Owner: whichever of BP04/BP10 the lead picks; two structs
+  describing the same concept in two packets is itself the finding.
+- **`Breachpoint.Build.cs` is missing `"SlateCore"`.** BP10's UI code instantiates `SObjectWidget`,
+  and the module fails to LINK with 8 unresolved Slate symbols (`SWidget::SWidgetConstruct`,
+  `EVisibility::Visible`, `SNullWidget::NullWidget`, `LLMTagDeclaration_UI_Slate`, …). `Build.cs`
+  is in no packet's owner_path.
+- **`State.Shields.Broken` has no applier.** The tag is declared in `BRGameplayTags` and §3.1, and
+  step 2 does not apply it — purity law 5 forbids applying a State tag by hand, so it needs a GE.
+  Step 4 must either add one or the tag is dead. Not decided here.
+- **`GE_InitStats` modifier ORDER is load-bearing.** `PreAttributeChange` clamps Health to
+  `GetMaxHealth()` as it currently is, so `GE_InitStats` must set MaxHealth/MaxShields BEFORE
+  Health/Shields or a fighter spawns at zero health from a correct table. Called out in the clamp
+  itself; step 4 owns it.
+- **`UBRAbilitySystemComponent::RecentDamageEffectClass` is null until step 4.** Damage currently
+  lands and logs a Warning that the regen gate was NOT applied. Loud on purpose.
+- **`AbilitySystem/` has no log channel (R24).** Uses `LogBRCombat` and `LogBRInput`; `BRCore.h`
+  is not in this packet's owner_path, so no `LogBRAbility` was added.
+- **Another packet wrote `Source/Breachpoint/Data/BRDataRows.h`**, which is inside BP02's granted
+  `owner_path`. Not touched here; flagged because it means two claims overlap on `Data/`.

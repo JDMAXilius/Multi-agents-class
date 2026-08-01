@@ -8,12 +8,14 @@
 #include "EnhancedInputComponent.h"
 #include "InputActionValue.h"
 
+#include "AbilitySystem/BRAbilitySystemComponent.h"
 #include "Character/BRCharacterMovementComponent.h"
 #include "Core/BRCore.h"
 #include "Core/BRGameplayTags.h"
 #include "Input/BRInputComponent.h"
 #include "Input/BRInputConfig.h"
 #include "Match/BRPlayerController.h"
+#include "Match/BRPlayerState.h"
 
 ABRCharacter::ABRCharacter(const FObjectInitializer& ObjectInitializer)
 	// THE registration line for deliverable 2: ACharacter creates its movement component as the
@@ -99,12 +101,70 @@ ABRCharacter::ABRCharacter(const FObjectInitializer& ObjectInitializer)
 
 UAbilitySystemComponent* ABRCharacter::GetAbilitySystemComponent() const
 {
-	// THE SEAM, LEFT OPEN ON PURPOSE. BP01 owns no ASC, no attribute set and no PlayerState; the
-	// ASC lives on ABRPlayerState (§3.6) and arrives with BP02. Returning null is honest —
-	// inventing a pawn-owned ASC here would be a second, unreplicated ASC that BP02 would then
-	// have to delete, and every ability granted to it would be lost on respawn.
-	// The exact four steps BP02 must take are listed on this function's declaration.
-	return nullptr;
+	// Forward, own nothing. The pawn holds no ASC pointer of its own — not even a cached one —
+	// because a cache would go stale the moment the PlayerState is swapped (seamless travel,
+	// rejoin) and would then be a second, wrong answer to this question.
+	const ABRPlayerState* BRPlayerState = GetPlayerState<ABRPlayerState>();
+	return BRPlayerState ? BRPlayerState->GetAbilitySystemComponent() : nullptr;
+}
+
+// ---------------------------------------------------------------------------
+// The GAS init dance (§3.4) — BOTH halves, and the reason there are two
+// ---------------------------------------------------------------------------
+
+void ABRCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	// SERVER PATH. On the authority, PossessedBy runs after the controller (and therefore the
+	// PlayerState) is attached, so the ASC is reachable right here.
+	InitializeAbilitySystem(TEXT("PossessedBy (server)"));
+}
+
+void ABRCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+
+	// CLIENT PATH, AND IT IS NOT OPTIONAL. PossessedBy does not run on a remote client at all — the
+	// client learns about its pawn and its PlayerState as two independent replication events, in
+	// either order. Without this override the client's ASC has an owner and NO AVATAR: abilities
+	// activate server-side and nothing predicts, no cue plays locally, no montage fires, and the
+	// player feels a game running entirely on the round trip.
+	//
+	// THE REASON THIS BUG IS WORTH SIX LINES OF COMMENT: it is invisible in single-process PIE,
+	// where the "client" shares a process with the server and finds a populated ASC by accident of
+	// timing. It appears only against a real client — honesty-ladder rung 3, the rung nobody runs
+	// by accident. BP01's builder flagged it in this ticket's Log for exactly that reason.
+	InitializeAbilitySystem(TEXT("OnRep_PlayerState (client)"));
+}
+
+void ABRCharacter::InitializeAbilitySystem(const TCHAR* CallSite)
+{
+	ABRPlayerState* BRPlayerState = GetPlayerState<ABRPlayerState>();
+	if (!BRPlayerState)
+	{
+		// Normal, not an error: on a client the pawn frequently arrives before its PlayerState. The
+		// OTHER call site will run when the missing half lands — that redundancy IS the design.
+		UE_LOG(LogBRCombat, Verbose, TEXT("BRCharacter '%s': %s — no ABRPlayerState yet; the other init path will cover it."),
+			*GetName(), CallSite);
+		return;
+	}
+
+	UBRAbilitySystemComponent* ASC = BRPlayerState->GetBRAbilitySystemComponent();
+	if (!ASC)
+	{
+		UE_LOG(LogBRCombat, Error, TEXT("BRCharacter '%s': %s — ABRPlayerState '%s' has no ASC. No ability on this pawn will ever activate."),
+			*GetName(), CallSite, *BRPlayerState->GetName());
+		return;
+	}
+
+	// Owner = the PlayerState (it outlives the pawn), Avatar = this pawn (it is what the world
+	// sees). Re-pointing the avatar is the whole of respawn as far as GAS is concerned: attributes,
+	// granted abilities and cooldowns were never on the pawn to lose.
+	ASC->InitAbilityActorInfo(BRPlayerState, this);
+
+	UE_LOG(LogBRCombat, Log, TEXT("BRCharacter '%s': %s — InitAbilityActorInfo(owner='%s', avatar='%s')."),
+		*GetName(), CallSite, *BRPlayerState->GetName(), *GetName());
 }
 
 UBRCharacterMovementComponent* ABRCharacter::GetBRCharacterMovement() const

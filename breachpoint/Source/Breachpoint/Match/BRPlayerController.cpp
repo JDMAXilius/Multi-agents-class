@@ -7,8 +7,10 @@
 #include "GameFramework/Pawn.h"
 #include "InputMappingContext.h"
 
+#include "AbilitySystem/BRAbilitySystemComponent.h"
 #include "Core/BRCore.h"
 #include "Input/BRInputConfig.h"
+#include "Match/BRPlayerState.h"
 
 ABRPlayerController::ABRPlayerController()
 {
@@ -19,32 +21,41 @@ ABRPlayerController::ABRPlayerController()
 }
 
 // ---------------------------------------------------------------------------
-// The relay stubs. Signature fixed by BindAbilityActions — see the header.
+// The relay. Signature fixed by BindAbilityActions — see the header.
+//
+// No de-duplication here, no state here, no logging of the held stream here. All three moved to
+// the ASC when BP02 step 1 landed, and none of them may come back: the controller's whole job in
+// §3.2 is to know which ASC the tag belongs to.
 // ---------------------------------------------------------------------------
 
 void ABRPlayerController::AbilityInputTagPressed(FGameplayTag InputTag)
 {
-	// Bound to ETriggerEvent::Triggered, so this fires every frame the key is held. The edge is
-	// logged at Log; the repeats at Verbose. See LogBRInput's verbosity policy in BRCore.h.
-	if (LoggedHeldInputTags.Contains(InputTag))
+	if (UBRAbilitySystemComponent* ASC = GetBRAbilitySystemComponent())
 	{
-		UE_LOG(LogBRInput, Verbose, TEXT("BRPlayerController '%s': AbilityInputTag HELD %s"),
-			*GetName(), *InputTag.ToString());
-		return;
+		ASC->AbilityInputTagPressed(InputTag);
 	}
-
-	LoggedHeldInputTags.Add(InputTag);
-
-	UE_LOG(LogBRInput, Log, TEXT("BRPlayerController '%s': AbilityInputTagPressed %s (stub — BP02 relays this to the ASC)"),
-		*GetName(), *InputTag.ToString());
+	else
+	{
+		// The PlayerState has not arrived yet. Reachable on a joining client for a frame or two;
+		// the input is genuinely lost, and saying so is better than buffering it here and
+		// replaying a stale press into a freshly spawned fighter.
+		UE_LOG(LogBRInput, Verbose, TEXT("BRPlayerController '%s': %s pressed with no ASC yet (PlayerState not replicated); input dropped."),
+			*GetName(), *InputTag.ToString());
+	}
 }
 
 void ABRPlayerController::AbilityInputTagReleased(FGameplayTag InputTag)
 {
-	LoggedHeldInputTags.Remove(InputTag);
+	if (UBRAbilitySystemComponent* ASC = GetBRAbilitySystemComponent())
+	{
+		ASC->AbilityInputTagReleased(InputTag);
+	}
+}
 
-	UE_LOG(LogBRInput, Log, TEXT("BRPlayerController '%s': AbilityInputTagReleased %s (stub — BP02 relays this to the ASC)"),
-		*GetName(), *InputTag.ToString());
+UBRAbilitySystemComponent* ABRPlayerController::GetBRAbilitySystemComponent() const
+{
+	const ABRPlayerState* BRPlayerState = GetPlayerState<ABRPlayerState>();
+	return BRPlayerState ? BRPlayerState->GetBRAbilitySystemComponent() : nullptr;
 }
 
 // ---------------------------------------------------------------------------
@@ -145,9 +156,35 @@ void ABRPlayerController::OnUnPossess()
 	UE_LOG(LogBRInput, Log, TEXT("BRPlayerController '%s': unpossessed pawn '%s' (authority side)."),
 		*GetName(), *GetNameSafe(GetPawn()));
 
-	// The pawn's input component (and every binding on it) dies with the pawn; drop the
-	// diagnostic held set with it so a respawn does not inherit a stale "held" view.
-	LoggedHeldInputTags.Reset();
-
+	// The held-input flush is NOT here — see SetPawn below for why OnUnPossess is the wrong hook.
 	Super::OnUnPossess();
+}
+
+void ABRPlayerController::SetPawn(APawn* InPawn)
+{
+	const APawn* PreviousPawn = GetPawn();
+
+	Super::SetPawn(InPawn);
+
+	if (PreviousPawn == InPawn)
+	{
+		return;
+	}
+
+	// FLUSH THE HELD-INPUT BUFFER ON EVERY PAWN CHANGE.
+	//
+	// The pawn's input component, and every binding on it, dies with the pawn — so no release event
+	// will ever arrive for a key that was down at the moment of death. The ASC outlives the pawn, so
+	// without this a respawned fighter starts life with a phantom held tag, and once step 3's
+	// WhileHeld sprint exists it sprints on a key nobody is pressing.
+	//
+	// SetPawn AND NOT OnUnPossess, deliberately: OnUnPossess runs on the AUTHORITY ONLY, while the
+	// buffer being flushed is the LOCAL client's. A remote client learns its pawn is gone through
+	// OnRep_Pawn -> SetPawn and never sees OnUnPossess at all — so the server-only hook would clean
+	// the one buffer that was already fine and leave the one that matters stale. Another
+	// "correct in PIE, wrong against a real client" shape, which is why it is written down.
+	if (UBRAbilitySystemComponent* ASC = GetBRAbilitySystemComponent())
+	{
+		ASC->ClearAbilityInput();
+	}
 }

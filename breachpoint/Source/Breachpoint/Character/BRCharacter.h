@@ -35,8 +35,10 @@ struct FInputActionValue;
  * function in this class is called by a delegate, an override, or an input binding.
  *
  * STILL OWED BY §3.4, NOT BY THIS PACKET (named so the next builder does not re-derive them):
- *   - BP02: the GAS init dance — InitAbilityActorInfo(PS, this) in PossessedBy (server) AND
- *     OnRep_PlayerState (client), and a real GetAbilitySystemComponent(). See that function.
+ *   - BP02 step 1: DONE. The GAS init dance is below — InitAbilityActorInfo(PS, this) from
+ *     PossessedBy (server) AND OnRep_PlayerState (client), plus a real
+ *     GetAbilitySystemComponent(). BP01's LoggedHeldInputTags diagnostic went with it; the
+ *     authoritative held-input buffer is UBRAbilitySystemComponent's.
  *   - BP03/anim-builder: two ABPs, one per mesh; remote aim pitch from replicated RemoteViewPitch.
  *   - BP05: the server-side rear-arc melee helper, and the weapon mesh socket attach on both
  *     meshes.
@@ -56,29 +58,30 @@ public:
 	ABRCharacter(const FObjectInitializer& ObjectInitializer);
 
 	// -------------------------------------------------------------------------
-	// IAbilitySystemInterface — A SEAM, NOT AN IMPLEMENTATION (BP01 leaves it null)
+	// IAbilitySystemInterface — CLOSED by BP02 step 1. The seam is now a forward.
 	// -------------------------------------------------------------------------
 
 	/**
 	 * §3.4: "the ASC lives on PlayerState; the pawn implements IAbilitySystemInterface by
-	 * forwarding". BP01 owns neither, so this returns nullptr today, and that is the correct
-	 * BP01 state rather than a defect to be worked around.
+	 * forwarding". This forwards to ABRPlayerState's ASC (§3.6: "ASC + set live here").
 	 *
-	 * WHAT BP02 MUST DO TO CLOSE THIS SEAM (the whole of it, in one place):
-	 *   1. author ABRPlayerState with the ASC + attribute set (§3.6: "ASC + set live here");
-	 *   2. implement this as
-	 *        ABRPlayerState* PS = GetPlayerState<ABRPlayerState>();
-	 *        return PS ? PS->GetAbilitySystemComponent() : nullptr;
-	 *   3. call InitAbilityActorInfo(PS, this) from BOTH PossessedBy (server) and
-	 *      OnRep_PlayerState (client) — the canonical respawn-safe wiring; either one alone
-	 *      leaves a client-side ASC with no avatar, which fails only under a real client;
-	 *   4. route ABRPlayerController::AbilityInputTagPressed/Released into that ASC.
-	 * None of that is BP01's to guess: it is replicated, authority-bearing wiring.
-	 *
-	 * Callers must therefore null-check. Every GAS caller already does — a pawn without an ASC
-	 * is the normal state during travel and between possessions.
+	 * STILL RETURNS NULL LEGITIMATELY, and every caller must still null-check: between spawn and
+	 * PlayerState replication a client's pawn genuinely has no ASC, and so does a pawn mid-travel.
+	 * That window is normal, not an error — and it is exactly why the init happens on BOTH
+	 * PossessedBy and OnRep_PlayerState below, since the two orders of arrival are different on
+	 * the server and on a client.
 	 */
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+
+	// -------------------------------------------------------------------------
+	// The GAS init dance (§3.4). BOTH overrides are required — see the .cpp.
+	// -------------------------------------------------------------------------
+
+	/** Server path: the pawn gets a controller, therefore a PlayerState, therefore an ASC. */
+	virtual void PossessedBy(AController* NewController) override;
+
+	/** Client path: the PlayerState replicates in AFTER the pawn. Without this, clients have no avatar. */
+	virtual void OnRep_PlayerState() override;
 
 	// -------------------------------------------------------------------------
 	// Dual-mesh accessors (§3.4)
@@ -133,6 +136,15 @@ protected:
 	/** Native: crouch, HOLD semantics (Started crouches, Completed stands). */
 	void Input_CrouchStarted();
 	void Input_CrouchCompleted();
+
+	/**
+	 * Point the PlayerState's ASC at this pawn as its avatar. Idempotent — InitAbilityActorInfo is
+	 * safe to re-run, which is what lets both the server and the client path call it unconditionally
+	 * without either one having to know whether the other already did.
+	 *
+	 * @param CallSite  which of the two paths called, for the log line that proves both fired.
+	 */
+	void InitializeAbilitySystem(const TCHAR* CallSite);
 
 private:
 	/** Arms + weapon; owning client only. Attached to the camera so it rides the view exactly. */
