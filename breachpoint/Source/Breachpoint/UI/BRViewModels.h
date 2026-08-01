@@ -54,7 +54,7 @@ struct FOnAttributeChangeData;
 // ---------------------------------------------------------------------------
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FBROnHitMarker, EBRHitMarkerKind /*Kind*/);
-DECLARE_MULTICAST_DELEGATE_OneParam(FBROnKillfeedEntryAdded, const FBRKillfeedEntry& /*Entry*/);
+DECLARE_MULTICAST_DELEGATE_OneParam(FBROnKillfeedEntryAdded, const FBRKillfeedViewEntry& /*Entry*/);
 DECLARE_MULTICAST_DELEGATE(FBROnKillfeedChanged);
 
 // ===========================================================================
@@ -366,7 +366,7 @@ public:
 	 * the honesty law, and it is also the only way the critic's "killfeed pool exhaustion" pass
 	 * can find anything.
 	 */
-	void PushKillfeedEntry(const FBRKillfeedEntry& InEntry);
+	void PushKillfeedEntry(const FBRKillfeedViewEntry& InEntry);
 
 	/**
 	 * Attach a Spotter line to an already-visible row. No-op if the row has expired, which is the
@@ -376,7 +376,7 @@ public:
 
 	void ClearKillfeed();
 
-	const TArray<FBRKillfeedEntry>& GetKillfeedEntries() const { return KillfeedEntries; }
+	const TArray<FBRKillfeedViewEntry>& GetKillfeedEntries() const { return KillfeedEntries; }
 
 	FBROnKillfeedEntryAdded& OnKillfeedEntryAdded() { return OnKillfeedEntryAddedEvent; }
 	FBROnKillfeedChanged& OnKillfeedChanged() { return OnKillfeedChangedEvent; }
@@ -476,7 +476,7 @@ private:
 	// -----------------------------------------------------------------------
 
 	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetKillfeedEntries", Category = "Breachpoint|Match", meta = (AllowPrivateAccess))
-	TArray<FBRKillfeedEntry> KillfeedEntries;
+	TArray<FBRKillfeedViewEntry> KillfeedEntries;
 
 	/** Fires whenever KillfeedEntries changed for ANY reason (append, expiry, Spotter append). */
 	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Category = "Breachpoint|Match", meta = (AllowPrivateAccess))

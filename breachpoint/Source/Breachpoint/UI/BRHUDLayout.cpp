@@ -15,7 +15,7 @@
 // UBRKillfeedEntryWidget
 // ===========================================================================
 
-void UBRKillfeedEntryWidget::SetEntry(const FBRKillfeedEntry& InEntry)
+void UBRKillfeedEntryWidget::SetEntry(const FBRKillfeedViewEntry& InEntry)
 {
 	Entry = InEntry;
 	BP_OnEntrySet();
@@ -236,10 +236,10 @@ void UBRHUDLayout::RebuildKillfeed()
 	KillfeedContainer->ClearChildren();
 	KillfeedPool.ReleaseAll(/*bReleaseSlate=*/false);
 
-	const TArray<FBRKillfeedEntry>& Entries = Match->GetKillfeedEntries();
+	const TArray<FBRKillfeedViewEntry>& Entries = Match->GetKillfeedEntries();
 	int32 NumRows = 0;
 
-	for (const FBRKillfeedEntry& Entry : Entries)
+	for (const FBRKillfeedViewEntry& Entry : Entries)
 	{
 		UBRKillfeedEntryWidget* Row = KillfeedPool.GetOrCreateInstance<UBRKillfeedEntryWidget>(ResolvedKillfeedEntryClass);
 		if (!Row)

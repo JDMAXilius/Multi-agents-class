@@ -517,12 +517,12 @@ void UBRVM_Match::StopClockUpdates()
 	ClockTimerHandle.Invalidate();
 }
 
-void UBRVM_Match::PushKillfeedEntry(const FBRKillfeedEntry& InEntry)
+void UBRVM_Match::PushKillfeedEntry(const FBRKillfeedViewEntry& InEntry)
 {
 	const UBRUISettings& Settings = UBRUISettings::Get();
 	const int32 MaxVisible = FMath::Max(1, Settings.KillfeedMaxVisibleEntries);
 
-	FBRKillfeedEntry Entry = InEntry;
+	FBRKillfeedViewEntry Entry = InEntry;
 	if (Entry.SequenceId == INDEX_NONE)
 	{
 		Entry.SequenceId = NextKillfeedSequenceFallback++;
@@ -554,7 +554,7 @@ void UBRVM_Match::PushKillfeedEntry(const FBRKillfeedEntry& InEntry)
 	KillfeedExpiryTimes.Add(Now + FMath::Max(0.5f, Settings.KillfeedEntryLifetimeSeconds));
 
 	// NOT UE_MVVM_SET_PROPERTY_VALUE: that macro compares old to new with operator==, and
-	// TArray<FBRKillfeedEntry> has no element comparison. Mutate then broadcast explicitly.
+	// TArray<FBRKillfeedViewEntry> has no element comparison. Mutate then broadcast explicitly.
 	UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(KillfeedEntries);
 	PublishKillfeedChanged();
 
@@ -564,7 +564,7 @@ void UBRVM_Match::PushKillfeedEntry(const FBRKillfeedEntry& InEntry)
 
 void UBRVM_Match::AppendSpotterLine(int32 InSequenceId, const FText& InLine)
 {
-	for (FBRKillfeedEntry& Entry : KillfeedEntries)
+	for (FBRKillfeedViewEntry& Entry : KillfeedEntries)
 	{
 		if (Entry.SequenceId == InSequenceId)
 		{

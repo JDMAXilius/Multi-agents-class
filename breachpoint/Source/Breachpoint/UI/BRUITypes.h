@@ -137,7 +137,7 @@ enum class EBRHitMarkerKind : uint8
  * on the frames that matter.
  */
 USTRUCT(BlueprintType)
-struct FBRKillfeedEntry
+struct FBRKillfeedViewEntry
 {
 	GENERATED_BODY()
 

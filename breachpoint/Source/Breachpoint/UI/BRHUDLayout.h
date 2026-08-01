@@ -31,11 +31,11 @@ class BREACHPOINT_API UBRKillfeedEntryWidget : public UCommonUserWidget
 
 public:
 	/** Called every time the row is claimed from the pool. Assume nothing persisted. */
-	void SetEntry(const FBRKillfeedEntry& InEntry);
+	void SetEntry(const FBRKillfeedViewEntry& InEntry);
 
 	/** By value, not by const ref: UHT does not accept reference return types on a UFUNCTION. */
 	UFUNCTION(BlueprintCallable, Category = "Breachpoint|Killfeed")
-	FBRKillfeedEntry GetEntry() const { return Entry; }
+	FBRKillfeedViewEntry GetEntry() const { return Entry; }
 
 	UFUNCTION(BlueprintCallable, Category = "Breachpoint|Killfeed")
 	FText GetKillerName() const { return Entry.KillerName; }
@@ -57,7 +57,7 @@ protected:
 
 private:
 	UPROPERTY(Transient)
-	FBRKillfeedEntry Entry;
+	FBRKillfeedViewEntry Entry;
 };
 
 /**
