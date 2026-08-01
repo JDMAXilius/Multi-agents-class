@@ -25,6 +25,15 @@ Input → InputTag → ASC, no per-ability binding code, ever.
    `BreachpointServer` — server target must compile NOW), `Breachpoint.Build.cs` deps per
    ARCHITECTURE §3, folder skeleton (Core/Input/AbilitySystem/Character/Weapons/Match/AI/
    Online/UI/Telemetry/Data/Tests). Owner: **builder**.
+   > **Enable the plugins those deps require, in this same step.** A `Build.cs` entry naming a
+   > plugin module whose plugin is not enabled in the `.uproject` is a hard compile failure, so
+   > this ticket's Done-when ("all three targets compile clean") cannot pass without it.
+   > Audited 31 Jul 2026: the template ships only `ModelingToolsEditorMode`, `StateTree`,
+   > `GameplayStateTree`. Still to enable — **`GameplayAbilities`** (BP02's entire surface),
+   > **`CommonUI`** and **`ModelViewViewModel`** (BP10's Kickoff checks both by name), and
+   > **`OnlineSubsystemSteam`** (BP11). Enable them now even though nothing consumes them yet:
+   > an unused enabled plugin is free, and a missing one stops the packet that needs it long
+   > after `Config/` has closed — the same asymmetry that decides the R17 tags in step 2.
 2. `Core/`: `BRGameplayTags.h/.cpp` (ALL native tags from ARCHITECTURE §3.1 — the one
    authoritative list; includes `InputTag.*` and `SetByCaller.*`) and `BRCore.h/.cpp` (log
    channels + collision aliases; add matching channels to `DefaultEngine.ini`).
