@@ -218,3 +218,56 @@ so it is filed here rather than written. Cheap, and it would have caught this on
 *Still blocking `BRGA_WeaponFire`* — two of the three gaps are untouched: `FBRWeaponRow` still has
 **no trace range and no spread**, and `DT_Weapons.csv` still has **no `AbilitySet` column**. Both
 are `Data/` + curator, not this packet.
+
+**1 Aug 2026 — RUNG 1 GREEN on all three targets, and the input chain is proven ARMED.**
+
+First compile of everything written this session (~20k lines: six abilities, the CMC grapple half,
+the cue subsystem, the projectile, two attributes, a cost GE). Verbatim, per R19:
+
+```
+RUNG1|target=BreachpointEditor|exit=0|start=15:45:51.355|mtime=15:46:08.673|newer=YES|actions=13|verdict=PASS
+RUNG1|target=Breachpoint      |exit=0|start=15:46:56.607|mtime=15:47:30.533|newer=YES|actions=5 |verdict=PASS
+RUNG1|target=BreachpointServer|exit=0|start=15:47:37.493|mtime=15:48:15.550|newer=YES|actions=5 |verdict=PASS
+```
+
+*(A later full-sweep run reported the editor target INCONCLUSIVE — "already up to date, nothing
+was compiled" — which is the ladder refusing to launder an untouched binary into a pass. The
+PASS above is the run that actually built it.)*
+
+**Three defects fixed to get there, all authored this session:**
+
+1. **Unity build.** Five `.cpp` files each defined `constexpr float MetresToUU` in an anonymous
+   namespace. Correct C++ per file; UE concatenates translation units, so five anonymous
+   namespaces became one and collided (C2374/C2086). Now `BRUnits::MetresToUU` in `BRCore.h`.
+   **The failure is invisible in a non-unity build** — the configuration that ships.
+2. **`FNativeGameplayTag` has no `GetTagName()`.** Four sites called it on the native tag object
+   rather than the `FGameplayTag` it converts to.
+3. **`CheckCost` used `CanApplyAttributeModifiers`, which takes the effect's CDO** and evaluates
+   modifiers *on the class*. Our magnitude is a per-spec `SetByCaller`, so the CDO evaluates it as
+   **0** and the check would have passed at zero grenades — a cost check that compiles, reads
+   correctly, and always says yes. **The same trap the ability already documents for
+   `CostGameplayEffectClass`, in a second costume.** Now asks the attribute directly.
+
+**THE INPUT CHAIN, proven by execution rather than by reading.** The founder reported movement and
+camera doing nothing. Every asset was correctly wired — `BP_BRcharacter`'s parent, `PC_BR`'s
+config and mapping context, all 11 `IA_*` paths, `DefaultInputComponentClass`. **The binary was
+stale: `UnrealEditor-Breachpoint.dll` dated 13:16 while the editor ran for two more hours.** A
+standalone `-game` run on the 15:46 binary logged:
+
+```
+BRPlayerController 'PC_BR_C_0': added mapping context 'IMC_Default' at priority 0.
+BRCharacter 'BP_BRcharacter_C_0': PossessedBy (server) — InitAbilityActorInfo(...)
+BRCharacter 'BP_BRcharacter_C_0': input bound via UBRInputComponent — 4 native verbs
+  (Move/Look/Jump/Crouch), 7 ability rows from config 'DA_InputConfig' (14 bind handles).
+```
+
+**Rung honesty: this proves BINDING, not MOVEMENT.** An axis with the wrong value type would bind
+identically and still do nothing. "The character moves" is a human-at-the-keyboard claim and
+nobody has made it.
+
+**Two findings from the same run, neither fixed here:**
+- `BRPowerWeaponSpawner…: no PickupClass set; node not armed` — the rocket spawner is placed in
+  `BR_Arena01` and will **never spawn a weapon**. R4's entire scarcity mechanic is inert. One
+  property on the placed actor.
+- `BRVM_Combat.GrappleReady` and `bGrappleReady` both expose to Python as `grapple_ready`.
+  Harmless in C++, but the MCP lane reads properties exactly that way. One `ScriptName` meta tag.
