@@ -40,7 +40,8 @@ git fetch && git pull --rebase   # never skip; other sessions push too
      (UBT, `-run=pythonscript`, the rungs). No editor session needed.
    - `editor-live` — a UE editor must be **open on this project** before the claim, because
      the work needs the MCP or an in-editor asset surface. **Open it first**, then claim.
-     R21 still binds: one editor, one driver, and an MCP session must not overlap a build.
+     **R29** binds: one editor, one driver, and an editor session must not overlap a build
+     (R21 is the build-lock half; R29 is the editor half).
 
    Wrong context → **do NOT claim.** Say which context the ticket needs and which this
    session is. This check is first because it is the cheapest: a `files-only` ticket is

@@ -24,6 +24,13 @@ the game cannot be reviewed by anyone but a human staring at the editor."*
 Two consequences worth stating plainly:
 - **No Blueprint classes.** Not thin ones, not "just glue." Actors, components, abilities,
   effects, controllers, game modes — all C++, spawned by class reference from data.
+  **The one exception, R26:** a direct BP child of a `BR` C++ class used purely as a
+  *default-value container* — empty EventGraph and ConstructionScript, no new variables or
+  components, no gameplay numbers (those stay in `Content/Data/*.csv`), named
+  `BP_<CppClassWithoutPrefix>`. Five such assets exist (`BP_BRGameMode` and friends). It is a
+  narrowing of R18, not a repeal: the moment one contains a decision it is a `high` finding.
+  Prefer `Config/DefaultGame.ini` under `[/Script/Breachpoint.<Class>]` wherever it works —
+  it is diffable and needs nobody to open the editor.
 - Assets that survive are **graph or layout only**, and the C++ they read from is the
   source of truth.
 
@@ -154,7 +161,7 @@ D is for what only a human should decide.
 ```
 - requires: files-only        # A or B
 - requires: engine-installed  # B — headless commandlet/UBT
-- requires: editor-live       # C — open the editor BEFORE claiming (R21: one editor, one driver)
+- requires: editor-live       # C — open the editor BEFORE claiming (R29: one editor, one driver)
 ```
 
 **The open hole, stated rather than assumed:** `guard_laws.py` gates `Edit`/`Write` by

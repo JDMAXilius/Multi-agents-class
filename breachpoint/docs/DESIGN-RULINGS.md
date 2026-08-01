@@ -85,7 +85,17 @@ The lead appends; nobody else writes here. A doubt this ledger closes is closed.
   **Extension rule (so the next one needs no ruling):** montage-raised events are
   `Event.<Verb>.<Moment>` — the verb is the ability's noun (`Melee`, `Weapon`, `Grapple`),
   the moment is what just happened in the animation, never what should result from it.
-  A new tag under this rule is a normal `Core/` change, not a re-opening of R17.
+  A new tag under this rule needs no new ruling — the *name* is already decided here.
+
+  **AMENDED 1 Aug 2026 by R23 — the naming is free, the write is not.** This paragraph
+  originally ended *"a normal `Core/` change, not a re-opening of R17,"* which read as
+  permission for any packet to add the tag itself. **R23 closed `Core/` for the five families
+  other than `Ability.*` and `GameplayCue.*`, and `Event.*` is one of the five.** So a packet
+  needing a new `Event.<Verb>.<Moment>` tag **files a `contract_gap` and stops**, exactly as
+  `contracts/animation.md` §4 says. Two rules pointed opposite ways here for a day: an agent
+  reading R17 would have written to `Core/` and been blocked by `guard_laws.py` mid-packet,
+  because `Core/` is in no packet's `owner_path` but BP01's. R23 is later, is what the contract
+  says, and is what the hook enforces — it wins.
 
   **The boundary this preserves (`animation.md` law 4):** a notify announces a *moment*; the
   sim decides the *consequence*, on the authority. A notify never carries a number, a branch,
@@ -296,10 +306,17 @@ The lead appends; nobody else writes here. A doubt this ledger closes is closed.
   exactly R18's original target, and that instance is a `high`-severity finding, not a style note.
 
   **Enforcement is owed, not assumed.** R18 was reviewable because there were no assets to
-  review; this exception spends that. A `Tools/audit_blueprints.py` must assert conditions 1–3
-  mechanically (node count, added-member count, parent chain) over every `BP_BR*` asset and run
-  in rung 2, or condition 2 erodes to "only a little logic" within a month. **Until that script
-  exists this ruling is enforced by goodwill, and that is stated here rather than assumed.**
+  review; this exception spends that. An audit must assert conditions 1–3 mechanically (node
+  count, added-member count, parent chain) over every `BP_BR*` asset and run in rung 2, or
+  condition 2 erodes to "only a little logic" within a month.
+
+  *Status, 1 Aug 2026 — the script exists and changes nothing yet.*
+  `Tools/audit_blueprints/audit_r26.py` was written, but its packet was **stopped mid-flight:
+  it is unreviewed, has never been run, and is not wired into rung 2** (`contracts/testing.md`
+  does not mention it). Two of those three are the same problem — an audit nobody runs is an
+  audit that does not exist. **So this ruling is still enforced by goodwill**, and the
+  existence of a file must not be mistaken for enforcement. Wiring it into rung 2, and one
+  green run against the five landed assets, is what closes this.
 
   *Corollary — the config path stays available and is preferred where it works:* every
   `EditDefaultsOnly` soft pointer can also be set from `Config/DefaultGame.ini` under
@@ -338,3 +355,32 @@ The lead appends; nobody else writes here. A doubt this ledger closes is closed.
   `BRCharacter` sets `FirstPersonFieldOfView = 70` for the arms only and never sets the world FOV.
   If anyone sets the player's FOV explicitly, this column silently becomes a privilege or a
   handicap. Pin the player FOV, or this ruling is resting on an engine default nobody chose.
+
+- **R29. One editor, one driver — and an open editor and a build must not overlap.** Three
+  documents already cited this rule as "R21." **R21 does not say it.** R21 is about `TaskStop`
+  orphaning spawned processes and UE's global *build* mutex; nothing in it mentions the editor.
+  The rule those citations reached for is real, is load-bearing for every `editor-live` packet,
+  and had no ruling — so it is cut here rather than left as three references to a rule that does
+  not exist. (Found 1 Aug 2026 by a doctrine-consistency audit. A miscitation is worse than a
+  missing rule: it reads as settled, so nobody checks.)
+
+  **The rule, in three parts:**
+  1. **One editor instance per project, ever.** UE takes an exclusive lock on the project; a
+     second instance either refuses to start or opens read-only. This is the engine's behaviour,
+     not our policy.
+  2. **One driver per editor.** A running editor is a single mutable world. Two agents issuing
+     MCP calls into it interleave with no transaction boundary — asset A half-created while
+     asset B saves the level. The MCP exposes no locking, so "don't" is the whole mechanism.
+     A session claiming an `editor-live` ticket owns that editor until it releases it.
+  3. **An editor session and a build must not overlap.** The open editor holds `Binaries/Win64/`
+     DLLs; UBT cannot replace a loaded module, so the build fails late and confusingly, or
+     produces binaries the running editor will never load. **A session using the MCP must not
+     dispatch a builder that compiles, and vice versa.** This is where R29 and R21 touch: R21
+     says one build at a time, R29 says the editor counts as a party to that.
+
+  *Cost of learning it the expensive way:* this burned real cycles on 1 Aug 2026 before anyone
+  wrote it down (`TICKET_BP16_UE_MCP_BRIDGE.md` Notes).
+
+  *Enforcement is honesty, not mechanism.* `guard_laws.py` gates `Edit`/`Write` by `file_path`;
+  an MCP tool call has neither, and nothing in the repo can see whether an editor is open. This
+  ruling is a rule the driver follows, and it is stated that way rather than assumed.

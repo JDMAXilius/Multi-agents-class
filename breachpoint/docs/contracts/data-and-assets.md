@@ -13,7 +13,7 @@ value into a Blueprint graph or a C++ literal, stop — it belongs in a DataTabl
 | Replicated surface (what/when/to whom) | netcode-builder's modules per `netcode.md` | ad-hoc per-feature RPCs |
 | Config | `Config/Default*.ini` — each file has a named owner | scattered `GConfig` writes |
 | Save data schema | one versioned module with explicit migration on change | implicit SaveGame field drift |
-| Visuals/layout/animation | Blueprint/asset land — designers iterate freely here | (this is the one place binaries are the point) |
+| Visuals/layout/animation | Asset land — the Tier-4 list below, and only it | BP *classes* (see R18/R26); a "designers iterate freely" reading of this row — binaries still have one owner per ticket and are locked before editing (§ Binary-asset discipline) |
 
 Derived artifacts (cooked builds, generated headers, compiled shaders) are never hand-edited —
 fix the source and regenerate.
@@ -26,6 +26,16 @@ from data. An engine asset exists ONLY where UE 5.8 offers no C++ authoring path
 complete list of those is Tier 4 in **`BREACHPOINT-AUTHORING-MATRIX.md`**:
 AnimBlueprint graphs · materials/instances · Niagara · MetaSounds · UMG layout (WBP) ·
 `ST_Bot` · EQS query assets · sourced art. **Nothing else gets an asset.**
+
+**The one exception — R26, default-value containers.** A direct BP child of a `BR` C++ class
+is permitted *solely* to set values on properties the C++ class already exposes: empty
+EventGraph and ConstructionScript (zero nodes), no new variables/functions/components, no
+gameplay **numbers** (law 3 is untouched — those stay in `Content/Data/*.csv`), named
+`BP_<CppClassWithoutPrefix>`. Five exist today (`BP_BRGameMode`, `BP_BRGameState`,
+`BP_BRPlayerController`, `BP_BRPlayerState`, `BP_BRCharacter`). A BP child that branches,
+holds state, reacts to an event, or overrides a virtual is **`high` severity**, not a style
+note. Prefer `Config/DefaultGame.ini` under `[/Script/Breachpoint.<Class>]` where it works —
+diffable, greppable, and it survives a clone with nobody opening the editor.
 
 Not because BP is bad — because **binary assets are invisible to review**: no diff, no
 merge, no grep-audit, and the crew's critic cannot read them. Adding a Tier-4 asset means

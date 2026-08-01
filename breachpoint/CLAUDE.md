@@ -30,7 +30,11 @@ suspect a name collision before you suspect the agent.
    editor ≠ packaged. Every "works" names its rung; multiplayer claims come in threes
    (server, acting client, observing client).
 7. **Binary assets:** one owner per `.uasset`/`.umap` per ticket; lock before editing.
-   **Zero Blueprint classes (R18).** An asset exists only where UE has no C++ path — the
+   **Zero Blueprint classes (R18), with ONE narrow exception (R26): a direct BP child of a
+   `BR` C++ class, holding default values only — empty graphs, no new members, no gameplay
+   numbers, named `BP_<CppClassWithoutPrefix>`.** All five conditions are in R26; a BP child
+   that fails any of them is a `high` finding, and prefer `Config/DefaultGame.ini` wherever it
+   works. An asset exists only where UE has no C++ path — the
    complete list is Tier 4 of `BREACHPOINT-AUTHORING-MATRIX.md` (AnimGraph, materials,
    Niagara, MetaSounds, WBP layout, `ST_Bot`, EQS queries, sourced art). GEs and cue
    handlers are **C++ classes**. Blockouts, table reimports, and input assets are

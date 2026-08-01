@@ -102,8 +102,9 @@ against a live editor). Steps 2–3 in order. Step 4 needs steps 1–3. Step 5 c
 - Binary files this ticket OWNS: **none.** Step 4 regenerates `Content/Input/*`, which BP01
   owns; coordinate rather than co-write.
 - **The running-editor constraint is an operating law, not a footnote.** An open editor holds
-  the project lock, so **an MCP session and a build cannot overlap** — this is R21 with a second
-  face. A session using the MCP must not dispatch a builder that compiles, and vice versa. This
+  the project lock, so **an MCP session and a build cannot overlap** — now ruled as **R29**
+  (cut 1 Aug 2026; this Note is where the rule was first observed, and it had no ruling until
+  a doctrine audit found three documents citing it as "R21," which says nothing about editors). A session using the MCP must not dispatch a builder that compiles, and vice versa. This
   cost us real cycles on 1 Aug before anyone wrote it down.
 - Out of scope: replacing the ladder (rungs still run headless, and must); using the MCP in CI
   (there is no editor there); driving the MCP from a cloud session; letting an MCP call
