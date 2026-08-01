@@ -100,3 +100,36 @@ granted to whichever packet is in flight, serialized by the board; (c) specs bec
 follow-on packet per feature, authored by the verifier's counterpart — which collides with the
 verifier having no write tools by capability. Option (a) looks cheapest and preserves one-owner,
 but it changes §3.12's three-file layout, so it is an ARCHITECTURE amendment, not a ticket edit.
+
+---
+
+**1 Aug 2026 — STEP 1 WRITTEN (sim-builder, parallel-pod packet). Code only; NOT compiled
+(ruling R21: four builders in the tree, one build lock). No rung claimed.**
+
+Landed: `Data/BRDataRows.h` (created — did not exist; `FBRWeaponRow` + `EBRWeaponFireMode` +
+`EBRDamageDelivery`), `Weapons/BRWeaponInstance.{h,cpp}`, `Weapons/BREquipmentComponent.{h,cpp}`,
+`Weapons/BRWeaponPickup.{h,cpp}` (`ABRWeaponPickup` + `ABRPowerWeaponSpawner`).
+
+`FBRWeaponRow` matches all 16 columns of `DT_Weapons.csv`; column 1 (`Name`) maps to the row
+KEY, not a member, per the DataTable importer. `ValidateSchema()` passes on all three shipped
+rows (checked by hand against the CSV, not by running anything).
+
+contract_gaps opened by this step — each blocks something later, none worked around:
+1. **No `AbilitySet` column in `DT_Weapons.csv`.** Step 1's "equip = grant the weapon's
+   `BRAbilitySet`" has no data source. `ResolveAbilitySetForRow()` refuses and logs; the grant
+   call site is one commented function in `BREquipmentComponent.cpp`. **Blocks step 2** — the
+   fire ability cannot be granted until a `TSoftClassPtr<UBRAbilitySet>` column exists.
+2. **`FireCueTag`'s three tags do not exist.** `GameplayCue.Weapon.{AR,Magnum,Rocket}.Fire` are
+   named by the CSV, but `BRGameplayTags.h` declares no `GameplayCue.*` leaves (deliberately —
+   §3.1 enumerates none). Kickoff's "re-imports clean" is therefore NOT satisfiable today: the
+   column imports empty with warnings. Needs §3.1 amended, then the tags declared.
+3. **R4's 90 s has no table home.** `ABRPowerWeaponSpawner::RespawnIntervalSeconds` defaults to
+   an INVALID -1 and the node refuses to arm rather than hard-code 90. Wants a column on
+   `FBRMatchRulesRow` (BP02) or `DT_MatchRules`.
+4. **Pickup interaction radius has no table home** (`InteractionRadiusCm`, EditDefaultsOnly
+   placeholder). Lower severity than #3: it carries no design ruling.
+5. **`ABRCharacter` must set `bReplicateUsingRegisteredSubObjectList = true`** or the weapon
+   subobjects replicate via the legacy path. Both paths are implemented here so neither
+   silently replicates nothing, but the pawn's flag decides which runs. Character/ is BP04's.
+6. Ticket text says `DT_Weapons.csv` carries "AR + Magnum rows; Rocket row lands in its own
+   later ticket" — the landed CSV already has all three. Not a defect; the ticket text is stale.
