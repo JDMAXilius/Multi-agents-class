@@ -218,6 +218,28 @@ struct BREACHPOINT_API FBRWeaponRow : public FTableRowBase
 	float Spread_deg = 0.f;
 
 	/**
+	 * SOFT reference to the `UBRAbilitySet` this weapon grants on equip and revokes on stow.
+	 * CSV: AbilitySet. Added by BP03 (1 Aug 2026).
+	 *
+	 * THIS COLUMN IS WHAT MAKES A WEAPON FIRE. Without it
+	 * `BREquipmentComponent::ResolveAbilitySetForRow` had no honest answer and returned null
+	 * with the log line *"the weapon equips but cannot fire"* — so every ability in
+	 * `AbilitySystem/Abilities/` was unreachable code. Six abilities were written before this
+	 * column existed and not one of them could be activated by a player.
+	 *
+	 * **`TSoftObjectPtr`, not `TSoftClassPtr`.** The gap's own comment in `BREquipmentComponent`
+	 * proposed `TSoftClassPtr<UBRAbilitySet>`; that is wrong. `UBRAbilitySet` is a
+	 * `UPrimaryDataAsset`, so what a weapon names is a data-asset INSTANCE (`DA_AbilitySet_AR`),
+	 * not a class. A soft class pointer would resolve to the CDO and grant nothing — a failure
+	 * that looks like a wiring bug and is a type error.
+	 *
+	 * Soft is law (`data-and-assets.md`): the set is loaded through the streamable manager at
+	 * equip time, exactly like `MeshSoftPath`, so a weapon row costs nothing until equipped.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	TSoftObjectPtr<class UBRAbilitySet> AbilitySet;
+
+	/**
 	 * SOFT reference to the weapon's world/first-person mesh, resolved by
 	 * BREquipmentComponent through the streamable manager at equip time.
 	 * Soft is law (`data-and-assets.md`): a hard UPROPERTY asset ref or ConstructorHelpers

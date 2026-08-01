@@ -4,6 +4,9 @@
 
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
+// The seam's own note said the include belongs in this .cpp and not the header, because step 1
+// deliberately did not include a header another builder was still authoring. It has landed.
+#include "AbilitySystem/BRAbilitySet.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Core/BRCore.h"
@@ -465,15 +468,49 @@ void UBREquipmentComponent::HandleActiveWeaponChanged()
 
 const UBRAbilitySet* UBREquipmentComponent::ResolveAbilitySetForRow(const FDataTableRowHandle& InWeaponRow) const
 {
-	// CONTRACT_GAP, reported with this packet. DT_Weapons.csv is the source of truth for the
-	// weapon schema and it has NO ability-set column, so there is no honest way to answer this
-	// question yet. The refusal is deliberate and loud: no fallback set, no "first set found",
-	// no guess. Adding the column (TSoftClassPtr<UBRAbilitySet>) turns this into one line.
-	UE_LOG(LogBRCombat, Error,
-		TEXT("BREquipmentComponent: no ability set is mapped for weapon row '%s' — DT_Weapons.csv "
-			 "has no AbilitySet column (BP03 step 1 contract_gap). The weapon equips but cannot fire."),
-		*InWeaponRow.RowName.ToString());
-	return nullptr;
+	// CONTRACT_GAP CLOSED 1 Aug 2026. This function used to refuse unconditionally, because
+	// DT_Weapons.csv had no ability-set column and there was no honest way to answer. The column
+	// now exists (`FBRWeaponRow::AbilitySet`) and this reads it.
+	//
+	// The gap's own note proposed `TSoftClassPtr<UBRAbilitySet>`; the row uses
+	// `TSoftObjectPtr` instead, and the difference matters. `UBRAbilitySet` is a
+	// `UPrimaryDataAsset`, so a weapon names an INSTANCE (`DA_AbilitySet_AR`), not a class. A
+	// soft class pointer would have resolved to the CDO and granted nothing — a type error
+	// wearing a wiring bug's costume.
+	const FBRWeaponRow* Row = InWeaponRow.GetRow<FBRWeaponRow>(TEXT("BREquipmentComponent::ResolveAbilitySetForRow"));
+	if (!Row)
+	{
+		UE_LOG(LogBRCombat, Error,
+			TEXT("BREquipmentComponent: weapon row '%s' does not resolve — is DT_Weapons imported?"),
+			*InWeaponRow.RowName.ToString());
+		return nullptr;
+	}
+
+	if (Row->AbilitySet.IsNull())
+	{
+		// Still loud, and still no fallback: no "first set found", no guess. A weapon with no
+		// ability set is a data defect, and inventing one here would hide it behind a weapon
+		// that fires something nobody authored.
+		UE_LOG(LogBRCombat, Error,
+			TEXT("BREquipmentComponent: weapon row '%s' has an EMPTY AbilitySet column. The weapon "
+				 "equips but cannot fire. Author the set asset and name it in DT_Weapons.csv."),
+			*InWeaponRow.RowName.ToString());
+		return nullptr;
+	}
+
+	// Synchronous load at equip time, matching how RefreshEquippedMesh resolves MeshSoftPath.
+	// Equip is already a discrete, infrequent event; a weapon whose abilities arrive a frame
+	// after the model would be a fire input that silently does nothing.
+	const UBRAbilitySet* Set = Row->AbilitySet.LoadSynchronous();
+	if (!Set)
+	{
+		UE_LOG(LogBRCombat, Error,
+			TEXT("BREquipmentComponent: weapon row '%s' names ability set '%s', which failed to "
+				 "load. The reference is soft, so this is a missing or renamed asset, not a null "
+				 "column."),
+			*InWeaponRow.RowName.ToString(), *Row->AbilitySet.ToString());
+	}
+	return Set;
 }
 
 void UBREquipmentComponent::GrantAbilitySetForSlot(int32 SlotIndex)
@@ -508,15 +545,18 @@ void UBREquipmentComponent::GrantAbilitySetForSlot(int32 SlotIndex)
 	}
 
 	// ---------------------------------------------------------------------------------------
-	// BP02 SEAM — the one call site. When AbilitySystem/BRAbilitySet.h lands, this becomes:
-	//
-	//   FBRWeaponAbilityGrant& Grant = SlotGrants[SlotIndex];
-	//   AbilitySet->GiveToAbilitySystem(ASC, /*SourceObject*/ Instance,
-	//                                   Grant.AbilityHandles, Grant.EffectHandles);
-	//
-	// and nothing else in this file moves. The include goes in this .cpp, not the header.
-	// Step 1 deliberately does not include a header another builder is still authoring.
+	// THE SEAM, CLOSED 1 Aug 2026 — and it landed exactly as step 1 predicted it would, with
+	// nothing else in this file moving. `SourceObject` is the weapon INSTANCE, not the row and
+	// not this component: it is what an ability calls `GetSourceObject()` on to find the weapon
+	// that granted it, which is how `BRGA_WeaponFire` reaches its ammo and its row.
 	// ---------------------------------------------------------------------------------------
+	FBRWeaponAbilityGrant& Grant = SlotGrants[SlotIndex];
+	AbilitySet->GiveToAbilitySystem(ASC, /*SourceObject=*/ Instance,
+		Grant.AbilityHandles, Grant.EffectHandles);
+
+	UE_LOG(LogBRCombat, Verbose,
+		TEXT("BREquipmentComponent: granted %d ability(ies) and %d effect(s) from '%s' for slot %d."),
+		Grant.AbilityHandles.Num(), Grant.EffectHandles.Num(), *GetNameSafe(AbilitySet), SlotIndex);
 }
 
 void UBREquipmentComponent::ClearAbilitySetForSlot(int32 SlotIndex)
