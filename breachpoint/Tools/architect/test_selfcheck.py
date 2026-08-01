@@ -555,9 +555,14 @@ def section_rank():
     check("all dependents BUILT -> blockers", 0, rows["BRGA_WeaponFire"]["blockers"],
           "F6a exactly: four finished BP10 widgets were counted as waiting on the fire path and "
           "produced its entire blocker score, and that score produced the #1 pick")
-    check("...and its total", 102, rows["BRGA_WeaponFire"]["total"],
-          "depth 2 (BP03<-BP02<-BP01) + blockers 0 + tier 0 + MISSING 100. 106 means the four "
-          "phantom waiters are back; the ticket records 102 as the post-fix number")
+    # VERDICT CHANGED BY A RULING, 1 Aug 2026 -- recorded rather than deleted. This case
+    # expected 102 = depth 2 + blockers 0 + tier 0 + MISSING 100 while depth was ADDED. R32
+    # subtracts it, so the same fixture is now -2 + 0 + 0 + 100 + readiness 0 = 98. The case
+    # still fails at 106 (the four phantom waiters back) and still fails at 102 (R32 reverted),
+    # which is the whole reason it is edited and not dropped.
+    check("...and its total (R32: depth subtracted)", 98, rows["BRGA_WeaponFire"]["total"],
+          "-depth 2 (BP03<-BP02<-BP01) + blockers 0 + tier 0 + MISSING 100 + readiness 0. 106 "
+          "means the four phantom waiters are back; 102 means depth is being ADDED again")
 
     rows = drive_rank(f6a_units(["BUILT", "BUILT", "BUILT", "STUB"]))
     check("one dependent STUB -> blockers", 1, rows["BRGA_WeaponFire"]["blockers"],
@@ -575,6 +580,298 @@ def section_rank():
 
 
 # ======================================================================================
+# Section 5 -- R32/R33/R34/R35: the four rulings landed 1 Aug 2026
+# ======================================================================================
+#
+# Each ruling was made because a REAL run came out wrong, so each gets a case shaped like the
+# run that was wrong -- not a case shaped like the code that fixes it.
+#
+#   R32  depth was ADDED, so the score rewarded distance from a DAG root, which is distance
+#        from being STARTABLE. The top pick was BRSpotterSubsystem (BP11 <- BP08 <- BP02+BP04)
+#        winning on depth 4 alone, in the same table that reported rung 2 BLOCKED because
+#        Tests/ was empty and ranked the three test specs 7-9. A deeper unit must now score
+#        LOWER, all else equal.
+#   R33  BRGA_WeaponFire ranked #1 while three of its declared inputs did not exist and the
+#        builder packet stopped at law 5 on contact. Readiness is derived from DISK -- declared
+#        tags, row structs, tables, columns -- and never from a model. Its most important
+#        property is the one it must NOT have: it must not invent a blocker. A family
+#        reference, an unmatched shape, or an absent oracle yields UNKNOWN, and UNKNOWN is
+#        treated as READY.
+#   R34  three bugs, one shape: `state` at 2/1/0 was swamped by a blocker term reaching 35 and
+#        the score picked an already-BUILT unit; `tier` needed -100 to stop a perpetually
+#        MISSING Phase-2 unit being selected; readiness needs the same. "This cannot be built"
+#        is not a preference to be outvoted, so the case below stacks the preference terms as
+#        high as they go and requires the gate to win anyway.
+#   R35  step 6's F3: one line -- `#include "BRGA_Grenade.h"` in BRCore.h -- moved that unit
+#        +27 and to #1, and the header does not exist. The pair of cases below is the sharp
+#        one: IDENTICAL include line, and the only difference is whether the target header is
+#        on disk. It must be worth 0 blockers absent and 1 present, or the filter is either
+#        not firing or has deleted the include graph.
+
+TAGS_CPP = '''#include "BRGameplayTags.h"
+
+namespace BRTags
+{
+\tUE_DEFINE_GAMEPLAY_TAG_COMMENT(Damage_Melee, "Damage.Melee", "Damage type: melee.");
+\tUE_DEFINE_GAMEPLAY_TAG(State_Dead, "State.Dead");
+}
+'''
+
+ROWS_H = '''#pragma once
+#include "CoreMinimal.h"
+
+USTRUCT(BlueprintType)
+struct BREACHPOINT_API FBRWeaponRow : public FTableRowBase
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditDefaultsOnly, Category = "Weapon")
+    float Range_m = 0.f;
+};
+'''
+
+WEAPONS_CSV = "Name,DisplayName,DamagePerShot,Spread_deg\nAR,Assault Rifle,12,1.5\n"
+
+
+def readiness_tree(td, with_tags=True, with_rows=True, with_csv=True):
+    """A minimal repo whose ground truth is entirely under our control."""
+    src = Path(td) / "Source" / "Breachpoint"
+    data = Path(td) / "Content" / "Data"
+    (src / "Core").mkdir(parents=True)
+    (src / "Data").mkdir(parents=True)
+    data.mkdir(parents=True)
+    if with_tags:
+        (src / "Core" / "BRGameplayTags.cpp").write_text(TAGS_CPP, encoding="utf-8")
+    if with_rows:
+        (src / "Data" / "BRDataRows.h").write_text(ROWS_H, encoding="utf-8")
+    if with_csv:
+        (data / "DT_Weapons.csv").write_text(WEAPONS_CSV, encoding="utf-8")
+    return src, data
+
+
+def drive_readiness(spec, **tree):
+    with tempfile.TemporaryDirectory() as td:
+        src, data = readiness_tree(td, **tree)
+        with patched(SRC=src, DATA_DIR=data), quiet():
+            verdict, missing, unknown, refs = architect.readiness_of(spec,
+                                                                     architect.ground_truth())
+        return verdict, missing
+
+
+# (name, §3 row text, expected verdict, why this case exists)
+READINESS_CASES = [
+    ("a declared tag", "| `BRX.h/.cpp` | applies `Damage.Melee` on hit. |", "ready",
+     "the control. If a reference that DOES resolve came back not_ready or unknown, the term "
+     "would either block everything or measure nothing"),
+    ("an UNdeclared tag", "| `BRX.h/.cpp` | grants `State.Airborne` while falling. |", "not_ready",
+     "the R33 case verbatim: BRGA_WeaponFire's cue tags were undeclared this morning, and the "
+     "score ranked it #1 anyway because it had no term for 'its inputs do not exist'"),
+    ("a declared column", "| `BRX.h/.cpp` | trace stops at `Range_m`. |", "ready",
+     "`Range_m` landed in FBRWeaponRow today -- a field present in the row struct must resolve "
+     "even when it is not in a CSV header, because §3 names the field, not the table"),
+    ("a column present only in a CSV", "| `BRX.h/.cpp` | cone from `Spread_deg`. |", "ready",
+     "the other half of the same rule: a CSV column with no C++ field yet is still an input "
+     "that EXISTS, and the check must read both oracles or half of BP03's debt is invisible"),
+    ("an absent column", "| `BRX.h/.cpp` | falloff over `Dropoff_m`. |", "not_ready",
+     "the shape of BP03's real gap -- a tuning number the manifest names and the data does not "
+     "carry. Nothing can be built against it"),
+    ("an absent row struct", "| `BRX.h/.cpp` | reads `FBRGhostRow`. |", "not_ready",
+     "`FBRMatchRules` vs `FBRMatchRulesRow` is one character from being live in §3 right now; "
+     "a near-miss row name is a unit that cannot compile"),
+    ("an absent table", "| `BRX.h/.cpp` | coefficients from `DT_Nowhere`. |", "not_ready",
+     "the table check is what makes `CT_Combat` load-bearing for BRDamageExecCalc; if a missing "
+     "table passed, the term would be blind to the entire Content/Data/ half of law 3"),
+    ("prose only, no reference", "| `BRX.h/.cpp` | Server validates rate, ammo, cone, range. |",
+     "unknown",
+     "THE CAP, asserted rather than described. This is BRGA_WeaponFire's actual §3 row shape: "
+     "it names its inputs in prose and the extraction cannot see them. It must come back "
+     "UNKNOWN -- inventing `Range_m` out of the word 'range' would be the model choosing"),
+    ("a family reference", "| `BRX.h/.cpp` | dynamic `Damage.*` tags. |", "unknown",
+     "`Damage.*` names no concrete tag, so it can neither pass nor fail. Expanding a family "
+     "into its members would manufacture blockers out of notation"),
+    ("a placeholder reference", "| `BRX.h/.cpp` | fires `Event.<Verb>.<Moment>`. |", "unknown",
+     "§3 writes generic event names this way; a literal check would report every unit that "
+     "mentions the convention as blocked on a tag nobody ever intended to declare"),
+]
+
+# (name, tree kwargs, spec, expected, why)
+ORACLE_CASES = [
+    ("tags file absent -> UNKNOWN, not blocked", {"with_tags": False},
+     "| `BRX.h/.cpp` | applies `Damage.Melee`. |", "unknown",
+     "R33 says: if you cannot determine readiness, mark UNKNOWN and do NOT invent a blocker. "
+     "A missing ORACLE is not a missing input -- and this is the failure mode that would bite "
+     "hardest, because it turns one deleted file into 44 units that 'cannot be built'"),
+    ("row header absent -> UNKNOWN, not blocked", {"with_rows": False},
+     "| `BRX.h/.cpp` | reads `FBRWeaponRow`. |", "unknown",
+     "same rule on the row oracle; BRDataRows.h is one file and the whole Data/ folder hangs "
+     "off it"),
+    ("Content/Data absent -> UNKNOWN, not blocked", {"with_csv": False, "with_rows": False},
+     "| `BRX.h/.cpp` | cone from `Spread_deg`. |", "unknown",
+     "the cloud runner checks out the repo without Content/ in some configurations; that must "
+     "degrade to 'cannot tell', never to 'nothing is buildable'"),
+]
+
+
+def r32_units(ticket):
+    return [{"unit": "BRProbe", "folder": "Core", "ticket": ticket,
+             "state": "MISSING", "tier": "slice"}]
+
+
+def r34_units(readiness, n_waiters=40):
+    """One gated unit with the maximum blocker score the preference term can produce."""
+    units = [{"unit": "BRBlocked", "folder": "Core", "ticket": "BP01", "state": "MISSING",
+              "tier": "slice", "readiness": readiness}]
+    for i in range(n_waiters):
+        units.append({"unit": f"BRWaiter{i:02d}", "folder": "Core", "ticket": "BP02",
+                      "state": "STUB", "tier": "slice", "readiness": "ready"})
+    return units
+
+
+def drive_include_edges(ghost_on_disk):
+    """F3's shape, minimised: one include line, and the target header exists or does not.
+
+    Returns (edges out of BRHost, discarded count, blockers scored for BRGhost).
+    """
+    units = [{"unit": "BRHost", "folder": "Core", "ticket": "BP99", "state": "STUB",
+              "tier": "slice"},
+             {"unit": "BRGhost", "folder": "Core", "ticket": "BP99", "state": "MISSING",
+              "tier": "slice"}]
+    with tempfile.TemporaryDirectory() as td:
+        src = Path(td) / "Source" / "Breachpoint"
+        (src / "Core").mkdir(parents=True)
+        (src / "Core" / "BRHost.h").write_text(
+            '#pragma once\n#include "CoreMinimal.h"\n#include "BRGhost.h"\n', encoding="utf-8")
+        if ghost_on_disk:
+            units[1]["state"] = "STUB"
+            (src / "Core" / "BRGhost.h").write_text("#pragma once\n", encoding="utf-8")
+        state = Path(td) / "state"
+        state.mkdir(parents=True)
+        with patched(SRC=src, STATE_DIR=state), quiet():
+            edges, discarded = architect.include_edges(units)
+            rows = {r["unit"]: r for r in architect.rank({"units": [dict(u) for u in units]})}
+        return sorted(edges["BRHost"]), len(discarded), rows["BRGhost"]["blockers"]
+
+
+def section_rulings():
+    print("\n-- 5. R32/R33/R34/R35: the rulings of 1 Aug 2026 -----------------------------")
+    print(f"  {'case':<52}{'expect':<12}{'got':<12}result")
+    failures = []
+
+    def check(name, expect, got, why):
+        ok = expect == got
+        print(f"  {name:<52}{str(expect):<12}{str(got):<12}{'ok' if ok else 'FAILED'}")
+        if not ok:
+            print(f"      why this case exists: {why}")
+            failures.append((name, why))
+        return ok
+
+    n = 0
+
+    # ---- R32: depth is SUBTRACTED -----------------------------------------------------
+    # A synthetic three-ticket chain so that DEPTH is the only term that moves: the same unit
+    # is placed at depth 0, 1 and 2 and nothing else about it changes.
+    chain = {"BP01": [], "BP02": ["BP01"], "BP03": ["BP02"]}
+    totals, depths = [], []
+    for tkt in ("BP01", "BP02", "BP03"):
+        with patched(TICKET_DEPS=chain):
+            row = drive_rank(r32_units(tkt))["BRProbe"]
+        totals.append(row["total"])
+        depths.append(row["depth"])
+    n += 3
+    check("R32 depth term reads 0/1/2 down the chain", [0, 1, 2], depths,
+          "if the depths are not 0/1/2 the fixture is broken and the sign test below proves "
+          "nothing -- this is the setup assertion, not the ruling")
+    check("R32 deeper unit scores STRICTLY LOWER", True,
+          totals[0] > totals[1] > totals[2],
+          "the ruling itself. Depth away from a DAG root is distance from being STARTABLE; "
+          "added, it made BRSpotterSubsystem (depth 4) the #1 pick over three depth-0 test "
+          "specs in a table that reported rung 2 BLOCKED because Tests/ was empty")
+    check("R32 depth enters with a MINUS sign", [100, 99, 98], totals,
+          "the magnitudes, not just the order: MISSING 100 minus depth. If these come back "
+          "100/101/102 the sign is flipped and the ordering test above still passes on a "
+          "reversed comparison one edit away")
+
+    # ---- R33: readiness, derived from disk --------------------------------------------
+    for name, spec, expect, why in READINESS_CASES:
+        got, missing = drive_readiness(spec)
+        n += 1
+        check(f"R33 {name}", expect, got, why)
+    for name, tree, spec, expect, why in ORACLE_CASES:
+        got, missing = drive_readiness(spec, **tree)
+        n += 1
+        check(f"R33 {name}", expect, got, why)
+
+    # The live-repo probe named in the ruling. BRGA_WeaponFire was NOT ready this morning --
+    # undeclared cue tags, no Range_m, no Spread_deg -- and the tags and both row fields landed
+    # today. Whatever the extraction sees, it must not report the unit blocked now.
+    with quiet():
+        manifest = architect.parse_manifest()
+        truth = architect.ground_truth()
+    spec = next((e.get("spec") for f in manifest.values() for e in f["units"]
+                 if e["name"] == "BRGA_WeaponFire"), None)
+    verdict, missing, unknown, refs = architect.readiness_of(spec, truth)
+    n += 1
+    ok = check("R33 BRGA_WeaponFire is not reported blocked today", True,
+               verdict != "not_ready",
+               "the ruling's own ground truth: its undeclared tags were declared and both row "
+               "fields landed today, so a not_ready verdict here would be the term reporting a "
+               "gap that has been closed")
+    named = sorted(f"{k}:{v}" for k, vs in refs.items() for v in vs)
+    print(f"      verdict {verdict.upper()}; §3 row names {named or '(no checkable input)'}")
+    if missing:
+        print(f"      absent on disk: {', '.join(missing)}")
+
+    # ---- R34: a gate is not a preference ----------------------------------------------
+    rows = drive_rank(r34_units("not_ready"))
+    blocked, waiter = rows["BRBlocked"], rows["BRWaiter00"]
+    n += 3
+    check("R34 the gated unit really has max blockers", 40, blocked["blockers"],
+          "the setup assertion. If the blocker term were 0 here the gate would 'win' against "
+          "nothing and the ruling would be untested")
+    check("R34 not-ready cannot outrank ready", True, blocked["total"] < waiter["total"],
+          "R34 exactly: 40 blocker points plus every preference available must not overcome "
+          "'this cannot be built'. state at 2/1/0 lost to a blocker term reaching 35 once "
+          "already, and the score returned a unit that was already BUILT")
+    check("R34 top of the table is a READY unit", "ready",
+          max(rows.values(), key=lambda r: r["total"])["readiness"],
+          "the consequence that matters: the thing the architect hands to a builder")
+    # Control: the ONLY change is the readiness verdict. If the gated unit does not win here,
+    # the blocker term has been destroyed rather than gated, and criticality is gone from the
+    # score -- which is exactly the failure a filter-everything fix would produce.
+    rows = drive_rank(r34_units("ready"))
+    n += 1
+    check("R34 control: same fixture, readiness ready -> wins", True,
+          rows["BRBlocked"]["total"] > rows["BRWaiter00"]["total"],
+          "40 units genuinely waiting on it is the strongest preference signal the score has, "
+          "and with the gate open it must still decide the pick")
+
+    # ---- R35: an include edge to a header that is not on disk ---------------------------
+    edges, discarded, ghost_blockers = drive_include_edges(ghost_on_disk=False)
+    n += 3
+    check("R35 phantom include -> no edge", [], edges,
+          "F3: one line naming a header that does not exist moved its target +27 and to #1. "
+          "The include cannot compile, so it is not evidence of a dependency")
+    check("R35 phantom include -> counted as discarded", 1, discarded,
+          "the discard must be REPORTED, not silently filtered: a phantom include is either a "
+          "broken build or an attempt to move the queue, and both are findings")
+    check("R35 phantom include -> 0 blocker points", 0, ghost_blockers,
+          "the term F3 actually moved. If this is 1 the edge is still being scored and the "
+          "score remains writable by the builder it directs")
+    edges, discarded, ghost_blockers = drive_include_edges(ghost_on_disk=True)
+    n += 3
+    check("R35 control: real header -> edge kept", ["BRGhost"], edges,
+          "the control. A filter that dropped every edge would pass all three cases above and "
+          "delete the entire second dependency source the spec requires")
+    check("R35 control: nothing discarded", 0, discarded,
+          "a discard counter that only ever goes up is as misleading as no counter at all")
+    check("R35 control: real header -> 1 blocker point", 1, ghost_blockers,
+          "identical include line to the phantom case; the ONLY difference is the header being "
+          "on disk, which is precisely what R35 makes the edge conditional on")
+
+    return n, failures
+
+
+# ======================================================================================
 
 def main():
     if not ARCH.exists():
@@ -584,14 +881,17 @@ def main():
     print("=" * 78)
     print("architect.py self-check -- RED-THEN-GREEN")
     print("=" * 78)
-    print("Four sections, one per surface the architect makes a decision on. Every case is a")
-    print("defect this file has actually shipped, so every case is red before its fix and green")
-    print("after it. F7 (step 6) is the reason sections 2-4 exist: five manifest cases proved")
-    print("nothing about classify(), rank() or blackboard(), and F4, F5 and F6a were all found")
-    print("in that gap.")
+    print("Five sections. Sections 1-4 are one per surface the architect makes a decision on;")
+    print("every case is a defect this file has actually shipped, so every case is red before")
+    print("its fix and green after it. F7 (step 6) is the reason sections 2-4 exist: five")
+    print("manifest cases proved nothing about classify(), rank() or blackboard(), and F4, F5")
+    print("and F6a were all found in that gap. Section 5 is the four rulings of 1 Aug 2026")
+    print("(R32 depth's sign, R33 readiness, R34 gates dominate, R35 include edges must point")
+    print("at a header that exists) -- each shaped like the wrong RUN that forced the ruling.")
 
     total, failures = 0, []
-    for section in (section_manifest, section_classify, section_traversal, section_rank):
+    for section in (section_manifest, section_classify, section_traversal, section_rank,
+                    section_rulings):
         n, f = section()
         total += n
         failures += f
@@ -604,8 +904,9 @@ def main():
             print(f"  - {name}")
         return 1
     print(f"All {total} cases behaved. The self-check has now been proven against cases it")
-    print("must reject, not only against the one it passes -- and across all four surfaces,")
-    print("not only the manifest parser.")
+    print("must reject, not only against the one it passes -- across all four surfaces, not")
+    print("only the manifest parser, and against each of the four rulings of 1 Aug 2026 by a")
+    print("case shaped like the run that forced it.")
     return 0
 
 

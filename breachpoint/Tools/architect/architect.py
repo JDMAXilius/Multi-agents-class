@@ -31,6 +31,7 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent                       # Tools/architect/ -> repo root
 ARCH = REPO / "BREACHPOINT-ARCHITECTURE.md"
 SRC = REPO / "Source" / "Breachpoint"
+DATA_DIR = REPO / "Content" / "Data"            # the CSVs readiness is checked against
 STATE_DIR = HERE / "state"
 BLACKBOARD_DIR = HERE / "blackboard"
 
@@ -95,8 +96,19 @@ FOLDER_TICKET = {
 # swamped it, so the top-ranked unit came back BUILT -- a "what to build next" scorer selecting
 # something already built. Magnitudes now separate the classes the way the tier term already
 # separates Phase-2: a BUILT unit can never outrank an unbuilt one, whatever else it scores.
+#
+# R34 (1 Aug 2026) generalises that into the rule the three bugs shared: **a term expressing
+# IMPOSSIBILITY is a gate, and a gate uses a magnitude no sum of preferences can overcome.**
+# `state`, `tier` and now `readiness` are gates; `depth` and `blockers` are preferences and stay
+# small. rank() PRINTS the dominance arithmetic every run -- the invariant is checked against the
+# largest preference sum the live table can actually produce, not asserted in a comment.
 STATE_SCORE = {"MISSING": 100, "STUB": 50, "BUILT": -1000}
 TIER_SCORE = {"slice": 0, "phase2": -100}
+
+# R33 + R34. "unknown" scores as READY on purpose: readiness is derived from disk, and a unit
+# whose §3 entry names nothing checkable has not been shown to be blocked. Inventing a blocker
+# out of an absence of evidence would bury real work behind a parsing gap.
+READINESS_SCORE = {"ready": 0, "unknown": 0, "not_ready": -500}
 
 
 def log(msg=""):
@@ -155,7 +167,14 @@ def parse_manifest():
                 # Reporting a by-design header-only unit as STUB offered BRDataRows (889
                 # lines, 8 USTRUCTs) as work to do. F4, step 6.
                 form = {"h/.cpp": "both", "h": "header", "cpp": "cpp"}[u.group(2)]
-                units.append({"name": name, "form": form})
+                # R33: readiness is judged against the unit's OWN §3 entry, so keep the row
+                # the declaration sits on. UNIT_RE only matches a backticked path WITH an
+                # extension, so this is always the declaring row and never a prose mention
+                # of the unit inside some other unit's row.
+                line_start = body.rfind("\n", 0, u.start()) + 1
+                line_end = body.find("\n", u.start())
+                spec = body[line_start:line_end if line_end > 0 else len(body)]
+                units.append({"name": name, "form": form, "spec": spec})
         out[folder] = {"declared": declared, "units": units}
     return out
 
@@ -240,6 +259,169 @@ def count_ge_classes():
     return len(re.findall(r"^\s*class\s+\w*\s*UBRGE_\w+", GE_HEADER.read_text(encoding="utf-8"), re.M))
 
 
+# --------------------------------------------------------------------------------------
+# R33 -- READINESS. Computed MECHANICALLY, from disk, never from a model.
+# --------------------------------------------------------------------------------------
+#
+# A unit whose declared inputs do not exist cannot be built, however valuable it is.
+# `BRGA_WeaponFire` ranked #1 while three of its inputs were missing and the builder packet
+# stopped at law 5 on contact -- the score had no term for "can this be started at all".
+#
+# THE EXTRACTION IS DELIBERATELY CONSERVATIVE, and its shape is the whole design:
+#
+#   * it reads ONLY the unit's own §3 row, so a reference is never attributed to a sibling;
+#   * it matches four reference shapes that are UNAMBIGUOUS in this manifest's own notation,
+#     and matches nothing else. A thing it does not match is NOT invented as a blocker;
+#   * a family/placeholder reference (`Damage.*`, `Event.<Verb>.<Moment>`) names no concrete
+#     input and is skipped;
+#   * if the ground-truth file it would check against is itself absent, the reference is
+#     UNKNOWN -- not missing. An absent oracle is not evidence of a missing input;
+#   * every reference it looked for and every verdict is PRINTED. A silent cap reads as
+#     "covered everything", and the cap here is large: most §3 rows are prose and name no
+#     checkable input at all, so most units come back UNKNOWN. The run log says how many.
+#
+# UNKNOWN scores as READY (READINESS_SCORE above). The known cost is stated out loud in the
+# run log: this term detects a MISSING INPUT THE MANIFEST NAMES. It cannot detect an input the
+# manifest only implies -- §3's `BRGA_WeaponFire` row says "server validates (rate/ammo/cone/
+# range)" in prose and names neither `Range_m`, `Spread_deg`, nor an `AbilitySet` column, so
+# the three gaps that actually blocked BP03 step 2 are invisible to it in BOTH directions.
+
+BACKTICK_RE = re.compile(r"`([^`]+)`")
+
+# A gameplay tag reference: one of the manifest's tag roots followed by at least one dotted
+# component. `Damage.Melee[.Rear]` is §3's notation for an OPTIONAL trailing component -- the
+# conservative reading is the base tag `Damage.Melee`, which is what gets checked.
+TAG_ROOTS = ("Ability", "InputTag", "State", "Damage", "Event", "GameplayCue",
+             "SetByCaller", "Cooldown")
+TAG_REF_RE = re.compile(r"^(?:" + "|".join(TAG_ROOTS) +
+                        r")(?:\.[A-Za-z0-9_]+)+(?:\[\.[A-Za-z0-9_.]+\])?$")
+# `FBRWeaponRow`-style row struct. The `Row` suffix is the discriminator: `FBRMatchTelemetry`
+# and `FBRKillFeedEntry` are plain USTRUCTs that live with their owning unit, owe nothing to
+# BRDataRows.h, and must not be reported as missing rows.
+ROW_STRUCT_REF_RE = re.compile(r"^FBR[A-Za-z0-9]+Row$")
+# A table reference: `DT_Weapons`, `DT_BotAmbitions.csv`, `CT_Combat`.
+TABLE_REF_RE = re.compile(r"^((?:DT|CT)_[A-Za-z0-9]+)(?:\.csv)?$")
+# A row field / CSV column. This project's data columns carry a UNIT SUFFIX (`ReloadTime_s`,
+# `Range_m`, `Spread_deg`, `reaction_ms`, `sight_radius_m`) and that suffix is what makes the
+# match safe: `COND_OwnerOnly`, `Mesh1P` and `MatchEndServerTime` are not columns and are not
+# matched. A column named without a unit suffix is a reference this check CANNOT see.
+COLUMN_REF_RE = re.compile(r"\b([A-Za-z][A-Za-z0-9]*_(?:m|s|ms|deg|cm|pct|x))\b")
+
+
+def unit_references(spec):
+    """The checkable inputs a unit's own §3 row NAMES -> {kind: [ref, ...]}."""
+    refs = {"tag": set(), "row": set(), "table": set(), "column": set()}
+    for span in BACKTICK_RE.findall(spec or ""):
+        s = span.strip()
+        if "*" in s or "<" in s:            # `Damage.*`, `Event.<Verb>.<Moment>` -- a family
+            continue                         # or a placeholder names no concrete input
+        if TAG_REF_RE.match(s):
+            refs["tag"].add(s.split("[")[0])
+            continue
+        if ROW_STRUCT_REF_RE.match(s):
+            refs["row"].add(s)
+            continue
+        m = TABLE_REF_RE.match(s)
+        if m:
+            refs["table"].add(m.group(1))
+            continue
+        refs["column"].update(COLUMN_REF_RE.findall(s))
+    return {k: sorted(v) for k, v in refs.items()}
+
+
+def declared_tags():
+    """Every tag string DEFINED in BRGameplayTags.cpp, or None if that file is absent."""
+    p = SRC / "Core" / "BRGameplayTags.cpp"
+    if not p.exists():
+        return None
+    text = p.read_text(encoding="utf-8", errors="replace")
+    return set(re.findall(r'UE_DEFINE_GAMEPLAY_TAG\w*\s*\(\s*[^,]+,\s*"([^"]+)"', text))
+
+
+def declared_rows():
+    """(row struct names, field names) from BRDataRows.h, or (None, None) if it is absent."""
+    p = SRC / "Data" / "BRDataRows.h"
+    if not p.exists():
+        return None, None
+    text = p.read_text(encoding="utf-8", errors="replace")
+    structs = set(re.findall(r"^\s*struct\s+(?:\w+\s+)?(FBR[A-Za-z0-9]+)", text, re.M))
+    fields = set(re.findall(r"UPROPERTY\s*\([^)]*\)\s*[\r\n]+\s*[^;\r\n]*?(\w+)\s*(?:=[^;]*)?;",
+                            text))
+    return structs, fields
+
+
+def declared_columns():
+    """({table stem: [column, ...]}, all columns), or (None, None) if there is no oracle.
+
+    An EMPTY Content/Data/ counts as no oracle, not as an oracle that knows nothing. The
+    difference decides whether a checkout without Content/ degrades to "cannot tell" or to
+    "nothing in this project is buildable".
+    """
+    if not DATA_DIR.is_dir() or not any(DATA_DIR.glob("*.csv")):
+        return None, None
+    tables, columns = {}, set()
+    for p in sorted(DATA_DIR.glob("*.csv")):
+        head = p.read_text(encoding="utf-8", errors="replace").splitlines()
+        cols = [c.strip().strip('"') for c in head[0].split(",")] if head else []
+        tables[p.stem] = cols
+        columns.update(c for c in cols if c)
+    return tables, columns
+
+
+def ground_truth():
+    """Everything readiness is judged against, read once per run. All of it comes off disk."""
+    tags = declared_tags()
+    structs, fields = declared_rows()
+    tables, columns = declared_columns()
+    return {"tags": tags, "structs": structs, "fields": fields,
+            "tables": tables, "columns": columns}
+
+
+def readiness_of(spec, truth):
+    """-> (verdict, [missing refs], [unknown refs], {kind: [refs looked for]}).
+
+    verdict is "not_ready" if ANY named input is provably absent, "ready" if at least one was
+    resolved and none was absent, and "unknown" if nothing checkable was named.
+    """
+    refs = unit_references(spec)
+    missing, unknown, resolved = [], [], []
+
+    def judge(kind, ref, oracle, present):
+        tag = f"{kind}:{ref}"
+        if oracle is None:
+            unknown.append(tag)             # no oracle on disk -> NOT a blocker
+        elif present:
+            resolved.append(tag)
+        else:
+            missing.append(tag)
+
+    for t in refs["tag"]:
+        judge("tag", t, truth["tags"], truth["tags"] is not None and t in truth["tags"])
+    for r in refs["row"]:
+        judge("row", r, truth["structs"], truth["structs"] is not None and r in truth["structs"])
+    for tb in refs["table"]:
+        judge("table", tb, truth["tables"], truth["tables"] is not None and tb in truth["tables"])
+    for c in refs["column"]:
+        # A column counts as present if ANY CSV header or any BRDataRows.h field carries it --
+        # §3 names the field, not which table it lands in, so demanding a specific table would
+        # be inferring a fact the manifest does not state. The corollary is that "absent" can
+        # only be asserted when BOTH oracles are readable: with one of them missing, the field
+        # could be sitting in the half we cannot see. Caught by this file's own self-check,
+        # which had `oracle = None` only when BOTH were absent -- so a checkout without
+        # Content/ reported every named column as a missing input.
+        oracle = None if (truth["columns"] is None or truth["fields"] is None) else True
+        present = (c in (truth["columns"] or set())) or (c in (truth["fields"] or set()))
+        judge("column", c, oracle, present)
+
+    if missing:
+        verdict = "not_ready"
+    elif resolved:
+        verdict = "ready"
+    else:
+        verdict = "unknown"
+    return verdict, missing, unknown, refs
+
+
 def scan():
     log("=" * 78)
     log("BP15 step 1 -- PERCEPTION (deterministic; ZERO API calls; no network import)")
@@ -291,22 +473,67 @@ def scan():
     log("  SELF-CHECK PASSED -- §3 is internally consistent and reaches §4's budget.")
 
     log("\n-- Disk scan: Source/Breachpoint/ -------------------------------------------")
+    truth = ground_truth()
     units, tally = [], {"BUILT": 0, "STUB": 0, "MISSING": 0}
     for folder, d in manifest.items():
         for entry in d["units"]:
             name, form = entry["name"], entry["form"]
             state = "MISSING" if name in PHASE2_UNITS else classify(folder, name, form)
             tally[state] += 1
+            verdict, missing, unknown, refs = readiness_of(entry.get("spec"), truth)
             units.append({"unit": name, "folder": folder, "state": state, "form": form,
                           "ticket": UNIT_TICKET.get(name, FOLDER_TICKET.get(folder, "?")),
-                          "tier": "phase2" if name in PHASE2_UNITS else "slice"})
+                          "tier": "phase2" if name in PHASE2_UNITS else "slice",
+                          "readiness": verdict, "readiness_missing": missing,
+                          "readiness_unknown": unknown,
+                          "readiness_refs": {k: v for k, v in refs.items() if v}})
     for name in sorted(PHASE2_UNITS):
         if not any(u["unit"] == name for u in units):
             units.append({"unit": name, "folder": "Online", "state": "MISSING",
-                          "ticket": "BP11", "tier": "phase2"})
+                          "ticket": "BP11", "tier": "phase2", "readiness": "unknown",
+                          "readiness_missing": [], "readiness_unknown": [],
+                          "readiness_refs": {}})
             tally["MISSING"] += 1
     log(f"  BUILT {tally['BUILT']} · STUB {tally['STUB']} · MISSING {tally['MISSING']} "
         f"· total {len(units)}")
+
+    log("\n-- R33 READINESS: computed from disk, never from a model --------------------")
+    log("  Ground truth consulted (all of it on disk; an absent oracle yields UNKNOWN, never")
+    log("  a blocker):")
+    n_tags = "ABSENT" if truth["tags"] is None else f"{len(truth['tags'])} tags declared"
+    n_rows = ("ABSENT" if truth["structs"] is None
+              else f"{len(truth['structs'])} structs / {len(truth['fields'])} fields")
+    n_cols = ("ABSENT" if truth["tables"] is None
+              else f"{len(truth['tables'])} tables / {len(truth['columns'])} columns")
+    log(f"    tags    {rel(SRC / 'Core' / 'BRGameplayTags.cpp'):<52}{n_tags}")
+    log(f"    rows    {rel(SRC / 'Data' / 'BRDataRows.h'):<52}{n_rows}")
+    log(f"    columns {rel(DATA_DIR) + '/*.csv':<52}{n_cols}")
+    log("  What it looks for, in the unit's OWN §3 row and nowhere else:")
+    log(f"    tag      a backticked {'/'.join(TAG_ROOTS[:4])}/... rooted dotted token; "
+        f"`X[.Y]` reads as `X`")
+    log("    row      a backticked `FBR<Name>Row` -> must be a struct in BRDataRows.h")
+    log("    table    a backticked `DT_*` / `CT_*`  -> must be a .csv in Content/Data/")
+    log("    column   a unit-suffixed identifier (`Range_m`, `Spread_deg`, `reaction_ms`)")
+    log("             -> must be a CSV header column or a BRDataRows.h field")
+    log("    SKIPPED  family/placeholder refs (`Damage.*`, `Event.<Verb>.<Moment>`) -- they")
+    log("             name no concrete input, so they can neither pass nor fail.")
+    log(f"  {'unit':<30}{'verdict':<11}references looked for (kind:name)")
+    r_tally = {"ready": 0, "not_ready": 0, "unknown": 0}
+    for u in units:
+        r_tally[u["readiness"]] += 1
+        shown = sorted(f"{k}:{v}" for k, vs in u["readiness_refs"].items() for v in vs)
+        detail = ", ".join(shown) if shown else "(none in its §3 row)"
+        log(f"  {u['unit']:<30}{u['readiness'].upper():<11}{detail}")
+        if u["readiness_missing"]:
+            log(f"  {'':<30}{'':<11}ABSENT ON DISK -> {', '.join(u['readiness_missing'])}")
+    log(f"  ready {r_tally['ready']} · not_ready {r_tally['not_ready']} · "
+        f"unknown {r_tally['unknown']}  (of {len(units)})")
+    log(f"  THE CAP, PRINTED: {r_tally['unknown']} units name NO checkable input in their §3")
+    log("  row -- their rows are prose. Those are UNKNOWN and are treated as READY. This term")
+    log("  detects a missing input the MANIFEST NAMES; it cannot detect one the manifest only")
+    log("  implies. §3's BRGA_WeaponFire row says 'server validates (rate/ammo/cone/range)' and")
+    log("  names no `Range_m`, no `Spread_deg` and no `AbilitySet` column, so the three gaps")
+    log("  that actually blocked BP03 step 2 are invisible here in BOTH directions.")
 
     log("\n-- UNDECLARED: real BR* source that §3 does not declare ---------------------")
     undeclared = undeclared_files(manifest)
@@ -326,6 +553,15 @@ def scan():
         "exclusions": {"ge_classes": ge, "ge_header": rel(GE_HEADER),
                        "phase2": sorted(PHASE2_UNITS), "template_dirs": sorted(TEMPLATE_DIRS)},
         "tally": tally,
+        "readiness_tally": r_tally,
+        "readiness_ground_truth": {
+            "tags": rel(SRC / "Core" / "BRGameplayTags.cpp"),
+            "rows": rel(SRC / "Data" / "BRDataRows.h"),
+            "columns": rel(DATA_DIR) + "/*.csv",
+            "declared_tags": 0 if truth["tags"] is None else len(truth["tags"]),
+            "declared_row_structs": 0 if truth["structs"] is None else len(truth["structs"]),
+            "declared_columns": 0 if truth["columns"] is None else len(truth["columns"]),
+        },
         "units": units,
         "undeclared": undeclared,
     }
@@ -352,22 +588,37 @@ INCLUDE_RE = re.compile(r'^\s*#include\s+"(?:[^"]*/)?(BR[A-Za-z0-9_]+)\.h"', re.
 
 
 def include_edges(units):
-    """Real `#include` edges between declared units -- the spec's second dependency source.
+    """Real `#include` edges between declared units -> (edges, discarded).
 
-    Only BUILT/STUB units have files to parse, so this graph is partial BY CONSTRUCTION and the
-    run log says so. It refines the ticket DAG; it never replaces it.
+    The spec's second dependency source. Only BUILT/STUB units have files to parse, so this
+    graph is partial BY CONSTRUCTION and the run log says so. It refines the ticket DAG; it
+    never replaces it.
+
+    R35: **an edge counts only if the included header EXISTS ON DISK.** Step 6's F3 added one
+    line -- `#include "BRGA_Grenade.h"` -- to `BRCore.h` and moved that unit +27 and to #1,
+    and the included header does not exist. The include cannot compile; a line that cannot
+    compile is not evidence of a dependency, and accepting it made two of the score's terms
+    writable by the same builder the score directs. Discarded edges are RETURNED, not dropped
+    silently -- rank() prints how many and which, because a phantom include is a finding
+    (either a broken build or an attempt to move the queue) and must not vanish into a filter.
     """
     names = {u["unit"] for u in units}
-    includes = {}
+    on_disk = {n for n in names if next(SRC.rglob(f"{n}.h"), None) is not None}
+    includes, discarded = {}, []
     for u in units:
         deps = set()
         for suffix in (".h", ".cpp"):
             for p in (SRC / u["folder"]).rglob(f"{u['unit']}{suffix}"):
                 for m in INCLUDE_RE.finditer(p.read_text(encoding="utf-8", errors="replace")):
-                    if m.group(1) in names and m.group(1) != u["unit"]:
-                        deps.add(m.group(1))
+                    dep = m.group(1)
+                    if dep not in names or dep == u["unit"]:
+                        continue
+                    if dep not in on_disk:
+                        discarded.append({"from": u["unit"], "to": dep, "in": rel(p)})
+                        continue
+                    deps.add(dep)
         includes[u["unit"]] = deps
-    return includes
+    return includes, discarded
 
 
 def include_depth(unit, includes, seen=None):
@@ -411,20 +662,37 @@ def rank(perception=None):
     log("\n" + "=" * 78)
     log("BP15 step 2 -- UTILITY SCORING (deterministic; ZERO API calls)")
     log("=" * 78)
-    log("score = depth + blockers + tier + state   |   ties break on LOWEST ticket number,")
-    log("never on a model's preference. Every term is printed; the total is never the only")
-    log("thing you can see.\n")
+    log("score = blockers + tier + state + readiness - depth   |   ties break on LOWEST ticket")
+    log("number, never on a model's preference. Every term is printed; the total is never the")
+    log("only thing you can see.")
+    log("")
+    log("  R32: depth is SUBTRACTED. Depth away from a DAG root is distance from being")
+    log("       STARTABLE, so it must reduce the score. Adding it made the top pick")
+    log("       BRSpotterSubsystem -- BP11, gated by BP08, gated by BP02+BP04 -- winning on")
+    log("       depth 4 alone, while the three test specs (depth 0, startable) ranked 7-9 in")
+    log("       the same table that reported rung 2 BLOCKED *because* Tests/ was empty.")
+    log("       Deep units are not buried: `blockers` still lifts a unit many others wait on.")
+    log("  R33: readiness is the fifth term, computed mechanically off disk (see --scan).")
+    log("  R34: gates (state, tier, readiness) dominate preferences (depth, blockers).\n")
 
     units = [u for u in perception["units"]]
     counts = {}
     for u in units:
         counts[u["ticket"]] = counts.get(u["ticket"], 0) + 1
 
-    includes = include_edges(units)
+    includes, discarded = include_edges(units)
     parsed_edges = sum(len(v) for v in includes.values())
     log(f"  dependency sources: ticket DAG ({len(TICKET_DEPS)} tickets) + {parsed_edges} real")
     log(f"  #include edges. The include graph is PARTIAL by construction -- MISSING units have")
-    log(f"  no files to parse -- so it refines the ticket DAG and never replaces it.\n")
+    log(f"  no files to parse -- so it refines the ticket DAG and never replaces it.")
+    log(f"  R35 -- include edges DISCARDED because the included header is not on disk: "
+        f"{len(discarded)}")
+    for d in discarded:
+        log(f"    {d['in']}: #include \"{d['to']}.h\" -> no such header. Cannot compile, so it")
+        log(f"    is not evidence of a dependency; the edge {d['from']} -> {d['to']} is dropped.")
+    if not discarded:
+        log("    (none -- every include edge names a header that exists)")
+    log("")
 
     by_unit = {u["unit"]: u for u in units}
     rows = []
@@ -445,16 +713,44 @@ def rank(perception=None):
         blockers = len(waiters)
         tier = TIER_SCORE[u["tier"]]
         state = STATE_SCORE[u["state"]]
+        # R33. A unit whose readiness was never computed (a synthetic row, or a perception.json
+        # written before this term existed) is UNKNOWN, and UNKNOWN is READY: absence of a
+        # readiness verdict is not a blocker.
+        verdict = u.get("readiness") or "unknown"
+        readiness = READINESS_SCORE[verdict]
         rows.append({**u, "depth": depth, "blockers": blockers, "tier": tier,
-                     "state_score": state, "total": depth + blockers + tier + state})
+                     "state_score": state, "readiness": verdict, "readiness_score": readiness,
+                     # R32: depth SUBTRACTED.
+                     "total": blockers + tier + state + readiness - depth})
 
     rows.sort(key=lambda r: (-r["total"], int(re.sub(r"\D", "", r["ticket"]) or 99), r["unit"]))
 
+    # R34, proved against the live table rather than asserted in a comment: the largest swing
+    # the two PREFERENCE terms can produce here, versus the smallest gate magnitude in play.
+    max_pref = max((r["blockers"] for r in rows), default=0) + max((r["depth"] for r in rows),
+                                                                   default=0)
+    gates = {"state MISSING->BUILT": abs(STATE_SCORE["MISSING"] - STATE_SCORE["BUILT"]),
+             "tier slice->phase2": abs(TIER_SCORE["slice"] - TIER_SCORE["phase2"]),
+             "readiness ready->not_ready": abs(READINESS_SCORE["ready"] -
+                                               READINESS_SCORE["not_ready"])}
+    log(f"  R34 dominance check: largest preference swing available in THIS table = "
+        f"max blockers {max((r['blockers'] for r in rows), default=0)} + max depth "
+        f"{max((r['depth'] for r in rows), default=0)} = {max_pref}")
+    for name, mag in sorted(gates.items()):
+        verdict34 = "DOMINATES" if mag > max_pref else "**FAILS -- a gate a preference can beat**"
+        log(f"    gate {name:<28} magnitude {mag:>5}   {verdict34}")
+    if any(mag <= max_pref for mag in gates.values()):
+        log("\nSELF-CHECK FAILED (R34): a gate term no longer dominates the preference terms.")
+        log("'This cannot be built' is not a preference to be outvoted.")
+        sys.exit(2)
+    log("")
+
     log(f"  {'#':>3}  {'unit':<30} {'tkt':<5}{'state':<9}"
-        f"{'depth':>6}{'block':>6}{'tier':>6}{'state':>7}{'TOTAL':>8}")
+        f"{'depth':>6}{'block':>6}{'tier':>6}{'state':>7}{'ready':>7}{'TOTAL':>8}")
     for i, r in enumerate(rows, 1):
         log(f"  {i:>3}  {r['unit']:<30} {r['ticket']:<5}{r['state']:<9}"
-            f"{r['depth']:>6}{r['blockers']:>6}{r['tier']:>6}{r['state_score']:>7}{r['total']:>8}")
+            f"{r['depth']:>6}{r['blockers']:>6}{r['tier']:>6}{r['state_score']:>7}"
+            f"{r['readiness_score']:>7}{r['total']:>8}")
 
     out = STATE_DIR / "ranking.json"
     out.write_text(json.dumps({"api_calls": 0, "ranked": rows}, indent=2) + "\n", encoding="utf-8")
@@ -496,8 +792,9 @@ def blackboard(rows=None):
     folder = top["folder"]
     owner = f"Source/Breachpoint/{folder}/"
     table = "\n".join(
-        f"| {i} | {r['unit']} | {r['ticket']} | {r['state']} | {r['depth']} | "
-        f"{r['blockers']} | {r['tier']} | {r['state_score']} | **{r['total']}** |"
+        f"| {i} | {r['unit']} | {r['ticket']} | {r['state']} | -{r['depth']} | "
+        f"{r['blockers']} | {r['tier']} | {r['state_score']} | "
+        f"{r.get('readiness_score', 0)} | **{r['total']}** |"
         for i, r in enumerate(rows[:12], 1))
 
     path.write_text(f"""# Blackboard — {top['unit']} — {stamp}
@@ -509,11 +806,16 @@ absent, nothing was authorised. Nothing reaches the codebase unlogged.
 
 Top 12 of {len(rows)}. Ties break on lowest ticket number. **Zero API calls** produced this order.
 
-| # | unit | ticket | state | depth | blockers | tier | state | TOTAL |
-|---|---|---|---|---|---|---|---|---|
+`score = blockers + tier + state + readiness − depth` (R32: depth is SUBTRACTED — depth away
+from a DAG root is distance from being *startable*. R33: readiness is the fifth term, derived
+from disk. R34: `state`, `tier` and `readiness` are gates and dominate; `depth` and `blockers`
+are preferences.)
+
+| # | unit | ticket | state | −depth | blockers | tier | state | ready | TOTAL |
+|---|---|---|---|---|---|---|---|---|---|
 {table}
 
-**Selected: `{top['unit']}`** — {top['ticket']}, {top['state']}, total {top['total']}.
+**Selected: `{top['unit']}`** — {top['ticket']}, {top['state']}, readiness {top.get('readiness', 'unknown')}, total {top['total']}.
 
 ## What it will issue
 

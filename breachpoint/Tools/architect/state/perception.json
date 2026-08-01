@@ -19,9 +19,22 @@
     ]
   },
   "tally": {
-    "BUILT": 34,
+    "BUILT": 40,
     "STUB": 0,
-    "MISSING": 10
+    "MISSING": 4
+  },
+  "readiness_tally": {
+    "ready": 8,
+    "not_ready": 0,
+    "unknown": 36
+  },
+  "readiness_ground_truth": {
+    "tags": "Source/Breachpoint/Core/BRGameplayTags.cpp",
+    "rows": "Source/Breachpoint/Data/BRDataRows.h",
+    "columns": "Content/Data/*.csv",
+    "declared_tags": 37,
+    "declared_row_structs": 7,
+    "declared_columns": 55
   },
   "units": [
     {
@@ -30,7 +43,11 @@
       "state": "BUILT",
       "form": "both",
       "ticket": "BP01",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BRCore",
@@ -38,7 +55,11 @@
       "state": "BUILT",
       "form": "both",
       "ticket": "BP01",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BRInputConfig",
@@ -46,7 +67,11 @@
       "state": "BUILT",
       "form": "both",
       "ticket": "BP01",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BRInputComponent",
@@ -54,7 +79,11 @@
       "state": "BUILT",
       "form": "both",
       "ticket": "BP01",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BRAbilitySystemComponent",
@@ -62,7 +91,11 @@
       "state": "BUILT",
       "form": "both",
       "ticket": "BP02",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BRAbilitySet",
@@ -70,7 +103,11 @@
       "state": "BUILT",
       "form": "both",
       "ticket": "BP02",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BRAttributeSet",
@@ -78,7 +115,15 @@
       "state": "BUILT",
       "form": "both",
       "ticket": "BP02",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "ready",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {
+        "tag": [
+          "Event.Death"
+        ]
+      }
     },
     {
       "unit": "BRGameplayAbility",
@@ -86,7 +131,15 @@
       "state": "BUILT",
       "form": "both",
       "ticket": "BP02",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "ready",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {
+        "tag": [
+          "State.Dead"
+        ]
+      }
     },
     {
       "unit": "BRDamageExecCalc",
@@ -94,23 +147,42 @@
       "state": "BUILT",
       "form": "both",
       "ticket": "BP02",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "ready",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {
+        "tag": [
+          "SetByCaller.BaseDamage"
+        ],
+        "table": [
+          "CT_Combat"
+        ]
+      }
     },
     {
       "unit": "BRGA_WeaponFire",
       "folder": "AbilitySystem",
-      "state": "MISSING",
+      "state": "BUILT",
       "form": "both",
       "ticket": "BP03",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BRGA_WeaponUtility",
       "folder": "AbilitySystem",
-      "state": "MISSING",
+      "state": "BUILT",
       "form": "both",
       "ticket": "BP03",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BRGA_Grenade",
@@ -118,23 +190,43 @@
       "state": "MISSING",
       "form": "both",
       "ticket": "BP05",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "ready",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {
+        "tag": [
+          "Damage.Explosive"
+        ]
+      }
     },
     {
       "unit": "BRGA_Melee",
       "folder": "AbilitySystem",
-      "state": "MISSING",
+      "state": "BUILT",
       "form": "both",
       "ticket": "BP05",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "ready",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {
+        "tag": [
+          "Damage.Melee"
+        ]
+      }
     },
     {
       "unit": "BRGA_Grapple",
       "folder": "AbilitySystem",
-      "state": "MISSING",
+      "state": "BUILT",
       "form": "both",
       "ticket": "BP06",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BRGA_Sprint",
@@ -142,7 +234,19 @@
       "state": "BUILT",
       "form": "both",
       "ticket": "BP02",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "ready",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {
+        "tag": [
+          "InputTag.Sprint",
+          "State.Movement.Sprinting"
+        ],
+        "table": [
+          "CT_Combat"
+        ]
+      }
     },
     {
       "unit": "BRCharacter",
@@ -150,7 +254,11 @@
       "state": "BUILT",
       "form": "both",
       "ticket": "BP01",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BRCharacterMovementComponent",
@@ -158,7 +266,11 @@
       "state": "BUILT",
       "form": "both",
       "ticket": "BP01",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BREquipmentComponent",
@@ -166,7 +278,11 @@
       "state": "BUILT",
       "form": "both",
       "ticket": "BP03",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BRWeaponInstance",
@@ -174,7 +290,11 @@
       "state": "BUILT",
       "form": "both",
       "ticket": "BP03",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BRWeaponPickup",
@@ -182,7 +302,11 @@
       "state": "BUILT",
       "form": "both",
       "ticket": "BP03",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BRGameMode",
@@ -190,7 +314,11 @@
       "state": "BUILT",
       "form": "both",
       "ticket": "BP04",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BRGameState",
@@ -198,7 +326,11 @@
       "state": "BUILT",
       "form": "both",
       "ticket": "BP04",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BRPlayerState",
@@ -206,7 +338,11 @@
       "state": "BUILT",
       "form": "both",
       "ticket": "BP04",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BRPlayerController",
@@ -214,7 +350,11 @@
       "state": "BUILT",
       "form": "both",
       "ticket": "BP04",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BRBotBrain",
@@ -222,7 +362,15 @@
       "state": "BUILT",
       "form": "both",
       "ticket": "BP08",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "ready",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {
+        "table": [
+          "DT_BotAmbitions"
+        ]
+      }
     },
     {
       "unit": "BRBotFacts",
@@ -230,7 +378,11 @@
       "state": "BUILT",
       "form": "header",
       "ticket": "BP08",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BRBotController",
@@ -238,7 +390,11 @@
       "state": "BUILT",
       "form": "both",
       "ticket": "BP08",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BRStateTreeTasks",
@@ -246,7 +402,11 @@
       "state": "BUILT",
       "form": "both",
       "ticket": "BP08",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BREnvQueryContexts",
@@ -254,7 +414,11 @@
       "state": "BUILT",
       "form": "both",
       "ticket": "BP08",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BRBotManagerComponent",
@@ -262,7 +426,11 @@
       "state": "BUILT",
       "form": "both",
       "ticket": "BP08",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BRSessionsSubsystem",
@@ -270,7 +438,11 @@
       "state": "BUILT",
       "form": "both",
       "ticket": "BP11",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BRServerLifecycle",
@@ -278,7 +450,11 @@
       "state": "BUILT",
       "form": "header",
       "ticket": "BP11",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BRListenServerLifecycle",
@@ -286,7 +462,11 @@
       "state": "BUILT",
       "form": "both",
       "ticket": "BP11",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BRUIManagerSubsystem",
@@ -294,7 +474,11 @@
       "state": "BUILT",
       "form": "both",
       "ticket": "BP10",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BRActivatableWidget",
@@ -302,7 +486,11 @@
       "state": "BUILT",
       "form": "both",
       "ticket": "BP10",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BRViewModels",
@@ -310,7 +498,11 @@
       "state": "BUILT",
       "form": "both",
       "ticket": "BP10",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BRHUDLayout",
@@ -318,7 +510,11 @@
       "state": "BUILT",
       "form": "both",
       "ticket": "BP10",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BRTelemetrySubsystem",
@@ -326,7 +522,11 @@
       "state": "BUILT",
       "form": "both",
       "ticket": "BP11",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BRSpotterSubsystem",
@@ -334,7 +534,11 @@
       "state": "MISSING",
       "form": "both",
       "ticket": "BP11",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BRDataRows",
@@ -342,23 +546,39 @@
       "state": "BUILT",
       "form": "header",
       "ticket": "BP02",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "ready",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {
+        "row": [
+          "FBRWeaponRow"
+        ]
+      }
     },
     {
       "unit": "BRCombatSpec",
       "folder": "Tests",
-      "state": "MISSING",
+      "state": "BUILT",
       "form": "cpp",
       "ticket": "BP00",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BRShieldSpec",
       "folder": "Tests",
-      "state": "MISSING",
+      "state": "BUILT",
       "form": "cpp",
       "ticket": "BP00",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BRBotDeterminismSpec",
@@ -366,14 +586,22 @@
       "state": "MISSING",
       "form": "cpp",
       "ticket": "BP00",
-      "tier": "slice"
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     },
     {
       "unit": "BRGameLiftLifecycle",
       "folder": "Online",
       "state": "MISSING",
       "ticket": "BP11",
-      "tier": "phase2"
+      "tier": "phase2",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
     }
   ],
   "undeclared": {
