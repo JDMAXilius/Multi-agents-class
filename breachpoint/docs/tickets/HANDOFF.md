@@ -211,3 +211,40 @@ exists is a retrofit instead of one extra `GetConfiguration()` override.
 Smaller, unfixed: `ARCHITECTURE §3` is stale against disk (`UI/` holds 7 units vs 4 listed;
 `BRCombatCurves` unlisted; `Tests/` empty vs 3) — BP15 step 1 will surface all of it
 mechanically, which is a better fix than doing it by hand.
+
+---
+
+# Session 3 — 1 Aug 2026, terminal (Windows). Short, because it ended deliberately.
+
+**Nothing is claimed; no `.claude/active-packet.json` exists.** Clean resting state.
+
+Session was launched at `D:\Documents\Claude\Multi-agents-class` — **one level above the game
+repo** — and closed on purpose so the next one launches at `…\Multi-agents-class\breachpoint`,
+per BP01's ruling. Two things landed first (commit `56782fb`, pushed):
+
+1. **BP14's checked step-1 box was FALSE on Windows.** `run_crew.py` exited **1** —
+   `UnicodeEncodeError` on `→` under cp1252, on the first job banner. Every file write in the
+   script already pinned `encoding="utf-8"`; only the streams were left to the platform. Fixed
+   and re-proven with `PYTHONIOENCODING` unset: **exit 0**, critic still bounces 3×, and
+   `output/DT_Weapons.csv` is byte-identical to `Content/Data/DT_Weapons.csv`.
+   **BP15's Kickoff gate now passes on this machine** — that gate is why it was found.
+2. **BP01's documented pre-flight gives a false pass.** "Ask for `/tickets list`; if the skill
+   is missing the hook is too" — **not true on the current harness.** From the parent directory
+   `CLAUDE.md` and all 7 skills loaded normally while `guard_laws.py` was inert: skills bind by
+   *directory scope*, hooks bind to the *launch root*. Proven both ways with the reject case
+   (parent `cwd` → exit 0 ALLOWED; repo `cwd` → exit 2 BLOCKED). The working check is written
+   into BP01's Log. `test_guard_laws.py` passes `cwd` itself, so **6/6 green is compatible with
+   a completely inert hook** — it tests the logic, never the binding.
+
+## Pick up here — nothing else changed
+
+- **BP15 steps 1–3.** Gate green, `requires: files-only`, `owner_path: Tools/architect/`,
+  `Tools/architect/` still empty. Unchanged from session 2's recommendation except that its
+  gate is now true on Windows rather than only in the cloud.
+- Then the three from session 1: **run the input generator** (nothing moves in PIE without it),
+  **restart BP03 step 2**, **import the CSVs**.
+
+*The pattern held for a third session running.* Both defects above are the same shape as
+session 2's four — a rule that read as enforced and was not — and one of them was **the check
+on the enforcement**. When looking for the next one, prefer the mechanisms nobody has fired a
+rejecting case at over the rules nobody follows.
