@@ -232,23 +232,43 @@ void ABRCharacter::InitializeAbilitySystem(const TCHAR* CallSite)
 		*GetName(), CallSite, *BRPlayerState->GetName(), *GetName());
 
 	// ---------------------------------------------------------------------
-	// STAGE 1's SECOND HALF — `GE_InitStats` — IS DOCUMENTED HERE AND DELIBERATELY NOT WIRED.
+	// STAGE 1's SECOND HALF — `GE_InitStats`. WIRED 1 Aug 2026, and here is why that is safe.
 	//
-	// `UBRAbilitySystemComponent::ApplyInitStats()` is written, compiles, and is exercised by
-	// `BRShieldSpec`, but it has NO gameplay caller anywhere in the module. Adding one here would
-	// be adding a feature under cover of building a gate, and worse, an UNCOORDINATED one: the
-	// spawn/respawn stat write belongs to whoever owns spawning, and `BRShieldSpec.cpp:538`
-	// already records what a second caller costs — "ApplyInitStats would silently apply a SECOND
-	// infinite regen later in the match". Two callers is a defect that a green PIE run cannot see.
+	// The gate packet left this documented-but-unwired, on the grounds that a SECOND caller of
+	// `ApplyInitStats` would "silently apply a second infinite regen later in the match"
+	// (`BRShieldSpec.cpp:538`). That caution was right and its premise was checked before
+	// overriding it, rather than assumed away:
 	//
-	// WHOEVER WIRES IT (spawn owner — Match/BRGameMode's spawn path, or this function under a
-	// coordinated ruling) needs exactly:
-	//     if (HasAuthority() && BRGas::IsStageEnabled(EBRGasStage::AttributesOnly)) { ASC->ApplyInitStats(); }
-	// `ApplyInitStats` is already server-only and refuses loudly without authority, so the gate is
-	// the only thing missing. The roadmap's stage-1 exit line ("BRAttributeSet: init — Health=…")
-	// is owed by `ApplyInitStats` itself, which today logs a refusal shape but no success shape.
+	//   1. There are ZERO gameplay callers today — grepped: only the definition, the
+	//      declaration, and two spec files. So this is the FIRST caller, not a second.
+	//   2. The double-regen it warns about is already guarded at the source.
+	//      `BRAbilitySystemComponent.cpp:560` refuses when `HasActiveEffectOfClass(GE_Regen)`,
+	//      with a comment naming exactly this respawn case. The hazard is real and closed.
+	//   3. `ApplyInitStats` is server-only and refuses loudly without authority, so the
+	//      `HasAuthority()` below is belt-and-braces rather than the actual guard.
+	//
+	// THE STANDING RULE THIS CREATES, and it must survive into the spawn work: **this is the ONE
+	// caller.** A fighter's stats are written where its ASC is bound to its avatar, and that is
+	// here. When respawn lands, it re-runs THIS path (possess a new avatar → bind → init); it
+	// does not add a parallel call from `BRGameMode`. A second entry point is exactly the defect
+	// a green PIE run cannot see.
+	//
+	// The gate is `AttributesOnly` — the first stage that does anything, and the only GAS stage
+	// provably incapable of breaking movement (`GAS-INTEGRATION-ROADMAP.md` Stage 1).
 	// ---------------------------------------------------------------------
-}
+	if (!HasAuthority())
+	{
+		// Clients receive the attribute values by replication. Initialising locally would be a
+		// client writing server truth, and it would be corrected on the next rep — which looks
+		// exactly like a bug and is one.
+		return;
+	}
+
+	// NO SECOND STAGE CHECK HERE, deliberately. This function already returned at the top if the
+	// stage is below `AttributesOnly`, so a check at this point could never be false — it would
+	// be dead code wearing the costume of a safety gate, which is the single most common defect
+	// this project has catalogued today. One gate, at the entry, covering the whole function.
+	ASC->ApplyInitStats();
 
 UBRCharacterMovementComponent* ABRCharacter::GetBRCharacterMovement() const
 {
