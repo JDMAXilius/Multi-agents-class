@@ -8,7 +8,7 @@
 #include "EnhancedInputComponent.h"
 #include "InputActionValue.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "breachpoint.h"
+#include "Breachpoint.h"
 
 AbreachpointCharacter::AbreachpointCharacter()
 {

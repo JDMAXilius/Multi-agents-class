@@ -2,43 +2,51 @@
 
 using UnrealBuildTool;
 
-public class breachpoint : ModuleRules
+public class Breachpoint : ModuleRules
 {
-	public breachpoint(ReadOnlyTargetRules Target) : base(Target)
+	public Breachpoint(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
+		// ARCHITECTURE.md §3 dependency list. "Slate" is template-inherited and kept because
+		// the surviving Variant_* sources need it.
 		PublicDependencyModuleNames.AddRange(new string[] {
 			"Core",
 			"CoreUObject",
 			"Engine",
 			"InputCore",
 			"EnhancedInput",
+			"GameplayAbilities",
+			"GameplayTags",
+			"GameplayTasks",
 			"AIModule",
 			"StateTreeModule",
 			"GameplayStateTreeModule",
+			"NavigationSystem",
 			"UMG",
-			"Slate"
+			"Slate",
+			"CommonUI",
+			"CommonInput",
+			"ModelViewViewModel"
 		});
 
-		PrivateDependencyModuleNames.AddRange(new string[] { });
+		// OnlineSubsystem is the API surface; the Steam *implementation* is selected by
+		// the enabled OnlineSubsystemSteam plugin + DefaultEngine.ini, never linked directly.
+		PrivateDependencyModuleNames.AddRange(new string[] {
+			"OnlineSubsystem",
+			"OnlineSubsystemUtils",
+			"HTTP",
+			"Json"
+		});
 
 		PublicIncludePaths.AddRange(new string[] {
-			"breachpoint",
-			"breachpoint/Variant_Horror",
-			"breachpoint/Variant_Horror/UI",
-			"breachpoint/Variant_Shooter",
-			"breachpoint/Variant_Shooter/AI",
-			"breachpoint/Variant_Shooter/UI",
-			"breachpoint/Variant_Shooter/Weapons"
+			"Breachpoint",
+			"Breachpoint/Variant_Horror",
+			"Breachpoint/Variant_Horror/UI",
+			"Breachpoint/Variant_Shooter",
+			"Breachpoint/Variant_Shooter/AI",
+			"Breachpoint/Variant_Shooter/UI",
+			"Breachpoint/Variant_Shooter/Weapons"
 		});
-
-		// Uncomment if you are using Slate UI
-		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
-
-		// Uncomment if you are using online features
-		// PrivateDependencyModuleNames.Add("OnlineSubsystem");
-
-		// To include OnlineSubsystemSteam, add it to the plugins section in your uproject file with the Enabled attribute set to true
 	}
 }

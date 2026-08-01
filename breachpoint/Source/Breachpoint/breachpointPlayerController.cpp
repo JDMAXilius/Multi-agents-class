@@ -7,7 +7,7 @@
 #include "InputMappingContext.h"
 #include "breachpointCameraManager.h"
 #include "Blueprint/UserWidget.h"
-#include "breachpoint.h"
+#include "Breachpoint.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 
 AbreachpointPlayerController::AbreachpointPlayerController()

@@ -8,7 +8,7 @@
 #include "breachpointCameraManager.h"
 #include "HorrorCharacter.h"
 #include "HorrorUI.h"
-#include "breachpoint.h"
+#include "Breachpoint.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 
 AHorrorPlayerController::AHorrorPlayerController()
