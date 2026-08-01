@@ -119,3 +119,49 @@ reviewable artifact — remains step 1's job and is untouched.
 *Carried to step 1:* `env.local.example` must document this, or the next machine repeats the
 deadlock. The Kickoff wording should also be amended to "`ENGINE_ROOT` is known and points at a
 source-built UE 5.8" — a condition about the *environment*, which is what it always meant.
+
+---
+
+**31 Jul 2026 — STEP 3 BLOCKED FOR A NEW REASON: the Gauntlet framework does not build on this
+machine. Recorded, not chased.**
+
+A Visual Studio / MSBuild build of `Breachpoint.vcxproj` was run at 23:45. It pulls in
+`UE5.vcxproj` → `AutomationTool` → **`Gauntlet.Automation.csproj`**, and the engine's shared C#
+libraries fail to compile in bulk:
+
+```
+EpicGames.Core      CS0234  'Extensions' does not exist in the namespace 'Microsoft'
+EpicGames.MongoDB   CS0246  'MongoDB' could not be found
+EpicGames.Slack     CS0246  'Polly' could not be found
+EpicGames.Core      CS0246  'OpenTracing' / 'JetBrains' / 'ILogger' / 'EventId' / 'LogLevel'
+```
+
+**Not our code — zero errors reference a Breachpoint source.** These are NuGet/SDK-targeting
+failures in `Engine/Source/Programs/Shared/*`. The log also shows it resolving
+`C:\Program Files\dotnet\sdk\10.0.302` (the **system** SDK) after announcing "Using bundled
+DotNet SDK version: 10.0", which is the usual shape of this problem.
+
+*Why every build tonight succeeded anyway:* the `Build.bat` path never compiles those C#
+projects. Only the Visual Studio/MSBuild route does. So the ladder wrappers (step 1) are
+unaffected and rungs 1–2 remain reachable; it is **rung 4 that is now blocked at the framework
+level**, not merely unauthored.
+
+*Step 3's status is therefore worse than the ticket assumed.* It was going to be BLOCKED because
+`BRGauntlet.SmokeTS2C` is unwritten and `BR_Arena01` (BP07) does not exist. It is **also** blocked
+because Gauntlet itself will not compile here until the engine's C# dependencies are restored.
+That is an environment repair — likely `Setup.bat` and/or a `dotnet restore` against the engine
+solution — and it belongs to whoever owns the workstation, not to a packet.
+
+*Deliberately not attempted* (founder directive this session: do not grind on a failing thing —
+record it and continue). Filed here so rung 4's true cost is known before anyone plans against it.
+
+**Collateral, recorded for honesty:** that same MSBuild run **deleted
+`Binaries/Win64/Breachpoint.exe` and `BreachpointServer.exe`.** Source is untouched and every
+commit is intact, but the R19-proven Server artifact from 23:12 no longer exists on disk and the
+evidence must be re-earned by a fresh witnessed build. One more instance of the night's recurring
+lesson: an artifact is not a result, and this time the artifact did not even survive.
+
+**Buried good news from the same run:** `UnrealEditor-Breachpoint.dll` rebuilt at 23:44 and grew
+571,904 → **836,608 bytes**, which is BP01 step 4's `BRCharacter`, `BRPlayerController` and
+`BRCharacterMovementComponent` clearing the compiler — including the three signatures the step-4
+builder explicitly flagged as unverifiable without a build.

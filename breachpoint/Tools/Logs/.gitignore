@@ -1,0 +1,5 @@
+# Ladder run logs are machine-local evidence, not repo content.
+# This directory ignores itself so the root .gitignore (owned by another packet)
+# does not need editing to keep build logs out of the repo.
+*
+!.gitignore
