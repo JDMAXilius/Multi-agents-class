@@ -193,8 +193,38 @@ public:
 	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Category = "Breachpoint|Combat")
 	FMVVMEventField GrappleCooldownStarted;
 
-	/** Grapple is available again. */
-	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Category = "Breachpoint|Combat")
+	/**
+	 * Grapple is available again.
+	 *
+	 * ScriptName IS NOT COSMETIC HERE. Python pythonises `GrappleReady` and `bGrappleReady` (the
+	 * `b` is stripped from bools) to the SAME `grapple_ready`. UE's reflection resolves that by
+	 * warning once at startup and then exposing whichever member registered first, so one of the
+	 * two becomes unreachable — or worse, ambiguous — through the Python surface:
+	 *
+	 *     LogPython: Warning: 'BRVM_Combat.GrappleReady' and 'BRVM_Combat.bGrappleReady' have the
+	 *     same name (grapple_ready) when exposed to Python.
+	 *
+	 * Harmless in C++, which is exactly why it survived: nothing fails, nothing crashes, and the
+	 * one warning scrolls past in a PIE log. It is NOT harmless to the MCP editor lane, which
+	 * reads properties through this precise surface (ObjectTools.get_properties) and would either
+	 * miss the field or silently read the wrong one.
+	 *
+	 * THE BOOL KEEPS THE NATURAL NAME, and the choice is not arbitrary. A script caller asking a
+	 * ViewModel about the grapple wants the STATE — "is it ready right now" — and `bGrappleReady`
+	 * is a value that answers that. This field is a BROADCAST TOKEN: an FMVVMEventField carries no
+	 * payload, so reading `grapple_ready` off it would return nothing a caller could use. Between
+	 * a readable state and an unreadable edge, the readable one earns the short name.
+	 *
+	 * The suffix also restores this file's own convention: ShieldsBrokenEvent and
+	 * ShieldsRestoredEvent already carry `Event`, and it is only because they do that they do not
+	 * collide with bShieldsBroken the same way. This field and GrappleCooldownStarted are the two
+	 * that never picked the suffix up; this one is the one it cost something.
+	 *
+	 * The C++ member is deliberately NOT renamed. BRViewModels.cpp broadcasts it by name and the
+	 * WBP binds it by name, so a rename is a behaviour change in a file this packet does not own.
+	 * ScriptName is the engine's own prescribed fix and touches nothing but the script surface.
+	 */
+	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Category = "Breachpoint|Combat", meta = (ScriptName = "GrappleReadyEvent"))
 	FMVVMEventField GrappleReady;
 
 private:
@@ -267,6 +297,13 @@ private:
 	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetGrappleCooldownDuration", Category = "Breachpoint|Combat", meta = (AllowPrivateAccess))
 	float GrappleCooldownDuration = 0.0f;
 
+	/**
+	 * This is the member that KEEPS the script name `grapple_ready`. Its former twin, the
+	 * FMVVMEventField `GrappleReady`, carries meta = (ScriptName = "GrappleReadyEvent") to get out
+	 * of the way — see it for the reasoning. Do not "fix" the collision a second time from this
+	 * side: a ScriptName here would move the name off the only one of the pair a script can
+	 * actually read a value from, and would leave the collision warning standing anyway.
+	 */
 	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "IsGrappleReady", Category = "Breachpoint|Combat", meta = (AllowPrivateAccess))
 	bool bGrappleReady = true;
 

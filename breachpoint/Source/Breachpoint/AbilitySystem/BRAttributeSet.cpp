@@ -2,6 +2,7 @@
 
 #include "AbilitySystem/BRAttributeSet.h"
 
+#include "GameFramework/Actor.h"
 #include "GameplayEffect.h"
 #include "GameplayEffectExtension.h"
 #include "Net/UnrealNetwork.h"
@@ -9,6 +10,48 @@
 #include "AbilitySystem/BRAbilitySystemComponent.h"
 #include "Core/BRCore.h"
 #include "Core/BRGameplayTags.h"
+
+// ---------------------------------------------------------------------------
+// The log throttle. Not gameplay state — see below for why it is file-static.
+// ---------------------------------------------------------------------------
+
+namespace
+{
+	/**
+	 * The "MaxShields is 0, so this fighter was never initialised" report is ONCE PER FIGHTER for
+	 * the life of the process.
+	 *
+	 * IT HAS TO BE BOUNDED, and that is the whole reason this ledger exists rather than a bare
+	 * UE_LOG. The refusal it guards sits under PostGameplayEffectExecute, which runs on every
+	 * applied damage effect — an AR at 600 RPM is ten a second, and a raw Warning there would
+	 * emit the same line ten times a second forever, bury whatever the log was opened to find,
+	 * and run afoul of law 4's spirit that nothing this project writes fires per frame. Note that
+	 * CheckForDeath's twin refusal gets away with being raw ONLY because it is gated behind
+	 * Health <= 0, which is a once-per-life event; the shields refusal has no such gate.
+	 *
+	 * KEYED ON THE OWNING ACTOR'S PATH NAME, which is the PlayerState that holds the ASC. That is
+	 * what makes the unit "one fighter": four half-initialised fighters in a match produce four
+	 * reports instead of one hiding the other three, and one fighter absorbing a full magazine
+	 * produces one. Keying on the effect or its spec instead would re-report per damage source and
+	 * would not bound anything; a single bool would bound too hard and report only the first
+	 * fighter, which is the failure mode that makes "is it just this one pawn?" unanswerable.
+	 *
+	 * PATH NAME rather than FName, deliberately: the path carries the PIE world (UEDPIE_N), which
+	 * increments per PIE session, so a second run inside the same editor process reports again
+	 * instead of being silenced by the first run's entry. A stale entry outliving the bug it
+	 * described is exactly how a diagnostic goes quiet without anyone deciding it should.
+	 *
+	 * A file-static set, not a member: this is a log throttle, not simulation state. On a member it
+	 * would be one more thing to replicate, serialise, and reset on respawn, and it would be read
+	 * as state by the next person to open the file. Game thread only, like every mutation here —
+	 * PostGameplayEffectExecute is server-authority game thread.
+	 */
+	TSet<FName>& GetUninitializedShieldsReportLedger()
+	{
+		static TSet<FName> Ledger;
+		return Ledger;
+	}
+}
 
 UBRAttributeSet::UBRAttributeSet()
 {
@@ -238,6 +281,25 @@ void UBRAttributeSet::UpdateShieldsBrokenState()
 		// means GE_InitStats has not run, so Shields == 0 is "uninitialised", not "broken". Applying
 		// the tag here would mark every fighter shields-broken for the instant between spawning and
 		// being initialised, and anything reacting to the tag (a cue, a bot's aggression) would fire.
+		//
+		// AND IT NOW SAYS SO, which it did not. The refusal was correct and completely silent, while
+		// its exact twin in CheckForDeath logs a Warning — so a fighter GE_InitStats never reached
+		// had one loud symptom and one invisible one. That asymmetry is the actual defect: the
+		// missing half is the half that would have named the cause, and without it the half-
+		// initialised fighter reads as "shields never break on this guy", which is a shields bug, a
+		// cue bug, or a tag bug depending on who is looking. Bounded through the ledger at the top of
+		// this file; see it for why a raw UE_LOG is fine in CheckForDeath and not fine here.
+		const AActor* OwningActor = GetOwningActor();
+		const FName LedgerKey = OwningActor ? FName(*OwningActor->GetPathName()) : FName(TEXT("<no owning actor>"));
+
+		TSet<FName>& Ledger = GetUninitializedShieldsReportLedger();
+		if (!Ledger.Contains(LedgerKey))
+		{
+			Ledger.Add(LedgerKey);
+			UE_LOG(LogBRCombat, Warning, TEXT("BRAttributeSet '%s': Shields are %.2f but MaxShields is 0 — treating as UNINITIALIZED, not broken. GE_InitStats has not run on this ASC, so State.Shields.Broken is neither applied nor cleared for it. Logged once per fighter per process."),
+				*GetNameSafe(OwningActor), GetShields());
+		}
+
 		return;
 	}
 
