@@ -1,0 +1,346 @@
+{
+  "generated_by": "Tools/architect/architect.py --scan",
+  "api_calls": 0,
+  "manifest_source": "BREACHPOINT-ARCHITECTURE.md \u00a73",
+  "budget": {
+    "in_slice": 43,
+    "reserved": 1,
+    "total": 44
+  },
+  "exclusions": {
+    "ge_classes": 7,
+    "ge_header": "Source/Breachpoint/AbilitySystem/Effects/BRGameplayEffects.h",
+    "phase2": [
+      "BRGameLiftLifecycle"
+    ],
+    "template_dirs": [
+      "Variant_Horror",
+      "Variant_Shooter"
+    ]
+  },
+  "tally": {
+    "BUILT": 31,
+    "STUB": 3,
+    "MISSING": 10
+  },
+  "units": [
+    {
+      "unit": "BRGameplayTags",
+      "folder": "Core",
+      "state": "BUILT",
+      "ticket": "BP01",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRCore",
+      "folder": "Core",
+      "state": "BUILT",
+      "ticket": "BP01",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRInputConfig",
+      "folder": "Input",
+      "state": "BUILT",
+      "ticket": "BP01",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRInputComponent",
+      "folder": "Input",
+      "state": "BUILT",
+      "ticket": "BP01",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRAbilitySystemComponent",
+      "folder": "AbilitySystem",
+      "state": "BUILT",
+      "ticket": "BP02",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRAbilitySet",
+      "folder": "AbilitySystem",
+      "state": "BUILT",
+      "ticket": "BP02",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRAttributeSet",
+      "folder": "AbilitySystem",
+      "state": "BUILT",
+      "ticket": "BP02",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRGameplayAbility",
+      "folder": "AbilitySystem",
+      "state": "BUILT",
+      "ticket": "BP02",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRDamageExecCalc",
+      "folder": "AbilitySystem",
+      "state": "BUILT",
+      "ticket": "BP02",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRGA_WeaponFire",
+      "folder": "AbilitySystem",
+      "state": "MISSING",
+      "ticket": "BP03",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRGA_WeaponUtility",
+      "folder": "AbilitySystem",
+      "state": "MISSING",
+      "ticket": "BP03",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRGA_Grenade",
+      "folder": "AbilitySystem",
+      "state": "MISSING",
+      "ticket": "BP05",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRGA_Melee",
+      "folder": "AbilitySystem",
+      "state": "MISSING",
+      "ticket": "BP05",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRGA_Grapple",
+      "folder": "AbilitySystem",
+      "state": "MISSING",
+      "ticket": "BP06",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRGA_Sprint",
+      "folder": "AbilitySystem",
+      "state": "BUILT",
+      "ticket": "BP02",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRCharacter",
+      "folder": "Character",
+      "state": "BUILT",
+      "ticket": "BP01",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRCharacterMovementComponent",
+      "folder": "Character",
+      "state": "BUILT",
+      "ticket": "BP01",
+      "tier": "slice"
+    },
+    {
+      "unit": "BREquipmentComponent",
+      "folder": "Weapons",
+      "state": "BUILT",
+      "ticket": "BP03",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRWeaponInstance",
+      "folder": "Weapons",
+      "state": "BUILT",
+      "ticket": "BP03",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRWeaponPickup",
+      "folder": "Weapons",
+      "state": "BUILT",
+      "ticket": "BP03",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRGameMode",
+      "folder": "Match",
+      "state": "BUILT",
+      "ticket": "BP04",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRGameState",
+      "folder": "Match",
+      "state": "BUILT",
+      "ticket": "BP04",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRPlayerState",
+      "folder": "Match",
+      "state": "BUILT",
+      "ticket": "BP04",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRPlayerController",
+      "folder": "Match",
+      "state": "BUILT",
+      "ticket": "BP04",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRBotBrain",
+      "folder": "AI",
+      "state": "BUILT",
+      "ticket": "BP08",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRBotFacts",
+      "folder": "AI",
+      "state": "STUB",
+      "ticket": "BP08",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRBotController",
+      "folder": "AI",
+      "state": "BUILT",
+      "ticket": "BP08",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRStateTreeTasks",
+      "folder": "AI",
+      "state": "BUILT",
+      "ticket": "BP08",
+      "tier": "slice"
+    },
+    {
+      "unit": "BREnvQueryContexts",
+      "folder": "AI",
+      "state": "BUILT",
+      "ticket": "BP08",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRBotManagerComponent",
+      "folder": "AI",
+      "state": "BUILT",
+      "ticket": "BP08",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRSessionsSubsystem",
+      "folder": "Online",
+      "state": "BUILT",
+      "ticket": "BP11",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRServerLifecycle",
+      "folder": "Online",
+      "state": "STUB",
+      "ticket": "BP11",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRListenServerLifecycle",
+      "folder": "Online",
+      "state": "BUILT",
+      "ticket": "BP11",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRUIManagerSubsystem",
+      "folder": "UI",
+      "state": "BUILT",
+      "ticket": "BP10",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRActivatableWidget",
+      "folder": "UI",
+      "state": "BUILT",
+      "ticket": "BP10",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRViewModels",
+      "folder": "UI",
+      "state": "BUILT",
+      "ticket": "BP10",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRHUDLayout",
+      "folder": "UI",
+      "state": "BUILT",
+      "ticket": "BP10",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRTelemetrySubsystem",
+      "folder": "Telemetry",
+      "state": "BUILT",
+      "ticket": "BP11",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRSpotterSubsystem",
+      "folder": "Telemetry",
+      "state": "MISSING",
+      "ticket": "BP11",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRDataRows",
+      "folder": "Data",
+      "state": "STUB",
+      "ticket": "BP02",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRCombatSpec",
+      "folder": "Tests",
+      "state": "MISSING",
+      "ticket": "BP00",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRShieldSpec",
+      "folder": "Tests",
+      "state": "MISSING",
+      "ticket": "BP00",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRBotDeterminismSpec",
+      "folder": "Tests",
+      "state": "MISSING",
+      "ticket": "BP00",
+      "tier": "slice"
+    },
+    {
+      "unit": "BRGameLiftLifecycle",
+      "folder": "Online",
+      "state": "MISSING",
+      "ticket": "BP11",
+      "tier": "phase2"
+    }
+  ],
+  "undeclared": {
+    "AbilitySystem": [
+      "BRCombatCurves"
+    ],
+    "UI": [
+      "BRRootLayout",
+      "BRUISettings",
+      "BRUITypes"
+    ]
+  }
+}

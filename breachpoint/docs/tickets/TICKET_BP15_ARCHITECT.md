@@ -113,13 +113,13 @@ path; if BP14 has not run, step 4 carries a minimal path of its own and says so 
 
 ## Done when
 
-- [ ] `python3 Tools/architect/architect.py --scan` reproduces every per-folder count from §3
+- [x] `python3 Tools/architect/architect.py --scan` reproduces every per-folder count from §3
       (43 in-slice units) plus the one Phase-2 reserved unit = 44, matching §4's composition
       table; exits nonzero on any mismatch. The **seven** generic GE classes and
       `BRGameLiftLifecycle` are excluded/expected-MISSING per §4, and the run log says so
-- [ ] Ranked table prints all four score terms; the same input produces the same order twice
+- [x] Ranked table prints all four score terms; the same input produces the same order twice
       (run twice, diff is empty)
-- [ ] Steps 1–2 make **zero API calls**, proven by the run log
+- [x] Steps 1–2 make **zero API calls**, proven by the run log
 - [ ] The blackboard file exists and its mtime **predates** the generated source file's
 - [ ] The chosen unit compiles on rung 1 (all three targets) and its spec passes rung 2, both
       verbatim in this Log; rung 4 either green or BLOCKED with a reason
@@ -234,3 +234,106 @@ ran), and the GE-class exclusion was corrected from six-classes/17-files to seve
 one header. **Steps 1–3 still need no engine, so this remains the cheapest ticket on the board**
 — but running it on the terminal is strictly better, because step 4 continues straight on from
 step 3 there instead of handing off across machines.
+
+---
+
+**1 Aug 2026 (terminal, Windows) — steps 1–3 LANDED. Three of ten boxes checked. The score was
+wrong twice before it was right, and both wrongnesses are the useful part.**
+
+`Tools/architect/` now holds `architect.py` (`--scan` / `--rank` / `--blackboard` / `--all`),
+`test_selfcheck.py`, `state/perception.json`, `state/ranking.json`, and one blackboard.
+
+*Step 1 result.* **The self-check PASSES** — all twelve §3 folders are internally consistent,
+summing to 43 in-slice + 1 reserved = **44**, matching §4's composition table. 7 `UBRGE_*`
+classes found in one header (asserted, not assumed — a drift there now fails the run).
+Disk: **BUILT 31 · STUB 3 · MISSING 10**.
+
+> **A distinction worth keeping, because HANDOFF predicted this ticket would fail here.** The
+> handoff said *"§3 is stale against disk (`UI/` 7 vs 4, `BRCombatCurves` unlisted, `Tests/`
+> empty vs 3)"* and expected step 1 to surface it as a **count mismatch**. It is not one. §3 is
+> *self*-consistent; it is *disk* that disagrees with it. So the staleness surfaces in the
+> **UNDECLARED** report — `AbilitySystem/: BRCombatCurves` · `UI/: BRRootLayout, BRUISettings,
+> BRUITypes` (4 declared + 3 undeclared = the 7 the handoff counted) — and `Tests/`'s three
+> specs come back **MISSING**, which is a *state*, not a manifest defect. Conflating "the doc
+> disagrees with itself" and "the doc disagrees with disk" would have made the scanner exit
+> nonzero on a healthy manifest. They are separate outputs for that reason.
+
+*Step 2 — the score was wrong twice.* Both drafts ran, printed, and looked authoritative:
+
+1. **It ranked a BUILT unit first.** Terms were depth + blockers + tier + state with state at
+   2/1/0; the blocker term reaches 35, so it swamped state entirely and `BRCharacter` (BUILT)
+   came top. **A "what to build next" scorer selected something already built.** Fixed by making
+   state a *gate* rather than a nudge (MISSING 100 · STUB 50 · BUILT −1000), the same mechanism
+   the tier term already used to push Phase-2 last.
+2. **Then it picked `BRGA_Grapple`.** Units were mapped to tickets by *folder*, but tickets cut
+   across folders: all six abilities live in `AbilitySystem/`, so all six were attributed to
+   BP02. `BRGA_Grapple` is **BP06**'s — gated behind BP05, gated behind BP02 — so the score was
+   ranking a unit that **cannot legally be started**, and it picked the single hardest one in
+   the codebase (THE netcode packet, critic REFUTER gate). Fixed with a `UNIT_TICKET` override
+   map, each entry justified by the ticket whose *title* names the unit's subject.
+
+*Step 2 result, after both fixes:* **`BRGA_WeaponFire` (BP03, MISSING, total 106)** —
+depth 2 · blockers 4 · tier 0 · state 100. Ties break on lowest ticket number, then unit name;
+`BRGA_WeaponUtility` ties it at 106 and is the same BP03 packet.
+
+> **The result worth reporting to the founder:** the ticket predicted the first unit would be
+> `BRGA_Sprint` + `BRAttributeSet` and said *"if the score picks otherwise, the score wins and
+> the Log records the surprise."* Both of those are now **BUILT**, so neither is selectable —
+> and the score independently landed on **the fire path, which is exactly what HANDOFF's
+> "restart BP03 step 2" says to do next.** A deterministic scorer with no knowledge of the
+> handoff reproduced the human board's next move. That is the strongest evidence this ticket
+> can produce that the scoring is measuring something real, and it cost zero API calls.
+
+*On `BRGameLiftLifecycle`:* it ranks **last among selectable candidates** (total 4, below all
+three STUBs). It sorts above the BUILT units only because BUILT is a *stronger* exclusion
+(−1000); neither class is selectable. The ledger's intent — never selected to build — holds.
+Flagged rather than tuned: if the founder wants it literally last, the tier weight moves.
+
+*Step 3.* `blackboard/2026-08-01-BRGA_WeaponFire.md` — full ranked table with every term, the
+verbatim builder prompt, target paths, `owner_path`, and the rungs owed (incl. R30's 4a/4b
+split). **Two earlier blackboards were deleted, deliberately and recorded here**
+(`BRCharacter`, `BRGA_Grapple`): a blackboard is an *authorisation* record, and those two
+authorised units the corrected score does not select. Keeping them would have left the
+directory claiming three units were authorised. The Log is the record; the blackboard is the
+authorisation.
+
+*Verification (this session, this machine):*
+
+| Check | Result |
+|---|---|
+| Self-check on the real manifest | **PASS** — 43 + 1 = 44 |
+| `test_selfcheck.py` red-then-green | **5/5** — 1 control ACCEPTs, 4 corruptions REJECT (exit 2) |
+| Determinism (run twice, diff) | `perception.json`, `ranking.json` **and the full run log** byte-identical |
+| Zero API calls | no network import — `grep -E "^\s*(import\|from)\s+(requests\|urllib\|http\|socket\|anthropic\|openai)"` returns nothing |
+| Law-5 confinement | `git status` after the packet shows **only** `Tools/architect/` + the claim file |
+
+*Why `test_selfcheck.py` exists at all:* the Done-when says the scanner "exits nonzero on any
+mismatch," and this session had already found three mechanisms that read as enforced and were
+not. A self-check only ever observed **passing** is not evidence. Driving the real parser over
+four corrupted manifests **found a real defect in `architect.py`** — `Path.relative_to` raises
+on a non-subpath, so a cosmetic log line was load-bearing and crashed the control case. A
+formatting helper that can fail a run is exactly the kind of thing only a rejecting case finds.
+
+*Two things NOT done, said plainly:*
+- **The blackboard-predates-source box stays unchecked.** No source has been generated (step 4
+  is `engine-installed`), so half the box is unprovable today. Half a box is not a box.
+- **Steps 4–6 untouched.** They need the engine, and R29.3 forbids building while the MCP
+  session holds the editor.
+
+**CONTRACT_GAP (filed, not fixed — `BREACHPOINT-ARCHITECTURE.md` is outside this packet's
+`owner_path`).** §4's exclusion #1 still reads *"The six generic GE classes"* and *"a scanner
+counting files on disk finds 17 in `AbilitySystem/`"*. Both numbers are wrong at HEAD — there
+are **seven** classes and `AbilitySystem/` holds **8** headers — and §3.3's GE table likewise
+prints *"(6 total"* and lists six, omitting `UBRGE_ShieldsBroken`. This ticket's Log corrected
+the numbers on **1 Aug in the ticket**; the correction never reached the architecture document,
+which is the file the scanner actually parses. `architect.py` does not read those prose numbers
+(it asserts the class count against the header directly), so nothing is broken today — but the
+manifest still tells the next reader six. Also unlisted in §3.9/§3.3: `BRCombatCurves`,
+`BRRootLayout`, `BRUISettings`, `BRUITypes`. Whether those become numbered units is a founder
+call, per this ticket's own out-of-scope line.
+
+**Harness note.** This packet ran from a session rooted one level above the game repo, so
+`guard_laws.py` was inert and law 5 was **not** mechanically enforced (see BP01's 1 Aug
+amendment). Confinement was instead proven after the fact by `git status`, which shows only
+`Tools/architect/` and the claim file. Stated because an unenforced law that happened to be
+obeyed is not the same as an enforced one, and the next reader should know which this was.
