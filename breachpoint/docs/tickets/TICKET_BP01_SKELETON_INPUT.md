@@ -1,5 +1,10 @@
 # TICKET — BP01: Project skeleton, Core, and the owned input layer
 
+> STATUS: in-progress — Windows box (lead session), 31 Jul 2026 (68e0d0b). Kickoff verified
+> mechanically: source-built UE 5.8 present at `D:\Program Files\UE_5.8_Source`
+> (`SourceDistribution.txt` present), crew kit at repo root, `guard_laws.py` armed and proven
+> 6/6 this session. First claim in the project's life.
+
 > STATUS: open — cut by lead session, 29 Jul 2026. First pickup of the project; nothing gates
 > it except a **source-built** UE 5.8 + the FPS template. (Corrected 31 Jul 2026: this line
 > previously read "installed UE 5.8", which contradicts the Kickoff and Done-when — an
@@ -16,7 +21,14 @@ Input → InputTag → ASC, no per-ability binding code, ever.
 - none (root ticket — nothing gates it), but the environment must be real:
   a **source-built UE 5.8** is installed and its path is known, and the game repo has
   `crew/`'s contents at its root (`CLAUDE.md`, `.claude/`, `docs/` all present)
-- owner_path: `Source/Breachpoint/`, `Config/`, `Content/Input/`
+- owner_path: `Source/Breachpoint/`, `Config/`, `Content/Input/`,
+  `Source/Breachpoint.Target.cs`, `Source/BreachpointEditor.Target.cs`,
+  `Source/BreachpointServer.Target.cs`
+  > The three `.Target.cs` entries added 31 Jul 2026 (second owner_path correction — see Log,
+  > "contract_gap 2"). They are listed as exact files, not by widening scope to `Source/`:
+  > `guard_laws.py` matches an owner entry by `rel == o` OR `rel.startswith(o + "/")`, so a
+  > file directly in `Source/` needs its own exact entry, and granting `Source/` would hand
+  > this packet every other discipline's folder.
   > `Content/Input/` added 31 Jul 2026. Step 3 authors `IMC_Default`, the `IA_*` actions and
   > `DA_InputConfig`, and this ticket's Notes already declare `Content/Input/*` as the binaries
   > it owns — but `guard_laws.py` confines every write under `Source/` and `Content/` to the
@@ -223,3 +235,34 @@ into any `.uproject`.
 `contract_gap`s once those packets claim — are **not written down in this repo.** Only BP01's own
 correction (`Content/Input/`, above) exists. Whoever holds that analysis should land it in the
 respective tickets before the packets run, or it will be rediscovered the hard way.
+
+---
+
+**31 Jul 2026 — CONTRACT_GAP 2 (lead, pre-claim): the three `.Target.cs` files were outside
+this ticket's own owner_path.** Filed and fixed in the Kickoff block above BEFORE dispatch.
+
+Found by reading `guard_laws.py` rather than by a builder hitting the wall. Law 5 tests
+`rel.startswith(("Source/", "Content/"))` and then requires `rel == o` or
+`rel.startswith(o + "/")` for some owner entry `o`. With `owner_path = ["Source/Breachpoint/",
+…]`, the path `Source/Breachpoint.Target.cs` matches neither — `"Source/Breachpoint.Target.cs"`
+does not start with `"Source/Breachpoint/"`. So step 1's headline deliverable ("add the three
+targets; the server target must compile NOW") and the first Done-when box ("all three targets
+compile clean") were **mechanically unreachable by the packet that owns them.**
+
+Same defect class as the `Content/Input/` correction one entry above, and it was invisible for
+the same reason: until today the hook was inert on Windows, so an owner_path could be wrong for
+weeks without anyone paying for it. **Arming the guard is what made both bugs findable.** Expect
+more of these as each packet claims — the four carried BP02/03/05/06 mismatches are the same
+shape. Verifying `owner_path` against the ticket's actual deliverables is now a pre-claim step
+of the lead's, not a discovery the builder makes mid-packet.
+
+*Fix chosen:* three exact-file entries, NOT widening to `Source/`. Widening would grant this
+packet `Source/Breachpoint/AI/`, `…/Online/`, and every other discipline's folder for the sake
+of three files — trading a false block for a real hole.
+
+**Honesty note on the guard's reach (recorded so no one over-trusts it):** `guard_laws.py` is a
+PreToolUse hook keyed on `tool_input.file_path`, so it sees **Edit and Write only**. A `Bash`
+`rm`/`git rm`/`mv` is not checked. Step 1 deletes the 49 template sources via shell, and that
+deletion is governed by the ticket, not by the hook. Law 5 is enforced on *writes*; on
+*removals* it is still goodwill. Worth a follow-up in BP14/BP15's adversarial pass — "can a
+builder delete outside `owner_path`?" currently answers **yes**.
