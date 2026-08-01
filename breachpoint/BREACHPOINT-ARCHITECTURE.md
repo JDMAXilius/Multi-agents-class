@@ -155,7 +155,7 @@ into the same ASC path — human and bot input are literally one API.
 | `Abilities/BRGA_Grapple.h/.cpp` | THE netcode packet: three modes by hit; self-pull via **root-motion source through CMC** (predicted by CMC machinery); rejection leaves zero state. Critic REFUTER gate. |
 | `Abilities/BRGA_Sprint.h/.cpp` | The movement-state ability, and the pattern-prover for **WhileHeld** activation: hold `InputTag.Sprint` → activate; release → end. Grants `State.Movement.Sprinting` via ActivationOwnedTags (predicted + replicated by GAS); the CMC reads it into the `FSavedMove_BR` sprint flag and applies the speed multiplier from `CT_Combat`. **No cost** (Halo sprint is free); `BRGA_WeaponFire`/`Melee`/`Grenade` list it in CancelAbilitiesWithTags — firing ends the sprint, Halo-style, with zero code in the sprint ability itself. |
 
-**The generic-effect library (6 total, **C++ `UGameplayEffect` subclasses — not Content assets**, per ruling R18 and `BREACHPOINT-AUTHORING-MATRIX.md` Tier 1; law #7 made real; purity law: `docs/contracts/gas-purity.md`). They live in `Source/Breachpoint/AbilitySystem/Effects/`, are constructor-authored, and are referenced by class — which is what keeps them diffable and critic-readable:**
+**The generic-effect library (7 total, **C++ `UGameplayEffect` subclasses — not Content assets**, per ruling R18 and `BREACHPOINT-AUTHORING-MATRIX.md` Tier 1; law #7 made real; purity law: `docs/contracts/gas-purity.md`). They live in `Source/Breachpoint/AbilitySystem/Effects/BRGameplayEffects.h` — **all seven in ONE header** — are constructor-authored, and are referenced by class, which is what keeps them diffable and critic-readable. The design names below (`GE_Damage`) map one-to-one onto the prefixed C++ classes (`UBRGE_Damage`):**
 
 | GE class | Parameterized by | Reused by |
 |---|---|---|
@@ -165,6 +165,14 @@ into the same ASC path — human and bot input are literally one API.
 | `GE_InitStats` | curve table row per archetype | attribute init on spawn |
 | `GE_RecentDamage` | 2.5 s tag application | shield-regen gate; (Phase-2: "in combat" logic) |
 | `GE_Death` | infinite; applies `State.Dead` | the ONE death mechanism: ability base blocks activation on `State.Dead`; respawn removes it + re-applies `GE_InitStats` |
+| `GE_ShieldsBroken` | infinite; applies `State.Shields.Broken` while Shields are 0. No magnitude — structural only | the shields-broken state itself. Applied/removed **only** by `UBRAbilitySystemComponent::SetShieldsBrokenState`, driven from the attribute set's single transition point — not polled |
+
+> **Why seven and not six.** `GE_ShieldsBroken` was added by BP02 steps 1–2 and is *named loudly
+> rather than slipped in*: `State.Shields.Broken` was declared in `BRGameplayTags` and §3.1 with
+> **nothing applying it**, and purity law 5 forbids applying a State tag by hand — so the tag was
+> either dead or it needed an effect. It needed an effect. *(This document said "six" until
+> 1 Aug 2026; BP15's scanner asserts the class count against the header, which is how the drift
+> was caught. See that ticket's Log.)*
 
 ### 3.4 `Character/` — 2
 
@@ -330,13 +338,23 @@ parses these numbers, so the composition is stated rather than inferred):*
 Two exclusions a manifest parser must handle explicitly, because both are
 real C++ under `Source/` that the per-folder counts do **not** include:
 
-1. **The six generic GE classes** (`GE_Damage`, `GE_Regen`, `GE_Cooldown`,
-   `GE_InitStats`, `GE_RecentDamage`, `GE_Death`) live in
-   `Source/Breachpoint/AbilitySystem/Effects/` as C++ `UGameplayEffect`
-   subclasses under R18 — but §3.3's count of **11** covers only its file
-   table, not the effect library beneath it. A scanner counting files on
-   disk finds 17 in `AbilitySystem/`; the expected count is 11. They are a
-   named library, not numbered units.
+1. **The seven generic GE classes** (`GE_Damage`, `GE_Regen`, `GE_Cooldown`,
+   `GE_InitStats`, `GE_RecentDamage`, `GE_Death`, `GE_ShieldsBroken`) live in
+   `Source/Breachpoint/AbilitySystem/Effects/BRGameplayEffects.h` as C++
+   `UGameplayEffect` subclasses under R18 — but §3.3's count of **11** covers
+   only its file table, not the effect library beneath it. They are a named
+   library, not numbered units.
+
+   **Exclude them by CLASS NAME, not by file.** All seven are declared in a
+   **single** header, and `AbilitySystem/` holds **8** headers in total — so a
+   parser that adjusts a *file* count has already lost. *(Corrected 1 Aug 2026.
+   This paragraph previously said "six generic GE classes" and "a scanner
+   counting files on disk finds 17 in `AbilitySystem/`". Both numbers were
+   wrong, and they were wrong for the same reason: the exclusion was conceived
+   as a file-count adjustment when it is a class-count adjustment. A UE header
+   routinely declares several `UCLASS`es. That is the reusable finding, and it
+   is why BP15's scanner counts `UCLASS` declarations and asserts the total
+   against the header rather than trusting this prose.)*
 2. **`BRGameLiftLifecycle`** is expected MISSING for the whole slice. It is
    Phase-2 tier, so BP15's GDD-tier score term must rank it last — a
    perpetually-MISSING unit that scores high would be picked to build, which

@@ -37,7 +37,7 @@ and the conflict is a finding against this skill — fix the skill in the same p
 
 ## 3. Generic GameplayEffects (law 7: parameterize, never proliferate)
 
-> **R18: the six generic GEs are C++ `UGameplayEffect` subclasses, not Content assets.**
+> **R18: the seven generic GEs are C++ `UGameplayEffect` subclasses, not Content assets.**
 > Constructor-authored, referenced by class, living in
 > `Source/Breachpoint/AbilitySystem/Effects/`. Read "asset" below as "the one generic GE
 > class" — the pattern is identical, only the authoring surface changed. `AddDynamicAssetTag`

@@ -46,7 +46,7 @@ majority of the game.
 | Thing | Note |
 |---|---|
 | Gameplay abilities, attribute set, damage exec calc | GAS core; `gas-purity` skill |
-| **GameplayEffects** — the six generic GEs | `UGameplayEffect` subclasses, fully constructor-authored. Do NOT author GEs as assets: SetByCaller + dynamic tags means six C++ classes cover the game |
+| **GameplayEffects** — the seven generic GEs | `UGameplayEffect` subclasses, fully constructor-authored, all seven in ONE header (`AbilitySystem/Effects/BRGameplayEffects.h`). Do NOT author GEs as assets: SetByCaller + dynamic tags means seven C++ classes cover the game |
 | **GameplayCue handlers** | `UGameplayCueNotify_Static` / `AGameplayCueNotify_Actor` C++ subclasses registered by tag. The cue *class* is C++; only the VFX/SFX it plays is an asset |
 | CMC subclass, grapple root-motion source | netcode-owned movement |
 | Replication, RPCs, `_Validate` bodies | |

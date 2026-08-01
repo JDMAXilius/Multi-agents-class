@@ -342,3 +342,43 @@ call, per this ticket's own out-of-scope line.
 amendment). Confinement was instead proven after the fact by `git status`, which shows only
 `Tools/architect/` and the claim file. Stated because an unenforced law that happened to be
 obeyed is not the same as an enforced one, and the next reader should know which this was.
+
+**1 Aug 2026 — CONTRACT_GAP RESOLVED by founder direction: the GE count is seven, in five
+documents.** The gap filed in the entry above was authorised and fixed.
+
+Scope note, because it exceeded what was asked: the instruction named
+`BREACHPOINT-ARCHITECTURE.md`, but the same wrong number was in **five** files. Fixing only the
+one named would have left four documents contradicting it — which is the exact failure this
+ticket's finding was about. All five:
+
+| File | Was | Now |
+|---|---|---|
+| `BREACHPOINT-ARCHITECTURE.md` §3.3 | "(6 total" + a 6-row table | 7 total, `GE_ShieldsBroken` row added, one-header fact stated |
+| `BREACHPOINT-ARCHITECTURE.md` §4 | "six generic GE classes" / "finds 17 in `AbilitySystem/`" | seven, named; **exclude by CLASS NAME, not by file**; 8 headers |
+| `BREACHPOINT-AUTHORING-MATRIX.md` | "the six generic GEs … six C++ classes" | seven, + the one-header location |
+| `docs/contracts/data-and-assets.md` | "the six generic GEs are C++ classes" | seven |
+| `.claude/skills/gas-purity/SKILL.md` | "R18: the six generic GEs" | seven |
+
+§3.3 now also records **why** there are seven, from the header's own comment: `GE_ShieldsBroken`
+was added by BP02 steps 1–2 because `State.Shields.Broken` was declared in `BRGameplayTags` and
+§3.1 with **nothing applying it**, and purity law 5 forbids applying a State tag by hand — so the
+tag was either dead or it needed an effect. Recording the reason is the point: a bare "7" invites
+the next reader to correct it back.
+
+§4's paragraph was the more important fix. It carried a wrong *premise*, not just a wrong count:
+it framed the exclusion as a file-count adjustment ("a scanner counting files on disk finds 17").
+It is a **class-count** adjustment — a UE header routinely declares several `UCLASS`es, and all
+seven live in one. A parser adjusting file counts has already lost.
+
+*Regression check after editing the manifest the scanner parses:*
+
+| Check | Result |
+|---|---|
+| `architect.py --all` | **exit 0**, self-check PASS, 43 + 1 = 44 (unchanged) |
+| Top-ranked unit | `BRGA_WeaponFire` (BP03, MISSING, 106) — **unchanged** |
+| `test_selfcheck.py` | **5/5** — control still ACCEPTs, 4 corruptions still REJECT |
+
+Unchanged is the result worth stating: the scanner asserts the GE class count against the header
+rather than reading §4's prose, so correcting the prose moved no number. That is the design
+working — **the doc and the code now agree, and they agree because the code never trusted the
+doc.**

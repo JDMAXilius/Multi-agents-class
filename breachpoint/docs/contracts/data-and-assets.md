@@ -46,7 +46,7 @@ What survives in those assets is a wiring diagram or a picture, never a decision
   notifies announce a *moment* per R17, the sim decides the consequence)
 - a WBP carrying anything but layout/anchors/animation → violation (state and binding live
   in the C++ parent + ViewModel)
-- a GameplayEffect authored as an asset → violation (the six generic GEs are C++ classes;
+- a GameplayEffect authored as an asset → violation (the seven generic GEs are C++ classes;
   SetByCaller + dynamic tags cover the game)
 - a GameplayCue authored as anything but a C++ handler class → violation (the asset is only
   the VFX/SFX the C++ cue plays)
