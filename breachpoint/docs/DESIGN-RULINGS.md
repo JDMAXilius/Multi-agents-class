@@ -489,3 +489,86 @@ The lead appends; nobody else writes here. A doubt this ledger closes is closed.
   session that reports "I could not even file the gap" has read the block message instead of the
   hook. *That mistake is the same shape as the four this project has already catalogued: a
   mechanism's behaviour inferred rather than fired at.*
+
+## Delegated batch, 1 Aug 2026 — R32–R36
+
+**Authority note, recorded because law 8 makes it matter.** The founder delegated these
+standing: *"decide always on your recommendation and continue working."* Each was filed as a
+recommendation in `docs/DECISIONS-OWED.md` first, with its trade-off written down; each is
+recorded here as the ruling taken on that recommendation, not as a lead widening its own remit.
+**Rulings are closed once made** — if one is wrong it is amended by a later R-number, never
+re-litigated inside a packet.
+
+- **R32. The architect's `depth` term is SUBTRACTED, not added.** BP15 step 2 spec'd four terms
+  and left the sign implicit; adding depth made the score reward *distance from a root*, which is
+  distance from being startable. Proven rather than argued: the corrected score's top pick was
+  `BRSpotterSubsystem` — BP11, gated by BP08, gated by BP02+BP04 — winning on **depth 4 alone**,
+  while the three test specs (depth 0, startable) ranked 7–9 in the same table that reported
+  rung 2 BLOCKED *because* `Tests/` was empty. A "what to build next" score ranks **startable**
+  work first. This does not bury deep units: `blockers` still lifts a unit many others wait on.
+
+- **R33. A fifth score term, READINESS, and it is a GATE.** A unit whose declared inputs do not
+  exist cannot be built, however valuable it is. `BRGA_WeaponFire` ranked #1 while three of its
+  inputs were missing, and the builder packet stopped at law 5 on contact. Readiness is computed
+  **mechanically** — declared-but-absent tags, row fields and CSV columns named by the unit's own
+  §3 spec — never by a model.
+
+- **R34. A score term expressing IMPOSSIBILITY is a gate and uses a magnitude that dominates.**
+  Generalised from three bugs with one shape: `state` at 2/1/0 was swamped by a blocker term
+  reaching 35 and the score picked an already-BUILT unit; `tier` needed −100 to stop a
+  perpetually-MISSING Phase-2 unit being selected; readiness needs the same. **"This cannot be
+  built" is not a preference to be outvoted.** Preference terms (depth, blockers) stay small;
+  gate terms (state, tier, readiness) use magnitudes no sum of preferences can overcome.
+
+- **R35. An include edge counts only if the included header EXISTS.** Step 6's F3: adding one
+  line — `#include "BRGA_Grenade.h"` — to `BRCore.h` moved that unit +27 and to #1, and **the
+  included header does not exist**. The include cannot compile and the scorer accepted it, so two
+  of four terms were writable by the same builder the score directs. The graph stays (step 2
+  names it); an edge whose target is absent from disk is not evidence. *Not closed by this:* a
+  builder can still add a **valid** include to move its own unit. The score is only as
+  trustworthy as the tree, and `check_authorisation.py` is what catches a landing it did not
+  authorise.
+
+- **R36. R29.3 is widened: an editor session must not overlap ANYTHING THAT TAKES THE PROJECT
+  LOCK, not merely "a build".** R29.3 named the operation this project rarely runs and missed the
+  one it runs constantly — every editor-driving tool we own is a `-run=pythonscript` commandlet
+  that takes the lock without being a build. **Demonstrated the same day:** with an editor open,
+  `run-ubt.ps1 -Targets BreachpointEditor` compiled every translation unit and linked the `.lib`,
+  then failed `LNK1104: cannot open file … UnrealEditor-Breachpoint.dll` because the editor held
+  it. The compile was fine; the *lock* was not. It had bitten nobody earlier only because
+  `build-input.ps1:180` and `rename-r26.ps1:88` guard on *"any editor process is live"* — the
+  correct test — rather than on R29.3's text. **A ruling whose wording is narrower than the
+  guards implementing it will eventually be read instead of the guards.**
+
+## Authoring execution (1 Aug 2026 — forced by BP18's first step, not decided in the abstract)
+
+- **R37. The MCP MAY execute an asset step. The committed plan plus a receipt is the reviewable
+  artifact — never the asset alone.** Founder ruling, 1 Aug 2026, taking BP16 step 2's proposal
+  **(a) MCP-as-executor**. `DECISIONS-OWED.md` carried this in the D-series with no R-number;
+  BP18 operated under (a) as the *conservative reading* while unruled. It is now ruled, and the
+  conservative reading is the actual one.
+
+  **Why it could not stay owed.** BP18's Kickoff says `requires: editor-live`. Every generator
+  the ticket names — `rename-r26.ps1`, `build-input.ps1` — carries an R21 guard that **refuses
+  to launch while any editor process is live**. Both cannot hold: the ticket demands an open
+  editor and its own tools demand a closed one. Steps 1–3 had no path that satisfied both. The
+  founder was offered close-the-editor-and-run-headless (law-7 clean today, no ruling needed)
+  and chose **editor open, MCP executes**, which is what forced the R-number.
+
+  **The obligation, which is the whole content of this ruling.** For every asset landed by MCP:
+  1. **A committed plan specifies it first.** The plan is a file in the repo — `rename_r26.py`,
+     `input_plan.py`, `arena_manifest.json`. The MCP replaces the `unreal`-importing half of a
+     generator, **not** the deciding half. An MCP call with no committed plan behind it is
+     hand-placing with a different hand and is a `high` finding.
+  2. **A receipt names every call and its result**, and is committed with the asset. The critic
+     cannot diff a `.uasset`; the receipt is what it reviews instead.
+  3. **Law 7 is NOT repealed.** Tier is still answered before the first call: if it is not
+     Tier 4 of `BREACHPOINT-AUTHORING-MATRIX.md`, the answer is still C++ and the step is wrong.
+
+  **The gap this ruling makes load-bearing, named out loud.** `guard_laws.py` gates `Edit`/`Write`
+  by `file_path`. **An MCP tool call has neither** — so every mechanical protection this project
+  owns is blind to asset authoring, exactly as BP16 warned. Before R37 that blindness was
+  theoretical because no agent was permitted to land an asset that way. It is now the primary
+  authoring route, and the only thing standing where the hook stands elsewhere is **receipt
+  discipline and review**. That is a real reduction in enforcement, accepted deliberately, and
+  a session that lands an MCP asset without a receipt has defeated the only control there is.
