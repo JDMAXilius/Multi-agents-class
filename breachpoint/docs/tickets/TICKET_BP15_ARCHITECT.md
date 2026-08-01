@@ -882,3 +882,53 @@ mtime), **F3** (include edges are model-written, and a one-line `#include` of a 
 header moved a unit +27 and to #1), **F6b** above, and **F7** (`test_selfcheck.py` exercises only
 `parse_manifest`; `classify`, `rank` and `blackboard` still have zero cases — F4 and F5 were both
 found in exactly that gap). **Step 6's box stays unchecked**: findings are addressed only in part.
+
+**1 Aug 2026 — F7 closed (31 cases), and it immediately caught that F4 was only TWO-THIRDS
+fixed. The Log said otherwise. Corrected.**
+
+*The correction.* The step-6 fix entry above states F4 was fixed with "statements counted by
+semicolons outside comments/**dead-blocks**/preprocessor." **The dead-block strip never ran.**
+`architect.py`'s regex contained **two literal `0x08` backspace bytes** where `\b` was intended
+(file offsets 8975 and 8998) — invisible in every editor and in a `Read`. Inside a raw string a
+literal backspace matches *literally*, so the pattern demanded a backspace immediately after
+`#if 0` and after `#endif`, which never occurs in C++. A `.cpp` whose entire body sat inside
+`#if 0` still classified **BUILT**, exactly as F4 reported. Two of F4's three probes were
+genuinely fixed; the third was not, and the Log claimed all three.
+
+*How it got there, because the mechanism matters more than the byte:* the fix was applied
+through a **shell heredoc**, which consumed the backslash before Python ever saw it. **Two
+subsequent attempts to repair it via `python -c` failed the same way and reported success** —
+the byte count printed "2" both times. It was only fixed by writing a script to a file so no
+shell touched the escape. A defect that is invisible on inspection AND survives its own repair
+is the sharpest instance yet of this session's pattern.
+
+*How it was found:* by writing the test, not by re-reading the code. F7's §2 asserted STUB for
+the `#if 0` probe; the assertion failed; disassembling `has_statements.__code__.co_consts`
+showed `'…#if\s+0\x08…'`. **`Read` cannot show this and neither can review** — only execution
+could. The agent left the assertion at STUB rather than weakening it to pass, which is the only
+reason the defect surfaced instead of being ratified.
+
+*F7 itself:* `test_selfcheck.py` is now **31 cases across four surfaces** — §1 `parse_manifest`
+(the original 5, unchanged), §2 `classify` (12), §3 `safe_unit_name`/`blackboard` (10),
+§4 `rank` (4). Red-then-green was **verified, not assumed**: the pre-fix heuristic was
+reconstructed and re-run, flipping 5 verdicts; and `safe_unit_name` was neutered to a
+pass-through, reproducing F5 end-to-end inside a sandbox (`canary intact: False`, `blackboard/`
+empty). The F5 sandbox is nested six directories deep so the traversal lands on a planted canary
+in the temp tree and the real repo is unreachable either way; per the Windows trailing-dot note
+the assertion is on the **nonzero SystemExit**, with canary-intact as an extra, and a crash is
+recorded FAILED rather than passed.
+
+*Verification after the byte fix:* `test_selfcheck.py` **31/31** · `architect.py --all` exit 0 ·
+`build_state.py` exit 0 · `check_authorisation.py` exit 0.
+
+**KNOWN LIMITATION, reported by the F7 agent and deliberately not asserted.** `classify()`'s
+header-only path still uses a line-count heuristic (`len(lines) > 8`) — *the same class of test
+F4 condemned on the `.cpp` side*. An 11-line header of `#pragma once`, three includes and
+`USTRUCT() struct FBRProbeRow { GENERATED_BODY() };` with **zero members** classifies BUILT. The
+agent left it out of the suite because `architect.py` never claimed to detect it and pinning
+either verdict would be writing spec rather than guarding a fix. That judgement is right, and
+the limitation is recorded here rather than in a comment nobody reads.
+
+**Step 6's box now: F1, F4, F5, F6a, F7 addressed. F2 graded (see `check_authorisation.py`),
+F3 and F6b open and both flagged as founder calls.** The box stays unchecked until those two
+are answered — a partial address is not an address.

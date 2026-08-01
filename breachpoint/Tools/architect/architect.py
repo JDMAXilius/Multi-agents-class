@@ -172,7 +172,7 @@ def has_statements(path, need=2):
     """
     src = path.read_text(encoding="utf-8", errors="replace")
     src = re.sub(r"/\*.*?\*/", "", src, flags=re.DOTALL)          # block comments
-    src = re.sub(r"^\s*#if\s+0.*?^\s*#(?:endif|else).*?$", "", src,
+    src = re.sub(r"^\s*#if\s+0\b.*?^\s*#(?:endif|else)\b.*?$", "", src,
                  flags=re.DOTALL | re.M)                          # dead code
     n = 0
     for line in src.splitlines():
