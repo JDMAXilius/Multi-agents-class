@@ -25,6 +25,11 @@ public class Breachpoint : ModuleRules
 			"NavigationSystem",
 			"UMG",
 			"Slate",
+			// SlateCore added 1 Aug 2026: UMG's SObjectWidget pulls SWidget, EVisibility,
+			// SNullWidget and FSlateAttributeMetaData, all of which live in SlateCore, not
+			// Slate. Without it the module compiles clean and fails at LINK with 13
+			// unresolved externals -- the failure mode is invisible until the linker runs.
+			"SlateCore",
 			"CommonUI",
 			"CommonInput",
 			"ModelViewViewModel"

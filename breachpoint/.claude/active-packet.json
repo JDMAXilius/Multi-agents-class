@@ -1,5 +1,5 @@
 {
-  "ticket": "BP02+BP03+BP08+BP11 (parallel pod, 01 Aug 2026)",
+  "ticket": "BP01 step 3b + BP02 steps 3-4 (input assets, abilities)",
   "owner_path": [
     "Source/Breachpoint/AbilitySystem/",
     "Source/Breachpoint/Data/",
@@ -17,6 +17,8 @@
     "Content/Data/",
     "Content/Maps/",
     "Content/UI/",
-    "Source/Breachpoint/Breachpoint.Build.cs"
+    "Source/Breachpoint/Breachpoint.Build.cs",
+    "Content/Input/",
+    "Tools/"
   ]
 }

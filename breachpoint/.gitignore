@@ -28,3 +28,4 @@ Tools/env.local
 # Python tool caches
 __pycache__/
 *.pyc
+build_editor_final.log
