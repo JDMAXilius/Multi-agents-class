@@ -16,7 +16,13 @@ Input → InputTag → ASC, no per-ability binding code, ever.
 - none (root ticket — nothing gates it), but the environment must be real:
   a **source-built UE 5.8** is installed and its path is known, and the game repo has
   `crew/`'s contents at its root (`CLAUDE.md`, `.claude/`, `docs/` all present)
-- owner_path: `Source/Breachpoint/`, `Config/`
+- owner_path: `Source/Breachpoint/`, `Config/`, `Content/Input/`
+  > `Content/Input/` added 31 Jul 2026. Step 3 authors `IMC_Default`, the `IA_*` actions and
+  > `DA_InputConfig`, and this ticket's Notes already declare `Content/Input/*` as the binaries
+  > it owns — but `guard_laws.py` confines every write under `Source/` and `Content/` to the
+  > claimed `owner_path`, so the packet would have been blocked writing its own deliverable.
+  > Harmless until now only because the hook was inert on Windows (see this ticket's Log);
+  > with the hook live it fires on the first input asset.
 
 ## Steps (in order)
 
@@ -97,6 +103,20 @@ what the installed build omits. BP00's premise stands as written.
 *Action:* cloning `5.8.1-release` (tag `63e13ee6`) from `EpicGames/UnrealEngine` to
 `D:\UnrealEngine_5.8`. Tag pinned to **5.8.1**, not branch head, to match the CL that saved
 the template's `.uasset` files. Build host: Ryzen 9 7950X / 32 threads / 63 GB, D: 602 GB free.
+
+**31 Jul 2026 — engine built and registered. Kickoff condition 1 is now MET.**
+
+| | |
+|---|---|
+| `ENGINE_ROOT` | `D:\Program Files\UE_5.8_Source` |
+| Version | 5.8.1 (tag `5.8.1-release`, `63e13ee6`) — matches the CL that saved the template assets |
+| Build type | **source** (`SourceDistribution.txt` present, `InstalledBuild.txt` absent) — this is what makes `BreachpointServer` compilable |
+| Registered GUID | `{018BF183-4F19-F6B0-0277-F682F40F4B85}` — use this as `EngineAssociation` in `Breachpoint.uproject` |
+| Toolchain | MSVC `14.50.35717` (cl.exe 14.50.35737) — UBT `FamilyRank` 0, the top preferred band for 5.8 |
+| Result | `UnrealEditor Win64 Development`, exit 0, **9051 actions, zero errors**, ~52 min |
+
+Note for whoever writes `Tools/env.local` in BP00 step 1: `ENGINE_ROOT` is the path above, and
+it is machine-local — `env.local` is never committed (`testing.md` fill-in).
 
 *Open, not yet decided* (these gate step 1 and are NOT resolved by the engine call):
 1. Repo topology — tickets assume a standalone game repo with `crew/`'s contents at its root;
