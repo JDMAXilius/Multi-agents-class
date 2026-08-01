@@ -444,3 +444,67 @@ and `CT_Combat.csv` has not been imported to a CurveTable asset yet (`Tools/reim
 -Tables CT_Combat` is now unblocked — its precondition was this CSV existing). BP02's Done-when boxes
 for sprint prediction and for the damage/regen/death numbers all still require step 5's specs and a
 multi-process run.
+
+**1 Aug 2026 — step 5: the project's FIRST two spec files landed. Rung 0.**
+
+`Source/Breachpoint/Tests/` held only a `.gitkeep` until now, so every combat and shield rule
+this project has landed was unpinned. Two sim-builder agents wrote one file each, taken by
+**exact path per R25** (never the `Tests/` folder), under an R31 window claim:
+
+- `BRCombatSpec.cpp` — 1036 lines, suite `Breachpoint.Sim.Combat`. Row algebra, headshot
+  multipliers, `UBRDamageExecCalc`, TTK, attribute clamps.
+- `BRShieldSpec.cpp` — 999 lines, suite `Breachpoint.Sim.Shields`, 29 tests in 5 `Describe`s.
+  Recharge gate, rate/clamp, shields-first ordering, the `ShieldsBroken` transition, death.
+
+**RUNG 0 — written, not compiled, not run.** An editor held the project lock the whole time
+(R29.3), so no build was attempted and none of this is a correctness claim. First compile will
+very likely need a debug pass; that is expected of a rung-0 artifact.
+
+**Verified by the dispatching session (not taken on the agents' word):** both files pure ASCII
+(40 em-dashes normalised out of `BRShieldSpec.cpp` — MSVC C4819 under warnings-as-errors is a
+real build failure, and it is the same family as BP14's cp1252 defect), braces and parens
+balanced, neither wrote outside its granted path, and `BRShieldSpec.cpp` writes **no attribute
+directly** — the only mention of `SetShields`/`SetHealth`/`InitShields` is a comment documenting
+that they are never called (law 1 intact). Every TTK number in `BRCombatSpec` was re-derived
+against the shipped `DT_Weapons.csv`: AR solo 25 shots/2.400 s, Magnum all-head 5/1.3333 s, the
+13th AR shot overflowing exactly 4 into health, Rocket 120 not one-shotting 200 EHP while 240
+would. **No CSV number contradicts a ruling.**
+
+**TWO CONTRACT_GAPS — filed, not worked around:**
+
+1. **`UBRAttributeSet::ApplyIncomingDamageShieldsFirst` has no headless entry point.** It is
+   private and only reachable from `PostGameplayEffectExecute`, which needs a live
+   `FGameplayEffectModCallbackData` + ASC. The agent refused to re-implement "absorb then
+   overflow" in the spec and assert it against itself — that is precisely the hollow spec R25
+   forbids — and pinned the split's *observable consequence* instead. **Asks for the same
+   factoring `ComputeFinalDamage` already has:** a `static void SplitShieldsFirst(float Raw,
+   float ShieldsBefore, float& OutAbsorbed, float& OutOverflow)` on `UBRAttributeSet`, after
+   which it is four assertions. Correctly NOT added — `AbilitySystem/` is outside the claim.
+2. **There is no `ShieldsBroken` EVENT, only a GE-applied tag.** R12 makes break-off on
+   shield-crack a legibility rule bots read. If R12 wants `Event.Shields.Broken`, that is a
+   `contract_gap` under R23 (`Event.*` is a CLOSED family). The spec pins tag count across
+   repeated hits instead — the observable a bot actually reads.
+
+**A DEFECT IN THE DISPATCH, recorded because the agent was right and the packet was wrong:**
+the packet prompt said "health reaching zero applies `GE_Death`." **It does not, deliberately.**
+`BRAttributeSet.cpp:269` — *"The attribute set REPORTS death; it does not administer it."* The
+agent pinned the code's real contract and added an alarm (asserting `State.Dead` is ABSENT
+immediately after death is reported), so if anyone ever moves `GE_Death` into the attribute set
+that line goes red. It reported the contradiction rather than quietly following the prompt.
+
+**CORROBORATION OF A LIVE FINDING, by an independent method.** The shield agent found
+`Content/Data/CT_Combat.uasset` does not exist (filesystem scan), so today
+`GetCombatCurveTable()` returns null, `ApplyInitStats()` refuses (fighters spawn `MaxHealth 0`)
+and `ApplyRecentDamageGate()` refuses (**regen ungated**). This independently confirms what a
+read-only MCP query found the same afternoon — `/Game/Data` holds **zero assets**. Two methods,
+same answer: **R5's pillars are currently unreachable at runtime.** Both suites are deliberately
+immune, building their tables in memory from the committed CSVs via
+`BRCombatCurves::SetTableOverrideForTests`, so they do not wait on the reimport.
+
+**Not pinned, and named rather than smuggled:** the shields-first split itself (gap 1); elapsed-
+time proof that recharge resumes at 2.5 s (rung 3/4 — the suite pins the number and the
+mechanism, and simulates gate expiry by removing the effect); recharge RATE as a number
+(deliberately left as the composition rule `per-tick == rate x period`, because rate/period/
+capacities are TUNABLES and pinning them would turn a legitimate balance change red — the
+literal 2.5 is the one hard-coded number, and only because R5 makes it a pillar); death
+attribution (BP04's); the full GE path end-to-end (needs an ASC).
