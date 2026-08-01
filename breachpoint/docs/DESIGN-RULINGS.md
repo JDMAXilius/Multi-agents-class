@@ -158,3 +158,30 @@ The lead appends; nobody else writes here. A doubt this ledger closes is closed.
   Done-when clause says "from scratch" and only an incremental build completed, the honest
   verdict is **INCONCLUSIVE**, never PASS — and a build reporting "up to date" with zero
   actions proves nothing at all about compilation.
+
+- **R21. Stopping an agent does not stop the processes it spawned, and UE's build lock is
+  global. One build agent at a time — always.** `TaskStop` kills the agent, not its children:
+  a `Build.bat` it launched keeps compiling, keeps holding `Build.bat`'s mutex, and keeps
+  writing binaries long after the agent is gone. A second verification agent dispatched into
+  that state does not queue politely — it gets
+  `"Build.bat is already running, waiting for existing script to terminate..."` and, if it is
+  honest, reports **BLOCKED**.
+
+  *Origin (31 Jul 2026, BP01):* the lead retired a verifier mid-build and dispatched a
+  replacement. The orphaned Game build ran to completion at 22:35:55 and its Server build held
+  the lock; the replacement hit the mutex at 22:39:10 and correctly reported BLOCKED, and its
+  Game check came back INCONCLUSIVE because the orphan had already made the target up to date.
+  Two agents, three reports, zero usable rung results — none of it the replacement's fault.
+
+  *Rules that follow:*
+  1. **Never dispatch a second build-running agent while one is live.** Check for live
+     `UnrealBuildTool`/`cl.exe`/`link.exe` before dispatching, not after.
+  2. **Before stopping a build agent, decide what happens to its build.** If the build should
+     die with it, kill the process tree explicitly. If it should finish, wait for it — do not
+     dispatch over it.
+  3. **Parallel pods (`CREW_PLAYBOOK` §12) do not make builds parallel.** Separate worktrees
+     give disjoint *files*; they do not give disjoint *build locks* or disjoint
+     `Engine/Intermediate`. Two builders may write code simultaneously; only one may compile.
+  4. A wait for a build to end must exit on **failure as well as success** — poll for the
+     build processes disappearing, not for the success artifact appearing. Waiting on the
+     happy-path marker alone makes a crash indistinguishable from slow progress.
