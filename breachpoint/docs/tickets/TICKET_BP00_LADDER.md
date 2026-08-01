@@ -1,5 +1,12 @@
 # TICKET — BP00: Bootstrap the validation ladder (rungs 1, 2, 4)
 
+> STATUS: in-progress — Windows box (lead session), 31 Jul 2026 (`103e6a4`). Both Kickoff
+> conditions verified MET: `Tools/env.local` written and gitignored (see Log — the condition was
+> circular and is resolved), and BP01 step 1 landed at `97b423e`. **Scoped to step 1 on this
+> pass**; steps 2–3 are expected BLOCKED and the Log will say why rather than skip them.
+> BP01 remains in-progress and unchecked — the claim file arms the hook, it does not close a
+> ticket.
+
 > STATUS: open — cut by lead session, 29 Jul 2026. Needs: UE 5.8 install path in
 > `Tools/env.local`; Breachpoint project skeleton (BP01 step 1) for targets to exist.
 

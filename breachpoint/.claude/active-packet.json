@@ -1,11 +1,7 @@
 {
-  "ticket": "BP01_SKELETON_INPUT",
+  "ticket": "BP00_LADDER",
   "owner_path": [
-    "Source/Breachpoint/",
-    "Config/",
-    "Content/Input/",
-    "Source/Breachpoint.Target.cs",
-    "Source/BreachpointEditor.Target.cs",
-    "Source/BreachpointServer.Target.cs"
+    "Tools/",
+    "Source/Breachpoint/Tests/"
   ]
 }
