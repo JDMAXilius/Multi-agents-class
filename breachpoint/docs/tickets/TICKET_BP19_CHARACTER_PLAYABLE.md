@@ -36,8 +36,9 @@ again if the editor revealed a missing property. Plan for **three windows** (R36
    a config asset, a class) or a **presentation** value (a socket name, a camera offset) —
    never a number the sim reads.
 
-**Ordering law:** Phase A (C++) gates Phase B (editor) gates Phase C (level + PIE). Within
-Phase B, step B1 gates B2–B4. Do not reorder to "get something visible sooner" — B3's AnimGraph
+**Ordering law:** **A0 gates A1** (an AnimInstance reading a tag from an ungranted ASC reads
+false forever, and B3's graph then looks broken for a reason that is not in the graph). Phase A
+gates Phase B gates Phase C. Within Phase B, B0 gates B1 gates B2–B4. Do not reorder to "get something visible sooner" — B3's AnimGraph
 can only bind to properties A1 creates, and creating them afterwards means rebuilding the graph.
 
 ## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
@@ -64,6 +65,38 @@ can only bind to properties A1 creates, and creating them afterwards means rebui
 ---
 
 # PHASE A — C++, editor CLOSED
+
+## A0. Nothing grants a startup set and nothing applies `GE_InitStats` on spawn
+
+**This is the step that decides whether "playable" means anything**, and it was found by running
+PIE, not by reading code — filed by T2 after `bc5cf8f`:
+
+> *"NOTHING GRANTS A STARTUP/BASE SET AND NOTHING APPLIES `GE_InitStats` ON SPAWN.
+> `BRAttributeSet`'s constructor sets every attribute to zero and calls it 'uninitialized';
+> `CheckForDeath` refuses to kill a pawn with `MaxHealth` 0. So the character moves and binds
+> input but has **no health, no shields and no Sprint**."*
+
+`UBRAbilitySystemComponent::ApplyInitStats()` **already exists** — `BRShieldSpec.cpp:395` and
+`:439` call it, and the specs pin `GE_InitStats`'s modifier order (capacities before current
+values). **The function is written and the game never calls it.**
+
+What to add, on the **server only**, in `ABRPlayerState`'s or `ABRCharacter`'s possession path
+(wherever the ASC's owner+avatar are both valid — `InitializeAbilitySystem` is the existing
+seam and is already idempotent):
+
+1. Grant the startup ability set — `TSoftObjectPtr<UBRAbilitySet>` **`EditDefaultsOnly`**, set
+   from `Config/DefaultGame.ini` or the R26 container, pointing at
+   `/Game/Abilities/DA_AbilitySet_Core`. **Soft, never a hard ref** (law 3).
+2. Call `ApplyInitStats()`.
+3. Guard both against re-entry — `PossessedBy` and `OnRep_PlayerState` both fire, and a respawn
+   fires them again. Re-granting an ability set duplicates every grant.
+
+**Do this before A1.** An AnimInstance reading `bIsSprinting` from an ASC that was never granted
+Sprint will read `false` forever, and B3's graph will look broken for a reason that is not in
+the graph.
+
+Owner: **builder** (**netcode-builder** consults — this is a server-authoritative spawn path).
+Contracts: `gas-purity.md`, `netcode.md`.
 
 ## A1. `UBRAnimInstance` — the class that does not exist, and is the reason the ABPs can't be built
 
@@ -201,15 +234,38 @@ time you touch assets, the names are already correct, and every path below assum
 
 Whichever of A2's options landed, this is where the pawn stops being invisible.
 
-**Assign, and nothing else:**
+**REVISED 1 Aug 2026 — most of this step is ALREADY DONE, and one line of it was a trap.**
+T2 landed the character's body in `bc5cf8f` and recorded the reasoning in
+`docs/bus/…T2-to-T1…` after the fact (the commit swept the assets in without it). Read that bus
+message before touching `BP_BRCharacter`. Current state:
 
-| Property | Value | Note |
+| Property | State | What to do |
 |---|---|---|
-| `Mesh3P` (the inherited `GetMesh()`) | `/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple` | full body; `OwnerNoSee`, casts shadow — already set in C++ |
-| `Mesh1P` | same skeleton, FP arms variant | UE 5.8's FP template uses the full body for both; **check what `BP_FirstPersonCharacter` actually assigns and match it** rather than guessing |
-| `AnimClass` on both | `ABP_BR_FirstPerson` / `ABP_BR_ThirdPerson` | **created in B3 — leave empty on this pass and return** |
-| Mesh transform | rotation `(0,0,-90)`, Z offset ≈ `-90` | the standard Manny root-vs-capsule offset; a *presentation* value, not a gameplay number |
-| `DA_InputConfig` | `/Game/Input/DA_InputConfig` | if `ABRCharacter`/`ABRPlayerController` exposes the property; if it does **not**, that is a `contract_gap` — the config has to reach the input component somehow |
+| `Mesh3P` (inherited `GetMesh()`) | **DONE** — `SKM_Manny_Simple` + `ABP_Unarmed`, transform already correct in C++ (Z −88 = capsule half-height, yaw −90) | swap `ABP_Unarmed` → `ABP_BR_ThirdPerson` after B3 |
+| **`Mesh1P`** | **EMPTY, DELIBERATELY. DO NOT ASSIGN A MESH TO IT.** | leave empty; see below |
+| `AnimClass` (3P) | `ABP_Unarmed` (template) | repoint after B3 |
+| `DA_InputConfig` | **DONE** — PIE proves 11 rows resolved (4 native verbs + 7 ability rows, 14 bind handles) | nothing |
+
+> ### Mesh1P is empty on purpose. This is the single most likely thing to be "fixed" here.
+>
+> T2 tried exactly what this ticket originally told you to do — assign `SKM_Manny_Simple` +
+> `ABP_FP_Copy` "the way the template does" — ran PIE, and **got a foot filling the screen.**
+>
+> The template gets away with identity because **its topology is inverted from ours.**
+> `breachpointCharacter.cpp:21` attaches the FP mesh to `GetMesh()` and `:28` hangs the camera
+> off the mesh's `head` socket. `ARCHITECTURE §3.4` does the opposite — camera on the capsule at
+> `BaseEyeHeight`, `Mesh1P` **under the camera** — so identity puts the body's *origin* at eye
+> level. Offsetting by −152 (88 capsule + 64 eye) only moved the problem: the head then sat
+> ~18 cm above the camera, from inside it.
+>
+> **The offset was never the bug.** §3.4 specifies `Mesh1P` as *"arms + weapon"* — Tier-4 sourced
+> art this project does not own. **A full body on a camera that pitches is the wrong asset at any
+> offset.** So `Mesh1P` stays cleared: first person is a clean view, `Mesh3P` still gives
+> everyone else and the death cam a correct silhouette.
+>
+> **AN FPS ARMS MESH IS OWED (Tier 4, sourced art).** Until it exists, leave `Mesh1P` empty and
+> do not spend a window on offsets. *This paragraph exists because the first draft of this
+> ticket told you to assign it — one hour after T2 proved you shouldn't.*
 
 **Do not** add a component, a variable, or a graph node. If the details panel tempts you to add
 one, the answer is C++ and a second Phase-A window.
@@ -236,8 +292,17 @@ runtime**: the weapon equips and still cannot fire, one layer further down.
 
 Two halves:
 
-**(i) Create three `UBRAbilitySet` instances** — `DA_AbilitySet_AR`, `DA_AbilitySet_Magnum`,
-`DA_AbilitySet_Rocket` in `/Game/AbilitySets/`. `UBRAbilitySet` is a `UPrimaryDataAsset`, so a
+**REVISED 1 Aug 2026: `/Game/Abilities/DA_AbilitySet_Core` ALREADY EXISTS** (T2, `bc5cf8f`).
+It grants `BRGA_Sprint` on `InputTag.Sprint` and applies `GE_InitStats`. It names **only** Sprint
+because **only `BRGA_Sprint` is compiled into the running editor binary** — Melee, Grenade,
+Grapple, WeaponFire and WeaponUtility are committed as source with no build behind them. **That
+is an ordering fact, not an oversight: add those rows only after Phase A's rung-1 build.**
+Note the folder is `/Game/Abilities/`, **not** `/Game/AbilitySets/` — the CSV's paths are what is
+wrong, not the folder.
+
+**(i) Create three per-weapon `UBRAbilitySet` instances** — `DA_AbilitySet_AR`,
+`DA_AbilitySet_Magnum`, `DA_AbilitySet_Rocket`, **in `/Game/Abilities/` beside `_Core`**, and
+repoint `DT_Weapons.csv` to that folder. `UBRAbilitySet` is a `UPrimaryDataAsset`, so a
 weapon names an **instance**, not a class (`c4a50f8`'s commit message is emphatic about this —
 a soft *class* pointer resolves to the CDO and grants nothing). Each set grants the abilities
 that weapon needs: `BRGA_WeaponFire`, `BRGA_WeaponUtility`, and whichever of
@@ -311,11 +376,39 @@ coordinate with BP07 rather than co-writing.
 
 ## C2. PIE, and say exactly what it proves
 
+**ALREADY PROVEN, 1 Aug (T2, PIE single-player) — do not re-derive these, verify they still
+hold after Phase A changes the spawn path:**
+
+```
+BRPlayerController 'PC_BR_C_0': added mapping context 'IMC_Default' at priority 0.
+BRCharacter 'BP_BRcharacter_C_0': PossessedBy (server) -- InitAbilityActorInfo(owner='PS_BR_C_0', avatar='BP_BRcharacter_C_0').
+BRCharacter: input bound via UBRInputComponent -- 4 native verbs (Move/Look/Jump/Crouch), 7 ability rows from config 'DA_InputConfig' -> controller 'PC_BR_C_0' (14 bind handles).
+```
+
+Our GameMode spawned our pawn, our controller possessed it, the ASC on our PlayerState
+initialised, all 11 input rows resolved. **T2's own caveat, and it is the honest one:
+*"I DID NOT PRESS A KEY — 'bound' is proven, 'moves' is not."*** Pressing the keys is this step.
+
+**Four defects PIE surfaced that no static check would have.** None is BP19's to fix; all four
+will appear in your log and must not be mistaken for this packet's failures:
+1. `BRPowerWeaponSpawner`: *"no PickupClass set; node not armed"* — the arena's rocket node is
+   inert. Needs a pickup class that does not exist (R4, and `ControlRocket`).
+2. CommonUI: *"Using CommonUI without a CommonGameViewportClient derived game viewport client.
+   Input routing will not function correctly."* — **BP10's UI will not route input** until
+   `DefaultEngine.ini` names one. Expect the HUD checkbox below to fail for this reason.
+3. *"No GameplayCueNotifyPaths were specified in DefaultGame.ini"* — every cue lookup scans all
+   of `/Game/`. Cheap to fix, and it is a one-line ini entry, but it is the cue work's call.
+4. *"Unable to find RecastNavMesh instance"* — the arena has NavMeshBounds but **no built
+   navmesh**, so bots cannot path (BP08).
+
 Play in Editor, one player. Walk the list and record each **PASS/FAIL** in the Log, with the
 failing log line where it fails:
 
-- [ ] The pawn that spawns is `ABRCharacter` (not the template pawn, not `DefaultPawn`)
-- [ ] Mesh is visible in third person; FP arms visible in first person; no T-pose
+- [x] The pawn that spawns is `ABRCharacter` — **proven 1 Aug, see above**
+- [ ] `MaxHealth`/`MaxShields` are non-zero after spawn (A0). **If this fails nothing below is
+      meaningful** — an uninitialised ASC makes every ability and every anim tag read false
+- [ ] Mesh visible in third person, no T-pose. **First person shows NO mesh, and that is the
+      expected PASS** until an arms mesh is sourced — see B1
 - [ ] `Move` — WASD moves in control-rotation space
 - [ ] `Look` — mouse aims; no inversion surprise (inversion is an IMC concern, not code)
 - [ ] `Jump` — hold-to-hold, release-to-cut
@@ -350,6 +443,10 @@ Owner: **critic**.
 
 ## Done when
 
+- [ ] A pawn that has just spawned has non-zero `MaxHealth`/`MaxShields` and holds the
+      `DA_AbilitySet_Core` grants — i.e. `ApplyInitStats()` and the startup grant run on the
+      server spawn path, guarded against the double-fire of `PossessedBy` + `OnRep_PlayerState`
+- [ ] `Mesh1P` is still **empty**, and the Log says an FPS arms mesh is owed (Tier 4)
 - [ ] `Source/Breachpoint/Animation/BRAnimInstance.{h,cpp}` exists, computes every listed
       property in `NativeThreadSafeUpdateAnimation`, reads sprint from the ASC tag, and uses
       `RemoteViewPitch` for non-locally-controlled pawns
@@ -357,7 +454,8 @@ Owner: **critic**.
 - [ ] Rung 1 green, all three targets, R19 timestamp proof, at a HEAD that includes A1 and A2
 - [ ] All five R26 renames done; `Config/DefaultEngine.ini` repointed; the audit's condition 5
       is clean
-- [ ] `/Game/AbilitySets/DA_AbilitySet_{AR,Magnum,Rocket}` exist and `DT_Weapons.csv`'s
+- [ ] `/Game/Abilities/DA_AbilitySet_{AR,Magnum,Rocket}` exist beside `_Core`, `_Core` has had
+      its five post-build ability rows added, and `DT_Weapons.csv`'s
       `AbilitySet` and `MeshSoftPath` columns resolve to assets that exist — **verified by
       loading them, not by reading the path**
 - [ ] `ABP_BR_FirstPerson` and `ABP_BR_ThirdPerson` exist, are parented to `UBRAnimInstance`,
@@ -373,7 +471,7 @@ Owner: **critic**.
 - **Crew:** **anim-builder** (A1, B3, B4) · **builder** (A2, B1, B2, C1) · **sim-builder**
   (consults on ability-set contents) · **verifier** (A3, C2) · **critic** (C3).
 - **Binary files this ticket OWNS** (lock before editing): `Content/Characters/BP_BRCharacter`,
-  `Content/Core/BP_BR*` (the four), `Content/AbilitySets/*` (new),
+  `Content/Core/BP_BR*` (the four), `Content/Abilities/*` (`_Core` exists; three are new),
   `Content/Animation/ABP_BR_*` (new), `Content/Maps/BR_Arena01.umap`.
 - **Out of scope — a well-meaning session must NOT do these here:** weapon *behaviour* changes
   (BP03 owns the fire path); new gameplay tags (R23 — `Core/` is closed, file a `contract_gap`);
@@ -386,3 +484,31 @@ Owner: **critic**.
 ## Log
 
 (append findings here, dated, newest last — this is what the next session reads)
+
+**1 Aug 2026 — cut, then revised within the hour, and the revision is the more useful entry.**
+
+Cut from disk state: no `UBRAnimInstance` anywhere in `Source/Breachpoint/`, `DT_Weapons.csv`
+pointing at `/Game/AbilitySets/DA_AbilitySet_AR` and `/Game/Weapons/AR/SM_AR` (neither exists),
+and `ABRGameMode` setting only `GameStateClass`.
+
+**Then T2's bus message landed and three of the steps were wrong.** Not wrong in the abstract —
+wrong because T2 had already done the work an hour earlier and `bc5cf8f` swept the assets in
+under a commit message about grenade tuning, so the reasoning was in the bus and not in the
+tree. Corrected:
+
+1. **B1 told you to assign a mesh to `Mesh1P`** — the exact thing T2 had already tried, proven
+   wrong in PIE (a foot filling the screen), and explicitly asked not to be repeated. Our camera
+   topology is inverted from the template's, so identity puts the body's origin at eye level and
+   no offset fixes it: §3.4 wants *arms*, which is Tier-4 art nobody has sourced.
+2. **B2 named `/Game/AbilitySets/`** — the folder is `/Game/Abilities/`, and
+   `DA_AbilitySet_Core` already exists there granting Sprint only, because only `BRGA_Sprint` is
+   in the running editor binary.
+3. **The actual blocker was missing entirely** — nothing grants a startup set or calls
+   `ApplyInitStats()` on spawn, so the pawn has no health, no shields and no Sprint. That is now
+   **A0**, and it is the step that decides whether "playable" means anything.
+
+*The reusable part:* this is the same failure the project has hit five times now — **the
+document a reader hits first wins, and it is usually the stale one.** What is new is the speed:
+this ticket was stale on arrival, by sixty minutes, against work that was committed but whose
+*reasoning* lived only in a bus message. A ticket written from `git log` inherits every commit
+message's omissions. **Read `docs/bus/` before cutting a packet, not only the tree.**
