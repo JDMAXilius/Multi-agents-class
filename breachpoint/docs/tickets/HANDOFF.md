@@ -86,6 +86,23 @@ nodes · **R27** the middle bot tier is `Marine` · **R28** tiers differ only on
   - Idempotent; R21 editor guard; law-7 lfs-lock check. `git lfs unlock` the five paths
     afterwards, then re-run the audit — condition 5 should be clean.
 
+## Added 1 Aug (cloud session, Context A — files only)
+
+- **UE MCP research landed:** `Tools/ue_mcp/RESEARCH.md`. Setup is `Edit > Plugins > Unreal
+  MCP` → restart → `Editor Preferences > Model Context Protocol > Auto Start Server`, then the
+  console command `ModelContextProtocol.GenerateClientConfig ClaudeCode` writes `.mcp.json`.
+  Endpoint `http://127.0.0.1:8000/mcp`. Our `.uproject` already enables both plugins; **no
+  `.mcp.json` is committed yet** — generate it on the workstation, then decide whether it is
+  committed or gitignored (it points at loopback, so committing it is harmless and saves the
+  next machine a step).
+- **The framing correction:** the MCP is a *server exposing tools*, not a second agent. It is
+  the same terminal session with the editor open. No prompt-handoff format needed.
+- **Execution contexts are now written down** — `BREACHPOINT-AUTHORING-MATRIX.md` §5, four
+  contexts (A cloud / B terminal-headless / C terminal+editor / D human), with the routing rule
+  and the `requires:` line tickets should carry. Backfilling `requires:` onto BP00–BP16's
+  Kickoff blocks is unstarted.
+- **R26 rename tool landed** (`Tools/rename_r26/`) — see the founder-Blueprints note above.
+
 ## Honesty ladder position
 
 **Rung 1 only, and not fully.** Three targets compiled with R19 evidence earlier in the session,

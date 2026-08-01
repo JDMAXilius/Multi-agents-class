@@ -127,13 +127,42 @@ Decide when BP01 lands the input layer, log it in the ticket, and record the rul
 
 ---
 
-## 5. Who does what — the three lanes
+## 5. Where work runs — four execution contexts
 
-| Lane | Owns | Examples |
-|---|---|---|
-| **Claude terminal (crew agents)** | All of Tier 1 + Tier 2, and the *scripts* in Tier 3 | C++ modules, CSVs, manifests, `build_arena.py`, specs |
-| **Headless script (run from terminal)** | Tier 3 execution | Blockout generation, table reimport, input assets, screenshots |
-| **You, in the editor** | Tier 4 only, plus every judgment call | ABP graphs, materials, Niagara, MetaSounds, WBP layout, StateTree/EQS wiring, **and the Review gate before any crew output enters `Content/`** |
+The tiers say *what* an artifact is. This says *where the work happens*. They are different
+questions and conflating them is what makes "who does this" feel ambiguous.
+
+**The correction that collapses most of the confusion:** the UE 5.8 MCP is **not a second
+agent** — it is a server exposing the editor's systems as tools to the *same* Claude Code
+session that already has the files and git (`Tools/ue_mcp/RESEARCH.md`). Contexts B and C
+below are one session with the editor shut or open. Nothing is "handed over"; no
+prompt-handoff format exists or is needed.
+
+| Context | Capability | Owns | Cannot |
+|---|---|---|---|
+| **A — Cloud Code** (phone/browser, this container) | files + git only. No engine, ever. | Docs, contracts, rulings, tickets, planning, review of pushed work, *writing* generators | Compile, PIE, run any rung, reach the editor MCP (loopback on another machine) |
+| **B — Local terminal, editor closed** | files + git + engine **headless** | C++, CSVs, specs, UBT/rungs, commandlet scripts (`-run=pythonscript`), reimports, blockout generation | Anything needing a live editor session |
+| **C — Local terminal, editor OPEN** | everything in B **+ MCP editor tools** | Live asset creation/inspection, actor placement, material instances, viewport screenshots, automation runs — **still landing a committed script as the reviewable artifact (law 7)** | Escape `guard_laws.py` — because it currently *can*, see below |
+| **D — You, in the editor** | human judgment | Tier-4 authoring (AnimGraph, materials, Niagara, MetaSounds, WBP layout), **the Review gate** before crew output enters `Content/`, and every fun/feel call | — |
+
+**Routing rule, in one line:** if Context A can do it, do it there (cheapest, always
+available); otherwise B; open the editor for C **only** when the packet declares it needs one;
+D is for what only a human should decide.
+
+**Tickets declare their context** in the Kickoff block — this is the entire integration:
+
+```
+- requires: files-only        # A or B
+- requires: engine-installed  # B — headless commandlet/UBT
+- requires: editor-live       # C — open the editor BEFORE claiming (R21: one editor, one driver)
+```
+
+**The open hole, stated rather than assumed:** `guard_laws.py` gates `Edit`/`Write` by
+`file_path`. An MCP tool call has neither, so in Context C **owner-path confinement, the
+banned-API check, and law 7 are all bypassed by shape.** The proposed fix (match on tool name,
+require `mcp: allowed` in the claim, leave read-only MCP tools ungated) is BP16 step 2 and is
+**not implemented**. Until it is, Context C runs on goodwill — the same footing as R26, and
+said out loud the same way.
 
 **The standing question for any new asset:** *"Which tier is this, and if it's Tier 4, why
 can't C++ express it?"* If that question has no crisp answer, the asset shouldn't exist.

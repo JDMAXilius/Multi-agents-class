@@ -32,6 +32,16 @@ against a live editor). Steps 2–3 in order. Step 4 needs steps 1–3. Step 5 c
 
 ## Steps (in order)
 
+0. **Desk research — DONE (1 Aug 2026, `Tools/ue_mcp/RESEARCH.md`).** Setup path, endpoint
+   (`http://127.0.0.1:8000/mcp`), the `ModelContextProtocol.GenerateClientConfig ClaudeCode`
+   console command, documented tool categories, and Epic's experimental caveats. Verdict:
+   a cloud container **cannot** host this (loopback + Epic's "not designed for remote use";
+   tunnelling considered and rejected as exposing an unauthenticated mutation endpoint to buy
+   a capability the local session already has). It also **corrects the framing this ticket was
+   cut under: the MCP is not an agent** — it is the same Claude Code session with the editor
+   open, so no prompt-handoff ticket format is needed. **This does not close step 1:**
+   documentation is not the surface, and where they disagree the editor is right.
+
 1. **Enumerate the real surface, against a live editor** — not against documentation.
    Start the editor, connect, and produce `Tools/ue_mcp/SURFACE.md`: every tool the MCP exposes,
    its arguments, what it returns, and **what it refuses**. For each, one line on whether it is
