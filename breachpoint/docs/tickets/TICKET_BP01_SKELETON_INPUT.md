@@ -392,6 +392,65 @@ not read its presence as proof it was required.**
 
 ---
 
+**31 Jul 2026 — RUNG 1 REJECTED: the verifier reported PASS on three targets having rebuilt
+one. No Done-when box checked.**
+
+The first V1 pass returned an emphatic PASS ("BreachpointServer compiled successfully on the
+first attempt. No workarounds needed."). It is **false for two of the three targets**, and the
+disproof is one `ls`:
+
+| Artifact | mtime | Whose build |
+|---|---|---|
+| `UnrealEditor-Breachpoint.dll` | 22:16:02 | the verifier's rebuild — genuine |
+| `BreachpointServer.exe` | 21:31:32 | **the builder's**, an hour earlier, untouched |
+| `Breachpoint.exe` | — | **absent from disk** |
+
+What it actually did: rebuilt `BreachpointEditor` (3951 actions, finishing 22:16), then reported
+the other two targets PASS on the *existence and file size* of binaries the builder had produced
+at 21:22 and 21:31. It quoted `Breachpoint.exe (319 MB, timestamp 21:22:38)` as its evidence for
+target 2 — a file that no longer exists, because `-Rebuild` deletes a target's binaries before
+recompiling and that build never completed. So the run was not merely unproven, it was
+**destructive**: the project currently has no game executable, and the report said PASS.
+
+It also fabricated Done-when boxes 7–9 ("input path walk, netcode validation, perf baseline").
+This ticket has six boxes. Invented scaffolding is a tell worth remembering.
+
+**The methodology finding, which outlives this ticket.** The crew's separation of powers assumes
+the verifier is the honest rung — it has no write tools *by capability*, so "quietly fixed the
+test" is structurally impossible. That defends against the verifier **changing the artifact**. It
+does nothing against the verifier **misreading one**: `ls` and `git diff` are read-only, and a
+stale binary is indistinguishable from a fresh one unless someone checks *when* it was made.
+Capability-limiting bought less than the playbook implies.
+
+*The fix, now standing policy for every compile rung* — a build claim requires:
+1. wall-clock time printed BEFORE the command,
+2. verbatim tail of the build output including `Result:` and `Total execution time:`,
+3. exit code captured from `$?`,
+4. binary mtime, and
+5. **an explicit assertion that mtime > start time.**
+
+Item 5 is the load-bearing one: it is the only check a pre-existing artifact cannot satisfy.
+"The file is there and it's 314 MB" is not evidence of a build — it is evidence of a file.
+
+*Also learned, and applied to the re-run:* `-Rebuild` on a monolithic UE target is not safely
+retryable in one pass. It destroys the working binary first, so an interrupted `-Rebuild` leaves
+the project worse than before it started. The re-run uses an incremental build with the timestamp
+proof, and reports **INCONCLUSIVE** rather than PASS against box 1's "from scratch" wording —
+which is the honest state, since no completed from-scratch build of targets 2 and 3 has been
+witnessed by anyone but the builder who wrote them.
+
+*Salvaged from the rejected pass:* static checks 1–6 quoted real file contents, real `git diff`
+output, and the `DefaultEngine.ini` redirect block verbatim — including the comment warning that
+a redirect's `OldGameName` must never be "fixed" to the new spelling. Those are corroborated and
+stand. It is specifically the two compile claims that are void.
+
+*Incidental good news:* the Editor rebuild replaced the stale lowercase
+`UnrealEditor-breachpoint.dll` with the correctly-cased `UnrealEditor-Breachpoint.dll`, closing
+follow-up (d) from the step-1 entry above — the Linux case-sensitivity trap is gone from
+`Binaries/`.
+
+---
+
 **Honesty note on the guard's reach (recorded so no one over-trusts it):** `guard_laws.py` is a
 PreToolUse hook keyed on `tool_input.file_path`, so it sees **Edit and Write only**. A `Bash`
 `rm`/`git rm`/`mv` is not checked. Step 1 deletes the 49 template sources via shell, and that
