@@ -120,3 +120,49 @@ the builder who owns `Character/`. Do not widen to `Source/Breachpoint/`.
 
 See also the systematic note in BP03's Log: **`Tests/` is in no packet's `owner_path` at all**,
 and four separate tickets need to write there.
+
+---
+
+**31 Jul 2026 — PROPOSED `owner_path` FOR THIS TICKET'S CLAIM (lead).** Assembled from
+everything BP01 discovered while building the seams BP02 plugs into. Written now so the claim is
+an amendment, not a rediscovery — and so BP02's builder never has to guess.
+
+```
+Source/Breachpoint/AbilitySystem/                    (already granted)
+Source/Breachpoint/Data/                             (already granted)
+Source/Breachpoint/Match/BRPlayerState.h  .cpp       NEW  — §3.6: "ASC + set live here"
+Source/Breachpoint/Match/BRPlayerController.h .cpp   NEW  — replace BP01's two stubs
+Source/Breachpoint/Character/BRCharacter.h .cpp      NEW  — GetAbilitySystemComponent + init
+Source/Breachpoint/Character/BRCharacterMovementComponent.h .cpp  NEW — BRGA_Sprint's CMC half
+Source/Breachpoint/Core/BRGameplayTags.h  .cpp       NEW  — R23: Ability.* tags
+Content/Data/CT_Combat.csv                           NEW  — CurveTable values
+Content/Data/DT_MatchRules.csv                       NEW
+```
+
+Exact files, never folders, wherever the grant reaches into another discipline — the precedent
+BP01 set with its three `.Target.cs` entries, for the same reason: `Character/` and `Match/`
+belong to other packets and BP02 needs precisely four files between them, not the folders.
+
+**What BP01 left BP02, stated by the builder that left it** (so the seam is a handoff, not an
+archaeology exercise):
+1. Author `ABRPlayerState` owning the ASC + attribute set.
+2. Implement `ABRCharacter::GetAbilitySystemComponent()` — BP01 shipped it returning `nullptr`.
+3. Call `InitAbilityActorInfo(PS, this)` from **BOTH** `PossessedBy` (server) **and**
+   `OnRep_PlayerState` (client). Either alone leaves a client ASC with no avatar — a bug that
+   is invisible in single-process PIE and only appears with a real client. Exactly the
+   silent-and-confident class the netcode doctrine exists for.
+4. Replace the two controller stub bodies with the ASC relay. **Do not re-declare the handlers'
+   signature** — `AbilityInputTagPressed(FGameplayTag)` takes its tag BY VALUE because Enhanced
+   Input's variadic `BindAction` payload deduces `VarTypes = FGameplayTag`; a `const&` matches
+   none of the three handler shapes and fails overload resolution.
+5. **Idempotency:** the pressed handler is bound to `ETriggerEvent::Triggered`, so it fires every
+   frame the key is held. The ASC's input buffer must be `AddUnique`-shaped. BP01 has a
+   `LoggedHeldInputTags` set in `BRCharacter` that is a **diagnostic de-duplicator only** —
+   **delete it**, do not promote it to state. Two copies of held-input state is precisely the
+   drift class this project keeps paying for.
+
+**Still unresolved and NOT fixable at claim time — `Source/Breachpoint/Tests/`.** BP02 step 5
+needs specs there; the folder is currently inside **BP00's** `owner_path` and four tickets want
+it. See BP03's Log for the full analysis and the three options. If BP00 has closed by the time
+BP02 claims, the folder is free and this is a simple grant; if not, it is a genuine collision and
+the lead sequences it.
