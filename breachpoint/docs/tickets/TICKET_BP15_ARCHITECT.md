@@ -1,5 +1,9 @@
 # TICKET — BP15: The Architect — score what to build next, then build it
 
+> STATUS: in-progress — **steps 1–3 only**, cloud session (Context A) 1 Aug 2026 (715e455).
+> Steps 4–6 remain `engine-installed` and are NOT claimed. `docs/BUILD-STATE.md` is step 5's
+> output and is deliberately left OUT of this claim's `owner_path`.
+
 > STATUS: open — cut 31 Jul 2026 from Class 07 (Autonomous Agency). **Mixed-machine:**
 > steps 1–3 and 7 run anywhere (no engine); steps 4–6 need the Windows box with UE 5.8,
 > a `.uproject`, and build targets.
