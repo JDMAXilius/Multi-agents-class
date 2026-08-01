@@ -125,6 +125,30 @@ public:
 	TArray<TSoftObjectPtr<UInputMappingContext>> AdditionalMappingContexts;
 
 	/**
+	 * HARD context pointers, settable on the Blueprint — the template's proven shape, added as a
+	 * BELT-AND-BRACES source alongside the soft/ini ones above. Empty by default, so it changes
+	 * nothing until someone fills it in.
+	 *
+	 * WHY THIS EXISTS. `BP_ShooterPlayerController` holds `TArray<UInputMappingContext*>` with
+	 * `IMC_Default`, `IMC_MouseLook` and `IMC_Weapons` assigned in the editor, and that controller
+	 * demonstrably moves `BP_BRcharacter`. Ours resolves soft refs from an ini string instead:
+	 * same intent, strictly more failure modes — the ini section must be read (`config = Game`),
+	 * the path must parse, the soft ref must resolve, and a Blueprint that ever serialises the
+	 * property silently wins over all of it (`PHASE2-RELAYER.md` step 1).
+	 *
+	 * Every one of those was verified correct on 1 Aug and input still differed between the two
+	 * controllers, so the remaining difference is the mechanism itself. This project has now lost
+	 * a day twice to input that fails invisibly; a second, dumber path that a human can see and
+	 * set in the editor is worth its cost.
+	 *
+	 * **It ADDS to the soft list, it does not replace it** — a context named in both is added
+	 * once (Enhanced Input ignores a duplicate add of the same context at the same priority), and
+	 * the census below reports what actually landed either way.
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "Breachpoint|Input")
+	TArray<TObjectPtr<UInputMappingContext>> HardMappingContexts;
+
+	/**
 	 * IA_MouseLook — the template's mouse-only look action, consumed by IMC_MouseLook.
 	 *
 	 * NOT in DA_InputConfig: the eleven-action contract forbids a second native row with

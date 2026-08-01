@@ -222,6 +222,42 @@ void ABRPlayerController::AddDefaultMappingContext()
 		AddOneContext(Extra, TEXT("AdditionalMappingContext"));
 	}
 
+	// HARD contexts, set on the Blueprint — the template's shape, and the reason is in the header:
+	// every link in the soft/ini chain was verified correct on 1 Aug and input STILL differed
+	// between this controller and `BP_ShooterPlayerController`, which holds its contexts as hard
+	// pointers. So the remaining difference is the mechanism, and this is the mechanism that is
+	// known to work on this project, on this map, today.
+	//
+	// Deliberately last: soft/ini first keeps the ini authoritative for anyone driving from
+	// config, and a context named in both lists is simply added twice at the same priority, which
+	// Enhanced Input treats as one.
+	for (const TObjectPtr<UInputMappingContext>& Hard : HardMappingContexts)
+	{
+		if (!Hard)
+		{
+			UE_LOG(LogBRInput, Warning,
+				TEXT("BRPlayerController '%s': HardMappingContexts holds an EMPTY entry — an array slot was added on the Blueprint and never filled."),
+				*GetName());
+			continue;
+		}
+
+		Subsystem->AddMappingContext(Hard, DefaultMappingContextPriority);
+		AddedContexts.Add(Hard);
+		UE_LOG(LogBRInput, Log,
+			TEXT("BRPlayerController '%s': added mapping context '%s' (HardMappingContexts, set on the Blueprint) at priority %d, %d key mapping(s)."),
+			*GetName(), *Hard->GetName(), DefaultMappingContextPriority, Hard->GetMappings().Num());
+	}
+
+	// The whole point of the census: it is the ONE line that answers "do the contexts that landed
+	// actually contain a KEY for the verbs the pawn is about to bind" — which is the question
+	// every input failure on this project has turned out to be.
+	if (AddedContexts.IsEmpty())
+	{
+		UE_LOG(LogBRInput, Error,
+			TEXT("BRPlayerController '%s': ZERO mapping contexts were added. No key can reach any action. Pin them in [/Script/Breachpoint.BRPlayerController] in Config/DefaultGame.ini, or set HardMappingContexts on PC_BR in the editor — the template's BP_ShooterPlayerController does the latter and works."),
+			*GetName());
+	}
+
 	LogMappingKeyCensus(AddedContexts);
 }
 
