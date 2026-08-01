@@ -38,41 +38,26 @@ UBRCharacterMovementComponent* UBRGA_Sprint::GetBRCharacterMovement(const FGamep
 	return Character ? Cast<UBRCharacterMovementComponent>(Character->GetCharacterMovement()) : nullptr;
 }
 
-void UBRGA_Sprint::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
+bool UBRGA_Sprint::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, OUT FGameplayTagContainer* OptionalRelevantTags) const
 {
-	// ---------------------------------------------------------------------
-	// THE STAGE GATE — Stage 4 `Sprint` (docs/GAS-INTEGRATION-ROADMAP.md).
-	//
-	// FIRST statement, before Super, so nothing commits and — the part that matters for this
-	// ability — `SetSprintIntent(true)` below is never reached. That single call is the ONLY
-	// producer of `bWantsToSprint` on an honest client (`BRCharacterMovementComponent.h` says so:
-	// "THE ONLY caller is UBRGA_Sprint"), and `bWantsToSprint` is what `FSavedMove_BR::SetMoveFor`
-	// copies, what `GetCompressedFlags` puts in FLAG_Custom_0, and therefore the only thing that
-	// can make the server's `UpdateFromCompressedFlags` set the bit. Gate this and the CMC's whole
-	// intent path is starved at its source; the multiplier in `GetMaxSpeed` is unreachable.
-	//
-	// WHERE THIS GATE IS *NOT* IDEAL, stated rather than hidden: it is in ActivateAbility and not
-	// in CanActivateAbility, because this class declares no `CanActivateAbility` override and the
-	// header is another lane's to write in this packet. The activation is therefore refused one
-	// step later than it should be — after PreActivate has taken a prediction key, before any
-	// cost, cooldown, tag grant or CMC write. Sprint is free (no cost, no cooldown), so the only
-	// thing paid here is the key itself, which GAS releases on the EndAbility below. The owed
-	// promotion is one line in BRGA_Sprint.h; it is named in this packet's report.
-	// ---------------------------------------------------------------------
+	// Promoted from ActivateAbility so a bot's CanActivateAbility-derived facts agree with it.
 	if (!BRGas::IsStageEnabled(EBRGasStage::Sprint))
 	{
-		// Verbose, matching ABRCharacter's gate: a default-verbosity playtest log is unchanged, but
-		// "the gate refused" is discoverable by turning the channel up rather than by reading this
-		// file. A silently dead ability is indistinguishable from a broken one.
-		UE_LOG(LogBRCombat, Verbose, TEXT("UBRGA_Sprint: activation refused — GAS stage gate is '%s'; sprint needs at least 'Sprint'. Set GasStage in Config/DefaultGame.ini."),
+		UE_LOG(LogBRCombat, Verbose,
+			TEXT("UBRGA_Sprint: refused — GAS stage gate is '%s'; needs at least 'Sprint'. "
+				 "Set GasStage in Config/DefaultGame.ini."),
 			BRGas::ToString(BRGas::GetStage()));
-
-		// Cancelled, not completed: this activation did not happen. bWasCancelled=true is what tells
-		// GAS to roll back anything the prediction key covered on the predicting client.
-		EndAbility(Handle, ActorInfo, ActivationInfo, /*bReplicateEndAbility=*/true, /*bWasCancelled=*/true);
-		return;
+		return false;
 	}
 
+	return Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags);
+}
+
+void UBRGA_Sprint::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
+{
+	// The stage gate is in CanActivateAbility (promoted 1 Aug 2026 so the bot facts agree
+	// with it). Deliberately NOT repeated here: a second check could never be false, and a
+	// gate that cannot fire is dead code wearing the costume of one.
 	// The base commits (free here) and wires the release watcher. Skipping it would leave a sprint
 	// that never ends — see the subclass contract in BRGameplayAbility.h.
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);

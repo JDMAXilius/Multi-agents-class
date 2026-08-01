@@ -185,6 +185,29 @@ void UBRCharacterMovementComponent::SetSprintIntent(bool bNewWantsToSprint)
 
 bool UBRCharacterMovementComponent::IsSprintIntentValid() const
 {
+	// THE STAGE GATE, and this function is where it belongs — this header's own note (the "SEAM
+	// for the server-side trust gate" block) nominates it: one function, one place, and no
+	// movement state moves when it changes.
+	//
+	// Gating CONSUMPTION, not intent, is the whole point. `bWantsToSprint` still travels, both
+	// sides still agree on it, no saved move changes shape and no replay diverges — the speed
+	// multiplier simply never applies. The two alternatives are worse in specific ways:
+	//   - gating `SetSprintIntent` is redundant with `BRGA_Sprint`'s own gate AND still misses a
+	//     forged bit, because that setter is not the only writer;
+	//   - gating `UpdateFromCompressedFlags` would make client and server STORE different intent,
+	//     which is the asymmetry this file already warns is invisible in single-process PIE, and
+	//     it would unpack the grapple bit on the way past.
+	//
+	// This also closes, for the honest and the modified client alike, the one hole the GAS stage
+	// gate otherwise left open: `bWantsToSprint` has TWO writers, and while `SetSprintIntent` is
+	// starved by the ability's gate, `UpdateFromCompressedFlags` writes whatever bit arrives in a
+	// ServerMove without asking whether the ability is active. Below the Sprint stage that bit is
+	// now inert regardless of who sent it.
+	if (!BRGas::IsStageEnabled(EBRGasStage::Sprint))
+	{
+		return false;
+	}
+
 	// Airborne sprint would let a bunny-hopper carry sprint speed through the air, which is a
 	// movement design nobody asked for. IsMovingOnGround() covers MOVE_Walking and MOVE_NavWalking
 	// (bots) in one call. This is a rule, not a tuning value, so it lives in code.

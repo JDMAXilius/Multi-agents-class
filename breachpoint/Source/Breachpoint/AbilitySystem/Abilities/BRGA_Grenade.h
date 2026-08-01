@@ -143,6 +143,20 @@ class BREACHPOINT_API UBRGA_Grenade : public UBRGameplayAbility
 public:
 	UBRGA_Grenade(const FObjectInitializer& ObjectInitializer);
 
+	/**
+	 * The stage gate lives HERE, not in ActivateAbility, and the reason is bots.
+	 *
+	 * `ABRBotController` builds `FBRBotFacts::bCanGrenade` / `bCanGrapple` by CALLING
+	 * `CanActivateAbility` on the granted spec. With the gate one level down in
+	 * `ActivateAbility`, a bot below the stage still believes the verb is available, presses it,
+	 * and is refused at activation — a bot reasoning from a fact that is false. Declaring this
+	 * override makes the bot's picture and the gate's answer the same answer.
+	 *
+	 * It also refuses BEFORE `PreActivate`, so no prediction key is spent and no
+	 * `ServerTryActivateAbility` crosses the wire for an ability the stage has switched off.
+	 */
+	virtual bool CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags = nullptr, const FGameplayTagContainer* TargetTags = nullptr, OUT FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
+
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
