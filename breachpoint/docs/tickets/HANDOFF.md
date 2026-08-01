@@ -236,13 +236,25 @@ per BP01's ruling. Two things landed first (commit `56782fb`, pushed):
    into BP01's Log. `test_guard_laws.py` passes `cwd` itself, so **6/6 green is compatible with
    a completely inert hook** — it tests the logic, never the binding.
 
-## Pick up here — nothing else changed
+## Pick up here — see `docs/WORK-ROUTING.md` for the whole board
 
-- **BP15 steps 1–3.** Gate green, `requires: files-only`, `owner_path: Tools/architect/`,
-  `Tools/architect/` still empty. Unchanged from session 2's recommendation except that its
-  gate is now true on Windows rather than only in the cloud.
-- Then the three from session 1: **run the input generator** (nothing moves in PIE without it),
-  **restart BP03 step 2**, **import the CSVs**.
+An MCP-connected second terminal now exists, so the board is schedulable in parallel lanes for
+the first time. **`docs/WORK-ROUTING.md` is the new routing map** (added 1 Aug); this list is
+just its front page.
+
+- **Lane A / OPEN** — **BP16 step 1**, per `Tools/ue_mcp/STEP1-PLAN.md`. Read-only, so it is
+  safe before step 2's law-7 ruling exists.
+- **Lane B / FILES** — **BP15 steps 1–3.** Gate green, `owner_path: Tools/architect/`, folder
+  still empty. Zero contention with Lane A — the real parallelism win.
+- **Lane D / CLOSED** — empty *while the editor is open*, then it becomes the critical path.
+  Batch in this order: build proof → **R26 rename** → **input generator** → **CSV reimport** →
+  **BP03 step 2** → BP07 blockout. The three session-1 items are all in here.
+
+**The reframing that made the routing work:** the project lock has two mutually exclusive modes.
+The three "do first" items are `-run=pythonscript` commandlets — they do not need the editor,
+they need it **gone**. Every mode switch costs an editor restart, so the unit of scheduling is
+the **mode window**, not the ticket. That is also the source of the one decision now owed
+(routing §7): claims are per-ticket, but a lock window naturally serves five or six of them.
 
 *The pattern held for a third session running.* Both defects above are the same shape as
 session 2's four — a rule that read as enforced and was not — and one of them was **the check
