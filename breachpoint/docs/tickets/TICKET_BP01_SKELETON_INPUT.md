@@ -451,6 +451,42 @@ follow-up (d) from the step-1 entry above — the Linux case-sensitivity trap is
 
 ---
 
+**31 Jul 2026 — BreachpointServer compiled from scratch. Evidence recorded; chain of custody
+imperfect; box 1 still NOT checked.**
+
+The first-ever from-scratch build of the dedicated-server target completed **22:45:33**.
+
+| Artifact | Size | mtime | Actions |
+|---|---|---|---|
+| `Breachpoint.exe` | 333,648,896 | 22:35:55 | 1026 |
+| `BreachpointServer.exe` | **314,262,528** | **22:45:33** | 999 |
+
+The Server binary differs in size from the builder's 21:31 artifact (314,262,016 → 314,262,528),
+which is independent confirmation these are two distinct builds and not one file re-read.
+
+*Witnessed live by the lead*, sampling the UBT action counter as it advanced:
+88/999 at 22:36:26 · 414/999 at 22:39:50 · 546/999 at 22:41:08 · complete at 22:45:33. A build
+process count polled to zero is what ended the wait — chosen over polling for the success
+artifact so that a crash would have ended it too (R21 rule 4).
+
+**Why this is NOT a PASS, stated plainly.** The build was started by the verifier that was
+retired mid-run. Killing an agent does not kill its child processes (R21), so it ran to
+completion ownerless. **No verifier can produce R19's `mtime > start` proof for it, because no
+verifier started it** — and the lead is not the verifier. Accepting a lead-witnessed build as a
+rung result would re-introduce exactly the conflation that produced tonight's false PASS, just
+with a more senior party doing it.
+
+*Standing decision:* record the evidence now so 34 minutes of genuine compile is not thrown away,
+and take a **clean witnessed re-run before BP01 closes** — Server intermediates cleared, one
+verifier, uninterrupted, nothing else compiling. ~10 minutes. That is the only path to an
+unqualified box 1, and box 1 stays unchecked until then.
+
+*Rejected alternative, recorded so it is not retried:* having a verifier simply rebuild now would
+report "up to date, 0 actions", which under R20 is INCONCLUSIVE and proves nothing about
+compilation. An agent reporting on an artifact it did not create is the failure mode, not the fix.
+
+---
+
 **Honesty note on the guard's reach (recorded so no one over-trusts it):** `guard_laws.py` is a
 PreToolUse hook keyed on `tool_input.file_path`, so it sees **Edit and Write only**. A `Bash`
 `rm`/`git rm`/`mv` is not checked. Step 1 deletes the 49 template sources via shell, and that
