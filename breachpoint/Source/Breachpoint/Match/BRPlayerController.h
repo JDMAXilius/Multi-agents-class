@@ -124,29 +124,36 @@ public:
 	UPROPERTY(EditDefaultsOnly, Config, Category = "Breachpoint|Input")
 	TArray<TSoftObjectPtr<UInputMappingContext>> AdditionalMappingContexts;
 
+	// ==============================================================================================
+	// THE TEMPLATE'S EDITOR SURFACE, deliberately identical — `Input | Input Mappings` on the
+	// Blueprint's Class Defaults, two arrays, hard pointers.
+	// ==============================================================================================
+	//
+	// `BP_ShooterPlayerController` carries exactly this and demonstrably moves `BP_BRcharacter`:
+	// Default Mapping Contexts = [IMC_Default, IMC_Weapons], Mobile Excluded = [IMC_MouseLook].
+	// Ours resolved soft refs from an ini string instead — same intent, strictly more failure
+	// modes: the ini section must be read (`config = Game`), the path must parse, the soft ref
+	// must resolve, and any Blueprint that ever serialises the property silently wins over all of
+	// it (`PHASE2-RELAYER.md` step 1). Every one of those was verified correct on 1 Aug and input
+	// STILL differed between the two controllers, so the mechanism itself is the difference.
+	//
+	// These ADD to the soft/ini lists rather than replacing them: a context named in both is added
+	// twice at one priority, which Enhanced Input treats as one. Property names and category match
+	// the template ON PURPOSE — anyone who has wired that controller already knows how to wire
+	// this one, and the two can be compared side by side in the editor.
+
+	/** Input mapping contexts for this player. Added on every platform. */
+	UPROPERTY(EditAnywhere, Category = "Input|Input Mappings")
+	TArray<TObjectPtr<UInputMappingContext>> DefaultMappingContexts;
+
 	/**
-	 * HARD context pointers, settable on the Blueprint — the template's proven shape, added as a
-	 * BELT-AND-BRACES source alongside the soft/ini ones above. Empty by default, so it changes
-	 * nothing until someone fills it in.
-	 *
-	 * WHY THIS EXISTS. `BP_ShooterPlayerController` holds `TArray<UInputMappingContext*>` with
-	 * `IMC_Default`, `IMC_MouseLook` and `IMC_Weapons` assigned in the editor, and that controller
-	 * demonstrably moves `BP_BRcharacter`. Ours resolves soft refs from an ini string instead:
-	 * same intent, strictly more failure modes — the ini section must be read (`config = Game`),
-	 * the path must parse, the soft ref must resolve, and a Blueprint that ever serialises the
-	 * property silently wins over all of it (`PHASE2-RELAYER.md` step 1).
-	 *
-	 * Every one of those was verified correct on 1 Aug and input still differed between the two
-	 * controllers, so the remaining difference is the mechanism itself. This project has now lost
-	 * a day twice to input that fails invisibly; a second, dumber path that a human can see and
-	 * set in the editor is worth its cost.
-	 *
-	 * **It ADDS to the soft list, it does not replace it** — a context named in both is added
-	 * once (Enhanced Input ignores a duplicate add of the same context at the same priority), and
-	 * the census below reports what actually landed either way.
+	 * Contexts added only when NOT using touch controls. `IMC_MouseLook` is the one that matters:
+	 * it is the reason a keyboard-and-mouse player can TURN. `IMC_Default` carries no mouse
+	 * mapping at all, so without this list the camera is dead while movement works — which reads
+	 * to a playtester as "the controls are broken" rather than "one context is missing".
 	 */
-	UPROPERTY(EditDefaultsOnly, Category = "Breachpoint|Input")
-	TArray<TObjectPtr<UInputMappingContext>> HardMappingContexts;
+	UPROPERTY(EditAnywhere, Category = "Input|Input Mappings")
+	TArray<TObjectPtr<UInputMappingContext>> MobileExcludedMappingContexts;
 
 	/**
 	 * IA_MouseLook — the template's mouse-only look action, consumed by IMC_MouseLook.

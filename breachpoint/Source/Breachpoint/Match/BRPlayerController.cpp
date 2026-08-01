@@ -10,6 +10,10 @@
 #include "GameFramework/Pawn.h"
 #include "InputAction.h"
 #include "InputMappingContext.h"
+// SVirtualJoystick::ShouldDisplayTouchInterface() — the touch-platform test the Shooter
+// template uses to decide whether the mouse-look context applies. Slate widget header, but the
+// call is a static platform query and costs nothing on desktop.
+#include "Widgets/Input/SVirtualJoystick.h"
 
 #include "AbilitySystem/BRAbilitySystemComponent.h"
 #include "Core/BRCore.h"
@@ -222,30 +226,50 @@ void ABRPlayerController::AddDefaultMappingContext()
 		AddOneContext(Extra, TEXT("AdditionalMappingContext"));
 	}
 
-	// HARD contexts, set on the Blueprint — the template's shape, and the reason is in the header:
-	// every link in the soft/ini chain was verified correct on 1 Aug and input STILL differed
-	// between this controller and `BP_ShooterPlayerController`, which holds its contexts as hard
-	// pointers. So the remaining difference is the mechanism, and this is the mechanism that is
-	// known to work on this project, on this map, today.
+	// ------------------------------------------------------------------------------------------
+	// THE TEMPLATE'S PATH — hard contexts set on the Blueprint's Class Defaults, in the same two
+	// lists and the same order `AShooterPlayerController::SetupInputComponent` uses.
+	// ------------------------------------------------------------------------------------------
 	//
-	// Deliberately last: soft/ini first keeps the ini authoritative for anyone driving from
-	// config, and a context named in both lists is simply added twice at the same priority, which
-	// Enhanced Input treats as one.
-	for (const TObjectPtr<UInputMappingContext>& Hard : HardMappingContexts)
+	// Deliberately AFTER the soft/ini lists: config stays authoritative for anyone driving from
+	// it, and a context named in both is added twice at one priority, which Enhanced Input treats
+	// as one. Nothing here replaces anything above.
+	auto AddHardContext = [this, Subsystem, &AddedContexts](const TObjectPtr<UInputMappingContext>& Context, const TCHAR* ListName)
 	{
-		if (!Hard)
+		if (!Context)
 		{
 			UE_LOG(LogBRInput, Warning,
-				TEXT("BRPlayerController '%s': HardMappingContexts holds an EMPTY entry — an array slot was added on the Blueprint and never filled."),
-				*GetName());
-			continue;
+				TEXT("BRPlayerController '%s': %s holds an EMPTY entry — an array slot was added on the Blueprint and never filled."),
+				*GetName(), ListName);
+			return;
 		}
 
-		Subsystem->AddMappingContext(Hard, DefaultMappingContextPriority);
-		AddedContexts.Add(Hard);
+		Subsystem->AddMappingContext(Context, DefaultMappingContextPriority);
+		AddedContexts.Add(Context);
 		UE_LOG(LogBRInput, Log,
-			TEXT("BRPlayerController '%s': added mapping context '%s' (HardMappingContexts, set on the Blueprint) at priority %d, %d key mapping(s)."),
-			*GetName(), *Hard->GetName(), DefaultMappingContextPriority, Hard->GetMappings().Num());
+			TEXT("BRPlayerController '%s': added mapping context '%s' (%s, set on the Blueprint) at priority %d, %d key mapping(s)."),
+			*GetName(), *Context->GetName(), ListName, DefaultMappingContextPriority, Context->GetMappings().Num());
+	};
+
+	for (const TObjectPtr<UInputMappingContext>& Context : DefaultMappingContexts)
+	{
+		AddHardContext(Context, TEXT("DefaultMappingContexts"));
+	}
+
+	// The mobile split, copied from the template because the REASON is real and not cosmetic:
+	// `IMC_MouseLook` maps a mouse the touch build does not have. On desktop this list is what
+	// makes the camera work at all — `IMC_Default` carries no mouse mapping.
+	//
+	// `SVirtualJoystick::ShouldDisplayTouchInterface()` is exactly what the template's
+	// `ShouldUseTouchControls()` asks (`ShooterPlayerController.cpp:153`); its other term is a
+	// `bForceTouchControls` override this controller does not have. Same question, one dependency
+	// fewer. On desktop this is false, so the mouse-look context is added.
+	if (!SVirtualJoystick::ShouldDisplayTouchInterface())
+	{
+		for (const TObjectPtr<UInputMappingContext>& Context : MobileExcludedMappingContexts)
+		{
+			AddHardContext(Context, TEXT("MobileExcludedMappingContexts"));
+		}
 	}
 
 	// The whole point of the census: it is the ONE line that answers "do the contexts that landed
