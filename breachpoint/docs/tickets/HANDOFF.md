@@ -181,16 +181,33 @@ it is tested with a case it should REJECT** — that is the operating lesson of 
 - Then the three from Session 1, unchanged: **run the input generator** (nothing moves in PIE
   without it), **restart BP03 step 2**, **import the CSVs**.
 
-## Open, not fixed — one needs a ruling
+## Rung 4 — RULED (R30), and it changes BP00 step 3
 
-**Rung 4 forbids the topology the slice ships.** `contracts/testing.md` and the
-`gauntlet-testing` skill both specify rung 4 as *dedicated server, not listen*. The slice ships
-a **listen server**, and `netcode.md` makes host-vs-remote-client a standing item on every
-netcode packet. As specified, **rung 4 never exercises the host path** — the one path the demo
-actually runs on. This needs a ruling before BP00 step 3 wires Gauntlet, or the harness gets
-built against a topology we do not ship. Not fixed here: it touches `docs/contracts/`, which the
-active BP15 claim correctly blocked.
+`testing.md` and the `gauntlet-testing` skill specified rung 4 as *dedicated server, not
+listen* — the skill's §8 self-check **failed** a packet that added a listen role — while
+`online-services.md` law 4 and `netcode.md` both make host-vs-remote a standing requirement on
+every netcode packet. Unsatisfiable at the only rung meant to satisfy it, and the shipping
+topology was the one thing rung 4 could never run.
 
-Smaller, also open: `ARCHITECTURE §3` is stale against disk (`UI/` holds 7 units vs 4 listed;
+**R30: two axes.** *4a dedicated* stays the default (proves authority does not need a local
+player — what keeps GL-3 a config change). *4b listen + 1 remote* is required whenever the path
+differs host-vs-remote: predicted abilities/CMC, session lifecycle incl. host-quit, any claim
+using the word "host", any `NM_ListenServer` branch. Everything else stays 4a-only. **4a green
+is not 4b evidence**, and BLOCKED is reported per axis.
+
+The reason it is not optional, in one line: **on a dedicated server no player is ever the
+authority**, so a host's *predicted* code path never executes at all — invisible to 4a by
+construction, not merely unlikely to be caught.
+
+Landed in all three places a builder reads, not just the ledger: `testing.md` rung 4,
+`gauntlet-testing` §3a/§3b (with a worked `SmokeLS1C` role config and the three-viewpoint
+`BRTEST|AUTH` / `HOSTLOCAL` / `REMOTE` logging table) and §8, and **BP00 step 3 + its
+Done-when, which now names both `SmokeTS2C` and `SmokeLS1C`.** Deciding now cost nothing —
+step 3 is blocked on Gauntlet not compiling — and a ruling that arrives after the test node
+exists is a retrofit instead of one extra `GetConfiguration()` override.
+
+## Still open
+
+Smaller, unfixed: `ARCHITECTURE §3` is stale against disk (`UI/` holds 7 units vs 4 listed;
 `BRCombatCurves` unlisted; `Tests/` empty vs 3) — BP15 step 1 will surface all of it
 mechanically, which is a better fix than doing it by hand.
