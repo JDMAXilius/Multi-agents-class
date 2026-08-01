@@ -38,8 +38,13 @@ Input → InputTag → ASC, no per-ability binding code, ever.
 
 ## Steps (in order)
 
-1. Create `Breachpoint` from the UE 5.8 **First Person C++ template**. Strip template gameplay
-   to pawn/camera/input scaffolding. Add the three targets (`Breachpoint`, `BreachpointEditor`,
+1. ~~Create `Breachpoint` from the UE 5.8 **First Person C++ template**. Strip template gameplay
+   to pawn/camera/input scaffolding.~~ **SUPERSEDED 31 Jul 2026 by founder decision — the
+   template is KEPT, nothing is stripped or deleted. See the Log entry "FOUNDER DECISION: the
+   UE template STAYS". Our project is built from scratch on NEW files; nothing of ours reuses,
+   subclasses, or is rebased from a template class. Content assets are the one inheritance.**
+   The rest of this step stands as written:
+   Add the three targets (`Breachpoint`, `BreachpointEditor`,
    `BreachpointServer` — server target must compile NOW), `Breachpoint.Build.cs` deps per
    ARCHITECTURE §3, folder skeleton (Core/Input/AbilitySystem/Character/Weapons/Match/AI/
    Online/UI/Telemetry/Data/Tests). Owner: **builder**.
@@ -223,6 +228,12 @@ source-built engine at `ENGINE_ROOT` and `BreachpointServer` is a Win64 target; 
 only on the Windows box. A Mac session may prepare, never pronounce — honesty ladder unchanged:
 the rung belongs to the machine that ran it.
 
+> ⚠️ **THE PARAGRAPH BELOW IS SUPERSEDED — do not act on it.** Its deletion directive was
+> reversed by the founder on 31 Jul 2026; see "FOUNDER DECISION: the UE template STAYS" further
+> down this Log. It is left unedited because a Log is a record, not a plan. What survives from it:
+> the `EngineAssociation` GUID, the Git LFS call, and the one-repo topology. What is DEAD: every
+> word about deleting the 49 sources or regenerating the project.
+
 *Still unlanded, carried to the real session's first act* (TD directive, recorded here so it does
 not die in a transcript): open item 2 above is **closed** — the project regenerates as
 `Breachpoint` with the `BR` prefix from the UE 5.8 First Person C++ template, and all 49
@@ -313,6 +324,71 @@ build cost, and item 1 and 2 above both evaporate. The cost is that template **B
 their parent classes no longer existing in any module. Template *art* is unaffected either way,
 and R18 (zero Blueprint classes) means those Blueprints were never going to be used. Revisit if
 the compile cost or the prefix debt starts to bite.
+
+---
+
+**31 Jul 2026 — STEP 1 LANDED (builder). Commit `97b423e`. Zero deletions.**
+
+Executed under the founder decision above. All 47 template sources, `Variant_Horror/`,
+`Variant_Shooter/` and all of `Content/` intact; `--diff-filter=D` count is 0.
+
+*Created (13):* `Source/BreachpointServer.Target.cs` — **the third target, which has never
+existed in this project** — plus 12 `.gitkeep` under the §3 discipline folders (exact spelling
+verified 12/12). *Renamed (6):* module `breachpoint` → `Breachpoint`. *Modified (10):*
+`.uproject` (real GUID + the four added plugins), `Build.cs` per §3, `DefaultEngine.ini`
+redirect, and **only 4 of the 47** template sources — the ones that included the module header.
+Template class names untouched (`AbreachpointCharacter`, …); `BREACHPOINT_API` was already
+correct for both spellings.
+
+*Builder OBSERVATIONS — not a rung. The verifier's clean-rebuild pass is what pronounces:*
+
+| Target | Result | Time | Actions |
+|---|---|---|---|
+| `BreachpointEditor` | exit 0 | 40 s | 14 |
+| `Breachpoint` | exit 0 | 596 s | 1036 |
+| `BreachpointServer` | exit 0 | 570 s | 1004 |
+
+Zero warnings, zero errors across all three logs. Nothing moved Public↔Private to link — the
+dependency split linked first try, Server included. Editor loaded `Lvl_FirstPerson.umap` with 0
+errors / 0 warnings, and `-run=CompileAllBlueprints` returned **0 errors, 0 warnings, 0 blueprints
+failed to load** — every template Blueprint whose parent lives in the renamed module resolved,
+and `Content/` was not resaved. The hook blocked nothing; every write landed inside `owner_path`.
+
+*Deviations from §3, flagged by the builder rather than defended:*
+1. **`OnlineSubsystemSteam` is enabled as a plugin but NOT linked as a module.** §3 reads
+   "OnlineSubsystem(+Steam)"; the builder read "+Steam" as *plugin enabled*, since the Steam
+   implementation is selected at runtime by `DefaultPlatformService=Steam` (BP11's config). If a
+   hard link was intended, it is one line — **someone should confirm the intent before BP11.**
+2. `OnlineSubsystemUtils` added (where `Online::GetSubsystem(World)` lives; the Steam plugin
+   depends on it anyway). Addition, not substitution.
+3. `Slate` kept — template-inherited, needed by the surviving `Variant_*` UI sources.
+4. Public/Private split is the builder's call; §3 lists deps without specifying it.
+5. `Logbreachpoint` left as-is — step 2's `BRCore` brings the real `LogBR*` channels.
+
+*Follow-ups named by the builder, each needing an owner:*
+- **`Config/DefaultGame.ini` still says `ProjectName=First Person Template`** (+ a template
+  `ProjectID`). Inside BP01's `owner_path` but outside step 1's wording, so deliberately left.
+- **`[OnlineSubsystem]` / `[OnlineSubsystemSteam]` sections are absent** from `DefaultEngine.ini`.
+  Steam is enabled-but-unselected, as this ticket intended. **BP11 must add
+  `DefaultPlatformService` and `SteamDevAppId` or Steam stays inert** — that is a Kickoff item
+  for BP11, not a defect here.
+- **Latent case trap for the Linux dedicated server:** `Binaries/Win64/` holds
+  `UnrealEditor-breachpoint.dll` (old casing — NTFS preserves the pre-existing name on overwrite)
+  while `UnrealEditor.modules` names `UnrealEditor-Breachpoint.dll`. Harmless on Windows and
+  `Binaries/` is gitignored, but **fatal on a case-sensitive filesystem.** Check on a clean
+  rebuild when the GameLift/Linux work starts.
+- **Repo topology, for BP15's scanner:** the git root is `D:\Documents\Claude\Multi-agents-class`
+  with the game nested at `breachpoint/`, so `git status` prints `breachpoint/Source/...` while
+  `guard_laws.py` and every `owner_path` key off `Source/...` relative to the project dir. Both
+  are correct today, but any tool that shells out to git and compares paths to `owner_path` will
+  disagree by one prefix.
+
+*Doubt the builder recorded rather than resolved (kept honest):* the redirect line maps
+`/Script/breachpoint` → `/Script/Breachpoint`, which under UE's case-insensitive `FName`
+comparison is a name mapping to itself. It produced no error and the Blueprints resolve — but the
+builder **could not construct evidence that the line is load-bearing** versus merely harmless;
+resolution may be succeeding on `FName` case-insensitivity alone. It costs nothing to keep. **Do
+not read its presence as proof it was required.**
 
 ---
 
