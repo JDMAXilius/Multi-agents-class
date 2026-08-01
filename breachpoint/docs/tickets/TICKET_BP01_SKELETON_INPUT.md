@@ -487,6 +487,62 @@ compilation. An agent reporting on an artifact it did not create is the failure 
 
 ---
 
+**31 Jul 2026 — STEP 2 LANDED (builder). Commit `cf3cae3`. `Core/` written, NOT compiled.**
+
+`BRGameplayTags.h/.cpp` — **29 tags declared and defined**, transcribed from §3.1 with nothing
+invented. `BRCore.h/.cpp` — `LogBRCombat/Net/AI/Online/UI` + `BRCollision` aliases.
+`DefaultEngine.ini` — `BRWeapon`/`BRMelee`/`BRGrapple` trace channels added; the template's
+`Projectile` channel **aliased rather than redefined** so the slot cannot be silently reused.
+Redirect lines untouched. Zero hook blocks. No `UPROPERTY`, no `ConstructorHelpers`, no Tick.
+
+*The §3.1 ↔ header grep, both directions — Done-when box 3's requirement:*
+
+| Direction | Result |
+|---|---|
+| in §3.1, missing from header | **empty** |
+| in header, not in §3.1 | **empty** |
+| declared-not-defined / defined-not-declared | **empty** |
+
+Families: `InputTag` 11 · `State` 4 · `Damage` 5 · `SetByCaller` 3 · `Event` 6 (all four R17
+tags present, independently grepped at `.h` 87–90 / `.cpp` 45–48) · `Ability` **0** ·
+`GameplayCue` **0**.
+
+**The builder refused to let "both directions empty" read as a pass, and it was right.** The
+comparison is empty partly because `Ability.*` and `GameplayCue.*` contribute zero on the *spec*
+side too — §3.1 names those families and enumerates no leaves. A tool that compares a spec to an
+implementation reports agreement when both are silent, which is the one case where agreement
+means nothing. Recording the mechanism because it will recur in every spec-vs-code check this
+project runs.
+
+*Two escalations resolved as rulings rather than guessed at:*
+- **R22** — `Damage.*` is FLAT. §3.1 says `Rear` is a sibling; §3.3 and BP05 said
+  `Damage.Melee.Rear`. Flat wins: types and modifiers compose, and nesting would forbid a rear
+  bonus on any non-melee source. BP05's text is corrected in that ticket.
+- **R23** — `Ability.*`/`GameplayCue.*` are OPEN families; `Core/` closes for the other five.
+  The packet that authors an ability or cue declares its tag, under an exact-file `owner_path`
+  grant on `BRGameplayTags.h/.cpp` (the BP01 `.Target.cs` precedent). **This is what would
+  otherwise have stopped BP02 and BP03 dead** — they own `AbilitySystem/` and `Weapons/`, not
+  `Core/`, so the hook would have blocked them from declaring their own tags.
+
+*Builder's own flagged doubt, unresolved by design:* §3.1 requires "collision channel aliases
+matching `DefaultEngine.ini`" but **enumerates no channels anywhere in ARCHITECTURE or `docs/`**.
+The set of three is therefore the builder's call, derived from the three abilities §3.3 says
+perform traces. It deliberately did NOT invent an AI cover/visibility channel (EQS uses engine
+`ECC_Visibility`). If ai-builder or sim-builder later needs a fourth, `Core/` is closed and that
+is a gap — cheaper to know now than to discover in BP08.
+
+*Also flagged:* `Config/DefaultGameplayTags.ini` does not exist though ARCHITECTURE §1 lists it.
+Native tags self-register so nothing is broken today, but a tag added via the editor picker has
+nowhere to land. Not step 2's deliverable; recorded so it is a decision, not a discovery.
+
+**NOT compiled.** An orphaned `BreachpointEditor -Rebuild` held UE's global build lock for the
+entire packet (R21 — the lead's own doing; see the entry above). The builder checked the lock,
+found it held, and stopped rather than colliding — the correct behaviour, and worth noting that
+it also correctly rebutted the lead's mistaken claim that it had been building. Step 2 therefore
+has **no compile evidence of any kind** and no rung is claimed.
+
+---
+
 **Honesty note on the guard's reach (recorded so no one over-trusts it):** `guard_laws.py` is a
 PreToolUse hook keyed on `tool_input.file_path`, so it sees **Edit and Write only**. A `Bash`
 `rm`/`git rm`/`mv` is not checked. Step 1 deletes the 49 template sources via shell, and that

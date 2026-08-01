@@ -26,7 +26,13 @@ the ONE damage pipeline (`GE_Damage` + tags) — the engine damage API stays ban
    **netcode-builder** consults projectile replication (spawn on server, `bReplicates`,
    low NetUpdateFrequency + dormancy after rest).
 2. `BRGA_Melee`: notify-window trace, 70 dmg via `GE_Damage` + `Damage.Melee`; **rear-arc
-   check server-side** (character helper) → `Damage.Melee.Rear` = lethal in the ExecCalc.
+   check server-side** (character helper) → the PAIR `Damage.Melee` + `Damage.Rear` = lethal in
+   the ExecCalc.
+   > Corrected 31 Jul 2026 by **ruling R22**: this line previously read `Damage.Melee.Rear`,
+   > a nested tag that does not exist. `Damage.*` is flat — types (`Kinetic`/`Explosive`/
+   > `Melee`) and modifiers (`Headshot`/`Rear`) are siblings that compose, and the ExecCalc
+   > queries each axis independently. Grepping for `Damage.Melee.Rear` will find nothing;
+   > that is correct, not a missing tag.
    Sprint-cancel via CancelAbilitiesWithTags proven here. Owner: **sim-builder**.
 3. The rhythm pass: swap/fire/grenade/melee interleave cleanly under the input buffer; no
    ability dead-zones; cancel hygiene between all three verbs. Owner: **sim-builder**.
