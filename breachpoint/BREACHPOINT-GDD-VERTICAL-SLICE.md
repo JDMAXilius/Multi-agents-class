@@ -383,7 +383,7 @@ Caps enforced server-side; every failure path falls back to canned lines.
 
 ### 4.5 Verification (the ladder)
 
-Per `crew/docs/contracts/testing.md`: clean compile → headless
+Per `docs/contracts/testing.md`: clean compile → headless
 Automation Specs (`Breachpoint.Sim.*` pins TTK, shield recharge, damage
 math; `Breachpoint.Bots.*` pins determinism: same seed + tuning row ⇒
 identical action trace) → functional tests → **Gauntlet networked smoke**

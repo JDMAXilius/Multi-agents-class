@@ -24,7 +24,7 @@ geometry). Both jobs are independent of each other and may run in parallel.
 
 ## Steps (in order)
 
-1. **Run the crew.** From `assignments/03-agent-crew/` (planning repo) or the copied
+1. **Run the crew.** From `../assignments/03-agent-crew/` (planning repo) or the copied
    `Tools/data-crew/` (game repo):
    `python3 run_crew.py --live` — or `--job weapons` / `--job arena` to run one.
    No API key? `python3 run_crew.py` replays the recorded run through the same gates.
@@ -79,7 +79,7 @@ geometry). Both jobs are independent of each other and may run in parallel.
 ## Log
 
 **29 Jul 2026 — crew run live, both jobs landed (steps 1–5 done).**
-Run recorded in `assignments/03-agent-crew/recording.json` (18 exchanges); transcript in
+Run recorded in `../assignments/03-agent-crew/recording.json` (18 exchanges); transcript in
 `output/run_log.txt`. Model: claude-sonnet-5 via the `claude` CLI.
 
 *Landed weapons table* (`output/DT_Weapons.csv`), verifier PASS:

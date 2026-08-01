@@ -27,7 +27,7 @@ them. Step 1 below gates steps 2–4.
 
 ## Steps (in order)
 
-1. **Relocate the crew into the game repo.** Copy `assignments/03-agent-crew/run_crew.py`
+1. **Relocate the crew into the game repo.** Copy `../assignments/03-agent-crew/run_crew.py`
    (planning repo) to `Tools/data-crew/` in the game repo. It already resolves agents from
    `.claude/agents/` when dropped at the root — confirm `find_agents_dir()` picks up the
    real crew, and that `python3 run_crew.py` (replay) still exits 0 from the new location.

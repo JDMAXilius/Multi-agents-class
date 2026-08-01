@@ -23,7 +23,7 @@ fix the source and regenerate.
 **There are no Blueprint classes.** Not thin ones, not "just glue." Actors, components,
 abilities, effects, controllers, game modes, cues — all C++, spawned by class reference
 from data. An engine asset exists ONLY where UE 5.8 offers no C++ authoring path, and the
-complete list of those is Tier 4 in **`breachpoint/BREACHPOINT-AUTHORING-MATRIX.md`**:
+complete list of those is Tier 4 in **`BREACHPOINT-AUTHORING-MATRIX.md`**:
 AnimBlueprint graphs · materials/instances · Niagara · MetaSounds · UMG layout (WBP) ·
 `ST_Bot` · EQS query assets · sourced art. **Nothing else gets an asset.**
 

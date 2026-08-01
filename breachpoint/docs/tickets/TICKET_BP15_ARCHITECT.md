@@ -26,7 +26,7 @@ path; if BP14 has not run, step 4 carries a minimal path of its own and says so 
 ## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
 
 - `python3 Tools/data-crew/run_crew.py` (replay) exits 0 from the game repo (BP14 step 1)
-- `breachpoint/BREACHPOINT-ARCHITECTURE.md` §3 is present and its per-folder counts parse
+- `BREACHPOINT-ARCHITECTURE.md` §3 is present and its per-folder counts parse
 - owner_path: `Tools/architect/` (generated output `docs/BUILD-STATE.md` is the one exception,
   declared in the packet)
 

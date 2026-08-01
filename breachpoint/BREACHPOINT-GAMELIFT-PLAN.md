@@ -3,7 +3,7 @@
 **Decision in one line:** the slice ships on Steam listen server; GameLift arrives later
 **behind `IBRServerLifecycle`** — and this plan makes the swap real by fixing the seam's
 shape NOW (three interface gaps, zero AWS code) and phasing the cloud work behind a
-telemetry trigger, not a date. Binding rulings: **R15–R16** in `crew/docs/DESIGN-RULINGS.md`.
+telemetry trigger, not a date. Binding rulings: **R15–R16** in `docs/DESIGN-RULINGS.md`.
 
 Researched against the full managed-GameLift stack (account/IAM → UE5 server SDK →
 Anywhere fleets → managed fleets → Lambda + API Gateway → game/player sessions → identity

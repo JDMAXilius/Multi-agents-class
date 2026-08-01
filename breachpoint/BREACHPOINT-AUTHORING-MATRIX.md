@@ -2,7 +2,7 @@
 
 **Policy in one line: zero Blueprint *classes*, and an engine asset exists only where UE
 5.8 offers no C++ path at all — every one of those is named here, with its owner.**
-Binding ruling: **R18** in `crew/docs/DESIGN-RULINGS.md`.
+Binding ruling: **R18** in `docs/DESIGN-RULINGS.md`.
 
 This is the practical answer to "who authors what": Claude terminal (C++/text), a generated
 Python script (assets built headlessly), or you in the editor (graph/WYSIWYG work the

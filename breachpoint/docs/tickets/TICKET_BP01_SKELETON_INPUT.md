@@ -120,7 +120,7 @@ netcode doctrine warns about, sitting in the enforcement layer itself.
 
 *Fix:* `.as_posix()` on the relative path — normalizes separators on every platform. One line.
 
-*Proof (red-then-green, same 6 cases, new suite `crew/.claude/hooks/test_guard_laws.py`):*
+*Proof (red-then-green, same 6 cases, new suite `.claude/hooks/test_guard_laws.py`):*
 
 | Case | pre-fix | post-fix |
 |---|---|---|

@@ -1,7 +1,7 @@
 # TICKET — BP08: Bots — the three-layer brain (ambitions → StateTree → GAS)
 
 > STATUS: open — recut 29 Jul 2026 for the GOAP-layer architecture
-> (`breachpoint/BREACHPOINT-AI-BOTS.md` is the binding design; rulings R8–R12 apply).
+> (`BREACHPOINT-AI-BOTS.md` is the binding design; rulings R8–R12 apply).
 > The M4 go/no-go hinges on this ticket.
 
 Founder directive: bots are players the AI drives — same input tags, same ASC path, same
@@ -67,7 +67,7 @@ traces. Legibility outranks win-rate. MassAI and Learning Agents stay rejected.
 
 - Crew: ai-builder owns · sim-builder purity review · tuning-curator curates ·
   verifier proves+soaks · critic refutes
-- Contracts: `gas-purity.md` (bots press InputTags on their own ASC — no privileged path) · `data-and-assets.md` (`DT_BotAmbitions`/`DT_BotTuning`, zero literals) · `testing.md` (determinism suites + soak) · plus `breachpoint/BREACHPOINT-AI-BOTS.md` and rulings R8–R12, already binding above
+- Contracts: `gas-purity.md` (bots press InputTags on their own ASC — no privileged path) · `data-and-assets.md` (`DT_BotAmbitions`/`DT_BotTuning`, zero literals) · `testing.md` (determinism suites + soak) · plus `BREACHPOINT-AI-BOTS.md` and rulings R8–R12, already binding above
 - Binary files this ticket OWNS (lock before editing): `Content/AI/ST_Bot.uasset`,
   EQS assets under `Content/AI/`
 - Out of scope: full GOAP A* planning (rejected, R10) · a second BehaviorTree asset (R9) ·

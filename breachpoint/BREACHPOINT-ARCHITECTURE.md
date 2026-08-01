@@ -155,7 +155,7 @@ into the same ASC path — human and bot input are literally one API.
 | `Abilities/BRGA_Grapple.h/.cpp` | THE netcode packet: three modes by hit; self-pull via **root-motion source through CMC** (predicted by CMC machinery); rejection leaves zero state. Critic REFUTER gate. |
 | `Abilities/BRGA_Sprint.h/.cpp` | The movement-state ability, and the pattern-prover for **WhileHeld** activation: hold `InputTag.Sprint` → activate; release → end. Grants `State.Movement.Sprinting` via ActivationOwnedTags (predicted + replicated by GAS); the CMC reads it into the `FSavedMove_BR` sprint flag and applies the speed multiplier from `CT_Combat`. **No cost** (Halo sprint is free); `BRGA_WeaponFire`/`Melee`/`Grenade` list it in CancelAbilitiesWithTags — firing ends the sprint, Halo-style, with zero code in the sprint ability itself. |
 
-**The generic-effect library (6 total, **C++ `UGameplayEffect` subclasses — not Content assets**, per ruling R18 and `BREACHPOINT-AUTHORING-MATRIX.md` Tier 1; law #7 made real; purity law: `crew/docs/contracts/gas-purity.md`). They live in `Source/Breachpoint/AbilitySystem/Effects/`, are constructor-authored, and are referenced by class — which is what keeps them diffable and critic-readable:**
+**The generic-effect library (6 total, **C++ `UGameplayEffect` subclasses — not Content assets**, per ruling R18 and `BREACHPOINT-AUTHORING-MATRIX.md` Tier 1; law #7 made real; purity law: `docs/contracts/gas-purity.md`). They live in `Source/Breachpoint/AbilitySystem/Effects/`, are constructor-authored, and are referenced by class — which is what keeps them diffable and critic-readable:**
 
 | GE class | Parameterized by | Reused by |
 |---|---|---|

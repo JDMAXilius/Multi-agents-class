@@ -5,7 +5,7 @@
 One brain, three layers, every layer deterministic and data-driven.
 
 This document is the researched design behind ticket BP08 and the `ai-builder` agent.
-Binding rulings: R8–R12 in `crew/docs/DESIGN-RULINGS.md`.
+Binding rulings: R8–R12 in `docs/DESIGN-RULINGS.md`.
 
 ---
 
