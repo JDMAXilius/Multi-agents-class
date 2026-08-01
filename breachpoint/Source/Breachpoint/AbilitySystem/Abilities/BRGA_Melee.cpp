@@ -199,6 +199,17 @@ UBRGA_Melee::UBRGA_Melee(const FObjectInitializer& ObjectInitializer)
 
 bool UBRGA_Melee::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, OUT FGameplayTagContainer* OptionalRelevantTags) const
 {
+	// THE STAGE GATE — Stage 6 `FullSandbox` (docs/GAS-INTEGRATION-ROADMAP.md). FIRST statement, and
+	// in CanActivateAbility rather than ActivateAbility, because that is the last point at which a
+	// refusal is FREE: past here the ASC takes a prediction key and the base commits. A swing that
+	// activates and then bails has already opened its damage window.
+	if (!BRGas::IsStageEnabled(EBRGasStage::FullSandbox))
+	{
+		UE_LOG(LogBRCombat, Verbose, TEXT("BRGA_Melee: activation refused — GAS stage gate is '%s'; melee needs at least 'FullSandbox'. Set GasStage in Config/DefaultGame.ini."),
+			BRGas::ToString(BRGas::GetStage()));
+		return false;
+	}
+
 	if (!Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags))
 	{
 		return false;

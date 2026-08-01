@@ -70,6 +70,16 @@ UBRGA_Reload::UBRGA_Reload(const FObjectInitializer& ObjectInitializer)
 
 bool UBRGA_Reload::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, OUT FGameplayTagContainer* OptionalRelevantTags) const
 {
+	// THE STAGE GATE — Stage 5 `Weapons` (docs/GAS-INTEGRATION-ROADMAP.md). FIRST statement, and in
+	// CanActivateAbility because past here the ASC takes a prediction key and the base commits. A
+	// reload that activates and then bails has opened its window and armed its commit timer.
+	if (!BRGas::IsStageEnabled(EBRGasStage::Weapons))
+	{
+		UE_LOG(LogBRCombat, Verbose, TEXT("UBRGA_Reload: activation refused — GAS stage gate is '%s'; reloading needs at least 'Weapons'. Set GasStage in Config/DefaultGame.ini."),
+			BRGas::ToString(BRGas::GetStage()));
+		return false;
+	}
+
 	if (!Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags))
 	{
 		return false;
@@ -193,6 +203,15 @@ UBRGA_WeaponSwap::UBRGA_WeaponSwap(const FObjectInitializer& ObjectInitializer)
 
 bool UBRGA_WeaponSwap::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, OUT FGameplayTagContainer* OptionalRelevantTags) const
 {
+	// THE STAGE GATE — Stage 5 `Weapons` (docs/GAS-INTEGRATION-ROADMAP.md). FIRST statement, same
+	// reasoning as the reload above: refuse before the prediction key, not after.
+	if (!BRGas::IsStageEnabled(EBRGasStage::Weapons))
+	{
+		UE_LOG(LogBRCombat, Verbose, TEXT("UBRGA_WeaponSwap: activation refused — GAS stage gate is '%s'; swapping needs at least 'Weapons'. Set GasStage in Config/DefaultGame.ini."),
+			BRGas::ToString(BRGas::GetStage()));
+		return false;
+	}
+
 	if (!Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags))
 	{
 		return false;

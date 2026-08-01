@@ -96,6 +96,34 @@ float UBRGA_Grapple::GetMaxRangeMetres() const
 
 void UBRGA_Grapple::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
+	// ---------------------------------------------------------------------
+	// THE STAGE GATE — Stage 6 `FullSandbox` (docs/GAS-INTEGRATION-ROADMAP.md).
+	//
+	// FIRST statement, and specifically BEFORE Super, because Super commits the 20 s cooldown. It
+	// is also the gate that matters most in this packet: this is the only ability that MOVES the
+	// player, and refusing here means `StartGrapplePull` is never called, so no root motion source
+	// is ever applied and `bWantsToGrapple` is never set on either side.
+	//
+	// WHERE THIS GATE IS *NOT* IDEAL: it belongs in `CanActivateAbility`, which this class does not
+	// override and whose declaration lives in a header this packet may not write. The refusal lands
+	// one step late — after PreActivate took a prediction key, before any cooldown, trace, target
+	// validation or CMC write. The owed promotion is one line in BRGA_Grapple.h, named in this
+	// packet's report; it also matters to `FBRBotFacts::bCanGrapple`, which asks
+	// `CanActivateAbility` and today answers `true` below `FullSandbox`.
+	// ---------------------------------------------------------------------
+	if (!BRGas::IsStageEnabled(EBRGasStage::FullSandbox))
+	{
+		// Verbose, matching ABRCharacter's gate. A grapple that is silently dead and a grapple that
+		// is broken look identical from the chair; this line is the difference.
+		UE_LOG(LogBRCombat, Verbose, TEXT("UBRGA_Grapple: activation refused — GAS stage gate is '%s'; the grapple needs at least 'FullSandbox'. Set GasStage in Config/DefaultGame.ini."),
+			BRGas::ToString(BRGas::GetStage()));
+
+		// Cancelled, not completed — the same choice the whiff path below makes, and the one that
+		// leaves zero state on the predicting client.
+		EndAbility(Handle, ActorInfo, ActivationInfo, /*bReplicateEndAbility=*/true, /*bWasCancelled=*/true);
+		return;
+	}
+
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 	if (!IsActive())
 	{

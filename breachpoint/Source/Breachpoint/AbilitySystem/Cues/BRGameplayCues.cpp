@@ -227,6 +227,46 @@ bool UBRGameplayCue_WeaponFire::HandlesEvent(EGameplayCueEvent::Type EventType) 
 
 bool UBRGameplayCue_WeaponFire::OnExecute_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters) const
 {
+	// ---------------------------------------------------------------------
+	// THE STAGE GATE — Stage 7 `Cues` (docs/GAS-INTEGRATION-ROADMAP.md).
+	//
+	// WHY GATE AT ALL, given the abilities above are already gated: gating the RAISERS silences
+	// every cue this project raises today, but it does not silence a cue raised by anything else —
+	// a GameplayEffect's GameplayCues array, an automation spec, a console `Cue.Execute`. This is
+	// the LAST gate in the chain and the one that holds when a new raiser appears; a gate that only
+	// works because of who happens to call it is not a gate.
+	//
+	// WHY SUPPRESSING A HANDLER CANNOT BREAK GAMEPLAY, checked rather than assumed: everything
+	// below this line reads `Parameters`, spawns one-shot FX/sound, draws a debug sphere and writes
+	// the file-local log-throttle ledger. It mutates no attribute, grants no tag, applies no effect
+	// and spawns no gameplay actor, and `UGameplayCueNotify_Static::HandleGameplayCue` DISCARDS the
+	// return value — so the only thing suppression costs is pixels and one Verbose line. That is the
+	// property the roadmap leans on when it puts FX last: "the only layer that cannot break
+	// gameplay." If a future handler in this file does anything a gate could break, that is a
+	// finding about the handler (law 6: all FX via GameplayCues, and cues do FX only), not a reason
+	// to drop this gate.
+	//
+	// REGISTRATION IS DELIBERATELY NOT GATED. `UBRGameplayCueRegistrar` still binds and still reads
+	// its bindings back at every world begin play, so the roadmap's resting state ("handlers are
+	// registered and verified by read-back") holds at every stage, and the registrar's zero-bound
+	// Error keeps its meaning. Gating registration would make `Off` print that Error, which the
+	// acceptance criterion forbids.
+	// ---------------------------------------------------------------------
+	if (!BRGas::IsStageEnabled(EBRGasStage::Cues))
+	{
+		// Verbose, matching ABRCharacter's gate. NOT routed through ReportSilentCue: that is the
+		// once-per-tag "bound, routing, no asset authored" report, and a suppressed cue is a
+		// different fact. Conflating them would make the FX gap look bigger than it is the first
+		// time someone reads the log at `Cues`.
+		UE_LOG(LogBRCombat, Verbose, TEXT("BRGameplayCue_WeaponFire: '%s' suppressed — GAS stage gate is '%s'; cues need at least 'Cues'. Set GasStage in Config/DefaultGame.ini."),
+			*Parameters.MatchedTagName.ToString(), BRGas::ToString(BRGas::GetStage()));
+
+		// false = "this handler played nothing". The engine discards it; a direct caller (an
+		// automation spec on the CDO) gets the honest answer rather than the "handled" the played
+		// path returns.
+		return false;
+	}
+
 	// `MyTarget` is the world context, not `GetWorld()`: UGameplayCueNotify_Static::GetWorld()
 	// returns the cue manager's CACHED world, which is correct during a route and stale outside
 	// one. The target actor is unambiguous.

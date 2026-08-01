@@ -69,6 +69,21 @@ UBRGA_WeaponFire::UBRGA_WeaponFire(const FObjectInitializer& ObjectInitializer)
 
 bool UBRGA_WeaponFire::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, OUT FGameplayTagContainer* OptionalRelevantTags) const
 {
+	// THE STAGE GATE — Stage 5 `Weapons` (docs/GAS-INTEGRATION-ROADMAP.md). FIRST statement, and
+	// in CanActivateAbility rather than ActivateAbility, because that is the last point at which a
+	// refusal is FREE: past here the ASC takes a prediction key, sends ServerTryActivateAbility and
+	// the base commits cost + cooldown. An ability that activates and then bails has already paid.
+	if (!BRGas::IsStageEnabled(EBRGasStage::Weapons))
+	{
+		// Verbose, matching ABRCharacter's gate: a default-verbosity playtest log is byte-for-byte
+		// what it is today, but "the gate refused" is discoverable by turning the channel up rather
+		// than by reading this source file. A silently dead ability is indistinguishable from a
+		// broken one, and that confusion has already cost this project a day.
+		UE_LOG(LogBRCombat, Verbose, TEXT("BRGA_WeaponFire: activation refused — GAS stage gate is '%s'; firing needs at least 'Weapons'. Set GasStage in Config/DefaultGame.ini."),
+			BRGas::ToString(BRGas::GetStage()));
+		return false;
+	}
+
 	if (!Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags))
 	{
 		return false;

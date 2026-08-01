@@ -357,6 +357,34 @@ bool UBRGA_Grenade::ResolveTuning(FBRGrenadeTuning& OutTuning, FString& OutReaso
 
 void UBRGA_Grenade::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
+	// ---------------------------------------------------------------------
+	// THE STAGE GATE — Stage 6 `FullSandbox` (docs/GAS-INTEGRATION-ROADMAP.md).
+	//
+	// FIRST statement, and specifically BEFORE Super: Super is what commits, and this ability's
+	// commit COSTS A GRENADE through the overridden ApplyCost. Refusing after it would spend a
+	// grenade for a stage that is switched off. Nothing below runs — no cook window, no timer, no
+	// release watcher, no projectile.
+	//
+	// WHERE THIS GATE IS *NOT* IDEAL: it belongs in `CanActivateAbility`, which this class does not
+	// override and whose declaration lives in a header this packet may not write. The refusal
+	// therefore lands one step late — after PreActivate took a prediction key, before any cost,
+	// cooldown or state. The owed promotion is one line in BRGA_Grenade.h and it is named in this
+	// packet's report; it also matters to `FBRBotFacts::bCanGrenade`, which asks
+	// `CanActivateAbility` and today answers `true` below `FullSandbox`.
+	// ---------------------------------------------------------------------
+	if (!BRGas::IsStageEnabled(EBRGasStage::FullSandbox))
+	{
+		// Verbose, matching ABRCharacter's gate: default-verbosity logs are unchanged, and the
+		// refusal is discoverable by raising the channel rather than by reading this file.
+		UE_LOG(LogBRCombat, Verbose, TEXT("UBRGA_Grenade: activation refused — GAS stage gate is '%s'; grenades need at least 'FullSandbox'. Set GasStage in Config/DefaultGame.ini."),
+			BRGas::ToString(BRGas::GetStage()));
+
+		// Cancelled, not completed — the same choice every other refusal in this file makes, and
+		// what rolls back anything the prediction key covered on the predicting client.
+		EndAbility(Handle, ActorInfo, ActivationInfo, /*bReplicateEndAbility=*/true, /*bWasCancelled=*/true);
+		return;
+	}
+
 	// The base commits — which now COSTS A GRENADE through the overridden ApplyCost — and will
 	// have ended us if the
 	// commit failed. Skipping it is the subclass-contract violation BRGameplayAbility.h warns about.
