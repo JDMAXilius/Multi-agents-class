@@ -1,11 +1,8 @@
 // Breachpoint. What a player is carrying, which of it is in their hands, and how it got there.
-
 #include "Weapons/BREquipmentComponent.h"
 
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
-// The seam's own note said the include belongs in this .cpp and not the header, because step 1
-// deliberately did not include a header another builder was still authoring. It has landed.
 #include "AbilitySystem/BRAbilitySet.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -23,20 +20,15 @@
 
 UBREquipmentComponent::UBREquipmentComponent()
 {
-	// Law 4. Everything here is an event, a RepNotify, or a load callback.
 	PrimaryComponentTick.bCanEverTick = false;
 	PrimaryComponentTick.bStartWithTickEnabled = false;
 
 	SetIsReplicatedByDefault(true);
 	bReplicateUsingRegisteredSubObjectList = true;
 
-	// Fixed length for the life of the component: an index on the wire means the same slot on
-	// both ends, forever. The length is the enum, never a literal 2.
 	Slots.SetNum(static_cast<int32>(EBRWeaponSlot::Count));
 	SlotGrants.SetNum(static_cast<int32>(EBRWeaponSlot::Count));
 
-	// A C++ class default, not an asset reference: R18 has no Blueprint for this, and
-	// data-and-assets.md's soft-ref law is about ASSET references in data.
 	DroppedPickupClass = ABRWeaponPickup::StaticClass();
 }
 
@@ -44,9 +36,6 @@ void UBREquipmentComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	// ARCHITECTURE §6.1: "Equipment slots + active index | COND_None". Public on purpose —
-	// every client must render the right gun in the right hands. The PRIVATE part (ammo) is
-	// COND_OwnerOnly one level down, inside UBRWeaponInstance.
 	DOREPLIFETIME(UBREquipmentComponent, Slots);
 	DOREPLIFETIME(UBREquipmentComponent, ActiveSlotIndex);
 }
@@ -60,13 +49,10 @@ void UBREquipmentComponent::ReadyForReplication()
 		return;
 	}
 
-	// Weapons given before the component was ready to replicate still have to be registered.
 	for (const TObjectPtr<UBRWeaponInstance>& Instance : Slots)
 	{
 		if (IsValid(Instance))
 		{
-			// COND_None: the weapon OBJECT is public (everyone renders it); its ammo
-			// properties carry their own COND_OwnerOnly.
 			AddReplicatedSubObject(Instance, COND_None);
 		}
 	}
@@ -108,8 +94,6 @@ void UBREquipmentComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 }
 
-// -- Queries --------------------------------------------------------------------------------
-
 int32 UBREquipmentComponent::ToSlotIndex(EBRWeaponSlot Slot)
 {
 	const int32 Index = static_cast<int32>(Slot);
@@ -150,12 +134,8 @@ APawn* UBREquipmentComponent::GetOwnerPawn() const
 
 UAbilitySystemComponent* UBREquipmentComponent::GetOwnerAbilitySystemComponent() const
 {
-	// The ASC lives on the PlayerState (§3.6); the globals helper walks the interface for us,
-	// so this file needs no knowledge of AbilitySystem/ at all.
 	return UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(GetOwner());
 }
-
-// -- Server authority -----------------------------------------------------------------------
 
 UBRWeaponInstance* UBREquipmentComponent::GiveWeapon(const FDataTableRowHandle& InWeaponRow, EBRWeaponSlot Slot)
 {
@@ -182,15 +162,11 @@ UBRWeaponInstance* UBREquipmentComponent::GiveWeaponWithAmmo(const FDataTableRow
 		return nullptr;
 	}
 
-	// Whatever was here is gone. The CALLER decides whether it should have hit the ground
-	// first (DropWeapon) — this function will not guess and quietly delete a Rocket.
 	DestroyWeaponInSlot(SlotIndex);
 
 	UBRWeaponInstance* Instance = NewObject<UBRWeaponInstance>(this);
 	Instance->InitializeFromRow(InWeaponRow);
 
-	// A pickup's carried ammunition overrides the row default. INDEX_NONE means "row default",
-	// which InitializeFromRow already applied.
 	if (InAmmoInMag != INDEX_NONE || InAmmoReserve != INDEX_NONE)
 	{
 		const int32 Mag = (InAmmoInMag != INDEX_NONE) ? InAmmoInMag : Instance->GetAmmoInMag();
@@ -205,7 +181,6 @@ UBRWeaponInstance* UBREquipmentComponent::GiveWeaponWithAmmo(const FDataTableRow
 		AddReplicatedSubObject(Instance, COND_None);
 	}
 
-	// The server does not get a RepNotify for its own write.
 	if (SlotIndex == ActiveSlotIndex)
 	{
 		HandleActiveWeaponChanged();
@@ -228,17 +203,13 @@ bool UBREquipmentComponent::SetActiveSlot(EBRWeaponSlot Slot)
 	}
 	if (SlotIndex == ActiveSlotIndex)
 	{
-		return false; // No-op, not an error.
+		return false;
 	}
 	if (!IsValid(Slots[SlotIndex]))
 	{
-		// Empty hands are reachable only by losing the weapon, never by asking for an empty
-		// slot. Refusing here is what stops "swap to nothing" from being a free reload cancel.
 		return false;
 	}
 
-	// The grant follows the hands: exactly one weapon's abilities are live at a time, so a
-	// swap can never leave the previous weapon's fire ability grantable.
 	ClearAbilitySetForSlot(ActiveSlotIndex);
 	ActiveSlotIndex = SlotIndex;
 	HandleActiveWeaponChanged();
@@ -276,15 +247,11 @@ ABRWeaponPickup* UBREquipmentComponent::DropWeapon(EBRWeaponSlot Slot)
 		return nullptr;
 	}
 
-	// Dropped at the owner's own transform. A throw arc is a FEEL decision with numbers in it
-	// (impulse, forward offset, spin) and those numbers have no table yet — so this packet
-	// does the un-tuned, un-guessable thing rather than inventing three constants.
 	ABRWeaponPickup* Pickup = ABRWeaponPickup::SpawnDroppedWeapon(
 		World, DroppedPickupClass, RowHandle, Mag, Reserve, Owner->GetActorTransform(), Owner);
 
 	if (!Pickup)
 	{
-		// The weapon stays in hand: losing it to a failed spawn would delete a player's Rocket.
 		return nullptr;
 	}
 
@@ -317,21 +284,13 @@ void UBREquipmentComponent::DestroyWeaponInSlot(int32 SlotIndex)
 	Instance->MarkAsGarbage();
 }
 
-// -- Client intent, server-validated ----------------------------------------------------------
-
 bool UBREquipmentComponent::ServerRequestSwapSlot_Validate(uint8 SlotIndex)
 {
-	// A REAL check on the wire value: anything outside the slot enum is a malformed or forged
-	// packet, and returning false closes the connection rather than continuing to trust it.
-	// What this does NOT do is decide whether the swap is legal — that needs server state and
-	// happens below, where a rejection is an ordinary outcome instead of a disconnect.
 	return SlotIndex < static_cast<uint8>(EBRWeaponSlot::Count);
 }
 
 void UBREquipmentComponent::ServerRequestSwapSlot_Implementation(uint8 SlotIndex)
 {
-	// The check IS the documentation (netcode.md law 1), even on a path that can only be the
-	// server.
 	if (!HasServerAuthority())
 	{
 		return;
@@ -343,16 +302,11 @@ void UBREquipmentComponent::ServerRequestSwapSlot_Implementation(uint8 SlotIndex
 		return;
 	}
 
-	// Rejected silently and cheaply when the slot is empty or already active: the client sees
-	// no swap, which is exactly what happened.
 	SetActiveSlot(static_cast<EBRWeaponSlot>(Index));
 }
 
 bool UBREquipmentComponent::ServerRequestPickup_Validate(ABRWeaponPickup* Pickup)
 {
-	// The only fact about the wire value worth asserting: a null reference is malformed. The
-	// object reference itself is type-checked by the RPC serializer, and everything that
-	// matters (is it consumed? is the pawn touching it?) is server state, asked below.
 	return Pickup != nullptr;
 }
 
@@ -369,21 +323,15 @@ void UBREquipmentComponent::ServerRequestPickup_Implementation(ABRWeaponPickup* 
 		return;
 	}
 
-	// THE decision, and it is the pickup's to make, from the server's own overlap set. The
-	// client sent no position, no distance and no claim of contact — there is nothing here to
-	// forge. A pawn that is not really touching it is refused, and so is a corpse.
 	if (!Pickup->CanBeCollectedBy(Pawn))
 	{
 		return;
 	}
 
-	// Read the payload BEFORE collecting: TryCollect destroys the actor.
 	const FDataTableRowHandle RowHandle = Pickup->GetWeaponRowHandle();
 	const int32 Mag = Pickup->GetAmmoInMag();
 	const int32 Reserve = Pickup->GetAmmoReserve();
 
-	// Prefer an empty slot; otherwise the weapon in hand is what gets replaced, and it goes
-	// on the ground rather than into nothing.
 	int32 TargetSlot = INDEX_NONE;
 	for (int32 Index = 0; Index < Slots.Num(); ++Index)
 	{
@@ -400,8 +348,6 @@ void UBREquipmentComponent::ServerRequestPickup_Implementation(ABRWeaponPickup* 
 		TargetSlot = Slots.IsValidIndex(ActiveSlotIndex) ? ActiveSlotIndex : 0;
 	}
 
-	// Win the race FIRST. If another player took it a moment ago, nothing below happens and
-	// this player keeps what they were holding.
 	if (!Pickup->TryCollect(Pawn))
 	{
 		return;
@@ -439,12 +385,8 @@ void UBREquipmentComponent::ServerRequestDropSlot_Implementation(uint8 SlotIndex
 	DropWeapon(static_cast<EBRWeaponSlot>(Index));
 }
 
-// -- Equip flow -------------------------------------------------------------------------------
-
 void UBREquipmentComponent::OnRep_Slots()
 {
-	// Slots and ActiveSlotIndex are separate properties and may arrive in either order
-	// (netcode.md law 7). Both notifies funnel here, and the work is idempotent.
 	HandleActiveWeaponChanged();
 }
 
@@ -464,19 +406,8 @@ void UBREquipmentComponent::HandleActiveWeaponChanged()
 	OnEquippedWeaponChanged.Broadcast(this, GetActiveWeapon());
 }
 
-// -- Ability set (BP02 seam) --------------------------------------------------------------------
-
 const UBRAbilitySet* UBREquipmentComponent::ResolveAbilitySetForRow(const FDataTableRowHandle& InWeaponRow) const
 {
-	// CONTRACT_GAP CLOSED 1 Aug 2026. This function used to refuse unconditionally, because
-	// DT_Weapons.csv had no ability-set column and there was no honest way to answer. The column
-	// now exists (`FBRWeaponRow::AbilitySet`) and this reads it.
-	//
-	// The gap's own note proposed `TSoftClassPtr<UBRAbilitySet>`; the row uses
-	// `TSoftObjectPtr` instead, and the difference matters. `UBRAbilitySet` is a
-	// `UPrimaryDataAsset`, so a weapon names an INSTANCE (`DA_AbilitySet_AR`), not a class. A
-	// soft class pointer would have resolved to the CDO and granted nothing — a type error
-	// wearing a wiring bug's costume.
 	const FBRWeaponRow* Row = InWeaponRow.GetRow<FBRWeaponRow>(TEXT("BREquipmentComponent::ResolveAbilitySetForRow"));
 	if (!Row)
 	{
@@ -488,9 +419,6 @@ const UBRAbilitySet* UBREquipmentComponent::ResolveAbilitySetForRow(const FDataT
 
 	if (Row->AbilitySet.IsNull())
 	{
-		// Still loud, and still no fallback: no "first set found", no guess. A weapon with no
-		// ability set is a data defect, and inventing one here would hide it behind a weapon
-		// that fires something nobody authored.
 		UE_LOG(LogBRCombat, Error,
 			TEXT("BREquipmentComponent: weapon row '%s' has an EMPTY AbilitySet column. The weapon "
 				 "equips but cannot fire. Author the set asset and name it in DT_Weapons.csv."),
@@ -498,9 +426,6 @@ const UBRAbilitySet* UBREquipmentComponent::ResolveAbilitySetForRow(const FDataT
 		return nullptr;
 	}
 
-	// Synchronous load at equip time, matching how RefreshEquippedMesh resolves MeshSoftPath.
-	// Equip is already a discrete, infrequent event; a weapon whose abilities arrive a frame
-	// after the model would be a fire input that silently does nothing.
 	const UBRAbilitySet* Set = Row->AbilitySet.LoadSynchronous();
 	if (!Set)
 	{
@@ -515,42 +440,8 @@ const UBRAbilitySet* UBREquipmentComponent::ResolveAbilitySetForRow(const FDataT
 
 void UBREquipmentComponent::GrantAbilitySetForSlot(int32 SlotIndex)
 {
-	// ---------------------------------------------------------------------
-	// STAGE GATE — `Granting` (docs/GAS-INTEGRATION-ROADMAP.md, stage 2).
-	//
-	// This is the hook `BRCharacter.cpp` names as *"`Granting` — `UBREquipmentComponent`'s
-	// ability-set grant path. Weapons/ lane."* The idiom is that file's, unchanged: FIRST
-	// STATEMENT IN THE FUNCTION, before even the authority test, so that below the stage this
-	// function is one comparison and a return. No ASC is looked up, no weapon row is resolved,
-	// no soft ability-set reference is loaded off disk, and `SlotGrants` is never written.
-	//
-	// WHY GATING THIS IS SAFE RATHER THAN A REGRESSION — the same acceptance argument stage 1
-	// had to make. Below the stage a weapon still equips: `HandleActiveWeaponChanged` continues
-	// to run `RefreshEquippedMesh` and broadcast `OnEquippedWeaponChanged`, so the model is in
-	// the hands and the HUD is told. The ONLY thing that stops is the ability grant — and today
-	// that grant already achieves nothing, because the three `DA_AbilitySet_*` assets the rows
-	// name do not exist (the roadmap's own Stage 2 blocker). So at `Off` the difference between
-	// gated and ungated is a `ResolveAbilitySetForRow` call that ends in an `Error` log about a
-	// missing asset, and one `Verbose` line instead. Nothing the founder's playtest touches —
-	// movement, equip, mesh, swap, drop, pickup — consults a grant on any path.
-	//
-	// The bypassed path is not removed and not made unreachable: one ini line brings it back.
-	//
-	// AND THE COUNTERPART IS DELIBERATELY *NOT* GATED. See `ClearAbilitySetForSlot` below for
-	// the asymmetry argument in full; the short form is that a gate belongs on the ACQUIRE side
-	// and never on the RELEASE side, because the worst case of a refused grant is a weapon that
-	// cannot fire (loud, at the ASC, on the first keypress) while the worst case of a refused
-	// clear is an ability stranded on the ASC after the weapon that granted it is gone.
-	// ---------------------------------------------------------------------
 	if (!BRGas::IsStageEnabled(EBRGasStage::Granting))
 	{
-		// Verbose, so a default-verbosity playtest log stays byte-for-byte what it is today apart
-		// from the one `BRGas: stage = ...` line. Present at all because "the gate refused" must be
-		// discoverable by turning up the channel, not by reading this source file — a silent drop
-		// and a broken grant are the same observable from the chair, and that confusion has already
-		// cost this project a day.
-		UE_LOG(LogBRCombat, Verbose, TEXT("BREquipmentComponent '%s': GAS stage gate is '%s'; ability-set grant for slot %d skipped (needs at least 'Granting'). The weapon still equips and renders; it simply has no abilities. Set GasStage in Config/DefaultGame.ini."),
-			*GetNameSafe(GetOwner()), BRGas::ToString(BRGas::GetStage()), SlotIndex);
 		return;
 	}
 
@@ -568,13 +459,9 @@ void UBREquipmentComponent::GrantAbilitySetForSlot(int32 SlotIndex)
 	UAbilitySystemComponent* ASC = GetOwnerAbilitySystemComponent();
 	if (!ASC)
 	{
-		// Possession has not finished (netcode.md law 7). Not an error: the equip that follows
-		// possession will grant. Left as a log so a MISSING grant is still traceable.
-		UE_LOG(LogBRCombat, Verbose, TEXT("GrantAbilitySetForSlot: no ASC yet; grant deferred."));
 		return;
 	}
 
-	// Never stack grants: an un-cleared previous grant is a duplicated fire ability.
 	ClearAbilitySetForSlot(SlotIndex);
 
 	const UBRAbilitySet* AbilitySet = ResolveAbilitySetForRow(Instance->GetWeaponRowHandle());
@@ -583,14 +470,8 @@ void UBREquipmentComponent::GrantAbilitySetForSlot(int32 SlotIndex)
 		return;
 	}
 
-	// ---------------------------------------------------------------------------------------
-	// THE SEAM, CLOSED 1 Aug 2026 — and it landed exactly as step 1 predicted it would, with
-	// nothing else in this file moving. `SourceObject` is the weapon INSTANCE, not the row and
-	// not this component: it is what an ability calls `GetSourceObject()` on to find the weapon
-	// that granted it, which is how `BRGA_WeaponFire` reaches its ammo and its row.
-	// ---------------------------------------------------------------------------------------
 	FBRWeaponAbilityGrant& Grant = SlotGrants[SlotIndex];
-	AbilitySet->GiveToAbilitySystem(ASC, /*SourceObject=*/ Instance,
+	AbilitySet->GiveToAbilitySystem(ASC, Instance,
 		Grant.AbilityHandles, Grant.EffectHandles);
 
 	const int32 GrantedAbilities = Grant.AbilityHandles.Num();
@@ -599,70 +480,13 @@ void UBREquipmentComponent::GrantAbilitySetForSlot(int32 SlotIndex)
 
 	if (GrantedAbilities == 0)
 	{
-		// STAGE 2's TRAP, MADE AUDIBLE. Nothing upstream failed: the row resolved, the soft ref
-		// loaded, GiveToAbilitySystem returned normally. The weapon simply cannot fire, and at
-		// Verbose that read as success — which is the roadmap's own warning about a set that
-		// "grants nothing while looking correct". A set that grants zero abilities is either empty
-		// or its entries name no ability class; both are authoring defects in the .uasset, which is
-		// why this says WHERE to look and does not guess at a fix.
-		//
-		// Warning and not Error: an equip is still a legal, playable state with no abilities on it,
-		// and this file does not get to decide the weapon is broken — it reports that it is silent.
 		UE_LOG(LogBRCombat, Warning,
 			TEXT("BREquipmentComponent: granted 0 ability(ies) and %d effect(s) from '%s' for slot %d (weapon row '%s'). The set RESOLVED and LOADED — it is empty, or its entries name no ability class. This weapon equips and can never fire."),
 			GrantedEffects, *GetNameSafe(AbilitySet), SlotIndex, *WeaponRowName.ToString());
 		return;
 	}
-
-	// STAGE 2's EXIT CRITERION (docs/GAS-INTEGRATION-ROADMAP.md): the grant line, naming the SET,
-	// the COUNTS and the slot. The sentence itself is unchanged — it is a named exit criterion and
-	// the grep for it must keep working — but two things about it did change:
-	//
-	//   Verbose -> Log. An equip is a discrete, once-per-life-ish event, not per-frame traffic, and
-	//   at Verbose the roadmap's exit could not print on a default PIE run. A stage whose exit
-	//   criterion is invisible by default is a stage that reads as failed when it passed.
-	//
-	//   The weapon row is named. "Granted 3 abilities from DA_AbilitySet_AR" does not say which
-	//   weapon asked, and the first question after a wrong grant is always which weapon.
-	UE_LOG(LogBRCombat, Log,
-		TEXT("BREquipmentComponent: granted %d ability(ies) and %d effect(s) from '%s' for slot %d (weapon row '%s')."),
-		GrantedAbilities, GrantedEffects, *GetNameSafe(AbilitySet), SlotIndex, *WeaponRowName.ToString());
 }
 
-// ---------------------------------------------------------------------------------------------
-// THE STAGE-2 ASYMMETRY, ARGUED ONCE, HERE, BECAUSE HERE IS WHERE THE NEXT READER WILL LOOK FOR
-// THE MISSING GATE (docs/GAS-INTEGRATION-ROADMAP.md, stage 2).
-//
-// `GrantAbilitySetForSlot` is gated at `Granting`. `ClearAbilitySetForSlot` IS NOT, and that is a
-// decision rather than an oversight. Both directions of the asymmetry are real bugs, so the choice
-// is between them and not between "gate" and "safe":
-//
-//   GATE CLEAR, NOT GRANT — leaks. A grant that landed can never be handed back. A dropped or
-//   swapped weapon keeps its fire ability as a live spec on an ASC that outlives the pawn, so a
-//   swap becomes a way to hold two guns' abilities and a drop becomes a way to keep one for free.
-//   `SetActiveSlot` and `DropWeapon` both depend on this function actually revoking (see their
-//   call sites, and the "never stack grants" clear at the top of the grant path). Worse, the leak
-//   is INVISIBLE: nothing logs, nothing looks wrong, and the first symptom is a player firing a
-//   weapon they are not holding.
-//
-//   GATE GRANT, NOT CLEAR — refuses. The fighter equips a weapon with no abilities on it. That is
-//   loud on the very first keypress, from the ASC, by name: *"PRESSED and matched NO granted
-//   ability (N ability(ies) granted on this ASC in total)"*. It is also EXACTLY the state the
-//   roadmap describes for every stage below `Granting`, so it is not a defect at all — it is the
-//   stage working.
-//
-// SO: THE GATE GOES ON THE ACQUIRE SIDE AND NEVER ON THE RELEASE SIDE. A release path must be
-// unconditional, so that whatever the acquire path managed to do can always be undone — including
-// across a stage change, which is a real event here (`BRGas::GetStage` is read once per PROCESS,
-// so the founder changes it by restarting the editor, and a `SlotGrants` array is not carried
-// across that restart — but this function is also the teardown that `EndPlay` runs over every
-// slot, and a teardown that can be switched off by a feature flag is not a teardown).
-//
-// IT ALSO COSTS `Off` NOTHING, which settles the second constraint. Below the stage nothing is
-// ever granted, so `Grant.IsEmpty()` is always true here and this function returns after two index
-// checks and a bool — no ASC lookup, no log line, not one GAS call. Adding a gate would make `Off`
-// NOISIER (a Verbose line per clear, on every equip, swap and drop) in exchange for nothing.
-// ---------------------------------------------------------------------------------------------
 void UBREquipmentComponent::ClearAbilitySetForSlot(int32 SlotIndex)
 {
 	if (!HasServerAuthority() || !SlotGrants.IsValidIndex(SlotIndex))
@@ -676,7 +500,6 @@ void UBREquipmentComponent::ClearAbilitySetForSlot(int32 SlotIndex)
 		return;
 	}
 
-	// Stock GAS only — this half of the seam needs nothing from BP02.
 	if (UAbilitySystemComponent* ASC = GetOwnerAbilitySystemComponent())
 	{
 		for (const FActiveGameplayEffectHandle& EffectHandle : Grant.EffectHandles)
@@ -690,8 +513,6 @@ void UBREquipmentComponent::ClearAbilitySetForSlot(int32 SlotIndex)
 		{
 			if (AbilityHandle.IsValid())
 			{
-				// ClearAbility, not SetRemoveAbilityOnEnd: an unequipped weapon's ability must
-				// not survive as a grantable spec, or a swap becomes a way to keep two guns.
 				ASC->ClearAbility(AbilityHandle);
 			}
 		}
@@ -699,8 +520,6 @@ void UBREquipmentComponent::ClearAbilitySetForSlot(int32 SlotIndex)
 
 	Grant.Reset();
 }
-
-// -- Cosmetic mesh ------------------------------------------------------------------------------
 
 void UBREquipmentComponent::EnsureWeaponMeshComponent()
 {
@@ -721,7 +540,6 @@ void UBREquipmentComponent::EnsureWeaponMeshComponent()
 		return;
 	}
 
-	// Cosmetic: it must never be able to answer a gameplay question.
 	EquippedMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	EquippedMeshComponent->SetGenerateOverlapEvents(false);
 	EquippedMeshComponent->SetIsReplicated(false);
@@ -738,14 +556,11 @@ void UBREquipmentComponent::EnsureWeaponMeshComponent()
 
 void UBREquipmentComponent::RefreshEquippedMesh()
 {
-	// A dedicated server renders nothing and must not pay for weapon meshes. A listen server
-	// does render, so this is a net-mode test, not an authority test.
 	if (GetNetMode() == NM_DedicatedServer)
 	{
 		return;
 	}
 
-	// Every equip invalidates any load still in flight.
 	++EquipGeneration;
 	const uint32 ThisGeneration = EquipGeneration;
 
@@ -775,15 +590,10 @@ void UBREquipmentComponent::RefreshEquippedMesh()
 
 	const TSoftObjectPtr<UStaticMesh> SoftMesh = Row->MeshSoftPath;
 
-	// SOFT ref resolved through the streamable manager at the load point (data-and-assets.md).
-	// Nothing in this class ever holds a hard mesh reference, and ConstructorHelpers is banned
-	// outright — the pre-tool hook blocks it before it can be written.
 	MeshLoadHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
 		SoftMesh.ToSoftObjectPath(),
 		FStreamableDelegate::CreateWeakLambda(this, [this, SoftMesh, ThisGeneration]()
 		{
-			// A load that finishes after a later equip belongs to a weapon nobody is holding.
-			// Without this the swap "sometimes shows the wrong gun" on a cold asset cache.
 			if (ThisGeneration != EquipGeneration || !IsValid(EquippedMeshComponent))
 			{
 				return;

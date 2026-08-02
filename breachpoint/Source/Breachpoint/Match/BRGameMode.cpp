@@ -1,5 +1,4 @@
 // Breachpoint. The server-only match spine: phase machine, kill attribution, scored respawn.
-
 #include "Match/BRGameMode.h"
 
 #include "AbilitySystemComponent.h"
@@ -22,35 +21,16 @@
 
 namespace
 {
-	/** Timers refuse a rate of 0 (it clears them), so every duration is floored here. */
 	constexpr float MinPhaseSeconds = 0.1f;
 
-	/** A spawn point used inside this window is heavily penalised, to avoid spawn stacking. */
 	constexpr float SpawnReuseWindowSeconds = 5.f;
 }
 
 ABRGameMode::ABRGameMode()
 {
-	// Law 4: the match frame owns four timers and two gameplay events. It does not tick.
 	PrimaryActorTick.bCanEverTick = false;
 	PrimaryActorTick.bStartWithTickEnabled = false;
 
-	// ---------------------------------------------------------------------
-	// THE FOUR CLASS DEFAULTS. Only GameStateClass was set here before, and the omission was not
-	// harmless: with PlayerControllerClass unset, AGameModeBase's own default (APlayerController)
-	// applied, so nothing in C++ ever asked for ABRPlayerController. GM_BR filled the gap on its
-	// Blueprint defaults and — verified 1 Aug 2026 by reading the asset's import table — filled it
-	// with BP_ShooterPlayerController, the TEMPLATE's controller. The shipped game therefore ran a
-	// BRCharacter pawn under a ShooterPlayerController: mapping contexts arrived (which is why it
-	// moved at all), while ABRPlayerController's relay, its key census and its CommonUI viewport
-	// check were never reached, and Cast<ABRPlayerController> in the pawn's
-	// SetupPlayerInputComponent failed on every possession.
-	//
-	// WHAT THIS DOES AND DOES NOT FIX. A Blueprint's serialised value beats a C++ CDO default
-	// (docs/PHASE2-RELAYER.md step 1), so GM_BR's saved PlayerControllerClass still wins while it
-	// holds one. This makes the C++ default correct and makes CLEARING the Blueprint override the
-	// fix, rather than requiring the founder to know which asset to point it at.
-	// ---------------------------------------------------------------------
 	GameStateClass       = ABRGameState::StaticClass();
 	PlayerStateClass     = ABRPlayerState::StaticClass();
 	PlayerControllerClass = ABRPlayerController::StaticClass();
@@ -59,16 +39,10 @@ ABRGameMode::ABRGameMode()
 	TeamDamageDealt.Init(0.f, BRMatch::NumTeams);
 }
 
-// ---------------------------------------------------------------------------
-// Lifecycle
-// ---------------------------------------------------------------------------
-
 void ABRGameMode::InitGameState()
 {
 	Super::InitGameState();
 
-	// Publish the rules before anybody can score against them. ServerSetScoreLimit
-	// refuses to move once scoring opens, so this is the only window that counts.
 	if (ABRGameState* BRGS = GetBRGameState())
 	{
 		BRGS->ServerSetScoreLimit(ScoreLimit);
@@ -79,8 +53,6 @@ void ABRGameMode::OnPostLogin(AController* NewPlayer)
 {
 	Super::OnPostLogin(NewPlayer);
 
-	// Human players bind here. Bots never reach OnPostLogin — their manager calls
-	// RegisterCombatant directly, which is why that entry point is public and idempotent.
 	RegisterCombatant(NewPlayer);
 }
 
@@ -93,7 +65,6 @@ void ABRGameMode::Logout(AController* Exiting)
 
 void ABRGameMode::HandleMatchHasStarted()
 {
-	// Super spawns everyone who was waiting; only then does the phase machine open.
 	Super::HandleMatchHasStarted();
 
 	EnterPhase(EBRMatchPhase::WarmUp);
@@ -101,9 +72,6 @@ void ABRGameMode::HandleMatchHasStarted()
 
 bool ABRGameMode::PlayerCanRestart_Implementation(APlayerController* Player)
 {
-	// Once a winner exists the arena is frozen. AGameMode::PlayerCanRestart already
-	// refuses outside MatchInProgress; this is the phase-level statement of the same rule,
-	// because PostMatch is entered before EndMatch() settles.
 	if (GetMatchPhase() == EBRMatchPhase::PostMatch)
 	{
 		return false;
@@ -111,10 +79,6 @@ bool ABRGameMode::PlayerCanRestart_Implementation(APlayerController* Player)
 
 	return Super::PlayerCanRestart_Implementation(Player);
 }
-
-// ---------------------------------------------------------------------------
-// Phase machine — timers and events only
-// ---------------------------------------------------------------------------
 
 EBRMatchPhase ABRGameMode::GetMatchPhase() const
 {
@@ -137,9 +101,6 @@ void ABRGameMode::EnterPhase(EBRMatchPhase NewPhase)
 
 	FTimerManager& TimerManager = GetWorldTimerManager();
 
-	// Exactly one phase timer may be armed at a time. Clearing all four here is what makes
-	// "death during a phase transition" harmless: a stale timer can never fire into the
-	// wrong phase and, e.g., send a decided match back into sudden death.
 	TimerManager.ClearTimer(WarmupTimerHandle);
 	TimerManager.ClearTimer(MatchClockTimerHandle);
 	TimerManager.ClearTimer(SuddenDeathTimerHandle);
@@ -178,8 +139,6 @@ void ABRGameMode::EnterPhase(EBRMatchPhase NewPhase)
 		BRGS->ServerSetMatchEndServerTime(Now + Duration);
 		TimerManager.SetTimer(PostMatchTimerHandle, this, &ABRGameMode::HandlePostMatchElapsed, Duration, false);
 
-		// No respawns after the whistle: drop every pending timer rather than let one
-		// fire into a frozen arena.
 		for (TPair<TWeakObjectPtr<AController>, FTimerHandle>& Pair : RespawnTimers)
 		{
 			TimerManager.ClearTimer(Pair.Value);
@@ -196,8 +155,6 @@ void ABRGameMode::EnterPhase(EBRMatchPhase NewPhase)
 
 void ABRGameMode::HandleWarmupElapsed()
 {
-	// Warmup -> Live. Scores earned before this instant do not exist (see HandleDeathEvent),
-	// so nothing needs resetting here.
 	EnterPhase(EBRMatchPhase::Live);
 }
 
@@ -214,7 +171,6 @@ void ABRGameMode::HandleMatchClockExpired()
 		return;
 	}
 
-	// A clean lead ends it; a tie goes to overtime. Sudden death is entered ONLY here.
 	int32 BestScore = TNumericLimits<int32>::Min();
 	uint8 BestTeam = BRMatch::InvalidTeamId;
 	bool bTied = false;
@@ -256,9 +212,6 @@ void ABRGameMode::HandleSuddenDeathExpired()
 		return;
 	}
 
-	// The 60 s cap fired with the score still level: the tiebreak ladder is
-	// score -> damage dealt to enemies -> draw. Damage is the server's own ledger, never
-	// a client-reported number, which is what makes it safe to decide a match on.
 	uint8 BestTeam = BRMatch::InvalidTeamId;
 	int32 BestScore = TNumericLimits<int32>::Min();
 	float BestDamage = -1.f;
@@ -282,9 +235,6 @@ void ABRGameMode::HandleSuddenDeathExpired()
 		}
 	}
 
-	UE_LOG(LogBRNet, Log, TEXT("[Match] Sudden death cap reached. Tiebreak -> team %d (score %d, damage %.0f, ambiguous %d)"),
-		BestTeam, BestScore, BestDamage, bAmbiguous ? 1 : 0);
-
 	EnterPostMatch(bAmbiguous ? BRMatch::InvalidTeamId : BestTeam);
 }
 
@@ -295,9 +245,6 @@ void ABRGameMode::HandlePostMatchElapsed()
 
 void ABRGameMode::RequestMatchTeardown()
 {
-	// Deliberately inert. Travel, session teardown and re-hosting belong to Online/
-	// behind IBRServerLifecycle; the match frame's job ends at "a winner exists".
-	UE_LOG(LogBRNet, Log, TEXT("[Match] Post-match window elapsed; teardown is the session layer's call."));
 }
 
 void ABRGameMode::ScheduleWinCheck()
@@ -309,9 +256,6 @@ void ABRGameMode::ScheduleWinCheck()
 
 	bWinCheckPending = true;
 
-	// THE double-KO line. Deferring to the next tick means every death resolved in this
-	// frame is scored before anything can end the match, so a trade at 24-24 credits both
-	// players and the tiebreak (not the ordering of two Event.Death callbacks) decides it.
 	GetWorldTimerManager().SetTimerForNextTick(this, &ABRGameMode::EvaluateWinConditions);
 }
 
@@ -357,8 +301,6 @@ void ABRGameMode::EvaluateWinConditions()
 
 	if (bSuddenDeath)
 	{
-		// Overtime ends the moment the tie breaks. An equal-score trade keeps it running
-		// until the 60 s cap.
 		if (BestScore > SecondScore)
 		{
 			EnterPostMatch(BestTeam);
@@ -368,9 +310,6 @@ void ABRGameMode::EvaluateWinConditions()
 
 	if (BestScore >= ScoreLimit)
 	{
-		// Both teams crossing the limit in the same frame is the double-KO-at-match-point
-		// case: BestTeam already carries the score-then-damage ordering, so it resolves
-		// here rather than by whichever death event happened to be delivered first.
 		EnterPostMatch(BestTeam);
 	}
 }
@@ -394,18 +333,11 @@ void ABRGameMode::EnterPostMatch(uint8 WinningTeamId)
 	PendingRespawnPlayers.Reset();
 	EarliestRespawnServerTime.Reset();
 
-	// Settle the engine's own match state too, so AGameMode's restart paths shut with ours.
 	if (IsMatchInProgress())
 	{
 		EndMatch();
 	}
-
-	UE_LOG(LogBRNet, Log, TEXT("[Match] Decided. Winning team %d."), WinningTeamId);
 }
-
-// ---------------------------------------------------------------------------
-// Damage ledger + kill attribution
-// ---------------------------------------------------------------------------
 
 void ABRGameMode::NotifyDamageDealt(APlayerState* Attacker, APlayerState* Victim, float Amount, FGameplayTag DamageTag)
 {
@@ -414,8 +346,6 @@ void ABRGameMode::NotifyDamageDealt(APlayerState* Attacker, APlayerState* Victim
 		return;
 	}
 
-	// Server-side sanity, not client validation — nothing here crosses the wire — but a
-	// bad number would still poison both attribution and the tiebreak, so it stops here.
 	if (!(Amount > 0.f) || Amount > MaxPlausibleSingleDamage || !FMath::IsFinite(Amount))
 	{
 		UE_LOG(LogBRNet, Warning, TEXT("[Match] Implausible damage report %.2f dropped (victim %s)."),
@@ -432,8 +362,6 @@ void ABRGameMode::NotifyDamageDealt(APlayerState* Attacker, APlayerState* Victim
 	Record.ServerTime = GetServerTime();
 	Record.DamageTag = DamageTag;
 
-	// Tiebreak credit: enemy damage only, scoring phases only. Farming a teammate or
-	// the warmup dummy may not buy an overtime win.
 	const ABRGameState* BRGS = GetBRGameState();
 	if (!BRGS || !BRGS->IsScoringOpen() || !Attacker || Attacker == Victim)
 	{
@@ -472,9 +400,6 @@ APlayerState* ABRGameMode::ResolveKiller(APlayerState* Victim, APlayerState* Eve
 
 	const float Cutoff = GetServerTime() - FMath::Max(0.f, KillCreditWindowSeconds);
 
-	// LAST hit inside the window wins, not most damage: the kill-steal rule, decided.
-	// Note what is NOT here: any check that the killer is still alive. That absence is
-	// the double-KO rule — a corpse still gets its kill.
 	if (const TArray<FBRDamageRecord>* Records = DamageLedger.Find(Victim))
 	{
 		for (int32 Index = Records->Num() - 1; Index >= 0; --Index)
@@ -493,14 +418,11 @@ APlayerState* ABRGameMode::ResolveKiller(APlayerState* Victim, APlayerState* Eve
 		}
 	}
 
-	// Fallback for damage that never reached the ledger (a kill volume, a scripted
-	// execution). Still refuses to credit the victim to themselves.
 	if (EventInstigator && EventInstigator != Victim)
 	{
 		return EventInstigator;
 	}
 
-	// Nothing in the window and no instigator: fall damage / world kill / suicide.
 	return nullptr;
 }
 
@@ -531,7 +453,7 @@ void ABRGameMode::CollectAssists(APlayerState* Victim, APlayerState* Killer, TAr
 
 		if (ResolveTeamId(Attacker) == ResolveTeamId(Victim))
 		{
-			continue; // A teammate softening you up is not an enemy assist.
+			continue;
 		}
 
 		OutAssists.AddUnique(Attacker);
@@ -551,12 +473,8 @@ void ABRGameMode::HandleDeathEvent(APlayerState* Victim, APlayerState* EventInst
 		return;
 	}
 
-	// One death per life. BP02 promises exactly one Event.Death per GE_Death, but a
-	// duplicate (a second lethal execution landing in the same frame, or a re-sent event)
-	// must not double-score. The set is cleared when the victim actually respawns.
 	if (PendingRespawnPlayers.Contains(Victim))
 	{
-		UE_LOG(LogBRNet, Verbose, TEXT("[Match] Duplicate death for %s ignored."), *GetNameSafe(Victim));
 		return;
 	}
 	PendingRespawnPlayers.Add(Victim);
@@ -566,8 +484,6 @@ void ABRGameMode::HandleDeathEvent(APlayerState* Victim, APlayerState* EventInst
 	TArray<APlayerState*> Assists;
 	CollectAssists(Victim, Killer, Assists);
 
-	// The victim's ledger dies with them; the next life starts with a clean sheet, so a
-	// hit taken before dying can never credit a kill after respawning.
 	DamageLedger.Remove(Victim);
 
 	const uint8 VictimTeam = ResolveTeamId(Victim);
@@ -575,22 +491,17 @@ void ABRGameMode::HandleDeathEvent(APlayerState* Victim, APlayerState* EventInst
 	const bool bSelfInflicted = (Killer == nullptr);
 	const bool bFriendlyFire = (!bSelfInflicted && KillerTeam != BRMatch::InvalidTeamId && KillerTeam == VictimTeam);
 
-	// Phase is read ONCE, here, and every branch below uses that read. A phase change can
-	// only happen inside our own timers/handlers, so this function never straddles one.
 	const bool bScoringOpen = BRGS->IsScoringOpen() && !bMatchDecided;
 
 	if (bScoringOpen)
 	{
 		if (bSelfInflicted)
 		{
-			// DECIDED: no instigator (fall damage, world kill, own grenade) = -1 to the
-			// victim's own team, clamped at 0, and a -1 Event.Kill to the victim.
 			BRGS->ServerAddTeamScore(VictimTeam, -1);
 			SendKillEvent(Victim, Victim, -1.f, CauseTag);
 		}
 		else if (bFriendlyFire)
 		{
-			// DECIDED: a team kill pays the killer's team, and the killer gets no credit.
 			if (bFriendlyFirePenalizesKillersTeam)
 			{
 				BRGS->ServerAddTeamScore(KillerTeam, -1);
@@ -615,15 +526,10 @@ void ABRGameMode::HandleDeathEvent(APlayerState* Victim, APlayerState* EventInst
 
 		OnPlayerKilled.Broadcast(Killer, Victim, Assists);
 
-		// Deferred by one tick — see ScheduleWinCheck.
 		ScheduleWinCheck();
 	}
 	else
 	{
-		// Warmup and post-match deaths are real (you die, you respawn) but weightless:
-		// no score, no killfeed row, no Event.Kill. Decided, not discovered.
-		UE_LOG(LogBRNet, Verbose, TEXT("[Match] Unscored death for %s in phase %d."),
-			*GetNameSafe(Victim), static_cast<int32>(BRGS->GetMatchPhase()));
 	}
 
 	StartRespawnTimer(Victim->GetOwningController());
@@ -642,9 +548,6 @@ void ABRGameMode::SendKillEvent(APlayerState* Recipient, APlayerState* Victim, f
 		return;
 	}
 
-	// Awarding by gameplay event keeps the K/D bookkeeping on the PlayerState that owns
-	// it (gas-purity: the match frame does not reach into another packet's state), and it
-	// gives abilities a legal hook to react to a kill.
 	FGameplayEventData Payload;
 	Payload.EventTag = BRGameplayTags::Event_Kill;
 	Payload.Instigator = Recipient;
@@ -654,10 +557,6 @@ void ABRGameMode::SendKillEvent(APlayerState* Recipient, APlayerState* Victim, f
 
 	ASC->HandleGameplayEvent(BRGameplayTags::Event_Kill, &Payload);
 }
-
-// ---------------------------------------------------------------------------
-// Combatant registration — the Event.Death subscription
-// ---------------------------------------------------------------------------
 
 void ABRGameMode::RegisterCombatant(AController* Combatant)
 {
@@ -672,15 +571,11 @@ void ABRGameMode::RegisterCombatant(AController* Combatant)
 		return;
 	}
 
-	// The ASC lives on the PlayerState (ARCHITECTURE §3.6), so the subscription survives
-	// every pawn death and respawn — bind once per player, not once per life.
 	const FDelegateHandle Handle = ASC->GenericGameplayEventCallbacks
 		.FindOrAdd(BRGameplayTags::Event_Death)
 		.AddUObject(this, &ABRGameMode::OnDeathGameplayEvent);
 
 	DeathListenerHandles.Add(ASC, Handle);
-
-	UE_LOG(LogBRNet, Log, TEXT("[Match] Registered combatant %s for Event.Death."), *GetNameSafe(Combatant->PlayerState));
 }
 
 void ABRGameMode::UnregisterCombatant(AController* Combatant)
@@ -705,8 +600,6 @@ void ABRGameMode::UnregisterCombatant(AController* Combatant)
 			}
 		}
 
-		// Law 7: a leaver's state must not linger. Their ledger entries would otherwise
-		// keep a stale weak pointer alive in the tiebreak and the killfeed.
 		DamageLedger.Remove(PS);
 		PendingRespawnPlayers.Remove(PS);
 	}
@@ -718,8 +611,6 @@ void ABRGameMode::UnregisterCombatant(AController* Combatant)
 	}
 	EarliestRespawnServerTime.Remove(Combatant);
 
-	// Weak keys go stale as actors are destroyed; sweep them so the maps stay bounded
-	// across a long match with reconnects.
 	for (auto It = DeathListenerHandles.CreateIterator(); It; ++It)
 	{
 		if (!It.Key().IsValid())
@@ -753,12 +644,9 @@ void ABRGameMode::OnDeathGameplayEvent(const FGameplayEventData* Payload)
 	APlayerState* Victim = ResolvePlayerState(Payload->Target);
 	if (!Victim)
 	{
-		// Death events from non-player actors (destructibles, turrets) are not match state.
 		return;
 	}
 
-	// The cause tag is cosmetic (a killfeed icon), so taking it straight off the payload
-	// is safe: it selects an image, never a score.
 	FGameplayTag CauseTag;
 	for (const FGameplayTag& Tag : Payload->InstigatorTags)
 	{
@@ -771,10 +659,6 @@ void ABRGameMode::OnDeathGameplayEvent(const FGameplayEventData* Payload)
 
 	HandleDeathEvent(Victim, ResolvePlayerState(Payload->Instigator), CauseTag);
 }
-
-// ---------------------------------------------------------------------------
-// Respawn
-// ---------------------------------------------------------------------------
 
 void ABRGameMode::StartRespawnTimer(AController* Victim)
 {
@@ -790,8 +674,6 @@ void ABRGameMode::StartRespawnTimer(AController* Victim)
 
 	const float Delay = FMath::Max(0.f, RespawnDelaySeconds);
 
-	// The single source of truth for "not yet": both the timer and any player-initiated
-	// request check this stamp, so a request path can never beat the timer.
 	EarliestRespawnServerTime.Add(Victim, GetServerTime() + Delay);
 
 	FTimerHandle& Handle = RespawnTimers.FindOrAdd(Victim);
@@ -846,8 +728,6 @@ bool ABRGameMode::CanRespawnNow(AController* Candidate) const
 		return false;
 	}
 
-	// Only the dead respawn. Without this, a live player asking to respawn would be a
-	// free teleport to the safest spawn on the map — the exact shape of a movement exploit.
 	if (!PendingRespawnPlayers.Contains(Candidate->PlayerState))
 	{
 		return false;
@@ -871,13 +751,8 @@ bool ABRGameMode::RequestRespawn(AController* Requester)
 		return false;
 	}
 
-	// Everything a Server RPC's _Validate could check is re-checked here, because
-	// _Validate can only see the wire arguments — possession, liveness, phase and the
-	// earliest-allowed stamp are server truth and are checked at the point of effect.
-	// A spammed request is refused, never queued: refusal is cheap, a queue is a weapon.
 	if (!CanRespawnNow(Requester))
 	{
-		UE_LOG(LogBRNet, Verbose, TEXT("[Match] Respawn request from %s refused."), *GetNameSafe(Requester->PlayerState));
 		return false;
 	}
 
@@ -896,10 +771,6 @@ bool ABRGameMode::RequestRespawn(AController* Requester)
 	RestartPlayer(Requester);
 	return true;
 }
-
-// ---------------------------------------------------------------------------
-// Scored spawn selection
-// ---------------------------------------------------------------------------
 
 void ABRGameMode::GatherSpawnCandidates(TArray<AActor*>& OutCandidates) const
 {
@@ -947,7 +818,6 @@ float ABRGameMode::ScoreSpawnCandidate(const AActor* Candidate, AController* For
 			continue;
 		}
 
-		// Teammates are not threats; the dead are not threats.
 		if (ResolveTeamId(PS) == SpawningTeam || PendingRespawnPlayers.Contains(PS))
 		{
 			continue;
@@ -965,8 +835,7 @@ float ABRGameMode::ScoreSpawnCandidate(const AActor* Candidate, AController* For
 
 		if (!bVisibleToThreat)
 		{
-			// Bounded work: this runs once per respawn (event-driven), never per frame.
-			FCollisionQueryParams Params(SCENE_QUERY_STAT(BRSpawnVisibility), /*bTraceComplex=*/false);
+			FCollisionQueryParams Params(SCENE_QUERY_STAT(BRSpawnVisibility), false);
 			Params.AddIgnoredActor(Candidate);
 			Params.AddIgnoredActor(ThreatPawn);
 			bVisibleToThreat = !World->LineTraceTestByChannel(
@@ -976,13 +845,11 @@ float ABRGameMode::ScoreSpawnCandidate(const AActor* Candidate, AController* For
 
 	if (NearestThreatDistance == TNumericLimits<float>::Max())
 	{
-		NearestThreatDistance = 100000.f; // No living enemy: every point is equally safe.
+		NearestThreatDistance = 100000.f;
 	}
 
 	float Score = NearestThreatDistance;
 
-	// Farthest-from-threat, with the two things distance alone gets wrong: a spawn an
-	// enemy is already looking at, and a spawn somebody just used.
 	if (bVisibleToThreat)
 	{
 		Score *= 0.25f;
@@ -1031,10 +898,6 @@ AActor* ABRGameMode::ChoosePlayerStart_Implementation(AController* Player)
 	return Best;
 }
 
-// ---------------------------------------------------------------------------
-// Rules + helpers
-// ---------------------------------------------------------------------------
-
 void ABRGameMode::ApplyMatchRules(int32 InScoreLimit, float InMatchSeconds, float InSuddenDeathSeconds,
 	float InWarmupSeconds, float InRespawnSeconds, float InKillCreditWindowSeconds)
 {
@@ -1050,8 +913,6 @@ void ABRGameMode::ApplyMatchRules(int32 InScoreLimit, float InMatchSeconds, floa
 		return;
 	}
 
-	// Clamped, not trusted. A CSV typo may cost a designer a confusing playtest; it may
-	// not produce a zero-length match, a negative respawn or an infinite credit window.
 	ScoreLimit = FMath::Clamp(InScoreLimit, 1, 999);
 	MatchDurationSeconds = FMath::Clamp(InMatchSeconds, 10.f, 3600.f);
 	SuddenDeathSeconds = FMath::Clamp(InSuddenDeathSeconds, 5.f, 600.f);
@@ -1074,10 +935,6 @@ uint8 ABRGameMode::ResolveTeamId(const APlayerState* Player) const
 
 	APlayerState* MutablePlayer = const_cast<APlayerState*>(Player);
 
-	// Seam, not a stub: IGenericTeamAgentInterface is the engine's own team contract and
-	// BRPlayerState/BRPlayerController (BP02) are expected to implement it. If they carry
-	// a bare TeamID instead, the BP04 follow-up overrides this one function — no other
-	// line in this file learns about it.
 	if (const IGenericTeamAgentInterface* Agent = Cast<IGenericTeamAgentInterface>(MutablePlayer))
 	{
 		const uint8 TeamId = Agent->GetGenericTeamId().GetId();
@@ -1128,9 +985,6 @@ ABRGameState* ABRGameMode::GetBRGameState() const
 
 float ABRGameMode::GetServerTime() const
 {
-	// One clock for the whole match frame, and the SAME clock the clients read through
-	// GetServerWorldTimeSeconds(). Mixing in GetTimeSeconds() here is how a deadline ends
-	// up meaning two different instants on two machines.
 	if (const AGameStateBase* GS = GetGameState<AGameStateBase>())
 	{
 		return GS->GetServerWorldTimeSeconds();
