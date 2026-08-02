@@ -110,6 +110,33 @@ commercial-safe:
 **Check each licence yourself before shipping** — they are permissive today, and that is a fact
 to verify at ship time, not to take on trust from this document.
 
+### Attribution — REQUIRED, and currently owed
+
+**49 Lucide icons are in the Figma file** (`Art / UI Glyphs`, 98 components across the 24 and 40
+tiers). The SVGs were imported with their licence comments stripped for payload size, so the
+notice does not travel with the artwork and **must live here instead**:
+
+```
+Lucide — https://lucide.dev
+Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2022 as part of Feather (MIT).
+All other copyright (c) for Lucide are held by Lucide Contributors 2022.
+Licensed under the ISC License.
+```
+
+ISC requires the copyright notice and permission notice appear in all copies. **If any of these
+glyphs ship in a build, that notice must appear in the game's third-party credits.** It is not
+optional and it is not satisfied by this file alone — this file only records the debt.
+
+**Restyling applied on import** (permitted, and necessary to match our system):
+`stroke-linecap: round → square`, `stroke-linejoin: round → miter`. The geometry is unchanged.
+
+**The 40px tier uses source `stroke-width: 1.2`, not 2.** Because stroke weight is absolute,
+`2 × (24/40) = 1.2` in source units renders as 2px at 40. Scaling the 24px version up instead
+would give a 3.33px stroke and break the rule the whole system rests on.
+
+**What libraries cannot supply:** game-specific iconography. No icon set ships `Oddball`,
+`Strongholds`, a 16-step rank ladder, or a mode roster. Those stay Tier 1.
+
 Import the SVG, then **restyle to our construction spec**: square the terminals, set the stroke to
 our weight, force the 24-grid, strip the rounded joins. The result is ours in treatment even
 though the topology came from the library. Covers: settings · lock · bookmark · share · play ·
