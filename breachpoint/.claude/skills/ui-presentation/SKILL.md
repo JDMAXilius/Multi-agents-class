@@ -129,7 +129,12 @@ screen can change column count without re-deriving spacing. Keep it.
 
 The Figma MCP is connected. **Never eyeball a screenshot when the metadata is available.**
 
-1. `get_metadata` with no `nodeId` → lists the file's top-level pages.
+1. `get_metadata` with no `nodeId` → **lists only the page currently open in the desktop app,
+   NOT every page in the file.** Verified 2 Aug 2026: our own file returned a single page
+   (`Cover`) while node `57:8359` on a HUD page resolved fine in the very next call. **A short
+   page list is not evidence the file is empty** — it nearly caused a false "the docs are
+   fabricated" finding here. To enumerate pages for real, run a read-only `use_figma`:
+   `return figma.root.children.map(p => ({id: p.id, name: p.name, children: p.children.length}))`.
 2. `get_metadata` with a page id → the XML tree. **This is often >100k tokens** for a real
    page; it gets written to a file instead of returned. Parse it with a script, do not Read it.
 3. `get_screenshot` with `nodeId` + `maxDimension` → the rendered frame. **Set
