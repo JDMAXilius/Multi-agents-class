@@ -74,7 +74,7 @@ protected:
 	bool ShouldUseTouchControls() const;
 
 	// Binding happens once per possession, so the blocking load is survivable here.
-	static const UInputAction* ResolveAction(const TSoftObjectPtr<UInputAction>& SoftAction);
+	static const UInputAction* ResolveAction(const TSoftObjectPtr<UInputAction>& SoftAction, const TCHAR* VerbName);
 
 	// The relay. Both hand the tag to the ASC, which owns the held-input buffer and decides
 	// what activates; bots reach the same two functions through ABRBotController.

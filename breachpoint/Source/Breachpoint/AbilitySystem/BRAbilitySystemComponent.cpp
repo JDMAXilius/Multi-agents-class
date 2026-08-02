@@ -88,9 +88,13 @@ void UBRAbilitySystemComponent::AbilityInputTagPressed(FGameplayTag InputTag)
 	const FName LedgerKey(*FString::Printf(TEXT("%s|%s"), *GetNameSafe(GetOwner()), *InputTag.ToString()));
 	TSet<FName>& Ledger = GetUnmatchedInputTagLedger();
 
+	// The ledger dedups per owner+tag so each distinct dead verb reports once rather than on
+	// every keypress; ensureAlways because one site serves every tag.
 	if (!Ledger.Contains(LedgerKey))
 	{
 		Ledger.Add(LedgerKey);
+		ensureAlwaysMsgf(false, TEXT("BRAbilitySystemComponent on '%s': input tag '%s' reached the ASC but no granted ability spec carries it. Either the startup loadout was never granted, or no entry in the ability set names this InputTag."),
+			*GetNameSafe(GetOwner()), *InputTag.ToString());
 	}
 }
 

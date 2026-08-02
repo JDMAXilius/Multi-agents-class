@@ -89,17 +89,17 @@ void ABRPlayerController::SetupInputComponent()
 
 	// Started/Completed on every verb, not just the held ones: the ASC's buffer is what makes
 	// WhileInputHeld abilities work, and it only unwinds if the release actually arrives.
-	auto BindPress = [this, EnhancedInput](const TSoftObjectPtr<UInputAction>& SoftAction, auto PressFunc)
+	auto BindPress = [this, EnhancedInput](const TSoftObjectPtr<UInputAction>& SoftAction, const TCHAR* VerbName, auto PressFunc)
 	{
-		if (const UInputAction* Action = ResolveAction(SoftAction))
+		if (const UInputAction* Action = ResolveAction(SoftAction, VerbName))
 		{
 			EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, PressFunc);
 		}
 	};
 
-	auto BindPressRelease = [this, EnhancedInput](const TSoftObjectPtr<UInputAction>& SoftAction, auto PressFunc, auto ReleaseFunc)
+	auto BindPressRelease = [this, EnhancedInput](const TSoftObjectPtr<UInputAction>& SoftAction, const TCHAR* VerbName, auto PressFunc, auto ReleaseFunc)
 	{
-		if (const UInputAction* Action = ResolveAction(SoftAction))
+		if (const UInputAction* Action = ResolveAction(SoftAction, VerbName))
 		{
 			EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, PressFunc);
 			EnhancedInput->BindAction(Action, ETriggerEvent::Completed, this, ReleaseFunc);
@@ -107,19 +107,23 @@ void ABRPlayerController::SetupInputComponent()
 		}
 	};
 
-	BindPressRelease(FireAction, &ABRPlayerController::OnFirePressed, &ABRPlayerController::OnFireReleased);
-	BindPressRelease(GrenadeAction, &ABRPlayerController::OnGrenadePressed, &ABRPlayerController::OnGrenadeReleased);
-	BindPressRelease(SprintAction, &ABRPlayerController::OnSprintPressed, &ABRPlayerController::OnSprintReleased);
-	BindPress(ReloadAction, &ABRPlayerController::OnReloadPressed);
-	BindPress(SwapAction, &ABRPlayerController::OnSwapPressed);
-	BindPress(MeleeAction, &ABRPlayerController::OnMeleePressed);
-	BindPress(GrappleAction, &ABRPlayerController::OnGrapplePressed);
+	BindPressRelease(FireAction, TEXT("FireAction"), &ABRPlayerController::OnFirePressed, &ABRPlayerController::OnFireReleased);
+	BindPressRelease(GrenadeAction, TEXT("GrenadeAction"), &ABRPlayerController::OnGrenadePressed, &ABRPlayerController::OnGrenadeReleased);
+	BindPressRelease(SprintAction, TEXT("SprintAction"), &ABRPlayerController::OnSprintPressed, &ABRPlayerController::OnSprintReleased);
+	BindPress(ReloadAction, TEXT("ReloadAction"), &ABRPlayerController::OnReloadPressed);
+	BindPress(SwapAction, TEXT("SwapAction"), &ABRPlayerController::OnSwapPressed);
+	BindPress(MeleeAction, TEXT("MeleeAction"), &ABRPlayerController::OnMeleePressed);
+	BindPress(GrappleAction, TEXT("GrappleAction"), &ABRPlayerController::OnGrapplePressed);
 }
 
-const UInputAction* ABRPlayerController::ResolveAction(const TSoftObjectPtr<UInputAction>& SoftAction)
+const UInputAction* ABRPlayerController::ResolveAction(const TSoftObjectPtr<UInputAction>& SoftAction, const TCHAR* VerbName)
 {
+	// ensureAlways, not ensure: seven verbs share this one call site, so a plain ensure would
+	// report whichever failed first and stay silent about the other six.
 	if (SoftAction.IsNull())
 	{
+		ensureAlwaysMsgf(false, TEXT("BRPlayerController: %s is unset, so that verb binds nothing and the key is dead. Expected [/Script/Breachpoint.BRPlayerController] %s in Config/DefaultGame.ini, or a value on PC_BR's details panel."),
+			VerbName, VerbName);
 		return nullptr;
 	}
 
@@ -128,7 +132,10 @@ const UInputAction* ABRPlayerController::ResolveAction(const TSoftObjectPtr<UInp
 		return Resident;
 	}
 
-	return SoftAction.LoadSynchronous();
+	const UInputAction* Loaded = SoftAction.LoadSynchronous();
+	ensureAlwaysMsgf(Loaded, TEXT("BRPlayerController: %s is set to '%s' but that asset failed to load."),
+		VerbName, *SoftAction.ToSoftObjectPath().ToString());
+	return Loaded;
 }
 
 void ABRPlayerController::SetPawn(APawn* InPawn)

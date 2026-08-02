@@ -58,16 +58,23 @@ void ABRPlayerState::GiveStartupLoadout()
 
 	if (StartupAbilitySet.IsNull())
 	{
+		ensureMsgf(false, TEXT("BRPlayerState '%s': StartupAbilitySet is unset, so this player is granted no abilities and every ability input will reach an ASC with no matching spec. Expected [/Script/Breachpoint.BRPlayerState] StartupAbilitySet in Config/DefaultGame.ini."),
+			*GetName());
 		return;
 	}
 
 	const UBRAbilitySet* Set = StartupAbilitySet.LoadSynchronous();
 	if (!Set)
 	{
+		ensureMsgf(false, TEXT("BRPlayerState '%s': StartupAbilitySet '%s' failed to load. The ini path is set but does not resolve to an ability set asset."),
+			*GetName(), *StartupAbilitySet.ToSoftObjectPath().ToString());
 		return;
 	}
 
 	Set->GiveToAbilitySystem(AbilitySystemComponent, this, StartupAbilityHandles, StartupEffectHandles);
+
+	ensureMsgf(StartupAbilityHandles.Num() > 0, TEXT("BRPlayerState '%s': ability set '%s' granted zero abilities. The asset loaded but its Abilities array is empty or every entry failed to resolve."),
+		*GetName(), *GetNameSafe(Set));
 }
 
 void ABRPlayerState::ClearStartupLoadout()

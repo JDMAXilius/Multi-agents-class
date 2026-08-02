@@ -33,8 +33,13 @@ void UBRAbilitySet::GiveToAbilitySystem(UAbilitySystemComponent* ASC, UObject* S
 		UClass* AbilityClass = Entry.Ability.LoadSynchronous();
 		if (!AbilityClass)
 		{
+			ensureAlwaysMsgf(false, TEXT("BRAbilitySet '%s': ability '%s' failed to load; that verb will be granted nothing."),
+				*GetName(), *Entry.Ability.ToSoftObjectPath().ToString());
 			continue;
 		}
+
+		ensureAlwaysMsgf(Entry.InputTag.IsValid(), TEXT("BRAbilitySet '%s': ability '%s' has no InputTag, so no keypress can ever reach it."),
+			*GetName(), *GetNameSafe(AbilityClass));
 
 		FGameplayAbilitySpec Spec(AbilityClass, Entry.AbilityLevel, INDEX_NONE, SourceObject);
 
