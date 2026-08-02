@@ -236,5 +236,77 @@ Rajdhani — a design call.
 ### What remains
 
 §6 steps 2–4. Step 1 cleared the Breachpoint-owned pages; **the 1,561 count is dominated by the
-`FE / …` screens, which remain blocked on stage 3a (§3)** — layers inside instances cannot be
-renamed, and their mains are on a reference page. That blocker is unchanged by this pass.
+`FE / …` screens**, addressed in §8.
+
+---
+
+## 8. Stage 3a — component ownership. Executed.
+
+**176 instances repointed from reference mains to Breachpoint-owned components. Zero errors.
+Zero node-count drift** — all twelve `FE / …` pages have byte-identical node counts before and
+after, so nothing was dropped, detached or restructured.
+
+| Component | Instances | Ours now lives on |
+|---|---:|---|
+| Profile Bar | 70 | Navigation |
+| Currency Widget | 34 | Progress & Feedback |
+| File Detail | 14 | Panels & Cards |
+| File Stats | 12 | Panels & Cards |
+| Challenge Card | 12 | Panels & Cards |
+| Pop-Up Options → `Popup Options` | 9 | Modals & Overlays |
+| Gear Detail | 8 | Panels & Cards |
+| Commendation Card | 6 | Panels & Cards |
+| Menu List | 6 | Navigation |
+| Warning Message | 2 | Modals & Overlays |
+| Flavour Textbox | 2 | Panels & Cards |
+| Big Level | 1 | Progress & Feedback |
+
+**Method.** Every candidate was structurally scored before anything moved: a depth-limited
+type+geometry signature of the reference main against ours. Only pairs at **≥95% match with an
+identical node type** were swapped; our components turned out to be exact clones of the reference
+ones (100% on all twelve), which is what made this safe. Variant sets were resolved
+variant-by-variant on the variant-property name, not set-to-set — a dry run confirmed **176 of
+176 resolved with zero ambiguity** before a single write. Jobs were collected in full *before*
+mutating, because swapping under a live traversal is not safe.
+
+### §3's estimate was wrong twice, in our favour and against
+
+The survey behind §3 only looked at the 22 mains carrying **text**. Indexing every main the FE
+screens actually instance gives the real picture:
+
+| | Count | Instances |
+|---|---:|---:|
+| Distinct mains used by FE screens | **80** | — |
+| **Already Breachpoint-owned before this pass** | 48 | 500 |
+| Swapped now | 12 | **176** |
+| Need review — structure differs | 4 | 48 |
+| **No equivalent exists — must be authored** | **17** | **177** |
+
+So §3's "8 missing components" was an undercount: **17 are missing**, not 8. But it also
+understated what we already owned — 48 mains and 500 instances were never on a reference page at
+all. Net: the file is in better shape than §3 said, and the authoring job is larger.
+
+### Still on reference pages — 225 instances
+
+**Four need review before swapping** (structure differs, so a swap could drop overrides):
+`Tag Frame` (31 instances, 11% match — variant order differs), `Preview Photo` (10, 30%),
+`Rank Label` (7, 94%), and one other. These are not blocked, only unsafe to automate; each needs
+a human to confirm the variant mapping.
+
+**Seventeen must be authored.** In instance order: `Button Prompts` (69), `Navigation Bar` (29),
+`Menu Combo` (16), `Battle Pass Level` (15), `Progression Button` (13), `Party List` (11),
+`Menu in Border` (6), `Three Photo Preview` (4), `Player` (3), `Load / Search Bar` (3),
+`Shop Passes Card` (2), and six singletons. **`Button Prompts` and `Navigation Bar` alone are 98
+of the 177** — authoring those two is the next highest-value action in the whole art pass.
+
+---
+
+## 9. Founder decisions — recorded 2 Aug 2026
+
+| # | Decision |
+|---|---|
+| **Scope** | **31 screens, not 11.** The full front end is in scope. This resolves finding F1 in `ue-frontend/TICKETS.md` — `REFERENCE-EXTRACTION.md` wins over the vertical-slice GDD's "direct-to-match" cut, and the ticket board must be rescoped from eleven screens to thirty-one. |
+| **N6** | **Keep `Team Slayer`.** It ships in VO at `DT_SpotterLines.csv:49` and stays. Consequently **`slayer` is struck from the removal lexicon** — it is a Breachpoint term now, not a Halo one. `Tactical Slayer` → `Tactical` still stands, as that is a *gametype* rename, not the mode. |
+| **3a** | **Approved and executed** — this section. |
+
+N1–N5 remain open. They are unaffected by the above.

@@ -886,3 +886,42 @@ where the question already lives.
   above; none of these tickets can fix it and none should try.
 - **Renumbering anything.** BP26 starts after BP25 because BP25 exists, not because BP25 comes
   first. `CREW_MAP` §2: *"Ticket numbers are IDENTIFIERS, not a running order."*
+
+---
+
+# ADDENDUM — founder decisions, 2 Aug 2026
+
+**Recorded after this file was written. Where they conflict with the body above, these win.**
+
+## Scope: 31 screens, not 11
+
+Finding **F1 is resolved: `REFERENCE-EXTRACTION.md` wins.** The full front end is in scope, and
+the vertical-slice GDD's "front-end menus → direct-to-match + Steam overlay invite only"
+(`BREACHPOINT-GDD-VERTICAL-SLICE.md:437`) is superseded for UI planning purposes.
+
+This body was scoped to eleven screens on the opposite assumption, stated openly and reversibly.
+**That rescope is now owed** and is the first edit this file needs:
+
+- The screen packets must cover all **31 WBPs** in `SCREEN-MANIFEST.md`, not the eleven-screen subset.
+- Wave 5 ("out of slice") is no longer out of slice — it needs decomposing into real packets.
+- Dependency and critical-path maths in the body assume eleven screens and must be recomputed.
+- Sizes shift accordingly. The component layer does **not** change: `SCREEN-MANIFEST.md`'s finding
+  that **7 Tier-0 components unblock all 31 screens** already assumed the full set, so the
+  foundation and component packets stand as written.
+
+## N6: keep `Team Slayer`
+
+`Team Slayer` ships in VO (`Content/Data/DT_SpotterLines.csv:49`) and **stays**. `slayer` is
+therefore **struck from the Halo removal lexicon** — it is a Breachpoint term. `Tactical Slayer`
+→ `Tactical` still stands: that renames a *gametype*, not the mode.
+
+## Stage 3a: approved, and executed
+
+The Figma component-ownership fix is **done** — 176 instances repointed, zero errors, zero node
+drift. See `ART-PASS-STAGE-3.md` §8. Two consequences for this board:
+
+1. Any packet that assumed 3a was pending should treat it as landed.
+2. 3a surfaced that **17 components must be authored, not 8**, and that `Button Prompts` (69
+   instances) and `Navigation Bar` (29) are 98 of the remaining 177. Both are Tier-0 in
+   `SCREEN-MANIFEST.md`'s dependency graph, so they are the highest-value authoring work
+   available and should be pulled to the front of the component wave.
