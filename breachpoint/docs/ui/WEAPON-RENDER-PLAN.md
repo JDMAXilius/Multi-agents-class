@@ -10,6 +10,12 @@ could not be determined from the repo.
 
 ---
 
+> **CORRECTION, 2 Aug 2026.** An earlier draft of this document named the combat ViewModel
+> `FBRHUDCombatVM`. **That symbol does not exist in this repo.** The real class is
+> `UBRVM_Combat` (a `UMVVMViewModelBase`, declared in `Source/Breachpoint/UI/`). The
+> description of the gap was accurate; the name was not, so a packet grepping for the old
+> symbol would have found nothing. All occurrences corrected.
+
 ## 0. What is actually in the repo today (checked, not assumed)
 
 **The weapon meshes exist.** All three shipping weapons have a static mesh, and `DT_Weapons.csv`
@@ -36,7 +42,7 @@ silhouette exists, exists in the reference Figma file and nowhere in git. The "s
 against the drawn placeholder" verification step in §8 therefore has no committed baseline, and
 that is recorded as a blocker, not glossed.
 
-**There is no consumer.** `FBRHUDCombatVM` (`Source/Breachpoint/UI/BRViewModels.h`) exposes
+**There is no consumer.** `UBRVM_Combat` (`Source/Breachpoint/UI/BRViewModels.h`) exposes
 `ActiveWeaponName` / `StowedWeaponName` as `FText` and nothing else. There is no icon field, no
 icon column in `DT_Weapons.csv`, and no `TSoftObjectPtr<UTexture2D>` in `BRDataRows.h`. Rendering
 the PNGs does not put them on screen. See §9.3.
@@ -620,7 +626,7 @@ during execution — each needs a decision or an experiment.
 3. **There is no consumer, and building one crosses three owner paths.** To put these on screen
    you need: a `TSoftObjectPtr<UTexture2D>` field on the weapon row in
    `Source/Breachpoint/Data/BRDataRows.h`; an `IconSoftPath` column in `Content/Data/DT_Weapons.csv`
-   plus a reimport; and an icon field on `FBRHUDCombatVM` in `Source/Breachpoint/UI/BRViewModels.h`.
+   plus a reimport; and an icon field on `UBRVM_Combat` in `Source/Breachpoint/UI/BRViewModels.h`.
    The first two are outside any UI packet's owner path — **that is a `contract_gap` for whoever
    picks this up, not something this plan may fix** (law 5). Law 3 also settles the shape: the
    reference is **soft**, it lives in the data table, and there is no `ConstructorHelpers`
@@ -645,7 +651,7 @@ during execution — each needs a decision or an experiment.
    field, but the *rule* must be one direction for the whole family and it needs an owner.
 
 7. **Does the tray show the stowed weapon too?** `HUD-CAMPAIGN-MEASURED.md` measures exactly one
-   silhouette slot, and `FBRHUDCombatVM` carries both `ActiveWeaponName` and `StowedWeaponName`.
+   silhouette slot, and `UBRVM_Combat` carries both `ActiveWeaponName` and `StowedWeaponName`.
    If the stowed weapon gets an icon it likely needs a second, smaller size — which would change
    §2.1 from one master to two, or force a min-feature re-check at the smaller size. Unmeasured.
 
@@ -677,3 +683,129 @@ during execution — each needs a decision or an experiment.
 from are the meshes the table equips, and the min-feature test passed. It does **not** mean an
 icon appears in the HUD — there is no consumer (§9.3). That is a separate packet at a separate
 rung, and claiming otherwise would be the exact defect law 6 exists to catch.
+
+---
+
+## 11. SPIKE CHECKLIST — what a human must observe on the first run
+
+The pipeline is now written: `Tools/render_weapons/` (see its README). **None of the editor
+half has ever been run.** This section is the ordered list of observations the first run
+exists to produce. Work it in order — each item makes the next one meaningful, and stopping
+at the first failure is correct, because a wrong answer to item 1 invalidates every number
+after it.
+
+**Do not treat a failing first run as a defect in the tooling.** §9.5 said this run would
+correct §3.3, and §9.1 said the orientation values in the table are guesses. The deliverable
+of the first run is **answers**, not icons.
+
+**Before you start:** no editor window open, no builder live (R21/R29.3/R36 — the commandlet
+takes the project lock without being a build). Run
+`Tools\render_weapons\render-weapons.ps1 -SelfTest` and `-PlanOnly` first; they need no
+editor and they are the only part of this that is proven. Then:
+`Tools\render_weapons\render-weapons.ps1 -DryRun` before the real run — it loads and frames
+under the editor and writes nothing, so it answers items 1, 2 and 6 at zero risk.
+
+Keep the run's receipt (`Tools/render_weapons/receipts/render-<stamp>.md`) and the raw
+`Tools/render_weapons/out/*_ss4x.png` open while you work through this.
+
+### 11.1 Does the mechanism exist at all? (answered by `-DryRun`)
+
+- [ ] **Did the commandlet get an editor world?** The receipt either shows an
+      `EditorActorSubsystem` or refuses naming assumption **A1**. If there is no world, the
+      capture strategy in §3.3 is wrong at the root — the fix is a different mechanism
+      (offscreen world, thumbnail renderer, `MoviePipeline`), not a parameter, and §3.3 must
+      be rewritten before anything else on this list is worth doing.
+- [ ] **Did all three meshes load?** `MESH_NOT_FOUND` here means the soft path in
+      `DT_Weapons.csv` is wrong, which is a data finding, not a rendering one.
+- [ ] **Did every `unreal` API name resolve?** Each refusal names the binding it wanted and
+      why. Fix the name in `render_weapons.py`, note the correction in the receipt.
+
+### 11.2 The authoring axes — **the single largest unknown (§9.1)**
+
+This is why the spike exists. Read the answers off the raw 768×256 frame, not off the
+downsampled icon.
+
+- [ ] **Which local axis is the barrel?** Look at each weapon at `yaw_deg=0`.
+      - A full side profile → the barrel is on local **X**; the identity guess was right.
+      - A short stub, roughly as wide as the receiver → the barrel points at or away from the
+        camera (local **Y**); the row needs `yaw_deg = ±90`.
+      - A vertical weapon → the barrel is on local **Z**; the row needs `roll_deg = ±90`.
+      Record the *observation*, not just the correction: "SM_Rifle rendered 40 px wide at
+      yaw 0, so the barrel is on Y" is what makes the number in the table reviewable later.
+- [ ] **Which sign?** Once the long axis is on screen, is the muzzle left or right? Note it
+      per mesh. The family must all point the same way (§9.6) and **that direction still has
+      no owner** — pick nothing here; record what each mesh does and file the decision.
+- [ ] **Where is the pivot?** The weapon is spawned at the origin and the camera is centred on
+      it, so a mesh whose pivot is at the muzzle or the grip renders **off-centre at the
+      correct size**. If a weapon is the right size but hugs an edge, that is a pivot finding,
+      not a framing one — and §3.2's framing math has no centring term, so it is a real gap
+      that needs a decision (recentre on the bounds origin, or accept per-mesh offset fields).
+- [ ] **Is the same axis the barrel on all three meshes?** They are three separate Epic
+      template assets and there is no reason for them to agree. If they disagree, that alone
+      justifies the per-row `yaw_deg` field existing.
+
+### 11.3 Does the flat-white override actually read?
+
+- [ ] **Is the render pure white on black, with no shading anywhere?** Sample a few pixels in
+      the middle of the weapon body in the raw frame. Anything that is not `255,255,255` —
+      a gradient, an ambient-occlusion darkening, a coloured tint — means the override did not
+      take, and §2.2's contract (RGB `#FFFFFF` on every pixel, shape carried entirely by
+      alpha) is not being met.
+- [ ] **Did `M_FlatCol` load, and is it actually unlit?** §3.3 named it as the *obvious
+      candidate* and marked it unverified — nobody has read its parameters. A
+      `MATERIAL_NOT_PARAMETERISED` finding in the receipt means whatever colour the asset
+      carries is what rendered.
+- [ ] **Did the override reach every material slot?** A weapon with an unlit white body and a
+      shaded scope is one slot that was missed.
+- [ ] **Is the background fully black and fully empty?** Any sky, fog, grid or second actor in
+      frame means `ShowOnlyActors` / `PRM_USE_SHOW_ONLY_LIST` did not apply, and the
+      luminance→alpha step in §7.1 will turn that background into silhouette.
+
+### 11.4 Is TAA off?
+
+- [ ] **Does the receipt show every ShowFlag being set, or `SHOWFLAG_UNSETTABLE` warnings?**
+      The flag names in `render_weapons.py` are assumption **A4** and several may not be
+      exposed to Python at all.
+- [ ] **The decisive test: run it twice and compare the PNG sha256s** in the two receipts.
+      **Identical bytes on an unchanged plan is the only proof that AA is deterministic**
+      (§8.4). TAA is temporal and non-deterministic on a single frame, so if the two hashes
+      differ, TAA (or some other temporal effect) is still on regardless of what the flags
+      claimed, and the receipt's one diffable artifact is worthless until it is fixed.
+- [ ] **Look at the edges of the raw frame.** A smeared or ghosted contour is TAA; hard
+      aliased stair-steps at 768×256 are *correct* here — the supersample-then-threshold order
+      in §7.1 is what turns them into clean coverage.
+
+### 11.5 Does the 2 px minimum feature survive at 94 × 30.67?
+
+The output contract's real bar, and the one the spike does **not** automate — §7.2's erode
+test is `NOT IMPLEMENTED IN THE SPIKE`. Do it by eye at true size.
+
+- [ ] **View the final PNG at 1× display size (94 × 31), not zoomed.** Not at the 2× master,
+      and not in an image viewer that is scaling it up.
+- [ ] **What disappears?** Expect: sight posts, antennas, sling loops, thin rails, the gap
+      between the trigger guard and the grip. List every one with roughly where it was — this
+      list is the input to the §7.3 reduction decision, which is a human call.
+- [ ] **How many interior holes are there, and do they still read?** §7.3 allows at most two,
+      chosen for *recognition* (trigger guard, magazine well), not accuracy. A render hands
+      you every hole the mesh has.
+- [ ] **Is the magnum still legible at true relative scale?** §3.2 says a magnum drawn smaller
+      than a launcher is information, not a bug, and that `scale_override` is a knowing
+      departure — decide, do not drift.
+- [ ] **The identity test (§8.3):** show the three at final size, unlabelled, to someone who
+      knows the three weapons. If they cannot say which is which, the reduction is wrong no
+      matter how faithful the render is to the mesh. **Fidelity is the method; recognition is
+      the requirement.**
+
+### 11.6 Write the answers down
+
+- [ ] Every corrected `yaw_deg` / `roll_deg` / `flip_x` goes into the `WEAPONS` table in
+      `Tools/render_weapons/render_plan.py`, **with the receipt stamp cited in the comment on
+      the line** (§4.2: every non-zero value must be justified).
+- [ ] Delete the `UNVERIFIED GUESS` banner over that table, and delete the
+      `the_framing_values_are_still_guesses` tripwire in `selftest_no_editor.py` — it exists
+      to fail once the values are real so a stale warning cannot outlive the guess.
+- [ ] If the *mechanism* was wrong rather than the numbers, **edit §3.3 of this document in
+      the same commit.** §9.5 predicted this; the plan is the artifact that outlives the
+      tooling, and a plan that still describes a rig that does not work is worse than no plan.
+- [ ] Anything this list could not settle goes to the ticket Log as a named open question,
+      alongside the §9 items — not into a comment nobody will read again.

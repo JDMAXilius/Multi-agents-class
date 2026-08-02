@@ -319,9 +319,25 @@ deleted rather than repaired.
 
 ### 5.4 What is NOT built
 
-Unchanged from `HUD-REFERENCE.md` §3: scope/ADS overlay is partially covered by the ADS frame
-(44:2, out of scope here); killfeed exists only inside `HUD — Core`, not as a component; medal art
-is a single placeholder chip; scoreboard, death/respawn and pause menu do not exist.
+> **CORRECTED 2 Aug 2026.** The original text of this section claimed *"scoreboard, death/respawn
+> and pause menu do not exist."* **That was wrong.** This audit scanned only `HUD / Elements` and
+> `HUD / Core`, then asserted about pages it never opened. All four screens exist and were verified
+> directly:
+>
+> | Page | Frames |
+> |---|---|
+> | `HUD / Scoreboard & PGCR` | `HUD — Scoreboard (TAB) — MEASURED 1:1` · `PGCR — Carnage Report` |
+> | `HUD / Death & Respawn` | `HUD — Death / Respawn` |
+> | `HUD / Pause` | `HUD — Pause` |
+>
+> An audit must not report absence outside the scope it actually read. Out of scope and
+> not built are different findings, and only one of them is a defect.
+
+Genuinely not built, within the audited scope:
+
+- **Killfeed** exists only as loose children inside `HUD — Core`, not as a reusable component.
+- **Medal art** is a single placeholder chip; the per-match medal set is not drawn.
+- **Scope/ADS overlay** is built (`44:2` on `HUD / Elements`) but was outside this audit's scope.
 
 ---
 
