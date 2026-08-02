@@ -57,6 +57,42 @@ the Forge radial quadrants · scroll bars · the VISR frame linework.
 
 That is **most of the icon inventory.**
 
+### The gotcha that will bite you
+
+**Figma normalises every vector node's path data to that node's own bounding box.** Build a
+multi-part icon as several separate `VECTOR` nodes, then set each to `x = 0, y = 0`, and every
+part collapses to the top-left corner. All relative positioning is destroyed, and destroyed
+irrecoverably — the absolute coordinates are gone from the stored path data, so there is nothing
+left to restore from.
+
+This is not hypothetical. A 16-rank difficulty set rendered as one visible chevron, because three
+identical chevrons were sitting exactly on top of each other. **41 of 42 generated components were
+affected.**
+
+**The fix: one compound path per component, `NONZERO` winding, then centre the single vector in
+its box.**
+
+- **One node** means Figma normalises the whole drawing as a unit, so the internal relationships
+  survive.
+- **`NONZERO` rather than `EVENODD`** because overlapping solid shapes must UNION — crossed
+  blades, an arrow over a plate. `EVENODD` would knock a hole out of every overlap.
+- **Rings still cut their counters correctly under `NONZERO`**, because the inner contour is wound
+  backwards and opposite winding cancels. A hole is just a reversed polygon.
+
+```js
+const v = figma.createVector();
+v.vectorPaths = [{ windingRule: 'NONZERO', data: paths.join(' ') }];
+c.appendChild(v);
+v.x = (w - v.width) / 2;   // centre AFTER assigning paths
+v.y = (h - v.height) / 2;
+```
+
+The centring must come after the paths are assigned — `v.width` is meaningless until the node has
+geometry to measure.
+
+That reversed-winding rule is also what makes recognition holes work in a silhouette:
+`hole = poly(points.reverse())`. Same points, opposite direction, and the fill drops out.
+
 ---
 
 ## Tier 2 — Licensed icon sets, restyled
@@ -139,13 +175,18 @@ Everything else has a free path above.
 
 ---
 
-## What to do with the 5.52 credits left
+## What happened to the 5.52 credits left
 
-**Nothing, for now.** The rank ladder — the one actively defective asset — is a Tier 1 job, not a
-Tier 5 one, and rebuilding it in code fixes the duplicate-rank defect *and* makes it editable.
-Spending 2.5 credits to re-roll the dice would buy a worse result than a script.
+**They were not spent, and the work shipped anyway.** The rank ladder — the one actively defective
+asset — was a Tier 1 job, not a Tier 5 one, and rebuilding it in code fixed the duplicate-rank
+defect *and* made it editable. Spending 2.5 credits to re-roll the dice would have bought a worse
+result than a script.
 
-Hold the remainder for a genuine Tier 5 need.
+Built parametrically, for zero credits: the **rank ladder**, the **mode**, **difficulty**,
+**currency** and **gametype** icons, the **glyph + container split**, and the **weapon
+silhouettes**.
+
+The remainder is still on the account, held for a genuine Tier 5 need.
 
 ---
 
