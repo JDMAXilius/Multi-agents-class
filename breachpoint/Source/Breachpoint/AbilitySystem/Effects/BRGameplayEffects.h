@@ -66,6 +66,9 @@ public:
 
 	static const FName MaxGrenadesName;
 	static const FName GrenadesName;
+
+	static const FName MoveSpeedBaseName;
+	static const FName SprintSpeedMultiplierName;
 };
 
 UCLASS(meta = (DisplayName = "GE_Death"))

@@ -339,11 +339,20 @@ bool UBRAbilitySystemComponent::ApplyInitStats()
 	SpecHandle.Data->SetSetByCallerMagnitude(UBRGE_InitStats::ShieldsName, MaxShields);
 	SpecHandle.Data->SetSetByCallerMagnitude(UBRGE_InitStats::GrenadesName, MaxGrenades);
 
-	ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+	// MOVEMENT, and it degrades on purpose rather than refusing. Unlike health and shields above,
+	// a missing movement curve is NOT fatal: zero means "no override" to the CMC, which then uses
+	// its own configured MaxWalkSpeed and the curve-read sprint multiplier exactly as before these
+	// attributes existed. That is what lets this land before CT_Combat.csv's two new rows have
+	// been reimported into the DataTable asset - the game keeps moving either way.
+	float BaseSpeed = 0.f;
+	float SprintMultiplier = 0.f;
+	BRCombatCurves::Evaluate(BRCombatCurves::Names::MovementBaseSpeed, BaseSpeed);
+	BRCombatCurves::Evaluate(BRCombatCurves::Names::MovementSprintSpeedMultiplier, SprintMultiplier);
 
-	if (const UBRAttributeSet* Attributes = GetSet<UBRAttributeSet>())
-	{
-	}
+	SpecHandle.Data->SetSetByCallerMagnitude(UBRGE_InitStats::MoveSpeedBaseName, FMath::Max(0.f, BaseSpeed));
+	SpecHandle.Data->SetSetByCallerMagnitude(UBRGE_InitStats::SprintSpeedMultiplierName, FMath::Max(0.f, SprintMultiplier));
+
+	ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 
 	SetShieldsBrokenState(false);
 

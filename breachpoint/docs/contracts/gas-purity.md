@@ -46,11 +46,32 @@ per feature.
 | Exception | Why it is outside GAS | The bound that keeps it honest |
 |---|---|---|
 | **Ammo** (`BRWeaponInstance` properties, not attributes) | Per-WEAPON state; attributes are per-ASC — modeling two mags as attributes means attribute proliferation per slot | Mutated ONLY inside `BRGA_WeaponFire`/`BRGA_WeaponUtility`; server-authoritative; `COND_OwnerOnly` replication IS the correction path for a mispredicted decrement (Lyra parity) |
-| **Movement** (CMC: speed, grapple RMS, jump) | Movement prediction/reconciliation is CMC's machinery — re-homing it into attributes would forfeit saved-move replay | GAS supplies the *decision* (abilities + tags: `State.Movement.Sprinting`); CMC applies the *motion* and carries the flags in `FSavedMove_BR` |
+| **Movement** (CMC: grapple RMS, jump, and every movement *state*) | Movement prediction/reconciliation is CMC's machinery — re-homing the STATE into attributes would forfeit saved-move replay | GAS supplies the *decision* (abilities + tags: `State.Movement.Sprinting`); CMC applies the *motion* and carries the flags in `FSavedMove_BR`. **Amended 2 Aug 2026 — see the split below.** |
 | **Match meta** (phase, timer, team scores, K/D/A) | Match bookkeeping is framework state, not combat simulation — no prediction, no per-fighter effects | Server-only mutation in GameMode; replicated via GameState/PlayerState RepNotify; nothing in the combat sim reads it for gameplay decisions except bots (as observed events) |
 
 Anything that wants to join this ledger arrives as a **contract change in its own packet**,
 with the rationale and the bound — never as an inline shortcut.
+
+### Amendment, 2 Aug 2026 — movement splits VALUE from STATE
+
+The movement exception previously read as "speed is the CMC's, full stop", which also meant no
+GameplayEffect could ever buff or debuff movement. That is too strong. The line is not
+*movement vs GAS*; it is **which half a client correction has to replay**.
+
+| Half | Home | Why |
+|---|---|---|
+| **State** — is this pawn sprinting *this frame* | `bWantsToSprint` in `FSavedMove_BR` | changes several times a second and MUST replay exactly. A correction replays saved moves; a flag inside the move reproduces the original decision, an attribute read during replay returns its value *now* and diverges. |
+| **Value** — how fast sprinting is | `MoveSpeedBase`, `SprintSpeedMultiplier` attributes | changes only when a GE lands. A one-frame magnitude discrepancy is invisible; a one-frame on/off discrepancy is the rubber-band. |
+
+**The bound.** Attributes may supply *magnitudes* only. No movement attribute may encode a
+per-frame decision, and nothing read by `GetMaxSpeed()` may become the thing that decides
+whether a movement state is active — that stays in the saved move. `MoveSpeedBase` overrides
+only the walking case and only when non-zero, so `MaxWalkSpeedCrouched` and the non-ground
+modes remain `Super::GetMaxSpeed()`'s.
+
+**Zero means unset**, everywhere: an ASC that has not replicated (a joining client, a bot with
+no attribute set) falls back to the CMC's configured speed and `CT_Combat.csv`'s curve, so the
+pawn never freezes at zero speed because a value has not arrived.
 
 ## Enforcement (how the crew catches impurity)
 

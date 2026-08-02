@@ -48,6 +48,20 @@ public:
 	FGameplayAttributeData MaxGrenades;
 	ATTRIBUTE_ACCESSORS_BASIC(UBRAttributeSet, MaxGrenades);
 
+	// MOVEMENT: the VALUE lives here so a GameplayEffect can buff or debuff it. The sprint
+	// on/off STATE deliberately does not - it stays as bWantsToSprint in FSavedMove_BR, because
+	// that is the field a client correction replays. See gas-purity.md's movement exception.
+	//
+	// Zero means "no override": the CMC keeps its own configured speed. That is what makes these
+	// safe to add before CT_Combat.csv carries a row for them.
+	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Attributes", ReplicatedUsing = OnRep_MoveSpeedBase)
+	FGameplayAttributeData MoveSpeedBase;
+	ATTRIBUTE_ACCESSORS_BASIC(UBRAttributeSet, MoveSpeedBase);
+
+	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Attributes", ReplicatedUsing = OnRep_SprintSpeedMultiplier)
+	FGameplayAttributeData SprintSpeedMultiplier;
+	ATTRIBUTE_ACCESSORS_BASIC(UBRAttributeSet, SprintSpeedMultiplier);
+
 	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Attributes")
 	FGameplayAttributeData IncomingDamage;
 	ATTRIBUTE_ACCESSORS_BASIC(UBRAttributeSet, IncomingDamage);
@@ -74,6 +88,12 @@ protected:
 
 	UFUNCTION()
 	void OnRep_MaxGrenades(const FGameplayAttributeData& OldValue);
+
+	UFUNCTION()
+	void OnRep_MoveSpeedBase(const FGameplayAttributeData& OldValue);
+
+	UFUNCTION()
+	void OnRep_SprintSpeedMultiplier(const FGameplayAttributeData& OldValue);
 
 private:
 	float ApplyIncomingDamageShieldsFirst(float RawDamage);

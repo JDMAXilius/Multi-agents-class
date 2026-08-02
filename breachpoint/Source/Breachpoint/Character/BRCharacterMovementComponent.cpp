@@ -1,5 +1,10 @@
 #include "Character/BRCharacterMovementComponent.h"
 
+#include "AbilitySystemComponent.h"
+#include "AbilitySystemGlobals.h"
+
+#include "AbilitySystem/BRAttributeSet.h"
+
 #include "GameFramework/Character.h"
 #include "GameFramework/RootMotionSource.h"
 
@@ -115,6 +120,19 @@ bool UBRCharacterMovementComponent::IsSprintIntentValid() const
 
 float UBRCharacterMovementComponent::GetSprintSpeedMultiplier() const
 {
+	// ATTRIBUTE FIRST, curve second. The attribute is what a GameplayEffect can buff; the curve
+	// is CT_Combat.csv's authored default and the floor this falls back to when no ASC has
+	// replicated yet - a joining client, or a bot with no attribute set. Zero means unset, not
+	// "stand still".
+	if (const UBRAttributeSet* Attributes = GetBRAttributeSet())
+	{
+		const float FromAttribute = Attributes->GetSprintSpeedMultiplier();
+		if (FromAttribute > KINDA_SMALL_NUMBER)
+		{
+			return FromAttribute;
+		}
+	}
+
 	if (CachedSprintSpeedMultiplier >= 0.f)
 	{
 		return CachedSprintSpeedMultiplier;
@@ -131,10 +149,35 @@ float UBRCharacterMovementComponent::GetSprintSpeedMultiplier() const
 	return CachedSprintSpeedMultiplier;
 }
 
+const UBRAttributeSet* UBRCharacterMovementComponent::GetBRAttributeSet() const
+{
+	const UAbilitySystemComponent* ASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(GetOwner());
+	return ASC ? ASC->GetSet<UBRAttributeSet>() : nullptr;
+}
+
 float UBRCharacterMovementComponent::GetMaxSpeed() const
 {
-	const float BaseMaxSpeed = Super::GetMaxSpeed();
+	// Super, not the attribute, supplies the base: it already resolves crouch, swim and fly
+	// modes, and an attribute override would silently discard MaxWalkSpeedCrouched.
+	// MoveSpeedBase overrides ONLY the walking case, and only when a GE has actually set it.
+	float BaseMaxSpeed = Super::GetMaxSpeed();
 
+	if (IsMovingOnGround() && !IsCrouching())
+	{
+		if (const UBRAttributeSet* Attributes = GetBRAttributeSet())
+		{
+			const float FromAttribute = Attributes->GetMoveSpeedBase();
+			if (FromAttribute > KINDA_SMALL_NUMBER)
+			{
+				BaseMaxSpeed = FromAttribute;
+			}
+		}
+	}
+
+	// THE BRANCH IS THE PREDICTED PART. bWantsToSprint arrives through UpdateFromCompressedFlags
+	// and is carried in FSavedMove_BR, so a correction replays the same on/off decision it made
+	// originally. Only the MAGNITUDE comes from an attribute, and a magnitude changes when a buff
+	// lands - rarely - where the on/off changes several times a second.
 	if (!IsSprintIntentValid())
 	{
 		return BaseMaxSpeed;

@@ -26,6 +26,8 @@ namespace BRCombatCurves
 	{
 		inline const TCHAR* DamageMultiplierSuffix = TEXT(".Multiplier");
 
+		inline const FName MovementBaseSpeed = FName(TEXT("Movement.BaseSpeed"));
+
 		inline const FName MovementSprintSpeedMultiplier = FName(TEXT("Movement.Sprint.SpeedMultiplier"));
 
 		inline const FName ShieldsRegenRatePerSecond = FName(TEXT("Shields.Regen.RatePerSecond"));

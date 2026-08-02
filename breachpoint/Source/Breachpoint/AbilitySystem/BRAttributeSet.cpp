@@ -33,11 +33,27 @@ void UBRAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 
 	DOREPLIFETIME_CONDITION_NOTIFY(UBRAttributeSet, Grenades, COND_OwnerOnly, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UBRAttributeSet, MaxGrenades, COND_OwnerOnly, REPNOTIFY_Always);
+
+	// COND_None, not OwnerOnly: a simulated proxy's CMC needs the same speed the server used or
+	// its local prediction of another player's movement drifts.
+	DOREPLIFETIME_CONDITION_NOTIFY(UBRAttributeSet, MoveSpeedBase, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UBRAttributeSet, SprintSpeedMultiplier, COND_None, REPNOTIFY_Always);
 }
 
 void UBRAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
 {
 	Super::PreAttributeChange(Attribute, NewValue);
+
+	// Clamped, not merely non-negative: a runaway multiplier from a stacking buff is a pawn that
+	// outruns its own replication, and zero base speed is a pawn frozen with no error anywhere.
+	if (Attribute == GetMoveSpeedBaseAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0.f, 5000.f);
+	}
+	else if (Attribute == GetSprintSpeedMultiplierAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0.f, 5.f);
+	}
 
 	if (Attribute == GetHealthAttribute())
 	{
@@ -210,4 +226,14 @@ void UBRAttributeSet::OnRep_Grenades(const FGameplayAttributeData& OldValue)
 void UBRAttributeSet::OnRep_MaxGrenades(const FGameplayAttributeData& OldValue)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UBRAttributeSet, MaxGrenades, OldValue);
+}
+
+void UBRAttributeSet::OnRep_MoveSpeedBase(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UBRAttributeSet, MoveSpeedBase, OldValue);
+}
+
+void UBRAttributeSet::OnRep_SprintSpeedMultiplier(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UBRAttributeSet, SprintSpeedMultiplier, OldValue);
 }

@@ -150,6 +150,8 @@ const FName UBRGE_InitStats::HealthName(TEXT("Health"));
 const FName UBRGE_InitStats::ShieldsName(TEXT("Shields"));
 const FName UBRGE_InitStats::MaxGrenadesName(TEXT("MaxGrenades"));
 const FName UBRGE_InitStats::GrenadesName(TEXT("Grenades"));
+const FName UBRGE_InitStats::MoveSpeedBaseName(TEXT("MoveSpeedBase"));
+const FName UBRGE_InitStats::SprintSpeedMultiplierName(TEXT("SprintSpeedMultiplier"));
 
 UBRGE_InitStats::UBRGE_InitStats()
 {
@@ -172,6 +174,9 @@ UBRGE_InitStats::UBRGE_InitStats()
 	Modifiers.Add(MakeOverrideMod(UBRAttributeSet::GetShieldsAttribute(), ShieldsName));
 
 	Modifiers.Add(MakeOverrideMod(UBRAttributeSet::GetGrenadesAttribute(), GrenadesName));
+
+	Modifiers.Add(MakeOverrideMod(UBRAttributeSet::GetMoveSpeedBaseAttribute(), MoveSpeedBaseName));
+	Modifiers.Add(MakeOverrideMod(UBRAttributeSet::GetSprintSpeedMultiplierAttribute(), SprintSpeedMultiplierName));
 }
 
 UBRGE_Death::UBRGE_Death()

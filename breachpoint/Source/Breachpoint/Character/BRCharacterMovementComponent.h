@@ -94,6 +94,10 @@ protected:
 private:
 	float GetSprintSpeedMultiplier() const;
 
+	// The ASC lives on the PlayerState, so this resolves through the owner rather than caching -
+	// a cache would go stale on every respawn.
+	const class UBRAttributeSet* GetBRAttributeSet() const;
+
 	mutable float CachedSprintSpeedMultiplier = -1.f;
 
 	const FBRGrappleTuning& GetGrappleTuning() const;
