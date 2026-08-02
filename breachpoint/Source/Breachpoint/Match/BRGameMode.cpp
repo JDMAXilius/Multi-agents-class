@@ -14,7 +14,10 @@
 #include "GameFramework/PlayerStart.h"
 #include "GameFramework/PlayerState.h"
 #include "GenericTeamAgentInterface.h"
+#include "Character/BRCharacter.h"
 #include "Match/BRGameState.h"
+#include "Match/BRPlayerController.h"
+#include "Match/BRPlayerState.h"
 #include "TimerManager.h"
 
 namespace
@@ -32,7 +35,26 @@ ABRGameMode::ABRGameMode()
 	PrimaryActorTick.bCanEverTick = false;
 	PrimaryActorTick.bStartWithTickEnabled = false;
 
-	GameStateClass = ABRGameState::StaticClass();
+	// ---------------------------------------------------------------------
+	// THE FOUR CLASS DEFAULTS. Only GameStateClass was set here before, and the omission was not
+	// harmless: with PlayerControllerClass unset, AGameModeBase's own default (APlayerController)
+	// applied, so nothing in C++ ever asked for ABRPlayerController. GM_BR filled the gap on its
+	// Blueprint defaults and — verified 1 Aug 2026 by reading the asset's import table — filled it
+	// with BP_ShooterPlayerController, the TEMPLATE's controller. The shipped game therefore ran a
+	// BRCharacter pawn under a ShooterPlayerController: mapping contexts arrived (which is why it
+	// moved at all), while ABRPlayerController's relay, its key census and its CommonUI viewport
+	// check were never reached, and Cast<ABRPlayerController> in the pawn's
+	// SetupPlayerInputComponent failed on every possession.
+	//
+	// WHAT THIS DOES AND DOES NOT FIX. A Blueprint's serialised value beats a C++ CDO default
+	// (docs/PHASE2-RELAYER.md step 1), so GM_BR's saved PlayerControllerClass still wins while it
+	// holds one. This makes the C++ default correct and makes CLEARING the Blueprint override the
+	// fix, rather than requiring the founder to know which asset to point it at.
+	// ---------------------------------------------------------------------
+	GameStateClass       = ABRGameState::StaticClass();
+	PlayerStateClass     = ABRPlayerState::StaticClass();
+	PlayerControllerClass = ABRPlayerController::StaticClass();
+	DefaultPawnClass     = ABRCharacter::StaticClass();
 
 	TeamDamageDealt.Init(0.f, BRMatch::NumTeams);
 }

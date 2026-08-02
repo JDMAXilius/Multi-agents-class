@@ -54,15 +54,15 @@ EBRGasStage BRGas::GetStage()
 	// use, exactly once, and thread-safely, so "log the stage once" needs no flag of its own.
 	static const EBRGasStage Resolved = []()
 	{
-		const EBRGasStage Stage = ABRCharacter::GetConfiguredGasStage();
+		//const EBRGasStage Stage = ABRCharacter::GetConfiguredGasStage();
 
 		// WARNING, not Log, and it is not a warning about anything. It is the one line that makes
 		// the gate audible: at Warning it survives a default-verbosity log and a founder skimming
 		// PIE output, which is the only place this information is any use. A silent gate and a
 		// broken feature look identical from the chair.
-		UE_LOG(LogBRCombat, Warning, TEXT("BRGas: stage = %s (Config/DefaultGame.ini)"), BRGas::ToString(Stage));
+		//UE_LOG(LogBRCombat, Warning, TEXT("BRGas: stage = %s (Config/DefaultGame.ini)"), BRGas::ToString(Stage));
 
-		return Stage;
+		return Resolved;
 	}();
 
 	return Resolved;
