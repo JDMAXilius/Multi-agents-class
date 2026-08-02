@@ -1,5 +1,4 @@
 // Breachpoint. The hardware -> InputTag map. Soft asset refs only.
-
 #include "Input/BRInputConfig.h"
 
 #include "Engine/AssetManager.h"
@@ -12,10 +11,6 @@
 
 #define LOCTEXT_NAMESPACE "BRInputConfig"
 
-// ---------------------------------------------------------------------------
-// FBRInputAction
-// ---------------------------------------------------------------------------
-
 const UInputAction* FBRInputAction::GetInputAction(bool bLoadSynchronousIfNeeded) const
 {
 	if (InputAction.IsNull())
@@ -23,7 +18,6 @@ const UInputAction* FBRInputAction::GetInputAction(bool bLoadSynchronousIfNeeded
 		return nullptr;
 	}
 
-	// Already resident (someone preloaded, or the asset is referenced elsewhere) — free.
 	if (const UInputAction* Resident = InputAction.Get())
 	{
 		return Resident;
@@ -31,10 +25,6 @@ const UInputAction* FBRInputAction::GetInputAction(bool bLoadSynchronousIfNeeded
 
 	return bLoadSynchronousIfNeeded ? InputAction.LoadSynchronous() : nullptr;
 }
-
-// ---------------------------------------------------------------------------
-// UBRInputConfig — lookup
-// ---------------------------------------------------------------------------
 
 const UInputAction* UBRInputConfig::FindActionForTag(const TArray<FBRInputAction>& Rows, const FGameplayTag& InputTag, bool bEnsureIfNotFound, const TCHAR* ListName)
 {
@@ -46,7 +36,6 @@ const UInputAction* UBRInputConfig::FindActionForTag(const TArray<FBRInputAction
 
 	for (const FBRInputAction& Row : Rows)
 	{
-		// MatchesTagExact: InputTag.Fire is not InputTag.Fire.Alt. The map is flat by design.
 		if (Row.InputTag.MatchesTagExact(InputTag))
 		{
 			if (const UInputAction* Action = Row.GetInputAction())
@@ -60,7 +49,6 @@ const UInputAction* UBRInputConfig::FindActionForTag(const TArray<FBRInputAction
 		}
 	}
 
-	// No row: the key is dead. Cheap to miss in PIE, expensive to find in a match.
 	ensureMsgf(!bEnsureIfNotFound, TEXT("BRInputConfig: no %s row carries the tag '%s'."), ListName, *InputTag.ToString());
 	return nullptr;
 }
@@ -74,10 +62,6 @@ const UInputAction* UBRInputConfig::FindAbilityInputActionForTag(const FGameplay
 {
 	return FindActionForTag(AbilityInputActions, InputTag, bEnsureIfNotFound, TEXT("ability"));
 }
-
-// ---------------------------------------------------------------------------
-// UBRInputConfig — soft-reference resolution
-// ---------------------------------------------------------------------------
 
 void UBRInputConfig::GetAllInputActionPaths(TArray<FSoftObjectPath>& OutPaths) const
 {
@@ -118,26 +102,19 @@ TSharedPtr<FStreamableHandle> UBRInputConfig::PreloadInputActionsAsync(const FSt
 
 	if (Paths.IsEmpty() || !UAssetManager::IsInitialized())
 	{
-		// Nothing to stream. Fire the delegate anyway so callers have one completion path.
 		OnLoaded.ExecuteIfBound();
 		return nullptr;
 	}
 
-	return UAssetManager::GetStreamableManager().RequestAsyncLoad(MoveTemp(Paths), OnLoaded, FStreamableManager::DefaultAsyncLoadPriority, /*bManageActiveHandle*/ false, /*bStartStalled*/ false, GetName());
+	return UAssetManager::GetStreamableManager().RequestAsyncLoad(MoveTemp(Paths), OnLoaded, FStreamableManager::DefaultAsyncLoadPriority, false, false, GetName());
 }
-
-// ---------------------------------------------------------------------------
-// UBRInputConfig — editor validation
-// ---------------------------------------------------------------------------
 
 #if WITH_EDITOR
 EDataValidationResult UBRInputConfig::IsDataValid(FDataValidationContext& Context) const
 {
 	EDataValidationResult Result = CombineDataValidationResults(Super::IsDataValid(Context), EDataValidationResult::Valid);
 
-	// The InputTag family root. Native leaves (BRGameplayTags.h) create it implicitly; if the
-	// tag tree has no InputTag node at all, skip the family check rather than assert.
-	const FGameplayTag InputTagRoot = UGameplayTagsManager::Get().RequestGameplayTag(FName("InputTag"), /*ErrorIfNotFound*/ false);
+	const FGameplayTag InputTagRoot = UGameplayTagsManager::Get().RequestGameplayTag(FName("InputTag"), false);
 
 	TSet<FGameplayTag> SeenTags;
 
@@ -189,6 +166,6 @@ EDataValidationResult UBRInputConfig::IsDataValid(FDataValidationContext& Contex
 
 	return Result;
 }
-#endif // WITH_EDITOR
+#endif
 
 #undef LOCTEXT_NAMESPACE

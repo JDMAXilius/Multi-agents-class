@@ -1,5 +1,4 @@
 // Breachpoint. Match telemetry collection: events, not opinions. Authority-only, no PII, no tick.
-
 #include "Telemetry/BRTelemetrySubsystem.h"
 
 #include "Core/BRCore.h"
@@ -17,8 +16,6 @@
 
 namespace BRTelemetry
 {
-	// Event ids. FNames, not GameplayTags: a telemetry metric is not gameplay state, and routing
-	// these through the tag registry would make "add a metric" a Core/ edit in someone else's file.
 	static const FName Event_Kill(TEXT("Kill"));
 	static const FName Event_Join(TEXT("Join"));
 	static const FName Event_Leave(TEXT("Leave"));
@@ -30,10 +27,6 @@ namespace BRTelemetry
 	static const FName Detail_JoinInProgress(TEXT("JoinInProgress"));
 }
 
-// =============================================================================================
-// Subsystem lifetime
-// =============================================================================================
-
 bool UBRTelemetrySubsystem::ShouldCreateSubsystem(UObject* Outer) const
 {
 	if (!Super::ShouldCreateSubsystem(Outer))
@@ -41,8 +34,6 @@ bool UBRTelemetrySubsystem::ShouldCreateSubsystem(UObject* Outer) const
 		return false;
 	}
 
-	// Game worlds only. An editor-preview or inactive world has no match to measure, and creating
-	// one there would fold thumbnail scenes into a match record.
 	const UWorld* const World = Cast<UWorld>(Outer);
 	return World && (World->WorldType == EWorldType::Game || World->WorldType == EWorldType::PIE);
 }
@@ -51,10 +42,8 @@ void UBRTelemetrySubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
-	Record.MatchId = FGuid::NewGuid();	// random per MATCH, so events correlate and players do not.
+	Record.MatchId = FGuid::NewGuid();
 
-	// Join/leave are bound here (not at BeginPlay) because a player can be admitted before the
-	// world finishes starting, and a missed join makes every later row for that player anonymous.
 	PostLoginHandle = FGameModeEvents::OnGameModePostLoginEvent().AddWeakLambda(this,
 		[this](AGameModeBase* GameMode, APlayerController* NewPlayer)
 		{
@@ -74,7 +63,6 @@ void UBRTelemetrySubsystem::OnWorldBeginPlay(UWorld& InWorld)
 
 	if (!HasTelemetryAuthority())
 	{
-		// A client's subsystem exists but stays inert for its whole life. Constraint 1.
 		return;
 	}
 
@@ -86,8 +74,6 @@ void UBRTelemetrySubsystem::OnWorldBeginPlay(UWorld& InWorld)
 
 void UBRTelemetrySubsystem::Deinitialize()
 {
-	// The world is going away. If nothing closed the record — a PIE stop, a travel, a crash-free
-	// but lifecycle-less session — close it now rather than losing the match entirely. Idempotent.
 	if (!bFinalized && HasTelemetryAuthority())
 	{
 		FinalizeRecord(bMatchIsLive ? EBRMatchTelemetryOutcome::Fault : Record.Outcome);
@@ -122,10 +108,6 @@ void UBRTelemetrySubsystem::Deinitialize()
 	Super::Deinitialize();
 }
 
-// =============================================================================================
-// Binding — every source is a delegate the game already fires. Nothing here polls.
-// =============================================================================================
-
 void UBRTelemetrySubsystem::TryBindMatchSources()
 {
 	if (bMatchSourcesBound || !HasTelemetryAuthority())
@@ -143,20 +125,14 @@ void UBRTelemetrySubsystem::TryBindMatchSources()
 	ABRGameState* const GameState = World->GetGameState<ABRGameState>();
 	if (!GameMode || !GameState)
 	{
-		// Not an error: a non-Breachpoint map (the front end) has neither, and telemetry simply
-		// never starts there. Retried from the next safe point rather than asserted.
 		return;
 	}
 
-	// The GameMode advertises OnPlayerKilled as "server-side telemetry/spec hook" (BP04). This is
-	// the consumer it was cut for — attribution stays entirely in the match frame's hands.
 	PlayerKilledHandle = GameMode->OnPlayerKilled.AddUObject(this, &UBRTelemetrySubsystem::HandlePlayerKilled);
 	PhaseChangedHandle = GameState->OnMatchPhaseChanged.AddUObject(this, &UBRTelemetrySubsystem::HandleMatchPhaseChanged);
 	KillFeedHandle = GameState->OnKillFeedEntryAdded.AddUObject(this, &UBRTelemetrySubsystem::HandleKillFeedEntryAdded);
 
 	bMatchSourcesBound = true;
-
-	UE_LOG(LogBROnline, Log, TEXT("Telemetry: match sources bound (match %s)."), *Record.MatchId.ToString(EGuidFormats::DigitsWithHyphens));
 }
 
 void UBRTelemetrySubsystem::TryBindServerLifecycle()
@@ -174,27 +150,16 @@ void UBRTelemetrySubsystem::TryBindServerLifecycle()
 		return;
 	}
 
-	// NOTE the direction of the dependency: telemetry consumes the SEAM (`IBRServerLifecycle`),
-	// never the listen implementation. When GameLift replaces the implementation, `PlatformEnded`
-	// starts appearing in Outcome and not one line of this file changes.
 	TScriptInterface<IBRServerLifecycle> Lifecycle = Sessions->GetServerLifecycle();
 	if (Lifecycle == nullptr)
 	{
-		// The lifecycle is created when hosting starts. A remote client never has one — and never
-		// needs one, because a remote has no authority and folds nothing.
 		return;
 	}
 
 	BoundLifecycle = Lifecycle;
 	HostingEndingHandle = BoundLifecycle->OnHostingEnding().AddUObject(this, &UBRTelemetrySubsystem::HandleHostingEnding);
 	bLifecycleBound = true;
-
-	UE_LOG(LogBROnline, Log, TEXT("Telemetry: bound to the server lifecycle's ending event."));
 }
-
-// =============================================================================================
-// Ingestion
-// =============================================================================================
 
 void UBRTelemetrySubsystem::RecordEvent(const FBRTelemetryEvent& Event)
 {
@@ -206,9 +171,6 @@ void UBRTelemetrySubsystem::RecordEvent(const FBRTelemetryEvent& Event)
 	const int32 Capacity = FMath::Clamp(MaxRetainedEvents, 64, 65536);
 	if (Record.Events.Num() >= Capacity)
 	{
-		// Bounded by construction (constraint 3). Dropping the OLDEST keeps the end of the match —
-		// the part every consumer cares about — and `DroppedEventCount` makes the loss visible
-		// instead of pretending the record is complete.
 		Record.Events.RemoveAt(0);
 		++Record.DroppedEventCount;
 	}
@@ -250,16 +212,10 @@ int32 UBRTelemetrySubsystem::GetPlayerKey(const APlayerState* Player)
 		return *Existing;
 	}
 
-	// THE ONE PLACE A PLAYER BECOMES AN IDENTITY HERE, and it is a counter. No hash of a Steam id,
-	// no persona name, nothing that survives the match. Constraint 2, made structural.
 	const int32 NewKey = NextPlayerKey++;
 	PlayerKeys.Add(Key, NewKey);
 	return NewKey;
 }
-
-// =============================================================================================
-// Sources
-// =============================================================================================
 
 void UBRTelemetrySubsystem::HandlePostLogin(AGameModeBase* GameMode, APlayerController* NewPlayer)
 {
@@ -271,10 +227,6 @@ void UBRTelemetrySubsystem::HandlePostLogin(AGameModeBase* GameMode, APlayerCont
 	APlayerState* const PlayerState = NewPlayer->PlayerState;
 	if (!PlayerState)
 	{
-		// LAW 3 / join-in-progress honesty: PlayerState is legitimately null for the first frames
-		// after login. We do not spin, poll, or assume — this player is folded when their first
-		// event arrives, and their row is created then.
-		UE_LOG(LogBROnline, Verbose, TEXT("Telemetry: PostLogin with no PlayerState yet; row deferred."));
 		return;
 	}
 
@@ -328,8 +280,6 @@ void UBRTelemetrySubsystem::HandlePlayerKilled(APlayerState* Killer, APlayerStat
 		++VictimRow->Deaths;
 		if (!Killer)
 		{
-			// BP04's decided edge case: no instigator => the victim is charged. Telemetry records
-			// the ruling, it does not re-derive it.
 			++VictimRow->SelfInflictedDeaths;
 		}
 	}
@@ -361,8 +311,6 @@ void UBRTelemetrySubsystem::HandleKillFeedEntryAdded(const FBRKillFeedEntry& Ent
 		return;
 	}
 
-	// The killfeed is the only source that distinguishes friendly fire, so the counter is folded
-	// here rather than duplicating BP04's team logic in this file.
 	if (Entry.bFriendlyFire && Entry.Killer)
 	{
 		if (FBRPlayerMatchTelemetry* const KillerRow = FindOrAddPlayerRow(Entry.Killer))
@@ -396,8 +344,6 @@ void UBRTelemetrySubsystem::HandleMatchPhaseChanged(EBRMatchPhase OldPhase, EBRM
 		}
 	}
 
-	// The abandonment window: a host quit HERE is the R16 datum; a host quit on the post-match
-	// card is not, and conflating the two would inflate the number that unlocks fleet spending.
 	bMatchIsLive = (NewPhase == EBRMatchPhase::Live || NewPhase == EBRMatchPhase::SuddenDeath);
 
 	if (NewPhase == EBRMatchPhase::PostMatch)
@@ -412,8 +358,6 @@ void UBRTelemetrySubsystem::HandleMatchPhaseChanged(EBRMatchPhase OldPhase, EBRM
 			Record.WinningTeamId = GameState->GetWinningTeamId();
 		}
 
-		// Decided, but not yet closed: the record stays open through the post-match window so a
-		// host who quits on the end card is still recorded as Completed, not Abandoned.
 		Record.Outcome = EBRMatchTelemetryOutcome::Completed;
 	}
 
@@ -432,9 +376,6 @@ void UBRTelemetrySubsystem::HandleHostingEnding(const FBRHostingEndNotice& Notic
 		return;
 	}
 
-	// SYNCHRONOUS AND LOAD-BEARING. This runs inside the lifecycle's ending broadcast, while the
-	// world still exists — the whole reason `OnHostingEnding` is an event with a grace window
-	// rather than "the level just went away". Ruling R16 reads the Outcome this line writes.
 	EBRMatchTelemetryOutcome Outcome = Record.Outcome;
 	switch (Notice.Reason)
 	{
@@ -459,15 +400,11 @@ void UBRTelemetrySubsystem::HandleHostingEnding(const FBRHostingEndNotice& Notic
 	FBRTelemetryEvent Event;
 	Event.EventId = BRTelemetry::Event_HostingEnding;
 	Event.ServerTime = GetServerTime();
-	Event.Detail = FName(*Notice.DiagnosticCode);	// a stable code, never a player-facing sentence
+	Event.Detail = FName(*Notice.DiagnosticCode);
 	RecordEvent(Event);
 
 	FinalizeRecord(Outcome);
 }
-
-// =============================================================================================
-// Internals
-// =============================================================================================
 
 FBRPlayerMatchTelemetry* UBRTelemetrySubsystem::FindOrAddPlayerRow(const APlayerState* Player)
 {
@@ -486,8 +423,6 @@ FBRPlayerMatchTelemetry* UBRTelemetrySubsystem::FindOrAddPlayerRow(const APlayer
 	Row.PlayerKey = Key;
 	Row.bIsBot = Player->IsABot();
 
-	// Team through IGenericTeamAgentInterface — the same seam ABRGameMode::ResolveTeamId uses,
-	// spelled the same way. Telemetry never invents a second notion of "which side is this on".
 	APlayerState* const MutablePlayer = const_cast<APlayerState*>(Player);
 	if (const IGenericTeamAgentInterface* const TeamAgent = Cast<IGenericTeamAgentInterface>(MutablePlayer))
 	{
@@ -524,7 +459,7 @@ void UBRTelemetrySubsystem::FinalizeRecord(EBRMatchTelemetryOutcome Outcome)
 {
 	if (bFinalized)
 	{
-		return;	// first close wins — a host quit during teardown must not overwrite Completed
+		return;
 	}
 
 	bFinalized = true;
@@ -535,14 +470,6 @@ void UBRTelemetrySubsystem::FinalizeRecord(EBRMatchTelemetryOutcome Outcome)
 		Record.MatchDurationSeconds = GetServerTime() - LiveStartServerTime;
 	}
 
-	UE_LOG(LogBROnline, Log,
-		TEXT("Telemetry: match %s closed — outcome=%d, %.1fs, %d humans, %d bots, %d JIP, %d early leaves, %d events (%d dropped)."),
-		*Record.MatchId.ToString(EGuidFormats::DigitsWithHyphens), static_cast<int32>(Record.Outcome),
-		Record.MatchDurationSeconds, Record.HumanPlayerCount, Record.BotPlayerCount,
-		Record.JoinInProgressCount, Record.EarlyDepartureCount, Record.Events.Num(), Record.DroppedEventCount);
-
-	// The ONLY output. No file, no socket, no blocking work — a consumer that wants to ship this
-	// somewhere subscribes and does it on its own terms (Spotter today, GL-5's writer later).
 	OnMatchTelemetryFinalized.Broadcast(Record);
 }
 
@@ -559,8 +486,6 @@ bool UBRTelemetrySubsystem::HasTelemetryAuthority() const
 		return false;
 	}
 
-	// Constraint 1. A listen server passes here; its remote clients do not, and neither does a
-	// dedicated server's client. There is deliberately no "unless testing" branch.
 	return World->GetNetMode() != NM_Client;
 }
 

@@ -1,5 +1,4 @@
 // Breachpoint. Bot roster management. Authority-only; the GameMode still owns spawning.
-
 #include "AI/BRBotManagerComponent.h"
 
 #include "AI/BRBotController.h"
@@ -12,10 +11,9 @@ DEFINE_LOG_CATEGORY_STATIC(LogBRBotManager, Log, All);
 
 UBRBotManagerComponent::UBRBotManagerComponent()
 {
-	// Law 4. Everything here is an event or a timer.
 	PrimaryComponentTick.bCanEverTick = false;
 	PrimaryComponentTick.bStartWithTickEnabled = false;
-	SetIsReplicatedByDefault(false); // Server-side bookkeeping; clients see replicated pawns, nothing else.
+	SetIsReplicatedByDefault(false);
 }
 
 void UBRBotManagerComponent::BeginPlay()
@@ -24,7 +22,6 @@ void UBRBotManagerComponent::BeginPlay()
 
 	if (GetOwner() != nullptr && !GetOwner()->HasAuthority())
 	{
-		// A bot manager on a client would be a second simulation deciding who exists.
 		UE_LOG(LogBRBotManager, Error, TEXT("BotManager exists on a non-authoritative owner — disabling."));
 		Deactivate();
 	}
@@ -44,11 +41,6 @@ void UBRBotManagerComponent::ConfigureRoster(int32 InMatchSeed, int32 InRosterSi
 	MatchSeed = InMatchSeed;
 	RosterSize = FMath::Max(InRosterSize, 0);
 	BackfillDelay_s = FMath::Max(InBackfillDelay_s, 0.f);
-
-	// The seed is logged at configure time, not at use time: a soak report that cannot name
-	// its seed is an anecdote (honesty law).
-	UE_LOG(LogBRBotManager, Log, TEXT("Bot roster configured: seed=%d roster=%d backfill=%.2fs"),
-		MatchSeed, RosterSize, BackfillDelay_s);
 }
 
 bool UBRBotManagerComponent::LoadBotTables(const UDataTable* TuningTable, const UDataTable* AmbitionsTable, const TArray<FName>& TierPerSlot)
@@ -88,8 +80,6 @@ bool UBRBotManagerComponent::LoadBotTables(const UDataTable* TuningTable, const 
 
 int32 UBRBotManagerComponent::MakeSeedForSlot(int32 SlotIndex) const
 {
-	// Slot, not spawn order and not time: a backfilled bot's stream is a function of WHICH
-	// slot it filled, so a replay does not depend on the moment someone disconnected.
 	return static_cast<int32>(HashCombine(static_cast<uint32>(MatchSeed), static_cast<uint32>(SlotIndex)));
 }
 
@@ -125,8 +115,6 @@ void UBRBotManagerComponent::FillToRoster()
 		const int32 SlotIndex = Humans + Bots.Num();
 		SpawnBotForSlot(SlotIndex);
 	}
-
-	UE_LOG(LogBRBotManager, Log, TEXT("Roster filled: %d humans + %d bots (target %d)."), Humans, Bots.Num(), RosterSize);
 }
 
 ABRBotController* UBRBotManagerComponent::SpawnBotForSlot(int32 SlotIndex)
@@ -159,18 +147,11 @@ ABRBotController* UBRBotManagerComponent::SpawnBotForSlot(int32 SlotIndex)
 		return nullptr;
 	}
 
-	// Seed and tuning BEFORE possession: a bot must never take a decision unseeded.
 	Bot->ConfigureBot(MakeSeedForSlot(SlotIndex), *Scalars, AmbitionDefs);
 
-	// The GameMode's OWN restart path — the same one a human login takes. Spawn transforms,
-	// spawn-point scoring and team assignment stay entirely in the GameMode's domain; this
-	// component never chooses a location or writes a team id.
 	GameMode->RestartPlayer(Bot);
 
 	Bots.Add(Bot);
-
-	UE_LOG(LogBRBotManager, Log, TEXT("Bot slot %d spawned (tier '%s', seed %d)."),
-		SlotIndex, *TierName.ToString(), MakeSeedForSlot(SlotIndex));
 
 	return Bot;
 }
@@ -184,8 +165,6 @@ void UBRBotManagerComponent::RemoveBot(ABRBotController* Bot)
 
 	Bots.Remove(Bot);
 
-	// Destroy the pawn through the controller's own unpossess path so the ASC, the timers
-	// and the StateTree all shut down the way they do on a normal death.
 	if (APawn* BotPawn = Bot->GetPawn())
 	{
 		Bot->UnPossess();
@@ -208,10 +187,8 @@ void UBRBotManagerComponent::NotifyCombatantLeft(AController* Leaver)
 		return;
 	}
 
-	// One timer, restarted: several departures inside the window collapse into one refill,
-	// which is what stops a mass disconnect from spawning a stampede of bots.
 	World->GetTimerManager().SetTimer(BackfillTimer, this, &UBRBotManagerComponent::HandleBackfillElapsed,
-		BackfillDelay_s, /*bLoop=*/false);
+		BackfillDelay_s, false);
 }
 
 void UBRBotManagerComponent::HandleBackfillElapsed()
@@ -224,8 +201,6 @@ void UBRBotManagerComponent::NotifyHumanJoined()
 	const int32 Humans = CountHumans();
 	while (Bots.Num() > 0 && (Humans + Bots.Num()) > RosterSize)
 	{
-		// LAST in, first out: the most recently backfilled bot yields, so a returning player
-		// displaces the bot that replaced them rather than a bot that has been fighting all match.
 		RemoveBot(Bots.Last());
 	}
 }

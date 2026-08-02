@@ -1,5 +1,4 @@
 // Breachpoint. The grant unit: soft ability classes + InputTags, granted and revoked as a set.
-
 #include "AbilitySystem/BRAbilitySet.h"
 
 #include "AbilitySystemComponent.h"
@@ -22,9 +21,6 @@ void UBRAbilitySet::GiveToAbilitySystem(UAbilitySystemComponent* ASC, UObject* S
 
 	if (!ASC->IsOwnerActorAuthoritative())
 	{
-		// REFUSED, not "granted locally". A client-side grant creates a spec the server has never
-		// heard of; it activates predictively, is never confirmed, and the failure surfaces as an
-		// ability that "sometimes does not fire".
 		UE_LOG(LogBRCombat, Error, TEXT("UBRAbilitySet '%s': GiveToAbilitySystem called without authority on '%s' — REFUSED. Ability sets are granted on the server."),
 			*GetName(), *GetNameSafe(ASC->GetOwner()));
 		return;
@@ -48,17 +44,11 @@ void UBRAbilitySet::GiveToAbilitySystem(UAbilitySystemComponent* ASC, UObject* S
 
 		if (!bWasResident)
 		{
-			// Named, so an equip hitch has a cause. A set whose classes are always cold is a
-			// preloading problem, not a reason to hold hard references.
 			UE_LOG(LogBRCombat, Warning, TEXT("UBRAbilitySet '%s': synchronously loaded ability class '%s' at grant time."), *GetName(), *AbilityClass->GetName());
 		}
 
-		FGameplayAbilitySpec Spec(AbilityClass, Entry.AbilityLevel, /*InputID=*/INDEX_NONE, SourceObject);
+		FGameplayAbilitySpec Spec(AbilityClass, Entry.AbilityLevel, INDEX_NONE, SourceObject);
 
-		// THE BINDING. The InputTag lives on the spec's dynamic source tags, which is exactly where
-		// UBRAbilitySystemComponent::AbilityInputTagPressed looks and where GAS replicates it from.
-		// An empty tag is legal (a passive) and is not stamped, because an invalid tag in that
-		// container would match an invalid press.
 		if (Entry.InputTag.IsValid())
 		{
 			Spec.GetDynamicSpecSourceTags().AddTag(Entry.InputTag);
@@ -96,8 +86,6 @@ void UBRAbilitySet::TakeFromAbilitySystem(UAbilitySystemComponent* ASC, TArray<F
 {
 	if (!ASC || !ASC->IsOwnerActorAuthoritative())
 	{
-		// The arrays are NOT cleared on refusal: dropping the handles on a non-authority would lose
-		// the only record of what the server granted, and the next grant would stack on top of it.
 		return;
 	}
 
@@ -114,8 +102,6 @@ void UBRAbilitySet::TakeFromAbilitySystem(UAbilitySystemComponent* ASC, TArray<F
 	{
 		if (Handle.IsValid())
 		{
-			// ClearAbility, not ClearAbilityInput: this removes the grant. An ability mid-activation
-			// is ended by the engine as part of this.
 			ASC->ClearAbility(Handle);
 		}
 	}
@@ -143,8 +129,6 @@ EDataValidationResult UBRAbilitySet::IsDataValid(FDataValidationContext& Context
 		{
 			if (SeenInputTags.Contains(Entry.InputTag))
 			{
-				// Two abilities on one InputTag both activate on the same press. Occasionally that
-				// is intended; far more often it is a copy-paste, and it is invisible at runtime.
 				Context.AddWarning(FText::FromString(FString::Printf(TEXT("InputTag '%s' appears on more than one ability in this set; every one of them will activate on the same press."), *Entry.InputTag.ToString())));
 			}
 			SeenInputTags.Add(Entry.InputTag);

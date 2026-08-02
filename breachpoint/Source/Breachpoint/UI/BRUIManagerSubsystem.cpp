@@ -1,5 +1,4 @@
 // Breachpoint. The screen-management spine.
-
 #include "UI/BRUIManagerSubsystem.h"
 
 #include "Blueprint/UserWidget.h"
@@ -48,9 +47,6 @@ void UBRUIManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	LocalPlayerRemovedHandle = GameInstance->OnLocalPlayerRemovedEvent.AddUObject(
 		this, &UBRUIManagerSubsystem::HandleLocalPlayerRemoved);
 
-	// Subsystem initialisation order vs. local-player creation is not something to bet on: catch
-	// up on anyone who already exists. Missing this is how "works in PIE, not in a packaged
-	// standalone client" starts.
 	for (ULocalPlayer* LocalPlayer : GameInstance->GetLocalPlayers())
 	{
 		HandleLocalPlayerAdded(LocalPlayer);
@@ -67,7 +63,6 @@ void UBRUIManagerSubsystem::Deinitialize()
 	LocalPlayerAddedHandle.Reset();
 	LocalPlayerRemovedHandle.Reset();
 
-	// Copy the keys: RemoveLayoutForLocalPlayer mutates the map.
 	TArray<TObjectPtr<ULocalPlayer>> Keys;
 	PlayerUIs.GetKeys(Keys);
 	for (const TObjectPtr<ULocalPlayer>& Key : Keys)
@@ -79,10 +74,6 @@ void UBRUIManagerSubsystem::Deinitialize()
 	Super::Deinitialize();
 }
 
-// ---------------------------------------------------------------------------
-// Local player bookkeeping
-// ---------------------------------------------------------------------------
-
 void UBRUIManagerSubsystem::HandleLocalPlayerAdded(ULocalPlayer* LocalPlayer)
 {
 	if (!LocalPlayer)
@@ -92,9 +83,6 @@ void UBRUIManagerSubsystem::HandleLocalPlayerAdded(ULocalPlayer* LocalPlayer)
 
 	FBRLocalPlayerUI& PlayerUI = FindOrAddPlayerUI(LocalPlayer);
 
-	// ViewModels FIRST, and long before any widget. Gameplay is allowed to push into these from
-	// its first RepNotify; a null ViewModel at that moment means state arrives and vanishes, which
-	// is invisible in PIE (nothing arrives early there) and reproducible only on a real join.
 	if (!PlayerUI.CombatViewModel)
 	{
 		PlayerUI.CombatViewModel = NewObject<UBRVM_Combat>(this);
@@ -105,9 +93,6 @@ void UBRUIManagerSubsystem::HandleLocalPlayerAdded(ULocalPlayer* LocalPlayer)
 	}
 
 	PublishViewModelsToGlobalCollection(PlayerUI);
-
-	UE_LOG(LogBRUI, Log, TEXT("UI ready for local player %s (ViewModels created; layout pending a PlayerController)."),
-		*GetNameSafe(LocalPlayer));
 }
 
 void UBRUIManagerSubsystem::HandleLocalPlayerRemoved(ULocalPlayer* LocalPlayer)
@@ -150,13 +135,8 @@ const FBRLocalPlayerUI* UBRUIManagerSubsystem::FindPlayerUI(const ULocalPlayer* 
 	{
 		return nullptr;
 	}
-	// TMap keyed on TObjectPtr: const_cast only to build the lookup key, never to mutate.
 	return PlayerUIs.Find(const_cast<ULocalPlayer*>(LocalPlayer));
 }
-
-// ---------------------------------------------------------------------------
-// ViewModels
-// ---------------------------------------------------------------------------
 
 UBRVM_Combat* UBRUIManagerSubsystem::GetCombatViewModel(const ULocalPlayer* LocalPlayer) const
 {
@@ -184,9 +164,6 @@ UBRVM_Match* UBRUIManagerSubsystem::GetPrimaryMatchViewModel() const
 
 void UBRUIManagerSubsystem::PublishViewModelsToGlobalCollection(const FBRLocalPlayerUI& PlayerUI)
 {
-	// One collection per GameInstance means one player's ViewModels can live there. Publishing a
-	// second player's would silently overwrite the first and every WBP would bind to the wrong
-	// pawn - so we publish exactly once and say nothing further.
 	if (PublishedLocalPlayer)
 	{
 		return;
@@ -250,10 +227,6 @@ void UBRUIManagerSubsystem::UnpublishViewModelsFromGlobalCollection(const FBRLoc
 	PublishedLocalPlayer = nullptr;
 }
 
-// ---------------------------------------------------------------------------
-// Layout
-// ---------------------------------------------------------------------------
-
 UBRRootLayout* UBRUIManagerSubsystem::GetRootLayout(const ULocalPlayer* LocalPlayer) const
 {
 	const FBRLocalPlayerUI* PlayerUI = FindPlayerUI(LocalPlayer);
@@ -277,9 +250,6 @@ UBRRootLayout* UBRUIManagerSubsystem::CreateLayoutForLocalPlayer(ULocalPlayer* L
 	APlayerController* OwningPC = LocalPlayer->GetPlayerController(World);
 	if (!OwningPC)
 	{
-		// Not an error, just early. AddToPlayerScreen requires a PlayerController; the caller
-		// (ABRPlayerController) will be back.
-		UE_LOG(LogBRUI, Verbose, TEXT("CreateLayoutForLocalPlayer: no PlayerController yet."));
 		return nullptr;
 	}
 
@@ -293,8 +263,6 @@ UBRRootLayout* UBRUIManagerSubsystem::CreateLayoutForLocalPlayer(ULocalPlayer* L
 		return nullptr;
 	}
 
-	// Soft -> hard at the last possible moment (law 3). Synchronous is acceptable here and only
-	// here: this runs once, at possession, before the player has control.
 	UClass* LayoutClass = Settings.RootLayoutClass.LoadSynchronous();
 	if (!LayoutClass)
 	{
@@ -310,12 +278,9 @@ UBRRootLayout* UBRUIManagerSubsystem::CreateLayoutForLocalPlayer(ULocalPlayer* L
 		return nullptr;
 	}
 
-	// ZOrder 0: this widget IS the UI. Everything else is a layer inside it, so there is exactly
-	// one thing in the viewport and no z-order arms race between screens.
 	Layout->AddToPlayerScreen(0);
 	PlayerUI.RootLayout = Layout;
 
-	UE_LOG(LogBRUI, Log, TEXT("Root layout '%s' created for %s."), *LayoutClass->GetName(), *GetNameSafe(LocalPlayer));
 	return Layout;
 }
 
@@ -331,10 +296,6 @@ void UBRUIManagerSubsystem::RemoveLayoutForLocalPlayer(ULocalPlayer* LocalPlayer
 	}
 }
 
-// ---------------------------------------------------------------------------
-// Screen stack
-// ---------------------------------------------------------------------------
-
 UBRActivatableWidget* UBRUIManagerSubsystem::PushWidgetToLayer(
 	ULocalPlayer* LocalPlayer, FUITag LayerTag, const TSoftClassPtr<UBRActivatableWidget>& WidgetClass)
 {
@@ -349,10 +310,6 @@ UBRActivatableWidget* UBRUIManagerSubsystem::PushWidgetToLayer(
 	UClass* ResolvedClass = WidgetClass.LoadSynchronous();
 	if (!bWasResident)
 	{
-		// Say it out loud. A synchronous class load during a match is a hitch, and the only way
-		// anyone finds out is if the code that does it admits to it.
-		UE_LOG(LogBRUI, Log, TEXT("Synchronously loaded widget class '%s' for layer %s."),
-			*WidgetClass.ToString(), *LayerTag.ToString());
 	}
 
 	return PushWidgetClassToLayer(LocalPlayer, LayerTag, ResolvedClass);
@@ -387,10 +344,6 @@ void UBRUIManagerSubsystem::ClearLayer(ULocalPlayer* LocalPlayer, FUITag LayerTa
 		Layout->ClearLayer(LayerTag);
 	}
 }
-
-// ---------------------------------------------------------------------------
-// Convenience flows
-// ---------------------------------------------------------------------------
 
 UBRActivatableWidget* UBRUIManagerSubsystem::ShowHUD(ULocalPlayer* LocalPlayer)
 {

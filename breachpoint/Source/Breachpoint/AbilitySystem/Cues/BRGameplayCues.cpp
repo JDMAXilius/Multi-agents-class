@@ -1,5 +1,4 @@
 // Breachpoint. The cue handlers, and the registration that arms them.
-
 #include "AbilitySystem/Cues/BRGameplayCues.h"
 
 #include "AbilitySystemGlobals.h"
@@ -22,32 +21,13 @@
 #include "DrawDebugHelpers.h"
 #endif
 
-// ================================================================================================
-// File-local knobs and the log throttle
-// ================================================================================================
-
 namespace
 {
 #if ENABLE_DRAW_DEBUG
-	/**
-	 * How long a placeholder marker stays on screen, and how big it is. STRUCTURAL, not tuning:
-	 * these describe a debug drawing, not a weapon. Nobody balances them, and they are compiled
-	 * out entirely of a shipping build — which is why they live inside the guard rather than
-	 * beside it, where they would be an unused-constant warning nobody can silence locally.
-	 */
 	constexpr float PlaceholderDrawSeconds = 0.35f;
 	constexpr float PlaceholderRadius = 10.f;
 #endif
 
-	/**
-	 * The "this cue played nothing" report is ONCE PER (tag, slot) for the life of the process.
-	 * An AR at 600 RPM would otherwise emit ten Warnings a second and bury whatever the log was
-	 * opened to find — and law 4's spirit is that nothing this project writes runs per frame.
-	 *
-	 * A file-static set, not a member: `UGameplayCueNotify_Static` handlers run on the shared CDO
-	 * and are `const`. This is a log throttle, not gameplay state, and it is the ONLY mutable
-	 * thing in this file. Game thread only, like every cue route.
-	 */
 	TSet<FName>& GetSilentCueReportLedger()
 	{
 		static TSet<FName> Ledger;
@@ -64,20 +44,9 @@ static FAutoConsoleVariableRef CVarBRCueDrawPlaceholders(
 		 "once-per-tag log warning is not affected."),
 	ECVF_Cheat);
 
-// ================================================================================================
-// UBRGameplayCue_Base
-// ================================================================================================
-
 UBRGameplayCue_Base::UBRGameplayCue_Base(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
-	// `IsOverride` is inherited as true from UGameplayCueNotify_Static and is left true. It means
-	// "when I handle a tag, do NOT also run the parent tag's notify". Breachpoint registers exact
-	// leaves and owns no parent-cue chain, so a false here would only ever find a handler nobody
-	// meant to run.
-	//
-	// GameplayCueTag is deliberately NOT set. See the header: for a native class it is read by
-	// nothing, and this family answers to more tags than the one field can hold.
 }
 
 FVector UBRGameplayCue_Base::ResolveCueLocation(const AActor* Target, const FGameplayCueParameters& Parameters)
@@ -96,9 +65,6 @@ bool UBRGameplayCue_Base::PlaySoundSoft(const UObject* WorldContext, const TSoft
 		return false;
 	}
 
-	// Get(), never LoadSynchronous(). A cue runs on the frame the player pulled the trigger; a
-	// blocking package load there is a hitch felt exactly when it is least forgivable. The
-	// registrar warms these at world begin play so the resident case is the normal one.
 	USoundBase* Sound = SoftSound.Get();
 	if (!Sound)
 	{
@@ -130,17 +96,10 @@ bool UBRGameplayCue_Base::SpawnFXSoft(const UObject* WorldContext, const TSoftOb
 
 	if (UNiagaraSystem* Niagara = Cast<UNiagaraSystem>(FX))
 	{
-		// `Niagara` became a PRIVATE dependency of Breachpoint.Build.cs on 1 Aug 2026 (see the
-		// dated note there); before that this branch could only name the asset in a Warning.
-		// Same contract as Cascade above: the ref was already resolved with Get(), so nothing
-		// here loads, and bAutoDestroy leaves no component to own — a one-shot, like the cue.
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(WorldContext, Niagara, Location, Rotation);
 		return true;
 	}
 
-	// Some third UFXSystemAsset subclass landed here. Named loudly, once, rather than returning
-	// false and letting it read as "no asset authored" — those are different problems with
-	// different fixes, and the whole point of ReportSilentCue is that they never look the same.
 	static TSet<FName> ReportedUnknownFX;
 	const FName AssetName = FX->GetFName();
 	if (!ReportedUnknownFX.Contains(AssetName))
@@ -176,31 +135,19 @@ void UBRGameplayCue_Base::ReportSilentCue(const UObject* WorldContext, const FGa
 	{
 		if (UWorld* World = GEngine ? GEngine->GetWorldFromContextObject(WorldContext, EGetWorldErrorMode::ReturnNull) : nullptr)
 		{
-			// The point of the marker is to make "the cue fired" observable to a human with no FX
-			// in the project. Without it, a correctly-bound cue and a completely unbound one look
-			// identical from the chair, and the packet's own claim would be unfalsifiable.
 			DrawDebugSphere(World, Location, PlaceholderRadius, 8, FColor::Yellow, false, PlaceholderDrawSeconds);
 		}
 	}
 #endif
 }
 
-// ================================================================================================
-// UBRGameplayCue_WeaponFire
-// ================================================================================================
-
 UBRGameplayCue_WeaponFire::UBRGameplayCue_WeaponFire(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
-	// Nothing to configure. The tags come from GetHandledCueTags(), the FX from config, and there
-	// is no third thing a fire cue needs — which is the shape a cue handler should have.
 }
 
 void UBRGameplayCue_WeaponFire::GetHandledCueTags(FGameplayTagContainer& OutTags) const
 {
-	// The three leaves that exist. They are named by `DT_Weapons.csv`'s `FireCueTag` column and
-	// declared in `BRGameplayTags.h` (R23's open GameplayCue.* family); this packet declares no
-	// tag of its own and adds none. A fourth weapon adds a fourth leaf THERE and one line HERE.
 	OutTags.AddTag(BRGameplayTags::GameplayCue_Weapon_AR_Fire);
 	OutTags.AddTag(BRGameplayTags::GameplayCue_Weapon_Magnum_Fire);
 	OutTags.AddTag(BRGameplayTags::GameplayCue_Weapon_Rocket_Fire);
@@ -218,69 +165,22 @@ void UBRGameplayCue_WeaponFire::GetFXAssetPaths(TArray<FSoftObjectPath>& OutPath
 
 bool UBRGameplayCue_WeaponFire::HandlesEvent(EGameplayCueEvent::Type EventType) const
 {
-	// ONE-SHOT. `gas-purity` §6: Executed for muzzle/impact/hitmarker, Added/Removed for looping
-	// state FX. The base class answers true to everything; saying so explicitly here is what
-	// stops a future duration effect carrying this tag from producing a second muzzle flash on
-	// OnActive and a third on WhileActive for a client that joined after the shot.
 	return EventType == EGameplayCueEvent::Executed;
 }
 
 bool UBRGameplayCue_WeaponFire::OnExecute_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters) const
 {
-	// ---------------------------------------------------------------------
-	// THE STAGE GATE — Stage 7 `Cues` (docs/GAS-INTEGRATION-ROADMAP.md).
-	//
-	// WHY GATE AT ALL, given the abilities above are already gated: gating the RAISERS silences
-	// every cue this project raises today, but it does not silence a cue raised by anything else —
-	// a GameplayEffect's GameplayCues array, an automation spec, a console `Cue.Execute`. This is
-	// the LAST gate in the chain and the one that holds when a new raiser appears; a gate that only
-	// works because of who happens to call it is not a gate.
-	//
-	// WHY SUPPRESSING A HANDLER CANNOT BREAK GAMEPLAY, checked rather than assumed: everything
-	// below this line reads `Parameters`, spawns one-shot FX/sound, draws a debug sphere and writes
-	// the file-local log-throttle ledger. It mutates no attribute, grants no tag, applies no effect
-	// and spawns no gameplay actor, and `UGameplayCueNotify_Static::HandleGameplayCue` DISCARDS the
-	// return value — so the only thing suppression costs is pixels and one Verbose line. That is the
-	// property the roadmap leans on when it puts FX last: "the only layer that cannot break
-	// gameplay." If a future handler in this file does anything a gate could break, that is a
-	// finding about the handler (law 6: all FX via GameplayCues, and cues do FX only), not a reason
-	// to drop this gate.
-	//
-	// REGISTRATION IS DELIBERATELY NOT GATED. `UBRGameplayCueRegistrar` still binds and still reads
-	// its bindings back at every world begin play, so the roadmap's resting state ("handlers are
-	// registered and verified by read-back") holds at every stage, and the registrar's zero-bound
-	// Error keeps its meaning. Gating registration would make `Off` print that Error, which the
-	// acceptance criterion forbids.
-	// ---------------------------------------------------------------------
 	if (!BRGas::IsStageEnabled(EBRGasStage::Cues))
 	{
-		// Verbose, matching ABRCharacter's gate. NOT routed through ReportSilentCue: that is the
-		// once-per-tag "bound, routing, no asset authored" report, and a suppressed cue is a
-		// different fact. Conflating them would make the FX gap look bigger than it is the first
-		// time someone reads the log at `Cues`.
-		UE_LOG(LogBRCombat, Verbose, TEXT("BRGameplayCue_WeaponFire: '%s' suppressed — GAS stage gate is '%s'; cues need at least 'Cues'. Set GasStage in Config/DefaultGame.ini."),
-			*Parameters.MatchedTagName.ToString(), BRGas::ToString(BRGas::GetStage()));
-
-		// false = "this handler played nothing". The engine discards it; a direct caller (an
-		// automation spec on the CDO) gets the honest answer rather than the "handled" the played
-		// path returns.
 		return false;
 	}
 
-	// `MyTarget` is the world context, not `GetWorld()`: UGameplayCueNotify_Static::GetWorld()
-	// returns the cue manager's CACHED world, which is correct during a route and stale outside
-	// one. The target actor is unambiguous.
 	const UObject* WorldContext = MyTarget;
 	const FVector MuzzleLocation = ResolveCueLocation(MyTarget, Parameters);
 
-	// The tag we were MATCHED on, not the tag as raised — a translator or a parent fallback makes
-	// those different, and the FX row is keyed by what actually matched.
 	const FGameplayTag& CueTag = Parameters.MatchedTagName;
 	const FBRWeaponFireCueFX* FX = FXByCueTag.Find(CueTag);
 
-	// Aim the muzzle flash along the shot where we can. The instigator's control rotation is the
-	// shooter's facing on every machine that received this cue (it is replicated), so this is not
-	// a client-local guess. Purely cosmetic: nothing below reads or changes gameplay state.
 	FRotator MuzzleRotation = FRotator::ZeroRotator;
 	if (const AActor* Shooter = Parameters.Instigator.Get())
 	{
@@ -288,25 +188,16 @@ bool UBRGameplayCue_WeaponFire::OnExecute_Implementation(AActor* MyTarget, const
 		Shooter->GetActorEyesViewPoint(EyeLocation, MuzzleRotation);
 	}
 
-	// -- Muzzle flash ---------------------------------------------------------------------------
 	if (!FX || !SpawnFXSoft(WorldContext, FX->MuzzleFlash, MuzzleLocation, MuzzleRotation))
 	{
 		ReportSilentCue(WorldContext, Parameters, MuzzleLocation, TEXT("MuzzleFlash"));
 	}
 
-	// -- Report ---------------------------------------------------------------------------------
 	if (!FX || !PlaySoundSoft(WorldContext, FX->Report, MuzzleLocation))
 	{
 		ReportSilentCue(WorldContext, Parameters, MuzzleLocation, TEXT("Report"));
 	}
 
-	// -- Tracer ---------------------------------------------------------------------------------
-	//
-	// A beam needs BOTH ends and only one travels today. The impact point would ride in the cue's
-	// effect context; `BRGA_WeaponFire` builds its FGameplayCueParameters with Location and
-	// Instigator and no context at all, so there is nothing to read. Reported as silent rather
-	// than extrapolated from MuzzleRotation: a tracer drawn along where the shooter is looking
-	// NOW is a lie about where the bullet went, and a convincing one.
 	const FHitResult* ShotHit = Parameters.EffectContext.GetHitResult();
 	const bool bTracerPlayed = ShotHit && FX
 		&& SpawnFXSoft(WorldContext, FX->Tracer, MuzzleLocation, (ShotHit->ImpactPoint - MuzzleLocation).Rotation());
@@ -326,16 +217,8 @@ bool UBRGameplayCue_WeaponFire::OnExecute_Implementation(AActor* MyTarget, const
 #endif
 	}
 
-	// The return value of OnExecute is unused by UGameplayCueNotify_Static::HandleGameplayCue —
-	// it is a BlueprintNativeEvent whose result the engine discards. Returning true anyway so a
-	// direct caller (an automation spec calling the CDO) reads "handled", never as a signal that
-	// FX actually played. Whether FX played is what the log above answers.
 	return true;
 }
-
-// ================================================================================================
-// UBRGameplayCueRegistrar — the binding
-// ================================================================================================
 
 bool UBRGameplayCueRegistrar::DoesSupportWorldType(const EWorldType::Type WorldType) const
 {
@@ -351,9 +234,6 @@ void UBRGameplayCueRegistrar::OnWorldBeginPlay(UWorld& InWorld)
 
 	if (Bound == 0)
 	{
-		// Zero is never correct while any handler exists, and it is the state in which every cue
-		// tag in the project plays nothing — which is precisely the bug this file was written to
-		// end. It must not pass quietly.
 		UE_LOG(LogBRCombat, Error,
 			TEXT("BRGameplayCueRegistrar bound ZERO cue handlers in world '%s'. Every "
 				 "GameplayCue.* tag will route to nothing. Check that the GameplayCueManager "
@@ -371,9 +251,6 @@ int32 UBRGameplayCueRegistrar::RegisterNativeCueHandlers()
 		return 0;
 	}
 
-	// GetRuntimeCueSet() can legitimately be null before the manager's object library has been
-	// initialised. Asking for the manager above is what triggers that initialisation, so by here
-	// it should exist — a null is a real problem, not a timing quirk to retry past.
 	UGameplayCueSet* RuntimeSet = CueManager->GetRuntimeCueSet();
 	if (!RuntimeSet)
 	{
@@ -381,10 +258,8 @@ int32 UBRGameplayCueRegistrar::RegisterNativeCueHandlers()
 		return 0;
 	}
 
-	// Discovery, not a hand-kept list. A new handler class registers itself by existing and
-	// declaring its tags; a list here would eventually miss one, and a missed handler is silent.
 	TArray<UClass*> HandlerClasses;
-	GetDerivedClasses(UBRGameplayCue_Base::StaticClass(), HandlerClasses, /*bRecursive=*/true);
+	GetDerivedClasses(UBRGameplayCue_Base::StaticClass(), HandlerClasses, true);
 
 	TArray<FGameplayCueReferencePair> CuesToAdd;
 	TArray<TPair<FGameplayTag, UClass*>> Expected;
@@ -414,9 +289,6 @@ int32 UBRGameplayCueRegistrar::RegisterNativeCueHandlers()
 			continue;
 		}
 
-		// The soft path to a NATIVE class is `/Script/Breachpoint.<ClassName>`. The cue set
-		// resolves it with ResolveObject(), which always succeeds for a native UClass — so this
-		// binding never takes the async-load path a Blueprint notify would.
 		const FSoftObjectPath ClassPath(HandlerClass);
 
 		for (const FGameplayTag& Tag : HandledTags)
@@ -434,14 +306,8 @@ int32 UBRGameplayCueRegistrar::RegisterNativeCueHandlers()
 		}
 	}
 
-	// AddCues skips a tag the set already holds, so re-asserting every world is free and this
-	// whole function is idempotent. It warns on a CONFLICT (same tag, different class), which is
-	// the one case that must never pass silently.
 	RuntimeSet->AddCues(CuesToAdd);
 
-	// VERIFY, then report. Registering and assuming is how the original bug happened: the point
-	// of this pass is that the count below is read back out of the engine's own map, not counted
-	// from what we intended.
 	int32 Verified = 0;
 	for (const TPair<FGameplayTag, UClass*>& Entry : Expected)
 	{
@@ -452,8 +318,6 @@ int32 UBRGameplayCueRegistrar::RegisterNativeCueHandlers()
 		if (bExact)
 		{
 			++Verified;
-			UE_LOG(LogBRCombat, Log, TEXT("BRGameplayCueRegistrar: '%s' -> %s"),
-				*Entry.Key.ToString(), *Entry.Value->GetName());
 		}
 		else
 		{
@@ -476,7 +340,7 @@ void UBRGameplayCueRegistrar::WarmCueFXAssets()
 	}
 
 	TArray<UClass*> HandlerClasses;
-	GetDerivedClasses(UBRGameplayCue_Base::StaticClass(), HandlerClasses, /*bRecursive=*/true);
+	GetDerivedClasses(UBRGameplayCue_Base::StaticClass(), HandlerClasses, true);
 
 	TArray<FSoftObjectPath> Paths;
 	for (UClass* HandlerClass : HandlerClasses)
@@ -493,18 +357,8 @@ void UBRGameplayCueRegistrar::WarmCueFXAssets()
 
 	if (Paths.IsEmpty())
 	{
-		// The honest state today: zero FX assets exist in the project, so zero soft refs are
-		// configured and there is nothing to warm. Said at Log rather than left as an absence,
-		// because "no FX warmed" and "warming never ran" are different and only one is expected.
-		UE_LOG(LogBRCombat, Log,
-			TEXT("BRGameplayCueRegistrar: no cue FX soft references configured — cues will route "
-				 "and report their empty slots. Populate [/Script/Breachpoint.BRGameplayCue_WeaponFire] "
-				 "FXByCueTag once FX assets exist."));
 		return;
 	}
 
-	// The cue manager's own streamable manager, not a second one: it is what the engine already
-	// uses to keep cue assets resident, so warmed refs stay warm for the same reasons.
 	CueManager->StreamableManager.RequestAsyncLoad(Paths);
-	UE_LOG(LogBRCombat, Log, TEXT("BRGameplayCueRegistrar: warming %d cue FX asset(s)."), Paths.Num());
 }

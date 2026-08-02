@@ -1,5 +1,4 @@
 // Breachpoint. The authored-space lookups. No nav divination, no invented destinations.
-
 #include "AI/BREnvQueryContexts.h"
 
 #include "AI/BRBotController.h"
@@ -12,8 +11,6 @@ DEFINE_LOG_CATEGORY_STATIC(LogBRBotSpace, Log, All);
 
 namespace BRBotArenaTags
 {
-	// The tags BP07's blockout generator must stamp on what it places. Strings, not numbers:
-	// this is vocabulary, not tuning.
 	const FName Landmark(TEXT("BR.Landmark"));
 	const FName RocketPad(TEXT("BR.Landmark.RocketPad"));
 	const FName Cover(TEXT("BR.Cover"));
@@ -22,7 +19,6 @@ namespace BRBotArenaTags
 
 namespace
 {
-	/** The querier's bot controller, whichever end of the query it came in on. */
 	const ABRBotController* GetQuerierBotController(const AActor* Querier)
 	{
 		if (const ABRBotController* AsController = Cast<ABRBotController>(Querier))
@@ -45,9 +41,6 @@ void BRBotArena::GatherTagged(const UWorld* World, FName Tag, TArray<AActor*>& O
 		return;
 	}
 
-	// An actor iteration per QUERY, never per tick, and only over the level's static
-	// vocabulary. When the manifest accessor lands (contract_gap 3) this becomes a cached
-	// lookup and the iteration disappears entirely.
 	for (TActorIterator<AActor> It(const_cast<UWorld*>(World)); It; ++It)
 	{
 		if (IsValid(*It) && It->ActorHasTag(Tag))
@@ -58,9 +51,6 @@ void BRBotArena::GatherTagged(const UWorld* World, FName Tag, TArray<AActor*>& O
 
 	if (OutActors.Num() == 0)
 	{
-		UE_LOG(LogBRBotSpace, Verbose,
-			TEXT("No actor carries arena vocabulary tag '%s' — EQS will produce no result (BP08 contract_gap 3)."),
-			*Tag.ToString());
 	}
 }
 
@@ -73,9 +63,6 @@ bool BRBotArena::GetRocketPadLocation(const UWorld* World, FVector& OutLocation)
 		return false;
 	}
 
-	// Deterministic pick: the arena has exactly one pad, and if it ever has two, "the first
-	// one the iterator found" would be a source of divergence between machines. Sorting by
-	// name makes it stable.
 	Pads.Sort([](const AActor& A, const AActor& B) { return A.GetFName().LexicalLess(B.GetFName()); });
 	OutLocation = Pads[0]->GetActorLocation();
 	return true;
@@ -109,8 +96,6 @@ float BRBotArena::GetCoverQualityAt(const APawn* Pawn)
 		FVector CoverExtent = FVector::ZeroVector;
 		CoverActor->GetActorBounds(true, CoverOrigin, CoverExtent);
 
-		// "Occupying" this cover = standing inside its footprint. Containment, not a radius
-		// constant — there is no distance number to tune (or to get wrong) anywhere here.
 		const FBox Footprint(
 			FVector(CoverOrigin.X - CoverExtent.X, CoverOrigin.Y - CoverExtent.Y, -HALF_WORLD_MAX),
 			FVector(CoverOrigin.X + CoverExtent.X, CoverOrigin.Y + CoverExtent.Y, HALF_WORLD_MAX));
@@ -120,17 +105,12 @@ float BRBotArena::GetCoverQualityAt(const APawn* Pawn)
 			continue;
 		}
 
-		// Quality is the geometry's own answer: how much of me this cover actually hides.
 		const float CoverHeight = CoverExtent.Z * 2.f;
 		BestQuality = FMath::Max(BestQuality, FMath::Clamp(CoverHeight / PawnHeight, 0.f, 1.f));
 	}
 
 	return BestQuality;
 }
-
-// =============================================================================================
-// Contexts
-// =============================================================================================
 
 void UBREnvQueryContext_Threat::ProvideContext(FEnvQueryInstance& QueryInstance, FEnvQueryContextData& ContextData) const
 {
@@ -145,7 +125,6 @@ void UBREnvQueryContext_Threat::ProvideContext(FEnvQueryInstance& QueryInstance,
 	{
 		UEnvQueryItemType_Actor::SetContextHelper(ContextData, Target);
 	}
-	// No target -> no context -> the query produces nothing and the step fails honestly.
 }
 
 void UBREnvQueryContext_RocketPad::ProvideContext(FEnvQueryInstance& QueryInstance, FEnvQueryContextData& ContextData) const
@@ -210,8 +189,6 @@ void UBREnvQueryContext_Teammates::ProvideContext(FEnvQueryInstance& QueryInstan
 		{
 			continue;
 		}
-		// Team attitude, from the engine's team interface — the same answer the HUD gives a
-		// human. No PlayerState scraping, no reading anyone's hidden state.
 		if (Bot->GetTeamAttitudeTowards(*Other) == ETeamAttitude::Friendly)
 		{
 			Teammates.Add(Other);
@@ -231,7 +208,6 @@ void UBREnvQueryContext_StepAnchor::ProvideContext(FEnvQueryInstance& QueryInsta
 		return;
 	}
 
-	// Layer 1 decided WHERE in the abstract; this is where that abstraction meets the level.
 	const FBRBotPlanStep Step = Bot->GetCurrentStep();
 
 	switch (Step.Anchor)
@@ -283,7 +259,6 @@ void UBREnvQueryContext_StepAnchor::ProvideContext(FEnvQueryInstance& QueryInsta
 
 	case EBRBotAnchor::Teammate:
 	{
-		// Delegated so there is one definition of "who is my teammate" in this file.
 		const UBREnvQueryContext_Teammates* TeammateContext = GetDefault<UBREnvQueryContext_Teammates>();
 		TeammateContext->ProvideContext(QueryInstance, ContextData);
 		break;

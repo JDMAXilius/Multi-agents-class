@@ -1,5 +1,4 @@
 // Breachpoint. Weapons lying in the world, and the node that puts the Rocket there.
-
 #include "Weapons/BRWeaponPickup.h"
 
 #include "AbilitySystemComponent.h"
@@ -19,23 +18,14 @@
 #include "TimerManager.h"
 #include "Weapons/BRWeaponInstance.h"
 
-// ===========================================================================================
-// ABRWeaponPickup
-// ===========================================================================================
-
 ABRWeaponPickup::ABRWeaponPickup()
 {
-	// Law 4. Nothing here needs a frame.
 	PrimaryActorTick.bCanEverTick = false;
 	PrimaryActorTick.bStartWithTickEnabled = false;
 
 	bReplicates = true;
 	SetReplicatingMovement(false);
 
-	// netcode.md law 4 (minimum replication): a pickup changes state twice in its life
-	// (collected, maybe attracted). It sleeps in between. EVERY mutator below is paired with
-	// FlushNetDormancy — an un-flushed write to a dormant actor is a silent desync, so if you
-	// add a replicated property here, you add the flush with it.
 	NetDormancy = DORM_Initial;
 
 	InteractionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("InteractionSphere"));
@@ -46,7 +36,6 @@ ABRWeaponPickup::ABRWeaponPickup()
 	InteractionSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	InteractionSphere->SetGenerateOverlapEvents(true);
 
-	// Cosmetic. It must never be able to answer a gameplay question, so it answers no query.
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
 	MeshComponent->SetupAttachment(InteractionSphere);
 	MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -57,9 +46,6 @@ void ABRWeaponPickup::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	// All COND_None: this is world state on a contested object. Compare UBRWeaponInstance,
-	// where the same two ammo numbers are COND_OwnerOnly because there they describe what is
-	// in an enemy's hands.
 	DOREPLIFETIME(ABRWeaponPickup, WeaponRow);
 	DOREPLIFETIME(ABRWeaponPickup, AmmoInMag);
 	DOREPLIFETIME(ABRWeaponPickup, AmmoReserve);
@@ -73,16 +59,12 @@ void ABRWeaponPickup::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// The editable radius is the truth; the constructor's InitSphereRadius only seeds the CDO.
 	if (InteractionSphere)
 	{
 		InteractionSphere->SetSphereRadius(InteractionRadiusCm);
 		InteractionSphere->OnComponentBeginOverlap.AddDynamic(this, &ABRWeaponPickup::HandleBeginOverlap);
 		InteractionSphere->OnComponentEndOverlap.AddDynamic(this, &ABRWeaponPickup::HandleEndOverlap);
 
-		// Seed the set from the overlaps that already exist. Begin-overlap fires at component
-		// registration, BEFORE this bind — so a weapon dropped at a player's feet would
-		// otherwise be un-collectable by that player until they stepped out and back in.
 		if (HasAuthority())
 		{
 			TArray<AActor*> AlreadyOverlapping;
@@ -97,8 +79,6 @@ void ABRWeaponPickup::BeginPlay()
 		}
 	}
 
-	// Clients get their mesh when the row arrives (OnRep_WeaponRow); the server-spawned path
-	// already has it here.
 	if (!WeaponRow.RowName.IsNone())
 	{
 		RequestMeshLoad();
@@ -134,8 +114,6 @@ ABRWeaponPickup* ABRWeaponPickup::SpawnDroppedWeapon(
 		return nullptr;
 	}
 
-	// Refuse, never substitute. A drop with no configured pickup class is a setup defect; a
-	// silently-chosen default class would hide it until someone found a floating AR.
 	if (!PickupClass)
 	{
 		UE_LOG(LogBRCombat, Error, TEXT("SpawnDroppedWeapon: no PickupClass supplied; nothing dropped."));
@@ -181,13 +159,11 @@ const FBRWeaponRow* ABRWeaponPickup::GetRow() const
 	{
 		return nullptr;
 	}
-	return WeaponRow.DataTable->FindRow<FBRWeaponRow>(WeaponRow.RowName, TEXT("ABRWeaponPickup"), /*bWarnIfRowMissing*/ false);
+	return WeaponRow.DataTable->FindRow<FBRWeaponRow>(WeaponRow.RowName, TEXT("ABRWeaponPickup"), false);
 }
 
 bool ABRWeaponPickup::CanBeCollectedBy(APawn* Collector) const
 {
-	// Only the server has an opinion worth having. A client asking this question is welcome
-	// to a hint for its prompt, but the answer that matters is computed here.
 	if (!HasAuthority())
 	{
 		return false;
@@ -198,20 +174,14 @@ bool ABRWeaponPickup::CanBeCollectedBy(APawn* Collector) const
 	}
 	if (WeaponRow.RowName.IsNone() || !GetRow())
 	{
-		// A pickup bound to a row that no longer exists grants nothing. Refuse rather than
-		// hand out an unarmed weapon.
 		return false;
 	}
 
-	// THE geometric check, and it is the server's own collision, not a client's claim about
-	// where it is standing. There is no distance parameter here to spoof.
 	if (!OverlappingPawns.Contains(TWeakObjectPtr<APawn>(Collector)))
 	{
 		return false;
 	}
 
-	// A corpse does not pick things up. State is a GE-applied tag (gas-purity.md), so this is
-	// a tag query, not a bool on the pawn.
 	if (const UAbilitySystemComponent* ASC =
 			UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Collector))
 	{
@@ -231,9 +201,6 @@ bool ABRWeaponPickup::TryCollect(APawn* Collector)
 		return false;
 	}
 
-	// Re-check rather than trust the caller's earlier check: between their call and ours,
-	// another player may have won the race. Two collectors on one Rocket is exactly the case
-	// this line exists for.
 	if (!CanBeCollectedBy(Collector))
 	{
 		return false;
@@ -242,14 +209,12 @@ bool ABRWeaponPickup::TryCollect(APawn* Collector)
 	bConsumed = true;
 	FlushNetDormancy();
 
-	// Stop answering overlap questions the moment the race is decided.
 	if (InteractionSphere)
 	{
 		InteractionSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 	OverlappingPawns.Reset();
 
-	// The spawner is listening: this is what starts its countdown.
 	OnCollected.Broadcast(this, Collector);
 
 	Destroy();
@@ -258,7 +223,6 @@ bool ABRWeaponPickup::TryCollect(APawn* Collector)
 
 bool ABRWeaponPickup::AttractTo(const FVector& InTargetLocation, AActor* InRequester)
 {
-	// BP06 seam. The authority gate is the part BP03 owns and guarantees.
 	if (!HasAuthority())
 	{
 		UE_LOG(LogBRCombat, Warning, TEXT("ABRWeaponPickup::AttractTo called without authority; ignored."));
@@ -271,8 +235,6 @@ bool ABRWeaponPickup::AttractTo(const FVector& InTargetLocation, AActor* InReque
 
 	if (!OnAttractRequested.IsBound())
 	{
-		// Explicit refusal, not a silent no-op: without a driver the pickup would sit still
-		// while the grapple animation played, and the bug would read as "grapple feels bad".
 		UE_LOG(LogBRCombat, Error,
 			TEXT("ABRWeaponPickup::AttractTo: no attract driver is bound (BP06 owns it). Request refused."));
 		return false;
@@ -282,8 +244,6 @@ bool ABRWeaponPickup::AttractTo(const FVector& InTargetLocation, AActor* InReque
 	AttractTargetLocation = InTargetLocation;
 	AttractRequester = InRequester;
 
-	// An actor in flight is not a resting actor: wake it and replicate its movement for the
-	// duration, then put it back to sleep in CancelAttract.
 	SetNetDormancy(DORM_Awake);
 	SetReplicatingMovement(true);
 	FlushNetDormancy();
@@ -306,12 +266,10 @@ void ABRWeaponPickup::CancelAttract()
 	SetNetDormancy(DORM_DormantAll);
 }
 
-void ABRWeaponPickup::HandleBeginOverlap(UPrimitiveComponent* /*OverlappedComponent*/, AActor* OtherActor,
-	UPrimitiveComponent* /*OtherComp*/, int32 /*OtherBodyIndex*/, bool /*bFromSweep*/,
-	const FHitResult& /*SweepResult*/)
+void ABRWeaponPickup::HandleBeginOverlap(UPrimitiveComponent*, AActor* OtherActor,
+	UPrimitiveComponent*, int32, bool,
+	const FHitResult&)
 {
-	// The set is SERVER truth and exists only there. A client maintaining one would be
-	// maintaining an opinion.
 	if (!HasAuthority())
 	{
 		return;
@@ -322,8 +280,8 @@ void ABRWeaponPickup::HandleBeginOverlap(UPrimitiveComponent* /*OverlappedCompon
 	}
 }
 
-void ABRWeaponPickup::HandleEndOverlap(UPrimitiveComponent* /*OverlappedComponent*/, AActor* OtherActor,
-	UPrimitiveComponent* /*OtherComp*/, int32 /*OtherBodyIndex*/)
+void ABRWeaponPickup::HandleEndOverlap(UPrimitiveComponent*, AActor* OtherActor,
+	UPrimitiveComponent*, int32)
 {
 	if (!HasAuthority())
 	{
@@ -337,14 +295,11 @@ void ABRWeaponPickup::HandleEndOverlap(UPrimitiveComponent* /*OverlappedComponen
 
 void ABRWeaponPickup::OnRep_WeaponRow()
 {
-	// Cosmetic only (netcode.md law 3): the row arriving is a client's cue to load the mesh.
 	RequestMeshLoad();
 }
 
 void ABRWeaponPickup::RequestMeshLoad()
 {
-	// A dedicated server renders nothing and must not pay for a mesh. A listen server does
-	// render, so this is a net-mode test, not an authority test.
 	if (GetNetMode() == NM_DedicatedServer)
 	{
 		return;
@@ -367,8 +322,6 @@ void ABRWeaponPickup::RequestMeshLoad()
 		return;
 	}
 
-	// SOFT ref resolved through the streamable manager at the load point (data-and-assets.md).
-	// The row never holds the mesh; nothing in this class ever hard-references one.
 	MeshLoadHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
 		Row->MeshSoftPath.ToSoftObjectPath(),
 		FStreamableDelegate::CreateUObject(this, &ABRWeaponPickup::OnMeshLoaded));
@@ -388,13 +341,8 @@ void ABRWeaponPickup::OnMeshLoaded()
 	}
 }
 
-// ===========================================================================================
-// ABRPowerWeaponSpawner
-// ===========================================================================================
-
 ABRPowerWeaponSpawner::ABRPowerWeaponSpawner()
 {
-	// Law 4: the countdown is a timer plus a replicated deadline. Nothing counts per frame.
 	PrimaryActorTick.bCanEverTick = false;
 	PrimaryActorTick.bStartWithTickEnabled = false;
 
@@ -409,8 +357,6 @@ void ABRPowerWeaponSpawner::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	// ARCHITECTURE §6.1: the rocket countdown is COND_None. Everyone contests it, so everyone
-	// reads the same deadline.
 	DOREPLIFETIME(ABRPowerWeaponSpawner, CurrentPickup);
 	DOREPLIFETIME(ABRPowerWeaponSpawner, RespawnAvailableServerTime);
 	DOREPLIFETIME(ABRPowerWeaponSpawner, bArmed);
@@ -442,8 +388,6 @@ void ABRPowerWeaponSpawner::ArmSpawner()
 		return;
 	}
 
-	// The three refusals. Each one is a configuration mistake that MUST be visible now, at
-	// arm time, rather than 90 seconds into a match as "the rocket never spawned".
 	if (!PickupClass)
 	{
 		UE_LOG(LogBRCombat, Error, TEXT("%s: no PickupClass set; node not armed."), *GetName());
@@ -456,8 +400,6 @@ void ABRPowerWeaponSpawner::ArmSpawner()
 	}
 	if (RespawnIntervalSeconds <= 0.f)
 	{
-		// See the property comment: ruling R4's 90 s belongs in DT_MatchRules, and this packet
-		// may not invent that column. An unconfigured node refuses rather than guessing 90.
 		UE_LOG(LogBRCombat, Error,
 			TEXT("%s: RespawnIntervalSeconds is unset (%.1f). Ruling R4's 90 s must come from data — "
 				 "node not armed, and no default was invented."),
@@ -502,8 +444,6 @@ float ABRPowerWeaponSpawner::GetSecondsUntilRespawn() const
 	const float Now = GetServerTimeSeconds();
 	if (Now < 0.f)
 	{
-		// No GameState yet (a client's first frames). "Unknown" reads as 0 to the HUD, which
-		// draws nothing — better than drawing a wrong deadline computed from a local clock.
 		return 0.f;
 	}
 
@@ -514,8 +454,6 @@ float ABRPowerWeaponSpawner::GetServerTimeSeconds() const
 {
 	const UWorld* World = GetWorld();
 	const AGameStateBase* GameState = World ? World->GetGameState() : nullptr;
-	// GetServerWorldTimeSeconds is a double; the replicated deadline is a float because a
-	// match clock does not need 15 digits and bandwidth is budgeted (QUALITY-BARS §2).
 	return GameState ? static_cast<float>(GameState->GetServerWorldTimeSeconds()) : -1.f;
 }
 
@@ -536,10 +474,8 @@ void ABRPowerWeaponSpawner::SpawnPickup()
 		return;
 	}
 
-	// The node spawns a FULL weapon of its row: mag full, reserve per the row (the Rocket's
-	// ReserveMags 0 is ruling R4 doing its job, not a missing number).
 	const FBRWeaponRow* Row = WeaponRow.DataTable
-		? WeaponRow.DataTable->FindRow<FBRWeaponRow>(WeaponRow.RowName, TEXT("ABRPowerWeaponSpawner"), /*bWarnIfRowMissing*/ false)
+		? WeaponRow.DataTable->FindRow<FBRWeaponRow>(WeaponRow.RowName, TEXT("ABRPowerWeaponSpawner"), false)
 		: nullptr;
 	if (!Row)
 	{
@@ -548,7 +484,6 @@ void ABRPowerWeaponSpawner::SpawnPickup()
 		return;
 	}
 
-	// ONE definition of "a full weapon of this row", shared with the equipment component.
 	int32 StartMag = 0;
 	int32 StartReserve = 0;
 	UBRWeaponInstance::CalcInitialAmmo(*Row, StartMag, StartReserve);
@@ -559,7 +494,6 @@ void ABRPowerWeaponSpawner::SpawnPickup()
 	if (CurrentPickup)
 	{
 		CurrentPickup->OnCollected.AddUObject(this, &ABRPowerWeaponSpawner::HandlePickupCollected);
-		// A pickup is present: the countdown is not running.
 		RespawnAvailableServerTime = -1.f;
 	}
 	else
@@ -568,7 +502,7 @@ void ABRPowerWeaponSpawner::SpawnPickup()
 	}
 }
 
-void ABRPowerWeaponSpawner::HandlePickupCollected(ABRWeaponPickup* Pickup, APawn* /*Collector*/)
+void ABRPowerWeaponSpawner::HandlePickupCollected(ABRWeaponPickup* Pickup, APawn*)
 {
 	if (!HasAuthority() || Pickup != CurrentPickup)
 	{
@@ -587,17 +521,13 @@ void ABRPowerWeaponSpawner::HandlePickupCollected(ABRWeaponPickup* Pickup, APawn
 		return;
 	}
 
-	// Publish the DEADLINE, not a counter. One replicated write per cycle; every client
-	// computes the same remaining time from it.
 	const float Now = GetServerTimeSeconds();
 	RespawnAvailableServerTime = (Now >= 0.f) ? (Now + RespawnIntervalSeconds) : -1.f;
 
 	World->GetTimerManager().SetTimer(
-		RespawnTimerHandle, this, &ABRPowerWeaponSpawner::SpawnPickup, RespawnIntervalSeconds, /*bLoop*/ false);
+		RespawnTimerHandle, this, &ABRPowerWeaponSpawner::SpawnPickup, RespawnIntervalSeconds, false);
 }
 
 void ABRPowerWeaponSpawner::OnRep_RespawnAvailableServerTime()
 {
-	// Cosmetic only: the HUD/GameState mirror refreshes. No gameplay decision is made here,
-	// and removing this body changes no outcome.
 }

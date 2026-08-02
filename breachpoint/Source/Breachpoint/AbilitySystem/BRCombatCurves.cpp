@@ -1,5 +1,4 @@
 // Breachpoint. The ONE reader of CT_Combat — every combat coefficient enters the sim here.
-
 #include "AbilitySystem/BRCombatCurves.h"
 
 #include "Engine/CurveTable.h"
@@ -8,9 +7,6 @@
 
 UBRCombatCurveConfig::UBRCombatCurveConfig()
 {
-	// A soft PATH default, not an asset reference: nothing is loaded by writing this line, and
-	// DefaultGame.ini can point the whole sim at a different table without a recompile. The
-	// package path is Content/Data/CT_Combat.csv's imported destination (data-and-assets.md).
 	CombatCurveTable = TSoftObjectPtr<UCurveTable>(FSoftObjectPath(TEXT("/Game/Data/CT_Combat.CT_Combat")));
 }
 
@@ -18,16 +14,10 @@ namespace BRCombatCurves
 {
 	namespace Private
 	{
-		/**
-		 * Cached resolution of the configured table. Weak, so a table unloaded between PIE runs is
-		 * re-resolved rather than dangling.
-		 */
 		static TWeakObjectPtr<const UCurveTable> CachedTable;
 
-		/** Set by SetTableOverrideForTests. Wins over the configured table while it is set. */
 		static TWeakObjectPtr<const UCurveTable> TestOverrideTable;
 
-		/** One Error per missing curve name per process. A per-shot Error log is a log nobody reads. */
 		static TSet<FName>& ReportedMissingCurves()
 		{
 			static TSet<FName> Reported;
@@ -54,9 +44,6 @@ namespace BRCombatCurves
 			return nullptr;
 		}
 
-		// Synchronous, and only here. This is a LOAD POINT in the data contract's sense: the first
-		// coefficient read of the process. If it ever shows in a profile, the fix is to preload the
-		// table at match start, NOT to cache a copy of the numbers somewhere else.
 		const UCurveTable* Table = Config->CombatCurveTable.LoadSynchronous();
 		if (!Table)
 		{
@@ -73,8 +60,6 @@ namespace BRCombatCurves
 	{
 		Private::TestOverrideTable = Table;
 
-		// A spec that swaps the table must not inherit the previous table's "already reported"
-		// state, or its own missing-curve assertions go quiet.
 		Private::ReportedMissingCurves().Reset();
 	}
 
@@ -86,9 +71,7 @@ namespace BRCombatCurves
 			return false;
 		}
 
-		// FindCurve with a null context string and bWarnIfNotFound=false: the warning below is ours,
-		// deduplicated and on our channel, and it names the consequence rather than the lookup.
-		const FRealCurve* Curve = Table->FindCurve(CurveName, /*ContextString=*/FString(), /*bWarnIfNotFound=*/false);
+		const FRealCurve* Curve = Table->FindCurve(CurveName, FString(), false);
 		if (!Curve)
 		{
 			bool bAlreadyReported = false;

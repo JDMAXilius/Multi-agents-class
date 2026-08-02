@@ -1,5 +1,4 @@
 // Breachpoint. The two ViewModels.
-
 #include "UI/BRViewModels.h"
 
 #include "AbilitySystemComponent.h"
@@ -13,21 +12,12 @@
 
 #define LOCTEXT_NAMESPACE "BreachpointUI"
 
-// ===========================================================================
-// UBRVM_Combat
-// ===========================================================================
-
 void UBRVM_Combat::BindToAbilitySystem(UAbilitySystemComponent* InASC, const FBRCombatAttributeBindings& InBindings)
 {
-	// Idempotent by construction: re-binding is the normal path (respawn, spectate target change),
-	// so tear the old subscription down first rather than leaking a second one onto the same ASC.
 	UnbindFromAbilitySystem();
 
 	if (!InASC || !InBindings.HasAny())
 	{
-		// NOT an error. This is what a join-in-progress client looks like for the frames between
-		// possession and InitAbilityActorInfo. Unknown is the honest answer; the caller calls again.
-		UE_LOG(LogBRUI, Verbose, TEXT("Combat VM: no ASC/attributes yet - staying Unknown."));
 		SetVitalsState(EBRUIDataState::Unknown);
 		return;
 	}
@@ -56,14 +46,10 @@ void UBRVM_Combat::BindToAbilitySystem(UAbilitySystemComponent* InASC, const FBR
 			.AddUObject(this, &UBRVM_Combat::HandleAttributeChanged);
 	}
 
-	// State is a GE-applied tag (gas-purity.md), so the shield-broken signal is a tag event, not a
-	// threshold test on Shields <= 0. Reading the tag is what keeps the HUD agreeing with the sim.
 	ShieldsBrokenTagHandle = InASC->RegisterGameplayTagEvent(
 			BRGameplayTags::State_Shields_Broken, EGameplayTagEventType::NewOrRemoved)
 		.AddUObject(this, &UBRVM_Combat::HandleShieldsBrokenTagChanged);
 
-	// Publish now. Attribute delegates only fire on CHANGE, so a HUD that waits for one shows
-	// dashes until the player is first shot - correct-looking and useless.
 	PublishCurrentAttributeValues();
 }
 
@@ -103,7 +89,6 @@ void UBRVM_Combat::UnbindFromAbilitySystem()
 	BoundASC.Reset();
 	Bindings = FBRCombatAttributeBindings();
 
-	// Values are KEPT. The death cam wants the last known bar; zeroing here would invent a fact.
 	if (VitalsState == EBRUIDataState::Live)
 	{
 		SetVitalsState(EBRUIDataState::Stale);
@@ -166,8 +151,6 @@ void UBRVM_Combat::PublishCurrentAttributeValues()
 	const bool bBrokenNow = ASC->HasMatchingGameplayTag(BRGameplayTags::State_Shields_Broken);
 	UE_MVVM_SET_PROPERTY_VALUE(bShieldsBroken, bBrokenNow);
 
-	// Only claim Live once the ASC actually answered. An ASC that exists but has no attribute set
-	// yet returns bFound == false for everything, and that is still Unknown, not zero.
 	SetVitalsState(bAnyFound ? EBRUIDataState::Live : EBRUIDataState::Unknown);
 }
 
@@ -208,8 +191,6 @@ void UBRVM_Combat::HandleShieldsBrokenTagChanged(const FGameplayTag Tag, int32 N
 
 	UE_MVVM_SET_PROPERTY_VALUE(bShieldsBroken, bBroken);
 
-	// Two distinct signatures, because "shields down" and "shields back" are different decisions
-	// for the player. Firing one event with a bool would push that branch into the widget graph.
 	if (bBroken)
 	{
 		UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(ShieldsBrokenEvent);
@@ -222,8 +203,6 @@ void UBRVM_Combat::HandleShieldsBrokenTagChanged(const FGameplayTag Tag, int32 N
 
 void UBRVM_Combat::RecomputeVitalRatios()
 {
-	// Derived in C++ so the WBP does no arithmetic. A "divide" node in a widget graph is one
-	// refactor away from being a gameplay decision in a widget graph.
 	const float NewHealthPercent = (MaxHealth > 0.0f) ? FMath::Clamp(Health / MaxHealth, 0.0f, 1.0f) : 0.0f;
 	const float NewShieldPercent = (MaxShields > 0.0f) ? FMath::Clamp(Shields / MaxShields, 0.0f, 1.0f) : 0.0f;
 
@@ -322,9 +301,6 @@ void UBRVM_Combat::ClearToUnknown()
 	UE_MVVM_SET_PROPERTY_VALUE(GrappleCooldownDuration, 0.0f);
 	UE_MVVM_SET_PROPERTY_VALUE(bGrappleReady, true);
 
-	// State last: the WBP switches on state, so it must flip to Unknown only once the numbers
-	// underneath it are already meaningless. Flipping it first would show one frame of real
-	// numbers labelled "unknown", which is the same class of lie in the other direction.
 	SetVitalsState(EBRUIDataState::Unknown);
 	SetEquipmentState(EBRUIDataState::Unknown);
 }
@@ -336,10 +312,6 @@ void UBRVM_Combat::BeginDestroy()
 	Super::BeginDestroy();
 }
 
-// ===========================================================================
-// UBRVM_Match
-// ===========================================================================
-
 void UBRVM_Match::SetTimeSource(AGameStateBase* InGameState)
 {
 	TimeSource = InGameState;
@@ -350,8 +322,6 @@ void UBRVM_Match::SetTimeSource(AGameStateBase* InGameState)
 	}
 	else
 	{
-		// GameState gone (travel). Keep the last numbers, mark them stale, stop the clock rather
-		// than let it free-run off a dead time base.
 		if (MatchState == EBRUIDataState::Live)
 		{
 			UE_MVVM_SET_PROPERTY_VALUE(MatchState, EBRUIDataState::Stale);
@@ -407,7 +377,6 @@ UWorld* UBRVM_Match::GetTimerWorld() const
 	{
 		return GameState->GetWorld();
 	}
-	// Falls back to the outer chain (this VM is outered to the GameInstance subsystem).
 	return GetWorld();
 }
 
@@ -415,8 +384,6 @@ FText UBRVM_Match::FormatClock(int32 InSeconds)
 {
 	if (InSeconds < 0)
 	{
-		// The honest placeholder. Never "0:00" - that reads as "time is up", which is a
-		// different and much more actionable claim than "I do not know the time yet".
 		return LOCTEXT("ClockUnknown", "--:--");
 	}
 
@@ -434,7 +401,6 @@ void UBRVM_Match::UpdateClocks()
 	const AGameStateBase* GameState = TimeSource.Get();
 	if (!GameState)
 	{
-		// No time base => no claim. Not zero, not the last value pretending to still be counting.
 		UE_MVVM_SET_PROPERTY_VALUE(SecondsRemaining, static_cast<int32>(INDEX_NONE));
 		UE_MVVM_SET_PROPERTY_VALUE(MatchClockText, FormatClock(INDEX_NONE));
 		UE_MVVM_SET_PROPERTY_VALUE(bClockRunning, false);
@@ -444,12 +410,8 @@ void UBRVM_Match::UpdateClocks()
 		return;
 	}
 
-	// GetServerWorldTimeSeconds() is the engine's client-corrected server clock. Using
-	// GetWorld()->GetTimeSeconds() here instead would give each client its own answer, which is
-	// the exact desync the "one replicated end time" rule exists to prevent.
 	const double Now = GameState->GetServerWorldTimeSeconds();
 
-	// --- match clock ---
 	int32 NewMatchSeconds = INDEX_NONE;
 	bool bNewClockRunning = false;
 	if (MatchEndServerTime > 0.0f)
@@ -462,7 +424,6 @@ void UBRVM_Match::UpdateClocks()
 	UE_MVVM_SET_PROPERTY_VALUE(MatchClockText, FormatClock(NewMatchSeconds));
 	UE_MVVM_SET_PROPERTY_VALUE(bClockRunning, bNewClockRunning);
 
-	// --- rocket countdown ---
 	int32 NewRocketSeconds = INDEX_NONE;
 	if (!bRocketAvailable && RocketSpawnServerTime > 0.0f)
 	{
@@ -489,14 +450,10 @@ void UBRVM_Match::ScheduleNextClockUpdate()
 	const bool bRocketClockNeedsTicking = (RocketSecondsRemaining > 0);
 	if (!bMatchClockNeedsTicking && !bRocketClockNeedsTicking)
 	{
-		// Nothing is counting: no timer at all. An idle HUD costs zero callbacks, which is the
-		// difference between "no Tick" as a rule and "no Tick" as a result.
 		StopClockUpdates();
 		return;
 	}
 
-	// Land on the next whole second of the SERVER clock, so the displayed digit changes when the
-	// value actually changes. One callback per visible change.
 	const double Now = GameState->GetServerWorldTimeSeconds();
 	double Delay = 1.0 - (Now - FMath::FloorToDouble(Now));
 	if (Delay < 0.01)
@@ -505,7 +462,7 @@ void UBRVM_Match::ScheduleNextClockUpdate()
 	}
 
 	World->GetTimerManager().SetTimer(
-		ClockTimerHandle, this, &UBRVM_Match::UpdateClocks, static_cast<float>(Delay), /*bLoop=*/false);
+		ClockTimerHandle, this, &UBRVM_Match::UpdateClocks, static_cast<float>(Delay), false);
 }
 
 void UBRVM_Match::StopClockUpdates()
@@ -530,8 +487,6 @@ void UBRVM_Match::PushKillfeedEntry(const FBRKillfeedViewEntry& InEntry)
 
 	while (KillfeedEntries.Num() >= MaxVisible)
 	{
-		// LOUD ON PURPOSE. A silent cap is indistinguishable from "the feed showed everything",
-		// and the one place that matters is the moment a team trade wipes four players at once.
 		UE_LOG(LogBRUI, Warning,
 			TEXT("Killfeed window full (%d rows); dropping oldest row seq=%d ('%s' -> '%s'). ")
 			TEXT("Raise BRUISettings.KillfeedMaxVisibleEntries or shorten KillfeedEntryLifetimeSeconds."),
@@ -553,8 +508,6 @@ void UBRVM_Match::PushKillfeedEntry(const FBRKillfeedViewEntry& InEntry)
 	KillfeedEntries.Add(Entry);
 	KillfeedExpiryTimes.Add(Now + FMath::Max(0.5f, Settings.KillfeedEntryLifetimeSeconds));
 
-	// NOT UE_MVVM_SET_PROPERTY_VALUE: that macro compares old to new with operator==, and
-	// TArray<FBRKillfeedViewEntry> has no element comparison. Mutate then broadcast explicitly.
 	UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(KillfeedEntries);
 	PublishKillfeedChanged();
 
@@ -574,10 +527,6 @@ void UBRVM_Match::AppendSpotterLine(int32 InSequenceId, const FText& InLine)
 			return;
 		}
 	}
-
-	// Late line for a row that already expired. Dropping it is correct - the HUD never waits on
-	// the LLM, and offline is an identical HUD minus flavour.
-	UE_LOG(LogBRUI, Verbose, TEXT("Spotter line for expired killfeed row seq=%d discarded."), InSequenceId);
 }
 
 void UBRVM_Match::ExpireKillfeedEntries()
@@ -615,7 +564,6 @@ void UBRVM_Match::ScheduleKillfeedExpiry()
 
 	if (KillfeedExpiryTimes.Num() == 0)
 	{
-		// Empty feed => no timer. Same discipline as the clock.
 		World->GetTimerManager().ClearTimer(KillfeedExpiryTimerHandle);
 		KillfeedExpiryTimerHandle.Invalidate();
 		return;
@@ -624,7 +572,7 @@ void UBRVM_Match::ScheduleKillfeedExpiry()
 	const double Delay = FMath::Max(0.05, KillfeedExpiryTimes[0] - World->GetTimeSeconds());
 	World->GetTimerManager().SetTimer(
 		KillfeedExpiryTimerHandle, this, &UBRVM_Match::ExpireKillfeedEntries,
-		static_cast<float>(Delay), /*bLoop=*/false);
+		static_cast<float>(Delay), false);
 }
 
 void UBRVM_Match::PublishKillfeedChanged()
