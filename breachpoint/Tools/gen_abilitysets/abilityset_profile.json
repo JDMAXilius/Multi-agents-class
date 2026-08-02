@@ -1,0 +1,98 @@
+{
+  "schema": "breachpoint.abilityset.profile/1",
+  "serves": "TICKET BP20 - the ability-set assets are empty, and that is why the verbs are dead",
+  "doctrine": [
+    "This file is the SOURCE OF TRUTH for the four DA_AbilitySet_* assets. Content/Abilities is",
+    "its projection. Regenerate the projection; never let the projection drift ahead of this file.",
+    "",
+    "Every row's input_tag is the whole mechanism, not a label. UBRAbilitySet::GiveToAbilitySystem",
+    "stamps it onto the spec's dynamic source tags and UBRAbilitySystemComponent::AbilityInputTagPressed",
+    "matches against exactly that. A row with an ability and no tag is granted and permanently",
+    "unreachable by any key.",
+    "",
+    "InputTag.Jump is ABSENT on purpose. ABRPlayerState::GiveNativeAbility grants UBRGA_Jump from",
+    "C++; a row here would give it a second spec. abilityset_plan.py refuses the profile if it",
+    "ever reappears."
+  ],
+  "sets": [
+    {
+      "name": "DA_AbilitySet_Core",
+      "package": "/Game/Abilities/DA_AbilitySet_Core",
+      "granted_by": "ABRPlayerState::GiveStartupLoadout - every player, at startup, server side",
+      "note": "BP20 B1. Sprint was the only row on disk; melee, grenade and grapple are the delta.",
+      "abilities": [
+        { "ability": "/Script/Breachpoint.BRGA_Sprint",  "input_tag": "InputTag.Sprint",  "level": 1 },
+        { "ability": "/Script/Breachpoint.BRGA_Melee",   "input_tag": "InputTag.Melee",   "level": 1 },
+        { "ability": "/Script/Breachpoint.BRGA_Grenade", "input_tag": "InputTag.Grenade", "level": 1 },
+        { "ability": "/Script/Breachpoint.BRGA_Grapple", "input_tag": "InputTag.Grapple", "level": 1 }
+      ]
+    },
+    {
+      "name": "DA_AbilitySet_AR",
+      "package": "/Game/Abilities/DA_AbilitySet_AR",
+      "granted_by": "UBREquipmentComponent on equip - DT_Weapons.csv row 'AR', column AbilitySet",
+      "note": "BP20 B2. Empty on disk before this generator.",
+      "abilities": [
+        { "ability": "/Script/Breachpoint.BRGA_WeaponFire", "input_tag": "InputTag.Fire",   "level": 1 },
+        { "ability": "/Script/Breachpoint.BRGA_Reload",     "input_tag": "InputTag.Reload", "level": 1 },
+        { "ability": "/Script/Breachpoint.BRGA_WeaponSwap", "input_tag": "InputTag.Swap",   "level": 1 }
+      ]
+    },
+    {
+      "name": "DA_AbilitySet_Magnum",
+      "package": "/Game/Abilities/DA_AbilitySet_Magnum",
+      "granted_by": "UBREquipmentComponent on equip - DT_Weapons.csv row 'Magnum', column AbilitySet",
+      "note": "BP20 B2. Empty on disk before this generator.",
+      "abilities": [
+        { "ability": "/Script/Breachpoint.BRGA_WeaponFire", "input_tag": "InputTag.Fire",   "level": 1 },
+        { "ability": "/Script/Breachpoint.BRGA_Reload",     "input_tag": "InputTag.Reload", "level": 1 },
+        { "ability": "/Script/Breachpoint.BRGA_WeaponSwap", "input_tag": "InputTag.Swap",   "level": 1 }
+      ]
+    },
+    {
+      "name": "DA_AbilitySet_Rocket",
+      "package": "/Game/Abilities/DA_AbilitySet_Rocket",
+      "granted_by": "UBREquipmentComponent on equip - DT_Weapons.csv row 'Rocket', column AbilitySet",
+      "note": "BP20 B2. Empty on disk before this generator.",
+      "abilities": [
+        { "ability": "/Script/Breachpoint.BRGA_WeaponFire", "input_tag": "InputTag.Fire",   "level": 1 },
+        { "ability": "/Script/Breachpoint.BRGA_Reload",     "input_tag": "InputTag.Reload", "level": 1 },
+        { "ability": "/Script/Breachpoint.BRGA_WeaponSwap", "input_tag": "InputTag.Swap",   "level": 1 }
+      ]
+    }
+  ],
+  "game_mode": {
+    "note": [
+      "BP20 B3. ABRGameMode's constructor sets all four class defaults in C++; GM_BR's saved",
+      "values still win. Verified 1 Aug 2026 by reading the import table: PlayerControllerClass",
+      "held BP_ShooterPlayerController, the template's controller, so ABRPlayerController's input",
+      "never ran. CLEARING is the fix, not repointing - that is why the C++ defaults were added."
+    ],
+    "package": "/Game/Core/GM_BR",
+    "clear_properties": [
+      "player_controller_class",
+      "default_pawn_class",
+      "player_state_class",
+      "game_state_class"
+    ]
+  },
+  "audit_only": {
+    "note": [
+      "BP20 B4 and B5 are CONFIRMATIONS, not edits. The generator reads them and reports; it",
+      "never writes to PC_BR or BP_BRcharacter, because a write is exactly the failure mode",
+      "B4 warns about (a value serialised on the Blueprint beats Config/DefaultGame.ini forever)."
+    ],
+    "player_controller": {
+      "package": "/Game/Core/PC_BR",
+      "ini_pinned_properties": [
+        "jump_action", "fire_action", "reload_action", "swap_action",
+        "grenade_action", "melee_action", "grapple_action", "sprint_action"
+      ]
+    },
+    "character": {
+      "package": "/Game/Characters/BP_BRcharacter",
+      "expected_properties": ["move_action", "look_action", "mouse_look_action"],
+      "removed_properties": ["jump_action"]
+    }
+  }
+}

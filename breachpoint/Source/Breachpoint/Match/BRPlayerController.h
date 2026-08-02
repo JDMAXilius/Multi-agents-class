@@ -8,10 +8,8 @@
 #include "BRPlayerController.generated.h"
 
 class UBRAbilitySystemComponent;
-class UBRInputConfig;
 class UInputAction;
 class UInputMappingContext;
-class UUserWidget;
 
 UCLASS(config="Game")
 class BREACHPOINT_API ABRPlayerController : public APlayerController
@@ -30,17 +28,11 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Input|Input Mappings")
 	TArray<UInputMappingContext*> DefaultMappingContexts;
 
+	// Was MobileExcludedMappingContexts; renamed with a PropertyRedirect in DefaultEngine.ini so
+	// PC_BR keeps the value it already holds - IMC_MouseLook. Both lists are now added
+	// unconditionally; the touch split they came from is gone.
 	UPROPERTY(EditAnywhere, Category="Input|Input Mappings")
-	TArray<UInputMappingContext*> MobileExcludedMappingContexts;
-
-	UPROPERTY(EditAnywhere, Category="Input|Touch Controls")
-	TSubclassOf<UUserWidget> MobileControlsWidgetClass;
-
-	UPROPERTY()
-	TObjectPtr<UUserWidget> MobileControlsWidget;
-
-	UPROPERTY(EditAnywhere, Config, Category = "Input|Touch Controls")
-	bool bForceTouchControls = false;
+	TArray<UInputMappingContext*> AdditionalMappingContexts;
 
 	// Ability verbs. The pawn owns Move and Look only; everything that routes to the ASC is
 	// bound here because the controller outlives the pawn across respawns.
@@ -68,13 +60,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Config, Category="Input|Abilities")
 	TSoftObjectPtr<UInputAction> SprintAction;
 
-	virtual void BeginPlay() override;
-
 	virtual void SetupInputComponent() override;
 
 	virtual void SetPawn(APawn* InPawn) override;
 
-	bool ShouldUseTouchControls() const;
+	// Answers the one question a successful bind cannot: does a KEY exist for it?
+	void LogKeyCensus(const TArray<const UInputAction*>& BoundActions) const;
 
 	// Binding happens once per possession, so the blocking load is survivable here.
 	static const UInputAction* ResolveAction(const TSoftObjectPtr<UInputAction>& SoftAction, const TCHAR* VerbName);
@@ -90,11 +81,15 @@ protected:
 	void OnFirePressed();
 	void OnFireReleased();
 	void OnReloadPressed();
+	void OnReloadReleased();
 	void OnSwapPressed();
+	void OnSwapReleased();
 	void OnGrenadePressed();
 	void OnGrenadeReleased();
 	void OnMeleePressed();
+	void OnMeleeReleased();
 	void OnGrapplePressed();
+	void OnGrappleReleased();
 	void OnSprintPressed();
 	void OnSprintReleased();
 };
