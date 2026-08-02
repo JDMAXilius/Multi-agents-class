@@ -145,7 +145,9 @@ float UBRCharacterMovementComponent::GetSprintSpeedMultiplier() const
 		return CachedSprintSpeedMultiplier;
 	}
 
-	CachedSprintSpeedMultiplier = 1.f;
+	// The C++ default, not 1.0. Returning 1.0 here means "sprint does nothing" while every log
+	// reports sprint active - a silent no-op is worse than a wrong number.
+	CachedSprintSpeedMultiplier = BRAttributeDefaults::SprintSpeedMultiplier;
 	return CachedSprintSpeedMultiplier;
 }
 

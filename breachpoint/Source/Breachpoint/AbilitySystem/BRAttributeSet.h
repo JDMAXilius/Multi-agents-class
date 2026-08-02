@@ -8,6 +8,20 @@
 
 struct FGameplayEffectSpec;
 
+// C++ FALLBACKS, mirroring Content/Data/CT_Combat.csv. The CSV stays the authority: ApplyInitStats
+// overrides every one of these from the curve table at spawn. They exist so a fighter is never in
+// a nonsense state - zero max health, zero move speed - when a curve row is missing or the
+// DataTable has not been reimported after a CSV edit. If these and the CSV ever disagree, the CSV
+// is right and these are stale.
+namespace BRAttributeDefaults
+{
+	inline constexpr float MaxHealth = 100.f;
+	inline constexpr float MaxShields = 100.f;
+	inline constexpr float MaxGrenades = 2.f;
+	inline constexpr float MoveSpeedBase = 600.f;
+	inline constexpr float SprintSpeedMultiplier = 1.2f;
+}
+
 DECLARE_MULTICAST_DELEGATE_FourParams(FBROnDeathSignature, AActor*, AActor*, AActor*, const FGameplayEffectSpec&);
 
 UCLASS(meta = (DisplayName = "BR Attribute Set"))

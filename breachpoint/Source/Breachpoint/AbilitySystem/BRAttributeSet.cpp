@@ -20,6 +20,24 @@ namespace
 
 UBRAttributeSet::UBRAttributeSet()
 {
+	// Base AND current, both: an attribute left at zero is not "unset" to anything that reads it,
+	// it is zero. A client that renders the HUD before GE_InitStats replicates would show a dead
+	// fighter, and a MoveSpeedBase of zero is a pawn that cannot move with nothing in the log.
+	auto Init = [](FGameplayAttributeData& Attribute, float Value)
+	{
+		Attribute.SetBaseValue(Value);
+		Attribute.SetCurrentValue(Value);
+	};
+
+	Init(MaxHealth, BRAttributeDefaults::MaxHealth);
+	Init(Health, BRAttributeDefaults::MaxHealth);
+	Init(MaxShields, BRAttributeDefaults::MaxShields);
+	Init(Shields, BRAttributeDefaults::MaxShields);
+	Init(MaxGrenades, BRAttributeDefaults::MaxGrenades);
+	Init(Grenades, BRAttributeDefaults::MaxGrenades);
+
+	Init(MoveSpeedBase, BRAttributeDefaults::MoveSpeedBase);
+	Init(SprintSpeedMultiplier, BRAttributeDefaults::SprintSpeedMultiplier);
 }
 
 void UBRAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

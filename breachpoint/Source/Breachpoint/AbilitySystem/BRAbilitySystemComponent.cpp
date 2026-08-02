@@ -339,18 +339,27 @@ bool UBRAbilitySystemComponent::ApplyInitStats()
 	SpecHandle.Data->SetSetByCallerMagnitude(UBRGE_InitStats::ShieldsName, MaxShields);
 	SpecHandle.Data->SetSetByCallerMagnitude(UBRGE_InitStats::GrenadesName, MaxGrenades);
 
-	// MOVEMENT, and it degrades on purpose rather than refusing. Unlike health and shields above,
-	// a missing movement curve is NOT fatal: zero means "no override" to the CMC, which then uses
-	// its own configured MaxWalkSpeed and the curve-read sprint multiplier exactly as before these
-	// attributes existed. That is what lets this land before CT_Combat.csv's two new rows have
-	// been reimported into the DataTable asset - the game keeps moving either way.
-	float BaseSpeed = 0.f;
-	float SprintMultiplier = 0.f;
-	BRCombatCurves::Evaluate(BRCombatCurves::Names::MovementBaseSpeed, BaseSpeed);
-	BRCombatCurves::Evaluate(BRCombatCurves::Names::MovementSprintSpeedMultiplier, SprintMultiplier);
+	// MOVEMENT, and the fallback is NOT zero - that was a real hole. These modifiers are Override,
+	// so passing zero when a curve row is missing does not mean "leave it alone", it actively
+	// writes zero over the constructor's default and the pawn loses its speed. A missing row falls
+	// back to the C++ default instead, which is the same number the CSV carries.
+	float BaseSpeed = BRAttributeDefaults::MoveSpeedBase;
+	float SprintMultiplier = BRAttributeDefaults::SprintSpeedMultiplier;
 
-	SpecHandle.Data->SetSetByCallerMagnitude(UBRGE_InitStats::MoveSpeedBaseName, FMath::Max(0.f, BaseSpeed));
-	SpecHandle.Data->SetSetByCallerMagnitude(UBRGE_InitStats::SprintSpeedMultiplierName, FMath::Max(0.f, SprintMultiplier));
+	float CurveBaseSpeed = 0.f;
+	if (BRCombatCurves::Evaluate(BRCombatCurves::Names::MovementBaseSpeed, CurveBaseSpeed) && CurveBaseSpeed > 0.f)
+	{
+		BaseSpeed = CurveBaseSpeed;
+	}
+
+	float CurveSprintMultiplier = 0.f;
+	if (BRCombatCurves::Evaluate(BRCombatCurves::Names::MovementSprintSpeedMultiplier, CurveSprintMultiplier) && CurveSprintMultiplier > 0.f)
+	{
+		SprintMultiplier = CurveSprintMultiplier;
+	}
+
+	SpecHandle.Data->SetSetByCallerMagnitude(UBRGE_InitStats::MoveSpeedBaseName, BaseSpeed);
+	SpecHandle.Data->SetSetByCallerMagnitude(UBRGE_InitStats::SprintSpeedMultiplierName, SprintMultiplier);
 
 	ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 
