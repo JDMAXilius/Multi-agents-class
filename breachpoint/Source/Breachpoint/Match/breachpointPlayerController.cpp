@@ -1,16 +1,16 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
-#include "breachpointPlayerController.h"
+#include "Match/breachpointPlayerController.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
 #include "InputMappingContext.h"
-#include "breachpointCameraManager.h"
+#include "Camera/BRPlayerCameraManager.h"
 #include "Blueprint/UserWidget.h"
 #include "Breachpoint.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 
 AbreachpointPlayerController::AbreachpointPlayerController()
 {
-	PlayerCameraManagerClass = AbreachpointCameraManager::StaticClass();
+	PlayerCameraManagerClass = ABRPlayerCameraManager::StaticClass();
 }
 
 void AbreachpointPlayerController::BeginPlay()

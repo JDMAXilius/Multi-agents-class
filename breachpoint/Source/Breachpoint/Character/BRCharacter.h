@@ -30,6 +30,9 @@ public:
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
 
+	// Reads the CDO, so the stage is one process-wide fact. Call BRGas::IsStageEnabled, not this.
+	static EBRGasStage GetConfiguredGasStage();
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	USkeletalMeshComponent* FirstPersonMesh;
 
@@ -37,6 +40,11 @@ public:
 	UCameraComponent* FirstPersonCameraComponent;
 
 protected:
+
+	// Config only, deliberately: no edit specifier means a Blueprint cannot serialise a value
+	// that would beat the ini. Set in Config/DefaultGame.ini.
+	UPROPERTY(Config)
+	EBRGasStage GasStage = EBRGasStage::Off;
 
 	UPROPERTY(EditAnywhere, Category ="Input")
 	UInputAction* JumpAction;

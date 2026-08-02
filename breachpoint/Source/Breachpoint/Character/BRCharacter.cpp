@@ -78,6 +78,11 @@ void ABRCharacter::OnRep_PlayerState()
 	InitializeAbilitySystem(TEXT("OnRep_PlayerState (client)"));
 }
 
+EBRGasStage ABRCharacter::GetConfiguredGasStage()
+{
+	return GetDefault<ABRCharacter>()->GasStage;
+}
+
 void ABRCharacter::InitializeAbilitySystem(const TCHAR* CallSite)
 {
 	if (!BRGas::IsStageEnabled(EBRGasStage::AttributesOnly))

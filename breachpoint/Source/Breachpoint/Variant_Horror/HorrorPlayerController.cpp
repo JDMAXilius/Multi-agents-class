@@ -5,7 +5,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
 #include "InputMappingContext.h"
-#include "breachpointCameraManager.h"
+#include "Camera/BRPlayerCameraManager.h"
 #include "HorrorCharacter.h"
 #include "HorrorUI.h"
 #include "Breachpoint.h"
@@ -14,7 +14,7 @@
 AHorrorPlayerController::AHorrorPlayerController()
 {
 	// set the player camera manager class
-	PlayerCameraManagerClass = AbreachpointCameraManager::StaticClass();
+	PlayerCameraManagerClass = ABRPlayerCameraManager::StaticClass();
 }
 
 void AHorrorPlayerController::BeginPlay()

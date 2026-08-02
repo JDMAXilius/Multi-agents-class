@@ -14,7 +14,7 @@ class UInputAction;
 class UInputMappingContext;
 class UUserWidget;
 
-UCLASS(abstract, config="Game")
+UCLASS(config="Game")
 class BREACHPOINT_API ABRPlayerController : public APlayerController
 {
 	GENERATED_BODY()

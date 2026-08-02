@@ -1,8 +1,6 @@
 // Breachpoint. Log channels, collision channel aliases, and the GAS stage gate.
 #include "Core/BRCore.h"
 
-#include "Misc/DelayedAutoRegister.h"
-
 #include "Character/BRCharacter.h"
 
 DEFINE_LOG_CATEGORY(LogBRCombat);
@@ -31,22 +29,11 @@ const TCHAR* BRGas::ToString(EBRGasStage Stage)
 
 EBRGasStage BRGas::GetStage()
 {
-	static const EBRGasStage Resolved = []()
-	{
-		return Resolved;
-	}();
-
+	static const EBRGasStage Resolved = ABRCharacter::GetConfiguredGasStage();
 	return Resolved;
 }
 
 bool BRGas::IsStageEnabled(EBRGasStage Required)
 {
 	return GetStage() >= Required;
-}
-
-namespace
-{
-	const FDelayedAutoRegisterHelper GBRGasStageAnnouncer(
-		EDelayedRegisterRunPhase::EndOfEngineInit,
-		[]() { BRGas::GetStage(); });
 }

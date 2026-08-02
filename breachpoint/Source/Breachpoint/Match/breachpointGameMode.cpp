@@ -1,5 +1,5 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
-#include "breachpointGameMode.h"
+#include "Match/breachpointGameMode.h"
 
 AbreachpointGameMode::AbreachpointGameMode()
 {

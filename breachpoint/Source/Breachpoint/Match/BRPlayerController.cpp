@@ -3,14 +3,14 @@
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
 #include "InputMappingContext.h"
-#include "breachpointCameraManager.h"
+#include "Camera/BRPlayerCameraManager.h"
 #include "Blueprint/UserWidget.h"
 #include "Breachpoint.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 
 ABRPlayerController::ABRPlayerController()
 {
-	PlayerCameraManagerClass = AbreachpointCameraManager::StaticClass();
+	PlayerCameraManagerClass = ABRPlayerCameraManager::StaticClass();
 }
 
 void ABRPlayerController::BeginPlay()
