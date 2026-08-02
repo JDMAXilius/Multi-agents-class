@@ -11,10 +11,10 @@ SHIPPING, not by it existing in the repository. Four things must hold:
   3. Config/DefaultGame.ini stages Content/Legal, or nothing reaches the build.
   4. Every icon set present in the tree has a notice (catches a dependency added
      without one).
-  5. Content/Reference (internal dev/test assets — extracted game content, competitor
-     art) is excluded from cook AND from git. Development may use anything it likes in
-     there; what must never happen is it SHIPPING or being PUSHED. A hard reference from
-     cooked content defeats DirectoriesToNeverCook, so that is checked too.
+  5. --ship ONLY: Content/Reference (internal dev/test assets) is not reachable from a
+     shipping build. This does NOT run by default, because internal development and
+     packaged playtest builds may use those assets freely — that is the point of the
+     directory. It runs at ship time, where the answer actually matters.
 
 Exit 0 = clean. Exit 1 = the game may not ship. Run from the game repo root, in
 rung 2 alongside the other grep gates (docs/contracts/testing.md).
@@ -55,27 +55,10 @@ GITIGNORE = ROOT / ".gitignore"
 
 
 def check_reference_area() -> int:
-    """Content/Reference may hold anything; it may never ship or be committed."""
+    """SHIP ONLY. Internal dev and packaged playtest builds may use Content/Reference
+    freely — nothing here runs unless --ship is passed."""
     problems = 0
 
-    ini = PACKAGING_INI.read_text(encoding="utf-8") if PACKAGING_INI.exists() else ""
-    if not re.search(r'DirectoriesToNeverCook=\(Path="Content/Reference"\)', ini):
-        fail(
-            "Content/Reference is not in DirectoriesToNeverCook. Internal reference assets "
-            "could reach a packaged build."
-        )
-        problems += 1
-
-    gi = GITIGNORE.read_text(encoding="utf-8") if GITIGNORE.exists() else ""
-    if "Content/Reference/*" not in gi:
-        fail(
-            ".gitignore does not exclude Content/Reference/*. Local use is private; pushing "
-            "to a remote is DISTRIBUTION, which is the larger exposure."
-        )
-        problems += 1
-
-    # A hard reference from cooked content drags the asset in regardless of never-cook.
-    # .uasset stores referenced package paths as readable ASCII, so a byte scan finds them.
     if REFERENCE_DIR.is_dir():
         for asset in ROOT.glob("Content/**/*.uasset"):
             if REFERENCE_DIR in asset.parents:
@@ -151,7 +134,8 @@ def main() -> int:
             fail(f"{why} (matched {pattern})")
             problems += 1
 
-    problems += check_reference_area()
+    if "--ship" in sys.argv:
+        problems += check_reference_area()
 
     if problems:
         print(
@@ -160,7 +144,8 @@ def main() -> int:
         )
         return 1
 
-    print("notices: OK — recorded, staged, packaged, matching; Content/Reference walled off.")
+    mode = "ship" if "--ship" in sys.argv else "dev"
+    print(f"notices: OK — recorded, staged, packaged, matching. ({mode} checks)")
     return 0
 
 

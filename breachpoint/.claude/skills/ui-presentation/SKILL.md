@@ -215,11 +215,12 @@ diffable, and changeable in one commit.
 - **Tick.** Law 4. Bind to `FieldNotify`; never poll.
 - **Ship Halo's art.** Typeface, medal icons, emblems, rank insignia, visor artwork and brand
   marks are 343/Microsoft's. We follow *layout and behaviour*; shipped art is original.
-  **Internal development and testing is explicitly unrestricted** — use original assets as
-  reference, measurement source or placeholder from `Content/Reference/`, which is gitignored
-  and never cooked (`Content/Reference/README.md`). The line is the packaged build and the
-  remote, not your working tree. The one hard rule: **no shipping asset may hard-reference
-  `/Game/Reference/`**, because that cooks it in regardless.
+  **Internal development and testing is explicitly unrestricted, including packaged playtest
+  builds** — use original assets as reference, measurement source or placeholder from
+  `Content/Reference/` (`Content/Reference/README.md`). No cook exclusion, and the verifier
+  ignores that directory unless run with `--ship`. The only guard is a gitignore, which stops an
+  over-broad `git add` from turning private use into distribution. At ship time, no shipping
+  asset may hard-reference `/Game/Reference/`.
 - **Assert a UI works from PIE alone.** PIE is single-process. Split-screen states, join-in-
   progress, and anything driven by replicated data need rung 4 (R30), and a HUD claim names its
   rung like any other.
