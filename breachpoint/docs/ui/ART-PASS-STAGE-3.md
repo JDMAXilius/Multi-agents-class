@@ -192,7 +192,49 @@ and it waits on six answers, not on 1,561 nodes.
 
 ---
 
-## 7. What this stage did not do
+## 7. Execution record — §6 step 1, done
 
-**No node was modified.** This is survey and planning; the file is unchanged. Execution is §6,
-and step 1 of it is the next action.
+**57 layer names renamed, 22 text nodes rewritten**, across the 27 Breachpoint-owned pages.
+Nothing on a `Refences - …` page was touched. Zero errors.
+
+Three dry runs preceded the write, and each one caught a defect that would have shipped:
+
+| Dry run | Defect caught |
+|---|---|
+| 1 | `Zeta Halo` → *"Zeta Breachpoint"*. `UNSC Alumnium` → *"BREACHPOINT Alumnium"* (it is a Forge material, not a faction). `Cadet Red` → *"Recruit Red"* — a **coating** name colliding with the rank. `Team Slayer` → *"Team Skirmish"*, silently deciding open question **N6**. |
+| 2 | **Meaning inversion in our own engineering prose.** `"no Halo iconography reproduced"` → *"no Breachpoint iconography reproduced"*; `"built 1:1 with Halo Infinite"` → *"built 1:1 with Breachpoint"*. These sentences name Halo deliberately, as the **source**. Rewriting them destroys the note and reverses what it says. |
+| 3 | Clean — executed. |
+
+**Two guards now in the script, and both are load-bearing:**
+
+1. **A `KEEP` list** — `Cadet Red`, `Team Slayer`, `Master Chief` are matched *first* and replaced
+   with themselves, which shields them from every later rule. `Team Slayer` is on it because it
+   is a **live conflict (N6), not a rename** — it ships in VO at `DT_SpotterLines.csv:49`.
+2. **A 60-character prose limit.** Any string longer than that is engineering prose, never a
+   content label, and is reported rather than edited. This is what stops defect 2 recurring, and
+   it is the difference between a find-and-replace and a corrupted spec.
+
+### Deferred, by design — 8 strings
+
+Five are **our own notes that must keep the word "Halo"**, because they cite it as the reference
+being matched: the rank-ladder provenance note on `Art / Insignia`, two HUD anchor notes on
+`UE Handoff`, and the measured motion-tracker note on `HUD / Elements`. **Renaming these would be
+a defect, not progress.**
+
+Three are reference *copy* rather than notes — the `The Void … Halo 3's The Pit` map description
+and the difficulty blurb on `Wireframes`. They belong to the **MAP family, decision N1**, and are
+correctly left for that decision.
+
+### Skipped — 2 nodes
+
+`14:1008` and `14:992` (`UNSC Alumnium`, `Forge Editor`) carry the font **`Industry Medium
+Italic`, which does not exist in this file**. Their layer names were renamed; their text was not.
+Changing a text node's font is a design change, not a nomenclature fix, so the script refused
+rather than substituting one. Resolve by installing Industry or by re-styling those two nodes to
+Rajdhani — a design call.
+
+### What remains
+
+§6 steps 2–4. Step 1 cleared the Breachpoint-owned pages; **the 1,561 count is dominated by the
+`FE / …` screens, which remain blocked on stage 3a (§3)** — layers inside instances cannot be
+renamed, and their mains are on a reference page. That blocker is unchanged by this pass.
