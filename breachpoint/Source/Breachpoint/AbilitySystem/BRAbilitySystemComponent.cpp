@@ -48,6 +48,11 @@ void UBRAbilitySystemComponent::AbilityInputTagPressed(FGameplayTag InputTag)
 	HeldInputTags.AddUnique(InputTag);
 	if (HeldInputTags.Num() == NumBeforeAdd)
 	{
+		// Already held, so this press is swallowed. Legitimate for an auto-repeating trigger,
+		// but it is also what a lost release looks like: once a WhileInputHeld tag is stuck in
+		// the buffer, every later press of that key is silently dead.
+		UE_LOG(LogBRAbility, Log, TEXT("INPUT SWALLOWED: '%s' was already held on '%s'; no release ever cleared it."),
+			*InputTag.ToString(), *GetNameSafe(GetOwner()));
 		return;
 	}
 
@@ -73,10 +78,38 @@ void UBRAbilitySystemComponent::AbilityInputTagPressed(FGameplayTag InputTag)
 
 			AbilitySpecInputPressed(Spec);
 			InvokeInputEventForSpec(Spec, EAbilityGenericReplicatedEvent::InputPressed);
+
+			UE_LOG(LogBRAbility, Log, TEXT("INPUT TO ACTIVE: '%s' -> %s was already running; press forwarded, not re-activated."),
+				*InputTag.ToString(), *GetNameSafe(Spec.Ability->GetClass()));
 		}
 		else
 		{
-			TryActivateAbility(Spec.Handle);
+			// THE RESULT WAS PREVIOUSLY DISCARDED, and that was the blind spot: a refused
+			// activation and a missing spec produced exactly the same silence.
+			const bool bActivated = TryActivateAbility(Spec.Handle);
+
+			if (bActivated)
+			{
+				UE_LOG(LogBRAbility, Log, TEXT("INPUT MATCHED: '%s' -> %s, activated."),
+					*InputTag.ToString(), *GetNameSafe(Spec.Ability->GetClass()));
+			}
+			else
+			{
+				// Re-ask CanActivateAbility purely for its OptionalRelevantTags out-param, which
+				// GAS fills with the REASON - the blocking tag, the missing cost, the live
+				// cooldown. Naming a list of suspects is not a diagnostic; this names the cause.
+				// The call is side-effect free and only runs on the failure path.
+				FGameplayTagContainer FailureTags;
+				Spec.Ability->CanActivateAbility(Spec.Handle, AbilityActorInfo.Get(), nullptr, nullptr, &FailureTags);
+
+				FGameplayTagContainer OwnedTags;
+				GetOwnedGameplayTags(OwnedTags);
+
+				UE_LOG(LogBRAbility, Warning, TEXT("INPUT REFUSED: '%s' -> %s. Reason tags: [%s]. Tags currently on the owner: [%s]."),
+					*InputTag.ToString(), *GetNameSafe(Spec.Ability->GetClass()),
+					FailureTags.IsEmpty() ? TEXT("none reported") : *FailureTags.ToStringSimple(),
+					OwnedTags.IsEmpty() ? TEXT("none") : *OwnedTags.ToStringSimple());
+			}
 		}
 	}
 
@@ -90,12 +123,19 @@ void UBRAbilitySystemComponent::AbilityInputTagPressed(FGameplayTag InputTag)
 
 	// The ledger dedups per owner+tag so each distinct dead verb reports once rather than on
 	// every keypress; ensureAlways because one site serves every tag.
-	if (!Ledger.Contains(LedgerKey))
+	if (Ledger.Contains(LedgerKey))
 	{
-		Ledger.Add(LedgerKey);
-		ensureAlwaysMsgf(false, TEXT("BRAbilitySystemComponent on '%s': input tag '%s' reached the ASC but no granted ability spec carries it. Either the startup loadout was never granted, or no entry in the ability set names this InputTag."),
-			*GetNameSafe(GetOwner()), *InputTag.ToString());
+		return;
 	}
+	Ledger.Add(LedgerKey);
+
+	// ONLY when nothing at all is granted. An unmatched tag on an ASC that does hold abilities
+	// is ordinary: weapon verbs are granted by UBREquipmentComponent when a weapon is equipped,
+	// so pressing reload while empty-handed is a legitimate state and not a wiring fault. The
+	// unambiguous failure is an ASC with no specs whatsoever, which means the loadout grant
+	// never ran.
+	ensureAlwaysMsgf(ActivatableAbilities.Items.Num() > 0, TEXT("BRAbilitySystemComponent on '%s': input tag '%s' reached the ASC and it holds NO granted abilities at all. The startup loadout never ran."),
+		*GetNameSafe(GetOwner()), *InputTag.ToString());
 }
 
 void UBRAbilitySystemComponent::AbilityInputTagReleased(FGameplayTag InputTag)

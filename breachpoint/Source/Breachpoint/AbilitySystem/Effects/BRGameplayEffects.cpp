@@ -131,6 +131,17 @@ UBRGE_Cooldown::UBRGE_Cooldown()
 {
 	DurationPolicy = EGameplayEffectDurationType::HasDuration;
 	DurationMagnitude = FGameplayEffectModifierMagnitude(BRGameplayEffectsInternal::MakeSetByCaller(NAME_None, BRGameplayTags::SetByCaller_CooldownDuration));
+
+	// The engine refuses to treat a GE as a cooldown unless its CDO grants a tag, and warns on
+	// every activation while it does not. The per-ability tag cannot live here - it arrives at
+	// runtime as DynamicGrantedTags in ApplyCooldown - so this grants a shared marker instead.
+	//
+	// State.Cooldown is deliberately NOT in any ability's GetCooldownTags. It is on the target
+	// whenever ANY cooldown is running, so an ability that tested for it would report itself on
+	// cooldown because some other ability is. See UBRGameplayAbility::GetCooldownTags.
+	BRGameplayEffectsInternal::GrantTagToTarget(GEComponents,
+		CreateDefaultSubobject<UTargetTagsGameplayEffectComponent>(TEXT("GrantCooldownTag")),
+		BRGameplayTags::State_Cooldown);
 }
 
 const FName UBRGE_InitStats::MaxHealthName(TEXT("MaxHealth"));

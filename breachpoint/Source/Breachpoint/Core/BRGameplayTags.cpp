@@ -27,6 +27,7 @@ namespace BRGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Melee, "InputTag.Melee", "Ability action: melee attack.");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Grapple, "InputTag.Grapple", "Ability action: grapple.");
 
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Cooldown, "State.Cooldown", "Granted by GE_Cooldown so the engine accepts it as a cooldown GE. SHARED by every cooldown, so it must never appear in an ability's GetCooldownTags or one ability's cooldown would gate them all.");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Shields_Broken, "State.Shields.Broken", "Shields are at zero; applied and removed by GEs only.");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Combat_RecentDamage, "State.Combat.RecentDamage", "Damage taken recently; gates shield regen.");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Movement_Sprinting, "State.Movement.Sprinting", "Sprinting; read by the CMC for the speed multiplier.");

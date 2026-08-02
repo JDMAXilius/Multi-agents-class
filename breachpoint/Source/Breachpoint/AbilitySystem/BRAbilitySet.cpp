@@ -49,6 +49,11 @@ void UBRAbilitySet::GiveToAbilitySystem(UAbilitySystemComponent* ASC, UObject* S
 		}
 
 		OutAbilityHandles.Add(ASC->GiveAbility(Spec));
+
+		UE_LOG(LogBRAbility, Log, TEXT("GRANTED: %s [%s] from set '%s'"),
+			*AbilityClass->GetName(),
+			Entry.InputTag.IsValid() ? *Entry.InputTag.ToString() : TEXT("NO INPUT TAG"),
+			*GetName());
 	}
 
 	for (const FBRAbilitySetEffectEntry& Entry : Effects)

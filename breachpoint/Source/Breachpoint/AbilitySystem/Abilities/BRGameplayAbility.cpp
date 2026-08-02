@@ -8,10 +8,6 @@
 #include "Core/BRCore.h"
 #include "Core/BRGameplayTags.h"
 
-// File-local: one activation line lives here and nothing else in the module logs, so this
-// category has no reason to be visible in a header.
-DEFINE_LOG_CATEGORY_STATIC(LogBRAbility, Log, All);
-
 UBRGameplayAbility::UBRGameplayAbility(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
@@ -39,10 +35,14 @@ void UBRGameplayAbility::ExternalEndAbility()
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }
 
-void UBRGameplayAbility::OnGiveAbility(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpec& Spec)
+void UBRGameplayAbility::OnAvatarSet(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpec& Spec)
 {
-	Super::OnGiveAbility(ActorInfo, Spec);
+	Super::OnAvatarSet(ActorInfo, Spec);
 
+	// OnAvatarSet, not OnGiveAbility. The ASC lives on the PlayerState and outlives the pawn, so
+	// a respawn grants nothing new - it points the existing specs at a new avatar. OnGiveAbility
+	// fires once per grant and would never run again, leaving an OnSpawn ability dead for every
+	// life after the first. OnAvatarSet fires on the grant AND on each new avatar.
 	if (ActivationPolicy != EBRAbilityActivationPolicy::OnSpawn || !ActorInfo)
 	{
 		return;
@@ -106,16 +106,17 @@ void UBRGameplayAbility::HandleInputReleased(float TimeHeld)
 
 const FGameplayTagContainer* UBRGameplayAbility::GetCooldownTags() const
 {
+	// nullptr, not the parent's tags: GE_Cooldown's CDO grants State.Cooldown, which is present
+	// whenever ANY ability is cooling down. Returning it here would make an ability with no
+	// cooldown of its own report itself blocked because something else is on cooldown.
 	if (!CooldownTag.IsValid())
 	{
-		return Super::GetCooldownTags();
+		return nullptr;
 	}
 
+	// This ability's own tag ONLY, for the same reason. The parent container is deliberately not
+	// appended.
 	CooldownTagsScratch.Reset();
-	if (const FGameplayTagContainer* ParentTags = Super::GetCooldownTags())
-	{
-		CooldownTagsScratch.AppendTags(*ParentTags);
-	}
 	CooldownTagsScratch.AddTag(CooldownTag);
 
 	return &CooldownTagsScratch;

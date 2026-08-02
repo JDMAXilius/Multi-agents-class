@@ -96,6 +96,9 @@ void ABRPlayerState::GiveNativeAbility(TSubclassOf<UBRGameplayAbility> AbilityCl
 	FGameplayAbilitySpec Spec(AbilityClass, 1, INDEX_NONE, this);
 	Spec.GetDynamicSpecSourceTags().AddTag(InputTag);
 	StartupAbilityHandles.Add(AbilitySystemComponent->GiveAbility(Spec));
+
+	UE_LOG(LogBRAbility, Log, TEXT("GRANTED: %s [%s] natively from C++"),
+		*AbilityClass->GetName(), *InputTag.ToString());
 }
 
 void ABRPlayerState::ClearStartupLoadout()
