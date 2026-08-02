@@ -83,6 +83,10 @@ UBRGA_Melee::UBRGA_Melee(const FObjectInitializer& ObjectInitializer)
 	AssetTags.AddTag(BRGameplayTags::Ability_Melee);
 	SetAssetTags(AssetTags);
 
+	// Tags are the state language (contracts/gas-purity.md 5): this ability's lifetime IS
+	// the state, so it is readable by every other system without a bool anywhere.
+	ActivationOwnedTags.AddTag(BRGameplayTags::State_Combat_Meleeing);
+
 	CancelAbilitiesWithTag.AddTag(BRGameplayTags::Ability_Sprint);
 
 	bCommitOnActivate = true;

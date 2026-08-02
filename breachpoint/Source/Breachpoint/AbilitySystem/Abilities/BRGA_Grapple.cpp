@@ -29,6 +29,10 @@ UBRGA_Grapple::UBRGA_Grapple(const FObjectInitializer& ObjectInitializer)
 	AssetTags.AddTag(BRGameplayTags::Ability_Grapple);
 	SetAssetTags(AssetTags);
 
+	// Tags are the state language (contracts/gas-purity.md 5): this ability's lifetime IS
+	// the state, so it is readable by every other system without a bool anywhere.
+	ActivationOwnedTags.AddTag(BRGameplayTags::State_Movement_Grappling);
+
 	CooldownTag = BRGameplayTags::Ability_Grapple;
 
 	CancelAbilitiesWithTag.AddTag(BRGameplayTags::Ability_Sprint);

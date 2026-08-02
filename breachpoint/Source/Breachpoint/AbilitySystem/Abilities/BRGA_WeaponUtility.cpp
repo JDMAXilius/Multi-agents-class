@@ -45,6 +45,10 @@ UBRGA_Reload::UBRGA_Reload(const FObjectInitializer& ObjectInitializer)
 	AssetTags.AddTag(BRGameplayTags::Ability_Weapon_Reload);
 	SetAssetTags(AssetTags);
 
+	// Tags are the state language (contracts/gas-purity.md 5): this ability's lifetime IS
+	// the state, so it is readable by every other system without a bool anywhere.
+	ActivationOwnedTags.AddTag(BRGameplayTags::State_Weapon_Reloading);
+
 	CancelAbilitiesWithTag.AddTag(BRGameplayTags::Ability_Sprint);
 
 	bCommitOnActivate = true;
@@ -138,6 +142,10 @@ UBRGA_WeaponSwap::UBRGA_WeaponSwap(const FObjectInitializer& ObjectInitializer)
 	FGameplayTagContainer AssetTags;
 	AssetTags.AddTag(BRGameplayTags::Ability_Weapon_Swap);
 	SetAssetTags(AssetTags);
+
+	// Tags are the state language (contracts/gas-purity.md 5): this ability's lifetime IS
+	// the state, so it is readable by every other system without a bool anywhere.
+	ActivationOwnedTags.AddTag(BRGameplayTags::State_Weapon_Swapping);
 
 	CancelAbilitiesWithTag.AddTag(BRGameplayTags::Ability_Sprint);
 

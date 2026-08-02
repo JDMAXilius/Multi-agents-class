@@ -31,6 +31,11 @@ namespace BRGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Shields_Broken, "State.Shields.Broken", "Shields are at zero; applied and removed by GEs only.");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Combat_RecentDamage, "State.Combat.RecentDamage", "Damage taken recently; gates shield regen.");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Movement_Sprinting, "State.Movement.Sprinting", "Sprinting; read by the CMC for the speed multiplier.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Movement_Grappling, "State.Movement.Grappling", "Granted for BRGA_Grapple's lifetime. The state language, not a bool on the CMC.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Weapon_Reloading, "State.Weapon.Reloading", "Granted for the reload ability's lifetime; what a future fire-interrupts-reload rule would query.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Weapon_Swapping, "State.Weapon.Swapping", "Granted for the swap ability's lifetime; the window in which no weapon is authoritative.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Combat_Meleeing, "State.Combat.Meleeing", "Granted for BRGA_Melee's lifetime, including its trace window.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Combat_ThrowingGrenade, "State.Combat.ThrowingGrenade", "Granted for BRGA_Grenade's lifetime, cook included.");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Dead, "State.Dead", "Dead; blocks every ability activation through one mechanism.");
 
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Damage_Kinetic, "Damage.Kinetic", "Damage type: hitscan/kinetic weapons.");

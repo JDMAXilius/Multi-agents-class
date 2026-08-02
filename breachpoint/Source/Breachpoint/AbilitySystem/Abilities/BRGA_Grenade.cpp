@@ -48,6 +48,10 @@ UBRGA_Grenade::UBRGA_Grenade(const FObjectInitializer& ObjectInitializer)
 	AssetTags.AddTag(GrenadeTag);
 	SetAssetTags(AssetTags);
 
+	// Tags are the state language (contracts/gas-purity.md 5): this ability's lifetime IS
+	// the state, so it is readable by every other system without a bool anywhere.
+	ActivationOwnedTags.AddTag(BRGameplayTags::State_Combat_ThrowingGrenade);
+
 	CancelAbilitiesWithTag.AddTag(BRGameplayTags::Ability_Sprint);
 
 	CostGameplayEffectClass = UBRGE_GrenadeCost::StaticClass();

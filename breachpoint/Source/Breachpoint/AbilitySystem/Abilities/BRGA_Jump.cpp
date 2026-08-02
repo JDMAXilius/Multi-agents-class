@@ -15,6 +15,11 @@ UBRGA_Jump::UBRGA_Jump(const FObjectInitializer& ObjectInitializer)
 	FGameplayTagContainer AssetTags;
 	AssetTags.AddTag(BRGameplayTags::Ability_Jump);
 	SetAssetTags(AssetTags);
+
+	// Every other verb cancels sprint; jump was the sole exception. Leaving the ground cancels
+	// it anyway through BRGA_Sprint's movement-mode handler, but the intent belongs stated here
+	// rather than resting on another ability's implementation detail.
+	CancelAbilitiesWithTag.AddTag(BRGameplayTags::Ability_Sprint);
 }
 
 ACharacter* UBRGA_Jump::GetAvatarCharacter(const FGameplayAbilityActorInfo* ActorInfo) const
