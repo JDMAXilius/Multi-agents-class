@@ -4,7 +4,8 @@
 build. Binding law: `CLAUDE.md` laws 1–8, `docs/DESIGN-RULINGS.md` (R18, R21, R26, R29, R30, R36,
 R37). Method: `.claude/skills/ui-presentation` (design system + Figma handoff) and
 `.claude/skills/ue5-ui-architecture` (CommonUI/MVVM mechanics). Reference tables:
-`docs/UI-DESIGN-SYSTEM.md`, `docs/ui/*`.
+`docs/UI-DESIGN-SYSTEM.md`, `docs/ui/*`. **Asset mechanics — Figma export settings, UE import
+settings, nine-slice, CommonUI style assets: `ASSET-PIPELINE.md` in this folder.**
 
 **How to read the two kinds of claim in this file.** Every statement is marked:
 

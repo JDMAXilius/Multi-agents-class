@@ -175,6 +175,11 @@ renders at any output size. **1 cqw = 12.8 px at the 1280 base** — that is the
 
 ## 8. Figma → UE 5.8: what crosses the boundary, and what does not
 
+> **Mechanics live in `docs/ui/ue-frontend/ASSET-PIPELINE.md`** — export format and scale, the
+> four import settings that matter, nine-slice, Box-vs-Canvas, and the three CommonUI style
+> assets that carry the whole look. The rule that keeps the asset count near zero: **export
+> nothing UMG can draw.**
+
 **Crosses (design owns it):** layout, position, size, spacing, hierarchy, state treatment
 (selected/disabled/focused), colour token *names*, motion timing.
 
