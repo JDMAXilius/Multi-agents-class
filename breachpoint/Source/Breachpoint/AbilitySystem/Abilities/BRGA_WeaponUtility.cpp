@@ -52,11 +52,6 @@ UBRGA_Reload::UBRGA_Reload(const FObjectInitializer& ObjectInitializer)
 
 bool UBRGA_Reload::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, OUT FGameplayTagContainer* OptionalRelevantTags) const
 {
-	if (!BRGas::IsStageEnabled(EBRGasStage::Weapons))
-	{
-		return false;
-	}
-
 	if (!Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags))
 	{
 		return false;
@@ -151,11 +146,6 @@ UBRGA_WeaponSwap::UBRGA_WeaponSwap(const FObjectInitializer& ObjectInitializer)
 
 bool UBRGA_WeaponSwap::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, OUT FGameplayTagContainer* OptionalRelevantTags) const
 {
-	if (!BRGas::IsStageEnabled(EBRGasStage::Weapons))
-	{
-		return false;
-	}
-
 	if (!Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags))
 	{
 		return false;

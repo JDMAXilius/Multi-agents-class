@@ -29,8 +29,6 @@ public:
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
 
-	static EBRGasStage GetConfiguredGasStage();
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	USkeletalMeshComponent* FirstPersonMesh;
 
@@ -38,9 +36,6 @@ public:
 	UCameraComponent* FirstPersonCameraComponent;
 
 protected:
-
-	UPROPERTY(Config)
-	EBRGasStage GasStage = EBRGasStage::Off;
 
 	UPROPERTY(EditAnywhere, Category ="Input")
 	UInputAction* JumpAction;
@@ -82,6 +77,6 @@ public:
 
 	USkeletalMeshComponent* GetMesh3P() const { return GetMesh(); }
 
-	void InitializeAbilitySystem(const TCHAR* CallSite);
+	void InitializeAbilitySystem();
 	UBRCharacterMovementComponent* GetBRCharacterMovement() const;
 };

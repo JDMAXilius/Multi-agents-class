@@ -26,11 +26,6 @@ UBRCharacterMovementComponent* UBRGA_Sprint::GetBRCharacterMovement(const FGamep
 
 bool UBRGA_Sprint::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, OUT FGameplayTagContainer* OptionalRelevantTags) const
 {
-	if (!BRGas::IsStageEnabled(EBRGasStage::Sprint))
-	{
-		return false;
-	}
-
 	return Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags);
 }
 

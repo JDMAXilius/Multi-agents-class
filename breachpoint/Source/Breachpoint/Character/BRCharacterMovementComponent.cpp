@@ -110,11 +110,6 @@ void UBRCharacterMovementComponent::SetSprintIntent(bool bNewWantsToSprint)
 
 bool UBRCharacterMovementComponent::IsSprintIntentValid() const
 {
-	if (!BRGas::IsStageEnabled(EBRGasStage::Sprint))
-	{
-		return false;
-	}
-
 	return bWantsToSprint && IsMovingOnGround();
 }
 

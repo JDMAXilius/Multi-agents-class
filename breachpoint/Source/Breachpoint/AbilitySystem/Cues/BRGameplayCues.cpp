@@ -159,11 +159,6 @@ bool UBRGameplayCue_WeaponFire::HandlesEvent(EGameplayCueEvent::Type EventType) 
 
 bool UBRGameplayCue_WeaponFire::OnExecute_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters) const
 {
-	if (!BRGas::IsStageEnabled(EBRGasStage::Cues))
-	{
-		return false;
-	}
-
 	const UObject* WorldContext = MyTarget;
 	const FVector MuzzleLocation = ResolveCueLocation(MyTarget, Parameters);
 

@@ -59,11 +59,6 @@ float UBRGA_Grapple::GetMaxRangeMetres() const
 
 bool UBRGA_Grapple::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, OUT FGameplayTagContainer* OptionalRelevantTags) const
 {
-	if (!BRGas::IsStageEnabled(EBRGasStage::FullSandbox))
-	{
-		return false;
-	}
-
 	return Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags);
 }
 

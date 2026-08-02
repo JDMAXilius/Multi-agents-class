@@ -66,27 +66,17 @@ UAbilitySystemComponent* ABRCharacter::GetAbilitySystemComponent() const
 void ABRCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
-	InitializeAbilitySystem(TEXT("PossessedBy (server)"));
+	InitializeAbilitySystem();
 }
 
 void ABRCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
-	InitializeAbilitySystem(TEXT("OnRep_PlayerState (client)"));
+	InitializeAbilitySystem();
 }
 
-EBRGasStage ABRCharacter::GetConfiguredGasStage()
+void ABRCharacter::InitializeAbilitySystem()
 {
-	return GetDefault<ABRCharacter>()->GasStage;
-}
-
-void ABRCharacter::InitializeAbilitySystem(const TCHAR* CallSite)
-{
-	if (!BRGas::IsStageEnabled(EBRGasStage::AttributesOnly))
-	{
-		return;
-	}
-
 	ABRPlayerState* BRPlayerState = GetPlayerState<ABRPlayerState>();
 	if (!BRPlayerState)
 	{
@@ -105,6 +95,7 @@ void ABRCharacter::InitializeAbilitySystem(const TCHAR* CallSite)
 		return;
 	}
 	ASC->ApplyInitStats();
+	BRPlayerState->GiveStartupLoadout();
 }
 
 UBRCharacterMovementComponent* ABRCharacter::GetBRCharacterMovement() const

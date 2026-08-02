@@ -39,11 +39,6 @@ UBRAbilitySystemComponent::UBRAbilitySystemComponent(const FObjectInitializer& O
 
 void UBRAbilitySystemComponent::AbilityInputTagPressed(FGameplayTag InputTag)
 {
-	if (!BRGas::IsStageEnabled(EBRGasStage::InputRouted))
-	{
-		return;
-	}
-
 	if (!InputTag.IsValid())
 	{
 		return;
@@ -101,11 +96,6 @@ void UBRAbilitySystemComponent::AbilityInputTagPressed(FGameplayTag InputTag)
 
 void UBRAbilitySystemComponent::AbilityInputTagReleased(FGameplayTag InputTag)
 {
-	if (!BRGas::IsStageEnabled(EBRGasStage::InputRouted))
-	{
-		return;
-	}
-
 	if (!InputTag.IsValid())
 	{
 		return;

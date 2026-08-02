@@ -90,11 +90,6 @@ UBRGA_Melee::UBRGA_Melee(const FObjectInitializer& ObjectInitializer)
 
 bool UBRGA_Melee::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, OUT FGameplayTagContainer* OptionalRelevantTags) const
 {
-	if (!BRGas::IsStageEnabled(EBRGasStage::FullSandbox))
-	{
-		return false;
-	}
-
 	if (!Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags))
 	{
 		return false;

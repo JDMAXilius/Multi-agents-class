@@ -422,11 +422,6 @@ const UBRAbilitySet* UBREquipmentComponent::ResolveAbilitySetForRow(const FDataT
 
 void UBREquipmentComponent::GrantAbilitySetForSlot(int32 SlotIndex)
 {
-	if (!BRGas::IsStageEnabled(EBRGasStage::Granting))
-	{
-		return;
-	}
-
 	if (!HasServerAuthority() || !Slots.IsValidIndex(SlotIndex))
 	{
 		return;
