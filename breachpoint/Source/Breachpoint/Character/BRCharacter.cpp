@@ -107,9 +107,6 @@ void ABRCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 {
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ABRCharacter::DoJumpStart);
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ABRCharacter::DoJumpEnd);
-
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ABRCharacter::MoveInput);
 
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ABRCharacter::LookInput);
@@ -147,14 +144,4 @@ void ABRCharacter::DoMove(float Right, float Forward)
 		AddMovementInput(GetActorRightVector(), Right);
 		AddMovementInput(GetActorForwardVector(), Forward);
 	}
-}
-
-void ABRCharacter::DoJumpStart()
-{
-	Jump();
-}
-
-void ABRCharacter::DoJumpEnd()
-{
-	StopJumping();
 }

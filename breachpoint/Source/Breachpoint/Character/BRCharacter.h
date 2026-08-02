@@ -38,9 +38,6 @@ public:
 protected:
 
 	UPROPERTY(EditAnywhere, Category ="Input")
-	UInputAction* JumpAction;
-
-	UPROPERTY(EditAnywhere, Category ="Input")
 	UInputAction* MoveAction;
 
 	UPROPERTY(EditAnywhere, Category ="Input")
@@ -60,12 +57,6 @@ protected:
 
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoMove(float Right, float Forward);
-
-	UFUNCTION(BlueprintCallable, Category="Input")
-	virtual void DoJumpStart();
-
-	UFUNCTION(BlueprintCallable, Category="Input")
-	virtual void DoJumpEnd();
 
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
 

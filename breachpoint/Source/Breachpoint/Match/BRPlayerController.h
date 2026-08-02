@@ -42,8 +42,11 @@ protected:
 	UPROPERTY(EditAnywhere, Config, Category = "Input|Touch Controls")
 	bool bForceTouchControls = false;
 
-	// Ability verbs. The pawn owns Move/Look/Jump; everything that routes to the ASC is
+	// Ability verbs. The pawn owns Move and Look only; everything that routes to the ASC is
 	// bound here because the controller outlives the pawn across respawns.
+	UPROPERTY(EditDefaultsOnly, Config, Category="Input|Abilities")
+	TSoftObjectPtr<UInputAction> JumpAction;
+
 	UPROPERTY(EditDefaultsOnly, Config, Category="Input|Abilities")
 	TSoftObjectPtr<UInputAction> FireAction;
 
@@ -82,6 +85,8 @@ protected:
 
 	void ReleaseInputTag(FGameplayTag InputTag);
 
+	void OnJumpPressed();
+	void OnJumpReleased();
 	void OnFirePressed();
 	void OnFireReleased();
 	void OnReloadPressed();

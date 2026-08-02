@@ -107,6 +107,7 @@ void ABRPlayerController::SetupInputComponent()
 		}
 	};
 
+	BindPressRelease(JumpAction, TEXT("JumpAction"), &ABRPlayerController::OnJumpPressed, &ABRPlayerController::OnJumpReleased);
 	BindPressRelease(FireAction, TEXT("FireAction"), &ABRPlayerController::OnFirePressed, &ABRPlayerController::OnFireReleased);
 	BindPressRelease(GrenadeAction, TEXT("GrenadeAction"), &ABRPlayerController::OnGrenadePressed, &ABRPlayerController::OnGrenadeReleased);
 	BindPressRelease(SprintAction, TEXT("SprintAction"), &ABRPlayerController::OnSprintPressed, &ABRPlayerController::OnSprintReleased);
@@ -183,6 +184,8 @@ void ABRPlayerController::ReleaseInputTag(FGameplayTag InputTag)
 	}
 }
 
+void ABRPlayerController::OnJumpPressed()      { ActivateByInputTag(BRGameplayTags::InputTag_Jump); }
+void ABRPlayerController::OnJumpReleased()     { ReleaseInputTag(BRGameplayTags::InputTag_Jump); }
 void ABRPlayerController::OnFirePressed()     { ActivateByInputTag(BRGameplayTags::InputTag_Fire); }
 void ABRPlayerController::OnFireReleased()    { ReleaseInputTag(BRGameplayTags::InputTag_Fire); }
 void ABRPlayerController::OnReloadPressed()   { ActivateByInputTag(BRGameplayTags::InputTag_Reload); }
