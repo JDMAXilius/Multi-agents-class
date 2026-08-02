@@ -72,6 +72,7 @@ it is reproduced here so the runner never has to leave its own contract to know 
 
 | Gate | Law behind it |
 |---|---|
+| `python3 Tools/verify_notices.py` exits 0 | **Licence obligation.** Lucide is ISC: the notice must appear in all copies, so it must SHIP, not merely exist in the repo. Checks the record, the staged copy, drift between them, and that `DefaultGame.ini` stages `Content/Legal`. A build that fails this must not ship |
 | `TakeDamage` · `ApplyRadialDamage` · `ApplyPointDamage` · `FDamageEvent` | `gas-purity.md` law 3 — the engine damage API is banned |
 | Direct attribute setter calls outside the AttributeSet's own hooks | `gas-purity.md` law 1 |
 | `AddLooseGameplayTag` outside cosmetic-marked sites | `gas-purity.md` law 5 |
