@@ -1,4 +1,3 @@
-// BREACHPOINT — BP03 step 2. The fire path.
 #pragma once
 
 #include "CoreMinimal.h"

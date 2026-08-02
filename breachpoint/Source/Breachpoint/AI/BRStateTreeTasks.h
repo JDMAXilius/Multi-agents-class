@@ -1,4 +1,3 @@
-// Breachpoint. Layer 2 — every StateTree task and condition ST_Bot is allowed to bind to.
 #pragma once
 
 #include "AI/BRBotBrain.h"

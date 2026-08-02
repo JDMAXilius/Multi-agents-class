@@ -1,4 +1,3 @@
-// BREACHPOINT — BP03 step 2. Reload and swap: the other half of the fire path.
 #include "AbilitySystem/Abilities/BRGA_WeaponUtility.h"
 
 #include "AbilitySystemComponent.h"
@@ -94,9 +93,6 @@ void UBRGA_Reload::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 
 	if (Seconds <= 0.f)
 	{
-		UE_LOG(LogBRCombat, Warning,
-			TEXT("UBRGA_Reload: ReloadTime_s is 0 and no montage raised %s — committing immediately."),
-			*BRGameplayTags::Event_Weapon_ReloadCommit.GetTag().GetTagName().ToString());
 		Commit();
 		return;
 	}
@@ -115,13 +111,6 @@ void UBRGA_Reload::OnReloadCommit(FGameplayEventData Payload)
 
 void UBRGA_Reload::OnFallbackElapsed()
 {
-	if (!bCommitted)
-	{
-		UE_LOG(LogBRCombat, Warning,
-			TEXT("UBRGA_Reload committed on the ReloadTime_s timer, not on %s. No reload montage "
-				 "exists yet (BP18 owns Content); the notify is authoritative once it does."),
-			*BRGameplayTags::Event_Weapon_ReloadCommit.GetTag().GetTagName().ToString());
-	}
 	Commit();
 }
 
@@ -204,11 +193,6 @@ void UBRGA_WeaponSwap::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
 
 	if (Seconds <= 0.f)
 	{
-		UE_LOG(LogBRCombat, Warning,
-			TEXT("UBRGA_WeaponSwap: EquipTime_s is 0 and no montage raised %s — committing "
-				 "immediately. R3 balances the sandbox around a 0.4 s swap, so a 0 here is a data "
-				 "gap, not a fast weapon."),
-			*BRGameplayTags::Event_Weapon_SwapCommit.GetTag().GetTagName().ToString());
 		Commit();
 		return;
 	}
@@ -227,13 +211,6 @@ void UBRGA_WeaponSwap::OnSwapCommit(FGameplayEventData Payload)
 
 void UBRGA_WeaponSwap::OnFallbackElapsed()
 {
-	if (!bCommitted)
-	{
-		UE_LOG(LogBRCombat, Warning,
-			TEXT("UBRGA_WeaponSwap committed on the EquipTime_s timer, not on %s. No swap montage "
-				 "exists yet (BP18 owns Content)."),
-			*BRGameplayTags::Event_Weapon_SwapCommit.GetTag().GetTagName().ToString());
-	}
 	Commit();
 }
 

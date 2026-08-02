@@ -1,4 +1,3 @@
-// Breachpoint. THE attribute set: shields over health, one damage entry point, one death.
 #pragma once
 
 #include "AbilitySystemComponent.h"

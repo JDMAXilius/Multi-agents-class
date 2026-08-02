@@ -1,4 +1,3 @@
-// Breachpoint. The PlayerState: the ASC and the attribute set live here.
 #include "Match/BRPlayerState.h"
 
 #include "AbilitySystem/BRAbilitySystemComponent.h"
@@ -38,10 +37,5 @@ void ABRPlayerState::PostInitializeComponents()
 	if (AbilitySystemComponent)
 	{
 		AbilitySystemComponent->InitAbilityActorInfo(this, nullptr);
-	}
-	else
-	{
-		UE_LOG(LogBRCombat, Error, TEXT("BRPlayerState '%s': no AbilitySystemComponent after construction. Nothing in the combat system will work for this player."),
-			*GetName());
 	}
 }

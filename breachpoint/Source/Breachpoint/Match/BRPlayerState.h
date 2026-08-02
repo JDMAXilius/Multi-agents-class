@@ -1,4 +1,3 @@
-// Breachpoint. The PlayerState: the ASC and the attribute set live here.
 #pragma once
 
 #include "AbilitySystemInterface.h"

@@ -1,4 +1,3 @@
-// Breachpoint. DataTable row structs — the ONE header for every DT_ row type.
 #pragma once
 
 #include "CoreMinimal.h"

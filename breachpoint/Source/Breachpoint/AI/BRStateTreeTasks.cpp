@@ -1,12 +1,9 @@
-// Breachpoint. Layer 2 implementation. Tasks press buttons and move; they never decide goals.
 #include "AI/BRStateTreeTasks.h"
 
 #include "AI/BRBotController.h"
 #include "Core/BRGameplayTags.h"
 #include "GameFramework/Pawn.h"
 #include "StateTreeExecutionContext.h"
-
-DEFINE_LOG_CATEGORY_STATIC(LogBRBotSpine, Log, All);
 
 ABRBotController* BRBotStateTree::GetBotController(FStateTreeExecutionContext& Context)
 {

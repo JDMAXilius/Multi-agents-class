@@ -1,4 +1,3 @@
-// Breachpoint. The ONE reader of CT_Combat — every combat coefficient enters the sim here.
 #include "AbilitySystem/BRCombatCurves.h"
 
 #include "Engine/CurveTable.h"
@@ -40,15 +39,12 @@ namespace BRCombatCurves
 		const UBRCombatCurveConfig* Config = GetDefault<UBRCombatCurveConfig>();
 		if (!Config || Config->CombatCurveTable.IsNull())
 		{
-			UE_LOG(LogBRCombat, Error, TEXT("BRCombatCurves: no CT_Combat configured (UBRCombatCurveConfig::CombatCurveTable is null). Every combat coefficient is unavailable."));
 			return nullptr;
 		}
 
 		const UCurveTable* Table = Config->CombatCurveTable.LoadSynchronous();
 		if (!Table)
 		{
-			UE_LOG(LogBRCombat, Error, TEXT("BRCombatCurves: CT_Combat failed to load from '%s'. Every combat coefficient is unavailable."),
-				*Config->CombatCurveTable.ToString());
 			return nullptr;
 		}
 
@@ -76,11 +72,6 @@ namespace BRCombatCurves
 		{
 			bool bAlreadyReported = false;
 			Private::ReportedMissingCurves().Add(CurveName, &bAlreadyReported);
-			if (!bAlreadyReported)
-			{
-				UE_LOG(LogBRCombat, Warning, TEXT("BRCombatCurves: CT_Combat has no curve '%s'. The caller decides what that means; nothing was substituted here."),
-					*CurveName.ToString());
-			}
 			return false;
 		}
 

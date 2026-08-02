@@ -1,4 +1,3 @@
-// Breachpoint. Weapons lying in the world, and the node that puts the Rocket there.
 #include "Weapons/BRWeaponPickup.h"
 
 #include "AbilitySystemComponent.h"
@@ -116,12 +115,10 @@ ABRWeaponPickup* ABRWeaponPickup::SpawnDroppedWeapon(
 
 	if (!PickupClass)
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("SpawnDroppedWeapon: no PickupClass supplied; nothing dropped."));
 		return nullptr;
 	}
 	if (InWeaponRow.RowName.IsNone() || !InWeaponRow.DataTable)
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("SpawnDroppedWeapon: no weapon row supplied; nothing dropped."));
 		return nullptr;
 	}
 
@@ -225,7 +222,6 @@ bool ABRWeaponPickup::AttractTo(const FVector& InTargetLocation, AActor* InReque
 {
 	if (!HasAuthority())
 	{
-		UE_LOG(LogBRCombat, Warning, TEXT("ABRWeaponPickup::AttractTo called without authority; ignored."));
 		return false;
 	}
 	if (bConsumed)
@@ -235,8 +231,6 @@ bool ABRWeaponPickup::AttractTo(const FVector& InTargetLocation, AActor* InReque
 
 	if (!OnAttractRequested.IsBound())
 	{
-		UE_LOG(LogBRCombat, Error,
-			TEXT("ABRWeaponPickup::AttractTo: no attract driver is bound (BP06 owns it). Request refused."));
 		return false;
 	}
 
@@ -390,20 +384,14 @@ void ABRPowerWeaponSpawner::ArmSpawner()
 
 	if (!PickupClass)
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("%s: no PickupClass set; node not armed."), *GetName());
 		return;
 	}
 	if (WeaponRow.RowName.IsNone() || !WeaponRow.DataTable)
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("%s: no WeaponRow set; node not armed."), *GetName());
 		return;
 	}
 	if (RespawnIntervalSeconds <= 0.f)
 	{
-		UE_LOG(LogBRCombat, Error,
-			TEXT("%s: RespawnIntervalSeconds is unset (%.1f). Ruling R4's 90 s must come from data — "
-				 "node not armed, and no default was invented."),
-			*GetName(), RespawnIntervalSeconds);
 		return;
 	}
 
@@ -479,8 +467,6 @@ void ABRPowerWeaponSpawner::SpawnPickup()
 		: nullptr;
 	if (!Row)
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("%s: row '%s' missing from the table; nothing spawned."),
-			*GetName(), *WeaponRow.RowName.ToString());
 		return;
 	}
 
@@ -495,10 +481,6 @@ void ABRPowerWeaponSpawner::SpawnPickup()
 	{
 		CurrentPickup->OnCollected.AddUObject(this, &ABRPowerWeaponSpawner::HandlePickupCollected);
 		RespawnAvailableServerTime = -1.f;
-	}
-	else
-	{
-		UE_LOG(LogBRCombat, Error, TEXT("%s: pickup spawn failed; node idle until re-armed."), *GetName());
 	}
 }
 

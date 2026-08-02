@@ -1,4 +1,3 @@
-// BREACHPOINT — BP03 step 2. Reload and swap: the other half of the fire path.
 #pragma once
 
 #include "CoreMinimal.h"

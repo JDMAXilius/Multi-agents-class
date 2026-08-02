@@ -1,4 +1,3 @@
-// Breachpoint. Breachpoint.Sim.Shields -- the R5 pillars, pinned so they cannot move quietly.
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 

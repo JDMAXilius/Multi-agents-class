@@ -1,4 +1,3 @@
-// Breachpoint. The one widget base.
 #include "UI/BRActivatableWidget.h"
 
 #include "Core/BRCore.h"

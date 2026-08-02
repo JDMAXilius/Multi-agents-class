@@ -1,4 +1,3 @@
-// Breachpoint. The server-only match spine: phase machine, kill attribution, scored respawn.
 #pragma once
 
 #include "CoreMinimal.h"

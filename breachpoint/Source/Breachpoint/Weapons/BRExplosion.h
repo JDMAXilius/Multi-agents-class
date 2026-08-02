@@ -1,4 +1,3 @@
-// Breachpoint. OUR radial damage — the one blast rule, shared by the grenade and the rocket.
 #pragma once
 
 #include "CoreMinimal.h"

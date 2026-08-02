@@ -1,4 +1,3 @@
-// Breachpoint. Sprint: the WhileHeld prover and the first predicted movement state.
 #include "AbilitySystem/Abilities/BRGA_Sprint.h"
 
 #include "GameFramework/Character.h"
@@ -47,8 +46,6 @@ void UBRGA_Sprint::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 	UBRCharacterMovementComponent* Movement = GetBRCharacterMovement(ActorInfo);
 	if (!Movement)
 	{
-		UE_LOG(LogBRCombat, Warning, TEXT("UBRGA_Sprint: no UBRCharacterMovementComponent on avatar '%s'; ending immediately."),
-			*GetNameSafe(ActorInfo ? ActorInfo->AvatarActor.Get() : nullptr));
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}

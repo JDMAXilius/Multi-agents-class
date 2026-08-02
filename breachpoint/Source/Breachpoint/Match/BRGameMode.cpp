@@ -1,4 +1,3 @@
-// Breachpoint. The server-only match spine: phase machine, kill attribution, scored respawn.
 #include "Match/BRGameMode.h"
 
 #include "AbilitySystemComponent.h"
@@ -348,8 +347,6 @@ void ABRGameMode::NotifyDamageDealt(APlayerState* Attacker, APlayerState* Victim
 
 	if (!(Amount > 0.f) || Amount > MaxPlausibleSingleDamage || !FMath::IsFinite(Amount))
 	{
-		UE_LOG(LogBRNet, Warning, TEXT("[Match] Implausible damage report %.2f dropped (victim %s)."),
-			Amount, *GetNameSafe(Victim));
 		return;
 	}
 
@@ -527,9 +524,6 @@ void ABRGameMode::HandleDeathEvent(APlayerState* Victim, APlayerState* EventInst
 		OnPlayerKilled.Broadcast(Killer, Victim, Assists);
 
 		ScheduleWinCheck();
-	}
-	else
-	{
 	}
 
 	StartRespawnTimer(Victim->GetOwningController());
@@ -909,7 +903,6 @@ void ABRGameMode::ApplyMatchRules(int32 InScoreLimit, float InMatchSeconds, floa
 	const ABRGameState* BRGS = GetBRGameState();
 	if (BRGS && BRGS->IsScoringOpen())
 	{
-		UE_LOG(LogBRNet, Warning, TEXT("[Match] ApplyMatchRules refused: scoring already open."));
 		return;
 	}
 

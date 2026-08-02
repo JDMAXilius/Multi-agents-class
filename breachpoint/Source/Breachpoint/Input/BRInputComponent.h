@@ -1,4 +1,3 @@
-// Breachpoint. The Enhanced Input -> InputTag routing component.
 #pragma once
 
 #include "CoreMinimal.h"

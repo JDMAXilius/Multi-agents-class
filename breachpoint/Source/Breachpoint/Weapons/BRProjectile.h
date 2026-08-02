@@ -1,4 +1,3 @@
-// Breachpoint. The server-authoritative projectile — D6's fourth unit of ARCHITECTURE §3.5.
 #pragma once
 
 #include "CoreMinimal.h"

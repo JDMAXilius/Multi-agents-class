@@ -1,4 +1,3 @@
-// Breachpoint. The two ViewModels. Gameplay pushes; widgets never reach back.
 #pragma once
 
 #include "MVVMViewModelBase.h"

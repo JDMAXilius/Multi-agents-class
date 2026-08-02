@@ -1,4 +1,3 @@
-// Breachpoint. One equipped weapon: the row it came from, and its ammunition.
 #include "Weapons/BRWeaponInstance.h"
 
 #include "Core/BRCore.h"
@@ -66,9 +65,6 @@ void UBRWeaponInstance::InitializeFromRow(const FDataTableRowHandle& InWeaponRow
 	const FBRWeaponRow* Row = GetRow();
 	if (!Row)
 	{
-		UE_LOG(LogBRCombat, Error,
-			TEXT("BRWeaponInstance: row '%s' not found in the supplied DataTable; weapon left unarmed."),
-			*InWeaponRow.RowName.ToString());
 		AmmoInMag = 0;
 		AmmoReserve = 0;
 		OnAmmoChanged.Broadcast(this);

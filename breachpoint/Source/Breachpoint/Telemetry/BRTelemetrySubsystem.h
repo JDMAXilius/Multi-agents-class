@@ -1,4 +1,3 @@
-// Breachpoint. Match telemetry collection: events, not opinions. Authority-only, no PII, no tick.
 #pragma once
 
 #include "CoreMinimal.h"

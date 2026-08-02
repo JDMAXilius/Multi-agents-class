@@ -1,4 +1,3 @@
-// Breachpoint. The CMC subclass: sprint intent, grapple intent, the saved move that replays both,
 #pragma once
 
 #include "CoreMinimal.h"

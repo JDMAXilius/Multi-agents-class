@@ -1,4 +1,3 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
 #include "Match/breachpointPlayerController.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
@@ -25,7 +24,6 @@ void AbreachpointPlayerController::BeginPlay()
 		{
 			MobileControlsWidget->AddToPlayerScreen(0);
 		} else {
-			UE_LOG(Logbreachpoint, Error, TEXT("Could not spawn mobile controls widget."));
 		}
 	}
 }

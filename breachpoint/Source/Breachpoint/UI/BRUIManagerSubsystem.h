@@ -1,4 +1,3 @@
-// Breachpoint. The screen-management spine: one entry point for pushing and popping screens.
 #pragma once
 
 #include "Subsystems/GameInstanceSubsystem.h"

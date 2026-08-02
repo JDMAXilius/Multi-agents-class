@@ -1,4 +1,3 @@
-// Breachpoint. The ASC: input-buffered tag activation, prediction-window helpers.
 #pragma once
 
 #include "AbilitySystemComponent.h"

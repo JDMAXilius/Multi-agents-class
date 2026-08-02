@@ -1,4 +1,3 @@
-// Breachpoint. The glue: events -> brain -> StateTree -> InputTags. Nothing else touches the world.
 #pragma once
 
 #include "AIController.h"

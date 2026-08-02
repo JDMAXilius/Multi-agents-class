@@ -1,4 +1,3 @@
-// Breachpoint. THE generic GameplayEffect library — eight classes, no assets, no proliferation.
 #include "AbilitySystem/Effects/BRGameplayEffects.h"
 
 #include "AbilitySystemComponent.h"
@@ -64,21 +63,17 @@ FGameplayEffectSpecHandle UBRGE_Damage::MakeSpec(UAbilitySystemComponent* Source
 {
 	if (!SourceASC)
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("UBRGE_Damage::MakeSpec called with a null source ASC. No spec was built; nothing was substituted."));
 		return FGameplayEffectSpecHandle();
 	}
 
 	const FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(StaticClass(), 1.f, Context);
 	if (!SpecHandle.IsValid() || !SpecHandle.Data.IsValid())
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("UBRGE_Damage::MakeSpec: MakeOutgoingSpec failed on '%s'."), *GetNameSafe(SourceASC->GetOwner()));
 		return SpecHandle;
 	}
 
 	if (BaseDamage < 0.f)
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("UBRGE_Damage::MakeSpec: negative BaseDamage (%.3f) from '%s' — REFUSED, clamped to zero. Healing is a Health modifier, not negative damage."),
-			BaseDamage, *GetNameSafe(SourceASC->GetOwner()));
 		BaseDamage = 0.f;
 	}
 
@@ -96,20 +91,16 @@ bool UBRGE_Damage::ApplyToTarget(const FGameplayEffectSpecHandle& SpecHandle, UA
 {
 	if (!SpecHandle.IsValid() || !SpecHandle.Data.IsValid())
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("UBRGE_Damage::ApplyToTarget: invalid spec handle; nothing applied."));
 		return false;
 	}
 
 	if (!SourceASC || !TargetASC)
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("UBRGE_Damage::ApplyToTarget: null %s ASC; nothing applied."), SourceASC ? TEXT("target") : TEXT("source"));
 		return false;
 	}
 
 	if (!SourceASC->GetOwner() || !SourceASC->GetOwner()->HasAuthority())
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("UBRGE_Damage::ApplyToTarget called without authority on '%s' — REFUSED. Damage is applied on the server only."),
-			*GetNameSafe(SourceASC->GetOwner()));
 		return false;
 	}
 
@@ -217,10 +208,6 @@ UBRGE_GrenadeCost::UBRGE_GrenadeCost()
 	const FGameplayAttribute GrenadeCount = ResolveGrenadeCountAttribute();
 	if (!GrenadeCount.IsValid())
 	{
-		UE_LOG(LogBRCombat, Error,
-			TEXT("UBRGE_GrenadeCost: UBRAttributeSet has no '%s' FGameplayAttributeData property, so the grenade cost is INERT and grenades remain FREE. "
-				 "This effect must not be wired as an ability cost until the attribute lands (see the class comment for the full specification hand-off)."),
-			*GrenadeCountAttributeName.ToString());
 		return;
 	}
 
@@ -235,30 +222,22 @@ FGameplayEffectSpecHandle UBRGE_GrenadeCost::MakeSpec(UAbilitySystemComponent* S
 {
 	if (!SpenderASC)
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("UBRGE_GrenadeCost::MakeSpec called with a null ASC. No spec was built; nothing was substituted."));
 		return FGameplayEffectSpecHandle();
 	}
 
 	if (!IsOperational())
 	{
-		UE_LOG(LogBRCombat, Error,
-			TEXT("UBRGE_GrenadeCost::MakeSpec on '%s': the '%s' attribute does not exist on UBRAttributeSet, so no cost spec can be built. The throw must be REFUSED or left free deliberately — not charged to nothing."),
-			*GetNameSafe(SpenderASC->GetOwner()), *GrenadeCountAttributeName.ToString());
 		return FGameplayEffectSpecHandle();
 	}
 
 	if (GrenadesPerThrow <= 0.f)
 	{
-		UE_LOG(LogBRCombat, Error,
-			TEXT("UBRGE_GrenadeCost::MakeSpec on '%s': cost of %.3f grenades is not a cost — REFUSED. The count comes from data and may not be invented here."),
-			*GetNameSafe(SpenderASC->GetOwner()), GrenadesPerThrow);
 		return FGameplayEffectSpecHandle();
 	}
 
 	const FGameplayEffectSpecHandle SpecHandle = SpenderASC->MakeOutgoingSpec(StaticClass(), 1.f, Context);
 	if (!SpecHandle.IsValid() || !SpecHandle.Data.IsValid())
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("UBRGE_GrenadeCost::MakeSpec: MakeOutgoingSpec failed on '%s'."), *GetNameSafe(SpenderASC->GetOwner()));
 		return SpecHandle;
 	}
 

@@ -1,4 +1,3 @@
-// Breachpoint. The ONE reader of CT_Combat — every combat coefficient enters the sim here.
 #pragma once
 
 #include "CoreMinimal.h"

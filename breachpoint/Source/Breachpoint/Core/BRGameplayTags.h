@@ -1,4 +1,3 @@
-// Breachpoint. All native gameplay tags.
 #pragma once
 
 #include "NativeGameplayTags.h"

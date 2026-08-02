@@ -1,4 +1,3 @@
-// Breachpoint. The two ViewModels.
 #include "UI/BRViewModels.h"
 
 #include "AbilitySystemComponent.h"
@@ -487,14 +486,6 @@ void UBRVM_Match::PushKillfeedEntry(const FBRKillfeedViewEntry& InEntry)
 
 	while (KillfeedEntries.Num() >= MaxVisible)
 	{
-		UE_LOG(LogBRUI, Warning,
-			TEXT("Killfeed window full (%d rows); dropping oldest row seq=%d ('%s' -> '%s'). ")
-			TEXT("Raise BRUISettings.KillfeedMaxVisibleEntries or shorten KillfeedEntryLifetimeSeconds."),
-			MaxVisible,
-			KillfeedEntries[0].SequenceId,
-			*KillfeedEntries[0].KillerName.ToString(),
-			*KillfeedEntries[0].VictimName.ToString());
-
 		KillfeedEntries.RemoveAt(0);
 		if (KillfeedExpiryTimes.Num() > 0)
 		{

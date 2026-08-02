@@ -1,4 +1,3 @@
-// Breachpoint. Match telemetry collection: events, not opinions. Authority-only, no PII, no tick.
 #include "Telemetry/BRTelemetrySubsystem.h"
 
 #include "Core/BRCore.h"

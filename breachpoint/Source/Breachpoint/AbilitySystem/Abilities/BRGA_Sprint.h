@@ -1,4 +1,3 @@
-// Breachpoint. Sprint: the WhileHeld prover and the first predicted movement state.
 #pragma once
 
 #include "AbilitySystem/Abilities/BRGameplayAbility.h"

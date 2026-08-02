@@ -1,4 +1,3 @@
-// Breachpoint. Bot roster management. Authority-only; the GameMode still owns spawning.
 #include "AI/BRBotManagerComponent.h"
 
 #include "AI/BRBotController.h"
@@ -6,8 +5,6 @@
 #include "GameFramework/GameModeBase.h"
 #include "GameFramework/PlayerController.h"
 #include "TimerManager.h"
-
-DEFINE_LOG_CATEGORY_STATIC(LogBRBotManager, Log, All);
 
 UBRBotManagerComponent::UBRBotManagerComponent()
 {
@@ -22,7 +19,6 @@ void UBRBotManagerComponent::BeginPlay()
 
 	if (GetOwner() != nullptr && !GetOwner()->HasAuthority())
 	{
-		UE_LOG(LogBRBotManager, Error, TEXT("BotManager exists on a non-authoritative owner — disabling."));
 		Deactivate();
 	}
 }
@@ -53,7 +49,6 @@ bool UBRBotManagerComponent::LoadBotTables(const UDataTable* TuningTable, const 
 	FString Error;
 	if (!UBRBotBrain::ReadAmbitionDefs(AmbitionsTable, AmbitionDefs, Error))
 	{
-		UE_LOG(LogBRBotManager, Error, TEXT("DT_BotAmbitions unavailable: %s — no bots will be spawned."), *Error);
 		return false;
 	}
 
@@ -67,8 +62,6 @@ bool UBRBotManagerComponent::LoadBotTables(const UDataTable* TuningTable, const 
 		FBRBotTierScalars Scalars;
 		if (!UBRBotBrain::ReadTierScalars(TuningTable, TierName, Scalars, Error))
 		{
-			UE_LOG(LogBRBotManager, Error, TEXT("DT_BotTuning row '%s' unavailable: %s — no bots will be spawned."),
-				*TierName.ToString(), *Error);
 			return false;
 		}
 		TierScalarsByName.Add(TierName, Scalars);
@@ -103,7 +96,6 @@ void UBRBotManagerComponent::FillToRoster()
 {
 	if (!bTablesLoaded)
 	{
-		UE_LOG(LogBRBotManager, Error, TEXT("FillToRoster with no tables loaded — refusing to spawn unconfigured bots."));
 		return;
 	}
 
@@ -123,7 +115,6 @@ ABRBotController* UBRBotManagerComponent::SpawnBotForSlot(int32 SlotIndex)
 	AGameModeBase* GameMode = Cast<AGameModeBase>(GetOwner());
 	if (World == nullptr || GameMode == nullptr || TierRoster.Num() == 0)
 	{
-		UE_LOG(LogBRBotManager, Error, TEXT("Cannot spawn a bot: no world, no GameMode owner, or no tier roster."));
 		return nullptr;
 	}
 
@@ -131,8 +122,6 @@ ABRBotController* UBRBotManagerComponent::SpawnBotForSlot(int32 SlotIndex)
 	const FBRBotTierScalars* Scalars = TierScalarsByName.Find(TierName);
 	if (Scalars == nullptr)
 	{
-		UE_LOG(LogBRBotManager, Error, TEXT("Tier '%s' was never resolved — not spawning slot %d."),
-			*TierName.ToString(), SlotIndex);
 		return nullptr;
 	}
 
@@ -143,7 +132,6 @@ ABRBotController* UBRBotManagerComponent::SpawnBotForSlot(int32 SlotIndex)
 	ABRBotController* Bot = World->SpawnActor<ABRBotController>(ABRBotController::StaticClass(), SpawnParams);
 	if (Bot == nullptr)
 	{
-		UE_LOG(LogBRBotManager, Error, TEXT("Bot controller spawn failed for slot %d."), SlotIndex);
 		return nullptr;
 	}
 

@@ -1,4 +1,3 @@
-// Breachpoint. The authored-space lookups. No nav divination, no invented destinations.
 #include "AI/BREnvQueryContexts.h"
 
 #include "AI/BRBotController.h"
@@ -6,8 +5,6 @@
 #include "EnvironmentQuery/Items/EnvQueryItemType_Actor.h"
 #include "EnvironmentQuery/Items/EnvQueryItemType_Point.h"
 #include "GameFramework/Pawn.h"
-
-DEFINE_LOG_CATEGORY_STATIC(LogBRBotSpace, Log, All);
 
 namespace BRBotArenaTags
 {

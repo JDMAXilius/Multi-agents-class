@@ -1,4 +1,3 @@
-// Breachpoint. The grant unit: soft ability classes + InputTags, granted and revoked as a set.
 #pragma once
 
 #include "ActiveGameplayEffectHandle.h"

@@ -1,4 +1,3 @@
-// Breachpoint. Layer 2's spatial vocabulary: EQS contexts over the arena's AUTHORED places.
 #pragma once
 
 #include "CoreMinimal.h"

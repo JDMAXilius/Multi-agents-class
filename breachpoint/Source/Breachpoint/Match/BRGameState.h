@@ -1,4 +1,3 @@
-// Breachpoint. The replicated match view: phase, clock deadline, team scores, killfeed.
 #pragma once
 
 #include "CoreMinimal.h"

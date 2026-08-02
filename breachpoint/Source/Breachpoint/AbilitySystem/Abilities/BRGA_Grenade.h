@@ -1,4 +1,3 @@
-// BREACHPOINT — BP05 step 1. The grenade: cook, throw, and the server-only projectile spawn.
 #pragma once
 
 #include "CoreMinimal.h"

@@ -1,4 +1,3 @@
-// BREACHPOINT — BP06. The Grappleshot: the netcode packet.
 #pragma once
 
 #include "CoreMinimal.h"

@@ -1,4 +1,3 @@
-// Breachpoint. THE generic GameplayEffect library — eight classes, no assets, no proliferation.
 #pragma once
 
 #include "CoreMinimal.h"

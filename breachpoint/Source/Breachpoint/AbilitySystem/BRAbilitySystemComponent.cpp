@@ -1,4 +1,3 @@
-// Breachpoint. The ASC: input-buffered tag activation, prediction-window helpers.
 #include "AbilitySystem/BRAbilitySystemComponent.h"
 
 #include "Abilities/GameplayAbility.h"
@@ -47,8 +46,6 @@ void UBRAbilitySystemComponent::AbilityInputTagPressed(FGameplayTag InputTag)
 
 	if (!InputTag.IsValid())
 	{
-		UE_LOG(LogBRInput, Warning, TEXT("BRAbilitySystemComponent '%s': AbilityInputTagPressed with an INVALID tag; ignored."),
-			*GetNameSafe(GetOwner()));
 		return;
 	}
 
@@ -99,12 +96,6 @@ void UBRAbilitySystemComponent::AbilityInputTagPressed(FGameplayTag InputTag)
 	if (!Ledger.Contains(LedgerKey))
 	{
 		Ledger.Add(LedgerKey);
-		UE_LOG(LogBRInput, Warning,
-			TEXT("BRAbilitySystemComponent '%s': %s PRESSED and matched NO granted ability (%d ability(ies) granted on this ASC in total). The key is ALIVE and the tag reached the ASC — nothing on this fighter answers to that tag. Look at the GRANT (the equipped weapon's ability set, or the InputTag on its entries), not at the input bindings. Reported once per owner+tag; repeats are Verbose."),
-			*GetNameSafe(GetOwner()), *InputTag.ToString(), ActivatableAbilities.Items.Num());
-	}
-	else
-	{
 	}
 }
 
@@ -153,8 +144,6 @@ void UBRAbilitySystemComponent::InvokeInputEventForSpec(const FGameplayAbilitySp
 	const TArray<UGameplayAbility*> Instances = Spec.GetAbilityInstances();
 	if (Instances.IsEmpty() || !Instances.Last())
 	{
-		UE_LOG(LogBRInput, Warning, TEXT("BRAbilitySystemComponent '%s': active ability '%s' has no instance; input event not invoked. Non-instanced abilities are not supported."),
-			*GetNameSafe(GetOwner()), *GetNameSafe(Spec.Ability));
 		return;
 	}
 
@@ -203,11 +192,6 @@ bool UBRAbilitySystemComponent::BatchRPCTryActivateAbility(FGameplayAbilitySpecH
 			{
 				BRAbility->ExternalEndAbility();
 			}
-			else
-			{
-				UE_LOG(LogBRCombat, Warning, TEXT("BRAbilitySystemComponent '%s': bEndAbilityImmediately requested for an ability that is not a UBRGameplayAbility; NOT ended. Only our base has a public external end."),
-					*GetNameSafe(GetOwner()));
-			}
 		}
 	}
 
@@ -218,16 +202,12 @@ bool UBRAbilitySystemComponent::ApplyRecentDamageGate()
 {
 	if (!RecentDamageEffectClass)
 	{
-		UE_LOG(LogBRCombat, Warning, TEXT("BRAbilitySystemComponent '%s': damage landed but RecentDamageEffectClass is UNSET — State.Combat.RecentDamage was NOT applied and shield regen is UNGATED."),
-			*GetNameSafe(GetOwner()));
 		return false;
 	}
 
 	float DelaySeconds = 0.f;
 	if (!BRCombatCurves::Evaluate(BRCombatCurves::Names::ShieldsRegenDelaySeconds, DelaySeconds) || DelaySeconds <= 0.f)
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("BRAbilitySystemComponent '%s': CT_Combat has no usable '%s' curve; the RecentDamage gate was NOT applied. Shield regen is UNGATED."),
-			*GetNameSafe(GetOwner()), *BRCombatCurves::Names::ShieldsRegenDelaySeconds.ToString());
 		return false;
 	}
 
@@ -235,8 +215,6 @@ bool UBRAbilitySystemComponent::ApplyRecentDamageGate()
 	const FGameplayEffectSpecHandle SpecHandle = MakeOutgoingSpec(RecentDamageEffectClass, 1.f, Context);
 	if (!SpecHandle.IsValid() || !SpecHandle.Data.IsValid())
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("BRAbilitySystemComponent '%s': failed to build a spec for RecentDamageEffectClass '%s'."),
-			*GetNameSafe(GetOwner()), *GetNameSafe(RecentDamageEffectClass));
 		return false;
 	}
 
@@ -262,7 +240,6 @@ void UBRAbilitySystemComponent::SetShieldsBrokenState(bool bBroken)
 {
 	if (!ShieldsBrokenEffectClass)
 	{
-		UE_LOG(LogBRCombat, Warning, TEXT("BRAbilitySystemComponent '%s': ShieldsBrokenEffectClass is UNSET — State.Shields.Broken is never applied."), *GetNameSafe(GetOwner()));
 		return;
 	}
 
@@ -290,13 +267,11 @@ bool UBRAbilitySystemComponent::ApplyInitStats()
 {
 	if (!GetOwner() || !GetOwner()->HasAuthority())
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("BRAbilitySystemComponent '%s': ApplyInitStats without authority — REFUSED. Attribute initialisation is server truth."), *GetNameSafe(GetOwner()));
 		return false;
 	}
 
 	if (!InitStatsEffectClass)
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("BRAbilitySystemComponent '%s': InitStatsEffectClass is UNSET; attributes stay at zero."), *GetNameSafe(GetOwner()));
 		return false;
 	}
 
@@ -309,22 +284,17 @@ bool UBRAbilitySystemComponent::ApplyInitStats()
 
 	if (!bHaveHealth || !bHaveShields || MaxHealth <= 0.f)
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("BRAbilitySystemComponent '%s': CT_Combat is missing '%s' or '%s' (read %.2f / %.2f); GE_InitStats NOT applied and this fighter is UNINITIALISED."),
-			*GetNameSafe(GetOwner()), *BRCombatCurves::Names::FighterMaxHealth.ToString(), *BRCombatCurves::Names::FighterMaxShields.ToString(), MaxHealth, MaxShields);
 		return false;
 	}
 
 	if (!bHaveGrenades || MaxGrenades < 0.f)
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("BRAbilitySystemComponent '%s': CT_Combat is missing a usable '%s' (read %.2f); GE_InitStats NOT applied and this fighter is UNINITIALISED. The grenade count is data and is not invented here."),
-			*GetNameSafe(GetOwner()), *FighterMaxGrenadesCurve.ToString(), MaxGrenades);
 		return false;
 	}
 
 	const FGameplayEffectSpecHandle SpecHandle = MakeOutgoingSpec(InitStatsEffectClass, 1.f, MakeEffectContext());
 	if (!SpecHandle.IsValid() || !SpecHandle.Data.IsValid())
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("BRAbilitySystemComponent '%s': failed to build a GE_InitStats spec."), *GetNameSafe(GetOwner()));
 		return false;
 	}
 
@@ -340,18 +310,11 @@ bool UBRAbilitySystemComponent::ApplyInitStats()
 	if (const UBRAttributeSet* Attributes = GetSet<UBRAttributeSet>())
 	{
 	}
-	else
-	{
-		UE_LOG(LogBRCombat, Error,
-			TEXT("BRAbilitySystemComponent '%s': GE_InitStats was applied but this ASC has NO UBRAttributeSet registered — the effect modified NOTHING and every attribute is still zero. The set is a PlayerState subobject; this is a construction problem, not a data one."),
-			*GetNameSafe(GetOwner()));
-	}
 
 	SetShieldsBrokenState(false);
 
 	if (!ShieldRegenEffectClass)
 	{
-		UE_LOG(LogBRCombat, Warning, TEXT("BRAbilitySystemComponent '%s': ShieldRegenEffectClass is UNSET; shields will never recharge."), *GetNameSafe(GetOwner()));
 		return true;
 	}
 
@@ -365,8 +328,6 @@ bool UBRAbilitySystemComponent::ApplyInitStats()
 	if (!BRCombatCurves::Evaluate(BRCombatCurves::Names::ShieldsRegenRatePerSecond, RatePerSecond) || RatePerSecond <= 0.f
 		|| !BRCombatCurves::Evaluate(BRCombatCurves::Names::ShieldsRegenPeriodSeconds, PeriodSeconds) || PeriodSeconds <= 0.f)
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("BRAbilitySystemComponent '%s': CT_Combat is missing a usable '%s' or '%s' (read %.2f / %.2f); GE_Regen NOT applied and shields will never recharge."),
-			*GetNameSafe(GetOwner()), *BRCombatCurves::Names::ShieldsRegenRatePerSecond.ToString(), *BRCombatCurves::Names::ShieldsRegenPeriodSeconds.ToString(), RatePerSecond, PeriodSeconds);
 		return true;
 	}
 
@@ -385,13 +346,11 @@ bool UBRAbilitySystemComponent::ApplyDeathEffect()
 {
 	if (!GetOwner() || !GetOwner()->HasAuthority())
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("BRAbilitySystemComponent '%s': ApplyDeathEffect without authority — REFUSED."), *GetNameSafe(GetOwner()));
 		return false;
 	}
 
 	if (!DeathEffectClass)
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("BRAbilitySystemComponent '%s': DeathEffectClass is UNSET; State.Dead is never applied and NOTHING blocks a dead fighter's abilities."), *GetNameSafe(GetOwner()));
 		return false;
 	}
 

@@ -1,4 +1,3 @@
-// Breachpoint. Platform session state: host, find, join, invite, leave — and nothing else.
 #include "Online/BRSessionsSubsystem.h"
 
 #include "Core/BRCore.h"
@@ -148,9 +147,6 @@ void UBRSessionsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 					OnInviteAcceptedInternal(bWasSuccessful, ResolvedIndex);
 				}));
 	}
-	else
-	{
-	}
 
 	const IOnlineSubsystem* const OSS = BRSessionsInternal::GetOSS(GetWorld());
 	const FString PlatformName = OSS ? OSS->GetSubsystemName().ToString() : FString(TEXT("none"));
@@ -297,10 +293,6 @@ void UBRSessionsSubsystem::OnStartSessionFinished(bool bWasSuccessful)
 {
 	if (bWasSuccessful)
 	{
-	}
-	else
-	{
-		UE_LOG(LogBROnline, Warning, TEXT("Sessions: StartSession failed; the platform's view of this match may be stale."));
 	}
 }
 
@@ -464,7 +456,6 @@ bool UBRSessionsSubsystem::JoinResolvedTarget(const FBRJoinTarget& Target)
 
 	if (SessionState == EBRSessionState::Joining || SessionState == EBRSessionState::Travelling)
 	{
-		UE_LOG(LogBROnline, Warning, TEXT("Sessions: JoinResolvedTarget ignored — a join is already in flight."));
 		return false;
 	}
 
@@ -638,7 +629,6 @@ bool UBRSessionsSubsystem::ShowInviteUI()
 	IOnlineSubsystem* const OSS = BRSessionsInternal::GetOSS(GetWorld());
 	if (!OSS)
 	{
-		UE_LOG(LogBROnline, Warning, TEXT("Sessions: ShowInviteUI — no online subsystem."));
 		return false;
 	}
 
@@ -650,7 +640,6 @@ bool UBRSessionsSubsystem::ShowInviteUI()
 
 	if (!IsHosting() && SessionState != EBRSessionState::InSession)
 	{
-		UE_LOG(LogBROnline, Warning, TEXT("Sessions: ShowInviteUI with no session to invite into."));
 		return false;
 	}
 
@@ -714,7 +703,6 @@ void UBRSessionsSubsystem::HostQuitToMainMenu()
 	EnsureServerLifecycle();
 	if (ServerLifecycle == nullptr)
 	{
-		UE_LOG(LogBROnline, Warning, TEXT("Sessions: host quit with no lifecycle; falling back to a local leave."));
 		bLocalLeaveRequested = true;
 		DestroySessionAndReturnToFrontEnd(EBRDisconnectReason::LocalPlayerLeft, FText::GetEmpty(), TEXT("local_leave"));
 		return;
@@ -779,11 +767,6 @@ void UBRSessionsSubsystem::OnDestroySessionFinished(bool bWasSuccessful)
 {
 	ClearAllOssDelegates();
 	ClearOperationTimeout();
-
-	if (!bWasSuccessful)
-	{
-		UE_LOG(LogBROnline, Warning, TEXT("Sessions: DestroySession failed; returning to the front end anyway."));
-	}
 
 	bIsHost = false;
 	ActiveJoinTarget = FBRJoinTarget();
@@ -985,9 +968,6 @@ void UBRSessionsSubsystem::OnNetworkFailed(UWorld* FailedWorld, int32 RawFailure
 
 	const ENetworkFailure::Type FailureType = static_cast<ENetworkFailure::Type>(RawFailureType);
 
-	UE_LOG(LogBROnline, Warning, TEXT("Sessions: network failure '%s' (%s)."),
-		ENetworkFailure::ToString(FailureType), *ErrorString);
-
 	EBRDisconnectReason Reason = EBRDisconnectReason::Unknown;
 	FString Code = TEXT("network_failure");
 
@@ -1026,8 +1006,6 @@ void UBRSessionsSubsystem::OnTravelFailed(UWorld* FailedWorld, int32, const FStr
 	{
 		return;
 	}
-
-	UE_LOG(LogBROnline, Warning, TEXT("Sessions: travel failure (%s)."), *ErrorString);
 
 	if (SessionState == EBRSessionState::Travelling || SessionState == EBRSessionState::Joining)
 	{
@@ -1117,8 +1095,6 @@ FBRSessionOpResult UBRSessionsSubsystem::FailOperation(EBRSessionFailure Failure
 	Result.Failure = Failure;
 	Result.UserMessage = UserMessage;
 	Result.DiagnosticCode = Code;
-
-	UE_LOG(LogBROnline, Warning, TEXT("Sessions: operation failed (%s)."), *Code);
 
 	SetSessionState(RecoveryState);
 

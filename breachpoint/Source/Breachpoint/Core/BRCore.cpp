@@ -1,15 +1,6 @@
-// Breachpoint. Log channels, collision channel aliases, and the GAS stage gate.
 #include "Core/BRCore.h"
 
 #include "Character/BRCharacter.h"
-
-DEFINE_LOG_CATEGORY(LogBRCombat);
-DEFINE_LOG_CATEGORY(LogBRNet);
-DEFINE_LOG_CATEGORY(LogBRAI);
-DEFINE_LOG_CATEGORY(LogBROnline);
-DEFINE_LOG_CATEGORY(LogBRUI);
-
-DEFINE_LOG_CATEGORY(LogBRInput);
 
 const TCHAR* BRGas::ToString(EBRGasStage Stage)
 {

@@ -1,4 +1,3 @@
-// Breachpoint. Shared UI vocabulary: layer tags, data states, hit markers, killfeed rows.
 #pragma once
 
 #include "CoreMinimal.h"

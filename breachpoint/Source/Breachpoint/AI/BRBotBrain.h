@@ -1,4 +1,3 @@
-// Breachpoint. Layer 1 — the ambition layer. Pure, headless, seeded, world-free.
 #pragma once
 
 #include "AI/BRBotFacts.h"

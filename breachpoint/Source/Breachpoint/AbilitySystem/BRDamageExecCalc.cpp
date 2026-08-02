@@ -1,4 +1,3 @@
-// Breachpoint. THE damage rule. Base magnitude x flat Damage.* multipliers, from data.
 #include "AbilitySystem/BRDamageExecCalc.h"
 
 #include "AbilitySystemComponent.h"
@@ -73,18 +72,6 @@ void UBRDamageExecCalc::Execute_Implementation(const FGameplayEffectCustomExecut
 	const float FinalDamage = ComputeFinalDamage(BaseDamage, AllTags,
 		[](FName CurveName, float& OutValue) { return BRCombatCurves::Evaluate(CurveName, OutValue); },
 		&MissingCurves);
-
-	if (BaseDamage <= 0.f)
-	{
-		UE_LOG(LogBRCombat, Warning, TEXT("BRDamageExecCalc: effect '%s' executed with BaseDamage %.3f. If that was not intended, the applier did not set SetByCaller.BaseDamage."),
-			*GetNameSafe(Spec.Def), BaseDamage);
-	}
-
-	for (const FName& MissingCurve : MissingCurves)
-	{
-		UE_LOG(LogBRCombat, Warning, TEXT("BRDamageExecCalc: CT_Combat has no curve '%s'; that modifier contributed the identity 1.0. Add the row or remove the tag."),
-			*MissingCurve.ToString());
-	}
 
 	OutExecutionOutput.AddOutputModifier(FGameplayModifierEvaluatedData(UBRAttributeSet::GetIncomingDamageAttribute(), EGameplayModOp::AddBase, FinalDamage));
 }

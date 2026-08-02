@@ -1,4 +1,3 @@
-// Breachpoint. One equipped weapon: the row it came from, and its ammunition.
 #pragma once
 
 #include "CoreMinimal.h"

@@ -1,4 +1,3 @@
-// Breachpoint. The HUD C++ base: binding points, killfeed pooling, hit-marker dispatch.
 #pragma once
 
 #include "Blueprint/UserWidgetPool.h"

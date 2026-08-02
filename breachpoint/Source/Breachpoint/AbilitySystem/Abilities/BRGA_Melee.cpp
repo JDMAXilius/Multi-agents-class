@@ -1,4 +1,3 @@
-// BREACHPOINT — BP05 step 2. The melee path.
 #include "AbilitySystem/Abilities/BRGA_Melee.h"
 
 #include "AbilitySystemBlueprintLibrary.h"
@@ -105,12 +104,6 @@ bool UBRGA_Melee::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, co
 	FString Missing;
 	if (!ResolveMeleeTuning(BaseDamage, RangeUU, SweepRadiusUU, RearArcDegrees, Missing))
 	{
-		UE_LOG(LogBRCombat, Warning,
-			TEXT("BRGA_Melee refused to activate: CT_Combat is missing '%s'. Melee's four coefficients "
-				 "(Melee.BaseDamage, Melee.RangeMetres, Melee.SweepRadiusMetres, Melee.RearArcDegrees) "
-				 "are DATA — typing one into this ability would be a law-3 violation. Filed as a "
-				 "contract_gap in TICKET_BP05_TRIANGLE."),
-			*Missing);
 		return false;
 	}
 
@@ -146,7 +139,6 @@ void UBRGA_Melee::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const
 
 		if (!WindowBeginTask || !WindowEndTask)
 		{
-			UE_LOG(LogBRCombat, Error, TEXT("BRGA_Melee: could not create the notify-window tasks; ending without swinging."));
 			EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 			return;
 		}
@@ -164,7 +156,6 @@ void UBRGA_Melee::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const
 		}
 		else
 		{
-			UE_LOG(LogBRCombat, Error, TEXT("BRGA_Melee: could not create the swing watchdog; ending without swinging."));
 			EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		}
 		return;
@@ -197,7 +188,6 @@ void UBRGA_Melee::OnWindowBegin(FGameplayEventData Payload)
 	FVector ViewLocation, ViewDirection;
 	if (!GetViewPoint(ViewLocation, ViewDirection))
 	{
-		UE_LOG(LogBRCombat, Warning, TEXT("BRGA_Melee: Event.Melee.WindowBegin with no resolvable view point; ending."));
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 		return;
 	}
@@ -210,9 +200,6 @@ void UBRGA_Melee::OnWindowEnd(FGameplayEventData Payload)
 {
 	if (!bWindowOpen)
 	{
-		UE_LOG(LogBRCombat, Warning,
-			TEXT("BRGA_Melee: Event.Melee.WindowEnd arrived with no open window — the montage's notify "
-				 "pair is mis-ordered or WindowBegin is missing. No swing was resolved."));
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 		return;
 	}
@@ -234,13 +221,6 @@ void UBRGA_Melee::OnSwingWatchdogElapsed()
 		if (!bLoggedNoAnimationOnce)
 		{
 			bLoggedNoAnimationOnce = true;
-			UE_LOG(LogBRCombat, Warning,
-				TEXT("BRGA_Melee IS RUNNING WITHOUT ANIMATION. No swing montage exists, so "
-					 "Event.Melee.WindowBegin/WindowEnd never fired; the swing is being resolved from the "
-					 "structural %.2f s fallback window instead. This is BP05 gap 3 — once the montage "
-					 "lands, its notifies are authoritative and this fallback only ever guards against a "
-					 "missing one. Logged once per process."),
-				SwingWindowFallbackSeconds);
 		}
 
 		FVector ViewLocation, ViewDirection;
@@ -250,13 +230,6 @@ void UBRGA_Melee::OnSwingWatchdogElapsed()
 			return;
 		}
 		SwingOriginLocation = ViewLocation;
-	}
-	else
-	{
-		UE_LOG(LogBRCombat, Warning,
-			TEXT("BRGA_Melee: Event.Melee.WindowBegin fired but WindowEnd did not within %.2f s. "
-				 "Closing the window from the watchdog so the ability cannot leak."),
-			SwingWindowFallbackSeconds);
 	}
 
 	bWindowOpen = false;
@@ -293,7 +266,6 @@ void UBRGA_Melee::ResolveSwing()
 	FString Missing;
 	if (!ResolveMeleeTuning(BaseDamage, RangeUU, SweepRadiusUU, RearArcDegrees, Missing))
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("BRGA_Melee: CT_Combat lost '%s' between activation and the swing; nothing was resolved."), *Missing);
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 		return;
 	}
@@ -386,11 +358,9 @@ void UBRGA_Melee::OnTargetDataReady(const FGameplayAbilityTargetDataHandle& Targ
 
 		if (!ResolveMeleeTuning(BaseDamage, RangeUU, SweepRadiusUU, RearArcDegrees, Missing))
 		{
-			UE_LOG(LogBRCombat, Error, TEXT("BRGA_Melee: CT_Combat is missing '%s' on the server; no damage was applied."), *Missing);
 		}
 		else if (!ValidateClaim(*Claim, RangeUU, Reason))
 		{
-			UE_LOG(LogBRCombat, Warning, TEXT("BRGA_Melee REJECTED a client claim: %s"), *Reason);
 		}
 		else
 		{

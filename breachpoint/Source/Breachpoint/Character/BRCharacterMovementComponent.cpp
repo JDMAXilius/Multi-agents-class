@@ -1,4 +1,3 @@
-// Breachpoint. The CMC subclass: sprint intent, grapple intent, the saved move that replays both,
 #include "Character/BRCharacterMovementComponent.h"
 
 #include "GameFramework/Character.h"
@@ -133,9 +132,6 @@ float UBRCharacterMovementComponent::GetSprintSpeedMultiplier() const
 		return CachedSprintSpeedMultiplier;
 	}
 
-	UE_LOG(LogBRCombat, Error, TEXT("BRCharacterMovementComponent: CT_Combat has no usable '%s' curve. Sprint applies NO speed multiplier."),
-		*BRCombatCurves::Names::MovementSprintSpeedMultiplier.ToString());
-
 	CachedSprintSpeedMultiplier = 1.f;
 	return CachedSprintSpeedMultiplier;
 }
@@ -202,13 +198,6 @@ const FBRGrappleTuning& UBRCharacterMovementComponent::GetGrappleTuning() const
 		return CachedGrappleTuning;
 	}
 
-	UE_LOG(LogBRCombat, Error,
-		TEXT("BRCharacterMovementComponent '%s': grapple DISABLED — CT_Combat is missing usable rows. '%s'=%s '%s'=%s '%s'=%s. No pull will be applied."),
-		*GetNameSafe(GetOwner()),
-		*BRGrappleCurveNames::GrapplePullSpeed.ToString(), bHavePullSpeed ? TEXT("ok") : TEXT("MISSING"),
-		*BRGrappleCurveNames::GrappleArrivalRadius.ToString(), bHaveArrival ? TEXT("ok") : TEXT("MISSING"),
-		*BRGrappleCurveNames::GrappleMaxPullSeconds.ToString(), bHaveMaxSeconds ? TEXT("ok") : TEXT("MISSING"));
-
 	CachedGrappleTuning = FBRGrappleTuning();
 	return CachedGrappleTuning;
 }
@@ -273,8 +262,6 @@ bool UBRCharacterMovementComponent::StartGrapplePull(const FVector& PullTargetWo
 	ActiveGrapplePullSourceID = ApplyRootMotionSource(Pull);
 	if (ActiveGrapplePullSourceID == static_cast<uint16>(ERootMotionSourceID::Invalid))
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("BRCharacterMovementComponent '%s': ApplyRootMotionSource refused the grapple pull."),
-			*GetNameSafe(GetOwner()));
 		return false;
 	}
 
@@ -305,9 +292,6 @@ void UBRCharacterMovementComponent::ClearGrapplePullState()
 	bWantsToGrapple = 0;
 	bGrappleIntentObserved = 0;
 
-	if (bWasSomething)
-	{
-	}
 }
 
 void UBRCharacterMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSeconds)

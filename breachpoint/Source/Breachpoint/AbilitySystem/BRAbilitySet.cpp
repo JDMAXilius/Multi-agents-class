@@ -1,4 +1,3 @@
-// Breachpoint. The grant unit: soft ability classes + InputTags, granted and revoked as a set.
 #include "AbilitySystem/BRAbilitySet.h"
 
 #include "AbilitySystemComponent.h"
@@ -15,14 +14,11 @@ void UBRAbilitySet::GiveToAbilitySystem(UAbilitySystemComponent* ASC, UObject* S
 {
 	if (!ASC)
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("UBRAbilitySet '%s': GiveToAbilitySystem with a null ASC; nothing granted."), *GetName());
 		return;
 	}
 
 	if (!ASC->IsOwnerActorAuthoritative())
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("UBRAbilitySet '%s': GiveToAbilitySystem called without authority on '%s' — REFUSED. Ability sets are granted on the server."),
-			*GetName(), *GetNameSafe(ASC->GetOwner()));
 		return;
 	}
 
@@ -30,7 +26,6 @@ void UBRAbilitySet::GiveToAbilitySystem(UAbilitySystemComponent* ASC, UObject* S
 	{
 		if (Entry.Ability.IsNull())
 		{
-			UE_LOG(LogBRCombat, Error, TEXT("UBRAbilitySet '%s': an ability row has no class; skipped. (Editor validation reports this row.)"), *GetName());
 			continue;
 		}
 
@@ -38,13 +33,7 @@ void UBRAbilitySet::GiveToAbilitySystem(UAbilitySystemComponent* ASC, UObject* S
 		UClass* AbilityClass = Entry.Ability.LoadSynchronous();
 		if (!AbilityClass)
 		{
-			UE_LOG(LogBRCombat, Error, TEXT("UBRAbilitySet '%s': ability class '%s' failed to load; skipped."), *GetName(), *Entry.Ability.ToString());
 			continue;
-		}
-
-		if (!bWasResident)
-		{
-			UE_LOG(LogBRCombat, Warning, TEXT("UBRAbilitySet '%s': synchronously loaded ability class '%s' at grant time."), *GetName(), *AbilityClass->GetName());
 		}
 
 		FGameplayAbilitySpec Spec(AbilityClass, Entry.AbilityLevel, INDEX_NONE, SourceObject);
@@ -61,14 +50,12 @@ void UBRAbilitySet::GiveToAbilitySystem(UAbilitySystemComponent* ASC, UObject* S
 	{
 		if (Entry.Effect.IsNull())
 		{
-			UE_LOG(LogBRCombat, Error, TEXT("UBRAbilitySet '%s': an effect row has no class; skipped."), *GetName());
 			continue;
 		}
 
 		UClass* EffectClass = Entry.Effect.LoadSynchronous();
 		if (!EffectClass)
 		{
-			UE_LOG(LogBRCombat, Error, TEXT("UBRAbilitySet '%s': effect class '%s' failed to load; skipped."), *GetName(), *Entry.Effect.ToString());
 			continue;
 		}
 

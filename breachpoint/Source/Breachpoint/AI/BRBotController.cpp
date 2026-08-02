@@ -1,4 +1,3 @@
-// Breachpoint. The glue. Every line here either perceives, thinks, or presses a button.
 #include "AI/BRBotController.h"
 
 #include "AI/BREnvQueryContexts.h"
@@ -19,8 +18,6 @@
 #include "Perception/AISenseConfig_Sight.h"
 #include "StateTree.h"
 #include "TimerManager.h"
-
-DEFINE_LOG_CATEGORY_STATIC(LogBRBot, Log, All);
 
 namespace
 {
@@ -54,7 +51,6 @@ void ABRBotController::ConfigureBot(int32 InSeed, const FBRBotTierScalars& InSca
 {
 	if (!HasAuthority())
 	{
-		UE_LOG(LogBRBot, Error, TEXT("ConfigureBot called without authority — refused."));
 		return;
 	}
 
@@ -88,9 +84,6 @@ void ABRBotController::ResolveStateTreeAsset()
 	const TSoftObjectPtr<UStateTree>& SoftTree = Brain->GetScalars().StateTreeSoftPath;
 	if (SoftTree.IsNull())
 	{
-		UE_LOG(LogBRBot, Warning,
-			TEXT("Tier '%s' names no StateTree asset — this bot will decide but never act."),
-			*Brain->GetScalars().TierName.ToString());
 		return;
 	}
 
@@ -109,7 +102,6 @@ void ABRBotController::OnStateTreeAssetLoaded()
 	UStateTree* LoadedTree = Brain->GetScalars().StateTreeSoftPath.Get();
 	if (LoadedTree == nullptr)
 	{
-		UE_LOG(LogBRBot, Error, TEXT("ST_Bot failed to load for tier '%s'."), *Brain->GetScalars().TierName.ToString());
 		return;
 	}
 
@@ -233,7 +225,6 @@ void ABRBotController::DispatchBotEvent(FBRBotEvent Event)
 	FString FactError;
 	if (!Facts.ValidateNormalized(FactError))
 	{
-		UE_LOG(LogBRBot, Error, TEXT("Fact fill produced an out-of-range value: %s"), *FactError);
 	}
 #endif
 
@@ -376,8 +367,6 @@ void ABRBotController::BeginEngage(AActor* Target)
 	const int32 IntervalMs = Brain->GetScalars().EngageUpdateMs;
 	if (IntervalMs <= 0)
 	{
-		UE_LOG(LogBRBot, Warning, TEXT("engage_update_ms is 0 for tier '%s' — the fight loop will not run."),
-			*Brain->GetScalars().TierName.ToString());
 		RunEngageSelector();
 		return;
 	}
@@ -413,7 +402,6 @@ void ABRBotController::RequestMoveToAnchor(UEnvQuery* LocationQuery, float Accep
 
 	if (LocationQuery == nullptr)
 	{
-		UE_LOG(LogBRBot, Warning, TEXT("MoveTo step has no EQS query authored on the state — failing the step."));
 		ReportStepFailed();
 		return;
 	}
@@ -574,8 +562,6 @@ void ABRBotController::FillMatchFacts(FBRBotFacts& Facts) const
 	if (!bWarnedMatchFactsSeam)
 	{
 		bWarnedMatchFactsSeam = true;
-		UE_LOG(LogBRBot, Warning,
-			TEXT("Match facts (rocket timer, score, clock) are not wired yet — BP08 contract_gap 2."));
 	}
 
 	const APawn* SelfPawn = GetPawn();
@@ -631,7 +617,6 @@ void ABRBotController::BindAbilitySystemEvents()
 	UBRAbilitySystemComponent* ASC = GetBotASC();
 	if (ASC == nullptr)
 	{
-		UE_LOG(LogBRBot, Warning, TEXT("No ASC on this bot's PlayerState — it will never perceive its own state."));
 		return;
 	}
 

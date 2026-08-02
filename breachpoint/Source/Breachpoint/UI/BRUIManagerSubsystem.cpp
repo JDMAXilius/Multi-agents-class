@@ -1,4 +1,3 @@
-// Breachpoint. The screen-management spine.
 #include "UI/BRUIManagerSubsystem.h"
 
 #include "Blueprint/UserWidget.h"
@@ -174,8 +173,6 @@ void UBRUIManagerSubsystem::PublishViewModelsToGlobalCollection(const FBRLocalPl
 	UMVVMViewModelCollectionObject* CollectionObject = MVVMSubsystem ? MVVMSubsystem->GetViewModelCollection() : nullptr;
 	if (!CollectionObject)
 	{
-		UE_LOG(LogBRUI, Warning,
-			TEXT("MVVM game subsystem unavailable; WBPs must be handed ViewModels explicitly."));
 		return;
 	}
 
@@ -256,25 +253,18 @@ UBRRootLayout* UBRUIManagerSubsystem::CreateLayoutForLocalPlayer(ULocalPlayer* L
 	const UBRUISettings& Settings = UBRUISettings::Get();
 	if (Settings.RootLayoutClass.IsNull())
 	{
-		UE_LOG(LogBRUI, Error,
-			TEXT("BRUISettings.RootLayoutClass is unset. Set it in Config/DefaultGame.ini under ")
-			TEXT("[/Script/Breachpoint.BRUISettings] to a WBP deriving from UBRRootLayout. ")
-			TEXT("No HUD will appear until then."));
 		return nullptr;
 	}
 
 	UClass* LayoutClass = Settings.RootLayoutClass.LoadSynchronous();
 	if (!LayoutClass)
 	{
-		UE_LOG(LogBRUI, Error, TEXT("Failed to load RootLayoutClass '%s'."),
-			*Settings.RootLayoutClass.ToString());
 		return nullptr;
 	}
 
 	UBRRootLayout* Layout = CreateWidget<UBRRootLayout>(OwningPC, LayoutClass);
 	if (!Layout)
 	{
-		UE_LOG(LogBRUI, Error, TEXT("CreateWidget failed for RootLayoutClass '%s'."), *LayoutClass->GetName());
 		return nullptr;
 	}
 
@@ -301,16 +291,11 @@ UBRActivatableWidget* UBRUIManagerSubsystem::PushWidgetToLayer(
 {
 	if (WidgetClass.IsNull())
 	{
-		UE_LOG(LogBRUI, Error, TEXT("PushWidgetToLayer(%s): the configured widget class is unset."),
-			*LayerTag.ToString());
 		return nullptr;
 	}
 
 	const bool bWasResident = WidgetClass.Get() != nullptr;
 	UClass* ResolvedClass = WidgetClass.LoadSynchronous();
-	if (!bWasResident)
-	{
-	}
 
 	return PushWidgetClassToLayer(LocalPlayer, LayerTag, ResolvedClass);
 }
@@ -321,8 +306,6 @@ UBRActivatableWidget* UBRUIManagerSubsystem::PushWidgetClassToLayer(
 	UBRRootLayout* Layout = GetRootLayout(LocalPlayer);
 	if (!Layout)
 	{
-		UE_LOG(LogBRUI, Warning, TEXT("PushWidgetClassToLayer(%s): no root layout for that local player."),
-			*LayerTag.ToString());
 		return nullptr;
 	}
 

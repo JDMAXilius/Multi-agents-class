@@ -1,4 +1,3 @@
-// Breachpoint. THE attribute set: shields over health, one damage entry point, one death.
 #include "AbilitySystem/BRAttributeSet.h"
 
 #include "GameFramework/Actor.h"
@@ -69,8 +68,6 @@ void UBRAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallback
 
 		if (RawDamage < 0.f)
 		{
-			UE_LOG(LogBRCombat, Error, TEXT("BRAttributeSet '%s': IncomingDamage was NEGATIVE (%.3f) from effect '%s' — REFUSED. Damage is never negative; healing is a Health modifier."),
-				*GetNameSafe(GetOwningActor()), RawDamage, *GetNameSafe(Data.EffectSpec.Def));
 			return;
 		}
 
@@ -137,8 +134,6 @@ void UBRAttributeSet::UpdateShieldsBrokenState()
 		if (!Ledger.Contains(LedgerKey))
 		{
 			Ledger.Add(LedgerKey);
-			UE_LOG(LogBRCombat, Warning, TEXT("BRAttributeSet '%s': Shields are %.2f but MaxShields is 0 — treating as UNINITIALIZED, not broken. GE_InitStats has not run on this ASC, so State.Shields.Broken is neither applied nor cleared for it. Logged once per fighter per process."),
-				*GetNameSafe(OwningActor), GetShields());
 		}
 
 		return;
@@ -157,8 +152,6 @@ void UBRAttributeSet::CheckForDeath(const FGameplayEffectModCallbackData& Data)
 
 	if (GetMaxHealth() <= 0.f)
 	{
-		UE_LOG(LogBRCombat, Warning, TEXT("BRAttributeSet '%s': Health is 0 but MaxHealth is 0 — treating as UNINITIALIZED, not dead. GE_InitStats has not run on this ASC."),
-			*GetNameSafe(GetOwningActor()));
 		return;
 	}
 

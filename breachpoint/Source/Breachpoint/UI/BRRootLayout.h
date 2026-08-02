@@ -1,4 +1,3 @@
-// Breachpoint. The per-local-player widget that HOSTS the four CommonUI layer stacks.
 #pragma once
 
 #include "CommonUserWidget.h"

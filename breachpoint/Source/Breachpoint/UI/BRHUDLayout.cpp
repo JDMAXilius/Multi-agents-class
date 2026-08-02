@@ -1,4 +1,3 @@
-// Breachpoint. The HUD C++ base.
 #include "UI/BRHUDLayout.h"
 
 #include "Components/PanelWidget.h"
@@ -36,12 +35,6 @@ void UBRHUDLayout::NativeOnInitialized()
 		ResolvedKillfeedEntryClass = Settings.KillfeedEntryClass.LoadSynchronous();
 	}
 
-	if (!ResolvedKillfeedEntryClass)
-	{
-		UE_LOG(LogBRUI, Warning,
-			TEXT("BRUISettings.KillfeedEntryClass is unset or failed to load; the killfeed will ")
-			TEXT("render no rows."));
-	}
 }
 
 void UBRHUDLayout::ReleaseSlateResources(bool bReleaseChildren)
@@ -209,8 +202,6 @@ void UBRHUDLayout::RebuildKillfeed()
 		UBRKillfeedEntryWidget* Row = KillfeedPool.GetOrCreateInstance<UBRKillfeedEntryWidget>(ResolvedKillfeedEntryClass);
 		if (!Row)
 		{
-			UE_LOG(LogBRUI, Warning, TEXT("Killfeed pool could not produce a row widget; %d of %d rendered."),
-				NumRows, Entries.Num());
 			break;
 		}
 

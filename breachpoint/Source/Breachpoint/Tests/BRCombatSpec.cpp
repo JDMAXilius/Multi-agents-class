@@ -1,4 +1,3 @@
-// Breachpoint. The project's FIRST pinned sim suite: TTK, headshot math, the damage rule, row algebra.
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 

@@ -1,4 +1,3 @@
-// BREACHPOINT — BP03 step 2. The fire path.
 #include "AbilitySystem/Abilities/BRGA_WeaponFire.h"
 
 #include "AbilitySystemBlueprintLibrary.h"
@@ -71,19 +70,11 @@ bool UBRGA_WeaponFire::CanActivateAbility(const FGameplayAbilitySpecHandle Handl
 
 	if (Row->DamageDelivery != EBRDamageDelivery::Hitscan)
 	{
-		UE_LOG(LogBRCombat, Warning,
-			TEXT("BRGA_WeaponFire refused '%s': DamageDelivery is not Hitscan. A projectile "
-				 "weapon needs its own ability (BP09), not this one."),
-			*Weapon->GetWeaponRowName().ToString());
 		return false;
 	}
 
 	if (Row->Range_m <= 0.f)
 	{
-		UE_LOG(LogBRCombat, Warning,
-			TEXT("BRGA_WeaponFire refused '%s': Range_m is %.2f. A hitscan trace needs a length, "
-				 "and inventing one here would be a law-3 violation."),
-			*Weapon->GetWeaponRowName().ToString(), Row->Range_m);
 		return false;
 	}
 
@@ -230,10 +221,6 @@ void UBRGA_WeaponFire::OnTargetDataReady(const FGameplayAbilityTargetDataHandle&
 			}
 		}
 
-		if (!bAccepted)
-		{
-			UE_LOG(LogBRCombat, Warning, TEXT("BRGA_WeaponFire REJECTED a client claim: %s"), *Reason);
-		}
 	}
 
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);

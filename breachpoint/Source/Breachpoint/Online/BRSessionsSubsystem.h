@@ -1,4 +1,3 @@
-// Breachpoint. Platform session state: host, find, join, invite, leave — and nothing else.
 #pragma once
 
 #include "CoreMinimal.h"

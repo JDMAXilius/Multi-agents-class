@@ -1,4 +1,3 @@
-// Breachpoint. The slice's IBRServerLifecycle: one process, one host, no migration.
 #pragma once
 
 #include "CoreMinimal.h"

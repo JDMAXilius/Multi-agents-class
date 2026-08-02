@@ -1,4 +1,3 @@
-// Breachpoint. The hardware -> InputTag map. Soft asset refs only.
 #include "Input/BRInputConfig.h"
 
 #include "Engine/AssetManager.h"

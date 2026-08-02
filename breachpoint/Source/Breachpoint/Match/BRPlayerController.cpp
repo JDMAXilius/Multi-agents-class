@@ -1,4 +1,3 @@
-// Breachpoint. The input -> ASC relay. Stubs today; BP02 routes them.
 #include "Match/BRPlayerController.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"

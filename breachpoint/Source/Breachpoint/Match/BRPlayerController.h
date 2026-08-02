@@ -1,4 +1,3 @@
-// Breachpoint. The input -> ASC relay. Stubs today; BP02 routes them.
 #pragma once
 
 #include "CoreMinimal.h"

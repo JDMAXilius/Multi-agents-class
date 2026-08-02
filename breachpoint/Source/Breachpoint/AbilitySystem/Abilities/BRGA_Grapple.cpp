@@ -1,4 +1,3 @@
-// BREACHPOINT — BP06. The Grappleshot: the netcode packet.
 #include "AbilitySystem/Abilities/BRGA_Grapple.h"
 
 #include "AbilitySystemComponent.h"
@@ -45,10 +44,6 @@ float UBRGA_Grapple::GetCooldownDurationSeconds() const
 		return Seconds;
 	}
 
-	UE_LOG(LogBRCombat, Warning,
-		TEXT("UBRGA_Grapple: CT_Combat has no '%s' row. The cooldown cannot be authored, and the "
-			 "base will refuse rather than apply a zero-length one. Row owed by BP13/curator."),
-		*GrappleCooldownSecondsCurve.ToString());
 	return 0.f;
 }
 
@@ -86,10 +81,6 @@ void UBRGA_Grapple::ActivateAbility(const FGameplayAbilitySpecHandle Handle, con
 	const float RangeMetres = GetMaxRangeMetres();
 	if (RangeMetres <= 0.f)
 	{
-		UE_LOG(LogBRCombat, Warning,
-			TEXT("UBRGA_Grapple refused: CT_Combat has no '%s' row, so there is no range to trace. "
-				 "A hardcoded 20 m here would be a law-3 violation."),
-			*GrappleRangeMetresCurve.ToString());
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
@@ -113,7 +104,6 @@ void UBRGA_Grapple::ActivateAbility(const FGameplayAbilitySpecHandle Handle, con
 		FString Reason;
 		if (!ValidateTarget(Hit, Mode, Reason))
 		{
-			UE_LOG(LogBRCombat, Warning, TEXT("UBRGA_Grapple REJECTED: %s"), *Reason);
 			EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 			return;
 		}
@@ -231,9 +221,6 @@ void UBRGA_Grapple::BeginPull(const FHitResult& Hit, EBRGrappleMode Mode)
 		}
 		else
 		{
-			UE_LOG(LogBRCombat, Error,
-				TEXT("UBRGA_Grapple: no UBRCharacterMovementComponent — the pull cannot be "
-					 "predicted and will not be faked with a position write."));
 			EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 			return;
 		}
@@ -246,11 +233,6 @@ void UBRGA_Grapple::BeginPull(const FHitResult& Hit, EBRGrappleMode Mode)
 		{
 			if (ABRWeaponPickup* Pickup = Cast<ABRWeaponPickup>(Hit.GetActor()))
 			{
-				UE_LOG(LogBRCombat, Warning,
-					TEXT("UBRGA_Grapple: WeaponAttract has no seam on '%s' yet. "
-						 "ABRWeaponPickup owes an authority-side attract entry point; this "
-						 "ability must not move it from here."),
-					*GetNameSafe(Pickup));
 			}
 		}
 		break;

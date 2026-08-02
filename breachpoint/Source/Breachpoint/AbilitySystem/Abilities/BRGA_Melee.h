@@ -1,4 +1,3 @@
-// BREACHPOINT — BP05 step 2. The melee path.
 #pragma once
 
 #include "CoreMinimal.h"

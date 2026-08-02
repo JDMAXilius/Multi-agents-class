@@ -1,4 +1,3 @@
-// Breachpoint. OUR radial damage — the one blast rule, shared by the grenade and the rocket.
 #include "Weapons/BRExplosion.h"
 
 #include "AbilitySystemBlueprintLibrary.h"
@@ -26,39 +25,27 @@ int32 BRExplosion::ApplyExplosionDamage(
 {
 	if (!InstigatorASC || !InstigatorActor)
 	{
-		UE_LOG(LogBRCombat, Warning, TEXT("BRExplosion::ApplyExplosionDamage refused: the blast has no instigator ASC or actor."));
 		return 0;
 	}
 
 	UWorld* World = InstigatorActor->GetWorld();
 	if (!World)
 	{
-		UE_LOG(LogBRCombat, Warning,
-			TEXT("BRExplosion::ApplyExplosionDamage refused: instigator '%s' has no world, so there is nothing to overlap."),
-			*GetNameSafe(InstigatorActor));
 		return 0;
 	}
 
 	if (InstigatorASC->GetOwnerRole() != ROLE_Authority)
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("BRExplosion::ApplyExplosionDamage called off the authority; refused."));
 		return 0;
 	}
 
 	if (BlastRadiusMetres <= 0.f || BlastCentreDamage <= 0.f)
 	{
-		UE_LOG(LogBRCombat, Warning,
-			TEXT("BRExplosion::ApplyExplosionDamage refused: radius %.2f m / centre damage %.2f. "
-				 "Both come from data and neither may be invented here."),
-			BlastRadiusMetres, BlastCentreDamage);
 		return 0;
 	}
 
 	if (FalloffCurveName.IsNone())
 	{
-		UE_LOG(LogBRCombat, Warning,
-			TEXT("BRExplosion::ApplyExplosionDamage refused: no falloff curve name was supplied, and "
-				 "no falloff shape may be invented here (law 3)."));
 		return 0;
 	}
 
@@ -85,12 +72,6 @@ int32 BRExplosion::ApplyExplosionDamage(
 		CueParams.RawMagnitude = BlastCentreDamage;
 		CueParams.Instigator = InstigatorActor;
 		InstigatorASC->ExecuteGameplayCue(ExplodeCueTag, CueParams);
-	}
-	else
-	{
-		UE_LOG(LogBRCombat, Warning,
-			TEXT("BRExplosion: no valid explosion cue tag was supplied, so the explosion is silent "
-				 "and invisible. Damage still applies — FX and gameplay are separate legs."));
 	}
 
 	TSet<AActor*> Considered;
@@ -126,10 +107,6 @@ int32 BRExplosion::ApplyExplosionDamage(
 		float FalloffScale = 0.f;
 		if (!BRCombatCurves::Evaluate(FalloffCurveName, NormalisedDistance, FalloffScale))
 		{
-			UE_LOG(LogBRCombat, Warning,
-				TEXT("BRExplosion blast: CT_Combat has no '%s' curve. No falloff shape means no "
-					 "damage number this file is allowed to compute; blast aborted."),
-				*FalloffCurveName.ToString());
 			return DamagedCount;
 		}
 

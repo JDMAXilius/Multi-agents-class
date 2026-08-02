@@ -1,4 +1,3 @@
-// Breachpoint. The slice's IBRServerLifecycle: one process, one host, no migration.
 #include "Online/BRListenServerLifecycle.h"
 
 #include "Core/BRCore.h"
@@ -14,13 +13,11 @@ bool UBRListenServerLifecycle::InitializeHosting(UGameInstance* InGameInstance)
 {
 	if (!InGameInstance)
 	{
-		UE_LOG(LogBROnline, Error, TEXT("ListenLifecycle: InitializeHosting with no GameInstance; hosting refused."));
 		return false;
 	}
 
 	if (HostingState == EBRHostingState::Ending || HostingState == EBRHostingState::Ended)
 	{
-		UE_LOG(LogBROnline, Warning, TEXT("ListenLifecycle: InitializeHosting refused — hosting is already ending."));
 		return false;
 	}
 
@@ -45,8 +42,6 @@ void UBRListenServerLifecycle::NotifyServerReadyForPlayers()
 
 	if (HostingState != EBRHostingState::Initializing)
 	{
-		UE_LOG(LogBROnline, Warning, TEXT("ListenLifecycle: NotifyServerReadyForPlayers in state %d ignored."),
-			static_cast<int32>(HostingState));
 		return;
 	}
 
@@ -138,7 +133,6 @@ void UBRListenServerLifecycle::ReturnRemotePlayersToMainMenu(const FText& Reason
 	UWorld* World = GetHostWorld();
 	if (!World)
 	{
-		UE_LOG(LogBROnline, Warning, TEXT("ListenLifecycle: no world at ending time; remotes fall back to ConnectionLost."));
 		return;
 	}
 

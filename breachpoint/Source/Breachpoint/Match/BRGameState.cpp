@@ -1,4 +1,3 @@
-// Breachpoint. The replicated match view: phase, clock deadline, team scores, killfeed.
 #include "Match/BRGameState.h"
 
 #include "Core/BRCore.h"
@@ -102,7 +101,6 @@ void ABRGameState::ServerSetScoreLimit(int32 NewScoreLimit)
 
 	if (IsScoringOpen())
 	{
-		UE_LOG(LogBRNet, Warning, TEXT("[Match] ServerSetScoreLimit(%d) refused: scoring already open."), NewScoreLimit);
 		return;
 	}
 

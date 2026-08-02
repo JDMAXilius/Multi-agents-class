@@ -1,4 +1,3 @@
-// Breachpoint. Config-driven SOFT class references for every widget the UI layer pushes.
 #pragma once
 
 #include "CoreMinimal.h"

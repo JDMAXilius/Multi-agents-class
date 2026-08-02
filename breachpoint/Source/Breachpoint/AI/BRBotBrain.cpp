@@ -1,9 +1,6 @@
-// Breachpoint. Layer 1 implementation. Nothing in this file may touch the world.
 #include "AI/BRBotBrain.h"
 
 #include "Engine/DataTable.h"
-
-DEFINE_LOG_CATEGORY_STATIC(LogBRBotBrain, Log, All);
 
 const TCHAR* LexToString(EBRBotAmbition Ambition)
 {
@@ -91,12 +88,6 @@ bool FBRBotTierScalars::ResolvePersonalityScalar(FName ScalarName, float& OutVal
 
 bool FBRBotTierScalars::ValidateSchema(FString& OutError) const
 {
-	if (ReactionMs < ReactionFloorMs)
-	{
-		UE_LOG(LogBRBotBrain, Warning,
-			TEXT("Tier '%s' declares reaction_ms=%d; ruling R11 clamps it to %d."),
-			*TierName.ToString(), ReactionMs, ReactionFloorMs);
-	}
 	if (ReactionQuantumMs < 0 || ReactionJitterMs < 0 || CommitWindowMs < 0 || CommitJitterMs < 0)
 	{
 		OutError = TEXT("A millisecond column is negative");
@@ -247,8 +238,6 @@ void UBRBotBrain::Initialize(int32 InSeed, const FBRBotTierScalars& InScalars, c
 	FString ScalarError;
 	if (!Scalars.ValidateSchema(ScalarError))
 	{
-		UE_LOG(LogBRBotBrain, Error, TEXT("Tier '%s' failed schema validation: %s"),
-			*Scalars.TierName.ToString(), *ScalarError);
 	}
 
 	bInitialized = true;
@@ -268,9 +257,6 @@ float UBRBotBrain::ScoreAmbition(const FBRBotAmbitionDef& Def, const FBRBotFacts
 		float Value = 0.f;
 		if (!Facts.ResolveScalar(Consideration.Consideration, Value))
 		{
-			UE_LOG(LogBRBotBrain, Error,
-				TEXT("Ambition row '%s' names unknown consideration '%s' — scoring it 0."),
-				*Def.RowName.ToString(), *Consideration.Consideration.ToString());
 			return 0.f;
 		}
 
@@ -292,9 +278,6 @@ float UBRBotBrain::ScoreAmbition(const FBRBotAmbitionDef& Def, const FBRBotFacts
 		}
 		else
 		{
-			UE_LOG(LogBRBotBrain, Error,
-				TEXT("Ambition row '%s' names unknown personality scalar '%s' — scoring it 0."),
-				*Def.RowName.ToString(), *Def.PersonalityScalar.ToString());
 			return 0.f;
 		}
 	}
@@ -392,8 +375,6 @@ FBRBotPlan UBRBotBrain::BuildPlan(EBRBotAmbition Ambition, const FBRBotFacts& Fa
 		return Plan;
 	}
 
-	UE_LOG(LogBRBotBrain, Warning, TEXT("Ambition '%s' won but no authored chain accepted the facts."),
-		LexToString(Ambition));
 	return Plan;
 }
 
@@ -414,7 +395,6 @@ FBRBotDecision UBRBotBrain::Think(const FBRBotEvent& Event, const FBRBotFacts& F
 
 	if (!bInitialized)
 	{
-		UE_LOG(LogBRBotBrain, Error, TEXT("Think() before Initialize() — no seed, no tuning. Refusing to decide."));
 		LastDecision = Decision;
 		return Decision;
 	}
@@ -507,7 +487,6 @@ bool UBRBotBrain::ReadAmbitionDefs(const UDataTable* AmbitionsTable, TArray<FBRB
 	}
 
 	OutError = TEXT("FBRBotAmbitionRow is not declared in BRDataRows.h yet (BP08 contract_gap 1)");
-	UE_LOG(LogBRBotBrain, Error, TEXT("%s"), *OutError);
 	return false;
 }
 
@@ -523,6 +502,5 @@ bool UBRBotBrain::ReadTierScalars(const UDataTable* TuningTable, FName TierRowNa
 	}
 
 	OutError = TEXT("FBRBotTuningRow is not declared in BRDataRows.h yet (BP08 contract_gap 1)");
-	UE_LOG(LogBRBotBrain, Error, TEXT("%s"), *OutError);
 	return false;
 }

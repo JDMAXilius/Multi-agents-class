@@ -1,4 +1,3 @@
-// Breachpoint. The hardware -> InputTag map. Soft asset refs only.
 #pragma once
 
 #include "CoreMinimal.h"

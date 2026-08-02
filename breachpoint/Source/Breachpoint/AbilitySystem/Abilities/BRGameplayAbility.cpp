@@ -1,4 +1,3 @@
-// Breachpoint. The ability base: activation policy, generic cooldown, cancel hygiene, one death gate.
 #include "AbilitySystem/Abilities/BRGameplayAbility.h"
 
 #include "AbilitySystemComponent.h"
@@ -69,7 +68,6 @@ void UBRGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 		UAbilityTask_WaitInputRelease* WaitRelease = UAbilityTask_WaitInputRelease::WaitInputRelease(this, true);
 		if (!WaitRelease)
 		{
-			UE_LOG(LogBRCombat, Error, TEXT("UBRGameplayAbility '%s': WhileInputHeld could not create its WaitInputRelease task; ending immediately rather than running forever."), *GetName());
 			EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 			return;
 		}
@@ -111,23 +109,18 @@ void UBRGameplayAbility::ApplyCooldown(const FGameplayAbilitySpecHandle Handle, 
 	const UGameplayEffect* CooldownGE = GetCooldownGameplayEffect();
 	if (!CooldownGE)
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("UBRGameplayAbility '%s' declares cooldown tag '%s' but has no cooldown effect class; NO cooldown was applied."),
-			*GetName(), *CooldownTag.ToString());
 		return;
 	}
 
 	const float DurationSeconds = GetCooldownDurationSeconds();
 	if (DurationSeconds <= 0.f)
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("UBRGameplayAbility '%s' declares cooldown tag '%s' but GetCooldownDurationSeconds() returned %.3f. NO cooldown applied — fix the data or clear the tag."),
-			*GetName(), *CooldownTag.ToString(), DurationSeconds);
 		return;
 	}
 
 	FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(Handle, ActorInfo, ActivationInfo, CooldownGE->GetClass(), GetAbilityLevel(Handle, ActorInfo));
 	if (!SpecHandle.IsValid() || !SpecHandle.Data.IsValid())
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("UBRGameplayAbility '%s': failed to build a GE_Cooldown spec; NO cooldown applied."), *GetName());
 		return;
 	}
 

@@ -1,4 +1,3 @@
-// Breachpoint. THE GameplayCue handler library — the classes that make a cue tag play something.
 #pragma once
 
 #include "CoreMinimal.h"

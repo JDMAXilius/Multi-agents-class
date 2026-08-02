@@ -1,4 +1,3 @@
-// BREACHPOINT — BP05 step 1. The grenade: cook, throw, and the server-only projectile spawn.
 #include "AbilitySystem/Abilities/BRGA_Grenade.h"
 
 #include "AbilitySystemComponent.h"
@@ -72,10 +71,6 @@ FGameplayEffectSpecHandle UBRGA_Grenade::MakeCostSpec() const
 	float CostPerThrow = 0.f;
 	if (!BRCombatCurves::Evaluate(GrenadeCostPerThrowCurve, CostPerThrow) || CostPerThrow <= 0.f)
 	{
-		UE_LOG(LogBRCombat, Error,
-			TEXT("UBRGA_Grenade: CT_Combat has no '%s' row, so the throw cost is unknown. Refusing "
-				 "rather than defaulting — a free grenade is not a safe fallback."),
-			*GrenadeCostPerThrowCurve.ToString());
 		return FGameplayEffectSpecHandle();
 	}
 
@@ -192,10 +187,6 @@ void UBRGA_Grenade::ActivateAbility(const FGameplayAbilitySpecHandle Handle, con
 	FString Reason;
 	if (!ResolveTuning(Tuning, Reason))
 	{
-		UE_LOG(LogBRCombat, Warning,
-			TEXT("UBRGA_Grenade refused: %s. The grenade's numbers are owed by BP13/curator; a "
-				 "literal fuse or radius here would be a law-3 violation."),
-			*Reason);
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
@@ -203,9 +194,6 @@ void UBRGA_Grenade::ActivateAbility(const FGameplayAbilitySpecHandle Handle, con
 	CookReleaseTask = UAbilityTask_WaitInputRelease::WaitInputRelease(this, true);
 	if (!CookReleaseTask)
 	{
-		UE_LOG(LogBRCombat, Error,
-			TEXT("UBRGA_Grenade: could not create its WaitInputRelease task; refusing rather than "
-				 "cooking a grenade that only a timer can throw."));
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
@@ -218,7 +206,6 @@ void UBRGA_Grenade::ActivateAbility(const FGameplayAbilitySpecHandle Handle, con
 	}
 	else
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("UBRGA_Grenade: no world, so the cook has no ceiling; refusing."));
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 	}
 }
@@ -247,7 +234,6 @@ void UBRGA_Grenade::ThrowGrenade(float SecondsCooked)
 	FVector ViewLocation, ViewDirection;
 	if (!ASC || !GetViewPoint(ViewLocation, ViewDirection))
 	{
-		UE_LOG(LogBRCombat, Warning, TEXT("UBRGA_Grenade: no ASC or no view point at the throw; nothing left the hand."));
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 		return;
 	}
@@ -266,14 +252,6 @@ void UBRGA_Grenade::ThrowGrenade(float SecondsCooked)
 		CueParams.Instigator = GetAvatarActorFromActorInfo();
 		ASC->ExecuteGameplayCue(ThrowCueTag, CueParams);
 	}
-	else
-	{
-		UE_LOG(LogBRCombat, Warning,
-			TEXT("UBRGA_Grenade: '%s' is not declared and has no C++ handler, so the client ghost "
-				 "does not exist. The throw is invisible until the tag and its cue class land "
-				 "together."),
-			GrenadeThrowCueTagString);
-	}
 
 	if (HasAuthority(&CurrentActivationInfo))
 	{
@@ -288,8 +266,6 @@ void UBRGA_Grenade::RequestProjectileSpawn(const FTransform& ReleaseTransform, c
 	UWorld* World = GetWorld();
 	if (!World)
 	{
-		UE_LOG(LogBRCombat, Error,
-			TEXT("UBRGA_Grenade: no world at the spawn; the throw was authorised and nothing left the hand."));
 		return;
 	}
 
@@ -297,20 +273,12 @@ void UBRGA_Grenade::RequestProjectileSpawn(const FTransform& ReleaseTransform, c
 	UAbilitySystemComponent* ThrowerASC = GetAbilitySystemComponentFromActorInfo();
 	if (!Thrower || !ThrowerASC)
 	{
-		UE_LOG(LogBRCombat, Error,
-			TEXT("UBRGA_Grenade: no avatar actor or no ASC at the spawn (avatar '%s'); nothing was "
-				 "spawned, because an unattributable grenade is a scoring bug three systems away."),
-			*GetNameSafe(Thrower));
 		return;
 	}
 
 	const FGameplayTag ExplodeCueTag = RequestOwedTag(GrenadeExplodeCueTagString);
 	if (!ExplodeCueTag.IsValid())
 	{
-		UE_LOG(LogBRCombat, Warning,
-			TEXT("UBRGA_Grenade: '%s' is not declared and has no C++ handler, so this grenade's "
-				 "detonation will be silent and invisible. Damage is unaffected."),
-			GrenadeExplodeCueTagString);
 	}
 
 	FBRProjectileSpawnParams Params;
@@ -330,11 +298,6 @@ void UBRGA_Grenade::RequestProjectileSpawn(const FTransform& ReleaseTransform, c
 
 	if (!Spawned)
 	{
-		UE_LOG(LogBRCombat, Error,
-			TEXT("UBRGA_Grenade: the projectile spawn FAILED (release at %s, launch %.0f uu/s, %.2f s "
-				 "of fuse left). The throw was authorised on the authority and nothing is in the air; "
-				 "the refusal above names the reason."),
-			*ReleaseTransform.GetLocation().ToCompactString(), LaunchVelocity.Size(), RemainingFuseSeconds);
 		return;
 	}
 }

@@ -1,4 +1,3 @@
-// Breachpoint. The one widget base. Every screen and panel derives from this.
 #pragma once
 
 #include "CommonActivatableWidget.h"

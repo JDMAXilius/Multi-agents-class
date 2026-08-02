@@ -1,4 +1,3 @@
-// Breachpoint. THE SEAM: everything that changes when the server stops being a listen host.
 #pragma once
 
 #include "CoreMinimal.h"

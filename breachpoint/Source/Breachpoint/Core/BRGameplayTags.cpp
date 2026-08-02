@@ -1,4 +1,3 @@
-// Breachpoint. All native gameplay tags.
 #include "Core/BRGameplayTags.h"
 
 namespace BRGameplayTags

@@ -1,4 +1,3 @@
-// Breachpoint. The Enhanced Input -> InputTag routing component.
 #include "Input/BRInputComponent.h"
 
 UBRInputComponent::UBRInputComponent(const FObjectInitializer& ObjectInitializer)

@@ -1,4 +1,3 @@
-// Breachpoint. The server-authoritative projectile — D6's fourth unit of ARCHITECTURE §3.5.
 #include "Weapons/BRProjectile.h"
 
 #include "AbilitySystemComponent.h"
@@ -109,28 +108,22 @@ ABRProjectile* ABRProjectile::SpawnProjectile(
 {
 	if (!World)
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("ABRProjectile::SpawnProjectile: no world; nothing spawned."));
 		return nullptr;
 	}
 
 	if (World->GetNetMode() == NM_Client)
 	{
-		UE_LOG(LogBRCombat, Error,
-			TEXT("ABRProjectile::SpawnProjectile called on a CLIENT. A predictively spawned projectile "
-				 "has no rollback path; refused."));
 		return nullptr;
 	}
 
 	if (!ProjectileClass)
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("ABRProjectile::SpawnProjectile: no ProjectileClass supplied; nothing spawned."));
 		return nullptr;
 	}
 
 	FString Reason;
 	if (!ValidateSpawnParams(InParams, Reason))
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("ABRProjectile::SpawnProjectile refused: %s."), *Reason);
 		return nullptr;
 	}
 
@@ -149,8 +142,6 @@ ABRProjectile* ABRProjectile::SpawnProjectile(
 
 	if (!Projectile)
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("ABRProjectile::SpawnProjectile: deferred spawn of '%s' failed; nothing is in the air."),
-			*GetNameSafe(ProjectileClass));
 		return nullptr;
 	}
 
@@ -167,17 +158,12 @@ void ABRProjectile::InitializeProjectile(const FBRProjectileSpawnParams& InParam
 	}
 	if (bInitialized)
 	{
-		UE_LOG(LogBRCombat, Error,
-			TEXT("%s: InitializeProjectile called twice. The second payload was DISCARDED — one "
-				 "projectile carries one thrower's numbers."),
-			*GetName());
 		return;
 	}
 
 	FString Reason;
 	if (!ValidateSpawnParams(InParams, Reason))
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("%s: InitializeProjectile refused: %s."), *GetName(), *Reason);
 		return;
 	}
 
@@ -186,7 +172,6 @@ void ABRProjectile::InitializeProjectile(const FBRProjectileSpawnParams& InParam
 
 	if (!ProjectileMovement)
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("%s: no ProjectileMovementComponent; it will not move."), *GetName());
 		return;
 	}
 
@@ -199,15 +184,6 @@ void ABRProjectile::InitializeProjectile(const FBRProjectileSpawnParams& InParam
 	if (InParams.BounceFriction >= 0.f)
 	{
 		ProjectileMovement->Friction = InParams.BounceFriction;
-	}
-	if (InParams.Bounciness < 0.f || InParams.BounceFriction < 0.f)
-	{
-		UE_LOG(LogBRCombat, Warning,
-			TEXT("%s: bounce tuning is OWED. No usable 'Grenade.Bounciness'/'Grenade.BounceFriction' "
-				 "value arrived (the CT_Combat row is absent, or authored negative), so this projectile "
-				 "is bouncing on UProjectileMovementComponent's own values (restitution %.2f, friction "
-				 "%.2f). No bounce number was invented in code — author the rows and they take over."),
-			*GetName(), ProjectileMovement->Bounciness, ProjectileMovement->Friction);
 	}
 }
 
@@ -232,10 +208,6 @@ void ABRProjectile::BeginPlay()
 
 	if (!bInitialized)
 	{
-		UE_LOG(LogBRCombat, Error,
-			TEXT("%s: reached BeginPlay with NO payload — spawned outside ABRProjectile::SpawnProjectile. "
-				 "Destroying it rather than leaving an inert grenade in the level."),
-			*GetName());
 		Destroy();
 		return;
 	}
@@ -243,7 +215,6 @@ void ABRProjectile::BeginPlay()
 	UWorld* World = GetWorld();
 	if (!World)
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("%s: no world at BeginPlay, so the fuse cannot be armed; destroying."), *GetName());
 		Destroy();
 		return;
 	}
@@ -290,7 +261,6 @@ void ABRProjectile::Detonate()
 {
 	if (!HasAuthority())
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("%s: Detonate called off the authority; refused."), *GetName());
 		return;
 	}
 	if (bDetonated)

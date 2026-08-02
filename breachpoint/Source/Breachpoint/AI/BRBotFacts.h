@@ -1,4 +1,3 @@
-// Breachpoint. The bot blackboard: one typed fact struct, normalized at the boundary.
 #pragma once
 
 #include "CoreMinimal.h"

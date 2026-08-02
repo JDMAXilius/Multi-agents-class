@@ -1,4 +1,3 @@
-// Breachpoint. THE damage rule. Base magnitude x flat Damage.* multipliers, from data.
 #pragma once
 
 #include "CoreMinimal.h"

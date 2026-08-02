@@ -1,4 +1,3 @@
-// Breachpoint. The pawn: a body, not a brain.
 #include "Character/BRCharacter.h"
 
 #include "Camera/CameraComponent.h"
@@ -15,8 +14,6 @@
 #include "Input/BRInputConfig.h"
 #include "Match/BRPlayerController.h"
 #include "Match/BRPlayerState.h"
-
-DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
 ABRCharacter::ABRCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer.SetDefaultSubobjectClass<UBRCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
@@ -99,8 +96,6 @@ void ABRCharacter::InitializeAbilitySystem(const TCHAR* CallSite)
 	UBRAbilitySystemComponent* ASC = BRPlayerState->GetBRAbilitySystemComponent();
 	if (!ASC)
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("BRCharacter '%s': %s — ABRPlayerState '%s' has no ASC. No ability on this pawn will ever activate."),
-			*GetName(), CallSite, *BRPlayerState->GetName());
 		return;
 	}
 	ASC->InitAbilityActorInfo(BRPlayerState, this);

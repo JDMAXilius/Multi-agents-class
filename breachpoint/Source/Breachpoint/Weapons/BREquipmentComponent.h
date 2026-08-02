@@ -1,4 +1,3 @@
-// Breachpoint. What a player is carrying, which of it is in their hands, and how it got there.
 #pragma once
 
 #include "ActiveGameplayEffectHandle.h"

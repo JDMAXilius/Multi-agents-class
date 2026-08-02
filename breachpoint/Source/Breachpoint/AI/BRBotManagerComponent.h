@@ -1,4 +1,3 @@
-// Breachpoint. Match glue: fill the roster with bots, backfill leavers, seed them all.
 #pragma once
 
 #include "AI/BRBotBrain.h"

@@ -1,4 +1,3 @@
-// Breachpoint. The cue handlers, and the registration that arms them.
 #include "AbilitySystem/Cues/BRGameplayCues.h"
 
 #include "AbilitySystemGlobals.h"
@@ -105,11 +104,6 @@ bool UBRGameplayCue_Base::SpawnFXSoft(const UObject* WorldContext, const TSoftOb
 	if (!ReportedUnknownFX.Contains(AssetName))
 	{
 		ReportedUnknownFX.Add(AssetName);
-		UE_LOG(LogBRCombat, Warning,
-			TEXT("BRGameplayCues: '%s' is neither a Cascade UParticleSystem nor a UNiagaraSystem, "
-				 "so this module has no way to spawn it. Not a missing asset — an unhandled FX "
-				 "system type."),
-			*AssetName.ToString());
 	}
 	return false;
 }
@@ -123,11 +117,6 @@ void UBRGameplayCue_Base::ReportSilentCue(const UObject* WorldContext, const FGa
 	if (!Ledger.Contains(LedgerKey))
 	{
 		Ledger.Add(LedgerKey);
-		UE_LOG(LogBRCombat, Warning,
-			TEXT("GameplayCue '%s' fired and its '%s' slot had nothing to play. The cue is BOUND "
-				 "and ROUTING correctly — no FX asset is authored for it yet. This is logged once "
-				 "per tag+slot; see BR.Cues.DrawPlaceholders for the in-world marker."),
-			*MatchedTag.ToString(), Slot);
 	}
 
 #if ENABLE_DRAW_DEBUG
@@ -232,14 +221,6 @@ void UBRGameplayCueRegistrar::OnWorldBeginPlay(UWorld& InWorld)
 	const int32 Bound = RegisterNativeCueHandlers();
 	WarmCueFXAssets();
 
-	if (Bound == 0)
-	{
-		UE_LOG(LogBRCombat, Error,
-			TEXT("BRGameplayCueRegistrar bound ZERO cue handlers in world '%s'. Every "
-				 "GameplayCue.* tag will route to nothing. Check that the GameplayCueManager "
-				 "exists and that a UBRGameplayCue_Base subclass declares tags."),
-			*InWorld.GetName());
-	}
 }
 
 int32 UBRGameplayCueRegistrar::RegisterNativeCueHandlers()
@@ -247,14 +228,12 @@ int32 UBRGameplayCueRegistrar::RegisterNativeCueHandlers()
 	UGameplayCueManager* CueManager = UAbilitySystemGlobals::Get().GetGameplayCueManager();
 	if (!CueManager)
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("BRGameplayCueRegistrar: no GameplayCueManager. No cue can play."));
 		return 0;
 	}
 
 	UGameplayCueSet* RuntimeSet = CueManager->GetRuntimeCueSet();
 	if (!RuntimeSet)
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("BRGameplayCueRegistrar: the GameplayCueManager has no runtime cue set."));
 		return 0;
 	}
 
@@ -282,10 +261,6 @@ int32 UBRGameplayCueRegistrar::RegisterNativeCueHandlers()
 
 		if (HandledTags.IsEmpty())
 		{
-			UE_LOG(LogBRCombat, Warning,
-				TEXT("BRGameplayCueRegistrar: '%s' declares no cue tags, so it can never run. A "
-					 "handler that answers to nothing is dead code, not a disabled feature."),
-				*HandlerClass->GetName());
 			continue;
 		}
 
@@ -295,10 +270,6 @@ int32 UBRGameplayCueRegistrar::RegisterNativeCueHandlers()
 		{
 			if (!Tag.IsValid())
 			{
-				UE_LOG(LogBRCombat, Warning,
-					TEXT("BRGameplayCueRegistrar: '%s' returned an INVALID tag. A cue bound to an "
-						 "invalid tag looks armed and is not."),
-					*HandlerClass->GetName());
 				continue;
 			}
 			CuesToAdd.Emplace(Tag, ClassPath);
@@ -318,13 +289,6 @@ int32 UBRGameplayCueRegistrar::RegisterNativeCueHandlers()
 		if (bExact)
 		{
 			++Verified;
-		}
-		else
-		{
-			UE_LOG(LogBRCombat, Error,
-				TEXT("BRGameplayCueRegistrar: '%s' did NOT land in the runtime cue set (wanted "
-					 "%s). That tag will play nothing."),
-				*Entry.Key.ToString(), *Entry.Value->GetName());
 		}
 	}
 

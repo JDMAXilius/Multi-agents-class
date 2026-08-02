@@ -1,18 +1,9 @@
-// Breachpoint. Log channels and collision channel aliases.
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Engine/EngineTypes.h"
 
 #include "BRCore.generated.h"
-
-BREACHPOINT_API DECLARE_LOG_CATEGORY_EXTERN(LogBRCombat, Log, All);
-BREACHPOINT_API DECLARE_LOG_CATEGORY_EXTERN(LogBRNet, Log, All);
-BREACHPOINT_API DECLARE_LOG_CATEGORY_EXTERN(LogBRAI, Log, All);
-BREACHPOINT_API DECLARE_LOG_CATEGORY_EXTERN(LogBROnline, Log, All);
-BREACHPOINT_API DECLARE_LOG_CATEGORY_EXTERN(LogBRUI, Log, All);
-
-BREACHPOINT_API DECLARE_LOG_CATEGORY_EXTERN(LogBRInput, Log, All);
 
 namespace BRUnits
 {

@@ -1,4 +1,3 @@
-// Breachpoint. The ability base: activation policy, generic cooldown, cancel hygiene, one death gate.
 #pragma once
 
 #include "Abilities/GameplayAbility.h"

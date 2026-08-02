@@ -1,4 +1,3 @@
-// Breachpoint. Weapons lying in the world, and the node that puts the Rocket there.
 #pragma once
 
 #include "CoreMinimal.h"

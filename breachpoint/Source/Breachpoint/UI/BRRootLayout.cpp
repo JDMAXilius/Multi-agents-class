@@ -1,4 +1,3 @@
-// Breachpoint. The per-local-player host for the four CommonUI layer stacks.
 #include "UI/BRRootLayout.h"
 
 #include "Core/BRCore.h"
@@ -20,10 +19,6 @@ void UBRRootLayout::RegisterLayer(FUITag LayerTag, UCommonActivatableWidgetStack
 {
 	if (!Stack)
 	{
-		UE_LOG(LogBRUI, Error,
-			TEXT("BRRootLayout: layer %s has no bound stack. The WBP subclass must contain a ")
-			TEXT("CommonActivatableWidgetStack named for it (see BRRootLayout.h)."),
-			*LayerTag.ToString());
 		return;
 	}
 
@@ -40,14 +35,12 @@ UBRActivatableWidget* UBRRootLayout::PushWidgetToLayer(FUITag LayerTag, TSubclas
 {
 	if (!WidgetClass)
 	{
-		UE_LOG(LogBRUI, Warning, TEXT("PushWidgetToLayer(%s): null widget class."), *LayerTag.ToString());
 		return nullptr;
 	}
 
 	UCommonActivatableWidgetStack* Stack = GetLayerStack(LayerTag);
 	if (!Stack)
 	{
-		UE_LOG(LogBRUI, Warning, TEXT("PushWidgetToLayer(%s): no such layer."), *LayerTag.ToString());
 		return nullptr;
 	}
 

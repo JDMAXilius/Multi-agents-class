@@ -1,4 +1,3 @@
-// Breachpoint. What a player is carrying, which of it is in their hands, and how it got there.
 #include "Weapons/BREquipmentComponent.h"
 
 #include "AbilitySystemComponent.h"
@@ -158,7 +157,6 @@ UBRWeaponInstance* UBREquipmentComponent::GiveWeaponWithAmmo(const FDataTableRow
 
 	if (InWeaponRow.RowName.IsNone() || !InWeaponRow.DataTable)
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("GiveWeapon: no row supplied; slot %d left untouched."), SlotIndex);
 		return nullptr;
 	}
 
@@ -243,7 +241,6 @@ ABRWeaponPickup* UBREquipmentComponent::DropWeapon(EBRWeaponSlot Slot)
 
 	if (!DroppedPickupClass)
 	{
-		UE_LOG(LogBRCombat, Error, TEXT("DropWeapon: no DroppedPickupClass configured; nothing dropped."));
 		return nullptr;
 	}
 
@@ -411,30 +408,15 @@ const UBRAbilitySet* UBREquipmentComponent::ResolveAbilitySetForRow(const FDataT
 	const FBRWeaponRow* Row = InWeaponRow.GetRow<FBRWeaponRow>(TEXT("BREquipmentComponent::ResolveAbilitySetForRow"));
 	if (!Row)
 	{
-		UE_LOG(LogBRCombat, Error,
-			TEXT("BREquipmentComponent: weapon row '%s' does not resolve — is DT_Weapons imported?"),
-			*InWeaponRow.RowName.ToString());
 		return nullptr;
 	}
 
 	if (Row->AbilitySet.IsNull())
 	{
-		UE_LOG(LogBRCombat, Error,
-			TEXT("BREquipmentComponent: weapon row '%s' has an EMPTY AbilitySet column. The weapon "
-				 "equips but cannot fire. Author the set asset and name it in DT_Weapons.csv."),
-			*InWeaponRow.RowName.ToString());
 		return nullptr;
 	}
 
 	const UBRAbilitySet* Set = Row->AbilitySet.LoadSynchronous();
-	if (!Set)
-	{
-		UE_LOG(LogBRCombat, Error,
-			TEXT("BREquipmentComponent: weapon row '%s' names ability set '%s', which failed to "
-				 "load. The reference is soft, so this is a missing or renamed asset, not a null "
-				 "column."),
-			*InWeaponRow.RowName.ToString(), *Row->AbilitySet.ToString());
-	}
 	return Set;
 }
 
@@ -480,9 +462,6 @@ void UBREquipmentComponent::GrantAbilitySetForSlot(int32 SlotIndex)
 
 	if (GrantedAbilities == 0)
 	{
-		UE_LOG(LogBRCombat, Warning,
-			TEXT("BREquipmentComponent: granted 0 ability(ies) and %d effect(s) from '%s' for slot %d (weapon row '%s'). The set RESOLVED and LOADED — it is empty, or its entries name no ability class. This weapon equips and can never fire."),
-			GrantedEffects, *GetNameSafe(AbilitySet), SlotIndex, *WeaponRowName.ToString());
 		return;
 	}
 }
