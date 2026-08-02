@@ -151,6 +151,12 @@ this is *not* the front end's 250/40.
 
 ## 6. Art that must be replaced, by screen
 
+> **Superseded by `ART-PASS-STAGE-2.md`.** This table was a sketch written before the file was
+> counted. The survey found **815 visible image fills, not ~250**, and three entries below are
+> wrong: the `Items` tiles are 101 visible (not ~180, and the 114×114 boxes carry no paint),
+> `Rank Image` is a grey placeholder rather than Halo art, and the `Commendation Card` icons do
+> not exist. Kept for its per-screen framing; use the stage-2 ledger for any count or schedule.
+
 Every `image 55` / `image 60` / `image 9` / `image 51` is a **hidden screenshot underlay** — delete,
 never port. Visible Halo-owned art needing original Breachpoint replacements:
 
