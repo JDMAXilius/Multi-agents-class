@@ -286,18 +286,48 @@ So §3's "8 missing components" was an undercount: **17 are missing**, not 8. Bu
 understated what we already owned — 48 mains and 500 instances were never on a reference page at
 all. Net: the file is in better shape than §3 said, and the authoring job is larger.
 
-### Still on reference pages — 225 instances
+### Second pass — the three review cases, resolved and swapped
 
-**Four need review before swapping** (structure differs, so a swap could drop overrides):
-`Tag Frame` (31 instances, 11% match — variant order differs), `Preview Photo` (10, 30%),
-`Rank Label` (7, 94%), and one other. These are not blocked, only unsafe to automate; each needs
-a human to confirm the variant mapping.
+**A further 48 instances repointed. Zero errors, zero node drift.** `Tag Frame` (31),
+`Preview Photo` (10), `Rank Label` (7).
 
-**Seventeen must be authored.** In instance order: `Button Prompts` (69), `Navigation Bar` (29),
-`Menu Combo` (16), `Battle Pass Level` (15), `Progression Button` (13), `Party List` (11),
-`Menu in Border` (6), `Three Photo Preview` (4), `Player` (3), `Load / Search Bar` (3),
-`Shop Passes Card` (2), and six singletons. **`Button Prompts` and `Navigation Bar` alone are 98
-of the 177** — authoring those two is the next highest-value action in the whole art pass.
+There were **three**, not four — 31+10+7 = 48, and an earlier note miscounted.
+
+Inspection showed all three were safe, and that **the low signature scores were partly
+self-inflicted**. `Tag Frame` scored 11% because its child is named `HALO 2` in the reference and
+`BREACHPOINT` in ours — **that is §7's own rename**, and the longer string changed the text node's
+width, which cascaded through a geometry-based signature. The signature was measuring our own
+progress as if it were divergence.
+
+Judged on what actually governs a swap, all three matched exactly: variant sets 4/4, 1/1 and 4/4
+with identical names, identical top-level sizes, identical child names. **Lesson: a geometry
+signature is a screening tool, not a verdict.** The verdict is variant-name parity plus a node
+census, and the census is what proves nothing was lost.
+
+### Running total
+
+**224 instances repointed across both passes — 176 + 48. Zero errors, zero node-count drift on
+all twelve pages, both times.**
+
+### Still on reference pages — 177, and every one is authoring work
+
+No ambiguous cases remain. All 177 belong to the **17 components with no Breachpoint equivalent**:
+
+| Component | Instances | | Component | Instances |
+|---|---:|---|---|---:|
+| `Button Prompts` | **69** | | `Menu in Border` | 6 |
+| `Navigation Bar` | **29** | | `Three Photo Preview` | 4 |
+| `Menu Combo` | 16 | | `Player` | 3 |
+| `Battle Pass Level` | 15 | | `Load / Search Bar` | 3 |
+| `Progression Button` | 13 | | `Shop Passes Card` | 2 |
+| `Party List` | 11 | | 6 singletons | 6 |
+
+**`Button Prompts` and `Navigation Bar` are 98 of the 177 — 55% of what is left in two
+components**, and both are Tier-0 in `ue-frontend/SCREEN-MANIFEST.md`'s dependency graph.
+Authoring those two is the highest-value action remaining in the art pass.
+
+**`Shop Passes Card` cannot be authored yet** — `SCREEN-MANIFEST.md` found it has no node id and
+no geometry; it exists only in a doc list. It needs a source before it can be specified.
 
 ---
 
