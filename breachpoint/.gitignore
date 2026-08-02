@@ -34,3 +34,10 @@ Tools/data-crew/output/
 __pycache__/
 *.pyc
 build_editor_final.log
+
+# Internal reference / dev-test assets — extracted game content, competitor art, uncleared
+# packs. Local use is private; committing to a remote is distribution, which is the exposure
+# worth preventing mechanically. Content/Reference is also in DirectoriesToNeverCook, so it
+# cannot reach a packaged build. See Content/Reference/README.md.
+Content/Reference/*
+!Content/Reference/README.md

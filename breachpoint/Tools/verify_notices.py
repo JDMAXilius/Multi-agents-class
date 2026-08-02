@@ -11,6 +11,10 @@ SHIPPING, not by it existing in the repository. Four things must hold:
   3. Config/DefaultGame.ini stages Content/Legal, or nothing reaches the build.
   4. Every icon set present in the tree has a notice (catches a dependency added
      without one).
+  5. Content/Reference (internal dev/test assets — extracted game content, competitor
+     art) is excluded from cook AND from git. Development may use anything it likes in
+     there; what must never happen is it SHIPPING or being PUSHED. A hard reference from
+     cooked content defeats DirectoriesToNeverCook, so that is checked too.
 
 Exit 0 = clean. Exit 1 = the game may not ship. Run from the game repo root, in
 rung 2 alongside the other grep gates (docs/contracts/testing.md).
@@ -45,6 +49,49 @@ REQUIRED_TOKENS: list[tuple[str, str]] = [
 DEPENDENCY_PROBES: list[tuple[str, str, str]] = [
     ("Content/UI/Icons/**/*.uasset", "Lucide", "icons are in Content/ but no Lucide notice"),
 ]
+
+REFERENCE_DIR = ROOT / "Content" / "Reference"
+GITIGNORE = ROOT / ".gitignore"
+
+
+def check_reference_area() -> int:
+    """Content/Reference may hold anything; it may never ship or be committed."""
+    problems = 0
+
+    ini = PACKAGING_INI.read_text(encoding="utf-8") if PACKAGING_INI.exists() else ""
+    if not re.search(r'DirectoriesToNeverCook=\(Path="Content/Reference"\)', ini):
+        fail(
+            "Content/Reference is not in DirectoriesToNeverCook. Internal reference assets "
+            "could reach a packaged build."
+        )
+        problems += 1
+
+    gi = GITIGNORE.read_text(encoding="utf-8") if GITIGNORE.exists() else ""
+    if "Content/Reference/*" not in gi:
+        fail(
+            ".gitignore does not exclude Content/Reference/*. Local use is private; pushing "
+            "to a remote is DISTRIBUTION, which is the larger exposure."
+        )
+        problems += 1
+
+    # A hard reference from cooked content drags the asset in regardless of never-cook.
+    # .uasset stores referenced package paths as readable ASCII, so a byte scan finds them.
+    if REFERENCE_DIR.is_dir():
+        for asset in ROOT.glob("Content/**/*.uasset"):
+            if REFERENCE_DIR in asset.parents:
+                continue
+            try:
+                blob = asset.read_bytes()
+            except OSError:
+                continue
+            if b"/Game/Reference/" in blob:
+                fail(
+                    f"{asset.relative_to(ROOT)} references /Game/Reference/. A HARD reference "
+                    f"from shipping content defeats DirectoriesToNeverCook and the asset cooks."
+                )
+                problems += 1
+
+    return problems
 
 
 def fail(msg: str) -> None:
@@ -104,6 +151,8 @@ def main() -> int:
             fail(f"{why} (matched {pattern})")
             problems += 1
 
+    problems += check_reference_area()
+
     if problems:
         print(
             f"\n{problems} problem(s). The build must not ship until these are clear.",
@@ -111,7 +160,7 @@ def main() -> int:
         )
         return 1
 
-    print("notices: OK — recorded, staged, packaged, and matching.")
+    print("notices: OK — recorded, staged, packaged, matching; Content/Reference walled off.")
     return 0
 
 

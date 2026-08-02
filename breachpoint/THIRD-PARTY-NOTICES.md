@@ -75,7 +75,12 @@ trademark of Microsoft Corporation; Halo Infinite and Halo: Campaign Evolved are
 343 Industries / Halo Studios. Breachpoint's UI follows *layout and behaviour conventions* — a
 functional design vocabulary shared across the FPS genre — and its artwork is original.
 
-Reference material was studied and is credited in `docs/UI-DESIGN-SYSTEM.md` §1. The removal of
-every Halo-owned string and asset from working files is tracked in `docs/ui/ART-PASS-STAGE-3.md`
-and is **not yet complete** — that pass gates shipping, and this paragraph is only true of a
-build once it passes.
+Reference material was studied and is credited in `docs/UI-DESIGN-SYSTEM.md` §1.
+
+**Internal development is a separate matter from shipping, deliberately.** Original assets are
+used during development for reference, measurement and placeholder work; they live in
+`Content/Reference/`, which is excluded from git and from cook, and `Tools/verify_notices.py`
+verifies both exclusions plus the one escape route that defeats them (a hard reference from
+shipping content). The removal of Halo-owned strings and assets from *shipping* files is tracked
+in `docs/ui/ART-PASS-STAGE-3.md` and is **not yet complete** — that pass gates shipping, and the
+paragraph above is a claim about a packaged build, not about the working tree.
