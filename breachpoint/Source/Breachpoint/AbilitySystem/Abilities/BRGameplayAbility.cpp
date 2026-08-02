@@ -8,6 +8,10 @@
 #include "Core/BRCore.h"
 #include "Core/BRGameplayTags.h"
 
+// File-local: one activation line lives here and nothing else in the module logs, so this
+// category has no reason to be visible in a header.
+DEFINE_LOG_CATEGORY_STATIC(LogBRAbility, Log, All);
+
 UBRGameplayAbility::UBRGameplayAbility(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
@@ -56,6 +60,24 @@ void UBRGameplayAbility::OnGiveAbility(const FGameplayAbilityActorInfo* ActorInf
 void UBRGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+
+	// One line in the base rather than seven in the leaves: every BR ability calls
+	// Super::ActivateAbility, so this covers the abilities that exist and the ones that do not
+	// yet. It prints BEFORE the commit below, so a cost or cooldown refusal still shows the
+	// activation that was attempted rather than looking like a dead input.
+	//
+	// ActivationMode, not just a server/client flag, because it is the one field that says
+	// whether prediction is working: a client should print Predicting and then the server's own
+	// Authority line. Predicting with no Authority line means the server refused.
+	const TCHAR* ActivationMode =
+		ActivationInfo.ActivationMode == EGameplayAbilityActivationMode::Authority ? TEXT("Authority") :
+		ActivationInfo.ActivationMode == EGameplayAbilityActivationMode::Predicting ? TEXT("Predicting") :
+		TEXT("Confirmed");
+
+	UE_LOG(LogBRAbility, Log, TEXT("GA ACTIVATED: %s on '%s' [%s]"),
+		*GetClass()->GetName(),
+		*GetNameSafe(ActorInfo ? ActorInfo->AvatarActor.Get() : nullptr),
+		ActivationMode);
 
 	if (bCommitOnActivate && !CommitAbility(Handle, ActorInfo, ActivationInfo))
 	{
