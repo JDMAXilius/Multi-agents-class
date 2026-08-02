@@ -114,7 +114,15 @@ other names).
 
 ---
 
-## 5. The 31 Halo-owned strings — handoff to stage 3
+## 5. The Halo-owned strings — handoff to stage 3
+
+> **CORRECTION.** The count below is **31**, and it is a severe undercount. It measured *text
+> content only*, on *12 pages*, against a *case-sensitive 50-term list*. Stage 3 re-ran the
+> sweep across **layer names and text**, on **17 pages** (adding the five HUD pages), with a
+> 130-term case-insensitive lexicon, and found **1,561 occurrences** — 1,141 in layer names,
+> 420 in text. The case-sensitivity alone hid 71 instances of `HALO`, and layer names were
+> never scanned at all. See `ART-PASS-STAGE-3.md` for the real ledger; the table below is
+> retained only as the record of what the narrow scan saw.
 
 Small enough to list in full. These are **strings**, so they are stage 3's problem, not stage
 4's — no art is produced to fix any of them.
