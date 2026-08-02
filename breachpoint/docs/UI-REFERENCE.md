@@ -24,6 +24,15 @@ FRONT-END screens.
   spec (Campaign Evolved language + Infinite's competitive-element behaviour) in the
   screen-pass artifact and `Source/Breachpoint/UI/` bindings.
 
+## The system built from it
+
+- **`.claude/skills/ui-presentation/SKILL.md`** — the method: Presentation as a discipline,
+  design-system-first, VISR colour semantics, the measured grid, the Figma MCP commands, the
+  Chromium render loop, and the Figma→UE handoff rules.
+- **`docs/UI-DESIGN-SYSTEM.md`** — the reference tables: colour tokens with their meanings,
+  measured geometry, the twelve-component inventory with Figma↔UE names, which reference
+  governs which surface, and the four C++ gaps that block binding.
+
 ## Where things are
 
 - Rendered mockups + field-by-field ViewModel binding tables: the "BREACHPOINT — UI Screen
