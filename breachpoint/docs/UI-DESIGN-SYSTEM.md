@@ -117,11 +117,25 @@ assets against twelve components. **The system is specified and largely unbuilt.
 | Death / respawn | Infinite's arena lineage | Campaign Evolved has no PvP death screen |
 
 **Deliberate deviations from every reference, with reasons:**
-- **No motion tracker.** No ViewModel field, and it would hand every player a permanent
-  through-wall read — against GDD §2.8's "no privileged state" and R12's legibility argument.
-  In a 4v4 arena with callouts as a pillar, a radar replaces communication.
-- **Vitals top-left, not top-centre.** Our top-centre carries score, match clock and the rocket
-  countdown, which a campaign has no equivalent of.
+- ~~**No motion tracker.**~~ **REVERSED by founder decision, 2 Aug 2026 — the motion tracker IS
+  in scope**, built 1:1 from Halo Infinite (Arena: 18 m precise blips, 30 m edge-direction;
+  BTB 24 m / 40 m; crouch-walk and Walk-binding movement undetected; disabled in Ranked and
+  Tactical Slayer).
+
+  *Correction to the record:* the original entry claimed this was backed by "R12's legibility
+  argument". **R12 is "Bots are legible before they are optimal" and says nothing about radar** —
+  it was cited by analogy, not as a ruling. No closed ruling ever banned a motion tracker, so
+  nothing in `DESIGN-RULINGS.md` needed reversing. The GDD §2.8 "no privileged state" citation
+  is also weak here: a tracker shows the *same* information to every player, which is the
+  opposite of privileged state. The real argument against it was a design opinion — that in a
+  4v4 arena with callouts as a pillar a radar replaces communication — and the founder has
+  decided against that opinion.
+- **Vitals top-left, not top-centre.** ~~Our top-centre carries score, match clock and the rocket
+  countdown.~~ **SUPERSEDED — see below.** Halo Infinite puts shield and health in ONE trapezoid
+  at **top-centre** (health nested in its bottom-centre, no gap) and puts score + timer at
+  **bottom-centre**. Since the founder's instruction is 1:1 with Infinite, the HUD now follows
+  Infinite's four anchors: top-centre survivability, bottom-left awareness, bottom-centre match
+  state, bottom-right loadout, centre reticle.
 - **Killfeed top-right, not far-left.** Infinite's left edge is free; ours holds vitals
   (top-left) and grenades/grapple (bottom-left).
 - **Visor frames dialled back** to a vignette and one arc. Campaign Evolved's heaviest signature
