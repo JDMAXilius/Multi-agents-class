@@ -15,8 +15,18 @@ CHECKS
                        `download_assets` composites against the page backdrop, while
                        the Plugin API `exportAsync` renders in isolation.
   3. Opaque share    — >90% fully opaque is a filled plate, not a glyph.
-  4. Dimensions      — must equal the Figma source size x the export scale, exactly.
-                       An off-by-one means the wrong node or a stale export.
+  4. Dimensions      — must equal the size the FILENAME promises x the export scale.
+                       The expectation must come from outside the file. Deriving it from
+                       the source's own header made this check tautological: rasterize_svg
+                       reads sw,sh from the SVG header, renders at sw*scale, and preflight
+                       then asserted the output equalled sw*scale — it compared the render
+                       against the header it rendered from and could never fail. It missed
+                       the two real defects in the set: Assault_16 and Extraction_16 ship
+                       viewBox="0 0 17 16", the only non-square _16 sources in a family of
+                       14, so they land as 68x64 where every sibling is 64x64 and UMG
+                       squashes them 6.25% horizontally in a square 16x16 brush.
+                       EXPECTED_SIZE below is the on-disk naming convention, verified
+                       against every viewBox in Export/UI. An unrecognised name WARNS.
   5. Clipping        — ink touching the canvas edge means the glyph is cut off. The
                        source frames all carry deliberate padding, so ink at the edge
                        is a bug, never a design choice.
@@ -26,7 +36,15 @@ CHECKS
                        silently defeats it and cannot be recoloured.
   7. Anti-aliasing   — a real vector export has partial alpha at the edges. An alpha
                        channel that is only 0 and 255 means the export was rasterised
-                       1-bit and will look jagged at every size.
+                       1-bit and will look jagged at every size — UNLESS the geometry
+                       cannot produce partial alpha at all, in which case zero AA is the
+                       forced correct output and failing it sends perfect art back to be
+                       redrawn. Elimination_16 was quarantined exactly that way: its path
+                       is {M,H,V,Z} only and all 18 coordinates are multiples of 0.25, so
+                       at 4x every edge lands on an integer device pixel. The caller that
+                       holds the SVG (rasterize_svg.aa_possible) decides; this end only
+                       honours `aa_possible=False`. Standalone runs have no SVG, so they
+                       default to checking — a false alarm is cheaper than a silent skip.
   8. Padding report  — informational. ASSET-PIPELINE §3 says trim to the ink, but
                        grid-designed icons (Lucide is authored on a 24 grid) rely on
                        consistent optical padding for alignment. Reported, not failed:
@@ -45,8 +63,92 @@ CHROMA_TOLERANCE = 12       # max RGB spread before ink counts as coloured
 GREY_INK_FLOOR  = 240       # dimmest opaque ink allowed: UMG tinting multiplies
 MIN_AA_LEVELS = 3           # distinct partial-alpha values expected from a vector
 
+# Expected SOURCE size per naming convention, in source units — multiplied by the export
+# scale to get the pixel size. Every entry below was checked against the actual viewBox of
+# all 137 SVGs under Export/UI: 0 unrecognised, and the only two disagreements are the
+# genuine defects (Assault_16 / Extraction_16 at 17x16). Prefix rules are tried first
+# because T_UI_Rank_16_Vanguard must NOT be read as a "_16" icon.
+EXPECTED_BY_PREFIX = [
+    ("T_UI_Rank_",             (76, 76)),
+    ("T_UI_Icon_Glyph_",       (23, 23)),   # ModeGlyphs, all 14
+    ("T_UI_Icon_Currency_",    (24, 40)),   # the only non-square family
+    ("T_UI_Icon_Container_",   (40, 40)),
+    ("T_UI_Icon_GametypeV2_",  (40, 40)),
+]
+EXPECTED_BY_SUFFIX = [
+    ("_16",  (16, 16)),
+    ("_24",  (24, 24)),
+    ("_40",  (40, 40)),
+    ("_120", (120, 120)),
+]
 
-def preflight(p: Path, expect: dict | None) -> tuple[bool, list[str], str]:
+# The HUD family carries NO size convention, so it gets an explicit per-file baseline.
+#
+# Read the weaker claim this makes, and do not oversell it. The icon rules above are a
+# real convention: a name ENDS in _16, so 16x16 is what the name PROMISES, and a 17x16
+# source is caught as a defect the first time it is seen. Nothing like that exists here.
+# Reticles are deliberately five different sizes because the size encodes the weapon's
+# spread; grenades are three different heights; the two Vitals states differ by 1px.
+# There is no rule to derive - only observation.
+#
+# So these numbers were transcribed ONCE, by hand, from the 29 viewBoxes as exported on
+# 3 Aug 2026, and committed. That makes this a DRIFT DETECTOR, not a validator: it will
+# catch a re-export that silently changes a size, a node id pointed at the wrong frame,
+# or a stale file - and it will NOT catch a size that was wrong on the day it was first
+# exported, because that wrongness is what got recorded. Regenerating this table from the
+# files would make it tautological again, which is the exact bug just fixed in check 4.
+#
+# Vitals: ShieldHealth is 277 and ShieldBroken 276. One pixel apart for what should be
+# two states of one widget. Recorded as measured rather than reconciled - the 1px belongs
+# to whoever owns the Figma frame, and averaging it here would hide it forever.
+EXPECTED_EXACT = {
+    "HUD_Ability_Grapple_Ready":   (52, 31),
+    "HUD_Ammo_Readout":            (190, 40),
+    "HUD_Ammo_Low":                (190, 40),
+    "HUD_Ammo_Battery":            (190, 40),
+    "HUD_Feedback_DamageDir":      (40, 42),
+    "HUD_Feedback_ShieldBreak":    (40, 42),
+    "HUD_Feedback_Medal":          (120, 120),
+    "HUD_Grenade_Frag_Sel":        (23, 17),
+    "HUD_Grenade_Dynamo_Sel":      (23, 17),
+    "HUD_Grenade_Plasma_Sel":      (23, 18),   # not 17 - the four are not a uniform set
+    "HUD_Grenade_Spike_Sel":       (23, 21),   # nor is this
+    "HUD_Minimap_Clear":           (140, 138),
+    "HUD_Minimap_Contacts":        (140, 138),
+    "HUD_Minimap_Disabled":        (140, 138),
+    "HUD_MotionTracker":           (136, 152),
+    "HUD_Reticle_AR":              (43, 43),
+    "HUD_Reticle_BR":              (43, 43),
+    "HUD_Reticle_HitMarkers":      (43, 43),
+    "HUD_Reticle_Magnum":          (36, 36),   # tightest - the most accurate weapon
+    "HUD_Reticle_Shotgun":         (52, 52),
+    "HUD_Reticle_Sniper":          (58, 58),   # widest, and it is 5 rects, not paths
+    "HUD_Vitals_ShieldHealth":     (277, 35),
+    "HUD_Vitals_ShieldBroken":     (276, 35),  # see note above: 1px, deliberately not hidden
+    "HUD_Weapon_AR":               (94, 31),
+    "HUD_Weapon_BR":               (94, 31),
+    "HUD_Weapon_Magnum":           (94, 31),
+    "HUD_Weapon_Sniper":           (94, 31),
+    "HUD_Weapon_Rocket":           (94, 31),
+    "HUD_Weapon_Shotgun":          (94, 31),
+}
+
+
+def expected_size(stem: str) -> tuple[int, int] | None:
+    """Source size the NAME promises, or None if the convention does not cover it."""
+    if stem in EXPECTED_EXACT:          # exact entries win: they are a recorded baseline
+        return EXPECTED_EXACT[stem]
+    for prefix, wh in EXPECTED_BY_PREFIX:
+        if stem.startswith(prefix):
+            return wh
+    for suffix, wh in EXPECTED_BY_SUFFIX:
+        if stem.endswith(suffix):
+            return wh
+    return None
+
+
+def preflight(p: Path, expect: dict | None = None, *,
+              aa_possible: bool = True) -> tuple[bool, list[str], str]:
     fails: list[str] = []
     notes: list[str] = []
     im = Image.open(p)
@@ -71,12 +173,18 @@ def preflight(p: Path, expect: dict | None) -> tuple[bool, list[str], str]:
     if opaque > OPAQUE_SHARE_LIMIT:
         fails.append(f"{opaque:.0%} fully opaque — filled plate, not a glyph")
 
-    # 4 — dimensions
-    if expect:
-        want = (int(expect["w"] * expect["scale"]), int(expect["h"] * expect["scale"]))
+    # 4 — dimensions, against the NAME, never against the source's own header. `expect`
+    # supplies only the scale: its w/h come from the very node/header that produced the
+    # render, so they cannot detect a source authored at the wrong size.
+    scale = float((expect or {}).get("scale", 4))
+    src = expected_size(p.stem)
+    if src is None:
+        notes.append(f"WARN: '{p.stem}' matches no naming rule — size UNCHECKED")
+    else:
+        want = (int(src[0] * scale), int(src[1] * scale))
         if (w, h) != want:
             fails.append(f"size {w}x{h}, expected {want[0]}x{want[1]} "
-                         f"({expect['w']}x{expect['h']} @ {expect['scale']}x)")
+                         f"({src[0]}x{src[1]} @ {scale:g}x, from the name)")
 
     # 5 — clipping: any ink on the border row/column
     edge = ([px[x, 0] for x in range(w)] + [px[x, h - 1] for x in range(w)]
@@ -116,10 +224,15 @@ def preflight(p: Path, expect: dict | None) -> tuple[bool, list[str], str]:
         fails.append(f"ink is grey (brightest opaque value {brightest}) — tinting "
                      "multiplies, so this renders dim against every palette colour")
 
-    # 7 — anti-aliasing
+    # 7 — anti-aliasing, only where anti-aliasing is POSSIBLE
     partial = sum(1 for lvl in range(1, 255) if hist[lvl] > 0)
     if partial < MIN_AA_LEVELS:
-        fails.append(f"only {partial} partial-alpha levels — export is 1-bit, will look jagged")
+        if aa_possible:
+            fails.append(f"only {partial} partial-alpha levels — export is 1-bit, "
+                         "will look jagged")
+        else:
+            notes.append(f"{partial} AA levels, exempt — geometry is axis-aligned on "
+                         "integer device pixels, so zero AA is correct")
 
     # 8 — padding, informational
     bbox = im.getbbox()
@@ -135,10 +248,18 @@ def preflight(p: Path, expect: dict | None) -> tuple[bool, list[str], str]:
 
 
 def main() -> int:
-    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    argv = sys.argv[1:]
+    if "--scale" in argv:
+        i = argv.index("--scale")
+        scale = float(argv[i + 1])
+        argv = argv[:i] + argv[i + 2:]
+    else:
+        scale = 4.0
+    args = [a for a in argv if not a.startswith("--")]
     root = REPO / (args[0] if args else "Content/UI/Icons")
     manifest = {}
     if "--manifest" in sys.argv:
+        # Only its `scale` is read now; see check 4 on why its w/h cannot be trusted.
         mp = Path(sys.argv[sys.argv.index("--manifest") + 1])
         manifest = json.load(open(mp))
 
@@ -147,10 +268,13 @@ def main() -> int:
         print(f"no PNGs under {root}")
         return 2
 
-    bad = []
+    bad, warned = [], []
     for p in pngs:
         rel = p.relative_to(root).as_posix()
-        ok, fails, summary = preflight(p, manifest.get(p.stem))
+        ok, fails, summary = preflight(
+            p, {"scale": manifest.get(p.stem, {}).get("scale", scale)})
+        if "WARN:" in summary:
+            warned.append(rel)
         if ok:
             print(f"  ok    {rel}  {summary}")
         else:
@@ -159,7 +283,12 @@ def main() -> int:
                 print(f"          - {f}")
             bad.append(rel)
 
-    print(f"\n{len(pngs) - len(bad)}/{len(pngs)} passed pre-flight")
+    print(f"\n{len(pngs) - len(bad)}/{len(pngs)} passed pre-flight "
+          f"(sizes checked at {scale:g}x from the naming convention)")
+    if warned:
+        print(f"WARNING — {len(warned)} name(s) match no size rule, dimensions UNCHECKED:")
+        for wname in warned:
+            print(f"  {wname}")
     if bad:
         print("REJECTED — do NOT import:")
         for b in bad:

@@ -32,6 +32,18 @@ Every output is then handed to preflight_textures.preflight() — the same gate 
 step uses, no second opinion. Failures go to Tools/gen_ui/quarantine/ with the reason
 beside them and never reach the output folder.
 
+ANTI-ALIASING IS NOT ALWAYS POSSIBLE
+------------------------------------
+This module is the only one holding the SVG text, so it is the only one that can tell
+preflight's AA check whether partial alpha is even reachable. aa_possible() below answers
+that, conservatively: it returns False ONLY for geometry that provably cannot land off a
+device pixel. Elimination_16 was quarantined as "1-bit, will look jagged" when it is
+mathematically correct art — {M,H,V,Z} only, every coordinate a multiple of 0.25, so at 4x
+every edge is an exact integer pixel and zero AA is the forced output. Add_24 is the same
+case in stroke form (axis-aligned segments, integer coords, even stroke-width, square caps).
+Anything else — one curve, one diagonal, one coordinate that does not survive x scale, a
+round cap, a transform, a non-path element — is AA-possible and stays checked.
+
 Run clean_svg.py first; a surviving backdrop rect shows up here as a corner-alpha failure.
 """
 from __future__ import annotations
@@ -140,6 +152,58 @@ BACKENDS = [
 ]
 
 
+DRAW_TAG = re.compile(r"<(path|polygon|polyline|circle|ellipse|line|rect|text|image|use)\b",
+                      re.I)
+PATH_TAG = re.compile(r"<path\b[^>]*>", re.I)
+D_ATTR = re.compile(r'\bd\s*=\s*"([^"]*)"')
+PATH_CMD = re.compile(r"[A-Za-z]")
+NUMBER = re.compile(r"[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?")
+# Axis-aligned commands only. L/l is EXCLUDED on purpose: a straight line between two
+# integer points can still be a diagonal, and a diagonal edge always needs AA. That is
+# stricter than "no curve commands" and it is what keeps Slayer_16 checked.
+AXIS_CMDS = set("MHVZmhvz")
+# Attributes that can move an edge off the pixel grid or make ink partially transparent.
+RISKY_ATTR = re.compile(
+    r"\b(transform|opacity|fill-opacity|stroke-opacity|stroke-dasharray)\s*=", re.I)
+
+
+def _integral(v: float, scale: float) -> bool:
+    return abs(v * scale - round(v * scale)) < 1e-9
+
+
+def aa_possible(text: str, scale: float) -> tuple[bool, str]:
+    """Can this SVG produce partial alpha at `scale`? Returns (possible, why).
+
+    False is a PROOF obligation, not a guess: every claim of "impossible" is checked
+    against the 128 rendered PNGs and none of them carries partial alpha. When in any
+    doubt the answer is True and preflight's AA check runs as before.
+    """
+    if RISKY_ATTR.search(text):
+        return True, "transform/opacity/dash attribute present"
+    tags = {m.group(1).lower() for m in DRAW_TAG.finditer(text)}
+    if tags - {"path"}:
+        return True, f"non-path geometry {sorted(tags - {'path'})}"
+    for tag in PATH_TAG.findall(text):
+        d = D_ATTR.search(tag)
+        if not d:
+            return True, "<path> with no d="
+        payload = d.group(1)
+        offenders = {c for c in PATH_CMD.findall(payload) if c not in AXIS_CMDS}
+        if offenders:
+            return True, f"non-axis-aligned path command {sorted(offenders)}"
+        for n in NUMBER.findall(payload):
+            if not _integral(float(n), scale):
+                return True, f"coordinate {n} x{scale:g} is not a whole pixel"
+        if re.search(r'\bstroke\s*=\s*"(?!none")', tag, re.I):
+            if re.search(r'stroke-line(?:cap|join)\s*=\s*"round"', tag, re.I):
+                return True, "round cap/join draws a curve"
+            sw = re.search(r'stroke-width\s*=\s*"([^"]*)"', tag)
+            half = (float(sw.group(1)) if sw else 1.0) / 2.0
+            if not _integral(half, scale):
+                return True, f"half stroke-width {half:g} x{scale:g} is not a whole pixel"
+    return False, "axis-aligned; every edge lands on an integer device pixel"
+
+
 def scaled_header(text: str, scale: float) -> tuple[str, float, float, int, int]:
     """Retarget the <svg> header to src_size * scale px, viewBox untouched.
 
@@ -164,8 +228,12 @@ def scaled_header(text: str, scale: float) -> tuple[str, float, float, int, int]
     return text[:m.start()] + tag + text[m.end():], sw, sh, ow, oh
 
 
-def rasterize(svg: Path, scale: float, out: Path, backend) -> tuple[float, float]:
-    """Render one SVG. Returns the SOURCE size, for preflight's dimension check."""
+def rasterize(svg: Path, scale: float, out: Path, backend) -> tuple[bool, str]:
+    """Render one SVG. Returns aa_possible(), the one fact only this side knows.
+
+    It no longer returns the source size: feeding that to preflight's dimension check made
+    the check tautological, since it is the same number the render was made from.
+    """
     text, sw, sh, ow, oh = scaled_header(svg.read_text(), scale)
     out.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory() as d:
@@ -174,7 +242,7 @@ def rasterize(svg: Path, scale: float, out: Path, backend) -> tuple[float, float
         backend(tmp, ow, oh, out)
     if not out.exists():
         raise RuntimeError("backend wrote nothing")
-    return sw, sh
+    return aa_possible(text, scale)
 
 
 def probe_backend(fn, tmpdir: Path) -> str:
@@ -224,6 +292,92 @@ def quarantine(png: Path, rel: str, reasons: list[str]) -> Path:
     return dest
 
 
+# --- self-test fixtures. Real payloads, copied from Export/UI, so the cases are the ones
+# --- that actually shipped wrong. No assets are read: the strings ARE the evidence.
+def _svg(vb_w: int, vb_h: int, body: str) -> str:
+    return (f'<svg width="{vb_w}" height="{vb_h}" viewBox="0 0 {vb_w} {vb_h}" fill="none" '
+            f'xmlns="http://www.w3.org/2000/svg"><g>{body}</g></svg>')
+
+
+# Elimination_16's real path: {M,H,V,Z} only, every coordinate a multiple of 0.25.
+AXIS_PATH = ('<path d="M2.25 2.5H4.75V13.5H2.25V2.5ZM6.75 6H9.25V13.5H6.75V6ZM11.25 '
+             '9.5H13.75V13.5H11.25V9.5Z" fill="white"/>')
+# Slayer_16's real path — diagonals, and coordinates that do not survive x4.
+SLAYER_PATH = ('<path d="M3.11306 11.0565L11.0565 3.11306L12.8869 4.9435L4.94351 '
+               '12.8869L3.11306 11.0565Z" fill="white"/>')
+# Elimination_40's real path — axis-aligned, but 6.45502 and 29.46 are not whole pixels.
+ELIM40_PATH = ('<path d="M6.45502 7.10001H11.615V29.46H6.45502V7.10001ZM13.765 '
+               '12.69H18.925V29.46H13.765V12.69Z" fill="white"/>')
+CURVE_PATH = '<path d="M2 2H14V8C14 12 10 14 2 14Z" fill="white"/>'
+
+
+def selftest_checks(fn) -> None:
+    """Prove the two repaired checks: dimensions can FAIL, and AA exemption is narrow."""
+    # --- check 7 predicate: exempt only what provably cannot anti-alias ---------------
+    cases = [
+        ("axis-aligned quarter-unit (Elimination_16)", _svg(16, 16, AXIS_PATH), False),
+        ("same shape plus one C curve",                _svg(16, 16, CURVE_PATH), True),
+        ("diagonals (Slayer_16)",                      _svg(16, 16, SLAYER_PATH), True),
+        ("6.455 / 29.46 coords (Elimination_40)",      _svg(40, 40, ELIM40_PATH), True),
+        ("stroked axis-aligned, width 2 (Add_24)",
+         _svg(24, 24, '<path d="M5 12H19" stroke="white" stroke-width="2" '
+                      'stroke-linecap="square"/>'), False),
+        ("same stroke with a round cap",
+         _svg(24, 24, '<path d="M5 12H19" stroke="white" stroke-width="2" '
+                      'stroke-linecap="round"/>'), True),
+    ]
+    for label, text, want in cases:
+        got, why = aa_possible(text, 4)
+        assert got == want, f"aa_possible({label}) = {got}, expected {want} ({why})"
+        print(f"  aa_possible={str(got):5} {label:44} {why}")
+
+    with tempfile.TemporaryDirectory() as d:
+        tmp = Path(d)
+
+        # --- check 7 end to end: the exemption skips, and without it the check bites ---
+        src = tmp / "T_UI_Icon_Mode_SelfAxis_16.svg"
+        src.write_text(_svg(16, 16, AXIS_PATH))
+        png = tmp / "T_UI_Icon_Mode_SelfAxis_16.png"
+        aa_ok, _ = rasterize(src, 4, png, fn)
+        assert aa_ok is False, "predicate changed its mind between text and render"
+        levels = sum(1 for lvl in range(1, 255)
+                     if Image.open(png).convert("RGBA").getchannel("A").histogram()[lvl])
+        assert levels < MIN_AA_LEVELS, (
+            f"fixture rendered {levels} AA levels — it is no longer the 1-bit case, so it "
+            "proves nothing")
+        ok_ex, fails_ex, _ = preflight(png, {"scale": 4}, aa_possible=False)
+        ok_ck, fails_ck, _ = preflight(png, {"scale": 4}, aa_possible=True)
+        assert ok_ex, f"exempt art still failed: {fails_ex}"
+        assert any("1-bit" in f for f in fails_ck), (
+            f"check 7 did not fire when AA was possible — it is dead: {fails_ck}")
+        print(f"  check 7  {levels} AA levels · exempt=PASS · checked=FAIL — skip is "
+              "conditional, not removed")
+
+        # --- check 4: a 17x16 source under a _16 name must FAIL ----------------------
+        wide = tmp / "T_UI_Icon_Mode_SelfWide_16.svg"
+        wide.write_text(_svg(17, 16, AXIS_PATH))          # the Assault_16 / Extraction_16 bug
+        wpng = tmp / "T_UI_Icon_Mode_SelfWide_16.png"
+        wide_aa, _ = rasterize(wide, 4, wpng, fn)
+        w, h = Image.open(wpng).size
+        assert (w, h) == (68, 64), f"fixture rendered {w}x{h}, expected the 68x64 defect"
+        ok_w, fails_w, _ = preflight(wpng, {"scale": 4}, aa_possible=wide_aa)
+        assert not ok_w and any("expected 64x64" in f for f in fails_w), (
+            f"a 68x64 '_16' icon passed the dimension check: {fails_w}")
+        print(f"  check 4  68x64 under a _16 name -> FAIL: {fails_w[0]}")
+        # and the square control passes, so the check is not simply always-fail
+        ok_sq, fails_sq, _ = preflight(png, {"scale": 4}, aa_possible=False)
+        assert ok_sq and not any("size" in f for f in fails_sq), (
+            f"the correct 64x64 icon was rejected too: {fails_sq}")
+        print("  check 4  64x64 under a _16 name -> pass (control)")
+
+        # --- an unrecognised name warns, never silently passes -----------------------
+        odd = tmp / "Whatever_This_Is.png"
+        Image.open(png).save(odd)
+        _, _, summary = preflight(odd, {"scale": 4}, aa_possible=False)
+        assert "WARN:" in summary and "UNCHECKED" in summary, summary
+        print(f"  check 4  unrecognised name -> {summary.split('·')[-1].strip()}")
+
+
 def selftest() -> int:
     print("backend probe:")
     name, fn = pick_backend()
@@ -250,6 +404,9 @@ def selftest() -> int:
         assert levels >= MIN_AA_LEVELS, f"only {levels} partial-alpha levels"
         print(f"\nselftest via {name}: {w}x{h} · corners {corners} · {ink} ink px · "
               f"{levels} AA levels · PASS")
+    print("\ncheck 4 (dimensions) + check 7 (anti-aliasing):")
+    selftest_checks(fn)
+    print("\nall self-tests PASS")
     return 0
 
 
@@ -294,14 +451,14 @@ def main() -> int:
         rel = p.relative_to(root).with_suffix(".png").as_posix()
         dest = out_root / rel
         try:
-            sw, sh = rasterize(p, args.scale, dest, fn)
+            aa_ok, _why = rasterize(p, args.scale, dest, fn)
         except Exception as e:
             print(f"  FAIL  {rel}")
             print(f"          - render failed: {e}")
             bad.append(rel)
             continue
 
-        ok, fails, summary = preflight(dest, {"w": sw, "h": sh, "scale": args.scale})
+        ok, fails, summary = preflight(dest, {"scale": args.scale}, aa_possible=aa_ok)
         if ok:
             print(f"  ok    {rel}  {summary}")
         else:
