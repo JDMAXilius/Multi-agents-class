@@ -1,5 +1,6 @@
 #pragma once
 
+#include "AttributeSet.h"
 #include "MVVMViewModelBase.h"
 #include "Types/MVVMEventField.h"
 #include "UI/BRUITypes.h"
@@ -12,8 +13,35 @@ class UWorld;
 struct FOnAttributeChangeData;
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FBROnHitMarker, EBRHitMarkerKind);
-DECLARE_MULTICAST_DELEGATE_OneParam(FBROnKillfeedEntryAdded, const FBRKillfeedViewEntry&);
 DECLARE_MULTICAST_DELEGATE(FBROnKillfeedChanged);
+
+/**
+ * The four attributes the combat ViewModel watches. Lives HERE, not in BRUITypes.h, on purpose
+ * (HUD-CPP-AUDIT): this file's two classes are its only consumers, and this header is included
+ * by zero other headers — so AttributeSet.h stops riding into every UI translation unit.
+ */
+USTRUCT(BlueprintType)
+struct FBRCombatAttributeBindings
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, Category = "Breachpoint|UI")
+	FGameplayAttribute Health;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Breachpoint|UI")
+	FGameplayAttribute MaxHealth;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Breachpoint|UI")
+	FGameplayAttribute Shields;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Breachpoint|UI")
+	FGameplayAttribute MaxShields;
+
+	bool HasAny() const
+	{
+		return Health.IsValid() || MaxHealth.IsValid() || Shields.IsValid() || MaxShields.IsValid();
+	}
+};
 
 UCLASS(BlueprintType, DisplayName = "BR Combat Viewmodel")
 class BREACHPOINT_API UBRVM_Combat : public UMVVMViewModelBase
@@ -63,24 +91,13 @@ public:
 
 public:
 
-	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Category = "Breachpoint|Combat|Hit Markers")
-	FMVVMEventField ShieldHitConfirmed;
-
-	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Category = "Breachpoint|Combat|Hit Markers")
-	FMVVMEventField FleshHitConfirmed;
-
-	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Category = "Breachpoint|Combat|Hit Markers")
-	FMVVMEventField HeadshotHitConfirmed;
-
-	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Category = "Breachpoint|Combat|Hit Markers")
-	FMVVMEventField KillConfirmed;
-
-	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Category = "Breachpoint|Combat")
-	FMVVMEventField ShieldsBrokenEvent;
-
-	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Category = "Breachpoint|Combat")
-	FMVVMEventField ShieldsRestoredEvent;
-
+	/**
+	 * The two grapple event fields survive because BREquipmentTray consumes both. The seven
+	 * sibling event fields (four hit-marker kinds, shields broken/restored, killfeed-changed)
+	 * were cut (HUD-CPP-AUDIT): every widget consumes the native delegates / FieldNotify
+	 * properties for those signals, and a second channel nobody reads is where the next
+	 * consumer subscribes and hears nothing.
+	 */
 	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Category = "Breachpoint|Combat")
 	FMVVMEventField GrappleCooldownStarted;
 
@@ -188,7 +205,11 @@ public:
 
 	const TArray<FBRKillfeedViewEntry>& GetKillfeedEntries() const { return KillfeedEntries; }
 
-	FBROnKillfeedEntryAdded& OnKillfeedEntryAdded() { return OnKillfeedEntryAddedEvent; }
+	/**
+	 * The killfeed's ONE notification channel. Its per-entry sibling (`OnKillfeedEntryAdded`)
+	 * was cut with zero subscribers and zero prospect of one — the pooled feed deliberately
+	 * refreshes the whole projection instead of appending (HUD-CPP-AUDIT).
+	 */
 	FBROnKillfeedChanged& OnKillfeedChanged() { return OnKillfeedChangedEvent; }
 
 	void ClearToUnknown();
@@ -256,11 +277,6 @@ private:
 	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetKillfeedEntries", Category = "Breachpoint|Match", meta = (AllowPrivateAccess))
 	TArray<FBRKillfeedViewEntry> KillfeedEntries;
 
-	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Category = "Breachpoint|Match", meta = (AllowPrivateAccess))
-	FMVVMEventField KillfeedChanged;
-
-	TArray<double> KillfeedExpiryTimes;
-
 	UPROPERTY(Transient)
 	TWeakObjectPtr<AGameStateBase> TimeSource;
 
@@ -271,8 +287,5 @@ private:
 	FTimerHandle ClockTimerHandle;
 	FTimerHandle KillfeedExpiryTimerHandle;
 
-	int32 NextKillfeedSequenceFallback = 0;
-
-	FBROnKillfeedEntryAdded OnKillfeedEntryAddedEvent;
 	FBROnKillfeedChanged OnKillfeedChangedEvent;
 };

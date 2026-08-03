@@ -1,7 +1,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "AttributeSet.h"
 #include "GameplayTagContainer.h"
 #include "UITag.h"
 
@@ -80,27 +79,17 @@ struct FBRKillfeedViewEntry
 
 	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|UI")
 	FText SpotterLine;
+
+	/**
+	 * LOCAL wall-clock (`World->GetTimeSeconds()`) at which this entry leaves the feed, stamped
+	 * by `UBRVM_Match::PushKillfeedEntry`. On the entry rather than in a parallel array — the
+	 * old `KillfeedExpiryTimes` was hand-kept index-parallel behind guards that hid desync
+	 * (HUD-CPP-AUDIT). Local time on purpose: a display decay must not be server-synced, so the
+	 * same line leaves a laggy client slightly later than the host, which is intentional.
+	 */
+	double ExpiryTime = 0.0;
 };
 
-USTRUCT(BlueprintType)
-struct FBRCombatAttributeBindings
-{
-	GENERATED_BODY()
-
-	UPROPERTY(BlueprintReadWrite, Category = "Breachpoint|UI")
-	FGameplayAttribute Health;
-
-	UPROPERTY(BlueprintReadWrite, Category = "Breachpoint|UI")
-	FGameplayAttribute MaxHealth;
-
-	UPROPERTY(BlueprintReadWrite, Category = "Breachpoint|UI")
-	FGameplayAttribute Shields;
-
-	UPROPERTY(BlueprintReadWrite, Category = "Breachpoint|UI")
-	FGameplayAttribute MaxShields;
-
-	bool HasAny() const
-	{
-		return Health.IsValid() || MaxHealth.IsValid() || Shields.IsValid() || MaxShields.IsValid();
-	}
-};
+// FBRCombatAttributeBindings moved to BRViewModels.h (HUD-CPP-AUDIT): it had exactly two
+// consumers, both in that file's classes, while its AttributeSet.h include rode this header
+// into effectively every UI translation unit through the three hub headers that include it.

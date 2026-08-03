@@ -1,6 +1,7 @@
 #include "UI/BRViewModels.h"
 
 #include "AbilitySystemComponent.h"
+#include "Breachpoint.h"
 #include "Core/BRCore.h"
 #include "Core/BRGameplayTags.h"
 #include "Engine/World.h"
@@ -150,7 +151,12 @@ void UBRVM_Combat::PublishCurrentAttributeValues()
 	const bool bBrokenNow = ASC->HasMatchingGameplayTag(BRGameplayTags::State_Shields_Broken);
 	UE_MVVM_SET_PROPERTY_VALUE(bShieldsBroken, bBrokenNow);
 
-	SetVitalsState(bAnyFound ? EBRUIDataState::Live : EBRUIDataState::Unknown);
+	// HUD-CPP-AUDIT H2: Live requires the DENOMINATORS, not "any attribute". On a client the
+	// four attributes arrive in a replication bunch with no intra-frame ordering guarantee; with
+	// `bAnyFound` alone, Health landing before MaxHealth published Live + HealthPercent 0.0 and
+	// the widget rendered an empty health bar on a living player — host right, client wrong.
+	const bool bDenominatorsKnown = (MaxHealth > 0.0f) && (MaxShields > 0.0f);
+	SetVitalsState((bAnyFound && bDenominatorsKnown) ? EBRUIDataState::Live : EBRUIDataState::Unknown);
 }
 
 void UBRVM_Combat::HandleAttributeChanged(const FOnAttributeChangeData& Data)
@@ -177,27 +183,22 @@ void UBRVM_Combat::HandleAttributeChanged(const FOnAttributeChangeData& Data)
 	}
 
 	RecomputeVitalRatios();
-	SetVitalsState(EBRUIDataState::Live);
+
+	// H2, same gate as the initial publish: a single attribute change must not promote a
+	// partial set to Live. Once both denominators are in, any change keeps it Live.
+	if ((MaxHealth > 0.0f) && (MaxShields > 0.0f))
+	{
+		SetVitalsState(EBRUIDataState::Live);
+	}
 }
 
 void UBRVM_Combat::HandleShieldsBrokenTagChanged(const FGameplayTag Tag, int32 NewCount)
 {
+	// The bShieldsBroken FieldNotify below is the one channel for this state — the paired
+	// broken/restored FMVVMEventFields were cut (HUD-CPP-AUDIT: zero consumers; the widgets
+	// observe the property).
 	const bool bBroken = NewCount > 0;
-	if (bShieldsBroken == bBroken)
-	{
-		return;
-	}
-
 	UE_MVVM_SET_PROPERTY_VALUE(bShieldsBroken, bBroken);
-
-	if (bBroken)
-	{
-		UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(ShieldsBrokenEvent);
-	}
-	else
-	{
-		UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(ShieldsRestoredEvent);
-	}
 }
 
 void UBRVM_Combat::RecomputeVitalRatios()
@@ -258,25 +259,14 @@ void UBRVM_Combat::SetGrappleReady()
 
 void UBRVM_Combat::ReportHitMarker(EBRHitMarkerKind InKind)
 {
-	switch (InKind)
+	if (InKind == EBRHitMarkerKind::None)
 	{
-	case EBRHitMarkerKind::Shield:
-		UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(ShieldHitConfirmed);
-		break;
-	case EBRHitMarkerKind::Flesh:
-		UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(FleshHitConfirmed);
-		break;
-	case EBRHitMarkerKind::Headshot:
-		UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(HeadshotHitConfirmed);
-		break;
-	case EBRHitMarkerKind::Kill:
-		UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(KillConfirmed);
-		break;
-	case EBRHitMarkerKind::None:
-	default:
 		return;
 	}
 
+	// ONE channel. The four per-kind FMVVMEventFields were cut (HUD-CPP-AUDIT): the reticle and
+	// the layout both consume this native delegate, and two channels for one signal is how a
+	// consumer picks the dead one.
 	OnHitMarkerEvent.Broadcast(InKind);
 }
 
@@ -457,7 +447,11 @@ void UBRVM_Match::ScheduleNextClockUpdate()
 	double Delay = 1.0 - (Now - FMath::FloorToDouble(Now));
 	if (Delay < 0.01)
 	{
-		Delay = 1.0;
+		// HUD-CPP-AUDIT H3: ADD a second, never REPLACE with one. `Delay = 1.0` from a fire at
+		// frac ~0.99 re-lands at frac ~0.99 — the degenerate condition reproduces itself and the
+		// clock ticks permanently out of phase with the server second. Adding keeps the phase:
+		// the next fire still lands on (just past) a whole-second boundary.
+		Delay += 1.0;
 	}
 
 	World->GetTimerManager().SetTimer(
@@ -475,34 +469,37 @@ void UBRVM_Match::StopClockUpdates()
 
 void UBRVM_Match::PushKillfeedEntry(const FBRKillfeedViewEntry& InEntry)
 {
+	// HUD-CPP-AUDIT H12: no world means no clock to stamp an expiry against and no timer
+	// manager to arm — a `0.0`-based stamp either never expires or expires everything in one
+	// burst when a real world appears. A kill pushed during travel is a kill nobody can see
+	// anyway; drop it loudly rather than poison the ring.
+	const UWorld* World = GetTimerWorld();
+	if (!World)
+	{
+		UE_LOG(Logbreachpoint, Warning, TEXT("UBRVM_Match::PushKillfeedEntry with no world; entry dropped."));
+		return;
+	}
+
+	// H5: no fallback sequence id. The fallback was per-VM, so host and client assigned
+	// DIFFERENT ids to the same kill and AppendSpotterLine could attach a line to a different
+	// row per machine. The producer owns the id (server-assigned FBRKillFeedEntry::Sequence);
+	// an id-less entry still renders — it just can never receive a spotter line, which is the
+	// honest outcome for an entry nothing can address.
 	const UBRUISettings& Settings = UBRUISettings::Get();
 	const int32 MaxVisible = FMath::Max(1, Settings.KillfeedMaxVisibleEntries);
-
-	FBRKillfeedViewEntry Entry = InEntry;
-	if (Entry.SequenceId == INDEX_NONE)
-	{
-		Entry.SequenceId = NextKillfeedSequenceFallback++;
-	}
 
 	while (KillfeedEntries.Num() >= MaxVisible)
 	{
 		KillfeedEntries.RemoveAt(0);
-		if (KillfeedExpiryTimes.Num() > 0)
-		{
-			KillfeedExpiryTimes.RemoveAt(0);
-		}
 	}
 
-	const UWorld* World = GetTimerWorld();
-	const double Now = World ? World->GetTimeSeconds() : 0.0;
+	FBRKillfeedViewEntry Entry = InEntry;
+	Entry.ExpiryTime = World->GetTimeSeconds() + FMath::Max(0.5f, Settings.KillfeedEntryLifetimeSeconds);
 
 	KillfeedEntries.Add(Entry);
-	KillfeedExpiryTimes.Add(Now + FMath::Max(0.5f, Settings.KillfeedEntryLifetimeSeconds));
 
 	UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(KillfeedEntries);
 	PublishKillfeedChanged();
-
-	OnKillfeedEntryAddedEvent.Broadcast(Entry);
 	ScheduleKillfeedExpiry();
 }
 
@@ -523,16 +520,19 @@ void UBRVM_Match::AppendSpotterLine(int32 InSequenceId, const FText& InLine)
 void UBRVM_Match::ExpireKillfeedEntries()
 {
 	const UWorld* World = GetTimerWorld();
-	const double Now = World ? World->GetTimeSeconds() : 0.0;
-
-	int32 NumRemoved = 0;
-	while (KillfeedExpiryTimes.Num() > 0 && KillfeedExpiryTimes[0] <= Now)
+	if (!World)
 	{
-		KillfeedExpiryTimes.RemoveAt(0);
-		if (KillfeedEntries.Num() > 0)
-		{
-			KillfeedEntries.RemoveAt(0);
-		}
+		return;
+	}
+	const double Now = World->GetTimeSeconds();
+
+	// The stamp lives ON the entry (HUD-CPP-AUDIT: the old parallel KillfeedExpiryTimes array
+	// was hand-synced with guards that HID desync rather than catching it). Entries are pushed
+	// in time order, so the ring's head is always the next to die.
+	int32 NumRemoved = 0;
+	while (KillfeedEntries.Num() > 0 && KillfeedEntries[0].ExpiryTime <= Now)
+	{
+		KillfeedEntries.RemoveAt(0);
 		++NumRemoved;
 	}
 
@@ -553,14 +553,14 @@ void UBRVM_Match::ScheduleKillfeedExpiry()
 		return;
 	}
 
-	if (KillfeedExpiryTimes.Num() == 0)
+	if (KillfeedEntries.Num() == 0)
 	{
 		World->GetTimerManager().ClearTimer(KillfeedExpiryTimerHandle);
 		KillfeedExpiryTimerHandle.Invalidate();
 		return;
 	}
 
-	const double Delay = FMath::Max(0.05, KillfeedExpiryTimes[0] - World->GetTimeSeconds());
+	const double Delay = FMath::Max(0.05, KillfeedEntries[0].ExpiryTime - World->GetTimeSeconds());
 	World->GetTimerManager().SetTimer(
 		KillfeedExpiryTimerHandle, this, &UBRVM_Match::ExpireKillfeedEntries,
 		static_cast<float>(Delay), false);
@@ -568,19 +568,19 @@ void UBRVM_Match::ScheduleKillfeedExpiry()
 
 void UBRVM_Match::PublishKillfeedChanged()
 {
-	UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(KillfeedChanged);
+	// The one channel. The KillfeedChanged FMVVMEventField was cut (HUD-CPP-AUDIT): both
+	// consumers subscribe to this native delegate, and this function used to fire both.
 	OnKillfeedChangedEvent.Broadcast();
 }
 
 void UBRVM_Match::ClearKillfeed()
 {
-	if (KillfeedEntries.Num() == 0 && KillfeedExpiryTimes.Num() == 0)
+	if (KillfeedEntries.Num() == 0)
 	{
 		return;
 	}
 
 	KillfeedEntries.Reset();
-	KillfeedExpiryTimes.Reset();
 	UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(KillfeedEntries);
 	PublishKillfeedChanged();
 	ScheduleKillfeedExpiry();
@@ -616,7 +616,6 @@ void UBRVM_Match::BeginDestroy()
 	{
 		World->GetTimerManager().ClearTimer(KillfeedExpiryTimerHandle);
 	}
-	OnKillfeedEntryAddedEvent.Clear();
 	OnKillfeedChangedEvent.Clear();
 	Super::BeginDestroy();
 }
