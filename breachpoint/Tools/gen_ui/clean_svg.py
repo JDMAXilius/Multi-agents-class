@@ -36,7 +36,13 @@ REPO = Path(__file__).resolve().parents[2]
 SVG_OPEN = re.compile(r"<svg\b[^>]*>", re.I)
 RECT = re.compile(r"<rect\b[^>]*/?>", re.I)
 ATTR = re.compile(r'(\w[\w:-]*)\s*=\s*"([^"]*)"')
-DRAW = re.compile(r"<(path|polygon|polyline|circle|ellipse|line)\b", re.I)
+# `rect` belongs here. Omitting it was a false negative that failed three real HUD assets:
+# a crosshair IS four rects. HUD_Reticle_Sniper is 5 rects and nothing else; the damage
+# direction indicator and shield-break flash are 4 rotated rects each. All three were
+# reported "no drawing element left - everything was stripped" while being entirely correct.
+# Safe against the opposite error: clean() removes the backdrop rect BEFORE verify() runs, so
+# a file whose only rect was the backdrop still has zero rects here and still fails.
+DRAW = re.compile(r"<(path|polygon|polyline|circle|ellipse|line|rect)\b", re.I)
 
 
 def _attrs(tag: str) -> dict:
