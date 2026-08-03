@@ -123,7 +123,14 @@ PLAN = {
     # Filed as a contract_gap; do not paper over it with a property binding, which
     # is a per-frame poll wearing a different hat (law 4).
     # ------------------------------------------------------------------
-    "WBP_KillfeedEntry": {
+    # Named WBP_KillfeedEntryWidget, not WBP_KillfeedEntry: the naming law derives the
+    # asset name from the C++ class by stripping `UBR`, and the class is
+    # `UBRKillfeedEntryWidget`. ROADMAP §0.4 already ruled that the CODE name wins over
+    # the doc's `UBRKillfeedRow` — renaming a compiled class to satisfy a doc is the tail
+    # wagging the dog. BP18's asset was named against the law and nobody noticed, because
+    # the MCP cannot rename an asset. A GENERATED asset renames for free: change this key,
+    # re-run, and the delete-then-create path does it.
+    "WBP_KillfeedEntryWidget": {
         "folder": "/Game/UI",
         "parent_class": "/Script/Breachpoint.BRKillfeedEntryWidget",
         "header": "Source/Breachpoint/UI/BRHUDLayout.h",
