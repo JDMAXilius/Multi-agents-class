@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Engine/EngineTypes.h"
 #include "UI/BRActivatableWidget.h"
 
 #include "BRPanel_Toast.generated.h"

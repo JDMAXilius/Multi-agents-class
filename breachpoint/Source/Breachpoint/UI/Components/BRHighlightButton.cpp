@@ -58,10 +58,13 @@ void UBRHighlightButton::ApplyButtonType()
 		TypeSwitcher->SetActiveWidgetIndex(static_cast<int32>(ButtonType));
 	}
 
-	// COMPONENT-SPECS Sec 2 status table: Disabled changes no geometry, only opacity -- and that
-	// dim is CommonUI's `bApplyAlphaOnDisable` (0.5, set on the WBP CDO), not our arithmetic.
-	// All we own is the fact that a Disabled-TYPE button is not interactive.
-	SetIsInteractionEnabled(ButtonType != EBRHighlightButtonType::Disabled);
+	// COMPONENT-SPECS Sec 2 status table: Disabled changes no geometry, only opacity. Both halves
+	// are applied here -- see the class doc for why the dim is not left to CommonUI's
+	// `bApplyAlphaOnDisable` (it no-ops before the Slate button exists, which is exactly when
+	// this runs).
+	const bool bTypeDisabled = (ButtonType == EBRHighlightButtonType::Disabled);
+	SetIsInteractionEnabled(!bTypeDisabled);
+	SetRenderOpacity(bTypeDisabled ? DisabledOpacity : 1.0f);
 
 	if (Fill && !bIsInverted)
 	{

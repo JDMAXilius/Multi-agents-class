@@ -42,6 +42,7 @@ from PIL import Image
 REPO = Path(__file__).resolve().parents[2]
 OPAQUE_SHARE_LIMIT = 0.90
 CHROMA_TOLERANCE = 12       # max RGB spread before ink counts as coloured
+GREY_INK_FLOOR  = 240       # dimmest opaque ink allowed: UMG tinting multiplies
 MIN_AA_LEVELS = 3           # distinct partial-alpha values expected from a vector
 
 
@@ -80,26 +81,40 @@ def preflight(p: Path, expect: dict | None) -> tuple[bool, list[str], str]:
     # 5 — clipping: any ink on the border row/column
     edge = ([px[x, 0] for x in range(w)] + [px[x, h - 1] for x in range(w)]
             + [px[0, y] for y in range(h)] + [px[w - 1, y] for y in range(h)])
-    ink_on_edge = sum(1 for v in edge if v > 8)
+    # >128, not >8. At 4x, alpha>128 on the border means geometry within 0.125
+    # source units of the frame — a real clip. The old >8 flagged ANTI-ALIAS
+    # FEATHER: LandGrab_16 is inset on all four sides (ink y 0.17-15.83 in a 16
+    # viewBox) yet tripped 66 'clipped' pixels whose max alpha was 64. Measured
+    # safety: max edge alpha across all 128 shipped icons is 0; the two genuine
+    # clips sit at 255. Sub-threshold edge ink is reported as a note, not a fail.
+    ink_on_edge = sum(1 for v in edge if v > 128)
+    feathered = sum(1 for v in edge if 8 < v <= 128)
     if ink_on_edge:
-        fails.append(f"{ink_on_edge} edge pixels carry ink — glyph is clipped")
+        fails.append(f"{ink_on_edge} edge pixels at alpha>128 — glyph is clipped")
+    elif feathered:
+        notes.append(f"{feathered} edge px of AA feather (tight padding, not a clip)")
 
     # 6 — neutral ink, sampled only where the pixel is essentially opaque
     rgb = im.convert("RGB").load()
-    spread_max, sampled = 0, 0
-    step = max(1, (w * h) // 4096)
-    i = 0
+    spread_max, sampled, brightest = 0, 0, 0
+    # No stride. At 1-in-22 a 2x2 coloured accent was missed 19 times in 20 and a
+    # 3x3 ten times in 20 — an icon that cannot be tinted, passing silently.
     for y in range(h):
         for x in range(w):
-            i += 1
-            if i % step or px[x, y] < 200:
+            if px[x, y] < 200:
                 continue
             r, g, b = rgb[x, y]
             spread_max = max(spread_max, max(r, g, b) - min(r, g, b))
+            brightest = max(brightest, max(r, g, b))
             sampled += 1
     if sampled and spread_max > CHROMA_TOLERANCE:
         fails.append(f"ink is coloured (RGB spread {spread_max}) — "
                      "icons must ship neutral and be tinted in UMG")
+    # Spread alone passes a solid (128,128,128) glyph. UMG tinting MULTIPLIES, so
+    # that renders at half brightness against every palette colour, with no signal.
+    if sampled and brightest < GREY_INK_FLOOR:
+        fails.append(f"ink is grey (brightest opaque value {brightest}) — tinting "
+                     "multiplies, so this renders dim against every palette colour")
 
     # 7 — anti-aliasing
     partial = sum(1 for lvl in range(1, 255) if hist[lvl] > 0)

@@ -123,6 +123,9 @@ public:
 	 */
 	static constexpr float StaggerIntervalSeconds = 0.150f;
 
+	/** COMPONENT-SPECS Sec 2 status table: Disabled dims to 0.5 and changes no geometry. */
+	static constexpr float DisabledOpacity = 0.5f;
+
 	UFUNCTION(BlueprintCallable, Category = "Breachpoint|UI")
 	void SetLabelText(const FText& InText);
 

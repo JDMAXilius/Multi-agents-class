@@ -2,6 +2,7 @@
 
 #include "Breachpoint.h"
 #include "Components/Image.h"
+#include "Components/ListView.h"
 #include "Components/SizeBox.h"
 #include "Engine/Texture2D.h"
 #include "UI/Components/BRHairlineBorder.h"
@@ -237,9 +238,20 @@ void UBRItemTile::NativeOnClicked()
 {
 	Super::NativeOnClicked();
 
-	if (ItemEntry)
+	if (!ItemEntry)
 	{
-		// Intent, published. The tile changes no state of its own beyond selection visuals.
-		OnItemTileClicked.Broadcast(ItemEntry);
+		return;
 	}
+
+	// A `UCommonButtonBase` entry consumes the mouse press itself, so the owning view never sees
+	// the click and its selection would stay wherever the last gamepad move left it. Telling the
+	// list what was picked is what keeps mouse and gamepad selection identical -- and it is what
+	// lets the grid publish ONE selection delegate instead of the screen binding N tiles.
+	if (UListView* OwningList = Cast<UListView>(GetOwningListView()))
+	{
+		OwningList->SetSelectedItem(ItemEntry);
+	}
+
+	// Intent, published. The tile changes no state of its own beyond selection visuals.
+	OnItemTileClicked.Broadcast(ItemEntry);
 }

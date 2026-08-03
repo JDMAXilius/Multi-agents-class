@@ -94,8 +94,8 @@ struct FBROptionsRequest
  * details panel; the x=48 / vertical-centre anchor is the WBP's job (Sec 7.3).
  *
  * Rows are `UBRMenuRow` instances built from the payload. The row class is a `TSoftClassPtr`
- * (law 3) resolved on activation -- there is no hard widget-class reference and no
- * `ConstructorHelpers` anywhere in this file.
+ * (law 3) resolved on activation -- there is no hard widget-class reference and no constructor
+ * asset lookup anywhere in this file.
  */
 UCLASS(Abstract, meta = (DisableNativeTick))
 class BREACHPOINT_API UBRModal_Options : public UBRActivatableWidget

@@ -107,8 +107,8 @@ public:
 	 * A modal always takes Menu input, whichever layer it was pushed over. This is declared in C++
 	 * rather than by the inherited `InputMode` property precisely because that property is
 	 * `EditDefaultsOnly` -- a WBP could otherwise leave a modal over the HUD in Game input, with no
-	 * cursor and no focus. `SetInputMode*` is never called from a widget body
-	 * (`ue5-ui-architecture` Sec 2).
+	 * cursor and no focus. The engine's input-mode setters are never called from a widget body --
+	 * declaring the config here is the only lawful path (`ue5-ui-architecture` Sec 2).
 	 */
 	virtual TOptional<FUIInputConfig> GetDesiredInputConfig() const override;
 
