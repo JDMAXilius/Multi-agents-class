@@ -1,0 +1,22 @@
+# Every exportable COMPONENT on the three Breachpoint art pages.
+# file: yznvnVdOFDADaugZSeomfP   read: 2 Aug 2026
+# format: <nodeId>|<Figma component name>
+# Pages: 48:2 Art/Insignia · 68:2 Art/Icons · 80:2 Art/UI Glyphs
+# NOTE: the 16 "PARAM Rank" nodes are MISALIGNED in the source (BP68) — their
+# vectors are pinned to (0,0). Export "Rank / NN" instead and graft the names.
+49:2|Rank / 01
+49:4|Rank / 02
+49:6|Rank / 03
+49:8|Rank / 04
+49:10|Rank / 05
+49:12|Rank / 06
+49:14|Rank / 07
+49:16|Rank / 08
+49:18|Rank / 09
+49:20|Rank / 10
+49:22|Rank / 11
+49:24|Rank / 12
+49:26|Rank / 13
+49:28|Rank / 14
+49:30|Rank / 15
+49:32|Rank / 16
