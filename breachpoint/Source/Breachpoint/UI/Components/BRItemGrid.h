@@ -161,9 +161,10 @@ protected:
 	// no hard widget-class pointer anywhere in this header (law 3 / `ue5-ui-architecture` Sec 1).
 	// ---------------------------------------------------------------------------------------
 
-	/** The 536 x 388 panel shell. Optional: the off-grid module sizes itself from its slot. */
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Breachpoint|UI")
-	TObjectPtr<USizeBox> RootSizeBox;
+	// The 536 x 388 panel size is NOT driven from C++ and there is deliberately no root size box:
+	// the same class ships as the 536 panel and as the 504 x 374 off-grid module, so its outer
+	// box belongs to the caller's canvas slot (SCREEN-MANIFEST Sec 7.3). C++ owns the one thing
+	// that must never drift -- the tile pitch and the column count.
 
 	/**
 	 * Wraps the tile view ONLY. C++ overrides its width to `WrapWidthForColumns(ColumnCount)` to
