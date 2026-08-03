@@ -22,10 +22,12 @@ averaged — see the per-asset notes.
 """
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
+HERE = Path(__file__).resolve().parent
 
 # Class paths, named once. A typo here is a silent "widget not created".
 OVERLAY = "/Script/UMG.Overlay"
@@ -48,6 +50,132 @@ FILL = {"horizontalAlignment": "HAlign_Fill", "verticalAlignment": "VAlign_Fill"
 # accuracy cue the centre of the screen carries.
 CENTER = {"horizontalAlignment": "HAlign_Center", "verticalAlignment": "VAlign_Center",
           "padding": {"left": 0.0, "top": 0.0, "right": 0.0, "bottom": 0.0}}
+
+# ---------------------------------------------------------------------------
+# ART: `font` and `brush`, the two node keys that make a correct tree VISIBLE
+# ---------------------------------------------------------------------------
+# Before these, every generated WBP was structurally right and visually empty: eleven
+# CommonTextBlocks reading "Text Block" in the engine default face, images with no brush.
+#
+# NOTHING HERE IS A LITERAL. A `font` node key is a STYLE NAME out of figma_tokens.json,
+# which was read live from the Figma variables; family, weight, size and letter spacing all
+# come from that row. Typing 12 or "Rajdhani" into this file would be the same offence as
+# typing hex into a WBP (`figma_tokens.json:_law`) — one more place a re-theme breaks silently.
+
+TOKENS = json.loads((HERE / "figma_tokens.json").read_text())
+TYPE_STYLES = {s["name"]: s for s in TOKENS["type"]["styles"]}
+
+# family -> (composite font asset, the typeface names that asset actually contains).
+#
+# The typeface names are the Figma weight strings BY CONSTRUCTION — `import_fonts.py` built
+# each composite font's typeface array from these same rows — so `style["weight"]` goes
+# straight into `FSlateFontInfo::TypefaceFontName` with no mapping table in between. That
+# also means a Figma weight this asset does not carry is a real, catchable error, which is
+# what the set below is for. `Medium Italic` is ONE FName containing a space; it is not a
+# family plus an italic flag, and UMG has no italic flag to set.
+FONT_ASSETS = {
+    "Rajdhani":         ("/Game/UI/Fonts/F_Rajdhani",       {"Regular", "Bold", "SemiBold"}),
+    "Roboto Condensed": ("/Game/UI/Fonts/F_RobotoCondensed", {"Medium", "Medium Italic", "SemiBold"}),
+}
+
+# Which node classes each art key is meaningful on. A `font` on a UImage is not a harmless
+# no-op — it is a set_properties call against a property that does not exist, which this
+# server reports as TEXT rather than as an error, so it would read as a silent pass.
+_FONT_CLASSES = {TEXT}
+_BRUSH_CLASSES = {IMAGE}
+
+
+def _obj_ref(game_path: str) -> dict:
+    """`/Game/UI/Fonts/F_Rajdhani` -> the full `/Game/UI/Fonts/F_Rajdhani.F_Rajdhani` ref.
+
+    The short form makes the MCP server drop the whole argument object and report "input
+    params Json is empty" — build_wbp.py's docstring note 2, learned the expensive way.
+    """
+    return {"refPath": f"{game_path}.{game_path.rsplit('/', 1)[-1]}"}
+
+
+def font_properties(style_name: str) -> dict:
+    """A Figma text style -> the exact camelCase payload `ObjectTools.set_properties` takes.
+
+    THE LETTER SPACING IS THE WHOLE POINT OF THIS FUNCTION. Figma records PERCENT; UMG's
+    `FSlateFontInfo::LetterSpacing` is 1/1000 em, so 15% is 150, not 15 and not 0.15. The
+    conversion is NOT done here: `figma_tokens.json` already carries both `ls_pct` and
+    `ls_umg`, computed once at read time, and this reads `ls_umg`. Recomputing it would put
+    a second copy of the rule in the repo, and the failure mode of a silently dropped
+    letter-spacing is the nastiest one on this surface — every number "matches", the chrome
+    just stops reading as military UI (`figma_tokens.json:type._letter_spacing`).
+
+    Every value is an INT on purpose. `Size` and `LetterSpacing` are integral in the token
+    rows already, and a JSON float landing on an int16 property is a rejection this server
+    would report as text.
+
+    NO ARRAYS IN THIS PAYLOAD, also on purpose. `set_properties` refuses a write that changes
+    an array's SIZE and its ELEMENTS in one call and reports the refusal as text, dropping the
+    whole property — that is what ate a font write earlier (it was building a composite font's
+    typeface array). Writing only these four scalars keeps this path clear of that trap; if a
+    future style ever needs `outlineSettings` or a fallback array, it must be grown one entry
+    per call.
+
+    `style["case"]` is deliberately NOT applied. UMG has no per-widget case transform, and the
+    string comes from C++/the ViewModel — so UPPER is a contract on whoever formats the FText,
+    not something a WBP default can express. Recorded rather than silently dropped.
+    """
+    s = TYPE_STYLES[style_name]
+    asset, _ = FONT_ASSETS[s["family"]]
+    return {"font": {"fontObject": _obj_ref(asset),
+                     "typefaceFontName": s["weight"],
+                     "size": int(s["size"]),
+                     "letterSpacing": int(s["ls_umg"])}}
+
+
+def brush(texture: str, width: float, height: float) -> dict:
+    """A design-time `FSlateBrush`: which texture, drawn at what size.
+
+    `width`/`height` are the AUTHORED size at the 1280x720 base, never multiplied by 1.5.
+    """
+    return {"texture": texture, "size": (float(width), float(height))}
+
+
+def brush_properties(spec: dict) -> dict:
+    return {"brush": {"resourceObject": _obj_ref(spec["texture"]),
+                      "imageSize": {"x": spec["size"][0], "y": spec["size"][1]}}}
+
+
+def texture_problem(spec: dict) -> str | None:
+    """Why this brush's texture cannot be used yet — or None if it can.
+
+    A brush pointing at an asset that is not there is worse than no brush: it compiles, it
+    saves, and it renders a blank the next reader blames on layout. So the target is checked
+    ON DISK at plan time and a miss is a SKIP with a loud note, never a plan error and never a
+    dead asset — the HUD texture set is being extended by another lane right now, and this
+    generator must keep producing correct assets while that lands.
+
+    The LFS check is the same reason in a different costume: a pointer stub is a 130-byte text
+    file wearing a .uasset name, and importing one yields a corrupt texture rather than an
+    error (see the repo's LFS-stub gate).
+    """
+    f = REPO / "Content" / (spec["texture"].removeprefix("/Game/") + ".uasset")
+    if not f.exists():
+        return f"no texture at {f.relative_to(REPO)}"
+    if f.read_bytes()[:32].lstrip().startswith(b"version https://git-lfs"):
+        return f"{f.relative_to(REPO)} is a Git LFS pointer stub, not a texture"
+    return None
+
+
+def art_properties(node: dict) -> tuple[dict, list[str]]:
+    """(properties to write on this widget, notes about what was skipped and why)."""
+    props: dict = {}
+    notes: list[str] = []
+    if node.get("font"):
+        props.update(font_properties(node["font"]))
+    if node.get("brush"):
+        why = texture_problem(node["brush"])
+        if why:
+            notes.append(f"brush not written — {why}")
+        else:
+            props.update(brush_properties(node["brush"]))
+    return props, notes
+
 
 UI_FOLDER = "/Game/UI"
 
@@ -217,16 +345,36 @@ PLAN = {
         "header": "Source/Breachpoint/UI/BRHUDLayout.h",
         "notes": "One killfeed row. Names are a proposed BindWidget contract; the C++ "
                  "parent declares none yet (D1 open). Row box is the frame's 340x20.",
+        # TYPOGRAPHY. Player names are proper nouns in mixed case, so they take the BODY face
+        # (Roboto Condensed), not the all-caps Rajdhani chrome — `Body/Name` is literally the
+        # style named for this. Row height is 20 and the face is 14, which fits.
+        #
+        # NO `color` ANYWHERE IN THIS ASSET, AND THAT IS LOAD-BEARING. `UBRKillfeed::…` tints
+        # the WHOLE ROW via `UUserWidget::ColorAndOpacity` (BRKillfeed.cpp:179), which
+        # MULTIPLIES down the tree. A leaf colour authored here would be multiplied by the
+        # row tint and every killfeed line would come out darker than its token — the classic
+        # double-tint. White leaves are the correct input to that multiply.
         "tree": [
             {"name": "RootSizeBox", "class": SIZEBOX, "parent": None},
             {"name": "Row", "class": HBOX, "parent": "RootSizeBox"},
-            {"name": "KillerNameText", "class": TEXT, "parent": "Row"},
+            {"name": "KillerNameText", "class": TEXT, "parent": "Row",
+             "font": "Body/Name"},
+            # frame: killfeed.row.glyph [78,6,22,8] — a WEAPON glyph, and no weapon glyph
+            # texture exists in Content/UI yet (Icons/ carries front-end UI glyphs, not
+            # weapons). No brush rather than a wrong one; filed as a gap.
             {"name": "WeaponIcon", "class": IMAGE, "parent": "Row"},
-            {"name": "VictimNameText", "class": TEXT, "parent": "Row"},
+            {"name": "VictimNameText", "class": TEXT, "parent": "Row",
+             "font": "Body/Name"},
             # The Spotter line reserves its slot and renders EMPTY when the string is
             # empty — it never collapses layout and never waits on the LLM.
             # Offline ⇒ identical HUD minus flavour (ue5-ui-architecture §5).
-            {"name": "SpotterLineText", "class": TEXT, "parent": "Row"},
+            #
+            # `Body/Flavor Small`, and the ITALIC is doing real work: it is the one visual
+            # difference between a FACT the server sent (the two names) and a GENERATED line.
+            # Roboto Condensed is also the only family here that HAS an italic — Rajdhani
+            # ships none, which is exactly why the token file splits body off the chrome face.
+            {"name": "SpotterLineText", "class": TEXT, "parent": "Row",
+             "font": "Body/Flavor Small"},
         ],
     },
 
@@ -266,6 +414,12 @@ PLAN = {
              "slot": canvas_slot(0, 20, 273.33, 5), "bind": True},
             # frame: centre_tick { x: 135.9, y: 20, w: 1.33, h: 10 }. Its visibility is a
             # C++ decision (present intact, absent broken), which is why it is bound at all.
+            #
+            # NO BRUSH, AND IT THEREFORE STILL DRAWS NOTHING. A 1.33x10 hairline is exactly the
+            # thing `Content/UI/Icons/README.md` says never to export ("anything UMG can draw"),
+            # so the right answer is a textureless solid fill — a `drawAs` other than `Image` —
+            # and this generator only writes brushes that name a real texture. Filed as a gap
+            # rather than pointed at a texture that does not exist.
             {"name": "CentreTick", "class": IMAGE, "parent": "VitalsCanvas",
              "slot": canvas_slot(135.9, 20, 1.33, 10), "bind": True},
         ],
@@ -296,20 +450,44 @@ PLAN = {
         "header": "Source/Breachpoint/UI/HUD/BRAmmoBlock.h",
         "notes": "Weapon caption, mag / reserve and the ghosted stowed weapon. Rects are "
                  "the loadout-tray frame's own children, re-based to this widget's origin.",
+        # TYPOGRAPHY. This readout is ONE family (Rajdhani) at THREE sizes, because the Figma
+        # rects say the hierarchy is size, not face: mag 43 tall, reserve 26, stowed label 12.
+        # Splitting mag and reserve across two families would break a single readout in half.
+        #
+        # NO COLOURS AUTHORED HERE. `UBRAmmoBlock::ApplyState` writes MagazineText,
+        # ReserveText and StowedWeaponText colours from BR::Tokens on every state change
+        # (BRAmmoBlock.cpp:172-197) — a design-time colour would be repainted before the first
+        # frame, so authoring one only invites someone to "fix" the HUD by editing a value
+        # nothing reads. ActiveWeaponText is the exception C++ never colours; see the gap.
         "tree": [
             {"name": "AmmoCanvas", "class": CANVAS, "parent": None},
-            # tray-local weapon.name [60,44,87,14]
+            # tray-local weapon.name [60,44,87,14] — an all-caps chrome caption in a 14px box.
+            # `Heading/Caption` is Rajdhani Bold 12 at 100 (10%), so it clears 14 with room for
+            # descenders. Its token `case` is UPPER, which UMG cannot apply — see font_properties.
             {"name": "ActiveWeaponText", "class": TEXT, "parent": "AmmoCanvas",
-             "slot": canvas_slot(0, 0, 87, 14), "bind": True},
-            # tray-local weapon.mag [74,58,36,43]
+             "slot": canvas_slot(0, 0, 87, 14), "bind": True,
+             "font": "Heading/Caption"},
+            # tray-local weapon.mag [74,58,36,43] — THE hero readout of the HUD.
+            # `Display/Heading 2` (Rajdhani Bold 32, spacing 0) is the largest style that fits
+            # 43; `Display/Item Title` is 48 and would overflow, which validate() now proves
+            # rather than leaves to the eye. Spacing 0 matters as much as the size: two digits
+            # at 10% spacing do not fit 36px.
             {"name": "MagazineText", "class": TEXT, "parent": "AmmoCanvas",
-             "slot": canvas_slot(14, 14, 36, 43), "bind": True},
+             "slot": canvas_slot(14, 14, 36, 43), "bind": True,
+             "font": "Display/Heading 2"},
             # tray-local weapon.reserve [138,70,28,26]. The `div` glyph between them is art.
+            # `Display/Title` — the same Rajdhani Bold, one step down, spacing 0. This is the
+            # tightest fit on the surface: a three-digit reserve at 20 is close to the 28px box.
             {"name": "ReserveText", "class": TEXT, "parent": "AmmoCanvas",
-             "slot": canvas_slot(78, 26, 28, 26), "bind": True},
+             "slot": canvas_slot(78, 26, 28, 26), "bind": True,
+             "font": "Display/Title"},
             # tray-local stowed.label [120,92,93,12]. The stowed BAR is art.
+            # `Label/Micro` (SemiBold 10): the smallest text on the HUD gets the style named
+            # for it. `Heading/Caption` at 12 would exactly equal the 12px box, leaving nothing
+            # for the descender of a lowercase weapon name.
             {"name": "StowedWeaponText", "class": TEXT, "parent": "AmmoCanvas",
-             "slot": canvas_slot(60, 48, 93, 12), "bind": True},
+             "slot": canvas_slot(60, 48, 93, 12), "bind": True,
+             "font": "Label/Micro"},
         ],
     },
 
@@ -336,8 +514,19 @@ PLAN = {
         "notes": "Reticle + hit marker, centred, unclamped. C++ drives the size at runtime.",
         "tree": [
             {"name": "ReticleOverlay", "class": OVERLAY, "parent": None},
+            # THIS BRUSH IS A DESIGN-TIME CONVENIENCE AND C++ NEVER READS IT.
+            # `UBRReticleWidget::ApplyArt` writes both the brush resource and the size onto
+            # this image from `FBRReticleArt` the moment a weapon is known, and it also pins
+            # the tint to BR::Tokens::Shield. So this default only decides what the asset
+            # looks like in the editor, and it is the AR at its authored 43 — the size that
+            # encodes AR spread — so the designer sees a truthful default rather than a blank.
+            # Nobody should ever "fix the reticle" by editing this.
             {"name": "ReticleImage", "class": IMAGE, "parent": "ReticleOverlay",
-             "slot": CENTER, "bind": True},
+             "slot": CENTER, "bind": True,
+             "brush": brush("/Game/UI/HUD/HUD_Reticle_AR", 43, 43)},
+            # No brush: the hit-marker art is not in Content/UI/HUD. `HUD_Feedback_DamageDir`
+            # exists as an export but has not been imported, and C++ drives this image from
+            # `HitMarkerArtByKind` anyway — an empty default is honest, a wrong one is not.
             {"name": "HitMarkerImage", "class": IMAGE, "parent": "ReticleOverlay",
              "slot": CENTER, "bind": True},
         ],
@@ -367,17 +556,29 @@ PLAN = {
         "header": "Source/Breachpoint/UI/HUD/BRMatchBand.h",
         "notes": "Ally score / clock / enemy score, band-local rects from the frame's own "
                  "children. Band centre is 625.67, measured, not 640.",
+        # TYPOGRAPHY. All three are NUMERALS in 20px-tall boxes, so all three take
+        # `Display/Title` — Rajdhani Bold 20, LETTER SPACING 0. The spacing is the decision
+        # here, not the size: `Heading/Small` is Rajdhani Bold at 200 (20%), and 20% on
+        # `12:00` in a 43px box overflows the band outright. Digits are also the one case
+        # where extreme tracking costs legibility instead of buying character.
+        #
+        # `AllyScoreText` and `EnemyScoreText` are recoloured by C++ every Refresh
+        # (BRMatchBand.cpp:28/33), so no colour is authored. ClockText is NOT — see the gap.
         "tree": [
             {"name": "BandCanvas", "class": CANVAS, "parent": None},
             # band-local ScoreSelf [90,1,34,20]
             {"name": "AllyScoreText", "class": TEXT, "parent": "BandCanvas",
-             "slot": canvas_slot(90, 1, 34, 20), "bind": True},
-            # band-local Timer [138,1,43,20]
+             "slot": canvas_slot(90, 1, 34, 20), "bind": True,
+             "font": "Display/Title"},
+            # band-local Timer [138,1,43,20]. Five glyphs (`M:SS` / `--:--`) in 43px is why
+            # this is the widest child of the band.
             {"name": "ClockText", "class": TEXT, "parent": "BandCanvas",
-             "slot": canvas_slot(138, 1, 43, 20), "bind": True},
+             "slot": canvas_slot(138, 1, 43, 20), "bind": True,
+             "font": "Display/Title"},
             # band-local ScoreThem [200,1,34,20]
             {"name": "EnemyScoreText", "class": TEXT, "parent": "BandCanvas",
-             "slot": canvas_slot(200, 1, 34, 20), "bind": True},
+             "slot": canvas_slot(200, 1, 34, 20), "bind": True,
+             "font": "Display/Title"},
         ],
     },
 
@@ -425,8 +626,13 @@ PLAN = {
             # grenades.count_text gives an ORIGIN [14,8] and no size; the FRAG glyph it sits
             # in is [0,0,40,34], so the box is the remainder of that glyph. Derived, not
             # measured — the only number on this surface that is.
+            #
+            # `Display/Title`, the SAME style as the scores and the clock, deliberately: one
+            # numeral style across the whole HUD is what makes a count read as a count. 20 in
+            # a 26 box, spacing 0.
             {"name": "GrenadeCountText", "class": TEXT, "parent": "TrayCanvas",
-             "slot": canvas_slot(14, 8, 26, 26), "bind": True},
+             "slot": canvas_slot(14, 8, 26, 26), "bind": True,
+             "font": "Display/Title"},
             # equipment.slot [100,0,40,34] + equipment.cooldown_band [1,20,38,13].
             # The band "FILLS UP" — a UBRProgressBar with a radial fill, per the class doc.
             {"name": "CooldownBar", "class": wbp_class("WBP_ProgressBar"), "parent": "TrayCanvas",
@@ -610,6 +816,67 @@ def _satisfies(planned: str, declared: str) -> bool:
 # Validation — every failure here is one that would otherwise surface in PIE
 # ---------------------------------------------------------------------------
 
+def _slot_height(node: dict) -> float | None:
+    """The authored height of a canvas-slotted node, or None if it is not one.
+
+    With min == max the anchor is a POINT and Offsets.Bottom IS the height — see canvas_slot.
+    Any other slot kind (FILL, CENTER) sizes from its parent and cannot be checked here.
+    """
+    try:
+        d = node["slot"]["layoutData"]
+        if d["anchors"]["minimum"] != d["anchors"]["maximum"]:
+            return None
+        return float(d["offsets"]["bottom"])
+    except (KeyError, TypeError):
+        return None
+
+
+def validate_art(asset: str, node: dict) -> list[str]:
+    """The `font` / `brush` keys, checked before an editor is ever opened.
+
+    Everything here fails the PLAN, not the asset — except a missing brush texture, which is
+    deliberately not an error at all (see `texture_problem`) and is reported separately.
+    """
+    errs: list[str] = []
+    name = node["name"]
+
+    style_name = node.get("font")
+    if style_name is not None:
+        if node["class"] not in _FONT_CLASSES:
+            errs.append(f"{asset}: '{name}' carries a font but is a "
+                        f"{node['class'].rsplit('.', 1)[-1]}, which has no `font` property")
+        elif style_name not in TYPE_STYLES:
+            errs.append(f"{asset}: '{name}' names text style '{style_name}', which is not in "
+                        f"figma_tokens.json ({len(TYPE_STYLES)} styles read from Figma)")
+        else:
+            style = TYPE_STYLES[style_name]
+            family = style["family"]
+            if family not in FONT_ASSETS:
+                errs.append(f"{asset}: '{name}' wants family '{family}', which has no font "
+                            f"asset in UE (have {sorted(FONT_ASSETS)})")
+            else:
+                asset_path, typefaces = FONT_ASSETS[family]
+                if style["weight"] not in typefaces:
+                    errs.append(f"{asset}: '{name}' wants typeface '{style['weight']}' from "
+                                f"{asset_path}, which contains {sorted(typefaces)} — "
+                                "TypefaceFontName must match a typeface in the composite font "
+                                "or the text silently renders in the fallback face")
+            # Does the style plausibly FIT the rect the layout measured for it? Only the
+            # unambiguous case is an error: a face taller than its own box cannot fit at any
+            # cap height. This is the check that would have caught reaching for
+            # `Display/Item Title` (48) for a magazine readout measured at 43.
+            h = _slot_height(node)
+            if h is not None and style["size"] > h:
+                errs.append(f"{asset}: '{name}' is {style['size']}px "
+                            f"('{style_name}') in a {h}px-tall slot — it cannot fit")
+
+    if node.get("brush") is not None and node["class"] not in _BRUSH_CLASSES:
+        errs.append(f"{asset}: '{name}' carries a brush but is a "
+                    f"{node['class'].rsplit('.', 1)[-1]}, which has no `brush` property")
+
+    return errs
+
+
 def validate(asset: str, spec: dict) -> list[str]:
     errs: list[str] = []
     tree = spec["tree"]
@@ -644,6 +911,9 @@ def validate(asset: str, spec: dict) -> list[str]:
             errs.append(f"{asset}: {node['name']} precedes its parent '{p}' — "
                         "tree order must be creation order")
         seen.add(node["name"])
+
+    for node in tree:
+        errs += validate_art(asset, node)
 
     # THE CHECK THIS FILE EXISTS FOR
     required = required_bind_widgets(spec["header"], cpp)
@@ -692,6 +962,23 @@ def validate_all() -> list[str]:
     return errs
 
 
+def skipped_brushes() -> list[str]:
+    """Brushes the plan asks for whose texture is not on disk. NOTES, never errors.
+
+    Kept out of `validate_all()` on purpose: the HUD texture set is being extended by another
+    lane, so a plan that is correct today and blocked by a texture that lands tomorrow would
+    stop every build for no defect. Loud in the run log, fatal to nothing.
+    """
+    out = []
+    for asset, spec in PLAN.items():
+        for node in spec["tree"]:
+            if node.get("brush"):
+                why = texture_problem(node["brush"])
+                if why:
+                    out.append(f"{asset}.{node['name']}: {why}")
+    return out
+
+
 if __name__ == "__main__":
     import sys
     problems = validate_all()
@@ -704,5 +991,16 @@ if __name__ == "__main__":
             print(f"  BindWidget contract from {spec['header']} ({spec['class']}): "
                   + (", ".join(f"{k}:{v['class']}" + ("?" if v["optional"] else "")
                                for k, v in req.items()) or "(none declared)"))
+            for node in spec["tree"]:
+                if node.get("font"):
+                    s = TYPE_STYLES[node["font"]]
+                    print(f"  font {node['name']}: {node['font']} — {s['family']} "
+                          f"{s['weight']} {s['size']}px, spacing {s['ls_umg']}/1000em "
+                          f"({s['ls_pct']}% in Figma)")
+                if node.get("brush"):
+                    print(f"  brush {node['name']}: {node['brush']['texture']} "
+                          f"@ {node['brush']['size'][0]}x{node['brush']['size'][1]}")
+        for note in skipped_brushes():
+            print("NOTE (not an error):", note)
         print("PLAN OK")
     sys.exit(1 if problems else 0)

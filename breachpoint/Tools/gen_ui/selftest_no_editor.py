@@ -128,6 +128,103 @@ check("exact match still satisfies", P._satisfies("UOverlay", "UOverlay"))
 check("an UNRELATED class is still rejected", not P._satisfies("UImage", "UPanelWidget"))
 check("an unknown class falls back to exact match", not P._satisfies("UMysteryWidget", "UWidget"))
 
+print("\n7. typography — the letter-spacing conversion, and bad font specs are REJECTED")
+
+# THE conversion check. Figma records PERCENT; UMG's LetterSpacing is 1/1000 em, so the
+# only correct factor is 10 — and getting it wrong is invisible in every number that
+# "matches" while the chrome quietly stops reading as military UI. Checked across ALL 16
+# styles rather than one, because the failure that matters is a single row drifting.
+bad_ls = [s["name"] for s in P.TOKENS["type"]["styles"] if s["ls_umg"] != s["ls_pct"] * 10]
+check("every token style has ls_umg == ls_pct * 10", not bad_ls, f"drifted: {bad_ls}")
+
+fp = P.font_properties("Label/Tab")["font"]
+check("Label/Tab (15% in Figma) writes letterSpacing 150", fp["letterSpacing"] == 150, f"got {fp}")
+check("letterSpacing is an int, not a float or a percent",
+      isinstance(fp["letterSpacing"], int) and not isinstance(fp["letterSpacing"], bool))
+check("the Figma weight string IS the TypefaceFontName", fp["typefaceFontName"] == "SemiBold")
+check("the font object ref is the full /Game/X.X form",
+      fp["fontObject"] == {"refPath": "/Game/UI/Fonts/F_Rajdhani.F_Rajdhani"}, f"got {fp}")
+
+italic = P.font_properties("Body/Flavor")["font"]
+check("'Medium Italic' is ONE FName with a space, not a family plus a flag",
+      italic["typefaceFontName"] == "Medium Italic", f"got {italic}")
+
+check("no font payload contains an array (the set_properties size+elements refusal)",
+      not any(isinstance(v, list)
+              for name in P.TYPE_STYLES
+              for v in P.font_properties(name)["font"].values()))
+
+check("every style the PLAN names resolves to a typeface its font asset really has",
+      all(P.TYPE_STYLES[n["font"]]["weight"]
+          in P.FONT_ASSETS[P.TYPE_STYLES[n["font"]]["family"]][1]
+          for s in P.PLAN.values() for n in s["tree"] if n.get("font")))
+
+# --- negative cases: a bad font spec must never reach an editor ---
+TEXTNODE = {"name": "AllyScoreText", "class": P.TEXT, "parent": "BandCanvas",
+            "slot": P.canvas_slot(90, 1, 34, 20), "bind": True, "font": "Display/Title"}
+
+e = P.validate_art("TEST", dict(TEXTNODE, font="Display/Nonexistent"))
+check("a style name that is not in figma_tokens.json is caught",
+      any("not in figma_tokens.json" in x for x in e), f"got {e}")
+
+e = P.validate_art("TEST", dict(TEXTNODE, font="Display/Item Title"))
+check("a 48px style in a 20px slot is caught as unfittable",
+      any("cannot fit" in x for x in e), f"got {e}")
+
+e = P.validate_art("TEST", {"name": "CentreTick", "class": P.IMAGE, "parent": "C",
+                            "font": "Display/Title"})
+check("a font on a UImage is caught (it has no `font` property)",
+      any("has no `font` property" in x for x in e), f"got {e}")
+
+# A weight the composite font does not carry renders in the FALLBACK face and reports
+# nothing, so it has to be caught here. Injected rather than hoped for: no real token row
+# is wrong today, and a negative case that cannot fire is not a test.
+P.TYPE_STYLES["TEST/Ghost Weight"] = {"name": "TEST/Ghost Weight", "family": "Rajdhani",
+                                      "weight": "Ultralight", "size": 12,
+                                      "ls_pct": 0, "ls_umg": 0, "case": "ORIGINAL"}
+P.TYPE_STYLES["TEST/Ghost Family"] = {"name": "TEST/Ghost Family", "family": "Comic Sans",
+                                      "weight": "Bold", "size": 12,
+                                      "ls_pct": 0, "ls_umg": 0, "case": "ORIGINAL"}
+e = P.validate_art("TEST", dict(TEXTNODE, font="TEST/Ghost Weight"))
+check("a weight the composite font does not contain is caught",
+      any("TypefaceFontName must match" in x for x in e), f"got {e}")
+e = P.validate_art("TEST", dict(TEXTNODE, font="TEST/Ghost Family"))
+check("a family with no imported font asset is caught",
+      any("no font asset in UE" in x for x in e), f"got {e}")
+del P.TYPE_STYLES["TEST/Ghost Weight"], P.TYPE_STYLES["TEST/Ghost Family"]
+
+check("the real plan is still valid after those mutations", not P.validate_all())
+
+print("\n8. brushes — a missing texture SKIPS, it never fails the asset")
+
+real = {"name": "ReticleImage", "class": P.IMAGE, "parent": "O",
+        "brush": P.brush("/Game/UI/HUD/HUD_Reticle_AR", 43, 43)}
+check("a texture that exists is not a problem", P.texture_problem(real["brush"]) is None,
+      f"got {P.texture_problem(real['brush'])}")
+props, notes = P.art_properties(real)
+check("...and it produces a brush payload", "brush" in props and not notes, f"got {props}")
+check("the brush resource ref is the full /Game/X.X form",
+      props["brush"]["resourceObject"]
+      == {"refPath": "/Game/UI/HUD/HUD_Reticle_AR.HUD_Reticle_AR"}, f"got {props}")
+check("imageSize is the AUTHORED 1280x720 size, never multiplied by 1.5",
+      props["brush"]["imageSize"] == {"x": 43.0, "y": 43.0}, f"got {props}")
+
+ghost = {"name": "HitMarkerImage", "class": P.IMAGE, "parent": "O",
+         "brush": P.brush("/Game/UI/HUD/HUD_Does_Not_Exist", 40, 42)}
+check("a missing texture is reported", P.texture_problem(ghost["brush"]) is not None)
+check("a missing texture is NOT a plan error", not P.validate_art("TEST", ghost),
+      f"got {P.validate_art('TEST', ghost)}")
+props, notes = P.art_properties(ghost)
+check("a missing texture yields NO brush write and one loud note",
+      props == {} and len(notes) == 1, f"got {props}, {notes}")
+
+e = P.validate_art("TEST", dict(TEXTNODE, brush=P.brush("/Game/UI/HUD/HUD_Reticle_AR", 8, 8)))
+check("a brush on a CommonTextBlock is caught",
+      any("has no `brush` property" in x for x in e), f"got {e}")
+
+check("every brush the PLAN asks for today resolves", not P.skipped_brushes(),
+      f"skipped: {P.skipped_brushes()}")
+
 print()
 if FAILS:
     print(f"SELF-TEST FAILED: {len(FAILS)} check(s) — {FAILS}")

@@ -13,9 +13,11 @@ Three things learned the expensive way, encoded here rather than in a comment no
    asset. Regeneration therefore DELETES first, explicitly, and asserts the delete.
 2. Object refs need the full `/Game/X/Y.Y` form. The short form makes the server drop the
    whole argument object and report "input params Json is empty", which names the wrong cause.
-3. Property names are camelCase (`layoutData`, `brushColor`), not C++ PascalCase, and
+3. Property names are camelCase (`layoutData`, `font`, `brush`), not C++ PascalCase, and
    `set_properties` takes `values` as a JSON *string*. A wrong name fails silently — which is
-   why every write here is read back and compared.
+   why every write here goes through `write_verified` and is read back and compared. Note
+   `letterSpacing` lives INSIDE the `font` struct (`FSlateFontInfo::LetterSpacing`, 1/1000 em),
+   not beside it on the text block.
 
 `BindToEventProperty` is deliberately NOT wired up: it adds a Blueprint event graph NODE,
 which is the artifact R18/R26 forbid and `audit_wbp.py` exists to catch.
@@ -189,20 +191,22 @@ def build_one(m: MCP, rc: Receipt, asset: str, spec: dict) -> bool:
         # name fails silently, so an unverified write is not a write.
         slot_spec = node.get("slot")
         if slot_spec and isinstance(info.get("slot"), dict):
-            m.call(OBJ, "set_properties",
-                   {"instance": info["slot"], "values": json.dumps(slot_spec)})
-            got, txt = m.call(OBJ, "get_properties",
-                              {"instance": info["slot"], "properties": list(slot_spec)})
-            try:
-                readback = json.loads(got) if isinstance(got, str) else got
-            except Exception:
-                readback = None
-            ok = readback is not None and all(
-                _close(readback.get(k), v) for k, v in slot_spec.items())
-            rc.call(f"slot {node['name']}", ok,
-                    f"wrote {json.dumps(slot_spec)}; read {json.dumps(readback)[:180]}")
+            write_verified(m, rc, f"slot {node['name']}", info["slot"], slot_spec)
         elif slot_spec:
             rc.call(f"slot {node['name']}", False, "AddWidget returned no slot handle")
+
+        # (4b) ART — `font` and `brush`, written on the WIDGET rather than its slot.
+        #
+        # DELIBERATELY NON-FATAL. A font that did not take is a real failure and is recorded
+        # as one (which sinks the run's verdict), but it does not abandon the asset: a HUD
+        # with correct geometry and a default face is recoverable, a half-built tree is not.
+        # A brush whose texture is missing is not even a failure — it is a SKIP with a loud
+        # line, because the HUD texture set is landing in another lane right now.
+        art, notes = wbp_plan.art_properties(node)
+        for why in notes:
+            rc.w(f"- SKIPPED `art {node['name']}` — {why}")
+        if art:
+            write_verified(m, rc, f"art {node['name']}", info["widget"], art)
 
     # (5) compile — the BindWidget contract is enforced HERE by the engine
     ok, txt = m.call(UMG, "CompileWidgetBlueprint", {"widgetBlueprint": wbp})
@@ -245,7 +249,42 @@ def build_one(m: MCP, rc: Receipt, asset: str, spec: dict) -> bool:
     return got_names == want_names
 
 
+def write_verified(m: MCP, rc: Receipt, label: str, instance, values: dict) -> bool:
+    """set_properties, then get_properties, then COMPARE. An unverified write is not a write.
+
+    This is the one path every property write in this file takes — slot geometry, fonts and
+    brushes alike. It is a function rather than three copies because of HOW this server
+    fails: `set_properties` can report a refusal as TEXT in a successful result rather than
+    as an error, so the only reliable evidence a property landed is reading it back. That
+    read-back is what caught the `save_assets` parameter bug and a silently dropped font
+    array; a call site that skips it is a call site that reports a false PASS.
+
+    Known refusal worth naming: `set_properties` rejects a write that changes an ARRAY's size
+    and its elements in one call, and drops the whole property while reporting success. No
+    payload this file sends contains an array (see `wbp_plan.font_properties`); one that ever
+    does must grow the array one entry per call.
+    """
+    m.call(OBJ, "set_properties", {"instance": instance, "values": json.dumps(values)})
+    got, _ = m.call(OBJ, "get_properties",
+                    {"instance": instance, "properties": list(values)})
+    try:
+        readback = json.loads(got) if isinstance(got, str) else got
+    except Exception:
+        readback = None
+    ok = readback is not None and all(_close(readback.get(k), v) for k, v in values.items())
+    rc.call(label, ok, f"wrote {json.dumps(values)}; read {json.dumps(readback)[:180]}")
+    return ok
+
+
 def _close(a, b):
+    # An object reference. UE reads one back in any of three shapes — `{"refPath": ...}`, a
+    # bare `/Game/...` path, or the export form `/Script/Engine.Font'/Game/....F_X'` — so the
+    # comparison is "does the asset path appear in what came back". Looser than the rest of
+    # this function on purpose: the alternative is a correct font write reported as a failure
+    # because the server spelled the same asset a different way.
+    if isinstance(b, dict) and set(b) == {"refPath"}:
+        got = a.get("refPath") if isinstance(a, dict) else a
+        return isinstance(got, str) and b["refPath"].split(".")[0] in got
     if isinstance(b, dict):
         return isinstance(a, dict) and all(_close(a.get(k), v) for k, v in b.items())
     if isinstance(b, float):
@@ -266,11 +305,19 @@ def main() -> int:
             print("  ERROR:", p)
         return EXIT_BLOCKED
     print(f"plan OK: {len(wbp_plan.PLAN)} asset(s)")
+    for note in wbp_plan.skipped_brushes():
+        print("  NOTE (not an error): brush skipped —", note)
 
     todo = {args.asset: wbp_plan.PLAN[args.asset]} if args.asset else wbp_plan.PLAN
     if args.dry_run:
         for a, s in todo.items():
             print(f"  {a}: {[n['name'] for n in s['tree']]}")
+            for n in s["tree"]:
+                art, notes = wbp_plan.art_properties(n)
+                if art:
+                    print(f"    art {n['name']}: {json.dumps(art)}")
+                for why in notes:
+                    print(f"    SKIPPED {n['name']}: {why}")
         return EXIT_PASS
 
     import hashlib
@@ -294,13 +341,17 @@ def main() -> int:
     ok = all(results.values()) and not rc.findings
 
     rc.close(
-        ("PASS — every asset rebuilt from the plan, every slot write verified by read-back, "
-         "every tree compiled." if ok else
+        ("PASS — every asset rebuilt from the plan, every slot AND art write verified by "
+         "read-back, every tree compiled." if ok else
          "FAIL — see the failed calls above. " +
          f"{sum(1 for v in results.values() if not v)} of {len(results)} asset(s) did not build."),
         "- **Not a rung.** A compiled WBP is not a rendered one. This proves the asset matches "
         "the plan; it does not prove the layout is correct on screen, and `ui-presentation` §11 "
         "still requires the screen be rendered and looked at.\n"
+        "- **A verified font write is not legible text.** Read-back proves the face, size and "
+        "letter spacing landed on the property. It does not prove a 20px style fits a 43px "
+        "clock box once real glyphs are shaped, and it does not prove the typeface resolved "
+        "inside the composite font rather than falling back. Both need eyes on a render.\n"
         "- **Not a multiplayer claim.** Law 6: PIE is not multiplayer, and a UI claim from PIE "
         "alone is not a UI claim.\n"
         "- **Does not prove R26 compliance.** Zero graph nodes is asserted by construction here "
