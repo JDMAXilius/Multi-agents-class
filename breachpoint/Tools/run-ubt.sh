@@ -43,6 +43,25 @@ UPROJECT="$REPO_ROOT/Breachpoint.uproject"
 echo "ENGINE_ROOT : $ENGINE_ROOT"
 echo "UBT wrapper : $BUILD_SH"
 
+# --- Git LFS: a checkout without it leaves every asset as a ~130-byte text pointer.
+# UE then says "appears to be an asset file" on a map and shows an empty Content
+# Browser - a failure that reads like asset corruption, not like a missing tool.
+# Only tiny files are opened: a pointer is ~130 bytes, a real package never is.
+# -size -2k, not -1k: BSD find rounds a file UP to whole 1k units, so a 130-byte
+# pointer counts as 1 and "-1k" (strictly less than 1) never matches it.
+lfs_stubs=()
+while IFS= read -r f; do
+  head -c 40 "$f" 2>/dev/null | grep -q 'git-lfs.github.com/spec' && lfs_stubs+=("$f")
+done < <(find "$REPO_ROOT/Content" \( -name '*.uasset' -o -name '*.umap' \) -size -2k 2>/dev/null)
+if [[ ${#lfs_stubs[@]:-0} -gt 0 ]]; then
+  blocked "${#lfs_stubs[@]} LFS-tracked asset(s) under Content/ are pointer stubs, not real packages." \
+          "  e.g. ${lfs_stubs[0]#$REPO_ROOT/}" \
+          "Install Git LFS, then materialise them:  git lfs install  &&  git lfs pull" \
+          "Restart the editor afterwards and delete Intermediate/CachedAssetRegistry -" \
+          "a registry built against pointer stubs caches them as broken."
+fi
+echo "  git lfs    : assets are real packages"
+
 # --- every named target must exist, or the run lies about its own scope --------------
 missing=()
 for t in "${TARGETS[@]}"; do

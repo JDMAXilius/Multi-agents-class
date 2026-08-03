@@ -121,6 +121,11 @@ if (-not $engine.Ok) {
     Write-BRBlocked -Rung 'RUNG 1' -Reasons $engine.Problems
     exit $BR_EXIT_BLOCKED
 }
+$lfs = @(Test-BRLfsPointers -RepoRoot $RepoRoot)
+if ($lfs.Count -gt 0) {
+    Write-BRBlocked -Rung 'RUNG 1' -Reasons $lfs
+    exit $BR_EXIT_BLOCKED
+}
 $EngineRoot = $engine.Root
 $RunUBT = Join-Path $EngineRoot 'Engine\Build\BatchFiles\RunUBT.bat'
 $UProject = Get-BRUProject -RepoRoot $RepoRoot

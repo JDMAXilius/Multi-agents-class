@@ -93,6 +93,11 @@ if (-not $engine.Ok) {
     Write-BRBlocked -Rung 'RUNG 2' -Reasons $engine.Problems
     exit $BR_EXIT_BLOCKED
 }
+$lfs = @(Test-BRLfsPointers -RepoRoot $RepoRoot)
+if ($lfs.Count -gt 0) {
+    Write-BRBlocked -Rung 'RUNG 2' -Reasons $lfs
+    exit $BR_EXIT_BLOCKED
+}
 $EngineRoot = $engine.Root
 $EditorCmd = Get-BREditorCmdPath -EngineRoot $EngineRoot
 $UProject = Get-BRUProject -RepoRoot $RepoRoot

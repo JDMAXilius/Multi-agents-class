@@ -164,6 +164,42 @@ function Resolve-BREngineRoot {
     return $result
 }
 
+function Test-BRLfsPointers {
+    <#
+      Returns an array of human-readable problem strings; empty means Content/ is real.
+
+      A checkout without git-lfs installed (or without `git lfs pull`) leaves every
+      .uasset/.umap as a ~130-byte text pointer. UE then reports "appears to be an asset
+      file" on a map and shows an empty Content Browser - a failure that reads like a
+      corrupt asset, not like a missing tool. Cheap to check, so every rung checks it.
+
+      Only files under 1 KB are opened: a pointer is always tiny, a real package never is.
+    #>
+    param([Parameter(Mandatory = $true)][string]$RepoRoot)
+
+    $content = Join-Path $RepoRoot 'Content'
+    if (-not (Test-Path -LiteralPath $content)) { return @() }
+
+    $pointers = @()
+    $small = @(Get-ChildItem -LiteralPath $content -Recurse -File -Include '*.uasset', '*.umap' -ErrorAction SilentlyContinue |
+        Where-Object { $_.Length -lt 1024 })
+    foreach ($f in $small) {
+        $first = Get-Content -LiteralPath $f.FullName -TotalCount 1 -ErrorAction SilentlyContinue
+        if ($null -eq $first) { continue }
+        if ($first -like '*git-lfs.github.com/spec*') { $pointers += $f.FullName }
+    }
+    if ($pointers.Count -eq 0) { return @() }
+
+    $problems = @(("{0} LFS-tracked asset(s) under Content/ are pointer stubs, not real packages." -f $pointers.Count))
+    foreach ($p in ($pointers | Select-Object -First 3)) {
+        $problems += ("  e.g. {0}" -f $p.Substring($RepoRoot.Length).TrimStart('\', '/'))
+    }
+    $problems += 'Install Git LFS, then materialise them:  git lfs install  &  git lfs pull'
+    $problems += 'Restart the editor afterwards and delete Intermediate/CachedAssetRegistry -'
+    $problems += 'a registry built against pointer stubs caches them as broken.'
+    return $problems
+}
+
 function Get-BREditorCmdPath {
     param([Parameter(Mandatory = $true)][string]$EngineRoot)
     return (Join-Path $EngineRoot 'Engine\Binaries\Win64\UnrealEditor-Cmd.exe')
