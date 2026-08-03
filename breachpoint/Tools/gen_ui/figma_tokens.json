@@ -1,0 +1,92 @@
+{
+  "_doc": "The BREACHPOINT design token system, read live from Figma variables + text styles.",
+  "_source": {
+    "file_key": "yznvnVdOFDADaugZSeomfP",
+    "file_name": "BREACHPOINT — UI/UX System",
+    "pages": "Colour (6:20) · Typography (6:21)",
+    "read_via": "Figma Plugin API — getLocalVariableCollectionsAsync + getLocalTextStylesAsync",
+    "read_on": "2026-08-03"
+  },
+  "_authority": "This file SUPERSEDES the hand-copied hex tables in docs/UI-DESIGN-SYSTEM.md §2 and docs/ui/REFERENCE-EXTRACTION.md §2. Those were transcribed; these were read from the variables themselves. Where they disagree, this wins and the doc is corrected.",
+  "_law": "ui-presentation §9: the palette is defined ONCE and every widget reads it. Never type hex into a WBP — a WBP is binary and unreviewable, so twelve widgets with typed hex is twelve places a rebrand breaks silently and the critic can diff none of them.",
+  "_semantic_rule": "The Semantic layer is entirely ALIASES onto Primitives. That indirection is the point: `surface/panel` -> `black/50` means a re-theme edits one primitive, not forty call sites. Consume the SEMANTIC name in code; never reach past it to the primitive.",
+
+  "primitives": {
+    "white": { "100": "#ffffff", "80": "#ffffff@0.80", "60": "#ffffff@0.60", "50": "#ffffff@0.50", "40": "#ffffff@0.40", "30": "#ffffff@0.30", "20": "#ffffff@0.20" },
+    "black": { "100": "#000000", "80": "#000000@0.80", "60": "#000000@0.60", "50": "#000000@0.50", "40": "#000000@0.40", "30": "#000000@0.30", "20": "#000000@0.20" },
+    "grey": { "placeholder": "#d9d9d9", "panel": "#36383f" },
+    "accent": { "orange": "#ff5c00", "premium": "#ffc11c", "cyan": "#2ec3e5", "danger": "#ff4b4b", "steel": "#34729b", "sky": "#3f97ce" },
+    "rarity": {
+      "common": "#ffffff", "common-tint": "#c4c4c4",
+      "rare": "#6295da", "rare-tint": "#70cddf",
+      "epic": "#ab55ff", "epic-tint": "#7b61ff",
+      "legendary": "#e8ba3d", "legendary-tint": "#ffed4f"
+    },
+    "visr": {
+      "shield": "#35d0f2", "shield-low": "#0e7e9b", "health": "#f5c542",
+      "amber": "#ffa333", "enemy": "#ff4a3d", "team-them": "#ff7a45",
+      "void": "#05080c", "deep": "#0a1018", "edge": "#1e2c3a",
+      "ink-dim": "#8397a9", "dead": "#4a5a6b"
+    }
+  },
+
+  "semantic": {
+    "surface": { "ground": "black/100", "panel": "black/50", "panel-strong": "black/80", "panel-soft": "black/40", "panel-faint": "black/20", "inverted": "white/100", "placeholder": "grey/placeholder", "menu-ground": "grey/panel" },
+    "text": { "primary": "white/100", "inverted": "black/100", "dim": "white/60", "disabled": "white/50", "faint": "white/30" },
+    "border": { "rule": "white/100", "rule-dim": "white/30", "tick": "white/40", "panel": "white/20", "focus": "white/100" },
+    "accent": { "event": "accent/orange", "premium": "accent/premium", "highlight": "accent/cyan", "danger": "accent/danger" },
+    "rarity": { "common": "rarity/common", "common/tint": "rarity/common-tint", "rare": "rarity/rare", "rare/tint": "rarity/rare-tint", "epic": "rarity/epic", "epic/tint": "rarity/epic-tint", "legendary": "rarity/legendary", "legendary/tint": "rarity/legendary-tint" },
+    "hud": { "self": "visr/shield", "shield-low": "visr/shield-low", "health": "visr/health", "clock": "visr/amber", "threat": "visr/enemy", "team-them": "visr/team-them", "ground": "visr/void", "panel": "visr/deep", "edge": "visr/edge", "ink-dim": "visr/ink-dim", "dead": "visr/dead" },
+    "_discipline": "A token means ONE thing. hud/threat is a threat channel — do not spend it on a non-lethal low-ammo warning or a UI error. hud/health is yellow and NEVER green: green reads as 'fine' at exactly the moment the player is one shot from dead. hud/health is hidden until damaged.",
+    "_hud_vs_frontend": "The rarity ramp is DECORATIVE and is forbidden on the HUD (REFERENCE-EXTRACTION §7 conflict 2). Front end is flat and near-monochrome; the HUD carries full VISR semantics. If the HUD shield bar and the lobby progress bar look identical, one of them is wrong."
+  },
+
+  "type": {
+    "_families": "Rajdhani (chrome, all-caps labels) + Roboto Condensed (body, and the ONLY italic). Rajdhani ships no italic, which is why Body/Flavor is Roboto — that split is deliberate and is the same substitution the reference file itself makes. Both are OFL.",
+    "_letter_spacing": "Figma records PERCENT. UMG's Letter Spacing is 1/1000 em, so multiply by 10: 15% -> 150, 10% -> 100, 8% -> 80, 20% -> 200. The extreme spacing is the signature of the language — at 14px, 15% is roughly 1.07em. Reproduce it; it is most of why the chrome reads as military UI.",
+    "styles": [
+      { "name": "Display/Item Title",     "family": "Rajdhani", "weight": "Regular",  "size": 48, "ls_pct": 10, "ls_umg": 100, "case": "ORIGINAL" },
+      { "name": "Display/Heading 2",      "family": "Rajdhani", "weight": "Bold",     "size": 32, "ls_pct": 0,  "ls_umg": 0,   "case": "ORIGINAL" },
+      { "name": "Display/Options Header", "family": "Rajdhani", "weight": "Bold",     "size": 28, "ls_pct": 10, "ls_umg": 100, "case": "UPPER" },
+      { "name": "Display/Page Title",     "family": "Rajdhani", "weight": "SemiBold", "size": 24, "ls_pct": 10, "ls_umg": 100, "case": "UPPER" },
+      { "name": "Display/Title",          "family": "Rajdhani", "weight": "Bold",     "size": 20, "ls_pct": 0,  "ls_umg": 0,   "case": "ORIGINAL" },
+      { "name": "Heading/Panel",          "family": "Rajdhani", "weight": "Bold",     "size": 16, "ls_pct": 10, "ls_umg": 100, "case": "ORIGINAL" },
+      { "name": "Heading/Small",          "family": "Rajdhani", "weight": "Bold",     "size": 14, "ls_pct": 20, "ls_umg": 200, "case": "UPPER" },
+      { "name": "Heading/Caption",        "family": "Rajdhani", "weight": "Bold",     "size": 12, "ls_pct": 10, "ls_umg": 100, "case": "UPPER" },
+      { "name": "Label/Tab",              "family": "Rajdhani", "weight": "SemiBold", "size": 14, "ls_pct": 15, "ls_umg": 150, "case": "ORIGINAL" },
+      { "name": "Label/Button",           "family": "Rajdhani", "weight": "SemiBold", "size": 16, "ls_pct": 10, "ls_umg": 100, "case": "UPPER" },
+      { "name": "Label/Button Plain",     "family": "Rajdhani", "weight": "SemiBold", "size": 16, "ls_pct": 0,  "ls_umg": 0,   "case": "ORIGINAL" },
+      { "name": "Label/Micro",            "family": "Rajdhani", "weight": "SemiBold", "size": 10, "ls_pct": 10, "ls_umg": 100, "case": "ORIGINAL" },
+      { "name": "Body/Name",              "family": "Roboto Condensed", "weight": "Medium",        "size": 14, "ls_pct": 0,  "ls_umg": 0,  "case": "ORIGINAL" },
+      { "name": "Body/Flavor",            "family": "Roboto Condensed", "weight": "Medium Italic", "size": 14, "ls_pct": 8,  "ls_umg": 80, "case": "ORIGINAL" },
+      { "name": "Body/Flavor Small",      "family": "Roboto Condensed", "weight": "Medium Italic", "size": 12, "ls_pct": 0,  "ls_umg": 0,  "case": "ORIGINAL" },
+      { "name": "Data/Value",             "family": "Roboto Condensed", "weight": "SemiBold",      "size": 12, "ls_pct": 10, "ls_umg": 100, "case": "ORIGINAL" }
+    ]
+  },
+
+  "layout": {
+    "_note": "Mode is 'Base 1280'. Author every WBP in this space; the DPI curve does the 1920 conversion (UIScaleRule=ShortestSide, 720->1.0, 1080->1.5). No number here is ever multiplied by hand.",
+    "canvas": { "width": 1280, "height": 720 },
+    "grid": { "margin": 69, "content": 1143, "gutter": 48, "col-3": 349, "col-4": 249.75, "top": 38, "height": 570 },
+    "nav": { "y": 45, "height": 30, "width": 666, "tab-width": 138, "tab-height": 26, "tab-pitch": 150 },
+    "row": { "height": 28, "pitch": 40, "width": 250, "pad-x": 10, "gap": 10 },
+    "rail": { "width": 349, "height": 510, "y": 138 },
+    "card": { "feature-h": 222 },
+    "strip": { "height": 37 },
+    "roster": { "width": 349, "height": 273, "header-h": 31, "row-h": 30, "row-pitch": 35, "row-pad-l": 5, "row-pad-r": 15 },
+    "profile": { "height": 50, "y": 670 },
+    "item": { "tile": 114, "tile-mini": 30, "art": 100, "inset": 7 },
+    "stroke": { "hairline": 1, "fine": 0.5, "heavy": 2, "focus": 3 },
+    "radius": { "none": 0, "badge": 5 },
+    "prompt": { "small": 16, "medium": 20 },
+    "icon": { "16": 16, "24": 24, "40": 40 },
+    "opacity": { "disabled": 0.5, "inactive": 0.6, "rule-dim": 0.3 }
+  },
+
+  "_findings": {
+    "stroke_focus_3": "layout.stroke has FOUR weights (0.5/1/2/3), not the three COMPONENT-SPECS §0 records. The fourth is `stroke/focus = 3` — the nav-tab active border, drawn OUTSIDE. The Styles lane previously flagged 3px as a conflict and substituted 2; this variable settles it: 3 is authored and intended. Correct the components.",
+    "grey_panel": "`grey/panel = #36383f` is a NON-BLACK menu ground and appears in no doc. It is aliased as surface/menu-ground.",
+    "visr_dead": "`visr/dead = #4a5a6b` — a dead/eliminated state colour absent from UI-DESIGN-SYSTEM.md §2.",
+    "accent_steel_sky": "accent/steel and accent/sky are defined as primitives but nothing in Semantic aliases them — unused, or a gap. Do not consume a primitive directly to 'use them up'; find out what they were for."
+  }
+}
