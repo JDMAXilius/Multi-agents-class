@@ -7,7 +7,8 @@ R37). Method: `.claude/skills/ui-presentation` (design system + Figma handoff) a
 `docs/UI-DESIGN-SYSTEM.md`, `docs/ui/*`. **Asset mechanics — Figma export settings, UE import
 settings, nine-slice, CommonUI style assets: `ASSET-PIPELINE.md` in this folder. Panel/grid
 selection, dynamic art binding, CommonUI class + input rules, and the main-menu widget tree:
-`LAYOUT-DOCTRINE.md`.**
+`LAYOUT-DOCTRINE.md`. Per-screen Halo→Breachpoint string mapping for the two rendered screens:
+`SCREEN-STRINGS.md`.**
 
 **How to read the two kinds of claim in this file.** Every statement is marked:
 
