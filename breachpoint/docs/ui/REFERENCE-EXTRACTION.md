@@ -6,7 +6,16 @@ screen, component set and icon family that exists in the sources, and what Breac
 from each. Legal boundary is unchanged and non-negotiable: **geometry and behaviour matched,
 art original** (`UI-REFERENCE.md` §"Art: original, always").
 
-Target file: **BREACHPOINT — UI/UX System** — `figma.com/design/yznvnVdOFDADaugZSeomfP`
+**Node-id provenance — read before using any id below.** Every node id in this document (§4
+inventory, §5 component sets) is an id in the **reference community file
+`Kn87U5sy2VD0lP8K7h4LcQ`** — §1's "only measured source" — and **not** in Breachpoint's working
+file, which holds §7b's clones under *different* ids. Verified 2 Aug 2026: `1:2` resolves in
+`Kn87U5s…` as the `Play` frame 1280×720, and returns *"the provided node ID was not found"*
+against `yznvnVdOFDADaugZSeomfP`. **Only `1:2` and `124:1179` have been probed; every other id
+here is unsampled** — the per-id sweep is `docs/tickets/TICKET_BP67_FIGMA_NODE_PROVENANCE.md`.
+
+Working file (the clones live here, ids differ): **BREACHPOINT — UI/UX System** —
+`figma.com/design/yznvnVdOFDADaugZSeomfP`
 
 ---
 

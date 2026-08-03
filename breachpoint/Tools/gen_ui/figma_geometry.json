@@ -88,6 +88,150 @@
     "_note": "The 3D subject box. Column 2 spans 466-815, so the subject sits INSIDE column 2. NO WIDGET may anchor into 466-815 at the 1280 base — that band is the camera (ui-presentation §1)."
   },
 
+  "_pending_measurement": {
+    "_status": "BLOCKED 2026-08-02 — NO FIGMA READ WAS PERFORMED THIS PASS. The agent assigned the Tier-0/Tier-1 measurement pass had no Figma MCP tool in its toolset (get_metadata and get_screenshot both resolved to 'No such tool available' under every namespace tried), there is no Figma API token on this machine, and no cached node dump exists in the repo. NOTHING IN THIS BLOCK IS MEASURED.",
+    "_why_it_is_here_anyway": "Every number below is a DOC CLAIM copied from docs/ui/COMPONENT-SPECS.md and docs/ui/ue-frontend/SCREEN-MANIFEST.md, quarantined under _doc_claim so it can never be read as a measurement. What this block actually contributes is the read list: which node id closes which claim, against which file. That survives the missing tool.",
+    "_how_to_close": "Read each _node against file_key Kn87U5sy2VD0lP8K7h4LcQ — see _provenance_warning above, NOT the Breachpoint file yznvnVdOFDADaugZSeomfP. On resolution, promote the measured values into `components` and leave _doc_claim behind only as the delta record.",
+    "_reading_law": "The live node wins over the doc. Record BOTH plus the delta — that disagreement is the point of this file. A node that does not resolve gets \"_status\": \"NOT FOUND <date>\"; never a deletion, never a guess.",
+    "_boundary": "ui-presentation §8. Record geometry, hierarchy and state treatment only. No art, no image fills, no exported assets, no reference strings.",
+
+    "UBRNavBar_internals": {
+      "_node": "124:1179 'Navigation Bar'",
+      "_status": "UNMEASURED 2026-08-02",
+      "_claim_source": "COMPONENT-SPECS.md §3 + SCREEN-MANIFEST.md §6.1",
+      "_doc_claim": {
+        "component": { "width": 666, "height": 30, "x": 33, "y": 45 },
+        "tabs": { "count": 4, "width": 138, "height": 26, "y": 2, "x": [39, 189, 339, 489], "pitch": 150 },
+        "tab_border": { "width": 138, "height": 26, "stroke_align": "OUTSIDE", "weight_active": 3, "weight_inactive": 2 },
+        "tab_text": { "x": 13, "y": 5, "width": 120, "height": 14 },
+        "tab_icon": { "x": 113, "y": 1, "width": 24, "height": 24, "_note": "INSTANCE_SWAP, optional" },
+        "bumpers": { "count": 2, "width": 27, "height": 15, "y": 7.5, "x": [27, 639] },
+        "state_inactive": "whole-tab opacity 0.6",
+        "sub_level_variant": { "width": 516, "height": 30, "x": 44, "y": [75, 110], "tabs": 3, "_status": "EXISTENCE UNCONFIRMED — no node id recorded anywhere in the repo" }
+      },
+      "_verify": [
+        "Each of the four tab x values and the 150 pitch, individually — the pitch may be derived prose rather than an authored value.",
+        "stroke align OUTSIDE and the 3/2 active/inactive weights (an outside 3px stroke grows the tab's painted box to 144x32, which changes the UMG slot size, not just the brush).",
+        "That inactive really is whole-tab opacity 0.6 and not a per-layer fill alpha — those author differently in UMG.",
+        "Whether the 516x30 3-tab sub-level variant exists as a real variant of this component, and its node id. SCREEN-MANIFEST §4 assigns it to WBP_Screen_Roster, so it is load-bearing.",
+        "Whether the tab row is auto-layout (pitch is then a gap) or absolutely placed (pitch is then four typed x values)."
+      ]
+    },
+
+    "UBRFeatureCard": {
+      "_node": "0:933 'News Button' (in-screen instance) / 1769:23147 (cited as the same component)",
+      "_status": "UNMEASURED 2026-08-02",
+      "_claim_source": "SCREEN-MANIFEST.md §9 question #13, §6.2; COMPONENT-SPECS.md §6",
+      "_doc_claim": {
+        "instance_in_screen": { "width": 349, "height": 222, "x_on_FE_Play": 69, "y_on_FE_Play": 155, "y_in_rail": 0 },
+        "component_artboard": { "width": 330, "_note": "the 19px discrepancy" },
+        "recommendation_in_doc": "author 349 and hug"
+      },
+      "_verify": [
+        "Read the INSTANCE on Play (1:2) and the MAIN COMPONENT separately; record both widths with their own node ids.",
+        "If the main is 330 and the instance 349, determine WHY: an auto-layout stretch/fill (then UMG gets a fill slot and 330 is irrelevant), or a hard per-instance resize (then 330 is stale and the main should be 349).",
+        "Same discrepancy class as Player Buttons 390 standalone vs 349 in-panel (COMPONENT-SPECS §4). Resolving one probably resolves both — check whether both are the column-1 349 stretch.",
+        "Internal frames: title, body and any carousel-dot slot, with offsets."
+      ]
+    },
+
+    "UBRDescriptionStrip": {
+      "_node": "0:1245 'Decription Frame' (sic — the reference file's spelling)",
+      "_status": "UNMEASURED 2026-08-02",
+      "_claim_source": "COMPONENT-SPECS.md §6 + SCREEN-MANIFEST.md §6.2",
+      "_doc_claim": {
+        "outer": { "width": 349, "height": 37, "y_in_rail": 473, "y_on_FE_Play": 563 },
+        "width_conflict": "COMPONENT-SPECS §6 table says '280-349 x 37' — the 280 is unexplained and may be a text-frame width mistaken for the strip width",
+        "text": { "_note": "Roboto Condensed Medium Italic 14, letterspacing 8% — typography, already transferred elsewhere" }
+      },
+      "_verify": [
+        "The inner text frame's x/y offsets and size inside the 349x37 — this is the specific ask and no doc records it.",
+        "Whether 280 is the inner text frame width (which would explain the '280-349' range and close it), or a second variant.",
+        "Vertical alignment / padding: 37 tall with a 14pt italic line implies roughly 11-12px of vertical padding, but read it rather than derive it."
+      ]
+    },
+
+    "UBRRosterRow": {
+      "_node": "0:687 'first row' and siblings (in-panel); the standalone main is 'Player Buttons'",
+      "_status": "UNMEASURED 2026-08-02",
+      "_claim_source": "COMPONENT-SPECS.md §4 (full anatomy, but no per-element node ids)",
+      "_doc_claim": {
+        "in_panel": { "x": 16, "y": 52, "width": 317, "height": 30, "pitch": 35 },
+        "standalone_main": { "width": 390, "height": 30 },
+        "anatomy": {
+          "team_fill": { "x": 2, "y": 2, "width": 386, "height": 26 },
+          "border": { "width": 390, "height": 30, "opacity": 0.3 },
+          "content": { "x": 2, "y": 2, "width": 386, "height": 26, "layout": "HORIZONTAL auto-layout", "gap": 10, "padding": { "t": 0, "r": 15, "b": 0, "l": 5 }, "align": "CENTER" },
+          "emblem": { "width": 26, "height": 26 },
+          "gamertag": { "_note": "TEXT, align LEFT — no measured box recorded" },
+          "rank": { "width": 30, "height": 26, "child_insignia": { "width": 26, "height": 26 } },
+          "microphone": { "width": 16, "height": 18 },
+          "external_icons": { "width": 40, "height": 30, "gap": -5, "_claim": "deliberate overlap", "children": { "party_leader_frame": { "width": 30, "height": 30 }, "current_player_icon": { "width": 10, "height": 10 } } }
+        }
+      },
+      "_verify": [
+        "THE -5 GAP. SCREEN-MANIFEST §6.3 flags it as needing verification. A negative auto-layout gap has no direct UMG equivalent — an HBox cannot overlap, so a confirmed -5 forces an Overlay or negative slot padding for that sub-frame. Confirm the sign and that it is a gap and not a negative right-padding.",
+        "317 in-panel vs 390 standalone vs 349 quoted elsewhere — three widths for one row. Read the in-panel instance and the main and record both; 317 = 349 minus the panel's 2x16 inset, which is consistent, but 390 is not.",
+        "The gamertag text frame box — the one element with no recorded size at all, and the one that must flex.",
+        "Whether the row is genuinely auto-layout HORIZONTAL (then UMG gets an HBox with 10px gaps) or absolute.",
+        "Row pitch 35 against row height 30 means a 5px gap: confirm it is authored as a gap and not as a 35-tall row with internal padding."
+      ]
+    },
+
+    "UBRPageTitle": {
+      "_node": "UNKNOWN — no node id for this component exists anywhere in the repo",
+      "_status": "UNMEASURED 2026-08-02 (no node id to read)",
+      "_claim_source": "task brief; not carried by COMPONENT-SPECS or SCREEN-MANIFEST",
+      "_doc_claim": { "width": 1280, "height": 75 },
+      "_verify": [
+        "FIND THE NODE FIRST. get_metadata on a list/roster screen (e.g. RS_Friends 927:43283) and locate the title band by geometry.",
+        "The 75 vs 105 swap shifts everything below by 40 and moves the nav bar y from 45 to 75 or 110 — so record which screens use which, not just the two heights.",
+        "Whether 1280 wide means full-bleed or a 1180 inner box inside a 1280 frame — this ties directly into the 1180 chrome question below."
+      ]
+    },
+
+    "UBRItemTitle": {
+      "_node": "UNKNOWN — no node id for this component exists anywhere in the repo",
+      "_status": "UNMEASURED 2026-08-02 (no node id to read)",
+      "_claim_source": "task brief; not carried by COMPONENT-SPECS or SCREEN-MANIFEST",
+      "_doc_claim": { "width": 1280, "height": 105 },
+      "_verify": ["As UBRPageTitle. The pair is only useful measured together — the delta 105-75=40 is what the layout actually consumes."]
+    },
+
+    "UBRScrollBar": {
+      "_node": "0:1175 'Vertical Scroll Bar' (the wide variant)",
+      "_status": "UNMEASURED 2026-08-02",
+      "_claim_source": "task brief; SCREEN-MANIFEST.md §4 lists UBRScrollBar as a must-create component (no reference component covers it)",
+      "_doc_claim": {
+        "wide": { "track_width": 13, "thumb_width": 7, "thumb_height": 70 },
+        "slim": { "track_width": 8, "thumb_width": 8, "thumb_height": 70, "_status": "VARIANT UNLOCATED — no node id" }
+      },
+      "_verify": [
+        "That 0:1175 is 13 wide, and whether its thumb is 7 (inset 3 each side) or 13.",
+        "Track height N is per-use; record the two or three N values actually authored rather than treating it as free.",
+        "Locate the slim 8-wide variant and give it a node id, or mark it NOT FOUND. UMG's UScrollBar takes a single thickness, so two widths = two style assets or one parameterised style."
+      ]
+    },
+
+    "chrome_1180_family": {
+      "_node": "927:43283 'RS_Friends' — read 'Roster Group Header' IN-SCREEN there. Sibling screens: RS_Squad 76:5392, RS_Recents 927:43697. Component-level: 0:671 'Roster Group Header' (recorded 317 wide in-panel above).",
+      "_status": "UNMEASURED 2026-08-02 — THE CONFLICT IS STILL OPEN",
+      "_claim_source": "SCREEN-MANIFEST.md §1 'Panel widths that are NOT on the column grid' + §9 question #3",
+      "_the_conflict": "Decorative Line, Roster Group Header, Team Label and Small Header are recorded 1180 wide. 1280 - 1180 = 100, i.e. a 50px side margin — not the 69px margin the 3-column grid is built on (1280 - 1143 = 137, 69 left + 68 right). Both cannot be the grid.",
+      "_hypotheses": {
+        "a_two_grids": "The file ships two margin systems: 69 on the rail-based front-end pages, 50 on the list/roster/table pages. Consequence: UBRPageTitle/UBRRosterHeader/UBRRule get their own 50-margin anchor set and the generator needs a second grid constant.",
+        "b_stale_layer": "The 1180 chrome is an older layer that the shipping screens do not instance. Consequence: delete 1180 from the spec, author list chrome at 1143 on the 69 grid, one grid everywhere."
+      },
+      "_verify": [
+        "Read the Roster Group Header INSTANCE inside 927:43283 (not the component main) and record its absolute x and width. x=50 w=1180 proves hypothesis (a). x=69 w=1143 proves (b) and the 1180 is the artboard only. Anything else is a third answer and is more valuable than either.",
+        "Do the same for Decorative Line, Team Label and Small Header on the same screen — if they disagree with each other the answer is 'stale layer' regardless.",
+        "Check whether the 1180 elements are children of a 1180-wide parent frame that is itself centred at x=50 — that would make 1180 a local coordinate space and dissolve the conflict entirely. Check this FIRST; it is the cheapest explanation and the doc's measurements may be local rather than absolute.",
+        "Record the y of the header on RS_Friends at the same time — it also settles the UBRPageTitle 75/105 question above."
+      ],
+      "_blocks": "every list page (SCREEN-MANIFEST §4 Wave 2+): WBP_Screen_Roster, WBP_Screen_Browser, and all table chrome. Highest-value read in this block."
+    }
+  },
+
   "_not_transferred": {
     "art": "815 visible image fills across 14 families, inventoried in ART-PASS-STAGE-2.md as Halo-owned. Stage 4 (produce original art) NOT STARTED; stage 5 (swap into Figma) gated on 4; stage 6 (export to UE) gated on 5. Nothing raster crosses until stage 5 completes per family.",
     "weapon_glyphs": "e.g. node 78:6 'SET Weapon / Magnum' in the Breachpoint file. Weapon icons are RENDERED FROM OUR OWN MESHES per WEAPON-RENDER-PLAN.md and BP25 — never exported from the reference.",

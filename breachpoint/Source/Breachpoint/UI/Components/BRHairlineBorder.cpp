@@ -40,7 +40,7 @@ void SBRHairlineBorder::SetParams(const FBRHairlineRenderParams& InParams)
 FVector2D SBRHairlineBorder::ComputeDesiredSize(float /*LayoutScaleMultiplier*/) const
 {
 	// A hairline's natural size is its own weight on both axes. In a Fill-aligned box slot the
-	// major axis stretches and the minor axis stays 0.5 / 1 / 2 px — which is exactly what a
+	// major axis stretches and the minor axis stays 0.5 / 1 / 2 px -- which is exactly what a
 	// rule and a border both want, with no size typed into the WBP.
 	return FVector2D(Params.Thickness, Params.Thickness);
 }
@@ -68,7 +68,7 @@ int32 SBRHairlineBorder::OnPaint(
 
 	if (Params.FillColor.A > 0.0f)
 	{
-		// A colour brush needs no texture and no asset — COMPONENT-SPECS' plates are flat fills.
+		// A colour brush needs no texture and no asset -- COMPONENT-SPECS' plates are flat fills.
 		static const FSlateColorBrush FillBrush(FLinearColor::White);
 		FSlateDrawElement::MakeBox(
 			OutDrawElements,
@@ -119,7 +119,7 @@ int32 SBRHairlineBorder::OnPaint(
 			Thickness);
 	};
 
-	// COMPONENT-SPECS §2: stroke alignment is CENTER, so each line sits half a weight inside
+	// COMPONENT-SPECS Sec 2: stroke alignment is CENTER, so each line sits half a weight inside
 	// its own edge. That keeps a 2px emphasis border inside the component box instead of
 	// bleeding one pixel over the neighbour.
 	DrawEdge(Params.TopColor, FVector2f(0.0f, HalfThickness), FVector2f(LocalSize.X, HalfThickness));
@@ -227,7 +227,7 @@ UBRRule::UBRRule()
 
 void UBRRule::ApplyOrientationToEdges()
 {
-	// The rule's edge is DERIVED from orientation, not authored — a rule can never accidentally
+	// The rule's edge is DERIVED from orientation, not authored -- a rule can never accidentally
 	// become a four-line border.
 	HairlineStyle.Edges = (Orientation == EBRRuleOrientation::Vertical)
 		? static_cast<int32>(EBRBorderEdge::Left)

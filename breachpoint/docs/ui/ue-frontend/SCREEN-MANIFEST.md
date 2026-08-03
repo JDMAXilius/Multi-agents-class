@@ -105,12 +105,15 @@ read `Roster Group Header` in-screen on `RS_Friends` (`927:43283`) and decide on
 list-page chrome is authored at 1180 wide anchored centre-stretch, and the deviation is recorded
 here rather than silently reconciled.
 
-### Grid conflict to close before Wave 0
+### Grid conflict — CLOSED 2 Aug 2026
 
-Nav bar x is **33** in `COMPONENT-SPECS.md` §6 (live node read off `Play 1:2`) and **44** in
-`SCREEN-BUILD-SPEC.md` §1. `COMPONENT-SPECS` is the stronger source (its stated method is a
-live-node read). **Recommend x=33, y=45, 666×30.** One measurement closes it; do not build the
-nav bar until it is closed, because 18 screens inherit the error.
+Nav bar x was **33** in `COMPONENT-SPECS.md` §6 and **44** in `SCREEN-BUILD-SPEC.md` §1.
+**Resolved: x=33.** Live node `124:1179` in `Kn87U5sy2VD0lP8K7h4LcQ` reads Navigation Bar
+**x=33, y=45, 666×30**, matching `COMPONENT-SPECS` §6 exactly. **Build the nav bar at (33,45)
+666×30**; 18 screens inherit it. `SCREEN-BUILD-SPEC.md` §1's `44,45` is wrong for the *root*
+bar — that correction is filed in `docs/tickets/TICKET_BP67_FIGMA_NODE_PROVENANCE.md` (that file
+is not this document's to edit). The **sub-level 516×30 bar's x=44 is untouched by this** and
+still unverified.
 
 ---
 
@@ -158,6 +161,15 @@ each carry a "back target" — the stack is the back target.** Only the exceptio
 ---
 
 ## 4. The screens
+
+> **Node-id provenance — every id in every §4 table.** These ids are ids in the **reference
+> community file `Kn87U5sy2VD0lP8K7h4LcQ`** ("Halo Infinite UI Rework"), inherited verbatim from
+> `REFERENCE-EXTRACTION.md` §4. They are **not** ids in Breachpoint's working file
+> `yznvnVdOFDADaugZSeomfP`, where the same frames exist as clones under different ids — resolving
+> `1:2` there returns *"node ID was not found"*. Verified 2 Aug 2026 on `1:2` and `124:1179`
+> only; the rest are **unsampled**, and the per-id sweep is
+> `docs/tickets/TICKET_BP67_FIGMA_NODE_PROVENANCE.md`. Quote the file key alongside the id
+> whenever you send anyone to read one.
 
 Column key:
 - **Grid** — column layout + any off-grid module.
@@ -406,7 +418,7 @@ Seven of the eight are fully measured below. The eighth is not, and says so.
 ### 6.1 `UBRNavBar` — Navigation Bar (blocks 18 screens)
 
 ```
-COMPONENT   666 × 30   at (33, 45)            ← x=33 vs 44 CONFLICT, see §1 / §8
+COMPONENT   666 × 30   at (33, 45)            ← CONFIRMED, node 124:1179 (Kn87U5s…), 2 Aug 2026
             516 × 30   at (44, 75) or (44, 110)   sub-level variant
 ├ Tab ×4    138 × 26   at x = 39, 189, 339, 489 · y = 2     ← PITCH 150
 │  ├ Border  RECTANGLE 138×26 · stroke #ffffff · align OUTSIDE
@@ -696,7 +708,7 @@ triggers. Do not build two.
 
 | # | Question | Blocks | How to close |
 |---|---|---|---|
-| 1 | Nav bar x — **33** (`COMPONENT-SPECS` §6) or **44** (`SCREEN-BUILD-SPEC` §1)? | 18 screens | one node read on `Play 1:2` |
+| 1 | ~~Nav bar x — **33** (`COMPONENT-SPECS` §6) or **44** (`SCREEN-BUILD-SPEC` §1)?~~ **RESOLVED 2 Aug 2026 → x=33** | ~~18 screens~~ unblocked — but **18 screens inherit this number**, so any that were already authored at 44 must be re-checked | **CLOSED** by live node `124:1179` in file `Kn87U5sy2VD0lP8K7h4LcQ`: Navigation Bar **x=33, y=45, 666×30**. `SCREEN-BUILD-SPEC.md` §1's `44,45` is a defect — correction filed as `TICKET_BP67_FIGMA_NODE_PROVENANCE.md`, not edited here (not this doc's owner path). Sub-level 516×30 at x=44 is a *separate* number and still unverified |
 | 2 | Roster panel width in lobby — **349** or **310**? | `WBP_Screen_Lobby` | measure a lobby node; `REFERENCE-EXTRACTION` conflict #3 |
 | 3 | The **1180 / 50px-margin** chrome family vs the 69px grid — two grids, or a stale layer? | all list pages | read `Roster Group Header` in-screen on `927:43283` |
 | 4 | Does **any** screen use the 4-column grid? No measured content matches 249.75 | Waves 5 layout | overlay `Grid - 4 Collumn` on `276:2013` and `581:4459` |

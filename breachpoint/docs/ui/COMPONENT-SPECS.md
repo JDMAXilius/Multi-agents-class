@@ -5,7 +5,12 @@
 XML metadata dump. Fills, strokes, stroke alignment, auto-layout padding, letter-spacing units and
 effect parameters are exact. Build to these.
 
-Target file: `figma.com/design/yznvnVdOFDADaugZSeomfP` — **BREACHPOINT — UI/UX System**
+**Node-id provenance:** every node id quoted here (`1:2`, `124:1179`, …) is an id in the
+**reference file `Kn87U5sy2VD0lP8K7h4LcQ`** named above — **not** in Breachpoint's working file
+**BREACHPOINT — UI/UX System** (`figma.com/design/yznvnVdOFDADaugZSeomfP`), which holds cloned
+copies under different ids. Verified 2 Aug 2026 on `1:2` and `124:1179`; the earlier "Target
+file:" line pointed at the working file and was wrong — it contradicted the measurement method
+stated two lines above. Full sweep: `docs/tickets/TICKET_BP67_FIGMA_NODE_PROVENANCE.md`.
 
 ---
 

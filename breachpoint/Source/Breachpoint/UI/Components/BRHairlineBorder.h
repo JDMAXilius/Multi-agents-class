@@ -7,7 +7,7 @@
 #include "BRHairlineBorder.generated.h"
 
 /**
- * COMPONENT-SPECS §2: the border is FOUR separate vector lines with independent opacities —
+ * COMPONENT-SPECS Sec 2: the border is FOUR separate vector lines with independent opacities --
  * a full top line, a dimmed bottom line, and two short side ticks. It is never a closed box.
  */
 UENUM(meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = "true"))
@@ -30,7 +30,7 @@ struct FBRHairlineStyle
 	GENERATED_BODY()
 
 	/**
-	 * Which of the four edges draw at all. COMPONENT-SPECS §2 draws all four on a menu row.
+	 * Which of the four edges draw at all. COMPONENT-SPECS Sec 2 draws all four on a menu row.
 	 * Default 15 = Top|Bottom|Left|Right (1|2|4|8). Literal because UHT parses struct
 	 * initialisers verbatim; the bit values are on EBRBorderEdge above.
 	 */
@@ -40,8 +40,8 @@ struct FBRHairlineStyle
 
 	/**
 	 * Which of the drawn edges use DimStrokeToken instead of StrokeToken.
-	 * COMPONENT-SPECS §2 idle state: top at 1.0, bottom + both ticks at 0.3.
-	 * Hover clears Bottom from this mask — that is the whole "0.3 -> 1.0" transition.
+	 * COMPONENT-SPECS Sec 2 idle state: top at 1.0, bottom + both ticks at 0.3.
+	 * Hover clears Bottom from this mask -- that is the whole "0.3 -> 1.0" transition.
 	 * Default 14 = Bottom|Left|Right (2|4|8).
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Breachpoint|UI",
@@ -62,7 +62,7 @@ struct FBRHairlineStyle
 	EBRStrokeWeight Weight = EBRStrokeWeight::Chrome;
 
 	/**
-	 * COMPONENT-SPECS §2: the side lines are `0 x 20` on a 28-tall row — short vertically
+	 * COMPONENT-SPECS Sec 2: the side lines are `0 x 20` on a 28-tall row -- short vertically
 	 * centred TICKS, not full-height edges. 0 means "run the full height".
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Breachpoint|UI", meta = (ClampMin = "0.0"))
@@ -113,13 +113,13 @@ private:
 };
 
 /**
- * `UBRHairlineBorder` — the atom under the atoms (SCREEN-MANIFEST §5 Tier 0, listed there as
+ * `UBRHairlineBorder` -- the atom under the atoms (SCREEN-MANIFEST Sec 5 Tier 0, listed there as
  * `UBRButtonBorder`; same component, this is the class name the packet fixed).
  *
  * WHY A `UWidget` OVER A SLATE LEAF, NOT A `UCommonUserWidget` COMPOSITE
  * ---------------------------------------------------------------------
- * COMPONENT-SPECS §0 counts 404 x 1px, 323 x 0.5px and 177 x 2px strokes in the library. The
- * composite alternative — a UserWidget holding four `UImage` children — costs one WBP asset,
+ * COMPONENT-SPECS Sec 0 counts 404 x 1px, 323 x 0.5px and 177 x 2px strokes in the library. The
+ * composite alternative -- a UserWidget holding four `UImage` children -- costs one WBP asset,
  * five widgets and five Slate draw elements PER BORDER, i.e. ~4500 widgets across the front
  * end, and it needs a Blueprint asset before a single line can be drawn (R18/R26 pressure for
  * zero benefit). The leaf draws the same four lines in four draw elements with zero widgets,
@@ -128,9 +128,9 @@ private:
  *
  * The cost of the choice, stated honestly: a leaf cannot hold a WidgetAnimation. Anything that
  * must ANIMATE a border animates the owning WBP's render opacity / the owner's C++-driven
- * token swap (see `UBRMenuRow::SetHoverVisualState`), not the border's internals.
+ * token swap (see `UBRMenuRow::ApplyInvertedState`), not the border's internals.
  *
- * This is a decoration primitive, so it is `HitTestInvisible` by default — it must never eat a
+ * This is a decoration primitive, so it is `HitTestInvisible` by default -- it must never eat a
  * click meant for the button it decorates. `UBRScrim` deliberately overrides that.
  */
 UCLASS(meta = (DisableNativeTick))
@@ -147,8 +147,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Breachpoint|UI")
 	FBRHairlineStyle GetHairlineStyle() const { return HairlineStyle; }
 
-	/** COMPONENT-SPECS §2 hover: `SetEdgeDimmed(Bottom, false)` IS the 0.3 -> 1.0 inversion. */
-	UFUNCTION(BlueprintCallable, Category = "Breachpoint|UI")
+	/**
+	 * COMPONENT-SPECS Sec 2 hover: `SetEdgeDimmed(Bottom, false)` IS the 0.3 -> 1.0 inversion.
+	 * Not a UFUNCTION on purpose: EBRBorderEdge is a bitflags enum and deliberately not
+	 * BlueprintType, and nothing in a graph-free WBP calls this -- C++ owners do.
+	 */
 	void SetEdgeDimmed(EBRBorderEdge Edge, bool bDimmed);
 
 	UFUNCTION(BlueprintCallable, Category = "Breachpoint|UI")
@@ -185,11 +188,11 @@ enum class EBRRuleOrientation : uint8
 };
 
 /**
- * `UBRRule` — the decorative line (SCREEN-MANIFEST §5 Tier 0, 12/31 screens).
+ * `UBRRule` -- the decorative line (SCREEN-MANIFEST Sec 5 Tier 0, 12/31 screens).
  *
  * It is `UBRHairlineBorder` with exactly one edge enabled, so it reuses the one paint path
  * rather than adding a second. Its orientation drives which edge that is, and its desired size
- * is the stroke weight on the minor axis — so a rule in a Fill-aligned box slot stretches along
+ * is the stroke weight on the minor axis -- so a rule in a Fill-aligned box slot stretches along
  * its length and stays 0.5 / 1 / 2 px thick across it, with no hand-typed size.
  */
 UCLASS(meta = (DisableNativeTick))
