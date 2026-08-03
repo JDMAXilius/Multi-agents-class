@@ -160,3 +160,42 @@ prescriptions were wrong. Provisional rulings below stand unless the founder vet
 - **Tray split:** Figma measures ONE 280×110 "Loadout Tray"; the code ships EquipmentTray +
   AmmoBlock as siblings. FOUNDER DECIDE — it gates the doctrine's InvalidationBox (one box
   needs one common parent). `INVALIDATION` class constant staged in the plan either way.
+
+### 3 Aug 2026 — D1 ANSWERED: it does not reproduce, and the gate is now PROVEN
+
+Both halves of D1 closed in one session (BP72 steps 1–3, lead, Mac terminal + editor MCP).
+
+**D1 does not reproduce.** `build_wbp.py --verify` was run as BP72 step 1 — read-only, before
+anything wrote — across all 11 planned assets. Result: **10 PASS, zero `extra` widgets on any
+of them.** D1 is the "extra names in the asset that the plan never declared" defect; there were
+none. Receipt: `docs/ui/receipts/gen-ui-20260803T212916Z.md`, committed in `8c67d38`.
+
+**The ordering was load-bearing and only worked once.** BP72 step 3's rebuild is
+delete-then-create, so it destroys the only evidence D1 could ever be read from. Running the
+verify first is what makes this an artifact instead of an assertion; after the rebuild the
+question is unanswerable forever. The single FAILED line in that receipt was `WBP_MenuRow` —
+**absent**, never built since it was planned in `f65dfbd`. It exists now (`d81193a`).
+
+**The gate is proven, which is this ticket's other D1 box.** A gate that has never rejected
+anything is a gate nobody has tested. Method: added a `TextBlock` named `BP70_GateProbe` to
+`WBP_Killfeed` through the editor MCP, compiled it, re-ran `--verify`:
+
+```
+Findings: **high** — on-disk tree matches plan: missing [], extra ['BP70_GateProbe']
+Verdict:  FAIL — on-disk tree matches plan: missing [], extra ['BP70_GateProbe']
+exit 1
+```
+
+It detects a stale widget, names it, and fails. Probe removed by rebuilding from the plan
+rather than by hand — `--verify` then returned exit 0, PASS, zero occurrences. Committed in
+`44f57c1`.
+
+**A defect in the verifier was found and fixed on the way (`d19f9b2`).** The verdict string was
+canned: every failure printed *"FAIL — an on-disk asset diverges from the plan. `extra` names
+are stale widgets (BP70 D1's class)"* regardless of cause. The 21:29:16Z run's only finding was
+an ABSENT asset with zero extras anywhere, so the verdict sent the reader hunting a divergence
+that did not exist — and it would have mis-described D1's own evidence. It now joins the real
+findings. A verifier that misreports why it failed is worse than one that fails.
+
+**Not claimed:** nothing here says the HUD draws. D2 and D3 are untouched by this run and still
+need PIE (BP72 step 6).
