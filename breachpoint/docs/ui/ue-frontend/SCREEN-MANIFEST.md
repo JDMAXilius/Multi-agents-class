@@ -102,8 +102,9 @@ the 4-col overlay, then verify the card pitch against the live node before locki
 list/roster/table pages; the 69 margin appears on the front-end rail pages. Two possibilities:
 (a) the file has two grids and both ship, (b) the 1180 chrome is an older layer. **UNMEASURED —
 read `Roster Group Header` in-screen on `RS_Friends` (`927:43283`) and decide once.** Until then,
-list-page chrome is authored at 1180 wide anchored centre-stretch, and the deviation is recorded
-here rather than silently reconciled.
+list-page chrome is authored as a `SizeBox` of `max-w 1180` with `HAlign Center` inside the
+content band (§7.1) — a second width, not a second layout mechanism — and the deviation is
+recorded here rather than silently reconciled.
 
 ### Grid conflict — CLOSED 2 Aug 2026
 
@@ -135,7 +136,7 @@ Every screen class derives from `UBRActivatableWidget` (`Source/Breachpoint/UI/`
 exists and already owns `GetDesiredInputConfig()`, `NativeOnActivated/Deactivated` and the
 ViewModel accessors. **There is no second widget base** (`ue5-ui-architecture` §2).
 
-Every WBP is **layout, anchors and animation only. Zero graph nodes.** R18 + R26 apply to a WBP
+Every WBP is **layout, slots and animation only. Zero graph nodes.** R18 + R26 apply to a WBP
 exactly as to a `BP_BR*` container (`ui-presentation` §8.2). A branch in a WBP graph is a `high`
 finding, not a style note.
 
@@ -187,13 +188,13 @@ Column key:
 These are on **every** screen in §4 and are therefore not repeated per row. They live in
 `WBP_RootLayout` / `UBRRootLayout`, not in each screen.
 
-| Element | Base coords | Anchor | Component |
+| Element | Base measurement | Where it lives (§7.1/§7.3) | Component |
 |---|---|---|---|
-| Title-safe overlay | inset 0 (PC) / 5% (console) | full stretch | §7.3 |
-| Background plate | 0,0 1280×720 | full stretch | **not a widget** — the arena camera |
-| Profile Bar | 0,670 1280×50 | bottom-stretch | `UBRProfileBar` † |
-| Button Prompts | 74,685 W×20 | bottom-left, hug | `UBRButtonPrompt` |
-| Scrim (when a panel is up) | 0,0 1280×720 | full stretch | `UBRScrim` ‡ |
+| Title-safe margin | inset 0 (PC) / 5% (console) | `Screen_SafeZone`, the screen's outermost node | — |
+| Background plate | 0,0 1280×720 | behind everything | **not a widget** — the arena camera |
+| Profile Bar | h50 | root layout footer band, `HAlign Fill` | `UBRProfileBar` † |
+| Button Prompts | h20, width hugs | root layout `CommonBoundActionBar` | `UBRButtonPrompt` |
+| Scrim (when a panel is up) | full bleed | `Layer.Modal`, beneath the modal | `UBRScrim` ‡ |
 
 `UBRProfileBar` is `#000000@0.5` + **BACKGROUND_BLUR**. Prompt-bar width tracks prompt count
 (58/62 for 1, 133/146 for 2, 253 for 3) so it **must be auto-layout hug**, never fixed.
@@ -257,7 +258,7 @@ This wave is where the collapse pays for itself: **14 Figma frames → 5 WBPs**,
 | `PR_CareerUnlocks` `1396:14822` | **`WBP_Screen_CareerUnlocks`**<br>`UBRScreen_CareerUnlocks` | 3-col | `UBRItemTile` · `UBRRankInsignia` (116×135 + 7× rank label — **art is 343-owned, needs original insignia**) · `UBRScrollBar` ‡ | `GAP: UBRVM_Progression` — unlocks[] per rank | drill-down from `PR_Career` |
 | `PR_Challenges` `82:930`<br>`PR_ChallengesMP` `934:9948` | **`WBP_Screen_Challenges`**<br>`UBRScreen_Challenges` | 3-col | `UBRChallengeCard` (364×68 / 364×54; **on focus narrows 511.5 → 461.5 and a 40×40 swap button slides in** — §7 of the build spec) · `UBRCommendationCard` (364×68) · `UBRCountdownChip` ‡ (88×40) · `UBRScrollBar` ‡ | `GAP: UBRVM_Progression` — challenges[] (title, description, progress, target, reward, rerollable), weekly reset seconds, commendations[] | two frames, one widget, a list-source enum |
 | `PR_BattlePass` `82:840` | **`WBP_Screen_BattlePass`**<br>`UBRScreen_BattlePass` | full-bleed key art + 819-wide preview panel | `UBRPreviewPanel` ‡ (819×720 render viewport with a **diagonal boolean mask**) · `UBRRewardTrack` ‡ · `UBRItemTile` · `UBRPriceTag` · `UBRCurrencyRow` ‡ | `GAP: UBRVM_Progression` — pass id, tier, XP, tiers[] (free/premium reward, claimed, locked), premium owned | from `FE_Play` and from `NW_PassPromo` |
-| `PR_PostGameXP` `1860:25253`<br>`PR_PostGameXPCards` `1862:25791` (1320×740) | **`WBP_Screen_PostGameXP`**<br>`UBRScreen_PostGameXP` | full bleed. **1320×740 exceeds 1280×720 — the card layer deliberately overscans.** Anchor full-stretch with negative margins; do not clip | `UBRProgressBar` · `UBRItemTile` · `UBRRule` · `UBRHighlightButton` | `GAP: UBRVM_PostGame` — XP sources[] (label, amount), total, rank before/after, medals[] · **plus the already-filed gap: no per-player stat block** (`UI-DESIGN-SYSTEM.md` §6) | auto-pushed on match end, before `PR_RankUp` if the rank changed. Back → `FE_Play` |
+| `PR_PostGameXP` `1860:25253`<br>`PR_PostGameXPCards` `1862:25791` (1320×740) | **`WBP_Screen_PostGameXP`**<br>`UBRScreen_PostGameXP` | full bleed. **1320×740 exceeds 1280×720 — the card layer deliberately overscans.** `Overlay` + negative slot padding, **outside** the SafeZone (§7.3); do not clip | `UBRProgressBar` · `UBRItemTile` · `UBRRule` · `UBRHighlightButton` | `GAP: UBRVM_PostGame` — XP sources[] (label, amount), total, rank before/after, medals[] · **plus the already-filed gap: no per-player stat block** (`UI-DESIGN-SYSTEM.md` §6) | auto-pushed on match end, before `PR_RankUp` if the rank changed. Back → `FE_Play` |
 | `PR_RankUp` `3606:39204` | **`WBP_Screen_RankUp`**<br>`UBRScreen_RankUp` | full bleed, centred | `UBRRankInsignia` (**Medal 3D effect**) · `UBRItemTitle` · `UBRHighlightButton` | `GAP: UBRVM_Progression` — old rank, new rank, unlocks granted | conditional, after `PR_PostGameXP` |
 
 **Wave 4 ships 6 WBPs and covers 7 frames.**
@@ -320,7 +321,7 @@ Cheap, shared, and needed by every wave. **Build these in Wave 0 with the founda
 |---|---|---|---|---|---|
 | `OV_Warning` (Full Page Warning) `940:10676` | `WBP_Modal_Warning` / `UBRModal_Warning` | `Layer.Modal` | `UBRScrim` ‡ · `UBRPageTitle` · `UBRHighlightButton` ×2 | none — **takes an `FBRConfirmRequest` payload**, not a ViewModel. Confirm/cancel resolve a delegate on the *caller* | pushed by any screen. Popping is the cancel path |
 | `OV_PopupOptions` `2387:32475` (451×682)<br>`OV_Filters` (Gear Filters) `891:8026` | `WBP_Modal_Options` / `UBRModal_Options` | `Layer.Modal` | `UBRPopupOptions` (451×682) · `UBRMenuRow` · `UBRCheckbox` · `UBRRadio` · `UBRDropDown` | takes a row payload from the caller | **§3.9: same 451×682 footprint at x=48 over a full scrim → ONE component, two variants.** Layers over *whatever* grid is beneath; it is not a navigation level |
-| `OV_ChallengePane` `375:2694` (1298×546) | `WBP_Overlay_ChallengePane` / `UBROverlay_ChallengePane` | `Layer.GameMenu` | `UBRChallengeCard` · `UBRCountdownChip` ‡ | `GAP: UBRVM_Progression` | in-match challenge peek. **1298 > 1280 — overscans; anchor stretch with negative margins** |
+| `OV_ChallengePane` `375:2694` (1298×546) | `WBP_Overlay_ChallengePane` / `UBROverlay_ChallengePane` | `Layer.GameMenu` | `UBRChallengeCard` · `UBRCountdownChip` ‡ | `GAP: UBRVM_Progression` | in-match challenge peek. **1298 > 1280 — overscans; `Overlay` + negative slot padding outside the SafeZone (§7.3)** |
 | `OV_Toast` (Warning Message) `707:5770` (349×60) | `WBP_Panel_Toast` / `UBRPanel_Toast` | `Layer.Modal` | `UBRRule` | takes a message payload | non-blocking. **349 wide = column 1.** Auto-dismiss on a timer, never a Tick |
 
 ---
@@ -333,6 +334,33 @@ Cheap, shared, and needed by every wave. **Build these in Wave 0 with the founda
 **One carry-over:** `Difficulty Select`'s radial-icon layout is the right shape for the
 bot-difficulty picker. It is not scheduled here; it belongs to whichever ticket adds bot
 difficulty to `CG_LobbyOptions`, and it can reuse `UBRRadialQuadrant` from Wave 7.
+
+---
+
+### 4.10 Reference coverage — which screens we can copy, and which we design
+
+**Cut 3 Aug 2026 from the founder render of `FE_Play`.** That render settled the grid (§1) and
+it is the reason §7.1 was rewritten. It is also the *only* screen anyone has looked at in
+resolution, and the risk this section exists to kill is the assumption that it generalises.
+
+**It covers one screen.** The nav/menu/status split confirmed at ~27% · subject · ~26%, bands
+present (nav and the status panel's label share a header row; the profile bar is a full-width
+footer). Every measurement in §1 and §6 of the layout doctrine traces to it.
+
+**The five things it does not cover, each of which is a screen someone will otherwise invent:**
+
+| Gap | Why the render can't answer it | Where it gets decided |
+|---|---|---|
+| **The screens the menu leads to.** No settings, no searching, no loading frame | The render is a menu at rest. Settings is conventionally a two-column category+options list — that is **not** our 3-column grid and we have not ruled on it | §4.6 (`ST_Settings`), §4.1 (`FE_Loading`) — **UNSOURCED**, ours to design |
+| **Lobby occupancy states.** The roster on the render is a social/friends list | Our lobby is **4 Fireteam slots with empty `Invite…` states**, not a friends list. Different component, different empty state, different focus behaviour | §4.2 `MM_Root`. `UBRRosterPanel` † §6.3 must specify the empty slot or it will ship as a blank row |
+| **The modal layer.** `Layer.Modal` has nothing to reference | Nothing is up in the render. Scrim opacity, modal entry, and what the action bar shows *while a modal is up* are all unobserved | §4.8, and `MOTION-INTERACTION.md` |
+| **The action bar.** The render shows one verb (`Menu`) | Ours renders several, and `CommonBoundActionBar` sizes to the actions registered. The one-verb case is the case that never reveals the wrapping rule | §7.3 row 6 · `LAYOUT-DOCTRINE.md` §5 |
+| **What occupies the status column.** The render puts progression there | We have progression, but the slice may not. If the status column is empty on a screen, **column 3 still exists** (§7.3) — it just carries nothing | Per-screen, §4 |
+
+**The rule this yields:** a §4 row whose `Grid` cell says `3-col` is inheriting a grid that one
+screen proved. A row that describes anything else — full bleed, 4-col, list chrome, off-grid
+modules — is **unsourced**, and the first person to build it is designing, not transcribing.
+Say so in the ticket rather than implying a reference exists.
 
 ---
 
@@ -541,36 +569,56 @@ missing one.
 
 ## 7. Wireframe and layout conventions — how a Figma frame becomes UMG
 
-### 7.1 Canvas vs Overlay vs Box — the rule, and why
+### 7.1 Bands and columns, not canvases — the rule, and why
+
+> **Superseded 3 Aug 2026.** This section previously specified one `UCanvasPanel` per screen
+> root, with Figma coordinates typed into anchored slots. `LAYOUT-DOCTRINE.md` §6 corrected that
+> against the reference grid overlay: **the grid is structural, not a guide.** A front-end screen
+> has **no `CanvasPanel` at all**. The numbers below are unchanged — only where they live is.
 
 | Figma construct | UMG construct | Never |
 |---|---|---|
-| The 1280×720 screen frame | **one** `UCanvasPanel` at the screen root, inside a `UOverlay` | a nested `UCanvasPanel` |
+| The 1280×720 screen frame | a `SafeZone` → `UVerticalBox` of **bands** (§7.1.1) | a `UCanvasPanel` at a screen root |
+| The 3-column content region | one `UHorizontalBox`, three `Fill 1.0` children | three separately-anchored canvas slots |
+| A gutter between columns | slot padding, **half the gutter on each neighbour** (24 + 24 = 48) | a spacer widget, or a full 48 on one side |
+| A panel's designed width inside a column | `USizeBox` `MaxDesiredWidth = 348.67` + `HAlign` outward | a fixed-width column |
 | A component with absolute children (`UBRItemTile`, `UBRProgressionButton`) | `UOverlay` + `USizeBox`, or a single `UCanvasPanel` **at the component root only** | absolute positioning inside a list entry |
 | Figma auto-layout `HORIZONTAL` / `VERTICAL` | `UHorizontalBox` / `UVerticalBox` + slot padding | a canvas with hand-typed x offsets |
-| Figma auto-layout `gap` | slot padding, half on each side, or `UWrapBox` inner slot padding | a spacer widget per gap |
 | A repeated row / tile (menu rows, roster rows, item tiles, table rows, file cards) | `UListView` / `UTileView` with an **entry WBP** implementing `IUserObjectListEntry` | N hand-placed children |
 | Full-bleed stacked layers (scene → scrim → content → chrome) | `UOverlay`, one child per layer | visibility toggling on a canvas |
 
-**Exactly one `UCanvasPanel` per widget, at its root, and only when the design is genuinely
-absolute.** Nested canvases defeat auto-sizing, make anchors meaningless below the first level,
-and are the reason a WBP becomes unreviewable — which matters more here than usual, because a
-WBP is binary and the critic cannot diff it (`ui-presentation` §9).
+**`UCanvasPanel` survives in exactly two places, and neither is a front-end screen:** the HUD,
+where elements genuinely are positioned against the viewport rather than against each other, and
+the root of a component whose *internal* design is absolute. Nested canvases defeat auto-sizing,
+make anchors meaningless below the first level, and are the reason a WBP becomes unreviewable —
+which matters more here than usual, because a WBP is binary and the critic cannot diff it
+(`ui-presentation` §9).
 
-**Screen root skeleton, identical on all 31:**
+#### 7.1.1 Screen root skeleton, identical on all 31
 
 ```
-UOverlay  (root)
-├ [0] SceneBleed      SizeBox, transparent   ← the arena camera renders behind; NOT a widget
-├ [1] Scrim           UBRScrim, collapsed by default
-├ [2] Content         UCanvasPanel           ← the ONLY canvas. Figma coords go here.
-└ [3] Chrome          UVerticalBox, bottom-anchored
-    ├ ButtonPrompts   UBRButtonPrompt (auto-layout HUG — width tracks prompt count)
-    └ ProfileBar      UBRProfileBar (1280×50)
+UBRActivatableWidget  (screen root — pushed to a layer, owns no action bar)
+└ Screen_SafeZone     SafeZone                 the outer margin, all four sides
+  └ Bands_VBox        UVerticalBox             ← NO CanvasPanel on a screen
+    ├ HeaderBand      Auto                     nav bar / page title / item title
+    ├ ContentBand     Fill 1.0
+    │ └ Columns_HBox  UHorizontalBox
+    │   ├ Col1        Fill 1.0 · pad-right 24  panel inside: max-w 348.67, HAlign Left
+    │   ├ Col2        Fill 1.0 · pad 24        RESERVED — the 3D subject reads through
+    │   └ Col3        Fill 1.0 · pad-left 24   panel inside: max-w 348.67, HAlign Right
+    └ FooterBand      Auto · height 50         (inherited — see below)
 ```
 
-Chrome is in the root layout, not the screen — the screen's `[3]` slot is inherited from
-`WBP_RootLayout`. Re-authoring the profile bar per screen is 31 places one blur setting drifts.
+**The scrim, the profile bar and the button prompts are not in this tree.** Scrim is
+`Layer.Modal`'s own business; the profile bar and prompts live in `WBP_RootLayout` (§5 of the
+layout doctrine) — one `CommonBoundActionBar`, one profile bar, both persistent. Re-authoring the
+profile bar per screen is 31 places one blur setting drifts. `FooterBand` appears above only so
+the band arithmetic is legible; a screen that owns no footer simply omits it and the content band
+takes the height.
+
+**Full-bleed screens** (`FE_Splash`, `FE_Loading`, `PR_PostGameXP`, `PR_RankUp`, `NW_*`) keep the
+`SafeZone` → band structure and use a **single** content band with no `Columns_HBox`. Full-bleed
+means "one column", not "back to a canvas".
 
 ### 7.2 The 1280 → 1920 conversion: do it with the DPI curve, not by hand
 
@@ -598,22 +646,28 @@ half-pixel that nobody can trace back to a source document.
 `1 cqw = 12.8 px` for the HTML mockups in `ui-presentation` §7. The mockup, the Figma node and
 the WBP all agree numerically. That is the point.
 
-### 7.3 Anchoring rules — the whole responsive story falls out of the 3-column law
+### 7.3 Placement rules — the whole responsive story falls out of the 3-column law
 
-| Band | Anchor | Offsets | Why |
+**Superseded with §7.1: these are slot rules, not anchors.** Every Figma x/y below is preserved
+because it is the *source measurement* — but it is now expressed as a band, a column and a
+padding, so no anchor number is ever typed.
+
+| Element | Where it lives | Sizing | Why |
 |---|---|---|---|
-| **Column 1** — left rail, menu lists, description strip | `(0,0)` top-left | x=69 fixed, w=349 fixed | The rail is a fixed-width instrument. It never stretches |
-| **Column 2** — the 3D subject | **no widget** | — | It is the camera. UI must not anchor into 466–815 |
-| **Column 3** — party list, progression button, gear detail | `(1,0)` **top-RIGHT** | right=69 fixed, w=349 fixed | At 1280, x=862 + 349 = 1211 = **69 from the right edge.** Anchoring right is what makes ultrawide correct with zero extra work |
-| Nav bar, page title, item title | `(0,0)`–`(1,0)` top-stretch | left=33/0, right=0 | Titles are full-bleed bands |
-| Profile bar | `(0,1)`–`(1,1)` bottom-stretch | height 50, y-offset −50 | Law: bottom 50 always reserved |
-| Button prompts | `(0,1)` bottom-left | x=74, y=−35, **size to content** | Width tracks prompt count |
-| Modals (`451×682` at x=48) | `(0,0.5)` left-middle | x=48, centred vertically | Deliberately off-grid; it is an overlay, not a column |
-| Forge material panel | `(0.5,0.5)` centre | **animate height AND y together** | Vertical centre pinned at y=360 across all three accordion levels |
-| Item grid (504 @ 86,260) | `(0,0)` top-left | x=86 fixed | Off-grid module; do **not** stretch. Add columns instead if space allows |
+| **Column 1** — menu lists, feature card, description strip | `Columns_HBox` child 0, `pad-right 24` | `SizeBox` max-w 348.67, **HAlign Left** | Figma x=69 is the SafeZone margin, not an offset. The panel keeps its designed width and pins to the outer edge |
+| **Column 2** — the 3D subject | `Columns_HBox` child 1, `pad 24` | `Fill 1.0`, **holds nothing** | It is the camera. The child exists to reserve 466–815 so columns 1 and 3 cannot drift inward — deleting it breaks the grid |
+| **Column 3** — party list, progression button, gear detail | `Columns_HBox` child 2, `pad-left 24` | `SizeBox` max-w 348.67, **HAlign Right** | Figma x=862 + 349 = 1211 = 69 from the right edge. Aligning outward is what makes ultrawide correct with zero extra work |
+| Nav bar, page title, item title | `HeaderBand`, `Auto` | `HAlign Fill` | Titles are full-bleed bands. Figma's left=33 is band padding |
+| Profile bar | `WBP_RootLayout` footer, `Auto` h50 | `HAlign Fill` | Law: bottom 50 always reserved. It is the last child of a Fill layout — not `y = 670` |
+| Button prompts | `WBP_RootLayout` → `CommonBoundActionBar` | **size to content** | Width tracks the actions actually registered, not a typed count |
+| Modals (`451×682` at x=48) | `Layer.Modal`, own `Overlay` | `HAlign Left · VAlign Center`, pad-left 48 | Deliberately off-grid; it is an overlay, not a column |
+| Forge material panel | `Overlay`, `HAlign/VAlign Center` | animate **height only** | Centring is structural, so the y=360 pin is free. The old rule said "animate height AND y together" — that was a consequence of anchoring, and it is now gone |
+| Item grid (504 @ 86,260) | inside its column, `SizeBox` w504 | **do not stretch** | Off-grid module. Add columns instead if space allows |
+| Deliberate overscans (`OV_ChallengePane` 1298, `PR_PostGameXPCards` 1320) | outside `Screen_SafeZone` | `Overlay` + **negative padding** | These exceed 1280 on purpose. Negative slot padding on an overlay child does what negative anchor margins did; do not clip, and do not put them inside the SafeZone |
 
-**The rule in one sentence: left rail anchors left, status band anchors right, chrome stretches,
-the middle is the camera.** Nothing in the UI stretches horizontally except the full-bleed bands.
+**The rule in one sentence: column 1 aligns left, column 3 aligns right, bands stretch, the middle
+is the camera.** Nothing stretches horizontally except the bands — and the columns themselves,
+which is exactly how the extra ultrawide space lands on the subject instead of on the panels.
 
 ### 7.4 Colour, type and state
 
@@ -647,17 +701,22 @@ happens. 2560×1440 → 2.0. 3840×2160 → 3.0 (extend the curve).
 At 2560×1080 the shortest side is still 1080, so DPI stays **1.5** and the virtual canvas becomes
 **1706×720** in design units.
 
+The three `Fill 1.0` columns each become (1706 − 138 margins − 96 gutters) / 3 = **490.67**. The
+panels inside them do not.
+
 | Element | Behaviour | Result at 1706 wide |
 |---|---|---|
-| Left rail (col 1) | anchored left, fixed 349 | x = 69–418, unchanged |
-| Status band (col 3) | anchored **right**, fixed 349 | x = 1288–1637, right margin still 69 |
+| Column 1 panel | `max-w 348.67`, **HAlign Left** inside a 490.67 column | x = 69–417.67, unchanged |
+| Column 3 panel | `max-w 348.67`, **HAlign Right** inside a 490.67 column | x = 1288.33–1637, right margin still 69 |
 | Centre gap (the subject) | grows | 213 → **870** design px |
 | Full-bleed bands (profile, title, nav) | stretch | 1706 wide |
 | Item / tile grids | **add columns, do not stretch tiles** | `UTileView` wrap; tile stays 114, pitch stays 130 |
-| Modals | stay 451 wide, stay at x=48 | unchanged — a modal that stretches to 21:9 is unreadable |
+| Modals | stay 451 wide, stay at pad-left 48 | unchanged — a modal that stretches to 21:9 is unreadable |
 
-**The columns never stretch.** 349 and 249.75 are instrument widths, not proportions. The
-48px gutter is preserved because nothing between the rails is laid out relative to them.
+**The columns stretch; the panels never do.** 349 and 249.75 are instrument widths, not
+proportions, and the `SizeBox` is what holds them — so all 563 design px of new width lands
+between the panels, on the subject, with no aspect-specific code. The 48px gutter is preserved
+because it is slot padding on the columns, not a measured distance between panels.
 
 **The one thing this breaks:** at 32:9 (3840×1080 → 2560 design px) the centre gap reaches
 1862 and the character is a small figure in a lot of nothing. **UNRESOLVED — the Figma file has
@@ -693,10 +752,13 @@ Standard console title-safe is a **5% inset per edge**: at 1280×720 that is **6
 **This is a real finding, not a hypothetical.** The reference file is a PC front end and never
 had to clear console title-safe.
 
-**Fix, in exactly one place:** `WBP_RootLayout` wraps everything in a `USizeBox` +
-`UBorder` padded by `UBRUISettings::TitleSafeInsetPercent` (default **0.0** on PC,
-**0.05** on console, read from a `DT_UIPalette`-adjacent settings row — law 3, not a WBP
-literal). Every screen anchors inside it and inherits the inset for free.
+**Fix, in exactly one place:** the `Screen_SafeZone` of §7.1.1 — but hoisted, so it is authored
+once in `WBP_RootLayout` rather than 31 times. `SafeZone` already reads the platform's title-safe
+ratio, which is **0 on PC and non-zero on console**, so the two-platform behaviour is the widget's
+default and not a branch we write. `UBRUISettings::TitleSafeInsetPercent` remains as the override
+for platforms that report nothing (law 3 — a settings row, never a WBP literal). Every screen sits
+inside it and inherits the inset for free, because the bands measure themselves against whatever
+box they are handed.
 
 The cost of that inset on console: the virtual canvas becomes 1152×648, which is the §8.3 case —
 so **the status-band collapse rule in §8.3 is also the console rule**. One mechanism, two
@@ -772,11 +834,15 @@ Per `ui-presentation` §11, plus what this manifest adds:
 - [ ] Every dynamic value traces to a ViewModel getter that **exists**, or is filed against §10.
 - [ ] Colours are token names read from `UBRUISettings`. Zero hex in the WBP.
 - [ ] The WBP has **zero graph nodes** and declares **no new variables** (R18/R26).
-- [ ] Exactly one `UCanvasPanel`, at the widget root (§7.1).
+- [ ] **Zero `UCanvasPanel` on a screen** (§7.1). One is permitted at a *component* root, and on
+      the HUD. A canvas on a front-end screen is the defect this rule exists to catch.
 - [ ] Authored in the **1280×720** space; the DPI curve does the 1920 conversion (§7.2).
-- [ ] Column 3 content anchors **right**, not left (§7.3) — verified by resizing the designer
-      preview to 21:9, not by reasoning about it.
-- [ ] Nothing anchors into x 466–815 at 1280 base — that is the camera's column.
+- [ ] Column 3's panel `HAlign`s **Right**, column 1's **Left**, and both carry
+      `max-w 348.67` (§7.3) — verified by resizing the designer preview to 21:9, not by
+      reasoning about it.
+- [ ] Column 2 exists as a `Fill 1.0` child and **holds nothing**. Deleting it is the other
+      defect this rule exists to catch.
+- [ ] Every gutter is **24 + 24 slot padding**, never a spacer widget and never 48 on one side.
 - [ ] The screen was **rendered and looked at** (`ui-presentation` §7), not just described.
 - [ ] Any deviation from §1's geometry is written down **here**, with a reason, in the same
       commit that makes it.
