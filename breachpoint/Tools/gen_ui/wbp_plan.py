@@ -300,7 +300,7 @@ ASSET_FOLDER = {
     "WBP_RecordPanel":         UI_COMPONENTS,
     "WBP_RosterPanel":         UI_COMPONENTS,
     "WBP_LeftRail":            UI_COMPONENTS,
-    "WBP_Screen_FrontEnd":     UI_MAINMENU,
+    "WBP_MainMenu":            UI_MAINMENU,
     # The item/table tier. WBP_ItemTile MUST precede WBP_ItemGrid in PLAN — the tile is not
     # a tree child of the grid (a UTileView owns its entries), so validate_all()'s
     # host-ordering rule never fires and would not catch a wrong order.
@@ -953,81 +953,75 @@ PLAN = {
     },
 
     # ------------------------------------------------------------------
-    # WBP_Screen_FrontEnd — LAST in PLAN. Hosts the rail, the nav bar, the record panel and
-    # the party list.
+    # WBP_MainMenu — FE_Play, 1:1. LAST in PLAN: hosts the rail, the nav bar, the record
+    # panel and the party list.
     #
-    # NO CanvasPanel ANYWHERE, and that is now legal: CPP-AUDIT PKT-C cut
-    # FBRFrontEndTabLayout/ApplyTabLayout, which were the ONLY thing requiring this screen's
-    # WBP to have a root canvas. Verified cut in the header before this entry was written —
-    # against the uncut class this tree would have failed at asset load. It is bands and
-    # columns; the 869/55/862/397 coordinates are what the bands replace.
+    # *** ROOT CanvasPanel — a DOCUMENTED EXCEPTION to LAYOUT-DOCTRINE §6, founder-granted
+    # 3 Aug 2026, in the same shape as UBRLeftRail's. ***
     #
-    # ONE SCREEN FOR THREE FRAMES. FE_Play / FE_Create / FE_Community are the same instances
-    # at the same coordinates; nav tabs swap the RAIL'S DATA, not the widget. So no
-    # TabSwitcher, no tab pages, no per-tab geometry.
+    # This screen was FIRST built as bands and columns and it was wrong, structurally rather
+    # than numerically. FE_Play (working file yznvnVdOFDADaugZSeomfP, node 21:32824, read
+    # 3 Aug) places `Progression Button` at y=55 while the `Navigation Bar` occupies y=45..75:
+    # THE TWO OVERLAP VERTICALLY. A VBox stacks, so no padding, alignment or fill can put a
+    # sibling level with an earlier sibling — the band shape could not express the design at
+    # any set of numbers. §6 exists to stop a canvas being the DEFAULT, not to stop it where
+    # the design IS absolute geometry, which this frame is.
     #
-    # NOT BOUND, DELIBERATELY: Background, the Player stage (a CAMERA's box, not a widget),
-    # the Profile Bar and the Button Prompts. The last two are root-layout chrome and this
-    # screen declares no member for either — so deferring the profile bar does NOT block
-    # this asset. The honest consequence: the front end renders with a 50px band of nothing
-    # at the bottom until the chrome packet lands. A visual gap, not a contract gap.
+    # THE COLUMNS WERE A GUIDE, NOT THE LAYOUT. `Grid - 3 Collumn` (21:32868) is HIDDEN in
+    # the frame, as is `Grid - 4 Collumn`. The first build read the guide as the design. That
+    # also explains the 869 vs 862 below: the two right-hand elements are NOT left-aligned
+    # with each other, which no single column with one padding can produce.
     #
-    # Col2_Subject is EMPTY ON PURPOSE and unbound — the ContentSlot bind died with the
-    # PKT-C cut. It reserves the subject's space as a named empty panel, never a Spacer.
+    # Every coordinate here is frame-local against 1280x720 and comes from that one read.
+    # canvas_slot() is point-anchored, so Right/Bottom are SIZE, not margins.
+    #
+    # NOT IN THIS TREE, and each for its own reason:
+    #   Background (21:32825) — an art instance with no texture in Content/UI; a brushless
+    #     UImage is BP70 D2's blank white rectangle across the whole screen.
+    #   Player (21:32827, 480,118 320x602) — the 3D subject's CAMERA box, not a widget.
+    #   Profile Bar (21:32862) + Button Prompts (21:32863) — root-layout chrome by
+    #     SCREEN-MANIFEST §7.1, and UBRScreen_FrontEnd declares no member for either. Their
+    #     absence is why a render looks emptier than the frame even where geometry is exact.
+    #
+    # KNOWN DISAGREEMENT, RECORDED NOT SILENCED: the frame gives ProgressionButton 334x115,
+    # and UBRFeatureCard::NativeOnInitialized unconditionally writes SetHeightOverride(222)
+    # and clears the width. So C++ WILL override this slot's 115 at runtime. The slot carries
+    # the measured value because that is what the design says; the override is the open gap
+    # (no per-instance height on UBRFeatureCard), and it is visible rather than papered over.
     # ------------------------------------------------------------------
-    "WBP_Screen_FrontEnd": {
-        "folder": ASSET_FOLDER["WBP_Screen_FrontEnd"],
+    "WBP_MainMenu": {
+        "folder": ASSET_FOLDER["WBP_MainMenu"],
         "parent_class": "/Script/Breachpoint.BRScreen_FrontEnd",
         "class": "UBRScreen_FrontEnd",
         "header": "Source/Breachpoint/UI/Screens/BRScreen_FrontEnd.h",
-        "notes": "Header band + three-column content band inside a SafeZone. No CanvasPanel. "
-                 "Column 2 is a reserved empty region; chrome is not this screen's.",
+        "notes": "FE_Play 1:1 from node 21:32824. Root CanvasPanel by founder exception to "
+                 "§6 — the frame is absolute geometry and Progression Button overlaps the "
+                 "nav bar, which a band layout cannot express.",
         "tree": [
-            # Platform title-safe for free. The outer margin is a SafeZone, not a padded box,
-            # because a padded box is a guess at every console's overscan.
-            {"name": "ScreenSafeZone", "class": SAFEZONE, "parent": None},
-            # NO SLOT, and this is measured rather than assumed: a USafeZoneSlot does not
-            # accept the standard HAlign/VAlign/padding write — the generator wrote it and
-            # read back null (receipt gen-ui-20260803T220816Z.md, the one FAILED line in 21
-            # assets). A SafeZone fills its single child anyway, so the write was redundant
-            # as well as impossible. Do not "restore" it.
-            {"name": "BandsVBox", "class": VBOX, "parent": "ScreenSafeZone"},
-            # pad-bottom 63 is the MEASURED band gap: nav y45 -> rail y138.
-            {"name": "NavBar", "class": wbp_class("WBP_NavBar"), "parent": "BandsVBox",
-             "slot": box_slot(padding=margin(bottom=63.0), h="HAlign_Left"), "bind": True},
-            {"name": "ContentBand", "class": HBOX, "parent": "BandsVBox",
-             "slot": box_slot(fill=1.0)},
-            # The 48px gutter, split 24/24 across the boundary — so a column can be removed
-            # without stranding a one-sided gap.
-            {"name": "Col1_Menu", "class": OVERLAY, "parent": "ContentBand",
-             "slot": box_slot(fill=1.0, padding=margin(right=24.0))},
-            # HAlign_Left: the rail is a fixed-width instrument that never stretches. Its 349
-            # is pinned in C++, so no screen and no WBP can fork the width.
-            {"name": "LeftRail", "class": wbp_class("WBP_LeftRail"), "parent": "Col1_Menu",
-             "slot": {"horizontalAlignment": "HAlign_Left", "verticalAlignment": "VAlign_Fill",
-                      "padding": margin()},
-             "bind": True},
-            # UNBOUND and EMPTY: the 3D subject reads through this column.
-            {"name": "Col2_Subject", "class": OVERLAY, "parent": "ContentBand",
-             "slot": box_slot(fill=1.0, padding=margin(left=24.0, right=24.0))},
-            {"name": "Col3_Status", "class": VBOX, "parent": "ContentBand",
-             "slot": box_slot(fill=1.0, padding=margin(left=24.0), h="HAlign_Right")},
-            # A second WBP of the SAME class as the feature card — a clickable ground +
-            # image + caption is exactly its shape, and the retype is what makes it
-            # gamepad-focusable at all.
+            {"name": "ScreenCanvas", "class": CANVAS, "parent": None},
+            # Navigation Bar 21:32864 — 33, 45, 666x30.
+            {"name": "NavBar", "class": wbp_class("WBP_NavBar"), "parent": "ScreenCanvas",
+             "slot": canvas_slot(33.0, 45.0, 666.0, 30.0), "bind": True},
+            # Menu Combo 21:32877 — 69, 138, 349x510. The 510 is a CROSS-CHECK, not a second
+            # source: ComputeRailHeight(4 rows, with feature card) = 222+10+186+38+55+37 =
+            # 510, so C++ and the frame already agree and the slot restates the agreement.
+            {"name": "LeftRail", "class": wbp_class("WBP_LeftRail"), "parent": "ScreenCanvas",
+             "slot": canvas_slot(69.0, 138.0, 349.0, 510.0), "bind": True},
+            # Progression Button 21:32826 — 869, 55, 334x115. See the height note above.
             {"name": "ProgressionButton", "class": wbp_class("WBP_RecordPanel"),
-             "parent": "Col3_Status",
-             "slot": box_slot(padding=margin(bottom=24.0), h="HAlign_Right"), "bind": True},
-            # HUG: 349x273 is the panel's own box, and it shares PanelWidthMainMenu with the
-            # profile card — that shared constant is the whole reason they align.
-            {"name": "PartyList", "class": wbp_class("WBP_RosterPanel"), "parent": "Col3_Status",
-             "slot": box_slot(h="HAlign_Right"), "bind": True},
+             "parent": "ScreenCanvas",
+             "slot": canvas_slot(869.0, 55.0, 334.0, 115.0), "bind": True},
+            # Party List 21:32861 — 862, 397, 349x273. Seven pixels left of the Progression
+            # Button, which is the measurement and not a typo.
+            {"name": "PartyList", "class": wbp_class("WBP_RosterPanel"),
+             "parent": "ScreenCanvas",
+             "slot": canvas_slot(862.0, 397.0, 349.0, 273.0), "bind": True},
             # WHICH KIND OF NOTHING: never-told (VM null) versus told-and-empty are two
-            # different facts and ApplyEmptyState renders them differently. Body/Flavor is
-            # italic on purpose — the device the killfeed uses to mark a line that is not a
-            # fact the server sent.
-            {"name": "EmptyStateLabel", "class": TEXT, "parent": "BandsVBox",
-             "slot": box_slot(h="HAlign_Center", v="VAlign_Center"),
+            # different facts and ApplyEmptyState renders them differently. The frame
+            # measures no rect for it — it is a state the design does not draw — so it is
+            # centred on the screen and that is a stated choice, not a measurement.
+            {"name": "EmptyStateLabel", "class": TEXT, "parent": "ScreenCanvas",
+             "slot": canvas_slot(0.0, 0.0, 1280.0, 720.0),
              "font": "Body/Flavor", "bind": True},
         ],
     },
