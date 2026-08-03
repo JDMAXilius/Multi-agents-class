@@ -131,7 +131,11 @@ void UBRLeftRail::SetRowCount(int32 InRowCount)
 
 void UBRLeftRail::RefreshLayout()
 {
-	if (MenuRowSlot && MenuRowSlot->GetChildrenCount() > 0)
+	// No `> 0` guard (CPP-AUDIT D8): zero children IS a valid count. The old guard kept the
+	// previous row count when the screen cleared its rows, so the rail rendered at a stale
+	// five-row height with nothing in it and the caret could validate against rows that no
+	// longer exist — on exactly the two empty-state paths the screen actually exercises.
+	if (MenuRowSlot)
 	{
 		RowCount = MenuRowSlot->GetChildrenCount();
 	}

@@ -3,7 +3,6 @@
 #include "Animation/WidgetAnimation.h"
 #include "Blueprint/UserWidget.h"
 #include "CommonTextBlock.h"
-#include "Components/CanvasPanelSlot.h"
 #include "Components/PanelWidget.h"
 #include "Components/VerticalBoxSlot.h"
 #include "Engine/World.h"
@@ -13,32 +12,12 @@
 #include "UI/Components/BRLeftRail.h"
 #include "UI/Components/BRMenuRow.h"
 #include "UI/Components/BRNavBar.h"
+#include "UI/Components/BRRosterPanel.h"
 #include "UI/ViewModels/BRVM_FrontEnd.h"
 
 #define LOCTEXT_NAMESPACE "BRScreenFrontEnd"
 
 DEFINE_LOG_CATEGORY_STATIC(LogBRScreenFrontEnd, Log, All);
-
-namespace BRScreenFrontEndInternal
-{
-	UCanvasPanelSlot* GetCanvasSlot(const UWidget* InWidget)
-	{
-		return InWidget ? Cast<UCanvasPanelSlot>(InWidget->Slot) : nullptr;
-	}
-
-	/**
-	 * Write y and PRESERVE x. The Party List is RIGHT-anchored (that is the whole ultrawide story
-	 * on `UBRRosterPanel`), so its slot x is whatever the anchor produced -- overwriting it with a
-	 * design-canvas number would silently break every aspect ratio but 16:9.
-	 */
-	void SetSlotY(UWidget* InWidget, float InY)
-	{
-		if (UCanvasPanelSlot* CanvasSlot = GetCanvasSlot(InWidget))
-		{
-			CanvasSlot->SetPosition(FVector2D(CanvasSlot->GetPosition().X, InY));
-		}
-	}
-}
 
 UBRScreen_FrontEnd::UBRScreen_FrontEnd()
 {
@@ -489,73 +468,6 @@ void UBRScreen_FrontEnd::ApplyFeatureCard()
 	FeatureCard->SetCaptionText(Cards[Index].Title);
 }
 
-void UBRScreen_FrontEnd::ApplyTabLayout(int32 TabIndex)
-{
-	if (!TabLayouts.IsValidIndex(TabIndex))
-	{
-		// THE DEFAULT PATH, and today the only one. No entry means the FE_Play geometry stands and
-		// nothing is moved. The two FE_Community deltas are recorded as constants in the header and
-		// deliberately NOT applied -- see the drift note there.
-		return;
-	}
-
-	const FBRFrontEndTabLayout& Layout = TabLayouts[TabIndex];
-
-	BRScreenFrontEndInternal::SetSlotY(ProgressionButton, Layout.ProgressionButtonY);
-	BRScreenFrontEndInternal::SetSlotY(PartyList, Layout.PartyListY);
-}
-
-void UBRScreen_FrontEnd::ApplyContentWidget(int32 TabIndex)
-{
-	if (!ContentSlot)
-	{
-		return;
-	}
-
-	ContentSlot->ClearChildren();
-
-	const FBRFrontEndTabLayout* Layout = TabLayouts.IsValidIndex(TabIndex) ? &TabLayouts[TabIndex] : nullptr;
-	if (!Layout || Layout->ContentWidgetClass.IsNull())
-	{
-		// The measured state of all three FE frames: the centre column is identical, so there is
-		// nothing to swap. Collapsed, not hidden -- an empty reserved band is not in the reference.
-		ContentSlot->SetVisibility(ESlateVisibility::Collapsed);
-		return;
-	}
-
-	TObjectPtr<UUserWidget>* Cached = ContentWidgets.Find(TabIndex);
-	UUserWidget* Content = Cached ? Cached->Get() : nullptr;
-
-	if (!Content)
-	{
-		// ponytail: sync load, because no tab ships content today and a load that never runs needs
-		// no streaming handle. The first tab that actually names a content widget should move this
-		// to the async path `UBRFeatureCard` already uses for its art.
-		UClass* ContentClass = Layout->ContentWidgetClass.LoadSynchronous();
-		if (!ContentClass)
-		{
-			UE_LOG(LogBRScreenFrontEnd, Warning,
-				TEXT("%s: tab %d names a ContentWidgetClass that failed to load."), *GetName(), TabIndex);
-			ContentSlot->SetVisibility(ESlateVisibility::Collapsed);
-			return;
-		}
-
-		Content = CreateWidget<UUserWidget>(this, ContentClass);
-		if (!Content)
-		{
-			ContentSlot->SetVisibility(ESlateVisibility::Collapsed);
-			return;
-		}
-
-		// Kept, so switching tabs back and forth re-parents an existing widget instead of building
-		// a new one each time.
-		ContentWidgets.Add(TabIndex, Content);
-	}
-
-	ContentSlot->AddChild(Content);
-	ContentSlot->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-}
-
 void UBRScreen_FrontEnd::ApplyEmptyState()
 {
 	if (!EmptyStateLabel)
@@ -597,13 +509,8 @@ void UBRScreen_FrontEnd::RefreshAll()
 	}
 	TGuardValue<bool> RefreshGuard(bRefreshing, true);
 
-	const UBRVM_FrontEnd* ViewModel = BoundViewModel.Get();
-	const int32 TabIndex = ViewModel ? ViewModel->GetActiveNavTabIndex() : INDEX_NONE;
-
 	// Order matters exactly once: the rows must exist before the caret is placed on one.
 	RebuildNavTabs();
-	ApplyTabLayout(TabIndex);
-	ApplyContentWidget(TabIndex);
 	RebuildMenuRows();
 	ApplyFeatureCard();
 	ApplyFocus();

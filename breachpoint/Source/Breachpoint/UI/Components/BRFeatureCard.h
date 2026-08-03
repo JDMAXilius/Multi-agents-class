@@ -94,6 +94,7 @@ public:
 protected:
 	//~ Begin UUserWidget interface
 	virtual void NativeOnInitialized() override;
+	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
 	//~ End UUserWidget interface
 

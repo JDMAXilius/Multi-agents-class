@@ -48,6 +48,21 @@ void UBRFeatureCard::NativeOnInitialized()
 	ClearFeature();
 }
 
+void UBRFeatureCard::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	// CPP-AUDIT D9: destruct cancels the stream but the object survives a pop, keeping its
+	// RequestedImage with no texture behind it. Without this re-request, popping the screen
+	// mid-stream and re-pushing it left the 196.7 band empty until the carousel happened to
+	// advance — forever, on a static single-entry carousel. SetFeatureImage's resident-check
+	// makes this free when the texture survived in memory.
+	if (!RequestedImage.IsNull() && !ImageHandle.IsValid())
+	{
+		SetFeatureImage(RequestedImage);
+	}
+}
+
 void UBRFeatureCard::NativeDestruct()
 {
 	// The handle outliving the widget is the leak that turns a menu open/close loop into a

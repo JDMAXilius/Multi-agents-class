@@ -3,7 +3,6 @@
 #include "Blueprint/UserWidgetPool.h"
 #include "FieldNotificationId.h"
 #include "UI/BRActivatableWidget.h"
-#include "UI/Components/BRRosterPanel.h"
 
 #include "BRScreen_FrontEnd.generated.h"
 
@@ -11,63 +10,29 @@ class UBRFeatureCard;
 class UBRLeftRail;
 class UBRMenuRow;
 class UBRNavBar;
+class UBRRosterPanel;
 class UBRVM_FrontEnd;
 class UCommonTextBlock;
-class UPanelWidget;
-class UUserWidget;
 class UWidget;
 class UWidgetAnimation;
 
 /**
- * The measured front-end chrome, from the reference file's own three FE frames.
+ * The reference file's three FE frames -- `FE_Play` (21:32824), `FE_Create` (21:32902),
+ * `FE_Community` (21:32941) -- are the SAME seven instances at the SAME coordinates; only the
+ * left rail's CONTENTS differ. That is why there is one screen class below and not three.
  *
- * `FE_Play` (21:32824), `FE_Create` (21:32902) and `FE_Community` (21:32941) are the SAME seven
- * instances at the SAME coordinates. Only the left rail's CONTENTS differ. That is why there is one
- * screen class below and not three -- see the class comment.
- *
- * A namespace rather than class statics because `FBRFrontEndTabLayout` needs these as default
- * member initialisers and the struct is declared before the class.
+ * CPP-AUDIT PKT-C cut the `BRFrontEnd` measurement namespace, `FBRFrontEndTabLayout` and
+ * `ApplyTabLayout` that used to live here. `TabLayouts` was empty on every tab, so the whole
+ * mechanism moved nothing -- and its layout contract was the ONLY thing requiring this screen's
+ * WBP to have a root CanvasPanel, which LAYOUT-DOCTRINE Sec 6 forbids. The screen is now
+ * bands-and-columns clean: geometry lives in the WBP (`MCP-BUILD-PLANS.md` Sec C2), measured
+ * numbers live in COMPONENT-SPECS, and FE_Community's contradictory column-3 deltas stay
+ * recorded in git history + the DECIDE ledger until a node read rules on them. If a tab ever
+ * genuinely differs, that is a data-driven content widget added WITH its data -- not a dormant
+ * struct waiting for some.
  */
 namespace BRFrontEnd
 {
-	/** ui-presentation Sec 5: the design canvas every number here is measured on. */
-	inline constexpr float DesignCanvasWidth = 1280.0f;
-	inline constexpr float DesignCanvasHeight = 720.0f;
-
-	/** Progression Button: 334 x 115 at (869, 55) on FE_Play and FE_Create. */
-	inline constexpr float ProgressionButtonX = 869.0f;
-	inline constexpr float ProgressionButtonY = 55.0f;
-	inline constexpr float ProgressionButtonWidth = 334.0f;
-	inline constexpr float ProgressionButtonHeight = 115.0f;
-
-	/**
-	 * FE_Community authors the Progression Button at y = **-25**, i.e. 80 px higher, which puts
-	 * 25 px of a 115-tall button OFF THE TOP of the 720 canvas.
-	 *
-	 * READ: DRIFT, not intent. A status element cropped by the screen edge is not a design, and the
-	 * companion delta below moves the OTHER right-column element the OPPOSITE way by a DIFFERENT
-	 * amount (-80 here, +100 there) -- so it is not one deliberate re-composition of column 3
-	 * either. Both are recorded here as named constants and NEITHER IS APPLIED: `TabLayouts` ships
-	 * empty, so every tab renders the FE_Play geometry until a node read confirms otherwise. If the
-	 * read says they are intentional, they become one `TabLayouts` entry and no code changes.
-	 */
-	inline constexpr float ProgressionButtonYCommunity = -25.0f;
-
-	/**
-	 * Party List: 349 x 273 at (862, 397). Owned by `UBRRosterPanel`; repeated here only so the
-	 * per-tab override has a baseline, and static_asserted against the component below.
-	 */
-	inline constexpr float PartyListY = 397.0f;
-
-	/** FE_Community authors the Party List at y = **497**: 100 lower, bottom at 770. See above. */
-	inline constexpr float PartyListYCommunity = 497.0f;
-
-	/** Player (the 3D subject): 320 x 602 at (480, 118). Invariant across all three tabs. */
-	inline constexpr float PlayerStageX = 480.0f;
-	inline constexpr float PlayerStageY = 118.0f;
-	inline constexpr float PlayerStageWidth = 320.0f;
-	inline constexpr float PlayerStageHeight = 602.0f;
-
 	/**
 	 * MOTION-MEASURED Sec 3: 150 ms per beat, measured on three reward elements entering five
 	 * frames apart. A nav tab change re-populates the rail's row list, which is exactly the
@@ -79,55 +44,11 @@ namespace BRFrontEnd
 	inline constexpr float RowStaggerSeconds = 0.150f;
 }
 
-// The screen's copy of the Party List origin must agree with the component that owns it, or the
-// per-tab override baseline is measuring a different panel than the one on screen.
-static_assert(BRFrontEnd::PartyListY == UBRRosterPanel::PanelOriginY,
-	"Front-end Party List baseline y disagrees with UBRRosterPanel::PanelOriginY.");
-
-// RECORDED, NOT RESOLVED: the two column-3 elements do not share a right margin.
-//   Party List           862 + 349 = 1211 -> 1280 - 1211 = 69  (the grid side margin)
-//   Progression Button   869 + 334 = 1203 -> 1280 - 1203 = 77  (8 px inside it)
-// Nothing here corrects it: a screen that "fixes" a component's measured origin is how a grid
-// silently forks. It needs a node read, and it is listed as a contract_gap in this packet's report.
-
 /** Raised when the player asks for a different nav tab. The screen does NOT change tab data itself. */
 DECLARE_DELEGATE_OneParam(FBRFrontEndTabChangeRequested, int32 /* TabIndex */);
 
 /** Raised when the player commits to a rail row or the feature card. Carries the route NAME only. */
 DECLARE_DELEGATE_OneParam(FBRFrontEndRouteRequested, FName /* RouteId */);
-
-/**
- * Per-tab layout deltas. THIS IS THE WHOLE OF WHAT VARIES GEOMETRICALLY between the three FE
- * frames, and today it is empty.
- *
- * Indexed by nav tab index, which is the same index `UBRVM_FrontEnd::GetActiveNavTabIndex` reports.
- * An index with no entry gets the FE_Play geometry, which is the correct default for all three
- * measured frames as far as anything verified says.
- */
-USTRUCT(BlueprintType)
-struct FBRFrontEndTabLayout
-{
-	GENERATED_BODY()
-
-	/** Canvas-slot y for the Progression Button on this tab. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Breachpoint|UI")
-	float ProgressionButtonY = BRFrontEnd::ProgressionButtonY;
-
-	/** Canvas-slot y for the Party List on this tab. X is never touched -- it is right-anchored. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Breachpoint|UI")
-	float PartyListY = BRFrontEnd::PartyListY;
-
-	/**
-	 * OPTIONAL bespoke content for the centre region of this tab. Law 3: SOFT, resolved on demand,
-	 * never a hard widget-class pointer.
-	 *
-	 * Null on every tab today, and that is the honest state: the three measured frames share their
-	 * centre column exactly. The slot exists because the packet's structure calls for a swappable
-	 * content region, not because a tab is known to need one.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Breachpoint|UI")
-	TSoftClassPtr<UUserWidget> ContentWidgetClass;
-};
 
 /**
  * `UBRScreen_FrontEnd` -- ONE screen for `FE_Play`, `FE_Create` and `FE_Community`.
@@ -144,11 +65,11 @@ struct FBRFrontEndTabLayout
  *
  * Three classes would triplicate eight instances in order to vary one, and the day the nav bar moves
  * 3 px it moves in one of the three. So the chrome is authored ONCE here and the swap is DATA:
- *   1. the rail's rows come from `UBRVM_FrontEnd::GetMenuRows()`, which by that ViewModel's own
- *      contract holds the ACTIVE tab's rows only;
- *   2. the two per-tab canvas deltas live in `TabLayouts` (empty today -- see BRFrontEnd above);
- *   3. `ContentSlot` takes an optional per-tab widget for a centre region that genuinely differs.
- * Nothing in that list is a subclass, and adding a tab is a data row, not a screen.
+ * the rail's rows come from `UBRVM_FrontEnd::GetMenuRows()`, which by that ViewModel's own
+ * contract holds the ACTIVE tab's rows only. Nothing else swaps — the three measured frames share
+ * their geometry and their centre column exactly (the per-tab delta machinery that once lived
+ * here was cut for having no data; see the header comment above). Adding a tab is a data row,
+ * not a screen.
  *
  * WHAT THIS SCREEN DOES NOT OWN
  * -----------------------------
@@ -248,27 +169,24 @@ protected:
 
 	void ApplyFocus();
 	void ApplyFeatureCard();
-	void ApplyTabLayout(int32 TabIndex);
-	void ApplyContentWidget(int32 TabIndex);
 	void ApplyEmptyState();
 
 	/** Everything above, in the one order that is correct. Called on activation and on any change. */
 	void RefreshAll();
 
 	// -------------------------------------------------------------------------------------------
-	// BindWidget contract for `WBP_Screen_FrontEnd`. Figma instance -> UMG name:
-	//   `Navigation Bar` (33,45) 666x30      -> NavBar
-	//   `Menu Combo`     (69,138) 349x510    -> LeftRail
-	//   `Party List`     (862,397) 349x273   -> PartyList
-	//   `Progression Button` (869,55) 334x115-> ProgressionButton
-	//   the centre content region             -> ContentSlot
-	//   (Background, Player, Profile Bar and Button Prompts are intentionally NOT bound -- see the
-	//    class comment. Author them in the WBP / root layout and leave C++ out of them.)
+	// BindWidget contract for `WBP_Screen_FrontEnd` (`MCP-BUILD-PLANS.md` Sec C2 is the tree):
+	//   `Navigation Bar` 666x30 (header band)   -> NavBar
+	//   `Menu Combo`     349x510 (column 1)     -> LeftRail
+	//   `Party List`     349x273 (column 3)     -> PartyList
+	//   `Progression Button` 334x115 (column 3) -> ProgressionButton
+	//   (Background, Player, Profile Bar, Button Prompts and column 2 are intentionally NOT
+	//    bound -- the scene reads through column 2, chrome lives in the root layout, and C++ has
+	//    nothing to say to any of them.)
 	//
-	// LAYOUT CONTRACT: `ProgressionButton` and `PartyList` must be direct children of the screen's
-	// ROOT CanvasPanel, because `ApplyTabLayout` writes their canvas-slot y in SCREEN-LOCAL design
-	// coordinates. `PartyList` keeps its RIGHT anchor (that is what makes ultrawide correct for
-	// free) -- C++ writes only y and preserves whatever x the anchor produced.
+	// NO LAYOUT CONTRACT. The old requirement that PartyList and ProgressionButton sit in a root
+	// CanvasPanel died with ApplyTabLayout (CPP-AUDIT PKT-C): position is the WBP's band-and-
+	// column structure now, and this screen never writes a slot.
 	// -------------------------------------------------------------------------------------------
 
 	/** Required: without it there is no tab spine, and this screen IS the tab spine. */
@@ -287,15 +205,14 @@ protected:
 	TObjectPtr<UBRRosterPanel> PartyList;
 
 	/**
-	 * Bound as a bare `UWidget` because no `UBRProgressionButton` component exists -- 334 x 115 is
-	 * measured and unimplemented (contract_gap, components lane). This screen only ever MOVES it.
+	 * The 334x115 rank/record panel — a second WBP of the SAME class as the feature card
+	 * (`MAIN-MENU-INVENTORY.md` Sec 4.2): a clickable ground + image + caption is exactly its
+	 * shape, and the retype is what makes it gamepad-focusable at all. This screen still drives
+	 * no geometry on it; once `UBRVM_Player` carries rank data, `SetCaptionText`/`SetFeatureImage`
+	 * are already there to receive it.
 	 */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Breachpoint|UI")
-	TObjectPtr<UWidget> ProgressionButton;
-
-	/** The swappable centre region. Empty on every measured tab; see `FBRFrontEndTabLayout`. */
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Breachpoint|UI")
-	TObjectPtr<UPanelWidget> ContentSlot;
+	TObjectPtr<UBRFeatureCard> ProgressionButton;
 
 	/** Says which KIND of nothing this is: never-told versus told-and-empty. Two different facts. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Breachpoint|UI")
@@ -316,10 +233,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Breachpoint|UI")
 	TSoftClassPtr<UBRMenuRow> MenuRowWidgetClass;
 
-	/** Per-tab deltas, indexed by tab index. EMPTY by default, and that is the verified state. */
-	UPROPERTY(EditDefaultsOnly, Category = "Breachpoint|UI")
-	TArray<FBRFrontEndTabLayout> TabLayouts;
-
 private:
 	/** Weak: neither this screen nor the ViewModel owns the other. */
 	TWeakObjectPtr<UBRVM_FrontEnd> BoundViewModel;
@@ -330,10 +243,6 @@ private:
 	/** No per-tab widget churn: rows are claimed and released, never created per tab change. */
 	UPROPERTY(Transient)
 	FUserWidgetPool MenuRowPool;
-
-	/** Created once per tab and kept, so switching back and forth does not churn widgets. */
-	UPROPERTY(Transient)
-	TMap<int32, TObjectPtr<UUserWidget>> ContentWidgets;
 
 	UPROPERTY(Transient)
 	TSubclassOf<UBRMenuRow> ResolvedMenuRowClass;
