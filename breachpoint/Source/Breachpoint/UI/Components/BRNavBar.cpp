@@ -3,6 +3,7 @@
 #include "Breachpoint.h"
 #include "CommonTextBlock.h"
 #include "Components/Image.h"
+#include "Components/HorizontalBoxSlot.h"
 #include "Components/PanelWidget.h"
 #include "Components/SizeBox.h"
 #include "Engine/Texture2D.h"
@@ -46,9 +47,10 @@ void UBRNavTab::NativeOnInitialized()
 		Style.FillToken = EBRUIColorToken::None;
 		Style.SideTickLength = 0.0f;
 
-		// See UBRNavTab::ActiveStrokeWeightPx -- 3px OUTSIDE is not expressible in
-		// EBRStrokeWeight, so both states draw at Emphasis (2px) and the state read is opacity.
-		Style.Weight = EBRStrokeWeight::Emphasis;
+		// EBRStrokeWeight::Focus (3px) landed with the token pass; the "not expressible" era is
+		// over. Inactive still reads as opacity 0.6 (COMPONENT-SPECS Sec 3), so the weight does
+		// not swap per state -- the active tab's 3px IS the authored difference.
+		Style.Weight = EBRStrokeWeight::Focus;
 		Border->SetHairlineStyle(Style);
 	}
 
@@ -136,7 +138,6 @@ void UBRNavBar::NativeOnInitialized()
 	}
 
 	GetOrCreateTabGroup();
-	RegisterBumperActions();
 
 	// Honest empty state on the first frame: no tab data has arrived yet, so show nothing.
 	if (Tabs.Num() == 0)
@@ -145,10 +146,31 @@ void UBRNavBar::NativeOnInitialized()
 	}
 }
 
+void UBRNavBar::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	// CPP-AUDIT D2/D3: construct/destruct is per TREE ENTRY, initialize is per OBJECT — and a
+	// popped-then-repushed screen re-enters the tree with the same object. Everything destruct
+	// tears down must therefore be rebuilt HERE, not in NativeOnInitialized:
+	//  - the tab-group delegate (RemoveAll'd below; the Transient TabGroup survives, so the
+	//    !TabGroup guard in GetOrCreateTabGroup will never re-bind it),
+	//  - the bumper action bindings (CommonUI unregisters the handles on destruct).
+	// Symptom of getting this wrong: after one pop/re-push the bar renders perfectly, every tab
+	// click is silently dropped, and LB/RB do nothing — invisible in a single-push PIE test.
+	if (TabGroup)
+	{
+		TabGroup->NativeOnSelectedButtonBaseChanged.RemoveAll(this);
+		TabGroup->NativeOnSelectedButtonBaseChanged.AddUObject(this, &UBRNavBar::HandleTabSelectionChanged);
+	}
+
+	RegisterBumperActions();
+}
+
 void UBRNavBar::NativeDestruct()
 {
-	// Bound in GetOrCreateTabGroup; unbound here so nothing outlives the widget
-	// (`ue5-ui-architecture` Sec 2: an unbound delegate surviving teardown is the crash).
+	// Bound in GetOrCreateTabGroup and re-bound in NativeConstruct; unbound here so nothing
+	// outlives this tree entry (`ue5-ui-architecture` Sec 2).
 	if (TabGroup)
 	{
 		TabGroup->NativeOnSelectedButtonBaseChanged.RemoveAll(this);
@@ -214,6 +236,16 @@ void UBRNavBar::RegisterBumperActions()
 
 void UBRNavBar::SetTabs(const TArray<FBRNavTabDefinition>& InTabs)
 {
+	// CPP-AUDIT D5: the mid-loop selection broadcast (AddWidget under selection-required) can
+	// route through the owning screen and re-enter this function while the loop below is live.
+	// A re-entrant rebuild is always a feedback loop upstream — drop it and say so.
+	if (bRebuildingTabs)
+	{
+		UE_LOG(Logbreachpoint, Warning, TEXT("UBRNavBar::SetTabs re-entered during a rebuild; dropped. The caller is echoing a selection broadcast back as a rebuild."));
+		return;
+	}
+	TGuardValue<bool> RebuildGuard(bRebuildingTabs, true);
+
 	UCommonButtonGroupBase* Group = GetOrCreateTabGroup();
 
 	Group->RemoveAll();
@@ -254,7 +286,16 @@ void UBRNavBar::SetTabs(const TArray<FBRNavTabDefinition>& InTabs)
 		Tab->SetTabLabel(Definition.Label);
 		Tab->SetTabIcon(Definition.Icon);
 
-		TabContainer->AddChild(Tab);
+		UPanelSlot* PanelSlot = TabContainer->AddChild(Tab);
+
+		// Pitch 150 on a 138 tab = 12 px gap, as slot padding on every tab after the first.
+		// The gap lives HERE because the tabs are created here — the WBP ships an empty
+		// container, so there is no authored slot for it to live in.
+		if (UHorizontalBoxSlot* BoxSlot = Cast<UHorizontalBoxSlot>(PanelSlot); BoxSlot && Tabs.Num() > 0)
+		{
+			BoxSlot->SetPadding(FMargin(TabGap, 0.0f, 0.0f, 0.0f));
+		}
+
 		Tabs.Add(Tab);
 
 		// Added to the group AFTER the container so CommonUI's selection-required rule picks the
@@ -263,6 +304,16 @@ void UBRNavBar::SetTabs(const TArray<FBRNavTabDefinition>& InTabs)
 	}
 
 	SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+
+	// The rebuild held every selection broadcast (HandleTabSelectionChanged checks the guard).
+	// Emit the ONE real resulting selection now, after the tree and Tabs agree — outside the
+	// loop, so a listener that reacts by re-entering hits the guard's early-return instead of
+	// corrupting a live rebuild.
+	const int32 SelectedIndex = Group->GetSelectedButtonIndex();
+	if (SelectedIndex != INDEX_NONE)
+	{
+		OnTabSelected.Broadcast(SelectedIndex);
+	}
 }
 
 void UBRNavBar::SetSelectedTabIndex(int32 InIndex)
@@ -300,6 +351,12 @@ void UBRNavBar::HandleSelectNextTab()
 
 void UBRNavBar::HandleTabSelectionChanged(UCommonButtonBase* SelectedButton, int32 SelectedIndex)
 {
+	// Held during a rebuild — SetTabs emits the single resulting selection itself (D5).
+	if (bRebuildingTabs)
+	{
+		return;
+	}
+
 	// The bar reports an INDEX and nothing else. It does not push a screen, does not touch
 	// replicated state and does not call an RPC -- routing is the owning screen's job through
 	// the activatable stack (CLAUDE.md law 1, `ue5-ui-architecture` Sec 1).

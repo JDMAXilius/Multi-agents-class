@@ -390,6 +390,7 @@ replace.
 | 6 | B5 | profile bar edge insets | — |
 | 7 | B5 `Status` | status font | `Data/Value` |
 | 8 | C1 `MenuRowSlot` | top inset (only L16/R22 named) | read the header first |
+| 9 | B1 bumpers | **origin ambiguity**: bar-local, the left glyph (27..54) overlaps the first tab (x39) by 15px while the right glyph sits flush — both numbers cannot be bar-local. Needs a node read, not a pick | measured 27×15 @ y7.5 |
 
 Each ticket closes its own rows **before** its build runs. A DECIDE closed by the builder
 mid-build is a measurement invented under deadline, which is how 44-vs-33 happened (§1 manifest).

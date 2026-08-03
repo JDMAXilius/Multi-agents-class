@@ -72,41 +72,16 @@ public:
 	static constexpr float TabWidth = 138.0f;
 	static constexpr float TabHeight = 26.0f;
 
-	/** COMPONENT-SPECS Sec 3: Text at (13, 5), 120 x 14, Rajdhani SemiBold 14, align LEFT, UPPER. */
-	static constexpr float TabTextOffsetX = 13.0f;
-	static constexpr float TabTextOffsetY = 5.0f;
-	static constexpr float TabTextWidth = 120.0f;
-	static constexpr float TabTextHeight = 14.0f;
-
-	/**
-	 * COMPONENT-SPECS Sec 0 / SCREEN-MANIFEST Sec 7.4: tab type is letter-spaced 15%. UMG's
-	 * Letter Spacing is 1/1000 em, so 15% is 150. RECORDED, NOT APPLIED: type comes from the
-	 * shared CommonUI text style asset (Sec 7.4 "no per-screen font forks"), and setting it from
-	 * C++ here would be exactly that fork. The number is here so the style asset can be checked.
-	 */
-	static constexpr int32 TabLetterSpacingPerMille = 150;
-	static constexpr float TabFontSizePx = 14.0f;
-
-	/** COMPONENT-SPECS Sec 3: Icon at (113, 1), 24 x 24, INSTANCE_SWAP, optional. */
-	static constexpr float TabIconOffsetX = 113.0f;
-	static constexpr float TabIconOffsetY = 1.0f;
+	/** COMPONENT-SPECS Sec 3: Icon 24 x 24, INSTANCE_SWAP, optional. */
 	static constexpr float TabIconSize = 24.0f;
 
 	/**
-	 * COMPONENT-SPECS Sec 3: border stroke align OUTSIDE, weight 3 when Active, 2 when not.
-	 *
-	 * CONTRACT GAP, do not silently round this away: `EBRStrokeWeight` has three values
-	 * (0.5 / 1 / 2) and no stroke ALIGNMENT concept, so a 3px OUTSIDE stroke is not expressible
-	 * today. `UBRHairlineBorder` therefore draws BOTH states at `Emphasis` (2px, centre-aligned)
-	 * and the active/inactive read is carried entirely by the 0.6 opacity below -- which is a
-	 * real part of the spec, not a substitute invented here. The 3.0 constant is kept so the
-	 * gap stays visible and so the fix is a one-line change when the tokens header gains the
-	 * weight and the alignment.
+	 * COMPONENT-SPECS Sec 3: weight 3 when Active. Drawn as `EBRStrokeWeight::Focus` — the 3px
+	 * token that closed the old "not expressible" gap. The measured stroke ALIGNMENT is OUTSIDE,
+	 * which the hairline leaf does not model; the 0.6 opacity below carries the state read and is
+	 * part of the spec, not a substitute. Text/icon geometry lives in COMPONENT-SPECS Sec 3 and
+	 * the WBP plan — CPP-AUDIT cut the constants that mirrored it here unread.
 	 */
-	static constexpr float ActiveStrokeWeightPx = 3.0f;
-	static constexpr float InactiveStrokeWeightPx = 2.0f;
-
-	/** COMPONENT-SPECS Sec 3: `Active=False` -> whole component opacity 0.6. */
 	static constexpr float InactiveOpacity = 0.6f;
 
 	UFUNCTION(BlueprintCallable, Category = "Breachpoint|UI")
@@ -197,46 +172,25 @@ public:
 	static constexpr float BarWidth = 666.0f;
 	static constexpr float BarHeight = 30.0f;
 
-	/** SCREEN-MANIFEST Sec 9 Q1, CLOSED 2 Aug 2026 -> x = 33. NOT 44. */
-	static constexpr float BarOriginX = 33.0f;
-	static constexpr float BarOriginY = 45.0f;
-
 	/**
-	 * The sub-level bar. SCREEN-MANIFEST Sec 6.1 and Sec 5 both quote 516 x 30 with 3 tabs, and
-	 * Sec 9 Q1 says in as many words that its ORIGIN "is a separate number and still unverified"
-	 * -- no node id exists for it anywhere in the sources. So the width is declared (it is
-	 * quoted twice and consistently) and NOTHING ELSE IS: no origin, no tab x list, no pitch.
-	 * The two candidate y values (75 and 110) live on `UBRItemTitle` where the swap that causes
-	 * them is explained. Do not add sub-level geometry here without a node read.
+	 * The sub-level bar. Width is quoted twice and consistently (516 x 30); its ORIGIN is
+	 * unverified and deliberately NOT declared -- the candidate y values live on `UBRItemTitle`
+	 * where the swap that causes them is explained. Do not add sub-level geometry without a
+	 * node read (SCREEN-MANIFEST Sec 9 Q1).
 	 */
 	static constexpr float SubLevelBarWidth = 516.0f;
-	static constexpr int32 SubLevelTabCount = 3;
 
 	/** COMPONENT-SPECS Sec 3: tabs at x = 39, 189, 339, 489 -- PITCH 150 on a 138-wide tab. */
-	static constexpr float FirstTabOffsetX = 39.0f;
 	static constexpr float TabPitch = 150.0f;
-	static constexpr float TabOffsetY = 2.0f;
 
 	/**
-	 * Pitch 150 on a 138 tab means the `TabContainer` HorizontalBox needs a 12 px inter-tab gap
-	 * (SCREEN-MANIFEST Sec 7.1: a Figma gap is slot padding, never a spacer widget). 150 - 138 = 12.
+	 * Pitch 150 on a 138 tab means a 12 px inter-tab gap. Applied by `SetTabs` as slot padding
+	 * on every tab after the first (SCREEN-MANIFEST Sec 7.1: a Figma gap is slot padding, never
+	 * a spacer widget) -- the WBP ships an EMPTY container, so the gap must live where the tabs
+	 * are created. Bumper geometry (27 x 15) and its origin ambiguity moved to
+	 * `MCP-BUILD-PLANS.md` with the rest of the WBP measurements.
 	 */
 	static constexpr float TabGap = TabPitch - UBRNavTab::TabWidth;
-
-	/**
-	 * COMPONENT-SPECS Sec 3: bumper prompts 27 x 15 at x = 27 and x = 639, y = 7.5.
-	 *
-	 * ORIGIN AMBIGUITY, recorded rather than resolved: read as bar-local, the left glyph spans
-	 * 27..54 and the first tab starts at 39, so they OVERLAP by 15 px; the right glyph spans
-	 * 639..666 and sits flush to the bar's right edge, which reads as clean bar-local. The two
-	 * numbers cannot both be bar-local without an overlap the reference does not show. The WBP
-	 * author must not silently pick one -- it needs a node read. Both numbers are kept verbatim.
-	 */
-	static constexpr float BumperWidth = 27.0f;
-	static constexpr float BumperHeight = 15.0f;
-	static constexpr float BumperLeftOffsetX = 27.0f;
-	static constexpr float BumperRightOffsetX = 639.0f;
-	static constexpr float BumperOffsetY = 7.5f;
 
 	/**
 	 * Replace the tab set. Rebuilds the entries -- called on screen setup and when the menu
@@ -270,6 +224,7 @@ public:
 protected:
 	//~ Begin UUserWidget interface
 	virtual void NativeOnInitialized() override;
+	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
 	//~ End UUserWidget interface
 
@@ -337,4 +292,13 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UCommonButtonGroupBase> TabGroup;
+
+	/**
+	 * CPP-AUDIT D5. `Group->AddWidget` under selection-required auto-selects the first tab, and
+	 * that broadcast can route through the owning screen straight back into `SetTabs` mid-loop —
+	 * which would clear `Tabs` and the container while the outer loop keeps appending orphans.
+	 * While true: re-entrant `SetTabs` calls are dropped and selection broadcasts are held; the
+	 * one real selection is broadcast once, after the rebuild completes.
+	 */
+	bool bRebuildingTabs = false;
 };

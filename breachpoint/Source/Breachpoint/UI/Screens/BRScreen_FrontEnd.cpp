@@ -316,14 +316,18 @@ void UBRScreen_FrontEnd::RebuildNavTabs()
 		}
 	}
 
+	// Guarded ACROSS SetTabs, not only across SetSelectedTabIndex (CPP-AUDIT D4): the rebuild
+	// itself emits a selection broadcast — CommonUI's selection-required rule picks tab 0 the
+	// moment it lands in the group — and unguarded, every data refresh navigated the front end
+	// to tab 0 and could recurse (broadcast → SetNavTab → FieldNotify → RefreshAll → here).
+	TGuardValue<bool> ApplyGuard(bApplyingViewModelState, true);
+
 	// Empty collapses the whole bar, by that class's contract. Before data arrives an empty 666x30
 	// outline would read as a broken screen; no bar reads as "not yet", which is the truth.
 	NavBar->SetTabs(Definitions);
 
 	if (ViewModel)
 	{
-		// Guarded: `SetSelectedTabIndex` broadcasts for programmatic selection too, by design.
-		TGuardValue<bool> ApplyGuard(bApplyingViewModelState, true);
 		NavBar->SetSelectedTabIndex(ViewModel->GetActiveNavTabIndex());
 	}
 }
@@ -583,6 +587,16 @@ void UBRScreen_FrontEnd::ApplyEmptyState()
 
 void UBRScreen_FrontEnd::RefreshAll()
 {
+	// Belt to D4's braces: a refresh that re-enters itself is tearing down row widgets while a
+	// delegate from those very widgets is on the stack. The guard above should make this
+	// unreachable; if it fires anyway, dropping the inner pass is correct — the outer pass will
+	// finish and render the same final state.
+	if (bRefreshing)
+	{
+		return;
+	}
+	TGuardValue<bool> RefreshGuard(bRefreshing, true);
+
 	const UBRVM_FrontEnd* ViewModel = BoundViewModel.Get();
 	const int32 TabIndex = ViewModel ? ViewModel->GetActiveNavTabIndex() : INDEX_NONE;
 

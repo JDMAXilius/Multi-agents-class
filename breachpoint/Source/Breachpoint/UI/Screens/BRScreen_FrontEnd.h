@@ -344,4 +344,7 @@ private:
 	 * the ViewModel's active tab would echo straight back out as a tab-change REQUEST and loop.
 	 */
 	bool bApplyingViewModelState = false;
+
+	/** Re-entry breaker on `RefreshAll` — see the comment at its definition (CPP-AUDIT D4). */
+	bool bRefreshing = false;
 };
