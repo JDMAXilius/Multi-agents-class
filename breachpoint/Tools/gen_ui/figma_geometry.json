@@ -1,0 +1,97 @@
+{
+  "_doc": "Measured Figma geometry — the ONLY thing that lawfully crosses from design to code.",
+  "_law": "ui-presentation §8. CROSSES: layout, position, size, spacing, hierarchy, state treatment, colour token NAMES, motion timing. DOES NOT CROSS: art, and every value the sim reads. UI-REFERENCE.md: 'Art: original, always.' Breachpoint ships on Steam; 343/Microsoft art is reference only and lives in Content/Reference/, which is gitignored and in DirectoriesToNeverCook.",
+
+  "_source": {
+    "file_key": "Kn87U5sy2VD0lP8K7h4LcQ",
+    "file_name": "Halo Infinite UI Rework (Community)",
+    "role": "THE MEASURED SOURCE. Per UI-REFERENCE.md the front end follows this file's LAYOUT SYSTEM. Geometry is matched 1:1; art is drawn fresh.",
+    "read_via": "Figma MCP get_metadata, live node read",
+    "read_on": "2026-08-02",
+    "root_node": "1:2 (frame 'Play', 1280x720)"
+  },
+
+  "_provenance_warning": "SCREEN-MANIFEST.md §4 and COMPONENT-SPECS.md cite these node ids under a heading naming the BREACHPOINT file (yznvnVdOFDADaugZSeomfP) as the target. THE IDS ARE NOT IN THAT FILE. Verified 2 Aug 2026: get_metadata('yznvnVdO...', '1:2') returns 'node ID was not found'; the same id against Kn87U5s... returns the Play frame. Anyone re-measuring must use the file_key above. Filed as a docs correction.",
+
+  "canvas": { "width": 1280, "height": 720, "dpi_scale_at_1080p": 1.5 },
+
+  "grid": {
+    "_node": "1769:23122 'Grid - 3 Collumn' / 1769:23466 'Grid - 4 Collumn'",
+    "origin": { "x": 69, "y": 38 },
+    "content_width": 1143,
+    "content_height": 570,
+    "side_margin": 69,
+    "gutter": 48,
+    "columns_3": { "width": 349, "origins_relative": [0, 397, 794], "origins_absolute": [69, 466, 863] },
+    "columns_4": { "width": 249.75, "origins_relative": [0, 297.75, 595.5, 893.25] },
+    "_note": "The 48px gutter is identical in both layouts, which is what makes them interchangeable. Keep it."
+  },
+
+  "components": {
+    "UBRNavBar": {
+      "_node": "124:1179 'Navigation Bar'",
+      "x": 33, "y": 45, "width": 666, "height": 30,
+      "_resolves": "SCREEN-MANIFEST §9 open question #1: x=33 (COMPONENT-SPECS) vs x=44 (SCREEN-BUILD-SPEC). LIVE NODE SAYS 33. Eighteen screens inherit this, so it mattered."
+    },
+    "UBRLeftRail": {
+      "_node": "2382:32507 'Menu Combo'",
+      "x": 69, "y": 138, "width": 349, "height": 510,
+      "children": {
+        "feature_card": { "_node": "0:933 'News Button'", "x": 0, "y": 0, "width": 349, "height": 222 },
+        "menu_in_border": { "_node": "0:1028", "x": 0, "y": 232, "width": 349, "height": 186 },
+        "menu_row_slot": { "_node": "0:1183 'Contents'", "x": 16, "y": 16, "width": 311, "height": 148 },
+        "description_frame": { "_node": "0:1245 'Decription Frame'", "x": 0, "y": 473, "width": 349, "height": 37 },
+        "selection_caret": {
+          "_node": "0:1182 'Rectangle 278'", "x": -4, "y": 58, "width": 3, "height": 65,
+          "_note": "Rail-hugging at x=-4. Its authored y encodes the focus index."
+        },
+        "reveal_notches": {
+          "_nodes": "0:1180 / 0:1181 'Rectangle 258/259'",
+          "width": 88, "height": 4.727,
+          "_note": "88x4.7 chamfers subtracted from the panel border. The open/close wipe ORIGINATES here — that is why the panel unzips rather than fades."
+        }
+      }
+    },
+    "UBRMenuRow": {
+      "_node": "0:1184 'Text Button 1' (and siblings at pitch 40)",
+      "width_in_rail": 311, "width_standalone": 349, "height": 28, "pitch": 40,
+      "_note": "311 inside the rail's 16px inset; 349 standalone. Gap between rows is 12."
+    },
+    "UBRRosterPanel": {
+      "_node": "527:3515 'Party List'",
+      "x": 862, "y": 397, "width": 349, "height": 273,
+      "children": {
+        "header": { "_node": "0:671 'Roster Group Header'", "x": 16, "y": 16, "width": 317, "height": 31 },
+        "row": { "_node": "0:687 first row", "x": 16, "y": 52, "width": 317, "height": 30, "pitch": 35 }
+      },
+      "_note": "x=862 vs column-3 origin 863 — a 1px authoring drift, not a second grid. Anchor RIGHT: 862+349 = 1211 = 69 from the right edge."
+    },
+    "UBRProgressionButton": {
+      "_node": "1680:27482 'Progression Button'",
+      "x": 869, "y": 55, "width": 334, "height": 115
+    },
+    "UBRProfileBar": {
+      "_node": "119:1525 'Profile Bar'",
+      "x": 0, "y": 670, "width": 1280, "height": 50,
+      "_note": "Screen invariant. The bottom 50 is always reserved."
+    },
+    "UBRButtonPrompt": {
+      "_node": "119:1491 'Button Prompts'",
+      "x": 60, "y": 685, "width": 62, "height": 20,
+      "_note": "Width tracks prompt count (58/62 for 1, 133/146 for 2, 253 for 3) so it MUST be auto-layout hug, never fixed."
+    }
+  },
+
+  "subject": {
+    "_node": "2397:29312 'Player'",
+    "x": 480, "y": 118, "width": 320, "height": 602,
+    "_note": "The 3D subject box. Column 2 spans 466-815, so the subject sits INSIDE column 2. NO WIDGET may anchor into 466-815 at the 1280 base — that band is the camera (ui-presentation §1)."
+  },
+
+  "_not_transferred": {
+    "art": "815 visible image fills across 14 families, inventoried in ART-PASS-STAGE-2.md as Halo-owned. Stage 4 (produce original art) NOT STARTED; stage 5 (swap into Figma) gated on 4; stage 6 (export to UE) gated on 5. Nothing raster crosses until stage 5 completes per family.",
+    "weapon_glyphs": "e.g. node 78:6 'SET Weapon / Magnum' in the Breachpoint file. Weapon icons are RENDERED FROM OUR OWN MESHES per WEAPON-RENDER-PLAN.md and BP25 — never exported from the reference.",
+    "typeface": "Rajdhani + Roboto Condensed are OFL and ARE ours to ship. They are the same substitution the reference file itself makes. Not yet imported: Content/UI/Fonts/ is empty.",
+    "strings": "1,561 Halo occurrences, ~130-term mapping table in ART-PASS-STAGE-3.md. Six founder decisions (N1-N6) gate 47% of them."
+  }
+}
