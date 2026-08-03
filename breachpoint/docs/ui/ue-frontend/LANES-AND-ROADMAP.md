@@ -85,12 +85,27 @@ real numbers. The menu is that plus twelve assets. Everything else is behind BP2
 
 ## 5. Ticket index for this pass
 
-| Ticket | Lane | One line |
-|---|---|---|
-| **BP71** | engine-installed | Compile the eight packets and run the ladder. **The gate.** |
-| **BP72** | editor-live | `--verify`, rebuild at digest, build the 12 menu WBPs. |
-| **BP73** | figma-mcp | Close the 9-value DECIDE ledger by reading the reference nodes. **DONE 3 Aug — 9/9 closed, every one node-cited. Left four escalations: E1 `ImageHeight` is sized to a hidden layer (BP71), E2 the nav-bar bumper overlap (FOUNDER), E3 three off-system fonts (style sweep), E4 the feature-card scrim material (art).** |
-| **BP74** | files-only + BP71 | The six producer contract gaps the HUD director filed. |
+| Ticket | Lane | State | One line |
+|---|---|---|---|
+| **BP73** | figma-mcp | ✅ **DONE 3 Aug** | The 9-value DECIDE ledger — 9/9 closed, every one node-cited. Left E1–E4 (below). |
+| **BP66** | files-only | ✅ **C++ done** | Killfeed BindWidget contract landed in HUD-C (`20a9b24`). **Asset build still owed by BP72, compile by BP71.** |
+| **BP70** | editor-live | ◑ **partly landed** | D3's C++ fix landed; D1 is BP72 step 1; D2 blocked on `T_UI_Weapon_Unknown`; **3 FOUNDER DECIDEs open.** |
+| **BP67** | figma-mcp | ○ **open — lane is live** | The ~83-id provenance sweep. BP73 bucketed ~75 ids `REF` incidentally, but **ran only the reference half**, so nothing is fully bucketed. The one remaining ticket a cloud container can actually work. |
+| **BP71** | engine-installed | ○ open | Compile the eight packets and run the ladder. **The gate — blocks BP72 and BP74's verify.** |
+| **BP72** | editor-live | ○ open, gated by BP71 | `--verify` FIRST, rebuild at digest, build the 12 menu WBPs. |
+| **BP74** | files-only + BP71 | ○ open | The six producer contract gaps the HUD director filed. Gameplay-adjacent — **wants the critic, not a UI free hand.** |
 
-**Closed by this pass:** BP66 (killfeed BindWidget contract — landed in HUD-C).
-**Amended:** BP70 (all three defects re-judged; two of its prescriptions were wrong).
+**BP73's four escalations, none of them BP73's to fix:**
+
+| # | What | Owner |
+|---|---|---|
+| E1 | `ImageHeight = 196.7f` sizes to a **hidden** layer (`BRFeatureCard.cpp:28`, `BRMenuRow.cpp:75`) | BP71 |
+| E2 | The nav-bar bumper overlaps the first tab by 15px in the source; an `HBox` cannot express it | **FOUNDER** |
+| E3 | Three measured fonts are absent from `figma_tokens.json` | style sweep |
+| E4 | The feature card's gradient scrim needs a material | art pass |
+
+**Not touched by this pass, still open, still theirs:** BP60–BP65 (the six `contract_gap`s BP26
+filed), BP21–BP25 (the five HUD feed gaps), BP68, BP69.
+
+**What a cloud container can do next:** BP67 only. BP71 needs a toolchain, BP72 needs the editor,
+BP74 wants the critic on replicated state. Everything else on this board is waiting on a machine.

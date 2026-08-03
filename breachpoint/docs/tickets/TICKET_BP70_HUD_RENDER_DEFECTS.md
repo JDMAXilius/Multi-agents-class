@@ -1,8 +1,19 @@
 # TICKET — BP70: Three HUD render defects, found in a founder screenshot
 
-> STATUS: open — cut 3 Aug 2026 from a founder-supplied render of `WBP_HUDLayout` in PIE.
-> **Editor/MCP lane.** All three are visible in one frame; none was caught by a static check,
-> which is itself the finding.
+> STATUS: **open — partially landed, 3 Aug 2026.** Cut from a founder-supplied render of
+> `WBP_HUDLayout` in PIE. **Editor/MCP lane.** All three are visible in one frame; none was caught
+> by a static check, which is itself the finding.
+>
+> **Where each defect stands after the HUD audit (see the Log — two of this ticket's own
+> prescriptions were wrong):**
+> - **D1** — the `--verify` gate landed (`0118b2e`); **running it is BP72 step 1**, and that run
+>   is the only chance to read the pre-existing assets before a rebuild overwrites the evidence.
+> - **D2** — reclassified: not produced by the current plan. Interim fix landed (killfeed
+>   `WeaponIcon` ships Collapsed); the real fix is **blocked on `T_UI_Weapon_Unknown`**, art pass.
+> - **D3** — **C++ FIX LANDED** in `BRProgressBar.cpp` (visibility moved onto the widget, not two
+>   named children). Unverified: needs BP71 to compile and BP72 to render.
+> - **Three FOUNDER DECIDEs still open** — D3's gate predicate, the killfeed corner, the tray
+>   split. All three are cheap to reverse after BP72 renders; none should be guessed before.
 
 Founder directive: the HUD render is structurally correct — motion tracker bottom-left with the
 `20 m / CANAL` callout, match state bottom-centre, reticle and damage arc centred, `42 m`

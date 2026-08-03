@@ -3,6 +3,12 @@
 > STATUS: open — cut by builder (front-end provenance pass) 2 Aug 2026. Needs a session with the
 > **Figma MCP available** (`get_metadata`, read-only). The three docs' *headers* are corrected;
 > the **per-id sweep is not done** and is this ticket's job.
+>
+> **3 Aug 2026: the MCP gate is now satisfiable — BP73 ran the tool live in a cloud container.**
+> BP73's reads bucketed ~75 ids as `REF` incidentally (Log entry 2), and turned up a **second
+> provenance trap this ticket did not know about**: most of those ids resolve *only* as children
+> of a parent dump, never standalone. **The working-file half was not run for any of them, so no
+> id is fully bucketed. Step 1 is still open.**
 
 The repo records ~83 Figma node ids across the front-end docs and, until today, attributed all of
 them to Breachpoint's own working file. They are not in it. `1:2` — the `Play` frame every grid
@@ -139,3 +145,51 @@ Changed today (headers only, no measurement touched, no id renumbered):
 Open question count in `SCREEN-MANIFEST.md` §9: **13**, not 14 (#1 closed). The section heading
 still says 14 — left alone deliberately as a numbering change nobody asked for; fold it into the
 next edit of that section.
+
+---
+
+**3 Aug 2026 — BP73 (figma-mcp, cloud session). Incidental evidence, NOT a claim on step 1.**
+
+BP73 closed the DECIDE ledger against the reference file and, in doing so, resolved a large
+slice of this ticket's id set. Recording it here so the sweep starts from evidence rather than
+from zero — but read the caveat before counting anything as bucketed.
+
+**What resolved standalone in `Kn87U5sy2VD0lP8K7h4LcQ` (REF-half only):**
+
+| Node | Name | Geometry |
+|---|---|---|
+| `1:2` | `Play` | 1280×720 — full child dump obtained |
+| `124:1179` | `Navigation Bar` | (33,45) 666×30 — reconfirms probe 3 |
+| `119:1491` | `Button Prompts` | (60,685) 62×20 |
+| `119:1525` | `Profile Bar` | (0,670) 1280×50 |
+| `527:3515` | `Party List` | (862,397) 349×273 |
+| `2382:32507` | `Menu Combo` | (69,138) 349×510 |
+| `927:43283` | `RS_Friends` | screen frame; hosts `927:43301` `Roster Group Header` |
+| `1769:23147` | `News Button` | 349×222 — see the tool caveat below |
+
+The `1:2` dump additionally returned ~65 descendants with full geometry (the `0:xxx` family,
+`1769:23122`–`23152`, `2377:33159`–`33171`, `1022:134xx`, `109:97x`, `1680:2xxxx`, `98:763`,
+`82:1021`, `2397:29312`, `1583:18793`, `2162:29143`, `8:0`).
+
+**THE CAVEAT, and it is the important part.** Those descendants are **instance-internal ids that
+do not resolve standalone.** Queried alone, `0:671` returned a *different* node entirely — a
+222×14 text layer "Example Description" — rather than the `Roster Group Header` it is inside
+`527:3515`. `I527:3515;0:671` returned "node ID was not found". So this ticket's thesis needs a
+second clause:
+
+> An id without its file key is a coincidence. **An instance-internal id without its file key
+> AND its parent is a different node that happens to answer.** The first kind fails loudly; the
+> second kind fails silently, with plausible geometry attached, which is worse.
+
+Anything in the three docs citing a bare `0:xxx` is therefore **unverifiable as written**, even
+against the correct file. The sweep must record the parent alongside those ids, or bucketing them
+proves nothing.
+
+**Second tool finding:** `get_metadata` on `1769:23147` returned a collapsed instance with no
+children; `get_design_context` on the **same id** returned the full tree. A collapsed
+`get_metadata` result is not evidence that a node is empty — do not bucket on it.
+
+**What this entry does NOT do:** it does not run the working-file half. Not one id above was
+probed against `yznvnVdOFDADaugZSeomfP`, so none has a bucket — `REF`-resolving says nothing
+about whether a clone also exists in the working file, and `BOTH` is a real bucket this ticket
+defined. Step 1 remains open and its Done-when box stays unticked.
