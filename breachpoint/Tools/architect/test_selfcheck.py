@@ -109,6 +109,17 @@ CASES = [
     ("§3's shape changed entirely",
      lambda t: re.sub(r"^### 3\.\d+ ", "### X ", t, flags=re.M), True,
      "no section header parses -- the scanner must fail loudly rather than report zero units"),
+    # BP60: the budget moved out of Python and into §4. Both cases below guard the NEW branch --
+    # without them, a later edit could delete the row or desync it and nothing would notice.
+    ("§4's total-budget row deleted",
+     lambda t: re.sub(r"^\| \*\*Total budget\*\* \| \*\*\d+\*\* \|.*$", "", t, flags=re.M), True,
+     "the budget comes from the doc now, so an ABSENT row must FAIL -- a check that disables "
+     "itself when the doc stops stating the number is the desync it exists to catch"),
+    ("§3.9 declares one more, §4's total left behind",
+     lambda t: t.replace("### 3.9 `UI/` — 4", "### 3.9 `UI/` — 5")
+                .replace("`BRHUDLayout.h/.cpp`", "`BRRootLayout.h/.cpp` · `BRHUDLayout.h/.cpp`"), True,
+     "BP60's exact failure mode: a unit declared in §3 without §4's total following it -- the "
+     "half-edit that the old hard-coded 43/44 could never distinguish from a correct one"),
 ]
 
 

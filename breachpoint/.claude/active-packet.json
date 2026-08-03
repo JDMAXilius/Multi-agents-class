@@ -1,8 +1,15 @@
 {
-  "ticket": "UI-WBP-GENERATE-HUD",
-  "owner_path": ["Content/UI/", "docs/ui/receipts/", "Tools/gen_ui/wbp_plan.py", "Tools/gen_ui/build_wbp.py"],
-  "goal": "Generate the 10 HUD/layout WBPs from the committed plan into feature-first folders and verify each against its C++ BindWidget contract.",
+  "ticket": "BP60_ARCHITECT_BUDGET + BP61_UI_UNITS_UNDECLARED (window claim over UI-FONT-PASS-AND-PIE)",
+  "owner_path": [
+    "Content/UI/",
+    "docs/ui/receipts/",
+    "Tools/gen_ui/",
+    "Tools/architect/",
+    "BREACHPOINT-ARCHITECTURE.md",
+    "docs/DECISIONS-OWED.md"
+  ],
+  "goal": "BP60: parse the budget from the doc instead of hard-coding 43/44, and rule on nesting depth. BP61: declare BRRootLayout + BRUISettings, exclude BRUITypes + BRCombatCurves by name.",
   "driver": "lead (sole editor driver, R29.2)",
   "claimed_utc": "2026-08-03",
-  "amended": "Widened from the original two paths: the generator's own plan and executor are part of this packet's work and my first claim was scoped too narrowly. This is amending MY OWN live claim with no other packet running - not taking over a sibling's."
+  "amended": "R31 additive union, read-modify-write. The first three paths are UI-FONT-PASS-AND-PIE's and are carried forward UNCHANGED - that packet's font pass landed in 271c7af but its PIE-capture half was never run, so its lane stays open and must not be confined out from under it. Added Tools/architect/ (BP60) plus two EXACT-FILE grants for BP61 rather than a docs/ prefix, because docs/ would admit docs/contracts/ (BP16's) and docs/ui/ (the UI lane's). R31's own warning applies to this file: a union weakens confinement to zero inside the union, so three lanes now share one window and only discipline separates them."
 }

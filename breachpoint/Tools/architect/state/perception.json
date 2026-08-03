@@ -8,7 +8,7 @@
     "total": 44
   },
   "exclusions": {
-    "ge_classes": 7,
+    "ge_classes": 8,
     "ge_header": "Source/Breachpoint/AbilitySystem/Effects/BRGameplayEffects.h",
     "phase2": [
       "BRGameLiftLifecycle"
@@ -20,8 +20,8 @@
   },
   "tally": {
     "BUILT": 40,
-    "STUB": 0,
-    "MISSING": 4
+    "STUB": 1,
+    "MISSING": 3
   },
   "readiness_tally": {
     "ready": 8,
@@ -32,9 +32,9 @@
     "tags": "Source/Breachpoint/Core/BRGameplayTags.cpp",
     "rows": "Source/Breachpoint/Data/BRDataRows.h",
     "columns": "Content/Data/*.csv",
-    "declared_tags": 37,
+    "declared_tags": 46,
     "declared_row_structs": 7,
-    "declared_columns": 55
+    "declared_columns": 58
   },
   "units": [
     {
@@ -52,7 +52,7 @@
     {
       "unit": "BRCore",
       "folder": "Core",
-      "state": "BUILT",
+      "state": "STUB",
       "form": "both",
       "ticket": "BP01",
       "tier": "slice",
@@ -187,7 +187,7 @@
     {
       "unit": "BRGA_Grenade",
       "folder": "AbilitySystem",
-      "state": "MISSING",
+      "state": "BUILT",
       "form": "both",
       "ticket": "BP05",
       "tier": "slice",
@@ -606,12 +606,57 @@
   ],
   "undeclared": {
     "AbilitySystem": [
-      "BRCombatCurves"
+      "BRCombatCurves",
+      "BRGA_Jump",
+      "BRGameplayCues"
+    ],
+    "Camera": [
+      "BRPlayerCameraManager"
     ],
     "UI": [
+      "BRAmmoBlock",
+      "BRButtonPrompt",
+      "BRButtonStyles",
+      "BRComponentTokens",
+      "BREquipmentTray",
+      "BRFeatureCard",
+      "BRGearDetail",
+      "BRHUDDirector",
+      "BRHairlineBorder",
+      "BRHighlightButton",
+      "BRItemGrid",
+      "BRItemTile",
+      "BRKillfeed",
+      "BRLeftRail",
+      "BRMatchBand",
+      "BRMenuRow",
+      "BRModal_Options",
+      "BRModal_Warning",
+      "BRNavBar",
+      "BRPageTitle",
+      "BRPanel",
+      "BRPanel_Toast",
+      "BRProgressBar",
+      "BRReticleWidget",
       "BRRootLayout",
+      "BRRosterPanel",
+      "BRScreen_DeathRespawn",
+      "BRScreen_FrontEnd",
+      "BRScreen_Scoreboard",
+      "BRScrim",
+      "BRScrollBar",
+      "BRTableRow",
+      "BRTextStyles",
       "BRUISettings",
-      "BRUITypes"
+      "BRUITokens",
+      "BRUITypes",
+      "BRVM_FrontEnd",
+      "BRVM_Player",
+      "BRVitalsWidget"
+    ],
+    "Weapons": [
+      "BRExplosion",
+      "BRProjectile"
     ]
   }
 }

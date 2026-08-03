@@ -47,7 +47,13 @@ BLACKBOARD_DIR = HERE / "blackboard"
 # never files. `GE_CLASS_COUNT_EXPECTED` is asserted against the header at scan time so this
 # number cannot drift again without the run failing loudly.
 GE_HEADER = SRC / "AbilitySystem" / "Effects" / "BRGameplayEffects.h"
-GE_CLASS_COUNT_EXPECTED = 7
+# 8 since BP05's `UBRGE_GrenadeCost` (BRGameplayEffects.h, commit 40af3b5, 1 Aug 2026). The
+# constant was not bumped with it, so `--all` has exited 2 on this line ever since and
+# test_selfcheck's CONTROL case ("faithful copy must PASS") has been red -- the suite was
+# reporting a failure of the tree, not of itself. BREACHPOINT-ARCHITECTURE.md still says
+# "seven" in §3.3's library paragraph and §4's exclusion 1; that doc is BP61's owner_path, so
+# BP60 bumps the code and files a contract_gap rather than reaching across.
+GE_CLASS_COUNT_EXPECTED = 8
 
 # Phase-2 reserved: expected MISSING for the entire slice, and must rank LAST. A perpetually
 # missing unit that scored high would be selected to build, inverting the ledger's intent.
@@ -137,6 +143,28 @@ SECTION_RE = re.compile(r"^### 3\.(\d+)\s+`([A-Za-z]+)/`\s+—\s+(\d+)", re.M)
 # prose mention) and `FSavedMove_BR` are correctly NOT matched -- the extension is what
 # distinguishes a declaration from a reference.
 UNIT_RE = re.compile(r"`((?:[A-Za-z]+/)?BR[A-Za-z0-9_]+)\.(h/\.cpp|h|cpp)`")
+
+# §4's `| **Total budget** | **N** |` row -- the ONE number the doc states about its own size.
+BUDGET_RE = re.compile(r"^\|\s*\*\*Total budget\*\*\s*\|\s*\*\*(\d+)\*\*\s*\|", re.M)
+
+
+def stated_budget():
+    """Read §4's stated total instead of hard-coding it.
+
+    The 43/44 literals that used to sit in scan() made *declaring a unit* a CODE change:
+    edit the doc, and the scanner failed until someone edited Python to agree. That is
+    backwards for a tool whose whole premise is "§3 IS the manifest, parse it, do not infer
+    it", and it is the whole of BP60.
+
+    An ABSENT row is a FAILURE, never a pass. A check that quietly disables itself the
+    moment the doc stops stating the number is the desync it exists to catch, wearing a hat.
+    """
+    m = BUDGET_RE.search(ARCH.read_text(encoding="utf-8"))
+    if not m:
+        log("\nSELF-CHECK FAILED: §4 states no `| **Total budget** | **N** |` row. The budget "
+            "comes from the doc now; an absent row is a failure and never a free pass.")
+        sys.exit(2)
+    return int(m.group(1))
 
 
 def parse_manifest():
@@ -466,9 +494,13 @@ def scan():
         for folder, dec, got, units in failures:
             log(f"  {folder}/: header says {dec}, its own table declares {got} -> {units}")
         sys.exit(2)
-    if total_declared != 43 or budget != 44:
-        log(f"\nSELF-CHECK FAILED: expected 43 in-slice + 1 reserved = 44, got "
-            f"{total_declared} + {len(PHASE2_UNITS)} = {budget}.")
+    stated = stated_budget()
+    log(f"  §4 states ................. {stated}")
+    if budget != stated:
+        log(f"\nSELF-CHECK FAILED: §3's folders sum to {total_declared} + {len(PHASE2_UNITS)} "
+            f"reserved = {budget}, but §4's composition table states {stated}. The doc "
+            f"disagrees with itself -- declaring a unit means editing §3's header AND §4's "
+            f"total, and this is the check that says so.")
         sys.exit(2)
     log("  SELF-CHECK PASSED -- §3 is internally consistent and reaches §4's budget.")
 
