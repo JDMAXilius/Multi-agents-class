@@ -119,7 +119,12 @@ EXPECTED_EXACT = {
     "HUD_MotionTracker":           (136, 152),
     "HUD_Reticle_AR":              (43, 43),
     "HUD_Reticle_BR":              (43, 43),
-    "HUD_Reticle_HitMarkers":      (43, 43),
+    "HUD_Reticle_EnemyState":      (43, 43),   # renamed: it is the ENEMY-STATE reticle,
+                                           # not a hit-marker set. Six paths, all #FF4A3D
+                                           # (visr/enemy), id "SET Reticle / Enemy State".
+                                           # I reported "4 sub-assets = 4 states"; those
+                                           # are the 4 arcs of ONE state. No shield-vs-flesh
+                                           # hit-marker art exists anywhere in the file.
     "HUD_Reticle_Magnum":          (36, 36),   # tightest - the most accurate weapon
     "HUD_Reticle_Shotgun":         (52, 52),
     "HUD_Reticle_Sniper":          (58, 58),   # widest, and it is 5 rects, not paths
