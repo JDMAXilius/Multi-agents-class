@@ -185,9 +185,14 @@ def build_one(m: MCP, rc: Receipt, asset: str, spec: dict) -> bool:
     else:
         rc.w("- `AssetTools.exists` → absent; creating fresh")
 
-    # (2) create.  UNVERIFIED — arg names inferred from UMGToolSet.CreateWidgetBlueprint.
+    # (2) create.  VERIFIED against the live schema, 3 Aug 2026 — and the inferred names
+    # were wrong in BOTH directions: camelCase `folderPath`/`assetName` (guessed from
+    # UMGToolSet.CreateWidgetBlueprint) are actually snake_case, and `material_function`
+    # is REQUIRED even though its only sensible value here is null. This server names one
+    # missing required param per attempt, so each wrong guess costs a full round trip.
     res, txt = m.call(MAT, T["create_material"],
-                      {"folderPath": folder, "assetName": asset})
+                      {"folder_path": folder, "asset_name": asset,
+                       "material_function": None})
     rc.call(f"MaterialTools.{T['create_material']} (UNVERIFIED)", res is not None, txt[:200])
     if res is None:
         return False
@@ -212,10 +217,13 @@ def build_one(m: MCP, rc: Receipt, asset: str, spec: dict) -> bool:
     for i, (name, node) in enumerate(spec["graph"].items()):
         # UNVERIFIED. `nodePos` is passed because MCP schemas want EVERY property present;
         # the layout is a readability nicety for whoever opens the graph, nothing more.
+        # VERIFIED schema: add_expression(material_or_function, expression_class, x, y).
+        # x/y are FLAT INTEGERS, not a nodePos struct - the guessed camelCase names were
+        # wrong on all three counts.
         info, txt = m.call(MAT, T["create_expression"], {
-            "material": mat,
-            "expressionClass": {"refPath": f"/Script/Engine.{node['type']}"},
-            "nodePos": {"x": -1600 + 260 * (i % 6), "y": -400 + 130 * (i // 6)},
+            "material_or_function": mat,
+            "expression_class": {"refPath": f"/Script/Engine.{node['type']}"},
+            "x": -1600 + 260 * (i % 6), "y": -400 + 130 * (i // 6),
         })
         ok = info is not None
         rc.call(f"create {name} ({node['type'][len('MaterialExpression'):]}) UNVERIFIED",
@@ -235,12 +243,27 @@ def build_one(m: MCP, rc: Receipt, asset: str, spec: dict) -> bool:
     # so only the DESTINATION pin name is a guess. UNVERIFIED.
     for name, node in spec["graph"].items():
         for pin, src in node["inputs"].items():
+            # An input may name its SOURCE PIN: ("Color", "A") reads the alpha output.
+            src, src_out = src if isinstance(src, tuple) else (src, "")
+            # VERIFIED: connect_expressions(from_expression, from_output_name,
+            # to_expression, to_input_name). It takes NO material - the expressions
+            # already know which material they belong to.
+            # VERIFIED, and the plan's pin names were wrong for single-input nodes.
+            # get_expression_input_names on a ComponentMask returns ['None'] - UE's
+            # UNNAMED input, not a pin literally called "Input". Ask the node what its
+            # pins are called and fall back to the unnamed one rather than guessing:
+            # a wrong pin name is a silent no-wire, and the compile only says
+            # "unconnected input" without naming which guess was wrong.
+            to_ref = handles[name].get("expression", handles[name])
+            names, _ = m.call(MAT, "get_expression_input_names", {"expression": to_ref})
+            real = pin if (names and pin in names) else (names[0] if names else "")
+            if real == "None":
+                real = ""
             _, txt = m.call(MAT, T["connect_expressions"], {
-                "material": mat,
-                "fromExpression": handles[src].get("expression", handles[src]),
-                "fromOutputName": "",
-                "toExpression": handles[name].get("expression", handles[name]),
-                "toInputName": pin,
+                "from_expression": handles[src].get("expression", handles[src]),
+                "from_output_name": src_out,
+                "to_expression": to_ref,
+                "to_input_name": real,
             })
             # Nothing reliable to read back per-wire; the compile in (7) is what proves the
             # graph, and a missing wire shows up there as an unconnected-input error.
@@ -249,17 +272,18 @@ def build_one(m: MCP, rc: Receipt, asset: str, spec: dict) -> bool:
 
     # (6) material outputs. UNVERIFIED enum spelling.
     for prop, src in spec["outputs"].items():
+        # VERIFIED: connect_to_output(expression, output_name, material_property).
+        # Again no material argument, and the property arg is `material_property`.
         _, txt = m.call(MAT, T["connect_property"], {
-            "material": mat,
-            "fromExpression": handles[src].get("expression", handles[src]),
-            "fromOutputName": "",
-            "property": prop,
+            "expression": handles[src].get("expression", handles[src]),
+            "output_name": "",
+            "material_property": prop if prop.startswith("MP_") else "MP_" + prop,
         })
         rc.call(f"output {prop} <- {src} (UNVERIFIED)",
                 "**ERROR**" not in txt and "**FAILED**" not in txt, txt[:120])
 
     # (7) compile. This is where an unconnected input or a bad pin name finally speaks.
-    _, txt = m.call(MAT, T["recompile"], {"material": mat})
+    _, txt = m.call(MAT, T["recompile"], {"material_or_function": mat})
     rc.call(f"MaterialTools.{T['recompile']} (UNVERIFIED)",
             "**ERROR**" not in txt and "**FAILED**" not in txt, str(txt)[:200])
 

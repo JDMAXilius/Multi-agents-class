@@ -226,8 +226,14 @@ PLAN = {
             "Ring":      n(MUL, inputs={"A": "OuterMask", "B": "InnerMask"}),
 
             "Wedge":     n(MUL, inputs={"A": "Ring", "B": "AngMask"}),
-            "ColorA":    n(MASK, inputs={"Input": "Color"}, r=False, g=False, b=False, a=True),
-            "Alpha":     n(MUL, inputs={"A": "Wedge", "B": "ColorA"}),
+            # ColorA is GONE. It was a ComponentMask 0001 over Color, and the compile
+            # refused it: "Not enough components in (float3) for component mask 0001".
+            # A VectorParameter's UNNAMED output is float3 (RGB) - there is no alpha
+            # channel there to mask. UE exposes alpha as a NAMED OUTPUT instead, so the
+            # source pin is "A" and no node is needed. That is why inputs now accept a
+            # (source, output_name) tuple: naming a source pin is a real part of the
+            # graph, not an executor detail.
+            "Alpha":     n(MUL, inputs={"A": "Wedge", "B": ("Color", "A")}),
         },
 
         # Emissive takes the PARAMETER directly (rgb); a UI-domain material is unlit, so this
@@ -347,6 +353,10 @@ def validate(asset: str, spec: dict, cpp_text: dict[str, str] | None = None) -> 
     seen: set[str] = set()
     for name, node in graph.items():
         for pin, src in node["inputs"].items():
+            # ("NodeName", "OutputPin") names a source pin; a bare string means the
+            # node's default output. Unwrapped HERE so every downstream check - unknown
+            # source, forward reference, dependency order - keeps working on the name.
+            src = src[0] if isinstance(src, tuple) else src
             if src not in graph:
                 errs.append(f"{asset}: node '{name}' pin {pin} references unknown '{src}'")
             elif src not in seen:

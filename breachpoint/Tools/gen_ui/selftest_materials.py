@@ -70,6 +70,18 @@ def _bin(op, a, b):
 def evaluate(graph, node, uv, params):
     """One node's value. Scalars are floats; vectors are tuples. Recursive, memo-free —
     the graph is 30 nodes, and a cache would be more code than the thing it speeds up."""
+    # A source may be ("NodeName", "OutputPin"). The named pin that exists today is a
+    # VectorParameter's "A", which this evaluator models as the 4th component - the
+    # engine refused a ComponentMask 0001 over a float3 because the unnamed output of a
+    # VectorParameter carries RGB only.
+    if isinstance(node, tuple):
+        node, out_pin = node
+        val = evaluate(graph, node, uv, params)
+        if out_pin == "A":
+            return val[3] if isinstance(val, (tuple, list)) and len(val) > 3 else 1.0
+        if out_pin in ("R", "G", "B"):
+            return val["RGB".index(out_pin)] if isinstance(val, (tuple, list)) else val
+        return val
     nd = graph[node]
     t, pr = nd["type"], nd["props"]
     ins = {k: evaluate(graph, v, uv, params) for k, v in nd["inputs"].items()}
