@@ -27,7 +27,7 @@ genuinely tabular.
 |---|---|---|
 | A stack with a rhythm (menu rows, roster rows) | **`VerticalBox`** / **`HorizontalBox`** | Slot `Padding` + `Size: Fill/Auto` reproduces Figma auto-layout exactly. **Pitch is padding, never a spacer widget** — a spacer is a widget nobody can find later |
 | Things layered on each other | **`Overlay`** | Z-order = child order. Slot alignment centres without constraining — see §2 |
-| A few regions pinned to screen edges | **`CanvasPanel`** | The ONLY panel that needs anchors. Use once per screen, at the top, and never nested |
+| A few regions pinned to **different screen edges**, with no flow relationship | **`CanvasPanel`** | The ONLY panel that needs anchors. **The HUD, and effectively only the HUD** — see the rule below. Once, at the root, never nested |
 | A fixed measured size | **`SizeBox`** | `WidthOverride`/`HeightOverride`. Our measured numbers land here |
 | **Equal-sized cells** — loadout grid, emblem picker, medal wall | **`UniformGridPanel`** | Every cell identical. `SlotPadding` once, not per cell |
 | **Unequal columns that must align across rows** — scoreboard | **`GridPanel`** + `ColumnFill`/`RowFill` | This is the carnage report. `ColumnFill` is a *ratio* array; leave a column out and it collapses to auto |
@@ -52,11 +52,18 @@ whose elements genuinely have no flow relationship — **the HUD, and effectivel
   screen. (`wbp_plan.py` already names this `CENTER`.)
 - **`Fill` needs a parent that can distribute.** `layoutSizing` equivalents apply after
   parenting, never before — append first, then set.
-- **Canvas anchors: set the anchor to the edge you are measuring from.** Left-rail items anchor
-  top-left with positive offsets; the status column anchors top-**right** with negative X. That
-  is what makes the rails hold and the centre grow at 21:9 (`SCREEN-MANIFEST.md` §8.2).
-- **Profile bar anchors bottom-stretch** (min 0,1 → max 1,1), height 50. Never a fixed Y of 670
-  — 670 is a 720-space number and the bar must sit on the bottom edge at any height.
+- **`SizeBox` is max-width, not position.** `MaxDesiredWidth` on a panel inside a `Fill` column
+  is what keeps the panel at its designed 348.67 while the column grows. Position stays
+  structural — the column's `HAlign` decides which edge the panel pins to.
+- **Half-gutter padding, on both neighbours.** `pad-right 24` + `pad-left 24` = the 48 gutter,
+  and it survives a column being hidden. A single 48 on one side does not, and a spacer widget
+  leaves a hole.
+- **Canvas anchors — HUD only.** Set the anchor to the edge you are measuring from; each corner
+  element anchors to its own corner. On a front-end screen there is no canvas and therefore no
+  anchor (§6).
+- **The profile bar is the last child of a `VerticalBox`, height 50.** Never a fixed Y of 670 —
+  670 is a 720-space number, and a band-based footer sits on the bottom edge at any height
+  without anyone typing a coordinate.
 
 ---
 
@@ -303,6 +310,21 @@ exists, so the next screen re-derives the layout instead of inheriting it.
 
 Every other front-end screen (lobby, settings, matchmaking, carnage report) is the **same
 band-and-column shell** with different column contents. That is the reuse this shape buys.
+
+### 6.5 The widgets that go in it
+
+**`COMPONENT-BREAKDOWN.md` breaks down all 17**, with each one's internal tree, its widget class,
+its measured geometry and its state table. Three of its rules change how the tree above is read:
+
+- **Six of the 17 are `UCommonButtonBase`** — menu rows, nav tabs, roster rows, the feature card,
+  the record panel. Anything clickable or focusable. The idle→hover **inversion** is one style
+  asset, not six implementations.
+- **`WBP_PanelBorder` is the atom below the atom.** The measured `Main Button`, `Player Buttons`
+  and `Items` components all carry the same four-line partial border at three opacities. Build it
+  once, first.
+- **`WBP_MenuRow` alone unblocks 26 of 31 screens**, and its 27-variant `Type` matrix is what
+  keeps Settings and MatchComposer to one screen each. Before authoring a new row-like widget,
+  check whether it is a variant of this one.
 
 ---
 
