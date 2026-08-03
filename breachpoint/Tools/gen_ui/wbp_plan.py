@@ -269,6 +269,9 @@ UI_SCREENS    = UI_FOLDER + "/Screens"      # activatable screens and modals
 # serves the options modal too, and a component that two screens use does not belong in one
 # screen's folder.
 UI_MAINMENU   = UI_FOLDER + "/MainMenu"
+# The crosshair gets its own folder (founder, 3 Aug 2026). The WIDGET moves; the
+# HUD_Reticle_* TEXTURES deliberately do NOT - see the WBP_ReticleWidget entry.
+UI_CROSSHAIR  = UI_FOLDER + "/Crosshair"
 
 # asset -> folder, declared ABOVE both wbp_class() and PLAN because both need it and neither
 # can be the source. wbp_class() runs DURING PLAN's construction (a host's child reference is
@@ -280,7 +283,7 @@ ASSET_FOLDER = {
     "WBP_HUDLayout":           UI_LAYOUTS,
     "WBP_VitalsWidget":        UI_HUD,
     "WBP_AmmoBlock":           UI_HUD,
-    "WBP_ReticleWidget":       UI_HUD,
+    "WBP_ReticleWidget":       UI_CROSSHAIR,
     "WBP_MatchBand":           UI_HUD,
     "WBP_Killfeed":            UI_HUD,
     "WBP_KillfeedEntryWidget": UI_HUD,
