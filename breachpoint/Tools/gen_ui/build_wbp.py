@@ -377,10 +377,20 @@ def main() -> int:
     if args.verify:
         results = {a: verify_one(m, rc, a, s) for a, s in todo.items()}
         ok = all(results.values()) and not rc.findings
+        # A verdict must name the finding it actually has. The old text blamed `extra`
+        # names unconditionally, so a run whose only fault was an ABSENT asset reported
+        # "diverges from the plan / stale widgets" and sent the reader hunting for a
+        # divergence that was not there. A verifier that misreports why it failed is
+        # worse than one that fails: it spends the next session's time on the wrong bug.
+        if ok:
+            verdict = "PASS — every on-disk tree matches the plan; no stale widgets."
+        elif rc.findings:
+            verdict = "FAIL — " + "; ".join(msg for _sev, msg in rc.findings)
+        else:
+            verdict = ("FAIL — an on-disk tree diverges from the plan; `extra` names are "
+                       "stale widgets (BP70 D1's class); rebuild the asset from the plan.")
         rc.close(
-            ("PASS — every on-disk tree matches the plan; no stale widgets." if ok else
-             "FAIL — an on-disk asset diverges from the plan. `extra` names are stale "
-             "widgets (BP70 D1's class); rebuild the asset from the plan."),
+            verdict,
             "- **Read-only.** Nothing was deleted, created or written.\n"
             "- **Not a rung.** A matching tree is not a rendered screen.")
         print(f"\nreceipt: {rc.path.relative_to(REPO)}")
