@@ -62,6 +62,12 @@ edges, and all 563 new design px land on the subject. That is the whole ultrawid
 
 ## 2. The complete inventory — 17 widgets, 4 kinds
 
+> **SUPERSEDED 3 Aug 2026 by `MAIN-MENU-INVENTORY.md`.** This table was written against the
+> design, not against `Source/Breachpoint/UI/`. Audited afterwards, **nine of the classes below
+> should not exist** — the C++ already answers each one, usually with a named `UPanelWidget` slot
+> on a class that exists rather than with a class of its own. The corrected count is **0 new C++
+> classes and 11 WBP assets**. §3, §4 and §8.3 below remain accurate; **the table does not.**
+
 `B` = `UCommonButtonBase` · `U` = `UCommonUserWidget` · `A` = `UBRActivatableWidget` ·
 `—` = a UMG panel in the tree, not its own asset.
 
