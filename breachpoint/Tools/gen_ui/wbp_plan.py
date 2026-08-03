@@ -54,6 +54,15 @@ SCROLLBAR = "/Script/UMG.ScrollBar"
 # It self-tints from a token in its own constructor and ships Collapsed, so it can never
 # render BP70 D2's blank white rectangle.
 SCRIM = "/Script/Breachpoint.BRScrim"
+# UScaleBox. Scales a FIXED design-space box uniformly to whatever the viewport is. This is
+# how a 1280x720 frame full of absolute coordinates becomes correct at 1920x1080 and every
+# other resolution: the numbers stay the frame's, and one widget does the arithmetic.
+# Default Stretch is ScaleToFit, which preserves aspect - the design and the common screen
+# are both 16:9, so 1280x720 -> 1920x1080 is an exact 1.5x with no letterboxing.
+SCALEBOX = "/Script/UMG.ScaleBox"
+
+# The design space every absolute coordinate in this file is measured in.
+DESIGN_W, DESIGN_H = 1280.0, 720.0
 
 # The hairline primitives. Both are `UWidget` over a Slate leaf, NOT UserWidgets — so unlike
 # every UBR* class in this plan they are placed DIRECTLY and need no generated child. That is
@@ -998,7 +1007,32 @@ PLAN = {
                  "§6 — the frame is absolute geometry and Progression Button overlaps the "
                  "nav bar, which a band layout cannot express.",
         "tree": [
-            {"name": "ScreenCanvas", "class": CANVAS, "parent": None},
+            # THE SCALE CHAIN, and it is the whole reason the first canvas build rendered
+            # "smaller" than the reference. canvas_slot() is POINT-anchored: offsets are
+            # absolute pixels from the top-left. At 1280x720 that is exact; at 1920x1080 the
+            # entire layout stays at 1280x720 scale in the corner and the screen is mostly
+            # empty. Absolute coordinates are only meaningful WITH the space they were
+            # measured in, so the space is declared here and scaled once.
+            #
+            # ScaleBox(ScaleToFit, the default) > SizeBox(1280x720) > CanvasPanel. The canvas
+            # always gets exactly its design space, every child lands on its measured pixel,
+            # and one widget maps that space onto the viewport. 1280x720 -> 1920x1080 is 1.5x
+            # exactly, both 16:9, so nothing is letterboxed and nothing is cropped.
+            #
+            # NOT normalized anchors (x/1280, y/720): those stretch NON-uniformly, so a 21:9
+            # display would smear the nav bar wide while leaving it 30 tall. Uniform scale is
+            # what "1:1 with the frame" actually means.
+            {"name": "ScreenScale", "class": SCALEBOX, "parent": None},
+            # The design space itself. widthOverride/heightOverride verified by
+            # ObjectTools.list_properties before writing - a guessed camelCase name fails
+            # SILENTLY here and would leave the box hugging its canvas, i.e. zero-sized.
+            # NO SLOT: a UScaleBoxSlot rejects the standard HAlign/VAlign/padding write and
+            # reads back null - the same measured behaviour as USafeZoneSlot. A ScaleBox
+            # scales its single child anyway, so the write was redundant as well as
+            # impossible. Do not "restore" it.
+            {"name": "DesignSpace", "class": SIZEBOX, "parent": "ScreenScale",
+             "properties": {"widthOverride": DESIGN_W, "heightOverride": DESIGN_H}},
+            {"name": "ScreenCanvas", "class": CANVAS, "parent": "DesignSpace", "slot": FILL},
             # Navigation Bar 21:32864 — 33, 45, 666x30.
             {"name": "NavBar", "class": wbp_class("WBP_NavBar"), "parent": "ScreenCanvas",
              "slot": canvas_slot(33.0, 45.0, 666.0, 30.0), "bind": True},
