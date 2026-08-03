@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Blueprint/UserWidgetPool.h"
 #include "CommonUserWidget.h"
 #include "FieldNotificationId.h"
 #include "UI/BRActivatableWidget.h"
@@ -8,8 +7,11 @@
 
 #include "BRHUDLayout.generated.h"
 
-class UPanelWidget;
-
+/**
+ * `UBRKillfeedEntryWidget` -- ONE killfeed row. Declared here for history; it is driven
+ * exclusively by `UBRKillfeed` (`UI/HUD/BRKillfeed.h`), which owns the pool that holds it.
+ * This layout no longer projects the feed -- see the `UBRHUDLayout` comment.
+ */
 UCLASS(Abstract, meta = (DisableNativeTick))
 class BREACHPOINT_API UBRKillfeedEntryWidget : public UCommonUserWidget
 {
@@ -42,23 +44,29 @@ private:
 	FBRKillfeedViewEntry Entry;
 };
 
+/**
+ * `UBRHUDLayout` -- the in-game HUD frame. It hosts the surfaces and routes ViewModels to
+ * them; it renders no feed, bar or number itself.
+ *
+ * THE KILLFEED IS NOT HERE, DELIBERATELY. This class used to carry a second killfeed
+ * (`KillfeedContainer` + an inline `FUserWidgetPool` + `RebuildKillfeed`) that projected the
+ * SAME `UBRVM_Match` ring as `UBRKillfeed` (`UI/HUD/BRKillfeed.h`). Two projections of one
+ * array is one feed drawn twice the moment a WBP hosts both, and `WBP_HUDLayout` hosts the
+ * `Killfeed` child today. The inline one is gone: it rebuilt every row on every change
+ * (re-parenting mid-firefight, and re-firing enter animations), it capped the feed silently,
+ * and it had no index-stable slot for a late Spotter line to land in.
+ */
 UCLASS(Abstract, meta = (DisableNativeTick))
 class BREACHPOINT_API UBRHUDLayout : public UBRActivatableWidget
 {
 	GENERATED_BODY()
 
 public:
-	UBRHUDLayout(const FObjectInitializer& ObjectInitializer);
+	UBRHUDLayout();
 
 protected:
-	virtual void NativeOnInitialized() override;
-	virtual void ReleaseSlateResources(bool bReleaseChildren) override;
-
 	virtual void BindViewModels() override;
 	virtual void UnbindViewModels() override;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Breachpoint|HUD")
-	TObjectPtr<UPanelWidget> KillfeedContainer;
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Breachpoint|HUD|Hit Markers", meta = (DisplayName = "On Shield Hit"))
 	void BP_OnShieldHit();
@@ -78,22 +86,11 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Breachpoint|HUD", meta = (DisplayName = "On Match State Changed"))
 	void BP_OnMatchStateChanged(EBRUIDataState NewState);
 
-	UFUNCTION(BlueprintImplementableEvent, Category = "Breachpoint|HUD", meta = (DisplayName = "On Killfeed Rebuilt"))
-	void BP_OnKillfeedRebuilt(int32 NumRows);
-
 private:
 	void HandleHitMarker(EBRHitMarkerKind Kind);
-	void HandleKillfeedChanged();
 	void HandleViewModelFieldChanged(UObject* Source, UE::FieldNotification::FFieldId FieldId);
 
-	void RebuildKillfeed();
 	void PushViewModelsIntoMVVMView();
-
-	UPROPERTY(Transient)
-	FUserWidgetPool KillfeedPool;
-
-	UPROPERTY(Transient)
-	TSubclassOf<UBRKillfeedEntryWidget> ResolvedKillfeedEntryClass;
 
 	FDelegateHandle VitalsStateFieldHandle;
 	FDelegateHandle MatchStateFieldHandle;

@@ -1,8 +1,6 @@
 #include "UI/BRHUDLayout.h"
 
-#include "Components/PanelWidget.h"
 #include "Core/BRCore.h"
-#include "Engine/World.h"
 #include "INotifyFieldValueChanged.h"
 #include "MVVMSubsystem.h"
 #include "UI/BRUISettings.h"
@@ -15,33 +13,9 @@ void UBRKillfeedEntryWidget::SetEntry(const FBRKillfeedViewEntry& InEntry)
 	BP_OnEntrySet();
 }
 
-UBRHUDLayout::UBRHUDLayout(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer)
-	, KillfeedPool(*this)
+UBRHUDLayout::UBRHUDLayout()
 {
 	InputMode = EBRWidgetInputMode::Game;
-}
-
-void UBRHUDLayout::NativeOnInitialized()
-{
-	Super::NativeOnInitialized();
-
-	KillfeedPool.SetWorld(GetWorld());
-	KillfeedPool.SetDefaultPlayerController(GetOwningPlayer());
-
-	const UBRUISettings& Settings = UBRUISettings::Get();
-	if (!Settings.KillfeedEntryClass.IsNull())
-	{
-		ResolvedKillfeedEntryClass = Settings.KillfeedEntryClass.LoadSynchronous();
-	}
-
-}
-
-void UBRHUDLayout::ReleaseSlateResources(bool bReleaseChildren)
-{
-	KillfeedPool.ReleaseAllSlateResources();
-
-	Super::ReleaseSlateResources(bReleaseChildren);
 }
 
 void UBRHUDLayout::BindViewModels()
@@ -68,15 +42,13 @@ void UBRHUDLayout::BindViewModels()
 
 	if (UBRVM_Match* Match = GetMatchViewModel())
 	{
-		Match->OnKillfeedChanged().AddUObject(this, &UBRHUDLayout::HandleKillfeedChanged);
-
+		// No `OnKillfeedChanged` subscription here: `UBRKillfeed` owns that projection.
 		MatchStateFieldHandle = Match->AddFieldValueChangedDelegate(
 			UBRVM_Match::FFieldNotificationClassDescriptor::MatchState,
 			INotifyFieldValueChanged::FFieldValueChangedDelegate::CreateUObject(
 				this, &UBRHUDLayout::HandleViewModelFieldChanged));
 
 		BP_OnMatchStateChanged(Match->GetMatchState());
-		RebuildKillfeed();
 	}
 	else
 	{
@@ -99,7 +71,6 @@ void UBRHUDLayout::UnbindViewModels()
 
 	if (UBRVM_Match* Match = GetMatchViewModel())
 	{
-		Match->OnKillfeedChanged().RemoveAll(this);
 		if (MatchStateFieldHandle.IsValid())
 		{
 			Match->RemoveFieldValueChangedDelegate(
@@ -171,44 +142,4 @@ void UBRHUDLayout::HandleViewModelFieldChanged(UObject* Source, UE::FieldNotific
 			BP_OnMatchStateChanged(Match->GetMatchState());
 		}
 	}
-}
-
-void UBRHUDLayout::HandleKillfeedChanged()
-{
-	RebuildKillfeed();
-}
-
-void UBRHUDLayout::RebuildKillfeed()
-{
-	if (!KillfeedContainer || !ResolvedKillfeedEntryClass)
-	{
-		return;
-	}
-
-	const UBRVM_Match* Match = GetMatchViewModel();
-	if (!Match)
-	{
-		return;
-	}
-
-	KillfeedContainer->ClearChildren();
-	KillfeedPool.ReleaseAll(false);
-
-	const TArray<FBRKillfeedViewEntry>& Entries = Match->GetKillfeedEntries();
-	int32 NumRows = 0;
-
-	for (const FBRKillfeedViewEntry& Entry : Entries)
-	{
-		UBRKillfeedEntryWidget* Row = KillfeedPool.GetOrCreateInstance<UBRKillfeedEntryWidget>(ResolvedKillfeedEntryClass);
-		if (!Row)
-		{
-			break;
-		}
-
-		Row->SetEntry(Entry);
-		KillfeedContainer->AddChild(Row);
-		++NumRows;
-	}
-
-	BP_OnKillfeedRebuilt(NumRows);
 }

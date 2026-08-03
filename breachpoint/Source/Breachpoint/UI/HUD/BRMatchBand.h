@@ -73,7 +73,11 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Breachpoint|HUD")
 	TObjectPtr<UCommonTextBlock> EnemyScoreText;
 
-	/** Formatted by the ViewModel (`M:SS`, or `--:--` when unset). Never formatted here. */
+	/**
+	 * Formatted by the ViewModel (`M:SS`, or `--:--` when unset). Never formatted here.
+	 * `visr/amber` -- the "a clock is running" channel (`semantic.hud.clock`), same as the
+	 * rocket countdown below. The WBP must not restyle it.
+	 */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Breachpoint|HUD")
 	TObjectPtr<UCommonTextBlock> ClockText;
 

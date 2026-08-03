@@ -33,9 +33,19 @@ void UBRMatchBand::NativeOnInitialized()
 		EnemyScoreText->SetColorAndOpacity(FSlateColor(BR::Tokens::TeamThem()));
 	}
 
+	// `semantic.hud.clock` -> `visr/amber`: a clock is running. Not a warning. BOTH clocks in
+	// this band are that channel -- the match clock is the literal thing the token names, and
+	// left uncoloured it drew default white, which reads as plain text where the design says
+	// "a timer is counting". The rocket countdown had the token and the match clock did not:
+	// an omission, not a distinction. Nothing separates them in `figma_tokens.json`, no
+	// comment claimed a reason, and `semantic.hud.clock` has exactly one value.
+	if (ClockText)
+	{
+		ClockText->SetColorAndOpacity(FSlateColor(BR::Tokens::Amber()));
+	}
+
 	if (RocketCountdownText)
 	{
-		// `semantic.hud.clock` -> `visr/amber`: a clock is running. Not a warning.
 		RocketCountdownText->SetColorAndOpacity(FSlateColor(BR::Tokens::Amber()));
 	}
 
