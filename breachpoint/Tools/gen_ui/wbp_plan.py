@@ -264,6 +264,11 @@ UI_LAYOUTS    = UI_FOLDER + "/Layouts"      # root + HUD layout: the two things 
 UI_HUD        = UI_FOLDER + "/HUD"          # in-match surfaces
 UI_COMPONENTS = UI_FOLDER + "/Components"   # reusable parts, never pushed directly
 UI_SCREENS    = UI_FOLDER + "/Screens"      # activatable screens and modals
+# The main menu gets its own folder (founder, 3 Aug 2026). Only the SCREEN moves here — the
+# rail, nav bar, roster panel and rows stay in Components/ because they are shared: WBP_MenuRow
+# serves the options modal too, and a component that two screens use does not belong in one
+# screen's folder.
+UI_MAINMENU   = UI_FOLDER + "/MainMenu"
 
 # asset -> folder, declared ABOVE both wbp_class() and PLAN because both need it and neither
 # can be the source. wbp_class() runs DURING PLAN's construction (a host's child reference is
@@ -292,7 +297,7 @@ ASSET_FOLDER = {
     "WBP_RecordPanel":         UI_COMPONENTS,
     "WBP_RosterPanel":         UI_COMPONENTS,
     "WBP_LeftRail":            UI_COMPONENTS,
-    "WBP_Screen_FrontEnd":     UI_SCREENS,
+    "WBP_Screen_FrontEnd":     UI_MAINMENU,
     # The item/table tier. WBP_ItemTile MUST precede WBP_ItemGrid in PLAN — the tile is not
     # a tree child of the grid (a UTileView owns its entries), so validate_all()'s
     # host-ordering rule never fires and would not catch a wrong order.
