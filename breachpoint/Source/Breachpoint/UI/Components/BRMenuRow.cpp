@@ -27,6 +27,12 @@ void UBRMenuRow::NativeOnInitialized()
 		BackgroundLine->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
+	// A row that never calls SetSelectionText would otherwise render UMG's "Text Block"
+	// placeholder on its right edge -- on every menu row on every screen, since only settings
+	// rows carry a value. Routed through the setter so the empty state has ONE definition:
+	// collapsed, not blank-but-occupying, and not a stale value from the previous row.
+	SetSelectionText(FText::GetEmpty());
+
 	ApplyRowType();
 	SetRowAlignment(Alignment);
 

@@ -40,6 +40,13 @@ IMAGE = "/Script/UMG.Image"
 SIZEBOX = "/Script/UMG.SizeBox"
 PROGRESS = "/Script/UMG.ProgressBar"
 
+# The hairline primitives. Both are `UWidget` over a Slate leaf, NOT UserWidgets — so unlike
+# every UBR* class in this plan they are placed DIRECTLY and need no generated child. That is
+# the whole reason `WBP_PanelBorder` does not exist and never will (BRHairlineBorder.h states
+# the arithmetic: ~4500 widgets across the front end if it were a four-UImage composite).
+HAIRLINE = "/Script/Breachpoint.BRHairlineBorder"
+RULE = "/Script/Breachpoint.BRRule"
+
 FILL = {"horizontalAlignment": "HAlign_Fill", "verticalAlignment": "VAlign_Fill",
         "padding": {"left": 0.0, "top": 0.0, "right": 0.0, "bottom": 0.0}}
 
@@ -50,6 +57,38 @@ FILL = {"horizontalAlignment": "HAlign_Fill", "verticalAlignment": "VAlign_Fill"
 # accuracy cue the centre of the screen carries.
 CENTER = {"horizontalAlignment": "HAlign_Center", "verticalAlignment": "VAlign_Center",
           "padding": {"left": 0.0, "top": 0.0, "right": 0.0, "bottom": 0.0}}
+
+
+def margin(left=0.0, top=0.0, right=0.0, bottom=0.0) -> dict:
+    return {"left": float(left), "top": float(top),
+            "right": float(right), "bottom": float(bottom)}
+
+
+def inset(amount: float, h="HAlign_Fill", v="VAlign_Fill") -> dict:
+    """An Overlay slot inset uniformly — Figma's `(2, 2) 246 x 24` inside a 250 x 28 shell.
+
+    Written as an INSET rather than as a 246x24 size on purpose: the row's width is not 250 on
+    any real screen (349 on the front-end rail, 536 in the grid stack), so the only number that
+    survives is the 2px border gap. Authoring 246 would pin the plate to a width its parent no
+    longer has.
+    """
+    return {"horizontalAlignment": h, "verticalAlignment": v,
+            "padding": margin(amount, amount, amount, amount)}
+
+
+def box_slot(fill: float | None = None, padding: dict | None = None,
+             h="HAlign_Fill", v="VAlign_Fill") -> dict:
+    """A Horizontal/VerticalBox slot. `fill=None` is Auto (hug), a float is Fill at that weight.
+
+    `size` is `FSlateChildSize`, whose `sizeRule` is `ESlateSizeRule` — "Automatic" or "Fill".
+    The value is only read when the rule is Fill, and it is written either way because a
+    partial struct write is the kind of thing `write_verified` reports as a read-back mismatch
+    rather than as a helpful error.
+    """
+    return {"size": {"sizeRule": "Automatic" if fill is None else "Fill",
+                     "value": float(fill or 1.0)},
+            "padding": padding or margin(),
+            "horizontalAlignment": h, "verticalAlignment": v}
 
 # ---------------------------------------------------------------------------
 # ART: `font` and `brush`, the two node keys that make a correct tree VISIBLE
@@ -211,6 +250,7 @@ ASSET_FOLDER = {
     "WBP_KillfeedEntryWidget": UI_HUD,
     "WBP_EquipmentTray":       UI_HUD,
     "WBP_ProgressBar":         UI_COMPONENTS,
+    "WBP_MenuRow":             UI_COMPONENTS,
 }
 
 
@@ -310,6 +350,86 @@ PLAN = {
                  "art pass. Must build BEFORE vitals and the equipment tray.",
         "tree": [
             {"name": "Fill", "class": PROGRESS, "parent": None, "bind": True},
+        ],
+    },
+
+    # ------------------------------------------------------------------
+    # WBP_MenuRow — the atom. SCREEN-MANIFEST §5 Tier 0: unblocks 26 of 31 screens.
+    #
+    # Geometry is COMPONENT-SPECS §2, measured off the reference file's live nodes:
+    #   COMPONENT   250 x 28   (width is NOT authored — see below)
+    #   Text Frame  (2,2) 246 x 24, auto-layout HORIZONTAL, gap 10, padding L10 R10,
+    #               primaryAxis MIN, counterAxis CENTER
+    #   Border      four vector lines, stroke align CENTER, side ticks 20 tall
+    #
+    # WIDTH IS DELIBERATELY NOT AUTHORED. The row is 250 in the component board and 349, 536 or
+    # a column's Fill everywhere it is actually used. `UBRMenuRow::ApplyRowType` overrides width
+    # ONLY for `IconOnly` (40x40) and clears it otherwise, which is the C++ saying the same
+    # thing. A 250 here would break every wider list, silently, in the direction that looks fine
+    # in the designer.
+    #
+    # HEIGHT IS C++-DRIVEN, and the asset therefore looks collapsed in the editor until it runs.
+    # `SetHeightOverride` is a WIDGET property and this generator writes SLOT properties, fonts
+    # and brushes only. Recording it rather than working around it: the height belongs on the
+    # Type axis (28 / 40 / 60 / 120), so C++ is where it has to live regardless.
+    #
+    # FOUR OPTIONAL BINDS ARE DELIBERATELY OMITTED, and each omission is a decision:
+    #   Icon, FilterButton — a UImage with no brush renders as a BLANK WHITE RECTANGLE. That is
+    #     BP70's D2 defect exactly, and shipping it into the one component 26 screens instance
+    #     would multiply it by 26. They land with their art, not before it.
+    #   TypeSwitcher — one child per EBRMenuRowType, i.e. the other nine bodies. Those are
+    #     Settings and MatchComposer (wave 6), and `ApplyRowType` already no-ops on a null
+    #     switcher. The Default body is what the main menu needs.
+    #   InvertAnim / DisclosureAnim — BindWidgetAnimOptional. A WidgetAnimation is not a widget
+    #     and this generator cannot author one; `ApplyInvertedState` already guards on null and
+    #     the inversion is fully correct without it (the animation only tweens it).
+    # ------------------------------------------------------------------
+    "WBP_MenuRow": {
+        "folder": ASSET_FOLDER["WBP_MenuRow"],
+        "parent_class": "/Script/Breachpoint.BRMenuRow",
+        "class": "UBRMenuRow",
+        "header": "Source/Breachpoint/UI/Components/BRMenuRow.h",
+        "notes": "The 250x28 atom, Default type. Width unauthored (the row fills its rail); "
+                 "height and the Type axis come from UBRMenuRow::ApplyRowType.",
+        "tree": [
+            {"name": "RootSizeBox", "class": SIZEBOX, "parent": None, "bind": True},
+
+            # Overlay child order IS z-order. Background line behind, then the plate that goes
+            # solid white on hover, then the strokes ON the plate, then the text on top.
+            {"name": "RowOverlay", "class": OVERLAY, "parent": "RootSizeBox", "slot": FILL},
+
+            # COMPONENT-SPECS §2 hover: "an extra Background Line (opacity 0.3) appears behind".
+            # Collapsed at idle by NativeOnInitialized — it exists to be shown, not to be seen.
+            {"name": "BackgroundLine", "class": RULE, "parent": "RowOverlay",
+             "slot": FILL, "bind": True},
+
+            # The plate. NO BRUSH: `ApplyInvertedState` drives it with SetColorAndOpacity from
+            # a token (None -> transparent idle, SurfaceInverted -> white on hover), so the
+            # engine's default white brush is the correct input to that tint. Authoring a brush
+            # here would be a second source for one colour.
+            {"name": "TextFrameFill", "class": IMAGE, "parent": "RowOverlay",
+             "slot": inset(2.0), "bind": True},
+
+            {"name": "Border", "class": HAIRLINE, "parent": "RowOverlay",
+             "slot": FILL, "bind": True},
+
+            # COMPONENT-SPECS §2: padding T0 R10 B0 L10, counterAxis CENTER. The gap 10 is
+            # expressed as padding on the children, not as a spacer (LAYOUT-DOCTRINE §1).
+            {"name": "TextFrame", "class": HBOX, "parent": "RowOverlay",
+             "slot": inset(2.0), "bind": True},
+
+            # Fill 1.0 so the label takes the row's real width and `Selection` hugs the right
+            # edge — which is what makes one row serve both a menu list and a settings list.
+            {"name": "Label", "class": TEXT, "parent": "TextFrame",
+             "slot": box_slot(fill=1.0, padding=margin(left=10.0), v="VAlign_Center"),
+             "font": "Label/Button", "bind": True},
+
+            # COMPONENT-SPECS §2: the right-aligned value on a settings row. Auto width, and
+            # `SetSelectionText` collapses it when empty so a menu row shows nothing here.
+            {"name": "Selection", "class": TEXT, "parent": "TextFrame",
+             "slot": box_slot(padding=margin(left=10.0, right=10.0), h="HAlign_Right",
+                              v="VAlign_Center"),
+             "font": "Label/Button", "bind": True},
         ],
     },
 
@@ -805,6 +925,11 @@ _BASES = {
     "UCommonActivatableWidgetStack":
         ["UCommonActivatableWidgetContainerBase", "UWidget"],
     "UBRProgressBar":  ["UCommonUserWidget", "UUserWidget", "UWidget"],
+    # Both are UWidget-over-a-Slate-leaf, NOT UserWidgets — the chain is one link long, and
+    # that is the point of them (BRHairlineBorder.h). `UBRRule` derives from the border, so a
+    # bind typed UBRHairlineBorder is satisfied by a rule; the reverse is correctly not.
+    "UBRHairlineBorder": ["UWidget"],
+    "UBRRule":           ["UBRHairlineBorder", "UWidget"],
 }
 
 

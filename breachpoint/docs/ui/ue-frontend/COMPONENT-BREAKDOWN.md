@@ -85,13 +85,14 @@ edges, and all 563 new design px land on the subject. That is the whole ultrawid
 | 13 | `WBP_RosterRow` | `UBRRosterRow` | **B** | 390 × 30 · **349 in-panel** | 5/31 | 2 |
 | 14 | `WBP_MicIcon` | `UBRMicIcon` | U | 16 × 18 | inside #13 | 4 |
 | 15 | `WBP_RankInsignia` | `UBRRankInsignia` | U | 26 × 26 in-row | 5/31 | 4 |
-| 16 | `WBP_PanelBorder` | `UBRPanelBorder` | U | tracks parent | **#9 #13 + item tiles** | 0 |
+| 16 | *(no WBP)* | **`UBRHairlineBorder`** | `UWidget` | tracks parent | **#9 #13 + item tiles** | 0 |
 
 † = one of the 8 components we do not yet own (`SCREEN-MANIFEST.md` §6). Building the main menu
 against a reference-page component is the blocker that section exists to clear.
 
-**The main menu costs 13 new assets and unblocks 26 of 31 screens.** That ratio is the entire
-argument for building components before screens.
+**#16 has no row in the WBP count on purpose** — it is a `UWidget` over a Slate leaf and is placed
+directly (§4). **The main menu costs 12 new WBP assets and unblocks 26 of 31 screens.** That ratio
+is the entire argument for building components before screens.
 
 ---
 
@@ -117,33 +118,44 @@ inversion rule (§4) authored once.
 
 ---
 
-## 4. The atom below the atom — `WBP_PanelBorder`
+## 4. The atom below the atom — `UBRHairlineBorder`, and it is **not a WBP**
 
 **The single most reused piece of geometry in the design, and it is easy to miss.** The measured
 `Main Button`, `Player Buttons` and `Items` components all carry the same construct: **not a
 closed rectangle** but four separate lines at different opacities.
 
+> **Corrected 3 Aug 2026.** The first version of this section specified
+> `WBP_PanelBorder : UBRPanelBorder (UCommonUserWidget)` — an Overlay of four `UImage` children.
+> `Source/Breachpoint/UI/Components/BRHairlineBorder.h` already exists and rejects that form with
+> the arithmetic: four `UImage`s per border is **one WBP asset, 5 widgets and 5 Slate draw
+> elements per border — roughly 4,500 widgets across the front end**, and it needs a Blueprint
+> asset before a single line can be drawn. The shipped form is a `UWidget` over an `SLeafWidget`:
+> the same four lines in four draw elements, **zero widgets, zero assets, zero texture memory.**
+
 ```
-WBP_PanelBorder                       : UBRPanelBorder (UCommonUserWidget)
-└── Border_Overlay                    Overlay        stroke align CENTER
-    ├── TopLine        Image  h1  #ffffff  opacity 1.0    VAlign Top   · HAlign Fill
-    ├── BottomLine     Image  h1  #ffffff  opacity 0.3    VAlign Bottom· HAlign Fill
-    ├── LeftTick       Image  w1  #ffffff  opacity 0.3    HAlign Left  · VAlign Fill · h20
-    └── RightTick      Image  w1  #ffffff  opacity 0.3    HAlign Right · VAlign Fill · h20
+UBRHairlineBorder  : UWidget                    ← placed DIRECTLY. There is no WBP_ for this.
+└── SBRHairlineBorder : SLeafWidget             4 × FSlateDrawElement::MakeLines + optional fill
 ```
 
-| Exposed | Type | Why |
+| `FBRHairlineStyle` field | Default | Why |
 |---|---|---|
-| `Weight` | 1px · 0.5px · **2px** | Three weights are in use — 404 / 323 / 177 occurrences. Not a free choice |
-| `BottomOpacity` | float | **0.3 idle → 1.0 hover.** This is the hover tell on every row |
-| `BottomColour` | token | item tiles put the **rarity** colour here; everything else leaves it white |
-| `TickHeight` | float | 20 on a 28-row; 0 on a full-bleed band |
+| `Edges` (bitmask) | `15` = all four | A menu row draws all four; `UBRRule` draws one |
+| `DimmedEdges` (bitmask) | `14` = Bottom·Left·Right | Idle: top at 1.0, the rest at 0.3 |
+| `StrokeToken` / `DimStrokeToken` | `ChromeStroke` / `ChromeStrokeDim` | Tokens, never hex |
+| `FillToken` | `None` | Optional plate behind the strokes |
+| `Weight` | `Chrome` | Three weights in use — 404 / 323 / 177 occurrences. Not a free choice |
+| `SideTickLength` | `20` | The sides are `0 × 20` on a 28-row: **ticks, not edges**. 0 = full height |
+
+**`SetEdgeDimmed(Bottom, false)` IS the hover inversion**, in one call. `UBRRule` — the decorative
+line, 12/31 screens — is the same class with one edge enabled, so there is one paint path in the
+whole UI rather than two.
 
 **Corner radius is 0 everywhere.** The only radii in the whole reference file are 5 (17 badges),
 1, 3, 0.25, 0.75. Sharp corners are the language — a rounded panel is off-system.
 
-**Build this first.** Three separate components measured the same border independently; authoring
-it three times is three places the 0.3 drifts.
+**The honest cost of the leaf, from the header:** a Slate leaf cannot hold a `WidgetAnimation`.
+Anything that must *animate* a border animates the owning WBP's render opacity or a C++ token
+swap — which is exactly what `UBRMenuRow::ApplyInvertedState` does.
 
 ---
 
@@ -298,16 +310,27 @@ later, and it breaks the moment a row is hidden.
 The highest-leverage single asset in the project. Its variant matrix is why `Settings` and
 `MatchComposer` are one screen each instead of N sub-screens.
 
+**Built.** The tree below is `Tools/gen_ui/wbp_plan.py`'s `WBP_MenuRow` entry, and it validates
+against the header's `BindWidget` contract at plan time.
+
 ```
-WBP_MenuRow                               : UBRMenuRow (UCommonButtonBase)
-└── Row_Overlay                           Overlay
-    ├── Background    Image               fill transparent → #ffffff on hover
-    ├── WBP_PanelBorder                   §4 · TickHeight 20
-    └── Content_HBox  HorizontalBox       pad T0 R10 B0 L10 · gap 10 · VAlign CENTER
-        ├── Icon      CommonLazyImage     16 × 16   optional
-        ├── Label     CommonTextBlock     Fill 1.0 · Rajdhani SemiBold 16 · ls 10% · UPPER · LEFT
-        └── Value     CommonTextBlock     Auto     · same style · RIGHT   (settings rows)
+RootSizeBox                               SizeBox        h28 · width NOT authored
+└── RowOverlay                            Overlay        child order = z-order
+    ├── BackgroundLine                    UBRRule        hover-only, collapsed at idle
+    ├── TextFrameFill                     Image          inset 2 · transparent → #ffffff
+    ├── Border                            UBRHairlineBorder   §4 · SideTickLength 20
+    └── TextFrame                         HorizontalBox  inset 2 · VAlign Center
+        ├── Label                         CommonTextBlock  Fill 1.0 · pad-left 10 · Label/Button
+        └── Selection                     CommonTextBlock  Auto · HAlign Right · Label/Button
 ```
+
+`Label/Button` resolves out of `figma_tokens.json` to **Rajdhani SemiBold 16px, letter-spacing
+100/1000em** — 10% in Figma. No font literal is typed anywhere.
+
+**Width is deliberately unauthored.** 250 is the component-board width; the row is 349 on the
+front-end rail, 536 in the grid stack, and a column's `Fill` on the main menu.
+`ApplyRowType` overrides width **only** for `IconOnly` (40×40) and clears it otherwise. A 250 in
+the asset would break every wider list, silently, in the direction that looks right in the designer.
 
 **The state table — one `CommonButtonStyle` asset, not four widgets:**
 
@@ -466,8 +489,8 @@ gameplay" tier rule, and applying it to a panel breaks the flat language everywh
 
 | # | Build | Why here |
 |---|---|---|
-| 1 | `WBP_PanelBorder` + the three `Common*Style` assets | Everything below draws with them. Three components measured this border independently |
-| 2 | `WBP_MenuRow` | 26/31 screens. The single highest-leverage asset in the project |
+| 1 | ~~`UBRHairlineBorder`~~ **DONE — C++, no asset** | It is a Slate leaf (§4). There was never a WBP to build |
+| 2 | `WBP_MenuRow` | 26/31 screens. The single highest-leverage asset in the project. **C++ done; the plan is written and validates; the asset needs the editor lane** |
 | 3 | `WBP_NavTab` → `WBP_NavBar` | 18/31. Unblocks whole waves |
 | 4 | `WBP_MenuList`, `WBP_DescriptionStrip` | Column 1 is now complete |
 | 5 | `WBP_RankInsignia`, `WBP_MicIcon` → `WBP_RosterRow` → `WBP_RosterPanel` | Leaf-up. The row cannot be built before its two children |
@@ -491,3 +514,39 @@ merge.
   families A–E and they are the long pole. Every slot above takes a soft path and renders a
   placeholder until then, which is deliberate: the layout can be finished and looked at before a
   single final asset exists.
+
+---
+
+## 13. Build state — steps 1 and 2
+
+| | State | Rung |
+|---|---|---|
+| `UBRHairlineBorder` + `UBRRule` | **complete**, C++, no asset owed | — |
+| `UBRMenuRow` C++ | **complete** | 0 — not compiled this session |
+| `WBP_MenuRow` plan | **written and validating** (`python3 Tools/gen_ui/wbp_plan.py` → `PLAN OK`) | 0 |
+| `WBP_MenuRow` asset | **not built** — needs the editor MCP | — |
+
+**The plan validates the contract, not the asset.** `required_bind_widgets()` parses
+`BRMenuRow.h` and proves all five non-optional binds are created at the right types — a
+`BindWidget` desync otherwise fails at *asset load*, where rung 1 stays green and the widget is
+simply empty in PIE. That check has run and passed. **Nothing here has been rendered**, and
+"the plan is valid" is a strictly weaker claim than "the row draws".
+
+**Four optional binds are deliberately omitted**, each for a reason:
+
+| Omitted | Why |
+|---|---|
+| `Icon`, `FilterButton` | A `UImage` with no brush renders as a **blank white rectangle** — BP70's D2 defect, in the one component 26 screens instance. They land with their art |
+| `TypeSwitcher` | The other nine `Type` bodies are Settings and MatchComposer (wave 6). `ApplyRowType` already no-ops on a null switcher |
+| `InvertAnim`, `DisclosureAnim` | A `WidgetAnimation` is not a widget and the generator cannot author one. `ApplyInvertedState` guards on null, and the inversion is fully correct without it — the animation only tweens it |
+
+**Height is C++-driven and the asset will look collapsed in the editor until it runs.**
+`SetHeightOverride` is a widget property; this generator writes slot properties, fonts and
+brushes. That is not a workaround: height belongs on the `Type` axis (28 / 40 / 60 / 120), so C++
+is where it has to live regardless.
+
+**One C++ defect fixed while building the plan.** `NativeOnInitialized` collapsed
+`BackgroundLine` but left `Selection` untouched, so any row that never called `SetSelectionText`
+would render UMG's `"Text Block"` placeholder on its right edge — which is every menu row on every
+screen, since only settings rows carry a value. Now routed through the setter so the empty state
+has one definition.
