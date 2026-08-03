@@ -16,6 +16,7 @@ check cannot go green because *some* finding happened to appear.
 from __future__ import annotations
 
 import copy
+import re
 import sys
 from pathlib import Path
 
@@ -134,9 +135,26 @@ byname = {a["asset"]: a for a in real}
 check("WBP_RootLayout needs 4 non-optional binds",
       len(byname["WBP_RootLayout"]["binds"]) == 4
       and not any(v["optional"] for v in byname["WBP_RootLayout"]["binds"].values()))
-check("WBP_HUDLayout needs exactly one, and it is OPTIONAL",
-      list(byname["WBP_HUDLayout"]["binds"]) == ["KillfeedContainer"]
-      and byname["WBP_HUDLayout"]["binds"]["KillfeedContainer"]["optional"])
+
+
+
+def _header_says_optional(a, member):
+    """A CRUDE second read of the header — deliberately not BIND_RE, so it can disagree."""
+    body = E.class_body((E.REPO / a["header"]).read_text(errors="replace"), a["cpp_class"])
+    return bool(re.search(rf"BindWidgetOptional[^;]*?\b{member}\b\s*;", body, re.S))
+
+
+# This check used to read "WBP_HUDLayout needs exactly one bind, KillfeedContainer, and it is
+# OPTIONAL". It went red on 2026-08-03 without a line of this file changing: C++ DELETED that
+# member ("THE KILLFEED IS NOT HERE, DELIBERATELY" — BRHUDLayout.h). A literal mirror of
+# another lane's header is a check that rots on their schedule, so the property is stated
+# instead: on every real header, `optional` is true exactly where the source says
+# BindWidgetOptional. That cannot go stale, and it still fires if the regex's `Optional`
+# group ever breaks.
+check("on the REAL headers, `optional` is true exactly where the source says BindWidgetOptional",
+      all(v["optional"] == _header_says_optional(a, n)
+          for a in real if a["header"] for n, v in a["binds"].items()),
+      {a["asset"]: a["binds"] for a in real})
 check("WBP_KillfeedEntryWidget needs none", byname["WBP_KillfeedEntryWidget"]["binds"] == {})
 check("game paths are the FULL /Game/X/Y.Y form the server requires",
       all(a["game_path"].startswith("/Game/") and a["game_path"].count(".") == 1
@@ -252,6 +270,10 @@ f = judged(obs_mut=lambda o: o["widgets"].append(
     {"name": "StrayIcon", "class": "/Script/UMG.Image", "isVariable": True, "inherited": False}))
 check("R26 cond. 3: an Is Variable widget with no BindWidget is flagged",
       sev(f, "medium", "StrayIcon"), f)
+# The finding is only worth its noise if the lane that can fix it can act without a round
+# trip, and the cause (UWidget::bIsVariable defaults TRUE) is not guessable from the symptom.
+check("...and the message names the ONE-LINE generator fix, not just the symptom",
+      sev(f, "medium", "ToggleWidgetAsVariable") and sev(f, "medium", "build_wbp.py"), f)
 
 f = judged(exp_mut=lambda e: e.__setitem__("header", None))
 check("an asset with NO C++ class of the right name is high",
@@ -269,6 +291,123 @@ check("an UNRESOLVABLE class is reported UNVERIFIED, not passed",
 f = judged(obs_mut=lambda o: o["graphs"].__setitem__("EventGraph", "(event Foo"))
 check("a graph that will not parse is reported, not passed as clean",
       sev(f, "medium", "did not parse"), f)
+
+# ------------------------------------------------------- 5. the real ClassResolver, faked editor
+#
+# Sections 1-4 inject `fake_compatible`, so they can never catch a bug in the thing that
+# answers "is this a subclass" — and that is exactly where the false `high` lived: the tree
+# reports a hosted child by ASSET path, `search_subclasses` answers in CLASS paths, and
+# `/Game/X.X` is never equal to `/Game/X.X_C`. So this section runs the REAL
+# `audit_wbp.ClassResolver` against a fake MCP whose answers are shaped like the ones in
+# docs/ui/receipts/audit-wbp-20260803T042219Z.md, where the three false findings were raised.
+print("\n5. ClassResolver — a generated Blueprint class against a C++-typed bind")
+
+import audit_wbp as A  # noqa: E402  — pure CPython; the transport is faked below
+
+# class refPath -> parent refPath, as the editor's reflection reports it. `WBP_Killfeed` is
+# the deliberate wrong answer: a real generated class that is genuinely NOT a UBRProgressBar.
+FAKE_CLASSES = {
+    "/Script/UMG.Widget": None,
+    "/Script/UMG.UserWidget": "/Script/UMG.Widget",
+    "/Script/CommonUI.CommonUserWidget": "/Script/UMG.UserWidget",
+    "/Script/UMG.ProgressBar": "/Script/UMG.Widget",
+    "/Script/Breachpoint.BRProgressBar": "/Script/CommonUI.CommonUserWidget",
+    "/Script/Breachpoint.BRKillfeed": "/Script/CommonUI.CommonUserWidget",
+    "/Game/UI/Components/WBP_ProgressBar.WBP_ProgressBar_C": "/Script/Breachpoint.BRProgressBar",
+    "/Game/UI/HUD/WBP_Killfeed.WBP_Killfeed_C": "/Script/Breachpoint.BRKillfeed",
+}
+
+# THE WHOLE BUG IN ONE DICT: the asset on the left is what a widget tree reports; the class on
+# the right is what a subclass query reports. `get_parent` is what bridges them, and the fake
+# models it exactly as the editor does — it answers for the ASSET.
+FAKE_ASSET_CLASS = {
+    "/Game/UI/Components/WBP_ProgressBar.WBP_ProgressBar":
+        "/Game/UI/Components/WBP_ProgressBar.WBP_ProgressBar_C",
+    "/Game/UI/HUD/WBP_Killfeed.WBP_Killfeed": "/Game/UI/HUD/WBP_Killfeed.WBP_Killfeed_C",
+}
+
+
+def _descends(cls, base):
+    while cls is not None:
+        if cls == base:
+            return True
+        cls = FAKE_CLASSES.get(cls)
+    return False
+
+
+class FakeMCP:
+    """The two read-only tools the resolver uses, with the real server's quirks kept.
+
+    `search_subclasses` matches `class_name` as a SUBSTRING and includes the base class in its
+    own results — both observed live (wbp_expect/audit_wbp docstrings, and the receipt above).
+    An unknown asset answers like a failed call: (None, text).
+    """
+
+    def __init__(self):
+        self.log = []
+
+    def call(self, toolset, tool, args):
+        self.log.append(tool)
+        if tool == "get_parent":
+            ref = args["blueprint"]["refPath"]
+            cls = FAKE_ASSET_CLASS.get(ref)
+            if cls is None:
+                return None, f"asset not found: {ref}"
+            return {"refPath": FAKE_CLASSES[cls]}, ""
+        if tool == "search_subclasses":
+            base, name = args["base_class"]["refPath"], args["class_name"]
+            return [{"refPath": c} for c in FAKE_CLASSES
+                    if (name == "" or name in c.rsplit(".", 1)[-1]) and _descends(c, base)], ""
+        raise AssertionError(f"the resolver called an unexpected tool: {tool}")
+
+
+class FakeReceipt:
+    def __init__(self):
+        self.lines, self.findings = [], []
+
+    def call(self, label, ok, detail):
+        self.lines.append((label, ok, detail))
+
+
+mcp, rc = FakeMCP(), FakeReceipt()
+res = A.ClassResolver(mcp, rc)
+
+check("a GENERATED BP class DOES satisfy its C++ ancestor's bind (the false-`high` fix)",
+      res.compatible("UBRProgressBar",
+                     "/Game/UI/Components/WBP_ProgressBar.WBP_ProgressBar") is True)
+check("...and it was RESOLVED, not string-matched — `get_parent` was asked",
+      "get_parent" in mcp.log)
+check("an INCOMPATIBLE generated class still fails (the negative must fire)",
+      res.compatible("UBRProgressBar", "/Game/UI/HUD/WBP_Killfeed.WBP_Killfeed") is False)
+check("a native class path is unaffected",
+      res.compatible("UProgressBar", "/Script/UMG.ProgressBar") is True)
+check("an asset the editor cannot resolve is UNVERIFIED, never a false high",
+      res.compatible("UBRProgressBar", "/Game/UI/Ghost.Ghost") is None)
+
+# End to end through judge(), on the exact shape that produced the three false findings.
+VIT_EXP = {"asset": "WBP_VitalsWidget",
+           "game_path": "/Game/UI/HUD/WBP_VitalsWidget.WBP_VitalsWidget",
+           "cpp_class": "UBRVitalsWidget",
+           "expected_parent": "/Script/Breachpoint.BRVitalsWidget",
+           "header": "Source/Breachpoint/UI/HUD/BRVitalsWidget.h",
+           "binds": {"ShieldBar": {"class": "UBRProgressBar", "optional": False}}}
+VIT_OBS = {"parent": "/Script/Breachpoint.BRVitalsWidget", "variables": [],
+           "graphs": {"EventGraph": EMPTY_DSL},
+           "widgets": [{"name": "VitalsCanvas", "class": "/Script/UMG.CanvasPanel",
+                        "isVariable": False, "inherited": False},
+                       {"name": "ShieldBar",
+                        "class": "/Game/UI/Components/WBP_ProgressBar.WBP_ProgressBar",
+                        "isVariable": True, "inherited": True}]}
+
+check("end to end: the vitals shape that raised 3 false `high`s is CLEAN",
+      E.judge(VIT_EXP, VIT_OBS, res.compatible) == [],
+      E.judge(VIT_EXP, VIT_OBS, res.compatible))
+
+wrong = copy.deepcopy(VIT_OBS)
+wrong["widgets"][1]["class"] = "/Game/UI/HUD/WBP_Killfeed.WBP_Killfeed"
+check("end to end: a genuinely wrong generated class is STILL `high`",
+      sev(E.judge(VIT_EXP, wrong, res.compatible), "high", "not a subclass"),
+      E.judge(VIT_EXP, wrong, res.compatible))
 
 print()
 if FAILS:

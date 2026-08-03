@@ -160,6 +160,7 @@ class ClassResolver:
         self.m, self.rc = m, rc
         self._resolved: dict[str, str | None] = {}
         self._compat: dict[tuple[str, str], bool | None] = {}
+        self._ancestor: dict[str, str | None] = {}
 
     def _resolve(self, leaf: str) -> str | None:
         """`UPanelWidget` -> `/Script/UMG.PanelWidget`. Every UMG widget derives from UWidget."""
@@ -181,15 +182,59 @@ class ClassResolver:
         self._resolved[leaf] = out
         return out
 
+    def _cpp_ancestor(self, refpath: str) -> str | None:
+        """A Blueprint ASSET path -> the `/Script/` class it derives from, per the editor.
+
+        THE FALSE-`high` BUG LIVED HERE. A widget tree reports a hosted child by its ASSET
+        path (`/Game/UI/Components/WBP_ProgressBar.WBP_ProgressBar`) while `search_subclasses`
+        answers in CLASS paths (`....WBP_ProgressBar_C`). Comparing the two is a guaranteed
+        miss, and it produced three `high` findings against assets the editor itself compiles
+        happily — exactly the false red that teaches people to switch a gate off (law 8: only
+        `high` blocks a landing, so a lying `high` is worse than no gate).
+
+        Pasting `_C` on would silence it and prove nothing. `_C` is the naming convention for
+        a generated class; it is not evidence about what the asset DERIVES FROM, so a string
+        rewrite would make `WBP_Killfeed` "satisfy" a `UBRProgressBar` bind the moment the
+        subclass query's substring filter got lucky. So this RESOLVES rather than rewrites:
+        `BlueprintTools.get_parent` — the same read-only call the audit already makes for R26
+        condition 1 — is asked what this Blueprint's parent actually is, and the walk repeats
+        while the answer is still a Blueprint, so a WBP parented to another WBP still lands on
+        the C++ class at the top of the chain. What comes back is a real class path, and it
+        goes into the same `search_subclasses` membership test as any native widget class —
+        the engine's reflection stays the judge of compatibility, which was the whole point of
+        this class (see the docstring above).
+        """
+        if refpath in self._ancestor:
+            return self._ancestor[refpath]
+        cur, seen = refpath, set()
+        while cur and not cur.startswith("/Script/"):
+            if cur in seen:          # UE cannot make a parent cycle; cheaper to check than trust
+                cur = None
+                break
+            seen.add(cur)
+            par, txt = self.m.call(BP, "get_parent", {"blueprint": {"refPath": cur}})
+            nxt = _ref(par)
+            self.rc.call(f"get_parent {cur.rsplit('/', 1)[-1]}", nxt is not None,
+                         nxt or f"unresolved: {txt[:120]} — compatibility left UNVERIFIED")
+            cur = nxt
+        self._ancestor[refpath] = cur
+        return cur
+
     def compatible(self, declared_leaf: str, actual_refpath: str) -> bool | None:
         key = (declared_leaf, actual_refpath)
         if key in self._compat:
             return self._compat[key]
         base = self._resolve(declared_leaf)
-        if base is None:
+        # A `/Game/` path in the tree is an ASSET; resolve it to the class it derives from
+        # before asking a question about classes. See `_cpp_ancestor`.
+        actual = actual_refpath or ""
+        if not actual.startswith("/Script/"):
+            actual = self._cpp_ancestor(actual)
+        if base is None or not actual:
             self._compat[key] = None
             return None
-        actual_leaf = (actual_refpath or "").rsplit(".", 1)[-1]
+        via = "" if actual == actual_refpath else f" (`{actual_refpath}` derives from it)"
+        actual_leaf = actual.rsplit(".", 1)[-1]
         hits, txt = self.m.call(OBJ, "search_subclasses", {
             "base_class": {"refPath": base}, "class_name": actual_leaf})
         if hits is None:
@@ -197,9 +242,12 @@ class ClassResolver:
             self._compat[key] = None
             return None
         got = {h.get("refPath") if isinstance(h, dict) else h for h in hits}
-        ok = actual_refpath in got
+        # `actual == base` is the exact-type case. The server does return the base among its
+        # own subclasses, so the membership test alone would cover it — but a class being
+        # compatible with itself should not depend on that courtesy.
+        ok = actual == base or actual in got
         self.rc.call(f"search_subclasses {actual_leaf} under {base}", True,
-                     f"{'is' if ok else 'is NOT'} a subclass")
+                     f"{'is' if ok else 'is NOT'} a subclass{via}")
         self._compat[key] = ok
         return ok
 

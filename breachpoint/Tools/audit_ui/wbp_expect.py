@@ -271,11 +271,23 @@ def judge(exp: dict, obs: dict, compatible) -> list[tuple[str, str]]:
     # A widget flagged "Is Variable" that no BindWidget backs adds a generated member to the
     # widget class. Inert, but it is a member R26 cond. 3 did not license, and it is how
     # "just one variable" starts. medium, not high: it holds no logic and blocks nothing.
+    #
+    # The message names the FIX, not just the symptom, because the cause is one line in
+    # another lane's file and is otherwise easy to misread as an editor quirk: `UWidget`
+    # constructs with `bIsVariable = true`, so a generator that only ever toggles the flag ON
+    # for bound nodes leaves every other node a variable BY DEFAULT. Nothing is "adding" these
+    # members — nothing is removing them.
     for w in obs.get("widgets") or []:
         if w.get("isVariable") and not w.get("inherited") and w["name"] not in (exp["binds"] or {}):
             f.append(("medium", f"{a}: widget `{w['name']}` is marked Is Variable but no "
                                 f"BindWidget in {exp['header']} backs it — an added member "
-                                f"(R26 cond. 3) with nothing in C++ to reach it"))
+                                f"(R26 cond. 3) with nothing in C++ to reach it. FIX (generator "
+                                f"lane, one edit): `Tools/gen_ui/build_wbp.py` guards its "
+                                f"`ToggleWidgetAsVariable` call with `if node.get(\"bind\")` — "
+                                f"call it for EVERY node instead, with "
+                                f"`\"bIsVariable\": bool(node.get(\"bind\"))`, because "
+                                f"`UWidget::bIsVariable` defaults to TRUE and an unset flag is "
+                                f"therefore not a neutral default"))
     return f
 
 
