@@ -15,10 +15,13 @@ Mechanics: `ue5-ui-architecture` skill. Assets: `ASSET-PIPELINE.md`.
 
 ## 1. Panel selection — the whole decision, in one table
 
-**There is no "grid overlay" widget in UMG.** The Figma concept of a layout grid is a *guide*,
-not a runtime object; in UE it becomes **anchors + fixed offsets**, which is why our 3-column
-law survives resolution changes without any grid widget existing. Reach for a grid panel only
-when content is genuinely tabular.
+**There is no "grid overlay" *widget* in UMG — but the grid is structural, not a guide.**
+*(Corrected 3 Aug 2026 against the reference grid overlay; the earlier claim that it "becomes
+anchors + fixed offsets" was wrong and produced a worse layout — see §6.)* A screen's grid is
+built from **bands (`VerticalBox`) and columns (`HorizontalBox` with `Fill` children and
+half-gutter padding)**. That reproduces the overlay exactly, needs no anchors, and is why the
+3-column law survives a resolution change. Reach for a *grid panel* only when content is
+genuinely tabular.
 
 | You have | Use | Why, and the trap |
 |---|---|---|
@@ -33,10 +36,11 @@ when content is genuinely tabular.
 | A whole screen that must letterbox | **`ScaleBox`** | `ScaleBoxStretch`. Rare — the DPI curve handles our scaling (`SCREEN-MANIFEST.md` §7.2) |
 | Swap between mutually exclusive panels | **`CommonVisibilitySwitcher`** | Beats toggling `Visibility` on siblings by hand; keeps focus sane |
 
-**The scalability rule, stated once:** *one* `CanvasPanel` at the root of a screen holds the
-anchored regions; **everything inside a region is a Box.** Canvas children need anchors and
-drift on aspect change; Box children inherit. A screen with a nested Canvas is the defect —
-it is how a layout that looks right at 1080p breaks at 21:9.
+**The scalability rule, stated once:** a front-end screen is **bands then columns, and needs no
+`CanvasPanel` at all.** Canvas children carry anchors, and every anchor is a number that can be
+wrong; Box children inherit their position from the layout. Reserve `CanvasPanel` for screens
+whose elements genuinely have no flow relationship — **the HUD, and effectively only the HUD**
+(§7), where each element is pinned to a different screen edge on purpose.
 
 ---
 
@@ -193,66 +197,112 @@ WBP_RootLayout                            : UBRRootLayout      persistent, one i
 
 ---
 
-## 6. Main menu — the tree
+## 6. Main menu — bands and columns, not anchored regions
+
+**Corrected 3 Aug 2026 against the reference grid overlay.** The first two versions of this
+section described three separately-anchored Canvas regions. That is not the system. The
+reference is a **band-and-column grid**, and our own measured numbers prove it:
+
+```
+base 1280 · margin 69 both sides  ->  content 1142
+3 equal columns · gutter 48       ->  column = 348.67   ("349")
+348.67 x 3  +  48 x 2  =  1142   exact
+column origins:  x=69 · x=465.67 · x=862.33
+```
+
+**The "349 left rail" was never a rail. It is column 1 of a three-column grid.** Column 2 is
+the subject -- deliberately empty so the 3D scene reads through it -- and column 3 is status.
+The overlay draws all three at equal width with the middle one reserved, which is a grid
+decision, not an absence.
+
+### 6.1 Three horizontal bands
+
+The overlay splits the screen top-to-bottom before any column exists:
+
+| Band | Holds | Sizing |
+|---|---|---|
+| **Header** | breadcrumb / nav tabs | Auto (content height) |
+| **Content** | the three columns | **Fill 1.0** -- takes all remaining height |
+| **Footer** | profile bar | Auto, height 50 |
+
+Bands are a `VerticalBox`. **This is what removes every anchor from the screen.** A band-based
+screen has no Canvas at all -- nothing to mis-anchor, nothing that drifts on aspect change, and
+the footer sits on the bottom edge because it is the last child of a Fill layout, not because
+someone typed `y = 670`.
+
+### 6.2 The tree
 
 ```
 WBP_Screen_MainMenu                       : UBRScreen_MainMenu (UBRActivatableWidget)
-│   pushed to Layer.Menu
-│   GetDesiredFocusTarget()  → TabSwitcher's active page → its MenuList
-│   GetDesiredInputConfig()  → Menu · mouse captured
-│
-└── Screen_SafeZone                       SafeZone           ← title-safe on TV/console
-    └── Screen_Canvas                     CanvasPanel        ← the ONLY canvas here
-        │
-        ├── NavBar        anchor TL   (69, 45)      666 × 30
-        │   └── WBP_NavBar                UBRNavBar   LB/RB · drives TabSwitcher
-        │
-        ├── TabSwitcher   anchor TL   (69, 138)     349 × HUG
-        │   └── WBP_TabSwitcher           CommonVisibilitySwitcher
-        │       ├── [0] WBP_Tab_Play
-        │       ├── [1] WBP_Tab_Training
-        │       └── [2] WBP_Tab_Settings
-        │
-        ├── StatusColumn  anchor TR   (-69, 45)     349 × HUG
-        │   └── InvalidationBox                     ← static between roster events
-        │       └── Status_VBox           VerticalBox
-        │           ├── WBP_RecordPanel   334 × 115   pad-bottom 24
-        │           └── WBP_RosterPanel   349 × HUG
-        │
-        └── ProfileBar    anchor BOTTOM-STRETCH (0,1)→(1,1)   height 50
-            └── WBP_ProfileBar
+|   pushed to Layer.Menu
+|   GetDesiredFocusTarget()  -> active tab's MenuList
+|   GetDesiredInputConfig()  -> Menu · mouse captured
+|
++-- Screen_SafeZone                       SafeZone        the outer margin, all four sides
+    +-- Bands_VBox                        VerticalBox     <- NO CanvasPanel on this screen
+        |
+        +-- HeaderBand                    Auto            pad-bottom 63
+        |   +-- WBP_NavBar                UBRNavBar       LB/RB · drives TabSwitcher
+        |
+        +-- ContentBand                   Fill 1.0
+        |   +-- Columns_HBox              HorizontalBox
+        |       |
+        |       +-- Col1_Menu             Fill 1.0 · pad-right 24     <- half the 48 gutter
+        |       |   +-- WBP_TabSwitcher   CommonVisibilitySwitcher · HAlign Left · max-w 348.67
+        |       |       +-- [0] WBP_Tab_Play
+        |       |       +-- [1] WBP_Tab_Training
+        |       |       +-- [2] WBP_Tab_Settings
+        |       |
+        |       +-- Col2_Subject          Fill 1.0 · pad 24           <- RESERVED, holds nothing
+        |       |                                                       the scene reads through
+        |       |
+        |       +-- Col3_Status           Fill 1.0 · pad-left 24
+        |           +-- InvalidationBox   HAlign Right · max-w 348.67
+        |               +-- Status_VBox   VerticalBox
+        |                   +-- WBP_RecordPanel    h 115   pad-bottom 24
+        |                   +-- WBP_RosterPanel    HUG
+        |
+        +-- FooterBand                    Auto · height 50
+            +-- WBP_ProfileBar            HAlign Fill
 ```
 
 ```
 WBP_Tab_Play                              : UBRTabPage (UCommonUserWidget)
-└── Tab_VBox                              VerticalBox        width from parent slot
-    ├── WBP_FeatureCard                   h 222   pad-bottom 10
-    ├── WBP_CarouselDots                  h 8     pad-bottom 12
-    ├── MenuList                          UBRMenuList        ← the focus target
-    │   └── Rows_VBox                     VerticalBox
-    │       ├── WBP_MenuRow "HOST MATCH"       h 28  pad-bottom 12   ← pitch 40
-    │       ├── WBP_MenuRow "JOIN BY INVITE"   h 28  pad-bottom 12
-    │       ├── WBP_MenuRow "TRAINING"         h 28  pad-bottom 12
-    │       └── WBP_MenuRow "QUIT"             h 28
-    └── WBP_DescriptionStrip               h 37   pad-top 12
++-- Tab_VBox                              VerticalBox
+    +-- WBP_FeatureCard                   h 222   pad-bottom 10
+    +-- WBP_CarouselDots                  h 8     pad-bottom 12
+    +-- MenuList                          UBRMenuList          <- the focus target
+    |   +-- Rows_VBox
+    |       +-- WBP_MenuRow x 4           h 28, pad-bottom 12   <- pitch 40
+    +-- WBP_DescriptionStrip              h 37    pad-top 12
 ```
 
-**What each choice is for, including the ones the first draft got wrong:**
+### 6.3 Why it is built this way
 
-- **`CommonVisibilitySwitcher` for tabs.** The first version had a nav bar with three tabs and no
-  tab content — the tabs switched nothing. The switcher is what the nav bar drives, and it keeps
-  focus coherent where toggling sibling `Visibility` by hand does not.
-- **Widths are pinned; heights HUG.** 349 is a measured column and belongs in the slot. 510 was a
-  720-space *height* and pinning it means content cannot grow — add a fifth menu row and it
-  clips. Heights come from the Box.
-- **`SafeZone` at the top.** Console and TV crop the edges; a 69px margin is not title-safe on
-  every display. Without this the profile bar loses its ends on a real TV.
-- **`InvalidationBox` on the status column only.** It is static between roster events, so caching
-  pays. It is *not* on the tab content — that changes on every navigation, and invalidating each
-  time costs more than it saves.
-- **No `(nothing)` node.** The first draft wrote an empty Overlay slot as a comment. The scene is
-  behind the whole layout because the root layout does not paint a background — that is the
-  absence of a widget, not a widget.
+- **Gutters are half-padding on each neighbour, not spacer widgets.** `pad-right 24` on column 1
+  plus `pad-left 24` on column 2 makes the 48 gutter, and it survives a column being hidden --
+  a spacer widget would leave a hole.
+- **Columns `Fill 1.0`; the panels inside carry the 348.67 max-width and align outward.** At
+  1280 the two are identical. At 21:9 the columns grow, the panels stay at their designed width
+  pinned to the outer edges, and the extra space lands in the middle where the subject is. That
+  ultrawide behaviour now falls out of the grid instead of out of hand-set anchors.
+- **Column 2 is a real child that holds nothing.** It reserves the subject's space so columns 1
+  and 3 cannot drift inward. Deleting it does not save a widget -- it breaks the grid.
+- **No `CanvasPanel` anywhere on this screen.** Bands give vertical position, columns give
+  horizontal, `SafeZone` gives the margin. Anchors were doing a job the layout does itself, and
+  every anchor is a number somebody can get wrong.
+- **`SizeBox` is max-width, not position.** Position is entirely structural.
+
+### 6.4 What this replaces
+
+The previous version anchored `NavBar` at `(69,45)`, `TabSwitcher` at `(69,138)`, `StatusColumn`
+at `(-69,45)` and the profile bar bottom-stretch, inside one Canvas. The numbers were right and
+the form was wrong: **four hand-placed anchors reproduce what one VBox and one HBox do for
+free**, and the anchored version silently loses the grid -- nothing in it says the middle column
+exists, so the next screen re-derives the layout instead of inheriting it.
+
+Every other front-end screen (lobby, settings, matchmaking, carnage report) is the **same
+band-and-column shell** with different column contents. That is the reuse this shape buys.
 
 ---
 
