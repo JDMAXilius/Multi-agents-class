@@ -3,6 +3,7 @@
 #include "CommonTextBlock.h"
 #include "Components/Image.h"
 #include "Components/ProgressBar.h"
+#include "UI/Components/BRComponentTokens.h"
 #include "UI/Components/BRHairlineBorder.h"
 #include "UI/Styles/BRUITokens.h"
 
@@ -11,7 +12,11 @@
 UBRProgressBar::UBRProgressBar()
 {
 	// Honest empty state, ue5-ui-architecture Sec 7: dashes, not a confident "0".
-	UnknownValueText = LOCTEXT("ProgressUnknown", "--");
+	// Sourced from BRUI, NOT a local literal. This was "--" (two hyphens) while the shared
+	// mark is an em dash, and UBREquipmentTray puts a dashed grenade count directly beside
+	// a dashed cooldown readout - two different "unknown" glyphs, touching, on one HUD.
+	// Unknown is one concept; it gets one mark, defined once.
+	UnknownValueText = BRUI::UnknownValueText();
 }
 
 void UBRProgressBar::NativeOnInitialized()
