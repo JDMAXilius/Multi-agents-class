@@ -39,6 +39,21 @@ TEXT = "/Script/CommonUI.CommonTextBlock"
 IMAGE = "/Script/UMG.Image"
 SIZEBOX = "/Script/UMG.SizeBox"
 PROGRESS = "/Script/UMG.ProgressBar"
+# UTileView. The view OWNS its entries - it creates, recycles and virtualises them, so a
+# repeated tile is NEVER N hand-placed children (SCREEN-MANIFEST §7.1).
+TILEVIEW = "/Script/UMG.TileView"
+# UBRPanel::Content is a NamedSlot, not a panel: an INSTANCED panel's caller drops content
+# through the named-slot API, which is the only way one WBP serves 45 measured variants.
+NAMED_SLOT = "/Script/UMG.NamedSlot"
+# The wrapped engine bar. UBRScrollBar COMPOSES it rather than deriving from it - UScrollBar
+# is UCLASS(Experimental, MinimalAPI) with GENERATED_UCLASS_BODY, so a cross-module subclass
+# fails at LINK, not at compile. The composition costs exactly this one line.
+SCROLLBAR = "/Script/UMG.ScrollBar"
+# UBRScrim is a UBRHairlineBorder with zero edges and a fill - a UWidget over a Slate leaf,
+# NOT a UserWidget, so it is placed DIRECTLY and needs no generated child, like HAIRLINE/RULE.
+# It self-tints from a token in its own constructor and ships Collapsed, so it can never
+# render BP70 D2's blank white rectangle.
+SCRIM = "/Script/Breachpoint.BRScrim"
 
 # The hairline primitives. Both are `UWidget` over a Slate leaf, NOT UserWidgets — so unlike
 # every UBR* class in this plan they are placed DIRECTLY and need no generated child. That is
@@ -278,6 +293,27 @@ ASSET_FOLDER = {
     "WBP_RosterPanel":         UI_COMPONENTS,
     "WBP_LeftRail":            UI_COMPONENTS,
     "WBP_Screen_FrontEnd":     UI_SCREENS,
+    # The item/table tier. WBP_ItemTile MUST precede WBP_ItemGrid in PLAN — the tile is not
+    # a tree child of the grid (a UTileView owns its entries), so validate_all()'s
+    # host-ordering rule never fires and would not catch a wrong order.
+    "WBP_HighlightButton":     UI_COMPONENTS,
+    "WBP_ItemTile":            UI_COMPONENTS,
+    "WBP_ItemGrid":            UI_COMPONENTS,
+    "WBP_TableRow":            UI_COMPONENTS,
+    # The chrome tier: containers and title bands, all leaves.
+    "WBP_Panel":               UI_COMPONENTS,
+    "WBP_ScrollBar":           UI_COMPONENTS,
+    "WBP_PageTitle":           UI_COMPONENTS,
+    "WBP_ItemTitle":           UI_COMPONENTS,
+    "WBP_SmallHeader":         UI_COMPONENTS,
+    # Screens and modals. WBP_Modal_Warning hosts WBP_HighlightButton and
+    # WBP_Screen_DeathRespawn hosts WBP_MatchBand — both hosts must follow their child.
+    "WBP_GearDetail":          UI_COMPONENTS,
+    "WBP_Modal_Options":       UI_SCREENS,
+    "WBP_Modal_Warning":       UI_SCREENS,
+    "WBP_Panel_Toast":         UI_SCREENS,
+    "WBP_Screen_Scoreboard":   UI_SCREENS,
+    "WBP_Screen_DeathRespawn": UI_SCREENS,
 }
 
 
@@ -988,6 +1024,415 @@ PLAN = {
         ],
     },
 
+    # ==================================================================
+    # THE CHROME + ITEM TIER. WBP_ItemTile MUST precede WBP_ItemGrid: the tile is NOT a tree
+    # child of the grid (a UTileView owns its entries), so validate_all()'s host-ordering
+    # rule never fires and would not catch a wrong order.
+    # ==================================================================
+
+    # ------------------------------------------------------------------
+    # WBP_Panel — the bordered container 45 measured variants collapse into.
+    #
+    # THERE IS NO `Ground` IMAGE AND THAT IS THE CLASS'S WHOLE ARGUMENT. UBRHairlineBorder
+    # draws the token-coloured fill BEHIND its own strokes (FBRHairlineStyle::FillToken), so
+    # a panel's ground and its border are ONE widget and one Slate draw element. A UImage
+    # plate here would fork the paint path the stroke budget is measured against — and it
+    # would be a brushless UImage (BP70 D2) in the one component every screen wraps.
+    #
+    # NO SIZE, AND NOT FOR THE USUAL REASON. SetPanelHeight writes SetHeightOverride but
+    # NOTHING CALLS IT at init — NativeOnInitialized only styles the frame. So an unsized
+    # RootSizeBox is a pass-through and the panel hugs whatever the caller drops in Content,
+    # which is correct: width is layout and height is per-variant. RootSizeBox is created
+    # anyway because it is the ONLY thing that makes SetPanelHeight work — omit it and the
+    # API silently no-ops on null.
+    # ------------------------------------------------------------------
+    "WBP_Panel": {
+        "folder": ASSET_FOLDER["WBP_Panel"],
+        "parent_class": "/Script/Breachpoint.BRPanel",
+        "class": "UBRPanel",
+        "header": "Source/Breachpoint/UI/Components/BRPanel.h",
+        "notes": "Ground + border in ONE UBRHairlineBorder, plus a NamedSlot for content. No "
+                 "size — SetPanelHeight is the only writer and nothing calls it at init.",
+        "tree": [
+            {"name": "RootSizeBox", "class": SIZEBOX, "parent": None, "bind": True},
+            {"name": "PanelOverlay", "class": OVERLAY, "parent": "RootSizeBox", "slot": FILL},
+            {"name": "Frame", "class": HAIRLINE, "parent": "PanelOverlay",
+             "slot": FILL, "bind": True},
+            {"name": "Content", "class": NAMED_SLOT, "parent": "PanelOverlay",
+             "slot": FILL, "bind": True},
+        ],
+    },
+
+    # ------------------------------------------------------------------
+    # WBP_ScrollBar — two widgets, both required, nothing optional. The smallest entry here.
+    #
+    # NEITHER NUMBER IS AUTHORED. ApplyWeight writes the track thickness onto the SizeBox and
+    # the thumb thickness onto the bar. Typing 8 or 13 would let a screen half-adopt the
+    # design — the class exists precisely so picking a weight gets you BOTH.
+    #
+    # THIS ASSET SCROLLS NOTHING BY ITSELF, by the class's own contract — the owning list
+    # drives it via GetScrollBar(). Its one C++ consumer today (UBRItemGrid::ScrollBar) is
+    # COLLAPSED and left collapsed, because UMG exposes no public path from a UTileView to an
+    # external bar. So this builds correct and renders nowhere; that gap is BRItemGrid.h's.
+    # ------------------------------------------------------------------
+    "WBP_ScrollBar": {
+        "folder": ASSET_FOLDER["WBP_ScrollBar"],
+        "parent_class": "/Script/Breachpoint.BRScrollBar",
+        "class": "UBRScrollBar",
+        "header": "Source/Breachpoint/UI/Components/BRScrollBar.h",
+        "notes": "The wrapped engine bar in its rail. Both measured thicknesses are C++-owned "
+                 "(ApplyWeight), so the asset carries no size at all.",
+        "tree": [
+            {"name": "Track", "class": SIZEBOX, "parent": None, "bind": True},
+            {"name": "ScrollBar", "class": SCROLLBAR, "parent": "Track",
+             "slot": FILL, "bind": True},
+        ],
+    },
+
+    # ------------------------------------------------------------------
+    # WBP_PageTitle — the 1280 x 75 title band. SCREEN-MANIFEST §5 Tier 1: 15 of 31 screens.
+    #
+    # THE `class` KEY IS LOAD-BEARING. BRPageTitle.h declares UBRPageTitle AND UBRItemTitle;
+    # without the slice this entry inherits the item title's RarityTagBorder / RarityLabel /
+    # EquippedCheck. All three are Optional, so the plan would PASS while quietly asking a
+    # page title to grow a rarity tag — the BRHUDLayout.h bug in a costume that does not error.
+    #
+    # NO WIDTH, EVER: the band is full-bleed and its width comes from the screen's top-stretch
+    # anchor (a 1280 override breaks every aspect wider than 16:9). The HEIGHT is C++'s
+    # GetBandHeight(), the ONE virtual UBRItemTitle overrides.
+    #
+    # EVERY INTERNAL OFFSET IS UNMEASURED AND NONE IS INVENTED. The header is explicit that
+    # the band's outer size is all the reference gives. So this authors STRUCTURE and ZERO
+    # padding numbers. The one structural call not backed by a read is the stack order — 75px
+    # of band for a 24px title is room for two lines, and a breadcrumb is the parent LEVEL,
+    # not a prefix. Flip it when the node is read.
+    # ------------------------------------------------------------------
+    "WBP_PageTitle": {
+        "folder": ASSET_FOLDER["WBP_PageTitle"],
+        "parent_class": "/Script/Breachpoint.BRPageTitle",
+        "class": "UBRPageTitle",
+        "header": "Source/Breachpoint/UI/Components/BRPageTitle.h",
+        "notes": "Full-bleed 1280x75 band: breadcrumb over title, vertically centred. Height "
+                 "is C++'s GetBandHeight(); no internal offset is authored — none is measured.",
+        "tree": [
+            {"name": "RootSizeBox", "class": SIZEBOX, "parent": None, "bind": True},
+            # VAlign_Center on the GROUP, so the pair stays centred in a 75 band and in the
+            # 105 one UBRItemTitle swaps in, without a second number.
+            {"name": "TitleVBox", "class": VBOX, "parent": "RootSizeBox",
+             "slot": {"horizontalAlignment": "HAlign_Fill", "verticalAlignment": "VAlign_Center",
+                      "padding": margin()}},
+            # NO FONT. The ramp records PAGE TITLE and ITEM TITLE and records nothing for a
+            # breadcrumb. Label/Micro would be a near-token substituted for a measurement —
+            # the move BP73 caught 6px short on the roster header.
+            {"name": "Breadcrumb", "class": TEXT, "parent": "TitleVBox",
+             "slot": box_slot(h="HAlign_Left"), "bind": True},
+            # Display/Page Title is Rajdhani SemiBold 24 @100/1000em — the EXACT pair the
+            # header records as TitleFontSizePx / TitleLetterSpacingPerMille.
+            {"name": "Title", "class": TEXT, "parent": "TitleVBox",
+             "slot": box_slot(h="HAlign_Left"),
+             "font": "Display/Page Title", "bind": True},
+        ],
+    },
+
+    # ------------------------------------------------------------------
+    # WBP_ItemTitle — the 1280 x 105 band. SAME HEADER AS WBP_PageTitle, SECOND CLASS.
+    #
+    # READ THIS BEFORE TOUCHING THE `bind` FLAGS. class_body() slices ONE class and this
+    # validator has NO base-class chain. So required_bind_widgets(BRPageTitle.h,
+    # "UBRItemTitle") sees only the three rarity/equipped members — every one Optional — and
+    # reports ZERO required binds. UMG does NOT agree: `Title` is a non-optional BindWidget on
+    # UBRPageTitle, it is INHERITED, and a WBP_ItemTitle without one FAILS AT ASSET LOAD with
+    # rung 1 still green.
+    # Hence Title, RootSizeBox and Breadcrumb are CREATED but NOT marked bind:True — marking
+    # them fails the plan ("declares no such BindWidget"), omitting them fails the engine.
+    # They bind by NAME at compile, which is what CompileWidgetBlueprint proves.
+    # contract_gap: this validator needs to walk base classes. It affects EVERY future
+    # subclass entry — UBRGearDetail : UBRPanel inherits a required `Frame` the same way.
+    # ------------------------------------------------------------------
+    "WBP_ItemTitle": {
+        "folder": ASSET_FOLDER["WBP_ItemTitle"],
+        "parent_class": "/Script/Breachpoint.BRItemTitle",
+        "class": "UBRItemTitle",
+        "header": "Source/Breachpoint/UI/Components/BRPageTitle.h",
+        "notes": "The 105 band: item name + rarity tag. Title/RootSizeBox/Breadcrumb are "
+                 "INHERITED binds this validator cannot see — created unbound on purpose.",
+        "tree": [
+            # UNBOUND, INHERITED, AND REQUIRED BY THE ENGINE ANYWAY — see the block above.
+            {"name": "RootSizeBox", "class": SIZEBOX, "parent": None},
+            {"name": "TitleVBox", "class": VBOX, "parent": "RootSizeBox",
+             "slot": {"horizontalAlignment": "HAlign_Fill", "verticalAlignment": "VAlign_Center",
+                      "padding": margin()}},
+            {"name": "Breadcrumb", "class": TEXT, "parent": "TitleVBox",
+             "slot": box_slot(h="HAlign_Left")},
+            # Name and tag on ONE line: SetItem writes both in a single call, so a title can
+            # never show one item's name over another item's rarity.
+            {"name": "TitleRow", "class": HBOX, "parent": "TitleVBox", "slot": box_slot()},
+            # Display/Item Title — Rajdhani REGULAR 48 @100/1000em. Regular, not SemiBold:
+            # the item title is the one place the ramp drops the chrome weight.
+            {"name": "Title", "class": TEXT, "parent": "TitleRow",
+             "slot": box_slot(v="VAlign_Center"), "font": "Display/Item Title"},
+            {"name": "RarityTag", "class": OVERLAY, "parent": "TitleRow",
+             "slot": box_slot(v="VAlign_Center")},
+            {"name": "RarityTagBorder", "class": HAIRLINE, "parent": "RarityTag",
+             "slot": FILL, "bind": True},
+            # NO FONT: the rarity word has no measured size and no token row. C++ ships it
+            # Collapsed until SetItem supplies a label, so the fallback face is invisible
+            # until an item is actually pushed.
+            {"name": "RarityLabel", "class": TEXT, "parent": "RarityTag",
+             "slot": {"horizontalAlignment": "HAlign_Center", "verticalAlignment": "VAlign_Center",
+                      "padding": margin()}, "bind": True},
+        ],
+    },
+
+    # ------------------------------------------------------------------
+    # WBP_SmallHeader — the 1180 x 27 column-caption band above a table.
+    #
+    # THE `class` SLICE IS THE WORST CASE IN THE PLAN. BRTableRow.h declares THREE classes,
+    # and parsing it whole hands this band UBRTableRow's Border / RowFill / NameText as
+    # NON-OPTIONAL — three table-row widgets the generator would dutifully create inside a
+    # caption band, one of them a brushless UImage. Measured both ways, not assumed.
+    #
+    # `CaptionContainer` IS OMITTED. Nothing in C++ ever touches it, and the column stops its
+    # children need are UNMEASURED sentinels — UBRTableRow makes them NEGATIVE so they cannot
+    # be quietly passed to SetWidthOverride and look plausible. An empty panel with no filler
+    # and no measurements is dead layout. It lands in the packet that reads the node and
+    # drives the row columns, because the two MUST come from one set of numbers.
+    # ------------------------------------------------------------------
+    "WBP_SmallHeader": {
+        "folder": ASSET_FOLDER["WBP_SmallHeader"],
+        "parent_class": "/Script/Breachpoint.BRSmallHeader",
+        "class": "UBRSmallHeader",
+        "header": "Source/Breachpoint/UI/Components/BRTableRow.h",
+        "notes": "1180x27 caption band. Size is C++'s; the caption container waits on the "
+                 "unmeasured column stops and the font on the band's own read.",
+        "tree": [
+            {"name": "RootSizeBox", "class": SIZEBOX, "parent": None, "bind": True},
+            {"name": "HeaderOverlay", "class": OVERLAY, "parent": "RootSizeBox", "slot": FILL},
+            # VAlign_Bottom, not Fill: a UBRRule's desired size is its own THICKNESS on both
+            # axes, so Fill on the major axis stretches it to 1180 while the minor stays 1px
+            # and the line sits ON the band's lower edge. A Fill slot would stretch it to 27
+            # tall and draw its top edge at the TOP.
+            {"name": "Rule", "class": RULE, "parent": "HeaderOverlay",
+             "slot": {"horizontalAlignment": "HAlign_Fill", "verticalAlignment": "VAlign_Bottom",
+                      "padding": margin()}, "bind": True},
+            # No padding: the band's internal inset is unmeasured and a guessed 10 or 16 would
+            # read as measurement. Authored AFTER the rule — overlay order is z-order.
+            {"name": "HeaderText", "class": TEXT, "parent": "HeaderOverlay",
+             "slot": {"horizontalAlignment": "HAlign_Fill", "verticalAlignment": "VAlign_Center",
+                      "padding": margin()}, "bind": True},
+        ],
+    },
+
+    # ------------------------------------------------------------------
+    # WBP_HighlightButton — the page-level CTA (SCREEN-MANIFEST §5 Tier 1: 11 of 31).
+    #
+    # NO SIZE ANYWHERE, AND NO RootSizeBox EITHER. The header states it: the reference lists
+    # `Highlight Buttons` WITHOUT measured dimensions, filed as a contract gap. There is no
+    # C++ member for a root box, so an unbound SizeBox would be an UNSIZED SizeBox — dead
+    # layout, the thing WBP_FeatureCard's CaptionBox was cut for. The Overlay hugs the label.
+    # HONEST CONSEQUENCE: the button is text-sized, so a host wanting the reference's box
+    # must slot it.
+    #
+    # `Fill`'s SLOT IS FILL, NOT inset(2). WBP_MenuRow's 2px is a MEASURED border gap on a
+    # 250x28 row; nothing measures this component, so borrowing the 2 would be a number with
+    # no source here — the one thing this file never does.
+    #
+    # Icon OMITTED: an art-bearing UImage whose .cpp never references it — no tint, no
+    # collapse — so unlike `Fill` there is nothing making a brushless image legal. It would
+    # be BP70 D2 on all 11 screens. TypeSwitcher OMITTED: six bodies, five identical (Event
+    # and Premium have no accent token), and ApplyButtonType guards null.
+    # ------------------------------------------------------------------
+    "WBP_HighlightButton": {
+        "folder": ASSET_FOLDER["WBP_HighlightButton"],
+        "parent_class": "/Script/Breachpoint.BRHighlightButton",
+        "class": "UBRHighlightButton",
+        "header": "Source/Breachpoint/UI/Components/BRHighlightButton.h",
+        "notes": "Invertible CTA: plate + 4-line border + label. NO box is authored — the "
+                 "reference measures none, so the button hugs its label (contract gap).",
+        "tree": [
+            # Overlay child order IS z-order: plate behind, chrome on it, label on top.
+            {"name": "ButtonOverlay", "class": OVERLAY, "parent": None},
+            # NO BRUSH: ApplyInvertedState drives this with SetColorAndOpacity from a token,
+            # so the engine default white brush is the correct input to that tint.
+            {"name": "Fill", "class": IMAGE, "parent": "ButtonOverlay",
+             "slot": FILL, "bind": True},
+            {"name": "Border", "class": HAIRLINE, "parent": "ButtonOverlay",
+             "slot": FILL, "bind": True},
+            # 10px L/R is the row family's shared text inset — a PADDING, not a size, so it
+            # survives whatever box eventually gets measured.
+            {"name": "Label", "class": TEXT, "parent": "ButtonOverlay",
+             "slot": {"horizontalAlignment": "HAlign_Center",
+                      "verticalAlignment": "VAlign_Center",
+                      "padding": margin(left=10.0, right=10.0)},
+             "font": "Label/Button", "bind": True},
+        ],
+    },
+
+    # ------------------------------------------------------------------
+    # WBP_ItemTile — the 114x114 cell, and a UTileView ENTRY. BEFORE WBP_ItemGrid.
+    #
+    # NO SIZE IS AUTHORED: C++ writes both overrides from the Size axis (114, or mini 30) so
+    # `mini` is not a second WBP. A 114 here would be a second source for the number the
+    # grid's pitch arithmetic is static_asserted against.
+    #
+    # inset(7) IS MEASURED and static_asserted (7 + 100 + 7 == 114). Written as an inset, not
+    # a 100x100 size, because at Size=mini the interior is UNMEASURED — the header forbids
+    # scaling 7/100 by 30/114 and calling it measured. An inset degrades honestly.
+    #
+    # `Art` IS BRUSHLESS AND SAFE, unlike every other bare UImage here: it is NON-OPTIONAL (a
+    # missing one fails at ASSET LOAD with rung 1 green), and ApplyItemData COLLAPSES it when
+    # there is no art — with TileType defaulting to Empty, it ships collapsed.
+    #
+    # `RarityTint` IS OMITTED, AND IT IS THE ONE OMISSION THAT COSTS SOMETHING. C++ does tint
+    # it — but the token resolves to OPAQUE WHITE for all four rarities today. Sitting above
+    # `Ground` it would ERASE the measured black plate and paint a flat white square wherever
+    # art has not streamed, while the recorded artefact is a 0->1 ALPHA GRADIENT (a Tier-4
+    # material that does not exist). It is optional and guarded; it lands with the material.
+    #
+    # FIVE BADGES OMITTED: all art-bearing, none with a texture, all guarded and collapsed.
+    # A virtualised grid would otherwise draw five blanks per visible cell.
+    # ------------------------------------------------------------------
+    "WBP_ItemTile": {
+        "folder": ASSET_FOLDER["WBP_ItemTile"],
+        "parent_class": "/Script/Breachpoint.BRItemTile",
+        "class": "UBRItemTile",
+        "header": "Source/Breachpoint/UI/Components/BRItemTile.h",
+        "notes": "One 114x114 grid cell: ground plate, art, 3-edge border and the rarity "
+                 "bottom line. Size is C++'s (114 / mini 30); badges wait on their art.",
+        "tree": [
+            {"name": "RootSizeBox", "class": SIZEBOX, "parent": None, "bind": True},
+            # Overlay child order IS z-order: plate, art, then chrome ON the art.
+            {"name": "TileOverlay", "class": OVERLAY, "parent": "RootSizeBox", "slot": FILL},
+            # BRUSHLESS AND TINTED — the legal case. C++ paints black@0.5 onto engine white.
+            {"name": "Ground", "class": IMAGE, "parent": "TileOverlay",
+             "slot": inset(7.0), "bind": True},
+            {"name": "Art", "class": IMAGE, "parent": "TileOverlay",
+             "slot": inset(7.0), "bind": True},
+            {"name": "Border", "class": HAIRLINE, "parent": "TileOverlay",
+             "slot": FILL, "bind": True},
+            # The rarity signal, and the ONLY node whose colour moves — which is why it is a
+            # separate UBRRule and not Border's bottom edge (one FBRHairlineStyle carries one
+            # stroke token for all four of its edges). A UBRRule's desired height IS the
+            # stroke weight, so a VAlign_Bottom slot puts the line on the tile's bottom edge
+            # with no hand-typed size. The 1px L/R padding is the measured 112 inside 114,
+            # expressed as the gap so it survives the mini variant.
+            {"name": "RarityLine", "class": RULE, "parent": "TileOverlay",
+             "slot": {"horizontalAlignment": "HAlign_Fill",
+                      "verticalAlignment": "VAlign_Bottom",
+                      "padding": margin(left=1.0, right=1.0)},
+             "bind": True},
+        ],
+    },
+
+    # ------------------------------------------------------------------
+    # WBP_ItemGrid — the 536x388 grid. AFTER WBP_ItemTile.
+    #
+    # THE TILE VIEW IS EMPTY AND THAT IS THE FINISHED STATE. A repeated tile is a UTileView
+    # with an entry WBP, NEVER N hand-placed children. The view owns creation, recycling and
+    # virtualisation; a tile authored here would bind by name into that and double-render —
+    # the killfeed lesson exactly.
+    #
+    # !! GAP — THIS ASSET IS NOT FINISHED BY THIS GENERATOR. TileView.EntryWidgetClass must
+    # point at WBP_ItemTile, and build_wbp.py writes SLOT properties, fonts and brushes ONLY.
+    # There is no plan key for a widget property, so the built grid COMPILES and renders ZERO
+    # tiles until EntryWidgetClass is set. That is why WBP_ItemTile is ordered first, and why
+    # this is NOT expressed with wbp_class(): the tile is not a tree child, so validate_all()
+    # never fires on it and would not catch a wrong order. Close it by teaching the generator
+    # a `properties` node key. DO NOT hand-place a tile to "fix" the blank grid.
+    #
+    # NO ROOT SIZE BOX: the same class ships as the 536 panel and the 504x374 off-grid
+    # module, so the outer box belongs to the CALLER's slot. C++ owns pitch and column count.
+    #
+    # TileViewBox IS HAlign_Left, NOT Fill: C++ overrides its WIDTH to N*130, and an
+    # HAlign_Fill slot would hand the SBox the parent's full width and quietly defeat the
+    # override — which is the whole column-count mechanism.
+    # ------------------------------------------------------------------
+    "WBP_ItemGrid": {
+        "folder": ASSET_FOLDER["WBP_ItemGrid"],
+        "parent_class": "/Script/Breachpoint.BRItemGrid",
+        "class": "UBRItemGrid",
+        "header": "Source/Breachpoint/UI/Components/BRItemGrid.h",
+        "notes": "An EMPTY UTileView in a C++-width-driven box, plus the honest empty-state "
+                 "line. EntryWidgetClass -> WBP_ItemTile is NOT writable here (gap).",
+        "tree": [
+            # Overlay, not a box: the placeholder sits OVER the view's area, not beside it.
+            {"name": "GridOverlay", "class": OVERLAY, "parent": None},
+            {"name": "TileViewBox", "class": SIZEBOX, "parent": "GridOverlay",
+             "slot": {"horizontalAlignment": "HAlign_Left",
+                      "verticalAlignment": "VAlign_Fill",
+                      "padding": margin()},
+             "bind": True},
+            # EMPTY ON PURPOSE. Entry size is C++'s: SetEntryWidth/Height = TilePitch, so the
+            # CELL is the pitch and the tile inside it stays 114 at every aspect ratio.
+            #
+            # `entryWidgetClass` IS NOT OPTIONAL — UMG refuses to COMPILE a UListViewBase
+            # without one ("required for any UListViewBase to function"), so this asset could
+            # not be built at all until the generator learned to write plain widget
+            # properties. That is why WBP_ItemTile must precede this entry in PLAN, and it is
+            # now enforced by more than a comment: wbp_class() raises a KeyError if the tile
+            # is not in the plan at all.
+            {"name": "TileView", "class": TILEVIEW, "parent": "TileViewBox",
+             "slot": FILL, "bind": True,
+            # `{"refPath": ...}`, NOT a bare string. A class reference is an OBJECT at this
+            # layer: the bare form is accepted and stored correctly, but reads back as
+            # {"refPath": ...} and the verified-write comparison then fails on a value that
+            # is actually right. Writing the shape the engine returns is what makes the
+            # read-back meaningful instead of a permanent false negative.
+             "properties": {"entryWidgetClass": {"refPath": wbp_class("WBP_ItemTile")}}},
+            # TWO DIFFERENT FACTS, ONE WIDGET: an em dash while Unknown (nothing feeds this
+            # grid — there is no customization ViewModel at all), "NO ITEMS" when a push
+            # arrived empty, Collapsed once there are tiles. C++ owns all three, so it never
+            # renders a confident empty inventory during travel or a pending fetch.
+            {"name": "EmptyStateLabel", "class": TEXT, "parent": "GridOverlay",
+             "slot": CENTER, "font": "Body/Flavor", "bind": True},
+        ],
+    },
+
+    # ------------------------------------------------------------------
+    # WBP_TableRow — Table Buttons, 660x28. The Browser's leaf (8 frames blocked on it).
+    #
+    # `class` MATTERS HERE MORE THAN ANYWHERE. BRTableRow.h declares THREE classes. Parsed
+    # whole-file it yields 12 binds including UBRSmallHeader's NON-OPTIONAL `HeaderText` —
+    # this plan would demand a header caption inside a table row and build_wbp.py would
+    # faithfully create it. The slice cuts it to the 9 that are actually UBRTableRow's.
+    #
+    # !! GAP — THIS ROW HAS ONE COLUMN, DELIBERATELY. How the 660 divides into name / author
+    # / players / rating is recorded NOWHERE: the header carries the four widths as NEGATIVE
+    # SENTINELS precisely so a guessed layout cannot be passed off as measured. Authoring the
+    # other columns means choosing stops — an HBox of three equal Fills IS a guess at 220
+    # each, and it would look plausible forever. SetColumnText guards every one on null, so a
+    # row showing only a name is visibly incomplete rather than confidently wrong.
+    #
+    # NO TEXT COLOUR IS AUTHORED: ApplyInvertedState repaints NameText on every hover,
+    # selection and release. A design-time colour would be overwritten before the first frame
+    # and would only invite someone to "fix" the row by editing dead data.
+    # ------------------------------------------------------------------
+    "WBP_TableRow": {
+        "folder": ASSET_FOLDER["WBP_TableRow"],
+        "parent_class": "/Script/Breachpoint.BRTableRow",
+        "class": "UBRTableRow",
+        "header": "Source/Breachpoint/UI/Components/BRTableRow.h",
+        "notes": "660x28 browser row: invertible plate, 4-line border, ONE column. The other "
+                 "three columns wait on the unmeasured stops.",
+        "tree": [
+            {"name": "RootSizeBox", "class": SIZEBOX, "parent": None, "bind": True},
+            {"name": "RowOverlay", "class": OVERLAY, "parent": "RootSizeBox", "slot": FILL},
+            # NO BRUSH: ApplyInvertedState drives it with SetColorAndOpacity.
+            {"name": "RowFill", "class": IMAGE, "parent": "RowOverlay",
+             "slot": inset(2.0), "bind": True},
+            {"name": "Border", "class": HAIRLINE, "parent": "RowOverlay",
+             "slot": FILL, "bind": True},
+            # Column 1, the only cell both Types are guaranteed to carry. The cell never
+            # collapses when empty: SetColumnText writes the unknown dash instead, because a
+            # collapsed cell shifts every column to its right.
+            {"name": "NameText", "class": TEXT, "parent": "RowOverlay",
+             "slot": {"horizontalAlignment": "HAlign_Left",
+                      "verticalAlignment": "VAlign_Center",
+                      "padding": margin(left=10.0, right=10.0)},
+             "font": "Label/Button", "bind": True},
+        ],
+    },
+
     # ------------------------------------------------------------------
     # WBP_KillfeedEntry — the contract LANDED (BP66 closed, HUD-CPP-AUDIT packet C).
     #
@@ -1374,6 +1819,300 @@ PLAN = {
                                  anchor=(0.5, 1.0), align=(0.5, 1.0))},
         ],
     },
+
+    # ==================================================================
+    # SCREENS AND MODALS. Appended LAST so every hosted child precedes its host:
+    # WBP_Modal_Warning hosts WBP_HighlightButton; WBP_Screen_DeathRespawn hosts WBP_MatchBand.
+    # ==================================================================
+
+    # ------------------------------------------------------------------
+    # WBP_GearDetail — the customization detail strip, 586 x 161 / 586 x 125.
+    #
+    # TWO WIDGETS ARE CREATED WITHOUT bind:True AND THAT IS NOT AN OVERSIGHT. `Frame`
+    # (NON-OPTIONAL) and `RootSizeBox` are declared on the BASE, UBRPanel, and
+    # required_bind_widgets() parses ONE header sliced to ONE class — it cannot see an
+    # inherited bind. bind:True would be rejected as "declares no such BindWidget", while
+    # omitting the widgets would fail the WBP at ASSET LOAD. Creating them by exact name
+    # satisfies UMG (BindWidget resolves by name at compile) and the validator both.
+    # Same defect as WBP_ItemTitle's inherited `Title`. Filed: walk the base chain.
+    #
+    # NO HEIGHT, EVER: ApplyVariant calls SetPanelHeight(161 or 125). NO WIDTH EITHER, and
+    # that one is a GAP — the .cpp says 586 "is authored in the WBP and never driven", but
+    # this generator writes no size overrides, so 586 has no owner in either place.
+    #
+    # `MakerMark` IS BUILT despite being art-bearing: NativeOnInitialized -> ClearDetail ->
+    # SetMakerMark({}) -> Collapsed, so the brushless slot is never drawn. `MakerRow` is
+    # bound as UWidget, so an HBox satisfies it — and its collapse IS the 161->125 variant.
+    # ------------------------------------------------------------------
+    "WBP_GearDetail": {
+        "folder": ASSET_FOLDER["WBP_GearDetail"],
+        "parent_class": "/Script/Breachpoint.BRGearDetail",
+        "class": "UBRGearDetail",
+        "header": "Source/Breachpoint/UI/Components/BRGearDetail.h",
+        "notes": "586-wide detail strip: name, description, and the maker row whose collapse "
+                 "IS the 161->125 variant. Frame/RootSizeBox are inherited binds, unbound.",
+        "tree": [
+            {"name": "RootSizeBox", "class": SIZEBOX, "parent": None},
+            {"name": "DetailOverlay", "class": OVERLAY, "parent": "RootSizeBox", "slot": FILL},
+            # INHERITED, NON-OPTIONAL. Ground AND border in one widget and one draw element.
+            {"name": "Frame", "class": HAIRLINE, "parent": "DetailOverlay", "slot": FILL},
+            {"name": "ContentVBox", "class": VBOX, "parent": "DetailOverlay",
+             "slot": inset(16.0)},
+            {"name": "ItemName", "class": TEXT, "parent": "ContentVBox",
+             "slot": box_slot(), "font": "Display/Item Title", "bind": True},
+            # Empty is never blank — ApplyFieldText writes the em dash.
+            {"name": "Description", "class": TEXT, "parent": "ContentVBox",
+             "slot": box_slot(fill=1.0, padding=margin(top=16.0)),
+             "font": "Body/Name", "bind": True},
+            {"name": "MakerRow", "class": HBOX, "parent": "ContentVBox",
+             "slot": box_slot(padding=margin(top=16.0)), "bind": True},
+            # NO BRUSH: the caller resolves the soft ref and pushes an FSlateBrush (law 3),
+            # and C++ collapses the mark whenever there is no resource.
+            {"name": "MakerMark", "class": IMAGE, "parent": "MakerRow",
+             "slot": box_slot(v="VAlign_Center"), "bind": True},
+            {"name": "MakerName", "class": TEXT, "parent": "MakerRow",
+             "slot": box_slot(fill=1.0, padding=margin(left=16.0), v="VAlign_Center"),
+             "font": "Heading/Caption", "bind": True},
+        ],
+    },
+
+    # ------------------------------------------------------------------
+    # WBP_Modal_Options — one class, two variants. Pushes to Layer.Modal.
+    #
+    # NO ROWS IN THIS TREE, AND THAT IS THE WHOLE ENTRY. RebuildRows resolves the SOFT
+    # RowWidgetClass (wired to WBP_MenuRow in DefaultGame.ini), creates one UBRMenuRow per
+    # payload row and AddChild's it. ReleaseRows calls RowContainer->ClearChildren() on every
+    # activation. A hand-placed row would bind by name AND be destroyed by the first rebuild.
+    #
+    # NO SIZE: NativeOnInitialized writes 451x682 onto RootSizeBox precisely so the modal
+    # cannot be stretched to 21:9 from a details panel. The x=48 anchor IS the WBP's job and
+    # is the one geometry number this entry authors.
+    # ------------------------------------------------------------------
+    "WBP_Modal_Options": {
+        "folder": ASSET_FOLDER["WBP_Modal_Options"],
+        "parent_class": "/Script/Breachpoint.BRModal_Options",
+        "class": "UBRModal_Options",
+        "header": "Source/Breachpoint/UI/Screens/BRModal_Options.h",
+        "notes": "451x682 popup at x=48 over a full scrim. Row list is EMPTY — C++ builds it "
+                 "from the soft RowWidgetClass. Size is C++-owned; only x=48 lives here.",
+        "tree": [
+            {"name": "ModalRoot", "class": OVERLAY, "parent": None},
+            {"name": "Scrim", "class": SCRIM, "parent": "ModalRoot",
+             "slot": FILL, "bind": True},
+            # PopupOriginX=48 is a C++ constant that C++ never applies; spent here.
+            {"name": "RootSizeBox", "class": SIZEBOX, "parent": "ModalRoot",
+             "slot": {"horizontalAlignment": "HAlign_Left", "verticalAlignment": "VAlign_Center",
+                      "padding": margin(left=48.0)},
+             "bind": True},
+            {"name": "PopupOverlay", "class": OVERLAY, "parent": "RootSizeBox", "slot": FILL},
+            # UNBOUND ON PURPOSE — no frame member is declared, so bind:True is a plan error.
+            {"name": "PopupFrame", "class": HAIRLINE, "parent": "PopupOverlay", "slot": FILL},
+            # 16 is the house content inset; this modal's inner anatomy is UNMEASURED.
+            {"name": "ContentVBox", "class": VBOX, "parent": "PopupOverlay",
+             "slot": inset(16.0)},
+            # C++ sets the text and COLLAPSES it when empty, so an untitled filter panel
+            # draws no empty band.
+            {"name": "TitleText", "class": TEXT, "parent": "ContentVBox",
+             "slot": box_slot(padding=margin(bottom=16.0)),
+             "font": "Display/Options Header", "bind": True},
+            # EMPTY. Declared UPanelWidget so a scroll box can replace it later without a C++
+            # change; a VerticalBox is what it must be TODAY.
+            {"name": "RowContainer", "class": VBOX, "parent": "ContentVBox",
+             "slot": box_slot(fill=1.0), "bind": True},
+        ],
+    },
+
+    # ------------------------------------------------------------------
+    # WBP_Modal_Warning — full-page confirm. Pushes to Layer.Modal.
+    #
+    # FULL PAGE, SO NO BOX AND NO NUMBERS: the header records 1280x720 "for reference only —
+    # the WBP anchors 0,0 -> 1,1 with zero offsets and is therefore correct at any aspect
+    # without either number being typed into a slot". An Overlay root IS that anchoring.
+    #
+    # ConfirmLabelText / CancelLabelText ARE DELIBERATELY OMITTED. They exist only because
+    # UCommonButtonBase has no label setter; WBP_HighlightButton draws its OWN Label, so
+    # authoring them puts a second label beside every button. CONSEQUENCE, FILED: the
+    # request's ConfirmLabel/CancelLabel are silently dropped until ApplyRequest casts to
+    # UBRHighlightButton and calls SetLabelText — a one-line C++ fix, not a WBP fix.
+    #
+    # ORDER IS accept-then-decline, but FOCUS IS NOT: NativeGetDesiredFocusTarget returns
+    # CancelButton, because cancel is the safe answer.
+    # ------------------------------------------------------------------
+    "WBP_Modal_Warning": {
+        "folder": ASSET_FOLDER["WBP_Modal_Warning"],
+        "parent_class": "/Script/Breachpoint.BRModal_Warning",
+        "class": "UBRModal_Warning",
+        "header": "Source/Breachpoint/UI/Screens/BRModal_Warning.h",
+        "notes": "Full-page confirm over a scrim: title, body, confirm/cancel pair. No box and "
+                 "no size — the overlay IS the 0,0->1,1 anchor. Inner gaps are UNMEASURED (16).",
+        "tree": [
+            {"name": "WarningRoot", "class": OVERLAY, "parent": None},
+            {"name": "Scrim", "class": SCRIM, "parent": "WarningRoot",
+             "slot": FILL, "bind": True},
+            {"name": "ContentVBox", "class": VBOX, "parent": "WarningRoot",
+             "slot": {"horizontalAlignment": "HAlign_Center",
+                      "verticalAlignment": "VAlign_Center", "padding": margin()}},
+            {"name": "TitleText", "class": TEXT, "parent": "ContentVBox",
+             "slot": box_slot(padding=margin(bottom=16.0), h="HAlign_Center"),
+             "font": "Display/Page Title", "bind": True},
+            # UNMEASURED CHOICE, STATED: no token is named for a prose paragraph, and
+            # Body/Name is the ONLY upright body style (the other two are italic, and italic
+            # is this project's mark for a generated line). Leaving it unwritten would render
+            # the one sentence the player must read in the ENGINE DEFAULT face, which is not
+            # in the family set at all — a worse lie than an on-system default.
+            {"name": "BodyText", "class": TEXT, "parent": "ContentVBox",
+             "slot": box_slot(padding=margin(bottom=16.0), h="HAlign_Center"),
+             "font": "Body/Name", "bind": True},
+            {"name": "ButtonRow", "class": HBOX, "parent": "ContentVBox",
+             "slot": box_slot(h="HAlign_Center")},
+            {"name": "ConfirmButton", "class": wbp_class("WBP_HighlightButton"),
+             "parent": "ButtonRow",
+             "slot": box_slot(padding=margin(right=16.0), v="VAlign_Center"), "bind": True},
+            {"name": "CancelButton", "class": wbp_class("WBP_HighlightButton"),
+             "parent": "ButtonRow", "slot": box_slot(v="VAlign_Center"), "bind": True},
+        ],
+    },
+
+    # ------------------------------------------------------------------
+    # WBP_Panel_Toast — 349 x 60, Layer.Modal, and NON-BLOCKING:
+    # bSupportsActivationFocus is false, so nothing here may be focusable and no input config
+    # is declared. It dismisses on a TIMER (law 4).
+    #
+    # SIZE IS C++'S so the toast stays on the 3x349 column grid. The Overlay root is what
+    # makes those overrides bite — a bare SizeBox root would be stretched by the layer's slot.
+    #
+    # x = 69 is Column1OriginX, a C++ constant C++ never applies. y IS UNMEASURED: the frame
+    # carries geometry only, so this authors NO top offset rather than inventing one.
+    # ------------------------------------------------------------------
+    "WBP_Panel_Toast": {
+        "folder": ASSET_FOLDER["WBP_Panel_Toast"],
+        "parent_class": "/Script/Breachpoint.BRPanel_Toast",
+        "class": "UBRPanel_Toast",
+        "header": "Source/Breachpoint/UI/Screens/BRPanel_Toast.h",
+        "notes": "349x60 non-blocking message at column-1 origin. Size is C++-owned; the rule "
+                 "under the text is unbound by contract; vertical placement is UNMEASURED.",
+        "tree": [
+            {"name": "ToastRoot", "class": OVERLAY, "parent": None},
+            {"name": "RootSizeBox", "class": SIZEBOX, "parent": "ToastRoot",
+             "slot": {"horizontalAlignment": "HAlign_Left", "verticalAlignment": "VAlign_Top",
+                      "padding": margin(left=69.0)},
+             "bind": True},
+            {"name": "ToastVBox", "class": VBOX, "parent": "RootSizeBox",
+             "slot": inset(16.0)},
+            # A toast is a SENTENCE, so it takes the body face, not the all-caps chrome.
+            {"name": "MessageText", "class": TEXT, "parent": "ToastVBox",
+             "slot": box_slot(fill=1.0, v="VAlign_Center"),
+             "font": "Body/Name", "bind": True},
+            # UNBOUND BY CONTRACT — "C++ binds only what C++ drives".
+            {"name": "MessageRule", "class": RULE, "parent": "ToastVBox", "slot": box_slot()},
+        ],
+    },
+
+    # ------------------------------------------------------------------
+    # WBP_Screen_Scoreboard — DELIBERATELY ALMOST EMPTY.
+    #
+    # NO CanvasPanel. The header's "canvas 465, 191" describes an ORIGIN, not a canvas: the
+    # .cpp places the highlight and its overhanging accent with SetRenderTranslation — "a
+    # RENDER transform, so it moves nothing else in the overlay and no layout pass can undo
+    # it". The C++ was written to AVOID needing one, so law 6 needs no exception here.
+    #
+    # THE ROSTER HAS NO SOURCE (the header's own CONTRACT GAP — ApplyRosterState hard-codes
+    # bHasRosterSource = false). So RosterContainer is created and left EMPTY, and the only
+    # thing this screen can honestly draw today is the em dash in RosterUnavailableText.
+    #
+    # LocalHighlightRow / LocalAccentBar OMITTED: SetLocalPlayerRow has ZERO callers
+    # repo-wide, so both ship Collapsed forever. Their documented sizes are inexpressible
+    # here too, so authoring them means two permanently-collapsed widgets at a wrong size.
+    # ------------------------------------------------------------------
+    "WBP_Screen_Scoreboard": {
+        "folder": ASSET_FOLDER["WBP_Screen_Scoreboard"],
+        "parent_class": "/Script/Breachpoint.BRScreen_Scoreboard",
+        "class": "UBRScreen_Scoreboard",
+        "header": "Source/Breachpoint/UI/Screens/BRScreen_Scoreboard.h",
+        "notes": "Header rule + the table body inside a SafeZone. No CanvasPanel. The roster is "
+                 "an EMPTY container and an em dash: UBRVM_Match has no per-player collection.",
+        "tree": [
+            {"name": "ScreenSafeZone", "class": SAFEZONE, "parent": None},
+            # NO SLOT — a USafeZoneSlot rejects the write and reads back null.
+            {"name": "BandsVBox", "class": VBOX, "parent": "ScreenSafeZone"},
+            # x is padding so the rule spans the content box at any width. A UBRRule is a
+            # Slate leaf, not art: it needs no texture, which is why it is the ONE piece of
+            # this frame that can be drawn honestly today.
+            {"name": "HeaderRule", "class": RULE, "parent": "BandsVBox",
+             "slot": box_slot(padding=margin(left=100.0, top=67.0, right=121.0))},
+            # Left is absolute; top is the MEASURED GAP from the header rule's bottom, because
+            # a VBox stacks by rendered height, not absolute y.
+            {"name": "TableSizeBox", "class": SIZEBOX, "parent": "BandsVBox",
+             "slot": box_slot(padding=margin(left=465.0, top=122.0),
+                              h="HAlign_Left", v="VAlign_Top"),
+             "bind": True},
+            {"name": "TableOverlay", "class": OVERLAY, "parent": "TableSizeBox", "slot": FILL},
+            # TOP-LEFT, ZERO PADDING — the header says "the WBP supplies no x/y of its own for
+            # these three or the overhang is lost". EMPTY on purpose.
+            {"name": "RosterContainer", "class": VBOX, "parent": "TableOverlay",
+             "slot": {"horizontalAlignment": "HAlign_Left", "verticalAlignment": "VAlign_Top",
+                      "padding": margin()},
+             "bind": True},
+            # Body/Flavor, italic: the project's mark for a line that is NOT a fact the
+            # server sent.
+            {"name": "RosterUnavailableText", "class": TEXT, "parent": "TableOverlay",
+             "slot": CENTER, "font": "Body/Flavor", "bind": True},
+        ],
+    },
+
+    # ------------------------------------------------------------------
+    # WBP_Screen_DeathRespawn — three centred bands, no CanvasPanel.
+    #
+    # VERTICAL RHYTHM IS THE FRAME'S GAPS, NOT ITS ABSOLUTE Y, because a VBox stacks by
+    # RENDERED height. KNOWN DRIFT, RECORDED: the frame's killer band is 59 tall and a
+    # Body/Name line renders about 18, so everything below rides up by that difference.
+    # Padding a fake 41px bottom would be a size nobody measured — the frame exports no type
+    # style for this node. Horizontal IS exact: both bands centre on 640.
+    #
+    # THE SWEEP BRUSH IS LOAD-BEARING, NOT DECORATION, and it is the ONE exception to "omit
+    # art-bearing UImage binds": the .cpp calls RespawnRingSweep->GetDynamicMaterial(), which
+    # returns null unless the brush resource IS a material. Without it, the only line in the
+    # project that names the `Sweep` parameter silently no-ops. The asset exists on disk and
+    # its package carries a scalar parameter named `Sweep`, matching the C++ constant exactly.
+    # It still ships HIDDEN until BP23 replicates a respawn value — a visible zero-sweep would
+    # be a claim about a timer that does not exist.
+    #
+    # KillingWeaponRoot OMITTED: collapsed unconditionally at init and, per the header's gap
+    # 2, stays collapsed "for the whole lifetime of this class as written".
+    # ------------------------------------------------------------------
+    "WBP_Screen_DeathRespawn": {
+        "folder": ASSET_FOLDER["WBP_Screen_DeathRespawn"],
+        "parent_class": "/Script/Breachpoint.BRScreen_DeathRespawn",
+        "class": "UBRScreen_DeathRespawn",
+        "header": "Source/Breachpoint/UI/Screens/BRScreen_DeathRespawn.h",
+        "notes": "Killer line / respawn ring / persisting match band as three centred bands in "
+                 "a SafeZone. The sweep carries M_UI_RadialSweep so GetDynamicMaterial resolves.",
+        "tree": [
+            {"name": "ScreenSafeZone", "class": SAFEZONE, "parent": None},
+            {"name": "BandsVBox", "class": VBOX, "parent": "ScreenSafeZone"},
+            # Body/Name is the RULED face for a gamertag — the same decision as the killfeed
+            # and the roster row, and this string comes out of the killfeed ring, so it is
+            # literally the same data. NO COLOUR: Refresh writes it every time.
+            {"name": "KillerNameText", "class": TEXT, "parent": "BandsVBox",
+             "slot": box_slot(padding=margin(top=276.0), h="HAlign_Center"),
+             "font": "Body/Name", "bind": True},
+            # An Overlay, because the countdown sits INSIDE the ring, not under it.
+            {"name": "RespawnRing", "class": OVERLAY, "parent": "BandsVBox",
+             "slot": box_slot(padding=margin(top=75.0), h="HAlign_Center")},
+            {"name": "RespawnRingSweep", "class": IMAGE, "parent": "RespawnRing",
+             "slot": CENTER, "bind": True,
+             "brush": brush("/Game/UI/Materials/M_UI_RadialSweep", 104, 104)},
+            # Display/Heading 2 is the project's hero numeral style (the ammo magazine) — and
+            # the ZERO letter spacing is the decision, not the size: tracking on digits costs
+            # legibility.
+            {"name": "RespawnCountdownText", "class": TEXT, "parent": "RespawnRing",
+             "slot": CENTER, "font": "Display/Heading 2", "bind": True},
+            # ONE UBRMatchBand, not a second set of bindings. It auto-binds UBRVM_Match itself
+            # and this class never touches it, so the band and the death screen cannot disagree.
+            {"name": "MatchState", "class": wbp_class("WBP_MatchBand"), "parent": "BandsVBox",
+             "slot": box_slot(padding=margin(top=146.0), h="HAlign_Center"), "bind": True},
+        ],
+    },
 }
 
 
@@ -1465,6 +2204,9 @@ def _hosted_asset(class_path: str) -> str:
 # class to a plan means adding its chain here; an unknown class falls back to exact match,
 # which fails loudly rather than passing something wrong.
 _BASES = {
+    # WBP_Modal_Warning's Confirm/Cancel binds are declared UCommonButtonBase and are planned
+    # as WBP_HighlightButton, so the check needs this chain to walk.
+    "UBRHighlightButton": ["UCommonButtonBase", "UCommonUserWidget", "UUserWidget", "UWidget"],
     "UOverlay":        ["UPanelWidget", "UWidget"],
     "UCanvasPanel":    ["UPanelWidget", "UWidget"],
     "UVerticalBox":    ["UPanelWidget", "UWidget"],

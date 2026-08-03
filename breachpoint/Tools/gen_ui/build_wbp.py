@@ -208,6 +208,20 @@ def build_one(m: MCP, rc: Receipt, asset: str, spec: dict) -> bool:
         if art:
             write_verified(m, rc, f"art {node['name']}", info["widget"], art)
 
+        # (4c) PLAIN WIDGET PROPERTIES. Added because `TileView` made it non-optional: UMG
+        # REFUSES TO COMPILE a UListViewBase with no EntryWidgetClass ("required for any
+        # UListViewBase to function"), so WBP_ItemGrid could not be built at all — not
+        # "builds and renders empty", which is what it was expected to do. Slot properties,
+        # fonts and brushes were the only three things this generator could write, and that
+        # was a gap in the generator rather than a fact about widgets.
+        #
+        # Deliberately the SAME verified write as everything else: set, read back, compare.
+        # An unverified property write is not a write, and a silently-wrong camelCase name
+        # here would produce a compiling asset that lists nothing.
+        props = node.get("properties")
+        if props:
+            write_verified(m, rc, f"props {node['name']}", info["widget"], props)
+
     # (5) compile — the BindWidget contract is enforced HERE by the engine
     ok, txt = m.call(UMG, "CompileWidgetBlueprint", {"widgetBlueprint": wbp})
     rc.call("CompileWidgetBlueprint", ok is True, str(txt)[:200])
