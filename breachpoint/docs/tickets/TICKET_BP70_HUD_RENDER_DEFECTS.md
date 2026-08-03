@@ -118,3 +118,34 @@ the defect is the debug override, not the binding.
 ## Log
 
 (append findings here, dated, newest last)
+
+**3 Aug 2026 — HUD-CPP-AUDIT re-judged all three defects; two of this ticket's
+prescriptions were wrong. Provisional rulings below stand unless the founder vetoes.**
+
+- **D1:** the `build_wbp.py` gate this ticket demanded EXISTED and was unreachable — the
+  build deletes the asset before comparing, so it can only see what it just created. A
+  `--verify` mode landed (reads the ON-DISK tree, no delete, no writes); the "proven against
+  a deliberately stale asset" box is now provable. **Still owed by the editor lane:** run
+  `--verify`, then rebuild at the current plan digest and commit the receipt — no committed
+  receipt matches the plan on disk.
+- **D2:** the blank rectangle is NOT produced by the current plan (neither tray widget has an
+  Image child) — it is a stale widget (D1's class) or an unrebuilt asset. `T_UI_Weapon_Unknown`
+  does not exist; the default-brush fix is **blocked on that one texture**. Interim: the
+  killfeed entry's `WeaponIcon` now ships Collapsed from C++, so the one brushless Image in
+  the plan can never render a blank box.
+- **D3:** this ticket's prescription ("bind Visibility to `GetHealthPercent() < 1.0`") is what
+  the code already did — it would have changed nothing. The real defect: visibility landed on
+  only `Fill`+`Track`, leaving the frame and readouts drawing at full health (the likely "gold
+  bar"). Fixed: `ApplyBarVisibility` now hides THE WIDGET. **Ruling on Hidden-vs-Collapsed:
+  in a canvas slot they are identical (no reflow is possible), so the ticket's `Collapsed`
+  demand is amended — `Hidden` stands** per the code's documented reservation reasoning.
+  **Open FOUNDER DECIDE:** the gate is health-damage (current code, per UI-DESIGN-SYSTEM §1)
+  — if the intent is shield-state gating instead, `AreShieldsBroken()` is already observed by
+  the widget and the change is one predicate.
+- **Killfeed position (the §"Also confirm" item):** doctrine said top-right, the render showed
+  mid-left, the built plan says bottom-left (60, −189) from Figma — the authority for
+  position. **Provisional: bottom-left stands and the doctrine was corrected to match.**
+  FOUNDER DECIDE if the render's placement was the intent.
+- **Tray split:** Figma measures ONE 280×110 "Loadout Tray"; the code ships EquipmentTray +
+  AmmoBlock as siblings. FOUNDER DECIDE — it gates the doctrine's InvalidationBox (one box
+  needs one common parent). `INVALIDATION` class constant staged in the plan either way.

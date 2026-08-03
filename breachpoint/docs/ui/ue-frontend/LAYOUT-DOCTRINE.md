@@ -343,29 +343,36 @@ WBP_HUDLayout                             : UBRHUDLayout (UBRActivatableWidget)
 │
 └── HUD_Canvas                             CanvasPanel        no SafeZone wrapper — see below
     │
-    ├── Vitals          TOP-CENTRE   (0.5,0)   offset (0, 24)      273 × 34
-    │   └── WBP_Vitals                     UBRVitalsWidget
-    │       └── Shield/health trapezoid, health nested, hidden until damaged
+    │   COORDINATES CORRECTED 3 Aug 2026 (HUD-CPP-AUDIT §6): the first version of this tree
+    │   quoted HUD-CAMPAIGN-MEASURED numbers that figma_hud_layout.json — the declared
+    │   authority for position — contradicts. The BUILT plan sides with Figma in every case;
+    │   this tree now matches what is actually built. Elements marked [NOT BUILT] have no
+    │   plan node, no C++ class and no imported art — they are future packets, listed so the
+    │   six-child layout is not read as complete.
     │
-    ├── Reticle         CENTRE       (0.5,0.5)                     42.67²
-    │   └── WBP_Reticle                    UBRReticleWidget
-    │       └── SetDesiredSizeOverride — the SIZE IS the spread readout
+    ├── Vitals          TOP-CENTRE   (0.5,0)   y=66                273.33 × 34
+    │   └── WBP_VitalsWidget               UBRVitalsWidget
+    │       └── Shield/health, health hidden until damaged (rule lives on UBRProgressBar)
     │
-    ├── HitMarkers      CENTRE       (0.5,0.5)                     ← shield cyan / flesh red
+    ├── Reticle         CENTRE       (0.5,0.5)                     size per weapon — the
+    │   └── WBP_ReticleWidget              UBRReticleWidget          SIZE IS the spread readout
+    │       └── HitMarkers live INSIDE it (HitMarkerImage), not as a sibling
     │
-    ├── DamageDirection CENTRE       full-bleed                    ← arc, non-hit-testable
+    ├── EquipmentTray   BOTTOM-RIGHT (1,1)    (-200, -106)         140 × 34
+    ├── AmmoBlock       BOTTOM-RIGHT (1,1)    (-62, -36)           218 × 60
+    │       Figma measures both as ONE 280×110 "Loadout Tray" unit — the two-widget split is
+    │       an open FOUNDER DECIDE, and the InvalidationBox waits on it (one box needs one
+    │       common parent)
     │
-    ├── MotionTracker   BOTTOM-LEFT  (0,1)     (42.67, -150.67)    140 × 120
+    ├── MatchBand       BOTTOM-CENTRE(0.5,1)  (-14.33, -76)        score · clock · rocket
     │
-    ├── WeaponTray      BOTTOM-RIGHT (1,1)     (-52.67, -144)      196 × 104
-    │   └── InvalidationBox                    ← frame is static; numbers are not
-    │       └── WBP_WeaponTray             pips · grenade · equipment · mag/reserve · silhouette
+    ├── Killfeed        BOTTOM-LEFT  (0,1)    (60, -189)           340 × 76 · pooled rows
+    │       (doctrine used to say TOP-RIGHT; the render showed mid-left; the plan built
+    │        bottom-left from Figma — FOUNDER DECIDE, recorded in TICKET_BP70)
     │
-    ├── MatchState      BOTTOM-CENTRE(0.5,1)   (0, -40)            score · clock · rocket
-    │
-    ├── Killfeed        TOP-RIGHT    (1,0)     (-43, 60)           pooled rows, never spawned
-    │
-    └── MedalPopup      CENTRE-UPPER (0.5,0.35)                    transient, amber
+    ├── DamageDirection [NOT BUILT]  no class, no art (the export is the hitmarker, not the wheel)
+    ├── MotionTracker   [NOT BUILT]  no class, no art, no data source (BP65)
+    └── MedalPopup      [NOT BUILT]  no class, no art, no Figma rect
 ```
 
 **The HUD-specific rules, and each one is a real bug if broken:**

@@ -292,10 +292,49 @@ def _close(a, b):
     return a == b
 
 
+def verify_one(m: MCP, rc: Receipt, asset: str, spec: dict) -> bool:
+    """The NO-DELETE gate BP70 D1 demands. `build_one` deletes before it creates, so its own
+    `tree matches plan` comparison can only ever see a tree built seconds earlier — a stale
+    widget left in an on-disk asset by an EARLIER generation is structurally invisible to a
+    build receipt (HUD-CPP-AUDIT §3). This path reads the asset AS IT SITS ON DISK and runs
+    the same comparison, which is the only artifact that can prove D1's class of defect
+    present or absent. It writes nothing.
+    """
+    path = full_path(spec["folder"], asset)
+    rc.w(f"\n## VERIFY `{asset}`  →  `{path}`  (no delete, no writes)\n")
+
+    exists, _ = m.call(ASSET, "exists", {"path": path})
+    if not exists:
+        rc.call("asset exists", False, "absent — nothing to verify; build it first")
+        return False
+
+    wbp = {"refPath": path}
+    desc, _ = m.call(UMG, "GetWidgetDescription",
+                     {"widgetBlueprint": wbp, "startWidget": None, "maxDepth": -1})
+    rc.w("\n```")
+    rc.w((desc or {}).get("description", "(no description returned)").rstrip())
+    rc.w("```")
+
+    # Same ground truth as build_one: the TREE, never GetWidgets (which enumerates declared
+    # binds including unsatisfied optionals). `extra` here IS the stale-widget finding —
+    # a name in the asset the plan does not create, exactly the shape of BP70 D1's duplicate
+    # ammo readout and the killfeed double of 04efb2a.
+    _TREE_NODE = re.compile(r"^\s*\[\d+\]\s+\S+\s+(\S+)", re.M)
+    got_names = set(_TREE_NODE.findall((desc or {}).get("description", "")))
+    want_names = {n["name"] for n in spec["tree"]}
+    rc.call("on-disk tree matches plan", got_names == want_names,
+            f"{len(got_names)} widgets" if got_names == want_names
+            else f"missing {sorted(want_names - got_names)}, extra {sorted(got_names - want_names)}")
+    return got_names == want_names
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true", help="validate the plan, touch no editor")
     ap.add_argument("--asset", help="build one asset instead of all")
+    ap.add_argument("--verify", action="store_true",
+                    help="read the ON-DISK assets and diff their trees against the plan; "
+                         "no delete, no create, no writes. The stale-widget gate (BP70 D1).")
     args = ap.parse_args()
 
     problems = wbp_plan.validate_all()
@@ -334,6 +373,18 @@ def main() -> int:
         rc.close("BLOCKED — the editor is not running, or its MCP server is off.",
                  "Nothing was built. No rung.")
         return EXIT_BLOCKED
+
+    if args.verify:
+        results = {a: verify_one(m, rc, a, s) for a, s in todo.items()}
+        ok = all(results.values()) and not rc.findings
+        rc.close(
+            ("PASS — every on-disk tree matches the plan; no stale widgets." if ok else
+             "FAIL — an on-disk asset diverges from the plan. `extra` names are stale "
+             "widgets (BP70 D1's class); rebuild the asset from the plan."),
+            "- **Read-only.** Nothing was deleted, created or written.\n"
+            "- **Not a rung.** A matching tree is not a rendered screen.")
+        print(f"\nreceipt: {rc.path.relative_to(REPO)}")
+        return EXIT_PASS if ok else EXIT_FAIL
 
     results = {a: build_one(m, rc, a, s) for a, s in todo.items()}
     # A verdict that ignores its own findings is the false-PASS this project keeps a ladder

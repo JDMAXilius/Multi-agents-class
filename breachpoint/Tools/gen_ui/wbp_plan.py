@@ -47,6 +47,12 @@ PROGRESS = "/Script/UMG.ProgressBar"
 HAIRLINE = "/Script/Breachpoint.BRHairlineBorder"
 RULE = "/Script/Breachpoint.BRRule"
 
+# Declared ahead of use (HUD-D): the doctrine wants an InvalidationBox around the weapon
+# tray's static frame. Whether that wraps ONE merged tray widget or the shipped two siblings
+# is an open founder DECIDE (figma_hud_layout.json measures the frame as one 280x110 unit);
+# the class path is here so the plan edit is one line when it is ruled.
+INVALIDATION = "/Script/UMG.InvalidationBox"
+
 FILL = {"horizontalAlignment": "HAlign_Fill", "verticalAlignment": "VAlign_Fill",
         "padding": {"left": 0.0, "top": 0.0, "right": 0.0, "bottom": 0.0}}
 
