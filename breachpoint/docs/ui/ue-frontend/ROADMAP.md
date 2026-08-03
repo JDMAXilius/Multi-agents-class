@@ -5,7 +5,9 @@ build. Binding law: `CLAUDE.md` laws 1–8, `docs/DESIGN-RULINGS.md` (R18, R21, 
 R37). Method: `.claude/skills/ui-presentation` (design system + Figma handoff) and
 `.claude/skills/ue5-ui-architecture` (CommonUI/MVVM mechanics). Reference tables:
 `docs/UI-DESIGN-SYSTEM.md`, `docs/ui/*`. **Asset mechanics — Figma export settings, UE import
-settings, nine-slice, CommonUI style assets: `ASSET-PIPELINE.md` in this folder.**
+settings, nine-slice, CommonUI style assets: `ASSET-PIPELINE.md` in this folder. Panel/grid
+selection, dynamic art binding, CommonUI class + input rules, and the main-menu widget tree:
+`LAYOUT-DOCTRINE.md`.**
 
 **How to read the two kinds of claim in this file.** Every statement is marked:
 
