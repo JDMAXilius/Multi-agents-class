@@ -6,7 +6,7 @@
 #include "Components/SizeBox.h"
 #include "UI/Components/BRScrim.h"
 
-DEFINE_LOG_CATEGORY_STATIC(LogBRUIScreens, Log, All);
+DEFINE_LOG_CATEGORY_STATIC(LogBRModalOptions, Log, All);
 
 UBRModal_Options::UBRModal_Options()
 {
@@ -108,13 +108,14 @@ void UBRModal_Options::RebuildRows()
 		return;
 	}
 
-	RowContainer->SetVisibility(ESlateVisibility::Visible);
+	// SelfHitTestInvisible: the container lays the rows out, the rows take the input.
+	RowContainer->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
 	UClass* ResolvedRowClass = RowWidgetClass.LoadSynchronous();
 	if (!ResolvedRowClass)
 	{
 		// Silence here would render an empty modal that looks like "no options available".
-		UE_LOG(LogBRUIScreens, Warning,
+		UE_LOG(LogBRModalOptions, Warning,
 			TEXT("%s: RowWidgetClass is unset or failed to load; %d option row(s) dropped."),
 			*GetName(), Request.Rows.Num());
 		return;

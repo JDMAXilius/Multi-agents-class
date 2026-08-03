@@ -24,7 +24,7 @@ namespace BRRosterPanelInternal
 	 */
 	FText UnknownValue()
 	{
-		return LOCTEXT("UnknownValue", "—");
+		return LOCTEXT("UnknownValue", "\u2014");
 	}
 
 	/** Show or collapse a widget by whether it has anything to say. Collapsed, never Hidden: a
@@ -261,8 +261,11 @@ void UBRRosterRow::ApplyMember()
 			(bKnown && !Member.Gamertag.IsEmpty()) ? Member.Gamertag : GetUnknownValueText());
 	}
 
-	BRRosterPanelInternal::ApplySoftIcon(Emblem, bKnown ? Member.Emblem : nullptr);
-	BRRosterPanelInternal::ApplySoftIcon(RankInsignia, bKnown ? Member.RankInsignia : nullptr);
+	// The empty soft ptr is spelled out rather than `nullptr`: the two arms of a ternary have to
+	// agree on a type, and `TSoftObjectPtr<UTexture2D>` vs `nullptr_t` does not deduce.
+	const TSoftObjectPtr<UTexture2D> NoIcon;
+	BRRosterPanelInternal::ApplySoftIcon(Emblem, bKnown ? Member.Emblem : NoIcon);
+	BRRosterPanelInternal::ApplySoftIcon(RankInsignia, bKnown ? Member.RankInsignia : NoIcon);
 
 	// The rank plate only exists to sit behind an insignia; with no insignia it is a white smear.
 	BRRosterPanelInternal::SetShown(RankFrame, bKnown && !Member.RankInsignia.IsNull());

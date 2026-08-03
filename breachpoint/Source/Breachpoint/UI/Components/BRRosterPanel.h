@@ -144,9 +144,13 @@ public:
 	 * Negative `InMemberCount` or `InCapacity` means UNKNOWN and renders the dash. Capacity is a
 	 * PARAMETER and never a constant in this file: fireteam size is a gameplay number and lives in
 	 * `Content/Data/*.csv` (law 3), not in a widget.
+	 *
+	 * The defaults are literal -1 rather than INDEX_NONE because UHT copies a UFUNCTION default
+	 * argument verbatim into generated code, and this packet cannot compile to prove it resolves
+	 * the macro. Both mean the same thing.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Breachpoint|UI")
-	void SetHeader(const FText& InLabel, int32 InMemberCount = INDEX_NONE, int32 InCapacity = INDEX_NONE);
+	void SetHeader(const FText& InLabel, int32 InMemberCount = -1, int32 InCapacity = -1);
 
 	/** Explicit honest-unknown state. Called on construct and whenever the feed goes away. */
 	UFUNCTION(BlueprintCallable, Category = "Breachpoint|UI")
@@ -480,7 +484,7 @@ public:
 	void SetMembers(const TArray<FBRRosterMemberView>& InMembers);
 
 	UFUNCTION(BlueprintCallable, Category = "Breachpoint|UI")
-	void SetHeaderText(const FText& InLabel, int32 InCapacity = INDEX_NONE);
+	void SetHeaderText(const FText& InLabel, int32 InCapacity = -1);
 
 	/** Back to honest unknown. Called on construct, and on every travel / feed teardown. */
 	UFUNCTION(BlueprintCallable, Category = "Breachpoint|UI")

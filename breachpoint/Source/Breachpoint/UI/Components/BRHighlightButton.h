@@ -54,9 +54,15 @@ enum class EBRHighlightButtonType : uint8
  *
  * BASE: `UCommonButtonBase` -- the same base as `UBRMenuRow`, so there is still exactly one
  * widget base family. CommonUI owns hover, press, select, focus, gamepad navigation and the
- * input-action glyph, and it owns the Disabled dim too: COMPONENT-SPECS Sec 2's "every child to
- * 0.5, geometry unchanged" is exactly `bApplyAlphaOnDisable` on the CDO. Tick that in the WBP;
- * do not re-implement it here.
+ * input-action glyph. The On Click status is CommonUI's Pressed brush on the shared
+ * `CommonButtonStyle`, which is why this class overrides no press handler: a status that a style
+ * asset already draws does not get a second implementation in C++.
+ *
+ * ONE EXCEPTION, and it is deliberate: the Disabled dim is applied HERE, not by CommonUI's
+ * `bApplyAlphaOnDisable`. `SetIsInteractionEnabled` only applies that alpha when the Slate button
+ * already exists, and Type=Disabled is set in `NativeOnInitialized` -- before `RebuildWidget` --
+ * so an authored-disabled button would render at full opacity until something else toggled it.
+ * `bApplyAlphaOnDisable` must therefore be OFF on the WBP CDO or the two dims compound.
  *
  * THE STATE MODEL, which is the whole component. COMPONENT-SPECS Sec 1 -- "Idle -> Hover is an
  * INVERSION, not a highlight. That single rule explains most of the file." Three things move
