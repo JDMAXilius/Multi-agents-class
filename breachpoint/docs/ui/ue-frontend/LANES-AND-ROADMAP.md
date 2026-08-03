@@ -89,7 +89,7 @@ real numbers. The menu is that plus twelve assets. Everything else is behind BP2
 |---|---|---|
 | **BP71** | engine-installed | Compile the eight packets and run the ladder. **The gate.** |
 | **BP72** | editor-live | `--verify`, rebuild at digest, build the 12 menu WBPs. |
-| **BP73** | figma-mcp | Close the 9-value DECIDE ledger by reading the reference nodes. |
+| **BP73** | figma-mcp | Close the 9-value DECIDE ledger by reading the reference nodes. **5/9 closed 3 Aug; the 4 open are all fonts, all behind `get_design_context`.** |
 | **BP74** | files-only + BP71 | The six producer contract gaps the HUD director filed. |
 
 **Closed by this pass:** BP66 (killfeed BindWidget contract — landed in HUD-C).

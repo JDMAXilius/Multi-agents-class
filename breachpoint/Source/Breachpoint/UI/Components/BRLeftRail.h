@@ -87,8 +87,13 @@ public:
 	 * NOTE THE ASYMMETRY: 16 left, but 349 - 16 - 311 = 22 right. Measured, not a typo, and not
 	 * "corrected" to 16 here -- an invented symmetry would move every row 3px.
 	 */
+	/**
+	 * MEASURED 3 Aug 2026 (BP73, reference node `0:1183` `Contents` inside `Menu Combo`
+	 * `2382:32507`): the row slot is inset **16 on all four sides**, not 16/22 — the slot sits
+	 * at (16,16) and is 311 wide inside a 343-wide `Menu List`, and 343 − 16 − 311 = 16. The
+	 * old `MenuRowSlotInsetRight = 22` was never read by any code and disagreed with the file.
+	 */
 	static constexpr float MenuRowSlotInset = 16.0f;
-	static constexpr float MenuRowSlotInsetRight = 22.0f;
 	static constexpr float MenuRowSlotWidth = 311.0f;
 	static constexpr float MenuRowSlotHeight = 148.0f;
 

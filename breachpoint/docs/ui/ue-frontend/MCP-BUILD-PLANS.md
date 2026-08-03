@@ -87,13 +87,13 @@ width on the SizeBox; any per-state colour (the button style owns idle/active).
 ```
 RootSizeBox        SizeBox    bind?   │ height UNAUTHORED (C++ PromptHeight 20) · width HUG —
 └ PromptHBox       HBOX               │ 62/146/253 at 1/2/3 prompts is MEASURED HUG, never fixed
-  ├ ActionGlyph    ACTION_GLYPH bind  │ /Script/CommonUI.CommonActionWidget · VAlign Center
+  ├ ActionGlyph    ACTION_GLYPH bind  │ 20 × 20 (BP73, node 0:10) · VAlign Center
   │                                   │ draws the PLATFORM's glyph for a bound input action —
   │                                   │ zero brushes, zero per-platform art. This is the whole
   │                                   │ reason the bind is CommonActionWidget and not UImage
-  └ Verb           TEXT       bind    │ pad-left DECIDE (unmeasured) · VAlign Center
-                                      │ font DECIDE — no measured style; Label/Micro (10px) is
-                                      │ the nearest. Close in the ticket, not in the editor
+  └ Verb           TEXT       bind    │ pad-left 10 (BP73: glyph ends x=20, text starts x=30) ·
+                                      │ VAlign Center · h17 in a 20 box
+                                      │ font still DECIDE — geometry cannot name a family
 ```
 
 **MUST NOT contain:** any glyph `Image` (the entire point of `UCommonActionWidget` is that the
@@ -165,12 +165,21 @@ decision (`TextToneLuminanceThreshold`); a `UListView` (four fixed slots, pooled
 padding (`FirstTabOffsetX` 39, `TabPitch` 150, `TabGap` 12). Tab count is data; the WBP ships an
 **empty container** and that is correct, not unfinished.
 
+> **RESOLVED 3 Aug 2026 (BP73 row 9).** Both bumper prompts are **direct children of the 666×30
+> `Navigation Bar` `124:1179`** — `0:18` at x=27 and `0:37` at x=639, each 27×15 at y=7.5. So both
+> ARE bar-local and there is no source inconsistency. What there IS: tabs sit at x=39/189/339/489,
+> so the left glyph (27..54) **overlaps the first tab by 15px in the reference**. That is an
+> authored overlap on an absolute-positioned frame, and **an `HBox` cannot reproduce it** — an
+> HBox lays out side by side. The tree below deliberately does not overlap. Founder call if the
+> overlap is wanted: it needs an `Overlay`, not a fix to these numbers.
+
 ```
 RootSizeBox        SizeBox    bind?   │ 666×30 (BarWidth/Height) — UNAUTHORED, C++ owns; the
 └ BarHBox          HBOX               │   516 sub-level variant is the SAME asset resized by C++
-  ├ BumperPrev     WBP_ButtonPrompt   │ bind? · VAlign Center (27×15 @ y7.5 → centred in 30)
+  ├ BumperPrev     WBP_ButtonPrompt   │ bind? · VAlign Center (27×15 @ y7.5 → centred in 30) ·
+  │                                   │   slot pad left 27 (measured origin, BP73 node 0:18)
   ├ TabContainer   HBOX       bind    │ Fill 1.0 · EMPTY — C++ fills it (see above)
-  └ BumperNext     WBP_ButtonPrompt   │ bind? · VAlign Center
+  └ BumperNext     WBP_ButtonPrompt   │ bind? · VAlign Center · ends flush at 666 (639 + 27)
 ```
 
 **MUST NOT contain:** any `WBP_NavTab` instance (C++-created — a hand-placed tab would bind by
@@ -271,26 +280,55 @@ sends*, not a hidden row.
 > `WBP_RootLayout` has **no chrome slot for the bar to live in yet**. The class, the slot and the
 > caller land together in one chrome packet. The tree below is kept as that packet's spec.
 
+> **CORRECTED 3 Aug 2026 (BP73 row 6).** The tree that stood here — a full-width `HBox` with the
+> gamertag left and prompts right — **was not what the reference authors.** `Profile Bar`
+> `119:1525` is 1280×50 and contains exactly ONE child: `Player Card` at **x=862, 349×50**. That
+> is column 3's origin and column 3's width. The bar is not a bar of content; it is a
+> **right-aligned 349-wide card on an otherwise empty 50px band**, and the band exists so the
+> card lines up with the roster panel above it. Building the old tree would have stretched a
+> 349-wide design across 1280.
+
+Measured internals of `Player Card` (all card-local, BP73):
+
+| Node | Origin | Size | Note |
+|---|---|---|---|
+| `Superintendent` | (5, 5) | 40 × 40 | avatar — square, 5px inset, so 50 − 5 − 40 = 5 bottom |
+| `Gamer and Service Tag` | (55, 17) | 107 × 17 | 55 = 5 + 40 + **10 gap**; contains `Service Tag` **hidden** |
+| `Buttons` | (211, 0) | 122 × 50 | full-height block, three dividers; 211 + 122 = 333, so **16 right inset** |
+
 ```
-RootSizeBox        SizeBox    bind    │ height UNAUTHORED (BarHeight 50). Never y=670 — the bar
-└ BarOverlay       OVERLAY            │   is the root layout's LAST CHILD (§7.3 manifest)
-  ├ Blur           BLUR       bind?   │ /Script/UMG.BackgroundBlur · FILL — the ONE blur in the
-  │                                   │   front end. Strength is C++/style, not authored
-  ├ Ground         IMAGE      bind    │ FILL · NO brush — C++ tints PanelGround50
-  └ BarHBox        HBOX              │ pad DECIDE (edge insets unmeasured)
-    ├ Gamertag     TEXT       bind    │ VAlign Center · font Body/Name
-    ├ Status       TEXT       bind?   │ VAlign Center · font DECIDE (Data/Value nearest) —
-    │                                 │   "IN MENUS · Invite Only" session states
-    └ PromptContainer HBOX    bind?   │ Fill · HAlign Right · EMPTY — C++ fills
+RootSizeBox        SizeBox    bind    │ 1280×50 band (BarHeight 50). Never y=670 — the bar is
+└ BarHBox          HBOX               │   the root layout's LAST CHILD (§7.3 manifest)
+  ├ (spacer)                          │ Fill 1.0 · NO WIDGET — the empty 862 left of the card is
+  │                                   │   fill, not a sized box. Do not author 862 anywhere
+  └ CardSizeBox    SIZEBOX   bind     │ 349 wide (PanelWidthMainMenu — the SAME constant as the
+    └ CardOverlay  OVERLAY            │   roster panel; that is why they align)
+      ├ Blur       BLUR      bind?    │ /Script/UMG.BackgroundBlur · FILL — the ONE blur in the
+      │                               │   front end. Strength is C++/style, not authored
+      ├ Ground     IMAGE     bind     │ FILL · NO brush — C++ tints PanelGround50
+      └ CardHBox   HBOX               │ pad (5,5,16,5) — MEASURED, no longer a DECIDE
+        ├ AvatarBox SIZEBOX bind?     │ 40×40 · VAlign Center
+        │ └ Avatar  IMAGE    bind     │ FILL · NO brush — VM pushes a soft path
+        ├ Gamertag  TEXT     bind     │ slot pad left 10 (measured) · VAlign Center ·
+        │                             │   font Body/Name · h17
+        └ PromptContainer HBOX bind?  │ Fill · HAlign Right · EMPTY — C++ fills. This is the
+                                      │   reference's 122-wide `Buttons` block; its three
+                                      │   dividers are per-prompt chrome, not bar widgets
 ```
 
+**Dropped from the old tree:** `Status`. The reference's second line (`Service Tag`) is **hidden
+in the source**, so there is no measured status line to build and DECIDE row 7 dies with it. If
+the founder wants "IN MENUS · Invite Only" it is a new design, not a transcription.
+
 **MUST NOT contain:** an action bar (`CommonBoundActionBar` lives in `WBP_RootLayout`, once);
-a second blur anywhere else in the menu — this is the only one and that is a design statement.
+a second blur anywhere else in the menu — this is the only one and that is a design statement;
+a hard 862 offset; the three `Buttons` dividers as widgets.
 
 > **Packet prompt:** Add `WBP_ProfileBar` after `WBP_RosterPanel`. Parent
 > `/Script/Breachpoint.BRProfileBar`. Add `UBackgroundBlur` to `_BASES` and a `BLUR` class-path
-> constant. Two DECIDEs (bar insets, status font). Root-layout integration is a separate
-> concern — this ticket only authors the bar.
+> constant. **Zero DECIDEs left** — the card geometry is measured (BP73, node `119:1525`); build
+> the spacer as a fill slot, never as a sized 862. Root-layout integration is a separate concern
+> — this ticket only authors the bar.
 
 ---
 
@@ -378,19 +416,28 @@ replace.
 
 ---
 
-## The DECIDE ledger — 8 open values, none inventable
+## The DECIDE ledger — 4 open, 5 closed (BP73, 3 Aug 2026)
+
+Still open — **all five are fonts**, and `get_metadata` returns geometry only (ids, types, names,
+positions, sizes). Closing a font needs `get_design_context` on the text node, which is BP73's
+remaining work.
 
 | # | Where | What | Nearest |
 |---|---|---|---|
 | 1 | A3 `Verb` | prompt verb font | `Label/Micro` |
-| 2 | A3 | glyph→verb gap | — |
 | 3 | A4 `Label` | roster header font | `Heading/Caption` |
 | 4 | A4 `Count` | count font | `Data/Value` |
 | 5 | B2 `Caption` | feature caption font + padding | — |
-| 6 | B5 | profile bar edge insets | — |
-| 7 | B5 `Status` | status font | `Data/Value` |
-| 8 | C1 `MenuRowSlot` | top inset (only L16/R22 named) | read the header first |
-| 9 | B1 bumpers | **origin ambiguity**: bar-local, the left glyph (27..54) overlaps the first tab (x39) by 15px while the right glyph sits flush — both numbers cannot be bar-local. Needs a node read, not a pick | measured 27×15 @ y7.5 |
+
+Closed — each names the node it was read from, per BP73's Done-when:
+
+| # | Where | Closed value | Read from |
+|---|---|---|---|
+| 2 | A3 glyph→verb gap | **10px** — glyph ends x=20, verb starts x=30 | `0:9` `Menu` variant of `Button Prompts` `119:1491`; glyph `0:10` @ (0,0) 20×20, text `0:16` @ (30, 1.5) 32×17 |
+| 6 | B5 profile bar insets | **(5,5,16,5)** on a 349-wide card, avatar→name gap 10 — and the premise was wrong: the bar is a right-aligned card, not a full-width row (§B5) | `Profile Bar` `119:1525` → `Player Card` @ x=862 349×50 |
+| 7 | B5 `Status` font | **DEAD** — the reference's second line `Service Tag` is hidden in the source; there is no status line to transcribe | same node |
+| 8 | C1 `MenuRowSlot` | **16 uniform**, not 16/22 — and `BRLeftRail.h`'s unread `MenuRowSlotInsetRight = 22` was wrong and is deleted | `Contents` `0:1183` @ (16,16) 311 wide inside 343-wide `Menu List` `0:1176`; 343−16−311=16 |
+| 9 | B1 bumper origins | **Both bar-local, no conflict.** The 15px overlap is authored; an `HBox` can't express it → founder call, not a number (§B1) | `0:18` x=27 and `0:37` x=639 as direct children of `Navigation Bar` `124:1179` |
 
 Each ticket closes its own rows **before** its build runs. A DECIDE closed by the builder
 mid-build is a measurement invented under deadline, which is how 44-vs-33 happened (§1 manifest).
