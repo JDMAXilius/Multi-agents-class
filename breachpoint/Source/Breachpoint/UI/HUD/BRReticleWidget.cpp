@@ -4,6 +4,7 @@
 #include "Components/Image.h"
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
+#include "Engine/Texture2D.h"
 #include "Engine/World.h"
 #include "INotifyFieldValueChanged.h"
 #include "TimerManager.h"
@@ -24,6 +25,9 @@ namespace
 		Out.SizePx = FVector2D(EdgePx, EdgePx);
 		return Out;
 	}
+
+	/** "Draw nothing." A named empty beats a nullptr literal that TSoftObjectPtr can read two ways. */
+	const TSoftObjectPtr<UTexture2D> NoArt;
 }
 
 const FName UBRReticleWidget::StandInReticleWeaponId(TEXT("AR"));
@@ -195,7 +199,7 @@ void UBRReticleWidget::ApplyReticle()
 	{
 		// Honest unknown: no weapon has been confirmed, so no reticle. A reticle drawn
 		// before the ViewModel has spoken would claim an accuracy the player does not have.
-		ApplyArt(ReticleImage, nullptr, FVector2D::ZeroVector);
+		ApplyArt(ReticleImage, NoArt, FVector2D::ZeroVector);
 		if (ReticleImage)
 		{
 			ReticleImage->SetVisibility(ESlateVisibility::Collapsed);
@@ -228,7 +232,7 @@ void UBRReticleWidget::ApplyReticle()
 	if (!Found)
 	{
 		// The stand-in itself is unconfigured. Draw nothing rather than something wrong.
-		ApplyArt(ReticleImage, nullptr, FVector2D::ZeroVector);
+		ApplyArt(ReticleImage, NoArt, FVector2D::ZeroVector);
 		if (ReticleImage)
 		{
 			ReticleImage->SetVisibility(ESlateVisibility::Collapsed);
@@ -274,7 +278,7 @@ void UBRReticleWidget::ShowHitMarker(EBRHitMarkerKind InKind)
 	ActiveHitMarkerKind = InKind;
 
 	const TSoftObjectPtr<UTexture2D>* SoftArt = HitMarkerArtByKind.Find(InKind);
-	ApplyArt(HitMarkerImage, SoftArt ? *SoftArt : nullptr, HitMarkerSizePx);
+	ApplyArt(HitMarkerImage, SoftArt ? *SoftArt : NoArt, HitMarkerSizePx);
 
 	if (HitMarkerImage)
 	{
@@ -379,17 +383,15 @@ void UBRReticleWidget::PreloadArt()
 
 	TWeakObjectPtr<UBRReticleWidget> WeakThis(this);
 	ArtPreloadHandle = Manager->GetStreamableManager().RequestAsyncLoad(
-		Paths,
+		MoveTemp(Paths),
 		FStreamableDelegate::CreateLambda([WeakThis]()
 		{
+			// Weak: the load outlives a mid-load teardown, and NativeDestruct cancels the
+			// handle anyway. Both guards, because only one of them is free.
 			if (UBRReticleWidget* Self = WeakThis.Get())
 			{
 				// The reticle may have been chosen before its texture arrived.
 				Self->ApplyReticle();
 			}
-		}),
-		FStreamableManager::DefaultAsyncLoadPriority,
-		/*bManageActiveHandle=*/false,
-		/*bStartStalled=*/false,
-		TEXT("BRReticleWidget"));
+		}));
 }
