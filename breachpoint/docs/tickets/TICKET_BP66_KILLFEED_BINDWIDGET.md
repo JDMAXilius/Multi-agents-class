@@ -1,6 +1,7 @@
 # TICKET — BP66: The killfeed row has no bindable surface, and D1 is why
 
-> STATUS: open — cut 2 Aug 2026 from the `gen_ui` authoring pass. Found by building the
+> STATUS: **C++ DONE 3 Aug 2026 (HUD-C, `20a9b24`) — asset build owed by BP72, compile owed by
+> BP71.** Cut 2 Aug 2026 from the `gen_ui` authoring pass. Found by building the
 > asset: `WBP_KillfeedEntry` now has a real widget tree and **not one widget in it can be
 > reached from C++**. This is the first concrete instance of decision **D1**, so it is filed
 > as a ticket rather than left as a roadmap paragraph.
@@ -105,3 +106,27 @@ editor until step 4.
 The asset built and compiled cleanly (six widgets, `AssetTools.save_assets` → true), and that is
 precisely what exposed the gap: the tree is real, and no C++ member can reach any of it. Before
 this pass the asset was an empty shell, so the defect was invisible.
+
+**3 Aug 2026 — the contract landed (HUD-CPP-AUDIT packet C, `20a9b24`).**
+
+`UBRKillfeedEntryWidget` now declares exactly the four members this plan pre-committed, so the
+asset that was already built is correct with zero re-authoring:
+
+| Member | Bind | Note |
+|---|---|---|
+| `KillerNameText` | `BindWidget` | `SetEntry` writes it |
+| `VictimNameText` | `BindWidget` | `SetEntry` writes it |
+| `SpotterLineText` | `BindWidgetOptional` | written, and RESERVES its slot — never collapsed, so a late LLM line appears without reflowing the feed |
+| `WeaponIcon` | `BindWidgetOptional` | ships **Collapsed** from C++: no glyph art exists, and a brushless Image is BP70 D2's blank rectangle |
+
+`BP_OnEntrySet` and the five dead accessors are gone. `wbp_plan.py` marks all four `bind: True`
+and still prints `PLAN OK`, so `validate()` now enforces the header/plan match it was written for.
+
+**The whole-row tint stays.** The original filing expected per-element colour once binds landed,
+but the plan authors every leaf WHITE precisely so one `SetColorAndOpacity` on the row is the
+single owner of the VISR channel — going per-element would be three writes per row per refresh
+for identical pixels. Recorded so the next reader does not "finish" it.
+
+**Still owed, and by whom:** BP71 compiles it; BP72 rebuilds the asset at the current plan digest
+and proves the four binds resolve. This ticket closes when BP72's receipt shows the row rendering
+two names.
