@@ -9,6 +9,7 @@
 class UBRVM_Combat;
 class USizeBox;
 class UWidget;
+class UWidgetAnimation;
 
 /**
  * `UBRVitalsWidget` -- the LEFT HUD surface: shields over health, top-left.
@@ -89,12 +90,13 @@ protected:
 	TObjectPtr<USizeBox> RootSizeBox;
 
 	/**
-	 * Fires when the shield-break or known/unknown state CHANGES, not on every attribute push --
-	 * a shield-break animation retriggered once per regen tick would strobe. Display only: this
-	 * hook decides nothing and the WBP may only animate from it.
+	 * The shield-break flourish, authored in the WBP and PLAYED from C++ — the lawful
+	 * replacement for the old `BP_OnVitalsStateChanged` BIE (unimplementable under R18: a BIE
+	 * needs a graph node, WBPs have empty graphs). Forward on break, reverse on restore, gated
+	 * on actual transitions so a regen tick cannot strobe it.
 	 */
-	UFUNCTION(BlueprintImplementableEvent, Category = "Breachpoint|HUD", meta = (DisplayName = "On Vitals State Changed"))
-	void BP_OnVitalsStateChanged(bool bShieldsBroken, bool bKnown);
+	UPROPERTY(Transient, meta = (BindWidgetAnimOptional))
+	TObjectPtr<UWidgetAnimation> ShieldBreakAnim;
 
 private:
 	void BindViewModel();

@@ -3,16 +3,15 @@
 #include "CommonTextBlock.h"
 #include "Components/Widget.h"
 #include "INotifyFieldValueChanged.h"
+#include "UI/BRUIManagerSubsystem.h"
 #include "UI/BRViewModels.h"
 #include "UI/Components/BRComponentTokens.h"
 #include "UI/Styles/BRUITokens.h"
 
-UBRMatchBand::UBRMatchBand()
+UBRVM_Match* UBRMatchBand::ResolveMatchViewModel() const
 {
-	// A HUD element, not a stack screen: it activates with its parent instead of being pushed.
-	// `InputMode` stays `Inherit` so activation changes no input config -- the band must never
-	// alter mouse capture or the gamepad's target just by appearing.
-	bAutoActivate = true;
+	UBRUIManagerSubsystem* Manager = UBRUIManagerSubsystem::Get(this);
+	return Manager ? Manager->GetMatchViewModel(GetOwningLocalPlayer()) : nullptr;
 }
 
 void UBRMatchBand::NativeOnInitialized()
@@ -49,47 +48,59 @@ void UBRMatchBand::NativeOnInitialized()
 		RocketCountdownText->SetColorAndOpacity(FSlateColor(BR::Tokens::Amber()));
 	}
 
+	// The band is decoration everywhere it appears — HUD frame or death screen — and must
+	// never eat a click or take gamepad focus (HUD-CPP-AUDIT H7). HitTestInvisible propagates
+	// to every child, so this one call covers the whole band.
+	SetVisibility(ESlateVisibility::HitTestInvisible);
+
 	// First frame on screen is an honest unknown, before any ViewModel has been consulted.
 	ClearToUnknown();
 }
 
-void UBRMatchBand::BindViewModels()
+void UBRMatchBand::NativeConstruct()
 {
-	Super::BindViewModels();
+	Super::NativeConstruct();
 
-	UBRVM_Match* Match = GetMatchViewModel();
+	UBRVM_Match* Match = ResolveMatchViewModel();
 	if (!Match)
 	{
 		// Legal on the first frames after travel: the subsystem may not have built the
-		// ViewModel for this local player yet. Show the unknown state and wait to be
-		// re-activated rather than inventing a score.
+		// ViewModel for this local player yet. Show the unknown state rather than inventing
+		// a score.
 		ClearToUnknown();
 		return;
 	}
 
-	// Subscribed fields, and why these five:
+	BoundViewModel = Match;
+
+	// Subscribed fields, and why these six:
 	//   MatchState          -- gates the whole band between unknown and live.
 	//   MatchClockText      -- the ViewModel's 1Hz re-derivation lands here (see the header).
 	//   RocketCountdownText -- also re-broadcast when `bRocketAvailable` flips, because
 	//                          `SetRocketAvailable` runs `UpdateClocks`. Subscribing to the
 	//                          text covers the bool without a second subscription.
 	//   Team0Score/Team1Score -- GameState RepNotify feeds these.
-	// `LocalTeamId` is NOT subscribed: it is pushed once at possession, before any score
-	// exists, and `MatchState` going Live always follows it.
+	//   LocalTeamId         -- Refresh() GATES the score display on it (HUD-CPP-AUDIT H13);
+	//                          the old "pushed once at possession, always before Live" claim
+	//                          was an ordering assumption no producer enforces, and when the
+	//                          id landed after the last score push the band showed dashes for
+	//                          the rest of the match.
 	BindMatchField(Match, UBRVM_Match::FFieldNotificationClassDescriptor::MatchState);
 	BindMatchField(Match, UBRVM_Match::FFieldNotificationClassDescriptor::MatchClockText);
 	BindMatchField(Match, UBRVM_Match::FFieldNotificationClassDescriptor::RocketCountdownText);
 	BindMatchField(Match, UBRVM_Match::FFieldNotificationClassDescriptor::Team0Score);
 	BindMatchField(Match, UBRVM_Match::FFieldNotificationClassDescriptor::Team1Score);
+	BindMatchField(Match, UBRVM_Match::FFieldNotificationClassDescriptor::LocalTeamId);
 
 	Refresh();
 }
 
-void UBRMatchBand::UnbindViewModels()
+void UBRMatchBand::NativeDestruct()
 {
-	// Unbind on deactivate, unconditionally: a ViewModel binding that outlives its widget is
-	// the crash the death cam finds (`ue5-ui-architecture` Sec 2).
-	if (UBRVM_Match* Match = GetMatchViewModel())
+	// Unbind from the object the delegates were ADDED to (H9), not a fresh lookup — if the
+	// subsystem swapped the ViewModel in between, the lookup removes from the wrong object and
+	// the real binding outlives the widget: the crash the death cam finds.
+	if (UBRVM_Match* Match = BoundViewModel.Get())
 	{
 		for (const TPair<UE::FieldNotification::FFieldId, FDelegateHandle>& Bound : BoundFields)
 		{
@@ -100,8 +111,9 @@ void UBRMatchBand::UnbindViewModels()
 		}
 	}
 	BoundFields.Reset();
+	BoundViewModel.Reset();
 
-	Super::UnbindViewModels();
+	Super::NativeDestruct();
 }
 
 void UBRMatchBand::BindMatchField(UBRVM_Match* Match, UE::FieldNotification::FFieldId FieldId)
@@ -129,7 +141,7 @@ void UBRMatchBand::HandleMatchFieldChanged(UObject* Source, UE::FieldNotificatio
 
 void UBRMatchBand::Refresh()
 {
-	const UBRVM_Match* Match = GetMatchViewModel();
+	const UBRVM_Match* Match = BoundViewModel.Get();
 	if (!Match)
 	{
 		ClearToUnknown();
@@ -209,14 +221,17 @@ void UBRMatchBand::ClearToUnknown()
 		EnemyScoreText->SetText(BRUI::UnknownValueText());
 	}
 
+	// The clocks use the ViewModel's own unset format ("--:--"), not the em dash: an unknown
+	// clock rendered as one glyph when the VM object is missing and another when it exists but
+	// is unfed was two different marks for one state (HUD-CPP-AUDIT stale-comment sweep).
 	if (ClockText)
 	{
-		ClockText->SetText(BRUI::UnknownValueText());
+		ClockText->SetText(NSLOCTEXT("BRMatchBand", "UnknownClock", "--:--"));
 	}
 
 	if (RocketCountdownText)
 	{
-		RocketCountdownText->SetText(BRUI::UnknownValueText());
+		RocketCountdownText->SetText(NSLOCTEXT("BRMatchBand", "UnknownClock", "--:--"));
 	}
 
 	if (RocketCountdownRoot)

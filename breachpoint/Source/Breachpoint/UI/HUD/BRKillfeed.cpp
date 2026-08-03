@@ -3,6 +3,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Components/PanelWidget.h"
 #include "UI/BRHUDLayout.h"
+#include "UI/BRUIManagerSubsystem.h"
 #include "UI/BRUISettings.h"
 #include "UI/BRUITypes.h"
 #include "UI/BRViewModels.h"
@@ -10,20 +11,28 @@
 
 DEFINE_LOG_CATEGORY_STATIC(LogBRKillfeed, Log, All);
 
-UBRKillfeed::UBRKillfeed()
+UBRVM_Match* UBRKillfeed::ResolveMatchViewModel() const
 {
-	// A HUD element, not a stack screen. `InputMode` stays `Inherit`: the feed must never
-	// change input config or focus just by appearing.
-	bAutoActivate = true;
+	UBRUIManagerSubsystem* Manager = UBRUIManagerSubsystem::Get(this);
+	return Manager ? Manager->GetMatchViewModel(GetOwningLocalPlayer()) : nullptr;
 }
 
-void UBRKillfeed::BindViewModels()
+void UBRKillfeed::NativeOnInitialized()
 {
-	Super::BindViewModels();
+	Super::NativeOnInitialized();
+
+	// The feed is history, never an input surface (HUD-CPP-AUDIT H7). HitTestInvisible
+	// propagates to every pooled row.
+	SetVisibility(ESlateVisibility::HitTestInvisible);
+}
+
+void UBRKillfeed::NativeConstruct()
+{
+	Super::NativeConstruct();
 
 	EnsurePool();
 
-	UBRVM_Match* Match = GetMatchViewModel();
+	UBRVM_Match* Match = ResolveMatchViewModel();
 	if (!Match)
 	{
 		// First frames after travel: the ViewModel for this local player may not exist yet.
@@ -32,41 +41,40 @@ void UBRKillfeed::BindViewModels()
 		return;
 	}
 
+	BoundViewModel = Match;
 	Match->OnKillfeedChanged().AddUObject(this, &UBRKillfeed::HandleKillfeedChanged);
 
-	// Re-activation mid-match (death cam, menu, rejoin) must show the kills that happened
-	// while we were not listening -- they are still in the authoritative ring.
+	// Re-entering the tree mid-match (death cam, menu, rejoin) must show the kills that
+	// happened while we were not listening -- they are still in the authoritative ring.
 	Refresh();
 }
 
-void UBRKillfeed::UnbindViewModels()
+void UBRKillfeed::NativeDestruct()
 {
-	if (UBRVM_Match* Match = GetMatchViewModel())
+	// Unbind from the object the delegate was ADDED to (H9), never a fresh lookup.
+	if (UBRVM_Match* Match = BoundViewModel.Get())
 	{
 		Match->OnKillfeedChanged().RemoveAll(this);
 	}
+	BoundViewModel.Reset();
 
-	// Release, do not destroy. The pool survives deactivation so the next activation costs
-	// nothing; collapsing the rows stops a stale feed showing for one frame on the way back.
+	// Release, do not destroy. The pool survives removal so the next construct costs nothing;
+	// collapsing the rows stops a stale feed showing for one frame on the way back.
 	ReleaseAllRows();
 
-	Super::UnbindViewModels();
-}
-
-void UBRKillfeed::ReleaseSlateResources(bool bReleaseChildren)
-{
-	// The rows are real children of `EntryContainer`, so the standard teardown reaches them.
-	// This override exists only to make that fact explicit next to the word "pool", which
-	// usually implies the off-tree kind that leaks unless released by hand.
-	Super::ReleaseSlateResources(bReleaseChildren);
+	Super::NativeDestruct();
 }
 
 void UBRKillfeed::EnsurePool()
 {
-	if (Rows.Num() > 0 || !EntryContainer)
+	// ONE attempt per widget object (H11). The old `Rows.Num() > 0` guard let a FAILED build
+	// (null entry class, null owning player) retry — re-warning and re-sync-loading a soft
+	// class — on every construct.
+	if (bPoolBuildAttempted || !EntryContainer)
 	{
 		return;
 	}
+	bPoolBuildAttempted = true;
 
 	const UBRUISettings& Settings = UBRUISettings::Get();
 
@@ -122,7 +130,7 @@ void UBRKillfeed::HandleKillfeedChanged()
 
 void UBRKillfeed::Refresh()
 {
-	const UBRVM_Match* Match = GetMatchViewModel();
+	const UBRVM_Match* Match = BoundViewModel.Get();
 	if (!Match || Rows.Num() == 0)
 	{
 		ReleaseAllRows();
@@ -168,14 +176,10 @@ void UBRKillfeed::Refresh()
 
 		const FBRKillfeedViewEntry& Entry = Entries[FirstIndex + SlotIndex];
 
-		// ponytail: whole-row tint. `UBRKillfeedEntryWidget` exposes no BindWidget text or
-		// colour surface (it carries the struct and fires a BP event), so the only C++ way to
-		// put the VISR channel on a row is `UUserWidget::ColorAndOpacity`, which multiplies
-		// the entire subtree including the Spotter line. Filed as a contract_gap against
-		// BP66: the entry widget wants `KillerText` / `VictimText` / `SpotterText` BindWidget
-		// members plus a pushed tint, at which point this becomes a per-element colour and
-		// this line goes away. Doing it here anyway keeps the colour DECISION in C++ with
-		// tokens instead of in a widget graph.
+		// Whole-row tint, deliberately kept after BP66 landed the entry's BindWidget members:
+		// the row's leaves are authored WHITE (the plan forbids colour in the asset), so one
+		// multiply on the row is one owner for the VISR channel. Going per-element would mean
+		// three writes per row per refresh for the same pixels.
 		Row->SetColorAndOpacity(ResolveEntryTint(Entry, LocalTeamId));
 
 		// Re-set unconditionally: rows shift by one slot whenever an entry expires off the

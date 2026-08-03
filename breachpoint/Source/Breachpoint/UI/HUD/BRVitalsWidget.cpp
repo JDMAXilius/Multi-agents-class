@@ -1,5 +1,6 @@
 #include "UI/HUD/BRVitalsWidget.h"
 
+#include "Animation/WidgetAnimation.h"
 #include "Components/SizeBox.h"
 #include "Components/Widget.h"
 #include "Engine/LocalPlayer.h"
@@ -10,6 +11,9 @@
 void UBRVitalsWidget::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
+
+	// Vitals are a readout, never an input surface (HUD-CPP-AUDIT H7). Propagates to children.
+	SetVisibility(ESlateVisibility::HitTestInvisible);
 
 	if (RootSizeBox)
 	{
@@ -49,6 +53,13 @@ void UBRVitalsWidget::NativeDestruct()
 {
 	// UNBIND. A FieldNotify delegate outliving its widget is the crash the death cam finds.
 	UnbindViewModel();
+
+	// HUD-CPP-AUDIT H10: the state latch must not survive the tree. Left set, a second
+	// construct saw an "unchanged" pair, skipped the state push, and the WBP re-entered the
+	// tree without its shield-break treatment.
+	bStatePushed = false;
+	bLastShieldsBroken = false;
+	bLastKnown = false;
 
 	Super::NativeDestruct();
 }
@@ -178,5 +189,18 @@ void UBRVitalsWidget::NotifyStateChanged(bool bInShieldsBroken, bool bInKnown)
 	bLastKnown = bInKnown;
 	bStatePushed = true;
 
-	BP_OnVitalsStateChanged(bInShieldsBroken, bInKnown);
+	// The lawful hook: a WBP-authored animation played from C++ (the old BIE could never be
+	// implemented under R18). Forward on break, reverse on restore; the change-gate above is
+	// what stops a regen tick from strobing it.
+	if (ShieldBreakAnim)
+	{
+		if (bInShieldsBroken)
+		{
+			PlayAnimationForward(ShieldBreakAnim);
+		}
+		else
+		{
+			PlayAnimationReverse(ShieldBreakAnim);
+		}
+	}
 }

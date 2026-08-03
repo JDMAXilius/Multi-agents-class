@@ -1,7 +1,8 @@
 #include "UI/BRHUDLayout.h"
 
+#include "CommonTextBlock.h"
+#include "Components/Image.h"
 #include "Core/BRCore.h"
-#include "INotifyFieldValueChanged.h"
 #include "MVVMSubsystem.h"
 #include "UI/BRUISettings.h"
 #include "UI/BRViewModels.h"
@@ -10,7 +11,28 @@
 void UBRKillfeedEntryWidget::SetEntry(const FBRKillfeedViewEntry& InEntry)
 {
 	Entry = InEntry;
-	BP_OnEntrySet();
+
+	if (KillerNameText)
+	{
+		KillerNameText->SetText(Entry.KillerName);
+	}
+	if (VictimNameText)
+	{
+		VictimNameText->SetText(Entry.VictimName);
+	}
+
+	// Empty renders as empty text in a reserved slot -- never collapsed, so a late-arriving
+	// line appears in place without reflowing the feed (see the header).
+	if (SpotterLineText)
+	{
+		SpotterLineText->SetText(Entry.SpotterLine);
+	}
+
+	// Collapsed until weapon glyph art exists; a brushless image is BP70 D2's blank rectangle.
+	if (WeaponIcon)
+	{
+		WeaponIcon->SetVisibility(ESlateVisibility::Collapsed);
+	}
 }
 
 UBRHUDLayout::UBRHUDLayout()
@@ -18,68 +40,22 @@ UBRHUDLayout::UBRHUDLayout()
 	InputMode = EBRWidgetInputMode::Game;
 }
 
+void UBRHUDLayout::NativeOnInitialized()
+{
+	Super::NativeOnInitialized();
+
+	// LAYOUT-DOCTRINE Sec 7 / HUD-CPP-AUDIT H7: HitTestInvisible propagates to every child, so
+	// asserting it ONCE on the frame's root makes the entire HUD passive to hit-testing. Set in
+	// C++, not the WBP, because the generator cannot author visibility and a details-panel
+	// default is decided by nobody. The pause menu never fights the HUD for clicks again.
+	SetVisibility(ESlateVisibility::HitTestInvisible);
+}
+
 void UBRHUDLayout::BindViewModels()
 {
 	Super::BindViewModels();
 
 	PushViewModelsIntoMVVMView();
-
-	if (UBRVM_Combat* Combat = GetCombatViewModel())
-	{
-		Combat->OnHitMarker().AddUObject(this, &UBRHUDLayout::HandleHitMarker);
-
-		VitalsStateFieldHandle = Combat->AddFieldValueChangedDelegate(
-			UBRVM_Combat::FFieldNotificationClassDescriptor::VitalsState,
-			INotifyFieldValueChanged::FFieldValueChangedDelegate::CreateUObject(
-				this, &UBRHUDLayout::HandleViewModelFieldChanged));
-
-		BP_OnVitalsStateChanged(Combat->GetVitalsState());
-	}
-	else
-	{
-		BP_OnVitalsStateChanged(EBRUIDataState::Unknown);
-	}
-
-	if (UBRVM_Match* Match = GetMatchViewModel())
-	{
-		// No `OnKillfeedChanged` subscription here: `UBRKillfeed` owns that projection.
-		MatchStateFieldHandle = Match->AddFieldValueChangedDelegate(
-			UBRVM_Match::FFieldNotificationClassDescriptor::MatchState,
-			INotifyFieldValueChanged::FFieldValueChangedDelegate::CreateUObject(
-				this, &UBRHUDLayout::HandleViewModelFieldChanged));
-
-		BP_OnMatchStateChanged(Match->GetMatchState());
-	}
-	else
-	{
-		BP_OnMatchStateChanged(EBRUIDataState::Unknown);
-	}
-}
-
-void UBRHUDLayout::UnbindViewModels()
-{
-	if (UBRVM_Combat* Combat = GetCombatViewModel())
-	{
-		Combat->OnHitMarker().RemoveAll(this);
-		if (VitalsStateFieldHandle.IsValid())
-		{
-			Combat->RemoveFieldValueChangedDelegate(
-				UBRVM_Combat::FFieldNotificationClassDescriptor::VitalsState, VitalsStateFieldHandle);
-		}
-	}
-	VitalsStateFieldHandle.Reset();
-
-	if (UBRVM_Match* Match = GetMatchViewModel())
-	{
-		if (MatchStateFieldHandle.IsValid())
-		{
-			Match->RemoveFieldValueChangedDelegate(
-				UBRVM_Match::FFieldNotificationClassDescriptor::MatchState, MatchStateFieldHandle);
-		}
-	}
-	MatchStateFieldHandle.Reset();
-
-	Super::UnbindViewModels();
 }
 
 void UBRHUDLayout::PushViewModelsIntoMVVMView()
@@ -99,47 +75,5 @@ void UBRHUDLayout::PushViewModelsIntoMVVMView()
 	if (UBRVM_Match* Match = GetMatchViewModel())
 	{
 		View->SetViewModel(Settings.MatchViewModelContextName, Match);
-	}
-}
-
-void UBRHUDLayout::HandleHitMarker(EBRHitMarkerKind Kind)
-{
-	switch (Kind)
-	{
-	case EBRHitMarkerKind::Shield:
-		BP_OnShieldHit();
-		break;
-	case EBRHitMarkerKind::Flesh:
-		BP_OnFleshHit();
-		break;
-	case EBRHitMarkerKind::Headshot:
-		BP_OnHeadshotHit();
-		break;
-	case EBRHitMarkerKind::Kill:
-		BP_OnKillConfirmed();
-		break;
-	case EBRHitMarkerKind::None:
-	default:
-		break;
-	}
-}
-
-void UBRHUDLayout::HandleViewModelFieldChanged(UObject* Source, UE::FieldNotification::FFieldId FieldId)
-{
-	if (const UBRVM_Combat* Combat = Cast<UBRVM_Combat>(Source))
-	{
-		if (FieldId == UBRVM_Combat::FFieldNotificationClassDescriptor::VitalsState)
-		{
-			BP_OnVitalsStateChanged(Combat->GetVitalsState());
-		}
-		return;
-	}
-
-	if (const UBRVM_Match* Match = Cast<UBRVM_Match>(Source))
-	{
-		if (FieldId == UBRVM_Match::FFieldNotificationClassDescriptor::MatchState)
-		{
-			BP_OnMatchStateChanged(Match->GetMatchState());
-		}
 	}
 }

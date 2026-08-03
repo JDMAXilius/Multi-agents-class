@@ -110,14 +110,11 @@ public:
 	UBRProgressBar();
 
 	/**
-	 * REFERENCE-EXTRACTION Sec 5: the `Progress Bar` set is ONE variant, a 536 x 152 frame. 536
-	 * is the grid-stack module width, so the bar module drops into the same column as
-	 * `UBRItemGrid` (536 x 388) and `UBRMenuList` (536 x 446) with no bespoke geometry.
-	 * Declared for the WBP author; the track's own height is NOT measured anywhere (see the
-	 * contract gap in this packet's report) and is therefore the WBP's to lay out.
+	 * No module geometry is declared here. The old 536x152 constants described ONE Figma
+	 * art-board and were contradicted by every shipped instance (273.33x34 vitals, 38x13
+	 * cooldown) — a class that ships at three sizes owns none of them; the WBP does
+	 * (HUD-CPP-AUDIT stale-comment sweep).
 	 */
-	static constexpr float ModuleWidth = 536.0f;
-	static constexpr float ModuleHeight = 152.0f;
 
 	/**
 	 * "Full" -- the boundary for the Health channel's hidden-until-damaged rule
@@ -167,6 +164,7 @@ public:
 protected:
 	//~ Begin UUserWidget interface
 	virtual void NativeOnInitialized() override;
+	virtual void NativePreConstruct() override;
 	//~ End UUserWidget interface
 
 	/**
@@ -217,18 +215,26 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Breachpoint|UI")
 	TObjectPtr<UCommonTextBlock> LabelText;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Breachpoint|UI")
+	/**
+	 * NOT EditAnywhere, deliberately (HUD-CPP-AUDIT): `BRVitalsWidget.h` promises "no colour
+	 * is ever passed in and none may be typed into the WBP" — an editable channel was that
+	 * details panel. `SetTreatment`/`SetChannel` from the owning C++ are the only path, which
+	 * is what makes the tier rule enforceable.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|UI")
 	EBRProgressTreatment Treatment = EBRProgressTreatment::FrontEndFlat;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Breachpoint|UI")
+	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|UI")
 	EBRProgressChannel Channel = EBRProgressChannel::Neutral;
 
-	/** COMPONENT-SPECS Sec 8. A token name, never a colour -- and never a hex in the WBP. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Breachpoint|UI")
+	/** COMPONENT-SPECS Sec 8. A token name, never a colour; per-asset styling is legitimate
+	 *  here, so it stays designer-editable — and previews via NativePreConstruct below. */
+	UPROPERTY(EditDefaultsOnly, Category = "Breachpoint|UI")
 	EBRUIColorToken TrackGroundToken = EBRUIColorToken::PanelGround40;
 
-	/** Printed instead of a number while the value is unknown. Set in the constructor. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Breachpoint|UI")
+	/** Printed instead of a number while the value is unknown. Set ONCE in the constructor —
+	 *  unknown is one concept and gets one mark, so no WBP may fork it. */
+	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|UI")
 	FText UnknownValueText;
 
 private:

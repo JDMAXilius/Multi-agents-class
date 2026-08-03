@@ -1,5 +1,6 @@
 #include "UI/HUD/BREquipmentTray.h"
 
+#include "Animation/WidgetAnimation.h"
 #include "CommonTextBlock.h"
 #include "Engine/World.h"
 #include "INotifyFieldValueChanged.h"
@@ -19,6 +20,9 @@ UBREquipmentTray::UBREquipmentTray()
 void UBREquipmentTray::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
+
+	// A readout, never an input surface (HUD-CPP-AUDIT H7). Propagates to every child.
+	SetVisibility(ESlateVisibility::HitTestInvisible);
 
 	if (CooldownBar)
 	{
@@ -90,7 +94,7 @@ void UBREquipmentTray::BindViewModel()
 		// rebuilt mid-cooldown. The ViewModel carries the DURATION but no start/end instant, so
 		// remaining time is genuinely unknown: dashes, not a guessed sweep. (Contract gap.)
 		ApplyCooldownUnknown();
-		BP_OnGrappleReadyChanged(false);
+		if (GrappleReadyAnim) { PlayAnimationReverse(GrappleReadyAnim); }
 	}
 }
 
@@ -177,14 +181,17 @@ void UBREquipmentTray::StartCooldownVisual(float DurationSeconds)
 	{
 		// A cooldown with no duration is not a cooldown this widget can draw honestly.
 		ApplyCooldownUnknown();
-		BP_OnGrappleReadyChanged(false);
+		if (GrappleReadyAnim) { PlayAnimationReverse(GrappleReadyAnim); }
 		return;
 	}
 
 	CooldownDurationSeconds = DurationSeconds;
+	// Local time, deliberately: the ring is a display decay for a cooldown the server already
+	// enforces, so pause/dilation drift is cosmetic. The match band's server-time doctrine is
+	// about shared FACTS (the clock all views must agree on); this is not one.
 	CooldownEndTimeSeconds = World->GetTimeSeconds() + DurationSeconds;
 
-	BP_OnGrappleReadyChanged(false);
+	if (GrappleReadyAnim) { PlayAnimationReverse(GrappleReadyAnim); }
 	AdvanceCooldownVisual();
 
 	// A timer, not a Tick (law 4). It interpolates between two instants already known at this
@@ -231,7 +238,7 @@ void UBREquipmentTray::ApplyGrappleReady()
 		CooldownBar->SetValueText(GrappleReadyText);
 	}
 
-	BP_OnGrappleReadyChanged(true);
+	if (GrappleReadyAnim) { PlayAnimationForward(GrappleReadyAnim); }
 }
 
 void UBREquipmentTray::ApplyCooldownUnknown()

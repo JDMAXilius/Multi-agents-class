@@ -1,7 +1,8 @@
 #pragma once
 
+#include "CommonUserWidget.h"
 #include "FieldNotificationId.h"
-#include "UI/BRActivatableWidget.h"
+#include "UI/BRUITypes.h"
 
 #include "BRMatchBand.generated.h"
 
@@ -39,20 +40,22 @@ class UWidget;
  * `InputMode` stays `Inherit`, which makes `GetDesiredInputConfig()` return an unset optional.
  */
 UCLASS(Abstract, meta = (DisableNativeTick))
-class BREACHPOINT_API UBRMatchBand : public UBRActivatableWidget
+class BREACHPOINT_API UBRMatchBand : public UCommonUserWidget
 {
 	GENERATED_BODY()
-
-public:
-	UBRMatchBand();
 
 protected:
 	virtual void NativeOnInitialized() override;
 
-	//~ Begin UBRActivatableWidget interface
-	virtual void BindViewModels() override;
-	virtual void UnbindViewModels() override;
-	//~ End UBRActivatableWidget interface
+	//~ Begin UUserWidget interface
+	// RE-BASED off UBRActivatableWidget (HUD-CPP-AUDIT §4): the band is never pushed to a
+	// layer, so activation fired from its own construct — activation scope WAS construct scope
+	// wearing a CommonUI hat, while the activatable base cost it bSupportsActivationFocus=true
+	// (the one live focus hazard on the HUD). Bind/unbind now live where they always
+	// effectively ran.
+	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
+	//~ End UUserWidget interface
 
 	/** Pushes every displayed value from the ViewModel. The only place text is written. */
 	void Refresh();
@@ -98,6 +101,15 @@ private:
 
 	void BindMatchField(UBRVM_Match* Match, UE::FieldNotification::FFieldId FieldId);
 
-	/** One handle per subscribed field, so `UnbindViewModels` can drop exactly what it took. */
+	UBRVM_Match* ResolveMatchViewModel() const;
+
+	/** One handle per subscribed field, so destruct can drop exactly what it took. */
 	TArray<TPair<UE::FieldNotification::FFieldId, FDelegateHandle>> BoundFields;
+
+	/**
+	 * The object the delegates were actually added to (HUD-CPP-AUDIT H9). Unbinding via a
+	 * fresh subsystem lookup removes from whatever the subsystem holds NOW — if the ViewModel
+	 * was swapped between construct and destruct, the real binding outlives the widget.
+	 */
+	TWeakObjectPtr<UBRVM_Match> BoundViewModel;
 };

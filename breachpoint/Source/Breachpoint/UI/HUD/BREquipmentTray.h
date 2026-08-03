@@ -9,11 +9,12 @@
 class UBRProgressBar;
 class UBRVM_Combat;
 class UCommonTextBlock;
+class UWidgetAnimation;
 
 /**
- * `UBREquipmentTray` -- the BOTTOM-LEFT HUD surface: grenade count and the grapple cooldown.
- * `ue5-ui-architecture` Sec 4 lists it as one element of the HUD: "grenade count + grapple
- * cooldown ring (bottom-left)".
+ * `UBREquipmentTray` -- the BOTTOM-RIGHT HUD surface: grenade count and the grapple cooldown.
+ * (The old BOTTOM-LEFT claim here was stale — `figma_hud_layout.json` measures the tray at
+ * x=940 of 1280, and the plan builds it there. HUD-CPP-AUDIT stale-comment sweep.)
  *
  * SCOPE, AND WHY IT LOOKS SMALLER THAN THE ART
  * -------------------------------------------
@@ -61,10 +62,8 @@ public:
 	 * (`HUD_Grenade_*_Sel.svg`) and the ability pill is 52 x 31 (`HUD_Ability_Grapple_Ready.svg`).
 	 * Declared, not enforced: geometry is the WBP's, these numbers stop it being guessed.
 	 */
-	static constexpr float GrenadeGlyphWidth = 23.0f;
-	static constexpr float GrenadeGlyphHeight = 17.0f;
-	static constexpr float AbilityPillWidth = 52.0f;
-	static constexpr float AbilityPillHeight = 31.0f;
+	// (The four glyph/pill constants that sat here were CUT — zero readers; the measured
+	// numbers live in the export files and MCP-BUILD-PLANS with the rest of the WBP geometry.)
 
 	/**
 	 * Display refresh of the cooldown interpolation, in seconds. A PRESENTATION number, not a
@@ -101,16 +100,20 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Breachpoint|HUD")
 	TObjectPtr<UBRProgressBar> CooldownBar;
 
-	/** Printed in the bar's readout while the ability is off cooldown. Display string only. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Breachpoint|HUD")
+	/** Printed in the bar's readout while the ability is off cooldown. Display string only.
+	 *  EditDefaultsOnly, and note it has no designer preview path — it is applied on the
+	 *  ready transition at runtime, so a per-asset override is legitimate but invisible in the
+	 *  designer (recorded, HUD-CPP-AUDIT P3). */
+	UPROPERTY(EditDefaultsOnly, Category = "Breachpoint|HUD")
 	FText GrappleReadyText;
 
 	/**
-	 * The Ready <-> Cooling swap the art authors as a pill pair. State comes from the ViewModel
-	 * (ultimately a GE tag); the BP only plays the visual. No gameplay branch belongs in it.
+	 * The Ready <-> Cooling pill swap, authored in the WBP and PLAYED from C++ — the lawful
+	 * replacement for the old `BP_OnGrappleReadyChanged` BIE (unimplementable under R18).
+	 * Forward on ready, reverse into cooldown.
 	 */
-	UFUNCTION(BlueprintImplementableEvent, Category = "Breachpoint|HUD", meta = (DisplayName = "On Grapple Ready Changed"))
-	void BP_OnGrappleReadyChanged(bool bReady);
+	UPROPERTY(Transient, meta = (BindWidgetAnimOptional))
+	TObjectPtr<UWidgetAnimation> GrappleReadyAnim;
 
 private:
 	void BindViewModel();

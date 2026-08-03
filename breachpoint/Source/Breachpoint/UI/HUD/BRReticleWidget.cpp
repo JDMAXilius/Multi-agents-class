@@ -1,5 +1,6 @@
 #include "UI/HUD/BRReticleWidget.h"
 
+#include "Animation/WidgetAnimation.h"
 #include "Breachpoint.h"
 #include "Components/Image.h"
 #include "Engine/AssetManager.h"
@@ -89,13 +90,20 @@ void UBRReticleWidget::NativeOnInitialized()
 
 	// Unknown until a weapon says otherwise. Draws nothing.
 	ApplyReticle();
-
-	PreloadArt();
 }
 
 void UBRReticleWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+
+	// HUD-CPP-AUDIT H8: the preload lives HERE, not in NativeOnInitialized. Initialize runs
+	// once per object; destruct cancels the streaming handle on every tree removal (death cam,
+	// HUD hide). Preloading from initialize meant the second construct onward ran every weapon
+	// swap through the synchronous fallback — the exact hitch the preload exists to prevent.
+	if (!ArtPreloadHandle.IsValid())
+	{
+		PreloadArt();
+	}
 
 	BindViewModel();
 }
@@ -133,6 +141,8 @@ void UBRReticleWidget::BindViewModel()
 		return;
 	}
 
+	BoundViewModel = Combat;
+
 	// THE hit-marker wire. Server-confirmed damage -> UBRVM_Combat::ReportHitMarker ->
 	// here. This widget never traces, never predicts, never infers a hit from input.
 	Combat->OnHitMarker().AddUObject(this, &UBRReticleWidget::HandleHitMarker);
@@ -149,7 +159,9 @@ void UBRReticleWidget::BindViewModel()
 
 void UBRReticleWidget::UnbindViewModel()
 {
-	if (UBRVM_Combat* Combat = GetCombatViewModel())
+	// Unbind from the object the delegates were ADDED to (HUD-CPP-AUDIT H9), never a fresh
+	// subsystem lookup — a swapped ViewModel would leave the real binding alive.
+	if (UBRVM_Combat* Combat = BoundViewModel.Get())
 	{
 		Combat->OnHitMarker().RemoveAll(this);
 
@@ -161,6 +173,7 @@ void UBRReticleWidget::UnbindViewModel()
 	}
 
 	ActiveWeaponFieldHandle.Reset();
+	BoundViewModel.Reset();
 }
 
 void UBRReticleWidget::HandleCombatFieldChanged(UObject* Source, UE::FieldNotification::FFieldId FieldId)
@@ -204,7 +217,6 @@ void UBRReticleWidget::ApplyReticle()
 		{
 			ReticleImage->SetVisibility(ESlateVisibility::Collapsed);
 		}
-		BP_OnReticleChanged(NAME_None, FVector2D::ZeroVector, false);
 		return;
 	}
 
@@ -237,7 +249,6 @@ void UBRReticleWidget::ApplyReticle()
 		{
 			ReticleImage->SetVisibility(ESlateVisibility::Collapsed);
 		}
-		BP_OnReticleChanged(ActiveWeaponId, FVector2D::ZeroVector, bIsStandIn);
 		return;
 	}
 
@@ -247,10 +258,9 @@ void UBRReticleWidget::ApplyReticle()
 		ReticleImage->SetVisibility(ESlateVisibility::HitTestInvisible);
 	}
 
-	// The size goes to the WBP too: SetDesiredSizeOverride only wins where the layout lets
-	// the image size itself. A SizeBox around it must be driven from here, or the five
-	// sizes collapse back into one and the spread cue is gone.
-	BP_OnReticleChanged(ActiveWeaponId, Found->SizePx, bIsStandIn);
+	// SetDesiredSizeOverride carries the size; the slot must not constrain it (the size IS
+	// the spread readout). The old BP_OnReticleChanged hook is gone with the other BIEs —
+	// C++ renders the whole reticle state, so there was nothing left for a graph to do.
 }
 
 void UBRReticleWidget::HandleHitMarker(EBRHitMarkerKind Kind)
@@ -285,9 +295,13 @@ void UBRReticleWidget::ShowHitMarker(EBRHitMarkerKind InKind)
 		HitMarkerImage->SetVisibility(ESlateVisibility::HitTestInvisible);
 	}
 
-	// Fired unconditionally: the confirm is information, so a WBP animation must be able
-	// to carry it even while the four marker assets are still unauthored.
-	BP_OnHitMarkerShown(InKind);
+	// Played unconditionally: the confirm is information, so the WBP animation must be able
+	// to carry it even while the four marker assets are still unauthored. An anim played from
+	// C++ is the lawful hook — the old BIE could never be implemented under R18.
+	if (HitMarkerAnim)
+	{
+		PlayAnimationForward(HitMarkerAnim);
+	}
 
 	if (const UWorld* World = GetWorld())
 	{
@@ -317,7 +331,10 @@ void UBRReticleWidget::HideHitMarker()
 		HitMarkerImage->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
-	BP_OnHitMarkerHidden();
+	if (HitMarkerAnim)
+	{
+		StopAnimation(HitMarkerAnim);
+	}
 }
 
 void UBRReticleWidget::ApplyArt(UImage* Image, const TSoftObjectPtr<UTexture2D>& SoftArt, const FVector2D& SizePx)

@@ -74,15 +74,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Breachpoint|Reticle")
 	void SetActiveWeaponId(FName InWeaponId);
 
-	UFUNCTION(BlueprintCallable, Category = "Breachpoint|Reticle")
-	FName GetActiveWeaponId() const { return ActiveWeaponId; }
-
 	/** Public for tests and for the ViewModel delegate. Higher-priority kinds win. */
 	UFUNCTION(BlueprintCallable, Category = "Breachpoint|Reticle")
 	void ShowHitMarker(EBRHitMarkerKind InKind);
-
-	UFUNCTION(BlueprintCallable, Category = "Breachpoint|Reticle")
-	EBRHitMarkerKind GetActiveHitMarkerKind() const { return ActiveHitMarkerKind; }
 
 	/**
 	 * The weapon whose reticle stands in when a weapon has no art of its own.
@@ -136,15 +130,15 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Config, Category = "Breachpoint|Reticle", meta = (ClampMin = "0.01"))
 	float HitMarkerDurationSeconds = 0.15f;
 
-	UFUNCTION(BlueprintImplementableEvent, Category = "Breachpoint|Reticle", meta = (DisplayName = "On Reticle Changed"))
-	void BP_OnReticleChanged(FName WeaponId, FVector2D SizePx, bool bIsStandIn);
-
-	/** Fired even when no art resolves, so a WBP animation can still carry the confirm. */
-	UFUNCTION(BlueprintImplementableEvent, Category = "Breachpoint|Reticle", meta = (DisplayName = "On Hit Marker Shown"))
-	void BP_OnHitMarkerShown(EBRHitMarkerKind Kind);
-
-	UFUNCTION(BlueprintImplementableEvent, Category = "Breachpoint|Reticle", meta = (DisplayName = "On Hit Marker Hidden"))
-	void BP_OnHitMarkerHidden();
+	/**
+	 * The confirm flourish, authored in the WBP and PLAYED from C++ — the lawful replacement
+	 * for the three BlueprintImplementableEvents that used to sit here (HUD-CPP-AUDIT §5: a
+	 * BIE needs a graph node, and R18 gives WBPs empty graphs, so every hook was
+	 * unimplementable). Played forward on ShowHitMarker even when no marker art resolves, so
+	 * an animation can carry the confirm alone; stopped on hide.
+	 */
+	UPROPERTY(Transient, meta = (BindWidgetAnimOptional))
+	TObjectPtr<UWidgetAnimation> HitMarkerAnim;
 
 private:
 	void BindViewModel();
@@ -176,6 +170,9 @@ private:
 	FTimerHandle HitMarkerTimerHandle;
 
 	FDelegateHandle ActiveWeaponFieldHandle;
+
+	/** The object the delegates were ADDED to (HUD-CPP-AUDIT H9); unbind targets this. */
+	TWeakObjectPtr<UBRVM_Combat> BoundViewModel;
 
 	TSharedPtr<FStreamableHandle> ArtPreloadHandle;
 };

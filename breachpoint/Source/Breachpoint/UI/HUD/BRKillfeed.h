@@ -1,17 +1,18 @@
 #pragma once
 
-#include "UI/BRActivatableWidget.h"
+#include "CommonUserWidget.h"
 
 #include "BRKillfeed.generated.h"
 
 class UBRKillfeedEntryWidget;
+class UBRVM_Match;
 class UPanelWidget;
 struct FBRKillfeedViewEntry;
 
 /**
  * `UBRKillfeed` -- the recycled feed (`ue5-ui-architecture` Sec 5).
  *
- * THE POOL IS THE POINT. Rows are created ONCE, on first activation, parented to
+ * THE POOL IS THE POINT. Rows are created ONCE, on first construct, parented to
  * `EntryContainer` once, and thereafter CLAIMED by index and RELEASED by collapsing. There is
  * no `CreateWidget` and no `AddChild`/`RemoveFromParent` anywhere on the per-kill path,
  * because the per-kill path runs in the middle of a firefight -- the worst possible moment to
@@ -35,31 +36,27 @@ struct FBRKillfeedViewEntry;
  * `SpotterLine` it has (usually empty). When the line lands later,
  * `UBRVM_Match::AppendSpotterLine` re-broadcasts and the SAME row re-renders in place. The
  * feed must not wait on the LLM and must not reflow when it answers: offline is the identical
- * HUD minus the flavour text. Reserving the append slot is the WBP's job -- see the class
- * comment gap below.
+ * HUD minus the flavour text.
+ *
+ * RE-BASED onto `UCommonUserWidget` (HUD-CPP-AUDIT §4): the feed is never pushed to a layer,
+ * so its old activatable base fired activation from its own construct -- activation scope WAS
+ * construct scope -- while costing it `bSupportsActivationFocus = true`, a focus hazard a HUD
+ * element must not carry. Bind/unbind now live where they always effectively ran.
  *
  * NO AUTHORITY: reads the ViewModel, nothing else. No GameState, no PlayerState, no RPC. It is
  * non-interactive, takes no focus, and cannot trap gamepad navigation.
  */
 UCLASS(Abstract, meta = (DisableNativeTick))
-class BREACHPOINT_API UBRKillfeed : public UBRActivatableWidget
+class BREACHPOINT_API UBRKillfeed : public UCommonUserWidget
 {
 	GENERATED_BODY()
 
-public:
-	UBRKillfeed();
-
-	/** How many rows the pool was built with. Zero means the entry class never resolved. */
-	UFUNCTION(BlueprintCallable, Category = "Breachpoint|Killfeed")
-	int32 GetPoolSize() const { return Rows.Num(); }
-
 protected:
-	//~ Begin UBRActivatableWidget interface
-	virtual void BindViewModels() override;
-	virtual void UnbindViewModels() override;
-	//~ End UBRActivatableWidget interface
-
-	virtual void ReleaseSlateResources(bool bReleaseChildren) override;
+	//~ Begin UUserWidget interface
+	virtual void NativeOnInitialized() override;
+	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
+	//~ End UUserWidget interface
 
 	/**
 	 * Where the pooled rows live for the whole lifetime of the widget. A `UVerticalBox` in
@@ -69,7 +66,7 @@ protected:
 	TObjectPtr<UPanelWidget> EntryContainer;
 
 private:
-	/** Builds the fixed pool. Runs at most once; a no-op on every later activation. */
+	/** Builds the fixed pool. ONE attempt per widget object -- see `bPoolBuildAttempted`. */
 	void EnsurePool();
 
 	/** Re-projects the ViewModel's ring onto the pool. The only place a row is written. */
@@ -79,6 +76,8 @@ private:
 
 	/** All rows collapsed, nothing claimed. The honest empty feed. */
 	void ReleaseAllRows();
+
+	UBRVM_Match* ResolveMatchViewModel() const;
 
 	/**
 	 * `visr` channel for one row. White is "you, in a list of people"; `team-them` is the other
@@ -90,4 +89,14 @@ private:
 	/** The pool. Index-stable, always parented to `EntryContainer`, never resized after build. */
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UBRKillfeedEntryWidget>> Rows;
+
+	/**
+	 * HUD-CPP-AUDIT H11: a failed build (null entry class, null owning player) used to retry --
+	 * and re-warn, and re-LoadSynchronous a soft class -- on every construct. One attempt per
+	 * widget object; the warning says what to fix and the feed renders empty until it is.
+	 */
+	bool bPoolBuildAttempted = false;
+
+	/** The object the delegate was ADDED to (H9) -- destruct unbinds from this, never a lookup. */
+	TWeakObjectPtr<UBRVM_Match> BoundViewModel;
 };

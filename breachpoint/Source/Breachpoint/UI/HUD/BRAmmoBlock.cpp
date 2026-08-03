@@ -2,7 +2,7 @@
 
 #include "CommonTextBlock.h"
 #include "Components/SizeBox.h"
-#include "Components/WidgetSwitcher.h"
+#include "Animation/WidgetAnimation.h"
 #include "Engine/LocalPlayer.h"
 #include "INotifyFieldValueChanged.h"
 #include "UI/BRUIManagerSubsystem.h"
@@ -13,6 +13,9 @@
 void UBRAmmoBlock::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
+
+	// A readout, never an input surface (HUD-CPP-AUDIT H7). Propagates to every child.
+	SetVisibility(ESlateVisibility::HitTestInvisible);
 
 	if (RootSizeBox)
 	{
@@ -36,6 +39,11 @@ void UBRAmmoBlock::NativeConstruct()
 void UBRAmmoBlock::NativeDestruct()
 {
 	UnbindViewModel();
+
+	// HUD-CPP-AUDIT H10: the latch must not survive the tree, or a second construct skips the
+	// state push and the WBP re-enters stale.
+	bStateApplied = false;
+	State = EBRAmmoReadoutState::Unknown;
 
 	Super::NativeDestruct();
 }
@@ -156,32 +164,11 @@ void UBRAmmoBlock::ApplyState(EBRAmmoReadoutState InState)
 	State = InState;
 	bStateApplied = true;
 
-	if (StateSwitcher)
-	{
-		StateSwitcher->SetActiveWidgetIndex(
-			State == EBRAmmoReadoutState::Battery ? BatteryLayoutIndex : ReadoutLayoutIndex);
-	}
-
 	if (MagazineText)
 	{
-		// One switch, one meaning per colour. Low is AMBER -- ui-presentation Sec 3 keeps red for
-		// threat, and a magazine running out is a clock, not a threat. See EBRAmmoReadoutState.
-		switch (State)
-		{
-		case EBRAmmoReadoutState::Low:
-			MagazineText->SetColorAndOpacity(BR::Tokens::Amber());
-			break;
-
-		case EBRAmmoReadoutState::Unknown:
-			MagazineText->SetColorAndOpacity(BR::Tokens::Dead());
-			break;
-
-		case EBRAmmoReadoutState::Normal:
-		case EBRAmmoReadoutState::Battery:
-		default:
-			MagazineText->SetColorAndOpacity(BR::Tokens::Shield());
-			break;
-		}
+		// Two states, two colours. (Low/amber returns with BP69's ViewModel fields.)
+		MagazineText->SetColorAndOpacity(
+			State == EBRAmmoReadoutState::Unknown ? BR::Tokens::Dead() : BR::Tokens::Shield());
 	}
 
 	if (ReserveText)
@@ -223,14 +210,15 @@ void UBRAmmoBlock::ApplyState(EBRAmmoReadoutState InState)
 		}
 	}
 
-	if (BatteryPercentText)
+	if (bChanged && StateAnim)
 	{
-		// Nothing on the ViewModel can fill this yet -- so it says so, permanently and honestly.
-		BatteryPercentText->SetText(BRUI::UnknownValueText());
-	}
-
-	if (bChanged)
-	{
-		BP_OnAmmoStateChanged(State);
+		if (State == EBRAmmoReadoutState::Normal)
+		{
+			PlayAnimationForward(StateAnim);
+		}
+		else
+		{
+			PlayAnimationReverse(StateAnim);
+		}
 	}
 }

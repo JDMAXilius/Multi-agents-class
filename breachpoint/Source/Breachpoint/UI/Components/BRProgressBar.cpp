@@ -44,6 +44,19 @@ void UBRProgressBar::NativeOnInitialized()
 	SetPercentUnknown();
 }
 
+void UBRProgressBar::NativePreConstruct()
+{
+	Super::NativePreConstruct();
+
+	// Designer preview (HUD-CPP-AUDIT P3): the one designer knob left on this class is
+	// TrackGroundToken, and initialize does not run at design time — without this a token
+	// change in the details panel showed nothing until PIE.
+	if (Track)
+	{
+		Track->SetColorAndOpacity(BRUI::ResolveColorToken(TrackGroundToken));
+	}
+}
+
 FLinearColor UBRProgressBar::ResolveFillColor() const
 {
 	// ui-presentation Sec 4, the tier rule. This switch IS the difference between the lobby bar
@@ -104,17 +117,13 @@ void UBRProgressBar::ApplyBarVisibility()
 
 	const bool bVisible = bHasValue && !bHiddenUntilDamaged;
 
-	if (Fill)
-	{
-		Fill->SetVisibility(bVisible ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
-	}
-
-	if (Track)
-	{
-		// Hidden, not Collapsed: the track reserves its slot so a bar appearing mid-fight does
-		// not reflow the vitals block under the player's eyes.
-		Track->SetVisibility(bVisible ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
-	}
+	// BP70 D3, the real fix (HUD-CPP-AUDIT H6): visibility lands on THIS WIDGET, not on two
+	// named children. The old Fill/Track-only path left Frame, ValueText, LabelText and any
+	// other WBP-authored child drawing at full health — the most likely literal cause of the
+	// founder render's "gold bar at full shields", which was the frame of a bar whose fill WAS
+	// hidden. Hidden, not Collapsed, and the choice is ruled in TICKET_BP70's log: in a canvas
+	// slot the two are identical (no reflow), and Hidden keeps the reservation explicit.
+	SetVisibility(bVisible ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
 }
 
 void UBRProgressBar::SetPercent(float InPercent)

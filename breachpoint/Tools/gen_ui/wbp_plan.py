@@ -434,19 +434,14 @@ PLAN = {
     },
 
     # ------------------------------------------------------------------
-    # WBP_KillfeedEntry — layout only, and NOTHING IN IT IS BINDABLE YET.
+    # WBP_KillfeedEntry — the contract LANDED (BP66 closed, HUD-CPP-AUDIT packet C).
     #
-    # UBRKillfeedEntryWidget declares ZERO BindWidget members. Its only update path
-    # is BP_OnEntrySet, a BlueprintImplementableEvent — and implementing that needs
-    # an event graph NODE, which R18/R26 forbid in a WBP. That is decision D1
-    # (ROADMAP §1), still open, and it blocks this asset from being finished.
-    #
-    # The row geometry below is real design work and is worth landing. The widget
-    # NAMES are chosen as the contract the C++ packet should adopt: adding
-    # BindWidget members with these exact names makes this WBP correct with no
-    # re-authoring, and `validate()` will then enforce the match automatically.
-    # Filed as a contract_gap; do not paper over it with a property binding, which
-    # is a per-frame poll wearing a different hat (law 4).
+    # UBRKillfeedEntryWidget now declares the exact BindWidget members this plan
+    # pre-committed: KillerNameText / VictimNameText required, SpotterLineText /
+    # WeaponIcon optional. SetEntry writes the texts directly — the old
+    # BlueprintImplementableEvent path (unimplementable under R18: a BIE needs a
+    # graph node, WBPs have empty graphs) is gone, and `validate()` below now
+    # enforces the header/plan match it was designed for.
     # ------------------------------------------------------------------
     # Named WBP_KillfeedEntryWidget, not WBP_KillfeedEntry: the naming law derives the
     # asset name from the C++ class by stripping `UBR`, and the class is
@@ -463,8 +458,8 @@ PLAN = {
         "parent_class": "/Script/Breachpoint.BRKillfeedEntryWidget",
         "class": "UBRKillfeedEntryWidget",
         "header": "Source/Breachpoint/UI/BRHUDLayout.h",
-        "notes": "One killfeed row. Names are a proposed BindWidget contract; the C++ "
-                 "parent declares none yet (D1 open). Row box is the frame's 340x20.",
+        "notes": "One killfeed row, binds live (BP66 closed). WeaponIcon ships collapsed "
+                 "from C++ until glyph art exists. Row box is the frame's 340x20.",
         # TYPOGRAPHY. Player names are proper nouns in mixed case, so they take the BODY face
         # (Roboto Condensed), not the all-caps Rajdhani chrome — `Body/Name` is literally the
         # style named for this. Row height is 20 and the face is 14, which fits.
@@ -478,13 +473,14 @@ PLAN = {
             {"name": "RootSizeBox", "class": SIZEBOX, "parent": None},
             {"name": "Row", "class": HBOX, "parent": "RootSizeBox"},
             {"name": "KillerNameText", "class": TEXT, "parent": "Row",
-             "font": "Body/Name"},
+             "font": "Body/Name", "bind": True},
             # frame: killfeed.row.glyph [78,6,22,8] — a WEAPON glyph, and no weapon glyph
             # texture exists in Content/UI yet (Icons/ carries front-end UI glyphs, not
-            # weapons). No brush rather than a wrong one; filed as a gap.
-            {"name": "WeaponIcon", "class": IMAGE, "parent": "Row"},
+            # weapons). No brush rather than a wrong one — C++ ships it Collapsed until
+            # art lands, so the brushless slot can never render BP70 D2's blank rectangle.
+            {"name": "WeaponIcon", "class": IMAGE, "parent": "Row", "bind": True},
             {"name": "VictimNameText", "class": TEXT, "parent": "Row",
-             "font": "Body/Name"},
+             "font": "Body/Name", "bind": True},
             # The Spotter line reserves its slot and renders EMPTY when the string is
             # empty — it never collapses layout and never waits on the LLM.
             # Offline ⇒ identical HUD minus flavour (ue5-ui-architecture §5).
@@ -494,7 +490,7 @@ PLAN = {
             # Roboto Condensed is also the only family here that HAS an italic — Rajdhani
             # ships none, which is exactly why the token file splits body off the chrome face.
             {"name": "SpotterLineText", "class": TEXT, "parent": "Row",
-             "font": "Body/Flavor Small"},
+             "font": "Body/Flavor Small", "bind": True},
         ],
     },
 
