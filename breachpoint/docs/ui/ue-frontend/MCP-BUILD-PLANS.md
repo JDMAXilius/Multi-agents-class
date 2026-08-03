@@ -265,7 +265,11 @@ sends*, not a hidden row.
 
 ---
 
-### B5 · `WBP_ProfileBar` — `UBRProfileBar` (`UCommonUserWidget`), 1280 × 50
+### B5 · `WBP_ProfileBar` — **DEFERRED to the root-layout chrome packet** (CPP-AUDIT §3)
+
+> `UBRProfileBar` was cut: zero referencing classes, `SetIdentity` has zero callers, and
+> `WBP_RootLayout` has **no chrome slot for the bar to live in yet**. The class, the slot and the
+> caller land together in one chrome packet. The tree below is kept as that packet's spec.
 
 ```
 RootSizeBox        SizeBox    bind    │ height UNAUTHORED (BarHeight 50). Never y=670 — the bar
@@ -346,9 +350,10 @@ ScreenSafeZone     SAFEZONE           │ the outer margin — platform title-sa
   ├ ContentBand    HBOX               │ Fill 1.0
   │ ├ Col1_Menu    OVERLAY            │ Fill 1.0 · pad-right 24        ← half the 48 gutter
   │ │ └ LeftRail   WBP_LeftRail       │ bind · HAlign Left · max-w 348.67 via the rail's own box
-  │ ├ ContentSlot  OVERLAY    bind?   │ Fill 1.0 · pad 24 · EMPTY — this IS column 2: it
-  │ │                                 │   reserves the subject's space AND is the per-tab
-  │ │                                 │   content bind. One node, both jobs
+  │ ├ Col2_Subject OVERLAY    UNBOUND │ Fill 1.0 · pad 24 · EMPTY — reserves the subject's
+  │ │                                 │   space. (Amended per CPP-AUDIT §3: the ContentSlot
+  │ │                                 │   bind died with the FBRFrontEndTabLayout cut — the
+  │ │                                 │   per-tab content region returns WITH data, not before)
   │ └ Col3_Status  VBOX               │ Fill 1.0 · pad-left 24 · HAlign Right (children max-w
   │   ├ ProgressionButton WBP_RecordPanel │ bind? · h115 · pad-bottom 24        348.67)
   │   └ PartyList  WBP_RosterPanel    │ bind? · HUG
