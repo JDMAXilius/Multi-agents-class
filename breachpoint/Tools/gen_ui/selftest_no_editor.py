@@ -121,6 +121,13 @@ check("layer order is Game -> GameMenu -> Menu -> Modal (back to front)",
       names == ["GameLayerStack", "GameMenuLayerStack", "MenuLayerStack", "ModalLayerStack"],
       f"got {names}")
 
+print("\n6. BindWidget accepts a SUBCLASS (UMG does; the validator must too)")
+check("UVerticalBox satisfies a declared UPanelWidget", P._satisfies("UVerticalBox", "UPanelWidget"))
+check("UCanvasPanel satisfies a declared UPanelWidget", P._satisfies("UCanvasPanel", "UPanelWidget"))
+check("exact match still satisfies", P._satisfies("UOverlay", "UOverlay"))
+check("an UNRELATED class is still rejected", not P._satisfies("UImage", "UPanelWidget"))
+check("an unknown class falls back to exact match", not P._satisfies("UMysteryWidget", "UWidget"))
+
 print()
 if FAILS:
     print(f"SELF-TEST FAILED: {len(FAILS)} check(s) — {FAILS}")
