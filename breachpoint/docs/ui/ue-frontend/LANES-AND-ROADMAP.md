@@ -89,7 +89,7 @@ real numbers. The menu is that plus twelve assets. Everything else is behind BP2
 |---|---|---|
 | **BP71** | engine-installed | Compile the eight packets and run the ladder. **The gate.** |
 | **BP72** | editor-live | `--verify`, rebuild at digest, build the 12 menu WBPs. |
-| **BP73** | figma-mcp | Close the 9-value DECIDE ledger by reading the reference nodes. **5/9 closed 3 Aug; the 4 open are all fonts, all behind `get_design_context`.** |
+| **BP73** | figma-mcp | Close the 9-value DECIDE ledger by reading the reference nodes. **DONE 3 Aug — 9/9 closed, every one node-cited. Left four escalations: E1 `ImageHeight` is sized to a hidden layer (BP71), E2 the nav-bar bumper overlap (FOUNDER), E3 three off-system fonts (style sweep), E4 the feature-card scrim material (art).** |
 | **BP74** | files-only + BP71 | The six producer contract gaps the HUD director filed. |
 
 **Closed by this pass:** BP66 (killfeed BindWidget contract — landed in HUD-C).

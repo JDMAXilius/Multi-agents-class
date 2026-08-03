@@ -91,10 +91,18 @@ RootSizeBox        SizeBox    bind?   │ height UNAUTHORED (C++ PromptHeight 20
   │                                   │ draws the PLATFORM's glyph for a bound input action —
   │                                   │ zero brushes, zero per-platform art. This is the whole
   │                                   │ reason the bind is CommonActionWidget and not UImage
-  └ Verb           TEXT       bind    │ pad-left 10 (BP73: glyph ends x=20, text starts x=30) ·
-                                      │ VAlign Center · h17 in a 20 box
-                                      │ font still DECIDE — geometry cannot name a family
+  └ Verb           TEXT       bind    │ pad-left 10 (BP73: glyph ends x=20, text starts x=30,
+                                      │ and the auto-layout gap reads 10 — two independent
+                                      │ confirmations) · VAlign Center · h17 in a 20 box
+                                      │ font MEASURED: Roboto Condensed **Bold** 14 · ls 0 ·
+                                      │ white. NOT `Label/Micro` — the guess was wrong by
+                                      │ family, weight and 4px. See the off-system finding below
 ```
+
+> **Token finding (BP73).** `Roboto Condensed Bold 14` **is not in `figma_tokens.json`** — the
+> nearest rows are `Body/Name` (Roboto Cond **Medium** 14) and `Data/Value` (Roboto Cond SemiBold
+> 12). Do not add a token row from one node read (BP73 Out of scope); build the verb with the
+> literal measured values and leave the token question for a style sweep.
 
 **MUST NOT contain:** any glyph `Image` (the entire point of `UCommonActionWidget` is that the
 platform supplies the art); a fixed width.
@@ -109,21 +117,40 @@ platform supplies the art); a fixed width.
 
 ### A4 · `WBP_RosterHeader` — `UBRRosterHeader` (`UCommonUserWidget`), 349 × 31 in-panel
 
+**MEASURED 3 Aug 2026 (BP73, node `927:43301` `Roster Group Header` on `RS_Friends`).** The 31
+is not one band — it is **28 + 3 + a 1px line**, and the header's separation IS its own business
+after all (the MUST-NOT below is corrected). The `Ground` is not a flat tint either: it is a
+**vertical gradient white 0.10 → white 0.30**, top to bottom, on the text band only.
+
 ```
-RootSizeBox        SizeBox    bind    │ height UNAUTHORED (C++ HeaderHeight 31)
-└ HeaderOverlay    OVERLAY            │
-  ├ Ground         IMAGE      bind    │ slot FILL · NO brush — C++ tints from a token (law 2b)
-  └ HeaderHBox     HBOX               │ pad DECIDE (in-panel inset unmeasured)
-    ├ Label        TEXT       bind    │ Fill 1.0 · VAlign Center · font DECIDE
-    │                                 │ (Heading/Caption = Rajdhani Bold 12 · ls 100 is nearest)
-    └ Count        TEXT       bind?   │ Auto · HAlign Right · font DECIDE (Data/Value nearest)
+RootSizeBox        SizeBox    bind    │ height UNAUTHORED (C++ HeaderHeight 31 = 28 + 3 + 1)
+└ HeaderVBox       VBOX               │ gap 3 as slot padding (measured)
+  ├ BandOverlay    OVERLAY            │ Auto · h 28
+  │ ├ Ground       IMAGE      bind    │ slot FILL · NO brush — C++ drives the white10→white30
+  │ │                                 │   VERTICAL gradient (measured). A flat tint is wrong
+  │ └ HeaderHBox   HBOX               │ pad (10, 0, 10, 0) — MEASURED px-10 · VAlign Center
+  │   ├ Label      TEXT       bind    │ Auto · font MEASURED: Rajdhani **Bold 18** · ls 100
+  │   │                               │   (tracking 1.8px on 18px = 10%) · UPPER · white.
+  │   │                               │   NOT `Heading/Caption` 12 — the guess was 6px short
+  │   └ Count      TEXT       bind?   │ Fill 1.0 · HAlign/Justify RIGHT · h21 · opacity 0.80 ·
+  │                                   │   font MEASURED: Rajdhani **SemiBold 18** · ls 0.
+  │                                   │   NOT `Data/Value` — wrong family, weight AND size
+  └ BottomLine     HAIRLINE  bind?    │ Auto · h1 · full width — the separator IS part of the
+                                      │   header (corrected; see above)
 ```
 
-**MUST NOT contain:** a hairline (the header's separation is the panel's business); hex.
+> **Token finding (BP73).** Neither `Rajdhani Bold 18` nor `Rajdhani SemiBold 18` exists in
+> `figma_tokens.json` — the ladder jumps `Heading/Panel` 16 → `Display/Title` 20. **Two of the
+> four font DECIDEs landed off-system**, which is a finding about the token extraction, not a
+> licence to invent a row. Build with the literal values; flag the gap to the style sweep.
+
+**MUST NOT contain:** hex; the count as a fixed-width box (it is the fill slot, right-justified —
+that is how the label and count share the band); a second gradient below the line.
 
 > **Packet prompt:** Add `WBP_RosterHeader` after `WBP_ButtonPrompt`. Parent
 > `/Script/Breachpoint.BRRosterHeader`, header `Components/BRRosterPanel.h` (three classes in
-> that header — slice by class). Four binds, two font DECIDEs to close in the ticket.
+> that header — slice by class). Six nodes now — the tree gained a `VBox` and a `BottomLine` when
+> BP73 read the real node. **Zero DECIDEs left**; both fonts are measured and both are off-system.
 
 ---
 
@@ -195,29 +222,56 @@ key art (the prompts' `CommonActionWidget` handles platform).
 
 ### B2 · `WBP_FeatureCard` — `UBRFeatureCard` (`UCommonButtonBase`), 349 × 222
 
+> **CORRECTED 3 Aug 2026 (BP73 row 5), node `1769:23147` `News Button` (349×222).** The caption
+> is **not a band stacked under the image.** The reference composes it as an overlay: the image
+> is full-bleed at inset 7, a transparent→black vertical gradient sits on top of it from the
+> midpoint down, and the caption's 40-tall text frame is anchored to the bottom of that same
+> inset-7 box. A stacked `VBox` would put the caption on a solid strip below the art, which is a
+> different card. **The dots are also not "inside CardOverlay"** — they own the bottom 22 of the
+> 222; the image button region is `inset [0,0,22,0]` = 200 tall.
+
 ```
 RootSizeBox        SizeBox    bind    │ 349×222 (CardWidth/Height) — UNAUTHORED, C++ owns
-└ CardOverlay      OVERLAY            │
-  ├ Ground         IMAGE      bind    │ FILL · NO brush — C++ tints PanelGround50
-  ├ CardVBox       VBOX               │
-  │ ├ ImageBox     SIZEBOX    bind    │ height 196.7 (ImageHeight) — C++-driven, not authored
-  │ │ └ FeatureImage IMAGE    bind    │ FILL · NO brush — the VM pushes a soft path at runtime.
-  │ │                                 │ GAP: no T_UI_Feature_Unknown placeholder exists yet —
-  │ │                                 │ until it does this renders white in-editor. File it,
-  │ │                                 │ don't hide it (LAYOUT-DOCTRINE §3.3)
-  │ └ Caption      TEXT       bind    │ h 25.3 (CaptionHeight) · pad DECIDE · font DECIDE
-  └ Border         HAIRLINE   bind?   │ FILL
-DotsContainer      HBOX       bind?   │ inside CardOverlay, VAlign Bottom · HAlign Center ·
-                                      │ EMPTY — dots are C++-created per carousel entry
+└ CardVBox         VBOX               │
+  ├ ButtonRegion   OVERLAY            │ Fill 1.0 → 200 tall (222 − 22)
+  │ ├ Border       HAIRLINE   bind?   │ FILL · the 1px frame + its 12px corner returns
+  │ ├ Ground       IMAGE      bind    │ slot inset 7 · NO brush — C++ tints PanelGround50
+  │ │                                 │   (MEASURED #000000 @ 0.5, inset 7 — matches the token)
+  │ ├ FeatureImage IMAGE      bind    │ slot inset 7 · FILL · scaling COVER (the reference clips
+  │ │                                 │   overflow) · NO brush — VM pushes a soft path.
+  │ │                                 │   GAP: no T_UI_Feature_Unknown placeholder exists yet —
+  │ │                                 │   until it does this renders white in-editor. File it,
+  │ │                                 │   don't hide it (LAYOUT-DOCTRINE §3.3)
+  │ ├ Scrim        IMAGE      bind?   │ slot inset 7 · FILL · transparent→black VERTICAL gradient
+  │ │                                 │   starting at 50% — this is what makes the caption legible
+  │ │                                 │   over art. Needs a gradient material → ART PASS, and the
+  │ │                                 │   card ships without it rather than faking a flat scrim
+  │ └ CaptionBox   SIZEBOX    bind?   │ slot inset 7 · VAlign BOTTOM · h 40 (MEASURED)
+  │   └ Caption    TEXT       bind    │ pad (20, 10, 20, 10) — MEASURED px-20 py-10 ·
+  │                                   │   VAlign Center · font MEASURED = **`Label/Button`**
+  │                                   │   (Rajdhani SemiBold 16 · ls 100 · UPPER · white) —
+  │                                   │   the ONE font of the four that IS on-system
+  └ DotsContainer  HBOX      bind?    │ Auto · h 22 · HAlign Center · pad (12, 2) · gap 6 ·
+                                      │   EMPTY — dots are C++-created per carousel entry,
+                                      │   6×6 each; the two end chevrons are 4×3 (MEASURED)
 ```
 
+**`ImageHeight = 196.7f` (`BRFeatureCard.h:62`) is suspect.** It traces the doc sentence "image
+349 × 196.7 + caption", and the only 196.709 node in the file is **`Preview Photo` `0:1027`,
+which is hidden**. The visible card has no 196.7 anywhere — its image is inset 7 inside a 200-tall
+region (so 186). `SetHeightOverride(ImageHeight)` in `BRFeatureCard.cpp:28` is sizing to a hidden
+layer. **Not changed here** — it is a C++ constant with two readers and belongs to BP71's packet,
+not to a Figma read pass. Filed, not fixed.
+
 **MUST NOT contain:** hand-placed dots; a 330 width (that is the component *board*, not the
-instance); caption hex.
+instance); caption hex; a stacked image-over-caption `VBox` (the correction above); a flat black
+rectangle standing in for the gradient scrim.
 
 > **Packet prompt:** Add `WBP_FeatureCard` after `WBP_RosterRow`. Parent
-> `/Script/Breachpoint.BRFeatureCard`. Eight nodes, six binds (+`DotsContainer`). Two DECIDEs
-> (caption font + padding) and one filed gap (feature placeholder texture) — the ticket closes
-> the DECIDEs and files the gap against the art pass, then builds.
+> `/Script/Breachpoint.BRFeatureCard`. Eight nodes, six binds (+`DotsContainer`). **Zero DECIDEs
+> left** — caption font and padding are measured (BP73, node `1769:23147`). Two filed gaps go
+> with it: the placeholder texture and the gradient scrim material, both art-pass. Build the card
+> without the scrim; do not fake it.
 
 ---
 
@@ -416,28 +470,32 @@ replace.
 
 ---
 
-## The DECIDE ledger — 4 open, 5 closed (BP73, 3 Aug 2026)
+## The DECIDE ledger — **all 9 closed** (BP73, 3 Aug 2026)
 
-Still open — **all five are fonts**, and `get_metadata` returns geometry only (ids, types, names,
-positions, sizes). Closing a font needs `get_design_context` on the text node, which is BP73's
-remaining work.
-
-| # | Where | What | Nearest |
-|---|---|---|---|
-| 1 | A3 `Verb` | prompt verb font | `Label/Micro` |
-| 3 | A4 `Label` | roster header font | `Heading/Caption` |
-| 4 | A4 `Count` | count font | `Data/Value` |
-| 5 | B2 `Caption` | feature caption font + padding | — |
-
-Closed — each names the node it was read from, per BP73's Done-when:
+Every row names the node it was read from, per BP73's Done-when: *a closed row must name the node
+it was read from, or the next person cannot check it.*
 
 | # | Where | Closed value | Read from |
 |---|---|---|---|
-| 2 | A3 glyph→verb gap | **10px** — glyph ends x=20, verb starts x=30 | `0:9` `Menu` variant of `Button Prompts` `119:1491`; glyph `0:10` @ (0,0) 20×20, text `0:16` @ (30, 1.5) 32×17 |
+| 1 | A3 `Verb` | **Roboto Condensed Bold 14 · ls 0 · white** — OFF-SYSTEM (no such token row) | `119:1491` `Button Prompts` design context |
+| 3 | A4 `Label` | **Rajdhani Bold 18 · ls 100 · UPPER** — OFF-SYSTEM | `927:43301` `Roster Group Header` |
+| 4 | A4 `Count` | **Rajdhani SemiBold 18 · ls 0 · opacity 0.8 · right** — OFF-SYSTEM | same node |
+| 5 | B2 `Caption` | **`Label/Button`** (Rajdhani SemiBold 16 · ls 100 · UPPER) · pad (20,10,20,10) | `1769:23147` `News Button` |
+| 2 | A3 glyph→verb gap | **10px** — glyph ends x=20, verb starts x=30; the auto-layout gap also reads 10 | `0:9` `Menu` variant of `Button Prompts` `119:1491`; glyph `0:10` @ (0,0) 20×20, text `0:16` @ (30, 1.5) 32×17 |
 | 6 | B5 profile bar insets | **(5,5,16,5)** on a 349-wide card, avatar→name gap 10 — and the premise was wrong: the bar is a right-aligned card, not a full-width row (§B5) | `Profile Bar` `119:1525` → `Player Card` @ x=862 349×50 |
 | 7 | B5 `Status` font | **DEAD** — the reference's second line `Service Tag` is hidden in the source; there is no status line to transcribe | same node |
 | 8 | C1 `MenuRowSlot` | **16 uniform**, not 16/22 — and `BRLeftRail.h`'s unread `MenuRowSlotInsetRight = 22` was wrong and is deleted | `Contents` `0:1183` @ (16,16) 311 wide inside 343-wide `Menu List` `0:1176`; 343−16−311=16 |
 | 9 | B1 bumper origins | **Both bar-local, no conflict.** The 15px overlap is authored; an `HBox` can't express it → founder call, not a number (§B1) | `0:18` x=27 and `0:37` x=639 as direct children of `Navigation Bar` `124:1179` |
 
-Each ticket closes its own rows **before** its build runs. A DECIDE closed by the builder
-mid-build is a measurement invented under deadline, which is how 44-vs-33 happened (§1 manifest).
+**Three of the four fonts landed off-system** — `Roboto Cond Bold 14`, `Rajdhani Bold 18` and
+`Rajdhani SemiBold 18` are all absent from `figma_tokens.json`, whose ladder jumps 16 → 20 and
+carries Roboto Condensed only at Medium 14 / SemiBold 12. That is a **finding about the token
+extraction**, recorded per BP73 step 2, and explicitly **not** a licence to add three rows from
+three node reads. Build with the literal measured values; a style sweep decides whether the token
+file grew a gap or the reference nodes are genuinely off-system.
+
+Note what closing the ledger cost: **four of the nine rows corrected something that was already
+written down** — a constant (`MenuRowSlotInsetRight = 22`), two plan trees (§B5's bar, §B2's
+stacked caption) and a suspect C++ constant (`ImageHeight = 196.7`, filed for BP71). A DECIDE
+closed by the builder mid-build is a measurement invented under deadline, which is how 44-vs-33
+happened (§1 manifest) — and every one of those four would have shipped.

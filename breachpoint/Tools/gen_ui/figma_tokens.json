@@ -87,6 +87,7 @@
     "stroke_focus_3": "layout.stroke has FOUR weights (0.5/1/2/3), not the three COMPONENT-SPECS §0 records. The fourth is `stroke/focus = 3` — the nav-tab active border, drawn OUTSIDE. The Styles lane previously flagged 3px as a conflict and substituted 2; this variable settles it: 3 is authored and intended. Correct the components.",
     "grey_panel": "`grey/panel = #36383f` is a NON-BLACK menu ground and appears in no doc. It is aliased as surface/menu-ground.",
     "visr_dead": "`visr/dead = #4a5a6b` — a dead/eliminated state colour absent from UI-DESIGN-SYSTEM.md §2.",
-    "accent_steel_sky": "accent/steel and accent/sky are defined as primitives but nothing in Semantic aliases them — unused, or a gap. Do not consume a primitive directly to 'use them up'; find out what they were for."
+    "accent_steel_sky": "accent/steel and accent/sky are defined as primitives but nothing in Semantic aliases them — unused, or a gap. Do not consume a primitive directly to 'use them up'; find out what they were for.",
+    "offsystem_fonts_bp73": "BP73 (3 Aug 2026) measured four text nodes in the REFERENCE file and three resolve to no row in type.styles: Roboto Condensed Bold 14 ls 0 (Button Prompts verb, node 119:1491); Rajdhani Bold 18 ls 100 UPPER and Rajdhani SemiBold 18 ls 0 (Roster Group Header label and count, node 927:43301). The ladder here jumps Heading/Panel 16 → Display/Title 20, and carries Roboto Condensed only at Medium 14 / SemiBold 12. NO ROWS ADDED — three node reads are not a style extraction, and BP73's scope forbids it. Either this extraction missed styles or those nodes are off-system in the source; a style sweep decides. The fourth, the feature-card caption (node 1769:23147), resolves exactly to Label/Button."
   }
 }
