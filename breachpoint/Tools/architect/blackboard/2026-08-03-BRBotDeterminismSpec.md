@@ -5,7 +5,7 @@ absent, nothing was authorised. Nothing reaches the codebase unlogged.
 
 ## What it scored
 
-Top 12 of 44. Ties break on lowest ticket number. **Zero API calls** produced this order.
+Top 12 of 46. Ties break on lowest ticket number. **Zero API calls** produced this order.
 
 `score = blockers + tier + state + readiness − depth` (R32: depth is SUBTRACTED — depth away
 from a DAG root is distance from being *startable*. R33: readiness is the fifth term, derived

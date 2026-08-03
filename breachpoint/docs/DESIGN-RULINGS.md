@@ -601,3 +601,38 @@ re-litigated inside a packet.
   authoring route, and the only thing standing where the hook stands elsewhere is **receipt
   discipline and review**. That is a real reduction in enforcement, accepted deliberately, and
   a session that lands an MCP asset without a receipt has defeated the only control there is.
+
+## Architecture manifest (3 Aug 2026 — D11, forced by BP60's budget parser)
+
+- **R39. Real `BR*` C++ under `Source/` is either a NUMBERED UNIT in §3 or a NAMED EXCLUSION in
+  §4 — silence is not a third option.** A unit's §3 declaration carries its **form**
+  (`X.h/.cpp`, `X.h`, `X.cpp`), because `architect.py` classifies against the declared form: a
+  header-only class declared as a pair reports finished work as a STUB and offers it up to be
+  built. An exclusion is written **by name, with its reason, and WITHOUT a file extension** — the
+  extension is what §3's `UNIT_RE` uses to tell a declaration from a reference.
+
+  **Applied by BP61 (D11(b)):** `BRRootLayout.h/.cpp` and `BRUISettings.h` declared in §3.9
+  (4 → 6); `BRUITypes` and `BRCombatCurves` excluded by name in §4 item 3. §3 sum 43 → 45,
+  budget 44 → 46, asserted by `--all` against §4's `| **Total budget** |` row.
+
+  **Enforced mechanically, not by prose.** `undeclared_files()` skipped only
+  `declared | {GE_HEADER.stem}`, so a §4 named exclusion was still printed as UNDECLARED
+  forever — a rule that read as enforced and was not, this project's most-repeated defect class.
+  BP61 added `RULED_EXCLUSIONS` alongside it, printed with the other declared exclusions and
+  self-checked: naming a class there that has no header on disk **fails the run**, because an
+  exclusion for a file that no longer exists hides nothing and misleads everyone.
+
+  **The limit, named because it is large.** R39 states the standard; it does not claim the
+  codebase meets it. On the day it was written `--all` reported **41** undeclared `BR*` headers
+  after D11's four were resolved — 37 in `UI/`, plus `BRGA_Jump`, `BRGameplayCues`,
+  `BRExplosion`, `BRProjectile` (the subject of the still-open **D6**), and a `Camera/` folder
+  that §3's tree does not list and §9's owner-path map does not own — so
+  `BRPlayerCameraManager` has no owner under law 5. **D11 is decided; the drift it was a sample
+  of is not.** R39 is what the next audit is judged against, not a description of today.
+
+  *A near-miss recorded because the wrong version was briefly committed:* the no-extension half
+  of this rule was first justified by claiming §4 falls inside §3.12's parse span. It does not —
+  `parse_manifest` ends the last section at `text.find("\n## 4.", ...)`, which resolves. Proven
+  by injecting extensions into §4 and re-parsing: unchanged, 45. The convention is still right,
+  but it rests on the **end-of-file fallback** firing if that heading is ever renamed, not on a
+  live bug. The first write also said "verified by running it" without that run having happened.

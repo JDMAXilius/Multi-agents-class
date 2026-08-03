@@ -81,7 +81,7 @@ Source/
 
 ---
 
-## 3. The Runtime Module — `Source/Breachpoint/` (44 class-units)
+## 3. The Runtime Module — `Source/Breachpoint/` (46 class-units)
 
 ```
 Source/Breachpoint/
@@ -155,7 +155,7 @@ into the same ASC path — human and bot input are literally one API.
 | `Abilities/BRGA_Grapple.h/.cpp` | THE netcode packet: three modes by hit; self-pull via **root-motion source through CMC** (predicted by CMC machinery); rejection leaves zero state. Critic REFUTER gate. |
 | `Abilities/BRGA_Sprint.h/.cpp` | The movement-state ability, and the pattern-prover for **WhileHeld** activation: hold `InputTag.Sprint` → activate; release → end. Grants `State.Movement.Sprinting` via ActivationOwnedTags (predicted + replicated by GAS); the CMC reads it into the `FSavedMove_BR` sprint flag and applies the speed multiplier from `CT_Combat`. **No cost** (Halo sprint is free); `BRGA_WeaponFire`/`Melee`/`Grenade` list it in CancelAbilitiesWithTags — firing ends the sprint, Halo-style, with zero code in the sprint ability itself. |
 
-**The generic-effect library (7 total, **C++ `UGameplayEffect` subclasses — not Content assets**, per ruling R18 and `BREACHPOINT-AUTHORING-MATRIX.md` Tier 1; law #7 made real; purity law: `docs/contracts/gas-purity.md`). They live in `Source/Breachpoint/AbilitySystem/Effects/BRGameplayEffects.h` — **all seven in ONE header** — are constructor-authored, and are referenced by class, which is what keeps them diffable and critic-readable. The design names below (`GE_Damage`) map one-to-one onto the prefixed C++ classes (`UBRGE_Damage`):**
+**The generic-effect library (8 total, **C++ `UGameplayEffect` subclasses — not Content assets**, per ruling R18 and `BREACHPOINT-AUTHORING-MATRIX.md` Tier 1; law #7 made real; purity law: `docs/contracts/gas-purity.md`). They live in `Source/Breachpoint/AbilitySystem/Effects/BRGameplayEffects.h` — **all eight in ONE header** — are constructor-authored, and are referenced by class, which is what keeps them diffable and critic-readable. The design names below (`GE_Damage`) map one-to-one onto the prefixed C++ classes (`UBRGE_Damage`):**
 
 | GE class | Parameterized by | Reused by |
 |---|---|---|
@@ -166,6 +166,7 @@ into the same ASC path — human and bot input are literally one API.
 | `GE_RecentDamage` | 2.5 s tag application | shield-regen gate; (Phase-2: "in combat" logic) |
 | `GE_Death` | infinite; applies `State.Dead` | the ONE death mechanism: ability base blocks activation on `State.Dead`; respawn removes it + re-applies `GE_InitStats` |
 | `GE_ShieldsBroken` | infinite; applies `State.Shields.Broken` while Shields are 0. No magnitude — structural only | the shields-broken state itself. Applied/removed **only** by `UBRAbilitySystemComponent::SetShieldsBrokenState`, driven from the attribute set's single transition point — not polled |
+| `GE_GrenadeCost` | instant; the grenade ability's cost GE (purity law: costs are GEs, never a hand-decremented counter) | the grenade throw. *(Added by BP05 in `40af3b5`, 1 Aug 2026. This row was missing until 3 Aug — the class shipped and every count in this document stayed at seven, which is what made `architect.py --all` exit 2 for two days. Recorded as the reusable finding: an added `UCLASS` in this header is a documentation edit too.)* |
 
 > **Why seven and not six.** `GE_ShieldsBroken` was added by BP02 steps 1–2 and is *named loudly
 > rather than slipped in*: `State.Shields.Broken` was declared in `BRGameplayTags` and §3.1 with
@@ -263,7 +264,7 @@ headless-testable; `DT_BotAmbitions.csv` joins `Content/Data/`.)*
 *(reserved, Phase 2: `BRGameLiftLifecycle` — SDK5 `InitSDK/ProcessReady/
 OnStartGameSession` behind the same interface).*
 
-### 3.9 `UI/` — 4
+### 3.9 `UI/` — 6
 
 `BRUIManagerSubsystem.h/.cpp` (CommonUI layer stack: GameHUD/Menu/Modal) ·
 `BRActivatableWidget.h/.cpp` (the one widget base) ·
@@ -271,7 +272,12 @@ OnStartGameSession` behind the same interface).*
 one pair; both are FieldNotify ViewModels fed by ASC delegates and
 RepNotify events — zero polling)* · `BRHUDLayout.h/.cpp` (binds BP visual
 subclasses to the ViewModels; killfeed widget pool; shield-vs-flesh hit
-markers).
+markers) · `BRRootLayout.h/.cpp` (the CommonUI layer-stack root the manager
+pushes into) · `BRUISettings.h` (**header-only** developer settings: the WBP
+class pointers the layer stack resolves at boot — declared `.h`, not `.h/.cpp`,
+because no `.cpp` exists and declaring one would classify it a STUB).
+*(Declared 3 Aug 2026 by ruling D11(b) → R39; the sibling types header and the
+combat-curve accessor are excluded by name in §4.)*
 
 ### 3.10 `Telemetry/` — 2 *(kept — verdict below)*
 
@@ -319,35 +325,44 @@ rear-melee, shields-first — asserted **against the DataTable**) ·
 | Target Actors (`AGameplayAbilityTargetActor`) | **REJECTED** | Built for confirm/cancel targeting flows; wrong for hitscan — we build TargetData from the client trace in a prediction window (Lyra parity) |
 | Sprint ability | **ADDED** (`BRGA_Sprint`) | Sprint is gameplay *state*, not just speed — GAS owns the decision (tag, cancel rules), the CMC owns the motion; it doubles as the WhileHeld-policy prover |
 
-**Budget: 44 class-units ≈ 84 source files + 3 targets.** (v1 was 44; v2's
+**Budget: 46 class-units ≈ 87 source files + 3 targets.** (v1 was 44; v2's
 consolidation took it to 42 — five merged/cut, two added for input, one for
 sprint — and the GOAP goal layer then added `BRBotBrain` + `BRBotFacts`,
 both headless-testable. Same total, different shape: fewer glue classes,
 more provable ones.)
 
-**How the 44 composes** *(added 31 Jul 2026 — §3's per-folder headers sum to
-43, not 44, and a scanner that does not know why exits nonzero; BP15 step 1
-parses these numbers, so the composition is stated rather than inferred):*
+**How the 46 composes** *(added 31 Jul 2026, updated 3 Aug 2026 by ruling
+D11(b) → R39 — §3's per-folder headers sum to 45, not 46, and a scanner that does
+not know why exits nonzero; BP15 step 1 parses these numbers, so the
+composition is stated rather than inferred. Since BP60 the scanner reads the
+`**Total budget**` row below rather than hard-coding it, so this table is
+load-bearing: change a §3 header and this total must follow, or the run
+exits 2):*
 
 | | Count |
 |---|---|
-| §3.1–§3.12 per-folder headers (Core 2 · Input 2 · AbilitySystem 11 · Character 2 · Weapons 3 · Match 4 · AI 6 · Online 3 · UI 4 · Telemetry 2 · Data 1 · Tests 3) | **43** |
+| §3.1–§3.12 per-folder headers (Core 2 · Input 2 · AbilitySystem 11 · Character 2 · Weapons 3 · Match 4 · AI 6 · Online 3 · UI 6 · Telemetry 2 · Data 1 · Tests 3) | **45** |
 | `BRGameLiftLifecycle` — §3.8's *"reserved, Phase 2"* unit, inside the budget but never built in the slice | **1** |
-| **Total budget** | **44** |
+| **Total budget** | **46** |
 
-Two exclusions a manifest parser must handle explicitly, because both are
+Three exclusions a manifest parser must handle explicitly, because all are
 real C++ under `Source/` that the per-folder counts do **not** include:
 
-1. **The seven generic GE classes** (`GE_Damage`, `GE_Regen`, `GE_Cooldown`,
-   `GE_InitStats`, `GE_RecentDamage`, `GE_Death`, `GE_ShieldsBroken`) live in
+1. **The eight generic GE classes** (`GE_Damage`, `GE_Regen`, `GE_Cooldown`,
+   `GE_InitStats`, `GE_RecentDamage`, `GE_Death`, `GE_ShieldsBroken`,
+   `GE_GrenadeCost`) live in
    `Source/Breachpoint/AbilitySystem/Effects/BRGameplayEffects.h` as C++
    `UGameplayEffect` subclasses under R18 — but §3.3's count of **11** covers
    only its file table, not the effect library beneath it. They are a named
    library, not numbered units.
 
-   **Exclude them by CLASS NAME, not by file.** All seven are declared in a
-   **single** header, and `AbilitySystem/` holds **8** headers in total — so a
-   parser that adjusts a *file* count has already lost. *(Corrected 1 Aug 2026.
+   **Exclude them by CLASS NAME, not by file.** All eight are declared in a
+   **single** header, while `AbilitySystem/` holds **15** headers in total
+   (8 in `Abilities/`, 5 at the root, 1 each in `Cues/` and `Effects/`) — so a
+   parser that adjusts a *file* count has already lost. *(Corrected 1 Aug 2026,
+   and the file count corrected AGAIN 3 Aug: it read **8**, which was already
+   stale. Third correction to one sentence — the file number is decoration and
+   keeps rotting; the class-name rule is the load-bearing half.
    This paragraph previously said "six generic GE classes" and "a scanner
    counting files on disk finds 17 in `AbilitySystem/`". Both numbers were
    wrong, and they were wrong for the same reason: the exclusion was conceived
@@ -359,6 +374,23 @@ real C++ under `Source/` that the per-folder counts do **not** include:
    Phase-2 tier, so BP15's GDD-tier score term must rank it last — a
    perpetually-MISSING unit that scores high would be picked to build, which
    is the opposite of what the ledger intends.
+3. **`BRUITypes`** and **`BRCombatCurves`** are real C++ that is **not a
+   numbered unit**: a types header (`Source/Breachpoint/UI/`) and a
+   curve-access helper (`Source/Breachpoint/AbilitySystem/`). Excluded **by
+   class name, with the reason stated** — the same device item 1 uses.
+   Ruling D11(b) → **R39**, 3 Aug 2026. *Neither is named with a file extension
+   here **on purpose**, and the reason is a near-miss worth recording
+   accurately rather than the tidier claim that was first written here.
+   `parse_manifest` slices the last §3 section with
+   `text.find("\n## 4.", ...)`, falling back to end-of-file only when that
+   string is absent — so §4 sits **outside** the parse span today and an
+   extension here would in fact be harmless. Checked by injecting
+   `BRUITypes.h/.cpp` and `BRCombatCurves.h/.cpp` into this item and
+   re-parsing: UI 6/6, Tests 3/3, total 45 — unchanged. The convention stands
+   on the **fallback**, not on a live bug: renumber or rename that `## 4.`
+   heading and §4 lands inside §3.12, which is one edit nobody would think of
+   as a manifest change. Exclusions are NAMED; they are never spelled like
+   files.*
 
 ---
 

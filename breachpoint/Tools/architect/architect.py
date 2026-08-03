@@ -55,6 +55,12 @@ GE_HEADER = SRC / "AbilitySystem" / "Effects" / "BRGameplayEffects.h"
 # BP60 bumps the code and files a contract_gap rather than reaching across.
 GE_CLASS_COUNT_EXPECTED = 8
 
+# §4 exclusion item 3, ruling D11(b), 3 Aug 2026: real C++ that is deliberately NOT a numbered
+# unit. A types header and a curve-access helper. Kept as a NAME set, mirroring how the GE
+# library is excluded by class name rather than by file -- and printed at run time with the
+# rest of the declared exclusions, never silently applied.
+RULED_EXCLUSIONS = {"BRUITypes", "BRCombatCurves"}
+
 # Phase-2 reserved: expected MISSING for the entire slice, and must rank LAST. A perpetually
 # missing unit that scored high would be selected to build, inverting the ledger's intent.
 PHASE2_UNITS = {"BRGameLiftLifecycle"}
@@ -267,7 +273,12 @@ def undeclared_files(manifest):
     workstation run the same file, and nothing compiles it. Hence the explicit prefix test.
     """
     declared = {e["name"] for f in manifest.values() for e in f["units"]}
-    skip = declared | {GE_HEADER.stem}          # the GE library is an announced exclusion
+    # The GE library and §4's item-3 named exclusions are both ANNOUNCED exclusions. Before
+    # D11(b) only the GE one was machine-read, so a unit "excluded by class name with the
+    # reason stated" in §4 went on being reported as undeclared forever -- the exclusion was
+    # prose, and prose does not survive a scanner that disagrees with it. Anything named here
+    # must also be named in §4 with its reason; this set is the machine half of that pair.
+    skip = declared | {GE_HEADER.stem} | RULED_EXCLUSIONS
     found = {}
     for p in SRC.rglob("*.h"):
         stem = p.stem
@@ -469,6 +480,16 @@ def scan():
         sys.exit(2)
     log(f"  2. Phase-2 reserved, expected MISSING all slice: {', '.join(sorted(PHASE2_UNITS))}")
     log(f"  3. UE template variants kept by founder decision: {', '.join(sorted(TEMPLATE_DIRS))}")
+    log(f"  4. Ruled NOT units (D11(b), §4 exclusion 3): {', '.join(sorted(RULED_EXCLUSIONS))}")
+    log(f"     A types header and a curve accessor. Excluded by NAME, like the GE library.")
+    missing_rule = sorted(n for n in RULED_EXCLUSIONS
+                          if not (SRC / "UI" / f"{n}.h").exists()
+                          and not (SRC / "AbilitySystem" / f"{n}.h").exists())
+    if missing_rule:
+        log(f"\nSELF-CHECK FAILED: ruled exclusion(s) {missing_rule} name no header on disk. "
+            f"An exclusion for a file that no longer exists hides nothing and misleads "
+            f"everyone -- delete it from §4 and from RULED_EXCLUSIONS together.")
+        sys.exit(2)
 
     log("\n-- Manifest self-check (§3 headers vs §3 unit tables) -----------------------")
     log(f"  {'Folder':<16}{'declared':>9}{'parsed':>8}   status")

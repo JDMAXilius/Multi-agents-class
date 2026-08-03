@@ -94,14 +94,14 @@ def inside(child, parent):
 CASES = [
     ("faithful copy", lambda t: t, False,
      "the control -- an unmodified manifest must still PASS, or every red below is meaningless"),
-    ("header/table disagree", lambda t: t.replace("### 3.9 `UI/` — 4", "### 3.9 `UI/` — 7"), True,
+    ("header/table disagree", lambda t: t.replace("### 3.9 `UI/` — 6", "### 3.9 `UI/` — 9"), True,
      "§3.9's header claims 7 while its table declares 4 -- exactly the stale-tree defect that "
      "printed `AI/ (4)` against six units on 31 Jul"),
     ("a unit silently dropped",
      lambda t: t.replace("`BRShieldSpec.cpp`", "BRShieldSpec.cpp-removed"), True,
      "Tests/ header says 3, table now declares 2 -- a unit deleted from the doc without the "
      "count following it"),
-    ("budget no longer reaches 44",
+    ("budget no longer matches §4's stated total",
      lambda t: t.replace("### 3.1 `Core/` — 2", "### 3.1 `Core/` — 3")
                 .replace("`BRCore.h/.cpp`", "`BRCore.h/.cpp` and `BRExtra.h/.cpp`"), True,
      "counts stay self-consistent but the total becomes 44 in-slice + 1 = 45, breaking §4's "
@@ -116,8 +116,9 @@ CASES = [
      "the budget comes from the doc now, so an ABSENT row must FAIL -- a check that disables "
      "itself when the doc stops stating the number is the desync it exists to catch"),
     ("§3.9 declares one more, §4's total left behind",
-     lambda t: t.replace("### 3.9 `UI/` — 4", "### 3.9 `UI/` — 5")
-                .replace("`BRHUDLayout.h/.cpp`", "`BRRootLayout.h/.cpp` · `BRHUDLayout.h/.cpp`"), True,
+     lambda t: t.replace("### 3.9 `UI/` — 6", "### 3.9 `UI/` — 7")
+                .replace("`BRUIManagerSubsystem.h/.cpp`",
+                         "`BRUIManagerSubsystem.h/.cpp` · `BRFakeUnit.h/.cpp`"), True,
      "BP60's exact failure mode: a unit declared in §3 without §4's total following it -- the "
      "half-edit that the old hard-coded 43/44 could never distinguish from a correct one"),
 ]

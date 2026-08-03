@@ -43,7 +43,7 @@ stop planning against the earlier of two.
 | **D8** | Where does the **headshot multiplier** compose — row, curve, or both? | BP03's fire-path damage composition | **RULING** |
 | **D9** | Buy the **second machine**; supply a **Steam App ID + two test accounts** | All of BP11/M5 · BP12 behind it. Long procurement lead time | call |
 | **D10** | Widen **R29.3** from *"a build"* to *"anything that takes the project lock"* | **Nothing today.** Cheap; prevents a future misread | **RULING** |
-| **D11** | Do the four **UNDECLARED** units become numbered units, or get deleted? | Nothing mechanically. §3's 44-unit budget is wrong until answered | **RULING** |
+| **D11** | Do the four **UNDECLARED** units become numbered units, or get deleted? | Nothing mechanically. §3's 44-unit budget is wrong until answered | **DECIDED 3 Aug 2026 — (b)** |
 | **D12** | Install the **`Stop` hook** for the session bus? Needs explicit consent | The bus's "never stop working" property. `bus.py` already claims this hook exists | call |
 | **D13** | **Standing rule** for Windows/`Tools/` platform defects, or keep filing Log entries? | Nothing. Prevents a fifth recurrence | RULING *if adopted* |
 | **D14** | `.mcp.json` is **already committed** — endorse it, and does anything guard it? | Nothing today. It is the key a future MCP gate would match on | call |
@@ -473,6 +473,30 @@ correct it back. `BRRootLayout` and `BRUISettings` are units (a layout and a set
 things the architecture should name); `BRUITypes` and `BRCombatCurves` are a types header and an
 accessor and belong on the exclusion list. Whichever split is chosen, the scanner asserts it, so a
 wrong guess fails loudly on the next run rather than drifting.
+
+**DECIDED — 3 Aug 2026 — (b), with the split written down.**
+
+- **Declared as numbered units** in ARCHITECTURE §3.9: `BRRootLayout` (a layer-stack root the
+  architecture should name) and `BRUISettings` — declared as `.h`, **not** `.h/.cpp`, because
+  `Source/Breachpoint/UI/BRUISettings.cpp` does not exist and declaring one would make
+  `classify()` return STUB. Verified on disk before writing it.
+- **Excluded by class name, with the reason stated**, in §4's exclusion list (now item 3):
+  `BRUITypes` (a types header) and `BRCombatCurves` (a curve-access helper). Neither is written
+  with a file extension there, deliberately — §4 falls inside §3.12's parse span, so a backticked
+  `BR*.h` in that section would be counted as a §3.12 unit and exit the self-check 2.
+- **Arithmetic:** §3.9 4 → 6; §3 per-folder sum 43 → 45; §4 composition budget 44 → 46. Verified
+  by running it: `architect.py --all` → exit 0, `UI/ 6 6 ok`, `§4 states 46`, SELF-CHECK PASSED.
+  This was also BP60's box 1 — the declaration is what proved the budget is now parsed from the
+  doc rather than hard-coded, since **no Python changed to accept it.**
+
+**Scope, stated so the next reader is not misled.** D11 was framed against four undeclared units.
+A re-scan on 3 Aug finds **far more** — the front-end board's units landed between the filing and
+the ruling (`UI/{Components,HUD,Screens,Styles,ViewModels}/`), plus `BRHUDDirector`, `BRGA_Jump`,
+`BRGameplayCues`, `BRExplosion`, `BRProjectile`, and `BRPlayerCameraManager` in a `Camera/` folder
+§3 has no section for. **This ruling decides only D11's original four.** The rest stay reported as
+UNDECLARED and are a new register entry, not this one. They are not blocked by tooling — BP60
+ruled that `UNIT_RE`'s one optional segment already covers every sub-folder on disk, because §3
+declares relative to the discipline folder — they are blocked only on someone deciding them.
 
 ---
 

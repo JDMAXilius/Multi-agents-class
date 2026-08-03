@@ -44,9 +44,11 @@ can declare a unit, and BP61's declaration is the acceptance test for this ticke
 
 ## Done when
 
-- [ ] Declaring one new `UI/` unit in `BREACHPOINT-ARCHITECTURE.md` §3.9 leaves
+- [x] Declaring one new `UI/` unit in `BREACHPOINT-ARCHITECTURE.md` §3.9 leaves
       `architect.py --all` at **exit 0** — demonstrated with a real declaration, not a dry run
-      → **verified by BP61's declaration; check when that lands**
+      → **BP61 declared TWO** (`BRRootLayout.h/.cpp`, `BRUISettings.h`), §3.9 4 → 6, budget
+      44 → 46. `--all` exit 0, `UI/ 6 6 ok`, `§4 states 46`. **No Python changed to accept it** —
+      which is the whole claim of this ticket, proven by the edit rather than asserted
 - [x] The self-check still **exits 2** when the §3 header count and its own unit table disagree
       (the regression this ticket must not introduce) — `test_selfcheck.py` **60/60, exit 0**,
       including two NEW cases guarding the doc-parsed budget branch

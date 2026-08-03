@@ -3,9 +3,9 @@
   "api_calls": 0,
   "manifest_source": "BREACHPOINT-ARCHITECTURE.md \u00a73",
   "budget": {
-    "in_slice": 43,
+    "in_slice": 45,
     "reserved": 1,
-    "total": 44
+    "total": 46
   },
   "exclusions": {
     "ge_classes": 8,
@@ -19,14 +19,14 @@
     ]
   },
   "tally": {
-    "BUILT": 40,
+    "BUILT": 42,
     "STUB": 1,
     "MISSING": 3
   },
   "readiness_tally": {
     "ready": 8,
     "not_ready": 0,
-    "unknown": 36
+    "unknown": 38
   },
   "readiness_ground_truth": {
     "tags": "Source/Breachpoint/Core/BRGameplayTags.cpp",
@@ -517,6 +517,30 @@
       "readiness_refs": {}
     },
     {
+      "unit": "BRRootLayout",
+      "folder": "UI",
+      "state": "BUILT",
+      "form": "both",
+      "ticket": "BP10",
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
+    },
+    {
+      "unit": "BRUISettings",
+      "folder": "UI",
+      "state": "BUILT",
+      "form": "header",
+      "ticket": "BP10",
+      "tier": "slice",
+      "readiness": "unknown",
+      "readiness_missing": [],
+      "readiness_unknown": [],
+      "readiness_refs": {}
+    },
+    {
       "unit": "BRTelemetrySubsystem",
       "folder": "Telemetry",
       "state": "BUILT",
@@ -606,7 +630,6 @@
   ],
   "undeclared": {
     "AbilitySystem": [
-      "BRCombatCurves",
       "BRGA_Jump",
       "BRGameplayCues"
     ],
@@ -638,7 +661,6 @@
       "BRPanel_Toast",
       "BRProgressBar",
       "BRReticleWidget",
-      "BRRootLayout",
       "BRRosterPanel",
       "BRScreen_DeathRespawn",
       "BRScreen_FrontEnd",
@@ -647,9 +669,7 @@
       "BRScrollBar",
       "BRTableRow",
       "BRTextStyles",
-      "BRUISettings",
       "BRUITokens",
-      "BRUITypes",
       "BRVM_FrontEnd",
       "BRVM_Player",
       "BRVitalsWidget"
