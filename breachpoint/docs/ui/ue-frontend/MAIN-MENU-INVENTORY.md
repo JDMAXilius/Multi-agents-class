@@ -248,8 +248,9 @@ the screen in its honest empty state — which is a correct result and a useless
 
 ## 7. What this audit did not cut, and why
 
-**The HUD, and the other 27 screens.** `Source/Breachpoint/UI/` is 90 files and ~16,100 lines
-across ~60 classes; most of it is the HUD and the components waves 2–7 need
+**The HUD, and the other 27 screens.** `Source/Breachpoint/UI/` is **85 files, 16,147 lines,
+~60 classes**, and the main menu accounts for **41 files / 7,525 lines** of it. The other
+**44 files / 8,622 lines** are the HUD and the components waves 2–7 need
 (`UBRItemTile`, `UBRItemGrid`, `UBRTableRow`, `UBRGearDetail`, `UBRPageTitle`, `UBRHighlightButton`,
 `UBRScrollBar`, `UBRScrim`, `UBRModal_*`). **None of it is main-menu work and none of it was
 audited here.** A file being unused *today* is not evidence it is unnecessary — `SCREEN-MANIFEST.md`
