@@ -51,6 +51,40 @@ CENTER = {"horizontalAlignment": "HAlign_Center", "verticalAlignment": "VAlign_C
 
 UI_FOLDER = "/Game/UI"
 
+# Feature-first folders, mirroring Source/Breachpoint/UI/. Flat /Game/UI was fine for three
+# assets and is not fine for thirty: an asset picker sorted alphabetically interleaves a HUD
+# surface, a menu component and a screen, and the naming law (strip UBR, prefix WBP_) then
+# carries the ENTIRE burden of saying what a thing is.
+#
+# Set now, deliberately, because this generator deletes-then-creates - so a folder move costs
+# nothing today and is nearly impossible later: BP18 proved MCP CANNOT rename an asset (the
+# rename modal auto-cancels). Every asset has to be born at its final path.
+#
+# Content/UI/Icons stays exactly where it is and is NOT reorganised: Tools/verify_notices.py
+# hard-codes that glob for the Lucide ISC notice, so moving it silently escapes a licence gate.
+UI_LAYOUTS    = UI_FOLDER + "/Layouts"      # root + HUD layout: the two things pushed onto layers
+UI_HUD        = UI_FOLDER + "/HUD"          # in-match surfaces
+UI_COMPONENTS = UI_FOLDER + "/Components"   # reusable parts, never pushed directly
+UI_SCREENS    = UI_FOLDER + "/Screens"      # activatable screens and modals
+
+# asset -> folder, declared ABOVE both wbp_class() and PLAN because both need it and neither
+# can be the source. wbp_class() runs DURING PLAN's construction (a host's child reference is
+# evaluated as the dict literal is built), so reading PLAN from it is a NameError. One table,
+# two readers, no cycle - and adding an asset to PLAN without routing it here is a KeyError at
+# import, which is exactly when you want to hear about it.
+ASSET_FOLDER = {
+    "WBP_RootLayout":          UI_LAYOUTS,
+    "WBP_HUDLayout":           UI_LAYOUTS,
+    "WBP_VitalsWidget":        UI_HUD,
+    "WBP_AmmoBlock":           UI_HUD,
+    "WBP_ReticleWidget":       UI_HUD,
+    "WBP_MatchBand":           UI_HUD,
+    "WBP_Killfeed":            UI_HUD,
+    "WBP_KillfeedEntryWidget": UI_HUD,
+    "WBP_EquipmentTray":       UI_HUD,
+    "WBP_ProgressBar":         UI_COMPONENTS,
+}
+
 
 def wbp_class(asset: str) -> str:
     """The GENERATED class of another asset in this plan: `/Game/UI/WBP_X.WBP_X_C`.
@@ -62,8 +96,16 @@ def wbp_class(asset: str) -> str:
 
     Every `BR` UI class is `UCLASS(Abstract)`, so a `BindWidget` typed `UBRProgressBar` can
     ONLY ever be satisfied by a generated child like this — never by the C++ class path.
+
+    The folder is looked up from PLAN, NOT assumed to be UI_FOLDER. Hardcoding the root was
+    invisible while every asset sat flat, and became three `high` findings the moment they
+    moved into Layouts/, HUD/ and Components/: a host still asked for
+    `/Game/UI/WBP_ProgressBar.WBP_ProgressBar_C` and the editor answered "not valid Class for
+    property 'WidgetClass'" — correctly, because nothing lives there any more. A KeyError
+    here is the right failure: a host referencing an asset outside the plan can never be
+    built, and learning that at plan time beats learning it at call 40 with a half-built tree.
     """
-    return f"{UI_FOLDER}/{asset}.{asset}_C"
+    return f"{ASSET_FOLDER[asset]}/{asset}.{asset}_C"
 
 
 def canvas_slot(left, top, width, height, anchor=(0.0, 0.0), align=(0.0, 0.0)):
@@ -99,7 +141,7 @@ def canvas_slot(left, top, width, height, anchor=(0.0, 0.0), align=(0.0, 0.0)):
 
 PLAN = {
     "WBP_RootLayout": {
-        "folder": UI_FOLDER,
+        "folder": ASSET_FOLDER["WBP_RootLayout"],
         "parent_class": "/Script/Breachpoint.BRRootLayout",
         "class": "UBRRootLayout",
         "header": "Source/Breachpoint/UI/BRRootLayout.h",
@@ -132,7 +174,7 @@ PLAN = {
     # authoring them here would produce named-but-blank widgets. They belong to the art pass.
     # ------------------------------------------------------------------
     "WBP_ProgressBar": {
-        "folder": UI_FOLDER,
+        "folder": ASSET_FOLDER["WBP_ProgressBar"],
         "parent_class": "/Script/Breachpoint.BRProgressBar",
         "class": "UBRProgressBar",
         "header": "Source/Breachpoint/UI/Components/BRProgressBar.h",
@@ -169,7 +211,7 @@ PLAN = {
     # `"class"` matters HERE more than anywhere: BRHUDLayout.h declares TWO classes, and
     # without the slice this entry inherited `UBRHUDLayout`'s `KillfeedContainer` bind.
     "WBP_KillfeedEntryWidget": {
-        "folder": UI_FOLDER,
+        "folder": ASSET_FOLDER["WBP_KillfeedEntryWidget"],
         "parent_class": "/Script/Breachpoint.BRKillfeedEntryWidget",
         "class": "UBRKillfeedEntryWidget",
         "header": "Source/Breachpoint/UI/BRHUDLayout.h",
@@ -207,7 +249,7 @@ PLAN = {
     # geometry — the canvas slot below — and the C++ guard (`if (RootSizeBox)`) no-ops.
     # ------------------------------------------------------------------
     "WBP_VitalsWidget": {
-        "folder": UI_FOLDER,
+        "folder": ASSET_FOLDER["WBP_VitalsWidget"],
         "parent_class": "/Script/Breachpoint.BRVitalsWidget",
         "class": "UBRVitalsWidget",
         "header": "Source/Breachpoint/UI/HUD/BRVitalsWidget.h",
@@ -248,7 +290,7 @@ PLAN = {
     # `ui-presentation` §8.3 forbids. They arrive with the ViewModel field.
     # ------------------------------------------------------------------
     "WBP_AmmoBlock": {
-        "folder": UI_FOLDER,
+        "folder": ASSET_FOLDER["WBP_AmmoBlock"],
         "parent_class": "/Script/Breachpoint.BRAmmoBlock",
         "class": "UBRAmmoBlock",
         "header": "Source/Breachpoint/UI/HUD/BRAmmoBlock.h",
@@ -287,7 +329,7 @@ PLAN = {
     # confirm draws in front of the reticle it confirms.
     # ------------------------------------------------------------------
     "WBP_ReticleWidget": {
-        "folder": UI_FOLDER,
+        "folder": ASSET_FOLDER["WBP_ReticleWidget"],
         "parent_class": "/Script/Breachpoint.BRReticleWidget",
         "class": "UBRReticleWidget",
         "header": "Source/Breachpoint/UI/HUD/BRReticleWidget.h",
@@ -319,7 +361,7 @@ PLAN = {
     # score. Nothing here creates them.
     # ------------------------------------------------------------------
     "WBP_MatchBand": {
-        "folder": UI_FOLDER,
+        "folder": ASSET_FOLDER["WBP_MatchBand"],
         "parent_class": "/Script/Breachpoint.BRMatchBand",
         "class": "UBRMatchBand",
         "header": "Source/Breachpoint/UI/HUD/BRMatchBand.h",
@@ -349,7 +391,7 @@ PLAN = {
     # either — it belongs to WBP_KillfeedEntryWidget's own box.
     # ------------------------------------------------------------------
     "WBP_Killfeed": {
-        "folder": UI_FOLDER,
+        "folder": ASSET_FOLDER["WBP_Killfeed"],
         "parent_class": "/Script/Breachpoint.BRKillfeed",
         "class": "UBRKillfeed",
         "header": "Source/Breachpoint/UI/HUD/BRKillfeed.h",
@@ -372,7 +414,7 @@ PLAN = {
     # settle a founder call by being the next person to open the HUD.
     # ------------------------------------------------------------------
     "WBP_EquipmentTray": {
-        "folder": UI_FOLDER,
+        "folder": ASSET_FOLDER["WBP_EquipmentTray"],
         "parent_class": "/Script/Breachpoint.BREquipmentTray",
         "class": "UBREquipmentTray",
         "header": "Source/Breachpoint/UI/HUD/BREquipmentTray.h",
@@ -409,7 +451,7 @@ PLAN = {
     # should be deleted in C++, and that is not a plan file's call to make.
     # ------------------------------------------------------------------
     "WBP_HUDLayout": {
-        "folder": UI_FOLDER,
+        "folder": ASSET_FOLDER["WBP_HUDLayout"],
         "parent_class": "/Script/Breachpoint.BRHUDLayout",
         "class": "UBRHUDLayout",
         "header": "Source/Breachpoint/UI/BRHUDLayout.h",

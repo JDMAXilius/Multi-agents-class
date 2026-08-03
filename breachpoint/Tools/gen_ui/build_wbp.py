@@ -22,7 +22,8 @@ which is the artifact R18/R26 forbid and `audit_wbp.py` exists to catch.
 """
 from __future__ import annotations
 
-import argparse, json, sys, urllib.request
+import argparse
+import re, json, sys, urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -221,8 +222,22 @@ def build_one(m: MCP, rc: Receipt, asset: str, spec: dict) -> bool:
     rc.w((desc or {}).get("description", "(no description returned)").rstrip())
     rc.w("```")
 
-    final, _ = m.call(UMG, "GetWidgets", {"widgetBlueprint": wbp})
-    got_names = {w["widgetName"] for w in (final or {}).get("widgets", [])}
+    # Ground truth is the TREE, parsed from GetWidgetDescription — NOT GetWidgets.
+    #
+    # GetWidgets enumerates the parent class's DECLARED BindWidget members, including ones
+    # no widget satisfies. Comparing it against the plan compared a declaration list to a
+    # creation list, so every optional bind the plan deliberately skipped was reported as
+    # "extra" and five CORRECT assets were failed with `high` findings. Verified directly:
+    # WBP_MatchBand's GetWidgets returns 6 names, its tree holds 4, and the two phantoms
+    # are exactly the optional RocketCountdown* binds that have no measured geometry.
+    #
+    # Skipping an OPTIONAL bind is legal and often right — that is what BindWidgetOptional
+    # means. Skipping a NON-OPTIONAL one is fatal, and that is caught in two other places
+    # already: wbp_plan.validate() refuses the plan before an editor is opened, and
+    # CompileWidgetBlueprint above fails at (5). This check's job is narrower and its name
+    # says it: does the tree match the plan.
+    _TREE_NODE = re.compile(r"^\s*\[\d+\]\s+\S+\s+(\S+)", re.M)
+    got_names = set(_TREE_NODE.findall((desc or {}).get("description", "")))
     want_names = {n["name"] for n in spec["tree"]}
     rc.call("tree matches plan", got_names == want_names,
             f"{len(got_names)} widgets" if got_names == want_names

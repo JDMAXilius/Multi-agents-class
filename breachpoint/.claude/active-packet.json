@@ -1,0 +1,8 @@
+{
+  "ticket": "UI-WBP-GENERATE-HUD",
+  "owner_path": ["Content/UI/", "docs/ui/receipts/", "Tools/gen_ui/wbp_plan.py", "Tools/gen_ui/build_wbp.py"],
+  "goal": "Generate the 10 HUD/layout WBPs from the committed plan into feature-first folders and verify each against its C++ BindWidget contract.",
+  "driver": "lead (sole editor driver, R29.2)",
+  "claimed_utc": "2026-08-03",
+  "amended": "Widened from the original two paths: the generator's own plan and executor are part of this packet's work and my first claim was scoped too narrowly. This is amending MY OWN live claim with no other packet running - not taking over a sibling's."
+}
