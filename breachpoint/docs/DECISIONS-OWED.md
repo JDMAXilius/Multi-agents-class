@@ -750,3 +750,45 @@ CLOSED batch when T2 releases the editor (`WORK-ROUTING §4.1`) answers it.
 *Unchanged by this addendum:* D1 (depth sign), D2 (readiness term), D3 (F3 include-graph
 demotion) — the three the course deliverable currently answers with "this is the project owner's
 call" — and D6/D7, which were verified as still open.
+
+---
+
+## D22 — The 41 units §3 does not declare, and one folder nobody owns · **RULING**
+
+**Question.** D11 (decided 3 Aug 2026 → R39) named four undeclared units and decided them. It
+was a sample, not the set. What happens to the remaining **41**?
+
+**Filed.** BP61's Log and R39's "the limit" paragraph. `architect.py --all` after BP61 reports
+41 undeclared `BR*` headers with D11's four now cleared:
+
+- **`UI/` — 37.** The front-end board's units, landed `d105220`..`b2eaaf8` between D11's filing
+  and its ruling. This is the bulk and it is one decision, not 37: declare the folder's units
+  in a new §3.9 sub-structure, or exclude the component tier by name the way §4 excludes the GE
+  library.
+- **`AbilitySystem/` — 3:** `BRGA_Jump`, `BRGameplayCues`, and `BRCombatCurves` (the last is
+  now excluded by name, so 2 remain undecided).
+- **`Weapons/` — 2:** `BRExplosion`, and `BRProjectile` — **which is the literal subject of the
+  still-open D6.** Deciding D22 without D6 would rule on the same class twice.
+- **`Camera/` — 1:** `BRPlayerCameraManager`.
+
+**Blocked until answered.**
+- **Nothing mechanically.** `--all` exits 0; the scanner reports drift as a separate output by
+  design, exactly so it cannot rewrite the architecture it checks against.
+- **But §3 cannot honestly be called "the manifest"** while it declares 46 units against 85
+  `BR*.h` + 81 `BR*.cpp` on disk. R39 states the standard; this is the gap to it.
+
+**One item here is not bookkeeping and should not wait for the rest.**
+`Source/Breachpoint/Camera/` is a discipline folder that appears in **neither** §3's folder tree
+**nor** §9's owner-path map. So `BRPlayerCameraManager` has **no owner under law 5** — any
+packet may write it and the guard hook will allow it, because confinement can only check paths
+someone declared. That is an enforcement hole, not a documentation gap, and it is cheap to
+close: add the folder to §9 with an owner, independently of how D22 rules on the unit itself.
+
+**Not blocked by tooling.** BP60 ruled that `UNIT_RE`'s one optional segment already covers
+every sub-folder on disk, because §3 declares paths relative to the discipline folder. Nothing
+needs widening. This is blocked only on someone deciding.
+
+**Recommendation.** Split it: (1) close the `Camera/` owner-path hole now, as a one-line §9 edit;
+(2) rule the `UI/` 37 as one decision once the front-end board settles, since declaring units
+that a live packet is still adding guarantees a second pass; (3) route `BRProjectile` through D6
+rather than here.
