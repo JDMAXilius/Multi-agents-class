@@ -47,3 +47,6 @@ Tools/gen_ui/quarantine/
 
 # Figma SVG exports — vector source, staged for rasterising into Content/UI
 # (tracked: these are original Breachpoint art + ISC-licensed Lucide)
+
+# macOS Finder droppings inside Content/ - never assets.
+.DS_Store
