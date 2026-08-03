@@ -41,3 +41,6 @@ build_editor_final.log
 # cannot reach a packaged build. See Content/Reference/README.md.
 Content/Reference/*
 !Content/Reference/README.md
+
+# Figma exports that failed pre-flight — diagnostic only, never shipped
+Tools/gen_ui/quarantine/
