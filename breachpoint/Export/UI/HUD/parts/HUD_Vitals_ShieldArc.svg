@@ -1,0 +1,13 @@
+<svg width="275" height="22" viewBox="0 0 275 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+<g id="SET Vitals / Shield + Health">
+<path id="Shield Arc" fill-rule="evenodd" clip-rule="evenodd" d="M0.5 0.511475C91.6449 2.5864 182.755 2.5864 273.83 0.511475V18.9553C182.755 21.0302 91.6449 21.0302 0.5 18.9553V0.511475Z" fill="url(#paint0_linear_6_48)" stroke="#ADD9FF"/>
+</g>
+<defs>
+<linearGradient id="paint0_linear_6_48" x1="0.5" y1="10.5115" x2="273.83" y2="10.5115" gradientUnits="userSpaceOnUse">
+<stop stop-color="#617D94"/>
+<stop offset="0.5" stop-color="#AFD5FC"/>
+<stop offset="1" stop-color="#617D94"/>
+</linearGradient>
+</defs>
+</svg>

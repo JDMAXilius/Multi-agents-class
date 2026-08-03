@@ -1,0 +1,12 @@
+<svg width="140" height="120" viewBox="0 0 140 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+<g id="SET Minimap / Clear">
+<path id="Field" d="M70 0.75C108.358 0.75 139.25 27.3814 139.25 60C139.25 92.6186 108.358 119.25 70 119.25C31.6416 119.25 0.75 92.6186 0.75 60C0.75 27.3814 31.6416 0.75 70 0.75Z" fill="url(#paint0_radial_6_48)" stroke="#35D0F2" stroke-width="1.5"/>
+</g>
+<defs>
+<radialGradient id="paint0_radial_6_48" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(70 60) scale(140 120)">
+<stop stop-color="#2E8CC7" stop-opacity="0.42"/>
+<stop offset="1" stop-color="#1A4D75" stop-opacity="0.16"/>
+</radialGradient>
+</defs>
+</svg>
