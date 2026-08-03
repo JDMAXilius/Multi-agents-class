@@ -10,13 +10,23 @@
 class UBRActivatableWidget;
 class UBRRootLayout;
 class UBRVM_Combat;
+class UBRVM_FrontEnd;
 class UBRVM_Match;
+class UBRVM_Player;
 class ULocalPlayer;
 
 USTRUCT()
 struct FBRLocalPlayerUI
 {
 	GENERATED_BODY()
+
+	/**
+	 * The local player these ViewModels belong to. Unpublish must compare against this:
+	 * without it, ANY player leaving unpublished the first player's global MVVM contexts
+	 * (the split-screen defect in CPP-AUDIT D6).
+	 */
+	UPROPERTY(Transient)
+	TObjectPtr<ULocalPlayer> Owner = nullptr;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UBRRootLayout> RootLayout = nullptr;
@@ -26,6 +36,12 @@ struct FBRLocalPlayerUI
 
 	UPROPERTY(Transient)
 	TObjectPtr<UBRVM_Match> MatchViewModel = nullptr;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UBRVM_FrontEnd> FrontEndViewModel = nullptr;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UBRVM_Player> PlayerViewModel = nullptr;
 };
 
 UCLASS()
@@ -41,9 +57,8 @@ public:
 
 	UBRVM_Combat* GetCombatViewModel(const ULocalPlayer* LocalPlayer) const;
 	UBRVM_Match* GetMatchViewModel(const ULocalPlayer* LocalPlayer) const;
-
-	UBRVM_Combat* GetPrimaryCombatViewModel() const;
-	UBRVM_Match* GetPrimaryMatchViewModel() const;
+	UBRVM_FrontEnd* GetFrontEndViewModel(const ULocalPlayer* LocalPlayer) const;
+	UBRVM_Player* GetPlayerViewModel(const ULocalPlayer* LocalPlayer) const;
 
 	UBRRootLayout* CreateLayoutForLocalPlayer(ULocalPlayer* LocalPlayer);
 

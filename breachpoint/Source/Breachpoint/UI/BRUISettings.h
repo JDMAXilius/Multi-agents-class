@@ -50,4 +50,10 @@ public:
 
 	UPROPERTY(config, EditDefaultsOnly, Category = "MVVM")
 	FName MatchViewModelContextName = FName("BRMatch");
+
+	UPROPERTY(config, EditDefaultsOnly, Category = "MVVM")
+	FName FrontEndViewModelContextName = FName("BRFrontEnd");
+
+	UPROPERTY(config, EditDefaultsOnly, Category = "MVVM")
+	FName PlayerViewModelContextName = FName("BRPlayer");
 };

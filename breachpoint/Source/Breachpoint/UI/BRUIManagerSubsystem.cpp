@@ -13,6 +13,9 @@
 #include "UI/BRRootLayout.h"
 #include "UI/BRUISettings.h"
 #include "UI/BRViewModels.h"
+#include "UI/Screens/BRScreen_FrontEnd.h"
+#include "UI/ViewModels/BRVM_FrontEnd.h"
+#include "UI/ViewModels/BRVM_Player.h"
 
 UBRUIManagerSubsystem* UBRUIManagerSubsystem::Get(const UObject* WorldContextObject)
 {
@@ -81,6 +84,7 @@ void UBRUIManagerSubsystem::HandleLocalPlayerAdded(ULocalPlayer* LocalPlayer)
 	}
 
 	FBRLocalPlayerUI& PlayerUI = FindOrAddPlayerUI(LocalPlayer);
+	PlayerUI.Owner = LocalPlayer;
 
 	if (!PlayerUI.CombatViewModel)
 	{
@@ -89,6 +93,14 @@ void UBRUIManagerSubsystem::HandleLocalPlayerAdded(ULocalPlayer* LocalPlayer)
 	if (!PlayerUI.MatchViewModel)
 	{
 		PlayerUI.MatchViewModel = NewObject<UBRVM_Match>(this);
+	}
+	if (!PlayerUI.FrontEndViewModel)
+	{
+		PlayerUI.FrontEndViewModel = NewObject<UBRVM_FrontEnd>(this);
+	}
+	if (!PlayerUI.PlayerViewModel)
+	{
+		PlayerUI.PlayerViewModel = NewObject<UBRVM_Player>(this);
 	}
 
 	PublishViewModelsToGlobalCollection(PlayerUI);
@@ -117,6 +129,14 @@ void UBRUIManagerSubsystem::HandleLocalPlayerRemoved(ULocalPlayer* LocalPlayer)
 		if (PlayerUI->MatchViewModel)
 		{
 			PlayerUI->MatchViewModel->ClearToUnknown();
+		}
+		if (PlayerUI->FrontEndViewModel)
+		{
+			PlayerUI->FrontEndViewModel->ClearToUnknown();
+		}
+		if (PlayerUI->PlayerViewModel)
+		{
+			PlayerUI->PlayerViewModel->ClearToUnknown();
 		}
 	}
 
@@ -149,16 +169,16 @@ UBRVM_Match* UBRUIManagerSubsystem::GetMatchViewModel(const ULocalPlayer* LocalP
 	return PlayerUI ? PlayerUI->MatchViewModel : nullptr;
 }
 
-UBRVM_Combat* UBRUIManagerSubsystem::GetPrimaryCombatViewModel() const
+UBRVM_FrontEnd* UBRUIManagerSubsystem::GetFrontEndViewModel(const ULocalPlayer* LocalPlayer) const
 {
-	const UGameInstance* GameInstance = GetGameInstance();
-	return GameInstance ? GetCombatViewModel(GameInstance->GetFirstGamePlayer()) : nullptr;
+	const FBRLocalPlayerUI* PlayerUI = FindPlayerUI(LocalPlayer);
+	return PlayerUI ? PlayerUI->FrontEndViewModel : nullptr;
 }
 
-UBRVM_Match* UBRUIManagerSubsystem::GetPrimaryMatchViewModel() const
+UBRVM_Player* UBRUIManagerSubsystem::GetPlayerViewModel(const ULocalPlayer* LocalPlayer) const
 {
-	const UGameInstance* GameInstance = GetGameInstance();
-	return GameInstance ? GetMatchViewModel(GameInstance->GetFirstGamePlayer()) : nullptr;
+	const FBRLocalPlayerUI* PlayerUI = FindPlayerUI(LocalPlayer);
+	return PlayerUI ? PlayerUI->PlayerViewModel : nullptr;
 }
 
 void UBRUIManagerSubsystem::PublishViewModelsToGlobalCollection(const FBRLocalPlayerUI& PlayerUI)
@@ -192,15 +212,36 @@ void UBRUIManagerSubsystem::PublishViewModelsToGlobalCollection(const FBRLocalPl
 		Context.ContextName = Settings.MatchViewModelContextName;
 		CollectionObject->AddViewModelInstance(Context, PlayerUI.MatchViewModel);
 	}
-
-	if (const UGameInstance* GI = GetGameInstance())
+	if (PlayerUI.FrontEndViewModel)
 	{
-		PublishedLocalPlayer = GI->GetFirstGamePlayer();
+		FMVVMViewModelContext Context;
+		Context.ContextClass = UBRVM_FrontEnd::StaticClass();
+		Context.ContextName = Settings.FrontEndViewModelContextName;
+		CollectionObject->AddViewModelInstance(Context, PlayerUI.FrontEndViewModel);
 	}
+	if (PlayerUI.PlayerViewModel)
+	{
+		FMVVMViewModelContext Context;
+		Context.ContextClass = UBRVM_Player::StaticClass();
+		Context.ContextName = Settings.PlayerViewModelContextName;
+		CollectionObject->AddViewModelInstance(Context, PlayerUI.PlayerViewModel);
+	}
+
+	// The published player is the one whose VMs went into the collection — which the guard at
+	// the top of this function makes the first caller, not necessarily GetFirstGamePlayer().
+	PublishedLocalPlayer = PlayerUI.Owner;
 }
 
 void UBRUIManagerSubsystem::UnpublishViewModelsFromGlobalCollection(const FBRLocalPlayerUI& PlayerUI)
 {
+	// CPP-AUDIT D6: only the player whose VMs ARE the published set may unpublish. Without this,
+	// player 2 leaving split-screen removed player 1's global contexts and every bound widget
+	// went null mid-match with no re-publish path.
+	if (PlayerUI.Owner != PublishedLocalPlayer)
+	{
+		return;
+	}
+
 	UGameInstance* GameInstance = GetGameInstance();
 	UMVVMGameSubsystem* MVVMSubsystem = GameInstance ? GameInstance->GetSubsystem<UMVVMGameSubsystem>() : nullptr;
 	UMVVMViewModelCollectionObject* CollectionObject = MVVMSubsystem ? MVVMSubsystem->GetViewModelCollection() : nullptr;
@@ -220,6 +261,16 @@ void UBRUIManagerSubsystem::UnpublishViewModelsFromGlobalCollection(const FBRLoc
 	MatchContext.ContextClass = UBRVM_Match::StaticClass();
 	MatchContext.ContextName = Settings.MatchViewModelContextName;
 	CollectionObject->RemoveViewModel(MatchContext);
+
+	FMVVMViewModelContext FrontEndContext;
+	FrontEndContext.ContextClass = UBRVM_FrontEnd::StaticClass();
+	FrontEndContext.ContextName = Settings.FrontEndViewModelContextName;
+	CollectionObject->RemoveViewModel(FrontEndContext);
+
+	FMVVMViewModelContext PlayerContext;
+	PlayerContext.ContextClass = UBRVM_Player::StaticClass();
+	PlayerContext.ContextName = Settings.PlayerViewModelContextName;
+	CollectionObject->RemoveViewModel(PlayerContext);
 
 	PublishedLocalPlayer = nullptr;
 }
@@ -335,7 +386,17 @@ UBRActivatableWidget* UBRUIManagerSubsystem::ShowHUD(ULocalPlayer* LocalPlayer)
 
 UBRActivatableWidget* UBRUIManagerSubsystem::ShowMainMenu(ULocalPlayer* LocalPlayer)
 {
-	return PushWidgetToLayer(LocalPlayer, FBRUITags::Get().Layer_Menu, UBRUISettings::Get().MainMenuScreenClass);
+	UBRActivatableWidget* Pushed = PushWidgetToLayer(LocalPlayer, FBRUITags::Get().Layer_Menu, UBRUISettings::Get().MainMenuScreenClass);
+
+	// The screen cannot fetch its own ViewModel (its header files the gap); it is pushed here,
+	// closing the loop. SetFrontEndViewModel unbinds-then-rebinds when already activated, so
+	// arriving after activation is safe (CPP-AUDIT D7).
+	if (UBRScreen_FrontEnd* FrontEnd = Cast<UBRScreen_FrontEnd>(Pushed))
+	{
+		FrontEnd->SetFrontEndViewModel(GetFrontEndViewModel(LocalPlayer));
+	}
+
+	return Pushed;
 }
 
 UBRActivatableWidget* UBRUIManagerSubsystem::ShowDeathOverlay(ULocalPlayer* LocalPlayer)

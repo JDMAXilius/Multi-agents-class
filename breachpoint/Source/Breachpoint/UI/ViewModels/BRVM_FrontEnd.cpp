@@ -58,8 +58,10 @@ FText UBRVM_FrontEnd::GetFocusedRowDescription() const
 
 void UBRVM_FrontEnd::SetSeasonKeyArt(const TSoftObjectPtr<UTexture2D>& InKeyArt)
 {
+	// Deliberately does NOT touch MenuState. The screen gates the whole rail on that field, and
+	// splash art arriving alone is not a live menu — it is a live splash. Only SetNavTab, which
+	// delivers actual rows, may declare the menu Live.
 	UE_MVVM_SET_PROPERTY_VALUE(SeasonKeyArt, InKeyArt);
-	UE_MVVM_SET_PROPERTY_VALUE(MenuState, EBRUIDataState::Live);
 }
 
 void UBRVM_FrontEnd::SetPressToStartState(EBRPressToStartState InState)

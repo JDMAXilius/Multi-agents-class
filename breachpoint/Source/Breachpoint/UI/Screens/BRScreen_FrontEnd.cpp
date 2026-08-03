@@ -74,8 +74,12 @@ void UBRScreen_FrontEnd::SetFrontEndViewModel(UBRVM_FrontEnd* InViewModel)
 	BoundViewModel = InViewModel;
 
 	// Only subscribe while activated. Outside activation this is a stored pointer and nothing else.
+	// Unbind FIRST: BindViewModels also binds the NavBar and FeatureCard delegates, and neither
+	// AddDynamic nor AddUObject dedupes — a VM pushed into an already-activated screen (the normal
+	// ShowMainMenu order) would otherwise fire every handler twice per click.
 	if (IsActivated())
 	{
+		UnbindViewModels();
 		BindViewModels();
 	}
 }
