@@ -161,67 +161,169 @@ locally. The idle→hover inversion is authored once and every menu row inherits
 
 ---
 
-## 5. The main menu tree — the concrete answer
+## 5. The architecture the trees hang off — read this before either tree
 
-Measured numbers from `UI-DESIGN-SYSTEM.md` §3, at the 1280×720 base. **One Canvas, three
-regions, Boxes inside.**
+`UBRRootLayout` already implements Lyra's model and **every screen tree must be written against
+it, not beside it**: four `CommonActivatableWidgetStack`s registered by `FUITag`
+(`Layer.Game`, `Layer.GameMenu`, `Layer.Menu`, `Layer.Modal`), reached through
+`GetLayerStack(FUITag)`.
 
 ```
-WBP_Screen_MainMenu                       : UBRScreen_MainMenu (UBRActivatableWidget)
-│
-└── Root_Overlay                          Overlay              full-bleed
-    │
-    ├── [0]  (nothing — the 3D scene in BR_Arena01 shows through; §1 of ui-presentation)
-    │
-    ├── [1] Content_Canvas                CanvasPanel          the ONLY canvas on this screen
-    │   │
-    │   ├── NavBar            anchor TL   pos (69, 45)    size (666, 30)
-    │   │   └── WBP_NavBar                UBRNavBar        bumper · tabs · bumper
-    │   │
-    │   ├── LeftRail_VBox     anchor TL   pos (69, 138)   size (349, 510)
-    │   │   ├── WBP_FeatureCard           349 × 222        pad-bottom 10
-    │   │   ├── CarouselDots_HBox         349 × 8          pad-bottom 12
-    │   │   ├── MenuList_VBox             349 × auto
-    │   │   │   ├── WBP_MenuRow "HOST MATCH"      h 28  pad-bottom 12   ← pitch 40
-    │   │   │   ├── WBP_MenuRow "JOIN BY INVITE"  h 28  pad-bottom 12
-    │   │   │   ├── WBP_MenuRow "TRAINING"        h 28  pad-bottom 12
-    │   │   │   └── WBP_MenuRow "QUIT"            h 28
-    │   │   └── WBP_DescriptionStrip      349 × 37         pad-top 12
-    │   │
-    │   ├── Status_VBox       anchor TR   pos (-69, 45)   size (349, auto)
-    │   │   ├── WBP_RecordPanel           334 × 115        pad-bottom 24
-    │   │   └── WBP_RosterPanel           349 × 273
-    │   │       ├── RosterHeader          h 31, inset 16
-    │   │       └── RosterRows_VBox       rows h 30, pad-bottom 5   ← pitch 35
-    │   │
-    │   └── WBP_ProfileBar    anchor BOTTOM-STRETCH (0,1)→(1,1)   h 50
-    │
-    └── [2] CommonBoundActionBar          anchor BL        prompts, from real bindings
+WBP_RootLayout                            : UBRRootLayout      persistent, one instance
+└── Root_Overlay                          Overlay
+    ├── GameLayerStack                    CommonActivatableWidgetStack   ← HUD
+    ├── GameMenuLayerStack                CommonActivatableWidgetStack   ← pause · scoreboard
+    ├── MenuLayerStack                    CommonActivatableWidgetStack   ← front end
+    ├── ModalLayerStack                   CommonActivatableWidgetStack   ← confirm · error
+    └── ActionBar_SafeZone                SafeZone
+        └── CommonBoundActionBar          ← ONE, persistent
 ```
 
-**Why it is shaped this way:**
+**Three consequences that change how a screen is written:**
 
-- **Overlay at the root**, not Canvas — so the scene, the content and the prompt bar are three
-  independent layers with no positioning relationship. Adding a modal dim later is one more
-  Overlay child, not a re-layout.
-- **One Canvas, three anchored regions.** Left rail anchors top-**left**, status column top-
-  **right** with negative X, profile bar bottom-**stretch**. At 21:9 the rails hold their margin
-  and the centre — where the character stands — grows. That behaviour falls out of the anchors;
-  no code, no grid widget.
-- **Every region is a VerticalBox**, so pitch is slot padding and the whole rail reflows if a
-  row is added. Menu pitch 40 = h28 + pad12; roster pitch 35 = h30 + pad5.
-- **Rows are `WBP_MenuRow`, not inline text.** Four instances of one component, so the hover
-  inversion is authored once.
-
-**The pause menu is the same tree minus the feature card and status column** — a
-`CommonActivatableWidget` pushed onto the Menu layer over the running game, with its own
-`GetDesiredInputConfig` returning Menu + mouse capture. It reuses `WBP_MenuRow`,
-`WBP_DescriptionStrip`, `WBP_NavBar` and the action bar unchanged. That reuse is the point of
-building components before screens.
+1. **A screen owns no action bar.** `CommonBoundActionBar` renders whatever the *currently
+   active* widget registers, so one instance in the root layout updates itself on every push
+   and pop. One per screen would rebuild on every transition and drift from the real bindings.
+2. **A screen owns no layer.** It is pushed to a tag. Only the top of the highest visible layer
+   is activated and receives input; everything beneath deactivates. That is why the HUD does not
+   have to hide itself when the pause menu opens.
+3. **Persistent chrome is composed, not re-declared.** The nav bar and profile bar appear on
+   every front-end screen — they are a `WBP_FrontEndChrome` component each screen includes, not
+   copies. Composition, not inheritance, because it stays visible in the editor.
 
 ---
 
-## 6. What the MCP receives
+## 6. Main menu — the tree
+
+```
+WBP_Screen_MainMenu                       : UBRScreen_MainMenu (UBRActivatableWidget)
+│   pushed to Layer.Menu
+│   GetDesiredFocusTarget()  → TabSwitcher's active page → its MenuList
+│   GetDesiredInputConfig()  → Menu · mouse captured
+│
+└── Screen_SafeZone                       SafeZone           ← title-safe on TV/console
+    └── Screen_Canvas                     CanvasPanel        ← the ONLY canvas here
+        │
+        ├── NavBar        anchor TL   (69, 45)      666 × 30
+        │   └── WBP_NavBar                UBRNavBar   LB/RB · drives TabSwitcher
+        │
+        ├── TabSwitcher   anchor TL   (69, 138)     349 × HUG
+        │   └── WBP_TabSwitcher           CommonVisibilitySwitcher
+        │       ├── [0] WBP_Tab_Play
+        │       ├── [1] WBP_Tab_Training
+        │       └── [2] WBP_Tab_Settings
+        │
+        ├── StatusColumn  anchor TR   (-69, 45)     349 × HUG
+        │   └── InvalidationBox                     ← static between roster events
+        │       └── Status_VBox           VerticalBox
+        │           ├── WBP_RecordPanel   334 × 115   pad-bottom 24
+        │           └── WBP_RosterPanel   349 × HUG
+        │
+        └── ProfileBar    anchor BOTTOM-STRETCH (0,1)→(1,1)   height 50
+            └── WBP_ProfileBar
+```
+
+```
+WBP_Tab_Play                              : UBRTabPage (UCommonUserWidget)
+└── Tab_VBox                              VerticalBox        width from parent slot
+    ├── WBP_FeatureCard                   h 222   pad-bottom 10
+    ├── WBP_CarouselDots                  h 8     pad-bottom 12
+    ├── MenuList                          UBRMenuList        ← the focus target
+    │   └── Rows_VBox                     VerticalBox
+    │       ├── WBP_MenuRow "HOST MATCH"       h 28  pad-bottom 12   ← pitch 40
+    │       ├── WBP_MenuRow "JOIN BY INVITE"   h 28  pad-bottom 12
+    │       ├── WBP_MenuRow "TRAINING"         h 28  pad-bottom 12
+    │       └── WBP_MenuRow "QUIT"             h 28
+    └── WBP_DescriptionStrip               h 37   pad-top 12
+```
+
+**What each choice is for, including the ones the first draft got wrong:**
+
+- **`CommonVisibilitySwitcher` for tabs.** The first version had a nav bar with three tabs and no
+  tab content — the tabs switched nothing. The switcher is what the nav bar drives, and it keeps
+  focus coherent where toggling sibling `Visibility` by hand does not.
+- **Widths are pinned; heights HUG.** 349 is a measured column and belongs in the slot. 510 was a
+  720-space *height* and pinning it means content cannot grow — add a fifth menu row and it
+  clips. Heights come from the Box.
+- **`SafeZone` at the top.** Console and TV crop the edges; a 69px margin is not title-safe on
+  every display. Without this the profile bar loses its ends on a real TV.
+- **`InvalidationBox` on the status column only.** It is static between roster events, so caching
+  pays. It is *not* on the tab content — that changes on every navigation, and invalidating each
+  time costs more than it saves.
+- **No `(nothing)` node.** The first draft wrote an empty Overlay slot as a comment. The scene is
+  behind the whole layout because the root layout does not paint a background — that is the
+  absence of a widget, not a widget.
+
+---
+
+## 7. HUD — the tree, and why it is a different kind of thing
+
+The HUD is not a screen with the chrome removed. **It takes no focus, routes no input, and must
+never tick.** Positions from `HUD-CAMPAIGN-MEASURED.md`, at the 1280×720 base.
+
+```
+WBP_HUDLayout                             : UBRHUDLayout (UBRActivatableWidget)
+│   pushed to Layer.Game, activated for the whole match
+│   GetDesiredFocusTarget()  → nullptr        ← the HUD never takes focus
+│   GetDesiredInputConfig()  → Game · no mouse capture
+│   bIsBackHandler = false                    ← Back belongs to the pause menu
+│   Visibility (root and every child) = HitTestInvisible
+│
+└── HUD_Canvas                             CanvasPanel        no SafeZone wrapper — see below
+    │
+    ├── Vitals          TOP-CENTRE   (0.5,0)   offset (0, 24)      273 × 34
+    │   └── WBP_Vitals                     UBRVitalsWidget
+    │       └── Shield/health trapezoid, health nested, hidden until damaged
+    │
+    ├── Reticle         CENTRE       (0.5,0.5)                     42.67²
+    │   └── WBP_Reticle                    UBRReticleWidget
+    │       └── SetDesiredSizeOverride — the SIZE IS the spread readout
+    │
+    ├── HitMarkers      CENTRE       (0.5,0.5)                     ← shield cyan / flesh red
+    │
+    ├── DamageDirection CENTRE       full-bleed                    ← arc, non-hit-testable
+    │
+    ├── MotionTracker   BOTTOM-LEFT  (0,1)     (42.67, -150.67)    140 × 120
+    │
+    ├── WeaponTray      BOTTOM-RIGHT (1,1)     (-52.67, -144)      196 × 104
+    │   └── InvalidationBox                    ← frame is static; numbers are not
+    │       └── WBP_WeaponTray             pips · grenade · equipment · mag/reserve · silhouette
+    │
+    ├── MatchState      BOTTOM-CENTRE(0.5,1)   (0, -40)            score · clock · rocket
+    │
+    ├── Killfeed        TOP-RIGHT    (1,0)     (-43, 60)           pooled rows, never spawned
+    │
+    └── MedalPopup      CENTRE-UPPER (0.5,0.35)                    transient, amber
+```
+
+**The HUD-specific rules, and each one is a real bug if broken:**
+
+- **`HitTestInvisible` on the root and every child.** A HUD that is `Visible` swallows mouse
+  clicks and gamepad hit-testing. This is the single most common HUD defect and it presents as
+  "the game stopped responding to clicks", which nobody attributes to the HUD.
+- **No focus target, ever.** Returning a widget from `GetDesiredFocusTarget()` on the HUD means
+  a controller lands *on the HUD* and the pause menu opens with focus already stolen.
+- **No `SafeZone` wrapper on the HUD canvas.** Vitals and reticle are anchored to screen centre
+  and must stay geometrically centred; a safe-zone inset shifts them off-centre on some
+  displays. Instead, the *individual corner* elements carry safe-zone-aware offsets.
+- **No Tick.** Every value arrives through `FieldNotify` on `UBRVM_Combat` / `UBRVM_Match`.
+  Law 4, and the reason the HUD costs nothing when nothing changes.
+- **`InvalidationBox` around the tray frame, not the numbers.** The frame, pips and silhouette
+  are static for a whole weapon; the mag counter changes per shot. Wrapping the counter would
+  invalidate every frame it changes, which is worse than not caching.
+- **Killfeed rows are pooled.** `KillfeedMaxVisibleEntries` already exists in `UBRUISettings`;
+  rows are hidden and reused, never created and destroyed during a firefight.
+- **The reticle's slot must not constrain it.** Its size *is* the spread readout. A slot that
+  clamps it silently deletes the only accuracy cue on screen.
+
+**The pause menu is `Layer.GameMenu`, not a HUD child.** It pushes above the HUD, deactivates
+it, requests the Menu input config, and pops back — the HUD never has to hide itself, and the
+match keeps rendering behind. It reuses `WBP_MenuRow`, `WBP_DescriptionStrip` and the persistent
+action bar unchanged, which is the whole return on building components before screens.
+
+---
+
+## 8. What the MCP receives
 
 Nothing new. A plan author writes this tree into `Tools/gen_ui/wbp_plan.py` using the existing
 node vocabulary — class path, name, `bind`, slot dict, `font`, `brush` — and `build_wbp.py`
