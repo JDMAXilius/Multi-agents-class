@@ -33,6 +33,35 @@
  * It SUPERSEDES the hand-copied hex in docs/UI-DESIGN-SYSTEM.md Sec 2. Consume the SEMANTIC
  * name; never reach past it to a primitive.
  */
+/**
+ * `EBRItemRarity` -- the four-step decorative ramp for owned items.
+ *
+ * DECORATIVE RAMP -- FORBIDDEN ON THE HUD. `REFERENCE-EXTRACTION` Sec 7 conflict 2 closed this:
+ * the VISR semantic tokens carry meaning under stress and stay the semantic core; rarity and
+ * premium are a SEPARATE DECORATIVE ramp "scoped to store/progression only", and "a decorative
+ * token may never appear on the HUD". Anything that resolves a rarity colour is front-end only.
+ * If a combat surface needs to say something about an item it says it with a VISR token, not
+ * with this ramp -- reusing `UBRItemTile` inside `UBRHUDLayout` is a finding, not a shortcut.
+ *
+ * IT LIVES HERE BECAUSE TWO LANES DECLARED IT AND UHT REJECTED THE MODULE. `BRPageTitle.h` and
+ * `BRItemTile.h` each declared a byte-identical copy, and UHT is right to refuse: two enums with
+ * one engine name is ambiguous at the reflection layer, not merely untidy. The BRPageTitle lane
+ * predicted it verbatim -- "the Tier-3 lane must REUSE this enum ... two rarity enums in one
+ * module is a defect" -- and both lanes named moving it to a shared header as the fix. This is
+ * that header: both already include it, so neither gained a dependency.
+ */
+UENUM(BlueprintType)
+enum class EBRItemRarity : uint8
+{
+	Common,
+
+	Rare,
+
+	Epic,
+
+	Legendary
+};
+
 UENUM(BlueprintType)
 enum class EBRUIColorToken : uint8
 {

@@ -143,7 +143,10 @@ public:
 	 *
 	 * Negative `InMemberCount` or `InCapacity` means UNKNOWN and renders the dash. Capacity is a
 	 * PARAMETER and never a constant in this file: fireteam size is a gameplay number and lives in
-	 * `Content/Data/*.csv` (law 3), not in a widget.
+	 * a CSV under `Content/Data/` (law 3), not in a widget.
+	 * (Written this way on purpose: the glob form opens a nested comment inside this
+	 * block, and the module builds with -Werror,-Wcomment. It cost two builds - the
+	 * first fix explained the problem using the very sequence that causes it.)
 	 *
 	 * The defaults are literal -1 rather than INDEX_NONE because UHT copies a UFUNCTION default
 	 * argument verbatim into generated code, and this packet cannot compile to prove it resolves

@@ -25,28 +25,6 @@ enum class EBRPageTitleType : uint8
 };
 
 /**
- * REFERENCE-EXTRACTION `Item Title`: variant axis `Rarity = Epic | Legendary | Rare` (3 variants);
- * `Common` is added because COMPONENT-SPECS Sec 5's rarity table has four rows and an item title
- * over a common item must render as something.
- *
- * CONTRACT GAP -- OWNERSHIP: nothing in `Source/Breachpoint/` declares an item rarity today, and
- * `UBRItemTile` (SCREEN-MANIFEST Sec 5 Tier 3) will need the same four values. It is declared here
- * because this is the first component that needs it; the Tier-3 lane must REUSE this enum and the
- * follow-up is to move it to a shared UI types header. Two rarity enums in one module is a defect.
- */
-UENUM(BlueprintType)
-enum class EBRItemRarity : uint8
-{
-	Common,
-
-	Rare,
-
-	Epic,
-
-	Legendary
-};
-
-/**
  * `UBRPageTitle` -- the 1280 x 75 title band (SCREEN-MANIFEST Sec 5 Tier 1: 15 of 31 screens).
  *
  * WHY THIS CLASS AND `UBRItemTitle` SHARE A FILE, WHICH IS ALSO THE WHOLE POINT OF THE PAIR

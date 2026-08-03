@@ -14,29 +14,6 @@ class USizeBox;
 class UTexture2D;
 class UWidget;
 
-/**
- * COMPONENT-SPECS Sec 5: the four rarities the reference file ships.
- *
- * DECORATIVE RAMP -- FORBIDDEN ON THE HUD.
- * `REFERENCE-EXTRACTION` Sec 7 conflict 2 closed this: the VISR semantic tokens carry meaning
- * under stress and stay the semantic core; rarity and premium are a SEPARATE DECORATIVE ramp
- * "scoped to store/progression only", and "a decorative token may never appear on the HUD".
- * So this enum, this tile, and anything that resolves a rarity colour are front-end only. If a
- * combat surface needs to say something about an item it says it with a VISR token, not with
- * this ramp -- reusing `UBRItemTile` inside `UBRHUDLayout` is a finding, not a shortcut.
- */
-UENUM(BlueprintType)
-enum class EBRItemRarity : uint8
-{
-	Common,
-
-	Rare,
-
-	Epic,
-
-	Legendary
-};
-
 /** COMPONENT-SPECS Sec 5 `Size` axis: the component ships at 114 and at mini 30. */
 UENUM(BlueprintType)
 enum class EBRItemTileSize : uint8

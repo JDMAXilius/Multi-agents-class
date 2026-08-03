@@ -1,0 +1,52 @@
+{
+  "_doc": "In-match SCREEN geometry, read from the Figma screen frames. Companion to figma_hud_layout.json.",
+  "_source": { "file_key": "yznvnVdOFDADaugZSeomfP", "canvas": [1280, 720], "read_on": "2026-08-03" },
+  "_authority": "Authoritative for POSITION. Component pages are authoritative for a component's art and size; they have no screen and can never answer 'where'.",
+
+  "_sample_data_warning": "EVERY gamertag in the Scoreboard frame is sample text and several are Halo-team handles - '343 Connmando', '343 Parfit', '343 Ellis', '343 Cliffton', '343 Meowlnir'. They are placeholders in a mock, NOT content. No shipped string, test fixture or default may carry them.",
+
+  "scoreboard": {
+    "node": "43:2", "name": "HUD - Scoreboard (TAB) - MEASURED 1:1",
+    "_scene": "Blurred behind. The frame name states it does NOT pause a live match - so this screen must NOT be pushed onto a layer that suspends gameplay input handling.",
+    "header": {
+      "tick": [5, 18, 3, 52], "mode_icon": { "outer": 44, "inner": 24, "core": 14, "x": 33, "y": 23 },
+      "mode_text": [100, 34, 182, 33], "sep": [358, 34], "map_text": [385, 34, 129, 33],
+      "rule": [100, 67, 1059, 2], "win_cond": [100, 73, 119, 17], "clock": [282, 73, 35, 15]
+    },
+    "team_blocks": {
+      "_pitch": 67, "eagle_y": 268, "cobra_y": 335,
+      "accent": [96, 4, 44], "emblem": [100, 44, 44], "emblem_art_inset": 6,
+      "nameplate": [145, 142, 44], "score_block": [287, 67, 44],
+      "_note": "Emblems are ORIGINAL ART per the frame name."
+    },
+    "table": {
+      "x": 465, "w": 694, "row_h": 22, "row_pitch": 22,
+      "col_header_y": 157, "header_rule_y": 173, "list_top_rule_y": 191, "bottom_rule_y": 472,
+      "columns": { "SCORE": 356.5, "KILLS": 440, "ASSISTS": 523, "DEATHS": 606.5, "_w": 90,
+                   "_note": "Column x are ROW-LOCAL. The header labels at y157 use x816.5/900/983/1066.5, which are CANVAS coords - 465+356.5=821.5 vs 816.5, a 5px disagreement between header and cell. Recorded, not reconciled." },
+      "row_local": { "status_dot": [8, 7.5, 7, 7], "rank": [31, 4], "gamertag": 51, "service_tag": "varies - right-aligned after the tag" },
+      "team_fill": { "blue": [465, 224, 694, 88], "red": [465, 378, 694, 88], "_note": "88 = 4 rows x 22, contiguous - a per-row background would show seams" },
+      "local_player": { "highlight_row": [465, 246, 694, 22], "accent": [460, 246, 4, 22],
+                        "_note": "The accent sits at x460, OUTSIDE the 465 table - it overhangs left. An HBox cannot express that; it is an Overlay offset." },
+      "col_tints": [[825, 191, 83, 282], [992, 191, 83, 282]],
+      "_col_tint_note": "Alternating column tints run the FULL table height (282), spanning both teams and the divider. They are table furniture, not row state.",
+      "team_divider_y": 367
+    }
+  },
+
+  "death_respawn": {
+    "node": "36:2", "name": "HUD - Death / Respawn (ORIGINAL: only the kill cam is documented)",
+    "_original": "Marked ORIGINAL in the frame name - no reference supplies this screen, so nothing can be checked against a source.",
+    "_designer_annotation": "Node 36:21 is a frame literally named 'C++ GAP' at (40,40,420,46) with two lines W1/W2. The designer annotated the missing producers INSIDE the mock. Read it before building.",
+    "layers": { "kill_cam": [0,0,1280,720], "scrim": [0,0,1280,720], "vignette": [0,0,1280,720,"radial"] },
+    "status": [0, 250, 1280, 20], "killer": [0, 276, 1280, 59],
+    "killing_weapon": { "frame": [540,340,200,34], "silhouette": [0,8,84,20], "name": [96,8,118,19],
+                        "_note": "Weapon silhouette is ORIGINAL ART." },
+    "respawn_ring": { "track": [588,410,104,104], "sweep": [588,410,104,104], "countdown": [588,432,104,71],
+                      "_note": "Ring TRACK and SWEEP are separate 104px circles - the sweep is a radial fill, which UMG cannot do with a ProgressBar. Tier-4 material." },
+    "respawn_label": [0, 528, 1280, 17], "prompt": [0, 596, 1280, 15],
+    "match_state": { "frame": [520,660,240,44], "score_self": [0,4,32,38], "timer": [92,10,39,23],
+                     "score_them": [200,4,26,38], "rule": [0,0,240,1],
+                     "_note": "Match state PERSISTS THROUGH DEATH - same data as the HUD band, different layout. Bind the same UBRVM_Match fields; do not fork a second source." }
+  }
+}
