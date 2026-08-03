@@ -2,6 +2,7 @@
 
 #include "Blueprint/UserWidget.h"
 #include "Core/BRCore.h"
+#include "Engine/AssetManager.h"
 #include "Engine/GameInstance.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
@@ -53,10 +54,33 @@ void UBRUIManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	{
 		HandleLocalPlayerAdded(LocalPlayer);
 	}
+
+	// Warm the mid-match screens now, off the game thread. Unset paths (DeathOverlay and
+	// CarnageReport have no assets yet) simply do not appear in the request.
+	const UBRUISettings& Settings = UBRUISettings::Get();
+	TArray<FSoftObjectPath> MidMatchClasses;
+	for (const TSoftClassPtr<UBRActivatableWidget>& SoftClass :
+		{ Settings.HUDLayoutClass, Settings.DeathOverlayClass, Settings.CarnageReportClass })
+	{
+		if (!SoftClass.IsNull())
+		{
+			MidMatchClasses.Add(SoftClass.ToSoftObjectPath());
+		}
+	}
+	if (MidMatchClasses.Num() > 0)
+	{
+		MidMatchPreloadHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(MidMatchClasses);
+	}
 }
 
 void UBRUIManagerSubsystem::Deinitialize()
 {
+	if (MidMatchPreloadHandle.IsValid())
+	{
+		MidMatchPreloadHandle->ReleaseHandle();
+		MidMatchPreloadHandle.Reset();
+	}
+
 	if (UGameInstance* GameInstance = GetGameInstance())
 	{
 		GameInstance->OnLocalPlayerAddedEvent.Remove(LocalPlayerAddedHandle);
@@ -345,7 +369,8 @@ UBRActivatableWidget* UBRUIManagerSubsystem::PushWidgetToLayer(
 		return nullptr;
 	}
 
-	const bool bWasResident = WidgetClass.Get() != nullptr;
+	// Sync resolve is the accepted cost at boot/menu time; the three MID-MATCH screens are
+	// preloaded in Initialize so this is a no-op lookup by the time a death fires (CPP-AUDIT).
 	UClass* ResolvedClass = WidgetClass.LoadSynchronous();
 
 	return PushWidgetClassToLayer(LocalPlayer, LayerTag, ResolvedClass);

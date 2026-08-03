@@ -11,10 +11,8 @@
 
 FText UBRTableRow::GetUnknownValueText()
 {
-	// Em dash as a universal-character escape so this file stays pure ASCII, same as
-	// UBRProfileBar::GetUnknownValueText. GAP: two copies of one dash -- it wants to be
-	// BRUI::GetUnknownValueText in BRComponentTokens.h, which is not this packet's file.
-	return LOCTEXT("UnknownValue", "\u2014");
+	// One owner: the gap this comment used to file is closed (CPP-AUDIT fork collapse).
+	return BRUI::UnknownValueText();
 }
 
 void UBRTableRow::SetColumnText(UCommonTextBlock* Column, const FText& InText)

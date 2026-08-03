@@ -88,20 +88,13 @@ class BREACHPOINT_API UBRMenuRow : public UCommonButtonBase
 	GENERATED_BODY()
 
 public:
-	/** COMPONENT-SPECS Sec 2: COMPONENT 250 x 28. */
-	static constexpr float RowWidth = 250.0f;
+	/**
+	 * COMPONENT-SPECS Sec 2: COMPONENT 250 x 28. `RowWidth` is deliberately NOT declared — the
+	 * row fills its rail (349 / 536 / a column's Fill) and 250 is the component-board width,
+	 * recorded in `MCP-BUILD-PLANS.md` with the text-frame and icon geometry the WBP authors
+	 * (CPP-AUDIT cut the seven constants that mirrored it here unread).
+	 */
 	static constexpr float RowHeight = 28.0f;
-
-	/** COMPONENT-SPECS Sec 2: Text Frame at (2,2), 246 x 24, gap 10, padding T0 R10 B0 L10. */
-	static constexpr float TextFrameWidth = 246.0f;
-	static constexpr float TextFrameHeight = 24.0f;
-	static constexpr float TextFrameInset = 2.0f;
-	static constexpr float TextFrameGap = 10.0f;
-	static constexpr float TextFramePaddingHorizontal = 10.0f;
-
-	/** COMPONENT-SPECS Sec 2: Icon 16 x 16 (INSTANCE_SWAP slot), Filter Button 20 x 20. */
-	static constexpr float IconSize = 16.0f;
-	static constexpr float FilterButtonSize = 20.0f;
 
 	/** COMPONENT-SPECS Sec 2: the border's side lines are 20 tall on a 28 row -- ticks, not edges. */
 	static constexpr float BorderSideTickLength = 20.0f;
@@ -136,6 +129,9 @@ public:
 protected:
 	//~ Begin UUserWidget interface
 	virtual void NativeOnInitialized() override;
+
+	/** CPP-AUDIT P3: `RowType`/`Alignment` are EditAnywhere and must preview in the designer. */
+	virtual void NativePreConstruct() override;
 	//~ End UUserWidget interface
 
 	//~ Begin UCommonButtonBase interface

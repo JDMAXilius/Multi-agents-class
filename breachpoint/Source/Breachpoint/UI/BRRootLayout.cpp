@@ -68,8 +68,3 @@ void UBRRootLayout::ClearLayer(FUITag LayerTag)
 	}
 }
 
-UCommonActivatableWidget* UBRRootLayout::GetActiveWidgetOnLayer(FUITag LayerTag) const
-{
-	const UCommonActivatableWidgetStack* Stack = GetLayerStack(LayerTag);
-	return Stack ? Stack->GetActiveWidget() : nullptr;
-}

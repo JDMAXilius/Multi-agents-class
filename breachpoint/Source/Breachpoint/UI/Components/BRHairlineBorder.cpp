@@ -1,7 +1,7 @@
 #include "UI/Components/BRHairlineBorder.h"
 
-#include "Brushes/SlateColorBrush.h"
 #include "Rendering/DrawElements.h"
+#include "Styling/CoreStyle.h"
 #include "Styling/WidgetStyle.h"
 
 #define LOCTEXT_NAMESPACE "BRHairlineBorder"
@@ -68,13 +68,16 @@ int32 SBRHairlineBorder::OnPaint(
 
 	if (Params.FillColor.A > 0.0f)
 	{
-		// A colour brush needs no texture and no asset -- COMPONENT-SPECS' plates are flat fills.
-		static const FSlateColorBrush FillBrush(FLinearColor::White);
+		// A colour brush needs no texture and no asset -- COMPONENT-SPECS' plates are flat
+		// fills. Engine-owned, not a function-local static: a static FSlateBrush's destruction
+		// order against the Slate renderer's resource map is the classic shutdown assert, and
+		// this is the hottest paint path in the front end (CPP-AUDIT P3).
+		const FSlateBrush* FillBrush = FCoreStyle::Get().GetBrush("GenericWhiteBox");
 		FSlateDrawElement::MakeBox(
 			OutDrawElements,
 			CurrentLayer,
 			AllottedGeometry.ToPaintGeometry(),
-			&FillBrush,
+			FillBrush,
 			DrawEffects,
 			Params.FillColor * Tint);
 
@@ -200,17 +203,6 @@ void UBRHairlineBorder::SetEdgeDimmed(EBRBorderEdge Edge, bool bDimmed)
 	ApplyRenderParams();
 }
 
-void UBRHairlineBorder::SetFillToken(EBRUIColorToken InFillToken)
-{
-	if (HairlineStyle.FillToken == InFillToken)
-	{
-		return;
-	}
-
-	HairlineStyle.FillToken = InFillToken;
-	ApplyRenderParams();
-}
-
 #if WITH_EDITOR
 const FText UBRHairlineBorder::GetPaletteCategory()
 {
@@ -232,18 +224,6 @@ void UBRRule::ApplyOrientationToEdges()
 	HairlineStyle.Edges = (Orientation == EBRRuleOrientation::Vertical)
 		? static_cast<int32>(EBRBorderEdge::Left)
 		: static_cast<int32>(EBRBorderEdge::Top);
-}
-
-void UBRRule::SetOrientation(EBRRuleOrientation InOrientation)
-{
-	if (Orientation == InOrientation)
-	{
-		return;
-	}
-
-	Orientation = InOrientation;
-	ApplyOrientationToEdges();
-	ApplyRenderParams();
 }
 
 void UBRRule::SynchronizeProperties()

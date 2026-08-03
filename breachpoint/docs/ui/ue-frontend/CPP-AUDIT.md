@@ -183,3 +183,33 @@ UI folder is ~700 lines lighter with identical behaviour.
 imperative inversion *for now* — two owners for one interaction is real drift risk, but which one
 wins depends on whether the style assets are ever authored (editor lane). Filed as an open
 question, not silently resolved. Same for re-basing killfeed/match band: HUD lane, not menu.
+
+---
+
+## 6. Execution record — all four packets landed 3 Aug 2026
+
+Commits: PKT-A `2a190df` · PKT-B `4d2f2f5` · PKT-C `35bac64` · PKT-D (this commit).
+**All four are RUNG 0: no UE toolchain exists in the authoring container, so nothing compiled.**
+Every deletion was grep-verified for zero references before AND after; the regression sequence
+for the first session with an editor is in PKT-B (push → pop → re-push, click a tab, press LB).
+
+**One audit finding corrected during execution:** the styles auditor marked all three
+`BR::Tokens` geometry ints dead; the post-cut grep caught `MenuRowHeight` and `NavBarHeight`
+live in `BRButtonStyles.cpp` as `MinHeight`. Both restored; only `MenuRowPitch` was truly dead.
+A cut list is a hypothesis until the after-grep agrees.
+
+**PKT-D residue — verified dead but left in place, sized against the compile risk of blind
+editing a working file** (each is a one-line cut for whoever next opens the file with a
+compiler):
+- `UBRLeftRail`: dead constants (`MeasuredRailHeight`, the two alternate origin Ys) and dead
+  methods (`SetRailOriginY`, `SetRowCount`, `SetRailOpen`/`IsRailOpen`, `GetFocusedRowIndex`)
+  plus the un-invoked reveal-notch mechanism — kept because the rail's geometry derivation is
+  interlocked and the file is live in PKT-C's changes.
+- The remaining `DesignCanvasWidth/Height` copies on `BRScrim`, `BRTableRow`, `BRModal_Warning`
+  (three of the original six; `BRPanel`, `BRScreen_FrontEnd`, `BRProfileBar` copies died in the
+  packets).
+- `EBRWidgetInputMode` stays: the audit called the knob cuttable, but `UBRHUDLayout` genuinely
+  consumes it through the base `GetDesiredInputConfig` — removing it is a HUD-lane change, not
+  a dead-code cut. Only the scoreboard's dead assignment was removed.
+- `MarkStale()` on both new VMs stays: a third staleness pattern, but a plausible lifecycle
+  verb whose callers arrive with the producers.

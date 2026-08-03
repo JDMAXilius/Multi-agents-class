@@ -46,5 +46,13 @@ void UBRButtonPrompt::ClearPrompt()
 		Verb->SetText(FText::GetEmpty());
 	}
 
+	// CPP-AUDIT: the glyph must clear too. Collapsed hides the stale action today, but any
+	// future path that shows the widget without SetPrompt would render the LAST prompt's glyph
+	// — a promise about input that no longer exists.
+	if (ActionGlyph)
+	{
+		ActionGlyph->SetEnhancedInputAction(nullptr);
+	}
+
 	SetVisibility(ESlateVisibility::Collapsed);
 }

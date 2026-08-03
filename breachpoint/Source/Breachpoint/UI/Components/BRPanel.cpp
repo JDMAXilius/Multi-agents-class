@@ -27,25 +27,10 @@ void UBRPanel::ApplyPanelStyle()
 	Frame->SetHairlineStyle(Style);
 }
 
-void UBRPanel::SetGroundToken(EBRUIColorToken InGroundToken)
+void UBRPanel::NativePreConstruct()
 {
-	if (GroundToken == InGroundToken)
-	{
-		return;
-	}
+	Super::NativePreConstruct();
 
-	GroundToken = InGroundToken;
-	ApplyPanelStyle();
-}
-
-void UBRPanel::SetStrokeWeight(EBRStrokeWeight InStrokeWeight)
-{
-	if (StrokeWeight == InStrokeWeight)
-	{
-		return;
-	}
-
-	StrokeWeight = InStrokeWeight;
 	ApplyPanelStyle();
 }
 

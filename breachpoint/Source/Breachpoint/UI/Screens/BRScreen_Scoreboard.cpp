@@ -13,8 +13,9 @@
 
 UBRScreen_Scoreboard::UBRScreen_Scoreboard()
 {
-	// The scene behind is BLURRED, not PAUSED. Game input keeps flowing; see GetDesiredInputConfig.
-	InputMode = EBRWidgetInputMode::Game;
+	// The scene behind is BLURRED, not PAUSED. Game input keeps flowing — this class's own
+	// GetDesiredInputConfig override declares it, so the base-class InputMode knob is
+	// deliberately NOT set here (a dead assignment the override never read, CPP-AUDIT).
 	bHideCursorDuringViewportCapture = true;
 
 	// TAB-up pops this. Taking the back action would make B / Escape close the scoreboard instead of

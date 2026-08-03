@@ -67,6 +67,16 @@ public:
 	//~ End UObject
 };
 
+/**
+ * THE RETENTION RULE (CPP-AUDIT, styles verdict): a text style class exists ONLY to fill a
+ * `UCommonButtonStyle` `TSubclassOf<UCommonTextStyle>` slot — the four below are exactly the
+ * set `BRButtonStyles.cpp` assigns. Every other piece of type data is `figma_tokens.json`,
+ * which the WBP generator writes directly onto each CommonTextBlock. A style class that
+ * duplicates a token row is a SECOND source of the same truth, and the three that existed
+ * (`_Body`, `_Numeral`, `_Flavor`) had already drifted from the tokens they shadowed before
+ * anything ever referenced them. Do not add a fifth without a button-style slot demanding it.
+ */
+
 /** Nav tabs. Rajdhani SemiBold 14, letter-spacing 150 (15%). */
 UCLASS()
 class BREACHPOINT_API UBRTextStyle_Tab : public UBRTextStyleBase
@@ -102,27 +112,7 @@ public:
 	UBRTextStyle_MenuRowInverted();
 };
 
-/** Running prose. Rajdhani SemiBold 14. */
-UCLASS()
-class BREACHPOINT_API UBRTextStyle_Body : public UBRTextStyleBase
-{
-	GENERATED_BODY()
-
-public:
-	UBRTextStyle_Body();
-};
-
-/** HUD counters and scores. Rajdhani SemiBold 24, no tracking -- digits must align. */
-UCLASS()
-class BREACHPOINT_API UBRTextStyle_Numeral : public UBRTextStyleBase
-{
-	GENERATED_BODY()
-
-public:
-	UBRTextStyle_Numeral();
-};
-
-/** Labels and secondary text. Rajdhani SemiBold 11, InkDim. */
+/** The DisabledTextStyle of all three button styles. Rajdhani SemiBold 11, InkDim. */
 UCLASS()
 class BREACHPOINT_API UBRTextStyle_Caption : public UBRTextStyleBase
 {
@@ -130,17 +120,4 @@ class BREACHPOINT_API UBRTextStyle_Caption : public UBRTextStyleBase
 
 public:
 	UBRTextStyle_Caption();
-};
-
-/**
- * The description strip. Roboto Condensed Medium Italic 14, letter-spacing 80 (8%).
- * The font split is deliberate: Rajdhani ships no italic.
- */
-UCLASS()
-class BREACHPOINT_API UBRTextStyle_Flavor : public UBRTextStyleBase
-{
-	GENERATED_BODY()
-
-public:
-	UBRTextStyle_Flavor();
 };

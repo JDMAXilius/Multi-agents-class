@@ -50,29 +50,12 @@ class BREACHPOINT_API UBRPanel : public UCommonUserWidget
 
 public:
 	/**
-	 * COMPONENT-SPECS Sec 0 + SCREEN-MANIFEST Sec 7.4. Stated, not used: nothing in the hairline
-	 * paint path can round a corner. If a panel ever renders rounded, the defect is in the WBP's
-	 * brush, not here.
+	 * Corner radius 0 and the 1280x720 canvas are the design system's facts, recorded in
+	 * COMPONENT-SPECS Sec 0/Sec 6 — CPP-AUDIT cut the constants that mirrored them here unread.
+	 * The two style axes (`GroundToken`, `StrokeWeight`) are EditAnywhere properties applied in
+	 * NativePreConstruct; their runtime setters had zero callers and were cut with them — a
+	 * subclass that needs to change ground at runtime adds the setter WITH its caller.
 	 */
-	static constexpr float PanelCornerRadius = 0.0f;
-
-	/** COMPONENT-SPECS Sec 6: the design canvas every measured panel origin is quoted against. */
-	static constexpr float DesignCanvasWidth = 1280.0f;
-	static constexpr float DesignCanvasHeight = 720.0f;
-
-	/** COMPONENT-SPECS Sec 8: one of the five measured black alphas. Never a free float. */
-	UFUNCTION(BlueprintCallable, Category = "Breachpoint|UI")
-	void SetGroundToken(EBRUIColorToken InGroundToken);
-
-	UFUNCTION(BlueprintCallable, Category = "Breachpoint|UI")
-	EBRUIColorToken GetGroundToken() const { return GroundToken; }
-
-	/** COMPONENT-SPECS Sec 0: 0.5 / 1 / 2 px. There is no fourth weight in the reference file. */
-	UFUNCTION(BlueprintCallable, Category = "Breachpoint|UI")
-	void SetStrokeWeight(EBRStrokeWeight InStrokeWeight);
-
-	UFUNCTION(BlueprintCallable, Category = "Breachpoint|UI")
-	EBRStrokeWeight GetStrokeWeight() const { return StrokeWeight; }
 
 	/**
 	 * Height-only, because that is the only dimension any measured panel variant changes
@@ -86,6 +69,9 @@ public:
 protected:
 	//~ Begin UUserWidget interface
 	virtual void NativeOnInitialized() override;
+
+	/** CPP-AUDIT P3: EditAnywhere style axes must preview — PreConstruct runs in the designer. */
+	virtual void NativePreConstruct() override;
 	//~ End UUserWidget interface
 
 	/**

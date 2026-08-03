@@ -24,7 +24,6 @@ public:
 
 	void ClearLayer(FUITag LayerTag);
 
-	UCommonActivatableWidget* GetActiveWidgetOnLayer(FUITag LayerTag) const;
 
 protected:
 	virtual void NativeOnInitialized() override;

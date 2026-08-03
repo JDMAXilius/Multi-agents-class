@@ -26,9 +26,6 @@ struct FBRFeatureCardEntry
 	FText Title;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|UI")
-	FText Body;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|UI")
 	FName TargetId;
 };
 
@@ -64,31 +61,19 @@ struct FBRMenuRowEntry
 };
 
 /**
- * `FE_Splash` / `FE_Splash_Seasonal` prompt state. `Unknown` is the boot value: the splash does
- * not know whether input is being accepted until the boot flow says so, and a prompt that invites
- * a press the game will ignore is worse than no prompt.
- */
-UENUM(BlueprintType)
-enum class EBRPressToStartState : uint8
-{
-	Unknown,
-
-	/** Deliberately suppressed (boot movie, transition). */
-	Hidden,
-
-	/** Prompt visible, input accepted. */
-	Awaiting,
-
-	/** Pressed; sign-in / load underway. Prompt shows busy, further presses are ignored. */
-	Acknowledged
-};
-
-/**
  * `UBRVM_FrontEnd` -- SCREEN-MANIFEST Sec 10 gap G2 (blocks 4 screens, gates Wave 1).
  *
  * The front-end shell's own data: the feature-card carousel, the left rail's rows for whichever
- * nav tab is active, the focused-row description, the splash's season art and prompt state, and
- * the one responsive flag from Sec 8.3.
+ * nav tab is active, and the focused-row description.
+ *
+ * WHAT WAS CUT, AND WHERE IT RETURNS (CPP-AUDIT PKT-D): the splash fields (`SeasonKeyArt`, the
+ * press-to-start enum), the Sec 8.3 status-band flag and `FBRFeatureCardEntry::Body` had no
+ * producer AND no consumer -- speculative surface that only drifts. Each returns WITH the packet
+ * that consumes it: the splash fields with `WBP_Screen_Splash` (wave 1), the band flag with the
+ * below-1280 collapse (Sec 8.3), the card body with a card layout that renders one.
+ * `GetFocusedRowDescription` is kept although its strip widget does not exist yet -- the
+ * Description Strip is a named manifest element, and its broadcast wiring in `SetNavTab` (the
+ * unconditional re-broadcast on a tab swap) is the subtle bit that must not be re-derived later.
  *
  * SEC 4.1, THE LOAD-BEARING SENTENCE: "Nav tabs swap the rail data, not the widget." So this
  * holds the rows for the ACTIVE tab only. The per-tab menu definition is table data owned by a
@@ -127,17 +112,6 @@ public:
 	/** Rail focus, driven by gamepad navigation. This is what moves the Description Strip. */
 	void SetFocusedMenuRowIndex(int32 InIndex);
 
-	void SetSeasonKeyArt(const TSoftObjectPtr<UTexture2D>& InKeyArt);
-
-	void SetPressToStartState(EBRPressToStartState InState);
-
-	/**
-	 * SCREEN-MANIFEST Sec 8.3: below 1280 design px of width the status band (column 3) stops
-	 * being a persistent panel and becomes a shoulder-summoned overlay. Fed by whoever observes
-	 * the viewport; it is a local layout fact, never replicated.
-	 */
-	void SetStatusBandPersistent(bool bInPersistent);
-
 	void MarkStale();
 
 	void ClearToUnknown();
@@ -166,10 +140,6 @@ public:
 	UFUNCTION(BlueprintPure, FieldNotify, Category = "Breachpoint|FrontEnd")
 	FText GetFocusedRowDescription() const;
 
-	TSoftObjectPtr<UTexture2D> GetSeasonKeyArt() const { return SeasonKeyArt; }
-	EBRPressToStartState GetPressToStartState() const { return PressToStartState; }
-	bool IsStatusBandPersistent() const { return bStatusBandPersistent; }
-
 private:
 
 	/** Covers the fed content (cards + rows + season art). Boots Unknown: nothing has fed yet. */
@@ -194,19 +164,4 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetFocusedMenuRowIndex", Category = "Breachpoint|FrontEnd", meta = (AllowPrivateAccess))
 	int32 FocusedMenuRowIndex = INDEX_NONE;
-
-	/** SOFT (law 3). `FE_Splash_Seasonal` is this field changing, not a second widget. */
-	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetSeasonKeyArt", Category = "Breachpoint|FrontEnd", meta = (AllowPrivateAccess))
-	TSoftObjectPtr<UTexture2D> SeasonKeyArt;
-
-	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetPressToStartState", Category = "Breachpoint|FrontEnd", meta = (AllowPrivateAccess))
-	EBRPressToStartState PressToStartState = EBRPressToStartState::Unknown;
-
-	/**
-	 * Sec 8.3 / Sec 8.1. The one bool here with no Unknown state, and deliberately so: it is
-	 * derived from the local viewport, which is known on the first frame and never replicated, so
-	 * "not yet known" cannot occur. It defaults to the 16:9 design target (persistent).
-	 */
-	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "IsStatusBandPersistent", Category = "Breachpoint|FrontEnd", meta = (AllowPrivateAccess))
-	bool bStatusBandPersistent = true;
 };

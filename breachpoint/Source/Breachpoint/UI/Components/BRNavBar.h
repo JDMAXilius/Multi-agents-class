@@ -82,7 +82,7 @@ public:
 	 * part of the spec, not a substitute. Text/icon geometry lives in COMPONENT-SPECS Sec 3 and
 	 * the WBP plan — CPP-AUDIT cut the constants that mirrored it here unread.
 	 */
-	static constexpr float InactiveOpacity = 0.6f;
+	static constexpr float InactiveOpacity = BR::Tokens::OpacityNavTabInactive;
 
 	UFUNCTION(BlueprintCallable, Category = "Breachpoint|UI")
 	void SetTabLabel(const FText& InText);

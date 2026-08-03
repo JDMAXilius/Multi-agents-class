@@ -32,24 +32,13 @@ class BREACHPOINT_API UBRButtonPrompt : public UCommonUserWidget
 	GENERATED_BODY()
 
 public:
-	/** COMPONENT-SPECS Sec 6: Button Prompts 62 x 20 at (60, 685). */
-	static constexpr float PromptHeight = 20.0f;
-
-	/** Nominal single-prompt width. Recorded for review, NOT applied -- see the class comment. */
-	static constexpr float NominalPromptWidth = 62.0f;
-
-	/** SCREEN-MANIFEST Sec 7.3: the prompt row anchors bottom-left at x=74, y=-35. */
-	static constexpr float PromptRowOriginX = 74.0f;
-	static constexpr float PromptRowOffsetY = -35.0f;
-
 	/**
-	 * Measured bar widths for 1 / 2 / 3 prompts (58-62, 133-146, 253). These are the EXPECTED
-	 * RESULT of hugging, kept here so a reviewer can check the hug rather than so anyone can
-	 * set them.
+	 * COMPONENT-SPECS Sec 6: prompts are h20 and their WIDTH HUGS — the measured 62/146/253 at
+	 * 1/2/3 prompts is the expected *result* of hugging, recorded in `MCP-BUILD-PLANS.md` with
+	 * the rest of the WBP measurements (CPP-AUDIT cut the six constants that mirrored them here
+	 * unread — a constexpr no code reads and no test asserts is a comment with a type).
 	 */
-	static constexpr float ExpectedBarWidthOnePrompt = 62.0f;
-	static constexpr float ExpectedBarWidthTwoPrompts = 146.0f;
-	static constexpr float ExpectedBarWidthThreePrompts = 253.0f;
+	static constexpr float PromptHeight = 20.0f;
 
 	/**
 	 * Show this prompt for an input action. A null action collapses the widget rather than

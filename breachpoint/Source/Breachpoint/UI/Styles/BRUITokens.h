@@ -171,12 +171,13 @@ namespace BR::Tokens
 	 *  widget as render opacity -- there is no CommonUI style field for it. */
 	inline constexpr float OpacityNavTabInactive = 0.6f;
 
-	/** Menu-row underline: 0.3 at rest, 1.0 when hovered/selected (the inversion). */
+	/** Menu-row underline at rest — 1.0 on hover is the inversion, expressed by clearing the
+	 *  dim mask (`SetEdgeDimmed`), not by a second opacity token. */
 	inline constexpr float OpacityMenuRowLineIdle = 0.3f;
-	inline constexpr float OpacityMenuRowLineActive = 1.0f;
 
-	/** Measured geometry (REFERENCE-EXTRACTION.md Sec.3), base 1280x720. */
+	/** Consumed by `BRButtonStyles.cpp` as the button styles' MinHeight. (The pitch that used
+	 *  to sit beside them had zero readers and was cut — CPP-AUDIT token dedup. The audit
+	 *  initially marked all three dead; the post-cut grep caught these two live.) */
 	inline constexpr int32 MenuRowHeight = 28;
-	inline constexpr int32 MenuRowPitch = 40;
 	inline constexpr int32 NavBarHeight = 30;
 }

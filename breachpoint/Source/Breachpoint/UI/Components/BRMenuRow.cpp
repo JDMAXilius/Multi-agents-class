@@ -43,6 +43,16 @@ void UBRMenuRow::NativeOnInitialized()
 	ApplyInvertedState(false, /*bPlayAnimation*/ false);
 }
 
+void UBRMenuRow::NativePreConstruct()
+{
+	Super::NativePreConstruct();
+
+	// Designer preview for the two EditAnywhere axes. NativeOnInitialized does not run at design
+	// time, so without this a RowType change in the details panel showed nothing until PIE.
+	ApplyRowType();
+	SetRowAlignment(Alignment);
+}
+
 void UBRMenuRow::ApplyRowType()
 {
 	if (RootSizeBox)

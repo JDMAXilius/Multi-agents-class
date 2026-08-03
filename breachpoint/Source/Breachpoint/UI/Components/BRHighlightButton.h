@@ -73,11 +73,10 @@ enum class EBRHighlightButtonType : uint8
  * It is implemented as ONE state (`ApplyInvertedState`) that hover and selection both route
  * through -- not as a tint applied at two call sites that will drift.
  *
- * ACCENT GAP (reported, not worked around): COMPONENT-SPECS Sec 8 measures `#ff5c00` for Event
- * and the `Premium Yellow` variable `#ffc11c` for Premium. NEITHER colour exists in
- * `EBRUIColorToken` (`BRComponentTokens.h` says accents are deliberately out of that enum) nor
- * in `BR::Tokens` (`UI/Styles/BRUITokens.h` carries the VISR channels only). Both files are
- * other lanes' owner paths. Until those tokens land, `ResolveIdleFillToken` returns `None` for
+ * ACCENT GAP — CLOSED. The old claim here (that neither accent existed in the token system)
+ * went stale when the token pass landed `AccentEvent` and `AccentPremium` in `BR::Tokens` and
+ * `EBRUIColorToken` (CPP-AUDIT caught the stale comment before it re-opened a ticket). What
+ * remains true: `ResolveIdleFillToken` still returns `None` for
  * Event and Premium and they render as Main. That is a stated, greppable gap -- adding the hex
  * here would fork the palette in the one place nobody would think to look for it.
  *

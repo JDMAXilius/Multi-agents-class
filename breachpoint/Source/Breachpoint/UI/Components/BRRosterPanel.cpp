@@ -16,15 +16,10 @@
 
 namespace BRRosterPanelInternal
 {
-	/**
-	 * The em dash is written as a universal-character escape so this file stays pure ASCII like
-	 * every other source file in the module -- same reason as `UBRProfileBar::GetUnknownValueText`.
-	 * That function is on another packet's class; duplicating one LOCTEXT is cheaper than reaching
-	 * across owner paths, and both collapse to the shared string table when one exists.
-	 */
+	/** One owner for the unknown dash: `BRUI::UnknownValueText` (CPP-AUDIT fork collapse). */
 	FText UnknownValue()
 	{
-		return LOCTEXT("UnknownValue", "\u2014");
+		return BRUI::UnknownValueText();
 	}
 
 	/** Show or collapse a widget by whether it has anything to say. Collapsed, never Hidden: a
@@ -409,14 +404,13 @@ void UBRRosterPanel::ApplyPanelGeometry()
 	}
 }
 
-void UBRRosterPanel::SetPanelWidth(float InPanelWidth)
+void UBRRosterPanel::NativePreConstruct()
 {
-	if (FMath::IsNearlyEqual(PanelWidth, InPanelWidth))
-	{
-		return;
-	}
+	Super::NativePreConstruct();
 
-	PanelWidth = InPanelWidth;
+	// CPP-AUDIT P3: `PanelWidth` is the one documented designer knob on this class (the 349/310
+	// conflict) and it only applied from NativeOnInitialized — which never runs at design time,
+	// so the designer typed 310 and saw nothing. PreConstruct runs in the UMG designer preview.
 	ApplyPanelGeometry();
 }
 

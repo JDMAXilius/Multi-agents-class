@@ -7,11 +7,8 @@
 
 FText UBRGearDetail::GetUnknownValueText()
 {
-	// The em dash as a universal-character escape, so this file stays pure ASCII like every other
-	// source file in the module. Identical to `UBRProfileBar::GetUnknownValueText`.
-	// CONTRACT GAP: this is now the SECOND copy of the unknown-value text. It belongs in
-	// `UI/BRUITypes.h` (`BRUI::UnknownValueText()`), which is not this packet's owner path.
-	return LOCTEXT("UnknownValue", "\u2014");
+	// One owner: the gap this comment used to file is closed (CPP-AUDIT fork collapse).
+	return BRUI::UnknownValueText();
 }
 
 void UBRGearDetail::ApplyFieldText(UCommonTextBlock* Field, const FText& InText)

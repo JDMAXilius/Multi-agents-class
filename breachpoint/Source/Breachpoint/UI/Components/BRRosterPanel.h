@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Blueprint/UserWidgetPool.h"
-#include "CommonButtonBase.h"
+#include "CommonUserWidget.h"
 #include "CommonUserWidget.h"
 #include "UI/BRUITypes.h"
 #include "UI/Components/BRComponentTokens.h"
@@ -190,13 +190,14 @@ protected:
 /**
  * `UBRRosterRow` -- COMPONENT-SPECS Sec 4 `Player Buttons`.
  *
- * BASE: `UCommonButtonBase`, which IS a `UCommonUserWidget` -- still exactly one widget base
- * family, same reasoning as `UBRMenuRow`. It is a button because (a) the reference component is
- * literally named "Player Buttons", (b) the lobby variant is the mute / view-profile / kick
- * target, and (c) CommonUI then owns focus and gamepad navigation for the whole list for free:
- * a `UVerticalBox` of focusable rows IS the gamepad path, and hand-rolled focus math would be a
- * finding (`ue5-ui-architecture` Sec 6). The main-menu instance turns interaction off with
- * `SetIsInteractionEnabled(false)` -- one call, not a second class.
+ * BASE: `UCommonUserWidget`, DEMOTED from `UCommonButtonBase` (CPP-AUDIT PKT-D). The button base
+ * was aspiration wearing a class: the row overrode no Native hook, sat in no button group, and
+ * rendered no focus state -- so a gamepad could land on a "button" that responded with nothing,
+ * which is a live routing defect, not a future feature. The reference component IS named "Player
+ * Buttons" and the lobby variant IS the mute / view-profile / kick target -- so the promotion
+ * back to `UCommonButtonBase` happens in BP24, together with the hover/focus treatment
+ * (`UBRMenuRow::ApplyInvertedState` is the template), a `UCommonButtonGroupBase` on the panel,
+ * and the click that gives the base class a job.
  *
  * THIS ROW NEVER RAISES INTENT. It has no click handler and no delegate to a controller: when the
  * lobby needs "mute this player", that intent goes through the owning `PlayerController`'s UI
@@ -206,7 +207,7 @@ protected:
  * note on `UBRRosterPanel`.
  */
 UCLASS(Abstract, meta = (DisableNativeTick))
-class BREACHPOINT_API UBRRosterRow : public UCommonButtonBase
+class BREACHPOINT_API UBRRosterRow : public UCommonUserWidget
 {
 	GENERATED_BODY()
 
@@ -221,24 +222,16 @@ public:
 	/** COMPONENT-SPECS Sec 4: `Team Fill` and `Content` both sit at (2,2), i.e. a 2px inset. */
 	static constexpr float ContentInset = 2.0f;
 
-	/** COMPONENT-SPECS Sec 4 `Content`: auto-layout HORIZONTAL, gap 10, padding T0 R15 B0 L5. */
-	static constexpr float ContentGap = 10.0f;
-	static constexpr float ContentPaddingLeft = 5.0f;
-	static constexpr float ContentPaddingRight = 15.0f;
+	/**
+	 * COMPONENT-SPECS Sec 4 anatomy (content gap/padding, emblem, rank frame, mic, external
+	 * icons) lives in `MCP-BUILD-PLANS.md` Sec A5 with the rest of the WBP measurements —
+	 * CPP-AUDIT cut the thirteen constants that mirrored it here unread. What survives below is
+	 * what code actually consumes.
+	 */
 
-	/** COMPONENT-SPECS Sec 4 anatomy. */
-	static constexpr float EmblemSize = 26.0f;
-	static constexpr float RankFrameWidth = 30.0f;
-	static constexpr float RankFrameHeight = 26.0f;
-	static constexpr float RankInsigniaSize = 26.0f;
-	static constexpr float MicWidth = 16.0f;
-	static constexpr float MicHeight = 18.0f;
-
-	/** COMPONENT-SPECS Sec 4 `External Icons` 40 x 30, gap -5. */
-	static constexpr float ExternalIconsWidth = 40.0f;
-	static constexpr float ExternalIconsHeight = 30.0f;
+	/** COMPONENT-SPECS Sec 4 `External Icons`: the overlap arithmetic, consumed by
+	 *  `ApplyExternalIconLayout`. */
 	static constexpr float PartyLeaderIconSize = 30.0f;
-	static constexpr float CurrentPlayerIconSize = 10.0f;
 
 	/**
 	 * THE -5. COMPONENT-SPECS Sec 4 measures the `External Icons` auto-layout gap as **-5**: a
@@ -286,11 +279,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Breachpoint|UI")
 	void ClearToUnknown();
 
-	UFUNCTION(BlueprintCallable, Category = "Breachpoint|UI")
-	FBRRosterMemberView GetMember() const { return Member; }
-
-	UFUNCTION(BlueprintCallable, Category = "Breachpoint|UI")
-	EBRRosterTextTone GetTextTone() const { return TextTone; }
 
 	/**
 	 * The computed half of COMPONENT-SPECS Sec 4's `Text Color` axis.
@@ -429,15 +417,9 @@ class BREACHPOINT_API UBRRosterPanel : public UCommonUserWidget
 public:
 	UBRRosterPanel(const FObjectInitializer& ObjectInitializer);
 
-	/** COMPONENT-SPECS Sec 6 / figma_geometry.json node 527:3515: the MEASURED main-menu width. */
+	/** COMPONENT-SPECS Sec 6 / figma_geometry.json node 527:3515: the MEASURED main-menu width.
+	 *  The lobby's claimed 310 is UNMEASURED and lives in the DECIDE ledger, not here. */
 	static constexpr float PanelWidthMainMenu = 349.0f;
-
-	/**
-	 * The lobby claim. UNMEASURED -- recorded so the conflict lives in code rather than in a
-	 * reviewer's memory. Nothing in this file uses it; it is the value to type into the lobby
-	 * instance's `PanelWidth` if and when a measurement confirms it.
-	 */
-	static constexpr float PanelWidthLobbyUnmeasured = 310.0f;
 
 	static constexpr float PanelHeight = 273.0f;
 
@@ -496,19 +478,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Breachpoint|UI")
 	EBRUIDataState GetDataState() const { return DataState; }
 
-	/** The 349/310 knob. Content width follows; no other value needs touching. */
-	UFUNCTION(BlueprintCallable, Category = "Breachpoint|UI")
-	void SetPanelWidth(float InPanelWidth);
-
-	UFUNCTION(BlueprintCallable, Category = "Breachpoint|UI")
-	float GetPanelWidth() const { return PanelWidth; }
-
-	/** DERIVED, never typed: 349 - 2*16 = 317, and 310 - 2*16 = 278. */
-	UFUNCTION(BlueprintCallable, Category = "Breachpoint|UI")
-	float GetContentWidth() const { return PanelWidth - (2.0f * ContentInset); }
-
 protected:
 	virtual void NativeOnInitialized() override;
+	virtual void NativePreConstruct() override;
 	virtual void ReleaseSlateResources(bool bReleaseChildren) override;
 
 	void ApplyPanelGeometry();

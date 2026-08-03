@@ -53,21 +53,13 @@ class BREACHPOINT_API UBRFeatureCard : public UCommonButtonBase
 	GENERATED_BODY()
 
 public:
-	/** COMPONENT-SPECS Sec 6 / figma_geometry `UBRLeftRail.children.feature_card` (node 0:933). */
-	static constexpr float CardWidth = 349.0f;
+	/** COMPONENT-SPECS Sec 6 / figma_geometry `UBRLeftRail.children.feature_card` (node 0:933).
+	 *  Width is the rail's business (the 330-vs-349 story is in the class comment); the two
+	 *  heights below are what C++ actually drives. */
 	static constexpr float CardHeight = 222.0f;
 
 	/** ui-presentation Sec 5: "image 349 x 196.7 + caption". */
 	static constexpr float ImageHeight = 196.7f;
-
-	/** Derived, not measured separately: whatever the image does not use is the caption band. */
-	static constexpr float CaptionHeight = CardHeight - ImageHeight;
-
-	/**
-	 * SCREEN-MANIFEST Sec 9 q13: the component board's width. RECORDED, NOT APPLIED -- see the
-	 * class comment. Delete this line the day q13 closes in favour of 330.
-	 */
-	static constexpr float ComponentBoardWidth = 330.0f;
 
 	/**
 	 * Push one carousel entry's art in. The reference is resolved asynchronously; a second call
@@ -84,13 +76,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Breachpoint|UI")
 	void ClearFeature();
 
-	/**
-	 * The carousel dots (`UBRCarouselDots`, a different packet) are PARENTED here, not owned
-	 * here -- this card exposes the container and never constructs the dots itself.
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Breachpoint|UI")
-	UPanelWidget* GetDotsContainer() const;
-
 protected:
 	//~ Begin UUserWidget interface
 	virtual void NativeOnInitialized() override;
@@ -105,8 +90,6 @@ protected:
 
 	/** COMPONENT-SPECS Sec 1: hover is an inversion cue, expressed once for both callers. */
 	void ApplyHoverState(bool bHovered);
-
-	static FText GetUnknownValueText();
 
 	// ---------------------------------------------------------------------------------------
 	// BindWidget contract for `WBP_FeatureCard`. Parsed out of this header by

@@ -12,12 +12,6 @@
 
 #define LOCTEXT_NAMESPACE "BRFeatureCard"
 
-FText UBRFeatureCard::GetUnknownValueText()
-{
-	// An em dash. Written as an escape so this file stays pure ASCII, matching UBRProfileBar.
-	return LOCTEXT("UnknownValue", "\u2014");
-}
-
 void UBRFeatureCard::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
@@ -154,7 +148,7 @@ void UBRFeatureCard::SetCaptionText(const FText& InCaption)
 {
 	if (Caption)
 	{
-		Caption->SetText(InCaption.IsEmpty() ? GetUnknownValueText() : InCaption);
+		Caption->SetText(InCaption.IsEmpty() ? BRUI::UnknownValueText() : InCaption);
 	}
 }
 
@@ -162,11 +156,6 @@ void UBRFeatureCard::ClearFeature()
 {
 	SetCaptionText(FText::GetEmpty());
 	SetFeatureImage(TSoftObjectPtr<UTexture2D>());
-}
-
-UPanelWidget* UBRFeatureCard::GetDotsContainer() const
-{
-	return DotsContainer;
 }
 
 void UBRFeatureCard::ApplyHoverState(bool bHovered)

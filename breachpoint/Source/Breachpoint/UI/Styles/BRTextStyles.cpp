@@ -95,20 +95,6 @@ UBRTextStyle_MenuRowInverted::UBRTextStyle_MenuRowInverted()
 	Color = BR::Tokens::Void();
 }
 
-UBRTextStyle_Body::UBRTextStyle_Body()
-{
-	Font.Size = 14.0f;
-	Font.LetterSpacing = 25;
-	Color = BR::Tokens::SelfWhite();
-}
-
-UBRTextStyle_Numeral::UBRTextStyle_Numeral()
-{
-	Font.Size = 24.0f;
-	Font.LetterSpacing = 0; // digits must sit on a fixed pitch; tracking breaks alignment
-	Color = BR::Tokens::SelfWhite();
-}
-
 UBRTextStyle_Caption::UBRTextStyle_Caption()
 {
 	Font.Size = 11.0f;
@@ -116,13 +102,3 @@ UBRTextStyle_Caption::UBRTextStyle_Caption()
 	Color = BR::Tokens::InkDim();
 }
 
-UBRTextStyle_Flavor::UBRTextStyle_Flavor()
-{
-	Font.Size = 14.0f;
-	Font.LetterSpacing = 80; // (measured) 8%
-	Font.TypefaceFontName = BR::Tokens::TypefaceRobotoCondensedItalic;
-	Color = BR::Tokens::InkDim();
-
-	// The one style on a different family. Rajdhani ships no italic.
-	FontAsset = BR::Tokens::FontRobotoCondensed();
-}

@@ -100,4 +100,12 @@ private:
 
 	FDelegateHandle LocalPlayerAddedHandle;
 	FDelegateHandle LocalPlayerRemovedHandle;
+
+	/**
+	 * Keeps the MID-MATCH screen classes resident from Initialize on, so ShowHUD /
+	 * ShowDeathOverlay / ShowCarnageReport never block the game thread on a class load at the
+	 * death moment (CPP-AUDIT). Boot/menu screens are deliberately not here — a sync load
+	 * behind a loading screen costs nothing.
+	 */
+	TSharedPtr<struct FStreamableHandle> MidMatchPreloadHandle;
 };

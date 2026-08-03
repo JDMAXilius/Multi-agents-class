@@ -190,8 +190,10 @@ namespace BRUI
 	inline constexpr float PanelGroundAlpha60 = 0.6f;
 	inline constexpr float PanelGroundAlpha80 = 0.8f;
 
-	/** COMPONENT-SPECS Sec 2: the idle bottom line and the side ticks sit at 0.3. */
-	inline constexpr float DimStrokeAlpha = 0.3f;
+	/** COMPONENT-SPECS Sec 2: the idle bottom line and the side ticks sit at 0.3. A FORWARDER
+	 *  onto the token, same as the stroke widths above — two owners for one 0.3 is the fork
+	 *  this header's own preamble warns against (CPP-AUDIT token dedup). */
+	inline constexpr float DimStrokeAlpha = BR::Tokens::OpacityMenuRowLineIdle;
 
 	/**
 	 * The four legal stroke weights, in design pixels at the 1280 base. Forwarders: the
@@ -209,7 +211,7 @@ namespace BRUI
 	 * which is the true statement while replicated state is still in flight.
 	 *
 	 * Written as a universal-character escape so every consumer stays pure ASCII. This is the
-	 * single copy -- see the header note in the report for the five classes still forking it.
+	 * single copy; the five forks that used to shadow it are gone (CPP-AUDIT fork collapse).
 	 */
 	inline FText UnknownValueText()
 	{

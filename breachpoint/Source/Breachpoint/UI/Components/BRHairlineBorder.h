@@ -154,8 +154,6 @@ public:
 	 */
 	void SetEdgeDimmed(EBRBorderEdge Edge, bool bDimmed);
 
-	UFUNCTION(BlueprintCallable, Category = "Breachpoint|UI")
-	void SetFillToken(EBRUIColorToken InFillToken);
 
 	//~ Begin UWidget interface
 	virtual void SynchronizeProperties() override;
@@ -203,8 +201,6 @@ class BREACHPOINT_API UBRRule : public UBRHairlineBorder
 public:
 	UBRRule();
 
-	UFUNCTION(BlueprintCallable, Category = "Breachpoint|UI")
-	void SetOrientation(EBRRuleOrientation InOrientation);
 
 	virtual void SynchronizeProperties() override;
 
