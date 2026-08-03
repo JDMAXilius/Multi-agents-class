@@ -47,6 +47,16 @@ PROGRESS = "/Script/UMG.ProgressBar"
 HAIRLINE = "/Script/Breachpoint.BRHairlineBorder"
 RULE = "/Script/Breachpoint.BRRule"
 
+# Platform title-safe. Used as a screen root instead of a padded box: a padded box is a
+# guess at every console's overscan, and this is the engine's answer to the same question.
+SAFEZONE = "/Script/UMG.SafeZone"
+
+# CommonUI's platform-glyph leaf. Draws the CURRENT input device's icon for a bound input
+# action - zero brushes, zero per-platform art. This is why WBP_ButtonPrompt's glyph is
+# NOT a UImage: a brushless UImage is BP70 D2's blank white rectangle AND a mouse-only lie
+# about what the player is actually holding.
+ACTION_GLYPH = "/Script/CommonUI.CommonActionWidget"
+
 # Declared ahead of use (HUD-D): the doctrine wants an InvalidationBox around the weapon
 # tray's static frame. Whether that wraps ONE merged tray widget or the shipped two siblings
 # is an open founder DECIDE (figma_hud_layout.json measures the frame as one 280x110 unit);
@@ -257,6 +267,17 @@ ASSET_FOLDER = {
     "WBP_EquipmentTray":       UI_HUD,
     "WBP_ProgressBar":         UI_COMPONENTS,
     "WBP_MenuRow":             UI_COMPONENTS,
+    # The menu tier (BP72 step 4). All components except the screen itself.
+    "WBP_NavTab":              UI_COMPONENTS,
+    "WBP_ButtonPrompt":        UI_COMPONENTS,
+    "WBP_RosterHeader":        UI_COMPONENTS,
+    "WBP_RosterRow":           UI_COMPONENTS,
+    "WBP_NavBar":              UI_COMPONENTS,
+    "WBP_FeatureCard":         UI_COMPONENTS,
+    "WBP_RecordPanel":         UI_COMPONENTS,
+    "WBP_RosterPanel":         UI_COMPONENTS,
+    "WBP_LeftRail":            UI_COMPONENTS,
+    "WBP_Screen_FrontEnd":     UI_SCREENS,
 }
 
 
@@ -300,6 +321,21 @@ def canvas_slot(left, top, width, height, anchor=(0.0, 0.0), align=(0.0, 0.0)):
         "anchors": {"minimum": {"x": float(anchor[0]), "y": float(anchor[1])},
                     "maximum": {"x": float(anchor[0]), "y": float(anchor[1])}},
         "alignment": {"x": float(align[0]), "y": float(align[1])}}}
+
+
+def canvas_stretch(left=0.0, top=0.0, right=0.0, bottom=0.0) -> dict:
+    """A CanvasPanelSlot stretched to its canvas: anchors (0,0)->(1,1).
+
+    The OTHER canvas slot. With min != max the anchor is a BOX, and UE reads
+    Offsets.Right/Bottom as MARGINS, not as a size - the exact inverse of `canvas_slot`.
+    Written as its own function because the two disagree about what four identical floats
+    mean, which is precisely the confusion `canvas_slot`'s docstring exists to prevent.
+    """
+    return {"layoutData": {
+        "offsets": {"left": float(left), "top": float(top),
+                    "right": float(right), "bottom": float(bottom)},
+        "anchors": {"minimum": {"x": 0.0, "y": 0.0}, "maximum": {"x": 1.0, "y": 1.0}},
+        "alignment": {"x": 0.0, "y": 0.0}}}
 
 
 # ---------------------------------------------------------------------------
@@ -436,6 +472,519 @@ PLAN = {
              "slot": box_slot(padding=margin(left=10.0, right=10.0), h="HAlign_Right",
                               v="VAlign_Center"),
              "font": "Label/Button", "bind": True},
+        ],
+    },
+
+    # ==================================================================
+    # THE MENU TIER (BP72 step 4). Order is load-bearing: validate_all()
+    # requires a hosted asset to appear in PLAN BEFORE its host.
+    #   leaves  -> NavTab, ButtonPrompt, RosterHeader, RosterRow
+    #   hosts   -> NavBar, FeatureCard, RecordPanel, RosterPanel
+    #   roots   -> LeftRail, Screen_FrontEnd
+    # ==================================================================
+
+    # ------------------------------------------------------------------
+    # WBP_NavTab — one tab of the 666x30 bar. SCREEN-MANIFEST §5 Tier 1: 18 of 31 screens.
+    #
+    # NO SIZE IS AUTHORED, and that is C++ saying so: BRNavBar.cpp writes
+    # SetWidthOverride(TabWidth=138)/SetHeightOverride(TabHeight=26) into RootSizeBox on
+    # NativeOnInitialized. A 138 typed here would be a second source for a number four Menu
+    # variants share. The asset therefore looks collapsed in the editor until it runs.
+    #
+    # `Icon` IS DELIBERATELY OMITTED. It is an art-bearing UImage with no texture, and a
+    # brushless UImage renders as a blank white rectangle (BP70 D2) — 24x24 of white on
+    # every tab of 18 screens. SetTabIcon COLLAPSES the slot for an unset soft ref anyway,
+    # so the icon lands with its art or not at all.
+    # ------------------------------------------------------------------
+    "WBP_NavTab": {
+        "folder": ASSET_FOLDER["WBP_NavTab"],
+        "parent_class": "/Script/Breachpoint.BRNavTab",
+        "class": "UBRNavTab",
+        "header": "Source/Breachpoint/UI/Components/BRNavBar.h",
+        "notes": "One 138x26 tab, closed rectangle border. Size unauthored — UBRNavTab "
+                 "owns TabWidth/TabHeight. Icon omitted (art-bearing UImage, no texture).",
+        "tree": [
+            {"name": "RootSizeBox", "class": SIZEBOX, "parent": None, "bind": True},
+            # Overlay order is z-order: frame behind, label on top.
+            {"name": "TabOverlay", "class": OVERLAY, "parent": "RootSizeBox", "slot": FILL},
+            {"name": "Border", "class": HAIRLINE, "parent": "TabOverlay",
+             "slot": FILL, "bind": True},
+            # COMPONENT-SPECS §3: text (13,5) 120x14 in 138x26 -> padding L13 T5 R5 B7.
+            # Written as PADDING, not a 120x14 size: the tab is 138 in the main bar and the
+            # SubLevel bar is 516 wide, so the inset survives and the width does not.
+            {"name": "Label", "class": TEXT, "parent": "TabOverlay",
+             "slot": {"horizontalAlignment": "HAlign_Fill", "verticalAlignment": "VAlign_Fill",
+                      "padding": margin(13.0, 5.0, 5.0, 7.0)},
+             "font": "Label/Tab", "bind": True},
+        ],
+    },
+
+    # ------------------------------------------------------------------
+    # WBP_ButtonPrompt — glyph + verb. SCREEN-MANIFEST §5 Tier 0: on all 31 screens.
+    #
+    # WIDTH IS NEVER AUTHORED. The measured 62/146/253 at one, two and three prompts is the
+    # OUTPUT of hugging, not an input. Height is C++'s (PromptHeight=20).
+    #
+    # `ActionGlyph` IS A UCommonActionWidget, NOT A UImage, and that is the whole component:
+    # it draws the CURRENT input device's icon, so the prompt swaps keyboard<->gamepad with
+    # no per-platform art and no raw key anywhere in the UI.
+    #
+    # `Verb` HAS NO FONT, AND THAT IS A RECORDED GAP. BP73 closed the DECIDE at Roboto
+    # Condensed **Bold** 14, which is unexpressible twice over: figma_tokens.json has no
+    # such row, and F_RobotoCondensed carries only {Medium, MediumItalic, SemiBold} — there
+    # is no Bold typeface in the composite at all. Naming Body/Name here would be inventing
+    # a measurement the ticket already measured differently.
+    # ------------------------------------------------------------------
+    "WBP_ButtonPrompt": {
+        "folder": ASSET_FOLDER["WBP_ButtonPrompt"],
+        "parent_class": "/Script/Breachpoint.BRButtonPrompt",
+        "class": "UBRButtonPrompt",
+        "header": "Source/Breachpoint/UI/Components/BRButtonPrompt.h",
+        "notes": "Platform glyph + verb, hugging width, h20 from C++. Verb font is OFF-SYSTEM "
+                 "(Roboto Cond Bold 14, BP73) and deliberately unwritten.",
+        "tree": [
+            {"name": "RootSizeBox", "class": SIZEBOX, "parent": None, "bind": True},
+            # Hug, not fill: this box's width IS the prompt's width.
+            {"name": "PromptHBox", "class": HBOX, "parent": "RootSizeBox", "slot": FILL},
+            {"name": "ActionGlyph", "class": ACTION_GLYPH, "parent": "PromptHBox",
+             "slot": box_slot(v="VAlign_Center"), "bind": True},
+            # BP73 DECIDE 2, closed at 10: glyph ends x=20, verb starts x=30. Expressed as
+            # the verb's left padding — LAYOUT-DOCTRINE §1 forbids a Spacer.
+            {"name": "Verb", "class": TEXT, "parent": "PromptHBox",
+             "slot": box_slot(padding=margin(left=10.0), v="VAlign_Center"), "bind": True},
+        ],
+    },
+
+    # ------------------------------------------------------------------
+    # WBP_RosterHeader — the group band above a roster's rows. 349 x 31 in-panel.
+    #
+    # The 31 IS NOT ONE BAND: BP73 read 28 (text) + 3 (gap) + 1 (line), so the separator
+    # belongs to the header. RootSizeBox stays unauthored — C++ writes HeaderHeight=31 once.
+    #
+    # `BottomLine` IS NOT BOUND. UBRRosterHeader declares four BindWidgets and this is not
+    # one of them, so bind:True would be a hard plan error. MCP-BUILD-PLANS §A4 draws it as
+    # `bind?` and the doc is wrong. It ships as a pure-layout UBRRule.
+    #
+    # `Ground` CARRIES NO BRUSH — C++ tints the engine default white, which is the legal
+    # case for a brushless UImage. DIVERGENCE: BP73 measured a vertical gradient white
+    # 0.10 -> 0.30 and C++ applies a FLAT tint. Neither a plan nor a WBP can express a
+    # gradient; filed, not faked.
+    #
+    # BOTH FONTS OFF-SYSTEM AND UNWRITTEN (BP73: Rajdhani Bold 18 / SemiBold 18; the token
+    # ladder jumps Heading/Panel 16 -> Display/Title 20). Reaching for Heading/Caption is
+    # precisely the guess BP73 caught — it was 6px short.
+    # ------------------------------------------------------------------
+    "WBP_RosterHeader": {
+        "folder": ASSET_FOLDER["WBP_RosterHeader"],
+        "parent_class": "/Script/Breachpoint.BRRosterHeader",
+        "class": "UBRRosterHeader",
+        "header": "Source/Breachpoint/UI/Components/BRRosterPanel.h",
+        "notes": "Group band + 3px gap + 1px rule = the 31 C++ drives. Ground is brushless. "
+                 "Both fonts OFF-SYSTEM (BP73), left unwritten.",
+        "tree": [
+            {"name": "RootSizeBox", "class": SIZEBOX, "parent": None, "bind": True},
+            {"name": "HeaderVBox", "class": VBOX, "parent": "RootSizeBox", "slot": FILL},
+            {"name": "BandOverlay", "class": OVERLAY, "parent": "HeaderVBox",
+             "slot": box_slot(padding=margin(bottom=3.0))},
+            {"name": "Ground", "class": IMAGE, "parent": "BandOverlay",
+             "slot": FILL, "bind": True},
+            {"name": "HeaderHBox", "class": HBOX, "parent": "BandOverlay",
+             "slot": {"horizontalAlignment": "HAlign_Fill",
+                      "verticalAlignment": "VAlign_Center",
+                      "padding": margin(10.0, 0.0, 10.0, 0.0)}},
+            {"name": "Label", "class": TEXT, "parent": "HeaderHBox",
+             "slot": box_slot(v="VAlign_Center"), "bind": True},
+            # Fill 1.0 + HAlign_Right is HOW the two share the band; a fixed-width count box
+            # is the thing §A4's MUST-NOT names.
+            {"name": "Count", "class": TEXT, "parent": "HeaderHBox",
+             "slot": box_slot(fill=1.0, h="HAlign_Right", v="VAlign_Center"), "bind": True},
+            # UNBOUND ON PURPOSE — no such member. Horizontal is UBRRule's default.
+            {"name": "BottomLine", "class": RULE, "parent": "HeaderVBox", "slot": box_slot()},
+        ],
+    },
+
+    # ------------------------------------------------------------------
+    # WBP_RosterRow — one player line. COMPONENT-SPECS §4 `Player Buttons`.
+    #
+    # WIDTH FILLS and is never authored (317 in the main-menu panel, different elsewhere).
+    # Height is C++'s RowHeight=30; the pitch 35 is the PANEL's slot padding.
+    #
+    # SEVEN OPTIONAL BINDS OMITTED, ALL FOR ONE REASON: Emblem, RankFrame, RankInsignia,
+    # MicSwitcher, ExternalIcons, PartyLeaderIcon, CurrentPlayerIcon are every one an
+    # art-bearing UImage with no art — six blank white rectangles on every row of a six-row
+    # panel is BP70 D2 multiplied by 36. C++ guards all seven on null.
+    #
+    # NO TEXT COLOUR ANYWHERE. The black/white flip is ComputeTextTone — one C++ decision,
+    # not a design-time hex.
+    # ------------------------------------------------------------------
+    "WBP_RosterRow": {
+        "folder": ASSET_FOLDER["WBP_RosterRow"],
+        "parent_class": "/Script/Breachpoint.BRRosterRow",
+        "class": "UBRRosterRow",
+        "header": "Source/Breachpoint/UI/Components/BRRosterPanel.h",
+        "notes": "Team plate + frame + gamertag. Width fills, height is C++'s RowHeight. "
+                 "Seven art-bearing optional binds omitted until their art exists.",
+        "tree": [
+            {"name": "RootSizeBox", "class": SIZEBOX, "parent": None, "bind": True},
+            {"name": "RowOverlay", "class": OVERLAY, "parent": "RootSizeBox", "slot": FILL},
+            # ContentInset=2: COMPONENT-SPECS §4 puts TeamFill and Content both at (2,2).
+            # The inset survives every row width; a 313 or a 345 would not.
+            {"name": "TeamFill", "class": IMAGE, "parent": "RowOverlay",
+             "slot": inset(2.0), "bind": True},
+            {"name": "Border", "class": HAIRLINE, "parent": "RowOverlay",
+             "slot": FILL, "bind": True},
+            # Bound as UWidget, so an HBox satisfies it. Its own padding rides on the
+            # children — a box has no padding property, only slots.
+            {"name": "Content", "class": HBOX, "parent": "RowOverlay",
+             "slot": inset(2.0), "bind": True},
+            # Body/Name — gamertags are mixed-case proper nouns, so they take the BODY face,
+            # never the all-caps Rajdhani chrome. Same reasoning as the killfeed's names.
+            {"name": "Gamertag", "class": TEXT, "parent": "Content",
+             "slot": box_slot(fill=1.0, padding=margin(left=5.0, right=15.0),
+                              v="VAlign_Center"),
+             "font": "Body/Name", "bind": True},
+        ],
+    },
+
+    # ------------------------------------------------------------------
+    # WBP_NavBar — SCREEN-MANIFEST §5 Tier 1: 18 of 31 screens.
+    #
+    # NO TABS IN THIS TREE. UBRNavBar::SetTabs creates every UBRNavTab from the soft
+    # TabWidgetClass and slots it into TabContainer. A hand-placed tab would bind by name
+    # into that array and double-render — the killfeed lesson exactly. An EMPTY container
+    # is the finished state, not an unfinished one.
+    #
+    # `TabContainer` IS DECLARED UPanelWidget AND MUST STILL BE AN HBOX: BRNavBar.cpp casts
+    # the new child's slot to UHorizontalBoxSlot to apply TabGap (12 = pitch 150 - tab 138).
+    # An Overlay or VBox satisfies the bind type and SILENTLY drops the gap.
+    #
+    # THE 15px BUMPER/TAB OVERLAP IS NOT REPRODUCED. DECIDE row 9: bumper at x=27 and tabs
+    # at x=39 overlap by 15, and an HBox lays children side by side — it cannot. Founder
+    # call (an Overlay), not a number to fudge. No left padding invented to chase x=39
+    # either: the `FirstTabOffsetX` the doc cites does NOT exist in BRNavBar.
+    # ------------------------------------------------------------------
+    "WBP_NavBar": {
+        "folder": ASSET_FOLDER["WBP_NavBar"],
+        "parent_class": "/Script/Breachpoint.BRNavBar",
+        "class": "UBRNavBar",
+        "header": "Source/Breachpoint/UI/Components/BRNavBar.h",
+        "notes": "666x30 bar: two hosted button prompts around an EMPTY tab container. Size "
+                 "unauthored — C++ picks 666 or the 516 sub-level width off bSubLevel.",
+        "tree": [
+            {"name": "RootSizeBox", "class": SIZEBOX, "parent": None, "bind": True},
+            {"name": "BarHBox", "class": HBOX, "parent": "RootSizeBox", "slot": FILL},
+            {"name": "BumperPrev", "class": wbp_class("WBP_ButtonPrompt"), "parent": "BarHBox",
+             "slot": box_slot(padding=margin(left=27.0), h="HAlign_Left", v="VAlign_Center"),
+             "bind": True},
+            {"name": "TabContainer", "class": HBOX, "parent": "BarHBox",
+             "slot": box_slot(fill=1.0), "bind": True},
+            {"name": "BumperNext", "class": wbp_class("WBP_ButtonPrompt"), "parent": "BarHBox",
+             "slot": box_slot(h="HAlign_Right", v="VAlign_Center"), "bind": True},
+        ],
+    },
+
+    # ------------------------------------------------------------------
+    # WBP_FeatureCard — the `News Button`, 349 x 222.
+    #
+    # The caption is OVERLAID on the art, not stacked under it (BP73 row 5 correction):
+    # image full-bleed at inset 7, caption anchored to the BOTTOM of that same box. A VBox
+    # would put the caption on a solid strip below the art, which is a different card.
+    #
+    # `ImageBox` IS CREATED even though MCP-BUILD-PLANS §B2's tree omits it: it is a
+    # NON-OPTIONAL BindWidget and a missing one fails the WBP at ASSET LOAD — rung 1 stays
+    # green and the card is simply blank. Doc defect, filed.
+    #
+    # ITS SLOT IS FILL, AND THAT IS A DECISION. C++ writes SetHeightOverride(196.7), a
+    # constant traced to a HIDDEN Figma layer, while the visible art band is 186. A Fill
+    # slot makes the measured 186 win and the suspect override inert; VAlign_Top would
+    # honour 196.7 and overflow by 3.7. The constant is BP71's to fix.
+    #
+    # NO `Scrim` (the doc asks for one; no such member exists, it needs a Tier-4 gradient
+    # material, and a brushless UImage is BP70 D2). NO `CaptionBox` (nothing binds it and
+    # this generator cannot write SetHeightOverride — an unsized SizeBox is dead layout);
+    # its measured px-20/py-10 is folded into the caption's own padding on top of inset 7.
+    # ------------------------------------------------------------------
+    "WBP_FeatureCard": {
+        "folder": ASSET_FOLDER["WBP_FeatureCard"],
+        "parent_class": "/Script/Breachpoint.BRFeatureCard",
+        "class": "UBRFeatureCard",
+        "header": "Source/Breachpoint/UI/Components/BRFeatureCard.h",
+        "notes": "349x222 news card: caption overlaid on inset-7 art, dots rail below. "
+                 "Height and every colour come from C++.",
+        "tree": [
+            {"name": "RootSizeBox", "class": SIZEBOX, "parent": None, "bind": True},
+            {"name": "CardVBox", "class": VBOX, "parent": "RootSizeBox", "slot": FILL},
+            # Fill 1.0 -> 200 tall (222 - the dots' 22). Overlay order IS z-order.
+            {"name": "ButtonRegion", "class": OVERLAY, "parent": "CardVBox",
+             "slot": box_slot(fill=1.0)},
+            {"name": "Border", "class": HAIRLINE, "parent": "ButtonRegion",
+             "slot": FILL, "bind": True},
+            # NO brush: C++ tints PanelGround50 onto the engine default white.
+            {"name": "Ground", "class": IMAGE, "parent": "ButtonRegion",
+             "slot": inset(7.0), "bind": True},
+            {"name": "ImageBox", "class": SIZEBOX, "parent": "ButtonRegion",
+             "slot": inset(7.0), "bind": True},
+            # NO brush: the VM pushes a soft texture path and C++ ships this Hidden (not
+            # Collapsed — the band keeps its space) until it resolves.
+            {"name": "FeatureImage", "class": IMAGE, "parent": "ImageBox",
+             "slot": FILL, "bind": True},
+            # Label/Button is the one font of BP73's four that is ON-SYSTEM. Its token case
+            # is UPPER, which UMG cannot apply — the FText arrives upper-cased from the VM.
+            {"name": "Caption", "class": TEXT, "parent": "ButtonRegion",
+             "slot": {"horizontalAlignment": "HAlign_Fill", "verticalAlignment": "VAlign_Bottom",
+                      "padding": margin(27.0, 10.0, 27.0, 17.0)},
+             "font": "Label/Button", "bind": True},
+            # The 72x10 switcher rail. EMPTY: dots are per-carousel-entry, the screen fills
+            # this. Its measured h22 is not authored — an empty panel has no height to
+            # override and the dots bring their own 6x6.
+            {"name": "DotsContainer", "class": HBOX, "parent": "CardVBox",
+             "slot": box_slot(padding=margin(12.0, 2.0, 12.0, 2.0), h="HAlign_Center"),
+             "bind": True},
+        ],
+    },
+
+    # ------------------------------------------------------------------
+    # WBP_RecordPanel — SAME PARENT CLASS AS WBP_FEATURECARD, ON PURPOSE.
+    # UBRScreen_FrontEnd::ProgressionButton is already TObjectPtr<UBRFeatureCard>, so this
+    # is one asset and ZERO new classes. Because the parent is shared, the BindWidget
+    # contract is IDENTICAL — same five required names, same two optional. Only art and
+    # slot values differ, and a rename in BRFeatureCard.h breaks both entries in one run.
+    #
+    # THE 334 x 115 IS NOT AUTHORED, AND CANNOT BE: this generator writes no size overrides,
+    # and UBRFeatureCard::NativeOnInitialized unconditionally sets CardHeight=222 and clears
+    # the width. No constant for 334x115 exists anywhere in Source/. So this asset runs 222
+    # tall until C++ gains a per-instance height. Typing 115 here would be a number invented
+    # under deadline. contract_gap filed.
+    # ------------------------------------------------------------------
+    "WBP_RecordPanel": {
+        "folder": ASSET_FOLDER["WBP_RecordPanel"],
+        "parent_class": "/Script/Breachpoint.BRFeatureCard",
+        "class": "UBRFeatureCard",
+        "header": "Source/Breachpoint/UI/Components/BRFeatureCard.h",
+        "notes": "The SERVICE RECORD panel — WBP_FeatureCard's tree with a Heading/Panel "
+                 "title. Same C++ class, same binds; 334x115 has no C++ owner yet (gap).",
+        "tree": [
+            {"name": "RootSizeBox", "class": SIZEBOX, "parent": None, "bind": True},
+            {"name": "CardVBox", "class": VBOX, "parent": "RootSizeBox", "slot": FILL},
+            {"name": "ButtonRegion", "class": OVERLAY, "parent": "CardVBox",
+             "slot": box_slot(fill=1.0)},
+            {"name": "Border", "class": HAIRLINE, "parent": "ButtonRegion",
+             "slot": FILL, "bind": True},
+            {"name": "Ground", "class": IMAGE, "parent": "ButtonRegion",
+             "slot": inset(7.0), "bind": True},
+            {"name": "ImageBox", "class": SIZEBOX, "parent": "ButtonRegion",
+             "slot": inset(7.0), "bind": True},
+            # NO brush — T_Logo_Mark is the art pass, and the 167x94 halves are the ART's
+            # internal layout, not two widgets.
+            {"name": "FeatureImage", "class": IMAGE, "parent": "ImageBox",
+             "slot": FILL, "bind": True},
+            # THE ONE ART DELTA FROM WBP_FeatureCard: this caption is a TITLE, not a news
+            # line. The drop shadow COMPONENT-SPECS names is a style property, not a second
+            # text widget, and this generator writes neither.
+            {"name": "Caption", "class": TEXT, "parent": "ButtonRegion",
+             "slot": {"horizontalAlignment": "HAlign_Fill", "verticalAlignment": "VAlign_Bottom",
+                      "padding": margin(27.0, 10.0, 27.0, 17.0)},
+             "font": "Heading/Panel", "bind": True},
+            {"name": "DotsContainer", "class": HBOX, "parent": "CardVBox",
+             "slot": box_slot(padding=margin(12.0, 2.0, 12.0, 2.0), h="HAlign_Center"),
+             "bind": True},
+        ],
+    },
+
+    # ------------------------------------------------------------------
+    # WBP_RosterPanel — `Party List`, 349 x 273.
+    #
+    # NO ROWS IN THIS TREE. RowPool (FUserWidgetPool) claims WBP_RosterRows from the soft
+    # RowWidgetClass into RowContainer and owns the measured pitch 35 as slot padding.
+    # Hand-placed rows would be cleared by the first rebuild. RowContainer MUST be a
+    # UVerticalBox — the bind is typed to it and the pool casts the slot.
+    #
+    # `Ground`'S SLOT IS FILL, NOT inset(3). BRRosterPanel.cpp pushes FMargin(3) into the
+    # Overlay slot itself from ApplyPanelGeometry, which NativePreConstruct also calls — so
+    # the designer sees it too. Typing 3 here would be a second source for one measured
+    # number. MCP-BUILD-PLANS §B4 says inset 3; the doc is wrong.
+    #
+    # CONTENT INSET IS 16, NOT 3 — the doc conflates the two. 349 - 2*16 = the measured 317
+    # header, and HeaderY + HeaderHeight + RowGap = the measured FirstRowY of 52 (there is a
+    # file-scope static_assert). Nothing in the .cpp consumes ContentInset, so the WBP is the
+    # only place it can live.
+    #
+    # NO `GradientFill`: needs a Tier-4 gradient material, and a brushless UImage would be a
+    # blank white rectangle over the WHOLE panel. Optional bind, C++ guards null.
+    # ------------------------------------------------------------------
+    "WBP_RosterPanel": {
+        "folder": ASSET_FOLDER["WBP_RosterPanel"],
+        "parent_class": "/Script/Breachpoint.BRRosterPanel",
+        "class": "UBRRosterPanel",
+        "header": "Source/Breachpoint/UI/Components/BRRosterPanel.h",
+        "notes": "349x273 party list: hosted header over an EMPTY pooled row column plus the "
+                 "honest empty-state line. Size, ground inset and row pitch are C++-owned.",
+        "tree": [
+            {"name": "RootSizeBox", "class": SIZEBOX, "parent": None, "bind": True},
+            {"name": "PanelOverlay", "class": OVERLAY, "parent": "RootSizeBox", "slot": FILL},
+            {"name": "Ground", "class": IMAGE, "parent": "PanelOverlay",
+             "slot": FILL, "bind": True},
+            {"name": "PanelBorder", "class": HAIRLINE, "parent": "PanelOverlay",
+             "slot": FILL, "bind": True},
+            {"name": "ContentVBox", "class": VBOX, "parent": "PanelOverlay",
+             "slot": {"horizontalAlignment": "HAlign_Fill", "verticalAlignment": "VAlign_Fill",
+                      "padding": margin(16.0, 16.0, 16.0, 0.0)}},
+            # The 5px bottom padding is UBRRosterRow::RowGap and it is the HEADER's to carry:
+            # C++ only pads ROWS, and 16 + 31 + 5 = the measured first row y of 52.
+            {"name": "Header", "class": wbp_class("WBP_RosterHeader"), "parent": "ContentVBox",
+             "slot": box_slot(padding=margin(bottom=5.0)), "bind": True},
+            {"name": "RowContainer", "class": VBOX, "parent": "ContentVBox",
+             "slot": box_slot(fill=1.0), "bind": True},
+            # TWO DIFFERENT FACTS, ONE WIDGET: the dash while Unknown, "NO PLAYERS" when the
+            # feed says live-but-empty, Collapsed otherwise. C++ owns all three, so this
+            # ships visible-and-dashed and never lies during travel or a mid-match join.
+            {"name": "EmptyStateLabel", "class": TEXT, "parent": "ContentVBox",
+             "slot": box_slot(padding=margin(top=8.0), h="HAlign_Center"),
+             "font": "Body/Flavor", "bind": True},
+        ],
+    },
+
+    # ------------------------------------------------------------------
+    # WBP_LeftRail — the `Menu Combo`, and the ONE component-root CanvasPanel in the menu.
+    #
+    # The canvas is REQUIRED, not tolerated (LAYOUT-DOCTRINE law 6's documented exception):
+    # ApplyCaret writes SelectionCaret's position and size through a canvas slot — 3 x 65 at
+    # rail-local x = -4, y computed from the focused row. A box layout cannot express "an
+    # arbitrary y", and the header's LAYOUT CONTRACT names the requirement outright. Nobody
+    # may "fix" this by flattening it.
+    #
+    # NOTHING SIZES THE RAIL HERE. ApplyRailLayout writes RootSizeBox's width (349) AND its
+    # height (ComputeRailHeight(RowCount, FeatureCard != nullptr)), plus MenuBorderBox's
+    # height from the row count. All are widget properties this generator cannot write.
+    #
+    # NO ROWS AND NO DESCRIPTION TEXT: a FUserWidgetPool fills MenuRowSlot and C++ fills
+    # DescriptionSlot. A hand-placed row would bind by name into the pool's array and
+    # double-render — the killfeed lesson.
+    #
+    # RevealNotchTop/Bottom OMITTED: chamfer ART whose x is unmeasured by the header's own
+    # admission, and the wipe originating from them is a BindWidgetAnimOptional this
+    # generator cannot author. They land with the art pass and the animation, together.
+    # ------------------------------------------------------------------
+    "WBP_LeftRail": {
+        "folder": ASSET_FOLDER["WBP_LeftRail"],
+        "parent_class": "/Script/Breachpoint.BRLeftRail",
+        "class": "UBRLeftRail",
+        "header": "Source/Breachpoint/UI/Components/BRLeftRail.h",
+        "notes": "Feature card / bordered menu panel / description strip in one 349-wide "
+                 "instrument. Root CanvasPanel is the documented law-6 exception.",
+        "tree": [
+            {"name": "RootSizeBox", "class": SIZEBOX, "parent": None, "bind": True},
+            {"name": "RailCanvas", "class": CANVAS, "parent": "RootSizeBox", "slot": FILL},
+            # Stretched so the rail's C++-driven height flows into it; the caret is a
+            # SIBLING of this box, not a child, so it can sit at x = -4.
+            {"name": "RailVBox", "class": VBOX, "parent": "RailCanvas",
+             "slot": canvas_stretch()},
+            # Only the 10px FeatureCardGap is expressible here. Its PRESENCE is the single
+            # source of truth for whether the 222+10 block is in the stack.
+            {"name": "FeatureCard", "class": wbp_class("WBP_FeatureCard"), "parent": "RailVBox",
+             "slot": box_slot(padding=margin(bottom=10.0)), "bind": True},
+            # Auto: C++ calls SetHeightOverride(ComputeMenuBorderHeight(RowCount)) — 186 at
+            # 4 rows. Authoring 186 would pin the panel at a row count that is data.
+            {"name": "MenuBorderBox", "class": SIZEBOX, "parent": "RailVBox",
+             "slot": box_slot(), "bind": True},
+            {"name": "MenuBorderOverlay", "class": OVERLAY, "parent": "MenuBorderBox",
+             "slot": FILL},
+            {"name": "MenuBorder", "class": HAIRLINE, "parent": "MenuBorderOverlay",
+             "slot": FILL, "bind": True},
+            # DECIDE 8, CLOSED (BP73): the inset is 16 UNIFORM, not 16/22 — the unread
+            # MenuRowSlotInsetRight=22 was deleted from the header for disagreeing with the
+            # file. One constant, so this is inset(), not four numbers.
+            {"name": "MenuRowSlot", "class": VBOX, "parent": "MenuBorderOverlay",
+             "slot": inset(16.0), "bind": True},
+            # DescriptionGap 55. The strip's own 37 comes from the UBRDescriptionStrip
+            # another packet drops in here.
+            {"name": "DescriptionSlot", "class": OVERLAY, "parent": "RailVBox",
+             "slot": box_slot(padding=margin(top=55.0)), "bind": True},
+            # AUTHORED LAST: canvas child order is z-order and the caret hugs the panel from
+            # OUTSIDE it (x = -4), so it must draw in front. A PLACEHOLDER at the header's
+            # constants — ApplyCaret rewrites position and size on every focus change.
+            {"name": "SelectionCaret", "class": RULE, "parent": "RailCanvas",
+             "slot": canvas_slot(-4.0, 0.0, 3.0, 65.0), "bind": True},
+        ],
+    },
+
+    # ------------------------------------------------------------------
+    # WBP_Screen_FrontEnd — LAST in PLAN. Hosts the rail, the nav bar, the record panel and
+    # the party list.
+    #
+    # NO CanvasPanel ANYWHERE, and that is now legal: CPP-AUDIT PKT-C cut
+    # FBRFrontEndTabLayout/ApplyTabLayout, which were the ONLY thing requiring this screen's
+    # WBP to have a root canvas. Verified cut in the header before this entry was written —
+    # against the uncut class this tree would have failed at asset load. It is bands and
+    # columns; the 869/55/862/397 coordinates are what the bands replace.
+    #
+    # ONE SCREEN FOR THREE FRAMES. FE_Play / FE_Create / FE_Community are the same instances
+    # at the same coordinates; nav tabs swap the RAIL'S DATA, not the widget. So no
+    # TabSwitcher, no tab pages, no per-tab geometry.
+    #
+    # NOT BOUND, DELIBERATELY: Background, the Player stage (a CAMERA's box, not a widget),
+    # the Profile Bar and the Button Prompts. The last two are root-layout chrome and this
+    # screen declares no member for either — so deferring the profile bar does NOT block
+    # this asset. The honest consequence: the front end renders with a 50px band of nothing
+    # at the bottom until the chrome packet lands. A visual gap, not a contract gap.
+    #
+    # Col2_Subject is EMPTY ON PURPOSE and unbound — the ContentSlot bind died with the
+    # PKT-C cut. It reserves the subject's space as a named empty panel, never a Spacer.
+    # ------------------------------------------------------------------
+    "WBP_Screen_FrontEnd": {
+        "folder": ASSET_FOLDER["WBP_Screen_FrontEnd"],
+        "parent_class": "/Script/Breachpoint.BRScreen_FrontEnd",
+        "class": "UBRScreen_FrontEnd",
+        "header": "Source/Breachpoint/UI/Screens/BRScreen_FrontEnd.h",
+        "notes": "Header band + three-column content band inside a SafeZone. No CanvasPanel. "
+                 "Column 2 is a reserved empty region; chrome is not this screen's.",
+        "tree": [
+            # Platform title-safe for free. The outer margin is a SafeZone, not a padded box,
+            # because a padded box is a guess at every console's overscan.
+            {"name": "ScreenSafeZone", "class": SAFEZONE, "parent": None},
+            # NO SLOT, and this is measured rather than assumed: a USafeZoneSlot does not
+            # accept the standard HAlign/VAlign/padding write — the generator wrote it and
+            # read back null (receipt gen-ui-20260803T220816Z.md, the one FAILED line in 21
+            # assets). A SafeZone fills its single child anyway, so the write was redundant
+            # as well as impossible. Do not "restore" it.
+            {"name": "BandsVBox", "class": VBOX, "parent": "ScreenSafeZone"},
+            # pad-bottom 63 is the MEASURED band gap: nav y45 -> rail y138.
+            {"name": "NavBar", "class": wbp_class("WBP_NavBar"), "parent": "BandsVBox",
+             "slot": box_slot(padding=margin(bottom=63.0), h="HAlign_Left"), "bind": True},
+            {"name": "ContentBand", "class": HBOX, "parent": "BandsVBox",
+             "slot": box_slot(fill=1.0)},
+            # The 48px gutter, split 24/24 across the boundary — so a column can be removed
+            # without stranding a one-sided gap.
+            {"name": "Col1_Menu", "class": OVERLAY, "parent": "ContentBand",
+             "slot": box_slot(fill=1.0, padding=margin(right=24.0))},
+            # HAlign_Left: the rail is a fixed-width instrument that never stretches. Its 349
+            # is pinned in C++, so no screen and no WBP can fork the width.
+            {"name": "LeftRail", "class": wbp_class("WBP_LeftRail"), "parent": "Col1_Menu",
+             "slot": {"horizontalAlignment": "HAlign_Left", "verticalAlignment": "VAlign_Fill",
+                      "padding": margin()},
+             "bind": True},
+            # UNBOUND and EMPTY: the 3D subject reads through this column.
+            {"name": "Col2_Subject", "class": OVERLAY, "parent": "ContentBand",
+             "slot": box_slot(fill=1.0, padding=margin(left=24.0, right=24.0))},
+            {"name": "Col3_Status", "class": VBOX, "parent": "ContentBand",
+             "slot": box_slot(fill=1.0, padding=margin(left=24.0), h="HAlign_Right")},
+            # A second WBP of the SAME class as the feature card — a clickable ground +
+            # image + caption is exactly its shape, and the retype is what makes it
+            # gamepad-focusable at all.
+            {"name": "ProgressionButton", "class": wbp_class("WBP_RecordPanel"),
+             "parent": "Col3_Status",
+             "slot": box_slot(padding=margin(bottom=24.0), h="HAlign_Right"), "bind": True},
+            # HUG: 349x273 is the panel's own box, and it shares PanelWidthMainMenu with the
+            # profile card — that shared constant is the whole reason they align.
+            {"name": "PartyList", "class": wbp_class("WBP_RosterPanel"), "parent": "Col3_Status",
+             "slot": box_slot(h="HAlign_Right"), "bind": True},
+            # WHICH KIND OF NOTHING: never-told (VM null) versus told-and-empty are two
+            # different facts and ApplyEmptyState renders them differently. Body/Flavor is
+            # italic on purpose — the device the killfeed uses to mark a line that is not a
+            # fact the server sent.
+            {"name": "EmptyStateLabel", "class": TEXT, "parent": "BandsVBox",
+             "slot": box_slot(h="HAlign_Center", v="VAlign_Center"),
+             "font": "Body/Flavor", "bind": True},
         ],
     },
 
