@@ -74,10 +74,11 @@ EXIT_PASS, EXIT_FAIL, EXIT_BLOCKED = 0, 1, 3
 # ---------------------------------------------------------------------------------------
 T = {
     "create_material":  "create_material",       # UNVERIFIED
-    "create_expression": "create_expression",    # UNVERIFIED
+    "create_expression": "add_expression",       # VERIFIED by --probe 3 Aug 2026:
+                                             # create_expression does not exist.
     "connect_expressions": "connect_expressions",  # UNVERIFIED
-    "connect_property": "connect_property",      # UNVERIFIED
-    "recompile": "recompile_material",           # UNVERIFIED
+    "connect_property": "connect_to_output",     # VERIFIED: material OUTPUTS, not properties.
+    "recompile": "recompile",                    # VERIFIED: bare name.
 }
 
 # UMaterial property names, camelCase per the ObjectTools convention. UNVERIFIED spellings —
@@ -370,3 +371,29 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+
+# ---------------------------------------------------------------------------
+# VERIFIED MaterialTools SCHEMA — probed against the live editor, 3 Aug 2026.
+# ---------------------------------------------------------------------------
+# The plan was authored without an editor (R29.2) and tagged every call UNVERIFIED.
+# The probe was worth running: THREE OF FIVE ASSUMED TOOL NAMES DO NOT EXIST.
+#
+#   create_expression   -> add_expression
+#   connect_property    -> connect_to_output      (materials have OUTPUTS, not properties)
+#   recompile_material  -> recompile
+#
+# Argument names cost four more round trips, and the pattern is worth internalising:
+# this server names every required param and REFUSES the whole call until all are
+# present, one error at a time. "default": null does not mean optional.
+#
+#   create_material(folder_path, asset_name, material_function)
+#       NOT package_path, NOT name. material_function must be present as null.
+#   list_expression_classes(material_or_function, search)
+#       NOT filter. Needs an EXISTING material to ask against - there is no
+#       standalone class list, so probing means creating a scratch asset first.
+#
+# Expression classes are refPaths, e.g. /Script/Engine.MaterialExpressionFrac.
+# 354 are available and every node this graph needs is among them. Two names are
+# substring traps when searching: "TextureCoordinate" also matches
+# MeshPaintTextureCoordinateIndex, and "Distance" also matches DistanceCullFade -
+# match the FULL class name, never a substring.
