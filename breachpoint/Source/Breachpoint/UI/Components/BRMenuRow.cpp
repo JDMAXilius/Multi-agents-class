@@ -3,10 +3,15 @@
 #include "Animation/WidgetAnimation.h"
 #include "CommonTextBlock.h"
 #include "Components/Image.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "Materials/MaterialInterface.h"
 #include "Components/PanelWidget.h"
 #include "Components/SizeBox.h"
 #include "Components/WidgetSwitcher.h"
 #include "UI/Components/BRHairlineBorder.h"
+
+const FName UBRMenuRow::PlateHoverParameterName(TEXT("Hover"));
+const FName UBRMenuRow::PlatePressedParameterName(TEXT("Pressed"));
 
 UBRMenuRow::UBRMenuRow(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -202,7 +207,9 @@ void UBRMenuRow::ApplyInvertedState(bool bInverted, bool bPlayAnimation)
 
 	bIsInverted = bInverted;
 
-	if (TextFrameFill)
+	// The material path first; it returns false unless this asset's plate carries one, and
+	// then the original tint runs unchanged. Two ways to reach the same measured states.
+	if (TextFrameFill && !ApplyPlateMaterialState(bInverted))
 	{
 		const EBRUIColorToken FillToken = bInverted ? InvertedFillToken : EBRUIColorToken::None;
 		TextFrameFill->SetColorAndOpacity(BRUI::ResolveColorToken(FillToken));
@@ -291,6 +298,43 @@ void UBRMenuRow::ApplyInversionToSubtree(UWidget* Root, const FSlateColor& InTex
 			ApplyInversionToSubtree(AsPanel->GetChildAt(ChildIndex), InTextColor, bInverted);
 		}
 	}
+}
+
+bool UBRMenuRow::ApplyPlateMaterialState(bool bInverted)
+{
+	if (!TextFrameFill)
+	{
+		return false;
+	}
+
+	// A brushless UImage has no resource object at all, and a TEXTURE one is not a material.
+	// Checked before GetDynamicMaterial() because that call CREATES a dynamic instance, and
+	// creating one per row on an asset that will never use it is a real cost for nothing.
+	if (!Cast<UMaterialInterface>(TextFrameFill->GetBrush().GetResourceObject()))
+	{
+		return false;
+	}
+
+	UMaterialInstanceDynamic* PlateMaterial = TextFrameFill->GetDynamicMaterial();
+	if (!PlateMaterial)
+	{
+		return false;
+	}
+
+	// COLOUR IS STILL THE WIDGET'S, and that is the whole point of the material's shape.
+	// FSlateBrush::TintColor multiplies the material output, so the tint carries the token
+	// and the material only decides HOW MUCH of it shows. Set unconditionally: at idle the
+	// alpha is 0, so a white tint is invisible rather than wrong.
+	TextFrameFill->SetColorAndOpacity(BRUI::ResolveColorToken(InvertedFillToken));
+
+	// Binary today, which makes this pixel-identical to the tint path. The reason it exists
+	// is that a float can be eased and a token swap cannot -- see the header.
+	PlateMaterial->SetScalarParameterValue(PlateHoverParameterName, bInverted ? 1.0f : 0.0f);
+
+	// COMPONENT-SPECS Sec 2: pressed is the same plate as hover, so nothing drives this yet.
+	// Written anyway so the parameter is never left at a stale value from a previous state.
+	PlateMaterial->SetScalarParameterValue(PlatePressedParameterName, 0.0f);
+	return true;
 }
 
 void UBRMenuRow::ApplySelectedMark(bool bSelected)

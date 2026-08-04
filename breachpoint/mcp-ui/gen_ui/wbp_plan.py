@@ -654,6 +654,24 @@ def icon_only_label(nodes: list[dict]) -> list[dict]:
     return out
 
 
+def with_plate_material(nodes: list[dict]) -> list[dict]:
+    """The same tree with `M_UI_MenuRowPlate` as `TextFrameFill`'s brush.
+
+    OPT-IN, ONE ASSET AT A TIME. `MENU_ROW_TREE` deliberately gives the plate NO brush — an
+    untinted UImage is the engine's white, which is the correct input to a C++ tint. Handing it
+    a material instead moves the same two measured states onto a scalar UBRMenuRow can ease.
+    Returns COPIES, for the same reason `with_text` does: the shared tree serves assets that
+    have not opted in.
+    """
+    out = []
+    for nd in nodes:
+        if nd["name"] == "TextFrameFill":
+            nd = dict(nd)
+            nd["brush"] = brush("/Game/UI/Materials/M_UI_MenuRowPlate", 246, 24)
+        out.append(nd)
+    return out
+
+
 def with_text(nodes: list[dict]) -> list[dict]:
     """The same tree with the Figma strings written onto `Label` / `Selection`.
 
@@ -2540,7 +2558,11 @@ PLAN = {
         # 100px frame; stretched across a 250x28 row they scale with it. The correct fix is to
         # export Menu Row's OWN border pieces through the same pipeline, or to author these as
         # nine-slice. Filed, not hidden.
-        "tree": MENU_ROW_TREE + [
+        # THE PLATE CARRIES A MATERIAL HERE, and only here. `M_UI_MenuRowPlate` takes a
+        # Hover scalar that UBRMenuRow drives instead of tinting; every other Menu Row asset
+        # keeps the brushless-UImage tint path, which ApplyPlateMaterialState falls back to.
+        # Binary today and pixel-identical to the tint, so this is a seam, not a look change.
+        "tree": with_plate_material(MENU_ROW_TREE) + [
             {"name": "EdgeTop", "class": IMAGE, "parent": "RowOverlay",
              "slot": {"horizontalAlignment": "HAlign_Fill", "verticalAlignment": "VAlign_Top",
                       "padding": margin()},

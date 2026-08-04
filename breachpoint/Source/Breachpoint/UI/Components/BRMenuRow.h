@@ -140,6 +140,26 @@ public:
 	/** ui-presentation Sec 5 / SCREEN-MANIFEST Sec 1: rows are h28 on a 40 pitch (12 px gap). */
 	static constexpr float RowPitch = 40.0f;
 
+	/**
+	 * The two scalars `M_UI_MenuRowPlate` exposes, driven on `TextFrameFill`'s dynamic material
+	 * when the plate carries one.
+	 *
+	 * WHY A MATERIAL AT ALL, when `SetColorAndOpacity` already does the inversion: a tint is a
+	 * step function. The plate can only be transparent or white, so hover SNAPS. A material
+	 * taking a 0..1 scalar can be eased, and the widget layer only has to move a float — which
+	 * is the shape `M_SimpleGlow` uses for its own Hover/Pressed (see `mcp-ui/MATERIALS.md`).
+	 *
+	 * BOTH ARE DECLARED even though COMPONENT-SPECS Sec 2 gives them the SAME plate ("Pressed is
+	 * the same plate -- the flip already reads as a press"). The material folds them with a
+	 * clamped add, so today they are interchangeable; they are separate parameters so that a
+	 * future press treatment is an instance tweak rather than a graph rebuild.
+	 *
+	 * `material_plan.py`'s `cpp_constants` gate parses these literals and fails the material
+	 * build if either drifts from the parameter the graph declares.
+	 */
+	static const FName PlateHoverParameterName;
+	static const FName PlatePressedParameterName;
+
 	UFUNCTION(BlueprintCallable, Category = "Breachpoint|UI")
 	void SetLabelText(const FText& InText);
 
@@ -197,6 +217,17 @@ protected:
 
 	/** Show `TypeCheckMark` iff the row is selected. Idle/Hover are an empty box (Sec 2). */
 	void ApplySelectedMark(bool bSelected);
+
+	/**
+	 * Drive the plate's `Hover`/`Pressed` scalars, if `TextFrameFill` carries a material.
+	 *
+	 * Returns FALSE when it does not — which is the normal case today. Every Menu Row asset
+	 * built so far uses a BRUSHLESS `UImage` that `ApplyInvertedState` tints directly, and that
+	 * path is untouched: this is additive, and an asset opts in purely by having
+	 * `M_UI_MenuRowPlate` as its brush. A `false` return is not a failure, it is "this asset
+	 * does it the other way", and the caller falls back to the tint.
+	 */
+	bool ApplyPlateMaterialState(bool bInverted);
 
 	// ---------------------------------------------------------------------------------------
 	// BindWidget contract. These names are parsed out of this header by the WBP generator and

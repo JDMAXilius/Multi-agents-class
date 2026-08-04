@@ -240,6 +240,80 @@ PLAN = {
         # is the colour. Opacity is the mask. Nothing else is connected.
         "outputs": {EMISSIVE: "Color", OPACITY: "Alpha"},
     },
+
+    # =======================================================================
+    # M_UI_MenuRowPlate — the Menu Row's hover plate, as a material instead of a tint.
+    #
+    # WHAT IT REPLACES. `UBRMenuRow::ApplyInvertedState` sets `TextFrameFill`'s colour from a
+    # token: `None` (transparent) at idle, `SurfaceInverted` (white) on hover. That is a STEP
+    # function — two states, so hover SNAPS. Correct, and exactly what COMPONENT-SPECS Sec 2
+    # measures, but it cannot ease.
+    #
+    # WHAT IT ENABLES. A 0..1 scalar the widget layer moves. Ease it and the plate fades in;
+    # leave it binary and the result is pixel-identical to today. `M_SimpleGlow` uses this
+    # shape for its own Hover/Pressed (mcp-ui/MATERIALS.md), which is where it was read from.
+    #
+    # THE FIRST DRAFT OF THIS ENTRY WAS REJECTED BY validate(), CORRECTLY. It lerped between
+    # an `IdleColor` and an `ActiveColor` inside the graph and drove EmissiveColor from the
+    # result — which bakes a colour TRANSITION into a binary nobody can diff, the same defect
+    # as a hex literal in a WBP. The rule is that EmissiveColor IS the VectorParameter, so the
+    # colour stays the widget's to set. What Hover/Pressed drive is OPACITY:
+    #     idle   -> alpha 0, the plate draws nothing (Sec 2's "no fill")
+    #     hover  -> alpha 1, a solid plate in whatever colour the widget's tint carries
+    # Same two measured states, one scalar between them, and zero colour opinion in the asset.
+    #
+    # HOVER AND PRESSED FOLD INTO ONE STATE, measured rather than lazy. COMPONENT-SPECS Sec 2:
+    # "Pressed is the same plate -- the flip already reads as a press; dimming it a second time
+    # just makes the row look broken." `BRButtonStyles.cpp` agrees: NormalHovered and
+    # NormalPressed are both Fill(SelfWhite). Add-then-clamp IS max() for inputs in 0..1. They
+    # stay SEPARATE PARAMETERS so a future press treatment is an instance tweak, not a rebuild.
+    # =======================================================================
+    "M_UI_MenuRowPlate": {
+        "folder": UI_MATERIALS,
+        "domain": "MD_UI",
+        "blend_mode": "BLEND_Translucent",
+        "shading_model": "MSM_Unlit",
+        "notes": "Menu Row hover plate. Hover/Pressed fold to one 0..1 state driving OPACITY; "
+                 "colour is the widget's, via the Color parameter and the brush tint.",
+
+        "cpp_constants": {
+            "Hover": ("Source/Breachpoint/UI/Components/BRMenuRow.cpp",
+                      "UBRMenuRow::PlateHoverParameterName"),
+            "Pressed": ("Source/Breachpoint/UI/Components/BRMenuRow.cpp",
+                        "UBRMenuRow::PlatePressedParameterName"),
+        },
+
+        "params": {
+            "Hover": {"kind": "scalar", "default": 0.0,
+                      "doc": "0 = idle (plate invisible), 1 = fully inverted. C++-driven."},
+            "Pressed": {"kind": "scalar", "default": 0.0,
+                        "doc": "Same plate as Hover today (COMPONENT-SPECS Sec 2). Separate so "
+                               "a press treatment needs no graph change."},
+            # Identical rationale to M_UI_RadialSweep's Color: FSlateBrush::TintColor multiplies
+            # the material's output, so identity here means the widget's tint — set from
+            # BRUI::ResolveColorToken — is the only thing that decides the colour.
+            "Color": {"kind": "vector", "default": [1.0, 1.0, 1.0, 1.0],
+                      "doc": "Identity by default; the widget's brush tint carries the token."},
+        },
+
+        "graph": {
+            "Hover":    n(SCALARP, parameterName="Hover", defaultValue=0.0),
+            "Pressed":  n(SCALARP, parameterName="Pressed", defaultValue=0.0),
+            "StateSum": n(ADD, inputs={"A": "Hover", "B": "Pressed"}),
+            # Clamp's MinDefault/MaxDefault are already 0 and 1 — same reason AngMask leaves
+            # them unwired. Sum-then-clamp IS max() over 0..1, with one fewer node.
+            "State":    n(CLAMP, inputs={"Input": "StateSum"}),
+
+            "Color":    n(VECTORP, parameterName="Color",
+                          defaultValue={"r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0}),
+            # The named "A" pin, not a ComponentMask: a VectorParameter's unnamed output is
+            # float3 and has no alpha to mask. Same constraint the RadialSweep's ColorA note
+            # records, and the reason inputs accept a (source, output_name) tuple.
+            "Alpha":    n(MUL, inputs={"A": "State", "B": ("Color", "A")}),
+        },
+
+        "outputs": {EMISSIVE: "Color", OPACITY: "Alpha"},
+    },
 }
 
 
