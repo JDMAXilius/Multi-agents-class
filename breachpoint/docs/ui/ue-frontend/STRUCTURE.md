@@ -200,22 +200,12 @@ to the critic — no diff, no merge, no grep").
 
 ## 7. `Content/UI/Icons/` is a load-bearing folder name
 
-`Tools/verify_notices.py:49-51` hard-codes the glob:
+Every icon brush in `Tools/gen_ui/wbp_plan.py` resolves against this exact path, and the
+generator's `texture_problem()` check verifies each target exists on disk at plan time.
 
-```python
-DEPENDENCY_PROBES: list[tuple[str, str, str]] = [
-    ("Content/UI/Icons/**/*.uasset", "Lucide", "icons are in Content/ but no Lucide notice"),
-]
-```
-
-`main()` (`:132-135`) fails the run when the glob matches anything and `Lucide` is absent from
-`THIRD-PARTY-NOTICES.md`. Lucide is ISC; ISC requires the notice in all copies, so the check also
-demands the staged copy `Content/Legal/THIRD-PARTY-NOTICES.txt` match (`:98-116`) and
-`Config/DefaultGame.ini` stage `Content/Legal` (`:118-129`). It runs in rung 2.
-
-**An icon imported anywhere else does not fail this check — it passes it, silently, because the
-glob matched nothing.** That is the failure mode, and it is why the folder name is not a
-preference.
+**An icon imported anywhere else does not fail loudly — the plan SKIPS the brush with a note,
+and the widget ships a brushless `UImage`, which renders as a blank white rectangle** (BP70 D2).
+That is the failure mode, and it is why the folder name is not a preference.
 
 **Open conflict:** `ASSET-PIPELINE.md:90` (§4) directs importers to `Content/UI/Textures/<Family>/`,
 which the probe cannot see. **Ticket BP63** resolves it. Until then, icons go in

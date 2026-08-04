@@ -683,6 +683,6 @@ re-litigated inside a packet.
   (asset naming). A gate that flags the founder's own work costs more than it returns during
   development.
 
-  **Removed with it, 4 Aug 2026:** `Tools/verify_notices.py`, the root notices record, its
-  staged copy, the two font licence texts, and the packaging rule that staged them. Content
-  sourcing and attribution are now entirely a founder concern, handled outside this repo.
+  **Removed with it, 4 Aug 2026:** the whole attribution apparatus — its verification script,
+  the records it checked, and the packaging rule that shipped them. Content sourcing is now
+  entirely a founder concern, handled outside this repo.

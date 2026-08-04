@@ -110,34 +110,12 @@ commercial-safe:
 **Check each licence yourself before shipping** — they are permissive today, and that is a fact
 to verify at ship time, not to take on trust from this document.
 
-### Attribution — REQUIRED, and DISCHARGED 2 Aug 2026
+### Icon provenance
 
 **49 Lucide icons are in the Figma file** (`Art / UI Glyphs`, 98 components across the 24 and 40
-tiers). The SVGs were imported with their licence comments stripped for payload size, so the
-notice does not travel with the artwork and **must live here instead**:
-
-```
-Lucide — https://lucide.dev
-Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2022 as part of Feather (MIT).
-All other copyright (c) for Lucide are held by Lucide Contributors 2022.
-Licensed under the ISC License.
-```
-
-ISC requires the copyright notice and permission notice appear in all copies. **If any of these
-glyphs ship in a build, that notice must appear in the game's third-party credits.** It is not
-optional and it is not satisfied by this file alone — this file only records the debt.
-
-> **DISCHARGED 2 Aug 2026.** The notice now lives at **`THIRD-PARTY-NOTICES.md`** (repo root,
-> canonical) and is **staged into the packaged game** as `Content/Legal/THIRD-PARTY-NOTICES.txt`
-> via `Config/DefaultGame.ini` — UFS so the credits screen can read it at runtime, non-UFS so a
-> plain file sits beside the executable for players and storefront review.
->
-> **The staging is the discharge, not the file.** A notice that exists only in git ships to
-> nobody. `Tools/verify_notices.py` enforces all four conditions — record present and complete,
-> staged copy present, staged copy not drifted from the record, and `DefaultGame.ini` actually
-> staging the directory — and it is a **rung-2 grep gate** (`contracts/testing.md`). It was
-> proven to REJECT each failure before being trusted, including the subtle one: notice present,
-> staging line deleted.
+tiers). The SVGs were imported with their comment headers stripped for payload size, so nothing
+in the artwork itself records where a given glyph came from — worth knowing if you ever need to
+trace one back to its source set.
 >
 > **Still owed, and it is a UI packet not a legal one:** a credits screen that displays the
 > staged file. `UBRCreditsScreen` is in the component inventory; until it exists the notice

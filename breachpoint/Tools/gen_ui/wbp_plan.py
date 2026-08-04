@@ -267,9 +267,8 @@ UI_FOLDER = "/Game/UI"
 # nothing today and is nearly impossible later: BP18 proved MCP CANNOT rename an asset (the
 # rename modal auto-cancels). Every asset has to be born at its final path.
 #
-# Content/UI/Icons stays exactly where it is and is NOT reorganised. It used to be pinned by a
-# hard-coded glob in Tools/verify_notices.py; that script was deleted 4 Aug 2026, so the path is
-# now convention only -- but every icon brush below still resolves against it.
+# Content/UI/Icons stays exactly where it is and is NOT reorganised: every icon brush below
+# resolves against that path, and texture_problem() checks each one on disk at plan time.
 UI_LAYOUTS    = UI_FOLDER + "/Layouts"      # root + HUD layout: the two things pushed onto layers
 UI_HUD        = UI_FOLDER + "/HUD"          # in-match surfaces
 UI_COMPONENTS = UI_FOLDER + "/Components"   # reusable parts, never pushed directly

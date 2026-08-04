@@ -797,31 +797,26 @@ rather than here.
 
 ## Carried out of the tickets before they were deleted (4 Aug 2026)
 
-The ticket board was cleared on founder direction. Two live findings existed ONLY in
-`TICKET_BP78_FRONTEND_SYSTEMS_CLEANROOM.md` and are recorded here so they survive it. Both are
-about tooling, not about the front end, so neither had another home.
+The ticket board was cleared on founder direction. One live finding existed ONLY in
+`TICKET_BP78_FRONTEND_SYSTEMS_CLEANROOM.md` and is recorded here so it survives the deletion.
+It is about tooling, not about the front end, so it had no other home.
 
-**1. `guard_laws.py` is a tool-call guard, not an owner-path guard — and the gap is wide.**
+**`guard_laws.py` is a tool-call guard, not an owner-path guard — and the gap is wide.**
 The hook is registered on `Edit|Write|MultiEdit|NotebookEdit` only. A shell `rm`, `mv`, `cp`,
 `sed -i` or `>` redirect from Bash never reaches it, so ANY file in the repo can be created,
-modified or destroyed with no owner-path check whatsoever. Demonstrated accidentally the same
-day: `Tools/verify_notices.py` was deleted with `rm` while `Tools/` root was not in the active
-claim's `owner_path`, and nothing objected — while the very next `Edit` to
-`docs/contracts/testing.md` was correctly refused. The mechanical enforcement CLAUDE.md
-advertises for law 5 therefore only covers the paths an agent happens to reach with the file
-tools. Closing it means either hooking `Bash` and parsing the command, or accepting that law 5
-is advisory for anything shell-driven and saying so in CLAUDE.md rather than implying it is
-enforced.
+modified or destroyed with no owner-path check whatsoever. Demonstrated accidentally on 4 Aug
+2026: a file under `Tools/` was deleted with `rm` while `Tools/` root was not in the active
+claim's `owner_path`, and nothing objected — while the very next `Edit`, to a path in the same
+situation, was correctly refused. The mechanical enforcement CLAUDE.md advertises for law 5
+therefore only covers the paths an agent happens to reach with the file tools.
 
-**2. Rung 2 is currently BROKEN and will fail on a missing file.**
-`Tools/verify_notices.py` was deleted (founder direction, R41 removal) but
-`docs/contracts/testing.md:75` still lists it as a rung-2 grep gate. That edit was blocked by
-the owner-path guard and was never made. Until `docs/contracts/testing.md` drops that row, a
-rung-2 run fails because the script is absent — which reads as a gate failure rather than as a
-deliberate removal. Two further stale references survive in `docs/ui/ASSET-METHODS.md:136` and
-`docs/ui/ue-frontend/STRUCTURE.md:203`; both are prose, and both are outside the claim too.
+Closing it means either hooking `Bash` and parsing the command, or accepting that law 5 is
+advisory for anything shell-driven and saying so in CLAUDE.md rather than implying it is
+enforced. **The second option is honest and cheap; the first is the only one that is actually a
+guard.** Worth deciding rather than leaving, because the current state reads as enforcement to
+anyone who has not tested it.
 
-**Also gone with the board, and worth knowing:** `TICKET_BP63_ICONS_PATH_CONFLICT.md` existed
-solely to resolve a hard-coded glob inside `verify_notices.py`. With that script deleted the
-ticket was moot, so nothing is lost by its deletion — but the underlying `Content/UI/Icons`
-path convention it documented is now recorded nowhere except the two `README.md` files.
+**Second-order note.** The same day, a stale claim naming three deleted tickets was still gating
+live edits — the claim file outlives the tickets it names, and nothing expires it. If law 5 stays
+mechanical, claim lifecycle needs an answer too: a claim whose ticket no longer exists should
+either fail loudly or clear itself, not silently keep enforcing a dead packet's boundaries.
