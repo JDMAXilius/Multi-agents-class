@@ -32,7 +32,12 @@ public class Breachpoint : ModuleRules
 			"SlateCore",
 			"CommonUI",
 			"CommonInput",
-			"ModelViewViewModel"
+			"ModelViewViewModel",
+			// DeveloperSettings added 3 Aug 2026 (BP78): UI/Loading/BRLoadingScreenSettings.h
+			// derives UDeveloperSettings so the loading screen's knobs appear under Project
+			// Settings > Game rather than only in an ini nobody opens. PUBLIC because that
+			// header is included by the subsystem's own public header's consumers.
+			"DeveloperSettings"
 		});
 
 		// OnlineSubsystem is the API surface; the Steam *implementation* is selected by
@@ -50,7 +55,13 @@ public class Breachpoint : ModuleRules
 			// mode is invisible until an FX asset exists, which is later than anyone will look.
 			// PRIVATE, not Public: no public header names a Niagara type (BRGameplayCues.h
 			// forward-declares only UFXSystemAsset), so no dependent module needs the include path.
-			"Niagara"
+			"Niagara",
+			// MoviePlayer added 3 Aug 2026 (BP78): UI/Loading/BRLoadingScreenSubsystem.cpp calls
+			// GetMoviePlayer()->SetupLoadingScreen. It is the ONLY thing that renders while the
+			// game thread is blocked loading a map -- a UMG widget on the viewport draws nothing
+			// during that window, which is the window a loading screen exists to cover.
+			// PRIVATE: no public header names an IGameMoviePlayer type.
+			"MoviePlayer"
 		});
 
 		PublicIncludePaths.AddRange(new string[] {

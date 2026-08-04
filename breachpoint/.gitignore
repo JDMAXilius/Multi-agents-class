@@ -50,3 +50,15 @@ Tools/gen_ui/quarantine/
 
 # macOS Finder droppings inside Content/ - never assets.
 .DS_Store
+
+# Bulk local-only media. These are engine/marketplace source assets and rendered
+# video, not authored Breachpoint work: 460MB that would eat the LFS quota and
+# that anyone can re-add from the engine or the render pipeline. Kept local until
+# a real asset-hosting story exists.
+Content/Assets/LevelVisuals/
+Content/Assets/Audio/
+Content/Movies/
+
+# Depends on Content/Assets/LevelVisuals above — would be a broken-reference map
+# on a fresh clone. Lands when its dependencies do.
+Content/Maps/FrontendTestMap.umap

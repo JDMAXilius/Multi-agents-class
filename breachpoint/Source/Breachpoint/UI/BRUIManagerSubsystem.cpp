@@ -424,6 +424,67 @@ UBRActivatableWidget* UBRUIManagerSubsystem::ShowMainMenu(ULocalPlayer* LocalPla
 	return Pushed;
 }
 
+namespace BRUIManagerConsole
+{
+	/**
+	 * `BR.ShowSettings` -- push the settings screen for the first local player.
+	 *
+	 * WHY A CONSOLE COMMAND EXISTS AT ALL. Nothing in the front end navigates to settings yet
+	 * (the main menu has no settings row wired), so without this the screen is reachable only
+	 * from C++ that does not exist. That makes it unverifiable: `ui-presentation` §11 requires a
+	 * screen be RENDERED and looked at, and "it compiles" is not that.
+	 *
+	 * It is a development affordance, not a shipping entry point. When the main menu grows a
+	 * settings row it calls `ShowSettings` directly and this stays as the debug path.
+	 *
+	 * `FAutoConsoleCommandWithWorld` gives the world, which is the only way to find the local
+	 * player without reaching for a global.
+	 */
+	static FAutoConsoleCommandWithWorld GShowSettingsCmd(
+		TEXT("BR.ShowSettings"),
+		TEXT("Push the Breachpoint settings screen for the first local player."),
+		FConsoleCommandWithWorldDelegate::CreateStatic([](UWorld* World)
+		{
+			if (!World)
+			{
+				return;
+			}
+
+			UBRUIManagerSubsystem* Manager = UBRUIManagerSubsystem::Get(World);
+			ULocalPlayer* LocalPlayer = World->GetFirstLocalPlayerFromController();
+
+			if (!Manager || !LocalPlayer)
+			{
+				UE_LOG(LogTemp, Warning,
+					TEXT("BR.ShowSettings: no UI manager or no local player in this world."));
+				return;
+			}
+
+			// The layout is created per local player on join; without it there is no layer to
+			// push onto and the push would silently no-op.
+			if (!Manager->GetRootLayout(LocalPlayer))
+			{
+				Manager->CreateLayoutForLocalPlayer(LocalPlayer);
+			}
+
+			if (!Manager->ShowSettings(LocalPlayer))
+			{
+				UE_LOG(LogTemp, Warning,
+					TEXT("BR.ShowSettings: push returned null. Check UBRUISettings::SettingsScreenClass ")
+					TEXT("in Config/DefaultGame.ini."));
+			}
+		}));
+}
+
+UBRActivatableWidget* UBRUIManagerSubsystem::ShowSettings(ULocalPlayer* LocalPlayer)
+{
+	// Layer.Menu, not Layer.Modal. Settings is a full navigation LEVEL -- it takes exclusive
+	// Menu input and claims the back action -- whereas Layer.Modal is for the confirm prompts
+	// it raises ON TOP of itself. Pushing it to Modal would put the discard confirm on the same
+	// layer as the thing it is asking about.
+	return PushWidgetToLayer(LocalPlayer, FBRUITags::Get().Layer_Menu, UBRUISettings::Get().SettingsScreenClass);
+}
+
 UBRActivatableWidget* UBRUIManagerSubsystem::ShowDeathOverlay(ULocalPlayer* LocalPlayer)
 {
 	return PushWidgetToLayer(LocalPlayer, FBRUITags::Get().Layer_GameMenu, UBRUISettings::Get().DeathOverlayClass);

@@ -67,18 +67,30 @@ enum class EBRHighlightButtonType : uint8
  * THE STATE MODEL, which is the whole component. COMPONENT-SPECS Sec 1 -- "Idle -> Hover is an
  * INVERSION, not a highlight. That single rule explains most of the file." Three things move
  * together and nothing else does:
- *   1. the fill plate goes from nothing to solid white (`SurfaceInverted`),
+ *   1. the fill plate goes from nothing to THE TYPE'S ACCENT (see `ResolveInvertedFillToken`),
  *   2. the label goes black (`TextInverted`),
  *   3. the border's bottom line goes 0.3 -> 1.0, i.e. `SetEdgeDimmed(Bottom, false)`.
  * It is implemented as ONE state (`ApplyInvertedState`) that hover and selection both route
  * through -- not as a tint applied at two call sites that will drift.
  *
- * ACCENT GAP — CLOSED. The old claim here (that neither accent existed in the token system)
- * went stale when the token pass landed `AccentEvent` and `AccentPremium` in `BR::Tokens` and
- * `EBRUIColorToken` (CPP-AUDIT caught the stale comment before it re-opened a ticket). What
- * remains true: `ResolveIdleFillToken` still returns `None` for
- * Event and Premium and they render as Main. That is a stated, greppable gap -- adding the hex
- * here would fork the palette in the one place nobody would think to look for it.
+ * THE HOVER PLATE IS NOT WHITE, AND THIS FILE USED TO SAY IT WAS. The old model here read "the
+ * fill plate goes from nothing to solid white (`SurfaceInverted`)". Measured against the design
+ * file 4 Aug 2026 (`Content/UI/Components/Buttons/Assets/01-HighlightButton.md`, Figma set
+ * `12:1194`, all 13 variants), that is true for exactly ONE type -- `Boring` -- and wrong for the
+ * other five: hover fills with the type's own accent, `#2ec3e5` Main, `#ff5c00` Event, `#ffc11c`
+ * Premium. Photo Button follows Main. The white rule was presumably generalised from the one
+ * variant that has no accent.
+ *
+ * `UBRMenuRow` REALLY DOES INVERT TO WHITE and its doc is correct. Two components, two rules --
+ * do not unify them on the assumption that "inversion" means one thing.
+ *
+ * ACCENT GAP — CLOSED FOR HOVER, STILL OPEN FOR IDLE. `AccentEvent` / `AccentPremium` /
+ * `AccentHighlight` exist in `BR::Tokens` and their hex matches the measured file exactly, so the
+ * hover half needs no new token and forks no palette. IDLE is a different shape of problem: the
+ * file paints it with THREE STACKED PAINTS -- `#000000@0.8`, then a linear gradient
+ * `#000000@0.3 -> accent` at `@0.8`, then `#000000@0.2` -- which a flat `SetColorAndOpacity` on a
+ * `UImage` cannot express at all. `ResolveIdleFillToken` therefore still returns `None`; closing
+ * it needs a gradient brush or material, not another enum value.
  *
  * NO GRAPH NODES: transitions are driven from C++; the WBP contributes layout plus an OPTIONAL
  * `BindWidgetAnim` timeline that C++ plays. `ui-presentation` Sec 11 wants a WBP with zero graph
@@ -151,8 +163,18 @@ protected:
 
 	void ApplyButtonType();
 
-	/** Type -> idle fill token. See the ACCENT GAP note in the class doc for Event / Premium. */
+	/** Type -> idle fill token. See the ACCENT GAP note in the class doc for why this is `None`. */
 	EBRUIColorToken ResolveIdleFillToken() const;
+
+	/**
+	 * Type -> HOVER fill token. The measured accent per type, not white -- see the class doc.
+	 *
+	 * This replaced an `InvertedFillToken` UPROPERTY that defaulted to `SurfaceInverted`. A
+	 * details-panel field cannot be right here: the correct value is a FUNCTION OF `ButtonType`,
+	 * so an editable one is just an invitation to author the five wrong combinations, and a WBP
+	 * that set it would silently outrank the design system. One owner, in code.
+	 */
+	EBRUIColorToken ResolveInvertedFillToken() const;
 
 	// ---------------------------------------------------------------------------------------
 	// BindWidget contract -- the WBP must use these exact names. Figma layer -> UMG name:
@@ -192,8 +214,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Breachpoint|UI")
 	EBRHighlightButtonType ButtonType = EBRHighlightButtonType::Main;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Breachpoint|UI")
-	EBRUIColorToken InvertedFillToken = EBRUIColorToken::SurfaceInverted;
+	// `InvertedFillToken` was REMOVED 4 Aug 2026. It defaulted to `SurfaceInverted` and was the
+	// mechanism by which this class rendered every hover white. Its replacement is
+	// `ResolveInvertedFillToken()`; see that declaration for why this is not an editable field.
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Breachpoint|UI")
 	EBRUIColorToken InvertedTextToken = EBRUIColorToken::TextInverted;

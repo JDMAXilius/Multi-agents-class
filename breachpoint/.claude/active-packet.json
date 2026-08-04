@@ -1,5 +1,5 @@
 {
-  "ticket": "BP60_ARCHITECT_BUDGET + BP61_UI_UNITS_UNDECLARED (window claim over UI-FONT-PASS-AND-PIE)",
+  "ticket": "BP60_ARCHITECT_BUDGET + BP61_UI_UNITS_UNDECLARED + BP78_FRONTEND_SYSTEMS_CLEANROOM (window claim over UI-FONT-PASS-AND-PIE)",
   "owner_path": [
     "Content/UI/",
     "docs/ui/receipts/",
@@ -8,10 +8,15 @@
     "BREACHPOINT-ARCHITECTURE.md",
     "docs/DECISIONS-OWED.md",
     "Config/DefaultGame.ini",
-    "Source/Breachpoint/UI/HUD/BREquipmentTray.h"
+    "Config/DefaultEngine.ini",
+    "Source/Breachpoint/UI/",
+    "Source/Breachpoint/Tests/",
+    "Source/Breachpoint/Breachpoint.Build.cs",
+    "Breachpoint.uproject",
+    "THIRD-PARTY-NOTICES.md"
   ],
-  "goal": "BP60: parse the budget from the doc instead of hard-coding 43/44, and rule on nesting depth. BP61: declare BRRootLayout + BRUISettings, exclude BRUITypes + BRCombatCurves by name.",
+  "goal": "BP60: parse the budget from the doc instead of hard-coding 43/44, and rule on nesting depth. BP61: declare BRRootLayout + BRUISettings, exclude BRUITypes + BRCombatCurves by name. BP78: clean-room the settings registry, key remapping and loading-screen systems as BR C++ (founder ruling, R41) -- no third-party code or content adopted.",
   "driver": "lead (sole editor driver, R29.2)",
   "claimed_utc": "2026-08-03",
-  "amended": "R31 additive union, read-modify-write. The first three paths are UI-FONT-PASS-AND-PIE's and are carried forward UNCHANGED - that packet's font pass landed in 271c7af but its PIE-capture half was never run, so its lane stays open and must not be confined out from under it. Added Tools/architect/ (BP60) plus two EXACT-FILE grants for BP61 rather than a docs/ prefix, because docs/ would admit docs/contracts/ (BP16's) and docs/ui/ (the UI lane's). R31's own warning applies to this file: a union weakens confinement to zero inside the union, so three lanes now share one window and only discipline separates them."
+  "amended": "R31 additive union, read-modify-write, SECOND amendment. The first seven paths are carried forward UNCHANGED from the BP60/BP61/UI-FONT-PASS window - that packet's PIE-capture half was never run, so its lane stays open and must not be confined out from under it. Added for BP78: Source/Breachpoint/UI/ (the new Settings/ and Loading/ trees plus the Components/ and Screens/ additions; this SUPERSEDES the earlier exact-file grant for UI/HUD/BREquipmentTray.h, which it contains), Source/Breachpoint/Tests/ (the Breachpoint.Sim.Settings spec), and two EXACT-FILE grants - Breachpoint.Build.cs for the new module deps and Breachpoint.uproject for the MoviePlayer plugin state. Config/DefaultEngine.ini added on a THIRD pass: UBRGameUserSettings is engaged by [/Script/Engine.Engine] GameUserSettingsClassName and Enhanced Input rebinding needs bEnableUserSettings -- both are config-only seams with no C++ substitute, so the alternative was landing two systems that compile and are unreachable. THIRD-PARTY-NOTICES.md is claimed but expected to go UNTOUCHED: R41's whole point is that nothing third-party lands, so a diff there is the signal that the clean-room boundary was crossed. R31's own warning applies with more force than before: four lanes now share one window and only discipline separates them."
 }

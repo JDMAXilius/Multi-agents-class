@@ -1,0 +1,1 @@
+# RECEIPT — texture import · 2026-08-04T05:23:39.006892+00:00

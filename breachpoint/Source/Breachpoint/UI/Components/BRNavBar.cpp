@@ -37,21 +37,24 @@ void UBRNavTab::NativeOnInitialized()
 		// COMPONENT-SPECS Sec 3: a closed RECTANGLE -- all four edges, none dimmed, full height.
 		// This is the one place in the front end where the border is NOT the menu row's four
 		// partial lines, so it is set from C++ rather than trusting a WBP default.
-		FBRHairlineStyle Style = Border->GetHairlineStyle();
-		Style.Edges = static_cast<int32>(EBRBorderEdge::Top)
+		// Named BorderStyle, not Style: `UCommonButtonBase` already has a member called `Style`
+		// and a local of that name shadows it (C4458, which is an error under this project's
+		// warning level). `UBRMenuRow::NativeOnInitialized` uses the same BorderStyle spelling.
+		FBRHairlineStyle BorderStyle = Border->GetHairlineStyle();
+		BorderStyle.Edges = static_cast<int32>(EBRBorderEdge::Top)
 			| static_cast<int32>(EBRBorderEdge::Bottom)
 			| static_cast<int32>(EBRBorderEdge::Left)
 			| static_cast<int32>(EBRBorderEdge::Right);
-		Style.DimmedEdges = static_cast<int32>(EBRBorderEdge::None);
-		Style.StrokeToken = StrokeToken;
-		Style.FillToken = EBRUIColorToken::None;
-		Style.SideTickLength = 0.0f;
+		BorderStyle.DimmedEdges = static_cast<int32>(EBRBorderEdge::None);
+		BorderStyle.StrokeToken = StrokeToken;
+		BorderStyle.FillToken = EBRUIColorToken::None;
+		BorderStyle.SideTickLength = 0.0f;
 
 		// EBRStrokeWeight::Focus (3px) landed with the token pass; the "not expressible" era is
 		// over. Inactive still reads as opacity 0.6 (COMPONENT-SPECS Sec 3), so the weight does
 		// not swap per state -- the active tab's 3px IS the authored difference.
-		Style.Weight = EBRStrokeWeight::Focus;
-		Border->SetHairlineStyle(Style);
+		BorderStyle.Weight = EBRStrokeWeight::Focus;
+		Border->SetHairlineStyle(BorderStyle);
 	}
 
 	if (Icon)

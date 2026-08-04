@@ -78,6 +78,9 @@ public:
 
 	UBRActivatableWidget* ShowMainMenu(ULocalPlayer* LocalPlayer);
 
+	/** Pushes the settings screen to `Layer.Menu`. See the .cpp for why not `Layer.Modal`. */
+	UBRActivatableWidget* ShowSettings(ULocalPlayer* LocalPlayer);
+
 	UBRActivatableWidget* ShowDeathOverlay(ULocalPlayer* LocalPlayer);
 
 	UBRActivatableWidget* ShowCarnageReport(ULocalPlayer* LocalPlayer);

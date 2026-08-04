@@ -91,7 +91,13 @@ class MCP:
 class Receipt:
     def __init__(self, path: Path, argv: str, plan_digest: str):
         path.parent.mkdir(parents=True, exist_ok=True)
-        self.f = path.open("w", buffering=1)          # line buffered, per R37
+        # encoding="utf-8" is NOT optional and NOT cosmetic. `Path.open` defaults to the
+        # LOCALE encoding, which on a stock Windows box is cp1252 — and this receipt's very
+        # first heading contains an em dash, with a `→` on every asset line after it. The run
+        # therefore died with UnicodeEncodeError partway through the header on any machine
+        # that had not set PYTHONUTF8, AFTER the plan had validated and the editor connection
+        # was live. Latent because it depends on the host locale, not on anything in the plan.
+        self.f = path.open("w", buffering=1, encoding="utf-8")   # line buffered, per R37
         self.path = path
         self.findings: list[tuple[str, str]] = []
         self.w(f"# RECEIPT — WBP generator · {datetime.now(timezone.utc).isoformat()}")

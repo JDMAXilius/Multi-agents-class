@@ -31,23 +31,47 @@ void UBRHighlightButton::NativeOnInitialized()
 
 EBRUIColorToken UBRHighlightButton::ResolveIdleFillToken() const
 {
+	// STILL `None` FOR EVERY TYPE, and now for a measured reason rather than a missing token.
+	// The design file paints idle with THREE STACKED PAINTS -- `#000000@0.8`, a linear gradient
+	// `#000000@0.3 -> accent` at `@0.8`, and `#000000@0.2` on top. `SetColorAndOpacity` applies a
+	// single flat tint to one `UImage` and cannot express that stack, so returning any solid token
+	// here would draw a flat plate the reference does not have. Closing this needs a gradient brush
+	// or a material on `Fill`, which is a WBP/asset change, not an enum value.
+	// Measurement: Content/UI/Components/Buttons/Assets/01-HighlightButton.md.
+	return EBRUIColorToken::None;
+}
+
+EBRUIColorToken UBRHighlightButton::ResolveInvertedFillToken() const
+{
+	// Measured 4 Aug 2026 against Figma set `12:1194`, all 13 variants. The token hex matches the
+	// file exactly in all three accent cases -- AccentHighlight #2EC3E5, AccentEvent #FF5C00,
+	// AccentPremium #FFC11C -- so nothing is forked and no new token is owed.
 	switch (ButtonType)
 	{
 	case EBRHighlightButtonType::Event:
+		return EBRUIColorToken::AccentEvent;
+
 	case EBRHighlightButtonType::Premium:
-		// ACCENT GAP -- see the class doc. COMPONENT-SPECS Sec 8 measures `#ff5c00` (event) and
-		// the `Premium Yellow` variable `#ffc11c`. Neither is in EBRUIColorToken or BR::Tokens,
-		// and both of those files belong to other lanes. Event and Premium therefore render as
-		// Main today. When the styles lane adds the tokens this switch is the ONLY edit.
-		return EBRUIColorToken::None;
+		return EBRUIColorToken::AccentPremium;
+
+	case EBRHighlightButtonType::Boring:
+		// The ONE type that really does invert to white. The old white-for-everything rule was
+		// almost certainly generalised from this variant.
+		return EBRUIColorToken::SurfaceInverted;
+
+	case EBRHighlightButtonType::Disabled:
+		// Measured hover is `#ffffff@0.3`. There is no 0.3-alpha white token (White20 is 0.2,
+		// White50 is 0.5) and inventing one here would fork the palette in the one file nobody
+		// greps. SurfaceInverted is returned and `ApplyButtonType`'s existing `DisabledOpacity`
+		// (0.5) dims the whole widget, landing at white@0.5 against a measured 0.3.
+		// KNOWN, SMALL, AND DELIBERATE -- filed rather than papered over.
+		return EBRUIColorToken::SurfaceInverted;
 
 	case EBRHighlightButtonType::Main:
-	case EBRHighlightButtonType::Disabled:
-	case EBRHighlightButtonType::Boring:
 	case EBRHighlightButtonType::PhotoButton:
 	default:
-		// COMPONENT-SPECS Sec 1: idle has no fill at all. The plate exists only to be inverted.
-		return EBRUIColorToken::None;
+		// Photo Button follows Main in the file: same accent, same bottom line.
+		return EBRUIColorToken::AccentHighlight;
 	}
 }
 
@@ -101,10 +125,10 @@ void UBRHighlightButton::ApplyInvertedState(bool bInverted, bool bPlayAnimation)
 	bIsInverted = bInverted;
 
 	// COMPONENT-SPECS Sec 1: "Idle -> Hover is an INVERSION, not a highlight." Three things, one
-	// state. 1/3 -- the plate goes solid white.
+	// state. 1/3 -- the plate goes to THE TYPE'S ACCENT (white only for Boring).
 	if (Fill)
 	{
-		const EBRUIColorToken FillToken = bInverted ? InvertedFillToken : ResolveIdleFillToken();
+		const EBRUIColorToken FillToken = bInverted ? ResolveInvertedFillToken() : ResolveIdleFillToken();
 		Fill->SetColorAndOpacity(BRUI::ResolveColorToken(FillToken));
 	}
 

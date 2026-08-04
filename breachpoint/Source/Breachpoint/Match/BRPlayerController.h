@@ -33,7 +33,14 @@ protected:
 	// unconditionally; the touch split they came from is gone.
 	UPROPERTY(EditAnywhere, Category="Input|Input Mappings")
 	TArray<UInputMappingContext*> AdditionalMappingContexts;
+	/** Type of bullet counter UI widget to spawn */
+	UPROPERTY(EditAnywhere, Category="Shooter|UI")
+	TSubclassOf<UUserWidget> HUDUIClass;
 
+	/** Pointer to the bullet counter UI widget */
+	UPROPERTY()
+	TObjectPtr<UUserWidget> HUDUI;
+	
 	// Ability verbs. The pawn owns Move and Look only; everything that routes to the ASC is
 	// bound here because the controller outlives the pawn across respawns.
 	UPROPERTY(EditDefaultsOnly, Config, Category="Input|Abilities")

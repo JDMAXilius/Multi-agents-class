@@ -78,7 +78,7 @@ preflight check catches: check 6 measures RGB SPREAD, and black's spread is 0.
 """
 from __future__ import annotations
 
-import argparse, json, re, shutil, subprocess, sys, tempfile
+import argparse, json, os, re, shutil, subprocess, sys, tempfile
 from pathlib import Path
 
 from PIL import Image
@@ -111,6 +111,24 @@ CHROME_CANDIDATES = [
         "Library/Caches/ms-playwright/chromium*/chrome-*/chrome-headless-shell")),
     *sorted(Path.home().glob(
         "Library/Caches/ms-playwright/chromium*/*/Chromium.app/Contents/MacOS/Chromium")),
+
+    # WINDOWS, added 4 Aug 2026. The list above is macOS-only and the `shutil.which` fallback
+    # does not help either: Chrome and Edge are not on PATH on a stock Windows box, so
+    # `--probe` reported "no Chrome/Chromium binary found" on a machine that had a perfectly
+    # good Chromium installed. That left ZERO working backends here — cairosvg installs from
+    # pip but cannot load `libcairo-2.dll`, and rsvg/qlmanage/sips are all Unix.
+    #
+    # MSEDGE COUNTS. Edge IS Chromium and supports the same `--headless --screenshot` and
+    # `--default-background-color=00000000` flags, which is the flag that keeps the export
+    # transparent. It ships on every Windows install, so it is the one backend that is always
+    # present here. It is listed last so a real Chrome still wins when both exist.
+    Path(os.environ.get("PROGRAMFILES", r"C:\Program Files")) / "Google/Chrome/Application/chrome.exe",
+    Path(os.environ.get("PROGRAMFILES(X86)", r"C:\Program Files (x86)")) / "Google/Chrome/Application/chrome.exe",
+    Path(os.environ.get("LOCALAPPDATA", "")) / "Google/Chrome/Application/chrome.exe",
+    *sorted(Path(os.environ.get("LOCALAPPDATA", "")).glob(
+        "ms-playwright/chromium*/chrome-win/chrome.exe")),
+    Path(os.environ.get("PROGRAMFILES", r"C:\Program Files")) / "Microsoft/Edge/Application/msedge.exe",
+    Path(os.environ.get("PROGRAMFILES(X86)", r"C:\Program Files (x86)")) / "Microsoft/Edge/Application/msedge.exe",
 ]
 
 
@@ -168,9 +186,59 @@ def _b_chrome(src: Path, w: int, h: int, out: Path) -> None:
     # resort by design. If the icon set grows past that, install librsvg
     # (`brew install librsvg`) and rsvg-convert takes over automatically: it is earlier in
     # the probe order and needs no other change here.
-    _run([_chrome_exe(), "--headless", "--disable-gpu", "--hide-scrollbars",
-          "--default-background-color=00000000", f"--window-size={w},{h}",
-          f"--screenshot={out.resolve()}", src.resolve().as_uri()])
+    # TWO PASSES, BLACK AND WHITE, AND THE ALPHA IS SOLVED FOR — not requested.
+    #
+    # `--default-background-color=00000000` is documented to give a transparent screenshot and
+    # DOES NOT on the Chromium available here (Edge 1xx on Windows, 4 Aug 2026): both the old
+    # and the new headless modes emit `mode=RGB`, no alpha channel at all, and
+    # `preflight_textures` correctly quarantined all six Button Border exports twice on exactly
+    # that. Relying on that flag is what makes this backend "the last resort by design".
+    #
+    # The recovery is exact and needs no flag to work. Render the SAME svg against black and
+    # against white. For each channel, compositing gives:
+    #     B = C·a + 0·(1−a) = C·a
+    #     W = C·a + 255·(1−a)
+    # so  W − B = 255·(1−a)  ->  a = 1 − (W−B)/255,  and  C = B/a  for a > 0.
+    # Two renders, one subtraction, one divide. It is correct for partial alpha too, which is
+    # what keeps the anti-aliased edges that `preflight_textures` checks for.
+    import numpy as np
+
+    exe = _chrome_exe()
+
+    # The background is set in CSS, NOT with `--default-background-color`. That flag is ignored
+    # outright by the Chromium here — proven, not assumed: rendering with `000000` and with
+    # `ffffff` produced BYTE-IDENTICAL images, so the recovered alpha came back 255 everywhere
+    # and preflight caught it as "background is baked in". A CSS `background` on <body> is
+    # honoured by every Chromium and is what the two passes actually differ by.
+    def _shot(bg: str, dest: Path, page: Path) -> None:
+        page.write_text(
+            "<!doctype html><html><body style=\"margin:0;padding:0;background:" + bg + "\">"
+            "<img src=\"" + src.resolve().as_uri() + "\" "
+            "style=\"display:block;width:" + str(w) + "px;height:" + str(h) + "px\">"
+            "</body></html>", encoding="utf-8")
+        _run([exe, "--headless=new", "--disable-gpu", "--no-sandbox", "--hide-scrollbars",
+              f"--window-size={w},{h}", f"--screenshot={dest.resolve()}", page.resolve().as_uri()])
+
+    with tempfile.TemporaryDirectory() as d:
+        on_black, on_white = Path(d) / "b.png", Path(d) / "w.png"
+        _shot("#000", on_black, Path(d) / "b.html")
+        _shot("#fff", on_white, Path(d) / "w.html")
+
+        B = np.asarray(Image.open(on_black).convert("RGB").resize((w, h)), dtype=np.float64)
+        W = np.asarray(Image.open(on_white).convert("RGB").resize((w, h)), dtype=np.float64)
+
+    # Max across channels: the three should agree, and taking the max means any single-channel
+    # rounding disagreement errs toward MORE opacity rather than punching a hole in the ink.
+    alpha = 255.0 - np.clip(W - B, 0.0, 255.0).max(axis=2)
+
+    # Un-premultiply. Where alpha is 0 the colour is unknowable and irrelevant; leave it black
+    # rather than dividing by zero and seeding NaNs into the PNG.
+    safe = np.where(alpha > 0.0, alpha, 1.0)[:, :, None]
+    rgb = np.clip(B * 255.0 / safe, 0.0, 255.0)
+    rgb = np.where(alpha[:, :, None] > 0.0, rgb, 0.0)
+
+    rgba = np.dstack([rgb, alpha]).round().astype(np.uint8)
+    Image.fromarray(rgba, mode="RGBA").save(out)
 
 
 BACKENDS = [

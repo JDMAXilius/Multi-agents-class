@@ -7,6 +7,7 @@
 #include "InputMappingContext.h"
 
 #include "AbilitySystem/BRAbilitySystemComponent.h"
+#include "Blueprint/UserWidget.h"
 #include "Camera/BRPlayerCameraManager.h"
 #include "Core/BRCore.h"
 #include "Core/BRGameplayTags.h"
@@ -61,7 +62,14 @@ void ABRPlayerController::SetupInputComponent()
 			Subsystem->AddMappingContext(CurrentContext, 0);
 		}
 	}
+	// create the bullet counter widget and add it to the screen
+	HUDUI = CreateWidget<UUserWidget>(this, HUDUIClass);
 
+	if (HUDUI)
+	{
+		HUDUI->AddToPlayerScreen(0);
+	}
+	
 	UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(InputComponent);
 	if (!EnhancedInput)
 	{

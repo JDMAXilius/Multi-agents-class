@@ -331,6 +331,15 @@ ASSET_FOLDER = {
     "WBP_Panel_Toast":         UI_SCREENS,
     "WBP_Screen_Scoreboard":   UI_SCREENS,
     "WBP_Screen_DeathRespawn": UI_SCREENS,
+    # The settings tier (BP78). WBP_SettingsRow is a COMPONENT even though only one screen
+    # instances it -- it is created at runtime from a soft class, never placed in a tree, so
+    # it is not "part of" the screen in any sense the folder convention recognises.
+    "WBP_SettingsRow":         UI_COMPONENTS,
+    "WBP_Modal_KeyRemap":      UI_SCREENS,
+    "WBP_Screen_Settings":     UI_SCREENS,
+    # Founder-requested, 4 Aug 2026. Its own folder because the Button Border texture set
+    # imported alongside it lives there too -- the widget and the art it may use stay together.
+    "WBP_ButtonDefault":       UI_COMPONENTS + "/Buttons",
 }
 
 
@@ -389,6 +398,75 @@ def canvas_stretch(left=0.0, top=0.0, right=0.0, bottom=0.0) -> dict:
                     "right": float(right), "bottom": float(bottom)},
         "anchors": {"minimum": {"x": 0.0, "y": 0.0}, "maximum": {"x": 1.0, "y": 1.0}},
         "alignment": {"x": 0.0, "y": 0.0}}}
+
+
+# ---------------------------------------------------------------------------
+# SHARED TREES
+# ---------------------------------------------------------------------------
+# A tree defined once and used by more than one asset. There is exactly one today and it
+# earns its keep: `WBP_MenuRow` and `WBP_SettingsRow` are the SAME widget tree under two
+# different C++ parents, because `UBRSettingsRow` adds behaviour (it holds a data object and
+# turns left/right into a value change) and not one new `BindWidget`. Copying the tree would
+# mean every future COMPONENT-SPECS correction had to be made twice, and the second copy is
+# the one that gets missed.
+
+MENU_ROW_TREE = [
+    {"name": "RootSizeBox", "class": SIZEBOX, "parent": None, "bind": True},
+
+    # Overlay child order IS z-order. Background line behind, then the plate that goes
+    # solid white on hover, then the strokes ON the plate, then the text on top.
+    {"name": "RowOverlay", "class": OVERLAY, "parent": "RootSizeBox", "slot": FILL},
+
+    # COMPONENT-SPECS §2 hover: "an extra Background Line (opacity 0.3) appears behind".
+    # Collapsed at idle by NativeOnInitialized — it exists to be shown, not to be seen.
+    {"name": "BackgroundLine", "class": RULE, "parent": "RowOverlay",
+     "slot": FILL, "bind": True},
+
+    # The plate. NO BRUSH: `ApplyInvertedState` drives it with SetColorAndOpacity from
+    # a token (None -> transparent idle, SurfaceInverted -> white on hover), so the
+    # engine's default white brush is the correct input to that tint. Authoring a brush
+    # here would be a second source for one colour.
+    {"name": "TextFrameFill", "class": IMAGE, "parent": "RowOverlay",
+     "slot": inset(2.0), "bind": True},
+
+    {"name": "Border", "class": HAIRLINE, "parent": "RowOverlay",
+     "slot": FILL, "bind": True},
+
+    # COMPONENT-SPECS §2: padding T0 R10 B0 L10, counterAxis CENTER. The gap 10 is
+    # expressed as padding on the children, not as a spacer (LAYOUT-DOCTRINE §1).
+    {"name": "TextFrame", "class": HBOX, "parent": "RowOverlay",
+     "slot": inset(2.0), "bind": True},
+
+    # Fill 1.0 so the label takes the row's real width and `Selection` hugs the right
+    # edge — which is what makes one row serve both a menu list and a settings list.
+    {"name": "Label", "class": TEXT, "parent": "TextFrame",
+     "slot": box_slot(fill=1.0, padding=margin(left=10.0), v="VAlign_Center"),
+     "font": "Label/Button", "bind": True},
+
+    # COMPONENT-SPECS §2: the right-aligned value on a settings row. Auto width, and
+    # `SetSelectionText` collapses it when empty so a menu row shows nothing here.
+    {"name": "Selection", "class": TEXT, "parent": "TextFrame",
+     "slot": box_slot(padding=margin(left=10.0, right=10.0), h="HAlign_Right",
+                      v="VAlign_Center"),
+     "font": "Label/Button", "bind": True},
+]
+
+
+def unbound(nodes: list[dict]) -> list[dict]:
+    """The same tree with every `bind` flag dropped, for a subclass that INHERITS its binds.
+
+    `required_bind_widgets` parses ONE header sliced to ONE class and cannot see a base
+    class's `BindWidget` members (the limitation `WBP_GearDetail` and `WBP_ItemTitle` already
+    document). So a WBP whose parent inherits all its binds must create the widgets BY EXACT
+    NAME but claim none of them: `bind: True` would be rejected as "declares no such
+    BindWidget", while omitting the widgets would fail the asset at LOAD time.
+
+    Naming them correctly satisfies UMG — `BindWidget` resolves by name at widget-compile,
+    not by anything this plan writes — and satisfies the validator. It is the documented
+    workaround, applied through a function so the next inherited-bind case does not re-derive
+    it from scratch.
+    """
+    return [{k: v for k, v in node.items() if k != "bind"} for node in nodes]
 
 
 # ---------------------------------------------------------------------------
@@ -486,46 +564,8 @@ PLAN = {
         "header": "Source/Breachpoint/UI/Components/BRMenuRow.h",
         "notes": "The 250x28 atom, Default type. Width unauthored (the row fills its rail); "
                  "height and the Type axis come from UBRMenuRow::ApplyRowType.",
-        "tree": [
-            {"name": "RootSizeBox", "class": SIZEBOX, "parent": None, "bind": True},
-
-            # Overlay child order IS z-order. Background line behind, then the plate that goes
-            # solid white on hover, then the strokes ON the plate, then the text on top.
-            {"name": "RowOverlay", "class": OVERLAY, "parent": "RootSizeBox", "slot": FILL},
-
-            # COMPONENT-SPECS §2 hover: "an extra Background Line (opacity 0.3) appears behind".
-            # Collapsed at idle by NativeOnInitialized — it exists to be shown, not to be seen.
-            {"name": "BackgroundLine", "class": RULE, "parent": "RowOverlay",
-             "slot": FILL, "bind": True},
-
-            # The plate. NO BRUSH: `ApplyInvertedState` drives it with SetColorAndOpacity from
-            # a token (None -> transparent idle, SurfaceInverted -> white on hover), so the
-            # engine's default white brush is the correct input to that tint. Authoring a brush
-            # here would be a second source for one colour.
-            {"name": "TextFrameFill", "class": IMAGE, "parent": "RowOverlay",
-             "slot": inset(2.0), "bind": True},
-
-            {"name": "Border", "class": HAIRLINE, "parent": "RowOverlay",
-             "slot": FILL, "bind": True},
-
-            # COMPONENT-SPECS §2: padding T0 R10 B0 L10, counterAxis CENTER. The gap 10 is
-            # expressed as padding on the children, not as a spacer (LAYOUT-DOCTRINE §1).
-            {"name": "TextFrame", "class": HBOX, "parent": "RowOverlay",
-             "slot": inset(2.0), "bind": True},
-
-            # Fill 1.0 so the label takes the row's real width and `Selection` hugs the right
-            # edge — which is what makes one row serve both a menu list and a settings list.
-            {"name": "Label", "class": TEXT, "parent": "TextFrame",
-             "slot": box_slot(fill=1.0, padding=margin(left=10.0), v="VAlign_Center"),
-             "font": "Label/Button", "bind": True},
-
-            # COMPONENT-SPECS §2: the right-aligned value on a settings row. Auto width, and
-            # `SetSelectionText` collapses it when empty so a menu row shows nothing here.
-            {"name": "Selection", "class": TEXT, "parent": "TextFrame",
-             "slot": box_slot(padding=margin(left=10.0, right=10.0), h="HAlign_Right",
-                              v="VAlign_Center"),
-             "font": "Label/Button", "bind": True},
-        ],
+        # SHARED WITH WBP_SettingsRow -- see MENU_ROW_TREE above. Edit it there, once.
+        "tree": MENU_ROW_TREE,
     },
 
     # ==================================================================
@@ -2147,6 +2187,189 @@ PLAN = {
             # and this class never touches it, so the band and the death screen cannot disagree.
             {"name": "MatchState", "class": wbp_class("WBP_MatchBand"), "parent": "BandsVBox",
              "slot": box_slot(padding=margin(top=146.0), h="HAlign_Center"), "bind": True},
+        ],
+    },
+
+    # ==================================================================
+    # THE SETTINGS TIER (BP78). Order: the row is a leaf, the rebind modal is a leaf, the
+    # screen hosts WBP_NavBar (declared far above) and therefore comes last.
+    #
+    # NOTHING HERE IS MEASURED FROM FIGMA, and that is stated rather than hidden. The
+    # settings screen has no frame in the reference file — SCREEN-MANIFEST does not carry
+    # one. Every number below is either a house constant already used elsewhere in this
+    # plan (the 16 content inset, the 40 row pitch) or a deliberate structural choice. When
+    # a settings frame IS measured, these are the numbers that get replaced.
+    # ==================================================================
+
+    # ------------------------------------------------------------------
+    # WBP_SettingsRow — the settings list row. SAME TREE AS WBP_MenuRow.
+    #
+    # `UBRSettingsRow` derives from `UBRMenuRow` and declares ZERO new BindWidgets: it adds
+    # a data object, a subscription and left/right handling. So this asset reuses
+    # MENU_ROW_TREE verbatim through `unbound()` — see that function for why the binds are
+    # dropped rather than repeated (inherited binds are invisible to the validator).
+    #
+    # It is a SEPARATE ASSET rather than a reuse of WBP_MenuRow because a WBP's parent class
+    # is fixed at creation: WBP_MenuRow's parent is UBRMenuRow, and nothing can retarget it
+    # to UBRSettingsRow without rebuilding it. The tree is shared; the asset cannot be.
+    # ------------------------------------------------------------------
+    "WBP_SettingsRow": {
+        "folder": ASSET_FOLDER["WBP_SettingsRow"],
+        "parent_class": "/Script/Breachpoint.BRSettingsRow",
+        "class": "UBRSettingsRow",
+        "header": "Source/Breachpoint/UI/Components/BRSettingsRow.h",
+        "notes": "MENU_ROW_TREE under a UBRSettingsRow parent. All eight binds are INHERITED "
+                 "from UBRMenuRow, so they are created by name and claimed by none.",
+        "tree": unbound(MENU_ROW_TREE),
+    },
+
+    # ------------------------------------------------------------------
+    # WBP_Modal_KeyRemap — the "press a key" capture. Pushes to Layer.Modal.
+    #
+    # FULL PAGE OVER A SCRIM, no box and no measured size: the screen exists to swallow every
+    # key press, so it must cover the viewport. An Overlay root anchored 0,0 -> 1,1 is that,
+    # at every aspect, without a number being typed.
+    #
+    # Both binds are OPTIONAL in C++ and are authored anyway — `UpdatePromptText` writes the
+    # instruction line AND every failure message ("that key cannot be bound", "already in
+    # use"). Omitting them would leave the player pressing keys at a modal that never says
+    # anything back, which is the exact failure the C++ was written to avoid.
+    # ------------------------------------------------------------------
+    "WBP_Modal_KeyRemap": {
+        "folder": ASSET_FOLDER["WBP_Modal_KeyRemap"],
+        "parent_class": "/Script/Breachpoint.BRScreen_KeyRemap",
+        "class": "UBRScreen_KeyRemap",
+        "header": "Source/Breachpoint/UI/Screens/BRScreen_KeyRemap.h",
+        "notes": "Full-page capture over a scrim. No size authored anywhere — the root "
+                 "Overlay stretches, and the centred VBox hugs its text.",
+        "tree": [
+            {"name": "ModalRoot", "class": OVERLAY, "parent": None},
+            # UNBOUND: UBRScreen_KeyRemap declares no Scrim member. It is here because a
+            # capture modal that does not visibly take over the screen reads as "nothing
+            # happened" while it silently eats every key.
+            {"name": "Scrim", "class": SCRIM, "parent": "ModalRoot", "slot": FILL},
+            {"name": "PromptVBox", "class": VBOX, "parent": "ModalRoot",
+             "slot": {"horizontalAlignment": "HAlign_Center",
+                      "verticalAlignment": "VAlign_Center", "padding": margin()}},
+            # The action being rebound, above the instruction — the player needs to know WHAT
+            # they are changing before they are told how.
+            {"name": "ActionText", "class": TEXT, "parent": "PromptVBox",
+             "slot": box_slot(padding=margin(bottom=16.0), h="HAlign_Center"),
+             "font": "Display/Heading 2", "bind": True},
+            {"name": "PromptText", "class": TEXT, "parent": "PromptVBox",
+             "slot": box_slot(h="HAlign_Center"),
+             "font": "Body/Flavor", "bind": True},
+        ],
+    },
+
+    # ------------------------------------------------------------------
+    # WBP_Screen_Settings — the settings screen. Pushes to Layer.Menu.
+    #
+    # HOSTS WBP_NavBar RATHER THAN AUTHORING A TAB STRIP. `UBRNavBar` already owns tab
+    # definitions, exclusive selection through a UCommonButtonGroupBase, and bumper
+    # navigation; a second strip here would fork the gamepad routing that component exists
+    # to own. This is why this entry sits at the END of PLAN — validate_all() requires a
+    # hosted asset to be built first, and WBP_NavBar is declared in the menu tier above.
+    #
+    # RowContainer IS EMPTY, exactly like WBP_Modal_Options's. `UBRScreen_Settings::RebuildRows`
+    # fills it from the soft row class on every tab change; a child authored here would be a
+    # widget the C++ neither owns nor clears.
+    #
+    # DescriptionText is a BindWidgetOptional that is authored: without it the screen renders
+    # but every setting's explanation — and, more importantly, every "why is this greyed out"
+    # reason — has nowhere to go.
+    # ------------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # WBP_ButtonDefault — the Menu Row `Type=Default` button. Founder-requested against
+    # Figma `12:724` (Menu Row), 4 Aug 2026.
+    #
+    # SAME TREE AS WBP_MenuRow, AND THAT IS THE POINT. `Type=Default` is not a different
+    # widget from a menu row — it IS the row's default type, one value on `EBRMenuRowType`,
+    # and `UBRMenuRow::ApplyRowType` drives the shell from it. So this shares `MENU_ROW_TREE`
+    # rather than copying it; a COMPONENT-SPECS correction lands in both or neither.
+    #
+    # BINDS ARE CLAIMED HERE, unlike `WBP_SettingsRow`. The parent is `UBRMenuRow` itself, which
+    # DECLARES all eight `BindWidget` members, so `required_bind_widgets` can see them and
+    # `bind: True` validates. `WBP_SettingsRow` had to use `unbound()` only because
+    # `UBRSettingsRow` inherits them.
+    #
+    # WHY A SECOND ASSET AT ALL, when WBP_MenuRow exists and is identical: a WBP's identity is
+    # its path, and screens reference it by soft class. Having a `WBP_ButtonDefault` under
+    # `Components/Buttons` lets button-shaped callers point at a button-shaped asset without
+    # every one of them having to know that a button is a menu row underneath. If that
+    # indirection stops earning its keep, delete this and repoint at `WBP_MenuRow` — nothing
+    # else changes, because the tree is the same object.
+    # ------------------------------------------------------------------
+    "WBP_ButtonDefault": {
+        "folder": ASSET_FOLDER["WBP_ButtonDefault"],
+        "parent_class": "/Script/Breachpoint.BRMenuRow",
+        "class": "UBRMenuRow",
+        "header": "Source/Breachpoint/UI/Components/BRMenuRow.h",
+        "notes": "Menu Row Type=Default as a standalone button asset, with the exported Button "
+                 "Border textures layered under the procedural hairline. 250x28 shell.",
+        # MENU_ROW_TREE plus four textured edge images.
+        #
+        # THE TEXTURES DO NOT REPLACE `Border`, AND THEY CANNOT. `UBRMenuRow` declares
+        # `Border` as a NON-OPTIONAL `BindWidget` typed `UBRHairlineBorder`; drop it and the
+        # widget fails to compile at asset load. So the exported art is layered as four extra
+        # UImages BENEATH the hairline (tree order is z-order in an Overlay), and the hairline
+        # is still what `NativeOnInitialized` drives. Making the texture the ONLY border is a
+        # C++ change to `UBRMenuRow`, not a WBP change.
+        #
+        # GEOMETRY CAVEAT, STATED BECAUSE IT IS VISIBLE: these pieces are authored for the
+        # 100x100 `Button Border` frame, not for a 250x28 row. `Top_Line`/`Bottom_Line` are
+        # BRACKETS (`M1 11V1H99V11` — down, across, down) whose corner stubs are 10px on a
+        # 100px frame; stretched across a 250x28 row they scale with it. The correct fix is to
+        # export Menu Row's OWN border pieces through the same pipeline, or to author these as
+        # nine-slice. Filed, not hidden.
+        "tree": MENU_ROW_TREE + [
+            {"name": "EdgeTop", "class": IMAGE, "parent": "RowOverlay",
+             "slot": {"horizontalAlignment": "HAlign_Fill", "verticalAlignment": "VAlign_Top",
+                      "padding": margin()},
+             "brush": brush("/Game/UI/Components/Buttons/Assets/Sides/Default_NoFade_Default__Top_Line", 100, 11)},
+            {"name": "EdgeBottom", "class": IMAGE, "parent": "RowOverlay",
+             "slot": {"horizontalAlignment": "HAlign_Fill", "verticalAlignment": "VAlign_Bottom",
+                      "padding": margin()},
+             "brush": brush("/Game/UI/Components/Buttons/Assets/Sides/Default_NoFade_Default__Bottom_Line", 100, 12)},
+            {"name": "EdgeLeft", "class": IMAGE, "parent": "RowOverlay",
+             "slot": {"horizontalAlignment": "HAlign_Left", "verticalAlignment": "VAlign_Center",
+                      "padding": margin()},
+             "brush": brush("/Game/UI/Components/Buttons/Assets/Sides/Default_NoFade_Default__Left_Line", 68, 2)},
+            {"name": "EdgeRight", "class": IMAGE, "parent": "RowOverlay",
+             "slot": {"horizontalAlignment": "HAlign_Right", "verticalAlignment": "VAlign_Center",
+                      "padding": margin()},
+             "brush": brush("/Game/UI/Components/Buttons/Assets/Sides/Default_NoFade_Default__Right_Line", 68, 2)},
+        ],
+    },
+
+    "WBP_Screen_Settings": {
+        "folder": ASSET_FOLDER["WBP_Screen_Settings"],
+        "parent_class": "/Script/Breachpoint.BRScreen_Settings",
+        "class": "UBRScreen_Settings",
+        "header": "Source/Breachpoint/UI/Screens/BRScreen_Settings.h",
+        "notes": "Title / tabs / row list / description. Hosts WBP_NavBar. Row list EMPTY — "
+                 "C++ builds it from the soft SettingsRowClass. No Figma frame exists yet.",
+        "tree": [
+            {"name": "ScreenRoot", "class": OVERLAY, "parent": None},
+            # UNBOUND: no member is declared for it. A full-bleed ground so the screen is not
+            # transparent over whatever is on Layer.Game beneath it.
+            {"name": "Ground", "class": SCRIM, "parent": "ScreenRoot", "slot": FILL},
+            # 16 is the house content inset, the same one WBP_Modal_Options spends.
+            {"name": "ContentVBox", "class": VBOX, "parent": "ScreenRoot",
+             "slot": inset(16.0)},
+            {"name": "TitleText", "class": TEXT, "parent": "ContentVBox",
+             "slot": box_slot(padding=margin(bottom=16.0)),
+             "font": "Display/Page Title", "bind": True},
+            # The tab strip. C++ calls SetTabs on it in NativeOnActivated, so it is authored
+            # with no tabs — the four come from the registry, never from this plan.
+            {"name": "TabBar", "class": wbp_class("WBP_NavBar"), "parent": "ContentVBox",
+             "slot": box_slot(padding=margin(bottom=16.0)), "bind": True},
+            # Fill 1.0: the row list takes everything the title, tabs and description leave.
+            {"name": "RowContainer", "class": VBOX, "parent": "ContentVBox",
+             "slot": box_slot(fill=1.0), "bind": True},
+            {"name": "DescriptionText", "class": TEXT, "parent": "ContentVBox",
+             "slot": box_slot(padding=margin(top=16.0)),
+             "font": "Body/Flavor", "bind": True},
         ],
     },
 }

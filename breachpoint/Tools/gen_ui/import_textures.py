@@ -107,7 +107,13 @@ def main() -> int:
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     rpath = REPO / "docs/ui/receipts" / f"import-textures-{stamp}.md"
     rpath.parent.mkdir(parents=True, exist_ok=True)
-    rc = rpath.open("w", buffering=1)     # flushed per line — R37
+    # encoding="utf-8" is REQUIRED. `Path.open` defaults to the locale encoding, which is
+    # cp1252 on a stock Windows box, and this receipt's own header contains an em dash and a
+    # `->` arrow. Without it the run dies with UnicodeEncodeError partway through the header,
+    # AFTER the editor connection is live and possibly after assets have been imported --
+    # i.e. it fails with the work half-done and no receipt saying so. Same latent bug as
+    # `build_wbp.py` had; fixed there 3 Aug 2026 and missed here.
+    rc = rpath.open("w", buffering=1, encoding="utf-8")     # flushed per line — R37
 
     def w(s=""):
         print(s)
