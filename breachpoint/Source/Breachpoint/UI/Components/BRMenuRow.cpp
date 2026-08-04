@@ -207,9 +207,15 @@ void UBRMenuRow::ApplyInvertedState(bool bInverted, bool bPlayAnimation)
 
 	bIsInverted = bInverted;
 
+	// MOTION-INTERACTION Sec 4.4: hover is folded into focus and the surviving hover value is a
+	// 90 ms colour fade whose stated job is "stop a mouse sweep from strobing". `InvertAnim` is
+	// where that lives; when it exists and will play, it owns the Hover scalar and C++ must not
+	// pre-set it. See ApplyPlateMaterialState's header note.
+	const bool bAnimationDrivesHover = (InvertAnim != nullptr) && bPlayAnimation;
+
 	// The material path first; it returns false unless this asset's plate carries one, and
 	// then the original tint runs unchanged. Two ways to reach the same measured states.
-	if (TextFrameFill && !ApplyPlateMaterialState(bInverted))
+	if (TextFrameFill && !ApplyPlateMaterialState(bInverted, bAnimationDrivesHover))
 	{
 		const EBRUIColorToken FillToken = bInverted ? InvertedFillToken : EBRUIColorToken::None;
 		TextFrameFill->SetColorAndOpacity(BRUI::ResolveColorToken(FillToken));
@@ -300,7 +306,7 @@ void UBRMenuRow::ApplyInversionToSubtree(UWidget* Root, const FSlateColor& InTex
 	}
 }
 
-bool UBRMenuRow::ApplyPlateMaterialState(bool bInverted)
+bool UBRMenuRow::ApplyPlateMaterialState(bool bInverted, bool bAnimationDrivesHover)
 {
 	if (!TextFrameFill)
 	{
@@ -327,9 +333,13 @@ bool UBRMenuRow::ApplyPlateMaterialState(bool bInverted)
 	// alpha is 0, so a white tint is invisible rather than wrong.
 	TextFrameFill->SetColorAndOpacity(BRUI::ResolveColorToken(InvertedFillToken));
 
-	// Binary today, which makes this pixel-identical to the tint path. The reason it exists
-	// is that a float can be eased and a token swap cannot -- see the header.
-	PlateMaterial->SetScalarParameterValue(PlateHoverParameterName, bInverted ? 1.0f : 0.0f);
+	// Set the scalar ONLY when no animation is going to. With `InvertAnim` present this would
+	// snap the plate to full and let the animation restart it from zero -- one flicker frame on
+	// every hover, and the kind of defect that reads as "the material is broken".
+	if (!bAnimationDrivesHover)
+	{
+		PlateMaterial->SetScalarParameterValue(PlateHoverParameterName, bInverted ? 1.0f : 0.0f);
+	}
 
 	// COMPONENT-SPECS Sec 2: pressed is the same plate as hover, so nothing drives this yet.
 	// Written anyway so the parameter is never left at a stale value from a previous state.

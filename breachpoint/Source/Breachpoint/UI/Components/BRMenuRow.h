@@ -226,8 +226,13 @@ protected:
 	 * path is untouched: this is additive, and an asset opts in purely by having
 	 * `M_UI_MenuRowPlate` as its brush. A `false` return is not a failure, it is "this asset
 	 * does it the other way", and the caller falls back to the tint.
+	 *
+	 * `bAnimationDrivesHover` IS THE HANDOFF, and without it the two fight. `InvertAnim` keys
+	 * the same `Hover` scalar; if C++ also snapped it to the target first, the plate would jump
+	 * to full and then animate from zero — a visible flicker on every hover. When an animation
+	 * is going to play, C++ sets the tint and the animation owns the scalar.
 	 */
-	bool ApplyPlateMaterialState(bool bInverted);
+	bool ApplyPlateMaterialState(bool bInverted, bool bAnimationDrivesHover);
 
 	// ---------------------------------------------------------------------------------------
 	// BindWidget contract. These names are parsed out of this header by the WBP generator and

@@ -48,9 +48,9 @@ ScalarParameter  Pressed  default 0     VectorParameter  PressedColor
 
 **Contrast with `UBRMenuRow`.** `ApplyInvertedState` swaps colours on widgets from C++, so hover
 is instant and binary — correct, and what COMPONENT-SPECS measures, but it cannot ease. A
-material taking `Hover` as a 0..1 scalar can tween over 120 ms for free, because the widget
-layer only has to move a float. If the inversion is ever asked to animate, this is the shape it
-should take, not a `WidgetAnimation` per row.
+material taking `Hover` as a 0..1 scalar can be eased, because the widget layer only has to move
+a float. That is exactly what `M_UI_MenuRowPlate` now does — see "Animating a material parameter
+from a widget" below for how the `WidgetAnimation` drives it and how the two avoid fighting.
 
 ### 2. `StaticSwitchParameter` compiles the unused branch OUT
 
@@ -131,3 +131,56 @@ AssetTools.delete(path)
 That is how `M_UI_RadialSweep` was confirmed to sweep **clockwise from 12 o'clock**, ending at
 ~126° at `Sweep=0.35`, with antialiased edges — a claim the build receipt explicitly could not
 make.
+
+---
+
+## Animating a material parameter from a widget
+
+The scalar is only half of it. A `Hover` parameter that C++ snaps 0→1 is still a step function —
+what makes it a *transition* is a `UWidgetAnimation` keying that scalar over time.
+
+**No MCP toolset can author an animation.** All 23 toolsets were checked: nothing in `UMGToolSet`
+or anywhere else creates a `UWidgetAnimation`, adds a track, or writes a key. This is Tier 4 hand
+work by design — `BREACHPOINT-AUTHORING-MATRIX.md` lists WBP "layout, anchors and **animation**
+only" as editor-authored. The generator builds the tree and the material; a human keys the curve.
+
+### The C++ side is already done
+
+`UBRMenuRow` declares `InvertAnim` as `BindWidgetAnimOptional` and `ApplyInvertedState` plays it
+forward on invert and reverse on release. Nothing needs writing for the animation to take effect —
+it starts working the moment an animation with that exact name exists in the asset.
+
+### The handoff, which is the part that bites
+
+If C++ sets the scalar **and** the animation keys it, they fight: C++ snaps the plate to full,
+then the animation restarts it from zero — one flicker frame on every hover, which reads as a
+broken material rather than a race.
+
+`ApplyPlateMaterialState(bInverted, bAnimationDrivesHover)` resolves it. When `InvertAnim` exists
+and will play, C++ sets the brush tint and **does not touch the scalar**; the animation owns it.
+When there is no animation, C++ sets it directly and the result is the binary snap. Both paths
+reach the same two measured states.
+
+### Authoring `InvertAnim` (editor, ~2 minutes)
+
+Timing is not a choice — `MOTION-INTERACTION.md` §4.4 and its proposal table give hover
+**90 ms [P]**, "colour-only… exists mainly to stop a mouse sweep from strobing", and §1 sets the
+authoring display rate to **30 fps / 30 ms per frame**. 90 ms is exactly **3 frames**.
+
+1. Open `WBP_ButtonDefault`. Animations panel → **+ Animation**, rename it **`InvertAnim`**
+   (exact — `BindWidgetAnim` resolves by name, like every other bind).
+2. Set the animation's display rate to **30 fps**.
+3. Select `TextFrameFill` in the hierarchy, then **+ Track → TextFrameFill**.
+4. On that track: **+ → Material Parameters** (UMG exposes brush material parameters as
+   `MovieSceneWidgetMaterialTrack`) → **Hover**.
+5. Key `Hover = 0` at frame 0 and `Hover = 1` at frame 3. Interpolation: the Standard curve
+   §2.1 defines; linear is defensible for 3 frames and should be said in the ticket Log if used.
+6. Compile and save.
+
+Nothing else changes. C++ already plays it, and the handoff already stops the two from fighting.
+
+### What to check afterwards
+
+A `WidgetAnimation` cannot be verified by read-back the way a property can — the generator does
+not write it and no audit reads it. This one is eyes-on: hover the row in PIE and confirm the
+plate fades in rather than popping, and that leaving it fades out rather than sticking.
