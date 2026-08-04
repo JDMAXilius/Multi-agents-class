@@ -560,11 +560,14 @@ def slider_body(static_value: bool = True) -> list[dict]:
     written to `Selection` by `RefreshFromSetting` — a hard-coded "50" beside a real value is a
     second number that never changes, which reads as a bug the first time a player drags it.
     """
+    # EMPTY IS NOT THE SAME AS UNSET. Leaving `properties` off entirely makes UMG fall back to
+    # its "Text Block" placeholder, which rendered verbatim beside every settings slider in PIE
+    # — caught on the first runtime test, invisible to every check before it. The value on a
+    # settings row is written to `Selection`, so this one stays blank on purpose.
     percent = {"name": "Percent", "class": TEXT, "parent": "TypeBody",
                "slot": box_slot(padding=margin(left=16.0), v="VAlign_Center"),
-               "font": "Body/Flavor"}
-    if static_value:
-        percent["properties"] = {"text": "50"}
+               "font": "Body/Flavor",
+               "properties": {"text": "50" if static_value else ""}}
     return [
         {"name": "TypeBody", "class": HBOX, "parent": "TextFrame",
          "slot": box_slot(padding=margin(left=25.0, right=10.0), h="HAlign_Right",

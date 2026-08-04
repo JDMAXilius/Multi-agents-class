@@ -1,6 +1,6 @@
 # Gotchas
 
-Eleven things that cost real time on this project. Read before your first build.
+Thirteen things that cost real time on this project. Read before your first build.
 
 ---
 
@@ -91,6 +91,24 @@ baked background is structurally impossible. Read the finding; do not obey the e
 It hooks `Edit|Write|MultiEdit|NotebookEdit`. A shell `rm`, `mv`, `cp` or `>` redirect walks
 straight past it with no owner-path check. If you are relying on law 5 to confine an agent, know
 that it confines only what that agent happens to do with the file tools.
+
+---
+
+## 12. An empty string is not the same as an absent one
+
+Omitting a node's `properties` entirely makes UMG fall back to its `"Text Block"` placeholder.
+Writing `{"text": ""}` gives you a genuinely blank widget. The settings slider shipped with
+`Text Block` rendered verbatim beside every value because the plan simply left the key off —
+invisible to the plan validator, invisible to the build receipt, invisible to the structural
+audit, and obvious within two seconds of running it.
+
+## 13. PIE input cannot be driven through the Slate inspector
+
+The observer sees editor chrome only. The game viewport's UMG tree does not surface, so there is
+no ref to click and `PressKey` goes to the focused *editor* widget — verified by diffing frames
+before and after: zero pixels changed. You can **launch** PIE, **run console commands** (via the
+editor's own Cmd box), and **screenshot** the result. You cannot hover a row or click a checkbox.
+Interaction claims need a human at the keyboard.
 
 ---
 

@@ -119,8 +119,30 @@ defect *visible*. Nobody was going to notice by looking.
 | Nine assets build and compile | yes — build receipts |
 | Match the measurements | yes — 8/8 data audit, read back from the editor |
 | Render correctly | six of eight, captured and looked at |
-| Work at runtime | **no** — nothing instances them in PIE yet |
+| Work at runtime | **partly** — see below |
 | Multiplayer | not applicable, not claimed |
 
 Sounds are unwired: `UBRButtonStyle_MenuRow` carries `PressedSlateSound` / `ClickedSlateSound` /
 `HoveredSlateSound`, and the project has no UI audio at all. Nothing was invented to fill it.
+
+---
+
+## The PIE run, and the defect only it could find
+
+`BR.ShowSettings` in a PIE session on `BR_Arena01`, driven through the editor's Cmd box. The
+settings screen pushed, built its rows, and **rendered all three typed bodies correctly** —
+Mouse Sensitivity and Field of View as sliders with a handle on the track, Invert Vertical Look
+and Damage Numbers as checkboxes, Colour Blind Mode with a dropdown caret. That is the shipped
+defect fixed and observed, not inferred.
+
+**It also immediately exposed a defect nothing else had caught.** Every settings slider rendered
+`Text Block` beside its value. The cause: `slider_body(static_value=False)` omitted the
+`properties` key rather than writing an empty string, so UMG fell back to its placeholder. The
+plan validated, the build receipt passed, the structural audit passed — because all three check
+that what you asked for was written, and nobody had asked for the right thing. Two seconds of
+running it was worth all of them.
+
+**What the PIE run could NOT establish:** hover inversion and click-to-toggle. The Slate
+inspector does not surface the game viewport's widget tree, so there is no widget to click, and
+`PressKey` reaches the editor rather than the game — verified by diffing frames, zero pixels
+changed. Those two claims still need a human at the keyboard.
