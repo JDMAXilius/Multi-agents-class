@@ -7,7 +7,8 @@
     "Tools/architect/",
     "BREACHPOINT-ARCHITECTURE.md",
     "docs/DECISIONS-OWED.md",
-    "Config/DefaultGame.ini"
+    "Config/DefaultGame.ini",
+    "Source/Breachpoint/UI/HUD/BREquipmentTray.h"
   ],
   "goal": "BP60: parse the budget from the doc instead of hard-coding 43/44, and rule on nesting depth. BP61: declare BRRootLayout + BRUISettings, exclude BRUITypes + BRCombatCurves by name.",
   "driver": "lead (sole editor driver, R29.2)",

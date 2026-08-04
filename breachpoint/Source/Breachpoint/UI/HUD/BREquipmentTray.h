@@ -97,8 +97,33 @@ protected:
 	 * second bar class in this folder -- the ring is a `UBRProgressBar` whose WBP fill brush is
 	 * radial.
 	 */
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Breachpoint|HUD")
+	/**
+	 * DEMOTED to Optional 3 Aug 2026, and the reason is a measurement, not a preference.
+	 * `HUD / Weapon Tray` (working file `yznvnVdOFDADaugZSeomfP`, node `24:35`, 240x90) draws
+	 * NO cooldown bar: its nine children are the two slot rects, their two counts, the
+	 * magazine / separator / reserve texts, the weapon silhouette and the tray rule. Required
+	 * here meant a 1:1 authoring of that symbol could not satisfy the contract -- the WBP
+	 * would fail at ASSET LOAD unless someone invented a position for a bar the design does
+	 * not have. Optional lets the measured tray build, and `ApplyGrappleState` already guards
+	 * every use on null, so nothing downstream changes.
+	 *
+	 * This does NOT say the grapple ring is cut. It says the ring is not in THIS symbol, and
+	 * a member whose art lives in a different frame should not block this one.
+	 */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Breachpoint|HUD")
 	TObjectPtr<UBRProgressBar> CooldownBar;
+
+	/**
+	 * The EQUIP slot's count -- node `24:39`, symbol-local (156, 4) 6x19, beside the GRENADE
+	 * slot's `24:37`. Added 3 Aug 2026 because the symbol measures a number this class had
+	 * nowhere to put: the tray could draw the EQUIP rectangle and then had to leave it empty.
+	 *
+	 * Optional, deliberately. The sim has ONE untyped equipment count today (R39 buckets the
+	 * five post-slice abilities), so a required member would force every author to bind a
+	 * number nothing publishes yet. When a producer exists it is one `SetEquipmentCount` away.
+	 */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Breachpoint|HUD")
+	TObjectPtr<UCommonTextBlock> EquipmentCountText;
 
 	/** Printed in the bar's readout while the ability is off cooldown. Display string only.
 	 *  EditDefaultsOnly, and note it has no designer preview path — it is applied on the
