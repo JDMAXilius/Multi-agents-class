@@ -316,7 +316,7 @@ later, and it breaks the moment a row is hidden.
 The highest-leverage single asset in the project. Its variant matrix is why `Settings` and
 `MatchComposer` are one screen each instead of N sub-screens.
 
-**Built.** The tree below is `Tools/gen_ui/wbp_plan.py`'s `WBP_MenuRow` entry, and it validates
+**Built.** The tree below is `mcp-ui/gen_ui/wbp_plan.py`'s `WBP_MenuRow` entry, and it validates
 against the header's `BindWidget` contract at plan time.
 
 ```
@@ -529,7 +529,7 @@ merge.
 |---|---|---|
 | `UBRHairlineBorder` + `UBRRule` | **complete**, C++, no asset owed | — |
 | `UBRMenuRow` C++ | **complete** | 0 — not compiled this session |
-| `WBP_MenuRow` plan | **written and validating** (`python3 Tools/gen_ui/wbp_plan.py` → `PLAN OK`) | 0 |
+| `WBP_MenuRow` plan | **written and validating** (`python3 mcp-ui/gen_ui/wbp_plan.py` → `PLAN OK`) | 0 |
 | `WBP_MenuRow` asset | **not built** — needs the editor MCP | — |
 
 **The plan validates the contract, not the asset.** `required_bind_widgets()` parses

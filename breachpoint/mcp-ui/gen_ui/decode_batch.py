@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Decode a batch of base64 PNGs exported from Figma into Content/UI/Icons/<family>/.
 
-    python3 Tools/gen_ui/decode_batch.py batch.json
+    python3 mcp-ui/gen_ui/decode_batch.py batch.json
 
 batch.json: [{"family": "Ranks", "name": "T_UI_Rank_01_Recruit", "b64": "..."}]
 

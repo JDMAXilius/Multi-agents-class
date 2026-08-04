@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Reject any UI texture that shipped with a baked-in background.
 
-    python3 Tools/gen_ui/check_transparency.py Content/UI/Icons
+    python3 mcp-ui/gen_ui/check_transparency.py Content/UI/Icons
 
 ASSET-PIPELINE.md §3: "Transparent background. No baked-in panel colour behind an icon."
 That rule exists because a baked background cannot be recoloured from the palette, cannot

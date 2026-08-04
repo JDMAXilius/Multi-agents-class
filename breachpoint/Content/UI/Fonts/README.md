@@ -10,7 +10,7 @@ Rajdhani Regular / SemiBold / Bold, Roboto Condensed Medium / Medium Italic / Se
 
 `FSlateFontInfo` resolves a weight by `TypefaceFontName`. **If that FName is not an entry in
 the composite font, Slate silently falls back to the first entry** — wrong weight, no error,
-no log line. So the entries are named exactly as `Tools/gen_ui/figma_tokens.json` names the
+no log line. So the entries are named exactly as `mcp-ui/gen_ui/figma_tokens.json` names the
 weight. Read back off the assets on 2026-08-02, verbatim:
 
 | Font asset | Figma weight | UE `TypefaceFontName` | FontFace asset |
@@ -34,7 +34,7 @@ rule the icons follow, and the one the importer already produces. Do not rename 
 
 ## How they got here
 
-`python3 Tools/gen_ui/import_fonts.py` — read its header first. The MCP surface has **no font
+`python3 mcp-ui/gen_ui/import_fonts.py` — read its header first. The MCP surface has **no font
 importer**; the editor's content-directory monitor turns a `.ttf` dropped in this folder into a
 `FontFace` (plus a junk one-entry `<stem>_Font` wrapper the script deletes). The script builds
 the composite fonts, then reads every typeface name back off the asset.

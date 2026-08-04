@@ -77,7 +77,7 @@ width on the SizeBox; any per-state colour (the button style owns idle/active).
 > `/Script/Breachpoint.BRNavTab`, header `Components/BRNavBar.h`, class `UBRNavTab` (the header
 > declares two classes — the `class_body` slice matters). Create `RootSizeBox`, `Border`
 > (HAIRLINE, FILL), `Label` (font `Label/Tab`, pad 13/5/5/7). Bind all three; omit `Icon` and
-> say why in the notes. `python3 Tools/gen_ui/wbp_plan.py` → PLAN OK, then `build_wbp.py`;
+> say why in the notes. `python3 mcp-ui/gen_ui/wbp_plan.py` → PLAN OK, then `build_wbp.py`;
 > receipt in `docs/ui/receipts/`. Done when the read-back tree matches the plan exactly.
 
 ---

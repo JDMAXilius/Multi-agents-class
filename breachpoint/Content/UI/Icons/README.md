@@ -5,7 +5,7 @@
 
 ## Why the folder name is a convention worth keeping
 
-Every icon brush in `Tools/gen_ui/wbp_plan.py` resolves against this path, and the generator's
+Every icon brush in `mcp-ui/gen_ui/wbp_plan.py` resolves against this path, and the generator's
 `texture_problem()` check verifies each one exists ON DISK at plan time. An icon imported
 somewhere else does not fail loudly — it produces a brushless `UImage`, which renders as a blank
 white rectangle (BP70 D2). Import icons here. Only here.

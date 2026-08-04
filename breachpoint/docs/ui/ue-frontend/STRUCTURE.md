@@ -202,7 +202,7 @@ to the critic — no diff, no merge, no grep").
 
 ## 7. `Content/UI/Icons/` is a load-bearing folder name
 
-Every icon brush in `Tools/gen_ui/wbp_plan.py` resolves against this exact path, and the
+Every icon brush in `mcp-ui/gen_ui/wbp_plan.py` resolves against this exact path, and the
 generator's `texture_problem()` check verifies each target exists on disk at plan time.
 
 **An icon imported anywhere else does not fail loudly — the plan SKIPS the brush with a note,

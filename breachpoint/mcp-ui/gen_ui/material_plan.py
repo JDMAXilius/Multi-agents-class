@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The committed plan half of the UI-material generator. Pure CPython — imports no engine.
 
-    python3 Tools/gen_ui/material_plan.py        # self-checks, prints the graph, exits non-zero on error
+    python3 mcp-ui/gen_ui/material_plan.py        # self-checks, prints the graph, exits non-zero on error
 
 Sibling of `wbp_plan.py`, and the same split for the same reason: this file is the
 reviewable R37.1 artifact — a material's node graph expressed as diffable text — and

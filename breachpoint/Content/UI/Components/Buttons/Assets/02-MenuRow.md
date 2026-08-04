@@ -158,4 +158,4 @@ a second pass with the 69-node hatch collapsed so it could not eat the budget ag
 |---|---|
 | Plates, borders, ticks, text, triangle, chevrons, checkbox, radio, slider track/handle | **None.** UMG draws all of it. `ui-presentation` §8: export nothing UMG can draw. |
 | `Highlight` diagonal hatch (Drop Down Active, Dig Down) | **Texture or material.** 69 line nodes; a tiling hatch is the correct form. |
-| `Icon` / `Revert` glyphs | Already the icon pipeline's job — `Art / UI Glyphs` page (`80:2`), `Tools/gen_ui/figma_export.py`. Not button assets. |
+| `Icon` / `Revert` glyphs | Already the icon pipeline's job — `Art / UI Glyphs` page (`80:2`), `mcp-ui/gen_ui/figma_export.py`. Not button assets. |

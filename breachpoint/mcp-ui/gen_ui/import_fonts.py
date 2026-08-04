@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build one composite Font asset per UI family, with the typeface names Figma uses.
 
-    python3 Tools/gen_ui/import_fonts.py [--receipts DIR]
+    python3 mcp-ui/gen_ui/import_fonts.py [--receipts DIR]
 
 Requires a LIVE editor with the MCP server. ONE DRIVER ONLY (R29.2) — two sessions
 writing font assets at once interleave with no transaction boundary and there is no

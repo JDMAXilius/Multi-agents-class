@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Import a folder of PNGs into UE as UI textures with the four settings that matter.
 
-    python3 Tools/gen_ui/import_textures.py Content/UI/Icons/Glyphs /Game/UI/Icons/Glyphs
+    python3 mcp-ui/gen_ui/import_textures.py Content/UI/Icons/Glyphs /Game/UI/Icons/Glyphs
 
 Requires a LIVE editor with the MCP server. ONE DRIVER ONLY (R29.2) — two sessions
 importing at once interleave with no transaction boundary and there is no rollback,

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Rasterise clean Figma SVGs into RGBA PNGs at an arbitrary scale. UE cannot import SVG.
 
-    python3 Tools/gen_ui/rasterize_svg.py Export/UI --scale 4 --out Content/UI/Icons
-    python3 Tools/gen_ui/rasterize_svg.py --selftest      # prove the backend, no assets needed
-    python3 Tools/gen_ui/rasterize_svg.py --probe         # just report which backends work
+    python3 mcp-ui/gen_ui/rasterize_svg.py Export/UI --scale 4 --out Content/UI/Icons
+    python3 mcp-ui/gen_ui/rasterize_svg.py --selftest      # prove the backend, no assets needed
+    python3 mcp-ui/gen_ui/rasterize_svg.py --probe         # just report which backends work
 
 WHY
 ---
@@ -29,7 +29,7 @@ renders at 76 and upsamples, and the blur is measurable (5980 partial-alpha pixe
 816 for a true 4x render of the same file).
 
 Every output is then handed to preflight_textures.preflight() — the same gate the import
-step uses, no second opinion. Failures go to Tools/gen_ui/quarantine/ with the reason
+step uses, no second opinion. Failures go to mcp-ui/gen_ui/quarantine/ with the reason
 beside them and never reach the output folder.
 
 ANTI-ALIASING IS NOT ALWAYS POSSIBLE
@@ -87,7 +87,7 @@ from clean_svg import SVG_OPEN, _attrs, _canvas
 from preflight_textures import MIN_AA_LEVELS, preflight
 
 REPO = Path(__file__).resolve().parents[2]
-QUARANTINE = REPO / "Tools/gen_ui/quarantine"
+QUARANTINE = REPO / "mcp-ui/gen_ui/quarantine"
 
 # A white checkmark on a 24 grid, inset far enough that edge clipping cannot confuse the
 # probe. At 4x it must land as 96x96 with clear corners.

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Prove the plan's logic with no engine, no editor, no MCP.
 
-    python3 Tools/gen_ui/selftest_no_editor.py
+    python3 mcp-ui/gen_ui/selftest_no_editor.py
 
 The point is the BindWidget cross-check: it must FAIL loudly when the plan and the C++
 header disagree. A validator that only ever passes is not a validator, so every negative

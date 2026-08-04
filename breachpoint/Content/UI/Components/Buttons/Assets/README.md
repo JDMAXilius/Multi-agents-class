@@ -20,9 +20,9 @@ variants across 5 sets, all captured.**
 page background into every export. Verified on `12:1205` (`Highlight Button / Idle / Main`): the
 component has **no fill** and a 2px empty margin at every corner, yet the returned PNG came back
 with all four corners fully opaque and an opaque share of **1.000** — a solid `#F5F5F5` plate. That
-is exactly the defect `Tools/gen_ui/figma_export.py` documents in its own docstring ("41 files with
+is exactly the defect `mcp-ui/gen_ui/figma_export.py` documents in its own docstring ("41 files with
 baked-in backgrounds that looked perfect in every viewer and were wrong only in engine"), and
-`Tools/gen_ui/check_transparency.py` exists to catch it. The probe was deleted rather than landed.
+`mcp-ui/gen_ui/check_transparency.py` exists to catch it. The probe was deleted rather than landed.
 
 **More importantly, flat PNGs are the wrong artifact for the stated goal.** These are to be rebuilt
 as widget components. A baked bitmap of a button cannot be re-tinted from the palette, cannot change
@@ -31,7 +31,7 @@ What actually crosses the Figma→UE boundary is layout, geometry, spacing, hier
 treatment and colour token names. That is what these documents contain, at the fidelity needed to
 rebuild each variant without opening Figma.
 
-**Working route if raw art is ever genuinely needed:** `Tools/gen_ui/figma_export.py`, which uses the
+**Working route if raw art is ever genuinely needed:** `mcp-ui/gen_ui/figma_export.py`, which uses the
 Figma REST `/v1/images` endpoint (renders in isolation, no compositing) and validates every output
 through `preflight_textures.py` before anything lands. It needs `FIGMA_TOKEN=figd_...` in
 `Tools/env.local`, which is **not currently set** on this machine.

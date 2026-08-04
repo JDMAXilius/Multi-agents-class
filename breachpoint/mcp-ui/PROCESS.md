@@ -46,7 +46,7 @@ drawn natively. Out of the 50 variants on the Menu Row page, exactly three thing
 If you do need a shape, author it as SVG and rasterise:
 
 ```bash
-python3 Tools/gen_ui/gen_menurow_art.py     # your own gen_<component>_art.py
+python3 mcp-ui/gen_ui/gen_menurow_art.py     # your own gen_<component>_art.py
 ```
 
 Model it on `gen_menurow_art.py`: a list of `(stem, svg_text, w, h, post_processor)` and a loop.
@@ -57,8 +57,8 @@ indistinguishable from a circle and, unlike a curve, it actually renders.
 Then gate and import:
 
 ```bash
-python3 Tools/gen_ui/preflight_textures.py <dir>
-python3 Tools/gen_ui/import_textures.py <src_dir> /Game/UI/<Target>     # editor OPEN
+python3 mcp-ui/gen_ui/preflight_textures.py <dir>
+python3 mcp-ui/gen_ui/import_textures.py <src_dir> /Game/UI/<Target>     # editor OPEN
 ```
 
 `import_textures.py` applies the four settings that matter — `TEXTUREGROUP_UI`,
@@ -81,7 +81,7 @@ asset is layout only. Write the class, declare its `BindWidget` members, and bui
 ./Tools/run-ubt.sh BreachpointEditor          # editor must be CLOSED
 ```
 
-Then add two things to `Tools/gen_ui/wbp_plan.py`:
+Then add two things to `mcp-ui/gen_ui/wbp_plan.py`:
 
 ```python
 ASSET_FOLDER = {
@@ -103,7 +103,7 @@ PLAN = {
 Validate with no editor:
 
 ```bash
-python3 Tools/gen_ui/wbp_plan.py              # -> "PLAN OK"
+python3 mcp-ui/gen_ui/wbp_plan.py              # -> "PLAN OK"
 ```
 
 This parses the header, extracts every `BindWidget`/`BindWidgetOptional`, and checks your tree
@@ -115,9 +115,9 @@ later. It also checks every brush target exists on disk and reports missing ones
 ## Phase 3 — Build
 
 ```bash
-python3 Tools/gen_ui/build_wbp.py --asset WBP_MyThing     # editor OPEN, MCP up
-python3 Tools/gen_ui/build_wbp.py                          # every asset in PLAN
-python3 Tools/gen_ui/build_wbp.py --dry-run                # no writes
+python3 mcp-ui/gen_ui/build_wbp.py --asset WBP_MyThing     # editor OPEN, MCP up
+python3 mcp-ui/gen_ui/build_wbp.py                          # every asset in PLAN
+python3 mcp-ui/gen_ui/build_wbp.py --dry-run                # no writes
 ```
 
 What it does per asset: delete any existing asset (explicitly — the clobber guard is

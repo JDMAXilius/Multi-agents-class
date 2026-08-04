@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Executor half of the WBP generator. Requires a LIVE editor with the MCP server.
 
-    python3 Tools/gen_ui/build_wbp.py [--dry-run] [--asset WBP_RootLayout]
+    python3 mcp-ui/gen_ui/build_wbp.py [--dry-run] [--asset WBP_RootLayout]
 
 Reads `wbp_plan.py`, rebuilds each WBP from scratch, and writes an R37 receipt to
 `docs/ui/receipts/` flushed per line — a run that dies leaves a record of where.
@@ -103,7 +103,7 @@ class Receipt:
         self.w(f"# RECEIPT — WBP generator · {datetime.now(timezone.utc).isoformat()}")
         self.w("")
         self.w(f"**Command:** `{argv}`")
-        self.w(f"**Plan:** `Tools/gen_ui/wbp_plan.py` sha256 `{plan_digest}`")
+        self.w(f"**Plan:** `mcp-ui/gen_ui/wbp_plan.py` sha256 `{plan_digest}`")
         self.w("**Transport:** raw HTTP `http://127.0.0.1:8000/mcp` (the MCP server runs inside "
                "the editor; under `bEnableToolSearch=true` the toolsets are reached via "
                "`call_tool` and never appear by name in a session tool list).")

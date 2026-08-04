@@ -1,4 +1,4 @@
-# `Tools/gen_ui/` — the Figma → UE asset pipeline
+# `mcp-ui/gen_ui/` — the Figma → UE asset pipeline
 
 Five steps, in order. Each one exists because the step before it can produce something that
 looks perfect in an image viewer and is wrong in the engine.
@@ -20,9 +20,9 @@ Steps 3 and 4 are joined: `rasterize_svg.py` calls `preflight()` itself, so noth
 # one-time: Tools/env.local (gitignored)
 #   FIGMA_TOKEN=figd_xxxxxxxxxxxxxxxxxxxx        (read-only scope is enough)
 
-python3 Tools/gen_ui/figma_export.py --list-pages
-python3 Tools/gen_ui/figma_export.py --audit 48:2
-python3 Tools/gen_ui/figma_export.py --export 80:2 --family Glyphs --scale 4
+python3 mcp-ui/gen_ui/figma_export.py --list-pages
+python3 mcp-ui/gen_ui/figma_export.py --audit 48:2
+python3 mcp-ui/gen_ui/figma_export.py --export 80:2 --family Glyphs --scale 4
 ```
 
 File key `yznvnVdOFDADaugZSeomfP`. Pages: `48:2` Art/Insignia → Ranks, `68:2` Art/Icons,
@@ -38,8 +38,8 @@ and lanes can run in parallel. **It is the only export path a subagent can run.*
 ## 2. `clean_svg.py` — strip the baked page backdrop
 
 ```
-python3 Tools/gen_ui/clean_svg.py Export/UI            # clean + verify
-python3 Tools/gen_ui/clean_svg.py Export/UI --check    # verify only
+python3 mcp-ui/gen_ui/clean_svg.py Export/UI            # clean + verify
+python3 mcp-ui/gen_ui/clean_svg.py Export/UI --check    # verify only
 ```
 
 **Figma's asset export composites the node against its PAGE BACKDROP.** In PNG that is
@@ -66,9 +66,9 @@ Current state: `137/137 clean · 0 backdrop rect(s) removed` (2026-08-03).
 ## 3. `rasterize_svg.py` — SVG → PNG
 
 ```
-python3 Tools/gen_ui/rasterize_svg.py Export/UI --scale 4 --out Content/UI/Icons
-python3 Tools/gen_ui/rasterize_svg.py --probe       # which backends survive
-python3 Tools/gen_ui/rasterize_svg.py --selftest    # prove the backend, no assets
+python3 mcp-ui/gen_ui/rasterize_svg.py Export/UI --scale 4 --out Content/UI/Icons
+python3 mcp-ui/gen_ui/rasterize_svg.py --probe       # which backends survive
+python3 mcp-ui/gen_ui/rasterize_svg.py --selftest    # prove the backend, no assets
 ```
 
 UE cannot import SVG, so this is the last mile — and it is where the corruption creeps back
@@ -107,7 +107,7 @@ Run `clean_svg.py` first. A surviving backdrop rect shows up here as a corner-al
 ## 4. `preflight_textures.py` — the 8-check gate
 
 ```
-python3 Tools/gen_ui/preflight_textures.py [Content/UI/Icons] [--manifest m.json]
+python3 mcp-ui/gen_ui/preflight_textures.py [Content/UI/Icons] [--manifest m.json]
 ```
 
 | # | Check | Fails when |
@@ -121,13 +121,13 @@ python3 Tools/gen_ui/preflight_textures.py [Content/UI/Icons] [--manifest m.json
 | 7 | Anti-aliasing | < 3 distinct partial-alpha levels — a 1-bit raster |
 | 8 | Padding | **informational only**, never fails — it is a design call |
 
-Failures go to `Tools/gen_ui/quarantine/<Family>/` (gitignored) as `<name>.png` plus a
+Failures go to `mcp-ui/gen_ui/quarantine/<Family>/` (gitignored) as `<name>.png` plus a
 `<name>.txt` holding the reason.
 
 ## 5. `import_textures.py` — UE import
 
 ```
-python3 Tools/gen_ui/import_textures.py Content/UI/Icons/Glyphs /Game/UI/Icons/Glyphs
+python3 mcp-ui/gen_ui/import_textures.py Content/UI/Icons/Glyphs /Game/UI/Icons/Glyphs
 ```
 
 Requires a LIVE editor with the MCP server on `http://127.0.0.1:8000/mcp`.

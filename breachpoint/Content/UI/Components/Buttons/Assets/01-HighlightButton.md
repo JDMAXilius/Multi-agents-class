@@ -116,4 +116,4 @@ per node. Nothing in Figma was modified. The PNG route was tried first and **rej
 `download_assets` composites the page background (`#F5F5F5`) into the export — verified on
 `12:1205`, whose four corners came back fully opaque and whose opaque share was 1.000, despite the
 component having no fill and a 2px empty margin. That is the exact defect
-`Tools/gen_ui/figma_export.py` was written to avoid.
+`mcp-ui/gen_ui/figma_export.py` was written to avoid.

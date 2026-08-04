@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Strip the baked-in page backdrop out of a Figma SVG export, and verify what is left.
 
-    python3 Tools/gen_ui/clean_svg.py Export/UI            # clean + verify a tree
-    python3 Tools/gen_ui/clean_svg.py Export/UI --check    # verify only, change nothing
+    python3 mcp-ui/gen_ui/clean_svg.py Export/UI            # clean + verify a tree
+    python3 mcp-ui/gen_ui/clean_svg.py Export/UI --check    # verify only, change nothing
 
 WHY
 ---

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Executor half of the UI-material generator. Requires a LIVE editor with the MCP server.
 
-    python3 Tools/gen_ui/build_materials.py [--dry-run] [--probe] [--asset M_UI_RadialSweep]
+    python3 mcp-ui/gen_ui/build_materials.py [--dry-run] [--probe] [--asset M_UI_RadialSweep]
 
 Reads `material_plan.py`, rebuilds each material from scratch, and writes an R37 receipt to
 `docs/ui/receipts/` flushed per line — a run that dies leaves a record of where.
@@ -106,7 +106,7 @@ class Receipt(_WbpReceipt):
                f"{datetime.now(timezone.utc).isoformat()}")
         self.w("")
         self.w(f"**Command:** `{argv}`")
-        self.w(f"**Plan:** `Tools/gen_ui/material_plan.py` sha256 `{plan_digest}`")
+        self.w(f"**Plan:** `mcp-ui/gen_ui/material_plan.py` sha256 `{plan_digest}`")
         self.w("**Transport:** `build_wbp.MCP`, imported. Raw HTTP `http://127.0.0.1:8000/mcp`.")
         self.w("**Caveat:** every `MaterialTools.*` call in this run is UNVERIFIED — written "
                "against an inferred schema without editor access (R29.2). Every unverified "

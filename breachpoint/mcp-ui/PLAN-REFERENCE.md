@@ -117,8 +117,8 @@ resolves them at compile — only the plan's own assertion is dropped.
 ## Validation
 
 ```bash
-python3 Tools/gen_ui/wbp_plan.py            # validate_all() over every entry
-python3 Tools/gen_ui/selftest_no_editor.py  # prove the logic with no engine
+python3 mcp-ui/gen_ui/wbp_plan.py            # validate_all() over every entry
+python3 mcp-ui/gen_ui/selftest_no_editor.py  # prove the logic with no engine
 ```
 
 `validate()` checks: every required bind is satisfied; every bound node's class is compatible

@@ -5,10 +5,10 @@
     #   FIGMA_TOKEN=figd_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # (Figma → Settings → Security → Personal access tokens. Read-only scope is enough.)
 
-    python3 Tools/gen_ui/figma_export.py --list-pages
-    python3 Tools/gen_ui/figma_export.py --audit 48:2
-    python3 Tools/gen_ui/figma_export.py --export 80:2 --family Glyphs --scale 4
-    python3 Tools/gen_ui/figma_export.py --export-all
+    python3 mcp-ui/gen_ui/figma_export.py --list-pages
+    python3 mcp-ui/gen_ui/figma_export.py --audit 48:2
+    python3 mcp-ui/gen_ui/figma_export.py --export 80:2 --family Glyphs --scale 4
+    python3 mcp-ui/gen_ui/figma_export.py --export-all
 
 WHY THIS EXISTS
 ---------------
@@ -22,7 +22,7 @@ a model, and because it is plain HTTP, the crew can run it in parallel.
 WHAT IT REFUSES TO DO
 ---------------------
 Nothing lands in Content/UI/Icons until it passes `preflight_textures.py`. Failures go to
-Tools/gen_ui/quarantine/ with the reason. The first export pass produced 41 files with
+mcp-ui/gen_ui/quarantine/ with the reason. The first export pass produced 41 files with
 baked-in backgrounds that looked perfect in every viewer and were wrong only in engine —
 the validator is the whole point, not a formality.
 
@@ -262,7 +262,7 @@ def main() -> int:
        "- **Not a rung.** A validated PNG on disk is not a rendered widget. This proves the "
        "file is transparent, correctly sized, unclipped and neutral — not that it looks "
        "right in a screen.\n"
-       "- Import into UE is a separate step: `Tools/gen_ui/import_textures.py`, which sets "
+       "- Import into UE is a separate step: `mcp-ui/gen_ui/import_textures.py`, which sets "
        "the four texture settings and reads each one back.")
     rf.close()
     print(f"\nreceipt: docs/ui/receipts/figma-export-{stamp}.md")

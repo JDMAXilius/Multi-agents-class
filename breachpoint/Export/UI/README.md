@@ -5,7 +5,7 @@ are generated FROM these files**, so re-rasterising the whole set at a different
 a local command, not a Figma round trip. Nothing here is disposable; if an SVG is missing,
 someone has to go back to Figma.
 
-Pipeline that produces and consumes this folder: `Tools/gen_ui/README.md`.
+Pipeline that produces and consumes this folder: `mcp-ui/gen_ui/README.md`.
 
 ## Families on disk (137 SVGs, counted 2026-08-03)
 
@@ -24,8 +24,8 @@ The two 17×16 files are `T_UI_Icon_Mode_Assault_16.svg` and
 `T_UI_Icon_Mode_Extraction_16.svg`. Both are currently quarantined downstream for edge
 clipping — the odd width and the clipping are the same bug.
 
-Page attribution comes from the `PAGES` table in `Tools/gen_ui/figma_export.py` plus the
-header of `Tools/gen_ui/figma_nodes.txt`. It is not recorded per file; there is no export
+Page attribution comes from the `PAGES` table in `mcp-ui/gen_ui/figma_export.py` plus the
+header of `mcp-ui/gen_ui/figma_nodes.txt`. It is not recorded per file; there is no export
 receipt for the SVG pass.
 
 ## Naming
@@ -71,11 +71,11 @@ yet drawn in Figma for any family.
 ## Regenerate the PNGs
 
 ```
-python3 Tools/gen_ui/rasterize_svg.py Export/UI --scale 4 --out Content/UI/Icons
+python3 mcp-ui/gen_ui/rasterize_svg.py Export/UI --scale 4 --out Content/UI/Icons
 ```
 
 Vector in, RGBA PNG out, folder structure preserved. Every output goes through
-`preflight_textures.py` before it lands; failures go to `Tools/gen_ui/quarantine/`
+`preflight_textures.py` before it lands; failures go to `mcp-ui/gen_ui/quarantine/`
 (gitignored) with the reason beside them and never reach `Content/`. `--scale` is the only
 knob you need for a different target resolution.
 

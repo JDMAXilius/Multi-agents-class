@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Pre-flight every UI texture BEFORE it is imported into UE. Nothing ships unchecked.
 
-    python3 Tools/gen_ui/preflight_textures.py [Content/UI/Icons] [--manifest m.json]
+    python3 mcp-ui/gen_ui/preflight_textures.py [Content/UI/Icons] [--manifest m.json]
 
 An icon that is wrong in the engine is expensive to find: it looks perfect in every
 image viewer, and the defect only appears composited over a panel at runtime. Every

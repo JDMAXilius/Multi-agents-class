@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Prove the material plan with no engine, no editor, no MCP.
 
-    python3 Tools/gen_ui/selftest_materials.py
+    python3 mcp-ui/gen_ui/selftest_materials.py
 
 Two jobs, and the second is the one that matters.
 

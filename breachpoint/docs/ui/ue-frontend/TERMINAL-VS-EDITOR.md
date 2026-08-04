@@ -284,7 +284,7 @@ rather than inventing a format. Its properties, in the order they matter:
   *"A receipt showing only the calls that worked is an advertisement, not a record."*
 
 Receipts live beside their generator (`Tools/<gen>/receipts/*.md`) and are committed in the same
-commit as the asset. **PROPOSAL:** for UI specifically, `Tools/gen_ui/receipts/` once §6's audit
+commit as the asset. **PROPOSAL:** for UI specifically, `mcp-ui/gen_ui/receipts/` once §6's audit
 script exists; until then put a UI receipt in the ticket's `## Log` — the ticket is committed too,
 and an uncommitted receipt is not a receipt.
 

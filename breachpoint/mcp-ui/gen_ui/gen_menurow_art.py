@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Author the five Menu Row shapes no existing texture covers, as SVG -> PNG.
 
-    python3 Tools/gen_ui/gen_menurow_art.py
+    python3 mcp-ui/gen_ui/gen_menurow_art.py
 
 Every number here is MEASURED off Figma `12:724` (Menu Row) via `get_metadata`, not derived
 and not eyeballed. The per-shape docstrings cite the node the number came from. Import the
@@ -200,7 +200,7 @@ def main() -> int:
         opaque = sum(1 for v in alpha.getdata() if v == 255)
         print(f"{stem:18} {w:>4}x{h:<4} partial-alpha levels {levels:>3}  "
               f"fully-opaque px {opaque:>5}  -> {png.name}")
-    print("\nNow: python3 Tools/gen_ui/preflight_textures.py Content/UI/Components/Buttons/Assets")
+    print("\nNow: python3 mcp-ui/gen_ui/preflight_textures.py Content/UI/Components/Buttons/Assets")
     return 0
 
 

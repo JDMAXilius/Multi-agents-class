@@ -13,7 +13,7 @@ plates / backgrounds, 3 weapon silhouettes (`docs/ui/ue-frontend/ASSET-PIPELINE.
 | Weapon silhouette | `T_UI_Weapon_<Name>` (rendered from the mesh, `WEAPON-RENDER-PLAN.md`) |
 
 **Never here:**
-- **Icons.** They go in `Content/UI/Icons/` — every icon brush in `Tools/gen_ui/wbp_plan.py`
+- **Icons.** They go in `Content/UI/Icons/` — every icon brush in `mcp-ui/gen_ui/wbp_plan.py`
   resolves against that path, so one parked here yields a brushless `UImage` (a blank white
   rectangle, BP70 D2) rather than a loud failure.
 - Anything UMG can draw. A texture for a divider, a panel background or a solid fill is the

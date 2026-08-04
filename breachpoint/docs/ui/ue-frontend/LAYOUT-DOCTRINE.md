@@ -4,7 +4,7 @@
 which **panel** to use (grids in particular), how **dynamic art** binds to our data, and the
 **CommonUI** rules that decide widget class and input.
 
-Everything here is expressed in `Tools/gen_ui/wbp_plan.py`'s vocabulary — that file is the
+Everything here is expressed in `mcp-ui/gen_ui/wbp_plan.py`'s vocabulary — that file is the
 committed plan R37.1 requires and the MCP executes it. **This doctrine is what a plan author
 follows; it invents no new format.**
 
@@ -404,7 +404,7 @@ action bar unchanged, which is the whole return on building components before sc
 
 ## 8. What the MCP receives
 
-Nothing new. A plan author writes this tree into `Tools/gen_ui/wbp_plan.py` using the existing
+Nothing new. A plan author writes this tree into `mcp-ui/gen_ui/wbp_plan.py` using the existing
 node vocabulary — class path, name, `bind`, slot dict, `font`, `brush` — and `build_wbp.py`
 executes it against the editor MCP.
 

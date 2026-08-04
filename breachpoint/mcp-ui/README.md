@@ -23,8 +23,8 @@ other component.
 
 ## The one-paragraph version
 
-A widget is declared as **data** in `Tools/gen_ui/wbp_plan.py` and built by
-`Tools/gen_ui/build_wbp.py`, which drives the editor over MCP. The plan half imports no engine,
+A widget is declared as **data** in `mcp-ui/gen_ui/wbp_plan.py` and built by
+`mcp-ui/gen_ui/build_wbp.py`, which drives the editor over MCP. The plan half imports no engine,
 so a tree can be validated against its C++ `BindWidget` contract before an editor is ever
 launched. The build half sets every property, reads it back, and compares — an unverified write
 is not a write. Art that UMG genuinely cannot draw is generated from committed SVG by
@@ -50,7 +50,7 @@ Nothing in the chain is hand-placed, so every asset is reproducible from a clean
       v
   wbp_plan.py    PLAN entry + ASSET_FOLDER entry
       |
-      |  python3 Tools/gen_ui/wbp_plan.py     -> "PLAN OK"    (no editor)
+      |  python3 mcp-ui/gen_ui/wbp_plan.py     -> "PLAN OK"    (no editor)
       v
   build_wbp.py   --asset WBP_<Name>            (editor OPEN)
       |
@@ -75,9 +75,26 @@ Nothing in the chain is hand-placed, so every asset is reproducible from a clean
 The same plan/executor split repeats for other domains — `material_plan.py`/`build_materials.py`,
 `input_plan.py`/`build_input.py`, `arena_plan.py`/`build_arena.py`. Learn one, you know all four.
 
-## Where the scripts live, and why they were not moved here
+## Where the scripts live
 
-`Tools/gen_ui/`. They stay there because `build_wbp.py` imports `wbp_plan` by path, four other
-scripts write receipts relative to the repo root, and roughly twenty documents cite those paths.
-Moving executable code to document its own method would trade a working pipeline for a tidier
-tree. This folder points at them instead.
+`mcp-ui/gen_ui/` — in this folder, beside the documents that describe them. Moved here from
+`Tools/gen_ui/` on 4 Aug 2026 so the method and its implementation ship as one unit.
+
+**The nesting depth is load-bearing.** Every script computes the project root as
+`Path(__file__).resolve().parents[2]`. From `Tools/gen_ui/x.py` that walked
+`gen_ui → Tools → breachpoint`; from `mcp-ui/gen_ui/x.py` it walks `gen_ui → mcp-ui → breachpoint`
+— the same answer, which is why the move needed **no code change at all**. Flattening the scripts
+to `mcp-ui/*.py` would break every one of them silently, resolving the repo root one level too
+high and writing receipts and textures outside the project.
+
+If you relocate this folder again, keep it exactly two levels deep or fix `parents[2]` in all
+sixteen scripts first.
+
+## Running them
+
+Paths in every example are relative to the **project root** (`breachpoint/`), not to this folder:
+
+```bash
+python3 mcp-ui/gen_ui/wbp_plan.py                       # validate, no editor
+python3 mcp-ui/gen_ui/build_wbp.py --asset WBP_MyThing  # build, editor OPEN
+```
