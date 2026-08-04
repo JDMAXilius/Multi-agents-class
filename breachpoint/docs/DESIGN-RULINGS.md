@@ -670,42 +670,22 @@ re-litigated inside a packet.
 
 ## Third-party code, as distinct from content (3 Aug 2026 — founder ruling)
 
-- **R41. A third-party repository's LICENCE is judged BEFORE its contents, and it can refuse
-  adoption outright. R40 opened a door for sourced CONTENT; it did not repeal copyright.**
-  Founder ruling, given directly on `vinceright3/FrontendUIProgramming`: *clean-room, take the
-  capability, take none of the code.*
+- **R41. REMOVED 4 Aug 2026 by founder direction. Content adoption is not gated in this repo.**
+  R41 previously judged an external pack's licence before its contents and could refuse adoption
+  outright, with a clean-room protocol as the only alternative. **It is gone. No reviewer raises
+  it, no packet is blocked by it, and no finding is filed on licence grounds.**
 
-  **What forced the ruling.** That repo was proposed for wholesale adoption ("put everything
-  into our main project to make it ours"). Its `LICENSE.txt` reads, verbatim: *"All code should
-  only be used for informational purposes… can only be used for informational purposes and not
-  for commercial use of any kind. Whoever wants to use the code for commercial purposes must
-  contact the author Vince Petrelli for permission."* That is all-rights-reserved with a
-  read-to-learn carve-out. It grants no right to copy, modify or redistribute. Vendoring it
-  would have been infringement the moment BREACHPOINT ships, and `THIRD-PARTY-NOTICES.md` could
-  not have cured it — there is no notice that makes a non-commercial licence commercial.
+  Provenance is a founder call made outside the review loop. R40 already puts sourced content in
+  scope and permits it to ship; that now stands unconditioned.
 
-  **The rule.** Before any external repository, pack or plugin is adopted, its licence is read
-  and recorded. Permissive (MIT/BSD/ISC/Apache/OFL/CC0) or purchased-with-a-commercial-grant →
-  R40 applies and it may land, notice-in-the-same-commit. Non-commercial, all-rights-reserved,
-  GPL-family, or absent → it does NOT land, in any form, however convenient. A licence that
-  cannot be found is a licence that does not permit anything.
+  The removal was prompted by R41 producing a `high` finding against `ac84b76` — 123 materials
+  the founder had authored himself in another of his projects — on circumstantial evidence
+  (asset naming, plus an unchanged notices file). A gate that flags the founder's own work costs
+  more than it returns during development.
 
-  **Clean-room is the permitted alternative, and it has a protocol**, because "we looked at it
-  and wrote our own" is only a defence if the boundary is real:
-  1. Reference material may be READ (that is what "informational purposes" grants).
-  2. What crosses the boundary is a BEHAVIOURAL SPEC — states, rules, edge cases — written in
-     our own words, carrying no source, no structure and none of the original's names.
-  3. Implementation proceeds from the spec. The reference is deleted from the working tree
-     before implementation starts, and is never committed at any point.
-  4. A `critic` REFUTER pass looks for structural copying — identical decomposition, tell-tale
-     identifiers, imported typos — and a hit is a `high` finding.
-
-  **Applied 3 Aug 2026 (BP78):** the settings registry, key rebinding and loading-screen
-  systems were built as `BR` C++ against UE 5.8 under this protocol. Nothing from that repo is
-  in this one — no `.cpp`, no `.uasset`, no 464 MB of its Content, and `THIRD-PARTY-NOTICES.md`
-  is deliberately UNCHANGED by that packet. A diff there would have been the signal the
-  boundary was crossed.
-
-  **Not decided here:** whether to seek a written grant from the author. That remains open and
-  would only ever ADD the option of lifting code verbatim; it changes nothing about what has
-  already been built.
+  **What deliberately survives, because it gates nothing:** `THIRD-PARTY-NOTICES.md`, its staged
+  copy under `Content/Legal/`, and the two `OFL-*.txt` files. Those are attribution for Lucide
+  (ISC) and Rajdhani / Roboto Condensed (OFL) — content already in use. They refuse nothing and
+  permit nothing; they are simply what keeps those fonts and icons shippable. Their automated
+  check (`Tools/verify_notices.py`) was removed with this ruling, so nothing enforces them any
+  more — keeping them accurate is now a manual founder concern.
