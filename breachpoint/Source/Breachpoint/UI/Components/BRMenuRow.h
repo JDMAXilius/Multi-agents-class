@@ -9,6 +9,7 @@ class UBRHairlineBorder;
 class UBRRule;
 class UCommonTextBlock;
 class UImage;
+class UPanelWidget;
 class USizeBox;
 class UWidget;
 class UWidgetAnimation;
@@ -89,6 +90,22 @@ class BREACHPOINT_API UBRMenuRow : public UCommonButtonBase
 
 public:
 	/**
+	 * Exists ONLY to set the designer preview mode, and that is the only way to set it.
+	 *
+	 * `UUserWidget::DesignSizeMode` is `WITH_EDITORONLY_DATA` declared as a bare `UPROPERTY()`
+	 * with no edit specifier (UserWidget.h:1534), so it is invisible to the details panel, to
+	 * `ObjectTools.set_properties` and to every config default — verified: a WidgetBlueprint
+	 * returns 107 properties over MCP and this is not among them, so a write reads back null.
+	 * The designer toolbar dropdown is the only UI for it, and a per-asset click is not
+	 * something a generator can reproduce.
+	 *
+	 * Setting it on the CDO here gives every Menu Row asset `Desired` at creation, so a
+	 * 250 x 28 row previews as 250 x 28 instead of floating in a 1280 x 720 canvas. Pure
+	 * editor presentation: `WITH_EDITORONLY_DATA` means it does not exist in a packaged build.
+	 */
+	UBRMenuRow(const FObjectInitializer& ObjectInitializer);
+
+	/**
 	 * COMPONENT-SPECS Sec 2: COMPONENT 250 x 28. `RowWidth` is deliberately NOT declared — the
 	 * row fills its rail (349 / 536 / a column's Fill) and 250 is the component-board width,
 	 * recorded in `MCP-BUILD-PLANS.md` with the text-frame and icon geometry the WBP authors
@@ -98,6 +115,19 @@ public:
 
 	/** COMPONENT-SPECS Sec 2: the border's side lines are 20 tall on a 28 row -- ticks, not edges. */
 	static constexpr float BorderSideTickLength = 20.0f;
+
+	/**
+	 * The component-board width, applied AT DESIGN TIME ONLY (see ApplyRowType).
+	 *
+	 * This is not a contradiction of "width is deliberately not authored" -- that rule is about
+	 * RUNTIME, where the row fills its rail (349 on the front end, 536 in the grid stack) and a
+	 * pinned 250 would break every wider list silently. But with no width at all the designer
+	 * preview stretches to whatever the canvas is, so the asset can never be compared 1:1
+	 * against the 250 x 28 component board it was measured from. Design time gets the board
+	 * width; the running game gets none, and `ClearWidthOverride` on the runtime path is what
+	 * keeps that promise.
+	 */
+	static constexpr float ComponentBoardWidth = 250.0f;
 
 	/** COMPONENT-SPECS Sec 2 Type axis: the three types that change the 250 x 28 shell. */
 	static constexpr float IconOnlySize = 40.0f;
@@ -151,6 +181,23 @@ protected:
 
 	void ApplyRowType();
 
+	/**
+	 * COMPONENT-SPECS Sec 2, every Type's hover row: "everything flips to #000000". The shell
+	 * inversion above reaches Label and Selection only, so without this the per-type body --
+	 * the disclosure triangle, the checkbox square, the radio fill, the slider track, the
+	 * gametype emblem -- stays WHITE on a plate that just went white, i.e. it disappears at
+	 * exactly the moment the row is focused. That is the whole reason this walk exists.
+	 *
+	 * Recursive rather than a fixed bind list because the Type axis holds ten different
+	 * bodies with different child counts; one traversal covers all ten and every future one.
+	 * Depth is bounded by the WBP's own tree (COMPONENT-SPECS' deepest body is four levels),
+	 * and this runs on a state change, not on tick.
+	 */
+	void ApplyInversionToSubtree(UWidget* Root, const FSlateColor& InTextColor, bool bInverted);
+
+	/** Show `TypeCheckMark` iff the row is selected. Idle/Hover are an empty box (Sec 2). */
+	void ApplySelectedMark(bool bSelected);
+
 	// ---------------------------------------------------------------------------------------
 	// BindWidget contract. These names are parsed out of this header by the WBP generator and
 	// must match the widget names in `WBP_MenuRow` exactly. Figma layer -> UMG name mapping:
@@ -201,6 +248,35 @@ protected:
 	 */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Breachpoint|UI")
 	TObjectPtr<UWidgetSwitcher> TypeSwitcher;
+
+	/**
+	 * The per-type body -- whatever sits inside the shell for this row's Type. Everything
+	 * beneath it follows the inversion (see ApplyInversionToSubtree). Optional: the Default
+	 * type has no body beyond Label, and a null root simply means the walk does nothing.
+	 */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Breachpoint|UI")
+	TObjectPtr<UPanelWidget> TypeBody;
+
+	/**
+	 * The ONE measured exception to "everything flips to black" (COMPONENT-SPECS Sec 2,
+	 * Slider hover): the handle `Circle` inverts its FILL to black but keeps a white 1px
+	 * stroke, so it stays visible on the inverted plate. A blanket tint would erase it.
+	 * Named as a bind rather than by string match so the exemption is greppable from the WBP.
+	 */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Breachpoint|UI")
+	TObjectPtr<UWidget> InversionExempt;
+
+	/**
+	 * The ACTIVE-ONLY mark: the checkbox's tick, the radio's 10x10 inner fill.
+	 *
+	 * COMPONENT-SPECS Sec 2 gives Checkbox and Radio four states, and the mark tracks exactly
+	 * one axis of them: Idle and Hover are an EMPTY box, Active and Active Hover carry the
+	 * mark. So it follows selection, NOT the hover inversion -- pointing at an unchecked box
+	 * must not make it look checked. Without this the tick is painted permanently and the
+	 * control can only ever render one of its four measured states.
+	 */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Breachpoint|UI")
+	TObjectPtr<UWidget> TypeCheckMark;
 
 	/** Played forward on hover / selection, reverse on release. Appearance only. */
 	UPROPERTY(Transient, meta = (BindWidgetAnimOptional))

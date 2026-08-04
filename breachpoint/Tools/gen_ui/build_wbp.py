@@ -234,6 +234,35 @@ def build_one(m: MCP, rc: Receipt, asset: str, spec: dict) -> bool:
     if ok is not True:
         return False
 
+    # (5b) THE DESIGNER PREVIEW MODE IS NOT WRITABLE FROM HERE, and that is recorded rather
+    # than worked around.
+    #
+    # `DesignSizeMode` / `DesignTimeSize` are `WITH_EDITORONLY_DATA` on `UUserWidget` declared
+    # as bare `UPROPERTY()` with no edit specifier, so `ObjectTools.list_properties` does not
+    # see them at all — verified: 107 properties come back on a WidgetBlueprint and neither is
+    # among them, while `previewBackground` (which IS `EditDefaultsOnly`) is. A write reads
+    # back null, which `write_verified` correctly reports as a `high` finding rather than
+    # letting it pass.
+    #
+    # THE SIZE IS SOLVED IN C++ INSTEAD, which is better anyway: `UBRMenuRow::ApplyRowType`
+    # sets the 250 component-board width when `IsDesignTime()` and clears it at runtime, so
+    # the preview is the measured box in every mode without a per-asset editor setting that
+    # no script can reproduce.
+
+    # (5c) CLASS DEFAULTS — properties on the generated class's CDO, not on a widget.
+    #
+    # `RowType` and `Style` live on the parent C++ class, so there is no tree node to hang
+    # them off. Without this they stay at their C++ defaults and the asset is wrong in a way
+    # nothing catches: every Menu Row Type would report `Default` and `ApplyRowType` would
+    # give Icon Only / Map Voting / Image a 28px height instead of 40 / 60 / 120.
+    #
+    # AFTER compile, because the CDO does not exist until the class is generated.
+    if spec.get("class_defaults"):
+        cdo = {"refPath": f"{spec['folder']}/{asset}.Default__{asset}_C"}
+        write_verified(m, rc, "class defaults", cdo, spec["class_defaults"])
+        ok, txt = m.call(UMG, "CompileWidgetBlueprint", {"widgetBlueprint": wbp})
+        rc.call("recompile after class defaults", ok is True, str(txt)[:200])
+
     # (6) save, then read the tree back from the compiled asset
     saved, txt = m.call(ASSET, "save_assets", {"asset_paths": [path]})
     rc.call("save_assets", saved is not None, str(txt)[:150])

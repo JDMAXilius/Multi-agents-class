@@ -13,8 +13,9 @@ plates / backgrounds, 3 weapon silhouettes (`docs/ui/ue-frontend/ASSET-PIPELINE.
 | Weapon silhouette | `T_UI_Weapon_<Name>` (rendered from the mesh, `WEAPON-RENDER-PLAN.md`) |
 
 **Never here:**
-- **Icons.** They go in `Content/UI/Icons/` — that path is a hard-coded licence gate in
-  `Tools/verify_notices.py:50`, and an icon parked here escapes it.
+- **Icons.** They go in `Content/UI/Icons/`. That path used to be a hard-coded licence probe in
+  `Tools/verify_notices.py` (deleted 4 Aug 2026 with R41), so nothing enforces it now — but the
+  convention holds, and an icon parked here is simply in the wrong folder.
 - Anything UMG can draw. A texture for a divider, a panel background or a solid fill is the
   defect `ASSET-PIPELINE.md:15` exists to prevent: unreviewable, does not recolour with the
   palette, does not scale.

@@ -1,33 +1,26 @@
-# `Content/UI/Icons/` — LOAD-BEARING FOLDER NAME
+# `Content/UI/Icons/` — CONVENTION, no longer enforced
 
 ~98 glyphs (shapes UMG cannot draw). Naming: `T_UI_Icon_<Name>`
 (`docs/ui/ue-frontend/ASSET-PIPELINE.md:81`).
 
-## Why the folder name is law, not taste
+## Why the folder name mattered, and what changed
 
-`Tools/verify_notices.py:49-51` hard-codes this glob as a dependency probe:
+`Tools/verify_notices.py` hard-coded `Content/UI/Icons/**/*.uasset` as a dependency probe: if the
+glob matched anything and the token `Lucide` was absent from `THIRD-PARTY-NOTICES.md`, the run
+failed. The Lucide set is ISC, and ISC requires the copyright and permission notice in **all
+copies** — so the obligation is discharged by the notice *shipping*, not by existing.
 
-```python
-DEPENDENCY_PROBES: list[tuple[str, str, str]] = [
-    ("Content/UI/Icons/**/*.uasset", "Lucide", "icons are in Content/ but no Lucide notice"),
-]
-```
+**That script was deleted 4 Aug 2026 with R41 (founder direction). Nothing enforces this now.**
+The obligation did not go away; only the check did. Keep importing icons here — not because a
+gate can see it, but because the notice in `THIRD-PARTY-NOTICES.md` is written against this set
+and nothing will warn you if it drifts.
 
-`main()` (`:132-135`) fails the run when the glob matches **anything** and the token `Lucide` is
-absent from `THIRD-PARTY-NOTICES.md`. The Lucide set is ISC; ISC requires the copyright and
-permission notice in **all copies**, so the obligation is discharged by the notice *shipping*,
-not by existing. `verify_notices.py` runs in rung 2 (`docs/contracts/testing.md`).
-
-**Therefore: an icon imported anywhere other than `Content/UI/Icons/` silently escapes the
-licence gate.** The check does not fail — it reports OK, because the glob matched nothing. That
-is the exact failure mode this folder exists to prevent. Import icons here. Only here.
-
-## Known conflict
+## Known conflict (still unresolved)
 
 `docs/ui/ue-frontend/ASSET-PIPELINE.md:90` (§4) tells importers to drop PNGs into
-`Content/UI/Textures/<Family>/`. That path is **not** covered by the probe glob. Ticket **BP63**
-resolves the contradiction; until it lands, `Content/UI/Icons/` wins for icons, because it is the
-one the gate can see.
+`Content/UI/Textures/<Family>/`, a different path from this one. Ticket BP63 existed to resolve
+the contradiction and was deleted with the rest of the board; the contradiction itself is still
+live. `Content/UI/Icons/` wins for icons.
 
 ## Never here
 
@@ -35,4 +28,4 @@ one the gate can see.
 - Anything UMG can draw (rules, dividers, panel fills, text) — `ASSET-PIPELINE.md:15`,
   *export nothing UMG can draw*.
 - A new icon set without adding its notice to `THIRD-PARTY-NOTICES.md` **and** re-copying
-  `Content/Legal/THIRD-PARTY-NOTICES.txt` (`verify_notices.py:98-116` fails on drift).
+  `Content/Legal/THIRD-PARTY-NOTICES.txt` — drift between the two is now caught by nobody.

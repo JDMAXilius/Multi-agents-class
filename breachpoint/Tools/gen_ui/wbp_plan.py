@@ -267,8 +267,9 @@ UI_FOLDER = "/Game/UI"
 # nothing today and is nearly impossible later: BP18 proved MCP CANNOT rename an asset (the
 # rename modal auto-cancels). Every asset has to be born at its final path.
 #
-# Content/UI/Icons stays exactly where it is and is NOT reorganised: Tools/verify_notices.py
-# hard-codes that glob for the Lucide ISC notice, so moving it silently escapes a licence gate.
+# Content/UI/Icons stays exactly where it is and is NOT reorganised. It used to be pinned by a
+# hard-coded glob in Tools/verify_notices.py; that script was deleted 4 Aug 2026, so the path is
+# now convention only -- but every icon brush below still resolves against it.
 UI_LAYOUTS    = UI_FOLDER + "/Layouts"      # root + HUD layout: the two things pushed onto layers
 UI_HUD        = UI_FOLDER + "/HUD"          # in-match surfaces
 UI_COMPONENTS = UI_FOLDER + "/Components"   # reusable parts, never pushed directly
@@ -340,6 +341,18 @@ ASSET_FOLDER = {
     # Founder-requested, 4 Aug 2026. Its own folder because the Button Border texture set
     # imported alongside it lives there too -- the widget and the art it may use stay together.
     "WBP_ButtonDefault":       UI_COMPONENTS + "/Buttons",
+    # The other eight Menu Row Types as standalone button assets, founder-requested against
+    # Figma `12:724`, 4 Aug 2026. `Disabled` is absent ON PURPOSE: it is a STATUS, not a body
+    # -- `NativeOnDisabled` dims the whole row to 0.5 and changes no geometry, so an asset for
+    # it would be a byte-identical copy of whichever Type was disabled.
+    "WBP_ButtonDropDown":      UI_COMPONENTS + "/Buttons",
+    "WBP_ButtonDigDown":       UI_COMPONENTS + "/Buttons",
+    "WBP_ButtonIconOnly":      UI_COMPONENTS + "/Buttons",
+    "WBP_ButtonSlider":        UI_COMPONENTS + "/Buttons",
+    "WBP_ButtonCheckbox":      UI_COMPONENTS + "/Buttons",
+    "WBP_ButtonRadio":         UI_COMPONENTS + "/Buttons",
+    "WBP_ButtonMapVoting":     UI_COMPONENTS + "/Buttons",
+    "WBP_ButtonImage":         UI_COMPONENTS + "/Buttons",
 }
 
 
@@ -450,6 +463,120 @@ MENU_ROW_TREE = [
                       v="VAlign_Center"),
      "font": "Label/Button", "bind": True},
 ]
+
+
+BTN_ART = "/Game/UI/Components/Buttons/Assets/"
+GLYPHS = "/Game/UI/Icons/Glyphs/"
+GAMETYPE = "/Game/UI/Icons/Gametype/"
+
+
+def menu_row_shell(text_frame_class: str = HBOX) -> list[dict]:
+    """`MENU_ROW_TREE`'s five shell nodes, with `TextFrame`'s CLASS left to the caller.
+
+    Six of the eight Type bodies hang off the standard horizontal `TextFrame` and just reuse
+    `MENU_ROW_TREE`. `Map Voting` and `Image` cannot: their measured layout stacks the label
+    over the selection (Map Voting) or puts a 120px emblem beside them (Image), which a
+    HorizontalBox cannot express. `UBRMenuRow` declares `TextFrame` as a bare `UWidget`, not
+    as a `UHorizontalBox` -- so swapping it for a VerticalBox is inside the C++ contract, not
+    a violation of it, and the bind still resolves.
+    """
+    return [
+        {"name": "RootSizeBox", "class": SIZEBOX, "parent": None, "bind": True},
+        {"name": "RowOverlay", "class": OVERLAY, "parent": "RootSizeBox", "slot": FILL},
+        {"name": "BackgroundLine", "class": RULE, "parent": "RowOverlay",
+         "slot": FILL, "bind": True},
+        {"name": "TextFrameFill", "class": IMAGE, "parent": "RowOverlay",
+         "slot": inset(2.0), "bind": True},
+        {"name": "Border", "class": HAIRLINE, "parent": "RowOverlay",
+         "slot": FILL, "bind": True},
+        {"name": "TextFrame", "class": text_frame_class, "parent": "RowOverlay",
+         "slot": inset(2.0), "bind": True},
+    ]
+
+
+# The Figma strings, verbatim. `12:724` labels every variant's `Text` "BUTTON" and every
+# value-carrying variant's `Selection` "SELECTION" -- so the asset should say that and not
+# UMG's "Text Block" placeholder, which is what a reader compares against the reference and
+# what a screenshot of the asset shows. At runtime `SetLabelText` overwrites it and
+# `SetSelectionText(empty)` collapses the value, so this is a DESIGN-TIME string only and
+# cannot leak into shipped copy.
+FIGMA_TEXT = {"Label": "BUTTON", "Selection": "SELECTION"}
+
+# The button style that carries every state. `UBRButtonStyle_MenuRow` already defines
+# NormalBase / NormalHovered / NormalPressed / SelectedBase / SelectedHovered /
+# SelectedPressed / Disabled plus a text style per state -- it just was never assigned to an
+# asset. It is a C++ `UCommonButtonStyle`, NOT a Blueprint style asset: a BP child of an
+# engine class fails R26 conditions 1 and 5 and is banned by R18, which is exactly why
+# `Content/UI/Styles/` is documented as deliberately not existing (STRUCTURE.md Sec 6).
+MENU_ROW_STYLE = {"refPath": "/Script/Breachpoint.BRButtonStyle_MenuRow"}
+
+
+def sized(w: float, h: float) -> dict:
+    """`properties` for a SizeBox pinned to an exact w x h.
+
+    NEEDED WHEREVER FIGMA GIVES A BOX AN EXPLICIT SIZE AND ITS CONTENTS CANNOT IMPLY ONE.
+    `UBRHairlineBorder` is a leaf that draws lines at whatever geometry it is handed; its
+    desired size is the stroke weight, not the box. So a 16x16 checkbox built as
+    Overlay(hairline, tick) collapses to the tick's size, and a 100x6 slider track collapses
+    to 1px. An Image gets its size from its brush and needs none of this; a hairline always
+    does.
+
+    Both the value AND its `bOverride_` flag are written: USizeBox ignores the value unless
+    the flag is set, and a value-only write is the kind of silent no-op `write_verified`
+    exists to catch.
+    """
+    return {"bOverride_WidthOverride": True, "widthOverride": float(w),
+            "bOverride_HeightOverride": True, "heightOverride": float(h)}
+
+
+def without(nodes: list[dict], *names: str) -> list[dict]:
+    """Drop nodes by name — for the Types whose measured tree simply has no such element.
+
+    `Selection` is present on only TWO of the ten Types. Measured (`02-MenuRow.md`): Drop Down
+    puts it inside `Text and Icon`, and Map Voting stacks it under the label. Every other Type
+    either widens `Text` to fill the row (Checkbox 200, Radio 200) or replaces the right-hand
+    space with something else entirely (Slider's track, Dig Down's chevrons). Shipping a
+    "SELECTION" string on those is not a 1:1 row, it is a different row.
+
+    Safe because `Selection` is `BindWidgetOptional`; dropping a NON-optional bind would fail
+    at compile, which is the check that makes this a legal edit rather than a hopeful one.
+    """
+    drop = set(names)
+    return [n for n in nodes if n["name"] not in drop]
+
+
+def icon_only_label(nodes: list[dict]) -> list[dict]:
+    """`MENU_ROW_TREE` with `Label` present but EMPTY, for Type=Icon Only.
+
+    Measured: the Icon Only variant is a 40x40 shell whose 36x36 `Text Frame` holds one 32x32
+    icon instance and no text node at all. `Label` cannot simply be dropped — it is a
+    NON-optional `BindWidget` on `UBRMenuRow` and the asset would fail to compile without it.
+    So it stays, carrying an empty string rather than "BUTTON", which is the closest the C++
+    contract allows to "there is no label here".
+    """
+    out = []
+    for n in nodes:
+        if n["name"] == "Label":
+            n = dict(n)
+            n["properties"] = {**n.get("properties", {}), "text": ""}
+        out.append(n)
+    return out
+
+
+def with_text(nodes: list[dict]) -> list[dict]:
+    """The same tree with the Figma strings written onto `Label` / `Selection`.
+
+    Returns COPIES. `MENU_ROW_TREE` is shared by `WBP_MenuRow`, `WBP_SettingsRow` and
+    `WBP_ButtonDefault`; mutating its node dicts in place would silently change three assets
+    this packet did not rebuild and does not own.
+    """
+    out = []
+    for n in nodes:
+        if n["name"] in FIGMA_TEXT:
+            n = dict(n)
+            n["properties"] = {**n.get("properties", {}), "text": FIGMA_TEXT[n["name"]]}
+        out.append(n)
+    return out
 
 
 def unbound(nodes: list[dict]) -> list[dict]:
@@ -2339,6 +2466,288 @@ PLAN = {
              "slot": {"horizontalAlignment": "HAlign_Right", "verticalAlignment": "VAlign_Center",
                       "padding": margin()},
              "brush": brush("/Game/UI/Components/Buttons/Assets/Sides/Default_NoFade_Default__Right_Line", 68, 2)},
+        ],
+    },
+
+    # ==================================================================
+    # THE OTHER EIGHT MENU ROW TYPES, as standalone button assets.
+    # Founder-requested against Figma `12:724`, 4 Aug 2026. Measurements are
+    # `Content/UI/Components/Buttons/Assets/02-MenuRow.md`, which read them off the live nodes.
+    #
+    # ALL EIGHT PARENT TO `UBRMenuRow`, and that is what makes them work rather than merely
+    # look right. The class is a `UCommonButtonBase`, so hover / press / select / disabled
+    # routing, gamepad focus and the whole inversion arrive with the parent -- an orphan WBP
+    # would have had to re-implement every one of them in a graph it is not allowed to have.
+    # Each asset sets `RowType` so `ApplyRowType` drives its own height (28 / 40 / 60 / 120).
+    #
+    # `TypeBody` IS THE HOVER CONTRACT. Everything under it is walked by
+    # `UBRMenuRow::ApplyInversionToSubtree` and flipped to black on hover/select, which is
+    # COMPONENT-SPECS Sec 2's "everything flips to #000000". Art that must NOT invert (the
+    # Dig Down hatch) is deliberately parented to `RowOverlay` instead, OUTSIDE the walk.
+    # ==================================================================
+
+    # Drop Down — `Text and Icon` 108x21, gap 8, holding SELECTION plus a 6x6 triangle.
+    # The Active variant moves the triangle DOWN 6px rather than rotating it (measured y=8
+    # idle, y=14 active), which is why one asset and one texture serve all three statuses.
+    "WBP_ButtonDropDown": {
+        "folder": ASSET_FOLDER["WBP_ButtonDropDown"],
+        # Preview size comes from UBRMenuRow::ApplyRowType's design-time width,
+        # not from DesignSizeMode — that property is not writable (build_wbp.py 5b).
+        "class_defaults": {"RowType": "DropDown", "Style": MENU_ROW_STYLE},
+        "parent_class": "/Script/Breachpoint.BRMenuRow", "class": "UBRMenuRow",
+        "header": "Source/Breachpoint/UI/Components/BRMenuRow.h",
+        "notes": "Menu Row Type=Drop Down. 250x28, disclosure triangle right of Selection. "
+                 "The Active hatch is NOT here — see WBP_ButtonDigDown's note.",
+        "tree": with_text(MENU_ROW_TREE) + [
+            {"name": "TypeBody", "class": HBOX, "parent": "TextFrame",
+             "slot": box_slot(padding=margin(left=8.0, right=10.0), h="HAlign_Right",
+                              v="VAlign_Center"), "bind": True},
+            {"name": "Disclosure", "class": IMAGE, "parent": "TypeBody",
+             "slot": box_slot(v="VAlign_Center"),
+             "brush": brush(BTN_ART + "MenuRow_Triangle", 6, 6)},
+        ],
+    },
+
+    # Dig Down — the hatch plate plus the trailing chevrons at x=277.
+    #
+    # THE HATCH HANGS OFF `RowOverlay`, NOT `TypeBody`, AND THAT IS DELIBERATE. It is a
+    # highlight, not a glyph: inverting it to black on hover would fill the left third of an
+    # already-white plate with a black wedge. Being outside `TypeBody` puts it outside
+    # `ApplyInversionToSubtree`'s walk, so it survives the inversion untouched.
+    #
+    # ITS FADE IS BAKED INTO THE TEXTURE'S ALPHA, because this generator writes brushes and
+    # never colours (law 1) and `UBRMenuRow` declares no hatch bind to drive a tint from.
+    "WBP_ButtonDigDown": {
+        "folder": ASSET_FOLDER["WBP_ButtonDigDown"],
+        # Preview size comes from UBRMenuRow::ApplyRowType's design-time width,
+        # not from DesignSizeMode — that property is not writable (build_wbp.py 5b).
+        "class_defaults": {"RowType": "DigDown", "Style": MENU_ROW_STYLE},
+        "parent_class": "/Script/Breachpoint.BRMenuRow", "class": "UBRMenuRow",
+        "header": "Source/Breachpoint/UI/Components/BRMenuRow.h",
+        "notes": "Menu Row Type=Dig Down. 250x28 with the 110x24 diagonal hatch left-aligned "
+                 "under the strokes, and two chevrons right. Hatch is outside TypeBody so the "
+                 "hover inversion leaves it alone.",
+        "tree": with_text(menu_row_shell()[:4] + [
+            # Between TextFrameFill and Border: over the plate, under the strokes.
+            {"name": "Hatch", "class": IMAGE, "parent": "RowOverlay",
+             "slot": {"horizontalAlignment": "HAlign_Left", "verticalAlignment": "VAlign_Fill",
+                      "padding": margin(2.0, 2.0, 0.0, 2.0)},
+             "brush": brush(BTN_ART + "MenuRow_Hatch", 110, 24)},
+        ] + menu_row_shell()[4:] + [
+            {"name": "Label", "class": TEXT, "parent": "TextFrame",
+             "slot": box_slot(fill=1.0, padding=margin(left=10.0), v="VAlign_Center"),
+             "font": "Label/Button", "bind": True},
+            {"name": "TypeBody", "class": HBOX, "parent": "TextFrame",
+             "slot": box_slot(padding=margin(right=10.0), h="HAlign_Right",
+                              v="VAlign_Center"), "bind": True},
+            {"name": "Arrows", "class": IMAGE, "parent": "TypeBody",
+             "slot": box_slot(v="VAlign_Center"),
+             "brush": brush(BTN_ART + "MenuRow_Arrows", 9, 7)},
+        ]),
+    },
+
+    # Icon Only — 40x40, `Text Frame` 36x36 at padding 2, one 32x32 glyph, gap 0.
+    # `Icon` IS THE C++ BIND, not a TypeBody child: `UBRMenuRow` already declares it and
+    # `ApplyInvertedState` already tints it, so wrapping it would add a panel for nothing.
+    # `ApplyRowType` drives the 40x40 from `RowType`, so no size is authored here.
+    "WBP_ButtonIconOnly": {
+        "folder": ASSET_FOLDER["WBP_ButtonIconOnly"],
+        # Preview size comes from UBRMenuRow::ApplyRowType's design-time width,
+        # not from DesignSizeMode — that property is not writable (build_wbp.py 5b).
+        "class_defaults": {"RowType": "IconOnly", "Style": MENU_ROW_STYLE},
+        "parent_class": "/Script/Breachpoint.BRMenuRow", "class": "UBRMenuRow",
+        "header": "Source/Breachpoint/UI/Components/BRMenuRow.h",
+        "notes": "Menu Row Type=Icon Only. 40x40 from ApplyRowType. Glyph is a PLACEHOLDER — "
+                 "the reference art is a 'revert' arrow and no such glyph is in the icon set.",
+        "tree": without(icon_only_label(MENU_ROW_TREE), "Selection") + [
+            {"name": "Icon", "class": IMAGE, "parent": "TextFrame",
+             "slot": box_slot(fill=1.0, h="HAlign_Center", v="VAlign_Center"),
+             "brush": brush(GLYPHS + "T_UI_Glyph_Back_40", 32, 32), "bind": True},
+        ],
+    },
+
+    # Slider — `Text & Slider` gap 25; track 100x6 with a 6x6 handle and a 4x4 tick above it;
+    # the percentage in Roboto Condensed Medium Italic 14 (`Body/Flavor`, an exact match).
+    #
+    # THE LABEL FONT IS `Label/Tab`, WHICH CLOSES A RECORDED UNKNOWN. `02-MenuRow.md` flagged
+    # this row as "Rajdhani Demi 14px, not SemiBold 16px — either deliberate or drift". Demi
+    # IS SemiBold in Rajdhani's weight naming (the family ships Light/Regular/Medium/SemiBold/
+    # Bold and no Demi), so `Label/Tab` — Rajdhani SemiBold 14 — is the same face at the same
+    # size, and the finding resolves as deliberate rather than as drift.
+    "WBP_ButtonSlider": {
+        "folder": ASSET_FOLDER["WBP_ButtonSlider"],
+        # Preview size comes from UBRMenuRow::ApplyRowType's design-time width,
+        # not from DesignSizeMode — that property is not writable (build_wbp.py 5b).
+        "class_defaults": {"RowType": "Slider", "Style": MENU_ROW_STYLE},
+        "parent_class": "/Script/Breachpoint.BRMenuRow", "class": "UBRMenuRow",
+        "header": "Source/Breachpoint/UI/Components/BRMenuRow.h",
+        "notes": "Menu Row Type=Slider. Track + handle + tick + percentage. The handle is bound "
+                 "as InversionExempt: measured, it keeps a white ring on the inverted plate.",
+        "tree": without(with_text(MENU_ROW_TREE), "Selection") + [
+            {"name": "TypeBody", "class": HBOX, "parent": "TextFrame",
+             "slot": box_slot(padding=margin(left=25.0, right=10.0), h="HAlign_Right",
+                              v="VAlign_Center"), "bind": True},
+            # Track is 100 x 6 (the Line is 100 long); a bare RULE would collapse to 1px.
+            #
+            # THE HANDLE AND TICK ARE STACKED ON THE TRACK, NOT LAID OUT BESIDE IT. Measured:
+            # `Circle` 6x6 sits ON the 100x6 `Slider` frame and `Polygon 15` 4x4 sits at
+            # y=-6, i.e. ABOVE it. Putting all three in the HorizontalBox made a row of three
+            # separate objects — a track, then a dot, then a marker — which is a different
+            # control. An Overlay is what makes it one slider.
+            {"name": "TrackBox", "class": SIZEBOX, "parent": "TypeBody",
+             "slot": box_slot(v="VAlign_Center"), "properties": sized(100, 6)},
+            {"name": "TrackStack", "class": OVERLAY, "parent": "TrackBox", "slot": FILL},
+            {"name": "SliderTrack", "class": RULE, "parent": "TrackStack",
+             "slot": {"horizontalAlignment": "HAlign_Fill", "verticalAlignment": "VAlign_Center",
+                      "padding": margin()}},
+            # y=-6 above the track: a negative top margin, since the Overlay clips nothing.
+            {"name": "SliderTick", "class": IMAGE, "parent": "TrackStack",
+             "slot": {"horizontalAlignment": "HAlign_Center", "verticalAlignment": "VAlign_Top",
+                      "padding": margin(top=-6.0)},
+             "brush": brush(BTN_ART + "MenuRow_Tick", 4, 4)},
+            # NAMED FOR THE BIND, not for the shape. `UBRMenuRow::InversionExempt` matches by
+            # member name, so the handle has to carry it; the note is here because
+            # "InversionExempt" reads as nothing in a widget tree without one.
+            {"name": "InversionExempt", "class": IMAGE, "parent": "TrackStack",
+             "slot": CENTER, "brush": brush(BTN_ART + "MenuRow_Dot", 6, 6), "bind": True},
+            # Figma's own value on this row is "50" — the percentage the handle sits at.
+            {"name": "Percent", "class": TEXT, "parent": "TypeBody",
+             "slot": box_slot(padding=margin(left=16.0), v="VAlign_Center"),
+             "font": "Body/Flavor", "properties": {"text": "50"}},
+        ],
+    },
+
+    # Checkbox — a 16x16 stroked square at the right, tick shown when Active.
+    # The square is a HAIRLINE (four edges, no side ticks), not an Image: it is a stroked
+    # rectangle and `UBRHairlineBorder` draws exactly that with no texture. The walk swaps its
+    # stroke token on hover, which is why the box stays visible on the inverted plate.
+    "WBP_ButtonCheckbox": {
+        "folder": ASSET_FOLDER["WBP_ButtonCheckbox"],
+        # Preview size comes from UBRMenuRow::ApplyRowType's design-time width,
+        # not from DesignSizeMode — that property is not writable (build_wbp.py 5b).
+        "class_defaults": {"RowType": "Checkbox", "Style": MENU_ROW_STYLE},
+        "parent_class": "/Script/Breachpoint.BRMenuRow", "class": "UBRMenuRow",
+        "header": "Source/Breachpoint/UI/Components/BRMenuRow.h",
+        "notes": "Menu Row Type=Checkbox. 16x16 stroked square + tick glyph. Square is "
+                 "procedural (UBRHairlineBorder); only the tick is art.",
+        "tree": without(with_text(MENU_ROW_TREE), "Selection") + [
+            # 16 x 16, measured. The SizeBox is what makes it 16x16 — see sized().
+            {"name": "TypeBody", "class": SIZEBOX, "parent": "TextFrame",
+             "slot": box_slot(padding=margin(left=10.0, right=10.0), h="HAlign_Right",
+                              v="VAlign_Center"), "properties": sized(16, 16), "bind": True},
+            {"name": "CheckStack", "class": OVERLAY, "parent": "TypeBody", "slot": FILL},
+            {"name": "CheckBox", "class": HAIRLINE, "parent": "CheckStack", "slot": FILL},
+            # Bound as TypeCheckMark: C++ shows it only when the row is selected (Active).
+            {"name": "TypeCheckMark", "class": IMAGE, "parent": "CheckStack", "slot": CENTER, "bind": True,
+             "brush": brush(GLYPHS + "T_UI_Glyph_Check_24", 16, 16)},
+        ],
+    },
+
+    # Radio — IT IS A SQUARE. `02-MenuRow.md` finding 5: the `Vector` is a RECT, not an
+    # ellipse, which is consistent with the flat/sharp system but surprises anyone building
+    # from the name. Active is a 10x10 fill inset 3px inside the 16x16 outline.
+    # The fill is a BRUSHLESS UImage on purpose — generator law 2 permits that exactly when
+    # C++ tints it, and the inversion walk does.
+    "WBP_ButtonRadio": {
+        "folder": ASSET_FOLDER["WBP_ButtonRadio"],
+        # Preview size comes from UBRMenuRow::ApplyRowType's design-time width,
+        # not from DesignSizeMode — that property is not writable (build_wbp.py 5b).
+        "class_defaults": {"RowType": "Radio", "Style": MENU_ROW_STYLE},
+        "parent_class": "/Script/Breachpoint.BRMenuRow", "class": "UBRMenuRow",
+        "header": "Source/Breachpoint/UI/Components/BRMenuRow.h",
+        "notes": "Menu Row Type=Radio. Square outline + 10x10 inset fill (3px). Fully "
+                 "procedural — no texture at all.",
+        "tree": without(with_text(MENU_ROW_TREE), "Selection") + [
+            # 16 x 16 outline; the Active fill is 10 x 10 at (3,3) — a 3px inset, measured.
+            {"name": "TypeBody", "class": SIZEBOX, "parent": "TextFrame",
+             "slot": box_slot(padding=margin(left=10.0, right=10.0), h="HAlign_Right",
+                              v="VAlign_Center"), "properties": sized(16, 16), "bind": True},
+            {"name": "RadioStack", "class": OVERLAY, "parent": "TypeBody", "slot": FILL},
+            {"name": "RadioBox", "class": HAIRLINE, "parent": "RadioStack", "slot": FILL},
+            # Bound as TypeCheckMark: the 10x10 Active fill, 3px inset, hidden when idle.
+            {"name": "TypeCheckMark", "class": IMAGE, "parent": "RadioStack", "slot": inset(3.0), "bind": True},
+        ],
+    },
+
+    # Map Voting — 250x60. `TextFrame` IS A VERTICALBOX here (see menu_row_shell's docstring):
+    # the measured layout is `Text Stacked` 173x44, autolayout VERTICAL gap 2, holding a
+    # `Gametype` row (emblem + label) above the selection line.
+    #
+    # "WINNING" IS A FILL, NOT A BORDER CHANGE, and it survives hover — measured, Hover Winning
+    # keeps the white plate and still draws Bottom Line in #2ec3e5. NEITHER IS BUILT HERE:
+    # `UBRMenuRow` has no winning state and no bind for one. Filed as a C++ gap, not faked.
+    "WBP_ButtonMapVoting": {
+        "folder": ASSET_FOLDER["WBP_ButtonMapVoting"],
+        # Preview size comes from UBRMenuRow::ApplyRowType's design-time width,
+        # not from DesignSizeMode — that property is not writable (build_wbp.py 5b).
+        "class_defaults": {"RowType": "MapVoting", "Style": MENU_ROW_STYLE},
+        "parent_class": "/Script/Breachpoint.BRMenuRow", "class": "UBRMenuRow",
+        "header": "Source/Breachpoint/UI/Components/BRMenuRow.h",
+        "notes": "Menu Row Type=Map Voting. 250x60, stacked label/selection with a gametype "
+                 "emblem and a vote counter. The Winning state is a C++ GAP — not built.",
+        # `Text Stacked` (10,6) and `Checkbox and Counter` (193,16) sit SIDE BY SIDE, so
+        # TextFrame stays horizontal and the stacking happens one level down. A VBox at the
+        # top would have put the counter under the label instead of beside it.
+        "tree": with_text(menu_row_shell()) + [
+            {"name": "TextStacked", "class": VBOX, "parent": "TextFrame",
+             "slot": box_slot(fill=1.0, padding=margin(left=10.0, top=6.0, bottom=6.0),
+                              v="VAlign_Fill")},
+            {"name": "GametypeRow", "class": HBOX, "parent": "TextStacked",
+             "slot": box_slot(padding=margin(bottom=2.0))},
+            {"name": "Icon", "class": IMAGE, "parent": "GametypeRow",
+             "slot": box_slot(padding=margin(right=4.0), v="VAlign_Center"),
+             "brush": brush(GAMETYPE + "T_UI_Icon_GametypeV2_Slayer", 20, 20), "bind": True},
+            {"name": "Label", "class": TEXT, "parent": "GametypeRow",
+             "slot": box_slot(fill=1.0, v="VAlign_Center"), "font": "Label/Button",
+             "properties": {"text": FIGMA_TEXT["Label"]}, "bind": True},
+            {"name": "Selection", "class": TEXT, "parent": "TextStacked",
+             "slot": box_slot(), "font": "Label/Button",
+             "properties": {"text": FIGMA_TEXT["Selection"]}, "bind": True},
+            {"name": "TypeBody", "class": HBOX, "parent": "TextFrame",
+             "slot": box_slot(padding=margin(right=10.0), h="HAlign_Right",
+                              v="VAlign_Center"), "bind": True},
+            # Figma's vote tally on this row is "6".
+            {"name": "VoteCount", "class": TEXT, "parent": "TypeBody",
+             "slot": box_slot(padding=margin(right=10.0), v="VAlign_Center"),
+             "font": "Label/Button", "properties": {"text": "6"}},
+            # 24 x 24 here, NOT the 16 used elsewhere — measured, and worth not "fixing".
+            {"name": "VoteBoxSize", "class": SIZEBOX, "parent": "TypeBody",
+             "slot": box_slot(v="VAlign_Center"), "properties": sized(24, 24)},
+            {"name": "VoteBox", "class": HAIRLINE, "parent": "VoteBoxSize", "slot": FILL},
+        ],
+    },
+
+    # Image — 250x120, a 120x120 emblem beside the label with a 16x16 checkbox at the right.
+    # THE EMBLEM IS A STAND-IN AND IS RECORDED AS ONE. `02-MenuRow.md`: the Figma `Image`
+    # instance is placeholder emblem art (Shield / Sword / Skull booleans at #d9d9d9) that
+    # "is not part of the button". A real gametype icon is used so the slot is not a blank
+    # white rectangle (BP70 D2); the shipping art is content, and arrives with content.
+    "WBP_ButtonImage": {
+        "folder": ASSET_FOLDER["WBP_ButtonImage"],
+        # Preview size comes from UBRMenuRow::ApplyRowType's design-time width,
+        # not from DesignSizeMode — that property is not writable (build_wbp.py 5b).
+        "class_defaults": {"RowType": "Image", "Style": MENU_ROW_STYLE},
+        "parent_class": "/Script/Breachpoint.BRMenuRow", "class": "UBRMenuRow",
+        "header": "Source/Breachpoint/UI/Components/BRMenuRow.h",
+        "notes": "Menu Row Type=Image. 250x120, 120x120 emblem + label + checkbox. Emblem art "
+                 "is a STAND-IN for content that does not exist yet.",
+        # NOT `MENU_ROW_TREE + [...]`: a HorizontalBox lays children out in declaration order,
+        # so appending would have put the 120px emblem to the RIGHT of the label. Measured, the
+        # emblem is at x=10 and the text at x=130 — emblem first. `Selection` is omitted
+        # because this variant has none (it is BindWidgetOptional, so the bind still resolves).
+        "tree": with_text(menu_row_shell()) + [
+            {"name": "Icon", "class": IMAGE, "parent": "TextFrame",
+             "slot": box_slot(padding=margin(left=10.0), v="VAlign_Center"),
+             "brush": brush(GAMETYPE + "T_UI_Icon_GametypeV2_Slayer", 120, 120), "bind": True},
+            {"name": "Label", "class": TEXT, "parent": "TextFrame",
+             "slot": box_slot(fill=1.0, padding=margin(left=10.0), v="VAlign_Center"),
+             "font": "Label/Button", "properties": {"text": FIGMA_TEXT["Label"]},
+             "bind": True},
+            # 16 x 16 at (220,50), measured — same checkbox as the Checkbox type.
+            {"name": "TypeBody", "class": SIZEBOX, "parent": "TextFrame",
+             "slot": box_slot(padding=margin(left=10.0, right=10.0), h="HAlign_Right",
+                              v="VAlign_Center"), "properties": sized(16, 16), "bind": True},
+            {"name": "ImageCheck", "class": HAIRLINE, "parent": "TypeBody", "slot": FILL},
         ],
     },
 

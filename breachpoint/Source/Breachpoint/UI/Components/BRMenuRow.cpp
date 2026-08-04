@@ -3,9 +3,21 @@
 #include "Animation/WidgetAnimation.h"
 #include "CommonTextBlock.h"
 #include "Components/Image.h"
+#include "Components/PanelWidget.h"
 #include "Components/SizeBox.h"
 #include "Components/WidgetSwitcher.h"
 #include "UI/Components/BRHairlineBorder.h"
+
+UBRMenuRow::UBRMenuRow(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
+{
+#if WITH_EDITORONLY_DATA
+	// The designer previews at the widget's own desired size instead of stretching it across a
+	// 1280x720 canvas. See the header for why this cannot be a property write or a config
+	// default. Editor-only data: absent from a packaged build entirely.
+	DesignSizeMode = EDesignPreviewSizeMode::Desired;
+#endif
+}
 
 void UBRMenuRow::NativeOnInitialized()
 {
@@ -35,6 +47,7 @@ void UBRMenuRow::NativeOnInitialized()
 
 	ApplyRowType();
 	SetRowAlignment(Alignment);
+	ApplySelectedMark(GetSelected());
 
 	// Force the idle treatment through the one code path rather than trusting WBP defaults.
 	// No animation: nothing has been rendered yet, and a reverse play from time 0 is a no-op
@@ -51,6 +64,20 @@ void UBRMenuRow::NativePreConstruct()
 	// time, so without this a RowType change in the details panel showed nothing until PIE.
 	ApplyRowType();
 	SetRowAlignment(Alignment);
+	// Design time shows the IDLE variant, which is an empty box.
+	ApplySelectedMark(false);
+
+	// ...and the idle TREATMENT, for the same reason. Without this the designer draws
+	// `TextFrameFill` with the engine's default WHITE brush -- an untinted UImage is a solid
+	// white rectangle (BP70 D2) -- so every Menu Row asset opens as a white slab with its
+	// border, label and type body hidden underneath. It is correct the moment it runs and
+	// wrong every time anyone looks at it, which is the worst of the two.
+	//
+	// The bIsInverted flip is not redundant: ApplyInvertedState early-returns when the state
+	// already matches, and the member defaults to false. NativeOnInitialized does the same
+	// thing for the same reason.
+	bIsInverted = true;
+	ApplyInvertedState(false, /*bPlayAnimation*/ false);
 }
 
 void UBRMenuRow::ApplyRowType()
@@ -83,7 +110,16 @@ void UBRMenuRow::ApplyRowType()
 
 		if (RowType == EBRMenuRowType::IconOnly)
 		{
+			// 40 x 40 at BOTH design time and runtime: Icon Only is square by definition, and
+			// a rail cannot stretch it into a row.
 			RootSizeBox->SetWidthOverride(IconOnlySize);
+		}
+		else if (IsDesignTime())
+		{
+			// The measured component board is 250 wide. Only the designer gets it -- see
+			// ComponentBoardWidth. Without this every asset previews at canvas width and
+			// cannot be compared against Figma at all.
+			RootSizeBox->SetWidthOverride(ComponentBoardWidth);
 		}
 		else
 		{
@@ -123,9 +159,16 @@ void UBRMenuRow::SetRowAlignment(EBRMenuRowAlignment InAlignment)
 
 	// COMPONENT-SPECS Sec 2: `Selection` is right-aligned on both Alignment values -- it is the
 	// value on a settings row, not part of the label block.
+	//
+	// MAP VOTING IS THE EXCEPTION, and it is a measured one: there `Selection` is the second
+	// line of `Text Stacked` (173x21 at x=10, directly under the label) rather than a value at
+	// the right edge, so right-justifying it pushes the map name away from the label it
+	// belongs to. It follows the label instead.
 	if (Selection)
 	{
-		Selection->SetJustification(ETextJustify::Right);
+		Selection->SetJustification(RowType == EBRMenuRowType::MapVoting
+			? LabelJustify
+			: ETextJustify::Right);
 	}
 }
 
@@ -177,6 +220,15 @@ void UBRMenuRow::ApplyInvertedState(bool bInverted, bool bPlayAnimation)
 		Selection->SetColorAndOpacity(TextColor);
 	}
 
+	// COMPONENT-SPECS Sec 2, every Type's hover row: the body inverts with the label. Icon is
+	// walked explicitly because it is a sibling of the body, not a child of it.
+	if (Icon)
+	{
+		Icon->SetColorAndOpacity(TextColor.GetSpecifiedColor());
+	}
+
+	ApplyInversionToSubtree(TypeBody, TextColor, bInverted);
+
 	// COMPONENT-SPECS Sec 2 hover: Bottom Line opacity 0.3 -> 1.
 	if (Border)
 	{
@@ -202,6 +254,58 @@ void UBRMenuRow::ApplyInvertedState(bool bInverted, bool bPlayAnimation)
 	}
 }
 
+void UBRMenuRow::ApplyInversionToSubtree(UWidget* Root, const FSlateColor& InTextColor, bool bInverted)
+{
+	// COMPONENT-SPECS Sec 2 Slider hover: the handle keeps a white ring and must not be tinted.
+	// Checked before the type dispatch so the exemption covers the widget AND its children.
+	if (!Root || Root == InversionExempt)
+	{
+		return;
+	}
+
+	if (UImage* AsImage = Cast<UImage>(Root))
+	{
+		// UImage takes a raw FLinearColor, unlike the text blocks' FSlateColor.
+		AsImage->SetColorAndOpacity(InTextColor.GetSpecifiedColor());
+	}
+	else if (UCommonTextBlock* AsText = Cast<UCommonTextBlock>(Root))
+	{
+		AsText->SetColorAndOpacity(InTextColor);
+	}
+	else if (UBRHairlineBorder* AsLine = Cast<UBRHairlineBorder>(Root))
+	{
+		// A hairline resolves its own colour from tokens, so inverting it is a token swap, not
+		// a tint. Both tokens move together: a checkbox square drawn half-dimmed on the
+		// inverted plate reads as a rendering fault rather than as a state.
+		FBRHairlineStyle LineStyle = AsLine->GetHairlineStyle();
+		LineStyle.StrokeToken = bInverted ? InvertedTextToken : IdleTextToken;
+		LineStyle.DimStrokeToken = LineStyle.StrokeToken;
+		AsLine->SetHairlineStyle(LineStyle);
+	}
+
+	if (UPanelWidget* AsPanel = Cast<UPanelWidget>(Root))
+	{
+		const int32 NumChildren = AsPanel->GetChildrenCount();
+		for (int32 ChildIndex = 0; ChildIndex < NumChildren; ++ChildIndex)
+		{
+			ApplyInversionToSubtree(AsPanel->GetChildAt(ChildIndex), InTextColor, bInverted);
+		}
+	}
+}
+
+void UBRMenuRow::ApplySelectedMark(bool bSelected)
+{
+	// COMPONENT-SPECS Sec 2 Checkbox/Radio: Idle and Hover are an EMPTY box; only Active and
+	// Active Hover carry the mark. HitTestInvisible rather than Visible -- the mark is
+	// decoration inside a button and must never eat the click that toggles it.
+	if (TypeCheckMark)
+	{
+		TypeCheckMark->SetVisibility(bSelected
+			? ESlateVisibility::HitTestInvisible
+			: ESlateVisibility::Collapsed);
+	}
+}
+
 void UBRMenuRow::NativeOnHovered()
 {
 	Super::NativeOnHovered();
@@ -223,6 +327,7 @@ void UBRMenuRow::NativeOnSelected(bool bBroadcast)
 	Super::NativeOnSelected(bBroadcast);
 
 	ApplyInvertedState(true);
+	ApplySelectedMark(true);
 
 	if (DisclosureAnim)
 	{
@@ -235,6 +340,7 @@ void UBRMenuRow::NativeOnDeselected(bool bBroadcast)
 	Super::NativeOnDeselected(bBroadcast);
 
 	ApplyInvertedState(IsHovered());
+	ApplySelectedMark(false);
 
 	if (DisclosureAnim)
 	{

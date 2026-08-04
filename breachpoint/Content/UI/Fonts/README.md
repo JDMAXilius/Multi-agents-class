@@ -47,8 +47,8 @@ the composite fonts, then reads every typeface name back off the asset.
 - A third font family. Two is the decision (`ROADMAP.md:680`); a third is a design ruling, not
   an import.
 - A font whose licence is not OFL/permissive **and** recorded in `THIRD-PARTY-NOTICES.md` +
-  re-copied to `Content/Legal/THIRD-PARTY-NOTICES.txt`. `Tools/verify_notices.py:98-116` fails
-  the build on drift between the two.
+  re-copied to `Content/Legal/THIRD-PARTY-NOTICES.txt`. Drift between the two used to fail the
+  build via `Tools/verify_notices.py`; that script was deleted 4 Aug 2026, so this is manual now.
 - Type sizes, weights or letter-spacing. Those are text styles — C++ in
   `Source/Breachpoint/UI/Styles/`, never baked into a font asset.
 - Rasterised text, SDF sprite sheets, or an image of a word.
