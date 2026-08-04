@@ -335,6 +335,9 @@ ASSET_FOLDER = {
     # instances it -- it is created at runtime from a soft class, never placed in a tree, so
     # it is not "part of" the screen in any sense the folder convention recognises.
     "WBP_SettingsRow":         UI_COMPONENTS,
+    "WBP_SettingsRow_Slider":   UI_COMPONENTS,
+    "WBP_SettingsRow_Checkbox": UI_COMPONENTS,
+    "WBP_SettingsRow_DropDown": UI_COMPONENTS,
     "WBP_Modal_KeyRemap":      UI_SCREENS,
     "WBP_Screen_Settings":     UI_SCREENS,
     # Founder-requested, 4 Aug 2026. Its own folder because the Button Border texture set
@@ -526,6 +529,92 @@ def sized(w: float, h: float) -> dict:
     """
     return {"bOverride_WidthOverride": True, "widthOverride": float(w),
             "bOverride_HeightOverride": True, "heightOverride": float(h)}
+
+
+# ---------------------------------------------------------------------------------------------
+# THE THREE TYPE BODIES, defined ONCE and consumed twice.
+#
+# `WBP_Button<Type>` (the component-board button) and `WBP_SettingsRow_<Type>` (the same body
+# under a `UBRSettingsRow` parent) are the SAME measured geometry. Defining each body here means
+# a COMPONENT-SPECS correction lands in both or neither — the same reason `MENU_ROW_TREE` is
+# shared rather than copied.
+# ---------------------------------------------------------------------------------------------
+
+def dropdown_body() -> list[dict]:
+    """`Text and Icon` gap 8, holding the 6x6 disclosure triangle."""
+    return [
+        {"name": "TypeBody", "class": HBOX, "parent": "TextFrame",
+         "slot": box_slot(padding=margin(left=8.0, right=10.0), h="HAlign_Right",
+                          v="VAlign_Center"), "bind": True},
+        {"name": "Disclosure", "class": IMAGE, "parent": "TypeBody",
+         "slot": box_slot(v="VAlign_Center"),
+         "brush": brush(BTN_ART + "MenuRow_Triangle", 6, 6)},
+    ]
+
+
+def slider_body(static_value: bool = True) -> list[dict]:
+    """Track 100x6 with the handle ON it and the tick 6px ABOVE it.
+
+    `static_value` writes Figma's own "50" into `Percent`. TRUE for the component-board button,
+    where the number is part of the reference. FALSE for a settings row, where the live value is
+    written to `Selection` by `RefreshFromSetting` — a hard-coded "50" beside a real value is a
+    second number that never changes, which reads as a bug the first time a player drags it.
+    """
+    percent = {"name": "Percent", "class": TEXT, "parent": "TypeBody",
+               "slot": box_slot(padding=margin(left=16.0), v="VAlign_Center"),
+               "font": "Body/Flavor"}
+    if static_value:
+        percent["properties"] = {"text": "50"}
+    return [
+        {"name": "TypeBody", "class": HBOX, "parent": "TextFrame",
+         "slot": box_slot(padding=margin(left=25.0, right=10.0), h="HAlign_Right",
+                          v="VAlign_Center"), "bind": True},
+        # Track is 100 x 6 (the Line is 100 long); a bare RULE would collapse to 1px.
+        #
+        # THE HANDLE AND TICK ARE STACKED ON THE TRACK, NOT LAID OUT BESIDE IT. Measured:
+        # `Circle` 6x6 sits ON the 100x6 `Slider` frame and `Polygon 15` 4x4 sits at y=-6, i.e.
+        # ABOVE it. Putting all three in the HorizontalBox made a row of three separate objects
+        # — a track, then a dot, then a marker — which is a different control.
+        {"name": "TrackBox", "class": SIZEBOX, "parent": "TypeBody",
+         "slot": box_slot(v="VAlign_Center"), "properties": sized(100, 6)},
+        {"name": "TrackStack", "class": OVERLAY, "parent": "TrackBox", "slot": FILL},
+        {"name": "SliderTrack", "class": RULE, "parent": "TrackStack",
+         "slot": {"horizontalAlignment": "HAlign_Fill", "verticalAlignment": "VAlign_Center",
+                  "padding": margin()}},
+        {"name": "SliderTick", "class": IMAGE, "parent": "TrackStack",
+         "slot": {"horizontalAlignment": "HAlign_Center", "verticalAlignment": "VAlign_Top",
+                  "padding": margin(top=-6.0)},
+         "brush": brush(BTN_ART + "MenuRow_Tick", 4, 4)},
+        # NAMED FOR THE BIND, not for the shape: `UBRMenuRow::InversionExempt` matches by member
+        # name, and the handle is the one thing that must not invert.
+        {"name": "InversionExempt", "class": IMAGE, "parent": "TrackStack",
+         "slot": CENTER, "brush": brush(BTN_ART + "MenuRow_Dot", 6, 6), "bind": True},
+        percent,
+    ]
+
+
+def checkbox_body(stack: str = "CheckStack", inset_fill: bool = False) -> list[dict]:
+    """A 16x16 stroked square with an Active-only mark.
+
+    `inset_fill=True` is the RADIO: the same 16x16 outline, but its mark is a 10x10 fill inset
+    3px rather than a tick glyph. Measured — and the radio really is a square (`02-MenuRow.md`
+    finding 5), so the two differ only in what fills them.
+    """
+    mark = {"name": "TypeCheckMark", "class": IMAGE, "parent": stack, "bind": True}
+    if inset_fill:
+        mark["slot"] = inset(3.0)
+    else:
+        mark["slot"] = CENTER
+        mark["brush"] = brush(GLYPHS + "T_UI_Glyph_Check_24", 16, 16)
+    return [
+        {"name": "TypeBody", "class": SIZEBOX, "parent": "TextFrame",
+         "slot": box_slot(padding=margin(left=10.0, right=10.0), h="HAlign_Right",
+                          v="VAlign_Center"), "properties": sized(16, 16), "bind": True},
+        {"name": stack, "class": OVERLAY, "parent": "TypeBody", "slot": FILL},
+        {"name": "CheckBox" if not inset_fill else "RadioBox", "class": HAIRLINE,
+         "parent": stack, "slot": FILL},
+        mark,
+    ]
 
 
 def without(nodes: list[dict], *names: str) -> list[dict]:
@@ -2497,14 +2586,7 @@ PLAN = {
         "header": "Source/Breachpoint/UI/Components/BRMenuRow.h",
         "notes": "Menu Row Type=Drop Down. 250x28, disclosure triangle right of Selection. "
                  "The Active hatch is NOT here — see WBP_ButtonDigDown's note.",
-        "tree": with_text(MENU_ROW_TREE) + [
-            {"name": "TypeBody", "class": HBOX, "parent": "TextFrame",
-             "slot": box_slot(padding=margin(left=8.0, right=10.0), h="HAlign_Right",
-                              v="VAlign_Center"), "bind": True},
-            {"name": "Disclosure", "class": IMAGE, "parent": "TypeBody",
-             "slot": box_slot(v="VAlign_Center"),
-             "brush": brush(BTN_ART + "MenuRow_Triangle", 6, 6)},
-        ],
+        "tree": with_text(MENU_ROW_TREE) + dropdown_body(),
     },
 
     # Dig Down — the hatch plate plus the trailing chevrons at x=277.
@@ -2582,38 +2664,7 @@ PLAN = {
         "header": "Source/Breachpoint/UI/Components/BRMenuRow.h",
         "notes": "Menu Row Type=Slider. Track + handle + tick + percentage. The handle is bound "
                  "as InversionExempt: measured, it keeps a white ring on the inverted plate.",
-        "tree": without(with_text(MENU_ROW_TREE), "Selection") + [
-            {"name": "TypeBody", "class": HBOX, "parent": "TextFrame",
-             "slot": box_slot(padding=margin(left=25.0, right=10.0), h="HAlign_Right",
-                              v="VAlign_Center"), "bind": True},
-            # Track is 100 x 6 (the Line is 100 long); a bare RULE would collapse to 1px.
-            #
-            # THE HANDLE AND TICK ARE STACKED ON THE TRACK, NOT LAID OUT BESIDE IT. Measured:
-            # `Circle` 6x6 sits ON the 100x6 `Slider` frame and `Polygon 15` 4x4 sits at
-            # y=-6, i.e. ABOVE it. Putting all three in the HorizontalBox made a row of three
-            # separate objects — a track, then a dot, then a marker — which is a different
-            # control. An Overlay is what makes it one slider.
-            {"name": "TrackBox", "class": SIZEBOX, "parent": "TypeBody",
-             "slot": box_slot(v="VAlign_Center"), "properties": sized(100, 6)},
-            {"name": "TrackStack", "class": OVERLAY, "parent": "TrackBox", "slot": FILL},
-            {"name": "SliderTrack", "class": RULE, "parent": "TrackStack",
-             "slot": {"horizontalAlignment": "HAlign_Fill", "verticalAlignment": "VAlign_Center",
-                      "padding": margin()}},
-            # y=-6 above the track: a negative top margin, since the Overlay clips nothing.
-            {"name": "SliderTick", "class": IMAGE, "parent": "TrackStack",
-             "slot": {"horizontalAlignment": "HAlign_Center", "verticalAlignment": "VAlign_Top",
-                      "padding": margin(top=-6.0)},
-             "brush": brush(BTN_ART + "MenuRow_Tick", 4, 4)},
-            # NAMED FOR THE BIND, not for the shape. `UBRMenuRow::InversionExempt` matches by
-            # member name, so the handle has to carry it; the note is here because
-            # "InversionExempt" reads as nothing in a widget tree without one.
-            {"name": "InversionExempt", "class": IMAGE, "parent": "TrackStack",
-             "slot": CENTER, "brush": brush(BTN_ART + "MenuRow_Dot", 6, 6), "bind": True},
-            # Figma's own value on this row is "50" — the percentage the handle sits at.
-            {"name": "Percent", "class": TEXT, "parent": "TypeBody",
-             "slot": box_slot(padding=margin(left=16.0), v="VAlign_Center"),
-             "font": "Body/Flavor", "properties": {"text": "50"}},
-        ],
+        "tree": without(with_text(MENU_ROW_TREE), "Selection") + slider_body(),
     },
 
     # Checkbox — a 16x16 stroked square at the right, tick shown when Active.
@@ -2629,17 +2680,7 @@ PLAN = {
         "header": "Source/Breachpoint/UI/Components/BRMenuRow.h",
         "notes": "Menu Row Type=Checkbox. 16x16 stroked square + tick glyph. Square is "
                  "procedural (UBRHairlineBorder); only the tick is art.",
-        "tree": without(with_text(MENU_ROW_TREE), "Selection") + [
-            # 16 x 16, measured. The SizeBox is what makes it 16x16 — see sized().
-            {"name": "TypeBody", "class": SIZEBOX, "parent": "TextFrame",
-             "slot": box_slot(padding=margin(left=10.0, right=10.0), h="HAlign_Right",
-                              v="VAlign_Center"), "properties": sized(16, 16), "bind": True},
-            {"name": "CheckStack", "class": OVERLAY, "parent": "TypeBody", "slot": FILL},
-            {"name": "CheckBox", "class": HAIRLINE, "parent": "CheckStack", "slot": FILL},
-            # Bound as TypeCheckMark: C++ shows it only when the row is selected (Active).
-            {"name": "TypeCheckMark", "class": IMAGE, "parent": "CheckStack", "slot": CENTER, "bind": True,
-             "brush": brush(GLYPHS + "T_UI_Glyph_Check_24", 16, 16)},
-        ],
+        "tree": without(with_text(MENU_ROW_TREE), "Selection") + checkbox_body(),
     },
 
     # Radio — IT IS A SQUARE. `02-MenuRow.md` finding 5: the `Vector` is a RECT, not an
@@ -2656,16 +2697,8 @@ PLAN = {
         "header": "Source/Breachpoint/UI/Components/BRMenuRow.h",
         "notes": "Menu Row Type=Radio. Square outline + 10x10 inset fill (3px). Fully "
                  "procedural — no texture at all.",
-        "tree": without(with_text(MENU_ROW_TREE), "Selection") + [
-            # 16 x 16 outline; the Active fill is 10 x 10 at (3,3) — a 3px inset, measured.
-            {"name": "TypeBody", "class": SIZEBOX, "parent": "TextFrame",
-             "slot": box_slot(padding=margin(left=10.0, right=10.0), h="HAlign_Right",
-                              v="VAlign_Center"), "properties": sized(16, 16), "bind": True},
-            {"name": "RadioStack", "class": OVERLAY, "parent": "TypeBody", "slot": FILL},
-            {"name": "RadioBox", "class": HAIRLINE, "parent": "RadioStack", "slot": FILL},
-            # Bound as TypeCheckMark: the 10x10 Active fill, 3px inset, hidden when idle.
-            {"name": "TypeCheckMark", "class": IMAGE, "parent": "RadioStack", "slot": inset(3.0), "bind": True},
-        ],
+        "tree": without(with_text(MENU_ROW_TREE), "Selection")
+                + checkbox_body("RadioStack", inset_fill=True),
     },
 
     # Map Voting — 250x60. `TextFrame` IS A VERTICALBOX here (see menu_row_shell's docstring):
@@ -2748,6 +2781,55 @@ PLAN = {
                               v="VAlign_Center"), "properties": sized(16, 16), "bind": True},
             {"name": "ImageCheck", "class": HAIRLINE, "parent": "TypeBody", "slot": FILL},
         ],
+    },
+
+    # ==================================================================
+    # THE TYPED SETTINGS ROWS. Same measured bodies as the buttons above, under a
+    # `UBRSettingsRow` parent so `UBRScreen_Settings` can instance one per setting kind.
+    #
+    # WHY THESE EXIST AT ALL: `UBRSettingsRow::RefreshFromSetting` has always resolved a
+    # Scalar to Slider and a two-option Discrete to Checkbox — and then rendered both as a
+    # plain label-and-value row, because `WBP_SettingsRow` has no per-type body and
+    # `SetRowType` only drives height. A volume slider and a resolution dropdown were
+    # pixel-identical. These are the bodies that resolution was always asking for.
+    #
+    # BINDS ARE `unbound()`: `UBRSettingsRow` INHERITS all of them from `UBRMenuRow`, and
+    # `required_bind_widgets` parses one header sliced to one class, so it cannot see a base
+    # class's members. Same device `WBP_SettingsRow` already uses.
+    #
+    # `Selection` IS KEPT, unlike the button variants that drop it. It is where
+    # `RefreshFromSetting` writes the live value, and `SetSelectionText` early-returns when the
+    # widget is absent — so dropping it would silently render every value blank.
+    # ==================================================================
+
+    "WBP_SettingsRow_Slider": {
+        "folder": ASSET_FOLDER["WBP_SettingsRow_Slider"],
+        "parent_class": "/Script/Breachpoint.BRSettingsRow",
+        "class": "UBRSettingsRow",
+        "header": "Source/Breachpoint/UI/Components/BRSettingsRow.h",
+        "notes": "Settings row, Slider body. static_value=False: the live value goes to "
+                 "Selection, so a hard-coded 50 would be a second number that never moves.",
+        "tree": unbound(MENU_ROW_TREE + slider_body(static_value=False)),
+    },
+
+    "WBP_SettingsRow_Checkbox": {
+        "folder": ASSET_FOLDER["WBP_SettingsRow_Checkbox"],
+        "parent_class": "/Script/Breachpoint.BRSettingsRow",
+        "class": "UBRSettingsRow",
+        "header": "Source/Breachpoint/UI/Components/BRSettingsRow.h",
+        "notes": "Settings row, Checkbox body. TypeCheckMark follows selection, so the tick "
+                 "reflects the bool rather than being painted permanently.",
+        "tree": unbound(MENU_ROW_TREE + checkbox_body()),
+    },
+
+    "WBP_SettingsRow_DropDown": {
+        "folder": ASSET_FOLDER["WBP_SettingsRow_DropDown"],
+        "parent_class": "/Script/Breachpoint.BRSettingsRow",
+        "class": "UBRSettingsRow",
+        "header": "Source/Breachpoint/UI/Components/BRSettingsRow.h",
+        "notes": "Settings row, Drop Down body. The disclosure triangle sits right of the "
+                 "value, which is what tells a player the row cycles rather than toggles.",
+        "tree": unbound(MENU_ROW_TREE + dropdown_body()),
     },
 
     "WBP_Screen_Settings": {

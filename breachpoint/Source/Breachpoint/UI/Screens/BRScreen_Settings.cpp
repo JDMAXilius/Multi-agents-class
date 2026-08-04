@@ -144,6 +144,29 @@ void UBRScreen_Settings::HandleTabSelected(int32 TabIndex)
 	RebuildRows();
 }
 
+/**
+ * Load a soft row class, or fall back. Never returns a class the caller did not ask for without
+ * saying so: a null soft pointer is a deliberate "use the default", while a set-but-unloadable
+ * one is a config error worth a line in the log.
+ */
+static UClass* ResolveRowClass(const TSoftClassPtr<UBRSettingsRow>& SoftClass, UClass* Fallback)
+{
+	if (SoftClass.IsNull())
+	{
+		return Fallback;
+	}
+
+	if (UClass* Loaded = SoftClass.LoadSynchronous())
+	{
+		return Loaded;
+	}
+
+	UE_LOG(LogBRScreenSettings, Warning,
+		TEXT("Settings row class '%s' is set but failed to load; falling back."),
+		*SoftClass.ToString());
+	return Fallback;
+}
+
 void UBRScreen_Settings::RebuildRows()
 {
 	ReleaseRows();
@@ -155,9 +178,9 @@ void UBRScreen_Settings::RebuildRows()
 
 	// Law 3: SOFT class, resolved here from config. There is no hard widget-class pointer and no
 	// constructor asset lookup anywhere in this file.
-	const TSoftClassPtr<UBRSettingsRow>& RowSoftClass = UBRUISettings::Get().SettingsRowClass;
-	UClass* RowClass = RowSoftClass.IsNull() ? nullptr : RowSoftClass.LoadSynchronous();
-	if (!RowClass)
+	const UBRUISettings& UISettings = UBRUISettings::Get();
+	UClass* DefaultRowClass = ResolveRowClass(UISettings.SettingsRowClass, nullptr);
+	if (!DefaultRowClass)
 	{
 		UE_LOG(LogBRScreenSettings, Warning,
 			TEXT("UBRUISettings::SettingsRowClass is unset or failed to load -- the settings list ")
@@ -170,6 +193,29 @@ void UBRScreen_Settings::RebuildRows()
 
 	for (UBRSettingsDataObject* Setting : Rows)
 	{
+		// The TYPE picks the CLASS, because the per-type body lives in the asset. Resolved from
+		// the setting rather than from a built row -- see UBRSettingsRow::ResolveRowTypeFor.
+		// Every branch falls back to the default row, so an unset entry degrades to a plain
+		// label-and-value row rather than to a gap in the list.
+		UClass* RowClass = DefaultRowClass;
+		switch (UBRSettingsRow::ResolveRowTypeFor(Setting))
+		{
+		case EBRMenuRowType::Slider:
+			RowClass = ResolveRowClass(UISettings.SettingsRowSliderClass, DefaultRowClass);
+			break;
+
+		case EBRMenuRowType::Checkbox:
+			RowClass = ResolveRowClass(UISettings.SettingsRowCheckboxClass, DefaultRowClass);
+			break;
+
+		case EBRMenuRowType::DropDown:
+			RowClass = ResolveRowClass(UISettings.SettingsRowDropDownClass, DefaultRowClass);
+			break;
+
+		default:
+			break;
+		}
+
 		UBRSettingsRow* Row = CreateWidget<UBRSettingsRow>(this, RowClass);
 		if (!Row)
 		{

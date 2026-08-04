@@ -51,6 +51,17 @@ public:
 	DECLARE_DELEGATE_OneParam(FBRSettingsRowActivated, UBRSettingsDataObject* /* Setting */);
 	FBRSettingsRowActivated OnSettingRowActivated;
 
+	/**
+	 * Which `EBRMenuRowType` body a setting renders as -- WITHOUT needing a row to ask.
+	 *
+	 * Static because the screen has to pick a WIDGET CLASS before it can create the widget, and
+	 * the type is what decides which class. `RefreshFromSetting` used to compute this on an
+	 * already-built row and set `RowType` on it, which changed the row's height and nothing else:
+	 * the per-type bodies live in different assets, so a Scalar setting and a Discrete one both
+	 * rendered as a plain Default row. Resolving before construction is what closes that.
+	 */
+	static EBRMenuRowType ResolveRowTypeFor(const UBRSettingsDataObject* InSetting);
+
 protected:
 	//~ Begin UUserWidget interface
 	virtual void NativeOnInitialized() override;

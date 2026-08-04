@@ -58,6 +58,11 @@ void UBRSettingsRow::HandleSettingChanged(UBRSettingsDataObject* Changed)
 
 EBRMenuRowType UBRSettingsRow::ResolveRowType() const
 {
+	return ResolveRowTypeFor(Setting);
+}
+
+EBRMenuRowType UBRSettingsRow::ResolveRowTypeFor(const UBRSettingsDataObject* Setting)
+{
 	if (!Setting)
 	{
 		return EBRMenuRowType::Default;

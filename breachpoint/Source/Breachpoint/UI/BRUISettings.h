@@ -59,9 +59,33 @@ public:
 	UPROPERTY(config, EditDefaultsOnly, Category = "Screens")
 	TSoftClassPtr<UBRActivatableWidget> ConfirmModalClass;
 
-	/** The row widget `UBRScreen_Settings::RebuildRows` instances. A `BP_`-free generated WBP. */
+	/**
+	 * The DEFAULT row widget `UBRScreen_Settings::RebuildRows` instances — headers, key bindings,
+	 * and anything the three typed classes below do not claim. A `BP_`-free generated WBP.
+	 */
 	UPROPERTY(config, EditDefaultsOnly, Category = "Screens")
 	TSoftClassPtr<UBRSettingsRow> SettingsRowClass;
+
+	/**
+	 * The typed rows, one per `EBRMenuRowType` a setting can resolve to.
+	 *
+	 * THREE CLASSES RATHER THAN ONE, because the per-type body lives in the ASSET. `UBRMenuRow`
+	 * selects a body through a `TypeSwitcher` bind, and `WBP_SettingsRow` has no switcher and no
+	 * bodies — so before these existed, `RefreshFromSetting` resolved Slider / Checkbox / DropDown
+	 * correctly and then rendered all three as a plain label-and-value row. A volume slider and a
+	 * resolution dropdown were pixel-identical.
+	 *
+	 * Each is UNSET-SAFE: `RebuildRows` falls back to `SettingsRowClass` for any that is null or
+	 * fails to load, so a missing entry degrades to today's behaviour instead of an empty list.
+	 */
+	UPROPERTY(config, EditDefaultsOnly, Category = "Screens")
+	TSoftClassPtr<UBRSettingsRow> SettingsRowSliderClass;
+
+	UPROPERTY(config, EditDefaultsOnly, Category = "Screens")
+	TSoftClassPtr<UBRSettingsRow> SettingsRowCheckboxClass;
+
+	UPROPERTY(config, EditDefaultsOnly, Category = "Screens")
+	TSoftClassPtr<UBRSettingsRow> SettingsRowDropDownClass;
 
 	UPROPERTY(config, EditDefaultsOnly, Category = "Screens")
 	TSoftClassPtr<UBRKillfeedEntryWidget> KillfeedEntryClass;
