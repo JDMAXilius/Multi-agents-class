@@ -15,7 +15,7 @@ agent from `.claude/agents/` against an existing ticket**. If a prompt here ever
 geometry) · `docs/ui/SCREEN-BUILD-SPEC.md` (screen invariants, §1) · `docs/ui/MOTION-MEASURED.md`
 (durations and curves) · `docs/ui/REFERENCE-EXTRACTION.md` (screen/component inventory + node ids)
 · `docs/ui/HUD-REFERENCE.md` §3b (the measured-vs-unverified HUD ledger) · `docs/ui/HUD-AUDIT.md`
-(what is currently wrong in Figma) · `Tools/ue_mcp/SURFACE.md` (the verified UE MCP surface).
+(what is currently wrong in Figma) · `.claude/skills/unreal-mcp/SKILL.md` (the verified UE MCP surface).
 
 ---
 
@@ -89,7 +89,7 @@ Two forms are acceptable and no third is:
 - `Figma yznvnVdOFDADaugZSeomfP · node 62:29 · HUD / Elements` — a node id from a call actually
   made this session.
 
-`docs/tickets/TICKET_BP22_RETICLE_STATE.md:95-98` is the model: *"`UBRVM_Combat`
+the BP22 ticket (board since cleared) is the model: *"`UBRVM_Combat`
 (`UI/BRViewModels.h`, 160 lines) has no target-state field of any kind… Grep for `Reticle` across
 `Source/` returns only `UBRReticleWidget` as an unbuilt row"*. That paragraph is checkable in
 fifteen seconds. Aim every prompt at that register.
@@ -121,7 +121,7 @@ State it as a rule the agent must obey, not a hope:
 > against it, do not plan a step around it, and do not describe it as "available". Report
 > `blocked: <capability> has no tool` and stop that thread.
 
-`Tools/ue_mcp/SURFACE.md:379-390` is the enumerated proof this matters: the UE MCP has **no
+`.claude/skills/unreal-mcp/SKILL.md` is the enumerated proof this matters: the UE MCP has **no
 Slate/UMG/widget toolset**, **no automation/test toolset**, **no Niagara/MetaSound/AnimGraph/
 StateTree/EQS toolset**, and **no console-command execution** — all four were listed in
 `RESEARCH.md` from secondary coverage and none exists. The consequence is written into that same
@@ -221,7 +221,7 @@ R36 at `docs/DESIGN-RULINGS.md:561`).
 Read `docs/ui/ue-frontend/PROMPT-LIBRARY.md` §2.1 and obey it for the whole task.
 
 You are ui-builder (`.claude/agents/ui-builder.md`). Packet: <<ticket file, e.g.
-docs/tickets/TICKET_BP10_HUD_FRONTEND.md>>. owner_path: `Source/Breachpoint/UI/`.
+the BP10 ticket (board since cleared)>>. owner_path: `Source/Breachpoint/UI/`.
 Claim file `.claude/active-packet.json` must name this ticket before your first write.
 
 GOAL: author the C++ class `<<UBRMenuRow>>` — header + cpp only, no asset, no editor.
@@ -263,7 +263,7 @@ DONE WHEN:
 ## T2 — Author a WBP layout asset from a screen spec (editor-side, zero graph nodes)
 
 Dispatch to: **ui-builder**, in a session with the editor open. Context: `editor-live`.
-**Read this first:** `Tools/ue_mcp/SURFACE.md:381` — *there is no Slate/UMG toolset on the UE
+**Read this first:** `.claude/skills/unreal-mcp/SKILL.md` — *there is no Slate/UMG toolset on the UE
 MCP.* The widget hierarchy is authored **by hand in the UMG editor**; the MCP's role here is
 narrow and is spelled out below. A prompt that implies otherwise is AP-6.
 
@@ -305,7 +305,7 @@ HARD PROHIBITIONS (each is a `high` finding, `ui-presentation` §10):
 - No branch, no arithmetic, no gameplay read. If the layout needs a computed value it belongs on
   the ViewModel — file it (T4).
 
-WHAT THE MCP MAY DO HERE, and only this (`Tools/ue_mcp/SURFACE.md`):
+WHAT THE MCP MAY DO HERE, and only this (`.claude/skills/unreal-mcp/SKILL.md`):
 - `AssetTools.exists` / `find_assets` / `get_asset_class` (`:201`) — confirm the asset path and
   confirm the parent resolves; a `_C` suffix from `get_asset_class` is the mechanical R18/R26
   audit primitive, so use it to PROVE the reparent landed.
@@ -314,7 +314,7 @@ WHAT THE MCP MAY DO HERE, and only this (`Tools/ue_mcp/SURFACE.md`):
 - `AssetTools.save_assets`, `is_dirty`.
 - FORBIDDEN in this packet, whatever the goal: everything in `BlueprintTools`. `write_graph_dsl`
   populates a graph AND compiles it in one call — the exact artifact R26 forbids, as a binary no
-  critic can diff (`Tools/ue_mcp/SURFACE.md:409`).
+  critic can diff (`.claude/skills/unreal-mcp/SKILL.md`).
 
 THE RECEIPT (R37.2), committed with the asset as `<<Tools/ui/receipt_wbp_hudlayout.md>>`:
 every call in order — toolset, tool, arguments, result — plus `git lfs lock` proof, the final
@@ -389,7 +389,7 @@ line numbers, every field you intend to bind. Produce this table and produce it 
 reticle target state binds today — vitals, ammo, stowed weapon, grenades, grapple ring, score,
 clock, rocket countdown, killfeed. Four gaps are known and TICKETED, so if you land on one of
 these, you have not found a new gap, you have found a blocked element:
-  per-player stat block → BP21 · reticle target state → BP22 (`docs/tickets/TICKET_BP22_
+  per-player stat block → BP21 · reticle target state → BP22 (the BP22 ticket (board since cleared)
   RETICLE_STATE.md`) · respawn countdown → BP23 · lobby ViewModel → BP24.
 
 STEP 2 — HOW TO FILE A C++ GAP (this is the point of the template; the wrong move here is the
@@ -544,7 +544,7 @@ and must match `docs/tickets/TICKET_TEMPLATE.md` exactly.
 ```
 Read `docs/ui/ue-frontend/PROMPT-LIBRARY.md` §2.1 and obey it. Write ONE ticket to
 `docs/tickets/TICKET_<<BP26>>_<<SCOREBOARD>>.md`, in the exact structure of
-`docs/tickets/TICKET_TEMPLATE.md`. `docs/tickets/TICKET_BP22_RETICLE_STATE.md` is the worked
+`docs/tickets/TICKET_TEMPLATE.md`. the BP22 ticket (board since cleared) is the worked
 example for a UI ticket — match its register.
 
 BEFORE YOU WRITE A LINE, verify on disk and cite it. BP22's Log (`:93-98`) is the standard:
@@ -560,7 +560,7 @@ REQUIRED SECTIONS, in order:
 5. `## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)`
    - `requires:` FIRST — `files-only` | `engine-installed` | `editor-live`. This is the cheapest
      gate and the most expensive to discover late. A WBP or MCP step is `editor-live` and drags
-     R29/R36 with it — and `docs/tickets/TICKET_BP16_UE_MCP_BRIDGE.md:22-29` records the trap:
+     R29/R36 with it — and the BP16 ticket (board since cleared) records the trap:
      "fresh build proof" + "editor open" is unsatisfiable as a simultaneous checklist and
      satisfiable in ONE order (editor CLOSED → build → open → claim). If your ticket needs both,
      write the order into the Kickoff.
@@ -711,7 +711,7 @@ the only control there is. A session that lands an MCP asset without a receipt h
 
 ## 5.3 What the surface actually is
 
-`Tools/ue_mcp/SURFACE.md`, enumerated against a live editor 1 Aug 2026. Give the agent these
+`.claude/skills/unreal-mcp/SKILL.md`, enumerated against a live editor 1 Aug 2026. Give the agent these
 facts, not "the UE MCP can edit the editor":
 
 - **It is a gateway, not a flat tool list** (`:33`). Three tools: `list_toolsets`,
@@ -727,7 +727,7 @@ facts, not "the UE MCP can edit the editor":
   no source-control toolset (`can_edit_asset` returns True whenever source control is disabled —
   it is NOT an lfs-lock check).
 - **The forbidden toolset for UI packets: `BlueprintTools`.** `write_graph_dsl` populates a graph
-  and compiles it in one call — R26's forbidden artifact, as a binary (`SURFACE.md` §4(b), line
+  and compiles it in one call — R26's forbidden artifact, as a binary (`.claude/skills/unreal-mcp/SKILL.md` §4(b), line
   409). `set_variable_replication` creates a replicated property with no netcode packet and no
   REFUTER (§4(c)). Both are `high` findings by construction; name them as banned in the prompt.
 - **`AssetTools.write_file` is confined** to `/Game/`, enabled plugins' `Content/` and `Saved/` —
@@ -739,19 +739,19 @@ facts, not "the UE MCP can edit the editor":
   loop) · `AssetTools.get_asset_class` (`_C` suffix ⇒ Blueprint generated class: the R18/R26 audit
   primitive) · `ObjectTools.set_properties` (R26 default values) · `LogsToolset.GetLogEntries`
   (three-viewpoint assertions readable during PIE).
-- **`StartPIE`/`StopPIE` are an R29 edge** (`SURFACE.md` §4(g)): an MCP session running PIE and a
+- **`StartPIE`/`StopPIE` are an R29 edge** (`.claude/skills/unreal-mcp/SKILL.md` §4(g)): an MCP session running PIE and a
   human playing in that editor are the same conflict as an MCP session and a build.
 
 ## 5.4 The exact-argument rule
 
-`Tools/ue_mcp/SURFACE.md:274`: `DataTableTools.search_row_structs` filters by **exact name match,
+`.claude/skills/unreal-mcp/SKILL.md`: `DataTableTools.search_row_structs` filters by **exact name match,
 not substring** — `"BR"` → `[]`, `"WeaponRow"` → `[]`, `"BRWeaponRow"` → hit, omitted → all 26.
 *"A prefix search returns empty and reads exactly like 'the struct is missing'; it cost this
 session a near-false-alarm."* Prompt rule, generalised: **an empty result is not evidence of
 absence until you have enumerated with no filter.** Same shape as P7.
 
 Also: `SceneTools.add_to_scene_from_class` and `add_to_scene_from_asset` **return nothing on
-failure** (`SURFACE.md` §2, `SceneTools`) — a silent null. Every prompt driving them says "check
+failure** (`.claude/skills/unreal-mcp/SKILL.md` §2, `SceneTools`) — a silent null. Every prompt driving them says "check
 the return of every mutating call; a null is a failure, not a success with no data."
 
 ---
@@ -820,7 +820,7 @@ positives — `reach` matches **B-reach-point**, our own wordmark and tagline. A
 
 ## AP-6 — Planning against tools that do not exist
 
-**What happened.** `Tools/ue_mcp/SURFACE.md:44-48`: `RESEARCH.md` listed nine documented tool
+**What happened.** `.claude/skills/unreal-mcp/SKILL.md`: `RESEARCH.md` listed nine documented tool
 categories from secondary coverage. Of those nine, *"inspecting Slate widgets"* and *"running
 automation tests"* have **no toolset at all**. The desk-research plan for the UI half of the MCP
 work described a capability that has never existed.

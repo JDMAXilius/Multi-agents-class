@@ -2800,7 +2800,7 @@ def class_body(header_text: str, cpp_class: str) -> str:
     """The slice of a header belonging to ONE class.
 
     Not cosmetic, and not a second invention: this mirrors
-    `Tools/audit_ui/wbp_expect.py::class_body`, which found the bug. `BRHUDLayout.h`
+    the header-slicing check that found the bug. `BRHUDLayout.h`
     declares BOTH `UBRKillfeedEntryWidget` and `UBRHUDLayout`, so parsing the whole file
     handed the killfeed row a `KillfeedContainer` bind belonging to the HUD. It passed only
     because that member is Optional; a non-optional sibling would make this plan demand a

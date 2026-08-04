@@ -160,7 +160,7 @@ def audit(page_id: str) -> int:
     print(f"\n{len(ok)} composed, {len(pinned)} pinned to top-left, {len(childless)} childless")
     if pinned:
         print("\nThese will export with the mark in a corner and ink on the frame edge.")
-        print("See docs/tickets/TICKET_BP68_RANK_INSIGNIA_MISALIGNED.md")
+        print("Known: rank insignia land misaligned; crop before import.")
         return 1
     print("Clean — every component is composed inside its frame.")
     return 0

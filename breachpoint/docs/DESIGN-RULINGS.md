@@ -311,7 +311,7 @@ The lead appends; nobody else writes here. A doubt this ledger closes is closed.
   condition 2 erodes to "only a little logic" within a month.
 
   *Status, 1 Aug 2026 — the script exists and changes nothing yet.*
-  `Tools/audit_blueprints/audit_r26.py` was written, but its packet was **stopped mid-flight:
+  An R26 blueprint audit was written, but its packet was **stopped mid-flight:
   it is unreviewed, has never been run, and is not wired into rung 2** (`contracts/testing.md`
   does not mention it). Two of those three are the same problem — an audit nobody runs is an
   audit that does not exist. **So this ruling is still enforced by goodwill**, and the
@@ -441,10 +441,10 @@ The lead appends; nobody else writes here. A doubt this ledger closes is closed.
 
 - **R31. A claim may name a SET of tickets sharing one window. `owner_path` is their union, and
   amendments are ADDITIVE ONLY.** Founder ruling, 1 Aug 2026, resolving the decision
-  `WORK-ROUTING.md` §7 filed as owed. §7 offered two candidates; this takes **(a) window claims**.
+  Filed as owed by the routing notes; of the two candidates offered, this takes **(a) window claims**.
 
   **The problem it solves, stated from what happened rather than from theory.**
-  `.claude/active-packet.json` is ONE file in ONE shared working tree. `WORK-ROUTING.md` §5.6
+  `.claude/active-packet.json` is ONE file in ONE shared working tree. The routing notes
   says *"a claim is per session."* It is not — it is per tree, last-writer-wins, with no
   ownership and no arbitration. In one session on 1 Aug:
   1. A BP15 claim silently confined an unrelated BP16 session to BP15's paths.
@@ -470,12 +470,12 @@ The lead appends; nobody else writes here. A doubt this ledger closes is closed.
   2. **Read before you write.** Never write the claim file blind. Read it, union, write.
   3. **Leave additively too.** A session finishing its packet removes **its own** ticket and
      paths; if it was the last, it deletes the file. It never truncates the file to "release".
-  4. **A window is one lock mode.** `WORK-ROUTING.md` §1's OPEN/CLOSED modes are exclusive; a
+  4. **A window is one lock mode.** The routing notes' OPEN/CLOSED modes are exclusive; a
      window claim may not span both, because the resource — not the claim — is what serializes.
 
   **What this ruling does NOT do, said out loud because the ledger's job is naming the gap:**
   a union **weakens confinement**. Under a BP03+BP16 window, the BP03 lane is mechanically free
-  to write `Tools/ue_mcp/`. Nothing stops it. The union exists so two lanes can **coexist**, not
+  to write its own tooling folder. Nothing stops it. The union exists so two lanes can **coexist**, not
   so either may write the other's files — that remains law 5, enforced by the agent's own
   discipline and by review, exactly as it was before there was a hook at all. **Precision was
   traded for coexistence, deliberately.** If that trade later proves wrong, §7 option (b) — a

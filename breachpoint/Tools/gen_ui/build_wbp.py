@@ -466,7 +466,7 @@ def main() -> int:
         "alone is not a UI claim.\n"
         "- **Does not prove R26 compliance.** Zero graph nodes is asserted by construction here "
         "(this generator never calls `BindToEventProperty`), not measured. "
-        "`Tools/audit_ui/audit_wbp.py` is what measures it, and it does not exist yet.")
+        "nothing measures it — the audit that would has not been written.")
     print(f"\nreceipt: {rc.path.relative_to(REPO)}")
     return EXIT_PASS if ok else EXIT_FAIL
 

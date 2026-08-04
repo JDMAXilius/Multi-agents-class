@@ -7,7 +7,7 @@ is its **projection**. This folder is the only sanctioned way to turn one into t
 > If you find yourself dragging a cube in the level editor to fix the arena, stop — the fix
 > belongs in the manifest, and the manifest belongs to BP13 / arena-architect.
 
-Ticket: `docs/tickets/TICKET_BP07_ARENA.md` (step 2). Doctrine: `.claude/skills/ue-editor`.
+Doctrine: `.claude/skills/ue-editor`.
 
 ## Files
 

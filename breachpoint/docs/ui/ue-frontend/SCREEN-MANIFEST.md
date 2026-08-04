@@ -112,7 +112,7 @@ Nav bar x was **33** in `COMPONENT-SPECS.md` §6 and **44** in `SCREEN-BUILD-SPE
 **Resolved: x=33.** Live node `124:1179` in `Kn87U5sy2VD0lP8K7h4LcQ` reads Navigation Bar
 **x=33, y=45, 666×30**, matching `COMPONENT-SPECS` §6 exactly. **Build the nav bar at (33,45)
 666×30**; 18 screens inherit it. `SCREEN-BUILD-SPEC.md` §1's `44,45` is wrong for the *root*
-bar — that correction is filed in `docs/tickets/TICKET_BP67_FIGMA_NODE_PROVENANCE.md` (that file
+bar — that correction is recorded with the node-provenance sweep (that file
 is not this document's to edit). The **sub-level 516×30 bar's x=44 is untouched by this** and
 still unverified.
 
@@ -169,7 +169,7 @@ each carry a "back target" — the stack is the back target.** Only the exceptio
 > `yznvnVdOFDADaugZSeomfP`, where the same frames exist as clones under different ids — resolving
 > `1:2` there returns *"node ID was not found"*. Verified 2 Aug 2026 on `1:2` and `124:1179`
 > only; the rest are **unsampled**, and the per-id sweep is
-> `docs/tickets/TICKET_BP67_FIGMA_NODE_PROVENANCE.md`. Quote the file key alongside the id
+> the node-provenance sweep. Quote the file key alongside the id
 > whenever you send anyone to read one.
 
 Column key:

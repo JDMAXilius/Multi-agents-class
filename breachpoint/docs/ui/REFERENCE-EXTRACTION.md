@@ -12,7 +12,7 @@ inventory, §5 component sets) is an id in the **reference community file
 file, which holds §7b's clones under *different* ids. Verified 2 Aug 2026: `1:2` resolves in
 `Kn87U5s…` as the `Play` frame 1280×720, and returns *"the provided node ID was not found"*
 against `yznvnVdOFDADaugZSeomfP`. **Only `1:2` and `124:1179` have been probed; every other id
-here is unsampled** — the per-id sweep is `docs/tickets/TICKET_BP67_FIGMA_NODE_PROVENANCE.md`.
+here is unsampled** — a per-id sweep is owed and has not been run.
 
 Working file (the clones live here, ids differ): **BREACHPOINT — UI/UX System** —
 `figma.com/design/yznvnVdOFDADaugZSeomfP`

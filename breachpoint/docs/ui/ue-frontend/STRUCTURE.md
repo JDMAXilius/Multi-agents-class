@@ -30,8 +30,8 @@ Source/Breachpoint/UI/
 
 `BREACHPOINT-ARCHITECTURE.md:266` declares `### 3.9 UI/ — 4`, listing only the first four pairs
 flat. **The four subfolders are not yet declared in §3** — declaring them is owed before the
-first class lands, or `Tools/architect/architect.py` `undeclared_files()` (`:232-253`) reports
-every new file as architecture drift.
+first class lands. The scanner that used to report undeclared files as drift has been removed,
+so this is now a convention nobody checks.
 
 ### `Content/UI/` — assets only
 
@@ -42,7 +42,7 @@ Content/UI/
 ├── ✅ Icons/          ~98 glyphs · T_UI_Icon_<Name> · LOAD-BEARING NAME, see §7
 ├── ✅ Art/            ~30 rank+medal marks · ~12 plates · 3 weapon silhouettes
 ├── ✅ Materials/      M_UI_<Effect> — gradients, scanlines, radial fills (~4)
-├── ✅ Fonts/          Rajdhani + Roboto Condensed (both OFL)
+├── ✅ Fonts/          Rajdhani + Roboto Condensed
 ├── ⛔ Styles/         DELIBERATELY DOES NOT EXIST — §6
 ├── ✅ WBP_RootLayout.uasset       ← at the root; belongs in Components/
 ├── ✅ WBP_HUDLayout.uasset        ← at the root; belongs in Components/
@@ -91,18 +91,20 @@ Texture/material spellings: `ASSET-PIPELINE.md:81-83`.
 
 ---
 
-## 3. Why ONE level of nesting, and not the 18-folder split in `TICKETS.md` §2(a)
+## 3. Why ONE level of nesting, and not an 18-folder split
 
 **The previously-published justification was wrong, and this section replaces it.**
-`TICKETS.md` §2(a) proposes `Components/{Core,Chrome,Rail,Grid,Leaf,Bespoke,HUD,Forge}/` and
+A since-deleted proposal argued for `Components/{Core,Chrome,Rail,Grid,Leaf,Bespoke,HUD,Forge}/` and
 `Screens/{HUD,OV,FE,MM,OP,PR,SH,ST,FG,PGCR}/`, on the ground that law 5 enforces `owner_path` at
 folder granularity so packets sharing a folder collide. The supporting claim — that a 2-deep unit
 *cannot be declared* in `BREACHPOINT-ARCHITECTURE.md` §3 — is **false**, verified adversarially:
 
-- `Tools/architect/architect.py:162` — `name = u.group(1).split("/")[-1]`, i.e. a §3 unit written
-  `Components/BRNavBar.h/.cpp` parses to the unit name `BRNavBar`, folder prefix discarded.
-- `Tools/architect/architect.py:214-215` — `classify()` resolves it with
-  `root.rglob(f"{unit}.h")` from `SRC/<folder>`, which matches at **any** depth.
+- The scanner parsed a §3 unit written `Components/BRNavBar.h/.cpp` to the unit name
+  `BRNavBar`, folder prefix discarded.
+- It then resolved that name with an `rglob` from `SRC/<folder>`, matching at **any** depth.
+
+(That scanner has since been removed, which only strengthens the point: nothing was ever
+enforcing a one-level rule.)
 
 So a 2-deep unit is declarable today, bare, with no tooling change. The real reasons are these
 three:
@@ -122,7 +124,7 @@ if not any(rel.startswith(o.rstrip("/") + "/") or rel == o for o in owners):
 `rel == o` is the whole point — a claim may name `Source/Breachpoint/UI/Components/BRNavBar.h`
 and the hook confines the packet to that file. This is the same device R23 uses for
 `BRGameplayTags.h/.cpp` and R25 uses for one spec file per packet in `Source/Breachpoint/Tests/`.
-Concurrency is bought with file-granular claims, not with folder splits. `TICKETS.md` §2(a)'s
+Concurrency is bought with file-granular claims, not with folder splits. That proposal's
 premise — "`guard_laws.py` enforces `owner_path` at *folder* granularity" — is contradicted by
 the line above.
 

@@ -128,7 +128,7 @@ ticket gates them, which is why they hang off the BP00 spine rather than the fea
 > A second trap it exposed, worth naming so it is not repeated: BP15's STATUS says *"steps 1–3
 > and 7 run anywhere (no engine)"*. That is a statement about **which machine**, not about
 > **what gates it** — the lead misread it as tier 0 on first pass. Its real Kickoff is
-> `Tools/data-crew/run_crew.py` replaying from the game repo, which is **BP14 step 1**.
+> a crew runner replaying from the game repo. That runner has since been removed.
 > Portability and dependency are different axes; a ticket can need no engine and still be
 > blocked by four others.
 

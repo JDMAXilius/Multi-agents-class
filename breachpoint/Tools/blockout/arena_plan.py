@@ -32,7 +32,7 @@ import sys
 M_TO_CM = 100.0  # the ONE metre->centimetre conversion in this toolchain (units law)
 
 # -------------------------------------------------------------------------------------
-# KICKOFF THRESHOLDS - docs/tickets/TICKET_BP07_ARENA.md, "Kickoff (machine-checkable)".
+# KICKOFF THRESHOLDS - the machine-checkable arena bounds.
 # These are acceptance law, not tuning. They are constants here and are deliberately NOT
 # readable from blockout_profile.json: a gate that a profile file can weaken is not a gate.
 # -------------------------------------------------------------------------------------

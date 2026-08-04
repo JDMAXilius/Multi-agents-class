@@ -9,7 +9,7 @@ execution contexts — **(a) Claude in a terminal with the editor CLOSED**, and 
 editor driven live via MCP / Python Editor Script Plugin / Remote Control**.
 
 Companions, all of which this file assumes you have read:
-`BREACHPOINT-AUTHORING-MATRIX.md` §5 (the four execution contexts) · `docs/WORK-ROUTING.md` §1
+`BREACHPOINT-AUTHORING-MATRIX.md` §5 (the four execution contexts) · the routing notes (removed)
 (mode windows) · `.claude/skills/ue-editor` (the bridge) · `.claude/skills/ue5-ui-architecture`
 (CommonUI/MVVM) · `.claude/skills/ui-presentation` (the design system and the Figma→WBP handoff).
 
@@ -78,7 +78,7 @@ nothing but this document.
 
 ## 2. Terminal-only work — editor CLOSED
 
-Everything in this section is `CLOSED` or `FILES` mode (`docs/WORK-ROUTING.md:44`). None of it
+Everything in this section is `CLOSED` or `FILES` mode (the routing notes (removed)). None of it
 should ever be done through the MCP, because all of it is diffable text.
 
 ### 2.1 What belongs here
@@ -174,10 +174,10 @@ layout, anchors and animation and **nothing else**. `ui-presentation:183-186` an
 
 ### 4.0 The unit of scheduling is the mode window, not the ticket
 
-`docs/WORK-ROUTING.md:36-38`: *every mode switch costs an editor restart, so batch all CLOSED
+the routing notes (removed): *every mode switch costs an editor restart, so batch all CLOSED
 work, then all OPEN work.* A board run ticket-by-ticket pays a restart per ticket for no reason.
 The bus already encodes the modes — `OPEN` (live editor) · `CLOSED` (commandlet/build, editor
-must be gone) · `FILES` (no engine) · `ANY` (`Tools/bus/bus.py:40`) — and `bus.py inbox` shows a
+must be gone) · `FILES` (no engine) · `ANY` (the message bus (removed)) — and `bus.py inbox` shows a
 terminal only what its current mode can run.
 
 ### 4.1 CLOSED → OPEN (terminal work → editor work)
@@ -189,13 +189,13 @@ terminal only what its current mode can run.
    (`Source/Breachpoint/UI/BRHUDLayout.h:60`, `BindWidgetOptional`).
 2. **Run rung 1 to green with the R19 proof.** `.\Tools\run-ubt.ps1`. This is the last moment a
    build is legal. An editor opened on unbuilt code cannot load the module the WBP reparents to.
-3. **Run every CLOSED-mode generator the OPEN window will depend on**, in `WORK-ROUTING.md:99-115`
+3. **Run every CLOSED-mode generator the OPEN window will depend on**, in the routing notes (removed)
    order. For UI that is at minimum `reimport-tables.ps1` (a HUD reading no table shows nothing)
    and any icon render (`Tools/render_weapons/render-weapons.ps1`).
 4. **Commit and push.** The editor is about to write binaries; a clean tree is what makes
    "which of these `.uasset` changes are mine" answerable.
 5. **Claim the editor on the bus, explicitly and by PID.** The precedent is
-   `docs/bus/20260801T174624Z--T2-to-T1--…`: *"R29 BINDS NOW: I own UnrealEditor PID 43952 for the
+   a 1 Aug 2026 hand-off message: *"R29 BINDS NOW: I own UnrealEditor PID 43952 for the
    duration. NO SESSION MAY BUILD until I post the release."* Amend `.claude/active-packet.json`
    **additively** (R31) — append your paths, never overwrite another session's.
 6. **`git lfs lock` every `.uasset` you will touch.** One owner per binary per ticket (law 7).
@@ -233,7 +233,7 @@ Three things to note, all load-bearing:
   whose wording is narrower than the guards implementing it will eventually be read instead of the
   guards."*
 - It includes `UnrealEditor-Cmd`, so a still-running commandlet counts. The two live callers are
-  `Tools/gen_input/build-input.ps1:180` and `Tools/rename_r26/rename-r26.ps1:88`, both of which
+  `Tools/gen_input/build-input.ps1:180` and the R26 rename script (removed), both of which
   print `BLOCKED (R21)` and refuse.
 - The in-Python equivalent for a script that might be run from the wrong place is
   `Tools/render_weapons/render_weapons.py:151` — it inspects `argv` for `-run=` and **refuses**
@@ -292,11 +292,11 @@ and an uncommitted receipt is not a receipt.
 
 ## 5. What the MCP editor can and cannot drive
 
-Source: `Tools/ue_mcp/SURFACE.md` — 19 toolsets, 255 tools, **enumerated against a live editor**
+Source: `.claude/skills/unreal-mcp/SKILL.md` — 19 toolsets, 255 tools, **enumerated against a live editor**
 1 Aug 2026. Read its own honesty note first (`SURFACE.md:19-29`): the tools were reached over raw
 HTTP and *"only read-only calls were made… the read-only/mutating marks are derived from each
 tool's own declared description and schema, not from firing it."*
-`WORK-ROUTING.md:152-165` sharpens this: **nearly every mark in `SURFACE.md` is
+the routing notes (removed) sharpens this: **nearly every mark in `.claude/skills/unreal-mcp/SKILL.md` is
 description-derived; only four tools have ever been fired at.** Treat any capability below that is
 not marked *fired* as a plan, not a fact.
 
@@ -313,7 +313,7 @@ not marked *fired* as a plan, not a fact.
 
 | Toolset | Relevance to the front end |
 |---|---|
-| `AssetTools` (21) | `find_assets`, `exists`, `save_assets`, `move`, `get_dependencies`/`get_referencers` — *"exactly what a law-7 binary-owner check needs"*. **`get_asset_class` returns `_C`-suffixed generated-class names — the mechanical R18/R26 audit primitive `Tools/audit_blueprints/` never got working** (`SURFACE.md:201`). |
+| `AssetTools` (21) | `find_assets`, `exists`, `save_assets`, `move`, `get_dependencies`/`get_referencers` — *"exactly what a law-7 binary-owner check needs"*. **`get_asset_class` returns `_C`-suffixed generated-class names — the mechanical R18/R26 audit primitive the blueprint audit (removed) never got working** (`SURFACE.md:201`). |
 | `BlueprintTools` (53) | ⚠️ **largest law exposure** (`SURFACE.md:62-67`). Also the only read path into a WBP's *graph*: `list_graphs`, `list_variables`, `read_graph_dsl`, `get_parent`. Use the **read** half for auditing; `write_graph_dsl` produces R26's forbidden artifact in one call (`SURFACE.md:409-412`). |
 | `MaterialInstanceTools` (13) | HUD material instances — scalar/vector/texture params with no shader recompile. The cheap path for palette-driven materials. |
 | `DataTableTools` (10) | `import_file`, `get_schema`, `search_row_structs` — makes *"schema declared ≠ schema live"* checkable. Note the fired gotcha at `SURFACE.md:274`: `search_row_structs` is **exact-name match, not substring**; `"BR"` returns `[]` and reads exactly like "the struct is missing". |
@@ -367,12 +367,12 @@ committed scripts**, never hand-placed."* Applied to the front end:
 | **WBP conformance audit** | **PROPOSAL — the highest-value new script.** See 6.2. |
 | **Screenshot evidence for a UI claim** | `EditorAppToolset.CaptureViewport` from a committed `execute_tool_script`, or `AutomationLibrary.take_high_res_screenshot` headless (`ue-editor` skill §3.7). |
 
-### 6.2 PROPOSAL — `Tools/audit_ui/audit_wbp.py`
+### 6.2 PROPOSAL — the WBP audit (removed)
 
 **The problem it solves is named in the rulings, not invented here.** R26:308-319: *"Enforcement is
 owed, not assumed… An audit must assert conditions 1–3 mechanically (node count, added-member
 count, parent chain) over every `BP_BR*` asset and run in rung 2, or condition 2 erodes to 'only a
-little logic' within a month."* `Tools/audit_blueprints/audit_r26.py` exists, is **unreviewed, has
+little logic' within a month."* the blueprint audit (removed) exists, is **unreviewed, has
 never been run, and is not wired into rung 2** — *"an audit nobody runs is an audit that does not
 exist."* WBPs are the same hazard with a different extension, and `Content/UI/` now has three of
 them.
@@ -409,7 +409,7 @@ is the exit criterion: *the screen was rendered and looked at.*
 | 2 | **Asset lock contention** | `.uasset` is binary and LFS-tracked (`.gitattributes:2`). Two writers produce an unresolvable conflict, not a merge. | `git lfs lock` before opening; unlock on release. **Do not use `AssetTools.can_edit_asset`** — `SURFACE.md:203`: always True when source control is disabled. `SURFACE.md:389-391` states it plainly: *"nothing here checks an lfs lock. Law 7's one-owner-per-binary remains a human/hook obligation."* |
 | 3 | **Binary `.uasset` merge conflict** | LFS pointer conflicts have no textual resolution. One side's work is lost, and which side is lost is arbitrary. | One owner per asset per ticket (law 7). BP18's pattern is the strong form: *"Binary files this ticket OWNS: **all of `Content/`** while claimed. That is the point of batching — one owner, one window, no cross-ticket binary contention."* If it happens: `git checkout --ours/--theirs` the whole file and **redo the other side's work**; never hand-merge. |
 | 4 | **Two sessions, one editor** | R29.2. Interleaved MCP calls, no transaction boundary, no diff to reconstruct from. | Claim by PID on the bus before opening (`bus.py post --mode OPEN`), release explicitly. Amend `.claude/active-packet.json` **additively** (R31) — the harm R31 exists for is one session overwriting another's claim. |
-| 5 | **Build during an OPEN window** | `LNK1104`, documented at R36:564-567. Whole compile wasted, confusing diagnosis. | The guards already refuse (`build-input.ps1:180`, `rename-r26.ps1:88`). For anything without a wrapper, run §4.3's check first. Lane D in `WORK-ROUTING.md:88-90` is **empty on purpose** during an OPEN window. |
+| 5 | **Build during an OPEN window** | `LNK1104`, documented at R36:564-567. Whole compile wasted, confusing diagnosis. | The guards already refuse (`build-input.ps1:180`, `rename-r26.ps1:88`). For anything without a wrapper, run §4.3's check first. Lane D in the routing notes (removed) is **empty on purpose** during an OPEN window. |
 | 6 | **`BindWidget` desync** | C++ renames a `BindWidget` property; the WBP still has the old name. The widget fails to compile *at asset load*, not at build — so rung 1 stays green and the HUD is empty in PIE. | The C++ header is the contract: land header changes first, then re-open the WBP in the same window. §6.2's audit turns this from "someone notices in PIE" into a rung-2 failure. `BindWidgetOptional` (`BRHUDLayout.h:60`) softens the crash into a silent null — softer, and therefore easier to miss. |
 | 7 | **MCP writes outside the repo** | `SURFACE.md:448-461`, **fired and confirmed**: `write_file` confinement held, *but the refusal enumerated ~80 allowed roots and only two are ours.* Every other root is inside the **engine install** — outside the repo, invisible to git, no hook, no diff. Presents as "works on my machine." | Never point an MCP write at a path outside `<project>\Content` or `<project>\Saved`. The receipt records every write path, which is the only place this is visible. |
 | 8 | **MCP silently overwrites tuning data** | `SURFACE.md:401-407`: `write_file` **can** overwrite `Content/Data/DT_Weapons.csv` — the data-crew's owner path — with law 5 never firing, because an MCP call has no `file_path` for `guard_laws.py` to see. | UI work never writes `Content/Data/`. If a UI packet needs a number, it files a data-crew request; the tuning-curator owns those rows. |
@@ -424,9 +424,8 @@ is the exit criterion: *the screen was rendered and looked at.*
 ─────────────────────────── START OF SESSION (any mode) ───────────────────────────
  1. cd <repo root>. The game repo root IS the working root (CLAUDE.md:8-12).
  2. git pull --rebase
- 3. python Tools/bus/bus.py inbox        # only shows work your current mode can run
  4. /tickets list                        # claim with a STATUS line; commit + push the claim
- 5. Prove the hook is live by firing a case it must REJECT (WORK-ROUTING.md:212-213).
+ 5. Prove the hook is live by firing a case it must REJECT (routing notes, removed).
     "Skills loaded" is not proof.
  6. Read the ticket's `requires:` line. OPEN, CLOSED or FILES? That decides everything below.
 
@@ -443,7 +442,7 @@ is the exit criterion: *the screen was rendered and looked at.*
      Empty output is the only green. Non-empty ⇒ STOP, post on the bus, do not "just try".
  C2. Check for Live Coding poison: any Binaries\Win64\*.patch_*.dll ⇒ rebuild before trusting.
  C3. .\Tools\run-ubt.ps1                 # rung 1, all three targets, R19 proof
- C4. Generators, -PlanOnly / -SelfTest FIRST, then for real. Order per WORK-ROUTING.md §4.
+ C4. Generators, -PlanOnly / -SelfTest FIRST, then for real. Order per the routing notes (removed)
  C5. .\Tools\run-specs.ps1               # rung 2. Zero discovered tests is BLOCKED, not green.
  C6. Commit script + receipt + asset together. Push.
 
@@ -475,7 +474,7 @@ is the exit criterion: *the screen was rendered and looked at.*
      needs a client that joined MID-MATCH.
  X4. Findings and numbers go in the ticket's `## Log`, or they did not happen.
  X5. The session that produced the artifact does not run the critic pass on it
-     (WORK-ROUTING.md:209-210).
+     (routing notes, removed).
 ```
 
 ---
@@ -485,7 +484,7 @@ is the exit criterion: *the screen was rendered and looked at.*
 - **`.mcp.json` is a transport, not a proven capability** (`SURFACE.md:446`). Until the tools
   resolve by name in a session's tool list, every OPEN-mode plan above has an untested first step.
 - **The claim model is per-ticket; the editor is a per-machine resource spanning six tickets**
-  (`WORK-ROUTING.md:234-253`). Two candidate resolutions are filed there **for the founder**. Until
+  (the routing notes (removed)). Two candidate resolutions are filed there **for the founder**. Until
   one is ruled, an OPEN window serving BP10 + BP08 + BP22 + BP25 has no clean claim shape, and this
   document's §4.1 step 5 (an additive amendment plus a bus post) is the workaround, not the answer.
 - **§5.4's three probes are unfired.** The honest state of "can the MCP help with WBPs at all" is

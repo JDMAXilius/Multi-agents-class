@@ -103,7 +103,7 @@ violation, the same way rung 2 is proven red-then-green, and record it in the ti
 - Gauntlet test project + first smoke scenario: **`BRGauntlet.SmokeTS2C`** — dedicated server
   + 2 clients join `BR_Arena01`; client A shoots client B; assert in threes (server truth,
   A's view, B's view agree); repeat under `-PktLag=120 -PktLoss=5`.
-  Bootstrapping this IS the first crew ticket — see `docs/tickets/TICKET_BP00_LADDER.md`.
+  Bootstrapping this is the ladder's own first job.
 - Headless spec suite prefix: `Breachpoint.Sim.*` (pinned combat/shield/match suites — values
   asserted against `DT_Weapons`/`CT_Combat`, never literals) + `Breachpoint.Bots.*`
   (determinism: same seed + tuning row ⇒ identical action trace).

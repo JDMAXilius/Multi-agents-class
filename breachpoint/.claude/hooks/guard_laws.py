@@ -61,7 +61,7 @@ def main():
     # Confinement covers EVERY path in the repo, not a hardcoded subtree. It
     # previously fired only for Source/ and Content/, which silently exempted
     # every other owner_path on the board: Tools/ (BP00), Config/ (BP01),
-    # Tools/data-crew/ (BP14), Tools/architect/ (BP15), Tools/ue_mcp/ and
+    # the generator lanes under Tools/ and
     # docs/contracts/ (BP16). Those tickets declared a write scope the hook
     # never checked, so law 5 read as enforced and was not. A claim names the
     # folders a packet may write; anything else is outside it, wherever it sits.

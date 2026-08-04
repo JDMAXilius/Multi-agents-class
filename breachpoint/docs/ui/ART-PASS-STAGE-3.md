@@ -335,7 +335,7 @@ no geometry; it exists only in a doc list. It needs a source before it can be sp
 
 | # | Decision |
 |---|---|
-| **Scope** | **31 screens, not 11.** The full front end is in scope. This resolves finding F1 in `ue-frontend/TICKETS.md` — `REFERENCE-EXTRACTION.md` wins over the vertical-slice GDD's "direct-to-match" cut, and the ticket board must be rescoped from eleven screens to thirty-one. |
+| **Scope** | **31 screens, not 11.** The full front end is in scope. `REFERENCE-EXTRACTION.md` wins over the vertical-slice GDD's "direct-to-match" cut: the front end is thirty-one screens, not eleven. |
 | **N6** | **Keep `Team Slayer`.** It ships in VO at `DT_SpotterLines.csv:49` and stays. Consequently **`slayer` is struck from the removal lexicon** — it is a Breachpoint term now, not a Halo one. `Tactical Slayer` → `Tactical` still stands, as that is a *gametype* rename, not the mode. |
 | **3a** | **Approved and executed** — this section. |
 

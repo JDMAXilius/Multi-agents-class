@@ -2,8 +2,9 @@
 
 **Written 1 Aug 2026 by the lead.** Every decision on this board that is waiting on the founder,
 in one place, ordered by **what it unblocks**. Swept from all seventeen ticket Logs,
-`docs/WORK-ROUTING.md`, `docs/tickets/HANDOFF.md`, `Tools/ue_mcp/{SURFACE,RESEARCH,STEP1-PLAN}.md`,
-`docs/bus/`, `docs/BUILD-STATE.md` and `docs/DESIGN-RULINGS.md`.
+the routing notes (removed), `docs/tickets/HANDOFF.md`, the MCP planning docs (removed),
+the hand-off message archive, the 1 Aug build-state snapshot (all since removed) and
+`docs/DESIGN-RULINGS.md`.
 
 **This file decides nothing.** Every "recommend" line below is a recommendation, not a ruling.
 A decision becomes real when it lands in `docs/DESIGN-RULINGS.md` (if it is a law-8 ruling) or in
@@ -47,7 +48,7 @@ stop planning against the earlier of two.
 | **D12** | Install the **`Stop` hook** for the session bus? Needs explicit consent | The bus's "never stop working" property. `bus.py` already claims this hook exists | call |
 | **D13** | **Standing rule** for Windows/`Tools/` platform defects, or keep filing Log entries? | Nothing. Prevents a fifth recurrence | RULING *if adopted* |
 | **D14** | `.mcp.json` is **already committed** — endorse it, and does anything guard it? | Nothing today. It is the key a future MCP gate would match on | call |
-| **D15** | `docs/bus/` — commit or gitignore? | Nothing. Decide before the history fills | call |
+| **D15** | the hand-off message archive (removed) — commit or gitignore? | Nothing. Decide before the history fills | call |
 | **D16–D19** | Four smaller calls — see the tail table | Little to nothing | mixed |
 
 ---
@@ -58,7 +59,7 @@ stop planning against the earlier of two.
 ticket DAG* — how many tickets must finish first. It is **added**. Should it be subtracted, dropped,
 or left as is?
 
-**Filed.** `docs/tickets/TICKET_BP15_ARCHITECT.md` Log — step 6 finding **F6b** (~L753–776), and
+**Filed.** the BP15 ticket (board since cleared) Log — step 6 finding **F6b** (~L753–776), and
 again in the 1 Aug fix entry (~L861–868): *"**Flagged, not fixed: the sign of the depth term is a
 founder call**, on the same precedent as the readiness term."* The same entry says explicitly that
 it *"belongs in `DESIGN-RULINGS.md`, not in a builder's diff."* Restated in
@@ -92,7 +93,7 @@ scorer.
   coherent pair.**
 
 **Recommendation — (a), subtract.** Reason: the ticket's own name for the layer is *"score what to
-build next"*, and the evidence is in the generated file. `docs/BUILD-STATE.md` reports rung 2
+build next"*, and the evidence is in the generated file. The 1 Aug build-state snapshot reported rung 2
 **BLOCKED because `Tests/` is empty**, while ranking the three units whose absence causes that block
 at 7–9 — below `BRGA_Grapple`, *"THE netcode packet"*, which outranks them **as a reward for having
 three more prerequisites.** A scorer that demotes the thing blocking the whole ladder is not
@@ -185,16 +186,16 @@ shipping asset.
 
 **Filed.** `TICKET_BP16_UE_MCP_BRIDGE.md` step 2 (the three options) and its Log entry *"1 Aug 2026
 — step 2 PROPOSAL — not a ruling"* (~L267–418), which recommends **(a)** and states plainly:
-*"**Per law 8 the R-number and the acceptance are the founder's**."* Also `Tools/ue_mcp/STEP1-PLAN.md`
+*"**Per law 8 the R-number and the acceptance are the founder's**."* Also the MCP step-1 plan (removed)
 L51–52 (*"Draft step 2's ruling … **as a proposal for the founder**"*) and the bus thread
-`docs/bus/20260801T161722Z…` / `…164846Z…`.
+`a 1 Aug 2026 hand-off message` / `…164846Z…`.
 
 **Blocked until answered.** This is the largest unblocking item on the board.
 - **Every mutating MCP call.** T2 has confirmed the tools exist by name and schema —
   `DataTableTools.import_file`, `CurveTableTools.import_file`, `DataAssetTools.create`,
   `AssetTools.move` — and has fired **none** of them, correctly, because there is no R-number.
 - **BP16 steps 3, 4 and 5**, and 4 of its 6 Done-when boxes.
-- **`WORK-ROUTING.md` §4a stays a hypothesis.** If (a) lands and BP16 step 4 measures the retrofit,
+- **the routing notes (removed) stays a hypothesis.** If (a) lands and BP16 step 4 measures the retrofit,
   the R26 rename / input generator / CSV reimport may move out of CLOSED mode — which is the board's
   whole critical path. Until then §4 stands as written and all three wait for the editor to close.
 
@@ -217,7 +218,7 @@ L51–52 (*"Draft step 2's ruling … **as a proposal for the founder**"*) and t
   would also kill BP16 step 4, the only measurement that settles §4a.
 
 **One material fact that post-dates the proposal and belongs in the ruling.** T2 fired a rejecting
-`AssetTools.write_file` case (`SURFACE.md` §5): the confinement **held**, but its refusal enumerated
+`AssetTools.write_file` case (`.claude/skills/unreal-mcp/SKILL.md` §5): the confinement **held**, but its refusal enumerated
 **~80 allowed roots and only two are ours** (`<project>\Content`, `<project>\Saved`). The rest are
 **engine-install** plugin `Content/` directories under `UE_5.8_Source`. **An MCP call can write
 inside the engine install — outside the repo, invisible to git.** That is a wider blast radius than
@@ -321,7 +322,7 @@ closes**, or BP06 arrives to find the seam absent and its owner archived."*
 
 **Blocked until answered.** BP06 step 2's weapon-attract mode is BLOCKED today either way — BP06 is
 gated behind BP05, gated behind BP02. What is *urgent* is not the block, it is the **window**:
-`WORK-ROUTING.md` §4 puts **BP03 step 2 fifth in the next CLOSED batch**. If BP03 closes without the
+the routing notes (removed) puts **BP03 step 2 fifth in the next CLOSED batch**. If BP03 closes without the
 seam, the only remaining resolutions are a law-7 violation or reopening an archived ticket.
 
 **Options.**
@@ -383,7 +384,7 @@ modifier axis and raising it above 1.0 silently overrides two closed rulings.* L
 **Question.** Acquire a second machine, and supply a Steam App ID plus two test accounts — or scope
 BP11 explicitly to OSS Null and say so.
 
-**Filed.** `docs/WORK-ROUTING.md` §6: *"**A second machine (BP11).** The Steam rung needs two. Not
+**Filed.** the routing notes (removed): *"**A second machine (BP11).** The Steam rung needs two. Not
 owned today; acquiring it is a **founder action with lead time**, so it is worth starting before BP11
 is otherwise ready."* And `TICKET_BP11_ONLINE_STEAM.md` Kickoff: *"A Steam App ID and two test
 accounts are available (or the packet explicitly scopes to OSS Null and says so — an invite claim
@@ -443,7 +444,7 @@ unchanged.
 **Question.** Do `BRCombatCurves` (`AbilitySystem/`), `BRRootLayout`, `BRUISettings`, `BRUITypes`
 (`UI/`) become numbered units in ARCHITECTURE §3, or are they something else?
 
-**Filed.** `docs/BUILD-STATE.md` (generated, ~L69–75): *"**UNDECLARED — real `BR*` source on disk
+**Filed.** The 1 Aug build-state snapshot (generated, ~L69–75): *"**UNDECLARED — real `BR*` source on disk
 that §3 does not declare.** Reported, never adopted as units: adopting them would let the scanner
 rewrite the architecture it is checked against."* And `TICKET_BP15_ARCHITECT.md`'s CONTRACT_GAP entry
 (~L336–338): *"Whether those become numbered units is a founder call, per this ticket's own
@@ -506,7 +507,7 @@ declares relative to the discipline folder — they are blocked only on someone 
 `.claude/settings.json`) that fires when a session tries to finish and hands it the next relevant bus
 message.
 
-**Filed.** `Tools/bus/bus.py` docstring L13–14: *"the `Stop` hook in `.claude/hooks/bus_notify.py` is
+**Filed.** the message bus (removed) docstring L13–14: *"the `Stop` hook in `.claude/hooks/bus_notify.py` is
 what turns the mailbox into 'never stop working' — it fires when a session tries to finish and hands
 it the next relevant message."* Exit code 2 is documented as *"nothing to do (useful for the Stop
 hook)"*.
@@ -548,21 +549,21 @@ governs agents.
 they stay individual Log entries?
 
 **Filed.** Across four files rather than one, which is the argument:
-- `Tools/data-crew/run_crew.py:51–58` — cp1252 `UnicodeEncodeError` on the first job banner; the
+- the crew runner (removed) — cp1252 `UnicodeEncodeError` on the first job banner; the
   whole replay exited 1 on the machine that runs steps 2–5 (BP14 Log, 1 Aug).
-- `Tools/architect/build_state.py:326–331` — cp1252 again on `—`/`·`/`∪` via `--stdout`; fixed by
-  writing bytes. Its own comment: *"Same platform defect as `Tools/data-crew` (BP14 Log, 1 Aug 2026)."*
-- `Tools/architect/architect.py:213–234` — `rglob("BR*.h")` is **case-insensitive on Windows**, so it
+- the architecture scanner (removed) — cp1252 again on `—`/`·`/`∪` via `--stdout`; fixed by
+  writing bytes. Its own comment: *"Same platform defect as the crew runner (removed) (BP14 Log, 1 Aug 2026)."*
+- the architecture scanner (removed) — `rglob("BR*.h")` is **case-insensitive on Windows**, so it
   also returns the kept UE template's `breachpointCharacter.h` and *"would be reported as
   architecture drift on Windows and not on Linux. **The same class of platform defect** as the cp1252
   one."*
-- Two more of the same family: `Tools/rename_r26/rename_r26.py:68–72` (a case-only rename needs a
+- Two more of the same family: the R26 rename script (removed) (a case-only rename needs a
   two-step because the filesystem is case-insensitive) and BP15's F5 (**a failed traversal exploit on
   Windows was not evidence the exploit was impossible** — Win32 strips trailing dots; one extra
   character restored it).
 
 **Blocked until answered.** Nothing. But the pattern is already being copied by hand:
-`Tools/validate_data_tags/validate_data_tags.py:89–94` pins the encoding pre-emptively with the
+the tag validator (removed) pins the encoding pre-emptively with the
 comment *"Windows has bitten this repo twice."* It has now bitten more than twice, in more than one
 way, and the next author has to rediscover it.
 
@@ -629,15 +630,15 @@ one structural objection Finding 1 raised against the whole mechanism path. Add 
 
 ---
 
-## D15 — `docs/bus/`: commit or gitignore · call
+## D15 — the hand-off message archive (removed): commit or gitignore · call
 
 **Question.** Does the session bus's message directory enter git history, or is it ignored?
 
-**Filed.** `docs/bus/20260801T161116Z--T2-to-T1--bus-py-routing-bug…md` (the routing bug itself is
-`status: done`; this rider is not): *"**`docs/bus/` has no gitignore decision.** Either it commits
+**Filed.** a 1 Aug 2026 hand-off message (the routing bug itself is
+`status: done`; this rider is not): *"**the hand-off message archive (removed) has no gitignore decision.** Either it commits
 (and every message enters history forever) or it is ignored (and messages vanish on a fresh clone).
 Neither is wrong, but per the project's own law — a decision that lives only in chat is lost — the
-bus MUST terminate in ticket Logs either way. **Suggest:** gitignore `docs/bus/`, and make
+bus MUST terminate in ticket Logs either way. **Suggest:** gitignore the hand-off message archive (removed), and make
 `done --result` the prompt to write the outcome into the ticket Log."*
 
 **Blocked until answered.** Nothing. Six messages exist. Decide before the directory is large enough
@@ -652,7 +653,7 @@ two concrete reimport risks, the `CT_Combat.csv` single-key observation). (c) Gi
 **Recommendation — (c).** Reason: (a) as stated would lose real findings, because the discipline it
 depends on is not yet in place — the evidence is that today's bus traffic contains at least four
 findings with no ticket home. (c) is (a) plus the missing half, and it matches the precedent set by
-`Tools/data-crew/output/`, which is gitignored precisely so there is one source of truth rather than
+the crew output dir (removed), which is gitignored precisely so there is one source of truth rather than
 a second drifting copy. **Do not adopt (a) until the `done --result` → Log discipline is real**, or
 this is a decision that deletes evidence.
 
@@ -675,7 +676,7 @@ Two items on the founder's starting list are already ruled. Recorded here so the
 send them round again, per law 8.
 
 **§7's window claims vs. a lock-mode file — RULED by R31, and it took option (a).**
-`WORK-ROUTING.md` §7 still reads *"Two candidate resolutions, **for the founder, not for a lead to
+the routing notes (removed) still reads *"Two candidate resolutions, **for the founder, not for a lead to
 pick**"* — **that text is stale.** `docs/DESIGN-RULINGS.md` **R31** (founder ruling, 1 Aug 2026)
 resolved it: *"A claim may name a SET of tickets sharing one window. `owner_path` is their union, and
 amendments are ADDITIVE ONLY. … §7 offered two candidates; this takes **(a) window claims**."* It is
@@ -703,10 +704,10 @@ are stale and should point at R25** — a doc fix, not a decision.
 For honesty about the sweep's edges, three categories were found and **excluded**:
 
 1. **Unfinished work with a known owner** — unchecked Done-when boxes, BP01's owed clean witnessed
-   rung-1 pass, BP13 step 6's reimport, `Tools/audit_blueprints/` being unrun. These are *work*, not
-   *decisions*; they are already tracked in their tickets and in `WORK-ROUTING.md` §4/§6.
+   rung-1 pass, BP13 step 6's reimport, the blueprint audit (removed) being unrun. These are *work*, not
+   *decisions*; they are already tracked in their tickets and in the routing notes (removed)/§6.
 2. **Environment repair** — the engine's C# libs failing NuGet/SDK resolution, which blocks all of
-   rung 4. `WORK-ROUTING.md` §6 calls it *"workstation repair, not a packet"* and it needs an hour,
+   rung 4. the routing notes (removed) calls it *"workstation repair, not a packet"* and it needs an hour,
    not a decision.
 3. **Human judgment gates** — BP05's M2 fun gate, BP08's M4 go/no-go, BP10's blindfold footstep test.
    These are decisions the founder owes, but they cannot be answered from a desk; they need a build
@@ -732,7 +733,7 @@ locally… neither was applied to the repo,"* and that sentence is still true **
 packet landed both afterwards and BP02's Log was never updated — a Log records what a packet did,
 not what the repo now is. **A register built from Logs inherits every Log's expiry date.** This is
 the same failure this session hit four other times: the stale `Ability.*` comment that misrouted a
-`contract_gap` to BP01, `ARCHITECTURE §4`'s "six GE classes", `WORK-ROUTING §7` being written after
+`contract_gap` to BP01, `ARCHITECTURE §4`'s "six GE classes", the routing notes (removed) being written after
 **R31** had already ruled it, and `bus.py`'s docstring asserting a Stop hook that does not exist.
 **The document that a reader hits first wins, and it is usually the stale one.**
 
@@ -745,7 +746,7 @@ was built to save.
 **not** evidence that the module compiles. **No rung-1 pass has been run at current HEAD** — a UE
 editor is live (the MCP session) and R29.3 forbids the build. The honest statement is: *the two
 known blockers are gone from the tree, and whether rung 1 is green is unknown.* First item in the
-CLOSED batch when T2 releases the editor (`WORK-ROUTING §4.1`) answers it.
+CLOSED batch when T2 releases the editor (the routing notes (removed)) answers it.
 
 *Unchanged by this addendum:* D1 (depth sign), D2 (readiness term), D3 (F3 include-graph
 demotion) — the three the course deliverable currently answers with "this is the project owner's

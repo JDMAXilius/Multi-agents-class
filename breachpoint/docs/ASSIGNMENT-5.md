@@ -1,5 +1,16 @@
 # Assignment #5 — Autonomous Agency (ELVTR S07)
 
+> **Historical document — accurate as of 1 August 2026, deliberately NOT rewritten.**
+> Everything it assesses has since been deleted from the repository: `Tools/architect/`, the
+> ticket board, `docs/BUILD-STATE.md`, the message bus and the crew runner were all removed on
+> 4 August 2026 on founder direction, as part of stripping tooling that nothing invoked. The
+> file paths and line numbers below therefore point at things you will not find on disk.
+>
+> That is intentional. This is an assessment of an agent as it stood when it ran — its scores,
+> its six defects, its one invalidated selection. Repointing those references at code that no
+> longer exists would not make the document more true; it would make it describe a system that
+> was never assessed. The evidence remains readable in git history at `ac84b76` and earlier.
+
 **Project:** BREACHPOINT — a 4v4 arena FPS in Unreal Engine 5.8, pure native C++, built by a
 crew of agents against a ticket board.
 **The agent under assessment:** *The Architect* (`Tools/architect/`, ticket

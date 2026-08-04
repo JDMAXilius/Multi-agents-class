@@ -10,7 +10,7 @@ effect parameters are exact. Build to these.
 **BREACHPOINT — UI/UX System** (`figma.com/design/yznvnVdOFDADaugZSeomfP`), which holds cloned
 copies under different ids. Verified 2 Aug 2026 on `1:2` and `124:1179`; the earlier "Target
 file:" line pointed at the working file and was wrong — it contradicted the measurement method
-stated two lines above. Full sweep: `docs/tickets/TICKET_BP67_FIGMA_NODE_PROVENANCE.md`.
+stated two lines above. A full per-id sweep is owed and has not been run.
 
 ---
 

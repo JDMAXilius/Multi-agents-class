@@ -715,7 +715,7 @@ plays for the right duration on the wrong curve, and nothing but this assertion 
 | Screen In / Out / Expand play at the authored durations | Frame-count the capture. 330 ms = 19.8 frames @60. ±1 frame passes |
 | Focus Move never queues under a held direction | Hold D-pad down through a 6-row list, confirm the caret tracks and does not lag |
 | Wrap works both axes as specced (§4.2) | Manual, both devices |
-| R26 conformance of every WBP | `Tools/audit_blueprints/audit_r26.py` over `Content/UI/` — node count 0, added-member count 0. **Note: `DESIGN-RULINGS.md` records this script as written but never run and not wired into rung 2.** A UI packet that adds WBPs is the packet that owes wiring it in |
+| R26 conformance of every WBP | UNAUTOMATED — the audit that would measure this was removed. Node count 0, added-member count 0 must be checked by hand. **Note: `DESIGN-RULINGS.md` records this script as written but never run and not wired into rung 2.** A UI packet that adds WBPs is the packet that owes wiring it in |
 | Invalidation discipline (§8.3) | `stat Slate` / `SlateGlobalInvalidation` — confirm the static-chrome retainer's cache is not invalidated on frames where only the killfeed is animating |
 
 ### Rung 2b — input parity (PIE, but a separate claim)

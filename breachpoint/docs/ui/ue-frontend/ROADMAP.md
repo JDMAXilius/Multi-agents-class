@@ -80,7 +80,7 @@ appears anywhere in `Config/`. Button prompts and stack back-navigation need one
 `WBP_KillfeedEntry.uasset`. All three are **git-LFS pointers** in this checkout (130 bytes each;
 `WBP_RootLayout`'s pointer declares `size 19848`). Landed by commit `238e4ce` (BP18).
 
-**[V]** `docs/bus/20260801T180038Z--T2-to-T1--bp18-...md` records: *"Confirmed real
+**[V]** A 1 Aug 2026 hand-off message recorded: *"Confirmed real
 UMGEditor.WidgetBlueprint assets, correct BR parents, zero graph nodes."*
 
 **What that message does not say, and what nobody has checked:** whether `WBP_RootLayout` contains
@@ -131,12 +131,12 @@ by counting frames on the 17 pages — it costs one Figma MCP call and stops the
 
 ### 0.6 The ladder is blocked at the bottom
 
-**[V]** `docs/BUILD-STATE.md` "Ladder blockers": rung 1 (UBT, three targets) **BLOCKED** — editor
+**[V]** The 1 Aug build-state snapshot recorded rung 1 (UBT, three targets) BLOCKED — editor
 and build must not overlap (R29.3/R36). Rung 2 (specs) **BLOCKED** — same lock, and
 `Source/Breachpoint/Tests/` holds only `.gitkeep`. Rung 4b **BLOCKED** upstream by BP00's
 Gauntlet/NuGet failure.
 
-**[V]** `Tools/audit_blueprints/audit_r26.py` exists, has never been run, and is not wired into
+**[V]** The R26 blueprint audit was written, never run, and never wired into
 rung 2 — R26 is enforced by goodwill (the ruling says so itself). **This roadmap is about to
 multiply WBP count by ~20×. That is the moment goodwill stops being adequate.**
 
@@ -224,7 +224,7 @@ crew), P10 (the Figma-side art and nomenclature track — headless, no editor, n
    compile result, child-widget tree, graph node count.
 2. Assert `WBP_RootLayout` contains the four exactly-named `CommonActivatableWidgetStack`s. If not,
    add them — that is pure layout, Tier 4, lawful.
-3. Run `Tools/audit_blueprints/audit_r26.py` for the first time against the five `BP_BR*` assets
+3. Audit the five `BP_BR*` assets against R26 by hand — the tool that would do it is gone
    **and** the three WBPs. Record the output verbatim.
 4. Write the missing R37 receipts for BP18's three WBPs **[P]** into `docs/ui/receipts/`. Late
    receipts are worth more than no receipts, and the directory has to exist before Phase 3 lands
@@ -569,7 +569,7 @@ reaches into the pawn, the ASC or the GameState to cover a missing field is a fi
 shortcut.
 
 **Size:** L across the six. **Risk:** **[V] BP21 step 2 and BP22 both need `BRGA_WeaponFire`, which
-does not exist** — `BUILD-STATE.md` ranks it MISSING with two open blockers (`FBRWeaponRow` carries
+does not exist** — the 1 Aug snapshot ranked it MISSING with two open blockers (`FBRWeaponRow` carries
 no trace range and no spread; `DT_Weapons.csv` has no `AbilitySet` column). **So the reticle state
 and the accuracy counters are blocked behind BP03's fire path, not behind UI.** Say that plainly
 rather than scheduling around it.

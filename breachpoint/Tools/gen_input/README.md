@@ -8,7 +8,7 @@ the only sanctioned way to turn one into the other.
 > If you find yourself retyping a key in the Input Mapping Context editor, stop — the rebind
 > belongs in `input_profile.json`, and a re-run puts it in the asset.
 
-Ticket: `docs/tickets/TICKET_BP01_SKELETON_INPUT.md` (step 3). Contract:
+Contract:
 `docs/contracts/data-and-assets.md`. Doctrine: `.claude/skills/ue-editor`. Precedent and
 structure: `Tools/blockout` (BP07) — same two-half split, same wrapper, same exit codes.
 
