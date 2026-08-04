@@ -74,9 +74,9 @@ See the `ue-editor` skill.
 
 | Asset | Script | Why scripted |
 |---|---|---|
-| `BR_Arena01.umap` blockout | `Tools/py/build_arena.py` | The manifest is truth; the map is its projection. Re-runnable when the manifest changes |
+| `BR_Arena01.umap` blockout | `Tools/blockout/build_arena.py` | The manifest is truth; the map is its projection. Re-runnable when the manifest changes |
 | DataTable reimport | `Tools/reimport-tables.ps1` | CSV → asset, never manual |
-| `UInputAction` + `IMC_Default` assets | `Tools/py/build_input_assets.py` | Tiny, mechanical, and reproducible beats remembered |
+| `UInputAction` + `IMC_Default` assets | `Tools/gen_input/build_input.py` | Tiny, mechanical, and reproducible beats remembered |
 | Ability-set / input-config data instances | *see §4 — pending decision* | |
 
 ### Tier 4 — Editor-authored (you, by hand — the engine reserves these)
@@ -141,7 +141,7 @@ questions and conflating them is what makes "who does this" feel ambiguous.
 
 **The correction that collapses most of the confusion:** the UE 5.8 MCP is **not a second
 agent** — it is a server exposing the editor's systems as tools to the *same* Claude Code
-session that already has the files and git (`Tools/ue_mcp/RESEARCH.md`). Contexts B and C
+session that already has the files and git. Contexts B and C
 below are one session with the editor shut or open. Nothing is "handed over"; no
 prompt-handoff format exists or is needed.
 

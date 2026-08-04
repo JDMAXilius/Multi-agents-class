@@ -17,7 +17,7 @@ projection drift ahead of the source.
 - **Python Editor Script Plugin** (+ Editor Scripting Utilities) — enable once in the
   project; unchanged API family across 5.x.
 - Headless execution (the crew's default — no human at an editor):
-  `UnrealEditor-Cmd Breachpoint.uproject -run=pythonscript -script="Tools/py/<script>.py" -stdout -unattended -nosplash`
+  `UnrealEditor-Cmd Breachpoint.uproject -run=pythonscript -script="Tools/<area>/<script>.py" -stdout -unattended -nosplash`
 - In-editor: `py <script>` in the console, or Output Log's Python REPL, for spikes only.
 - **Remote Control API** (WebControl plugin, HTTP :30010) — for poking a RUNNING editor
   (set a property, call a function). Useful for iteration; never the landing mechanism.
@@ -44,7 +44,7 @@ level_ss.save_current_level()                  # explicit save, never rely on pr
   and make the script **idempotent** (delete its own previously-tagged actors first) so
   a re-run after a manifest change is a clean rebuild, not a duplicate pile.
 
-## 3. `Tools/py/build_arena.py` — the BP07 pattern (manifest → blockout)
+## 3. `Tools/blockout/build_arena.py` — the BP07 pattern (manifest → blockout)
 
 1. Read `Content/Data/arena_manifest.json` (schema per `data-and-assets.md`).
 2. Open/create `BR_Arena01` — **the .umap this ticket owns, lfs-locked** (law 7).
@@ -92,7 +92,7 @@ exists when the reimport RAN and the pinned suites passed against the new values
 
 ## 6. Self-check before handoff
 
-Script committed under `Tools/py/` (not pasted into a chat) · idempotent re-run proven
+Script committed under `Tools/<area>/` (not pasted into a chat) · idempotent re-run proven
 · units converted once · every generated actor labeled + tagged · .umap locked before,
 saved after, one owner · screenshots attached to the ticket Log · claims name their
 rung (a generated map "works" at the walkthrough/functional rung, not on "the script

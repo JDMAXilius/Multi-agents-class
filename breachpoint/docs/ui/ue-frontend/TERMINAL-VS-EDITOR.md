@@ -122,7 +122,7 @@ should ever be done through the MCP, because all of it is diffable text.
 .\Tools\gen_input\build-input.ps1
 
 # Raw commandlet shape (ue-editor skill §1) when no wrapper exists yet:
-UnrealEditor-Cmd Breachpoint.uproject -run=pythonscript -script="Tools/py/<script>.py" `
+UnrealEditor-Cmd Breachpoint.uproject -run=pythonscript -script="Tools/<area>/<script>.py" `
   -stdout -unattended -nosplash
 ```
 
