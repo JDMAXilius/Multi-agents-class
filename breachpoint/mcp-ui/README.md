@@ -16,8 +16,9 @@ other component.
 |---|---|
 | `PROCESS.md` | The five phases, with the exact commands. Start here. |
 | `PLAN-REFERENCE.md` | Every key, helper and class constant `wbp_plan.py` accepts. |
-| `GOTCHAS.md` | The eleven things that cost real time. Read before your first build, not after. |
+| `GOTCHAS.md` | The thirteen things that cost real time. Read before your first build, not after. |
 | `WORKED-EXAMPLE.md` | Menu Row end to end, including the six defects the audit caught. |
+| `MATERIALS.md` | The material lane, and how to read an existing material before authoring one. |
 
 ---
 
