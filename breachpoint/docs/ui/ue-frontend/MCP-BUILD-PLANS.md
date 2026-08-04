@@ -154,7 +154,15 @@ that is how the label and count share the band); a second gradient below the lin
 
 ---
 
-### A5 · `WBP_RosterRow` — `UBRRosterRow` (`UCommonButtonBase`), fill × 30
+### A5 · `WBP_RosterRow` — `UBRRosterRow` (**`UCommonUserWidget`**), fill × 30
+
+> **CORRECTED 4 Aug 2026.** This heading said `UCommonButtonBase`. It is not one —
+> `BRRosterPanel.h:210` declares `UBRRosterRow : public UCommonUserWidget`, and the class has no
+> click, hover or selection handling of any kind. A builder who trusted the old heading would
+> have set the wrong parent on the asset. **Open question, not fixed here:** the reference calls
+> these `Player Buttons` and `RS_PlayerInspect` exists as a modal, so a roster row probably
+> *should* be clickable — but that is a C++ change with a caller contract, not a plan edit.
+> Filed; the plan now states what the code actually is.
 
 ```
 RootSizeBox        SizeBox    bind    │ height UNAUTHORED (C++ RowHeight 30 · pitch 35 is the
