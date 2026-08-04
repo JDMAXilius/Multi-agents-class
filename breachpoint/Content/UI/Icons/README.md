@@ -1,19 +1,14 @@
-# `Content/UI/Icons/` — CONVENTION, no longer enforced
+# `Content/UI/Icons/`
 
 ~98 glyphs (shapes UMG cannot draw). Naming: `T_UI_Icon_<Name>`
 (`docs/ui/ue-frontend/ASSET-PIPELINE.md:81`).
 
-## Why the folder name mattered, and what changed
+## Why the folder name is a convention worth keeping
 
-`Tools/verify_notices.py` hard-coded `Content/UI/Icons/**/*.uasset` as a dependency probe: if the
-glob matched anything and the token `Lucide` was absent from `THIRD-PARTY-NOTICES.md`, the run
-failed. The Lucide set is ISC, and ISC requires the copyright and permission notice in **all
-copies** — so the obligation is discharged by the notice *shipping*, not by existing.
-
-**That script was deleted 4 Aug 2026 with R41 (founder direction). Nothing enforces this now.**
-The obligation did not go away; only the check did. Keep importing icons here — not because a
-gate can see it, but because the notice in `THIRD-PARTY-NOTICES.md` is written against this set
-and nothing will warn you if it drifts.
+Every icon brush in `Tools/gen_ui/wbp_plan.py` resolves against this path, and the generator's
+`texture_problem()` check verifies each one exists ON DISK at plan time. An icon imported
+somewhere else does not fail loudly — it produces a brushless `UImage`, which renders as a blank
+white rectangle (BP70 D2). Import icons here. Only here.
 
 ## Known conflict (still unresolved)
 
@@ -27,5 +22,5 @@ live. `Content/UI/Icons/` wins for icons.
 - Rank/medal marks, scene plates, weapon renders → `Content/UI/Art/`.
 - Anything UMG can draw (rules, dividers, panel fills, text) — `ASSET-PIPELINE.md:15`,
   *export nothing UMG can draw*.
-- A new icon set without adding its notice to `THIRD-PARTY-NOTICES.md` **and** re-copying
-  `Content/Legal/THIRD-PARTY-NOTICES.txt` — drift between the two is now caught by nobody.
+- An icon that duplicates one already here under a second name. The set is deduplicated by
+  intent, not by pixels, and two names for one glyph is two things to restyle later.

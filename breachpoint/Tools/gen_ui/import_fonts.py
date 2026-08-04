@@ -24,9 +24,8 @@ weight strings from `figma_tokens.json` → `type.styles` (`SemiBold`, `Medium I
 …), and every one is read back off the asset after the write. An unverified write is
 not a write.
 
-The .ttf files themselves are the licence obligation, not an implementation detail:
-both families are OFL-1.1 and the notice is in THIRD-PARTY-NOTICES.md. Do not add a
-face without adding its notice in the same commit.
+Adding a face means adding it to the composite here as well as dropping the .ttf —
+a file the editor imported but that no composite names is invisible to Slate.
 """
 from __future__ import annotations
 

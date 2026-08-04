@@ -1,10 +1,7 @@
 # `Content/UI/Fonts/`
 
-Two families, both **SIL OFL 1.1**: **Rajdhani** (chrome, labels, the display ramp) and
-**Roboto Condensed** (body, and the only italic — Rajdhani ships none,
-`docs/ui/ue-frontend/ROADMAP.md:334`). Licence closed at `ROADMAP.md:116`; the notice is in
-`THIRD-PARTY-NOTICES.md` and the upstream `OFL.txt` of each family sits here verbatim as
-`OFL-Rajdhani.txt` / `OFL-RobotoCondensed.txt`.
+Two families: **Rajdhani** (chrome, labels, the display ramp) and **Roboto Condensed** (body,
+and the only italic — Rajdhani ships none, `docs/ui/ue-frontend/ROADMAP.md:334`).
 
 Six faces, static TTFs from the Google Fonts catalogue, **unmodified**:
 Rajdhani Regular / SemiBold / Bold, Roboto Condensed Medium / Medium Italic / SemiBold.
@@ -46,9 +43,8 @@ the composite fonts, then reads every typeface name back off the asset.
 
 - A third font family. Two is the decision (`ROADMAP.md:680`); a third is a design ruling, not
   an import.
-- A font whose licence is not OFL/permissive **and** recorded in `THIRD-PARTY-NOTICES.md` +
-  re-copied to `Content/Legal/THIRD-PARTY-NOTICES.txt`. Drift between the two used to fail the
-  build via `Tools/verify_notices.py`; that script was deleted 4 Aug 2026, so this is manual now.
+- A fourth or fifth face in an existing family without a reason. Six is the set the type ramp
+  in `figma_tokens.json` actually names; an unused face is texture memory for nothing.
 - Type sizes, weights or letter-spacing. Those are text styles — C++ in
   `Source/Breachpoint/UI/Styles/`, never baked into a font asset.
 - Rasterised text, SDF sprite sheets, or an image of a word.

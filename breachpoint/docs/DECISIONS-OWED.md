@@ -818,9 +818,8 @@ enforced.
 `docs/contracts/testing.md:75` still lists it as a rung-2 grep gate. That edit was blocked by
 the owner-path guard and was never made. Until `docs/contracts/testing.md` drops that row, a
 rung-2 run fails because the script is absent — which reads as a gate failure rather than as a
-deliberate removal. Nineteen further references to the deleted script survive across
-`THIRD-PARTY-NOTICES.md`, four `README.md` files, `docs/ui/ASSET-METHODS.md`,
-`docs/ui/ue-frontend/STRUCTURE.md` and `Tools/gen_ui/wbp_plan.py:270`.
+deliberate removal. Two further stale references survive in `docs/ui/ASSET-METHODS.md:136` and
+`docs/ui/ue-frontend/STRUCTURE.md:203`; both are prose, and both are outside the claim too.
 
 **Also gone with the board, and worth knowing:** `TICKET_BP63_ICONS_PATH_CONFLICT.md` existed
 solely to resolve a hard-coded glob inside `verify_notices.py`. With that script deleted the

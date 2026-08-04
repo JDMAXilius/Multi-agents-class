@@ -680,12 +680,9 @@ re-litigated inside a packet.
 
   The removal was prompted by R41 producing a `high` finding against `ac84b76` — 123 materials
   the founder had authored himself in another of his projects — on circumstantial evidence
-  (asset naming, plus an unchanged notices file). A gate that flags the founder's own work costs
-  more than it returns during development.
+  (asset naming). A gate that flags the founder's own work costs more than it returns during
+  development.
 
-  **What deliberately survives, because it gates nothing:** `THIRD-PARTY-NOTICES.md`, its staged
-  copy under `Content/Legal/`, and the two `OFL-*.txt` files. Those are attribution for Lucide
-  (ISC) and Rajdhani / Roboto Condensed (OFL) — content already in use. They refuse nothing and
-  permit nothing; they are simply what keeps those fonts and icons shippable. Their automated
-  check (`Tools/verify_notices.py`) was removed with this ruling, so nothing enforces them any
-  more — keeping them accurate is now a manual founder concern.
+  **Removed with it, 4 Aug 2026:** `Tools/verify_notices.py`, the root notices record, its
+  staged copy, the two font licence texts, and the packaging rule that staged them. Content
+  sourcing and attribution are now entirely a founder concern, handled outside this repo.

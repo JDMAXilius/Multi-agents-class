@@ -21,4 +21,4 @@ plates / backgrounds, 3 weapon silhouettes (`docs/ui/ue-frontend/ASSET-PIPELINE.
   palette, does not scale.
 - Text as an image. Ever.
 - Gradients / scanlines / glows — those are materials, `Content/UI/Materials/`.
-- Third-party art without a notice in `THIRD-PARTY-NOTICES.md`.
+- Art whose source or terms of use are unknown.
