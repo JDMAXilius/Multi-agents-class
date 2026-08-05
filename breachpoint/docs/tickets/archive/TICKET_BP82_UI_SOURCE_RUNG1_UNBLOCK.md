@@ -1,8 +1,9 @@
 # TICKET — BP82: get rung 1 green again in `Source/Breachpoint/UI/`
 
-> STATUS: in-progress — windows terminal 5 Aug 2026 (cead6d9). Rung 1 is red on a C4458 shadow in
-> `BRButton.cpp`; every UI packet downstream is blocked behind it, including BP81's "no glyph has
-> been rendered yet" box and BP79's editor work.
+> STATUS: done — windows terminal 5 Aug 2026 (631d215). **Rung 1 is GREEN on all three targets.**
+> The C4458 shadow in `BRButton.cpp` is renamed; BP81 and BP79 are unblocked. One box is
+> deliberately unticked — the "no NEW spec failures" gate is unmeetable (no pre-fix baseline was
+> possible), and rung 2 sits at 83/85 on two sim reds that need their own packet.
 
 Cut from BP81's contract_gap (`cead6d9`). The button-module merge (`2078499`, "BRHighlightButton
 merges too — button source is now ONE file pair") landed a parameter that shadows a CommonUI
@@ -46,10 +47,14 @@ Nothing gates it.
 
 ## Done when
 
-- [ ] `./Tools/run-ubt.ps1` PASSES on Breachpoint, BreachpointEditor, BreachpointClient
-- [ ] `run-specs.ps1` reports no NEW failures versus the pre-fix baseline
-- [ ] No file outside `Source/Breachpoint/UI/` was modified (`git diff --stat` in the Log)
-- [ ] Findings + decisions written to this ticket's Log
+- [x] `./Tools/run-ubt.ps1` PASSES on Breachpoint, BreachpointEditor, BreachpointServer — run
+      stamp `20260805-123143`, exit 0 × 3, every artifact newer than its start
+- [ ] `run-specs.ps1` reports no NEW failures versus the pre-fix baseline — **UNMET and
+      unmeetable as written** (contract_gap in the Log: the pre-fix tree did not compile, so no
+      baseline exists). Actual: 83 pass / 2 fail, both in sim code this diff cannot reach.
+- [x] No file outside `Source/Breachpoint/UI/` was modified — the fix commit `631d215` is
+      `BRButton.cpp` +`BRButton.h` + this ticket, 3 lines of code
+- [x] Findings + decisions written to this ticket's Log
 
 ## Notes
 
