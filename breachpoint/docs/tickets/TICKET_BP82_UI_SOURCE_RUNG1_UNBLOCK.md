@@ -65,3 +65,57 @@ Nothing gates it.
 ## Log
 
 (append findings here, dated, newest last — this is what the next session reads)
+
+### 5 Aug 2026 — windows terminal — step 1 done, rung 1 GREEN, rung 2 has two pre-existing reds
+
+**Step 1 landed.** The rename is 3 lines across 2 files and nothing else:
+
+```
+Source/Breachpoint/UI/Components/BRButton.cpp | 4 ++--   (:487 signature, :494 use)
+Source/Breachpoint/UI/Components/BRButton.h   | 2 +-     (:338 declaration)
+```
+
+`bInSelected` matches the prefix the file already used for the same reason at `BRButton.h:335`.
+Behaviour-neutral — the parameter is read once, to choose `TypeCheckMark`'s visibility.
+
+**Step 2 — scanned for siblings, found none.** Grepped `Source/Breachpoint/UI/` for parameters
+named after `UCommonButtonBase` bool members. `BRFeatureCard::ApplyHoverState(bool bHovered)`
+(`BRFeatureCard.cpp:161`) looked like a candidate — `UBRFeatureCard` does derive from
+`UCommonButtonBase` — but `bHovered` is **not** a member of that class (the bitfield block at
+`CommonButtonBase.h:878-940` has no such field), so it does not shadow and was left alone.
+`BRItemTile.h:70`'s `bool bLocked` is a member declaration, not a local; C4458 does not apply.
+
+**Rung 1: PASS, all three targets** — run stamp `20260805-123143`, incremental.
+
+| target | exit | artifact mtime | newer than start | verdict |
+|---|---|---|---|---|
+| BreachpointEditor | 0 | 2026-08-05T12:32:03.471 | YES | PASS |
+| Breachpoint | 0 | 2026-08-05T12:33:21.813 | YES | PASS |
+| BreachpointServer | 0 | 2026-08-05T12:34:25.964 | YES | PASS |
+
+**Rung 2: 83 pass, 2 fail** (`Tools/Logs/specs-20260805-123441.log`). Both failures are the SAME
+root cause and neither is reachable from this packet's diff:
+
+- `Breachpoint.Sim.Shields.the ShieldsBroken transition.refuses to mark an uninitialised fighter
+  as broken` — `BRShieldSpec.cpp:649`: *expected `GetMaxShields()` 0.0, got 100.0*
+- `Breachpoint.Sim.Combat.UBRAttributeSet clamps.clamps Health and Shields against an
+  UNINITIALISED capacity of zero`
+
+A freshly spawned fighter now arrives with `MaxShields = 100` where both specs assert it must be
+0 until `GE_InitStats` runs. That is an attribute-set/default-value change in the sim, and this
+packet's entire diff is a parameter name inside a CommonUI widget's checkmark visibility —
+there is no causal path between them.
+
+**contract_gap — the "no NEW failures vs the pre-fix baseline" box cannot be satisfied as
+written.** A pre-fix baseline is unobtainable: before this packet the module did not compile, so
+rung 2 could not run at all. There is nothing to diff against. The honest statement is the one
+above — the two reds are in `AbilitySystem`/sim code that this diff does not touch, so I am
+recording them as pre-existing on reasoning, NOT on a measured baseline. Whoever picks up the
+shield defect can establish the real baseline by running rung 2 at `2078499`.
+
+`Source/Breachpoint/AbilitySystem/` is outside this owner_path; per law 5 nothing was touched.
+**It needs its own packet** — and it is the more serious of the two findings now open in
+`Source/`, alongside BRHUDDirector's `InitializeDependency` (BP80, line 405).
+
+**Rung honesty:** rung 1 PASS and rung 2 83/85 are what happened. Nothing was launched, no PIE,
+no multiplayer. The button whose parameter this was has not been clicked.

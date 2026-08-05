@@ -484,14 +484,14 @@ bool UBRButton::ApplyPlateMaterialState(bool bInverted, bool bAnimationDrivesHov
 	return true;
 }
 
-void UBRButton::ApplySelectedMark(bool bSelected)
+void UBRButton::ApplySelectedMark(bool bInSelected)
 {
 	// COMPONENT-SPECS Sec 2 Checkbox/Radio: Idle and Hover are an EMPTY box; only Active and
 	// Active Hover carry the mark. HitTestInvisible rather than Visible -- the mark is
 	// decoration inside a button and must never eat the click that toggles it.
 	if (TypeCheckMark)
 	{
-		TypeCheckMark->SetVisibility(bSelected
+		TypeCheckMark->SetVisibility(bInSelected
 			? ESlateVisibility::HitTestInvisible
 			: ESlateVisibility::Collapsed);
 	}

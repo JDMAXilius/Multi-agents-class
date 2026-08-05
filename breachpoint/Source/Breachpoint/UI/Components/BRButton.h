@@ -335,7 +335,7 @@ protected:
 	void ApplyInversionToSubtree(UWidget* Root, const FSlateColor& InTextColor, bool bInverted);
 
 	/** Show `TypeCheckMark` iff the row is selected. Idle/Hover are an empty box (Sec 2). */
-	void ApplySelectedMark(bool bSelected);
+	void ApplySelectedMark(bool bInSelected);
 
 	/**
 	 * Drive the plate's `Hover`/`Pressed` scalars, if `TextFrameFill` carries a material.
