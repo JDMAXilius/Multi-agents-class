@@ -108,7 +108,7 @@ last, after a render proves the replacement.**
 - [x] 5 deleted; the six `DefaultGame.ini` soft refs each resolve to a real asset
 - [ ] A build receipt for the nine at the current plan digest is committed
 - [ ] **Two screenshots in this Log: the new `WBP_ButtonCheckbox` and its archived twin**
-- [ ] The art delete is done, or the exceptions are named with the reason
+- [x] The art delete is done, or the exceptions are named with the reason
 - [ ] Hover/press/click exercised in PIE — **rung 2 at best**, and said that way
 - [x] Findings + decisions written to this ticket's Log
 
@@ -336,3 +336,43 @@ pushed; the claim file `.claude/active-packet.json` is left in place because the
 finished. Four boxes remain: all-three-targets (needs a source-built engine, impossible on this
 launcher install), the committed receipt (contract_gap above), the twin screenshot, the art
 delete, and PIE.
+
+**5 Aug 2026 — STEP 6 DONE, and it had to be re-cut: the ticket's delete list was wrong twice.**
+
+Editor relaunched (memory had recovered to 4.5 GB free + 3.4 GB reclaimable once the first
+editor exited). `get_referencers` run against **every** `.uasset` under
+`Content/UI/Components/Buttons/Assets/` — 51 of them, not the 47 this ticket assumed.
+
+| This ticket said | The registry says |
+|---|---|
+| delete `MenuRow_Tick`, "duplicate of `Icons/Glyphs/T_UI_Glyph_Check_24`" | **KEPT.** It is referenced by the **live rebuilt `WBP_ButtonSlider`** and wired in `wbp_plan.py`. Deleting it would have broken a widget rebuilt earlier the same session |
+| "the **4** currently-referenced `Sides/` textures" | **8.** Four (`Top/Bottom/Left/Right_Line`) by the live `WBP_ButtonDefault`; four more (`Default_NoFade_Default__*`) held **only by the archived twin** — they are alive *because* step 3 archived instead of deleting |
+| `Sides/` = 40 textures / 112 files; "the other 43 still go" | 51 uassets under `Assets/`; **38 unreferenced** → **114 files** deleted with their `.png`/`.svg` |
+| `ButtonBorder_*` referenced zero times | **CONFIRMED** — all 6 unreferenced, all deleted |
+
+**Deleted: 38 uassets (32 `Sides/` + 6 `ButtonBorder_*`) = 114 files** including sources, on the
+founder's call to take the `.png`/`.svg` with each texture. **Kept: 13** — the 9 with live-widget
+referencers and the 4 the archive alone holds. Landed in `887c002`.
+
+**The eyes-on gate this ticket set for step 6 turned out to be moot.** It required comparing the
+4 live `Sides/` textures against a plain RoundedBox outline before deleting — but those four are
+*keepers* under any reading, so no comparison gated anything. The gate that mattered was the one
+the ticket did not name: **re-query referencers immediately before an irreversible delete.** Each
+of the 38 was re-checked in the same loop that deleted it, not from the earlier scan.
+
+**Verified after, not asserted:** `build_wbp.py --verify --parent BRButton` PASSes all nine at
+101 nodes with zero findings. Nothing referenced was destroyed.
+
+**The archived-twin screenshot is ABANDONED — the failure is reproducible, not incidental.**
+Retried on a freshly launched editor with 8 s of settle time.
+`OpenEditorForAsset('/Game/UI/OldWidgets/Buttons/WBP_ButtonCheckbox')` returns `null`,
+`GetOpenAssets` returns `[]`, and the capture shows only the level editor — yet the editor log
+records `LogAssetEditorSubsystem: Opening Asset editor for WidgetBlueprint
+/Game/UI/OldWidgets/Buttons/WBP_ButtonCheckbox`. **The subsystem reports opening a window that
+never appears**, with no error on either side. The same call on the `Components/Buttons` copy
+works. Whoever picks this up should not spend the time again through this path — either drive
+the content browser via `SlateInspectorToolset`, or accept the founder's on-screen comparison
+(already logged, 5 Aug: *"they are perfect"*) and drop the box.
+
+**Incidental visual confirmation:** the content browser capture shows `Content/UI/` containing
+both `OldWidgets` and `Reference` — steps 2 and 3 proven by eye as well as by `find_assets`.
