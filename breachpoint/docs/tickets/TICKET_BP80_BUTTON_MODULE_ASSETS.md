@@ -193,3 +193,79 @@ rung 1: **it compiles; nothing here says it works.**
 Unreal MCP at `127.0.0.1:8000/mcp` refuses the connection (the server runs inside the editor
 process). Per the CONTEXT gate the ticket stays in-progress at step 1; the archive, the delete,
 the nine rebuilds, the renders and the PIE pass all wait for an open editor.
+
+**5 Aug 2026 — STEPS 2–5 COMPLETE in a live editor. Steps 6–7 outstanding.**
+
+Editor opened on this mac terminal (launcher UE 5.8), MCP reached over raw HTTP through
+`mcp-ui/gen_ui/mcp.py` — the session's own MCP client had registered no tools because the
+server was down at session start, and the shared transport made that irrelevant.
+
+| Step | Result |
+|---|---|
+| 2 — archive 17 sourced | **PASS** — all 17 at `/Game/UI/Reference/Buttons/`, verified by `find_assets` at the destination, not by `move`'s return value |
+| 3 — archive our 10 | **PASS** — all 10 at `/Game/UI/OldWidgets/Buttons/` |
+| 4 — delete 5 | **PASS** — `get_referencers` returned `[]` for all five BEFORE the delete; all five gone from disk |
+| 5 — build the nine | **PASS** — `--list --parent BRButton` selected exactly 9 at **101 nodes** (12+10+10+8+14+11+11+15+10), matching the ticket. 294 verified writes, **zero findings** |
+
+`git status` shows **27 A** at the new tracked paths — `Content/UI/Reference/` and
+`Content/UI/OldWidgets/` are NOT gitignored (the `Content/Reference/` trap in step 2 was
+avoided). Landed in `2a61065`.
+
+**All 22 `/Game/...` refs in `DefaultGame.ini` resolve** — checked every one with
+`find_assets`, not just the six. Zero dangling.
+
+**A transient dangling window exists between step 3 and step 5, and it is not recorded
+anywhere else.** UE wrote **no redirectors** for the 27 moves, so the six ini refs pointing at
+`/Game/UI/Components/Buttons/WBP_Button{Default,Slider,Checkbox,DropDown}` were broken from the
+moment step 3 finished until step 5 recreated those assets at the same paths. **Steps 3 and 5
+are not separable** — a session that archives and stops leaves the front end and the settings
+screen pointing at nothing. Do them in one sitting or not at all.
+
+**Founder sign-off on the rebuild, 5 Aug: "they are perfect."** Eyes on the rebuilt
+`WBP_ButtonCheckbox` in the UMG designer — border, plate, `BUTTON` label, `TypeBody` check body,
+parent `BRButton`, 11 nodes. That clears step 3's "do not delete until the founder signs off"
+gate. `WBP_ButtonDefault`'s predicted appearance change (handoff note 2) was not called a
+regression.
+
+**The two-screenshot box is NOT satisfied, and one capture is misleading.** `CaptureAssetImage`
+refuses widget blueprints ("Asset type does not support image capture"), so the fallback was
+`OpenEditorForAsset` + `CaptureEditorImage`. `OpenEditorForAsset` on
+`/Game/UI/OldWidgets/Buttons/WBP_ButtonCheckbox` **returned null and silently opened nothing** —
+`GetOpenAssets` listed only the `Components/Buttons` path throughout. The file captured as the
+archived twin is **the new widget photographed a second time**. One render exists, not a pair.
+The founder's comparison was made on screen, not from these files.
+
+**Two hazards this session hit, worth not re-deriving:**
+
+1. **A modal dialog in the editor blocks every MCP call.** Tool calls execute on the game
+   thread; a modal parks the main thread in `-[NSApplication nextEventMatchingMask]` and the
+   MCP goes silent while the process still burns ~70% CPU on render threads. It reads exactly
+   like a hang. `sample <pid>` distinguishes them: parked in the Cocoa event loop = modal
+   waiting for a human; in `FEngineLoop::Tick` = real work. Dismissing the dialog resumed
+   everything with nothing lost.
+2. **`mcp.py` hardcodes `timeout=120` in `_post`.** Opening a UMG designer exceeds it, and the
+   client raises `socket.timeout` while **the server keeps executing** — so the call lands, the
+   result is thrown away, and a retry double-executes it. Harmless for reads; not harmless for
+   a write. Every capture here overrode it to 300s.
+
+**contract_gap — the receipt cannot be committed as the Done-when box requires.**
+`.gitignore:68` excludes `docs/ui/receipts/` deliberately ("2.7 MB of logs in git is not history
+anyone reads"), while this ticket's Done-when says "a build receipt for the nine ... is
+committed" and its owner_path lists `docs/ui/receipts/`. Both cannot hold. `.gitignore` is not
+in this ticket's owner_path, so per law 5 nothing was edited to unblock. The receipt's identity
+is recorded here instead, which is what a reader actually needs:
+
+- file: `docs/ui/receipts/gen-ui-20260805T025529Z.md` (local only)
+- receipt sha256: `4043e2876a570c6e…` · plan `wbp_plan.py` sha256: `971a070741b6135f…`
+- 294 `PASS` lines, 0 `FAILED`, 0 findings, verdict PASS
+
+Whoever owns the ticket should rule: either drop the box, or carve an exception into
+`.gitignore` for `gen-ui-*.md` receipts under a size cap.
+
+**Not done, and why:**
+- **Step 6 (art delete)** — its own gate is unmet: the 4 currently-referenced `Sides/` textures
+  need an eyes-on comparison against a plain RoundedBox outline before 43 files are deleted
+  irreversibly. Not attempted.
+- **Step 7 (PIE)** — not run this session.
+- **Rung honesty:** everything above is rung 1 plus a design-time render. Nothing here is a
+  runtime claim, and no hover/press/click has ever been exercised.
