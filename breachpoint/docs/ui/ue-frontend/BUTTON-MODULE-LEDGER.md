@@ -162,11 +162,50 @@ No scripts deleted. Inside `mcp-ui/gen_ui/wbp_plan.py`: 14 button entries → 9,
 
 ## 4. BUILD — 9 modular assets
 
-Rebuilt into `Content/UI/Components/Buttons/`, which is empty by then (ours archived, sourced
-moved out):
+> ### ❌ RETRACTED 4 Aug — the "154 → 66 nodes" reduction in v1/v2 WAS WRONG
+>
+> v1 claimed the chrome nodes (`BackgroundLine`, `TextFrameFill`, `Border`) could be deleted
+> because "a `FSlateBrush` RoundedBox draws fill + outline + corners per state." **I never read
+> what those three nodes do.** Having now read `BRButton.cpp` and `BRHairlineBorder.h`, every
+> one of them is load-bearing and a RoundedBox brush can express none of it:
+>
+> | Node | Why it survives | Evidence |
+> |---|---|---|
+> | `Border` | The side lines are **0 × 20 centred TICKS on a 28-tall row**, not full-height edges. A RoundedBox outline is a continuous rectangle. | `SideTickLength = 20.0f`, `BRButton.h:236` / `BRHairlineBorder.h:69` |
+> | `Border` | `SetEdgeDimmed(Bottom, !bInverted)` — the bottom line alone goes 0.3 → 1.0. That IS one of COMPONENT-SPECS §1's three inversion moves. A RoundedBox outline is **uniform on all four sides**. | `BRButton.cpp:385` |
+> | `TextFrameFill` | It is the **material target**. `ApplyPlateMaterialState` fetches the dynamic material instance and eases a scalar for the measured 330 ms symmetric hover. A state brush swaps **instantly**. | `BRButton.cpp:355, 448-471` |
+> | `BackgroundLine` | A **second layer** behind the plate, collapsed at idle, shown at 0.3 on hover. One state brush is one layer. | `BRButton.cpp:389` |
+> | `CheckStack` | `UBRHairlineBorder : UWidget` is backed by `SLeafWidget` — **it cannot hold children**. The square and the tick must be siblings in an Overlay, and the Overlay must be sized by a SizeBox. | `BRHairlineBorder.h:88, 137` |
+>
+> **`UBRHairlineBorder` exists as an `SLeafWidget` precisely because Slate brushes cannot draw
+> this border.** Proposing to replace it with a brush was proposing to undo the reason it was
+> written. The 4,500-widgets-saved figure in `COMPONENT-BREAKDOWN.md` §4 is the same argument
+> from the other direction.
+>
+> **Available reduction, honestly: one node per button, and it costs more than it saves.**
+> `FBRHairlineStyle::FillToken` ("optional solid plate behind the strokes") means `Border` could
+> absorb `TextFrameFill` — **−9 nodes across the family**. The cost is BP79's eased hover: a fill
+> token is a colour, not a material, so the measured 330 ms transition becomes an instant swap.
+> Trading a measured motion property for one widget per button is a bad trade. **Not recommended,
+> founder's call.**
+>
+> **Net: the nine assets build at their current node counts. 101 nodes, not 66.**
 
-| Asset | Nodes before → after |
-|---|---|
+The nine, at their real counts:
+
+| Asset | Nodes | Asset | Nodes |
+|---|---|---|---|
+| `WBP_ButtonDefault` | 12 | **`WBP_ButtonCheckbox`** ★ | **11** |
+| `WBP_ButtonDropDown` | 10 | `WBP_ButtonRadio` | 11 |
+| `WBP_ButtonDigDown` | 10 | `WBP_ButtonMapVoting` | 15 |
+| `WBP_ButtonIconOnly` | 8 | `WBP_ButtonImage` | 10 |
+| `WBP_ButtonSlider` | 14 | **Total** | **101** |
+
+`Radio` stays a separate asset on purpose: `ButtonType` lives on the CDO, so one asset = one type
+— the designer drags "a checkbox," and the preview is right without a host screen. Its *plan
+definition* is fully shared; only the asset is distinct.
+
+---|---|
 | `WBP_ButtonDefault` | 12 → 5 |
 | **`WBP_ButtonCheckbox`** ★ | **11 → 6** |
 | `WBP_ButtonRadio` | 11 → 6 |
@@ -201,7 +240,7 @@ definition* is fully shared; only the asset is distinct.
 |---|---|---|---|
 | Source (C++ files) | **4** | — | 2 (`BRButton.h/.cpp`, renamed) |
 | Content (widget assets) | **5** | **27** | **9** |
-| Widget nodes | **88** | — | 66 |
+| Widget nodes | **53** (only those inside the 5 deleted assets) | — | 66 |
 | Art (textures) | **47** | — | — |
 | Art (files) | **133** | — | — |
 | Pipeline (plan entries) | **5** | — | 9 via factory |

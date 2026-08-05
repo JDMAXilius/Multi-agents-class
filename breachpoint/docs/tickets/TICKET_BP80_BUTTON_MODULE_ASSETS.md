@@ -112,10 +112,14 @@ last, after a render proves the replacement.**
   fills with a per-type accent, and `EBRHighlightButtonType` is deliberately not `EBRButtonType`.
   Nothing was folded into `UBRButton`. If the compile surfaces a conflict between the two, the
   fix is to separate them again, never to unify the rules.
-- **The node reduction is NOT in this ticket.** The ledger's 154 → 66 assumes state brushes draw
-  the plate, border and corners. That is a `UBRButton` change plus a plan change, and doing it in
-  the same editor session as an archive + rebuild would make a failure unattributable. **Build
-  the nine at their current node counts first; reduce second.**
+- **There is no node reduction, and the ledger's old "154 → 66" is RETRACTED.** It assumed a
+  `FSlateBrush` RoundedBox could draw the plate, border and corners. It cannot: the side lines are
+  0 × 20 **centred ticks** (a RoundedBox outline is a continuous rectangle), the bottom edge dims
+  independently 0.3 → 1.0 (a RoundedBox outline is uniform), the plate is a **material target**
+  for the measured 330 ms ease (a state brush swaps instantly), and `UBRHairlineBorder` is an
+  `SLeafWidget` that cannot hold the tick. **`UBRHairlineBorder` exists because Slate brushes
+  cannot draw this border** — replacing it with one undoes the reason it was written.
+  **The nine build at 101 nodes. Do not "optimise" the chrome away in this session.**
 - Why the moves could not be done from the cloud container, recorded so it is not re-asked:
   redirectors are editor-only, and every `.uasset` there is an LFS pointer stub — no analysis
   could enumerate in-content references.
