@@ -510,7 +510,7 @@ def label_pair(selection: bool = True, text: bool = True) -> list[dict]:
 
 def button(asset: str, button_type: str, body: list[dict], notes: str, *,
            selection: bool = False, label_text: bool = True, text_frame: str = HBOX,
-           overlay: tuple[str, list[dict]] | None = None,
+           overlay: tuple[str, list[dict]] | None = None, background_line: bool = True,
            plate_material: bool = False, tree: list[dict] | None = None) -> dict:
     """One `UBRButton` asset. THE ONLY WAY a button enters `PLAN`.
 
@@ -547,6 +547,12 @@ def button(asset: str, button_type: str, body: list[dict], notes: str, *,
     """
     if tree is None:
         shell = menu_row_shell(text_frame)
+        if not background_line:
+            # Icon Only is the one Type whose Figma reference (12:977) has NO background rule:
+            # it is a 40x40 shell holding Text Frame + icon + Border and nothing else. The rule
+            # is a `BindWidgetOptional` on UBRButton, so dropping the node is inside the C++
+            # contract — the bind simply resolves null and `UBRButton` already guards on it.
+            shell = [n for n in shell if n["name"] != "BackgroundLine"]
         if plate_material:
             shell = with_plate_material(shell)
         if overlay is not None:
@@ -2619,7 +2625,7 @@ PLAN = {
         "Menu Row Type=Icon Only. 40x40 from ApplyRowType. Glyph is the REFERENCE art: "
                  "Figma 12:979 'Revert' at 32x32 inside 12:977. The _40 tier is the source "
                  "(160px) because the instance draws at 32 — the _24 tier would upscale.",
-        label_text=False,
+        label_text=False, background_line=False,
     ),
 
     # Slider — `Text & Slider` gap 25; track 100x6 with a 6x6 handle and a 4x4 tick above it;
@@ -2676,9 +2682,15 @@ PLAN = {
         # TextFrame stays horizontal and the stacking happens one level down. A VBox at the
         # top would have put the counter under the label instead of beside it.
         tree=with_text(menu_row_shell()) + [
-            {"name": "TextStacked", "class": VBOX, "parent": "TextFrame",
-             "slot": box_slot(fill=1.0, padding=margin(left=10.0, top=6.0, bottom=6.0),
-                              v="VAlign_Fill")},
+            # Figma 12:1113 `Text Stacked` is (10,6) 173x44 — a MEASURED box, not a stretch.
+            # fill=1.0 let it take the whole remaining width, so the label ran wider than the
+            # reference and the two lines no longer matched 149/173. SizeBox pins it, same
+            # pattern as `VoteBoxSize` below.
+            {"name": "TextStackedSize", "class": SIZEBOX, "parent": "TextFrame",
+             "slot": box_slot(padding=margin(left=10.0, top=6.0, bottom=6.0),
+                              v="VAlign_Fill"), "properties": sized(173, 44)},
+            {"name": "TextStacked", "class": VBOX, "parent": "TextStackedSize",
+             "slot": FILL},
             {"name": "GametypeRow", "class": HBOX, "parent": "TextStacked",
              "slot": box_slot(padding=margin(bottom=2.0))},
             {"name": "Icon", "class": IMAGE, "parent": "GametypeRow",
