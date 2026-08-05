@@ -3,7 +3,7 @@
 > STATUS: in-progress — mac terminal 4 Aug 2026 (bbb2ceb). Step 1 (compile) only; steps 2–7
 > need editor-live and the MCP is refused (no editor running).
 
-> STATUS: open — cut 4 Aug 2026, **files-only half COMPLETE and handed off.** editor-live, and
+> *(as cut, 4 Aug 2026)* — **files-only half COMPLETE and handed off.** editor-live, and
 > gated by a compile. This ticket is everything left that needs redirectors, an editor, or eyes
 > on a render. Nothing else can be done from a cloud container.
 >
@@ -154,3 +154,42 @@ are in the STATUS block. Three things the terminal should know before starting:
    a regression.
 3. **Do not reduce the node counts.** The 154 → 66 figure in the ledger's v1/v2 was retracted on
    evidence; §4 there carries the per-node reasons. The nine build at **101 nodes**.
+
+**4 Aug 2026 — STEP 1 COMPLETE. The blind merge compiles. Zero fixes needed.**
+
+Ran `./Tools/run-ubt.sh` (all three targets) on the mac terminal at `c7a2fe7`.
+
+| Target | Result | Evidence |
+|---|---|---|
+| `BreachpointEditor` | **PASS** (exit 0) | relinked `libUnrealEditor-Breachpoint.dylib`, mtime > start |
+| `Breachpoint` | **PASS** (exit 0) | touched `CodeResources`, mtime > start |
+| `BreachpointServer` | **FAIL** (exit 6) | `Server targets are not currently supported from this engine distribution` |
+
+**None of the 24 repointed files needed a fix.** The `Done when` box asks which ones did: the
+answer is none. Both hand edits flagged in step 1 were already correct — `BRTableRow.h:241`
+(`ApplyRowType`, its own method, correctly left alone) and `BRModal_Options.cpp:134`
+(`SetButtonType`, a real call into the merged class) both compiled. `UBRButton`,
+`EBRButtonType` and `ButtonType` resolve everywhere. No conflict surfaced between `UBRButton`
+and `UBRHighlightButton`, so the separation note in ## Notes stands untested but unviolated.
+
+This was a real compile, not a no-op: `[1/5]`–`[4/5]` are the four unity blobs of the whole
+`Breachpoint` module — every `.cpp` including `BRButton.cpp` — then the link. Rung 1, and only
+rung 1: **it compiles; nothing here says it works.**
+
+**Two environment findings the next session should not re-derive:**
+
+1. **This machine is a LAUNCHER install of UE 5.8, not a source build**
+   (`Engine/Build/SourceDistribution.txt` absent). Launcher ships no server binaries, so
+   `BreachpointServer` **can never link here** — the failure is the distribution, not the code,
+   and `run-ubt.sh` warns about exactly this before it runs. The `Done when` box "all three
+   targets compile" is **not satisfiable on this machine**; it needs a source-built engine.
+   Two of three is what this terminal can prove, and it is stated that way.
+2. **`run-ubt.sh:86`'s "an Unreal editor is running" warning is a FALSE POSITIVE here.** Its
+   `pgrep -f "UnrealEditor"` matches `UnrealEditorServices` — the macOS Finder/QuickLook helper
+   (PID 888), always resident, not an editor. No editor was open; the link succeeded. Do not
+   go hunting for an editor to close on this warning alone; check the PID first.
+
+**Steps 2–7 NOT started — this session is not `editor-live`.** No editor process exists and the
+Unreal MCP at `127.0.0.1:8000/mcp` refuses the connection (the server runs inside the editor
+process). Per the CONTEXT gate the ticket stays in-progress at step 1; the archive, the delete,
+the nine rebuilds, the renders and the PIE pass all wait for an open editor.
