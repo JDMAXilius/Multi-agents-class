@@ -408,70 +408,16 @@ def canvas_stretch(left=0.0, top=0.0, right=0.0, bottom=0.0) -> dict:
                     "right": float(right), "bottom": float(bottom)},
         "anchors": {"minimum": {"x": 0.0, "y": 0.0}, "maximum": {"x": 1.0, "y": 1.0}},
         "alignment": {"x": 0.0, "y": 0.0}}}
-
-
-# ---------------------------------------------------------------------------
-# SHARED TREES
-# ---------------------------------------------------------------------------
-# A tree defined once and used by more than one asset. There is exactly one today and it
-# earns its keep: `WBP_MenuRow` and `WBP_SettingsRow` are the SAME widget tree under two
-# different C++ parents, because `UBRButton` adds behaviour (it holds a data object and
-# turns left/right into a value change) and not one new `BindWidget`. Copying the tree would
-# mean every future COMPONENT-SPECS correction had to be made twice, and the second copy is
-# the one that gets missed.
-
-MENU_ROW_TREE = [
-    {"name": "RootSizeBox", "class": SIZEBOX, "parent": None, "bind": True},
-
-    # Overlay child order IS z-order. Background line behind, then the plate that goes
-    # solid white on hover, then the strokes ON the plate, then the text on top.
-    {"name": "RowOverlay", "class": OVERLAY, "parent": "RootSizeBox", "slot": FILL},
-
-    # COMPONENT-SPECS §2 hover: "an extra Background Line (opacity 0.3) appears behind".
-    # Collapsed at idle by NativeOnInitialized — it exists to be shown, not to be seen.
-    {"name": "BackgroundLine", "class": RULE, "parent": "RowOverlay",
-     "slot": FILL, "bind": True},
-
-    # The plate. NO BRUSH: `ApplyInvertedState` drives it with SetColorAndOpacity from
-    # a token (None -> transparent idle, SurfaceInverted -> white on hover), so the
-    # engine's default white brush is the correct input to that tint. Authoring a brush
-    # here would be a second source for one colour.
-    {"name": "TextFrameFill", "class": IMAGE, "parent": "RowOverlay",
-     "slot": inset(2.0), "bind": True},
-
-    {"name": "Border", "class": HAIRLINE, "parent": "RowOverlay",
-     "slot": FILL, "bind": True},
-
-    # COMPONENT-SPECS §2: padding T0 R10 B0 L10, counterAxis CENTER. The gap 10 is
-    # expressed as padding on the children, not as a spacer (LAYOUT-DOCTRINE §1).
-    {"name": "TextFrame", "class": HBOX, "parent": "RowOverlay",
-     "slot": inset(2.0), "bind": True},
-
-    # Fill 1.0 so the label takes the row's real width and `Selection` hugs the right
-    # edge — which is what makes one row serve both a menu list and a settings list.
-    {"name": "Label", "class": TEXT, "parent": "TextFrame",
-     "slot": box_slot(fill=1.0, padding=margin(left=10.0), v="VAlign_Center"),
-     "font": "Label/Button", "bind": True},
-
-    # COMPONENT-SPECS §2: the right-aligned value on a settings row. Auto width, and
-    # `SetSelectionText` collapses it when empty so a menu row shows nothing here.
-    {"name": "Selection", "class": TEXT, "parent": "TextFrame",
-     "slot": box_slot(padding=margin(left=10.0, right=10.0), h="HAlign_Right",
-                      v="VAlign_Center"),
-     "font": "Label/Button", "bind": True},
-]
-
-
 BTN_ART = "/Game/UI/Components/Buttons/Assets/"
 GLYPHS = "/Game/UI/Icons/Glyphs/"
 GAMETYPE = "/Game/UI/Icons/Gametype/"
 
 
 def menu_row_shell(text_frame_class: str = HBOX) -> list[dict]:
-    """`MENU_ROW_TREE`'s five shell nodes, with `TextFrame`'s CLASS left to the caller.
+    """The six shell nodes every button starts from, with `TextFrame`'s CLASS left to the caller.
 
     Six of the eight Type bodies hang off the standard horizontal `TextFrame` and just reuse
-    `MENU_ROW_TREE`. `Map Voting` and `Image` cannot: their measured layout stacks the label
+    the standard shell. `Map Voting` and `Image` cannot: their measured layout stacks the label
     over the selection (Map Voting) or puts a 120px emblem beside them (Image), which a
     HorizontalBox cannot express. `UBRButton` declares `TextFrame` as a bare `UWidget`, not
     as a `UHorizontalBox` -- so swapping it for a VerticalBox is inside the C++ contract, not
@@ -508,15 +454,83 @@ FIGMA_TEXT = {"Label": "BUTTON", "Selection": "SELECTION"}
 MENU_ROW_STYLE = {"refPath": "/Script/Breachpoint.BRButtonStyle_MenuRow"}
 
 
-def button(asset: str, button_type: str, tree: list[dict], notes: str) -> dict:
+def insert_after(nodes: list[dict], after: str, extra: list[dict]) -> list[dict]:
+    """Splice `extra` in directly after the node NAMED `after`.
+
+    REPLACES `menu_row_shell()[:4] + [x] + menu_row_shell()[4:]`, which is what Dig Down's hatch
+    used to say. That form is index arithmetic standing in for an intent, and the intent is a
+    LAYER: child order in an Overlay IS z-order, so the hatch has to sit above the plate and
+    below the border. Written as a slice, reordering the shell by one node moves the hatch to a
+    different layer silently -- it still validates, still builds, and looks wrong only to a human
+    who happens to render it. Written as a name, a rename is a KeyError and a reorder is a no-op.
+
+    It also stops calling `menu_row_shell()` twice per asset, which built two independent copies
+    of the shell and threw one away.
+    """
+    out, hit = [], False
+    for n in nodes:
+        out.append(n)
+        if n["name"] == after:
+            out.extend(extra)
+            hit = True
+    if not hit:
+        raise KeyError(f"insert_after: no node named {after!r} in {[n['name'] for n in nodes]}")
+    return out
+
+
+def label_pair(selection: bool = True, text: bool = True) -> list[dict]:
+    """`Label` and (optionally) `Selection` -- the two nodes seven of the nine Types share.
+
+    `selection=False` is the majority case and it is not laziness: measured (`02-MenuRow.md`),
+    `Selection` exists on only TWO Types. Every other Type either widens the label to fill the
+    row or replaces the right-hand space with a track, a mark or chevrons. Shipping a "SELECTION"
+    string on those is not a 1:1 row, it is a different row.
+
+    `text=False` is Type=Icon Only: the label node must EXIST because `Label` is a NON-optional
+    `BindWidget` and the asset fails to compile without it -- but the reference authors it empty,
+    so it ships empty rather than being dropped or filled with a placeholder.
+    """
+    label = {"name": "Label", "class": TEXT, "parent": "TextFrame",
+             "slot": box_slot(fill=1.0, padding=margin(left=10.0), v="VAlign_Center"),
+             "font": "Label/Button", "bind": True,
+             # `text=False` writes an EMPTY STRING, it does not omit the property. Omitting it
+             # leaves UMG's "Text Block" placeholder on the asset, which is what a reader
+             # comparing Icon Only against the reference would see and what a screenshot shows.
+             # An intentionally-blank label has to be written blank.
+             "properties": {"text": FIGMA_TEXT["Label"] if text else ""}}
+    out = [label]
+    if selection:
+        out.append({"name": "Selection", "class": TEXT, "parent": "TextFrame",
+                    "slot": box_slot(padding=margin(left=10.0, right=10.0), h="HAlign_Right",
+                                     v="VAlign_Center"),
+                    "font": "Label/Button", "bind": True,
+                    "properties": {"text": FIGMA_TEXT["Selection"]}})
+    return out
+
+
+def button(asset: str, button_type: str, body: list[dict], notes: str, *,
+           selection: bool = False, label_text: bool = True, text_frame: str = HBOX,
+           overlay: tuple[str, list[dict]] | None = None,
+           plate_material: bool = False, tree: list[dict] | None = None) -> dict:
     """One `UBRButton` asset. THE ONLY WAY a button enters `PLAN`.
 
-    Every button in this project is the same C++ class wearing a different `ButtonType`. Before
-    this factory each of the nine repeated `parent_class`, `class`, `header` and half the
-    `class_defaults` by hand -- about seventy lines whose only job was to be identical, and
-    whose failure mode was the worst kind: a typo'd `parent_class` still VALIDATES and still
-    BUILDS, and produces an asset parented to the wrong class that nothing catches until it is
-    opened. Centralising them makes that class of error unrepresentable rather than unlikely.
+    EVERY BUTTON IS `shell + body`. Before this, nine buttons declared their trees SIX different
+    ways -- `without(with_text(MENU_ROW_TREE), "Selection") + checkbox_body()`,
+    `with_text(menu_row_shell()) + [...]`, `with_plate_material(MENU_ROW_TREE) + [...]`,
+    `menu_row_shell()[:4] + [...] + menu_row_shell()[4:]` -- and a reader could not tell from any
+    two of them what actually varied. Adding a tenth Type meant inventing a seventh pattern. Now
+    the shell is built here, once, and the per-Type part arrives as `body`.
+
+    THE VARIATION, all of it, as named arguments:
+      `selection`      does the Type have the right-hand value? Measured: TWO of ten do.
+      `label_text`     False for Icon Only, whose label exists (non-optional bind) but is EMPTY.
+      `text_frame`     HBOX for eight; Map Voting and Image restructure one level down.
+      `overlay`        `(after_node, nodes)` spliced into `RowOverlay` BY NAME. Child order in an
+                       Overlay is Z-ORDER, so this is a layer statement, not a list operation.
+      `plate_material` opt in to `M_UI_MenuRowPlate` on the plate (BP79's eased hover).
+      `tree`           ESCAPE HATCH -- a complete tree, bypassing shell+body. Nothing uses it and
+                       nothing should; it exists so a genuinely unrepresentable Type can land
+                       without anyone quietly re-inventing a seventh pattern to avoid asking.
 
     `button_type` is the DATA that tells the class which button it is (founder directive,
     4 Aug 2026). It lands on the generated class's CDO after compile -- `build_wbp.py` step 5c --
@@ -524,10 +538,20 @@ def button(asset: str, button_type: str, tree: list[dict], notes: str) -> dict:
     `Default` and `ApplyButtonType` gives Icon Only / Map Voting / Image a 28px height instead
     of 40 / 60 / 120.
 
-    NOT parameterised, on purpose: `folder`. Every button belongs in `Buttons/`, and a per-asset
-    override would be the first step back toward the split that put `WBP_MenuRow` in one folder
-    and `WBP_ButtonDefault` in another with identical trees.
+    NOT parameterised, on purpose: `folder`, `parent_class`, `class`, `header`. Every button
+    shares them, and a per-asset override is the first step back toward the split that put
+    `WBP_MenuRow` in one folder and `WBP_ButtonDefault` in another with identical trees. A
+    typo'd `parent_class` still VALIDATES and still BUILDS -- it produces an asset parented to
+    the wrong class that nothing catches until someone opens it. One copy makes that
+    unrepresentable rather than unlikely.
     """
+    if tree is None:
+        shell = menu_row_shell(text_frame)
+        if plate_material:
+            shell = with_plate_material(shell)
+        if overlay is not None:
+            shell = insert_after(shell, overlay[0], overlay[1])
+        tree = shell + label_pair(selection=selection, text=label_text) + body
     return {
         "folder": ASSET_FOLDER[asset],
         "class_defaults": {"ButtonType": button_type, "Style": MENU_ROW_STYLE},
@@ -563,7 +587,7 @@ def sized(w: float, h: float) -> dict:
 #
 # `WBP_Button<Type>` (the component-board button) and `WBP_SettingsRow_<Type>` (the same body
 # under a `UBRButton` parent) are the SAME measured geometry. Defining each body here means
-# a COMPONENT-SPECS correction lands in both or neither — the same reason `MENU_ROW_TREE` is
+# a COMPONENT-SPECS correction lands in both or neither — the same reason `menu_row_shell()` is
 # shared rather than copied.
 # ---------------------------------------------------------------------------------------------
 
@@ -645,46 +669,11 @@ def checkbox_body(stack: str = "CheckStack", inset_fill: bool = False) -> list[d
          "parent": stack, "slot": FILL},
         mark,
     ]
-
-
-def without(nodes: list[dict], *names: str) -> list[dict]:
-    """Drop nodes by name — for the Types whose measured tree simply has no such element.
-
-    `Selection` is present on only TWO of the ten Types. Measured (`02-MenuRow.md`): Drop Down
-    puts it inside `Text and Icon`, and Map Voting stacks it under the label. Every other Type
-    either widens `Text` to fill the row (Checkbox 200, Radio 200) or replaces the right-hand
-    space with something else entirely (Slider's track, Dig Down's chevrons). Shipping a
-    "SELECTION" string on those is not a 1:1 row, it is a different row.
-
-    Safe because `Selection` is `BindWidgetOptional`; dropping a NON-optional bind would fail
-    at compile, which is the check that makes this a legal edit rather than a hopeful one.
-    """
-    drop = set(names)
-    return [n for n in nodes if n["name"] not in drop]
-
-
-def icon_only_label(nodes: list[dict]) -> list[dict]:
-    """`MENU_ROW_TREE` with `Label` present but EMPTY, for Type=Icon Only.
-
-    Measured: the Icon Only variant is a 40x40 shell whose 36x36 `Text Frame` holds one 32x32
-    icon instance and no text node at all. `Label` cannot simply be dropped — it is a
-    NON-optional `BindWidget` on `UBRButton` and the asset would fail to compile without it.
-    So it stays, carrying an empty string rather than "BUTTON", which is the closest the C++
-    contract allows to "there is no label here".
-    """
-    out = []
-    for n in nodes:
-        if n["name"] == "Label":
-            n = dict(n)
-            n["properties"] = {**n.get("properties", {}), "text": ""}
-        out.append(n)
-    return out
-
-
 def with_plate_material(nodes: list[dict]) -> list[dict]:
     """The same tree with `M_UI_MenuRowPlate` as `TextFrameFill`'s brush.
 
-    OPT-IN, ONE ASSET AT A TIME. `MENU_ROW_TREE` deliberately gives the plate NO brush — an
+    OPT-IN, ONE ASSET AT A TIME (`button(plate_material=True)`). The shell deliberately gives
+    the plate NO brush — an
     untinted UImage is the engine's white, which is the correct input to a C++ tint. Handing it
     a material instead moves the same two measured states onto a scalar UBRButton can ease.
     Returns COPIES, for the same reason `with_text` does: the shared tree serves assets that
@@ -702,9 +691,8 @@ def with_plate_material(nodes: list[dict]) -> list[dict]:
 def with_text(nodes: list[dict]) -> list[dict]:
     """The same tree with the Figma strings written onto `Label` / `Selection`.
 
-    Returns COPIES. `MENU_ROW_TREE` is shared by `WBP_MenuRow`, `WBP_SettingsRow` and
-    `WBP_ButtonDefault`; mutating its node dicts in place would silently change three assets
-    this packet did not rebuild and does not own.
+    Returns COPIES. The shell is shared by every button; mutating its node dicts in place would
+    silently change assets this packet did not rebuild and does not own.
     """
     out = []
     for n in nodes:
@@ -713,25 +701,6 @@ def with_text(nodes: list[dict]) -> list[dict]:
             n["properties"] = {**n.get("properties", {}), "text": FIGMA_TEXT[n["name"]]}
         out.append(n)
     return out
-
-
-def unbound(nodes: list[dict]) -> list[dict]:
-    """The same tree with every `bind` flag dropped, for a subclass that INHERITS its binds.
-
-    `required_bind_widgets` parses ONE header sliced to ONE class and cannot see a base
-    class's `BindWidget` members (the limitation `WBP_GearDetail` and `WBP_ItemTitle` already
-    document). So a WBP whose parent inherits all its binds must create the widgets BY EXACT
-    NAME but claim none of them: `bind: True` would be rejected as "declares no such
-    BindWidget", while omitting the widgets would fail the asset at LOAD time.
-
-    Naming them correctly satisfies UMG — `BindWidget` resolves by name at widget-compile,
-    not by anything this plan writes — and satisfies the validator. It is the documented
-    workaround, applied through a function so the next inherited-bind case does not re-derive
-    it from scratch.
-    """
-    return [{k: v for k, v in node.items() if k != "bind"} for node in nodes]
-
-
 # ---------------------------------------------------------------------------
 # THE PLAN
 # ---------------------------------------------------------------------------
@@ -2455,19 +2424,6 @@ PLAN = {
     # ==================================================================
 
     # ------------------------------------------------------------------
-    # WBP_SettingsRow — the settings list row. SAME TREE AS WBP_MenuRow.
-    #
-    # `UBRButton` derives from `UBRButton` and declares ZERO new BindWidgets: it adds
-    # a data object, a subscription and left/right handling. So this asset reuses
-    # MENU_ROW_TREE verbatim through `unbound()` — see that function for why the binds are
-    # dropped rather than repeated (inherited binds are invisible to the validator).
-    #
-    # It is a SEPARATE ASSET rather than a reuse of WBP_MenuRow because a WBP's parent class
-    # is fixed at creation: WBP_MenuRow's parent is UBRButton, and nothing can retarget it
-    # to UBRButton without rebuilding it. The tree is shared; the asset cannot be.
-    # ------------------------------------------------------------------
-
-    # ------------------------------------------------------------------
     # WBP_Modal_KeyRemap — the "press a key" capture. Pushes to Layer.Modal.
     #
     # FULL PAGE OVER A SCRIM, no box and no measured size: the screen exists to swallow every
@@ -2527,15 +2483,14 @@ PLAN = {
     # WBP_ButtonDefault — the Menu Row `Type=Default` button. Founder-requested against
     # Figma `12:724` (Menu Row), 4 Aug 2026.
     #
-    # SAME TREE AS WBP_MenuRow, AND THAT IS THE POINT. `Type=Default` is not a different
-    # widget from a menu row — it IS the row's default type, one value on `EBRMenuRowType`,
-    # and `UBRButton::ApplyRowType` drives the shell from it. So this shares `MENU_ROW_TREE`
-    # rather than copying it; a COMPONENT-SPECS correction lands in both or neither.
+    # `Type=Default` is not a different widget from a menu row — it IS the row's default type,
+    # one value on `EBRButtonType`, and `UBRButton::ApplyButtonType` drives the shell from it.
+    # So this shares `menu_row_shell()` rather than copying it; a COMPONENT-SPECS correction
+    # lands in every Type or none.
     #
-    # BINDS ARE CLAIMED HERE, unlike `WBP_SettingsRow`. The parent is `UBRButton` itself, which
-    # DECLARES all eight `BindWidget` members, so `required_bind_widgets` can see them and
-    # `bind: True` validates. `WBP_SettingsRow` had to use `unbound()` only because
-    # `UBRButton` inherits them.
+    # THIS ASSET SUPERSEDES `WBP_MenuRow` AND `WBP_SettingsRow` (both deleted 4 Aug 2026 —
+    # byte-identical trees). `DefaultGame.ini`'s `MenuRowWidgetClass`, `RowWidgetClass` and
+    # `SettingsRowClass` all resolve here now.
     #
     # WHY A SECOND ASSET AT ALL, when WBP_MenuRow exists and is identical: a WBP's identity is
     # its path, and screens reference it by soft class. Having a `WBP_ButtonDefault` under
@@ -2547,7 +2502,7 @@ PLAN = {
     "WBP_ButtonDefault": button(
         "WBP_ButtonDefault", "Default",
 
-        # MENU_ROW_TREE plus four textured edge images.
+        # The standard shell plus four textured edge images.
         #
         # THE TEXTURES DO NOT REPLACE `Border`, AND THEY CANNOT. `UBRButton` declares
         # `Border` as a NON-OPTIONAL `BindWidget` typed `UBRHairlineBorder`; drop it and the
@@ -2566,7 +2521,7 @@ PLAN = {
         # Hover scalar that UBRButton drives instead of tinting; every other Menu Row asset
         # keeps the brushless-UImage tint path, which ApplyPlateMaterialState falls back to.
         # Binary today and pixel-identical to the tint, so this is a seam, not a look change.
-        with_plate_material(MENU_ROW_TREE) + [
+        [
             {"name": "EdgeTop", "class": IMAGE, "parent": "RowOverlay",
              "slot": {"horizontalAlignment": "HAlign_Fill", "verticalAlignment": "VAlign_Top",
                       "padding": margin()},
@@ -2585,6 +2540,7 @@ PLAN = {
              "brush": brush("/Game/UI/Components/Buttons/Assets/Sides/Default_NoFade_Default__Right_Line", 68, 2)},
         ],
         "Menu Row Type=Default as a standalone button asset, with the exported Button " "Border textures layered under the procedural hairline. 250x28 shell.",
+        selection=True, plate_material=True,
     ),
 
     # ==================================================================
@@ -2609,9 +2565,10 @@ PLAN = {
     # idle, y=14 active), which is why one asset and one texture serve all three statuses.
     "WBP_ButtonDropDown": button(
         "WBP_ButtonDropDown", "DropDown",
-        with_text(MENU_ROW_TREE) + dropdown_body(),
+        dropdown_body(),
         "Menu Row Type=Drop Down. 250x28, disclosure triangle right of Selection. "
                  "The Active hatch is NOT here — see WBP_ButtonDigDown's note.",
+        selection=True,
     ),
 
     # Dig Down — the hatch plate plus the trailing chevrons at x=277.
@@ -2625,26 +2582,27 @@ PLAN = {
     # never colours (law 1) and `UBRButton` declares no hatch bind to drive a tint from.
     "WBP_ButtonDigDown": button(
         "WBP_ButtonDigDown", "DigDown",
-        with_text(menu_row_shell()[:4] + [
-            # Between TextFrameFill and Border: over the plate, under the strokes.
-            {"name": "Hatch", "class": IMAGE, "parent": "RowOverlay",
-             "slot": {"horizontalAlignment": "HAlign_Left", "verticalAlignment": "VAlign_Fill",
-                      "padding": margin(2.0, 2.0, 0.0, 2.0)},
-             "brush": brush(BTN_ART + "MenuRow_Hatch", 110, 24)},
-        ] + menu_row_shell()[4:] + [
-            {"name": "Label", "class": TEXT, "parent": "TextFrame",
-             "slot": box_slot(fill=1.0, padding=margin(left=10.0), v="VAlign_Center"),
-             "font": "Label/Button", "bind": True},
+        [
             {"name": "TypeBody", "class": HBOX, "parent": "TextFrame",
              "slot": box_slot(padding=margin(right=10.0), h="HAlign_Right",
                               v="VAlign_Center"), "bind": True},
             {"name": "Arrows", "class": IMAGE, "parent": "TypeBody",
              "slot": box_slot(v="VAlign_Center"),
              "brush": brush(BTN_ART + "MenuRow_Arrows", 9, 7)},
-        ]),
+        ],
         "Menu Row Type=Dig Down. 250x28 with the 110x24 diagonal hatch left-aligned "
                  "under the strokes, and two chevrons right. Hatch is outside TypeBody so the "
                  "hover inversion leaves it alone.",
+        # The hatch is a LAYER, not a list position: it sits above the plate and below
+        # the border, and `insert_after` says that by NAME so a shell reorder cannot
+        # silently move it. This replaced `menu_row_shell()[:4] + [...] + [4:]`.
+        overlay=("TextFrameFill", [
+            {"name": "Hatch", "class": IMAGE, "parent": "RowOverlay",
+             "slot": {"horizontalAlignment": "HAlign_Left", "verticalAlignment": "VAlign_Fill",
+                      "padding": margin(2.0, 2.0, 0.0, 2.0)},
+             "brush": brush(BTN_ART + "MenuRow_Hatch", 110, 24)},
+        ]),
+
     ),
 
     # Icon Only — 40x40, `Text Frame` 36x36 at padding 2, one 32x32 glyph, gap 0.
@@ -2653,13 +2611,14 @@ PLAN = {
     # `ApplyRowType` drives the 40x40 from `RowType`, so no size is authored here.
     "WBP_ButtonIconOnly": button(
         "WBP_ButtonIconOnly", "IconOnly",
-        without(icon_only_label(MENU_ROW_TREE), "Selection") + [
+        [
             {"name": "Icon", "class": IMAGE, "parent": "TextFrame",
              "slot": box_slot(fill=1.0, h="HAlign_Center", v="VAlign_Center"),
              "brush": brush(GLYPHS + "T_UI_Glyph_Back_40", 32, 32), "bind": True},
         ],
         "Menu Row Type=Icon Only. 40x40 from ApplyRowType. Glyph is a PLACEHOLDER — "
                  "the reference art is a 'revert' arrow and no such glyph is in the icon set.",
+        label_text=False,
     ),
 
     # Slider — `Text & Slider` gap 25; track 100x6 with a 6x6 handle and a 4x4 tick above it;
@@ -2672,7 +2631,7 @@ PLAN = {
     # size, and the finding resolves as deliberate rather than as drift.
     "WBP_ButtonSlider": button(
         "WBP_ButtonSlider", "Slider",
-        without(with_text(MENU_ROW_TREE), "Selection") + slider_body(),
+        slider_body(),
         "Menu Row Type=Slider. Track + handle + tick + percentage. The handle is bound "
                  "as InversionExempt: measured, it keeps a white ring on the inverted plate.",
     ),
@@ -2683,7 +2642,7 @@ PLAN = {
     # stroke token on hover, which is why the box stays visible on the inverted plate.
     "WBP_ButtonCheckbox": button(
         "WBP_ButtonCheckbox", "Checkbox",
-        without(with_text(MENU_ROW_TREE), "Selection") + checkbox_body(),
+        checkbox_body(),
         "Menu Row Type=Checkbox. 16x16 stroked square + tick glyph. Square is "
                  "procedural (UBRHairlineBorder); only the tick is art.",
     ),
@@ -2695,8 +2654,7 @@ PLAN = {
     # C++ tints it, and the inversion walk does.
     "WBP_ButtonRadio": button(
         "WBP_ButtonRadio", "Radio",
-        without(with_text(MENU_ROW_TREE), "Selection")
-                + checkbox_body("RadioStack", inset_fill=True),
+        checkbox_body("RadioStack", inset_fill=True),
         "Menu Row Type=Radio. Square outline + 10x10 inset fill (3px). Fully "
                  "procedural — no texture at all.",
     ),
@@ -2710,11 +2668,13 @@ PLAN = {
     # `UBRButton` has no winning state and no bind for one. Filed as a C++ gap, not faked.
     "WBP_ButtonMapVoting": button(
         "WBP_ButtonMapVoting", "MapVoting",
+        [],   # body unused — this Type restructures; see `tree=` below
+        "Menu Row Type=Map Voting. 250x60, stacked label/selection with a gametype " "emblem and a vote counter. The Winning state is a C++ GAP — not built.",
 
         # `Text Stacked` (10,6) and `Checkbox and Counter` (193,16) sit SIDE BY SIDE, so
         # TextFrame stays horizontal and the stacking happens one level down. A VBox at the
         # top would have put the counter under the label instead of beside it.
-        with_text(menu_row_shell()) + [
+        tree=with_text(menu_row_shell()) + [
             {"name": "TextStacked", "class": VBOX, "parent": "TextFrame",
              "slot": box_slot(fill=1.0, padding=margin(left=10.0, top=6.0, bottom=6.0),
                               v="VAlign_Fill")},
@@ -2741,7 +2701,6 @@ PLAN = {
              "slot": box_slot(v="VAlign_Center"), "properties": sized(24, 24)},
             {"name": "VoteBox", "class": HAIRLINE, "parent": "VoteBoxSize", "slot": FILL},
         ],
-        "Menu Row Type=Map Voting. 250x60, stacked label/selection with a gametype " "emblem and a vote counter. The Winning state is a C++ GAP — not built.",
     ),
 
     # Image — 250x120, a 120x120 emblem beside the label with a 16x16 checkbox at the right.
@@ -2751,12 +2710,14 @@ PLAN = {
     # white rectangle (BP70 D2); the shipping art is content, and arrives with content.
     "WBP_ButtonImage": button(
         "WBP_ButtonImage", "Image",
+        [],   # body unused — this Type restructures; see `tree=` below
+        "Menu Row Type=Image. 250x120, 120x120 emblem + label + checkbox. Emblem art " "is a STAND-IN for content that does not exist yet.",
 
-        # NOT `MENU_ROW_TREE + [...]`: a HorizontalBox lays children out in declaration order,
+        # NOT `shell + label_pair() + body`: a HorizontalBox lays children out in declaration order,
         # so appending would have put the 120px emblem to the RIGHT of the label. Measured, the
         # emblem is at x=10 and the text at x=130 — emblem first. `Selection` is omitted
         # because this variant has none (it is BindWidgetOptional, so the bind still resolves).
-        with_text(menu_row_shell()) + [
+        tree=with_text(menu_row_shell()) + [
             {"name": "Icon", "class": IMAGE, "parent": "TextFrame",
              "slot": box_slot(padding=margin(left=10.0), v="VAlign_Center"),
              "brush": brush(GAMETYPE + "T_UI_Icon_GametypeV2_Slayer", 120, 120), "bind": True},
@@ -2770,30 +2731,7 @@ PLAN = {
                               v="VAlign_Center"), "properties": sized(16, 16), "bind": True},
             {"name": "ImageCheck", "class": HAIRLINE, "parent": "TypeBody", "slot": FILL},
         ],
-        "Menu Row Type=Image. 250x120, 120x120 emblem + label + checkbox. Emblem art " "is a STAND-IN for content that does not exist yet.",
     ),
-
-    # ==================================================================
-    # THE TYPED SETTINGS ROWS. Same measured bodies as the buttons above, under a
-    # `UBRButton` parent so `UBRScreen_Settings` can instance one per setting kind.
-    #
-    # WHY THESE EXIST AT ALL: `UBRButton::RefreshFromSetting` has always resolved a
-    # Scalar to Slider and a two-option Discrete to Checkbox — and then rendered both as a
-    # plain label-and-value row, because `WBP_SettingsRow` has no per-type body and
-    # `SetRowType` only drives height. A volume slider and a resolution dropdown were
-    # pixel-identical. These are the bodies that resolution was always asking for.
-    #
-    # BINDS ARE `unbound()`: `UBRButton` INHERITS all of them from `UBRButton`, and
-    # `required_bind_widgets` parses one header sliced to one class, so it cannot see a base
-    # class's members. Same device `WBP_SettingsRow` already uses.
-    #
-    # `Selection` IS KEPT, unlike the button variants that drop it. It is where
-    # `RefreshFromSetting` writes the live value, and `SetSelectionText` early-returns when the
-    # widget is absent — so dropping it would silently render every value blank.
-    # ==================================================================
-
-
-
 
     "WBP_Screen_Settings": {
         "folder": ASSET_FOLDER["WBP_Screen_Settings"],
