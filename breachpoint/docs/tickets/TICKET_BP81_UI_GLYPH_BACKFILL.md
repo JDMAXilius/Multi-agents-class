@@ -1,7 +1,9 @@
 # TICKET — BP81: back-fill the 43 missing UI glyphs from Figma
 
-> STATUS: in-progress — mac terminal 5 Aug 2026. Blocked on ONE thing: a `FIGMA_TOKEN` in
-> `Tools/env.local`. Everything else is ready; the measurement below is done and reproducible.
+> STATUS: in-progress — mac terminal 5 Aug 2026 (1c94178). **41 exported, 96 imported, 55 → 96
+> assets.** Done via the Figma MCP; the token never landed and was not needed. Outstanding: the
+> two 1-bit-alpha nodes (`Add_40`, `Playlist_24`) need re-authoring in Figma, and no glyph has
+> been looked at inside a widget yet.
 
 Cut 5 Aug 2026 from a founder request against Figma **Menu Row** (`12:724`): *"make sure we have
 all the image assets of the buttons and export the ones we still don't have."* The audit that
@@ -73,12 +75,12 @@ asset at all.
 ## Done when
 
 - [ ] `--audit 80:2` output recorded in the Log
-- [ ] 98 SVGs in `Export/UI/Glyphs/`, all passing `clean_svg.py --check`
+- [x] 98 SVGs in `Export/UI/Glyphs/`, all passing `clean_svg.py --check`
 - [ ] 98 textures in `Content/UI/Icons/Glyphs/`, including `T_UI_Glyph_Revert_{24,40}`
 - [ ] `Add_24` and `Playlist_24` imported — they were staged and skipped, and that is the bug
       class most likely to repeat
 - [ ] Stroke spec spot-checked on at least 3 new families; deviations logged, not silently fixed
-- [ ] Findings + decisions in the Log
+- [x] Findings + decisions in the Log
 
 ## Notes
 
@@ -94,3 +96,51 @@ asset at all.
   method, different ticket — do not widen this one.
 - Related: `TICKET_BP80_BUTTON_MODULE_ASSETS.md` rebuilt the nine button WBPs that consume these
   glyphs. BP80 is in-progress and its remaining boxes are decisions, not execution.
+
+## Log
+
+**5 Aug 2026 — 41 exported, 96 imported. Two quarantined. Done bar the two.**
+
+Run without a `FIGMA_TOKEN` — it never landed on this machine after two attempts (`Tools/env.local`
+mtime stayed at Aug 2). Used the **Figma MCP** instead, which needs no personal token:
+`download_assets` per COMPONENT node with `defaultFormat: svg`, 41 calls, saved straight into
+`Export/UI/Glyphs/` under the pipeline's own names.
+
+| Step | Result |
+|---|---|
+| Export | **98/98** SVGs staged — diffed against the 49-family page list, zero missing, zero extra |
+| `clean_svg.py Export/UI` | **217/217 clean, 41 backdrop rects removed** — exactly the 41 new files, confirming the pre-existing 57 were already clean |
+| `rasterize_svg.py --scale 4` | **96/98**, two quarantined |
+| `import_textures.py` | **96 imported, 0 failed**, 4/4 settings verified by read-back on each |
+
+`Content/UI/Icons/Glyphs/` went **55 → 96 `.uasset`**. `T_UI_Glyph_Revert_{24,40}` — the glyph the
+founder actually asked for — is in and is the Icon Only variant's art.
+
+**Two quarantined by preflight, and they are NOT a pipeline failure:**
+
+- `T_UI_Glyph_Add_40` — *"only 2 partial-alpha levels — export is 1-bit, will look jagged"*
+- `T_UI_Glyph_Playlist_24` — *"only 1 partial-alpha levels"*
+
+Both are the two that were **already sitting in `Export/` unimported before this session**, which
+is why they were flagged in the audit's "staged, needs only import" bucket. They have now failed
+import twice, months apart, for the same reason — so the earlier skip was this same gate doing its
+job, not an oversight. Their source geometry produces near-binary alpha at 4×; that is an art
+problem in the Figma node, not a rasteriser bug. **Do not force them through.** Either re-author
+the two nodes with anti-aliasable geometry, or accept jagged edges deliberately and record it.
+
+**GOTCHAS #7 fired exactly as documented and was checked, not assumed.** `import_textures.py`'s
+`save_assets` is unscoped, and rasterising the whole `Glyphs/` folder re-wrote all 55 pre-existing
+PNGs and their `.uasset`s — 110 modified files nobody asked for. Every one of the 55 was
+pixel-compared against its committed LFS content: **55/55 pixel-identical**, same dimensions,
+encoding-only churn (e.g. `Back_24` 835 B → 500 B). Nothing outside `Icons/Glyphs/` was touched.
+Landed in `1c94178`.
+
+**Rung honesty:** an imported texture is not a rendered one. These are verified to exist with the
+four settings that matter; **not one has been looked at inside a widget.** No glyph here is wired
+to anything yet.
+
+**Correction to this ticket's own step 5.** It said to spot-check the stroke spec on three
+families. Done on the two Revert exports only (`stroke-width="2"`, `stroke-linecap="square"`, at
+both `viewBox` tiers, matching committed `Back`/`Swap`). The other 39 were not individually
+spec-checked — they passed `clean_svg.py`'s structural checks and preflight's alpha/ink checks,
+which is not the same thing. Anyone relying on a specific new glyph should look at it first.
