@@ -1,5 +1,8 @@
 # TICKET — BP80: Archive 27, delete 5, build 9 — the button module's editor half
 
+> STATUS: in-progress — mac terminal 4 Aug 2026 (bbb2ceb). Step 1 (compile) only; steps 2–7
+> need editor-live and the MCP is refused (no editor running).
+
 > STATUS: open — cut 4 Aug 2026, **files-only half COMPLETE and handed off.** editor-live, and
 > gated by a compile. This ticket is everything left that needs redirectors, an editor, or eyes
 > on a render. Nothing else can be done from a cloud container.
