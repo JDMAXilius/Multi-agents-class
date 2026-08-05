@@ -1,7 +1,9 @@
 # TICKET — BP80: Archive 27, delete 5, build 9 — the button module's editor half
 
-> STATUS: in-progress — mac terminal 4 Aug 2026 (bbb2ceb). Step 1 (compile) only; steps 2–7
-> need editor-live and the MCP is refused (no editor running).
+> STATUS: in-progress — mac terminal 5 Aug 2026 (dce68ee). **Steps 1–5 DONE** (compile, archive 27,
+> delete 5, rebuild 9; founder signed off the rebuild). Outstanding: step 6 art delete (its
+> eyes-on gate is unmet), step 7 PIE, the archived-twin screenshot, and a receipt `.gitignore`
+> forbids committing — see the contract_gap in the Log.
 
 > *(as cut, 4 Aug 2026)* — **files-only half COMPLETE and handed off.** editor-live, and
 > gated by a compile. This ticket is everything left that needs redirectors, an editor, or eyes
@@ -98,15 +100,15 @@ last, after a render proves the replacement.**
 ## Done when
 
 - [ ] All three targets compile; the Log names which of the 24 repointed files needed a fix
-- [ ] 17 sourced assets in `Content/UI/Reference/Buttons/`, **tracked by git** (`git status`
+- [x] 17 sourced assets in `Content/UI/Reference/Buttons/`, **tracked by git** (`git status`
       shows them moved, not deleted)
-- [ ] 10 archived in `Content/UI/OldWidgets/Buttons/`
-- [ ] 5 deleted; the six `DefaultGame.ini` soft refs each resolve to a real asset
+- [x] 10 archived in `Content/UI/OldWidgets/Buttons/`
+- [x] 5 deleted; the six `DefaultGame.ini` soft refs each resolve to a real asset
 - [ ] A build receipt for the nine at the current plan digest is committed
 - [ ] **Two screenshots in this Log: the new `WBP_ButtonCheckbox` and its archived twin**
 - [ ] The art delete is done, or the exceptions are named with the reason
 - [ ] Hover/press/click exercised in PIE — **rung 2 at best**, and said that way
-- [ ] Findings + decisions written to this ticket's Log
+- [x] Findings + decisions written to this ticket's Log
 
 ## Notes
 
