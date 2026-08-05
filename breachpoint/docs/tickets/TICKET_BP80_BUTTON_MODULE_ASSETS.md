@@ -21,8 +21,9 @@ last, after a render proves the replacement.**
 - requires: **engine-installed** for step 1, then **editor-live** with the Unreal MCP reachable
   (`mcp-ui/gen_ui/build_wbp.py` reports BLOCKED and exits 3 if it is not). R21: one editor,
   one driver.
-- `Source/Breachpoint/UI/Components/BRButton.h` exists and declares `UBRButton`, `UBRSettingsRow`
-  and four `UBRButtonStyle_*` classes
+- `Source/Breachpoint/UI/Components/BRButton.h` exists and declares **every button class in the
+  project**: `UBRButton`, `UBRSettingsRow`, `UBRHighlightButton`, two enums and four
+  `UBRButtonStyle_*` — 774 lines, with `BRButton.cpp` at 903
 - `python3 mcp-ui/gen_ui/wbp_plan.py` prints `PLAN OK` — verified on the files-only commit, and
   that pass already checks every `BindWidget` name in all nine trees against the merged header
 - `git lfs pull` has run — every `.uasset` in a fresh clone is a pointer stub
@@ -31,8 +32,8 @@ last, after a render proves the replacement.**
 
 ## Steps (in order)
 
-1. **Compile the merge.** `BRMenuRow`/`BRSettingsRow`/`BRButtonStyles` were merged into
-   `BRButton.h/.cpp` and six files deleted; the class renamed `UBRMenuRow` → `UBRButton`, the
+1. **Compile the merge.** `BRMenuRow`/`BRSettingsRow`/`BRButtonStyles`/`BRHighlightButton` were
+   merged into `BRButton.h/.cpp` and **eight files deleted**; the class renamed `UBRMenuRow` → `UBRButton`, the
    enum `EBRMenuRowType` → `EBRButtonType`, the property `RowType` → `ButtonType`. **Twenty-four
    files referenced the old names** and were repointed blind, without a compiler. Expect the
    errors to cluster in `BRScreen_FrontEnd`, `BRModal_Options`, `BRScreen_Settings` and
@@ -101,9 +102,16 @@ last, after a render proves the replacement.**
 - Binary files this ticket OWNS: everything under `Content/UI/Components/Buttons/`,
   `Content/UI/Reference/Buttons/`, `Content/UI/OldWidgets/Buttons/`, and the five named assets
   in `Content/UI/Components/`. Lock before editing.
-- Out of scope: `UBRHighlightButton` (its own header forbids the merge — *"two components, two
-  rules"*), `UBRHairlineBorder` (11 non-button consumers), the chrome-via-style-brush rewrite
-  (that is a separate C++ packet — this ticket ships the merge as-is, not the node reduction).
+- Out of scope: `UBRHairlineBorder` (12 includers, 11 not buttons), `BRComponentTokens.h`
+  (23 consumers), `BRUITokens.h`/`BRTextStyles.h` — none is button source; they are the drawing
+  layer and the design system buttons CONSUME. Also out: the chrome-via-style-brush rewrite
+  (a separate C++ packet — this ticket ships the merge as-is, not the node reduction).
+- **`UBRHighlightButton` DID merge (4 Aug), and the merge is file-only.** Its header's warning —
+  *"two components, two rules — do not unify them on the assumption that 'inversion' means one
+  thing"* — is about BEHAVIOUR and still binds: a menu row inverts to white, a highlight button
+  fills with a per-type accent, and `EBRHighlightButtonType` is deliberately not `EBRButtonType`.
+  Nothing was folded into `UBRButton`. If the compile surfaces a conflict between the two, the
+  fix is to separate them again, never to unify the rules.
 - **The node reduction is NOT in this ticket.** The ledger's 154 → 66 assumes state brushes draw
   the plate, border and corners. That is a `UBRButton` change plus a plan change, and doing it in
   the same editor session as an archive + rebuild would make a failure unattributable. **Build

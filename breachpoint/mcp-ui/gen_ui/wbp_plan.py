@@ -1575,7 +1575,7 @@ PLAN = {
         "folder": ASSET_FOLDER["WBP_HighlightButton"],
         "parent_class": "/Script/Breachpoint.BRHighlightButton",
         "class": "UBRHighlightButton",
-        "header": "Source/Breachpoint/UI/Components/BRHighlightButton.h",
+        "header": "Source/Breachpoint/UI/Components/BRButton.h",
         "notes": "Invertible CTA: plate + 4-line border + label. NO box is authored — the "
                  "reference measures none, so the button hugs its label (contract gap).",
         "tree": [

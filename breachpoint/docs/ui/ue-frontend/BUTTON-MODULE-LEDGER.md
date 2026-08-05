@@ -82,20 +82,28 @@ identically, and these are what "identically" is measured against.
 
 ## 3. DELETE
 
-### 3.1 Source — 4 files, 438 lines
+### 3.1 Source — 6 files, 857 lines
 
 | File | Lines | Why |
 |---|---|---|
 | `Source/Breachpoint/UI/Components/BRSettingsRow.h` + `.cpp` | 248 | folds into `UBRButton` as a type, not a subclass |
 | `Source/Breachpoint/UI/Styles/BRButtonStyles.h` + `.cpp` | 190 | folds into `BRButton.h` — styles are referenced by path, so zero include churn |
+| `Source/Breachpoint/UI/Components/BRHighlightButton.h` + `.cpp` | 419 | folds in — zero files included it |
 
 **Renamed, not deleted:** `BRMenuRow.h/.cpp` → `BRButton.h/.cpp`. The class keeps its behaviour
 and gains the chrome-via-style-brush simplification; further shrinkage is real but unquantified
 until written.
 
-**Not touched:** `BRHighlightButton` (its own header forbids the merge — *"two components, two
-rules"*), `BRHairlineBorder` (11 non-button consumers), `BRUITokens.h`, `BRTextStyles`,
-`BRComponentTokens.h`.
+**Also merged, 4 Aug (second pass):** `BRHighlightButton.h` + `.cpp` (419 lines) — **zero files
+included it**, so the merge cost no include churn at all. File-only: `EBRHighlightButtonType`
+stays its own axis and the accent-fill rule is untouched. Founder: *"we should only have BRButton
+for the source."* **Button source is now one file pair — 8 files → 2.**
+
+**Not touched, and the measurement that decided it:** `BRHairlineBorder` (12 includers, **11 not
+buttons**), `BRComponentTokens.h` (**23 consumers**), `BRUITokens.h` (9), `BRTextStyles.h` (2).
+None is button source — they are the drawing layer and the design system buttons consume, no more
+this module's than `CommonButtonBase.h` is. Folding the hairline in would make eleven unrelated
+widgets include the button module to paint a line.
 
 ### 3.2 Content — 5 widget assets
 
