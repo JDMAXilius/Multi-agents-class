@@ -205,32 +205,21 @@ The nine, at their real counts:
 — the designer drags "a checkbox," and the preview is right without a host screen. Its *plan
 definition* is fully shared; only the asset is distinct.
 
----|---|
-| `WBP_ButtonDefault` | 12 → 5 |
-| **`WBP_ButtonCheckbox`** ★ | **11 → 6** |
-| `WBP_ButtonRadio` | 11 → 6 |
-| `WBP_ButtonDropDown` | 10 → 7 |
-| `WBP_ButtonDigDown` | 10 → 7 |
-| `WBP_ButtonIconOnly` | 8 → 5 |
-| `WBP_ButtonSlider` | 14 → 11 |
-| `WBP_ButtonMapVoting` | 15 → 12 |
-| `WBP_ButtonImage` | 10 → 7 |
-| **Total** | **154 → 66 (−57%)** |
-
-The checkbox after:
+The checkbox's real tree — 11 nodes, and every one earns its place:
 
 ```
-RootSizeBox      SizeBox
-└ TextFrame      HorizontalBox        ← Overlay gone; nothing left to stack
-  ├ Label        CommonTextBlock         Fill 1.0
-  ├ Selection    CommonTextBlock         collapses when empty
-  └ MarkBox      Border 16x16         ← RoundedBox brush IS the square outline
-    └ Mark       Image                   tick, visible when Selected
+RootSizeBox        SizeBox              C++ drives the height from ButtonType
+└ RowOverlay       Overlay              child order IS z-order
+  ├ BackgroundLine BRRule               hover-only halo, collapsed at idle
+  ├ TextFrameFill  Image                the plate — the MATERIAL target (330 ms ease)
+  ├ Border         BRHairlineBorder     4 lines, 0x20 centred side ticks, per-edge dimming
+  └ TextFrame      HorizontalBox
+    ├ Label        CommonTextBlock      Fill 1.0
+    └ TypeBody     SizeBox 16x16
+      └ CheckStack Overlay              required: the hairline is a LEAF, no children
+        ├ CheckBox      BRHairlineBorder   the square outline
+        └ TypeCheckMark Image              the tick, Active only
 ```
-
-`Radio` stays a separate asset on purpose: `Type` lives on the CDO, so one asset = one type —
-the designer drags "a checkbox," and the preview is right without a host screen. Its *plan
-definition* is fully shared; only the asset is distinct.
 
 ---
 
@@ -240,7 +229,7 @@ definition* is fully shared; only the asset is distinct.
 |---|---|---|---|
 | Source (C++ files) | **4** | — | 2 (`BRButton.h/.cpp`, renamed) |
 | Content (widget assets) | **5** | **27** | **9** |
-| Widget nodes | **53** (only those inside the 5 deleted assets) | — | 66 |
+| Widget nodes | **53** (inside the 5 deleted assets) | — | **101** |
 | Art (textures) | **47** | — | — |
 | Art (files) | **133** | — | — |
 | Pipeline (plan entries) | **5** | — | 9 via factory |
