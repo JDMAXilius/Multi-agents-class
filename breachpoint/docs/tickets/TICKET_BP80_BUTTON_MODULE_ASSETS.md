@@ -271,3 +271,66 @@ Whoever owns the ticket should rule: either drop the box, or carve an exception 
 - **Step 7 (PIE)** — not run this session.
 - **Rung honesty:** everything above is rung 1 plus a design-time render. Nothing here is a
   runtime claim, and no hover/press/click has ever been exercised.
+
+**5 Aug 2026 — step 7 ATTEMPTED AND NOT ACHIEVED; steps 6 and the twin render blocked. Session end.**
+
+**PIE never started. Two attempts, two different walls, neither of them the button module.**
+
+1. **Attempt 1 — a modal aborted it.** At PIE start UE raised *"Blueprint Asset Compilation
+   Errors"* listing seven widgets. The log records `Message dialog closed, result: 1` and
+   `IsPIERunning` false immediately after: the dialog was answered with the choice that
+   **cancels** the play session. `StartPIE` had already returned `Timed out waiting for PIE to
+   start` — its wait for `PostPIEStarted` expired while the modal held the game thread.
+2. **Attempt 2 — system memory.** No compile dialog this time; a **macOS/UE "Memory Pressure
+   Warning"** was on screen instead (*"your system is running low on memory"*). Free pages were
+   **~60 MB** on a 16 GB machine with the editor at 1.23 GB RSS. `StartPIE` timed out again and
+   `IsPIERunning` stayed false. PIE duplicates the world, so it is precisely the operation that
+   cannot get memory here.
+
+**The hover/press/click box is UNCHECKED and no claim is made about it.** It has still never
+been exercised — same as the 4 Aug build. Nothing in this session touched runtime behaviour, so
+this is not a regression, it is the same untested surface it always was.
+
+**The seven compile failures are PRE-EXISTING and were NOT caused by the archive move.**
+`W_ButtonChangeSelection` `W_CheckBox` `W_DialogPrompt` `W_EditableText` `W_EscMenu`
+`W_GlassRectangleButton` `W_RoboButton` — all sourced pack. Compiled one directly for the real
+error rather than inferring from the summary:
+
+```
+Can't connect pins  Focus Widget  and  W Checkbox :
+    Widget Object Reference is not compatible with Object Reference.
+In use pin  <Unnamed>  no longer exists on node  Update Button Styles .
+    Please refresh node or break links to remove pin.
+```
+
+That is an **engine-upgrade breakage of third-party Blueprint graphs** — pin types changed and
+nodes lost pins. **A folder move cannot produce this error class**: a broken path yields
+unresolved-reference / unknown-class errors, never a pin type mismatch or a vanished pin. They
+were broken before this session; nobody had run PIE to discover it. It is also a live
+demonstration of why R18 exists, in the one place the project tolerates Blueprint graphs.
+
+**This needs a ruling, and it is not in this ticket's scope.** Those seven raise a modal on
+**every PIE start**, which means every future PIE in this project stops for a human click. They
+are archived reference material that never instantiates at runtime. Three ways out — fix the
+graphs, keep them and accept the dialog forever, or drop the pack from the repo. Whoever owns
+the pack decides.
+
+**Step 6 (the art delete) NOT ATTEMPTED — nothing under `Assets/` was touched.** It needs
+`get_referencers` on 47 `.uasset` files to identify which four `Sides/` textures are live, and
+the editor exited (cleanly — `LogExit: Exiting`, 05:55:24) before that ran. **Deleting 43 files
+irreversibly on the strength of a doc's claim rather than a fresh referencer query is exactly
+the mistake the ordering law was written to prevent**, so it was not done. The `.png`/`.svg`
+sources sit beside every `.uasset` there; a future session should confirm whether those go too,
+because the ticket's file counts (112 for `Sides/`, 18 for `ButtonBorder_*`) imply they do.
+
+**The archived-twin screenshot was not retried** — same reason, no editor.
+
+**One thing did get visual confirmation.** A capture of the content browser shows
+`Content/UI/Reference/Buttons` holding **17 items**, which is step 2 proven by eye rather than
+only by `find_assets`.
+
+**State at session end:** `main` clean and level with origin at `08b893a`. Steps 1–5 done and
+pushed; the claim file `.claude/active-packet.json` is left in place because the ticket is not
+finished. Four boxes remain: all-three-targets (needs a source-built engine, impossible on this
+launcher install), the committed receipt (contract_gap above), the twin screenshot, the art
+delete, and PIE.
