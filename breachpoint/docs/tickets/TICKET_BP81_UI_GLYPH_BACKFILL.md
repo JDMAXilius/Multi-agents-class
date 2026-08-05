@@ -174,3 +174,36 @@ unavailable to this packet.
 
 Whoever owns `Source/Breachpoint/UI/Components/` should take the rename. It is a single ticket step,
 not a ruling.
+
+### 5 Aug 2026 — windows terminal — 43 glyph re-saves pushed on founder instruction
+
+Founder called it directly ("push assets too") after the provenance limits below were put to them.
+Landing the record here because `Content/UI/Icons/Glyphs/` is this ticket's owner_path, even
+though the claim was released for BP82.
+
+**What went up:** 43 `.uasset` LFS objects — 41 in `Icons/Glyphs/`, 2 in
+`Components/Buttons/Assets/` (`T_UI_Glyph_Revert_{24,40}`). Every oid changed; **all 43 grew**,
+by roughly 150–400 B each.
+
+**Provenance, stated plainly: not verified.** Two distinct write events, neither of them
+deliberate authoring:
+
+- **36 were already dirty at mtime 12:24**, before this session ran anything. Origin unknown —
+  no ticket in the board claims them and no commit records them.
+- **7 were rewritten between 12:30 and 12:38**, i.e. during this session's `run-ubt.ps1` and
+  `run-specs.ps1`. `run-specs` boots `UnrealEditor-Cmd` on the project, and that is GOTCHAS #7 —
+  the same unscoped-save behaviour that rewrote all 55 glyphs in `1c94178`.
+
+**How this differs from `1c94178`, and why it matters.** That earlier sweep was checked: 55/55
+came back **pixel-identical**, pure encoding churn. These 43 did **not** get that check — it
+needs an editor to extract the texture, and none was open. Every file growing in the same
+direction is consistent with a uniform re-save, but consistent-with is not evidence-of. **No one
+has looked at these pixels.**
+
+**Consequence for anyone pulling:** if a glyph renders wrong from here, this commit is the first
+suspect, and `1c94178` is the last known-good state for the 55 pre-existing families. The
+reproducible path is unaffected — every one of these regenerates from `Export/UI/Glyphs/` via
+`rasterize_svg.py` + `import_textures.py`.
+
+**Law 7 note:** one owner per `.uasset` per ticket, and no packet was claimed for this push. That
+is a deviation, made on an explicit founder call, recorded rather than hidden.
