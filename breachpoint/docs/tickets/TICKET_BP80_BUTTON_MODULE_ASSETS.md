@@ -1,9 +1,11 @@
 # TICKET — BP80: Archive 27, delete 5, build 9 — the button module's editor half
 
-> STATUS: in-progress — mac terminal 5 Aug 2026 (dce68ee). **Steps 1–5 DONE** (compile, archive 27,
-> delete 5, rebuild 9; founder signed off the rebuild). Outstanding: step 6 art delete (its
-> eyes-on gate is unmet), step 7 PIE, the archived-twin screenshot, and a receipt `.gitignore`
-> forbids committing — see the contract_gap in the Log.
+> STATUS: in-progress — mac terminal 5 Aug 2026 (f7b6958). **Steps 1–5 DONE** (compile, archive 27,
+> delete 5, rebuild 9; founder signed off the rebuild on screen). **Steps 6–7 NOT DONE.** PIE never
+> started — a Blueprint-compile modal aborted one attempt and system memory pressure timed out the
+> next; the art delete was not attempted because the editor exited before referencers could be
+> queried. Also open: the archived-twin screenshot, and a receipt `.gitignore` forbids committing
+> (contract_gap in the Log). Next session needs **editor-live** and free RAM.
 
 > *(as cut, 4 Aug 2026)* — **files-only half COMPLETE and handed off.** editor-live, and
 > gated by a compile. This ticket is everything left that needs redirectors, an editor, or eyes
