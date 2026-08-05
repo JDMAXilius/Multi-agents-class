@@ -821,3 +821,83 @@ anyone who has not tested it.
 live edits — the claim file outlives the tickets it names, and nothing expires it. If law 5 stays
 mechanical, claim lifecycle needs an answer too: a claim whose ticket no longer exists should
 either fail loudly or clear itself, not silently keep enforcing a dead packet's boundaries.
+
+---
+
+## The button-module session — six calls owed (4 Aug 2026)
+
+Swept out of `BUTTON-MODULE-LEDGER.md`, `TICKET_BP80`, and the retracted node reduction. All six
+exist in a ticket or a ledger; none was in this register, which is the gap this section closes.
+Ordered by what they block.
+
+### B1 — the nav bar's bumper overlap · **call** · blocks `WBP_NavBar`
+
+Measured (BP73, reference nodes `0:18` / `0:37`, both direct children of `Navigation Bar`
+`124:1179`): the left bumper prompt spans x 27..54 and the first tab starts at x 39. **The
+reference authors a 15px overlap.** `MCP-BUILD-PLANS.md` §B1 lays the bar out as a
+`HorizontalBox`, which lays children side by side and **cannot overlap at all**.
+
+Not a measurement error — both numbers are bar-local and consistent. Either the bar becomes an
+`Overlay` (reproduces the source, costs the simple HBox layout) or the overlap is dropped
+(simpler, and 15px off the reference).
+
+*Recommend:* drop it and record the divergence. A 15px overlap on a chrome strip is not worth an
+absolute-positioned bar, and nothing else in the front end needs one. **Founder's to decide.**
+
+### B2 — `FillToken`: trade the measured hover ease for nine widgets? · **call** · blocks nothing
+
+`FBRHairlineStyle::FillToken` ("optional solid plate behind the strokes") means `Border` could
+absorb `TextFrameFill` — **−9 nodes across the button family, one per asset.** The cost: a fill
+token is a colour, not a material, so BP79's `M_UI_MenuRowPlate` scalar has nowhere to live and
+the measured **330 ms symmetric ease** (MOTION-MEASURED §7, RMSE 0.007/0.005) becomes an instant
+swap.
+
+*Recommend:* **no.** Trading a measured motion property for one widget per button is a bad trade,
+and node count was never this module's fat — the 47 unreferenced textures were.
+
+### B3 — three measured fonts are off-system · **call** · blocks the style sweep
+
+BP73 measured four text nodes; three resolve to no row in `figma_tokens.json`: Roboto Condensed
+**Bold 14** (`119:1491`), Rajdhani **Bold 18** and Rajdhani **SemiBold 18** (`927:43301`). The
+token ladder jumps `Heading/Panel` 16 → `Display/Title` 20 and carries Roboto Condensed only at
+Medium 14 / SemiBold 12.
+
+Either the live-read extraction missed styles, or those nodes are genuinely off-system in the
+reference. **No token rows were added** — three node reads are not a style extraction. Recorded in
+`figma_tokens.json` `_findings.offsystem_fonts_bp73`.
+
+### B4 — `ImageHeight = 196.7f` sizes to a HIDDEN layer · **call** · blocks nothing, but it is wrong today
+
+`BRFeatureCard.h:62`. The only 196.709 node in the reference is `Preview Photo` `0:1027`, and it
+is **hidden**. The visible card's image is inset 7 inside a 200-tall region — 186.
+`SetHeightOverride(ImageHeight)` (`BRFeatureCard.cpp:28`) and `BRMenuRow.cpp:75` both read it.
+
+*Recommend:* re-measure against the visible composition and correct both call sites. Filed rather
+than fixed because it is a C++ constant with two readers, outside the button packet's owner path.
+
+### B5 — BP70's three, still open · **call** · blocks the HUD render sign-off
+
+Restated here only because they were in a ticket Log and not in this register:
+the health-bar gate predicate (health-damage, current code, vs shield-state), the killfeed corner
+(doctrine said top-right, the render showed mid-left, the built plan says bottom-left from Figma),
+and the tray split (Figma measures ONE 280×110 tray; the code ships two siblings — it gates the
+doctrine's InvalidationBox, which needs one common parent).
+
+All three are cheap to reverse **after** BP80 renders the screens, which is the right time to look.
+
+### B6 — law 5 is advisory for anything shell-driven · **RULING** · see §"Carried out of the tickets"
+
+Not new, but it fired again this session: this session's file deletions and `sed -i` rewrites went
+through Bash and were never owner-path checked. The section above states the two honest options.
+Flagged here so it is counted among the open rulings rather than living only in a tail note.
+
+---
+
+## Closed this session (4 Aug 2026) — recorded so they are not re-litigated
+
+| # | Decision | Made |
+|---|---|---|
+| — | Sourced `W_*` pack archives to **`Content/UI/Reference/Buttons/` (tracked)**, NOT the gitignored `Content/Reference/` — that would have untracked 17 assets | founder, 4 Aug |
+| — | Our 4 Aug button WBPs archive to **`Content/UI/OldWidgets/Buttons/`**, not deleted | founder, 4 Aug |
+| — | **One class per file is wrong; one MODULE per file is right.** `UBRHighlightButton` merged into `BRButton.h` — the merge is FILE-only, its accent-fill rule stays its own | founder, 4 Aug |
+| — | **The 154 → 66 node reduction is retracted.** Every chrome node is load-bearing; `UBRHairlineBorder` exists because Slate brushes cannot draw this border | evidence, 4 Aug |
