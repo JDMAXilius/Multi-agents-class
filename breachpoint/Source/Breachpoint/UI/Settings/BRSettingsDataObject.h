@@ -94,7 +94,7 @@ public:
 	void SetIdentity(FName InId, const FText& InDisplayName, const FText& InDescription);
 
 	/**
-	 * How this value reads on the right-hand side of a `UBRMenuRow`. The base returns the em
+	 * How this value reads on the right-hand side of a `UBRButton`. The base returns the em
 	 * dash, which is the honest answer for a header or a collection -- see `BRUI::UnknownValueText`
 	 * for why blank is never the right blank.
 	 */

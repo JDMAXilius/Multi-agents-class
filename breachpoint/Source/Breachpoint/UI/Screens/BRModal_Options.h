@@ -1,7 +1,7 @@
 #pragma once
 
 #include "UI/BRActivatableWidget.h"
-#include "UI/Components/BRMenuRow.h"
+#include "UI/Components/BRButton.h"
 
 #include "BRModal_Options.generated.h"
 
@@ -29,7 +29,7 @@ enum class EBRModalOptionsVariant : uint8
 	Filters
 };
 
-/** One row of the payload. Maps 1:1 onto `UBRMenuRow`'s Type axis -- the modal invents no widget of its own. */
+/** One row of the payload. Maps 1:1 onto `UBRButton`'s Type axis -- the modal invents no widget of its own. */
 USTRUCT(BlueprintType)
 struct FBROptionsRow
 {
@@ -47,7 +47,7 @@ struct FBROptionsRow
 	FText Value;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Breachpoint|UI")
-	EBRMenuRowType RowType = EBRMenuRowType::Default;
+	EBRButtonType RowType = EBRButtonType::Default;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Breachpoint|UI")
 	bool bEnabled = true;
@@ -93,7 +93,7 @@ struct FBROptionsRequest
  * unreadable"). The width is driven from C++ onto `RootSizeBox` so it cannot be stretched from a
  * details panel; the x=48 / vertical-centre anchor is the WBP's job (Sec 7.3).
  *
- * Rows are `UBRMenuRow` instances built from the payload. The row class is a `TSoftClassPtr`
+ * Rows are `UBRButton` instances built from the payload. The row class is a `TSoftClassPtr`
  * (law 3) resolved on activation -- there is no hard widget-class reference and no constructor
  * asset lookup anywhere in this file.
  */
@@ -149,7 +149,7 @@ protected:
 
 	/** Law 3: SOFT. Resolved on activation, never a hard `UPROPERTY` class pointer. */
 	UPROPERTY(EditDefaultsOnly, Category = "Breachpoint|UI")
-	TSoftClassPtr<UBRMenuRow> RowWidgetClass;
+	TSoftClassPtr<UBRButton> RowWidgetClass;
 
 private:
 	void RebuildRows();
@@ -165,5 +165,5 @@ private:
 	 * the killfeed's per-kill churn, not a list built once when a modal opens).
 	 */
 	UPROPERTY(Transient)
-	TArray<TObjectPtr<UBRMenuRow>> RowWidgets;
+	TArray<TObjectPtr<UBRButton>> RowWidgets;
 };

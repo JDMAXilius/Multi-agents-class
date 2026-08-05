@@ -128,7 +128,7 @@ private:
  *
  * The cost of the choice, stated honestly: a leaf cannot hold a WidgetAnimation. Anything that
  * must ANIMATE a border animates the owning WBP's render opacity / the owner's C++-driven
- * token swap (see `UBRMenuRow::ApplyInvertedState`), not the border's internals.
+ * token swap (see `UBRButton::ApplyInvertedState`), not the border's internals.
  *
  * This is a decoration primitive, so it is `HitTestInvisible` by default -- it must never eat a
  * click meant for the button it decorates. `UBRScrim` deliberately overrides that.

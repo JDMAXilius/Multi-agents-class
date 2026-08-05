@@ -72,7 +72,7 @@ enum class EBRProgressChannel : uint8
  * treatment axis has to be explicit).
  *
  * BASE: `UCommonUserWidget`. It is not interactive, so it is NOT a `UCommonButtonBase` -- but it
- * is the same base family as every other widget in this folder (`UBRMenuRow`'s
+ * is the same base family as every other widget in this folder (`UBRButton`'s
  * `UCommonButtonBase` IS a `UCommonUserWidget`). There is still exactly one widget base.
  *
  * WHAT THIS CLASS DOES NOT DO, DELIBERATELY -- two timings MOTION-MEASURED Sec 7 forbids

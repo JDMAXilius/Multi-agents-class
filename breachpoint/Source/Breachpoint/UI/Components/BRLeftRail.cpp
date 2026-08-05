@@ -107,8 +107,8 @@ void UBRLeftRail::ApplyCaret()
 		// changing row count.
 		const float CaretY = GetMenuBorderTop()
 			+ MenuRowSlotInset
-			+ (static_cast<float>(FocusedRowIndex) * UBRMenuRow::RowPitch)
-			+ ((UBRMenuRow::RowHeight - CaretHeight) * 0.5f);
+			+ (static_cast<float>(FocusedRowIndex) * UBRButton::RowPitch)
+			+ ((UBRButton::RowHeight - CaretHeight) * 0.5f);
 
 		CaretSlot->SetPosition(FVector2D(CaretOffsetX, CaretY));
 		CaretSlot->SetSize(FVector2D(CaretWidth, CaretHeight));

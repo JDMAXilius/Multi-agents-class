@@ -1,7 +1,7 @@
 #pragma once
 
 #include "UI/BRActivatableWidget.h"
-#include "UI/Components/BRSettingsRow.h"
+#include "UI/Components/BRButton.h"
 
 #include "BRScreen_Settings.generated.h"
 
@@ -19,7 +19,7 @@ class UPanelWidget;
  * row-CHOOSER: the caller hands it a payload of rows, the player picks one, it reports which and
  * pops. It has no concept of a value, a range, persistence, or apply. This screen is the settings
  * TREE: it owns a `UBRSettingsRegistry`, its rows hold live values, and it has a commit step.
- * They share `UBRMenuRow` and nothing else, which is the correct amount.
+ * They share `UBRButton` and nothing else, which is the correct amount.
  *
  * TABS ARE `UBRNavBar`, NOT A NEW WIDGET. The nav bar already does tab definitions, exclusive
  * selection through a `UCommonButtonGroupBase`, and bumper-key navigation. Building a second tab

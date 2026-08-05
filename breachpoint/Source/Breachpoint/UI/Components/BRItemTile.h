@@ -123,7 +123,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FBROnItemTileClicked, UBRItemTileEnt
  * `FBRHairlineStyle` carries one stroke token for all four of its edges, so a per-edge rarity
  * colour is not expressible on a single border. Two widgets, one measured fact.
  *
- * BASE: `UCommonButtonBase` + `IUserObjectListEntry`. Same base family as `UBRMenuRow` (a
+ * BASE: `UCommonButtonBase` + `IUserObjectListEntry`. Same base family as `UBRButton` (a
  * `UCommonButtonBase` IS a `UCommonUserWidget`), which is what makes the tile gamepad-focusable
  * and navigable for free -- `ue5-ui-architecture` Sec 6: navigation and focus are CommonUI's job.
  * The interface is what lets a `UTileView` own, recycle and virtualise these; hand-placing N

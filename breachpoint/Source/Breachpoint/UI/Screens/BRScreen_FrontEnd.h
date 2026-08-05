@@ -8,7 +8,7 @@
 
 class UBRFeatureCard;
 class UBRLeftRail;
-class UBRMenuRow;
+class UBRButton;
 class UBRNavBar;
 class UBRRosterPanel;
 class UBRVM_FrontEnd;
@@ -231,21 +231,21 @@ protected:
 
 	/** Law 3: SOFT. Resolved once on initialise; never a hard widget-class `UPROPERTY`. */
 	UPROPERTY(EditDefaultsOnly, Category = "Breachpoint|UI")
-	TSoftClassPtr<UBRMenuRow> MenuRowWidgetClass;
+	TSoftClassPtr<UBRButton> MenuRowWidgetClass;
 
 private:
 	/** Weak: neither this screen nor the ViewModel owns the other. */
 	TWeakObjectPtr<UBRVM_FrontEnd> BoundViewModel;
 
 	UPROPERTY(Transient)
-	TArray<TObjectPtr<UBRMenuRow>> MenuRowWidgets;
+	TArray<TObjectPtr<UBRButton>> MenuRowWidgets;
 
 	/** No per-tab widget churn: rows are claimed and released, never created per tab change. */
 	UPROPERTY(Transient)
 	FUserWidgetPool MenuRowPool;
 
 	UPROPERTY(Transient)
-	TSubclassOf<UBRMenuRow> ResolvedMenuRowClass;
+	TSubclassOf<UBRButton> ResolvedMenuRowClass;
 
 	/**
 	 * `UBRNavBar::SetSelectedTabIndex` fires `OnTabSelected` for PROGRAMMATIC selection too (by

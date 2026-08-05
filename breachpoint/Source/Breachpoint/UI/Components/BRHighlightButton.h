@@ -52,7 +52,7 @@ enum class EBRHighlightButtonType : uint8
  * screens; the confirm/cancel pair on `OV_Warning`, the purchase button on `SH_BundleDetail` and
  * `NW_BattlePass` at Type=Premium, `PR_PostGameXP` and `PR_RankUp`'s continue).
  *
- * BASE: `UCommonButtonBase` -- the same base as `UBRMenuRow`, so there is still exactly one
+ * BASE: `UCommonButtonBase` -- the same base as `UBRButton`, so there is still exactly one
  * widget base family. CommonUI owns hover, press, select, focus, gamepad navigation and the
  * input-action glyph. The On Click status is CommonUI's Pressed brush on the shared
  * `CommonButtonStyle`, which is why this class overrides no press handler: a status that a style
@@ -81,7 +81,7 @@ enum class EBRHighlightButtonType : uint8
  * Premium. Photo Button follows Main. The white rule was presumably generalised from the one
  * variant that has no accent.
  *
- * `UBRMenuRow` REALLY DOES INVERT TO WHITE and its doc is correct. Two components, two rules --
+ * `UBRButton` REALLY DOES INVERT TO WHITE and its doc is correct. Two components, two rules --
  * do not unify them on the assumption that "inversion" means one thing.
  *
  * ACCENT GAP — CLOSED FOR HOVER, STILL OPEN FOR IDLE. `AccentEvent` / `AccentPremium` /

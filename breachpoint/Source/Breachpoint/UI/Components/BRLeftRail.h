@@ -2,7 +2,7 @@
 
 #include "CommonUserWidget.h"
 #include "UI/Components/BRComponentTokens.h"
-#include "UI/Components/BRMenuRow.h"
+#include "UI/Components/BRButton.h"
 
 #include "BRLeftRail.generated.h"
 
@@ -48,7 +48,7 @@ class UWidgetAnimation;
  * (`ui-presentation` Sec 10/11).
  *
  * NOT ACTIVATABLE, NOT A BUTTON: the rail routes nothing and decides nothing. Its focus targets
- * are the `UBRFeatureCard` and the `UBRMenuRow`s inside it, all of which are `UCommonButtonBase`
+ * are the `UBRFeatureCard` and the `UBRButton`s inside it, all of which are `UCommonButtonBase`
  * and therefore already gamepad-navigable; `GetFirstFocusTarget` hands the owning screen the
  * entry point so no one hand-rolls focus math (`ue5-ui-architecture` Sec 6).
  *
@@ -115,7 +115,7 @@ public:
 
 	/**
 	 * 148 = (4 - 1) * 40 + 28, so the measured slot holds FOUR rows at the Sec 5 pitch, even
-	 * though `FE_Play` instances five `UBRMenuRow`s. Recorded, unresolved (SCREEN-MANIFEST Sec 9);
+	 * though `FE_Play` instances five `UBRButton`s. Recorded, unresolved (SCREEN-MANIFEST Sec 9);
 	 * the row count is data, so the rail grows rather than cropping the fifth row.
 	 */
 	static constexpr int32 MeasuredRowCount = 4;
@@ -128,7 +128,7 @@ public:
 	static constexpr float ComputeRowsHeight(int32 InRowCount)
 	{
 		return InRowCount > 0
-			? (static_cast<float>(InRowCount - 1) * UBRMenuRow::RowPitch) + UBRMenuRow::RowHeight
+			? (static_cast<float>(InRowCount - 1) * UBRButton::RowPitch) + UBRButton::RowHeight
 			: 0.0f;
 	}
 
@@ -255,7 +255,7 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Breachpoint|UI")
 	TObjectPtr<UBRHairlineBorder> MenuBorder;
 
-	/** The screen fills this with `UBRMenuRow`s. The rail neither creates nor owns them. */
+	/** The screen fills this with `UBRButton`s. The rail neither creates nor owns them. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Breachpoint|UI")
 	TObjectPtr<UPanelWidget> MenuRowSlot;
 

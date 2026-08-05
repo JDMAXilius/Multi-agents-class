@@ -54,12 +54,12 @@ struct FBRNavTabDefinition
  * `UBRNavTab` -- one 138 x 26 tab, the entry widget of `UBRNavBar`.
  *
  * BASE: `UCommonButtonBase` (which IS a `UCommonUserWidget`, so there is still one widget base),
- * for the same reason `UBRMenuRow` uses it: CommonUI already owns focus, hover, navigation and
+ * for the same reason `UBRButton` uses it: CommonUI already owns focus, hover, navigation and
  * gamepad routing. A tab strip that hand-rolls "which one is focused" is the classic mouse-only
  * path and a gamepad finding (`ue5-ui-architecture` Sec 6). Selection exclusivity is likewise not
  * hand-rolled -- `UBRNavBar` puts every tab in a `UCommonButtonGroupBase`.
  *
- * COMPONENT-SPECS Sec 3 is the whole visual: a CLOSED rectangle border (unlike `UBRMenuRow`'s
+ * COMPONENT-SPECS Sec 3 is the whole visual: a CLOSED rectangle border (unlike `UBRButton`'s
  * four partial lines), and `Active=False` dims the WHOLE tab to 0.6 rather than restyling it.
  */
 UCLASS(Abstract, meta = (DisableNativeTick))

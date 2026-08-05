@@ -1,6 +1,16 @@
 # Button module — the move/delete/keep ledger
 
-**Status:** v1, 4 Aug 2026. **Plan only — nothing has been moved, deleted or built.**
+**Status:** v2, 4 Aug 2026. **Files-only half EXECUTED; editor half is `TICKET_BP80`.**
+
+> Founder confirmed 4 Aug: the sourced pack goes to the **tracked** `Content/UI/Reference/Buttons/`
+> (NOT the gitignored `Content/Reference/`), and our 4 Aug WBPs to `Content/UI/OldWidgets/Buttons/`.
+>
+> **Landed already:** `BRButton.h/.cpp` (six files merged into two), the 24 consumer repoints,
+> the `button()` factory with all nine assets through it, the five deleted plan entries, and the
+> six `DefaultGame.ini` repoints. `PLAN OK` passes — which also re-validates every `BindWidget`
+> name in all nine trees against the merged header.
+>
+> **Not landed:** anything needing an editor, a compiler, or a render. That is `TICKET_BP80`.
 
 Founder directive, this session: the button system becomes **one modular C++ class** with the
 type as data; the sourced third-party pack is **archived, not deleted**; the ten button WBPs
@@ -41,7 +51,7 @@ W_RoboButton              W_TypeText
 The sharpest reason to move them: **`W_CheckBox` currently sits directly beside
 `WBP_ButtonCheckbox`.** Different origin, different rules, one letter apart.
 
-> ### ⚠ DECISION OWED — do NOT use the existing `Content/Reference/`
+> ### ✅ DECIDED 4 Aug — tracked folder, NOT the gitignored one
 >
 > `Content/Reference/` already exists and is **gitignored** (`.gitignore:42`, `Content/Reference/*`)
 > because it holds extracted game content and uncleared packs — "committing to a remote is
@@ -51,9 +61,8 @@ The sharpest reason to move them: **`W_CheckBox` currently sits directly beside
 > fresh clone. That is almost certainly not what "move it to a references folder" meant for a
 > pack we deliberately sourced and licensed (R40).
 >
-> **Recommendation: `Content/UI/Reference/Buttons/` — a NEW tracked folder**, distinct from the
-> gitignored `Content/Reference/`. Same intent, no silent data loss. Founder confirms before
-> anything moves.
+> **CONFIRMED: `Content/UI/Reference/Buttons/` — a NEW tracked folder**, distinct from the
+> gitignored `Content/Reference/`. Same intent, no silent data loss.
 
 ### 2.2 Our 4 Aug button WBPs → `Content/UI/OldWidgets/Buttons/`
 
@@ -98,7 +107,7 @@ rules"*), `BRHairlineBorder` (11 non-button consumers), `BRUITokens.h`, `BRTextS
 ✗ Content/UI/Components/WBP_SettingsRow_Slider.uasset    = ButtonSlider + Selection
 ```
 
-> ### ⚠ BLOCKER — six config lines point at these
+> ### ✅ RESOLVED 4 Aug — the six config lines are repointed
 >
 > `Config/DefaultGame.ini` resolves four settings-row classes and the menu-row atom to assets on
 > this delete list:
@@ -112,9 +121,11 @@ rules"*), `BRHairlineBorder` (11 non-button consumers), `BRUITokens.h`, `BRTextS
 > | 89 | `MenuRowWidgetClass` | `WBP_MenuRow` |
 > | 95 | `RowWidgetClass` | `WBP_MenuRow` |
 >
-> **Every one must be repointed to its surviving `Buttons/` twin in the same commit as the
-> delete.** A soft class ref that resolves to nothing fails silently at runtime — the same shape
-> as the missing-ini bug that made the entire UI stack inert (CPP-AUDIT D1).
+> **All six now point at their surviving `Buttons/` twin** (`SettingsRow*` → `WBP_ButtonSlider` /
+> `WBP_ButtonCheckbox` / `WBP_ButtonDropDown`, the plain rows → `WBP_ButtonDefault`). Repointed in
+> the files-only commit, i.e. BEFORE the delete rather than after — a soft class ref that resolves
+> to nothing fails silently at runtime, the same shape as the missing-ini bug that made the entire
+> UI stack inert (CPP-AUDIT D1).
 
 ### 3.3 Art — 47 textures, 133 files
 
@@ -232,4 +243,28 @@ definition* is fully shared; only the asset is distinct.
    its archived twin.
 5. **Art delete** — only after step 4's render confirms the RoundedBox outline matches.
 
-**Nothing in steps 2–5 has been executed.** This document is the plan.
+**Step 2 is executed.** Steps 3–5 are `TICKET_BP80`.
+
+---
+
+## 8. What actually landed in the files-only pass
+
+| Change | Detail |
+|---|---|
+| `BRButton.h` | 541 lines — 4 style classes, `EBRButtonType`, `UBRButton`, `UBRSettingsRow` |
+| `BRButton.cpp` | 715 lines |
+| Deleted | `BRMenuRow.h/.cpp`, `BRSettingsRow.h/.cpp`, `BRButtonStyles.h/.cpp` |
+| Renames | `UBRMenuRow`→`UBRButton`, `EBRMenuRowType`→`EBRButtonType`, `RowType`→`ButtonType`, `SetRowType`→`SetButtonType`, `ApplyRowType`→`ApplyButtonType` |
+| Consumers repointed | 24 files (6 with real code refs, 18 doc mentions) |
+| Plan | `button()` factory; 9 entries through it; `parent_class` appears **once** in 3,200 lines |
+| Plan entries deleted | 5 |
+| Config | 6 soft class refs repointed |
+
+**The header is native-only, as directed:** `CommonButtonBase.h` (CommonUI), UMG forward
+declarations, and `BRComponentTokens.h` — which is a header-only constant table, data not a
+class. No BR class dependency. `BRHairlineBorder.h` appears in the `.cpp` and deliberately not
+in the header: the border is a bind target the button drives, never part of its public shape.
+
+**Unverified.** Nothing here has been compiled — no toolchain in the container it was written
+in. `PLAN OK` proves the plan and the header agree on every bind name and type; it proves
+nothing about whether the module builds. BP80 step 1 is that gate.

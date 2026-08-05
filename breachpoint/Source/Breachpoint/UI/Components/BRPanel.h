@@ -40,7 +40,7 @@ class USizeBox;
  * PUSH-ONLY, LIKE EVERY COMPONENT IN THIS FOLDER. A panel reads nothing. It has no ViewModel, no
  * `PlayerState`, no ASC, no GameState, no Tick (`ue5-ui-architecture` Sec 7/8) -- its owner pushes
  * appearance in. It is also decoration, so it takes no focus: the interactive children it wraps
- * (`UBRMenuRow` and friends) own gamepad navigation, and a panel that grabbed focus would put a
+ * (`UBRButton` and friends) own gamepad navigation, and a panel that grabbed focus would put a
  * dead stop in a controller path.
  */
 UCLASS(Abstract, meta = (DisableNativeTick))

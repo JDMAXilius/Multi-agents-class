@@ -67,9 +67,9 @@ public:
 	TSoftClassPtr<UBRSettingsRow> SettingsRowClass;
 
 	/**
-	 * The typed rows, one per `EBRMenuRowType` a setting can resolve to.
+	 * The typed rows, one per `EBRButtonType` a setting can resolve to.
 	 *
-	 * THREE CLASSES RATHER THAN ONE, because the per-type body lives in the ASSET. `UBRMenuRow`
+	 * THREE CLASSES RATHER THAN ONE, because the per-type body lives in the ASSET. `UBRButton`
 	 * selects a body through a `TypeSwitcher` bind, and `WBP_SettingsRow` has no switcher and no
 	 * bodies — so before these existed, `RefreshFromSetting` resolved Slider / Checkbox / DropDown
 	 * correctly and then rendered all three as a plain label-and-value row. A volume slider and a

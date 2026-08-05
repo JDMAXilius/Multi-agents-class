@@ -39,7 +39,7 @@ void UBRNavTab::NativeOnInitialized()
 		// partial lines, so it is set from C++ rather than trusting a WBP default.
 		// Named BorderStyle, not Style: `UCommonButtonBase` already has a member called `Style`
 		// and a local of that name shadows it (C4458, which is an error under this project's
-		// warning level). `UBRMenuRow::NativeOnInitialized` uses the same BorderStyle spelling.
+		// warning level). `UBRButton::NativeOnInitialized` uses the same BorderStyle spelling.
 		FBRHairlineStyle BorderStyle = Border->GetHairlineStyle();
 		BorderStyle.Edges = static_cast<int32>(EBRBorderEdge::Top)
 			| static_cast<int32>(EBRBorderEdge::Bottom)

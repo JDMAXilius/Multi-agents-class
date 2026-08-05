@@ -46,7 +46,7 @@ struct FBRConfirmRequest
 	 * CONTRACT GAP: `UCommonButtonBase` has no label setter in UE 5.8 and `UBRHighlightButton`
 	 * (SCREEN-MANIFEST Sec 5 Tier 1) does not exist yet, so these are applied through the OPTIONAL
 	 * `ConfirmLabelText` / `CancelLabelText` blocks below. When the highlight button lands with a
-	 * `SetLabelText` (the precedent is `UBRMenuRow::SetLabelText`), `ApplyRequest` should call that
+	 * `SetLabelText` (the precedent is `UBRButton::SetLabelText`), `ApplyRequest` should call that
 	 * instead and the two optional blocks come out.
 	 */
 	UPROPERTY(BlueprintReadWrite, Category = "Breachpoint|UI")

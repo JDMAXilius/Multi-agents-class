@@ -30,13 +30,13 @@ struct FBRFeatureCardEntry
 };
 
 /**
- * SCREEN-MANIFEST Sec 4.1: one row of the Left Rail's Menu Combo (`UBRMenuRow`, h28 pitch 40).
+ * SCREEN-MANIFEST Sec 4.1: one row of the Left Rail's Menu Combo (`UBRButton`, h28 pitch 40).
  *
  * `Description` lives on the row, not on the ViewModel, because the Description Strip shows the
  * FOCUSED row's text -- one stored focus index derives it (see `GetFocusedRowDescription`).
  *
- * No row `Type` here on purpose: the visual type axis is `EBRMenuRowType` on the widget
- * (`UI/Components/BRMenuRow.h`) and belongs to the screen's layout, not to this data. A ViewModel
+ * No row `Type` here on purpose: the visual type axis is `EBRButtonType` on the widget
+ * (`UI/Components/BRButton.h`) and belongs to the screen's layout, not to this data. A ViewModel
  * that names widget variants has the dependency arrow pointing the wrong way.
  */
 USTRUCT(BlueprintType)

@@ -3,10 +3,11 @@
 #include "CommonButtonBase.h"
 #include "UI/Components/BRComponentTokens.h"
 
-#include "BRMenuRow.generated.h"
+#include "BRButton.generated.h"
 
 class UBRHairlineBorder;
 class UBRRule;
+class UBRSettingsDataObject;
 class UCommonTextBlock;
 class UImage;
 class UPanelWidget;
@@ -15,6 +16,113 @@ class UWidget;
 class UWidgetAnimation;
 class UWidgetSwitcher;
 
+// =============================================================================================
+// THE BUTTON MODULE -- one seam, and it depends on NOTHING but CommonUI, UMG and the tokens.
+//
+// Founder directive, 4 Aug 2026: "make sure that class is independent from any other class,
+// only the native one ... from CommonUI. And for the button types, we can have that as data
+// that will let the class know which button it is, so it could be changeable."
+//
+// So the include list above is the contract: `CommonButtonBase.h` is CommonUI, the forward
+// declarations are UMG, and `BRComponentTokens.h` is a header-only table of constants -- data,
+// not a class. There is no BR class dependency in this file and adding one is a finding.
+//
+// WHAT MERGED HERE, AND WHY IT IS ONE FILE:
+//   Sec 1  the button STYLES        (was Styles/BRButtonStyles.h)
+//   Sec 2  the TYPE axis            (was Components/BRMenuRow.h)
+//   Sec 3  UBRButton                (was UBRButton)
+//   Sec 4  UBRSettingsRow           (was Components/BRSettingsRow.h)
+//
+// A file is an OWNERSHIP SEAM, not a class. These four are edited by one ticket, they share one
+// design contract, and the styles are resolved by PATH (`/Script/Breachpoint.BRButtonStyle_*`)
+// rather than by include -- verified: the old BRButtonStyles.h was included by exactly one .cpp,
+// its own. So this merge costs zero include churn anywhere in the module.
+//
+// WHAT DID NOT MERGE, DELIBERATELY:
+//   `UBRHighlightButton` -- its own header forbids it: "Two components, two rules -- do not
+//     unify them on the assumption that 'inversion' means one thing." A menu row inverts to
+//     WHITE; a highlight button fills with a per-type ACCENT. Same word, different rule.
+//   `UBRHairlineBorder` -- the drawing primitive has 11 non-button consumers. Folding it here
+//     would make eleven unrelated widgets include the button module to paint a line, which is
+//     dependency inversion wearing a file merge.
+// =============================================================================================
+
+// ============================================================================ Sec 1
+// THE STYLES -- state brushes and text styles, resolved by PATH not by include.
+// ============================================================================
+
+/**
+ * Base for every BREACHPOINT button style. C++, not a BP style asset, for the same
+ * reason as UBRTextStyleBase: a BP child of an ENGINE class fails R26 conditions 1 and 5
+ * and is therefore banned by R18. NotBlueprintable makes it structural.
+ *
+ * No asset references live in here at all. Every brush is an FSlateColorBrush -- a solid
+ * tint with DrawAs = Image, no texture, no material, no ResourceObject. That is a
+ * deliberate double win: nothing to load (so none of UBRTextStyleBase's deferred-resolve
+ * machinery is needed), and DrawAs = Image cannot round a corner, so "corner radius 0
+ * everywhere" is enforced by the type rather than by a review comment. If a style ever
+ * needs ESlateBrushDrawType::RoundedBox, that is a design change, not an implementation
+ * detail.
+ *
+ * Stroke thickness and whole-component opacity are NOT expressible on UCommonButtonStyle
+ * -- it has brushes, padding and size clamps, nothing else. They live as
+ * BR::Tokens::Stroke* / Opacity* constants for the widget layer to read.
+ */
+UCLASS(Abstract, NotBlueprintable)
+class BREACHPOINT_API UBRButtonStyleBase : public UCommonButtonStyle
+{
+	GENERATED_BODY()
+
+public:
+	UBRButtonStyleBase();
+};
+
+/**
+ * The left-rail menu row, and the signature interaction of the whole front end: the
+ * idle -> hover INVERSION. At rest the row is transparent with a dim underline; on hover
+ * or selection the fill goes solid white and the text flips to black.
+ *
+ * The underline itself (StrokeThin at OpacityMenuRowLineIdle -> OpacityMenuRowLineActive)
+ * is a widget-owned element -- UCommonButtonStyle has no line field. Tokens carry it.
+ */
+UCLASS()
+class BREACHPOINT_API UBRButtonStyle_MenuRow : public UBRButtonStyleBase
+{
+	GENERATED_BODY()
+
+public:
+	UBRButtonStyle_MenuRow();
+};
+
+/**
+ * Top nav tab. Active state is a StrokeNavTabActive border drawn OUTSIDE the component;
+ * inactive dims the WHOLE component to OpacityNavTabInactive -- not just the label.
+ * Both are widget-layer concerns (see tokens); this style carries the fills and type.
+ */
+UCLASS()
+class BREACHPOINT_API UBRButtonStyle_NavTab : public UBRButtonStyleBase
+{
+	GENERATED_BODY()
+
+public:
+	UBRButtonStyle_NavTab();
+};
+
+/** The one-per-screen affirmative action. Amber = a clock is running / act now. */
+UCLASS()
+class BREACHPOINT_API UBRButtonStyle_Highlight : public UBRButtonStyleBase
+{
+	GENERATED_BODY()
+
+public:
+	UBRButtonStyle_Highlight();
+};
+
+// ============================================================================ Sec 2
+// THE TYPE AXIS -- the DATA that tells the class which button it is.
+// ============================================================================
+
+
 /**
  * COMPONENT-SPECS Sec 2 "Type axis (10 values)": what sits INSIDE the same 250x28 shell.
  * The order is the authoring contract -- the WBP's `TypeSwitcher` child index must match it,
@@ -22,10 +130,10 @@ class UWidgetSwitcher;
  *
  * There are 27 variants in the reference file. There is ONE class. The 27 are
  * (10 Types x 6 Statuses x 2 Alignments) collapsed onto three axes: Type is this enum, Status
- * is CommonUI's own button state, Alignment is EBRMenuRowAlignment.
+ * is CommonUI's own button state, Alignment is EBRButtonAlignment.
  */
 UENUM(BlueprintType)
-enum class EBRMenuRowType : uint8
+enum class EBRButtonType : uint8
 {
 	Default,
 
@@ -54,15 +162,19 @@ enum class EBRMenuRowType : uint8
 
 /** COMPONENT-SPECS Sec 2 "Alignment axis". */
 UENUM(BlueprintType)
-enum class EBRMenuRowAlignment : uint8
+enum class EBRButtonAlignment : uint8
 {
 	Left,
 
 	Center
 };
 
+// ============================================================================ Sec 3
+// UBRButton -- the one modular button.
+// ============================================================================
+
 /**
- * `UBRMenuRow` -- the atom (SCREEN-MANIFEST Sec 5 Tier 0: unblocks 26 of 31 screens; the
+ * `UBRButton` -- the atom (SCREEN-MANIFEST Sec 5 Tier 0: unblocks 26 of 31 screens; the
  * highest-leverage single component in the project).
  *
  * BASE: `UCommonButtonBase`, which IS a `UCommonUserWidget` -- there is still exactly one widget
@@ -84,7 +196,7 @@ enum class EBRMenuRowAlignment : uint8
  * zero graph nodes, so this class deliberately exposes no BlueprintImplementableEvent.
  */
 UCLASS(Abstract, meta = (DisableNativeTick))
-class BREACHPOINT_API UBRMenuRow : public UCommonButtonBase
+class BREACHPOINT_API UBRButton : public UCommonButtonBase
 {
 	GENERATED_BODY()
 
@@ -103,7 +215,7 @@ public:
 	 * 250 x 28 row previews as 250 x 28 instead of floating in a 1280 x 720 canvas. Pure
 	 * editor presentation: `WITH_EDITORONLY_DATA` means it does not exist in a packaged build.
 	 */
-	UBRMenuRow(const FObjectInitializer& ObjectInitializer);
+	UBRButton(const FObjectInitializer& ObjectInitializer);
 
 	/**
 	 * COMPONENT-SPECS Sec 2: COMPONENT 250 x 28. `RowWidth` is deliberately NOT declared — the
@@ -117,7 +229,7 @@ public:
 	static constexpr float BorderSideTickLength = 20.0f;
 
 	/**
-	 * The component-board width, applied AT DESIGN TIME ONLY (see ApplyRowType).
+	 * The component-board width, applied AT DESIGN TIME ONLY (see ApplyButtonType).
 	 *
 	 * This is not a contradiction of "width is deliberately not authored" -- that rule is about
 	 * RUNTIME, where the row fills its rail (349 on the front end, 536 in the grid stack) and a
@@ -168,19 +280,19 @@ public:
 	void SetSelectionText(const FText& InText);
 
 	UFUNCTION(BlueprintCallable, Category = "Breachpoint|UI")
-	void SetRowType(EBRMenuRowType InRowType);
+	void SetButtonType(EBRButtonType InButtonType);
 
 	UFUNCTION(BlueprintCallable, Category = "Breachpoint|UI")
-	EBRMenuRowType GetRowType() const { return RowType; }
+	EBRButtonType GetButtonType() const { return ButtonType; }
 
 	UFUNCTION(BlueprintCallable, Category = "Breachpoint|UI")
-	void SetRowAlignment(EBRMenuRowAlignment InAlignment);
+	void SetButtonAlignment(EBRButtonAlignment InAlignment);
 
 protected:
 	//~ Begin UUserWidget interface
 	virtual void NativeOnInitialized() override;
 
-	/** CPP-AUDIT P3: `RowType`/`Alignment` are EditAnywhere and must preview in the designer. */
+	/** CPP-AUDIT P3: `ButtonType`/`Alignment` are EditAnywhere and must preview in the designer. */
 	virtual void NativePreConstruct() override;
 	//~ End UUserWidget interface
 
@@ -199,7 +311,7 @@ protected:
 	 */
 	void ApplyInvertedState(bool bInverted, bool bPlayAnimation = true);
 
-	void ApplyRowType();
+	void ApplyButtonType();
 
 	/**
 	 * COMPONENT-SPECS Sec 2, every Type's hover row: "everything flips to #000000". The shell
@@ -236,7 +348,7 @@ protected:
 
 	// ---------------------------------------------------------------------------------------
 	// BindWidget contract. These names are parsed out of this header by the WBP generator and
-	// must match the widget names in `WBP_MenuRow` exactly. Figma layer -> UMG name mapping:
+	// must match the widget names in `WBP_Button*` assets exactly. Figma layer -> UMG name mapping:
 	//   `Text Frame`    -> TextFrame        `Text`      -> Label
 	//   `Selection`     -> Selection        `Icon`      -> Icon
 	//   `Filter Button` -> FilterButton     `Border`    -> Border
@@ -279,7 +391,7 @@ protected:
 	TObjectPtr<UBRRule> BackgroundLine;
 
 	/**
-	 * One child per EBRMenuRowType, in enum order. This is what keeps the 10-value Type axis
+	 * One child per EBRButtonType, in enum order. This is what keeps the 10-value Type axis
 	 * from becoming 10 classes or 10 WBPs.
 	 */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Breachpoint|UI")
@@ -323,10 +435,10 @@ protected:
 	TObjectPtr<UWidgetAnimation> DisclosureAnim;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Breachpoint|UI")
-	EBRMenuRowType RowType = EBRMenuRowType::Default;
+	EBRButtonType ButtonType = EBRButtonType::Default;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Breachpoint|UI")
-	EBRMenuRowAlignment Alignment = EBRMenuRowAlignment::Left;
+	EBRButtonAlignment Alignment = EBRButtonAlignment::Left;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Breachpoint|UI")
 	EBRUIColorToken InvertedFillToken = EBRUIColorToken::SurfaceInverted;
@@ -339,4 +451,91 @@ protected:
 
 private:
 	bool bIsInverted = false;
+};
+
+// ============================================================================ Sec 4
+// UBRSettingsRow -- behaviour, not appearance: it holds a data object.
+// ============================================================================
+
+
+/**
+ * `UBRSettingsRow` -- a `UBRButton` that knows which setting it is showing.
+ *
+ * IT IS A SUBCLASS AND THAT IS NOT A CONTRADICTION. `UBRButton`'s own doc says 27 reference
+ * variants collapse to ONE class because they differ only in appearance. This differs in
+ * BEHAVIOUR: it holds a data object, subscribes to it, and turns left/right into a value change.
+ * That is a new responsibility, not a new look, and it is exactly what a subclass is for. The
+ * Type axis is still `UBRButton`'s -- this class picks a value on it, it does not add one.
+ *
+ * WHY NOT A LIST VIEW ENTRY. `UBRModal_Options` already establishes the project's idiom: a
+ * screenful of rows is built into a `UPanelWidget` on activation, and pooling is reserved for
+ * the killfeed's per-kill churn. The longest settings tab is the key bindings, which is tens of
+ * rows built once when a screen opens -- the same case, so it gets the same answer. Reaching for
+ * `UCommonListView` here would add an entry-widget indirection and a pooling lifecycle to solve
+ * a problem this screen does not have.
+ *
+ * THE ROW OWNS NO VALUE. Every read goes through the data object, every write goes through the
+ * data object's setter, and the row redraws from `OnSettingChanged`. It cannot show a value the
+ * model does not have, because it has nowhere to keep one.
+ */
+UCLASS(Abstract, meta = (DisableNativeTick))
+class BREACHPOINT_API UBRSettingsRow : public UBRButton
+{
+	GENERATED_BODY()
+
+public:
+	/** Point the row at a setting. Safe to call repeatedly; the previous subscription is dropped. */
+	void SetSetting(UBRSettingsDataObject* InSetting);
+
+	UFUNCTION(BlueprintCallable, Category = "Breachpoint|Settings")
+	UBRSettingsDataObject* GetSetting() const { return Setting; }
+
+	/**
+	 * Left/right on this row: one step for a scalar, one option for a discrete. `Direction` is
+	 * -1 or +1. A row whose setting does neither (a header, a key binding) ignores it -- rebinding
+	 * a key is an ACTIVATION, not a nudge, and routing it here would let a stray stick flick
+	 * rebind a control.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Breachpoint|Settings")
+	void NudgeValue(int32 Direction);
+
+	/** Fired when the row is clicked or accepted. The screen decides what that means. */
+	DECLARE_DELEGATE_OneParam(FBRSettingsRowActivated, UBRSettingsDataObject* /* Setting */);
+	FBRSettingsRowActivated OnSettingRowActivated;
+
+	/**
+	 * Which `EBRButtonType` body a setting renders as -- WITHOUT needing a row to ask.
+	 *
+	 * Static because the screen has to pick a WIDGET CLASS before it can create the widget, and
+	 * the type is what decides which class. `RefreshFromSetting` used to compute this on an
+	 * already-built row and set `ButtonType` on it, which changed the row's height and nothing else:
+	 * the per-type bodies live in different assets, so a Scalar setting and a Discrete one both
+	 * rendered as a plain Default row. Resolving before construction is what closes that.
+	 */
+	static EBRButtonType ResolveButtonTypeFor(const UBRSettingsDataObject* InSetting);
+
+protected:
+	//~ Begin UUserWidget interface
+	virtual void NativeOnInitialized() override;
+	virtual void NativeDestruct() override;
+	//~ End UUserWidget interface
+
+	//~ Begin UCommonButtonBase interface
+	virtual void NativeOnClicked() override;
+	//~ End UCommonButtonBase interface
+
+	/** Push the setting's label, value, row type and enabled state onto the widget. */
+	void RefreshFromSetting();
+
+	/** Which `EBRButtonType` body this setting renders as. */
+	EBRButtonType ResolveButtonType() const;
+
+private:
+	void HandleSettingChanged(UBRSettingsDataObject* Changed);
+
+	/** Drop the delegate binding. Called from `SetSetting` and `NativeDestruct`. */
+	void UnsubscribeFromSetting();
+
+	UPROPERTY(Transient)
+	TObjectPtr<UBRSettingsDataObject> Setting;
 };

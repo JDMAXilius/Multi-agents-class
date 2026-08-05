@@ -24,7 +24,7 @@ class UWidgetSwitcher;
  * a tint, so this enum is only the three real states plus two honest absences.
  *
  * The order IS the authoring contract: `MicSwitcher`'s child index is this enum cast to int32,
- * the same trick `UBRMenuRow::TypeSwitcher` uses to keep an axis from becoming N widget classes.
+ * the same trick `UBRButton::TypeSwitcher` uses to keep an axis from becoming N widget classes.
  */
 UENUM(BlueprintType)
 enum class EBRRosterMicState : uint8
@@ -196,7 +196,7 @@ protected:
  * which is a live routing defect, not a future feature. The reference component IS named "Player
  * Buttons" and the lobby variant IS the mute / view-profile / kick target -- so the promotion
  * back to `UCommonButtonBase` happens in BP24, together with the hover/focus treatment
- * (`UBRMenuRow::ApplyInvertedState` is the template), a `UCommonButtonGroupBase` on the panel,
+ * (`UBRButton::ApplyInvertedState` is the template), a `UCommonButtonGroupBase` on the panel,
  * and the click that gives the base class a job.
  *
  * THIS ROW NEVER RAISES INTENT. It has no click handler and no delegate to a controller: when the

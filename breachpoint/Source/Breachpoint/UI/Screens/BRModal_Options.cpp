@@ -81,7 +81,7 @@ void UBRModal_Options::NativeOnDeactivated()
 UWidget* UBRModal_Options::NativeGetDesiredFocusTarget() const
 {
 	// Focus the first row that can actually take it -- focusing a disabled row is a dead gamepad.
-	for (const TObjectPtr<UBRMenuRow>& RowWidget : RowWidgets)
+	for (const TObjectPtr<UBRButton>& RowWidget : RowWidgets)
 	{
 		if (RowWidget && RowWidget->GetIsEnabled())
 		{
@@ -125,13 +125,13 @@ void UBRModal_Options::RebuildRows()
 
 	for (const FBROptionsRow& Row : Request.Rows)
 	{
-		UBRMenuRow* RowWidget = CreateWidget<UBRMenuRow>(this, ResolvedRowClass);
+		UBRButton* RowWidget = CreateWidget<UBRButton>(this, ResolvedRowClass);
 		if (!RowWidget)
 		{
 			continue;
 		}
 
-		RowWidget->SetRowType(Row.RowType);
+		RowWidget->SetButtonType(Row.RowType);
 		RowWidget->SetLabelText(Row.Label);
 		RowWidget->SetSelectionText(Row.Value);
 		RowWidget->SetIsEnabled(Row.bEnabled);
@@ -147,7 +147,7 @@ void UBRModal_Options::RebuildRows()
 
 void UBRModal_Options::ReleaseRows()
 {
-	for (const TObjectPtr<UBRMenuRow>& RowWidget : RowWidgets)
+	for (const TObjectPtr<UBRButton>& RowWidget : RowWidgets)
 	{
 		if (RowWidget)
 		{

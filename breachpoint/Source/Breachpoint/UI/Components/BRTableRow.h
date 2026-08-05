@@ -29,7 +29,7 @@ class UWidgetSwitcher;
  *
  * If the WBP ever needs genuinely different column GEOMETRY per type, it adds a
  * `TypeSwitcher` whose child index equals this enum's value -- same contract as
- * `UBRMenuRow::TypeSwitcher`. It does NOT add a second class.
+ * `UBRButton::TypeSwitcher`. It does NOT add a second class.
  */
 UENUM(BlueprintType)
 enum class EBRTableRowType : uint8
@@ -95,21 +95,21 @@ public:
  * `UBRTableRow` -- Table Buttons, 660 x 28 (SCREEN-MANIFEST Sec 6.5; Tier 4 leaf, blocks the
  * 8-frame Browser).
  *
- * BASE: `UCommonButtonBase`, the same widget base family as `UBRMenuRow` -- CommonUI already owns
+ * BASE: `UCommonButtonBase`, the same widget base family as `UBRButton` -- CommonUI already owns
  * focus, gamepad navigation, hover/press/selection and input-action routing, so a table row is
  * reachable with a controller for free (`ue5-ui-architecture` Sec 6: hand-rolled focus math is a
  * finding).
  *
- * WHY IT IS A SIBLING OF `UBRMenuRow` AND NOT A SUBCLASS, stated once so nobody "fixes" it:
- *   1. `UBRMenuRow` declares five REQUIRED `BindWidget` members (`TextFrame`, `TextFrameFill`,
+ * WHY IT IS A SIBLING OF `UBRButton` AND NOT A SUBCLASS, stated once so nobody "fixes" it:
+ *   1. `UBRButton` declares five REQUIRED `BindWidget` members (`TextFrame`, `TextFrameFill`,
  *      `Label`, ...). Inheriting them would make `WBP_TableRow` fail to compile for reasons
  *      invisible in this header -- and `Tools/gen_ui/wbp_plan.py` parses ONE header per plan
  *      entry with no base-class chain (see its `BindWidget` regex), so the generator would not
  *      catch it either.
- *   2. `UBRMenuRow::ApplyRowType()` casts `EBRMenuRowType` (10 values) straight to
+ *   2. `UBRButton::ApplyButtonType()` casts `EBRButtonType` (10 values) straight to
  *      `TypeSwitcher`'s child index. A 2-value `EBRTableRowType` sharing that switcher is a
  *      silent index collision.
- * The cost is the ~20 lines of inversion below, duplicated from `UBRMenuRow::ApplyInvertedState`.
+ * The cost is the ~20 lines of inversion below, duplicated from `UBRButton::ApplyInvertedState`.
  * That is the smaller bug surface. If a third row type appears, hoist the inversion into a shared
  * `UBRRowBase` in ONE packet rather than growing a third copy.
  *

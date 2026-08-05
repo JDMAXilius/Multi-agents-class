@@ -194,21 +194,21 @@ void UBRScreen_Settings::RebuildRows()
 	for (UBRSettingsDataObject* Setting : Rows)
 	{
 		// The TYPE picks the CLASS, because the per-type body lives in the asset. Resolved from
-		// the setting rather than from a built row -- see UBRSettingsRow::ResolveRowTypeFor.
+		// the setting rather than from a built row -- see UBRSettingsRow::ResolveButtonTypeFor.
 		// Every branch falls back to the default row, so an unset entry degrades to a plain
 		// label-and-value row rather than to a gap in the list.
 		UClass* RowClass = DefaultRowClass;
-		switch (UBRSettingsRow::ResolveRowTypeFor(Setting))
+		switch (UBRSettingsRow::ResolveButtonTypeFor(Setting))
 		{
-		case EBRMenuRowType::Slider:
+		case EBRButtonType::Slider:
 			RowClass = ResolveRowClass(UISettings.SettingsRowSliderClass, DefaultRowClass);
 			break;
 
-		case EBRMenuRowType::Checkbox:
+		case EBRButtonType::Checkbox:
 			RowClass = ResolveRowClass(UISettings.SettingsRowCheckboxClass, DefaultRowClass);
 			break;
 
-		case EBRMenuRowType::DropDown:
+		case EBRButtonType::DropDown:
 			RowClass = ResolveRowClass(UISettings.SettingsRowDropDownClass, DefaultRowClass);
 			break;
 

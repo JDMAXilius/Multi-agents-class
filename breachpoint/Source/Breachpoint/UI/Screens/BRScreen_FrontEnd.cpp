@@ -10,7 +10,7 @@
 #include "UI/Components/BRComponentTokens.h"
 #include "UI/Components/BRFeatureCard.h"
 #include "UI/Components/BRLeftRail.h"
-#include "UI/Components/BRMenuRow.h"
+#include "UI/Components/BRButton.h"
 #include "UI/Components/BRNavBar.h"
 #include "UI/Components/BRRosterPanel.h"
 #include "UI/ViewModels/BRVM_FrontEnd.h"
@@ -355,7 +355,7 @@ void UBRScreen_FrontEnd::RebuildMenuRows()
 
 		// Pooled: a tab change re-uses the widgets it released a line ago instead of allocating a
 		// fresh list every time the player taps a bumper.
-		UBRMenuRow* RowWidget = MenuRowPool.GetOrCreateInstance<UBRMenuRow>(ResolvedMenuRowClass);
+		UBRButton* RowWidget = MenuRowPool.GetOrCreateInstance<UBRButton>(ResolvedMenuRowClass);
 		if (!RowWidget)
 		{
 			break;
@@ -383,7 +383,7 @@ void UBRScreen_FrontEnd::RebuildMenuRows()
 			// computed height and what is actually in it cannot disagree.
 			const float BottomPadding = (Index == Rows.Num() - 1)
 				? 0.0f
-				: (UBRMenuRow::RowPitch - UBRMenuRow::RowHeight);
+				: (UBRButton::RowPitch - UBRButton::RowHeight);
 			BoxSlot->SetPadding(FMargin(0.0f, 0.0f, 0.0f, BottomPadding));
 			BoxSlot->SetHorizontalAlignment(HAlign_Fill);
 		}
@@ -395,7 +395,7 @@ void UBRScreen_FrontEnd::RebuildMenuRows()
 
 void UBRScreen_FrontEnd::ReleaseMenuRows()
 {
-	for (const TObjectPtr<UBRMenuRow>& RowWidget : MenuRowWidgets)
+	for (const TObjectPtr<UBRButton>& RowWidget : MenuRowWidgets)
 	{
 		if (RowWidget)
 		{
