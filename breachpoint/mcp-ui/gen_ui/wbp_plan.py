@@ -2614,7 +2614,7 @@ PLAN = {
         [
             {"name": "Icon", "class": IMAGE, "parent": "TextFrame",
              "slot": box_slot(fill=1.0, h="HAlign_Center", v="VAlign_Center"),
-             "brush": brush(BTN_ART + "T_UI_Glyph_Revert_40", 32, 32), "bind": True},
+             "brush": brush(BTN_ART + "Revert", 32, 32), "bind": True},
         ],
         "Menu Row Type=Icon Only. 40x40 from ApplyRowType. Glyph is the REFERENCE art: "
                  "Figma 12:979 'Revert' at 32x32 inside 12:977. The _40 tier is the source "
@@ -2683,7 +2683,7 @@ PLAN = {
              "slot": box_slot(padding=margin(bottom=2.0))},
             {"name": "Icon", "class": IMAGE, "parent": "GametypeRow",
              "slot": box_slot(padding=margin(right=4.0), v="VAlign_Center"),
-             "brush": brush(GAMETYPE + "T_UI_Icon_GametypeV2_Slayer", 20, 20), "bind": True},
+             "brush": brush(BTN_ART + "Slayer", 20, 20), "bind": True},
             {"name": "Label", "class": TEXT, "parent": "GametypeRow",
              "slot": box_slot(fill=1.0, v="VAlign_Center"), "font": "Label/Button",
              "properties": {"text": FIGMA_TEXT["Label"]}, "bind": True},
@@ -2721,7 +2721,7 @@ PLAN = {
         tree=with_text(menu_row_shell()) + [
             {"name": "Icon", "class": IMAGE, "parent": "TextFrame",
              "slot": box_slot(padding=margin(left=10.0), v="VAlign_Center"),
-             "brush": brush(GAMETYPE + "T_UI_Icon_GametypeV2_Slayer", 120, 120), "bind": True},
+             "brush": brush(BTN_ART + "Image", 120, 120), "bind": True},
             {"name": "Label", "class": TEXT, "parent": "TextFrame",
              "slot": box_slot(fill=1.0, padding=margin(left=10.0), v="VAlign_Center"),
              "font": "Label/Button", "properties": {"text": FIGMA_TEXT["Label"]},
