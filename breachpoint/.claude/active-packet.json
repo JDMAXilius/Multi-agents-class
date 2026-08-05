@@ -1,9 +1,9 @@
 {
-  "ticket": "TICKET_BP80_BUTTON_MODULE_ASSETS",
+  "ticket": "TICKET_BP81_UI_GLYPH_BACKFILL",
   "owner_path": [
-    "Content/UI/",
-    "Config/DefaultGame.ini",
+    "Export/UI/Glyphs/",
+    "Content/UI/Icons/Glyphs/",
     "docs/ui/receipts/",
-    "docs/tickets/TICKET_BP80_BUTTON_MODULE_ASSETS.md"
+    "docs/tickets/TICKET_BP81_UI_GLYPH_BACKFILL.md"
   ]
 }
