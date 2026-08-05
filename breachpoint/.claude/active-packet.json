@@ -1,11 +1,7 @@
 {
-  "ticket": "TICKET_BP81_UI_GLYPH_BACKFILL",
+  "ticket": "TICKET_BP82_UI_SOURCE_RUNG1_UNBLOCK",
   "owner_path": [
-    "Export/UI/Glyphs/",
-    "Content/UI/Icons/Glyphs/",
-    "Content/UI/Components/Buttons/",
-    "mcp-ui/gen_ui/wbp_plan.py",
-    "docs/ui/receipts/",
-    "docs/tickets/TICKET_BP81_UI_GLYPH_BACKFILL.md"
+    "Source/Breachpoint/UI/",
+    "docs/tickets/TICKET_BP82_UI_SOURCE_RUNG1_UNBLOCK.md"
   ]
 }

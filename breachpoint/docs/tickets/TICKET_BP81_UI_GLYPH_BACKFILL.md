@@ -1,9 +1,10 @@
 # TICKET — BP81: back-fill the 43 missing UI glyphs from Figma
 
-> STATUS: in-progress — mac terminal 5 Aug 2026 (1c94178). **41 exported, 96 imported, 55 → 96
-> assets.** Done via the Figma MCP; the token never landed and was not needed. Outstanding: the
-> two 1-bit-alpha nodes (`Add_40`, `Playlist_24`) need re-authoring in Figma, and no glyph has
-> been looked at inside a widget yet.
+> STATUS: blocked — windows terminal 5 Aug 2026 (cead6d9). **41 exported, 96 imported, 55 → 96
+> assets.** Done via the Figma MCP; the token never landed and was not needed. Claim RELEASED so
+> BP82 can take the rung-1 unblock recorded in this ticket's contract_gap. Outstanding: the two
+> 1-bit-alpha nodes (`Add_40`, `Playlist_24`) need re-authoring in Figma, and no glyph has been
+> looked at inside a widget yet — which needs a green compile, i.e. BP82 first.
 
 Cut 5 Aug 2026 from a founder request against Figma **Menu Row** (`12:724`): *"make sure we have
 all the image assets of the buttons and export the ones we still don't have."* The audit that
