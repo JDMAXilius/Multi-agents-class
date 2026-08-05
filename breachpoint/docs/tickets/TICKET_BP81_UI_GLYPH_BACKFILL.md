@@ -144,3 +144,32 @@ families. Done on the two Revert exports only (`stroke-width="2"`, `stroke-linec
 both `viewBox` tiers, matching committed `Back`/`Swap`). The other 39 were not individually
 spec-checked — they passed `clean_svg.py`'s structural checks and preflight's alpha/ink checks,
 which is not the same thing. Anyone relying on a specific new glyph should look at it first.
+
+---
+
+**contract_gap — rung 1 is red on a file this packet does not own, so BP81 cannot self-verify.**
+
+`Tools/run-ubt.ps1` fails in `Module.Breachpoint.3.cpp` with a warnings-as-errors shadow:
+
+```
+BRButton.cpp(487,40): Error C4458 : declaration of 'bSelected' hides class member
+void UBRButton::ApplySelectedMark(bool bSelected)
+CommonButtonBase.h(934,8): note: see declaration of 'UCommonButtonBase::bSelected'
+```
+
+The parameter shadows `UCommonButtonBase::bSelected`, which BP81's own work did not introduce —
+`Source/Breachpoint/UI/Components/BRButton.cpp` was last touched by `2078499`
+("BRHighlightButton merges too — button source is now ONE file pair"), i.e. it arrived with the
+button-module merge, not with the glyph back-fill. The fix is a one-token rename of the parameter
+to `bInSelected` at `BRButton.cpp:487` (+ its use at :494) and the declaration at `BRButton.h:338`.
+It is behaviour-neutral: the parameter is read once, to pick `TypeCheckMark`'s visibility.
+
+**Not applied.** `Source/Breachpoint/UI/` is outside this packet's `owner_path`, and
+`.claude/hooks/guard_laws.py` blocked the edit at tool-call time. Per law 5 nothing was edited to
+unblock, and per law 6 no rung is claimed for BP81 — the compile never completed, so the 96
+imported glyphs remain verified only as **imported assets with correct settings**, exactly as this
+ticket's rung-honesty note already says. Nothing here is newly broken; the ladder is simply
+unavailable to this packet.
+
+Whoever owns `Source/Breachpoint/UI/Components/` should take the rename. It is a single ticket step,
+not a ruling.
