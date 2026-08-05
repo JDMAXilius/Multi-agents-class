@@ -377,3 +377,49 @@ the content browser via `SlateInspectorToolset`, or accept the founder's on-scre
 
 **Incidental visual confirmation:** the content browser capture shows `Content/UI/` containing
 both `OldWidgets` and `Reference` — steps 2 and 3 proven by eye as well as by `find_assets`.
+
+**5 Aug 2026 — PIE RAN. It found a real defect in our own UI boot, and it is NOT this ticket's to fix.**
+
+`StartPIE` succeeded (`IsPIERunning` true, 56 actors, `BP_BRcharacter0` possessed) once the
+Blueprint-compile modal was answered with the choice that continues rather than the one that
+cancels. That modal is unavoidable while the seven sourced widgets stay broken — neither
+`bAutoCompileBlueprintsOnLaunch` nor `bPromoteOutputLogWarningsDuringPIE` suppresses it, so
+**there is no unattended PIE in this project today**. Another input to the ruling that pack needs.
+
+**Finding — `high`, and it blocks the UI at runtime:**
+
+```
+Ensure condition failed: SubsystemClass->IsChildOf(BaseType)
+  SubsystemCollection.cpp:340
+ClassType (/Script/Breachpoint.BRUIManagerSubsystem)
+  must be a subclass of BaseType (/Script/Engine.LocalPlayerSubsystem).
+[Callstack] UBRUIManagerSubsystem* FSubsystemCollectionBase::InitializeDependency<UBRUIManagerSubsystem>()
+```
+
+Root cause, read off the source rather than guessed:
+
+- `BRUIManagerSubsystem.h:48` — `UBRUIManagerSubsystem : public UGameInstanceSubsystem`
+- `BRHUDDirector.h:55` — `UBRHUDDirector : public ULocalPlayerSubsystem`
+- `BRHUDDirector.cpp:24` — `Collection.InitializeDependency<UBRUIManagerSubsystem>()`
+
+`InitializeDependency` resolves **within the calling collection**, whose BaseType here is
+`ULocalPlayerSubsystem`. A **GameInstance** subsystem can never satisfy it. The comment above
+that line explains the ordering it wants — the UI manager owns the ViewModels the director
+feeds — but a cross-collection dependency is not a thing UE can express this way, so the
+ordering guarantee the comment claims **does not exist at runtime**; the ensure fires and the
+dependency is not initialised. The two other call sites already do it correctly and lazily:
+`BRActivatableWidget.cpp:52` and `BRUIManagerSubsystem.cpp:35` both go through
+`GameInstance->GetSubsystem<UBRUIManagerSubsystem>()`.
+
+**NOT FIXED HERE, deliberately.** `Source/` is not in this ticket's owner_path (law 5), and this
+is UI-boot code, not button assets. It needs its own packet, and it needs a `ui-builder` to
+decide whether the ordering the comment wants must be re-established some other way rather than
+just deleting the line.
+
+**Consequence for the hover/press/click box: still unchecked, and now for a second reason.** The
+subsystem that hosts the screens is the one failing to initialise as written. Exercising a
+checkbox through the options modal was not attempted past this point — the founder called it
+("no need to test") and the defect above is the more useful result than a click would have been.
+
+**Incidental confirmation:** the PIE capture's content browser shows `Assets/Sides/` holding
+exactly **8 items** — the 4 live and the 4 archive-only textures step 6 kept, and nothing else.
