@@ -45,109 +45,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import wbp_plan  # noqa: E402
-
-REPO = Path(__file__).resolve().parents[2]
-URL = "http://127.0.0.1:8000/mcp"
-
-UMG = "UMGToolSet.UMGToolSet"
-OBJ = "editor_toolset.toolsets.object.ObjectTools"
-ASSET = "editor_toolset.toolsets.asset.AssetTools"
-
-EXIT_PASS, EXIT_FAIL, EXIT_BLOCKED = 0, 1, 3
-
-
-# --------------------------------------------------------------------------- transport
-class MCP:
-    def __init__(self):
-        self.sid = None
-        self.n = 0
-
-    def _post(self, payload):
-        req = urllib.request.Request(URL, data=json.dumps(payload).encode(), method="POST")
-        req.add_header("Content-Type", "application/json")
-        req.add_header("Accept", "application/json, text/event-stream")
-        if self.sid:
-            req.add_header("Mcp-Session-Id", self.sid)
-        with urllib.request.urlopen(req, timeout=120) as r:
-            self.sid = r.headers.get("Mcp-Session-Id") or self.sid
-            body = r.read().decode()
-        if body.lstrip().startswith(("event:", "data:")):
-            body = "\n".join(l[5:].strip() for l in body.splitlines() if l.startswith("data:"))
-        return json.loads(body) if body.strip() else None
-
-    def init(self):
-        self._post({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {
-            "protocolVersion": "2025-06-18", "capabilities": {},
-            "clientInfo": {"name": "breachpoint-gen-ui", "version": "1"}}})
-        try:
-            self._post({"jsonrpc": "2.0", "method": "notifications/initialized"})
-        except Exception:
-            pass
-
-    def call(self, toolset, tool, args):
-        self.n += 1
-        r = self._post({"jsonrpc": "2.0", "id": 100 + self.n, "method": "tools/call",
-                        "params": {"name": "call_tool", "arguments": {
-                            "toolset_name": toolset, "tool_name": tool, "arguments": args}}})
-        res = r.get("result", {}) if r else {}
-        txt = "\n".join(c["text"] for c in res.get("content", []) if c.get("type") == "text")
-        if "error" in (r or {}):
-            return None, "**ERROR** " + json.dumps(r["error"])
-        if res.get("isError"):
-            return None, "**FAILED** " + txt
-        try:
-            return json.loads(txt).get("returnValue"), txt
-        except Exception:
-            return txt, txt
-
-
-# --------------------------------------------------------------------------- receipt
-class Receipt:
-    def __init__(self, path: Path, argv: str, plan_digest: str):
-        path.parent.mkdir(parents=True, exist_ok=True)
-        # encoding="utf-8" is NOT optional and NOT cosmetic. `Path.open` defaults to the
-        # LOCALE encoding, which on a stock Windows box is cp1252 — and this receipt's very
-        # first heading contains an em dash, with a `→` on every asset line after it. The run
-        # therefore died with UnicodeEncodeError partway through the header on any machine
-        # that had not set PYTHONUTF8, AFTER the plan had validated and the editor connection
-        # was live. Latent because it depends on the host locale, not on anything in the plan.
-        self.f = path.open("w", buffering=1, encoding="utf-8")   # line buffered, per R37
-        self.path = path
-        self.findings: list[tuple[str, str]] = []
-        self.w(f"# RECEIPT — WBP generator · {datetime.now(timezone.utc).isoformat()}")
-        self.w("")
-        self.w(f"**Command:** `{argv}`")
-        self.w(f"**Plan:** `mcp-ui/gen_ui/wbp_plan.py` sha256 `{plan_digest}`")
-        self.w("**Transport:** raw HTTP `http://127.0.0.1:8000/mcp` (the MCP server runs inside "
-               "the editor; under `bEnableToolSearch=true` the toolsets are reached via "
-               "`call_tool` and never appear by name in a session tool list).")
-        self.w("")
-
-    def w(self, s=""):
-        print(s)
-        self.f.write(s + "\n")
-
-    def call(self, label, ok, detail):
-        self.w(f"- {'PASS' if ok else '**FAILED**'} `{label}` — {detail}")
-        if not ok:
-            self.findings.append(("high", f"{label}: {detail}"))
-
-    def close(self, verdict, rung_note):
-        self.w("")
-        self.w("## Findings")
-        if self.findings:
-            for sev, f in self.findings:
-                self.w(f"- **{sev}** — {f}")
-        else:
-            self.w("- none")
-        self.w("")
-        self.w("## Verdict")
-        self.w(verdict)
-        self.w("")
-        self.w("## Rung honesty — what this PASS does not mean")
-        self.w(rung_note)
-        self.f.close()
-
+from mcp import (REPO, URL, UMG, OBJ, ASSET,          # noqa: E402  shared transport
+                 EXIT_PASS, EXIT_FAIL, EXIT_BLOCKED,
+                 MCP, Receipt, write_verified, close)
 
 # --------------------------------------------------------------------------- build
 def full_path(folder: str, asset: str) -> str:
@@ -311,48 +211,6 @@ def build_one(m: MCP, rc: Receipt, asset: str, spec: dict) -> bool:
             else f"missing {sorted(want_names - got_names)}, extra {sorted(got_names - want_names)}")
     return got_names == want_names
 
-
-def write_verified(m: MCP, rc: Receipt, label: str, instance, values: dict) -> bool:
-    """set_properties, then get_properties, then COMPARE. An unverified write is not a write.
-
-    This is the one path every property write in this file takes — slot geometry, fonts and
-    brushes alike. It is a function rather than three copies because of HOW this server
-    fails: `set_properties` can report a refusal as TEXT in a successful result rather than
-    as an error, so the only reliable evidence a property landed is reading it back. That
-    read-back is what caught the `save_assets` parameter bug and a silently dropped font
-    array; a call site that skips it is a call site that reports a false PASS.
-
-    Known refusal worth naming: `set_properties` rejects a write that changes an ARRAY's size
-    and its elements in one call, and drops the whole property while reporting success. No
-    payload this file sends contains an array (see `wbp_plan.font_properties`); one that ever
-    does must grow the array one entry per call.
-    """
-    m.call(OBJ, "set_properties", {"instance": instance, "values": json.dumps(values)})
-    got, _ = m.call(OBJ, "get_properties",
-                    {"instance": instance, "properties": list(values)})
-    try:
-        readback = json.loads(got) if isinstance(got, str) else got
-    except Exception:
-        readback = None
-    ok = readback is not None and all(_close(readback.get(k), v) for k, v in values.items())
-    rc.call(label, ok, f"wrote {json.dumps(values)}; read {json.dumps(readback)[:180]}")
-    return ok
-
-
-def _close(a, b):
-    # An object reference. UE reads one back in any of three shapes — `{"refPath": ...}`, a
-    # bare `/Game/...` path, or the export form `/Script/Engine.Font'/Game/....F_X'` — so the
-    # comparison is "does the asset path appear in what came back". Looser than the rest of
-    # this function on purpose: the alternative is a correct font write reported as a failure
-    # because the server spelled the same asset a different way.
-    if isinstance(b, dict) and set(b) == {"refPath"}:
-        got = a.get("refPath") if isinstance(a, dict) else a
-        return isinstance(got, str) and b["refPath"].split(".")[0] in got
-    if isinstance(b, dict):
-        return isinstance(a, dict) and all(_close(a.get(k), v) for k, v in b.items())
-    if isinstance(b, float):
-        return isinstance(a, (int, float)) and abs(a - b) < 1e-4
-    return a == b
 
 
 def verify_one(m: MCP, rc: Receipt, asset: str, spec: dict) -> bool:

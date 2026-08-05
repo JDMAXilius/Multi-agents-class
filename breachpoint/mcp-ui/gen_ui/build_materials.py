@@ -10,8 +10,8 @@ Reads `material_plan.py`, rebuilds each material from scratch, and writes an R37
     --probe     connect, dump every toolset schema into the receipt, build NOTHING.
                 RUN THIS FIRST. See "unverified" below.
 
-Transport is `build_wbp.MCP`, IMPORTED, not copied — one HTTP/SSE quirk, one place to fix.
-The three things `build_wbp.py` learned the expensive way apply here unchanged and are not
+Transport is `mcp.MCP`, IMPORTED, not copied — one HTTP/SSE quirk, one place to fix.
+The three things `mcp.py` records apply here unchanged and are not
 re-derived: delete-before-create (the clobber guard is `FindPackage`, i.e. MEMORY), full
 `/Game/X/Y.Y` ref paths (the short form makes the server silently drop the whole argument),
 camelCase property names with `values` as a JSON *string*. Plus one this file learned:
@@ -57,15 +57,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import material_plan                                   # noqa: E402
-from build_wbp import MCP, Receipt as _WbpReceipt      # noqa: E402  transport, verbatim
+from mcp import (MCP, Receipt as _SharedReceipt,        # noqa: E402  shared transport
+                 ASSET, OBJ, MAT, EXIT_PASS, EXIT_FAIL, EXIT_BLOCKED, write_verified, close)
 
 REPO = Path(__file__).resolve().parents[2]
 
-ASSET = "editor_toolset.toolsets.asset.AssetTools"
-OBJ = "editor_toolset.toolsets.object.ObjectTools"
-MAT = "editor_toolset.toolsets.material.MaterialTools"       # UNVERIFIED toolset path
 
-EXIT_PASS, EXIT_FAIL, EXIT_BLOCKED = 0, 1, 3
 
 # ---------------------------------------------------------------------------------------
 # Every guessed tool name, in ONE table. When --probe says a name is wrong, this is the
@@ -88,8 +85,8 @@ MAT_PROPS = {"domain": "materialDomain", "blend_mode": "blendMode",
              "shading_model": "shadingModel"}
 
 
-class Receipt(_WbpReceipt):
-    """`build_wbp.Receipt` with an honest title.
+class Receipt(_SharedReceipt):
+    """`mcp.Receipt` with an honest title.
 
     Deliberately does NOT call super().__init__: the base hardcodes "WBP generator" into its
     heading, and an R37 receipt that misnames its own generator is exactly the kind of small
@@ -107,7 +104,7 @@ class Receipt(_WbpReceipt):
         self.w("")
         self.w(f"**Command:** `{argv}`")
         self.w(f"**Plan:** `mcp-ui/gen_ui/material_plan.py` sha256 `{plan_digest}`")
-        self.w("**Transport:** `build_wbp.MCP`, imported. Raw HTTP `http://127.0.0.1:8000/mcp`.")
+        self.w("**Transport:** `mcp.MCP`, imported. Raw HTTP `http://127.0.0.1:8000/mcp`.")
         self.w("**Caveat:** every `MaterialTools.*` call in this run is UNVERIFIED — written "
                "against an inferred schema without editor access (R29.2). Every unverified "
                "write is read back; an unverified call that no-ops fails the run.")
@@ -148,20 +145,10 @@ def _readback(m: MCP, instance, wanted: dict) -> tuple[bool, str]:
         back = json.loads(got) if isinstance(got, str) else got
     except Exception:
         back = None
-    ok = isinstance(back, dict) and all(_close(back.get(k), v) for k, v in wanted.items())
+    ok = isinstance(back, dict) and all(close(back.get(k), v) for k, v in wanted.items())
     return ok, f"wrote {json.dumps(wanted)[:140]}; read {json.dumps(back)[:140]}"
 
 
-def _close(a, b):
-    """Float-tolerant compare. Enum reads may come back as a name or an int, so a string
-    property matches if either side contains the other — `MD_UI` vs `EMaterialDomain::MD_UI`
-    is agreement, not drift, and failing it would make every run red for no reason."""
-    if isinstance(b, dict):
-        return isinstance(a, dict) and all(_close(a.get(k), v) for k, v in b.items())
-    if isinstance(b, float):
-        return isinstance(a, (int, float)) and abs(a - b) < 1e-4
-    if isinstance(b, str) and isinstance(a, str):
-        return a == b or b in a or a in b
     return a == b
 
 
