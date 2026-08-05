@@ -37,7 +37,7 @@ glows, nothing rounds, nothing gradients except item rarity.
 
 ---
 
-## 2. `Main Button` → `UBRMenuRow` — the atom (250 × 28)
+## 2. `Main Button` → `UBRButton` — the atom (250 × 28)
 
 The most-used component in the system; 27 variants.
 

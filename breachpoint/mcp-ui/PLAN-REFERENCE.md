@@ -20,7 +20,7 @@ exactly the keys listed here and ignores anything else, silently.
 ```
 
 **`class_defaults` is the escape hatch for anything that lives on the class, not the tree.**
-`RowType` and `Style` are properties of `UBRMenuRow`, so no widget node can carry them. They are
+`RowType` and `Style` are properties of `UBRButton`, so no widget node can carry them. They are
 written after the first compile (the CDO does not exist before that) and the asset is recompiled.
 
 ---
@@ -94,7 +94,7 @@ as a helpful error.
 ### Why `unbound()` exists
 
 `required_bind_widgets` parses **one header sliced to one class**. It cannot see a base class's
-members. So `UBRSettingsRow`, which inherits every bind from `UBRMenuRow`, would fail validation
+members. So `UBRSettingsRow`, which inherits every bind from `UBRButton`, would fail validation
 if its nodes claimed `bind: True`. The widgets are still created by name and the engine still
 resolves them at compile — only the plan's own assertion is dropped.
 

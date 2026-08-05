@@ -84,7 +84,7 @@ edges, and all 563 new design px land on the subject. That is the whole ultrawid
 | 6 | `WBP_FeatureCard` | `UBRFeatureCard` | **B** | 349 × 222 | 4/31 | 2 |
 | 7 | `WBP_CarouselDots` | `UBRCarouselDots` | U | UNMEASURED | 4/31 | 2 |
 | 8 | `WBP_MenuList` | `UBRMenuList` | U | 349 × 148 (4 rows) | 4/31 | 3 |
-| 9 | `WBP_MenuRow` | `UBRMenuRow` | **B** | 250 × 28, pitch 40 | **26/31** | 0 |
+| 9 | `WBP_MenuRow` | `UBRButton` | **B** | 250 × 28, pitch 40 | **26/31** | 0 |
 | 10 | `WBP_DescriptionStrip` | `UBRDescriptionStrip` | U | 349 × 37 | 7/31 | 1 |
 | 11 | `WBP_RecordPanel` | `UBRProgressionButton` † | **B** | 334 × 115 | 3/31 | 2 |
 | 12 | `WBP_RosterPanel` | `UBRRosterPanel` † | U | 349 × 273 | 5/31 | 2 |
@@ -161,7 +161,7 @@ whole UI rather than two.
 
 **The honest cost of the leaf, from the header:** a Slate leaf cannot hold a `WidgetAnimation`.
 Anything that must *animate* a border animates the owning WBP's render opacity or a C++ token
-swap — which is exactly what `UBRMenuRow::ApplyInvertedState` does.
+swap — which is exactly what `UBRButton::ApplyInvertedState` does.
 
 ---
 
@@ -528,12 +528,12 @@ merge.
 | | State | Rung |
 |---|---|---|
 | `UBRHairlineBorder` + `UBRRule` | **complete**, C++, no asset owed | — |
-| `UBRMenuRow` C++ | **complete** | 0 — not compiled this session |
+| `UBRButton` C++ | **complete** | 0 — not compiled this session |
 | `WBP_MenuRow` plan | **written and validating** (`python3 mcp-ui/gen_ui/wbp_plan.py` → `PLAN OK`) | 0 |
 | `WBP_MenuRow` asset | **not built** — needs the editor MCP | — |
 
 **The plan validates the contract, not the asset.** `required_bind_widgets()` parses
-`BRMenuRow.h` and proves all five non-optional binds are created at the right types — a
+`BRButton.h` and proves all five non-optional binds are created at the right types — a
 `BindWidget` desync otherwise fails at *asset load*, where rung 1 stays green and the widget is
 simply empty in PIE. That check has run and passed. **Nothing here has been rendered**, and
 "the plan is valid" is a strictly weaker claim than "the row draws".

@@ -46,7 +46,7 @@ ScalarParameter  Pressed  default 0     VectorParameter  PressedColor
 …feeding **10 `LinearInterpolate` nodes**. Button state is driven by
 `GetDynamicMaterial()->SetScalarParameterValue("Hover", t)` and blended on the GPU.
 
-**Contrast with `UBRMenuRow`.** `ApplyInvertedState` swaps colours on widgets from C++, so hover
+**Contrast with `UBRButton`.** `ApplyInvertedState` swaps colours on widgets from C++, so hover
 is instant and binary — correct, and what COMPONENT-SPECS measures, but it cannot ease. A
 material taking `Hover` as a 0..1 scalar can be eased, because the widget layer only has to move
 a float. That is exactly what `M_UI_MenuRowPlate` now does — see "Animating a material parameter
@@ -146,7 +146,7 @@ only" as editor-authored. The generator builds the tree and the material; a huma
 
 ### The C++ side is already done
 
-`UBRMenuRow` declares `InvertAnim` as `BindWidgetAnimOptional` and `ApplyInvertedState` plays it
+`UBRButton` declares `InvertAnim` as `BindWidgetAnimOptional` and `ApplyInvertedState` plays it
 forward on invert and reverse on release. Nothing needs writing for the animation to take effect —
 it starts working the moment an animation with that exact name exists in the asset.
 

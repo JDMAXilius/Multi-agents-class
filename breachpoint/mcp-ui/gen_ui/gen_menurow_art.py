@@ -56,7 +56,7 @@ def _poly(pts: list[tuple[float, float]]) -> str:
 #   - `Rectangle 154` (110 x 24, a black gradient at 0.8) fading the left third.
 # `wbp_plan.py` writes brushes, never colours (its law 1), so a hatch that needed a runtime
 # tint would render at full white and be wrong in the asset. Baking makes it correct with no
-# C++ hook -- and `UBRMenuRow` declares no hatch bind to drive one with.
+# C++ hook -- and `UBRButton` declares no hatch bind to drive one with.
 #
 # ONE THING IS NOT MEASURED: which way the 45 degrees leans. A Figma <line> reports a square
 # bounding box either way and the direction is in its transform, which get_metadata does not

@@ -258,7 +258,7 @@ def build_one(m: MCP, rc: Receipt, asset: str, spec: dict) -> bool:
     # back null, which `write_verified` correctly reports as a `high` finding rather than
     # letting it pass.
     #
-    # THE SIZE IS SOLVED IN C++ INSTEAD, which is better anyway: `UBRMenuRow::ApplyRowType`
+    # THE SIZE IS SOLVED IN C++ INSTEAD, which is better anyway: `UBRButton::ApplyButtonType`
     # sets the 250 component-board width when `IsDesignTime()` and clears it at runtime, so
     # the preview is the measured box in every mode without a per-asset editor setting that
     # no script can reproduce.
@@ -267,7 +267,7 @@ def build_one(m: MCP, rc: Receipt, asset: str, spec: dict) -> bool:
     #
     # `RowType` and `Style` live on the parent C++ class, so there is no tree node to hang
     # them off. Without this they stay at their C++ defaults and the asset is wrong in a way
-    # nothing catches: every Menu Row Type would report `Default` and `ApplyRowType` would
+    # nothing catches: every Menu Row Type would report `Default` and `ApplyButtonType` would
     # give Icon Only / Map Voting / Image a 28px height instead of 40 / 60 / 120.
     #
     # AFTER compile, because the CDO does not exist until the class is generated.

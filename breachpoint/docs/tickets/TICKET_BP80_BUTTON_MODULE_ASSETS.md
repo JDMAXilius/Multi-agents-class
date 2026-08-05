@@ -1,8 +1,18 @@
 # TICKET — BP80: Archive 27, delete 5, build 9 — the button module's editor half
 
-> STATUS: open — cut 4 Aug 2026. **editor-live, and gated by a compile.** The files-only half
-> already landed (`BRButton.h/.cpp`, the `button()` factory, the six ini repoints). This ticket
-> is everything that needs redirectors, an editor, or eyes on a render.
+> STATUS: open — cut 4 Aug 2026, **files-only half COMPLETE and handed off.** editor-live, and
+> gated by a compile. This ticket is everything left that needs redirectors, an editor, or eyes
+> on a render. Nothing else can be done from a cloud container.
+>
+> **What landed before this ticket starts** (all pushed to main, all unverified by a compiler):
+> | Commit | What |
+> |---|---|
+> | `7bef7fa` | `BRButton.h/.cpp` — `BRMenuRow` + `BRSettingsRow` + `BRButtonStyles` merged; 24 consumers repointed; `button()` factory; 5 plan entries deleted; 6 ini repoints |
+> | `2078499` | `BRHighlightButton` merged too — button source is **one file pair**, 8 files → 2 |
+> | `b0e50aa` | `build_wbp.py --parent / --filter / --list` — rebuild ONE family, exit 3 on no match |
+> | `b79d6a8` | every button declares the same way (`shell + body`); `insert_after` replaced the `[:4]` z-order slice; 8/9 trees proven byte-identical; 4 dead helpers removed |
+> | `7b4d44b` | **the node reduction was RETRACTED** — every chrome node is load-bearing |
+> | *(this)* | ~50 stale doc/code pointers to the deleted headers repointed |
 
 Founder directive, 4 Aug 2026: one modular button class with the type as data; the sourced
 third-party pack and our 4 Aug button WBPs are **archived, not deleted**; everything else in the
@@ -126,4 +136,18 @@ last, after a render proves the replacement.**
 
 ## Log
 
-(append findings here, dated, newest last)
+**4 Aug 2026 — files-only half complete, handed to the terminal.**
+
+Everything achievable without a compiler, an editor or LFS is done and pushed. The five commits
+are in the STATUS block. Three things the terminal should know before starting:
+
+1. **Nothing has been compiled.** Two merges (six files, then two more) and 24 consumer repoints
+   were made blind. `PLAN OK` proves the plan and the header agree on every `BindWidget` name
+   and type; it proves nothing about whether the module builds. Step 1 is the real gate.
+2. **`WBP_ButtonDefault` will look different.** It used `with_plate_material(MENU_ROW_TREE)` and
+   never `with_text()`, so alone among nine it shipped UMG's `"Text Block"` placeholder instead
+   of the reference's `"BUTTON"` / `"SELECTION"`. The refactor made it uniform. That is the one
+   asset whose design-time appearance changes — check it in step 5's render, do not assume it is
+   a regression.
+3. **Do not reduce the node counts.** The 154 → 66 figure in the ledger's v1/v2 was retracted on
+   evidence; §4 there carries the per-node reasons. The nine build at **101 nodes**.

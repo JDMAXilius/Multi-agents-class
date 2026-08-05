@@ -224,7 +224,7 @@ You are ui-builder (`.claude/agents/ui-builder.md`). Packet: <<ticket file, e.g.
 the BP10 ticket (board since cleared)>>. owner_path: `Source/Breachpoint/UI/`.
 Claim file `.claude/active-packet.json` must name this ticket before your first write.
 
-GOAL: author the C++ class `<<UBRMenuRow>>` — header + cpp only, no asset, no editor.
+GOAL: author the C++ class `<<UBRButton>>` — header + cpp only, no asset, no editor.
 
 RETRIEVAL SET (read these and nothing else; CREW_PLAYBOOK §14):
 - `docs/ui/COMPONENT-SPECS.md` §<<2>> — the measured geometry and the state table for this

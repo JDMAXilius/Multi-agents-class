@@ -90,7 +90,7 @@ no implementation, or the implementation has no spec.
 | Component | Figma name | UE class | Built? |
 |---|---|---|---|
 | Nav tab bar | `Navigation Bar` | `UBRNavBar` | ☐ |
-| Menu list row | `Text Button` | `UBRMenuRow` | ☐ |
+| Menu list row | `Text Button` | `UBRButton` | ☐ |
 | Feature card | `News Button` | `UBRFeatureCard` | ☐ |
 | Description strip | `Decription Frame` | `UBRDescriptionStrip` | ☐ |
 | Roster panel | `Party List` | `UBRRosterPanel` | ☐ |

@@ -25,13 +25,13 @@ keeps snapping, which is the behaviour shipped today.
   `ObjectTools.get_properties` on
   `/Game/UI/Components/Buttons/WBP_ButtonDefault.WBP_ButtonDefault:WidgetTree.TextFrameFill`
 - `./Tools/run-ubt.sh BreachpointEditor` exits with `BreachpointEditor` PASS (the handoff in
-  `UBRMenuRow::ApplyPlateMaterialState` must be compiled in, or C++ will fight the animation)
+  `UBRButton::ApplyPlateMaterialState` must be compiled in, or C++ will fight the animation)
 - owner_path: `Content/UI/Components/Buttons/` — one asset, `WBP_ButtonDefault.uasset`
 
 ## Steps (in order)
 
 1. **Open `WBP_ButtonDefault`.** Animations panel → **+ Animation** → rename to exactly
-   **`InvertAnim`**. The name is the contract: `UBRMenuRow` binds it as `BindWidgetAnimOptional`
+   **`InvertAnim`**. The name is the contract: `UBRButton` binds it as `BindWidgetAnimOptional`
    and `BindWidgetAnim` resolves by name. `Invert_Anim`, `InvertAnimation` or any other spelling
    binds nothing, fails silently, and leaves the plate snapping with no error anywhere.
 2. **Set the animation's display rate to 30 fps.** `MOTION-INTERACTION.md` §1: 30 ms per frame,

@@ -23,7 +23,7 @@ the win is available incrementally.
 | Folders | 8 (`UI/`, `Components/`, `Screens/`, `HUD/`, `ViewModels/`, `Styles/`, `Settings/`, `Loading/`) |
 
 The important prior fact: **the class-level minimization already happened.** The inventory audit
-cut 9 of 17 planned menu classes; `UBRMenuRow` serves ten asset variants from one class;
+cut 9 of 17 planned menu classes; `UBRButton` serves ten asset variants from one class;
 `UBRFeatureCard` serves two. The remaining fat is not classes — it is **files, includes, and
 split token sources.** A from-scratch pass that "merges classes" would be re-fighting a won war.
 
@@ -93,7 +93,7 @@ Source/Breachpoint/UI/
 │                                    that paints instead of shipping textures
 │
 │  ── components (5 seams) ──────────────────────────────────────────────
-├── Components/BRMenuRow.h/.cpp      UBRMenuRow + UBRSettingsRow (the subclass belongs with
+├── Components/BRButton.h/.cpp      UBRButton + UBRSettingsRow (the subclass belongs with
 │                                    its contract) — ten button assets, one seam
 ├── Components/BRNavBar.h/.cpp       NavTab + NavBar + ButtonPrompt — the chrome strip is
 │                                    one data contract (bumpers host prompts)

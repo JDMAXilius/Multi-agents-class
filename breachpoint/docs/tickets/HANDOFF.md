@@ -1,5 +1,11 @@
 # HANDOFF — session of 4 August 2026
 
+
+> **NAMES CHANGED 4 Aug 2026, after this document was written.** `UBRMenuRow` is now
+> `UBRButton`, `EBRMenuRowType` is `EBRButtonType`, and `BRMenuRow.h` / `BRSettingsRow.h` /
+> `BRButtonStyles.h` / `BRHighlightButton.h` are one file: `Components/BRButton.h`. The old
+> names are left below **deliberately** — this is a dated record and rewriting its findings
+> would make it a different document. See `BUTTON-MODULE-LEDGER.md`.
 Read this first. The previous handoff described the 31 Jul → 1 Aug world; almost everything it
 routed you to no longer exists, so it has been replaced rather than amended.
 

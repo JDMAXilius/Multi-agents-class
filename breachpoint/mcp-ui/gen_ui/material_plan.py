@@ -244,7 +244,7 @@ PLAN = {
     # =======================================================================
     # M_UI_MenuRowPlate — the Menu Row's hover plate, as a material instead of a tint.
     #
-    # WHAT IT REPLACES. `UBRMenuRow::ApplyInvertedState` sets `TextFrameFill`'s colour from a
+    # WHAT IT REPLACES. `UBRButton::ApplyInvertedState` sets `TextFrameFill`'s colour from a
     # token: `None` (transparent) at idle, `SurfaceInverted` (white) on hover. That is a STEP
     # function — two states, so hover SNAPS. Correct, and exactly what COMPONENT-SPECS Sec 2
     # measures, but it cannot ease.
@@ -264,7 +264,7 @@ PLAN = {
     #
     # HOVER AND PRESSED FOLD INTO ONE STATE, measured rather than lazy. COMPONENT-SPECS Sec 2:
     # "Pressed is the same plate -- the flip already reads as a press; dimming it a second time
-    # just makes the row look broken." `BRButtonStyles.cpp` agrees: NormalHovered and
+    # just makes the row look broken." `BRButton.cpp` (Sec 1) agrees: NormalHovered and
     # NormalPressed are both Fill(SelfWhite). Add-then-clamp IS max() for inputs in 0..1. They
     # stay SEPARATE PARAMETERS so a future press treatment is an instance tweak, not a rebuild.
     # =======================================================================
@@ -277,10 +277,10 @@ PLAN = {
                  "colour is the widget's, via the Color parameter and the brush tint.",
 
         "cpp_constants": {
-            "Hover": ("Source/Breachpoint/UI/Components/BRMenuRow.cpp",
-                      "UBRMenuRow::PlateHoverParameterName"),
-            "Pressed": ("Source/Breachpoint/UI/Components/BRMenuRow.cpp",
-                        "UBRMenuRow::PlatePressedParameterName"),
+            "Hover": ("Source/Breachpoint/UI/Components/BRButton.cpp",
+                      "UBRButton::PlateHoverParameterName"),
+            "Pressed": ("Source/Breachpoint/UI/Components/BRButton.cpp",
+                        "UBRButton::PlatePressedParameterName"),
         },
 
         "params": {

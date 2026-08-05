@@ -329,7 +329,7 @@ pipeline step 1 and 343's own stated order ("design system first").
 | # | Class | Geometry (measured) | Screens unblocked | Note |
 |---|---|---|---|---|
 | 1 | **`SBRHairlineBorder`** (Slate, C++ only) | 4 vector lines, opacity 1 / 0.3 / 0.3 / 0.3, weights 0.5 / 1 / 2 px | **all 73** | The atom under the atoms. `COMPONENT-SPECS.md` §0 counts **404× 1px, 323× 0.5px, 177× 2px** strokes. Building this once instead of drawing four lines per WBP is the single biggest asset-count saving available |
-| 2 | `UBRMenuRow` | 250×28, text frame 246×24, gap 10, pad L/R 10 | ~60 | 27 variants; 10-value Type axis (Default/Disabled/DropDown/DigDown/IconOnly/Slider/Checkbox/Radio/MapVoting/Image). **Hover is an inversion, not a highlight** |
+| 2 | `UBRButton` | 250×28, text frame 246×24, gap 10, pad L/R 10 | ~60 | 27 variants; 10-value Type axis (Default/Disabled/DropDown/DigDown/IconOnly/Slider/Checkbox/Radio/MapVoting/Image). **Hover is an inversion, not a highlight** |
 | 3 | `UBRButtonPrompt` + prompt bar | 62×20 at (60,685); bar width tracks count: 58/62 · 133/146 · 253 | **all 73** | Auto-layout hug. Driven by the CommonUI input action from P1.6 |
 | 4 | `UBRProfileBar` | 1280×50 at y=670, `#000000@0.5` + BACKGROUND_BLUR | **all 73** | Screen invariant. Always reserved |
 | 5 | `UBRNavBar` + `UBRNavTab` | bar 666×30 at (33,45); tab 138×26, pitch 150, x = 39/189/339/489; bumper glyphs 27×15 at x=27/639 | ~40 | Active border **3px OUTSIDE**; inactive whole-component opacity 0.6 |

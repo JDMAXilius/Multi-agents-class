@@ -187,7 +187,7 @@ carry-over.
 
 | Component set | Variant axes | Count | Breachpoint UE class |
 |---|---|---|---|
-| `Main Button` | Status × Alignment × Type | **27** | `UBRMenuRow` + subtypes |
+| `Main Button` | Status × Alignment × Type | **27** | `UBRButton` + subtypes |
 | — Status | Idle · Hover · Active · Active Hover · Idle Winning · Hover Winning | | |
 | — Alignment | Left · Center | | |
 | — Type | Default · Disabled · Drop Down · Dig Down · Icon Only · Slider · Checkbox · Radio · Map Voting · Image | | |

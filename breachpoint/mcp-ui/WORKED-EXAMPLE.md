@@ -11,8 +11,8 @@ the parts that went wrong; the failures are the useful half.
 Types: Default, Disabled, Drop Down, Dig Down, Icon Only, Slider, Checkbox, Radio, Map Voting,
 Image.
 
-The C++ class already existed and already modelled it: `UBRMenuRow` collapses the 27 onto three
-axes, where Type is `EBRMenuRowType`, Status is CommonUI's own button state, and Alignment is
+The C++ class already existed and already modelled it: `UBRButton` collapses the 27 onto three
+axes, where Type is `EBRButtonType`, Status is CommonUI's own button state, and Alignment is
 `EBRMenuRowAlignment`. **The gap was the assets, not the design.**
 
 ---
@@ -46,7 +46,7 @@ the 6×6 disclosure triangle, the Dig Down chevrons, the slider handle, the slid
 
 `gen_menurow_art.py` authors each as SVG and rasterises through `svg_pillow.py`. The hatch bakes
 two things into alpha — the `Highlight` frame's own 0.5 opacity and the `Rectangle 154` gradient
-— because the generator writes brushes and never colours, and `UBRMenuRow` has no hatch bind to
+— because the generator writes brushes and never colours, and `UBRButton` has no hatch bind to
 drive a tint from.
 
 The Dig Down arrows were built from **metadata alone**: `get_screenshot` on `12:972` returned a

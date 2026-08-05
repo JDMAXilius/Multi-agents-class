@@ -52,7 +52,7 @@
         }
       }
     },
-    "UBRMenuRow": {
+    "UBRButton": {
       "_node": "0:1184 'Text Button 1' (and siblings at pitch 40)",
       "width_in_rail": 311, "width_standalone": 349, "height": 28, "pitch": 40,
       "_note": "311 inside the rail's 16px inset; 349 standalone. Gap between rows is 12."

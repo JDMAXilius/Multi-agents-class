@@ -60,7 +60,7 @@ and files are not the same number, deliberately.**
 | `Screens/BRScreen_FrontEnd.h` | `UBRScreen_FrontEnd` | The screen. Owns the tab spine, pools menu rows, routes clicks out as route names. Reads one ViewModel and nothing else |
 | `Components/BRNavBar.h` | `UBRNavTab`, `UBRNavBar` | Tab (button) and bar. The bar holds a `UCommonButtonGroupBase` and registers LB/RB as **input actions** — tab cycling is CommonUI's, not ours |
 | `Components/BRLeftRail.h` | `UBRLeftRail` | The 349×510 `Menu Combo`: feature-card slot, row slot, description slot, selection caret |
-| `Components/BRMenuRow.h` | `UBRMenuRow` | The atom. 27 reference variants → 10-value `Type` enum × CommonUI's own Status × 2 alignments |
+| `Components/BRButton.h` | `UBRButton` | The atom. 27 reference variants → 10-value `Type` enum × CommonUI's own Status × 2 alignments |
 | `Components/BRFeatureCard.h` | `UBRFeatureCard` | Clickable card: ground, image, caption, border, dot rail |
 | `Components/BRRosterPanel.h` | `UBRRosterHeader`, `UBRRosterRow`, `UBRRosterPanel` | The 349×273 party list and its parts |
 | `Components/BRProfileBar.h` | `UBRProfileBar` | 1280×50 footer. Lives in the **root layout**, not the screen |
@@ -79,7 +79,7 @@ Checked class by class. **Yes, with one recommendation and one correction.**
 | Class | Base | Correct? |
 |---|---|---|
 | `UBRScreen_FrontEnd` | `UBRActivatableWidget` → `UCommonActivatableWidget` | ✅ It is the screen. The only activatable in the menu |
-| `UBRNavTab`, `UBRMenuRow`, `UBRFeatureCard`, `UBRRosterRow` | `UCommonButtonBase` | ✅ All four are clickable **and focusable**. This is the class that owns focus, navigation, held-action progress and the input glyph |
+| `UBRNavTab`, `UBRButton`, `UBRFeatureCard`, `UBRRosterRow` | `UCommonButtonBase` | ✅ All four are clickable **and focusable**. This is the class that owns focus, navigation, held-action progress and the input glyph |
 | `UBRNavBar`, `UBRLeftRail`, `UBRRosterPanel`, `UBRRosterHeader`, `UBRProfileBar`, `UBRButtonPrompt` | `UCommonUserWidget` | ✅ Passive containers. None takes focus |
 | `UBRHairlineBorder`, `UBRRule` | `UWidget` over `SLeafWidget` | ✅ **Correctly *not* CommonUI.** A decoration primitive drawn ~900 times has no business being a UserWidget |
 | `UBRPanel` | `UCommonUserWidget` | ✅ Collapses the Figma `Panels & Cards` page's **45 variants** to one class via two enums |
@@ -121,7 +121,7 @@ halves and a 72×10 dot switcher. `UBRFeatureCard` is exactly that shape and is 
 `UCommonButtonBase` with `Ground`, `ImageBox`, `Caption`, `Border` and `DotsContainer`.
 
 Retype the bind from `UWidget` to `UBRFeatureCard` and author `WBP_RecordPanel` against it. **One
-class, two assets** — the same pattern that makes one `UBRMenuRow` serve 26 screens.
+class, two assets** — the same pattern that makes one `UBRButton` serve 26 screens.
 
 *Stated honestly:* the class is **named** for the news card. If the rank halves later need real
 behaviour, promote it then — but promoting a class that exists is cheap and writing one that
@@ -155,7 +155,7 @@ Source/Breachpoint/UI/
 │   ├── BRComponentTokens.h           EBRUIColorToken · EBRStrokeWeight — no hex anywhere
 │   ├── BRHairlineBorder.h/.cpp       SBRHairlineBorder · UBRHairlineBorder · UBRRule
 │   ├── BRPanel.h/.cpp                45 Figma panel variants → 1 class
-│   ├── BRMenuRow.h/.cpp              the atom, 26/31 screens
+│   ├── BRButton.h/.cpp               the atom + settings row + highlight + styles
 │   ├── BRNavBar.h/.cpp               UBRNavTab · UBRNavBar
 │   ├── BRLeftRail.h/.cpp             the 349×510 Menu Combo
 │   ├── BRFeatureCard.h/.cpp          clickable card (and the record panel — §4.2)
@@ -165,7 +165,7 @@ Source/Breachpoint/UI/
 ├── Styles/
 │   ├── BRUITokens.h                  the token table
 │   ├── BRTextStyles.h/.cpp           7 CommonTextStyle subclasses
-│   ├── BRButtonStyles.h/.cpp         3 CommonButtonStyle subclasses
+│   │                                 (merged 4 Aug: was BRMenuRow + BRSettingsRow
 │   └── BRBorderStyles.h/.cpp         3 CommonBorderStyle subclasses
 └── ViewModels/
     ├── BRVM_FrontEnd.h/.cpp          tabs, rows, feature card, focus
@@ -181,7 +181,7 @@ and puts the palette under the same token table as everything else.
 | # | Asset | Folder | Parent | State |
 |---|---|---|---|---|
 | 1 | `WBP_RootLayout` | `UI/Layouts/` | `UBRRootLayout` | ✅ **built** |
-| 2 | `WBP_MenuRow` | `UI/Components/` | `UBRMenuRow` | 📋 **planned, validates** |
+| 2 | `WBP_MenuRow` | `UI/Components/` | `UBRButton` | 📋 **planned, validates** |
 | 3 | `WBP_NavTab` | `UI/Components/` | `UBRNavTab` | ⬜ |
 | 4 | `WBP_NavBar` | `UI/Components/` | `UBRNavBar` | ⬜ |
 | 5 | `WBP_ButtonPrompt` | `UI/Components/` | `UBRButtonPrompt` | ⬜ |

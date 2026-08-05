@@ -1,5 +1,11 @@
 # C++ audit — the main-menu classes, judged the way the widgets were
 
+
+> **NAMES CHANGED 4 Aug 2026, after this document was written.** `UBRMenuRow` is now
+> `UBRButton`, `EBRMenuRowType` is `EBRButtonType`, and `BRMenuRow.h` / `BRSettingsRow.h` /
+> `BRButtonStyles.h` / `BRHighlightButton.h` are one file: `Components/BRButton.h`. The old
+> names are left below **deliberately** — this is a dated record and rewriting its findings
+> would make it a different document. See `BUTTON-MODULE-LEDGER.md`.
 **Status:** v1, 3 Aug 2026. Three parallel read-only audits over all 22 main-menu translation
 units (~7,500 lines) plus the styles, tokens and both new ViewModels. Every finding below carries
 a file:line; nothing here is a style opinion. This is the C++ half of the pass that produced
