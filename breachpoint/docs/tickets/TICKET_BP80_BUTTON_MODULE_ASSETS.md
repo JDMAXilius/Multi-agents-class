@@ -56,8 +56,18 @@ last, after a render proves the replacement.**
    Their trees were byte-identical (or one `Selection` node apart) from their `Buttons/` twins.
    **The six ini refs that pointed at them were already repointed in the files-only commit** —
    verify they resolve rather than repointing again.
-5. **Build the nine.** `python3 mcp-ui/gen_ui/build_wbp.py` — commit the receipt. All nine now
-   come from the `button()` factory, so `parent_class` appears exactly once in the plan.
+5. **Build the nine — and ONLY the nine.**
+   ```
+   python3 mcp-ui/gen_ui/build_wbp.py --list   --parent BRButton   # confirm the selection
+   python3 mcp-ui/gen_ui/build_wbp.py --verify --parent BRButton   # read the OLD assets first
+   python3 mcp-ui/gen_ui/build_wbp.py          --parent BRButton   # rebuild
+   ```
+   **Never run it unflagged here.** With no selector it deletes and recreates all forty-six,
+   which rebuilds the HUD and the front end at a plan digest this ticket never reviewed — and
+   the receipt still says PASS, because every asset matches the plan it was just built from.
+   `--parent` selects by the C++ contract, so it cannot drift from what the module is.
+   Commit each receipt. All nine come from the `button()` factory, so `parent_class` appears
+   exactly once in the plan.
    Then **render `WBP_ButtonCheckbox` beside its archived twin** and compare. That comparison is
    this ticket's real deliverable.
 6. **Only now, the art.** Delete `Assets/Sides/` (40 textures, 112 files), `ButtonBorder_*`

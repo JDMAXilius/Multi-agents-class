@@ -3,6 +3,19 @@
 
     python3 mcp-ui/gen_ui/build_wbp.py [--dry-run] [--asset WBP_RootLayout]
 
+SELECTING WHAT TO TOUCH -- read this before rebuilding anything:
+
+    --parent BRButton          every asset parented to UBRButton (the nine buttons). PREFER
+                               THIS. It selects by the C++ contract, so a tenth button type
+                               is included the day it is planned, with no flag to update.
+    --filter 'WBP_Button*'     name glob. A guess about naming discipline; --parent is a fact.
+    --asset WBP_ButtonCheckbox exactly one.
+    --list                     print the selection and exit. Touches no editor.
+    (no flag)                  ALL FORTY-SIX. Deletes and recreates every asset in the plan.
+
+A selection that matches nothing exits BLOCKED (3) rather than falling through to the
+everything path -- a typo'd filter must not become a full rebuild.
+
 Reads `wbp_plan.py`, rebuilds each WBP from scratch, and writes an R37 receipt to
 `docs/ui/receipts/` flushed per line — a run that dies leaves a record of where.
 
@@ -26,6 +39,7 @@ from __future__ import annotations
 
 import argparse
 import re, json, sys, urllib.request
+from fnmatch import fnmatch
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -377,10 +391,46 @@ def verify_one(m: MCP, rc: Receipt, asset: str, spec: dict) -> bool:
     return got_names == want_names
 
 
+def select(args) -> dict:
+    """Which assets this run touches. Narrowing is the point, not a convenience.
+
+    A rebuild of the nine buttons used to mean either nine `--asset` invocations (nine receipts,
+    nine chances to stop halfway with no record of which) or `build_wbp.py` with no flag, which
+    DELETES AND RECREATES ALL FORTY-SIX. The second is how an unrelated asset gets rebuilt at a
+    plan digest nobody reviewed, and it is silent — the receipt says PASS because every asset
+    matched the plan it was just built from.
+
+    `--parent` beats `--filter` and is the one to reach for. It selects by the C++ contract
+    (`parent_class`), so it cannot drift from what the module actually is: add a tenth button
+    type to `PLAN` tomorrow and `--parent BRButton` picks it up with no flag to update. A name
+    glob is a guess about naming discipline; a parent class is a fact.
+    """
+    plan = wbp_plan.PLAN
+    if args.asset:
+        if args.asset not in plan:
+            return {}
+        return {args.asset: plan[args.asset]}
+    if args.parent:
+        want = args.parent if args.parent.startswith("/Script/") else f"/Script/Breachpoint.{args.parent}"
+        return {a: s for a, s in plan.items() if s.get("parent_class") == want}
+    if args.filter:
+        return {a: s for a, s in plan.items() if fnmatch(a, args.filter)}
+    return plan
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true", help="validate the plan, touch no editor")
     ap.add_argument("--asset", help="build one asset instead of all")
+    ap.add_argument("--filter", metavar="GLOB",
+                    help="build/verify every asset whose name matches a glob "
+                         "(e.g. 'WBP_Button*'). Combines with --verify and --dry-run.")
+    ap.add_argument("--parent", metavar="CLASS",
+                    help="build/verify every asset parented to this class "
+                         "(e.g. BRButton). Selects by CONTRACT, not by name — a new "
+                         "button type is included the day it is planned.")
+    ap.add_argument("--list", action="store_true",
+                    help="print the selected assets and exit. Touches no editor.")
     ap.add_argument("--verify", action="store_true",
                     help="read the ON-DISK assets and diff their trees against the plan; "
                          "no delete, no create, no writes. The stale-widget gate (BP70 D1).")
@@ -392,11 +442,24 @@ def main() -> int:
         for p in problems:
             print("  ERROR:", p)
         return EXIT_BLOCKED
-    print(f"plan OK: {len(wbp_plan.PLAN)} asset(s)")
+    todo = select(args)
+    # Notes AFTER selection and scoped TO it. Emitting all forty-six while nine are selected
+    # buries the ones that matter under thirty-seven that do not, and a note nobody reads is
+    # the same as no note. Each line is prefixed `<Asset>.<Node>: ...`, so the selection filter
+    # is a prefix match on the asset name.
+    print(f"plan OK: {len(wbp_plan.PLAN)} asset(s), {len(todo)} selected")
     for note in wbp_plan.skipped_brushes():
-        print("  NOTE (not an error): brush skipped —", note)
+        if note.split(".", 1)[0] in todo:
+            print("  NOTE (not an error): brush skipped —", note)
 
-    todo = {args.asset: wbp_plan.PLAN[args.asset]} if args.asset else wbp_plan.PLAN
+    if not todo:
+        print("NOTHING SELECTED — no asset matches. Nothing was executed.")
+        return EXIT_BLOCKED
+    if args.list:
+        for a, s in todo.items():
+            print(f"  {a:26} {len(s['tree']):2} nodes  {s['parent_class'].rsplit('.', 1)[-1]}")
+        print(f"{len(todo)} of {len(wbp_plan.PLAN)} selected")
+        return EXIT_PASS
     if args.dry_run:
         for a, s in todo.items():
             print(f"  {a}: {[n['name'] for n in s['tree']]}")
