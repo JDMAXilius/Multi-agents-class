@@ -3,6 +3,8 @@
   "owner_path": [
     "Export/UI/Glyphs/",
     "Content/UI/Icons/Glyphs/",
+    "Content/UI/Components/Buttons/",
+    "mcp-ui/gen_ui/wbp_plan.py",
     "docs/ui/receipts/",
     "docs/tickets/TICKET_BP81_UI_GLYPH_BACKFILL.md"
   ]

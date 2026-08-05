@@ -2614,10 +2614,11 @@ PLAN = {
         [
             {"name": "Icon", "class": IMAGE, "parent": "TextFrame",
              "slot": box_slot(fill=1.0, h="HAlign_Center", v="VAlign_Center"),
-             "brush": brush(GLYPHS + "T_UI_Glyph_Back_40", 32, 32), "bind": True},
+             "brush": brush(BTN_ART + "T_UI_Glyph_Revert_40", 32, 32), "bind": True},
         ],
-        "Menu Row Type=Icon Only. 40x40 from ApplyRowType. Glyph is a PLACEHOLDER — "
-                 "the reference art is a 'revert' arrow and no such glyph is in the icon set.",
+        "Menu Row Type=Icon Only. 40x40 from ApplyRowType. Glyph is the REFERENCE art: "
+                 "Figma 12:979 'Revert' at 32x32 inside 12:977. The _40 tier is the source "
+                 "(160px) because the instance draws at 32 — the _24 tier would upscale.",
         label_text=False,
     ),
 
