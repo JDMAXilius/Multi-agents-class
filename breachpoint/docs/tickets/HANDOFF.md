@@ -1,5 +1,31 @@
 # HANDOFF — session of 4 August 2026
 
+---
+
+> ## UPDATE — 7 August 2026: there IS a board again, and it is the gameplay rework
+>
+> The statement below that "there is no ticket board" was true on 4 Aug and is **no longer
+> true**. `docs/tickets/` now holds **twelve tickets, BP90–BP102**, cut from
+> `docs/BREACHPOINT-GAMEPLAY-REWORK.md`. Read that document first — it is the architecture and
+> the road in one place, and every ticket's steps assume it.
+>
+> **Start at `TICKET_BP90_DEMOLITION.md`.** It is the root: it deletes the 36 UE-template files
+> still compiling inside the runtime module (`Variant_Horror/`, `Variant_Shooter/`,
+> `breachpoint{Character,GameMode,PlayerController}` — verified as referenced by nothing in the
+> `BR` tree), and it settles the three decisions (D-1 projectile Tick exception, D-2
+> `Weapons/`→`Equipment/`, D-3 AI scope) that later tickets depend on. **No Phase-1 ticket
+> starts until BP90 is DONE.**
+>
+> Scope of the rework is **gameplay only** — Core, Data, Input, AbilitySystem, Character,
+> Equipment, Match. `UI/`, `AI/`, `Online/`, `Telemetry/` are untouched and meet the new layer
+> at named seams.
+>
+> Everything below this block still stands: the ladder state (rung 1 PARTIAL by environment,
+> and structurally cannot be more on an Epic Launcher install), the `guard_laws.py` shell
+> bypass, and the unwired UI sounds. **BP90 is a shell-driven deletion packet, so its
+> owner-path confinement is advisory** — that is the gap named below, firing for real.
+
+---
 
 > **NAMES CHANGED 4 Aug 2026, after this document was written.** `UBRMenuRow` is now
 > `UBRButton`, `EBRMenuRowType` is `EBRButtonType`, and `BRMenuRow.h` / `BRSettingsRow.h` /
