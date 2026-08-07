@@ -35,20 +35,26 @@
 Read this first. The previous handoff described the 31 Jul → 1 Aug world; almost everything it
 routed you to no longer exists, so it has been replaced rather than amended.
 
-**The board is two tickets, both cut 4 Aug, both editor-live.** Forty-six tickets and the
-archive were deleted on founder direction, so the board was empty for part of that day — it is
-not any more, and the line that used to say so was stale within hours of being written.
+**Read the board, do not trust a list of it.** This paragraph has now been wrong twice in
+three days — first saying the board was empty (it had two tickets within hours), then saying it
+had two (a thirteen-ticket gameplay rework landed the same afternoon). So: **`ls docs/tickets/`
+is the board.** What is stable is the ORDERING, and only that is written here.
 
-| Ticket | Lane | Start here? |
+**Two independent tracks. They do not block each other.**
+
+| Track | Tickets | Order |
 |---|---|---|
-| **`TICKET_BP80_BUTTON_MODULE_ASSETS.md`** | editor-live, gated by a compile | **YES — step 1 gates everything, including BP79** |
-| `TICKET_BP79_INVERTANIM_PLATE_FADE.md` | editor-live | after BP80 — its `ApplyPlateMaterialState` pointer now lives in `BRButton.cpp` |
+| **UI / buttons** | `BP80` → `BP79` | BP80 step 1 is a compile gate and it gates BP79 too — BP79's `ApplyPlateMaterialState` pointer now lives in `BRButton.cpp`. `BP81` (glyph backfill) is **blocked** and released its claim. |
+| **Gameplay rework** | `BP90` → `BP91` … `BP102` | `BP90` is the root: *"nothing in Phase 1+ starts until this is DONE."* Read `docs/BREACHPOINT-GAMEPLAY-REWORK.md` first — it supersedes `BREACHPOINT-ARCHITECTURE.md` §3.1–3.6 and §3.11 for the folders it names. |
 
-**BP80 is the handoff for the whole 4 Aug button session.** Its STATUS block lists the eight
-commits that landed files-only and unverified, and its Log carries the three things to know
-before touching anything: nothing has compiled, `WBP_ButtonDefault` will legitimately look
-different, and the node counts must not be "optimised" because that reduction was retracted on
-evidence.
+The rework is scoped to gameplay only — Core, Data, Input, AbilitySystem, Character, Equipment,
+Match. **`UI/` is explicitly untouched and meets the new layer at named seams**, so the button
+work and the rework can run in parallel without a merge fight.
+
+**`BP80` is the handoff for the whole 4 Aug button session.** Its STATUS block lists the eight
+commits that landed files-only and unverified; its Log carries the three things to know before
+touching anything: nothing has compiled, `WBP_ButtonDefault` will legitimately look different,
+and the node counts must not be "optimised" because that reduction was retracted on evidence.
 
 Also read `docs/DECISIONS-OWED.md` — six founder calls (B1–B6) from that session are waiting,
 and all six are answerable from a desk with no engine.
