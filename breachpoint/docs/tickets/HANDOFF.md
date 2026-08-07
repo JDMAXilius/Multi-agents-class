@@ -35,9 +35,23 @@
 Read this first. The previous handoff described the 31 Jul → 1 Aug world; almost everything it
 routed you to no longer exists, so it has been replaced rather than amended.
 
-**There is no ticket board.** `docs/tickets/` holds this file and `TICKET_TEMPLATE.md`, nothing
-else. Forty-six tickets and the archive were deleted on founder direction. `/tickets list` will
-show nothing — that is correct, not a fault.
+**The board is two tickets, both cut 4 Aug, both editor-live.** Forty-six tickets and the
+archive were deleted on founder direction, so the board was empty for part of that day — it is
+not any more, and the line that used to say so was stale within hours of being written.
+
+| Ticket | Lane | Start here? |
+|---|---|---|
+| **`TICKET_BP80_BUTTON_MODULE_ASSETS.md`** | editor-live, gated by a compile | **YES — step 1 gates everything, including BP79** |
+| `TICKET_BP79_INVERTANIM_PLATE_FADE.md` | editor-live | after BP80 — its `ApplyPlateMaterialState` pointer now lives in `BRButton.cpp` |
+
+**BP80 is the handoff for the whole 4 Aug button session.** Its STATUS block lists the eight
+commits that landed files-only and unverified, and its Log carries the three things to know
+before touching anything: nothing has compiled, `WBP_ButtonDefault` will legitimately look
+different, and the node counts must not be "optimised" because that reduction was retracted on
+evidence.
+
+Also read `docs/DECISIONS-OWED.md` — six founder calls (B1–B6) from that session are waiting,
+and all six are answerable from a desk with no engine.
 
 **There is no claim file.** `.claude/active-packet.json` does not exist, so `guard_laws.py`
 enforces no `owner_path` at all. Its banned-API checks (law 2/3 — `TakeDamage`, direct attribute
