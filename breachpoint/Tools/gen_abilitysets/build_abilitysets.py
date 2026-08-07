@@ -143,7 +143,21 @@ class LockGate(object):
         self.locked = {}
         self.query_error = None
         self.gated = []
+        # git lfs reports lock paths relative to the GIT root, which is not the UE project
+        # root whenever the .uproject sits in a subdirectory of the repo (it does here:
+        # <repo>/breachpoint/Breachpoint.uproject). Comparing a project-relative path against
+        # a repo-relative one never matches, so every lock check failed as "NOT lfs-locked"
+        # no matter how many locks were actually held. Both sides are normalised to the git
+        # root; if git cannot answer, the project root is the old behaviour unchanged.
+        self.lock_root = root
         if not enabled:
+            return
+        try:
+            top = subprocess.check_output(["git", "rev-parse", "--show-toplevel"], cwd=root,
+                                          stderr=subprocess.STDOUT)
+            self.lock_root = top.decode("utf-8").strip() or root
+        except (OSError, subprocess.CalledProcessError) as exc:
+            self.query_error = str(exc)
             return
         try:
             out = subprocess.check_output(["git", "lfs", "locks", "--json"], cwd=root,
@@ -155,7 +169,7 @@ class LockGate(object):
             self.query_error = str(exc)
 
     def rel(self, package):
-        return os.path.relpath(uasset_disk_path(package), self.root).replace("\\", "/")
+        return os.path.relpath(uasset_disk_path(package), self.lock_root).replace("\\", "/")
 
     def require(self, package, existed_before):
         """Raise Refused unless `package` may be written now."""
