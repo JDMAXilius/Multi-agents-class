@@ -4,6 +4,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "EnhancedInputComponent.h"
+#include "Engine/DataTable.h"
 #include "InputAction.h"
 #include "InputActionValue.h"
 
@@ -14,6 +15,7 @@
 #include "Input/BRInputConfig.h"
 #include "Match/BRPlayerController.h"
 #include "Match/BRPlayerState.h"
+#include "Weapons/BREquipmentComponent.h"
 
 ABRCharacter::ABRCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer.SetDefaultSubobjectClass<UBRCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
@@ -35,6 +37,8 @@ ABRCharacter::ABRCharacter(const FObjectInitializer& ObjectInitializer)
 	FirstPersonCameraComponent->bEnableFirstPersonScale = true;
 	FirstPersonCameraComponent->FirstPersonFieldOfView = 70.0f;
 	FirstPersonCameraComponent->FirstPersonScale = 0.6f;
+
+	EquipmentComponent = CreateDefaultSubobject<UBREquipmentComponent>(TEXT("EquipmentComponent"));
 
 	GetMesh()->SetOwnerNoSee(true);
 	GetMesh()->FirstPersonPrimitiveType = EFirstPersonPrimitiveType::WorldSpaceRepresentation;
@@ -96,6 +100,54 @@ void ABRCharacter::InitializeAbilitySystem()
 	}
 	ASC->ApplyInitStats();
 	BRPlayerState->GiveStartupLoadout();
+
+	// After the ability set, deliberately: the weapon's own set (fire, reload, swap) is
+	// granted by the equipment component against this same ASC, and it needs the actor
+	// info already initialised above.
+	GiveStartupWeapon();
+}
+
+void ABRCharacter::GiveStartupWeapon()
+{
+	if (!HasAuthority() || !EquipmentComponent)
+	{
+		return;
+	}
+
+	if (EquipmentComponent->IsSlotOccupied(EBRWeaponSlot::Primary))
+	{
+		return;
+	}
+
+	if (StartupWeaponTable.IsNull() || StartupWeaponRow.IsNone())
+	{
+		ensureMsgf(false, TEXT("BRCharacter '%s': no startup weapon configured, so this pawn spawns empty-handed and Fire/Reload/Swap reach an ASC with no matching spec — the weapon verbs live in the weapon's own ability set, not the startup one. Expected [/Script/Breachpoint.BRCharacter] StartupWeaponTable and StartupWeaponRow in Config/DefaultGame.ini."),
+			*GetName());
+		return;
+	}
+
+	UDataTable* WeaponTable = StartupWeaponTable.LoadSynchronous();
+	if (!WeaponTable)
+	{
+		ensureMsgf(false, TEXT("BRCharacter '%s': StartupWeaponTable '%s' failed to load. The ini path is set but does not resolve to a data table."),
+			*GetName(), *StartupWeaponTable.ToSoftObjectPath().ToString());
+		return;
+	}
+
+	FDataTableRowHandle RowHandle;
+	RowHandle.DataTable = WeaponTable;
+	RowHandle.RowName = StartupWeaponRow;
+
+	if (!EquipmentComponent->GiveWeapon(RowHandle, EBRWeaponSlot::Primary))
+	{
+		ensureMsgf(false, TEXT("BRCharacter '%s': StartupWeaponRow '%s' is not a row in '%s'."),
+			*GetName(), *StartupWeaponRow.ToString(), *GetNameSafe(WeaponTable));
+		return;
+	}
+
+	// Giving fills the slot; activating it is what grants the weapon's abilities and puts
+	// the mesh in the pawn's hand. A weapon in an inactive slot is inventory, not a gun.
+	EquipmentComponent->SetActiveSlot(EBRWeaponSlot::Primary);
 }
 
 UBRCharacterMovementComponent* ABRCharacter::GetBRCharacterMovement() const

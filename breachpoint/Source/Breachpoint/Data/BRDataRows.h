@@ -7,6 +7,8 @@
 
 #include "BRDataRows.generated.h"
 
+class UAnimInstance;
+class USkeletalMesh;
 class UStaticMesh;
 
 UENUM(BlueprintType)
@@ -76,8 +78,26 @@ struct BREACHPOINT_API FBRWeaponRow : public FTableRowBase
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	TSoftObjectPtr<class UBRAbilitySet> AbilitySet;
 
+	// The WORLD PICKUP mesh, static: what a dropped weapon looks like lying on the floor.
+	// Not the mesh a pawn holds — that one is skeletal, below.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	TSoftObjectPtr<UStaticMesh> MeshSoftPath;
+
+	// The HELD mesh, skeletal, exactly as the template's BP_ShooterWeapon_* assets carry it.
+	// Skeletal and not static because the weapon animates in the hand — reload, bolt, recoil
+	// are on this skeleton, and a UStaticMesh copy of it is a prop that can only sit still.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	TSoftObjectPtr<USkeletalMesh> HeldMeshSoftPath;
+
+	// The anim BPs the CHARACTER's own meshes switch to while holding this weapon, which is
+	// how the hands come to grip it. Without them the pawn holds a rifle in an unarmed idle:
+	// the weapon is attached correctly and the arms have never heard of it. Matches
+	// AShooterCharacter::OnWeaponActivated, which sets exactly these two.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	TSoftClassPtr<UAnimInstance> FirstPersonAnimBP;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	TSoftClassPtr<UAnimInstance> ThirdPersonAnimBP;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	FGameplayTag FireCueTag;
@@ -146,6 +166,28 @@ struct BREACHPOINT_API FBRWeaponRow : public FTableRowBase
 			OutError = TEXT("SplashRadius_m and SplashDamage must both be set or both be zero");
 			return false;
 		}
+
+		// A weapon with no held mesh equips, fires and kills while being invisible in the
+		// hand — the worst kind of working, because nothing in any log mentions it.
+		if (HeldMeshSoftPath.IsNull())
+		{
+			OutError = TEXT("HeldMeshSoftPath is unset — this weapon would be invisible in the hand");
+			return false;
+		}
+
+		if (ThirdPersonAnimBP.IsNull())
+		{
+			OutError = TEXT("ThirdPersonAnimBP unset — everyone else would watch this pawn hold the weapon in an unarmed pose");
+			return false;
+		}
+
+		// FirstPersonAnimBP is deliberately OPTIONAL, and every shipped row leaves it empty.
+		// The template's first-person weapon layers (ABP_FP_Weapon, ABP_FP_Pistol) cast to
+		// BP_FirstPersonCharacter_C and read its "First Person Camera"; on a BRCharacter that
+		// cast fails and the anim BP logs "Accessed None" EVERY FRAME. Until an FP layer
+		// exists that does not hard-cast to a pawn class we do not use, an unset column means
+		// "keep the arms on whatever they already wear", which is what the equipment
+		// component's fallback does. The third-person layers carry no such coupling.
 
 		return true;
 	}

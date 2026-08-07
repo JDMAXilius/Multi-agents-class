@@ -3,14 +3,17 @@
 #include "AbilitySystemInterface.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "UObject/SoftObjectPtr.h"
 
 #include "Core/BRCore.h"
 
 #include "BRCharacter.generated.h"
 
 class UBRCharacterMovementComponent;
+class UBREquipmentComponent;
 class UBRInputConfig;
 class UCameraComponent;
+class UDataTable;
 class UEnhancedInputComponent;
 class UInputAction;
 class USkeletalMeshComponent;
@@ -35,7 +38,21 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FirstPersonCameraComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UBREquipmentComponent> EquipmentComponent;
+
+	UBREquipmentComponent* GetEquipment() const { return EquipmentComponent; }
+
 protected:
+
+	// Config, soft, and named by row: which gun a player spawns holding is a data choice,
+	// and a hard DataTable ref on the character class would pull every weapon's mesh and
+	// ability set into memory with the class itself.
+	UPROPERTY(EditDefaultsOnly, Config, Category = "Breachpoint|Equipment")
+	TSoftObjectPtr<UDataTable> StartupWeaponTable;
+
+	UPROPERTY(EditDefaultsOnly, Config, Category = "Breachpoint|Equipment")
+	FName StartupWeaponRow;
 
 	UPROPERTY(EditAnywhere, Category ="Input")
 	UInputAction* MoveAction;
@@ -70,4 +87,8 @@ public:
 
 	void InitializeAbilitySystem();
 	UBRCharacterMovementComponent* GetBRCharacterMovement() const;
+
+	// Server only. Idempotent: possession runs again on every respawn and on seamless
+	// travel, and a second grant would throw away the weapon in hand with its live ammo.
+	void GiveStartupWeapon();
 };

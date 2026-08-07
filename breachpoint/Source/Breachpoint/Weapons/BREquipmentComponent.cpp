@@ -3,15 +3,18 @@
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
 #include "AbilitySystem/BRAbilitySet.h"
+#include "Animation/AnimInstance.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Core/BRCore.h"
 #include "Data/BRDataRows.h"
 #include "Engine/ActorChannel.h"
 #include "Engine/AssetManager.h"
+#include "Engine/SkeletalMesh.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/StreamableManager.h"
 #include "Engine/World.h"
+#include "GameFramework/Character.h"
 #include "GameFramework/Pawn.h"
 #include "Net/UnrealNetwork.h"
 #include "Weapons/BRWeaponInstance.h"
@@ -400,6 +403,7 @@ void UBREquipmentComponent::HandleActiveWeaponChanged()
 	}
 
 	RefreshEquippedMesh();
+	RefreshOwnerAnimLayers();
 	OnEquippedWeaponChanged.Broadcast(this, GetActiveWeapon());
 }
 
@@ -495,9 +499,9 @@ void UBREquipmentComponent::ClearAbilitySetForSlot(int32 SlotIndex)
 	Grant.Reset();
 }
 
-void UBREquipmentComponent::EnsureWeaponMeshComponent()
+void UBREquipmentComponent::EnsureWeaponMeshComponents()
 {
-	if (IsValid(EquippedMeshComponent))
+	if (!EquippedMeshComponents.IsEmpty())
 	{
 		return;
 	}
@@ -508,24 +512,155 @@ void UBREquipmentComponent::EnsureWeaponMeshComponent()
 		return;
 	}
 
-	EquippedMeshComponent = NewObject<UStaticMeshComponent>(Owner, TEXT("BREquippedWeaponMesh"));
-	if (!EquippedMeshComponent)
+	const auto AddWeaponMesh = [this, Owner](USceneComponent* AttachParent, const UPrimitiveComponent* CopyVisibilityFrom)
+	{
+		if (!AttachParent)
+		{
+			return;
+		}
+
+		USkeletalMeshComponent* WeaponMesh = NewObject<USkeletalMeshComponent>(Owner);
+		if (!WeaponMesh)
+		{
+			return;
+		}
+
+		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		WeaponMesh->SetGenerateOverlapEvents(false);
+		WeaponMesh->SetIsReplicated(false);
+
+		if (CopyVisibilityFrom)
+		{
+			// Inherited rather than reasoned about: a weapon held by a mesh only its owner
+			// sees must be seen by only its owner, and the first-person primitive type is
+			// what makes it render at the first-person FOV and scale instead of clipping
+			// through the geometry the arms holding it pass over.
+			WeaponMesh->SetOnlyOwnerSee(CopyVisibilityFrom->bOnlyOwnerSee);
+			WeaponMesh->SetOwnerNoSee(CopyVisibilityFrom->bOwnerNoSee);
+			WeaponMesh->SetFirstPersonPrimitiveType(CopyVisibilityFrom->FirstPersonPrimitiveType);
+		}
+
+		// SnapToTarget, matching AShooterCharacter::AttachWeaponMeshes: the socket carries
+		// the grip transform, so the weapon must take it whole rather than keep its own.
+		WeaponMesh->SetupAttachment(AttachParent, WeaponAttachSocket);
+		WeaponMesh->RegisterComponent();
+		WeaponMesh->AttachToComponent(AttachParent,
+			FAttachmentTransformRules(EAttachmentRule::SnapToTarget, false), WeaponAttachSocket);
+
+		EquippedMeshComponents.Add(WeaponMesh);
+	};
+
+	USkeletalMeshComponent* FirstPersonMesh = nullptr;
+	USkeletalMeshComponent* ThirdPersonMesh = nullptr;
+	ResolveOwnerMeshes(FirstPersonMesh, ThirdPersonMesh);
+
+	AddWeaponMesh(FirstPersonMesh, FirstPersonMesh);
+	AddWeaponMesh(ThirdPersonMesh, ThirdPersonMesh);
+
+	if (EquippedMeshComponents.IsEmpty())
+	{
+		// No skeletal body at all — a test pawn or a blockout dummy. The weapon still
+		// exists so the ammo and HUD path stays exercisable; it just hangs off the root.
+		AddWeaponMesh(Owner->GetRootComponent(), nullptr);
+	}
+}
+
+void UBREquipmentComponent::ResolveOwnerMeshes(USkeletalMeshComponent*& OutFirstPerson,
+	USkeletalMeshComponent*& OutThirdPerson) const
+{
+	OutFirstPerson = nullptr;
+	OutThirdPerson = nullptr;
+
+	const AActor* Owner = GetOwner();
+	if (!Owner)
 	{
 		return;
 	}
 
-	EquippedMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	EquippedMeshComponent->SetGenerateOverlapEvents(false);
-	EquippedMeshComponent->SetIsReplicated(false);
-
-	USceneComponent* AttachParent = Owner->FindComponentByClass<USkeletalMeshComponent>();
-	if (!AttachParent)
+	// The character mesh is third person by definition (ACharacter owns it and the pawn's
+	// world-space representation is drawn from it). Asked for by identity and not by
+	// "the first skeletal mesh found", because component order is not a contract.
+	if (const ACharacter* Character = Cast<ACharacter>(Owner))
 	{
-		AttachParent = Owner->GetRootComponent();
+		OutThirdPerson = Character->GetMesh();
 	}
 
-	EquippedMeshComponent->SetupAttachment(AttachParent, WeaponAttachSocket);
-	EquippedMeshComponent->RegisterComponent();
+	TArray<USkeletalMeshComponent*> OwnerMeshes;
+	Owner->GetComponents(OwnerMeshes);
+
+	for (USkeletalMeshComponent* OwnerMesh : OwnerMeshes)
+	{
+		if (OwnerMesh == OutThirdPerson)
+		{
+			continue;
+		}
+		// bOnlyOwnerSee is what MAKES a mesh first person here — ABRCharacter sets it on the
+		// first-person body and bOwnerNoSee on the third. A name test would break the first
+		// time someone renamed a component.
+		if (OwnerMesh->bOnlyOwnerSee)
+		{
+			OutFirstPerson = OwnerMesh;
+			break;
+		}
+	}
+
+	if (!OutThirdPerson && !OwnerMeshes.IsEmpty())
+	{
+		// Not an ACharacter: take any mesh that is not the first-person one.
+		for (USkeletalMeshComponent* OwnerMesh : OwnerMeshes)
+		{
+			if (OwnerMesh != OutFirstPerson)
+			{
+				OutThirdPerson = OwnerMesh;
+				break;
+			}
+		}
+	}
+}
+
+void UBREquipmentComponent::RefreshOwnerAnimLayers()
+{
+	USkeletalMeshComponent* FirstPersonMesh = nullptr;
+	USkeletalMeshComponent* ThirdPersonMesh = nullptr;
+	ResolveOwnerMeshes(FirstPersonMesh, ThirdPersonMesh);
+
+	if (!FirstPersonMesh && !ThirdPersonMesh)
+	{
+		return;
+	}
+
+	if (!bCapturedDefaultAnimClasses)
+	{
+		DefaultFirstPersonAnimClass = FirstPersonMesh ? FirstPersonMesh->GetAnimClass() : nullptr;
+		DefaultThirdPersonAnimClass = ThirdPersonMesh ? ThirdPersonMesh->GetAnimClass() : nullptr;
+		bCapturedDefaultAnimClasses = true;
+	}
+
+	const UBRWeaponInstance* Instance = GetActiveWeapon();
+	const FBRWeaponRow* Row = Instance ? Instance->GetRow() : nullptr;
+
+	// A row that names no anim BP falls back to the unarmed default rather than to null:
+	// clearing the anim class outright leaves a T-posed pawn, which reads as a broken
+	// skeleton rather than as an unconfigured column.
+	const auto Apply = [](USkeletalMeshComponent* Mesh, const TSoftClassPtr<UAnimInstance>& Wanted,
+		const TSubclassOf<UAnimInstance>& Fallback)
+	{
+		if (!Mesh)
+		{
+			return;
+		}
+
+		UClass* Desired = Wanted.IsNull() ? Fallback.Get() : Wanted.LoadSynchronous();
+		if (Mesh->GetAnimClass() != Desired)
+		{
+			Mesh->SetAnimInstanceClass(Desired);
+		}
+	};
+
+	static const TSoftClassPtr<UAnimInstance> NoAnimBP;
+
+	Apply(FirstPersonMesh, Row ? Row->FirstPersonAnimBP : NoAnimBP, DefaultFirstPersonAnimClass);
+	Apply(ThirdPersonMesh, Row ? Row->ThirdPersonAnimBP : NoAnimBP, DefaultThirdPersonAnimClass);
 }
 
 void UBREquipmentComponent::RefreshEquippedMesh()
@@ -547,34 +682,46 @@ void UBREquipmentComponent::RefreshEquippedMesh()
 	const UBRWeaponInstance* Instance = GetActiveWeapon();
 	const FBRWeaponRow* Row = Instance ? Instance->GetRow() : nullptr;
 
-	if (!Row || Row->MeshSoftPath.IsNull())
+	// The HELD mesh, not MeshSoftPath — that one is the static prop a dropped pickup uses.
+	if (!Row || Row->HeldMeshSoftPath.IsNull())
 	{
-		if (IsValid(EquippedMeshComponent))
+		for (const TObjectPtr<USkeletalMeshComponent>& WeaponMesh : EquippedMeshComponents)
 		{
-			EquippedMeshComponent->SetStaticMesh(nullptr);
+			if (IsValid(WeaponMesh))
+			{
+				WeaponMesh->SetSkeletalMesh(nullptr);
+			}
 		}
 		return;
 	}
 
-	EnsureWeaponMeshComponent();
-	if (!IsValid(EquippedMeshComponent) || !UAssetManager::IsInitialized())
+	EnsureWeaponMeshComponents();
+	if (EquippedMeshComponents.IsEmpty() || !UAssetManager::IsInitialized())
 	{
 		return;
 	}
 
-	const TSoftObjectPtr<UStaticMesh> SoftMesh = Row->MeshSoftPath;
+	const TSoftObjectPtr<USkeletalMesh> SoftMesh = Row->HeldMeshSoftPath;
 
 	MeshLoadHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
 		SoftMesh.ToSoftObjectPath(),
 		FStreamableDelegate::CreateWeakLambda(this, [this, SoftMesh, ThisGeneration]()
 		{
-			if (ThisGeneration != EquipGeneration || !IsValid(EquippedMeshComponent))
+			if (ThisGeneration != EquipGeneration)
 			{
 				return;
 			}
-			if (UStaticMesh* Mesh = SoftMesh.Get())
+			USkeletalMesh* Mesh = SoftMesh.Get();
+			if (!Mesh)
 			{
-				EquippedMeshComponent->SetStaticMesh(Mesh);
+				return;
+			}
+			for (const TObjectPtr<USkeletalMeshComponent>& WeaponMesh : EquippedMeshComponents)
+			{
+				if (IsValid(WeaponMesh))
+				{
+					WeaponMesh->SetSkeletalMesh(Mesh);
+				}
 			}
 		}));
 }

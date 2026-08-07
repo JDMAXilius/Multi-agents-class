@@ -14,9 +14,10 @@ class APawn;
 class FOutBunch;
 class UAbilitySystemComponent;
 class UActorChannel;
+class UAnimInstance;
 class UBRAbilitySet;
 class UBRWeaponInstance;
-class UStaticMeshComponent;
+class USkeletalMeshComponent;
 struct FBRWeaponRow;
 struct FStreamableHandle;
 
@@ -103,10 +104,24 @@ protected:
 	APawn* GetOwnerPawn() const;
 
 	void RefreshEquippedMesh();
-	void EnsureWeaponMeshComponent();
+	void EnsureWeaponMeshComponents();
 
+	// The owner's own two bodies. 3P is the character mesh; 1P is the only-owner-see mesh
+	// beside it. Either may be null on a pawn that has just one.
+	void ResolveOwnerMeshes(USkeletalMeshComponent*& OutFirstPerson, USkeletalMeshComponent*& OutThirdPerson) const;
+
+	// Points the owner's meshes at the held weapon's anim BPs, or back at whatever they
+	// were wearing before the first equip when nothing is held.
+	void RefreshOwnerAnimLayers();
+
+	// The socket SK_Mannequin actually carries, and the one the template's AShooterCharacter
+	// attaches both its meshes to. "GripPoint" — the previous default — is in no asset in
+	// this project, and an attach to a name the skeleton does not know does not fail: it
+	// falls back to the component origin, putting the weapon at the pawn's feet. Attaching
+	// to the hand_r BONE instead would be wrong the same way, just less visibly — the socket
+	// exists to carry the grip offset and rotation that the bare bone has no idea about.
 	UPROPERTY(EditDefaultsOnly, Category = "Equipment")
-	FName WeaponAttachSocket = TEXT("GripPoint");
+	FName WeaponAttachSocket = TEXT("HandGrip_R");
 
 	UPROPERTY(EditDefaultsOnly, Category = "Equipment")
 	TSubclassOf<ABRWeaponPickup> DroppedPickupClass;
@@ -127,8 +142,23 @@ private:
 
 	TArray<FBRWeaponAbilityGrant> SlotGrants;
 
+	// One per body the owner draws itself with. A pawn with separate first- and third-person
+	// meshes hides one from the owning player and the other from everyone else, so a single
+	// shared weapon mesh is visible to exactly the wrong half of the room whichever parent
+	// it picks. Skeletal, because the held weapon animates.
 	UPROPERTY(Transient)
-	TObjectPtr<UStaticMeshComponent> EquippedMeshComponent;
+	TArray<TObjectPtr<USkeletalMeshComponent>> EquippedMeshComponents;
+
+	// What the owner's meshes wore before any weapon touched them. Captured once, on the
+	// first equip, so dropping the last weapon returns the pawn to its unarmed pose instead
+	// of leaving it gripping air in a rifle stance.
+	UPROPERTY(Transient)
+	TSubclassOf<UAnimInstance> DefaultFirstPersonAnimClass;
+
+	UPROPERTY(Transient)
+	TSubclassOf<UAnimInstance> DefaultThirdPersonAnimClass;
+
+	bool bCapturedDefaultAnimClasses = false;
 
 	uint32 EquipGeneration = 0;
 

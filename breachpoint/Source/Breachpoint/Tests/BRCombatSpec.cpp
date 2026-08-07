@@ -38,6 +38,59 @@ namespace BRCombatSpecInternal
 		return (ShotCount <= 1) ? 0.f : (ShotCount - 1) * ShotIntervalSeconds;
 	}
 
+	// Every line under Header, stopping at the next section. Config here is read as TEXT and
+	// not through GConfig: a spec that asked the config system would be asking the same
+	// loader the shipping code asks, and would agree with it about a section that is missing
+	// from the file entirely.
+	static TArray<FString> IniSectionLines(const FString& Ini, const TCHAR* Header)
+	{
+		TArray<FString> Lines;
+		Ini.ParseIntoArrayLines(Lines);
+
+		TArray<FString> Section;
+		bool bInSection = false;
+		for (const FString& Line : Lines)
+		{
+			const FString Trimmed = Line.TrimStartAndEnd();
+			if (Trimmed.StartsWith(TEXT("[")))
+			{
+				bInSection = Trimmed.Equals(Header);
+				continue;
+			}
+			if (bInSection && !Trimmed.IsEmpty() && !Trimmed.StartsWith(TEXT(";")))
+			{
+				Section.Add(Trimmed);
+			}
+		}
+		return Section;
+	}
+
+	// "/Game/Weapons/Rifle/Meshes/SKM_Rifle.SKM_Rifle" -> does Content/.../SKM_Rifle.uasset
+	// exist? An empty path is NOT a pass: an unset soft ref is the failure being hunted.
+	static bool PackageFileExists(const FString& SoftObjectPath)
+	{
+		if (SoftObjectPath.IsEmpty())
+		{
+			return false;
+		}
+
+		FString PackageName = SoftObjectPath;
+		int32 DotIndex = INDEX_NONE;
+		if (PackageName.FindChar(TEXT('.'), DotIndex))
+		{
+			PackageName.LeftInline(DotIndex);
+		}
+
+		if (!PackageName.RemoveFromStart(TEXT("/Game/")))
+		{
+			// Engine or plugin content: outside this repo's Content dir, so not checkable
+			// here. Reported as present rather than failing a path the repo does not own.
+			return PackageName.StartsWith(TEXT("/"));
+		}
+
+		return FPaths::FileExists(FPaths::Combine(FPaths::ProjectContentDir(), PackageName + TEXT(".uasset")));
+	}
+
 	static FGameplayTagContainer MakeDamageTags(const TArray<FGameplayTag>& Tags)
 	{
 		FGameplayTagContainer Container;
@@ -279,6 +332,76 @@ void FBRCombatSpec::Define()
 			}
 
 			TestTrue(TEXT("ValidateSchema writes a human-readable reason when it refuses"), !Error.IsEmpty());
+		});
+	});
+
+	Describe("Startup weapon wiring", [this]()
+	{
+		// The pawn spawns holding whatever [/Script/Breachpoint.BRCharacter] names, and every
+		// way that can be wrong is SILENT at runtime: a missing section, a renamed row, or a
+		// repointed table all leave ABRCharacter::GiveStartupWeapon early-returning into a
+		// player with no gun and three dead trigger keys. Read as text, checked against the
+		// shipped table, because neither half can see the other until PIE.
+		It("names a StartupWeaponRow that exists in the shipped DT_Weapons", [this]()
+		{
+			if (!EnsureTables()) { return; }
+
+			const FString IniPath = FPaths::Combine(FPaths::ProjectConfigDir(), TEXT("DefaultGame.ini"));
+			FString Ini;
+			if (!FFileHelper::LoadFileToString(Ini, *IniPath))
+			{
+				AddError(FString::Printf(TEXT("Could not read '%s'."), *IniPath));
+				return;
+			}
+
+			FString RowName;
+			FString TablePath;
+			for (const FString& Line : BRCombatSpecInternal::IniSectionLines(Ini, TEXT("[/Script/Breachpoint.BRCharacter]")))
+			{
+				FParse::Value(*Line, TEXT("StartupWeaponRow="), RowName);
+				FParse::Value(*Line, TEXT("StartupWeaponTable="), TablePath);
+			}
+
+			if (RowName.IsEmpty() || TablePath.IsEmpty())
+			{
+				AddError(TEXT("DefaultGame.ini has no [/Script/Breachpoint.BRCharacter] StartupWeaponTable + StartupWeaponRow. Without both, every player spawns empty-handed."));
+				return;
+			}
+
+			TestTrue(FString::Printf(TEXT("StartupWeaponTable '%s' points at DT_Weapons, the table this suite pins"), *TablePath),
+				TablePath.Contains(TEXT("DT_Weapons")));
+
+			TestNotNull(FString::Printf(TEXT("StartupWeaponRow '%s' is a row in DT_Weapons.csv"), *RowName),
+				Weapon(FName(*RowName)));
+		});
+
+		// A soft ref that resolves to nothing fails SILENTLY — the equip runs, the mesh
+		// never appears, and no log line anywhere says why. Checked on disk because the
+		// paths are just text until something tries to load them at runtime.
+		It("points every shipped row's held mesh and anim BPs at assets that exist on disk", [this]()
+		{
+			if (!EnsureTables()) { return; }
+
+			for (const FName& RowName : { RowAR, RowMagnum, RowRocket })
+			{
+				const FBRWeaponRow* Row = Weapon(RowName);
+				if (!Row) { continue; }
+
+				// FirstPersonAnimBP is absent on purpose — see FBRWeaponRow::ValidateSchema.
+				const TArray<TPair<FString, FString>> SoftRefs = {
+					{ TEXT("HeldMeshSoftPath"), Row->HeldMeshSoftPath.ToSoftObjectPath().ToString() },
+					{ TEXT("ThirdPersonAnimBP"), Row->ThirdPersonAnimBP.ToSoftObjectPath().ToString() },
+					{ TEXT("MeshSoftPath"), Row->MeshSoftPath.ToSoftObjectPath().ToString() },
+					{ TEXT("AbilitySet"), Row->AbilitySet.ToSoftObjectPath().ToString() },
+				};
+
+				for (const TPair<FString, FString>& SoftRef : SoftRefs)
+				{
+					TestTrue(FString::Printf(TEXT("%s.%s points at an asset that exists"),
+							*RowName.ToString(), *SoftRef.Key),
+						BRCombatSpecInternal::PackageFileExists(SoftRef.Value));
+				}
+			}
 		});
 	});
 
