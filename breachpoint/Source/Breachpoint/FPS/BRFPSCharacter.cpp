@@ -4,6 +4,7 @@
 #include "Components/SkeletalMeshComponent.h"
 
 #include "FPS/BRAnimInstance.h"
+#include "FPS/BRProceduralAnimComponent.h"
 
 ABRFPSCharacter::ABRFPSCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -20,6 +21,8 @@ ABRFPSCharacter::ABRFPSCharacter(const FObjectInitializer& ObjectInitializer)
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = false;
 	PrimaryActorTick.bAllowTickOnDedicatedServer = false;
+
+	ProceduralAnim = CreateDefaultSubobject<UBRProceduralAnimComponent>(TEXT("ProceduralAnim"));
 }
 
 void ABRFPSCharacter::BeginPlay()
@@ -103,71 +106,23 @@ UBRAnimInstance* ABRFPSCharacter::GetThirdPersonAnimInstance() const
 	return Mesh3P ? Cast<UBRAnimInstance>(Mesh3P->GetAnimInstance()) : nullptr;
 }
 
-bool ABRFPSCharacter::LinkLayerOnMesh(USkeletalMeshComponent* Mesh, TSubclassOf<UAnimInstance> LayerClass,
-	TSubclassOf<UAnimInstance>& InOutLinked)
-{
-	if (!Mesh)
-	{
-		InOutLinked = nullptr;
-		return false;
-	}
-
-	// VERIFY, do not trust the record. LinkAnimClassLayers is void and no-ops silently when the
-	// mesh has no anim instance; and any InitAnim resets the linked list without telling us. The
-	// mesh is the only honest source of truth for what is actually linked.
-	if (!Mesh->GetAnimInstance())
-	{
-		InOutLinked = nullptr;
-		return false;
-	}
-
-	if (InOutLinked == LayerClass)
-	{
-		return true;
-	}
-
-	if (InOutLinked)
-	{
-		Mesh->UnlinkAnimClassLayers(InOutLinked);
-	}
-
-	if (LayerClass)
-	{
-		Mesh->LinkAnimClassLayers(LayerClass);
-	}
-
-	InOutLinked = LayerClass;
-	return true;
-}
-
 void ABRFPSCharacter::LinkWeaponAnimLayer(TSubclassOf<UAnimInstance> LayerClass)
 {
-	DesiredLayerClass = LayerClass;
-
-	// PER MESH, and each is idempotent on its own. Idempotence is not a micro-optimisation:
-	// LinkAnimClassLayers on an already-linked class tears the layer instance down and rebuilds
-	// it, discarding every blend and inertialised transition in flight -- so equipment
-	// re-broadcasting its state would hitch the weapon pose exactly when a player is swapping
-	// under fire. But it must be per-mesh, or one mesh failing to link poisons the other's guard.
-	const bool bLinked1P = LinkLayerOnMesh(GetFirstPersonMesh(), LayerClass, LinkedLayer1P);
-	const bool bLinked3P = LinkLayerOnMesh(GetMesh3P(), LayerClass, LinkedLayer3P);
-
-	// A mesh that was not ready keeps `DesiredLayerClass` pending, so the next broadcast retries
-	// only the one that failed. Before this, a partial link was recorded as complete and never
-	// recovered -- the arms held a rifle and the body did not, until the player swapped weapons.
-	if (!bLinked1P || !bLinked3P)
+	// Forwarded, not reimplemented. The component owns the whole "what weapon is up and how does
+	// it move" concern; a character that kept its own copy of the linked state would be the second
+	// owner of one fact, which is the defect this packet has already hit three times.
+	if (UBRProceduralAnimComponent* Procedural = GetProceduralAnim())
 	{
-		UE_LOG(LogTemp, Verbose,
-			TEXT("BRFPSCharacter: layer link deferred (1P:%d 3P:%d) - mesh not ready."),
-			bLinked1P ? 1 : 0, bLinked3P ? 1 : 0);
+		Procedural->LinkWeaponAnimLayer(LayerClass);
 	}
 }
 
 void ABRFPSCharacter::UnlinkWeaponAnimLayer()
 {
-	DesiredLayerClass = nullptr;
-	LinkLayerOnMesh(GetFirstPersonMesh(), nullptr, LinkedLayer1P);
-	LinkLayerOnMesh(GetMesh3P(), nullptr, LinkedLayer3P);
+	if (UBRProceduralAnimComponent* Procedural = GetProceduralAnim())
+	{
+		Procedural->UnlinkWeaponAnimLayer();
+	}
 }
 
 void ABRFPSCharacter::ApplyWeaponRecoil(const FBRRecoilImpulse& Impulse, float Alpha)
