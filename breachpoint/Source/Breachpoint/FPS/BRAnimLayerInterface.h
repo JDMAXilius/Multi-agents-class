@@ -3,6 +3,8 @@
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
 
+#include "FPS/BRSwayAndLagTypes.h"
+
 #include "BRAnimLayerInterface.generated.h"
 
 /**
@@ -67,4 +69,21 @@ public:
 	UFUNCTION(BlueprintNativeEvent, Category = "Breachpoint|Animation")
 	bool GetOverridesHandPose() const;
 	virtual bool GetOverridesHandPose_Implementation() const { return false; }
+
+	/**
+	 * This weapon's sway and lag profile.
+	 *
+	 * **This is what makes "sway is a property of the weapon" true rather than aspirational.** The
+	 * spine previously held one `FBRSwayAndLagInfo` as a class-wide config member and its comment
+	 * claimed the per-weapon profile was in force; nothing supplied one, so it was still a single
+	 * profile for every gun — sourced from an ini instead of from hardcoded scalars, which is not
+	 * the same thing as fixed.
+	 *
+	 * The source pack's `infoMap` carries nine distinct entries, and the spread is real:
+	 * `lag_Rotation_Multiply` is 5 on the knife and unarmed, 11 on one pistol, 12 on the rest. A
+	 * knife and a rifle should not trail the camera identically, and with this they do not.
+	 */
+	UFUNCTION(BlueprintNativeEvent, Category = "Breachpoint|Animation")
+	FBRSwayAndLagInfo GetSwayAndLagInfo() const;
+	virtual FBRSwayAndLagInfo GetSwayAndLagInfo_Implementation() const { return FBRSwayAndLagInfo(); }
 };

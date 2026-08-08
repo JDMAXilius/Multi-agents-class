@@ -2,6 +2,8 @@
 
 #include "CoreMinimal.h"
 
+#include "FPS/BRSwayAndLagTypes.h"
+
 #include "BRAnimTypes.generated.h"
 
 /**
@@ -134,6 +136,14 @@ struct FBRAnimSnapshot
 
 	/** Which weapon row the linked layer serves, asked through `IBRAnimLayer` on the game thread. */
 	FName LayerRow;
+
+	/**
+	 * The linked layer's sway/lag profile, latched with everything else.
+	 *
+	 * Crosses the boundary as data rather than being asked for on the worker thread, because
+	 * asking means calling through a UObject interface — which law 1 forbids from that pass.
+	 */
+	FBRSwayAndLagInfo LayerSwayAndLag;
 	bool bLayerOverridesHandPose = false;
 
 	/** False until the pawn is real. Every consumer checks it; a zeroed snapshot is not a pose. */

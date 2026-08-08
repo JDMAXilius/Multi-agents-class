@@ -32,6 +32,25 @@
 namespace BRProcedural
 {
 	/**
+	 * Stiffness per unit of `SwayInterpSpeed`, and the damping ratio held across the whole range.
+	 *
+	 * Named constants rather than literals in the formula because their RELATIONSHIP is the design:
+	 * zeta is what decides whether a weapon settles crisply or rings, and it must not drift when a
+	 * designer turns the speed knob. 0.74 sits just under critical -- one small overshoot, which
+	 * reads as weight; a perfectly critical spring reads as lifeless.
+	 */
+	static constexpr float SwayStiffnessPerSpeed = 9.f;
+	static constexpr float SwayDampingRatio = 0.74f;
+
+	/** Below this speed (cm/s) there is no lag direction. Matches the spine's own "is moving" test. */
+	static constexpr float BR_MinLagSpeed = 1.f;
+
+	/**
+	 * A weight sum below this fraction of the largest single weight is treated as no distribution.
+	 * Catches mixed-sign tables, where the sum is small but the shares are enormous.
+	 */
+	static constexpr float BR_MinWeightSumRatio = 0.01f;
+	/**
 	 * Advance a spring one step and return its value.
 	 *
 	 * `Step` is expected to be **already clamped** by the caller. Semi-implicit Euler at the

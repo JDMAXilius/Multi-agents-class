@@ -279,6 +279,9 @@ protected:
 	 */
 	static constexpr float BR_NeverFired = 9999.f;
 
+	/** Ceiling on queued recoil. A spine that stops draining must not grow an array forever. */
+	static constexpr int32 BR_MaxPendingRecoil = 32;
+
 	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Weapon")
 	float TimeSinceFired = BR_NeverFired;
 
@@ -620,14 +623,16 @@ private:
 	float ProceduralTimeSeconds = 0.f;
 
 	/**
-	 * The per-weapon sway profile in force. Defaults until a layer supplies one.
+	 * The profile used when NO layer is linked — unarmed, or before equipment has spoken.
 	 *
-	 * This is what the ported `FBRSwayAndLagInfo` is FOR: the hardcoded config scalars this class
-	 * started with were one profile for every weapon, which is the thing the source pack got
-	 * right and we had not yet.
+	 * Named `Default…` and not `SwayAndLag` on purpose. The previous field claimed to be "the
+	 * per-weapon profile in force" and was nothing of the kind: no layer, no interface member and
+	 * no writer existed, so it was a single profile for every weapon read from an ini instead of
+	 * from hardcoded scalars — a different source for the same defect. The real per-weapon value
+	 * now arrives through `IBRAnimLayer::GetSwayAndLagInfo` and lands in the snapshot.
 	 */
 	UPROPERTY(EditDefaultsOnly, Config, Category = "Breachpoint|Tuning")
-	FBRSwayAndLagInfo SwayAndLag;
+	FBRSwayAndLagInfo DefaultSwayAndLag;
 
 	TWeakObjectPtr<UAbilitySystemComponent> BoundASC;
 	TArray<FDelegateHandle> TagHandles;

@@ -51,9 +51,9 @@ struct FBRRecoilImpulse
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Breachpoint|Recoil")
 	FRotator MaxForceRotation = FRotator::ZeroRotator;
 
-	/** Source default for the ADS envelope is 0.1 s. */
+	/** Source ADS envelope is 0.08 s min / 0.1 s max. (Shipped as 0.1/0.1 -- min was wrong.) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Breachpoint|Recoil")
-	float MinForceDuration = 0.1f;
+	float MinForceDuration = 0.08f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Breachpoint|Recoil")
 	float MaxForceDuration = 0.1f;

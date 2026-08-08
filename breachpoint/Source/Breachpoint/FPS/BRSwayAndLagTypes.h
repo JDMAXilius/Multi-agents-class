@@ -30,9 +30,19 @@ struct FBRSwayAndLagInfo
 {
 	GENERATED_BODY()
 
-	/** How fast rotational sway chases its target. Source default 10. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Breachpoint|Sway")
-	float SwayInterpSpeed = 10.f;
+	/**
+	 * How fast rotational sway chases its target.
+	 *
+	 * **3, and the correction matters more than the number.** This shipped as 10 with the comment
+	 * "Source default 10" — which was `lag_InterpSpeed`, one line below it in the same struct.
+	 * The inventory is unambiguous: `defaultInfo.sway_InterpSpeed` is 3 and **all nine `infoMap`
+	 * entries** are 3. No weapon in the pack has 10.
+	 *
+	 * A transcription error is cheap; a transcription error wearing a provenance citation is not,
+	 * because the citation is what stops the next reader checking.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Breachpoint|Sway", meta = (ClampMin = "0.01"))
+	float SwayInterpSpeed = 3.f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Breachpoint|Sway")
 	float SwayMultiplyDefault = 1.f;
@@ -42,20 +52,22 @@ struct FBRSwayAndLagInfo
 	 * is usable: full hip-fire sway on a magnified optic makes the target unhittable.
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Breachpoint|Sway")
-	float SwayMultiplyADS = 0.35f;
+	float SwayMultiplyADS = 0.5f;
 
 	/** How far the weapon may trail the camera positionally, in cm. Source default 1.6. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Breachpoint|Lag")
 	float LagDistance = 1.6f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Breachpoint|Lag")
+	/** Any positive value is stable at any timestep -- `VInterpTo` clamps its own alpha. But ZERO
+	 *  snaps to the target instantly, which is the opposite of what "no interpolation" suggests. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Breachpoint|Lag", meta = (ClampMin = "0.01"))
 	float LagInterpSpeed = 10.f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Breachpoint|Lag")
 	float LagMultiplyDefault = 1.f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Breachpoint|Lag")
-	float LagMultiplyADS = 0.35f;
+	float LagMultiplyADS = 0.5f;
 
 	/**
 	 * Vertical lag while airborne. The source documents this one in the asset itself —
@@ -63,9 +75,14 @@ struct FBRSwayAndLagInfo
 	 * ten the original author felt needed explaining.
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Breachpoint|Lag")
-	float LagMultiplyAir = 1.f;
+	float LagMultiplyAir = 0.5f;
 
-	/** How much of the lag is expressed as rotation rather than translation. */
+	/**
+	 * How much of the lag is expressed as rotation rather than translation. Source default **8**,
+	 * and per-weapon 5 (knife, unarmed), 11 and 12 — the widest real spread in the whole profile,
+	 * which is the clearest single argument that this struct belongs in a per-weapon table.
+	 * Shipped as 1.0 here, an eightfold understatement.
+	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Breachpoint|Lag")
-	float LagRotationMultiply = 1.f;
+	float LagRotationMultiply = 8.f;
 };

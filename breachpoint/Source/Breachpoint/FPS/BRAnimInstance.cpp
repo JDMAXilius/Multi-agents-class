@@ -158,6 +158,7 @@ void UBRAnimInstance::RefreshLinkedLayer()
 {
 	FName Row;
 	bool bOverridesHands = false;
+	FBRSwayAndLagInfo LayerProfile = DefaultSwayAndLag;
 
 	// `GetLinkedAnimLayerInstanceByClass` takes the LAYER class; asking by our own interface
 	// keeps this free of any per-weapon class name. If no layer is linked the row is NAME_None,
@@ -170,6 +171,7 @@ void UBRAnimInstance::RefreshLinkedLayer()
 			{
 				Row = IBRAnimLayer::Execute_GetLayerWeaponRow(Linked);
 				bOverridesHands = IBRAnimLayer::Execute_GetOverridesHandPose(Linked);
+				LayerProfile = IBRAnimLayer::Execute_GetSwayAndLagInfo(Linked);
 				break;
 			}
 		}
@@ -177,6 +179,10 @@ void UBRAnimInstance::RefreshLinkedLayer()
 
 	Snapshot.LayerRow = Row;
 	Snapshot.bLayerOverridesHandPose = bOverridesHands;
+
+	// The layer's profile if one is linked, the spine's fallback if not. Unarmed is a legitimate
+	// state, not a missing weapon, so the fallback is a real profile rather than a zeroed struct.
+	Snapshot.LayerSwayAndLag = LayerProfile;
 }
 
 void UBRAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
@@ -403,12 +409,12 @@ void UBRAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 	// property of the WEAPON, and one profile for every gun makes a pistol and a rocket launcher
 	// settle identically.
 	SwayRotation = BRProcedural::SolveSway(
-		SwayAndLag, YawDeltaSpeed, PitchRate, bIsADS, SwayMaxAngle, Step,
+		Snapshot.LayerSwayAndLag, YawDeltaSpeed, PitchRate, bIsADS, SwayMaxAngle, Step,
 		SwayYawSpring, SwayPitchSpring);
 
 	// Positional lag, in the actor's frame. Trails the motion and catches up; never overshoots.
 	SwayLagOffset = BRProcedural::SolveLag(
-		SwayAndLag, LocalVelocity2D + FVector(0.f, 0.f, VelocityZ), bIsADS, bIsFalling, Step, LagOffset);
+		Snapshot.LayerSwayAndLag, LocalVelocity2D + FVector(0.f, 0.f, VelocityZ), bIsADS, bIsFalling, Step, LagOffset);
 
 	// ------------------------------------------------------------------ recoil (weapon transform)
 	// Camera recoil is NOT here and never will be -- animation.md A.6, founder ruling: it moves
@@ -607,6 +613,19 @@ void UBRAnimInstance::AddRecoilImpulse(const FBRRecoilImpulse& Impulse, float Al
 	// The alpha is the caller's roll, used verbatim: see animation.md A.6 on why a function that
 	// rolled its own would desynchronise the client's crosshair from the server's cone.
 	FScopeLock Lock(&PendingForcesLock);
+
+	// CAPPED, and it is not theoretical the moment anyone tunes performance. The drain only runs
+	// when the spine updates, and `VisibilityBasedAnimTickOption` defaults to always-tick today --
+	// but `OnlyTickPoseWhenRendered` on the 3P mesh is the first thing a perf pass reaches for in
+	// a 4v4 arena. After that, every off-screen remote player's spine stops draining while their
+	// weapon keeps firing: an AR at 600 RPM appends ten entries a second, forever, under a lock
+	// the game thread takes on every shot. Dropping the OLDEST keeps the most recent kick, which
+	// is the one a player would actually see if the mesh came back on screen.
+	if (PendingForces.Num() >= BR_MaxPendingRecoil)
+	{
+		PendingForces.RemoveAt(0, EAllowShrinking::No);
+	}
+
 	PendingForces.Add(FBRPendingRecoil{ Impulse, Alpha });
 }
 

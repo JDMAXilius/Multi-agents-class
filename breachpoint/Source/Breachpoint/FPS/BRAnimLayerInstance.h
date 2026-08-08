@@ -52,6 +52,7 @@ public:
 
 	virtual FName GetLayerWeaponRow_Implementation() const override { return WeaponRow; }
 	virtual bool GetOverridesHandPose_Implementation() const override { return bOverridesHandPose; }
+	virtual FBRSwayAndLagInfo GetSwayAndLagInfo_Implementation() const override { return SwayAndLag; }
 
 	/** Per-bone aim-offset weights. Empty means "the spine's default"; a layer overrides only if it differs. */
 	const TMap<FName, float>& GetAimSpineWeights() const { return AimSpineWeights; }
@@ -104,4 +105,14 @@ protected:
 	 */
 	UPROPERTY(EditDefaultsOnly, Category = "Breachpoint|Layer")
 	TMap<FName, float> AimSpineWeights;
+
+	/**
+	 * How this weapon sways and lags. The pack's `infoMap` entry for this layer, in C++.
+	 *
+	 * Lives on the LAYER rather than on the spine because that is the only place that knows which
+	 * weapon is up without asking an asset. Defaults are the pack's `defaultInfo`, so a layer that
+	 * does not differ carries nothing.
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "Breachpoint|Layer")
+	FBRSwayAndLagInfo SwayAndLag;
 };

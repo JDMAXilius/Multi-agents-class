@@ -129,14 +129,36 @@ protected:
 	float FOVInterpSpeed = 10.f;
 
 	/**
-	 * The layer currently linked, so `LinkWeaponAnimLayer` can be idempotent.
+	 * Linked layer tracked PER MESH, because the two meshes can genuinely disagree.
 	 *
-	 * Not replicated. Each machine links from its own copy of the equipment state, and replicating
-	 * a *class pointer* to describe something already derivable from the weapon row would be a
-	 * second source of truth for the same fact.
+	 * A single character-wide field was wrong in a way that had no recovery path.
+	 * `USkeletalMeshComponent::LinkAnimClassLayers` returns `void` and **silently no-ops when the
+	 * mesh has no anim instance yet** -- routine on a join-in-progress client, where the 3P mesh
+	 * can initialise after the 1P one. The old code recorded success for both, so the next
+	 * broadcast of the same weapon hit the idempotence guard and returned early: **arms posing a
+	 * rifle, body posing the base layer, permanently.** Invisible to the player causing it, which
+	 * is the law-7 failure the linking comment itself cites.
+	 *
+	 * Any `InitAnim` also drops linked layers behind our back (`LinkedInstances.Reset()`), so the
+	 * per-mesh record is verified against the mesh rather than trusted.
+	 *
+	 * Not replicated. Each machine links from its own copy of the equipment state; replicating a
+	 * class pointer to describe something already derivable from the weapon row would be a second
+	 * source of truth for the same fact.
 	 */
 	UPROPERTY(Transient)
-	TSubclassOf<UAnimInstance> LinkedLayerClass;
+	TSubclassOf<UAnimInstance> LinkedLayer1P;
+
+	UPROPERTY(Transient)
+	TSubclassOf<UAnimInstance> LinkedLayer3P;
+
+	/** The layer equipment last asked for. Retried per mesh until each actually holds it. */
+	UPROPERTY(Transient)
+	TSubclassOf<UAnimInstance> DesiredLayerClass;
+
+	/** Link one mesh and report whether it actually took. */
+	bool LinkLayerOnMesh(USkeletalMeshComponent* Mesh, TSubclassOf<UAnimInstance> LayerClass,
+		TSubclassOf<UAnimInstance>& InOutLinked);
 
 	/** Where the FOV is heading. Equal to the current FOV means "settled, stop ticking". */
 	UPROPERTY(Transient)

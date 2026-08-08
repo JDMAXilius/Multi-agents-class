@@ -103,60 +103,71 @@ UBRAnimInstance* ABRFPSCharacter::GetThirdPersonAnimInstance() const
 	return Mesh3P ? Cast<UBRAnimInstance>(Mesh3P->GetAnimInstance()) : nullptr;
 }
 
+bool ABRFPSCharacter::LinkLayerOnMesh(USkeletalMeshComponent* Mesh, TSubclassOf<UAnimInstance> LayerClass,
+	TSubclassOf<UAnimInstance>& InOutLinked)
+{
+	if (!Mesh)
+	{
+		InOutLinked = nullptr;
+		return false;
+	}
+
+	// VERIFY, do not trust the record. LinkAnimClassLayers is void and no-ops silently when the
+	// mesh has no anim instance; and any InitAnim resets the linked list without telling us. The
+	// mesh is the only honest source of truth for what is actually linked.
+	if (!Mesh->GetAnimInstance())
+	{
+		InOutLinked = nullptr;
+		return false;
+	}
+
+	if (InOutLinked == LayerClass)
+	{
+		return true;
+	}
+
+	if (InOutLinked)
+	{
+		Mesh->UnlinkAnimClassLayers(InOutLinked);
+	}
+
+	if (LayerClass)
+	{
+		Mesh->LinkAnimClassLayers(LayerClass);
+	}
+
+	InOutLinked = LayerClass;
+	return true;
+}
+
 void ABRFPSCharacter::LinkWeaponAnimLayer(TSubclassOf<UAnimInstance> LayerClass)
 {
-	// Idempotent, and not as a micro-optimisation. `LinkAnimClassLayers` on an already-linked
-	// class tears the layer instance down and builds a new one, which discards every blend,
-	// additive and inertialised transition in flight. Equipment re-broadcasting its state -- on
-	// respawn, on a relevancy change, on any OnRep -- would otherwise hitch the weapon pose at
-	// exactly the moment a player is swapping under fire. This is the same failure Amendment A
-	// §A.3 rejected AnimInstance-swapping for; the mechanism is different, the cost is identical.
-	if (LayerClass == LinkedLayerClass)
+	DesiredLayerClass = LayerClass;
+
+	// PER MESH, and each is idempotent on its own. Idempotence is not a micro-optimisation:
+	// LinkAnimClassLayers on an already-linked class tears the layer instance down and rebuilds
+	// it, discarding every blend and inertialised transition in flight -- so equipment
+	// re-broadcasting its state would hitch the weapon pose exactly when a player is swapping
+	// under fire. But it must be per-mesh, or one mesh failing to link poisons the other's guard.
+	const bool bLinked1P = LinkLayerOnMesh(GetFirstPersonMesh(), LayerClass, LinkedLayer1P);
+	const bool bLinked3P = LinkLayerOnMesh(GetMesh3P(), LayerClass, LinkedLayer3P);
+
+	// A mesh that was not ready keeps `DesiredLayerClass` pending, so the next broadcast retries
+	// only the one that failed. Before this, a partial link was recorded as complete and never
+	// recovered -- the arms held a rifle and the body did not, until the player swapped weapons.
+	if (!bLinked1P || !bLinked3P)
 	{
-		return;
+		UE_LOG(LogTemp, Verbose,
+			TEXT("BRFPSCharacter: layer link deferred (1P:%d 3P:%d) - mesh not ready."),
+			bLinked1P ? 1 : 0, bLinked3P ? 1 : 0);
 	}
-
-	UnlinkWeaponAnimLayer();
-
-	if (!LayerClass)
-	{
-		return;
-	}
-
-	// Both meshes. The arms and the body pose the same weapon and would otherwise disagree about
-	// which one they are holding -- visible to everyone except the player causing it, which is
-	// the class of bug law 7's three views exists to catch.
-	if (USkeletalMeshComponent* Mesh1P = GetFirstPersonMesh())
-	{
-		Mesh1P->LinkAnimClassLayers(LayerClass);
-	}
-
-	if (USkeletalMeshComponent* Mesh3P = GetMesh3P())
-	{
-		Mesh3P->LinkAnimClassLayers(LayerClass);
-	}
-
-	LinkedLayerClass = LayerClass;
 }
 
 void ABRFPSCharacter::UnlinkWeaponAnimLayer()
 {
-	if (!LinkedLayerClass)
-	{
-		return;
-	}
-
-	if (USkeletalMeshComponent* Mesh1P = GetFirstPersonMesh())
-	{
-		Mesh1P->UnlinkAnimClassLayers(LinkedLayerClass);
-	}
-
-	if (USkeletalMeshComponent* Mesh3P = GetMesh3P())
-	{
-		Mesh3P->UnlinkAnimClassLayers(LinkedLayerClass);
-	}
-
-	LinkedLayerClass = nullptr;
+	DesiredLayerClass = nullptr;
+	LinkLayerOnMesh(GetFirstPersonMesh(), nullptr, LinkedLayer1P);
+	LinkLayerOnMesh(GetMesh3P(), nullptr, LinkedLayer3P);
 }
 
 void ABRFPSCharacter::ApplyWeaponRecoil(const FBRRecoilImpulse& Impulse, float Alpha)

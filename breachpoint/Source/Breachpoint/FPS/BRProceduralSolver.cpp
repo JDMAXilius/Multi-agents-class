@@ -27,15 +27,29 @@ FRotator SolveSway(
 	const float YawTarget = FMath::Clamp(-YawRateDegrees * Multiply, -MaxAngle, MaxAngle);
 	const float PitchTarget = FMath::Clamp(-PitchRateDegrees * Multiply, -MaxAngle, MaxAngle);
 
-	// InterpSpeed is the source's tuning knob and maps to stiffness; damping is derived to sit
-	// slightly under critical (zeta ~0.74 at the defaults) so the weapon settles with one small
-	// overshoot rather than creeping in. A perfectly critical spring reads as damped and lifeless.
-	const FBRSpringSetting Setting{ Info.SwayInterpSpeed * 9.f, Info.SwayInterpSpeed * 1.4f };
+	// DAMPING IS DERIVED FOR A CONSTANT DAMPING RATIO, not a constant ratio to stiffness. That
+	// distinction is the whole fix for a defect this function shipped with.
+	//
+	// It used to be `{s * 9, s * 1.4}`, chosen so zeta = c / (2*sqrt(k)) landed near 0.74 -- at
+	// s = 10, which was a MIS-TRANSCRIBED default. The source's real `sway_InterpSpeed` is 3
+	// (all nine weapons), and at s = 3 that formula gives zeta = 0.2333*sqrt(3) = 0.40, i.e. a
+	// 25% overshoot: every weapon visibly wobbles past its rest position on every turn. The
+	// constant was calibrated against a number the pack does not contain, so loading the pack's
+	// real values -- the entire point of the struct -- would have introduced the ring.
+	//
+	// zeta is now held fixed and `c` solved from `k`: c = 2*zeta*sqrt(k). The knob stays a knob
+	// across its whole range instead of silently changing the feel as it is turned.
+	const float Stiffness = FMath::Max(Info.SwayInterpSpeed, 0.01f) * SwayStiffnessPerSpeed;
+	const FBRSpringSetting Setting{ Stiffness, 2.f * SwayDampingRatio * FMath::Sqrt(Stiffness) };
 
-	return FRotator(
-		StepSpring(PitchSpring, PitchTarget, Setting, Step),
-		StepSpring(YawSpring, YawTarget, Setting, Step),
-		0.f);
+	// The TARGET was clamped; the spring's own value was not. At a high enough stiffness the
+	// integrator overshoots past the rail even from a clamped target, so the output is clamped
+	// too -- the same unbounded-output failure the timestep clamp closed, reachable through the
+	// stiffness knob instead, from an unvalidated per-weapon table value.
+	const float Pitch = FMath::Clamp(StepSpring(PitchSpring, PitchTarget, Setting, Step), -MaxAngle, MaxAngle);
+	const float Yaw = FMath::Clamp(StepSpring(YawSpring, YawTarget, Setting, Step), -MaxAngle, MaxAngle);
+
+	return FRotator(Pitch, Yaw, 0.f);
 }
 
 FVector SolveLag(
@@ -54,10 +68,14 @@ FVector SolveLag(
 		Multiply *= Info.LagMultiplyAir;
 	}
 
-	// Normalised then scaled, NOT scaled raw. Raw velocity means lag grows without bound with
-	// speed, so a sprint or a launch pad throws the weapon out of frame. Direction is the signal;
-	// LagDistance is the entire budget.
-	const FVector Direction = LocalVelocity.GetSafeNormal();
+	// A MINIMUM SPEED, because `GetSafeNormal`'s tolerance is ~1e-8 on the squared length: without
+	// this, 5 cm/s of friction settle or network micro-jitter displaces the weapon exactly as far
+	// as an 800 cm/s sprint. The threshold matches the spine's own "is moving" test (1 cm/s), so
+	// there is no band where the spine reports stationary while the weapon wanders at full
+	// amplitude -- which is precisely what the mismatch produced.
+	const FVector Direction = LocalVelocity.SizeSquared() > (BR_MinLagSpeed * BR_MinLagSpeed)
+		? LocalVelocity.GetSafeNormal()
+		: FVector::ZeroVector;
 	const FVector Target = -Direction * Info.LagDistance * Multiply;
 
 	// Interp rather than spring: lag should trail and catch up, never overshoot past the hands.
@@ -110,7 +128,20 @@ void DistributeSpineRotation(
 	OutPerBone.Reset();
 
 	const float Total = Weights.TotalWeight();
-	if (FMath::IsNearlyZero(Total))
+
+	// `IsNearlyZero` alone is not enough, and the gap is not academic. Weights of opposite sign
+	// -- one typed minus in a bone table -- can sum to a small NON-zero total while the individual
+	// magnitudes stay large: {head: 1.0, neck_01: -0.999} totals 0.001, so the shares become
+	// +1000 and -999 and a 30-degree aim pitch becomes 30,000 degrees on one bone. That is not a
+	// wrong pose, it is destroyed geometry. Guarding on the total against the largest magnitude
+	// catches the sign case, which a magnitude-free epsilon cannot.
+	float MaxMagnitude = 0.f;
+	for (const TPair<FName, float>& Pair : Weights.BoneWeights)
+	{
+		MaxMagnitude = FMath::Max(MaxMagnitude, FMath::Abs(Pair.Value));
+	}
+
+	if (FMath::IsNearlyZero(Total) || FMath::Abs(Total) < MaxMagnitude * BR_MinWeightSumRatio)
 	{
 		// An empty or all-zero table means "no distribution authored", which is a legitimate
 		// answer (use the spine's default), not an error. Returning an empty map says exactly
