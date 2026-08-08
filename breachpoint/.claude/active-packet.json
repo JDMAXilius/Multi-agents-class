@@ -11,7 +11,8 @@
   ],
   "binary_locks": [
     "Content/Characters/ABP_BRMannequin1P.uasset",
-    "Content/Characters/ABP_BRMannequin3P.uasset"
+    "Content/Characters/ABP_BRMannequin3P.uasset",
+    "Content/Characters/BP_BRcharacter.uasset"
   ],
   "authorized_by": "founder, 8 Aug 2026 - integrate from the editor, create/delete Blueprints as needed"
 }
