@@ -16,9 +16,8 @@
 > No Build.cs change is owed: UE globs every folder under `Source/Breachpoint/`, and
 > `PublicIncludePaths` lists only the legacy `Variant_*` shortcuts, which `FPS/` does not use.
 
-> **Founder directive (unchanged):** *"break down the entire character and entire anim instance … transfer
-> Founder directive: *"break down the entire character and entire anim instance … transfer
-> everything to C++ as much as possible. I understand there's gonna be a couple stuff we might
+> **Founder directive (unchanged):** *"break down the entire character and entire anim instance …
+> transfer everything to C++ as much as possible. I understand there's gonna be a couple stuff we might
 > not be able to do."* This ticket honours both halves of that sentence — it maximises C++ and
 > it names, in advance, exactly what cannot move.
 
@@ -229,7 +228,8 @@ wearing a different hat.
 > nobody, which is the precise silence R39 forbids.
 >
 > **RE-AMENDED 8 Aug (second expansion, founder call).** It is now **10 units / 15 files**.
-> `Source/Breachpoint/FPS/` is a NEW discipline folder needing a numbered §3.x **"FPS — 10"**:
+> **RE-AMENDED AGAIN 8 Aug** — the solver and the character seam land, so it is **13 units / 24
+> files**. `Source/Breachpoint/FPS/` is a NEW discipline folder needing a numbered §3.x **"FPS — 13"**:
 > | Unit | Form | Job |
 > |---|---|---|
 > | `BRAnimInstance` | `.h/.cpp` | The shared spine. Game-thread snapshot → worker compute. |
@@ -242,6 +242,15 @@ wearing a different hat.
 > | `BRAnimTypes` | `.h` (types) | Cardinal enum, snapshot, tag state, spring. |
 > | `BRAnimCurveNames` | `.h` (constants) | Curve-name contract. **No reader yet** — see BP82-4. |
 > | `BRFPSWeaponAnimTypes` | `.h` (types) | Fire mode, crosshair, sockets. **No reader yet.** |
+> | `BRFPSCharacter` | `.h/.cpp` | **Extends `ABRCharacter`.** Layer linking, recoil forwarding, spine accessors. Tick OFF. |
+> | `BRProceduralSolver` | `.h/.cpp` | Sway/lag/recoil/spine maths as free functions over plain data. |
+> | `BRProceduralTypes` · `BRSwayAndLagTypes` · `BRRecoilTypes` · `BRAimAndLeanTypes` · `BRPoseOffsetTypes` | `.h` ×5 | The 16 `S_Procedural_*` shapes. |
+>
+> **`ABRFPSCharacter` extends rather than replaces, and that is load-bearing.** `Character/`
+> stays BP96's at 2 units; this subclass is the anim-facing half only and owns no pawn state. A
+> *second* character class was the outcome to avoid — the ticket's own risk note says a
+> half-ported template is worse than either version because it leaves two systems with an
+> undocumented seam. Extending declares the seam instead of hiding it.
 >
 > **Two units have no caller today and must be declared as such, not quietly.** `BRAnimCurveNames`
 > exists so the turn-in-place curve (BP82-4) cannot be spelled two ways when someone authors the
