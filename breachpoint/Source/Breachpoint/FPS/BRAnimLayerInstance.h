@@ -56,7 +56,6 @@ public:
 	/** Per-bone aim-offset weights. Empty means "the spine's default"; a layer overrides only if it differs. */
 	const TMap<FName, float>& GetAimSpineWeights() const { return AimSpineWeights; }
 
-	bool GetDisableHandIK() const { return bDisableHandIK; }
 	float GetAimOffsetBlendWeight() const { return AimOffsetBlendWeight; }
 
 protected:
@@ -75,9 +74,17 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Breachpoint|Layer")
 	bool bOverridesHandPose = false;
 
-	/** `disableHandIK` on `ABP_ItemAnimLayersBase`. A knife needs it; a rifle does not. */
-	UPROPERTY(EditDefaultsOnly, Category = "Breachpoint|Layer")
-	bool bDisableHandIK = false;
+	// There is deliberately NO `bDisableHandIK` here, and its absence is the design.
+	//
+	// `ABP_ItemAnimLayersBase` carries `disableHandIK` as an asset property, set true on
+	// `ABP_UnarmedAnimLayers` (inventory, anim_layers set), and the AnimGraph reads THAT one.
+	// Declaring a C++ mirror of it would put two values with one meaning on a single object --
+	// the asset's, which the graph uses, and a C++ default of `false`, which code would read.
+	// That is exactly the second-source-of-truth this packet's tag-bool design exists to prevent,
+	// and it would have been reintroduced by the class whose stated job is to END it.
+	//
+	// `bOverridesHandPose` below is not a mirror: it is the SPINE's question ("do I keep hand
+	// IK?"), answered once, and the layer is free to derive it from whatever it likes.
 
 	/** `aimOffsetBlendWeight`. How much of the aim offset this weapon's pose accepts. */
 	UPROPERTY(EditDefaultsOnly, Category = "Breachpoint|Layer", meta = (ClampMin = "0.0", ClampMax = "1.0"))
@@ -86,11 +93,11 @@ protected:
 	/**
 	 * Per-bone aim weights, keyed by bone name.
 	 *
-	 * A map rather than eight floats because that is the shape the source actually had --
-	 * `aimSpineWeights_UE5` came back from the inventory as an object keyed by bone, and it
-	 * carried a DIFFERENT bone set than `aimSpineWeights_UE4` (8 bones vs 5). Eight named float
-	 * members would have hard-coded one skeleton's spine into C++ and broken silently on the
-	 * other -- the map does not care how many spine joints a skeleton has.
+	 * A map rather than eight floats. The full evidence is in the class comment above -- and note
+	 * the correction there: the bone-keyed sets (`aimSpineWeights_UE5`, 8 bones;
+	 * `aimSpineWeights_UE4`, 5) are on the SPINE, not on this layer base, which carries the flat
+	 * `alpha01…alpha08` instead. The argument survives: the weight set is skeleton-dependent, so
+	 * eight positional floats hard-code one skeleton and go silently wrong on the other.
 	 *
 	 * Left empty by default on purpose: empty means "use the spine's distribution", so a layer
 	 * that does not differ carries no data at all.

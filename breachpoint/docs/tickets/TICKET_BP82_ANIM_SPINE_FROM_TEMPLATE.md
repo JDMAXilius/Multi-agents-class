@@ -456,6 +456,96 @@ one frame.** The fix was right and the number is now on the record.
 > verifier's "exactly four files" gate was already stale against disk when it passed.
 > **Rule for the next round: commit first, name the SHA in the packet.**
 
+### 8 Aug 2026 — rung V2 round 2, against SHA `b52e43b`. **1 new high, 5 medium.**
+
+The round-1 process finding is closed: this pass reviewed a committed tree and named the SHA.
+
+> **H2 (high) — MY OWN H1 FIX WAS WORSE THAN THE BUG.** I traded a loud double-fire for a
+> **silent, nondeterministic no-fire of the entire law-4 seam**, which is precisely the trade I
+> asked the critic to check for. It happened.
+>
+> `IsGameplayEventSource()` gated on `GetOwningComponent() == Character->GetMesh()`, reasoning
+> that the 3P mesh exists everywhere. True, and irrelevant — **nothing authored on a montage
+> decides which mesh it plays on.** GAS decides, and it does not choose deliberately:
+> `UAbilityTask_PlayMontageAndWait::Activate` → `ActorInfo->GetAnimInstance()` →
+> `SkeletalMeshComponent->GetAnimInstance()`, where `SkeletalMeshComponent` came from
+> `FindComponentByClass<USkeletalMeshComponent>()` — and `AActor::OwnedComponents` is a
+> **`TSet`**. Hash order.
+>
+> `ABRCharacter` owns two skeletal meshes and pins neither. So GAS may hand the reload montage to
+> the **1P** instance; the notify fires there; my gate returns false; `Event.Weapon.ReloadCommit`
+> is never sent **on any machine, server included**; `WaitGameplayEvent` never fires; **ammo never
+> moves.** And which mesh you get can differ between PIE and a packaged build, or shift when an
+> unrelated component is added.
+>
+> **Fixed by asking GAS instead of guessing at it:** the gate is now
+> `GetOwningComponent() == ASC->AbilityActorInfo->SkeletalMeshComponent`. Whichever mesh GAS is
+> using is the one that speaks — exactly one instance per machine, correct regardless of hash
+> order, and it stays correct if the resolution ever changes, because it is no longer an
+> assumption. The determinism of *which* mesh is still worth fixing at the source:
+>
+> > **`contract_gap` BP82-6 → `Source/Breachpoint/Character/` (owner: builder).** `ABRCharacter`
+> > should pin the ability actor info's mesh after `InitAbilityActorInfo` —
+> > `ASC->AbilityActorInfo->SkeletalMeshComponent = GetMesh();` — so 1P-vs-3P is a decision
+> > somebody made rather than a hash-set's iteration order. `Character/` is not in this ticket's
+> > owner_path. The `FPS/` fix above is correct without it; this makes it *predictable*.
+
+> **M13 — the M3 recovery gate was structurally always-true for a simulated proxy.** My stated
+> worry (a slow deliberate turn tripping it) was unfounded — 0.01°/frame is 0.6°/s and no input
+> reaches there. The real defect was the one I did not guess: `Snapshot.WorldRotation` comes from
+> the actor, and for a proxy that is a **step function at the net update rate** (CMC smoothing
+> smooths the mesh offset, not the actor rotation). At 60 fps against 20 Hz the per-frame yaw
+> delta is **exactly 0.0 on two frames in three**, so "has the camera stopped?" answers yes
+> two-thirds of the time *while the player is mid-turn*. Recovery ate ~60°/s of a 90°/s turn:
+> **any remote player turning slower than ~60°/s never turned in place on an observer's screen**,
+> while the same turn worked perfectly for its owner. **Fixed:** the gate now reads
+> `Snapshot.bRotationChanged`, set in the game pass, because only the game pass can tell "new
+> data arrived" from "nothing moved".
+
+> **M17 — stale tag state outlived the ASC.** `UnbindAbilitySystem` reset the handles, never the
+> state. An observing client watching someone **disconnect mid-reload** kept `bReloading` true
+> forever: PlayerState destroyed → rebind returns early at the null check → nothing ever writes
+> it false. The abandoned pawn reloads for eternity with its upper-body additive pinned to zero.
+> Respawn was always clean; ASC *loss* was not. One line, `TagState = FBRAnimTagState{}`.
+
+> **M14 — my `ensureMsgf` asserted law 1 was met in exactly the configuration where it isn't.**
+> The ABP compiler copies its flag to the CDO unconditionally, but the engine *also* gates
+> threaded updates on `UEngine::bAllowMultiThreadedAnimationUpdate`. Set that false in
+> `DefaultEngine.ini` — an ordinary profiling toggle — and the CDO flag stays **true**, my check
+> passed happily, and every worker-pass line ran on the game thread anyway. Now checks both.
+> Second half unfixed and filed: `ensure` is compiled out of Shipping, which is the build where a
+> game-thread anim update actually costs frames.
+>
+> > **`contract_gap` BP82-8 → `Core/` (owner: builder).** `FPS/` has no log channel, so the
+> > Shipping-safe companion to that ensure cannot be written from here (R24/R38).
+
+> **M15 — `UBRAnimLayerInstance` is unreachable from the three layers the ledger says to KEEP.**
+> They parent to `ABP_ItemAnimLayersBase`, which parents to `UAnimInstance`, so they do not
+> implement `IBRAnimLayer` — `LinkedLayerRow` would be permanently `NAME_None` and the header's
+> "the spine knows which layer is up" true of nothing. Fixing it means **reparenting a sourced
+> binary asset**, and this ticket owns no binary files by its own Notes.
+>
+> > **`contract_gap` BP82-7 → a packet that owns `Content/FPSTemplate/`.** Reparent
+> > `ABP_ItemAnimLayersBase` to `UBRAnimLayerInstance` (not the three leaves — that would destroy
+> > ~90 pose slots and the graph, i.e. the purchase). Also: `MeleeWindow` **must** be authored as
+> > `AnimNotify_PlayMontageNotifyWindow`. Authored as the point notify instead, End never fires
+> > and the round-1 high returns — a trace window that opens and is never closed — from one wrong
+> > dropdown, with no diff, no grep and no assert. The detector I could add only catches the
+> > *opposite* mistake, because an absence has no callback.
+>
+> The critic also caught that `UBRAnimLayerInstance` was about to re-create the very thing this
+> packet exists to prevent: a C++ `bDisableHandIK` mirroring the asset's `disableHandIK` (set
+> **true** on `ABP_UnarmedAnimLayers`), giving one meaning two values. **Deleted** — the asset's
+> is the one the graph reads, and `bOverridesHandPose` is the spine's separate question.
+
+**What round 2 could not break** — the M6 latch (race genuinely closed; publish-before-edge
+ordering verified), the two-map split against real engine notify semantics, dedicated-server
+behaviour (both meshes exist and tick), **montage interruption** (`FAnimMontageInstance` emits
+`BranchingPointNotifyEnd` on terminate, so a cancelled melee still closes its window — law 5
+holds), the L3 fix, and it enumerated every accumulator in the class to confirm **no third case**.
+It also re-derived ledger corrections C1/C2/C3 and confirmed I corrected them to something *true*
+rather than merely different.
+
 **Two findings filed against things I do not own, fixed by nobody today:**
 - `run-ubt.sh` warned *"an Unreal editor is running"* on every run **after** the editor was
   closed and confirmed gone. A false positive on a warning about build/editor overlap (R21/R29)

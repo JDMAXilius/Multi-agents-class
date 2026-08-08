@@ -450,13 +450,16 @@ private:
 	 * same ASC -- doubling every event, on every machine. The netcode gate cannot see this: it is
 	 * per-machine, and this duplication is per-mesh.
 	 *
-	 * The third-person mesh is the one that speaks, because it is the one that exists and plays
-	 * on **every** machine including a dedicated server, where the 1P arms are cosmetic. The
-	 * consequence, stated so it is not discovered later: **a gameplay-bearing notify must be
-	 * authored on the third-person montage.** A notify that exists only on the 1P montage raises
-	 * nothing, deliberately.
+	 * The mesh **GAS is using** is the one that speaks — asked, never assumed. An earlier
+	 * revision picked the third-person mesh on the reasoning that it exists everywhere, which is
+	 * true and irrelevant: GAS resolves the montage's mesh with
+	 * `FindComponentByClass<USkeletalMeshComponent>()`, and `OwnedComponents` is a `TSet`. Guessing
+	 * wrong does not double an event, it **deletes the entire seam** on every machine at once.
 	 */
 	bool IsGameplayEventSource() const;
+
+	/** The owner's ASC, resolved fresh. Used before `BoundASC` exists and by the seam's gate. */
+	UAbilitySystemComponent* ResolveAbilitySystem() const;
 
 	/** Refresh `LinkedLayerRow` from whatever layer is currently linked. Game thread; asks the interface. */
 	void RefreshLinkedLayer();
@@ -517,6 +520,9 @@ private:
 	FName PreviousLayerRow;
 	float PreviousAimPitch = 0.f;
 	bool bHasPreviousAimPitch = false;
+
+	/** Suppresses first-pass transition edges, whose "previous" values are defaults, not history. */
+	bool bHasPublishedOnce = false;
 
 	/**
 	 * The fire stamp crosses threads, so it is atomic and nothing else here needs to be.

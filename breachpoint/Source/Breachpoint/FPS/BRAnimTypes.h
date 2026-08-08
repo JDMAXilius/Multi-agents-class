@@ -121,6 +121,17 @@ struct FBRAnimSnapshot
 	/** Latched from the ASC callback's own copy once per game-thread pass. See `FBRAnimTagState`. */
 	FBRAnimTagState Tags;
 
+	/**
+	 * Did the actor's rotation actually change since the last GAME-THREAD pass?
+	 *
+	 * Not derivable on the worker thread, which is the whole point. For a simulated proxy the
+	 * actor rotation is a step function refreshed at the net update rate, so a per-frame yaw
+	 * delta reads exactly zero on most frames while the player is genuinely mid-turn. Anything
+	 * that means "the turn has stopped" must ask whether NEW DATA ARRIVED, and only the game
+	 * pass knows that.
+	 */
+	bool bRotationChanged = false;
+
 	/** Which weapon row the linked layer serves, asked through `IBRAnimLayer` on the game thread. */
 	FName LayerRow;
 	bool bLayerOverridesHandPose = false;

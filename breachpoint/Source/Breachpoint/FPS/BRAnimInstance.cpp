@@ -73,11 +73,19 @@ void UBRAnimInstance::NativeInitializeAnimation()
 	// overwrites: `UAnimBlueprint` forces it false when the graph contains any non-thread-safe
 	// node or a `BlueprintUpdateAnimation` event. If that happens, every line documented as
 	// worker-thread silently runs on the game thread instead and nothing else notices. So: say so.
-	ensureMsgf(bUseMultiThreadedAnimationUpdate,
-		TEXT("UBRAnimInstance: multi-threaded update is OFF for %s. The ABP graph has a "
-			 "non-thread-safe node or a BlueprintUpdateAnimation event, so NativeThreadSafe"
-			 "UpdateAnimation is running on the GAME thread. animation.md law 1 is not being met."),
-		*GetNameSafe(GetClass()));
+	// BOTH halves, because either one alone is a false pass. The ABP compiler copies its flag to
+	// the CDO unconditionally, but the engine ALSO gates threaded updates on a project setting --
+	// so with `bAllowMultiThreadedAnimationUpdate=False` in DefaultEngine.ini (an ordinary
+	// profiling toggle) the CDO flag stays true, a check on it alone passes happily, and every
+	// worker-pass line still runs on the game thread. That is the check asserting law 1 is met in
+	// precisely the configuration where it is not.
+	const bool bEngineAllows = GetDefault<UEngine>()->bAllowMultiThreadedAnimationUpdate;
+	ensureMsgf(bEngineAllows && bUseMultiThreadedAnimationUpdate,
+		TEXT("UBRAnimInstance: threaded anim update is OFF for %s (engine allows: %d, class: %d). "
+			 "Either the project setting is disabled or the ABP graph has a non-thread-safe node "
+			 "or a BlueprintUpdateAnimation event. NativeThreadSafeUpdateAnimation is running on "
+			 "the GAME thread and animation.md law 1 is NOT being met."),
+		*GetNameSafe(GetClass()), bEngineAllows ? 1 : 0, bUseMultiThreadedAnimationUpdate ? 1 : 0);
 }
 
 void UBRAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
@@ -103,8 +111,15 @@ void UBRAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		return;
 	}
 
+	const FRotator NewRotation = Pawn->GetActorRotation();
+
+	// Asked HERE because only the game pass can tell "new data arrived" from "nothing moved".
+	// On a simulated proxy these two are indistinguishable to the worker: both look like a zero
+	// delta, and one of them is a player mid-turn whose update has not landed yet.
+	Snapshot.bRotationChanged = !NewRotation.Equals(Snapshot.WorldRotation, 0.01f);
+
 	Snapshot.WorldLocation = Pawn->GetActorLocation();
-	Snapshot.WorldRotation = Pawn->GetActorRotation();
+	Snapshot.WorldRotation = NewRotation;
 	Snapshot.WorldVelocity = Pawn->GetVelocity();
 	Snapshot.BaseAimRotation = Pawn->GetBaseAimRotation();
 
@@ -268,9 +283,15 @@ void UBRAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 	// ------------------------------------------------------------------ transition edges
 	// True for exactly one update. A state machine transitioning on a LEVEL re-enters its entry
 	// state for as long as the level holds; what it needs is the moment the level changed.
-	bCrouchStateChanged = bIsCrouched != bWasCrouchedLastUpdate;
-	bADSStateChanged = bIsADS != bWasADSLastUpdate;
-	bLinkedLayerChanged = LinkedLayerRow != PreviousLayerRow;
+	//
+	// Suppressed on the first pass, same family as the pitch and yaw guards: the "previous"
+	// fields initialise to the ABSENT value, so a pawn that spawns already crouched -- or already
+	// holding a weapon, so already layer-linked -- would emit a change edge for a change that
+	// never happened, on the one frame the graph is deciding which state to start in.
+	bCrouchStateChanged = bHasPublishedOnce && bIsCrouched != bWasCrouchedLastUpdate;
+	bADSStateChanged = bHasPublishedOnce && bIsADS != bWasADSLastUpdate;
+	bLinkedLayerChanged = bHasPublishedOnce && LinkedLayerRow != PreviousLayerRow;
+	bHasPublishedOnce = true;
 
 	bWasCrouchedLastUpdate = bIsCrouched;
 	bWasADSLastUpdate = bIsADS;
@@ -311,6 +332,7 @@ void UBRAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 	// and leaving an offset applied through a run is how a character ends up crabbing sideways.
 	const float ClampMin = bIsCrouched ? RootYawOffsetMinCrouched : RootYawOffsetMin;
 	const float ClampMax = bIsCrouched ? RootYawOffsetMaxCrouched : RootYawOffsetMax;
+	const bool bSnapshotRotationChanged = Snapshot.bRotationChanged;
 
 	if (bHasVelocity)
 	{
@@ -331,7 +353,17 @@ void UBRAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 		// So: once the turn is over (the camera has stopped), walk it back. This is not
 		// turn-in-place -- it is the floor that stops a missing system reading as a broken one.
 		// The real fix is `contract_gap BP82-4`.
-		if (FMath::IsNearlyZero(YawDeltaSinceLastUpdate, 0.01f))
+		//
+		// GATED ON THE SNAPSHOT CHANGING, NOT ON A PER-FRAME DELTA, and the difference decides
+		// whether remote players turn in place at all. `Snapshot.WorldRotation` comes from the
+		// actor, and for a SIMULATED PROXY that is a step function refreshed at the net update
+		// rate -- CMC smoothing smooths the mesh offset, not the actor rotation. So at 60 fps
+		// against a 20 Hz update the per-frame yaw delta is exactly 0.0 on two frames in three,
+		// and a "has the camera stopped?" test built on it answers YES two frames out of three
+		// while the player is mid-turn. Recovery then eats ~60 deg/s of a 90 deg/s turn, and any
+		// remote player turning slower than that never accumulates an offset at all -- turn in
+		// place works for the owner and silently does not exist for everyone watching him.
+		if (!bSnapshotRotationChanged)
 		{
 			RootYawOffset =
 				FMath::FInterpConstantTo(RootYawOffset, 0.f, DeltaSeconds, RootYawOffsetIdleRecoverySpeed);
@@ -394,10 +426,42 @@ void UBRAnimInstance::HandleMontageNotifyEnd(FName NotifyName, const FBranchingP
 	ForwardNotifyAsGameplayEvent(NotifyName, /*bIsEnd=*/true);
 }
 
+UAbilitySystemComponent* UBRAnimInstance::ResolveAbilitySystem() const
+{
+	const IAbilitySystemInterface* AbilityInterface = Cast<const IAbilitySystemInterface>(GetOwningActor());
+	return AbilityInterface ? AbilityInterface->GetAbilitySystemComponent() : nullptr;
+}
+
 bool UBRAnimInstance::IsGameplayEventSource() const
 {
-	const ACharacter* Character = Cast<ACharacter>(GetOwningActor());
-	return Character && GetOwningComponent() == Character->GetMesh();
+	// FOLLOW GAS. DO NOT GUESS AT IT.
+	//
+	// This used to be `GetOwningComponent() == Character->GetMesh()`, on the reasoning that the
+	// third-person mesh is the one that exists everywhere -- and that reasoning was fine while
+	// being completely wrong about the thing that matters, because **nothing authored on a
+	// montage decides which mesh it plays on.** The ability does, through GAS:
+	//
+	//   UAbilityTask_PlayMontageAndWait::Activate -> ActorInfo->GetAnimInstance()
+	//   FGameplayAbilityActorInfo::GetAnimInstance -> SkeletalMeshComponent->GetAnimInstance()
+	//   FGameplayAbilityActorInfo::InitFromActor   -> FindComponentByClass<USkeletalMeshComponent>()
+	//
+	// and `AActor::OwnedComponents` is a **TSet** -- hash order, not declaration order. A pawn
+	// with two skeletal meshes gets whichever one the set hands over first. So the previous gate
+	// silently dropped the ENTIRE law-4 seam whenever GAS happened to pick the 1P mesh: the
+	// reload's commit notify fired on an instance the gate rejected, on every machine including
+	// the server, and the ability's WaitGameplayEvent simply never fired. Ammo never moves.
+	// Worse, which mesh you get can differ between PIE and a packaged build.
+	//
+	// So the gate asks GAS which mesh it is using and matches that. Whichever mesh plays the
+	// montage is the one that speaks, exactly one instance per machine, and it stays correct
+	// even if the resolution changes -- because it is no longer an assumption.
+	const UAbilitySystemComponent* ASC = BoundASC.IsValid() ? BoundASC.Get() : ResolveAbilitySystem();
+	if (!ASC || !ASC->AbilityActorInfo.IsValid())
+	{
+		return false;
+	}
+
+	return GetOwningComponent() == ASC->AbilityActorInfo->SkeletalMeshComponent.Get();
 }
 
 void UBRAnimInstance::ForwardNotifyAsGameplayEvent(FName NotifyName, bool bIsEnd)
@@ -422,6 +486,18 @@ void UBRAnimInstance::ForwardNotifyAsGameplayEvent(FName NotifyName, bool bIsEnd
 	static const TMap<FName, FGameplayTag> EndEvents = {
 		{ FName("MeleeWindow"), BRGameplayTags::Event_Melee_WindowEnd },
 	};
+
+	// MIS-AUTHORING DETECTOR, and it catches the direction that fails LOUD so the quiet one at
+	// least has a companion. A seam name reaching the END delegate while living only in
+	// `BeginEvents` means it was authored as a `…NotifyWindow` when it should be a point notify.
+	// The reverse mistake -- `MeleeWindow` authored as a point notify -- cannot be detected here
+	// at all: the End simply never arrives, and an absence has no callback. That one is
+	// `contract_gap BP82-7`, because it silently restores the round-1 high (a trace window that
+	// opens and is never closed) from one wrong dropdown selection in a `.uasset`.
+	ensureMsgf(!(bIsEnd && !EndEvents.Contains(NotifyName) && BeginEvents.Contains(NotifyName)),
+		TEXT("UBRAnimInstance: seam notify '%s' arrived on the END delegate but is a begin-only "
+			 "event. It was authored as PlayMontageNotifyWindow and must be PlayMontageNotify."),
+		*NotifyName.ToString());
 
 	const FGameplayTag* EventTag = (bIsEnd ? EndEvents : BeginEvents).Find(NotifyName);
 	if (!EventTag)
@@ -562,6 +638,13 @@ void UBRAnimInstance::UnbindAbilitySystem()
 
 	TagHandles.Reset();
 	BoundASC.Reset();
+
+	// CLEAR THE STATE, not just the handles. Without this, an observing client watching a player
+	// who DISCONNECTS mid-reload keeps `bReloading` true forever: the PlayerState dies, the
+	// rebind retry returns early at the null-ASC check, and nothing ever writes the flag false
+	// again. The abandoned pawn reloads for eternity with its upper body additive pinned to zero.
+	// Respawn was always clean because a rebind reseeds all seven; ASC LOSS was not.
+	TagState = FBRAnimTagState{};
 }
 
 void UBRAnimInstance::OnStateTagChanged(const FGameplayTag Tag, int32 NewCount)
