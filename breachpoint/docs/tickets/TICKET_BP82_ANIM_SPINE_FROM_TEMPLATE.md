@@ -592,6 +592,43 @@ cone disagree **by construction** — arithmetic, not a bug. Camera recoil must 
 server-validated, and an AnimInstance has no prediction key and no authority. It could not do
 this correctly even if the law allowed it.
 
+### 8 Aug 2026 — the solver, the character seam, and one asset I touched by accident.
+
+**The types now drive the motion.** Until this tranche the ported `S_Procedural_*` shapes existed
+and nothing consumed them; the spine still ran on class-wide config scalars. That was the one
+thing the purchased pack got structurally right and this packet had not: **sway is a property of
+the weapon**, and one profile for every gun makes a pistol and a rocket launcher settle
+identically.
+
+`BRProceduralSolver` is **free functions over plain data, not a component** — the single design
+decision in it. The template puts each concern on a `UActorComponent` driven by `Tick`, five of
+them, ticking on dedicated servers that render nothing. As free functions the same maths is
+worker-thread safe *by construction* (no UObject is reachable from any signature, so law 1 holds
+without needing a reviewer to check), headless-testable, and free on the server.
+
+`ABRFPSCharacter` **extends** `ABRCharacter` rather than replacing it. The DROP verdict on
+`BP_FPST_Character` stands — none of its 42 authored properties survives our laws — but the
+*seam* it implies is real, and someone must own layer linking and recoil forwarding.
+`Character/` stays BP96's at 2 units and is untouched.
+
+**A race I introduced and then removed rather than made safe.** `AddRecoilImpulse` first built
+the force game-side, which needed `ProceduralTimeSeconds` — a float the worker writes every
+frame. The queue now carries `(envelope, roll)` and the worker stamps the expiry with its own
+clock, so the cross-thread read stops existing instead of being synchronised.
+
+> **FINDING AGAINST MYSELF — I dirtied a binary asset this ticket does not own.**
+> `Content/Data/DT_Weapons.uasset` came back modified (2 lines) after an editor session. This
+> ticket's Notes say **"Binary files this ticket OWNS: none"**, and R-lock discipline says one
+> owner per `.uasset` per ticket. I did not edit it deliberately — **opening the editor was
+> enough**, which is the part worth recording: an editor session is a WRITE surface, not a read
+> one, and `guard_laws.py` hooks `Edit`/`Write` so it cannot see a resave the editor performs on
+> its own. Reverted with `git checkout`, nothing committed. The founder's own in-flight
+> `WBP_ButtonMapVoting.uasset` edit was left untouched.
+>
+> **Generalisable:** any `editor-live` step in any ticket can silently dirty assets it does not
+> own. The cheap mitigation is `git status` before and after every editor session, and it is not
+> written down anywhere.
+
 **Two findings filed against things I do not own, fixed by nobody today:**
 - `run-ubt.sh` warned *"an Unreal editor is running"* on every run **after** the editor was
   closed and confirmed gone. A false positive on a warning about build/editor overlap (R21/R29)
