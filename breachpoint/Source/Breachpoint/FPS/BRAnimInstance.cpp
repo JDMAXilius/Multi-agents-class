@@ -1,12 +1,15 @@
 #include "FPS/BRAnimInstance.h"
 
+#include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemInterface.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Pawn.h"
 
 #include "Core/BRGameplayTags.h"
+#include "FPS/BRAnimLayerInterface.h"
 
 namespace
 {
@@ -55,6 +58,12 @@ void UBRAnimInstance::NativeInitializeAnimation()
 	Super::NativeInitializeAnimation();
 
 	BindAbilitySystem();
+
+	// Bound once, here, rather than per montage: these are the AnimInstance's own delegates, so
+	// every montage this instance plays routes through them and no play site can forget to wire
+	// the seam up.
+	OnPlayMontageNotifyBegin.AddDynamic(this, &UBRAnimInstance::HandleMontageNotifyBegin);
+	OnPlayMontageNotifyEnd.AddDynamic(this, &UBRAnimInstance::HandleMontageNotifyEnd);
 }
 
 void UBRAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
@@ -95,10 +104,43 @@ void UBRAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 			Snapshot.MaxSpeed = Movement->GetMaxSpeed();
 			Snapshot.bIsFalling = Movement->IsFalling();
 			Snapshot.bIsOnGround = Movement->IsMovingOnGround();
+
+			// Never assume -980: a gravity scale makes it wrong, and the apex estimate is what
+			// the jump's whole blend hangs off.
+			const float Gravity = Movement->GetGravityZ();
+			Snapshot.GravityZ = FMath::IsNearlyZero(Gravity) ? -980.f : Gravity;
 		}
 	}
 
+	// The linked layer is a UObject question, so it is asked here and never in the worker pass.
+	RefreshLinkedLayer();
+
 	Snapshot.bValid = true;
+}
+
+void UBRAnimInstance::RefreshLinkedLayer()
+{
+	FName Row;
+	bool bOverridesHands = false;
+
+	// `GetLinkedAnimLayerInstanceByClass` takes the LAYER class; asking by our own interface
+	// keeps this free of any per-weapon class name. If no layer is linked the row is NAME_None,
+	// which is a meaningful answer (unarmed) rather than a failure.
+	if (const USkeletalMeshComponent* Mesh = GetOwningComponent())
+	{
+		for (UAnimInstance* Linked : Mesh->GetLinkedAnimInstances())
+		{
+			if (Linked && Linked->Implements<UBRAnimLayer>())
+			{
+				Row = IBRAnimLayer::Execute_GetLayerWeaponRow(Linked);
+				bOverridesHands = IBRAnimLayer::Execute_GetOverridesHandPose(Linked);
+				break;
+			}
+		}
+	}
+
+	LinkedLayerRow = Row;
+	bLayerOverridesHandPose = bOverridesHands;
 }
 
 void UBRAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
@@ -113,6 +155,13 @@ void UBRAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 	{
 		return;
 	}
+
+	// Every integrator below sees a BOUNDED step. A level-load hitch hands this function a delta
+	// of hundreds of milliseconds; semi-implicit Euler at that step overshoots enormously and the
+	// weapon leaves the screen for a frame. Clamping is correct for presentation -- a spring that
+	// resolves slightly slow through a hitch is invisible, one that explodes is not. Elapsed-time
+	// accumulators deliberately keep the REAL delta: they measure wall clock, not motion.
+	const float Step = FMath::Min(DeltaSeconds, MaxIntegrationStep);
 
 	// ------------------------------------------------------------------ fire stamp
 	if (bFirePending.exchange(false))
@@ -154,6 +203,43 @@ void UBRAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 			FMath::RadiansToDegrees(FMath::Atan2(LocalAcceleration2D.Y, LocalAcceleration2D.X));
 		AccelerationCardinal = SelectCardinal(AccelAngle, AccelerationCardinal, CardinalDeadZone);
 	}
+
+	// ------------------------------------------------------------------ pivot
+	// A pivot is acceleration OPPOSING velocity: the player asked for the other direction while
+	// still travelling this one. Waiting for velocity to flip is too late -- the plant has been
+	// missed and the turn skates.
+	bIsPivoting = false;
+	if (bHasVelocity && bHasAcceleration)
+	{
+		const float Opposition =
+			FVector::DotProduct(WorldVelocity2D.GetSafeNormal(), WorldAccel2D.GetSafeNormal());
+		if (Opposition <= PivotOpposingDot)
+		{
+			bIsPivoting = true;
+			PivotDirection2D = LocalAcceleration2D.GetSafeNormal();
+			TimeSincePivot = 0.f;
+		}
+	}
+	TimeSincePivot = FMath::Min(TimeSincePivot + DeltaSeconds, BR_NeverFired);
+
+	// ------------------------------------------------------------------ air
+	VelocityZ = Snapshot.WorldVelocity.Z;
+
+	// Falling AND rising is a jump; falling and descending is a drop. One "in air" bool would
+	// make every walk-off a ledge look like a deliberate hop.
+	bIsJumping = Snapshot.bIsFalling && VelocityZ > 0.f;
+	TimeToJumpApex = bIsJumping ? -VelocityZ / Snapshot.GravityZ : 0.f;
+
+	// ------------------------------------------------------------------ transition edges
+	// True for exactly one update. A state machine transitioning on a LEVEL re-enters its entry
+	// state for as long as the level holds; what it needs is the moment the level changed.
+	bCrouchStateChanged = bIsCrouched != bWasCrouchedLastUpdate;
+	bADSStateChanged = bIsADS != bWasADSLastUpdate;
+	bLinkedLayerChanged = LinkedLayerRow != PreviousLayerRow;
+
+	bWasCrouchedLastUpdate = bIsCrouched;
+	bWasADSLastUpdate = bIsADS;
+	PreviousLayerRow = LinkedLayerRow;
 
 	// ------------------------------------------------------------------ deltas
 	// First frame has no previous, and a delta against a zeroed previous is a teleport: the
@@ -204,23 +290,98 @@ void UBRAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 	LeanAngle = FMath::Clamp(YawDeltaSpeed * LeanScale, -LeanMaxAngle, LeanMaxAngle);
 
 	// ------------------------------------------------------------------ sway
-	// Springs chase the turn rate, so the weapon lags the camera and settles instead of being
-	// welded to it. Amendment A's "further than Lyra" lives in these four lines; what it is
+	// Springs chase the turn RATE on both axes, so the weapon lags the camera and settles
+	// instead of being welded to it. Amendment A's "further than Lyra" lives here; what is
 	// missing is only the custom NODE, not the computation.
-	SwayYawSpring.Step(FMath::Clamp(-YawDeltaSpeed * SwayYawScale, -SwayMaxAngle, SwayMaxAngle),
-		SwayStiffness, SwayDamping, DeltaSeconds);
+	//
+	// DEFECT FIXED HERE, and it is worth naming because it would have shipped looking fine.
+	// The pitch spring was originally fed `AimPitch` -- an ANGLE -- while the yaw spring was fed
+	// `YawDeltaSpeed`, a RATE. The local was even named `PitchRate` while holding an angle. The
+	// symptom is not a wobble but a PERMANENT offset: hold the camera at 30 degrees up and the
+	// spring settles to a constant tilt and stays there, because a constant angle is a constant
+	// target. Sway is a response to MOTION; a still camera must produce zero sway on both axes.
+	const float PitchDelta = FRotator::NormalizeAxis(AimPitch - PreviousAimPitch);
+	const float PitchRate = DeltaSeconds > 0.f ? PitchDelta / DeltaSeconds : 0.f;
+	PreviousAimPitch = AimPitch;
 
-	const float PitchRate = DeltaSeconds > 0.f ? AimPitch : 0.f;
+	SwayYawSpring.Step(FMath::Clamp(-YawDeltaSpeed * SwayYawScale, -SwayMaxAngle, SwayMaxAngle),
+		SwayStiffness, SwayDamping, Step);
+
 	SwayPitchSpring.Step(FMath::Clamp(-PitchRate * SwayPitchScale, -SwayMaxAngle, SwayMaxAngle),
-		SwayStiffness, SwayDamping, DeltaSeconds);
+		SwayStiffness, SwayDamping, Step);
 
 	SwayRotation = FRotator(SwayPitchSpring.Value, SwayYawSpring.Value, 0.f);
 	SwayLocation = FVector::ZeroVector;
+
+	// ------------------------------------------------------------------ additive weights
+	// Sway is suppressed while ADS: a scoped weapon that swims around the screen is unusable,
+	// and this is the one place presentation defers to readability.
+	ApplySwayAlpha = bIsADS ? 0.f : 1.f;
+	ApplyCrouchAlpha = bIsCrouched ? 1.f : 0.f;
+
+	// The upper body stops accepting additives while a montage owns it -- otherwise a reload
+	// gets lean and sway layered on top of an animation that was authored complete.
+	UpperBodyAdditiveWeight = (bIsReloading || bIsSwapping || bIsMeleeing) ? 0.f : 1.f;
+}
+
+void UBRAnimInstance::HandleMontageNotifyBegin(FName NotifyName, const FBranchingPointNotifyPayload& Payload)
+{
+	ForwardNotifyAsGameplayEvent(NotifyName);
+}
+
+void UBRAnimInstance::HandleMontageNotifyEnd(FName NotifyName, const FBranchingPointNotifyPayload& Payload)
+{
+	ForwardNotifyAsGameplayEvent(NotifyName);
+}
+
+void UBRAnimInstance::ForwardNotifyAsGameplayEvent(FName NotifyName)
+{
+	// The law-4 seam, and the ONLY thing this class does that reaches gameplay: it announces
+	// that a moment arrived. It does not decide what the moment means.
+	static const TMap<FName, FGameplayTag> NotifyToEvent = {
+		{ FName("MeleeWindowBegin"), BRGameplayTags::Event_Melee_WindowBegin },
+		{ FName("MeleeWindowEnd"),   BRGameplayTags::Event_Melee_WindowEnd },
+		{ FName("ReloadCommit"),     BRGameplayTags::Event_Weapon_ReloadCommit },
+		{ FName("SwapCommit"),       BRGameplayTags::Event_Weapon_SwapCommit },
+	};
+
+	const FGameplayTag* EventTag = NotifyToEvent.Find(NotifyName);
+	if (!EventTag)
+	{
+		// An unmapped notify is not an error. Montages carry cosmetic notifies (footsteps, shell
+		// ejects) that have no business raising a gameplay event, and most of them are that.
+		return;
+	}
+
+	APawn* Pawn = TryGetPawnOwner();
+	if (!Pawn)
+	{
+		return;
+	}
+
+	// THE NETCODE GATE. Montages play on EVERY machine, simulated proxies included. Forwarding
+	// unconditionally raises a reload-commit event on each observer's copy of a REMOTE player --
+	// on a machine with no authority over that pawn. Abilities run on the authority and on the
+	// predicting owner; nowhere else. This is invisible in PIE with one player and wrong the
+	// moment there are two, which is exactly the class of bug law 7's rungs exist to catch.
+	if (!Pawn->HasAuthority() && !Pawn->IsLocallyControlled())
+	{
+		return;
+	}
+
+	FGameplayEventData Payload;
+	Payload.EventTag = *EventTag;
+	Payload.Instigator = Pawn;
+
+	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(Pawn, *EventTag, Payload);
 }
 
 void UBRAnimInstance::NativeUninitializeAnimation()
 {
 	UnbindAbilitySystem();
+
+	OnPlayMontageNotifyBegin.RemoveDynamic(this, &UBRAnimInstance::HandleMontageNotifyBegin);
+	OnPlayMontageNotifyEnd.RemoveDynamic(this, &UBRAnimInstance::HandleMontageNotifyEnd);
 
 	Super::NativeUninitializeAnimation();
 }

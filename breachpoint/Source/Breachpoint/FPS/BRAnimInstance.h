@@ -105,6 +105,101 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Locomotion")
 	float DisplacementSpeed = 0.f;
 
+	/**
+	 * Airborne state, split from `bIsFalling` because they are not the same question.
+	 *
+	 * `bIsFalling` is true the instant you walk off a ledge; `bIsJumping` is true only when you
+	 * left the ground going UP. The graph needs both -- a jump start plays a launch pose, a ledge
+	 * drop does not, and a single "in air" bool makes every walk-off look like a deliberate hop.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Air")
+	bool bIsJumping = false;
+
+	/**
+	 * Seconds until the apex, from the pack's `timeToJumpApex`.
+	 *
+	 * Derived, never a countdown: `-VelocityZ / GravityZ`. A ticking timer would need resetting
+	 * on every launch, double jump and root-motion push, and would be wrong on precisely the
+	 * frame it mattered. Zero once falling.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Air")
+	float TimeToJumpApex = 0.f;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Air")
+	float VelocityZ = 0.f;
+
+	// ---------------------------------------------------------------- pivots
+
+	/**
+	 * A pivot is a direction REVERSAL, and detecting it needs acceleration, not velocity.
+	 *
+	 * The pack carried `pivotDirection2D`, `pivotInitialDirection` and `lastPivotTime` for this.
+	 * The tell is acceleration opposing velocity: the player has asked to go the other way while
+	 * still travelling the old one. Velocity alone cannot see it -- by the time velocity flips,
+	 * the plant has already been missed and the character skates through the turn.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Locomotion")
+	bool bIsPivoting = false;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Locomotion")
+	FVector PivotDirection2D = FVector::ZeroVector;
+
+	/** Seconds since the last pivot, saturating like `TimeSinceFired` and for the same reason. */
+	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Locomotion")
+	float TimeSincePivot = BR_NeverFired;
+
+	// ---------------------------------------------------------------- transition edges
+
+	/**
+	 * One-frame EDGES, not levels.
+	 *
+	 * The pack had `aDSStateChanged`, `crouchStateChange`, `wasADSLastUpdate`,
+	 * `linkedLayerChanged`. A state machine that transitions on a LEVEL ("is crouched") re-enters
+	 * its entry state for as long as the level holds; it needs the moment the level CHANGED.
+	 * These are true for exactly one update and are cleared at the top of the next.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Transitions")
+	bool bCrouchStateChanged = false;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Transitions")
+	bool bADSStateChanged = false;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Transitions")
+	bool bLinkedLayerChanged = false;
+
+	// ---------------------------------------------------------------- linked layer
+
+	/**
+	 * Which weapon row the currently linked layer serves -- asked through `IBRAnimLayer`.
+	 *
+	 * This is the payoff for the interface existing. The spine knows WHICH layer is up without
+	 * ever naming a layer class, so `FPS/` stays free of asset references and adding a weapon
+	 * stays a row plus an asset.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Layer")
+	FName LinkedLayerRow;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Layer")
+	bool bLayerOverridesHandPose = false;
+
+	// ---------------------------------------------------------------- additive weights
+
+	/**
+	 * Presentation alphas the graph multiplies its additive branches by.
+	 *
+	 * From `upperbodyDynamicAdditiveWeight`, `applyCrouchAlpha`, `applySwayAlpha`. Computed here
+	 * rather than as graph maths for the reason Amendment A gives: a graph carrying computation
+	 * is a design smell with a named home, and this is the home.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Additive")
+	float UpperBodyAdditiveWeight = 1.f;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Additive")
+	float ApplyCrouchAlpha = 0.f;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Additive")
+	float ApplySwayAlpha = 1.f;
+
 	// ---------------------------------------------------------------- aim, lean, turn-in-place
 
 	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Aim")
@@ -266,6 +361,22 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Config, Category = "Breachpoint|Tuning")
 	float SwayMaxAngle = 8.f;
 
+	/** Acceleration must oppose velocity by more than this (cosine) to count as a pivot, not a drift. */
+	UPROPERTY(EditDefaultsOnly, Config, Category = "Breachpoint|Tuning")
+	float PivotOpposingDot = -0.5f;
+
+	/**
+	 * Hard ceiling on the DeltaSeconds any spring or integrator sees.
+	 *
+	 * NOT cosmetic. A level-load hitch or an editor breakpoint hands the anim update a delta of
+	 * hundreds of milliseconds, and semi-implicit Euler at that step overshoots hugely -- the
+	 * weapon leaves the screen for a frame and snaps back. Clamping the STEP is correct here
+	 * because animation is presentation: a spring that resolves slightly slow through a hitch is
+	 * invisible, and one that explodes is not.
+	 */
+	UPROPERTY(EditDefaultsOnly, Config, Category = "Breachpoint|Tuning")
+	float MaxIntegrationStep = 0.05f;
+
 public:
 
 	/**
@@ -278,6 +389,35 @@ public:
 	void NotifyWeaponFired();
 
 private:
+
+	/**
+	 * Montage notify -> gameplay event. The seam `animation.md` law 4 is entirely about.
+	 *
+	 * "Notifies raise events; the sim decides." The animation announces that a moment ARRIVED --
+	 * the melee trace window opened, the reload reached the point ammo moves -- and an ability
+	 * waiting on that tag decides what it means. No damage, no ammo, no branch on a gameplay
+	 * number happens here or anywhere in this class.
+	 *
+	 * The tags are R17's, closed 31 Jul 2026 and not re-litigated: `Event.Melee.WindowBegin` /
+	 * `WindowEnd`, `Event.Weapon.ReloadCommit`, `Event.Weapon.SwapCommit`.
+	 *
+	 * NETCODE GATE, and it is the part that would have been wrong. Montages play on EVERY
+	 * machine, including simulated proxies watching someone else. Forwarding unconditionally
+	 * would raise a reload-commit event on each observer's copy of a remote player -- an event
+	 * an ability could act on, on a machine with no authority over that pawn. So it forwards only
+	 * where an ability legitimately runs: the authority, and the locally-controlled predicting
+	 * client. This is invisible in PIE with one player and wrong the moment there are two.
+	 */
+	UFUNCTION()
+	void HandleMontageNotifyBegin(FName NotifyName, const FBranchingPointNotifyPayload& Payload);
+
+	UFUNCTION()
+	void HandleMontageNotifyEnd(FName NotifyName, const FBranchingPointNotifyPayload& Payload);
+
+	void ForwardNotifyAsGameplayEvent(FName NotifyName);
+
+	/** Refresh `LinkedLayerRow` from whatever layer is currently linked. Game thread; asks the interface. */
+	void RefreshLinkedLayer();
 
 	/** Pointer-to-member binding table. One row per tag; adding a state is one line, in code, greppable. */
 	struct FBRTagBinding
@@ -316,6 +456,12 @@ private:
 	float PreviousYaw = 0.f;
 	FVector PreviousLocation = FVector::ZeroVector;
 	bool bHasPreviousFrame = false;
+
+	/** Previous-frame levels, kept solely so the one-frame edges above can be derived. */
+	bool bWasCrouchedLastUpdate = false;
+	bool bWasADSLastUpdate = false;
+	FName PreviousLayerRow;
+	float PreviousAimPitch = 0.f;
 
 	/**
 	 * The fire stamp crosses threads, so it is atomic and nothing else here needs to be.

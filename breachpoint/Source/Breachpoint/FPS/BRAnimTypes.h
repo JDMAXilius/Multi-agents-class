@@ -58,6 +58,15 @@ struct FBRAnimSnapshot
 	bool bIsFalling = false;
 
 	/**
+	 * Gravity, copied rather than assumed.
+	 *
+	 * `TimeToJumpApex` is `-VelocityZ / GravityZ`, and a hardcoded -980 would be wrong for any
+	 * pawn with a gravity scale -- which is every pawn the moment someone tunes jump feel. It is
+	 * read from the movement component on the game thread because that is where the component is.
+	 */
+	float GravityZ = -980.f;
+
+	/**
 	 * `ACharacter::bIsCrouched`, read directly rather than through a tag.
 	 *
 	 * Worth naming because it is the one state in this spine that needs NO `contract_gap`:
