@@ -302,6 +302,54 @@ non-empty `properties`.
 > the 4 Aug HANDOFF's "rung 1 is PARTIAL by environment", which named only the server target.
 > `Tools/` is not in this ticket's owner_path — **filed, not fixed.**
 
+### 8 Aug 2026 — second tranche. The rest of the state model, and the seam I had skipped.
+
+The first pass ported roughly **30 of `ABP_Mannequin_Base`'s 96 fields** and stopped. That was
+short of the directive, and one row of step 3's own table — *"montage playback + notify
+forwarding → C++"* — had been skipped outright rather than deferred with a reason. Both closed.
+
+**New unit: `FPS/BRAnimLayerInstance`.** Before it, `IBRAnimLayer` had **zero implementors** and
+was dead code. It splits `ABP_ItemAnimLayersBase`'s 102 properties along the only line that
+matters: ~90 pose slots stay on the asset (they are animation assets — porting them means hard
+asset refs, law 3), while `disableHandIK`, `enableLeftHandPoseOverride`, `aimOffsetBlendWeight`
+and the per-bone aim weights come into C++. **Correction to the first ledger entry:** "KEEP" was
+right about ~90 of those properties and wrong about the rest; the ledger now says so.
+
+**Ported this pass:** jump-vs-fall split, `TimeToJumpApex` derived from CMC gravity rather than
+an assumed −980, pivot detection (acceleration *opposing* velocity — waiting for velocity to flip
+is too late, the plant is already missed), the one-frame transition **edges**, linked-layer
+identity asked through the interface so `FPS/` still names no asset, and the additive alphas.
+
+**The montage seam, with the gate that would have been wrong.** R17's four tags in a C++ table.
+Montages play on **every** machine, simulated proxies included — forwarding unconditionally
+raises a reload-commit event on each observer's copy of a *remote* player, on a machine with no
+authority over that pawn. Gated to authority-or-locally-controlled. Invisible in PIE with one
+player; wrong the moment there are two.
+
+**Sway pitch defect — found by re-reading, fixed, and stated because it would have shipped
+looking fine.** The pitch spring was fed `AimPitch`, an **angle**, while the yaw spring was fed
+`YawDeltaSpeed`, a **rate** — and the local was named `PitchRate` while holding an angle. The
+symptom is not a wobble but a **permanent tilt**: hold the camera 30° up and the spring settles
+to a constant offset and stays there, because a constant angle is a constant target. Sway is a
+response to *motion*; a still camera must produce zero sway on both axes. Now fed a true rate.
+*(Flagged to the founder as suspected before the critic reported; fixed on the author's own
+re-reading rather than waiting. The critic's verdict on it is still owed and will be recorded
+here whether it agrees or not.)*
+
+**Second defect from the same re-read: nothing clamped `DeltaSeconds`.** A level-load hitch hands
+the anim update a step of hundreds of milliseconds, and semi-implicit Euler at that step
+overshoots enormously — the weapon leaves the screen for a frame and snaps back. Added
+`MaxIntegrationStep` (0.05 s, config). Elapsed-time accumulators deliberately keep the **real**
+delta: they measure wall clock, not motion.
+
+**Not ported, deliberately, with the reason each time:** `groundDistance` and
+`left/rightJointTargetLocation` need a trace and an IK chain, and foot placement has no packet
+yet; `enableControlRig` / `useFootPlacement` are switches for systems that do not exist;
+`bFPSMode` / `bFPSWalkMode` are the pack's own 1P/3P branch, which our two-instance design
+replaces; the `basePose*` / `currPose*` / `procApply*` pairs are procedural-pose scratch for a
+graph that has not been authored. **None of these is a "couldn't"; each is a "no packet needs it
+yet", which is the honest distinction.**
+
 **Two findings filed against things I do not own, fixed by nobody today:**
 - `run-ubt.sh` warned *"an Unreal editor is running"* on every run **after** the editor was
   closed and confirmed gone. A false positive on a warning about build/editor overlap (R21/R29)

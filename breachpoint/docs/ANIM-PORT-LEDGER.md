@@ -100,10 +100,36 @@ differ only in defaults, they are rows, not classes."* They are rows. `BRWeaponI
 |---|---|---|
 | The state model | `FPS/BRAnimInstance` — locomotion, cardinal direction, root yaw offset, lean, aim, displacement | `ABP_Mannequin_Base`'s 96 |
 | Tag → bool | C++ binding table + `RegisterGameplayTagEvent` | its 5 `gameplayTag_Is*` |
+| Jump vs fall, apex estimate | `FPS/BRAnimInstance` | `isJumping`, `timeToJumpApex`, `isFalling` |
+| Pivot detection | `FPS/BRAnimInstance` — acceleration opposing velocity | `pivotDirection2D`, `lastPivotTime`, `pivotInitialDirection` |
+| One-frame transition edges | `FPS/BRAnimInstance` | `aDSStateChanged`, `crouchStateChange`, `wasADSLastUpdate`, `linkedLayerChanged` |
+| Additive weights | `FPS/BRAnimInstance` | `upperbodyDynamicAdditiveWeight`, `applyCrouchAlpha`, `applySwayAlpha` |
 | Sway · bob · recoil | `FPS/BRAnimInstance` thread-safe springs → one transform the graph applies | `camRot*` + `applySwayAlpha` |
-| Montage → gameplay events | `FPS/BRAnimInstance` notify forwarding, R17 tags | its 6 `onMontage*` |
+| Montage → gameplay events | `FPS/BRAnimInstance` notify forwarding, R17 tags, gated to authority/owner | its 6 `onMontage*` |
 | The layer contract, code half | `IBRAnimLayer` UINTERFACE | `ALI_ItemAnimLayers` |
+| The layer's non-pose state | `FPS/BRAnimLayerInstance` — the C++ base layer ABPs parent to | `ABP_ItemAnimLayersBase`'s non-slot members |
 | State machines, blend spaces, layer graphs | **ASSET** — no C++ path in 5.8 | R18 Tier 4 |
+
+### `ABP_ItemAnimLayersBase` — KEEP was right, but it was not the whole answer
+
+The first pass marked it KEEP on the evidence that its 102 properties are animation asset slots.
+Re-reading the inventory, that is true of **~90** of them and false of the rest. Those 102 are
+**two different kinds of thing wearing one class**:
+
+- **Pose slots** — `aim_HipFirePose`, `bS_FPS_ADS_Idle_Move`, `crouch_Idle_Entry`, `fPS_Sprint`
+  and ~86 more. Animation assets. **KEEP**, and porting them would mean hard asset references in
+  C++, which law 3 bans outright.
+- **Structure and configuration** — `disableHandIK`, `enableLeftHandPoseOverride`,
+  `aimOffsetBlendWeight`, and the per-bone aim weights. **PORT**, to `FPS/BRAnimLayerInstance`.
+
+`AimSpineWeights` is a `TMap<FName,float>` keyed by bone rather than eight named floats, and the
+inventory is the reason: the base carried `aimSpineWeights_UE5` with **8** bones
+(`head`, `neck_01`, `neck_02`, `spine_01`…`spine_05`) and `aimSpineWeights_UE4` with **5**.
+Eight named members would have hard-coded one skeleton's spine into C++ and gone silently wrong
+on the other.
+
+This also stops `IBRAnimLayer` being dead code — before `BRAnimLayerInstance` existed the
+interface had **zero implementors**.
 
 ### The template hands us Amendment A's proof, in writing
 
