@@ -7,10 +7,17 @@
 /**
  * Vocabulary for the animation spine. Types only -- no numbers.
  *
- * Every tuning value the FPS template kept on a class (`cardinalDirectionDeadZone` 10,
- * `rootYawOffsetAngleClamp` {-120,100}, `defaultWalkSpeed` 500) is a NUMBER, and law 3 puts
- * numbers in the `Content/Data` CSVs, not in a header. What lives here is the shape those numbers
- * are read into, plus the one enum the graph switches on.
+ * Types only, no numbers. What lives here is the shape values are read into, plus the one enum
+ * the graph switches on.
+ *
+ * WHERE THE NUMBERS WENT, since the template kept them all on a class and law 3 forbids that.
+ * The split is by what the number CHANGES, not by where it came from:
+ *   - **Gameplay numbers** -> `Content/Data` CSV. `defaultWalkSpeed` 500 is one: it changes what
+ *     the game does, so a designer must be able to retune it against a table.
+ *   - **Presentation constants** -> `Config` on `UBRAnimInstance`. Sway stiffness, the cardinal
+ *     dead zone, the root-yaw clamps. They change how it LOOKS and nothing else; a CSV row and a
+ *     DataTable reimport for a spring constant is machinery with no reader.
+ * Both are diffable by a critic, which is the property law 3 is actually protecting.
  */
 
 /**
@@ -31,6 +38,36 @@ enum class EBRAnimCardinal : uint8
 };
 
 /**
+ * Tag-driven state, as written by the ASC callback on the game thread.
+ *
+ * WHY THIS IS ITS OWN STRUCT and not nine loose bools on the AnimInstance. The ASC callback
+ * fires from arbitrary game-thread code -- a GameplayEffect applied during some other actor's
+ * tick -- while the parallel anim task may be in flight. As long as the worker only ever READ
+ * these for the graph, a stale frame was the worst case and nobody cared.
+ *
+ * That stopped being true the moment the worker started COMPUTING from them (`bADSStateChanged`
+ * is an edge, `UpperBodyAdditiveWeight` is a product). An edge computed against a value that
+ * changes between the compare and the store is **lost permanently**, and a state machine waiting
+ * on it never transitions. So the callback writes here, the game pass latches this into the
+ * snapshot, and the worker reads only its own copy -- the same discipline every other field
+ * already followed.
+ */
+struct FBRAnimTagState
+{
+	bool bSprinting = false;
+	bool bReloading = false;
+	bool bSwapping = false;
+	bool bMeleeing = false;
+	bool bGrappling = false;
+	bool bThrowingGrenade = false;
+	bool bDead = false;
+
+	/** Bound to nothing until BP93 declares `State.Weapon.ADS` / `.Firing` (contract_gap BP82-2). */
+	bool bADS = false;
+	bool bFiring = false;
+};
+
+/**
  * Everything the worker thread needs, copied on the game thread.
  *
  * THIS STRUCT IS THE THREAD-SAFETY BOUNDARY and it is the whole reason the spine can obey
@@ -38,6 +75,12 @@ enum class EBRAnimCardinal : uint8
  * controller and the movement component are UObjects; touching any of them from
  * `NativeThreadSafeUpdateAnimation` is the hitch that has not happened yet. So the game-thread
  * pass reads them ONCE into these plain fields, and the worker pass computes from nothing else.
+ *
+ * "Nothing else" is meant literally, and it did not used to be. An earlier revision let the
+ * worker compute from `LinkedLayerRow` and from the ASC-callback bools, which happened to be
+ * ordering-safe but made this comment false -- and a boundary that is documented but not
+ * enforced is one careless addition away from being neither. Everything the worker computes
+ * from now arrives here, including the tag state and the linked layer.
  *
  * Deliberately not a `USTRUCT` with `UPROPERTY`s: nothing reflects it, nothing serialises it,
  * and no graph reads it. It is a snapshot, and giving it reflection would invite both.
@@ -75,6 +118,13 @@ struct FBRAnimSnapshot
 	 */
 	bool bIsCrouched = false;
 
+	/** Latched from the ASC callback's own copy once per game-thread pass. See `FBRAnimTagState`. */
+	FBRAnimTagState Tags;
+
+	/** Which weapon row the linked layer serves, asked through `IBRAnimLayer` on the game thread. */
+	FName LayerRow;
+	bool bLayerOverridesHandPose = false;
+
 	/** False until the pawn is real. Every consumer checks it; a zeroed snapshot is not a pose. */
 	bool bValid = false;
 };
@@ -91,7 +141,15 @@ struct FBRSpring1D
 	float Value = 0.f;
 	float Velocity = 0.f;
 
-	/** Critically-damped-ish step. Stiffness and damping come from a row, never from here. */
+	/**
+	 * Critically-damped-ish step. Stiffness and damping are passed in, never stored here.
+	 *
+	 * They live as `Config` properties on `UBRAnimInstance` -- NOT in a data row. Corrected from
+	 * an earlier comment that said "a row": these are presentation constants that change nothing
+	 * about what the game does, so law 3's CSV requirement (which is about *gameplay* numbers)
+	 * does not reach them, and `DefaultGame.ini` is the smaller mechanism. The distinction is
+	 * whether a critic can diff the value, and for a config property they can.
+	 */
 	void Step(float Target, float Stiffness, float Damping, float DeltaSeconds)
 	{
 		if (DeltaSeconds <= 0.f)

@@ -224,11 +224,20 @@ edit shared code to unblock"* — and widening my own claim to reach it would be
 wearing a different hat.
 
 > **`contract_gap` BP82-1 → `BREACHPOINT-GAMEPLAY-REWORK.md` §3 (owner: game-lead).**
-> `Source/Breachpoint/FPS/` is a NEW discipline folder with three units:
-> `BRAnimInstance` (`.h/.cpp`), `BRAnimLayerInterface` (`.h`, UINTERFACE), `BRAnimTypes` (`.h`).
-> Needs a numbered §3.x "FPS — 3". **`Character/` stays at 2 and is untouched** — that is what
-> the founder's FPS-folder call bought. Until this lands `architect.py` will report the folder as
-> a STUB, and that report is CORRECT.
+> **AMENDED 8 Aug after critic finding M8 — it is FOUR units, not three.** The first filing
+> listed three and `BRAnimLayerInstance` would have been left declared nowhere and owned by
+> nobody, which is the precise silence R39 forbids.
+>
+> `Source/Breachpoint/FPS/` is a NEW discipline folder needing a numbered §3.x **"FPS — 4"**:
+> | Unit | Form |
+> |---|---|
+> | `BRAnimInstance` | `.h/.cpp` |
+> | `BRAnimLayerInstance` | `.h` |
+> | `BRAnimLayerInterface` | `.h` (UINTERFACE) |
+> | `BRAnimTypes` | `.h` (types only) |
+>
+> **`Character/` stays at 2 and is untouched** — that is what the founder's FPS-folder call
+> bought. Until this lands `architect.py` reports the folder as a STUB, and that report is CORRECT.
 
 **Step 5 — R23 tag gaps: filed against BP93, none added locally.** `Core/` is CLOSED; the spine
 binds only tags that exist (`State.Movement.Sprinting`, `.Grappling`, `State.Weapon.Reloading`,
@@ -349,6 +358,103 @@ yet; `enableControlRig` / `useFootPlacement` are switches for systems that do no
 replaces; the `basePose*` / `currPose*` / `procApply*` pairs are procedural-pose scratch for a
 graph that has not been authored. **None of these is a "couldn't"; each is a "no packet needs it
 yet", which is the honest distinction.**
+
+### 8 Aug 2026 — rung V2, `critic` in REFUTER mode. **1 high, 9 medium, 8 low.**
+
+It reached all seven attack items. **H1 blocks a landing and it was right to.** Fixes below are
+landed and compiled; the mediums it raised against the ledger are corrected in the ledger itself
+rather than argued with.
+
+> **H1 (high) — the montage seam sent every event 2–4× and `Event.Melee.WindowEnd` was
+> UNREACHABLE.** Two independent multipliers, both structural, neither visible in a one-player PIE:
+>
+> 1. **`AnimNotify_PlayMontageNotifyWindow` broadcasts the IDENTICAL `NotifyName` to both the
+>    begin and the end delegate.** Both handlers went through **one** name→tag map, so a window's
+>    CLOSE re-emitted the tag its OPEN emitted. `Event.Melee.WindowEnd` was not merely un-sent —
+>    it was unreachable by any name. `BRGA_Melee` would open the trace window and never be told
+>    to close it. **A trace window that never closes is free hits.**
+> 2. **Two meshes, one ASC.** `ABRCharacter` owns `FirstPersonMesh` and the inherited 3P `Mesh`,
+>    and law 2 gives each its own `UBRAnimInstance`. Both resolve `TryGetPawnOwner()` to the same
+>    pawn, so both sent to the same ASC. The netcode gate I was proud of **cannot see this** — it
+>    is per-*machine*, and the duplication is per-*mesh*.
+>
+> **Fixed:** two maps selected by a `bIsEnd` flag (windowed notifies are now named for the
+> window, `MeleeWindow`, and the edge picks the tag), plus `IsGameplayEventSource()` — only the
+> instance on the third-person mesh speaks, because that mesh exists and plays on every machine
+> including a dedicated server. **Consequence, stated so it is not discovered later: a
+> gameplay-bearing notify must be authored on the 3P montage.**
+>
+> `AddDynamic` → `AddUniqueDynamic` as well (L1): it does not de-duplicate, so any re-init would
+> have doubled the seam again.
+
+> **M6 (latent, and it would have detonated exactly when BP93 landed).** The worker pass had
+> begun *computing* from ASC-callback bools — `bADSStateChanged` is an edge, `UpperBodyAdditiveWeight`
+> a product — while the callback writes them from arbitrary game-thread code. Bools do not tear,
+> so today's cost is a stale frame; **the latent cost is not bounded.** If the game thread flips
+> `bIsADS` between the compare and the store, **the edge is lost permanently** and a state
+> machine waiting on it never transitions.
+>
+> That directly falsified this ticket's own proof-of-design — *"the table gains two lines and
+> nothing else in this class changes."* **Fixed:** the callback now writes a private
+> `FBRAnimTagState`; the game pass latches it into `Snapshot.Tags`; the worker publishes the
+> public bools. Every graph-read field is worker-written again, and the header comment claiming
+> so is true again.
+
+> **M3 — `RootYawOffset` had no consumer and stuck at the clamp.** The sign is right (the critic
+> tried and could not break it). What it could break: nothing ever *reduced* the offset while
+> standing. Pan 200° on the spot → it pins to −120 and **stays** until the player takes a step.
+> In Lyra the turn-in-place animation consumes it through a yaw curve; there is no curve, no ABP
+> and no packet that authors one. **Landed a standing recovery** as an explicit stand-in, and
+> filed the real thing:
+>
+> > **`contract_gap` BP82-4 → whichever packet authors `ABP_BRMannequin`.** `RootYawOffset` needs
+> > a consumer — a turn-in-place yaw curve read back into the spine. Until then the C++ idle
+> > recovery is a floor that stops a missing system reading as a broken one, not turn-in-place.
+
+> **M7 — `bUseMultiThreadedAnimationUpdate = true` in the constructor is a no-op, and law 1 is
+> enforced by a checkbox in a `.uasset`.** `UAnimInstance` already sets it true, and the **ABP
+> compiler overwrites the CDO** — forcing it false if the graph has one non-thread-safe node or a
+> `BlueprintUpdateAnimation` event. Every line documented as worker-thread would then run on the
+> game thread, and nothing in the repo would notice. Added an `ensureMsgf` that says so out loud.
+> The deeper point stands and is uncomfortable: **the guarantee this class is built on lives in a
+> binary file**, which is the exact condition R18 exists to prevent.
+
+> **M8 — R39, and I had under-filed my own gap.** `BRAnimLayerInstance` is a real `BR*` `UCLASS`
+> named in **no** declaration: `contract_gap BP82-1` listed three units, the Log said four files,
+> and the V1 verifier asserted "exactly the four expected files." There are **five**.
+> **`contract_gap BP82-1` is amended below to four units.**
+
+> **M5 / M12 — accepted risk, filed not fixed.** The rate terms feeding lean and both sway
+> springs are computed from `Snapshot` fields that, **on a simulated proxy**, refresh at the
+> actor's net update rate rather than per frame. At 60 fps observing a 20 Hz remote pawn, the
+> whole delta lands on one frame in three: `YawDeltaSpeed` reads 270, 0, 0, 270… and the observed
+> player's lean **strobes** full-to-none. My pitch fix inherits this; it did not introduce it.
+> Law 7 makes the simulated proxy the mandatory view and it has been checked on **none**. Also:
+> `Config/DefaultGame.ini` has no `[/Script/Breachpoint.BRAnimInstance]` section, so "tunable
+> without a recompile" is currently true of nothing — `Config/` is not in owner_path.
+>
+> > **`contract_gap` BP82-5 → `Config/DefaultGame.ini`.** Needs a
+> > `[/Script/Breachpoint.BRAnimInstance]` section, or the `Config` specifiers are decoration.
+
+**What the critic tried to break and could not** — recorded because a refuter's failures are
+evidence too: the netcode gate on the notify seam is **correct on all six views** it walked; the
+turn-in-place **sign** is right; the `TagHandles[i]`↔`Bindings[i]` pairing is **unbreakable**
+(respawn, PlayerState replacement, stale weak pointer, double-bind all tried); the ASC retry
+design is right and `Cast<const IAbilitySystemInterface>` does what its comment claims; declining
+`FGameplayTagBlueprintPropertyMap` is justified **in outcome**; and *"no editor module ⇒ no
+custom `FAnimNode_`"* is **true for UE 5.8** — it found no path I missed.
+
+It also did the stability maths I could not: k=90, c=14 diverges above **Δt = 0.106 s** and
+sign-flips above **0.0714 s**; the 0.05 s clamp gives ζ ≈ 0.74, about 3 % overshoot. **On the
+revision that is on `main` without the clamp, a 250 ms hitch produces −45° of weapon rotation in
+one frame.** The fix was right and the number is now on the record.
+
+> **PROCESS FINDING, and it is against me, not the code.** I told the critic the artifact was on
+> `main`. It was **uncommitted working-tree state, and it changed twice during the review** — its
+> first read got the 324-line committed file and it had to re-derive against the 485-line
+> on-disk one. A review of uncommitted state **cannot be replayed from a SHA by anyone**. The V1
+> verifier's "exactly four files" gate was already stale against disk when it passed.
+> **Rule for the next round: commit first, name the SHA in the packet.**
 
 **Two findings filed against things I do not own, fixed by nobody today:**
 - `run-ubt.sh` warned *"an Unreal editor is running"* on every run **after** the editor was

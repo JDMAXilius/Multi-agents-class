@@ -245,8 +245,11 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Weapon")
 	FRotator SwayRotation = FRotator::ZeroRotator;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Weapon")
-	FVector SwayLocation = FVector::ZeroVector;
+	// There is no `SwayLocation`. An earlier revision published one and assigned it
+	// `FVector::ZeroVector` unconditionally -- a BlueprintReadOnly field a graph could wire
+	// translation from and get nothing, forever. Positional sway needs a weapon-socket reference
+	// the spine does not have; when it does, this is where it lands. Deleted rather than left as
+	// a plausible-looking zero.
 
 	/**
 	 * Seconds since the weapon last fired, saturating.
@@ -269,6 +272,11 @@ protected:
 	 * container walk on the worker thread. The engine's own answer is a registered callback that
 	 * writes a cached bool, and a cached bool that the ASC keeps correct is the difference
 	 * Amendment A was pointing at.
+	 *
+	 * These are published by the WORKER pass from `Snapshot.Tags`, not written by the callback
+	 * directly. The callback writes `TagState`, a private game-thread copy. That indirection is
+	 * not ceremony: the worker computes edges and products from tag state, and a value that can
+	 * change between a compare and its store loses the edge permanently.
 	 */
 	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|State")
 	bool bIsSprinting = false;
@@ -336,9 +344,19 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Config, Category = "Breachpoint|Tuning")
 	float RootYawOffsetMaxCrouched = 80.f;
 
-	/** How fast the held-back root bleeds back to neutral once the turn stops, in degrees/second. */
+	/** How fast the held-back root bleeds back to neutral once the character MOVES, in degrees/second. */
 	UPROPERTY(EditDefaultsOnly, Config, Category = "Breachpoint|Tuning")
 	float RootYawOffsetBleedSpeed = 180.f;
+
+	/**
+	 * Recovery while STANDING and no longer turning. Slower than the moving bleed on purpose.
+	 *
+	 * A placeholder for a consumer that does not exist: in Lyra the turn-in-place animation eats
+	 * this offset through a yaw curve, and this project has no such curve and no ABP. Without it
+	 * the offset saturates at the clamp and stays there. `contract_gap BP82-4`.
+	 */
+	UPROPERTY(EditDefaultsOnly, Config, Category = "Breachpoint|Tuning")
+	float RootYawOffsetIdleRecoverySpeed = 90.f;
 
 	UPROPERTY(EditDefaultsOnly, Config, Category = "Breachpoint|Tuning")
 	float LeanScale = 0.06f;
@@ -414,16 +432,46 @@ private:
 	UFUNCTION()
 	void HandleMontageNotifyEnd(FName NotifyName, const FBranchingPointNotifyPayload& Payload);
 
-	void ForwardNotifyAsGameplayEvent(FName NotifyName);
+	/**
+	 * `bIsEnd` is not a convenience flag; it is the whole correctness of the seam.
+	 *
+	 * `AnimNotify_PlayMontageNotifyWindow` broadcasts **the identical `NotifyName`** to the begin
+	 * and end delegates. A single name->tag map therefore makes a window's CLOSE emit the tag its
+	 * OPEN emitted, and `Event.Melee.WindowEnd` unreachable by construction: the trace window
+	 * opens and is never told to close, which is free hits. Two maps, selected by this flag.
+	 */
+	void ForwardNotifyAsGameplayEvent(FName NotifyName, bool bIsEnd);
+
+	/**
+	 * Does THIS instance speak for the pawn?
+	 *
+	 * A character has two meshes and law 2 gives each its own `UBRAnimInstance`. Both resolve
+	 * `TryGetPawnOwner()` to the same pawn, so both would send the same gameplay event to the
+	 * same ASC -- doubling every event, on every machine. The netcode gate cannot see this: it is
+	 * per-machine, and this duplication is per-mesh.
+	 *
+	 * The third-person mesh is the one that speaks, because it is the one that exists and plays
+	 * on **every** machine including a dedicated server, where the 1P arms are cosmetic. The
+	 * consequence, stated so it is not discovered later: **a gameplay-bearing notify must be
+	 * authored on the third-person montage.** A notify that exists only on the 1P montage raises
+	 * nothing, deliberately.
+	 */
+	bool IsGameplayEventSource() const;
 
 	/** Refresh `LinkedLayerRow` from whatever layer is currently linked. Game thread; asks the interface. */
 	void RefreshLinkedLayer();
 
-	/** Pointer-to-member binding table. One row per tag; adding a state is one line, in code, greppable. */
+	/**
+	 * Pointer-to-member binding table. One row per tag; adding a state is one line, in code, greppable.
+	 *
+	 * It points into `FBRAnimTagState`, NOT at the public bools. The callback writes the private
+	 * game-thread copy; the worker publishes the public ones. That keeps every graph-read field
+	 * worker-written, which is the invariant the whole class rests on.
+	 */
 	struct FBRTagBinding
 	{
 		FGameplayTag Tag;
-		bool UBRAnimInstance::*Field;
+		bool FBRAnimTagState::*Field;
 	};
 
 	/**
@@ -450,6 +498,12 @@ private:
 	/** Game-thread scratch, worker-thread input. The only channel between the two passes. */
 	FBRAnimSnapshot Snapshot;
 
+	/**
+	 * Written by the ASC callback, read only by the game-thread pass that latches it into
+	 * `Snapshot.Tags`. The worker never touches this.
+	 */
+	FBRAnimTagState TagState;
+
 	FBRSpring1D SwayYawSpring;
 	FBRSpring1D SwayPitchSpring;
 
@@ -462,6 +516,7 @@ private:
 	bool bWasADSLastUpdate = false;
 	FName PreviousLayerRow;
 	float PreviousAimPitch = 0.f;
+	bool bHasPreviousAimPitch = false;
 
 	/**
 	 * The fire stamp crosses threads, so it is atomic and nothing else here needs to be.

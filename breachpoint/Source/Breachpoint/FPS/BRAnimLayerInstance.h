@@ -24,10 +24,19 @@
  *   and porting them to C++ would mean hard asset references, which law 3 bans outright.
  *
  *   EVERYTHING ELSE -- `disableHandIK`, `enableLeftHandPoseOverride`, `aimOffsetBlendWeight`,
- *   and the per-bone aim weights (`alpha01_spine_01` … `alpha08_head`, which the base carries
- *   as `aimSpineWeights_UE5` = {head 0.1, neck_01 0.15, neck_02 0.2, spine_01 0.15,
- *   spine_02..05 0.1}). These are STRUCTURE and CONFIGURATION, not content, and they are
- *   declared here.
+ *   and the per-bone aim weights, which the layer base carries as the flat floats
+ *   `alpha01_spine_01` … `alpha08_head`. These are STRUCTURE and CONFIGURATION, not content,
+ *   and they are declared here.
+ *
+ * WHY A MAP AND NOT EIGHT FLOATS, corrected: the flat `alpha01…alpha08` list is what the LAYER
+ * base has, but the SPINE (`ABP_Mannequin_Base`) carries the same idea keyed by bone, and it
+ * carries TWO of them -- `aimSpineWeights_UE5` with 8 bones (`head`, `neck_01`, `neck_02`,
+ * `spine_01`…`spine_05`) and `aimSpineWeights_UE4` with 5. That is the evidence: the weight set
+ * is skeleton-dependent, so eight positional floats hard-code one skeleton's spine and go
+ * silently wrong on the other. A map keyed by bone does not care how many joints a spine has.
+ * (An earlier revision of this comment credited `aimSpineWeights_UE5` to the layer base. It is
+ * on the spine; the argument survives the correction, which is why the correction is recorded
+ * rather than quietly edited.)
  *
  * The result is the shape Amendment A §A.3 asked for, stated as a test rather than a promise:
  * **adding a weapon is a table row plus a layer asset and zero C++.** The layer asset supplies

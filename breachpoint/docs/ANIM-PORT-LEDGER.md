@@ -29,8 +29,8 @@ displaces are named below with the count that displaced them.
 | Asset | Props | Verdict | Evidence, and why |
 |---|---|---|---|
 | `ABP_Mannequin_Base` | **96** | **PORT** | The prize, as predicted. This IS the anim state model: `localVelocity2D`, `localVelocityDirectionAngle`, `cardinalDirectionDeadZone` (10), `rootYawOffset` + `rootYawOffsetAngleClamp` (`{-120,100}`, crouched `{-90,80}`), `leanRotation`/`leanOppRotation`, `aimPitch`/`aimYaw`, `displacementSpeed`, `yawDeltaSpeed`, `timeSinceFiredWeapon` (9999). Ports to `FPS/BRAnimInstance`. |
-| `ABP_ItemAnimLayersBase` | 102 | **KEEP** | Its 102 are **animation asset slots**, not logic: `aim_HipFirePose`, `bS_FPS_ADS_Idle_Move`, `crouch_Idle_Entry/Exit`, `fPS_Sprint_Additive`, `alpha01_spine_01`…`alpha08_head`. A class whose every member is a pose reference is a data table with a graph attached. Tier 4, stays. |
-| `ALI_ItemAnimLayers` | **0** | **KEEP (asset), contract split** | Zero properties, and that is **correct, not a failure**: an Anim Layer Interface declares *functions*, not variables, so its CDO has none. Probed three ref forms — all empty. See "The one thing that could not move" below. |
+| `ABP_ItemAnimLayersBase` | 102 | **KEEP (asset) + PORT (its non-pose half)** | ⚠️ **Overstated on first writing — corrected below.** 55 of 102 are object refs; 47 are not. |
+| `ALI_ItemAnimLayers` | **0** | **KEEP (asset), contract split** | ⚠️ **The evidence is a tool failure, not a measurement — see the correction below.** |
 | `ABP_Mannequin_Retarget` | 11 | **KEEP** | All 11 are stock `UAnimInstance`: `bPropagateNotifiesToLinkedInstances`, `componentPlayingAnim`, `rootMotionMode`, the six `onMontage*` delegates. **Zero custom variables** ⇒ it is a graph and nothing else. Nothing to port. |
 | `ABP_Mannequin_CopyPose` | 11 | **KEEP** | Byte-identical property list to `_Retarget` (same 11 stock names). Same verdict, same evidence. |
 
@@ -44,10 +44,20 @@ displaces are named below with the count that displaced them.
 
 The ticket predicted *"if a layer ABP comes back with zero variables, that PROVES it is pose
 content."* What came back is stronger and more precise: they carry 102 properties and **add zero
-of their own** — schema diff 0 against their base, three times over. Every one of the 34–42
-differences is an animation asset slot (`bS_FPS_ADS_Idle_Move`, `aim_HipFirePose_Crouch`,
-`aDS_Start_Cardinals`). **They are not three classes. They are three rows of data that UE
-requires be shaped as classes**, because `LinkAnimClassLayers()` takes a `TSubclassOf`.
+of their own** — schema diff 0 against their base, three times over. **They are not three
+classes. They are three rows of data that UE requires be shaped as classes**, because
+`LinkAnimClassLayers()` takes a `TSubclassOf`.
+
+> **CORRECTION (critic REFUTER, finding M10).** This entry originally said *"every one of the
+> 34–42 differences is an animation asset slot."* **That is false, and the exceptions matter
+> more than the rule.** Recomputed from the JSON:
+> - `ABP_RifleAnimLayers`: `raiseWeaponAfterFiringWhenCrouched` false → **true** — a behaviour flag.
+> - `ABP_UnarmedAnimLayers`: `disableHandIK` false → **true**.
+>
+> `disableHandIK` is *precisely* the field `IBRAnimLayer::GetOverridesHandPose()` exists to
+> expose. The overstatement threw away the single best piece of evidence that the interface is
+> justified. The KEEP verdict stands — a behaviour flag as a class default is R26-shaped, not
+> logic — but it stands on **"two flags and ~40 pose slots"**, not on "all pose slots".
 
 They stay assets — and per Amendment A §A.3 that is the *point*: adding a weapon is a row plus a
 layer asset and **zero C++**.
@@ -150,6 +160,53 @@ exact thing R18 exists to prevent. The engine's *own* callback (`RegisterGamepla
 `AbilitySystemComponent.h:720`) gives the identical no-drift guarantee from a C++ table that
 `git diff` can read. This is a **finding against Amendment A's wording**, filed not fixed —
 its intent ("the graph can never drift from what the ASC actually says") is met in full.
+
+---
+
+## Corrections, after an adversarial pass. Kept visible rather than edited away.
+
+A `critic` REFUTER re-derived every verdict above from `bp_inventory.json` rather than reading
+this file. **Five reproduced exactly** — schema diff 0 for all three layers and all four weapons,
+the 42/40/34 and 18/19/20/6 value-diff counts, `_Retarget`/`_CopyPose` as 11 stock and
+byte-identical, and `ABP_Mannequin_Base`'s 96 with every named default
+(`cardinalDirectionDeadZone` 10, `rootYawOffsetAngleClamp` {−120,100}, crouched {−90,80},
+`timeSinceFiredWeapon` 9999). **Three overreached their evidence**, and all three are corrected
+in place above and detailed here.
+
+**C1 — `ALI_ItemAnimLayers` cited a failed read as a measurement (M9).** The entry said *"zero
+properties, and that is correct, not a failure… probed three ref forms — all empty."* The cited
+JSON says something different in its own words:
+
+```json
+{"found": true, "notes": ["could not parse the property list: "],
+ "properties": {}, "property_count": 0}
+```
+
+`property_count: 0` is **the parse failing**, not the CDO being empty — the note is the tool
+reporting that it could not read, which is exactly the `HOLLOW`-class failure the reader was
+fixed to announce. The three probed ref forms were run in a throwaway shell and **appear nowhere
+in the committed inventory**, so they are not evidence a reviewer can check.
+
+The *conclusion* is still right — an Anim Layer Interface genuinely declares functions, not
+variables, and `AnimBlueprint.h` confirms no C++ path. But step 2's rule is *"a verdict with no
+evidence from the inventory is not a verdict."* **This verdict is now labelled as resting on the
+engine headers, not on the inventory**, which is where its support actually comes from.
+
+**C2 — the layer ABPs' differences are not all asset slots (M10).** Detailed above.
+
+**C3 — `ABP_ItemAnimLayersBase`'s KEEP contradicted this document's own law-3 reasoning (M11).**
+The entry said *"a class whose **every** member is a pose reference"*. Measured: **55 of 102 are
+object refs; 47 are not**, and ~15 of those are tuning numbers —
+`raiseWeaponAfterFiringDuration`, `idleBreakDelayTime`, `strideWarpingBlendInDurationScaled`,
+`hipFireUpperBodyOverrideWeight`, `turnInPlaceAnimTime`, `sprintSpineAlpha`,
+`handIK_Left/Right_Alpha`. The example this document offered as an "asset slot",
+`alpha01_spine_01`, **is a float** (0.15).
+
+That is the same document sending `BP_FPST_Character`'s `defaultWalkSpeed` 500 to a CSV two rows
+earlier, citing law 3, and keeping a comparable float here without one. **One rule, two answers.**
+The resolution: the non-pose half now ports to `FPS/BRAnimLayerInstance` (see above), and what
+remains on the asset is kept under **R40** — sourced content adopted as-is — which is the honest
+reason, and was not the reason originally given.
 
 ---
 

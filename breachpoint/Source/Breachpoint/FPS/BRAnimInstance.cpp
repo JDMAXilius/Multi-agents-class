@@ -62,8 +62,22 @@ void UBRAnimInstance::NativeInitializeAnimation()
 	// Bound once, here, rather than per montage: these are the AnimInstance's own delegates, so
 	// every montage this instance plays routes through them and no play site can forget to wire
 	// the seam up.
-	OnPlayMontageNotifyBegin.AddDynamic(this, &UBRAnimInstance::HandleMontageNotifyBegin);
-	OnPlayMontageNotifyEnd.AddDynamic(this, &UBRAnimInstance::HandleMontageNotifyEnd);
+	//
+	// AddUNIQUEDynamic, not AddDynamic: `NativeInitializeAnimation` re-runs on any re-init (mesh
+	// swap, forced InitAnim), and AddDynamic does not de-duplicate -- a second binding would
+	// double every gameplay event this seam raises, silently, on the second init only.
+	OnPlayMontageNotifyBegin.AddUniqueDynamic(this, &UBRAnimInstance::HandleMontageNotifyBegin);
+	OnPlayMontageNotifyEnd.AddUniqueDynamic(this, &UBRAnimInstance::HandleMontageNotifyEnd);
+
+	// The worker-thread guarantee this entire class is built on lives in a flag the ABP COMPILER
+	// overwrites: `UAnimBlueprint` forces it false when the graph contains any non-thread-safe
+	// node or a `BlueprintUpdateAnimation` event. If that happens, every line documented as
+	// worker-thread silently runs on the game thread instead and nothing else notices. So: say so.
+	ensureMsgf(bUseMultiThreadedAnimationUpdate,
+		TEXT("UBRAnimInstance: multi-threaded update is OFF for %s. The ABP graph has a "
+			 "non-thread-safe node or a BlueprintUpdateAnimation event, so NativeThreadSafe"
+			 "UpdateAnimation is running on the GAME thread. animation.md law 1 is not being met."),
+		*GetNameSafe(GetClass()));
 }
 
 void UBRAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
@@ -115,6 +129,12 @@ void UBRAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	// The linked layer is a UObject question, so it is asked here and never in the worker pass.
 	RefreshLinkedLayer();
 
+	// Latch the ASC callback's copy. This is what makes `bADSStateChanged` safe to compute: the
+	// worker compares and stores against ONE value that cannot change underneath it. Reading the
+	// live callback field instead would let a tag flip between the compare and the store, losing
+	// the edge permanently and leaving a state machine waiting on it stuck forever.
+	Snapshot.Tags = TagState;
+
 	Snapshot.bValid = true;
 }
 
@@ -139,8 +159,8 @@ void UBRAnimInstance::RefreshLinkedLayer()
 		}
 	}
 
-	LinkedLayerRow = Row;
-	bLayerOverridesHandPose = bOverridesHands;
+	Snapshot.LayerRow = Row;
+	Snapshot.bLayerOverridesHandPose = bOverridesHands;
 }
 
 void UBRAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
@@ -172,10 +192,25 @@ void UBRAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 	// recently"; past it the value carries no information and float precision only degrades.
 	TimeSinceFired = FMath::Min(TimeSinceFired + DeltaSeconds, BR_NeverFired);
 
-	// ------------------------------------------------------------------ locomotion
+	// ------------------------------------------------------------------ publish snapshot state
+	// Every graph-read field is written HERE, on the worker thread, from the snapshot. The ASC
+	// callback writes only its private copy, so no field the graph reads has two writers.
 	bIsOnGround = Snapshot.bIsOnGround;
 	bIsFalling = Snapshot.bIsFalling;
 	bIsCrouched = Snapshot.bIsCrouched;
+
+	bIsSprinting = Snapshot.Tags.bSprinting;
+	bIsReloading = Snapshot.Tags.bReloading;
+	bIsSwapping = Snapshot.Tags.bSwapping;
+	bIsMeleeing = Snapshot.Tags.bMeleeing;
+	bIsGrappling = Snapshot.Tags.bGrappling;
+	bIsThrowingGrenade = Snapshot.Tags.bThrowingGrenade;
+	bIsDead = Snapshot.Tags.bDead;
+	bIsADS = Snapshot.Tags.bADS;
+	bIsFiring = Snapshot.Tags.bFiring;
+
+	LinkedLayerRow = Snapshot.LayerRow;
+	bLayerOverridesHandPose = Snapshot.bLayerOverridesHandPose;
 
 	const FVector WorldVelocity2D(Snapshot.WorldVelocity.X, Snapshot.WorldVelocity.Y, 0.f);
 	const FVector WorldAccel2D(Snapshot.Acceleration.X, Snapshot.Acceleration.Y, 0.f);
@@ -284,6 +319,23 @@ void UBRAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 	else
 	{
 		RootYawOffset = FMath::Clamp(RootYawOffset - YawDeltaSinceLastUpdate, ClampMin, ClampMax);
+
+		// STANDING RECOVERY, and it is a stand-in for something that does not exist yet.
+		//
+		// Nothing consumes this offset. In Lyra the turn-in-place ANIMATION consumes it through a
+		// yaw curve, and there is no such curve, no ABP, and no packet that authors one. Without
+		// a consumer the offset only ever grows while stationary: pan the camera 200 degrees
+		// standing still and it pins to the clamp and STAYS there -- the body twisted 120 degrees
+		// from the camera until the player happens to take a step.
+		//
+		// So: once the turn is over (the camera has stopped), walk it back. This is not
+		// turn-in-place -- it is the floor that stops a missing system reading as a broken one.
+		// The real fix is `contract_gap BP82-4`.
+		if (FMath::IsNearlyZero(YawDeltaSinceLastUpdate, 0.01f))
+		{
+			RootYawOffset =
+				FMath::FInterpConstantTo(RootYawOffset, 0.f, DeltaSeconds, RootYawOffsetIdleRecoverySpeed);
+		}
 	}
 
 	// ------------------------------------------------------------------ lean
@@ -300,9 +352,18 @@ void UBRAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 	// symptom is not a wobble but a PERMANENT offset: hold the camera at 30 degrees up and the
 	// spring settles to a constant tilt and stays there, because a constant angle is a constant
 	// target. Sway is a response to MOTION; a still camera must produce zero sway on both axes.
-	const float PitchDelta = FRotator::NormalizeAxis(AimPitch - PreviousAimPitch);
+	// Same first-frame guard the yaw path already had, and for the identical reason: a delta
+	// against a zeroed previous is a teleport. Spawning while looking 30 degrees down would read
+	// as ~1800 deg/s and slam the sway spring to its rail for a third of a second.
+	//
+	// Its OWN flag, not `bHasPreviousFrame`: that one is already set true by the deltas block
+	// above, in this same pass, so reusing it here would guard nothing on the only frame that
+	// needed guarding.
+	const float PitchDelta =
+		bHasPreviousAimPitch ? FRotator::NormalizeAxis(AimPitch - PreviousAimPitch) : 0.f;
 	const float PitchRate = DeltaSeconds > 0.f ? PitchDelta / DeltaSeconds : 0.f;
 	PreviousAimPitch = AimPitch;
+	bHasPreviousAimPitch = true;
 
 	SwayYawSpring.Step(FMath::Clamp(-YawDeltaSpeed * SwayYawScale, -SwayMaxAngle, SwayMaxAngle),
 		SwayStiffness, SwayDamping, Step);
@@ -311,7 +372,6 @@ void UBRAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 		SwayStiffness, SwayDamping, Step);
 
 	SwayRotation = FRotator(SwayPitchSpring.Value, SwayYawSpring.Value, 0.f);
-	SwayLocation = FVector::ZeroVector;
 
 	// ------------------------------------------------------------------ additive weights
 	// Sway is suppressed while ADS: a scoped weapon that swims around the screen is unusable,
@@ -326,30 +386,62 @@ void UBRAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 
 void UBRAnimInstance::HandleMontageNotifyBegin(FName NotifyName, const FBranchingPointNotifyPayload& Payload)
 {
-	ForwardNotifyAsGameplayEvent(NotifyName);
+	ForwardNotifyAsGameplayEvent(NotifyName, /*bIsEnd=*/false);
 }
 
 void UBRAnimInstance::HandleMontageNotifyEnd(FName NotifyName, const FBranchingPointNotifyPayload& Payload)
 {
-	ForwardNotifyAsGameplayEvent(NotifyName);
+	ForwardNotifyAsGameplayEvent(NotifyName, /*bIsEnd=*/true);
 }
 
-void UBRAnimInstance::ForwardNotifyAsGameplayEvent(FName NotifyName)
+bool UBRAnimInstance::IsGameplayEventSource() const
+{
+	const ACharacter* Character = Cast<ACharacter>(GetOwningActor());
+	return Character && GetOwningComponent() == Character->GetMesh();
+}
+
+void UBRAnimInstance::ForwardNotifyAsGameplayEvent(FName NotifyName, bool bIsEnd)
 {
 	// The law-4 seam, and the ONLY thing this class does that reaches gameplay: it announces
 	// that a moment arrived. It does not decide what the moment means.
-	static const TMap<FName, FGameplayTag> NotifyToEvent = {
-		{ FName("MeleeWindowBegin"), BRGameplayTags::Event_Melee_WindowBegin },
-		{ FName("MeleeWindowEnd"),   BRGameplayTags::Event_Melee_WindowEnd },
-		{ FName("ReloadCommit"),     BRGameplayTags::Event_Weapon_ReloadCommit },
-		{ FName("SwapCommit"),       BRGameplayTags::Event_Weapon_SwapCommit },
+	//
+	// TWO MAPS, and the reason is a property of the engine rather than a style choice.
+	// `AnimNotify_PlayMontageNotifyWindow` broadcasts the SAME `NotifyName` to the begin and the
+	// end delegate. With one shared map a window's close re-emits its open tag, so
+	// `Event.Melee.WindowEnd` is never sent by any name -- the trace window opens and is never
+	// told to close. Windowed notifies are named for the WINDOW ("MeleeWindow"), and which edge
+	// it is decides the tag.
+	static const TMap<FName, FGameplayTag> BeginEvents = {
+		{ FName("MeleeWindow"),  BRGameplayTags::Event_Melee_WindowBegin },
+		{ FName("ReloadCommit"), BRGameplayTags::Event_Weapon_ReloadCommit },
+		{ FName("SwapCommit"),   BRGameplayTags::Event_Weapon_SwapCommit },
 	};
 
-	const FGameplayTag* EventTag = NotifyToEvent.Find(NotifyName);
+	// End-only. A point notify (`PlayMontageNotify`) fires begin and never end, so
+	// `ReloadCommit` and `SwapCommit` correctly appear in neither this map nor twice.
+	static const TMap<FName, FGameplayTag> EndEvents = {
+		{ FName("MeleeWindow"), BRGameplayTags::Event_Melee_WindowEnd },
+	};
+
+	const FGameplayTag* EventTag = (bIsEnd ? EndEvents : BeginEvents).Find(NotifyName);
 	if (!EventTag)
 	{
-		// An unmapped notify is not an error. Montages carry cosmetic notifies (footsteps, shell
-		// ejects) that have no business raising a gameplay event, and most of them are that.
+		// An unmapped notify is not an error: a montage's other `PlayMontageNotify`s are
+		// presentation cues that have no business raising a gameplay event.
+		//
+		// Worth knowing, because it is not obvious and nothing else says it: these delegates fire
+		// ONLY for `AnimNotify_PlayMontageNotify` and `…NotifyWindow`. An ordinary anim notify --
+		// a footstep, a shell eject, a custom notify class -- never reaches here at all. So a
+		// gameplay-bearing notify MUST be authored as one of those two classes or the seam is
+		// silent, and silence is indistinguishable from "the ability did not care".
+		return;
+	}
+
+	// One mesh speaks for the pawn. Both AnimInstances resolve to the SAME pawn and the same
+	// ASC, so without this every event lands twice -- a doubling the per-machine netcode gate
+	// below is structurally unable to see.
+	if (!IsGameplayEventSource())
+	{
 		return;
 	}
 
@@ -403,13 +495,13 @@ const TArray<UBRAnimInstance::FBRTagBinding>& UBRAnimInstance::GetTagBindings() 
 	// contract_gaps against BP93. When BP93 declares them, this table gains two lines and
 	// nothing else in this class changes -- which is the test of whether the seam was drawn right.
 	static const TArray<FBRTagBinding> Bindings = {
-		{ BRGameplayTags::State_Movement_Sprinting,   &UBRAnimInstance::bIsSprinting },
-		{ BRGameplayTags::State_Movement_Grappling,   &UBRAnimInstance::bIsGrappling },
-		{ BRGameplayTags::State_Weapon_Reloading,     &UBRAnimInstance::bIsReloading },
-		{ BRGameplayTags::State_Weapon_Swapping,      &UBRAnimInstance::bIsSwapping },
-		{ BRGameplayTags::State_Combat_Meleeing,      &UBRAnimInstance::bIsMeleeing },
-		{ BRGameplayTags::State_Combat_ThrowingGrenade, &UBRAnimInstance::bIsThrowingGrenade },
-		{ BRGameplayTags::State_Dead,                 &UBRAnimInstance::bIsDead },
+		{ BRGameplayTags::State_Movement_Sprinting,     &FBRAnimTagState::bSprinting },
+		{ BRGameplayTags::State_Movement_Grappling,     &FBRAnimTagState::bGrappling },
+		{ BRGameplayTags::State_Weapon_Reloading,       &FBRAnimTagState::bReloading },
+		{ BRGameplayTags::State_Weapon_Swapping,        &FBRAnimTagState::bSwapping },
+		{ BRGameplayTags::State_Combat_Meleeing,        &FBRAnimTagState::bMeleeing },
+		{ BRGameplayTags::State_Combat_ThrowingGrenade, &FBRAnimTagState::bThrowingGrenade },
+		{ BRGameplayTags::State_Dead,                   &FBRAnimTagState::bDead },
 	};
 
 	return Bindings;
@@ -435,8 +527,10 @@ void UBRAnimInstance::BindAbilitySystem()
 		return;
 	}
 
-	// Respawn re-points the ASC. Binding the new one without dropping the old leaves a callback
-	// writing into a dead instance's bools -- and the first symptom is a corpse that reloads.
+	// Respawn re-points the ASC, so drop the old registration before taking a new one. NOT for
+	// safety -- `AddUObject` binds weakly and a destroyed instance is skipped, never written --
+	// but for handle hygiene: leaving stale entries on the old ASC's delegate list means this
+	// instance keeps receiving a dead pawn's tag changes for as long as that ASC lives.
 	UnbindAbilitySystem();
 
 	for (const FBRTagBinding& Binding : GetTagBindings())
@@ -448,7 +542,7 @@ void UBRAnimInstance::BindAbilitySystem()
 		// Seed from the CURRENT count. A callback only fires on CHANGE, so binding to an ASC
 		// that is already sprinting leaves the bool false until the player stops -- state that
 		// is wrong exactly when it is least visible in testing and most visible in a match.
-		this->*(Binding.Field) = ASC->HasMatchingGameplayTag(Binding.Tag);
+		TagState.*(Binding.Field) = ASC->HasMatchingGameplayTag(Binding.Tag);
 	}
 
 	BoundASC = ASC;
@@ -478,7 +572,9 @@ void UBRAnimInstance::OnStateTagChanged(const FGameplayTag Tag, int32 NewCount)
 	{
 		if (Binding.Tag == Tag)
 		{
-			this->*(Binding.Field) = NewCount > 0;
+			// Writes the PRIVATE game-thread copy. The worker publishes it into the graph-read
+			// bool next pass, so nothing the graph reads has two writers.
+			TagState.*(Binding.Field) = NewCount > 0;
 			return;
 		}
 	}
