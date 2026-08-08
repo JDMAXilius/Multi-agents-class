@@ -1,6 +1,22 @@
 # TICKET — BP82: Read the FPS template's character + AnimInstance, and land the C++ spine
 
-> STATUS: open — cut 7 Aug 2026. **editor-live for step 1, then files-only, then a compile.**
+> STATUS: in-progress — mac terminal 8 Aug 2026 (772dade). Editor live, MCP reachable on :8000.
+
+> **AMENDMENT — founder call, 8 Aug 2026: the spine lands in a NEW `Source/Breachpoint/FPS/`,
+> not `Source/Breachpoint/Character/`.** Recorded here because a decision that lives only in
+> chat is lost. Three consequences, each checkable:
+> 1. `owner_path` below changes; `Character/` is no longer written by this ticket at all.
+> 2. **The BP82↔BP96 collision is gone.** `GAMEPLAY-REWORK §3.5` budgets `Character/` at 2 units
+>    and BP96 owns both; this ticket no longer contends for that folder or that budget.
+> 3. R39 (step 4) therefore declares a **new numbered §3.x `FPS` section**, not a `Character/`
+>    bump from 2 to 3. `animation.md`'s binding line ("the anim-facing members of
+>    `Source/Breachpoint/Character/`") must be re-pointed at `FPS/` in the same commit as the
+>    first header — that edit is inside this ticket's owner_path.
+>
+> No Build.cs change is owed: UE globs every folder under `Source/Breachpoint/`, and
+> `PublicIncludePaths` lists only the legacy `Variant_*` shortcuts, which `FPS/` does not use.
+
+> **Founder directive (unchanged):** *"break down the entire character and entire anim instance … transfer
 > Founder directive: *"break down the entire character and entire anim instance … transfer
 > everything to C++ as much as possible. I understand there's gonna be a couple stuff we might
 > not be able to do."* This ticket honours both halves of that sentence — it maximises C++ and
@@ -27,8 +43,12 @@ the inventory exists — the whole point is to stop estimating and read the thin
   must not overlap a build.
 - `python3 mcp-bp/bp_extract.py --list` prints 4 sets, 14 assets — runs anywhere, no editor
 - `git lfs pull` has run
-- owner_path: `mcp-bp/`, `Source/Breachpoint/Character/`, `docs/contracts/animation.md`,
-  `docs/tickets/TICKET_BP82_ANIM_SPINE_FROM_TEMPLATE.md`
+- owner_path: `mcp-bp/`, `Source/Breachpoint/FPS/`, `docs/contracts/animation.md`,
+  `docs/ANIM-PORT-LEDGER.md`, `docs/tickets/TICKET_BP82_ANIM_SPINE_FROM_TEMPLATE.md`
+  — amended 8 Aug 2026. `ANIM-PORT-LEDGER.md` was missing from the original list although step 2
+  mandates writing it; added rather than worked around. **`BREACHPOINT-GAMEPLAY-REWORK.md` is
+  deliberately NOT here** — step 4's R39 declaration edits it, and law 5 says a blocked write is
+  a `contract_gap`, not a widened claim. That gap is filed when step 4 is reached, not now.
 - **`animation.md` Amendment A is the design law for this ticket** — read it first; it already
   settles the reference verdicts and the C++/graph boundary.
 
@@ -70,8 +90,9 @@ the inventory exists — the whole point is to stop estimating and read the thin
    | Montage play + notify forwarding | **C++** | law 4, and R17's `Event.*` tags |
    | **State machines, blend spaces, the layer stack** | **ASSET — unavoidable** | R18 names AnimBlueprint graphs as the one thing UE 5.8 has no C++ path for |
 
-   Target shape: **`Character/BRAnimInstance.h/.cpp`, one pair**, plus the anim nodes. The FP and
-   TP instances share it and differ only in what they expose.
+   Target shape: **`FPS/BRAnimInstance.h/.cpp`, one pair**, plus the anim nodes. The FP and
+   TP instances share it and differ only in what they expose. (Was `Character/` before the
+   8 Aug amendment above.)
 
 4. **Declare the unit — R39, and it is not optional.** *"Real `BR*` C++ under `Source/` is either
    a NUMBERED UNIT in §3 or a NAMED EXCLUSION in §4 — silence is not a third option."*
@@ -95,7 +116,7 @@ the inventory exists — the whole point is to stop estimating and read the thin
 
 - [ ] `mcp-bp/bp_inventory.json` committed, 14/14 found, **before any C++**
 - [ ] `docs/ANIM-PORT-LEDGER.md` gives every asset a PORT/KEEP/DROP verdict **citing the JSON**
-- [ ] `Character/BRAnimInstance.h/.cpp` exists; the header's includes are engine-only
+- [ ] `FPS/BRAnimInstance.h/.cpp` exists; the header's includes are engine-only
 - [ ] The layer contract is a C++ `UINTERFACE`; no C++ hard-refs an AnimInstance class per weapon
 - [ ] R39: the unit is declared in §3 with its form, same commit as the file
 - [ ] R23: every missing `State.*` tag is a filed `contract_gap`, none added locally
