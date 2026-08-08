@@ -281,6 +281,27 @@ one rung below "works"**, and every rung above it is owed by whichever packet au
 Specifically unverified: the worker-thread update actually running off the game thread, the
 turn-in-place sign, the sway spring under a frame spike, and the ASC rebind on respawn.
 
+**Rung V1, run independently by `verifier` (read-only crew, not the author).** It reproduced the
+same verdict from scratch — **rung 1 PARTIAL by environment**: `BreachpointEditor` PASS (relinked
+the dylib), `Breachpoint` PASS, `BreachpointServer` FAIL on *"Server targets are not currently
+supported from this engine distribution."* Its mechanical gates also passed: the folder contains
+exactly the four expected files; the six `ABP_`/`/Game/` hits are **all in comments, none in
+code**; no banned API (`TakeDamage`, `ApplyRadialDamage`, `FDamageEvent`, loose-tag or attribute
+setters) appears anywhere in `FPS/`; `bp_inventory.json` parses with 14 `found=true` and 13
+non-empty `properties`.
+
+> **FINDING — the ladder above rung 1 has NO macOS path at all, and this is bigger than BP82.**
+> `verifier` reported rungs 2 and 4 BLOCKED for want of a macOS runner. Checked further rather
+> than taking it at face value: `pwsh` is **not installed**, and installing it would not help —
+> `Tools/run-specs.ps1` is Windows-**hardcoded**, not merely PowerShell-flavoured. It looks for
+> `UnrealEditor-Cmd.exe` and `Binaries\Win64\UnrealEditor-Breachpoint.dll`. `run-gauntlet.ps1`
+> has no macOS counterpart either; only `run-ubt` was ever ported (`run-ubt.sh`).
+>
+> So on this machine the honesty ladder **terminates at rung 1**, and every "PIE ≠ multiplayer"
+> claim above it is unreachable rather than merely un-run. That is a much sharper statement than
+> the 4 Aug HANDOFF's "rung 1 is PARTIAL by environment", which named only the server target.
+> `Tools/` is not in this ticket's owner_path — **filed, not fixed.**
+
 **Two findings filed against things I do not own, fixed by nobody today:**
 - `run-ubt.sh` warned *"an Unreal editor is running"* on every run **after** the editor was
   closed and confirmed gone. A false positive on a warning about build/editor overlap (R21/R29)
