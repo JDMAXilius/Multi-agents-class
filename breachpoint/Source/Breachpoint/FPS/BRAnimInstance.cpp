@@ -10,6 +10,7 @@
 
 #include "Core/BRGameplayTags.h"
 #include "FPS/BRAnimLayerInterface.h"
+#include "FPS/BRProceduralSolver.h"
 
 namespace
 {
@@ -397,13 +398,45 @@ void UBRAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 	PreviousAimPitch = AimPitch;
 	bHasPreviousAimPitch = true;
 
-	SwayYawSpring.Step(FMath::Clamp(-YawDeltaSpeed * SwayYawScale, -SwayMaxAngle, SwayMaxAngle),
-		SwayStiffness, SwayDamping, Step);
+	// The per-weapon profile drives this now, not a single set of class-wide scalars. That was the
+	// one thing the purchased pack got structurally right and this class did not: sway is a
+	// property of the WEAPON, and one profile for every gun makes a pistol and a rocket launcher
+	// settle identically.
+	SwayRotation = BRProcedural::SolveSway(
+		SwayAndLag, YawDeltaSpeed, PitchRate, bIsADS, SwayMaxAngle, Step,
+		SwayYawSpring, SwayPitchSpring);
 
-	SwayPitchSpring.Step(FMath::Clamp(-PitchRate * SwayPitchScale, -SwayMaxAngle, SwayMaxAngle),
-		SwayStiffness, SwayDamping, Step);
+	// Positional lag, in the actor's frame. Trails the motion and catches up; never overshoots.
+	SwayLagOffset = BRProcedural::SolveLag(
+		SwayAndLag, LocalVelocity2D + FVector(0.f, 0.f, VelocityZ), bIsADS, bIsFalling, Step, LagOffset);
 
-	SwayRotation = FRotator(SwayPitchSpring.Value, SwayYawSpring.Value, 0.f);
+	// ------------------------------------------------------------------ recoil (weapon transform)
+	// Camera recoil is NOT here and never will be -- animation.md A.6, founder ruling: it moves
+	// where the next bullet goes, so it belongs to BP98's fire path. This is the gun kicking in
+	// the hands, which is presentation and nothing else.
+	// Elapsed wall clock, accumulated on this thread rather than read from a world -- a world is
+	// a UObject and this pass may not touch one. Advanced BEFORE draining so a kick queued this
+	// frame expires relative to now, not to the previous frame.
+	ProceduralTimeSeconds += DeltaSeconds;
+
+	{
+		FScopeLock Lock(&PendingForcesLock);
+		for (const FBRPendingRecoil& Pending : PendingForces)
+		{
+			// Stamped with the WORKER's clock. That is the whole reason the queue carries inputs
+			// rather than finished forces.
+			ActiveForces.Add(
+				BRProcedural::MakeRecoilForce(Pending.Impulse, Pending.Alpha, ProceduralTimeSeconds));
+		}
+		PendingForces.Reset();
+	}
+
+	FVector RecoilLocation = FVector::ZeroVector;
+	FRotator RecoilRotation = FRotator::ZeroRotator;
+	BRProcedural::AccumulateForces(ActiveForces, ProceduralTimeSeconds, RecoilLocation, RecoilRotation);
+
+	RecoilOffsetLocation = RecoilLocation;
+	RecoilOffsetRotation = RecoilRotation;
 
 	// ------------------------------------------------------------------ additive weights
 	// Sway is suppressed while ADS: a scoped weapon that swims around the screen is unusable,
@@ -562,6 +595,19 @@ void UBRAnimInstance::NativeUninitializeAnimation()
 	OnPlayMontageNotifyEnd.RemoveDynamic(this, &UBRAnimInstance::HandleMontageNotifyEnd);
 
 	Super::NativeUninitializeAnimation();
+}
+
+void UBRAnimInstance::AddRecoilImpulse(const FBRRecoilImpulse& Impulse, float Alpha)
+{
+	// GAME THREAD, and it deliberately does NOT build the force. Building one needs the clock,
+	// and the clock lives on the worker thread -- reading it here would be a cross-thread read of
+	// a float written every frame. The envelope and the roll go over instead and the worker
+	// stamps the expiry itself, so the race does not exist rather than being made safe.
+	//
+	// The alpha is the caller's roll, used verbatim: see animation.md A.6 on why a function that
+	// rolled its own would desynchronise the client's crosshair from the server's cone.
+	FScopeLock Lock(&PendingForcesLock);
+	PendingForces.Add(FBRPendingRecoil{ Impulse, Alpha });
 }
 
 void UBRAnimInstance::NotifyWeaponFired()

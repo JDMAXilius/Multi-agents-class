@@ -7,6 +7,8 @@
 #include "GameplayTagContainer.h"
 
 #include "FPS/BRAnimTypes.h"
+#include "FPS/BRRecoilTypes.h"
+#include "FPS/BRSwayAndLagTypes.h"
 
 #include "BRAnimInstance.generated.h"
 
@@ -245,6 +247,23 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Weapon")
 	FRotator SwayRotation = FRotator::ZeroRotator;
 
+	/** Positional weapon lag, actor frame. The graph applies it with the same node as the sway. */
+	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Weapon")
+	FVector SwayLagOffset = FVector::ZeroVector;
+
+	/**
+	 * Weapon-transform recoil: the gun kicking in the hands. Presentation, and ours.
+	 *
+	 * **Camera recoil is deliberately absent** — `animation.md` A.6, founder ruling 8 Aug 2026.
+	 * It moves where the next bullet goes, which makes it a gameplay decision with a netcode
+	 * surface, and it belongs to BP98's fire path.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Weapon")
+	FVector RecoilOffsetLocation = FVector::ZeroVector;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Weapon")
+	FRotator RecoilOffsetRotation = FRotator::ZeroRotator;
+
 	// There is no `SwayLocation`. An earlier revision published one and assigned it
 	// `FVector::ZeroVector` unconditionally -- a BlueprintReadOnly field a graph could wire
 	// translation from and get nothing, forever. Positional sway needs a weapon-socket reference
@@ -407,6 +426,21 @@ public:
 	void NotifyWeaponFired();
 
 	/**
+	 * Queue a recoil kick. Called by the fire ability on the machines that own the shot.
+	 *
+	 * `Alpha` is the caller's roll in 0..1 between the impulse's min and max envelope, and it is
+	 * an ARGUMENT rather than something rolled here — see `animation.md` A.6. Recoil randomised
+	 * independently per machine makes the client's crosshair and the server's cone disagree by
+	 * arithmetic, so whoever owns the shot owns the seed. This method takes the number it is
+	 * given and asks no questions.
+	 *
+	 * Game thread in, worker thread out: the force lands in a queue that the next thread-safe
+	 * pass drains, for the same reason `NotifyWeaponFired` uses an atomic.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Breachpoint|Weapon")
+	void AddRecoilImpulse(const FBRRecoilImpulse& Impulse, float Alpha);
+
+	/**
 	 * Raise one seam event, with both gates applied. The single door every notify path uses.
 	 *
 	 * Public because `UBRAnimNotify_GameplayEvent` and `UBRAnimNotifyState_GameplayEventWindow`
@@ -546,6 +580,54 @@ private:
 	 * so a shot fired between two anim updates is stamped exactly once and never lost.
 	 */
 	std::atomic<bool> bFirePending { false };
+
+	/**
+	 * Recoil kicks queued on the game thread, drained by the worker pass.
+	 *
+	 * A lock, and it is the only one in this class -- justified because the producer is gameplay
+	 * firing a weapon at an arbitrary moment and the consumer is the anim worker. A queue that
+	 * two threads push and pop without one is not a race that shows up in testing; it is a
+	 * corrupted TArray that crashes days later. The critical section is held for the length of an
+	 * Append and a Reset, never across the solve.
+	 */
+	/**
+	 * Queued as (envelope, roll) -- NOT as a built force.
+	 *
+	 * Building the force game-side would need the clock, and the clock is accumulated on the
+	 * worker thread; reading it from gameplay is a cross-thread read of a float being written
+	 * every frame. Handing over the two inputs instead lets the worker stamp the expiry with its
+	 * OWN time, and the race stops existing rather than being made safe.
+	 */
+	struct FBRPendingRecoil
+	{
+		FBRRecoilImpulse Impulse;
+		float Alpha = 0.f;
+	};
+
+	TArray<FBRPendingRecoil> PendingForces;
+	TArray<FBRProceduralForce> ActiveForces;
+	FCriticalSection PendingForcesLock;
+
+	FVector LagOffset = FVector::ZeroVector;
+
+	/**
+	 * Wall clock accumulated on the worker thread.
+	 *
+	 * Not read from a world: a world is a UObject and law 1 forbids reaching one from this pass.
+	 * It uses the REAL delta rather than the clamped step, because it measures elapsed time and
+	 * not motion — the same distinction `TimeSinceFired` makes.
+	 */
+	float ProceduralTimeSeconds = 0.f;
+
+	/**
+	 * The per-weapon sway profile in force. Defaults until a layer supplies one.
+	 *
+	 * This is what the ported `FBRSwayAndLagInfo` is FOR: the hardcoded config scalars this class
+	 * started with were one profile for every weapon, which is the thing the source pack got
+	 * right and we had not yet.
+	 */
+	UPROPERTY(EditDefaultsOnly, Config, Category = "Breachpoint|Tuning")
+	FBRSwayAndLagInfo SwayAndLag;
 
 	TWeakObjectPtr<UAbilitySystemComponent> BoundASC;
 	TArray<FDelegateHandle> TagHandles;
