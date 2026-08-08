@@ -10,6 +10,29 @@ Read `docs/contracts/animation.md` Amendment A first; it is the design law this 
 
 ---
 
+> # ⚠️ THE HEADLINE BELOW WAS WRONG. Read this first.
+>
+> **Corrected 8 Aug 2026, on founder challenge.** The line *"of 14 Blueprints, exactly ONE carries
+> a state model"* was true of the fourteen assets `bp_extract.py` was pointed at, and **false of
+> the template**. Its target list never looked in `Blueprints/Components/`.
+>
+> The template has **43** extractable assets, not 14. The missing 29 include an entire
+> **procedural weapon-motion system** — five components on the character plus a base, and sixteen
+> `S_Procedural_*` data structs. Corrected count: **five assets carry logic worth porting, not
+> one.** The revised verdicts are in "The 29 that were missed" below; the original table is left
+> intact beneath it as the dated record of what was concluded from a partial read.
+>
+> **`BP_FPST_Character`'s own CDO named them the whole time** — `bPC_FPST_Procedural_Recoil`,
+> `_SwayAndLag`, `_AimAndLean`, `_PoseOffsets`, `_Manager` were sitting in the committed JSON as
+> component properties and nobody followed the names. Sway springs and lean were then written
+> from first principles against a purchased, structured implementation that had never been read.
+>
+> **The transferable lesson, which is worth more than the correction:** a curated target list is a
+> *claim about what matters*, and any conclusion drawn from it inherits that claim silently.
+> **"14/14 found" reads as completeness and only ever meant "14/14 of what I was told to look
+> at."** The count was never the coverage. It is now recorded in `bp_extract.py` beside the list
+> itself, because that is where the next person will be tempted to trust it.
+
 ## The one-line finding
 
 **The purchase is worth what it cost, and almost none of it is code.** Of 14 extracted
@@ -160,6 +183,79 @@ exact thing R18 exists to prevent. The engine's *own* callback (`RegisterGamepla
 `AbilitySystemComponent.h:720`) gives the identical no-drift guarantee from a C++ table that
 `git diff` can read. This is a **finding against Amendment A's wording**, filed not fixed —
 its intent ("the graph can never drift from what the ASC actually says") is met in full.
+
+---
+
+---
+
+# The 29 that were missed
+
+Extracted 8 Aug 2026 after the target list was widened. Same rule as everything above: **every
+verdict cites a property count or a named field from `mcp-bp/bp_inventory.json`.**
+
+## procedural — the system this packet was reinventing
+
+| Asset | Props | Verdict | Evidence |
+|---|---|---|---|
+| `BPC_FPST_Procedural_SwayAndLag` | 24 | **PORT (shapes) / DECLINE (architecture)** | Carries `swayPrevControlRotation` → `swayControlRotDelta`: sway is driven by the **rate of change of control rotation**, never the rotation. Also `applySwayAlpha`, `swayMultiplyValue`, `lagMultiplyValue`, and an `infoMap` of per-weapon `FBRSwayAndLagInfo`. → `FPS/BRSwayAndLagTypes.h` |
+| `BPC_FPST_Procedural_Recoil` | 32 | **PORT (shapes) / RULING OWED (behaviour)** | `cameraRecoil_Multiply`, `cameraReturnRotationVector`, `cameraSpringStiffness_RotationVector`, `cameraRecoilFireCount`, `forceInfoArray`, `locationSpringState` + `rotationSpringState`. **It drives the camera** → `contract_gap BP82-9`. → `FPS/BRRecoilTypes.h` |
+| `BPC_FPST_Procedural_AimAndLean` | 19 | **PORT (shapes)** | `currInfo.aimSpineWeights_UE4/UE5`, `targetLeaning`/`currLeaning`, `leaningSpeed` 8 (an interp, not a spring — lean settles without overshoot). → `FPS/BRAimAndLeanTypes.h` |
+| `BPC_FPST_Procedural_PoseOffsets` | **35** | **PORT (shapes)** | The largest of the five. ADS/scope/crouch offset tables. → `FPS/BRPoseOffsetTypes.h` |
+| `BPC_FPST_Procedural_Manager` | 17 | **DROP** | One meaningful member: `proceduralCompAry`. It is a Tick fan-out over the other components — pure architecture, and the architecture is what law 4 declines. |
+| `BPC_FPST_Procedural_Base` | 12 | **DROP** | **Zero custom properties.** A shared base carrying only stock `UActorComponent` members; its content is graph, which no tool here can read and which law 4 sends to the worker thread anyway. |
+
+**The architecture is declined as a whole, and the reason is measurable rather than stylistic.**
+All five hang off `BP_FPST_Character`, whose `primaryActorTick` reads `bCanEverTick: true` **and
+`bAllowTickOnDedicatedServer: true`** — a per-frame procedural animation pass running on a server
+that renders nothing. CLAUDE.md law 4 forbids gameplay Tick; `animation.md` law 1 puts anim maths
+on the worker thread. BREACHPOINT computes the same quantities in `UBRAnimInstance`'s thread-safe
+pass. **Measured, judged, declined** — which is a different claim from "we did it differently".
+
+## procedural_structs — 16 shapes, all ported
+
+**All 16 report `HOLLOW` for values and that is correct, not a failure:** a `UserDefinedStruct`
+has no CDO, so there are no defaults to read — the *schema* is the deliverable, and all 16
+schemas landed. (The `HOLLOW` note exists because of the earlier silent-empty defect; it is the
+guard working.)
+
+| Struct | Fields | Lands as |
+|---|---|---|
+| `S_Procedural_SpringSetting` | 2 | `FBRSpringSetting` — literally `{spring_Stiffness, spring_Damping}`, the same pair `FBRSpring1D` already took |
+| `S_Procedural_ForceInfo` | 3 | `FBRProceduralForce` |
+| `S_ProceduralSwayAndLagInfo` | 10 | `FBRSwayAndLagInfo` |
+| `S_Procedural_RecoilInfo` · `_RecoilItemInfo` | 7 · 6 | `FBRRecoilInfo` · `FBRRecoilImpulse` |
+| `S_Procedural_AimAndLean` | 6 | `FBRAimAndLeanInfo` |
+| `S_Procedural_AimSpineInfoItem_UE5` · `_UE4` | **8 · 5** | `FBRSpineWeights` (one type) |
+| `S_Procedural_LeanSpineInfoItem_UE5` · `_UE4` | **8 · 5** | `FBRSpineWeights` (same type) |
+| `S_Procedural_PoseInfo` | 3 | `FBRPoseInfo` |
+| `S_Procedural_PoseOffsetInfo` · `_ItemInfo` · `_ADS_ItemInfo` | 4 · 3 · 4 | `FBRPoseOffsetInfo` · `FBRPoseOffsetItem` · `FBRADSPoseOffsetItem` |
+| `S_Procedural_PoseOffset_SetupInfo` · `_Scope_SetupInfo` | 5 · 3 | `FBRPoseSetup` · `FBRScopeSetup` |
+
+**Four structs became one type, and the field counts are the argument.** The spine-weight structs
+are 8 fields on UE5 and 5 on UE4 because they name the bones *in the type* — `head`, `neck_01`,
+`neck_02`, `spine_01`…`spine_05` versus `head`, `neck_01`, `spine_01`…`spine_03`. One idea,
+forced into two types and two code paths by a skeleton change. `FBRSpineWeights` is a
+`TMap<FName,float>`: the skeleton becomes data, and a third one costs nothing.
+
+## components — gameplay, and almost none of it ours
+
+| Asset | Props (custom) | Verdict | Evidence |
+|---|---|---|---|
+| `BPC_FPST_LineTracer` | 23 (9) | **DROP → BP98** | `hitResult`, `hitBoneName`, `hitSurfaceType`, `fireDirection`. This is the **fire trace**, and law 2 admits one damage pipeline. A client-side tracer that decides hits is the shape `netcode.md` exists to prevent — the server revalidates. |
+| `BPC_FPST_FireTimer` | 18 (4) | **DROP → BP98** | `fireTimerHandle`, `burstFireCount`, `fireType` "Single", `delay`. Cadence belongs to `BRGA_WeaponFire` reading `EBRFireMode` off the row; `delay` is a law-3 number. |
+| `BPC_FPST_MeleeCombo` | 17 (4) | **DROP → BP100** | `meleeComboMontages`, `currComboIndex`, `enableCombo`, `attacking`. Combo state on a component is ability state; `BRGA_Melee` owns it, and its windows are R17 notify tags. |
+| `BPC_FPSComp` | 28 (9) | **DROP → BP96/BP10** | Camera: `currentCameraFov` 90, `targetCameraFov`, `cameraFovInterpSpeed` 10, `cameraRotationLagSpeed`. FOV numbers are law-3 rows; the camera is the pawn's. |
+| `BPC_FPST_Lyra_Integration` | 32 (10) | **DROP** | The same nine camera fields as `BPC_FPSComp` plus `lastAiming`/`lastIsCrouched`. **Integration glue for a Lyra project we are not** — and near-duplicate of the component above, which is its own finding. |
+| `BPC_FPSMT_Integration` | 26 (4) | **DROP** | `aiming`, `isCrouched`, `tempControlRot`, `bMyLocalCharacter`. Glue for a different marketplace pack ("FPSMT") that this project does not use. |
+| `BPC_FPST_Lyra_FireEffectComp` | 14 (**0**) | **DROP** | **Zero custom properties.** Whatever it does is entirely graph; there is nothing to port and nothing to read. |
+
+**A finding the counts make visible:** `BPC_FPSComp` and `BPC_FPST_Lyra_Integration` carry the
+same nine camera fields (`currentCameraFov` 90, `targetCameraFov` 90, `cameraFovInterpSpeed`,
+`cameraRotationLagSpeed`, `enableCameraRotationLag`, `isUpdateCameraFov`, `cameraPitch`,
+`bMyLocalCharacter`), differing only in interp-speed defaults (10 vs 12). Two components, one
+camera model, copy-pasted — the same "one class per variant" shape the layer ABPs and the weapon
+subclasses already showed. **Three independent instances of it in one purchase** is the strongest
+argument in this document for keeping the pack as content and none of it as architecture.
 
 ---
 
