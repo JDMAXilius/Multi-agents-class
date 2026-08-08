@@ -406,6 +406,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Breachpoint|Weapon")
 	void NotifyWeaponFired();
 
+	/**
+	 * Raise one seam event, with both gates applied. The single door every notify path uses.
+	 *
+	 * Public because `UBRAnimNotify_GameplayEvent` and `UBRAnimNotifyState_GameplayEventWindow`
+	 * call it — and those exist so the tag arrives as a **C++-declared `FGameplayTag` property**
+	 * instead of a magic string matched against a table. That closes the hole this packet filed
+	 * against itself: a windowed notify authored as a point notify silently restored a trace
+	 * window that opens and never closes, and nothing could detect it. A notify that carries its
+	 * own tag cannot be mis-named, because there is no name to get wrong.
+	 */
+	void SendSeamGameplayEvent(FGameplayTag EventTag);
+
 private:
 
 	/**

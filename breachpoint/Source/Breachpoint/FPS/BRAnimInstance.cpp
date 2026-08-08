@@ -513,6 +513,16 @@ void UBRAnimInstance::ForwardNotifyAsGameplayEvent(FName NotifyName, bool bIsEnd
 		return;
 	}
 
+	SendSeamGameplayEvent(*EventTag);
+}
+
+void UBRAnimInstance::SendSeamGameplayEvent(FGameplayTag EventTag)
+{
+	if (!EventTag.IsValid())
+	{
+		return;
+	}
+
 	// One mesh speaks for the pawn. Both AnimInstances resolve to the SAME pawn and the same
 	// ASC, so without this every event lands twice -- a doubling the per-machine netcode gate
 	// below is structurally unable to see.
@@ -538,10 +548,10 @@ void UBRAnimInstance::ForwardNotifyAsGameplayEvent(FName NotifyName, bool bIsEnd
 	}
 
 	FGameplayEventData Payload;
-	Payload.EventTag = *EventTag;
+	Payload.EventTag = EventTag;
 	Payload.Instigator = Pawn;
 
-	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(Pawn, *EventTag, Payload);
+	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(Pawn, EventTag, Payload);
 }
 
 void UBRAnimInstance::NativeUninitializeAnimation()
