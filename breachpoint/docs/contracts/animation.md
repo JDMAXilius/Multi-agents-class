@@ -2,8 +2,13 @@
 
 Status: v1 (filled for BREACHPOINT) · Owner: anim-builder · Binds every packet touching the
 character's AnimBlueprints, AnimGraph nodes, montages, notify seams, or motion warping —
-i.e. `Content/Characters/` anim assets plus the anim-facing members of
-`Source/Breachpoint/Character/`.
+i.e. `Content/Characters/` anim assets plus **`Source/Breachpoint/FPS/`** (the C++ animation
+spine) and the anim-facing members of `Source/Breachpoint/Character/`.
+
+> **Re-pointed 8 Aug 2026 (BP82, founder call).** The spine lives in its own folder,
+> `Source/Breachpoint/FPS/`, and **anim-builder owns it outright** — no shared-folder handoff,
+> because the owner-path note below exists only for `Character/`. `Character/` stays builder's
+> and BP96's. This landed in the same commit as `FPS/BRAnimInstance.h`, per R39.
 The boundary in one line: **animation requests and presents; it never decides gameplay.**
 
 > **Owner-path note (`Character/` is shared).** `ARCHITECTURE §9` assigns `Source/Breachpoint/
@@ -90,6 +95,18 @@ read for *patterns*, never for code to paste.
 | **Variant_Shooter** (in-repo, deleted by BP90) | ⏳ **read before deletion** — see A.3 | Proof that per-weapon AnimInstance swapping works, and what it costs | The pattern itself. Layers supersede it |
 | **ZoransResistance** | ❌ **no** | — | The rework already found 5 damage paths, one bug copy-pasted into two, ~600 lines to move a hit client→server. Nothing suggests its animation is better-disciplined |
 | **UE5_Multiplayer_FPS** | ❌ not unless a question survives Lyra | — | Same tier |
+
+> **RESOLVED 8 Aug 2026 (BP82), and the verdict is split.** The include is
+> `GameplayEffectTypes.h` (GameplayAbilities/Public), line 1480 — the open question below is
+> closed. **The mechanism is used; the container is declined**, and the reason is R18 rather
+> than taste: `FGameplayTagBlueprintPropertyMap::PropertyMappings` is `protected` and
+> `EditAnywhere`, so the tag→property table would be authored **on the ABP asset** — no diff,
+> no merge, no grep, which is the exact condition R18 exists to prevent. BP82 binds the same
+> engine event one layer down (`UAbilitySystemComponent::RegisterGameplayTagEvent`,
+> `AbilitySystemComponent.h:720`) from a **C++ table** in `FPS/BRAnimInstance.cpp`. The stated
+> intent of this paragraph — *"the graph can never drift from what the ASC actually says"* — is
+> met in full, and the drift-free bool is now also reviewable. Finding filed against the
+> wording below, which is left intact as the dated record.
 
 **The single highest-value finding is `FGameplayTagBlueprintPropertyMap`** (GameplayAbilities
 plugin — confirm the exact include at first compile; it is not resolvable from a cloud
