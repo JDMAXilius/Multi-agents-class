@@ -109,12 +109,27 @@ def extract_one(m: MCP, path: str) -> dict:
         rec["notes"].append(f"list_properties failed: {txt[:200]}")
         return rec
 
+    # `list_properties` returns a JSON OBJECT keyed by property name -- {name: {type,
+    # description}} -- not the array the first cut of this file assumed. That assumption cost a
+    # full 14-asset extraction: `json.loads` produced a dict, `len()` on it gave the RIGHT count,
+    # and the dict was then passed to `get_properties` as its `properties` argument, where the
+    # server rejected it and returned nothing. Every record came back with an accurate
+    # `property_count` and an EMPTY `properties` -- a hollow inventory that looked complete.
+    # Hence `schema` below: the names and types are kept as their own deliverable, so a values
+    # failure can never again cost the whole read.
+    schema: dict = {}
     try:
-        keys = names if isinstance(names, list) else json.loads(names)
+        parsed = names if isinstance(names, (list, dict)) else json.loads(names)
+        if isinstance(parsed, dict):
+            schema = parsed
+            keys = list(parsed)
+        else:
+            keys = list(parsed)
     except Exception:
         keys = []
         rec["notes"].append(f"could not parse the property list: {str(names)[:200]}")
     rec["property_count"] = len(keys)
+    rec["schema"] = schema
 
     # Values in one call. A per-key loop is 200 round-trips against a live editor for one
     # Blueprint and there is no reason for it.
@@ -124,6 +139,12 @@ def extract_one(m: MCP, path: str) -> dict:
             rec["properties"] = json.loads(got) if isinstance(got, str) else (got or {})
         except Exception:
             rec["notes"].append(f"could not parse values: {str(got)[:200]}")
+        # Silence is the failure mode that got us. Say it out loud in the record.
+        if not rec["properties"]:
+            rec["notes"].append(
+                f"HOLLOW: {len(keys)} properties listed, zero values returned. "
+                f"server said: {str(txt)[:200]}"
+            )
     return rec
 
 
