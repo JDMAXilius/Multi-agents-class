@@ -183,6 +183,38 @@ C++**.
 The C++ spine is **not** blocked by any of the above and can be written now. It is the piece
 `BP96_CHARACTER` will otherwise build around, leaving someone to bolt an anim seam on afterwards.
 
+## A.6 Recoil — where the boundary falls (founder ruling, 8 Aug 2026, CLOSED)
+
+**Raised as `contract_gap BP82-9` and answered the same day. Do not re-litigate; reviews judge
+against this.**
+
+The FPS template's `BPC_FPST_Procedural_Recoil` (32 properties) drives **both** the weapon
+transform and the camera: `cameraRecoil_Multiply`, `cameraReturnRotationVector`,
+`cameraSpringStiffness_RotationVector`, and a `cameraRecoilCurve` sampled by
+`cameraRecoilFireCount` so sustained fire climbs a designed path. One component, two concerns.
+
+**The ruling splits them, and the test is "does it move where the next bullet goes?":**
+
+| Concern | Owner | Why |
+|---|---|---|
+| **Weapon-transform recoil** — the gun kicking in the hands | **animation** (`FPS/`, `UBRAnimInstance`) | Presentation. It changes what the player SEES and nothing about where the shot goes. |
+| **Camera recoil** — the view kicking | **BP98, the fire path** | It changes where the player is AIMING, therefore where their next shot lands. That is a gameplay decision with a netcode surface, and law 4 is explicit: animation *requests and presents; it never decides*. |
+
+**Two consequences that are not obvious and are the real reason this needed a ruling:**
+
+1. **Recoil is randomised between a min and a max envelope** (`S_Procedural_RecoilItemInfo`).
+   Rolled independently on each machine, the client's crosshair and the server's cone disagree
+   **by construction** — not as a bug, as arithmetic. Camera recoil must therefore be **seeded and
+   server-validated**, which is only possible where the ability lives. An AnimInstance has no
+   prediction key and no authority; it could not do this correctly even if the law allowed it.
+2. **An AnimGraph that moved the camera would be selecting where a bullet goes**, which is the
+   same violation A.5 already names for motion warping ("an AnimGraph that picks a warp target is
+   selecting a victim"). Recoil is that argument applied to the crosshair.
+
+**The data shapes stay declared in `FPS/`** (`BRRecoilTypes.h`) because that is where they were
+measured out of the purchased pack — `FBRCameraRecoilInfo` is a **handoff to BP98**, explicitly
+not owned here, and BP98 may relocate it without consulting this contract.
+
 ## A.5 Motion warping — a gap the original contract implied but never bounded
 
 Law 6 lists "warp windows" as a feel number, so warping is in scope, but nothing bounds it.

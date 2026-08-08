@@ -560,6 +560,29 @@ holds), the L3 fix, and it enumerated every accumulator in the class to confirm 
 It also re-derived ledger corrections C1/C2/C3 and confirmed I corrected them to something *true*
 rather than merely different.
 
+### 8 Aug 2026 — `contract_gap BP82-9` CLOSED by founder ruling: camera recoil is BP98's.
+
+Raised and answered the same day. Recorded as **`animation.md` A.6** (the rulings ledger
+`DESIGN-RULINGS.md` is not in this ticket's owner_path; the animation contract is, and this is a
+law-4 boundary ruling, which is what that contract governs).
+
+The test the ruling applies: **"does it move where the next bullet goes?"**
+
+| Concern | Owner |
+|---|---|
+| Weapon-transform recoil — the gun kicking in the hands | **animation**, `FPS/`, `FBRRecoilInfo` |
+| Camera recoil — the view kicking | **BP98's fire path**, `FBRCameraRecoilInfo` |
+
+`BRRecoilTypes.h` now splits accordingly. `FBRCameraRecoilInfo` stays declared in `FPS/` as an
+explicit **handoff** — it was measured here, and BP98 may relocate it without consulting the
+contract. The header says so in those words so nobody later reads its location as ownership.
+
+The reason this needed a ruling rather than a preference: recoil is randomised between a min and
+a max envelope, so rolled independently on each machine the client's crosshair and the server's
+cone disagree **by construction** — arithmetic, not a bug. Camera recoil must be seeded and
+server-validated, and an AnimInstance has no prediction key and no authority. It could not do
+this correctly even if the law allowed it.
+
 **Two findings filed against things I do not own, fixed by nobody today:**
 - `run-ubt.sh` warned *"an Unreal editor is running"* on every run **after** the editor was
   closed and confirmed gone. A false positive on a warning about build/editor overlap (R21/R29)

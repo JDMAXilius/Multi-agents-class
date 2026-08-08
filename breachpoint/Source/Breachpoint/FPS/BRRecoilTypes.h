@@ -11,21 +11,18 @@ class UCurveFloat;
 /**
  * Recoil shapes, from `S_Procedural_RecoilInfo` and `S_Procedural_RecoilItemInfo`.
  *
- * **A RULING IS OWED BEFORE ANY OF THIS RUNS, and it is not this packet's to make.** The source
- * component (`BPC_FPST_Procedural_Recoil`) drives the **camera**: `cameraRecoil_Multiply`,
- * `cameraReturnRotationVector`, `cameraSpringStiffness_RotationVector`,
- * `cameraRecoilFireCount`. Camera kick moves where the player is AIMING, which means it changes
- * where their next shot goes — that is a gameplay decision with a netcode surface, and
- * `animation.md` law 4 is explicit that animation *requests and presents, it never decides*.
+ * **THE RULING IS CLOSED** — founder, 8 Aug 2026, recorded as `animation.md` A.6. The source
+ * component (`BPC_FPST_Procedural_Recoil`, 32 properties) drove both the weapon transform and the
+ * camera. The test is *"does it move where the next bullet goes?"*:
  *
- * So the split this file assumes, subject to that ruling:
- *   · **weapon-transform recoil** — the gun kicking in the hands — is presentation, and the
- *     AnimInstance may compute it;
- *   · **camera recoil** is the fire ability's, applied server-authoritatively on the owning
- *     client, and belongs to **BP98**. These shapes are declared here because they were measured
- *     here, not because this folder should own the behaviour.
+ *   · **weapon-transform recoil** — the gun kicking in the hands — changes what the player SEES
+ *     and nothing about where the shot lands. Presentation. `FBRRecoilInfo`, computed by the
+ *     AnimInstance, owned here.
+ *   · **camera recoil** changes where the player is AIMING, therefore where their next shot goes.
+ *     Gameplay, with a netcode surface. `FBRCameraRecoilInfo`, owned by **BP98's fire path**,
+ *     declared here only because it was measured here.
  *
- * Filed as `contract_gap BP82-9`.
+ * `contract_gap BP82-9` is closed by that ruling and is not re-litigated.
  */
 
 /**
@@ -87,17 +84,48 @@ struct FBRRecoilInfo
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Breachpoint|Recoil")
 	FBRSpringSetting ForceRotationSpring;
 
+	// Camera recoil is NOT here. See `FBRCameraRecoilInfo` below and `animation.md` A.6.
+};
+
+/**
+ * Camera recoil — **BP98's, not this folder's.** Declared here only because it was measured here.
+ *
+ * `contract_gap BP82-9` is CLOSED by founder ruling, 8 Aug 2026, recorded as `animation.md` A.6.
+ * The test the ruling applies is *"does it move where the next bullet goes?"* — weapon-transform
+ * recoil does not and is presentation; camera recoil does, and is therefore a gameplay decision
+ * with a netcode surface. Law 4: animation requests and presents, it never decides.
+ *
+ * **Why an AnimInstance could not do this correctly even if the law allowed it.** Recoil is
+ * randomised between a min and a max envelope. Rolled independently on each machine, the client's
+ * crosshair and the server's cone disagree **by construction** — that is arithmetic, not a bug.
+ * Camera recoil has to be seeded and server-validated, and an AnimInstance has no prediction key
+ * and no authority. The struct is inert data; whoever owns the fire path owns the behaviour.
+ *
+ * **BP98 may move this struct out of `FPS/` without consulting `animation.md`.** It is a handoff,
+ * left in one piece so the measurements are not lost between packets.
+ */
+USTRUCT(BlueprintType)
+struct FBRCameraRecoilInfo
+{
+	GENERATED_BODY()
+
 	/**
-	 * Camera kick over the burst, sampled by shot count. **SOFT** — law 3 admits no hard asset
-	 * reference in C++, and a curve on a weapon profile would otherwise pull every weapon's
-	 * curve into memory with the table.
+	 * Kick over the burst, sampled by shot count so sustained fire climbs a DESIGNED path rather
+	 * than accumulating randomly — `cameraRecoilFireCount` in the source.
 	 *
-	 * Sampled by `cameraRecoilFireCount` in the source, so sustained fire climbs a designed path
-	 * rather than accumulating randomly. This is the field the BP82-9 ruling is really about.
+	 * **SOFT**, per law 3: a hard curve reference on a per-weapon profile pulls every weapon's
+	 * curve into memory the moment one row is touched.
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Breachpoint|Recoil")
 	TSoftObjectPtr<UCurveFloat> CameraRecoilCurve;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Breachpoint|Recoil")
+	float CameraRecoilMultiply = 1.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Breachpoint|Recoil")
 	float CameraRecoilADSMultiply = 1.f;
+
+	/** How the view returns to centre after the kick. Source: `cameraSpring*_RotationVector`. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Breachpoint|Recoil")
+	FBRSpringSetting CameraReturnSpring;
 };
