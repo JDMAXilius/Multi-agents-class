@@ -79,7 +79,65 @@ SETS: dict[str, list[str]] = {
         f"{T}/Demo/Characters/Heroes/Mannequin/Animations/Locomotion/Pistol/ABP_PistolAnimLayers",
         f"{T}/Demo/Characters/Heroes/Mannequin/Animations/Locomotion/Unarmed/ABP_UnarmedAnimLayers",
     ],
+    # ------------------------------------------------------------------------------------
+    # ADDED 8 Aug 2026, AND THE OMISSION WAS THE EXPENSIVE KIND.
+    #
+    # The first cut of this file listed 14 assets and the ledger drew a headline conclusion from
+    # them -- "of 14 Blueprints, exactly ONE carries a state model." That conclusion was true of
+    # the 14 and FALSE of the template, because this list never looked in `Blueprints/Components/`.
+    #
+    # `BP_FPST_Character`'s own CDO named them the whole time: `bPC_FPST_Procedural_Recoil`,
+    # `_SwayAndLag`, `_AimAndLean`, `_PoseOffsets`, `_Manager`. They were sitting in the extracted
+    # JSON as component properties and nobody followed the names. Sway springs and lean were then
+    # written from first principles against a purchased, structured implementation that had never
+    # been read.
+    #
+    # THE LESSON, worth more than the fix: a curated target list is a claim about what matters,
+    # and a conclusion drawn from it inherits that claim silently. An inventory that says "14/14
+    # found" reads like completeness and only ever meant "14/14 of what I was told to look at."
+    "procedural": [
+        f"{T}/Blueprints/Components/Procedural/BPC_FPST_Procedural_Base",
+        f"{T}/Blueprints/Components/Procedural/BPC_FPST_Procedural_Manager",
+        f"{T}/Blueprints/Components/Procedural/BPC_FPST_Procedural_Recoil",
+        f"{T}/Blueprints/Components/Procedural/BPC_FPST_Procedural_SwayAndLag",
+        f"{T}/Blueprints/Components/Procedural/BPC_FPST_Procedural_AimAndLean",
+        f"{T}/Blueprints/Components/Procedural/BPC_FPST_Procedural_PoseOffsets",
+    ],
+    "components": [
+        f"{T}/Blueprints/Components/BPC_FPSComp",
+        f"{T}/Blueprints/Components/BPC_FPST_FireTimer",
+        f"{T}/Blueprints/Components/BPC_FPST_LineTracer",
+        f"{T}/Blueprints/Components/BPC_FPST_MeleeCombo",
+        f"{T}/Blueprints/Components/BPC_FPST_Lyra_FireEffectComp",
+        f"{T}/Blueprints/Components/BPC_FPST_Lyra_Integration",
+        f"{T}/Blueprints/Components/BPC_FPSMT_Integration",
+    ],
 }
+
+# UserDefinedStructs, not classes. They have no CDO and no `_C` suffix, so `cdo()` must NOT be
+# applied to them -- the struct asset IS the object whose properties are the field list. These
+# are the data shapes the procedural components exchange, i.e. the design of the system this
+# project would otherwise re-invent (and partly did).
+STRUCT_SET = "procedural_structs"
+STRUCTS: list[str] = [
+    f"{T}/Blueprints/Structs/Procedural/S_Procedural_SpringSetting",
+    f"{T}/Blueprints/Structs/Procedural/S_Procedural_RecoilInfo",
+    f"{T}/Blueprints/Structs/Procedural/S_Procedural_RecoilItemInfo",
+    f"{T}/Blueprints/Structs/Procedural/S_ProceduralSwayAndLagInfo",
+    f"{T}/Blueprints/Structs/Procedural/S_Procedural_AimAndLean",
+    f"{T}/Blueprints/Structs/Procedural/S_Procedural_AimSpineInfoItem_UE5",
+    f"{T}/Blueprints/Structs/Procedural/S_Procedural_AimSpineInfoItem_UE4",
+    f"{T}/Blueprints/Structs/Procedural/S_Procedural_LeanSpineInfoItem_UE5",
+    f"{T}/Blueprints/Structs/Procedural/S_Procedural_LeanSpineInfoItem_UE4",
+    f"{T}/Blueprints/Structs/Procedural/S_Procedural_ForceInfo",
+    f"{T}/Blueprints/Structs/Procedural/S_Procedural_PoseInfo",
+    f"{T}/Blueprints/Structs/Procedural/S_Procedural_PoseOffsetInfo",
+    f"{T}/Blueprints/Structs/Procedural/S_Procedural_PoseOffsetItemInfo",
+    f"{T}/Blueprints/Structs/Procedural/S_Procedural_PoseOffset_SetupInfo",
+    f"{T}/Blueprints/Structs/Procedural/S_Procedural_PoseOffset_Scope_SetupInfo",
+    f"{T}/Blueprints/Structs/Procedural/S_Procedural_ADS_PoseOffsetItemInfo",
+]
+SETS[STRUCT_SET] = STRUCTS
 
 
 def cdo(path: str) -> str:
@@ -94,7 +152,7 @@ def cdo(path: str) -> str:
     return f"{path}.Default__{name}_C"
 
 
-def extract_one(m: MCP, path: str) -> dict:
+def extract_one(m: MCP, path: str, is_struct: bool = False) -> dict:
     rec: dict = {"path": path, "found": False, "properties": {}, "notes": []}
 
     exists, _ = m.call(ASSET, "exists", {"path": path})
@@ -103,7 +161,10 @@ def extract_one(m: MCP, path: str) -> dict:
         return rec
     rec["found"] = True
 
-    instance = {"refPath": cdo(path)}
+    # A UserDefinedStruct has no generated class and therefore no CDO. Applying the `_C` /
+    # `Default__` decoration to one resolves nothing; the asset itself is the object to read.
+    name = path.rsplit("/", 1)[-1]
+    instance = {"refPath": f"{path}.{name}" if is_struct else cdo(path)}
     names, txt = m.call(OBJ, "list_properties", {"instance": instance})
     if names is None:
         rec["notes"].append(f"list_properties failed: {txt[:200]}")
@@ -174,7 +235,7 @@ def main() -> int:
 
     out: dict = {"sets": {}}
     for name, paths in todo.items():
-        out["sets"][name] = [extract_one(m, p) for p in paths]
+        out["sets"][name] = [extract_one(m, p, is_struct=(name == STRUCT_SET)) for p in paths]
         found = sum(1 for r in out["sets"][name] if r["found"])
         print(f"  {name:12} {found}/{len(paths)} found")
 
