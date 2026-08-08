@@ -80,7 +80,53 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Breachpoint|Animation")
 	UBRAnimInstance* GetThirdPersonAnimInstance() const;
 
+	/**
+	 * Aim down sights: retarget the camera FOV. Presentation only.
+	 *
+	 * This is `BPC_FPSComp`'s job, in C++ and without the component. The pack carried
+	 * `currentCameraFov` 90, `targetCameraFov`, `cameraFovInterpSpeed` 10 and `isUpdateCameraFov`
+	 * on a ticking `UActorComponent`; all four are here as three config values and a target.
+	 *
+	 * **Called by the ADS ability, not decided here.** The character does not know what aiming
+	 * means — it knows what the camera should look like once someone else has decided.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Breachpoint|Camera")
+	void SetAimingCamera(bool bAiming);
+
+	/**
+	 * THE ONE TICK IN THIS FILE, and it is off by default and turns itself off again.
+	 *
+	 * Law 4 bans gameplay Tick. A camera FOV blend is not gameplay — it changes what the player
+	 * SEES and nothing about what the game does or where a bullet goes (contrast `animation.md`
+	 * A.6 on camera recoil, which is the opposite case and is therefore BP98's). But it does need
+	 * a per-frame update, and there is no camera-mode system in this project to host one.
+	 *
+	 * So: tick is disabled in the constructor, enabled only while a transition is in flight, and
+	 * **disables itself the frame the FOV settles**. At rest the actor costs nothing, which is the
+	 * property law 4 is actually protecting — an always-on per-frame callback on every pawn.
+	 * `contract_gap BP82-10` asks for this to be ledgered as a named exception or given a proper
+	 * camera-mode home; until then it is written down here rather than done quietly.
+	 */
+	virtual void Tick(float DeltaSeconds) override;
+
 protected:
+
+	/** Hip-fire FOV. The pack's `currentCameraFov` default. */
+	UPROPERTY(EditDefaultsOnly, Config, Category = "Breachpoint|Camera")
+	float DefaultFOV = 90.f;
+
+	/**
+	 * FOV while aiming. Narrower, which is what reads as magnification.
+	 *
+	 * A separate value rather than a multiplier: a multiplier ties every weapon's zoom to the
+	 * hip-fire FOV, so raising the base FOV for comfort silently weakens every scope in the game.
+	 */
+	UPROPERTY(EditDefaultsOnly, Config, Category = "Breachpoint|Camera")
+	float AimFOV = 65.f;
+
+	/** The pack's `cameraFovInterpSpeed` = 10. */
+	UPROPERTY(EditDefaultsOnly, Config, Category = "Breachpoint|Camera")
+	float FOVInterpSpeed = 10.f;
 
 	/**
 	 * The layer currently linked, so `LinkWeaponAnimLayer` can be idempotent.
@@ -91,4 +137,38 @@ protected:
 	 */
 	UPROPERTY(Transient)
 	TSubclassOf<UAnimInstance> LinkedLayerClass;
+
+	/** Where the FOV is heading. Equal to the current FOV means "settled, stop ticking". */
+	UPROPERTY(Transient)
+	float TargetFOV = 90.f;
+
+	/**
+	 * The 1P and 3P spine classes, resolved in C++ and applied in `BeginPlay`.
+	 *
+	 * SOFT, and that is the whole point of them being here. `Character/` must not name an
+	 * animation asset (law 3, and rework governing idea 5: *C++ knows tags and row handles, never
+	 * an asset*), and `Variant_Shooter` was deleted for hard-referencing an AnimInstance class per
+	 * weapon. A soft class in config is the version that survives both rules: the ABP is named in
+	 * `DefaultGame.ini`, loaded on demand, and no C++ file mentions it.
+	 *
+	 * Without these, somebody has to set the AnimInstance class on a Blueprint character — which
+	 * is exactly the thing this packet exists to make unnecessary.
+	 */
+	UPROPERTY(EditDefaultsOnly, Config, Category = "Breachpoint|Animation")
+	TSoftClassPtr<UAnimInstance> FirstPersonAnimClass;
+
+	UPROPERTY(EditDefaultsOnly, Config, Category = "Breachpoint|Animation")
+	TSoftClassPtr<UAnimInstance> ThirdPersonAnimClass;
+
+	virtual void BeginPlay() override;
+
+	/**
+	 * Apply the configured spine classes to both meshes.
+	 *
+	 * Synchronous load, deliberately, and it is the one place in this class where that is right:
+	 * a character whose meshes have no AnimInstance for a few frames is a T-pose in front of
+	 * every player who can see it. The cost is paid once at spawn, against an asset that is
+	 * already resident because every character in the match shares it.
+	 */
+	void ApplyAnimInstanceClasses();
 };
