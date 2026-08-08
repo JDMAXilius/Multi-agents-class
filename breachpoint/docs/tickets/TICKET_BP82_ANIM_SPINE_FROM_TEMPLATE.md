@@ -228,13 +228,27 @@ wearing a different hat.
 > listed three and `BRAnimLayerInstance` would have been left declared nowhere and owned by
 > nobody, which is the precise silence R39 forbids.
 >
-> `Source/Breachpoint/FPS/` is a NEW discipline folder needing a numbered §3.x **"FPS — 4"**:
-> | Unit | Form |
-> |---|---|
-> | `BRAnimInstance` | `.h/.cpp` |
-> | `BRAnimLayerInstance` | `.h` |
-> | `BRAnimLayerInterface` | `.h` (UINTERFACE) |
-> | `BRAnimTypes` | `.h` (types only) |
+> **RE-AMENDED 8 Aug (second expansion, founder call).** It is now **10 units / 15 files**.
+> `Source/Breachpoint/FPS/` is a NEW discipline folder needing a numbered §3.x **"FPS — 10"**:
+> | Unit | Form | Job |
+> |---|---|---|
+> | `BRAnimInstance` | `.h/.cpp` | The shared spine. Game-thread snapshot → worker compute. |
+> | `BRAnimInstance1P` | `.h/.cpp` | Arms. Zeroes aim offset and lean; own sway scale. |
+> | `BRAnimInstance3P` | `.h/.cpp` | Body. Compressed aim pitch; standing threshold. |
+> | `BRAnimLayerInstance` | `.h` | C++ base per-weapon layers parent to. |
+> | `BRAnimLayerInterface` | `.h` (UINTERFACE) | Code half of the layer contract. |
+> | `BRAnimNotify_GameplayEvent` | `.h/.cpp` | Point notify carrying a typed `FGameplayTag`. |
+> | `BRAnimNotifyState_GameplayEventWindow` | `.h/.cpp` | Window notify; end guaranteed on interrupt. |
+> | `BRAnimTypes` | `.h` (types) | Cardinal enum, snapshot, tag state, spring. |
+> | `BRAnimCurveNames` | `.h` (constants) | Curve-name contract. **No reader yet** — see BP82-4. |
+> | `BRFPSWeaponAnimTypes` | `.h` (types) | Fire mode, crosshair, sockets. **No reader yet.** |
+>
+> **Two units have no caller today and must be declared as such, not quietly.** `BRAnimCurveNames`
+> exists so the turn-in-place curve (BP82-4) cannot be spelled two ways when someone authors the
+> ABP; `BRFPSWeaponAnimTypes` holds the anim-facing half of the weapon vocabulary so BP97
+> inherits measured names instead of re-deriving them. Both are scaffolding, landed on an
+> explicit founder call, and `architect.py` reporting them as STUBs is **correct behaviour, not a
+> defect** — that is the tool doing its job until a consumer exists.
 >
 > **`Character/` stays at 2 and is untouched** — that is what the founder's FPS-folder call
 > bought. Until this lands `architect.py` reports the folder as a STUB, and that report is CORRECT.
