@@ -1,0 +1,77 @@
+﻿// Copyright Zollpa LLC.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "NativeGameplayTags.h"
+
+// Character States
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_Dead)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_Stunned)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_Rooted)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_Slowed)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_Aiming)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_Firing)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_Crouching)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_JumpAction)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_BlockKineticCharge)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_BlockKineticChargeRegen)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_Sprinting)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_Hologram)
+
+// Weapon
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_WeaponCooldown)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_HideWeapon)
+
+// Set By Caller
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_Damage)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_Healing)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_Magnitude)
+
+// Ability Filtering
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_ClassAbility1)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_ClassAbility2)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_ClassAbility3)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_ClassAbility4)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_AbilityZ)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_OffensiveAction)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_MobilityAction)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_JumpAbility)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_ReloadAction)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_CharacterAbility)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_Emote)
+
+// Input
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_HasInput)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_ActiveAbility)
+
+// Ability Triggers
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_Reload)
+
+// Event Triggers
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_Trigger)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_Trigger_L)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_Trigger_R)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_Release)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_CosmeticWeaponEvent)
+
+// Effect Filtering
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_GrantThrowdown)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_RemoveOnDeath)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_ModularZoran)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_PersonalShield)
+
+// Damage
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_DamageReceived)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayTag_WeakPoint)
+
+namespace DamageType
+{
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(DamageType_Default)
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(DamageType_Light)
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(DamageType_Medium)
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(DamageType_Heavy)
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(DamageType_Explosive)
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(DamageType_Impale)
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(DamageType_Throwdown)
+}
