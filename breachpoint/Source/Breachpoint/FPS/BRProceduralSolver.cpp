@@ -11,76 +11,64 @@ float StepSpring(FBRSpring1D& Spring, float Target, const FBRSpringSetting& Sett
 
 FRotator SolveSway(
 	const FBRSwayAndLagInfo& Info,
-	float YawRateDegrees,
-	float PitchRateDegrees,
+	const FRotator& ControlRotationDelta,
+	float ApplySwayAlpha,
 	bool bIsADS,
-	float MaxAngle,
-	float Step,
-	FBRSpring1D& YawSpring,
-	FBRSpring1D& PitchSpring)
+	float DeltaSeconds,
+	FRotator& SwayState)
 {
-	const float Multiply = bIsADS ? Info.SwayMultiplyADS : Info.SwayMultiplyDefault;
+	const float Multiply = (bIsADS ? Info.SwayMultiplyADS : Info.SwayMultiplyDefault) * ApplySwayAlpha;
+	const float Limit = Info.SwayMaxDeltaDegrees;
 
-	// Negated: the weapon lags OPPOSITE the turn. Turning right leaves it trailing to the left,
-	// which is the whole read -- a weapon that swings the way you turn looks like it is leading
-	// the player rather than being carried by them.
-	const float YawTarget = FMath::Clamp(-YawRateDegrees * Multiply, -MaxAngle, MaxAngle);
-	const float PitchTarget = FMath::Clamp(-PitchRateDegrees * Multiply, -MaxAngle, MaxAngle);
+	// Pitch negated, yaw not. Asymmetric in the source and it is not a typo there: looking UP
+	// should drop the muzzle, while turning right should trail the weapon right. Negating both
+	// -- which the first version did -- makes the weapon lead the turn instead of following it.
+	const FRotator Target(
+		FMath::Clamp(-ControlRotationDelta.Pitch, -Limit, Limit) * Multiply,
+		FMath::Clamp(ControlRotationDelta.Yaw, -Limit, Limit) * Multiply,
+		0.f);
 
-	// DAMPING IS DERIVED FOR A CONSTANT DAMPING RATIO, not a constant ratio to stiffness. That
-	// distinction is the whole fix for a defect this function shipped with.
-	//
-	// It used to be `{s * 9, s * 1.4}`, chosen so zeta = c / (2*sqrt(k)) landed near 0.74 -- at
-	// s = 10, which was a MIS-TRANSCRIBED default. The source's real `sway_InterpSpeed` is 3
-	// (all nine weapons), and at s = 3 that formula gives zeta = 0.2333*sqrt(3) = 0.40, i.e. a
-	// 25% overshoot: every weapon visibly wobbles past its rest position on every turn. The
-	// constant was calibrated against a number the pack does not contain, so loading the pack's
-	// real values -- the entire point of the struct -- would have introduced the ring.
-	//
-	// zeta is now held fixed and `c` solved from `k`: c = 2*zeta*sqrt(k). The knob stays a knob
-	// across its whole range instead of silently changing the feel as it is turned.
-	const float Stiffness = FMath::Max(Info.SwayInterpSpeed, 0.01f) * SwayStiffnessPerSpeed;
-	const FBRSpringSetting Setting{ Stiffness, 2.f * SwayDampingRatio * FMath::Sqrt(Stiffness) };
-
-	// The TARGET was clamped; the spring's own value was not. At a high enough stiffness the
-	// integrator overshoots past the rail even from a clamped target, so the output is clamped
-	// too -- the same unbounded-output failure the timestep clamp closed, reachable through the
-	// stiffness knob instead, from an unvalidated per-weapon table value.
-	const float Pitch = FMath::Clamp(StepSpring(PitchSpring, PitchTarget, Setting, Step), -MaxAngle, MaxAngle);
-	const float Yaw = FMath::Clamp(StepSpring(YawSpring, YawTarget, Setting, Step), -MaxAngle, MaxAngle);
-
-	return FRotator(Pitch, Yaw, 0.f);
+	// RInterpTo, NOT a spring. `SwayInterpSpeed` is an interpolation speed; the previous version
+	// fed it to a spring as stiffness and derived damping from it, which is a category error --
+	// and it is why that code needed a timestep clamp and an output clamp to stay stable.
+	// RInterpTo clamps its own alpha, so it is unconditionally stable at any delta.
+	SwayState = FMath::RInterpTo(SwayState, Target, DeltaSeconds, Info.SwayInterpSpeed);
+	return SwayState;
 }
 
 FVector SolveLag(
 	const FBRSwayAndLagInfo& Info,
-	const FVector& LocalVelocity,
+	const FVector& WorldVelocity,
+	const FVector& ActorForward,
+	const FVector& ActorRight,
+	const FVector& ActorUp,
+	float MaxWalkSpeed,
+	float JumpZVelocity,
 	bool bIsADS,
-	bool bIsFalling,
-	float Step,
-	FVector& LagOffset)
+	float DeltaSeconds,
+	FVector& LagState)
 {
-	float Multiply = bIsADS ? Info.LagMultiplyADS : Info.LagMultiplyDefault;
-	if (bIsFalling)
-	{
-		// The pack documents this one in the asset itself. Falling velocity is large and vertical;
-		// without its own multiplier it drags the weapon clean off the bottom of the screen.
-		Multiply *= Info.LagMultiplyAir;
-	}
+	const float Multiply = bIsADS ? Info.LagMultiplyADS : Info.LagMultiplyDefault;
 
-	// A MINIMUM SPEED, because `GetSafeNormal`'s tolerance is ~1e-8 on the squared length: without
-	// this, 5 cm/s of friction settle or network micro-jitter displaces the weapon exactly as far
-	// as an 800 cm/s sprint. The threshold matches the spine's own "is moving" test (1 cm/s), so
-	// there is no band where the spine reports stationary while the weapon wanders at full
-	// amplitude -- which is precisely what the mismatch produced.
-	const FVector Direction = LocalVelocity.SizeSquared() > (BR_MinLagSpeed * BR_MinLagSpeed)
-		? LocalVelocity.GetSafeNormal()
-		: FVector::ZeroVector;
-	const FVector Target = -Direction * Info.LagDistance * Multiply;
+	// Each component divided by the maximum that is RELEVANT to it. Strafe and forward against
+	// walk speed; vertical against jump velocity, because falling speed has nothing to do with
+	// how fast you walk and dividing it by walk speed sends the weapon off-screen in a long drop.
+	const float SafeWalk = FMath::Max(MaxWalkSpeed, 1.f);
+	const float SafeJump = FMath::Max(FMath::Abs(JumpZVelocity), 1.f);
 
-	// Interp rather than spring: lag should trail and catch up, never overshoot past the hands.
-	LagOffset = FMath::VInterpTo(LagOffset, Target, Step, Info.LagInterpSpeed);
-	return LagOffset;
+	const FVector Target(
+		(FVector::DotProduct(WorldVelocity, ActorRight) / SafeWalk) * Info.LagStrafeScale,
+		(FVector::DotProduct(WorldVelocity, ActorForward) / -SafeWalk) * Info.LagForwardScale,
+		(FVector::DotProduct(WorldVelocity, ActorUp) / -SafeJump) * Info.LagMultiplyAir);
+
+	// Clamped as a VECTOR, not per axis: clamping components independently would let a diagonal
+	// sprint travel further than either axis allows, which is the classic square-instead-of-circle
+	// bug and shows up as the weapon drifting further on diagonals.
+	const FVector Clamped = (Target * Multiply).GetClampedToMaxSize(Info.LagDistance);
+
+	// VInterpTo clamps its own alpha, so any positive speed is stable at any timestep.
+	LagState = FMath::VInterpTo(LagState, Clamped, DeltaSeconds, Info.LagInterpSpeed);
+	return LagState;
 }
 
 void AccumulateForces(

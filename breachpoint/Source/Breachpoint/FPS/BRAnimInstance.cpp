@@ -121,8 +121,21 @@ void UBRAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 	Snapshot.WorldLocation = Pawn->GetActorLocation();
 	Snapshot.WorldRotation = NewRotation;
+
+	// The actor's basis, copied so the worker can project velocity without touching the pawn.
+	Snapshot.ActorForward = Pawn->GetActorForwardVector();
+	Snapshot.ActorRight = Pawn->GetActorRightVector();
+	Snapshot.ActorUp = Pawn->GetActorUpVector();
 	Snapshot.WorldVelocity = Pawn->GetVelocity();
-	Snapshot.BaseAimRotation = Pawn->GetBaseAimRotation();
+	// CONTROL-rotation delta, which is what the source's sway is driven by -- not the actor's.
+	// With turn-in-place holding the body back, the two diverge exactly when the weapon should be
+	// swaying most, so using the actor rotation understates sway during the turn.
+	const FRotator NewAim = Pawn->GetBaseAimRotation();
+	Snapshot.ControlRotationDelta = bHasPreviousAim
+		? (NewAim - Snapshot.BaseAimRotation).GetNormalized()
+		: FRotator::ZeroRotator;
+	bHasPreviousAim = true;
+	Snapshot.BaseAimRotation = NewAim;
 
 	if (const ACharacter* Character = Cast<ACharacter>(Pawn))
 	{
@@ -409,12 +422,13 @@ void UBRAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 	// property of the WEAPON, and one profile for every gun makes a pistol and a rocket launcher
 	// settle identically.
 	SwayRotation = BRProcedural::SolveSway(
-		Snapshot.LayerSwayAndLag, YawDeltaSpeed, PitchRate, bIsADS, SwayMaxAngle, Step,
-		SwayYawSpring, SwayPitchSpring);
+		Snapshot.LayerSwayAndLag, Snapshot.ControlRotationDelta, ApplySwayAlpha,
+		bIsADS, DeltaSeconds, SwayState);
 
-	// Positional lag, in the actor's frame. Trails the motion and catches up; never overshoots.
 	SwayLagOffset = BRProcedural::SolveLag(
-		Snapshot.LayerSwayAndLag, LocalVelocity2D + FVector(0.f, 0.f, VelocityZ), bIsADS, bIsFalling, Step, LagOffset);
+		Snapshot.LayerSwayAndLag, Snapshot.WorldVelocity,
+		Snapshot.ActorForward, Snapshot.ActorRight, Snapshot.ActorUp,
+		Snapshot.MaxSpeed, Snapshot.JumpZVelocity, bIsADS, DeltaSeconds, LagOffset);
 
 	// ------------------------------------------------------------------ recoil (weapon transform)
 	// Camera recoil is NOT here and never will be -- animation.md A.6, founder ruling: it moves

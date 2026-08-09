@@ -67,42 +67,54 @@ namespace BRProcedural
 	 * the same way (`swayPrevControlRotation` → `swayControlRotDelta`), which is the second
 	 * independent confirmation of that after `ABP_Mannequin_Base`'s `camRotRate`.
 	 */
+	/**
+	 * Rotational sway, matching the source's `UpdateSway` rather than my earlier guess.
+	 *
+	 * DECOMPILED 9 Aug 2026 and it corrected three things at once. The graph reads:
+	 *   target.pitch = clamp(-ControlRotDelta.pitch, +-5) * alpha
+	 *   target.yaw   = clamp( ControlRotDelta.yaw,   +-5) * alpha
+	 *   Sway = RInterpTo(Sway, target, dt, sway_InterpSpeed)
+	 *
+	 * So: it is an **RInterpTo, not a spring** -- `sway_InterpSpeed` (3) is an interp speed, and
+	 * feeding it to a spring as stiffness was a category error that no amount of tuning would
+	 * have fixed. It uses the **per-frame delta clamped to +-5 degrees**, not a rate, so it
+	 * saturates on fast turns instead of scaling with them. And it negates **pitch only**.
+	 *
+	 * It also drives from the CONTROL rotation, not the actor's: with turn-in-place holding the
+	 * body back, those two diverge exactly when the weapon should be swaying most.
+	 */
 	BREACHPOINT_API FRotator SolveSway(
 		const FBRSwayAndLagInfo& Info,
-		float YawRateDegrees,
-		float PitchRateDegrees,
+		const FRotator& ControlRotationDelta,
+		float ApplySwayAlpha,
 		bool bIsADS,
-		float MaxAngle,
-		float Step,
-		FBRSpring1D& YawSpring,
-		FBRSpring1D& PitchSpring);
+		float DeltaSeconds,
+		FRotator& SwayState);
 
 	/**
-	 * Positional lag: the weapon trailing in space as the body moves, then catching up.
+	 * Positional lag, matching the source's `UpdateLagPos`.
 	 *
-	 * Separate from sway because they are separate intuitions — sway is the weight of the gun
-	 * resisting a turn, lag is the body carrying it. The airborne multiplier exists because a
-	 * falling character's vertical velocity would otherwise drag the weapon off-screen; it is the
-	 * one field the pack's own author documented.
+	 * Velocity is projected onto the actor's own axes and each component divided by a RELEVANT
+	 * maximum -- strafe and forward by `MaxWalkSpeed`, vertical by `JumpZVelocity` -- so lag is a
+	 * fraction of how fast you are moving relative to your own capability, not an absolute
+	 * distance. That is what makes it read the same on a slow and a fast character, and it is
+	 * why the earlier "normalise the direction and scale by LagDistance" version was wrong: it
+	 * produced full lag at 1 cm/s.
+	 *
+	 * Forward and vertical are negated in the source; strafe is not.
 	 */
 	BREACHPOINT_API FVector SolveLag(
 		const FBRSwayAndLagInfo& Info,
-		const FVector& LocalVelocity,
+		const FVector& WorldVelocity,
+		const FVector& ActorForward,
+		const FVector& ActorRight,
+		const FVector& ActorUp,
+		float MaxWalkSpeed,
+		float JumpZVelocity,
 		bool bIsADS,
-		bool bIsFalling,
-		float Step,
-		FVector& LagOffset);
+		float DeltaSeconds,
+		FVector& LagState);
 
-	/**
-	 * Sum the live recoil forces and drop the expired ones.
-	 *
-	 * Additive on purpose: several shots fired quickly stack into one kick that decays as a whole,
-	 * rather than each shot restarting the motion. A weapon whose recoil resets per shot feels
-	 * lighter the faster you fire it, which is backwards.
-	 *
-	 * `NowSeconds` is passed in rather than read from a world, because a world is a UObject and
-	 * this function runs on the worker thread.
-	 */
 	BREACHPOINT_API void AccumulateForces(
 		TArray<FBRProceduralForce>& ActiveForces,
 		float NowSeconds,

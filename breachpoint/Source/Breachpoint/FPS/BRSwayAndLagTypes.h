@@ -85,4 +85,25 @@ struct FBRSwayAndLagInfo
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Breachpoint|Lag")
 	float LagRotationMultiply = 8.f;
+
+	/**
+	 * Per-axis lag weights, and they are NOT symmetric in the source.
+	 *
+	 * `UpdateLagPos` (decompiled 9 Aug 2026) scales strafe by **0.3** and forward/back by **0.4**,
+	 * each after dividing the velocity component by `MaxWalkSpeed` — so lag is a fraction of how
+	 * fast you are going RELATIVE TO YOUR OWN TOP SPEED, not an absolute distance. Sidestepping
+	 * and running produce different weapon travel by design.
+	 *
+	 * Vertical uses `JumpZVelocity` as its divisor instead, because falling speed has nothing to
+	 * do with walk speed and normalising it by one would send the weapon off-screen in a long fall.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Breachpoint|Lag")
+	float LagStrafeScale = 0.3f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Breachpoint|Lag")
+	float LagForwardScale = 0.4f;
+
+	/** Per-frame control-rotation delta is clamped to this before it drives sway. Source: 5 degrees. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Breachpoint|Sway")
+	float SwayMaxDeltaDegrees = 5.f;
 };

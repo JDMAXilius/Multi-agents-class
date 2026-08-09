@@ -111,6 +111,17 @@ struct FBRAnimSnapshot
 	 */
 	float GravityZ = -980.f;
 
+	/** Needed to normalise vertical weapon lag; falling speed is unrelated to walk speed. */
+	float JumpZVelocity = 420.f;
+
+	/** Per-frame delta of the CONTROL rotation -- what the source drives sway from. */
+	FRotator ControlRotationDelta = FRotator::ZeroRotator;
+
+	/** Actor basis, so the worker can project velocity without touching the pawn. */
+	FVector ActorForward = FVector::ForwardVector;
+	FVector ActorRight = FVector::RightVector;
+	FVector ActorUp = FVector::UpVector;
+
 	/**
 	 * `ACharacter::bIsCrouched`, read directly rather than through a tag.
 	 *

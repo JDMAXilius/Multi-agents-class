@@ -556,8 +556,9 @@ private:
 	 */
 	FBRAnimTagState TagState;
 
-	FBRSpring1D SwayYawSpring;
-	FBRSpring1D SwayPitchSpring;
+	/** Sway is now one interpolated rotator, not two springs -- see BRProceduralSolver::SolveSway. */
+	FRotator SwayState = FRotator::ZeroRotator;
+	bool bHasPreviousAim = false;
 
 	float PreviousYaw = 0.f;
 	FVector PreviousLocation = FVector::ZeroVector;
