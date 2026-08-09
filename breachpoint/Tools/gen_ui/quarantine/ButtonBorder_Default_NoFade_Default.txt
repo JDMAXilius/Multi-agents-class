@@ -1,0 +1,4 @@
+corner alpha [255, 255, 255, 255] — background is baked in
+100% fully opaque — filled plate, not a glyph
+1600 edge pixels at alpha>128 — glyph is clipped
+only 0 partial-alpha levels — export is 1-bit, will look jagged

@@ -1,0 +1,5 @@
+corner alpha [255, 255, 255, 255] — background is baked in
+100% fully opaque — filled plate, not a glyph
+1696 edge pixels at alpha>128 — glyph is clipped
+ink is coloured (RGB spread 183) — icons must ship neutral and be tinted in UMG
+only 0 partial-alpha levels — export is 1-bit, will look jagged
