@@ -157,6 +157,22 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Config, Category = "Breachpoint|Animation")
 	TSoftClassPtr<UAnimInstance> ThirdPersonAnimClass;
 
+	/**
+	 * The layer linked when nothing is equipped, and the reason the character stands still without it.
+	 *
+	 * THE SPINE HOLDS THE STATE MACHINE; THE LAYER HOLDS THE POSES. `ABP_Mannequin_Base`'s
+	 * `LocomotionSM` has Idle, Start, Cycle, Stop and Pivot states, but the animation ASSETS those
+	 * states play live on `ABP_ItemAnimLayersBase` -- that is what its ~90 pose-slot properties
+	 * are. With no layer linked, the state machine transitions correctly and plays nothing, which
+	 * looks exactly like "the character is not animated".
+	 *
+	 * The template linked one from its weapon components. Equipment (BP97) will own that decision
+	 * eventually; until it exists, a character with empty hands still needs unarmed poses, so the
+	 * default is linked here. SOFT, and named in config, because law 3 forbids C++ naming an asset.
+	 */
+	UPROPERTY(EditDefaultsOnly, Config, Category = "Breachpoint|Animation")
+	TSoftClassPtr<UAnimInstance> DefaultWeaponAnimLayer;
+
 	virtual void BeginPlay() override;
 
 	/**

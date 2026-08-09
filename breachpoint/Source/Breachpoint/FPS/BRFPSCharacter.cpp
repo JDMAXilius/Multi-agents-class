@@ -31,6 +31,14 @@ void ABRFPSCharacter::BeginPlay()
 
 	ApplyAnimInstanceClasses();
 
+	// Link the unarmed layer, or the locomotion state machine has no poses to play. Equipment
+	// replaces this the moment it equips something; this is the empty-handed case, not a default
+	// nobody revisits.
+	if (UClass* LayerClass = DefaultWeaponAnimLayer.LoadSynchronous())
+	{
+		LinkWeaponAnimLayer(LayerClass);
+	}
+
 	TargetFOV = DefaultFOV;
 	if (UCameraComponent* Camera = GetFirstPersonCameraComponent())
 	{
