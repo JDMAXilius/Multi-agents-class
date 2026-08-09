@@ -9,7 +9,8 @@
     "Config/DefaultGame.ini",
     "Content/Characters/",
     "Content/FPSTemplate/",
-    "Config/DefaultEngine.ini"
+    "Config/DefaultEngine.ini",
+    "Breachpoint.uproject"
   ],
   "binary_locks": [
     "Content/Characters/ABP_BRMannequin1P.uasset",
