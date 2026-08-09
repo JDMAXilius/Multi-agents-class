@@ -8,7 +8,8 @@
     "docs/tickets/TICKET_BP82_ANIM_SPINE_FROM_TEMPLATE.md",
     "Config/DefaultGame.ini",
     "Content/Characters/",
-    "Content/FPSTemplate/"
+    "Content/FPSTemplate/",
+    "Config/DefaultEngine.ini"
   ],
   "binary_locks": [
     "Content/Characters/ABP_BRMannequin1P.uasset",
