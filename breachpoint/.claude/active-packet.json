@@ -7,12 +7,14 @@
     "docs/ANIM-PORT-LEDGER.md",
     "docs/tickets/TICKET_BP82_ANIM_SPINE_FROM_TEMPLATE.md",
     "Config/DefaultGame.ini",
-    "Content/Characters/"
+    "Content/Characters/",
+    "Content/FPSTemplate/"
   ],
   "binary_locks": [
     "Content/Characters/ABP_BRMannequin1P.uasset",
     "Content/Characters/ABP_BRMannequin3P.uasset",
-    "Content/Characters/BP_BRcharacter.uasset"
+    "Content/Characters/BP_BRcharacter.uasset",
+    "Content/FPSTemplate/Demo/Characters/Heroes/Mannequin/Animations/LinkedLayers/ABP_ItemAnimLayersBase.uasset"
   ],
   "authorized_by": "founder, 8 Aug 2026 - integrate from the editor, create/delete Blueprints as needed"
 }

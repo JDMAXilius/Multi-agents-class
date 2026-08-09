@@ -629,6 +629,44 @@ clock, so the cross-thread read stops existing instead of being synchronised.
 > own. The cheap mitigation is `git status` before and after every editor session, and it is not
 > written down anywhere.
 
+### 8 Aug 2026 — first PIE run, and a reparent experiment that changed the plan.
+
+**`contract_gap BP82-7` is CLOSED (the reparent half).** `ABP_ItemAnimLayersBase` went from
+`/Script/Engine.AnimInstance` to `UBRAnimLayerInstance`; its CDO gained all five `IBRAnimLayer`
+members, and the three leaf layers inherit it. `RefreshLinkedLayer` can now resolve a weapon row
+instead of returning `NAME_None` forever.
+
+**PIE runs, and the honest rung moves from "compiles" to "PIE starts clean of our code".**
+`Server logged in`, 1.37 s, `Game class is 'GM_BR_C'`. **My `ensureMsgf` did NOT fire** — zero
+occurrences — so threaded anim update is genuinely ON at runtime and law 1's precondition holds
+in fact rather than in theory. No error or warning from any `BR` anim class.
+
+**What PIE did NOT prove, and no claim is made:** that the pawn spawned with the spine attached.
+`GetVisibleActors` returns the EDITOR world, and `CaptureViewport` captured the editor viewport,
+not the PIE view. Closing that needs one `UE_LOG` in `ApplyAnimInstanceClasses`.
+
+> **THE REPARENT EXPERIMENT — run on a throwaway duplicate, and it inverted my expectation.**
+> The plan was to reparent `ABP_Mannequin_Base` (the real Lyra graph) onto `UBRAnimInstance3P`.
+> The inventory predicted **17 case-insensitive name collisions** before the editor was even
+> opened. Measured on a copy:
+>
+> 1. **Collisions are NOT fatal — and that is the danger.** UE auto-renames the Blueprint's
+>    variable (`TimeToJumpApex` → `TimeToJumpApex_0`) and emits a *warning*. The graph then keeps
+>    reading its OWN orphaned copy, which nothing writes, while our C++ field of the same name
+>    sits beside it unused. **The reparent would compile, run, and be silently wrong** — the
+>    animation reading stale zeros forever with no error anywhere.
+> 2. **The only hard errors are the law being enforced by the compiler**, and they are worth
+>    quoting: *"BRAnimInstance.LocalVelocity2D is not blueprint writable. Set LocalVelocity2D"* —
+>    same for `LocalAcceleration2D` and `PivotDirection2D`. The pack's graph contains **Set**
+>    nodes for those three. Our C++ declares them `BlueprintReadOnly` because Amendment A says
+>    *"the graph reads fields, it never computes"*. Those three errors are exactly the three
+>    places the template's graph is computing what we moved into C++.
+>
+> **The fix is NOT to make them writable** — that re-opens the door Amendment A closed. It is to
+> delete those Set nodes, because C++ now produces the values. That is AnimGraph surgery on 83
+> surviving variables, and it is a human-in-the-editor packet, not an MCP one. Test asset
+> deleted; `ABP_Mannequin_Base` was never touched.
+
 **Two findings filed against things I do not own, fixed by nobody today:**
 - `run-ubt.sh` warned *"an Unreal editor is running"* on every run **after** the editor was
   closed and confirmed gone. A false positive on a warning about build/editor overlap (R21/R29)
