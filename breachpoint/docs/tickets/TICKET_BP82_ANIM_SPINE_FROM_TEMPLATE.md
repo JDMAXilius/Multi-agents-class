@@ -667,6 +667,46 @@ not the PIE view. Closing that needs one `UE_LOG` in `ApplyAnimInstanceClasses`.
 > surviving variables, and it is a human-in-the-editor packet, not an MCP one. Test asset
 > deleted; `ABP_Mannequin_Base` was never touched.
 
+### 8 Aug 2026 — the missing plugin, and a retraction I had to retract.
+
+**`AnimationLocomotionLibrary` was never enabled in `Breachpoint.uproject`.** Forty-odd graph
+errors on `ABP_ItemAnimLayersBase` reduced to five real ones — `AdvanceTimeByDistanceMatching`,
+`DistanceMatchToTarget`, `SetPlayrateToMatchSpeed`, `PredictGroundMovementPivotLocation`,
+`PredictGroundMovementStopLocation` — and *"could not find a function named X"* is the signature
+of a missing plugin, not a broken graph. All five live in that one Epic plugin. **We vendored the
+content and not the dependency.** The dangling-pin errors were downstream noise: a node whose
+function cannot be resolved has no signature, so every pin on it reports as gone.
+
+**VERIFIED after a clean rebuild:** both plugin modules load, `plugin is not mounted` drops from
+many to **zero**, `ABP_ItemAnimLayersBase` **compiles OK**, and `Could not find a function named`
+is **0** across the session.
+
+> **I retracted the root-cause claim, and the retraction was wrong.** After enabling the plugin
+> I recompiled and saw the same errors, told the founder my claim had been premature, and
+> promised to correct the commit. The recompile was run in an editor session that had been
+> started **before** the rebuild took effect — the plugin genuinely was not mounted *in that
+> process*. The original diagnosis was correct; my verification was not.
+>
+> Worth recording because it is the mirror image of the day's other failures: those were
+> **claiming success without evidence**. This was **claiming failure without evidence** — and
+> retracting a correct finding costs exactly as much as asserting a wrong one. "Test after the
+> change has actually taken effect" is the same discipline as "read the value back."
+
+**Scope held:** exactly five function names appear in the log, all from one plugin, and grep
+found **zero** warping-node errors — so `AnimationWarping` and `MotionWarping` stay OFF. The
+layer base does carry `strideWarpingBlendInDurationScaled`, which tempts a second plugin, but
+nothing in the evidence asks for it.
+
+**`ABP_Mannequin_Base` reparent: attempted, measured, DISCARDED.** Reparenting it onto
+`UBRAnimInstance3P` produced 3 hard errors (`LocalVelocity2D`, `LocalAcceleration2D`,
+`PivotDirection2D` *"is not blueprint writable"* — our own law, since the pack's graph SETS what
+C++ now computes) **and 11 silently auto-renamed variables**: `AimPitch_0`, `AimYaw_0`,
+`RootYawOffset_0`, `DisplacementSpeed_0`, `ApplySwayAlpha_0`, `YawDeltaSpeed_0` and five more.
+The graph keeps reading those orphaned copies, which nothing writes, while the C++ fields of the
+same name sit unused — so clearing the 3 visible errors would have produced a **green compile
+driving the character from stale zeros**. Strictly worse than the red one. Closed without saving;
+the asset is unmodified on disk and parented to `/Script/Engine.AnimInstance` as before.
+
 **Two findings filed against things I do not own, fixed by nobody today:**
 - `run-ubt.sh` warned *"an Unreal editor is running"* on every run **after** the editor was
   closed and confirmed gone. A false positive on a warning about build/editor overlap (R21/R29)
