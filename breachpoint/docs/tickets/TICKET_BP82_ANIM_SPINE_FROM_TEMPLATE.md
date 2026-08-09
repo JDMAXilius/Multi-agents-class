@@ -715,3 +715,85 @@ the asset is unmodified on disk and parented to `/Script/Engine.AnimInstance` as
 - `mcp.py` still lives in `mcp-ui/gen_ui/` while serving three lanes (UI, materials, and now
   Blueprint extraction), reached by a `sys.path` hop. `bp_extract.py` already carries this as a
   filed-not-fixed comment; a third consumer makes it worth a packet.
+
+---
+
+### 9 Aug 2026 — founder ask: new `BP*` starter scaffolds (not the BR production spine)
+
+Explicit session request: new files prefixed `BP` —
+`ABPCharacter`, `ABPPlayerState`, `ABPPlayerController`, `UBPAnimInstance`, `ABPGameMode` — pretty basic initial setup.
+
+**Landed:**
+- `Source/Breachpoint/Character/BPCharacter.{h,cpp}` — capsule, 1P mesh+camera, Enhanced Input move/look, no Tick
+- `Source/Breachpoint/Match/BPPlayerState.{h,cpp}` — PlayerState with replicated Kills/Deaths (renamed from `ABPPlayer`)
+- `Source/Breachpoint/Match/BPPlayerController.{h,cpp}` — mapping-context push on BeginPlay
+- `Source/Breachpoint/Match/BPGameMode.{h,cpp}` — wires the three classes above
+- `Source/Breachpoint/FPS/BPAnimInstance.{h,cpp}` — game/worker split; GroundSpeed / Velocity / ground-air bools
+
+**Not wired into `ABRGameMode`.** Production defaults stay `ABRCharacter` / `ABRPlayerState` / `ABRPlayerController` / `UBRAnimInstance`.
+
+**`contract_gap` BP82-7:** `Character/` and `Match/` are outside this ticket's `owner_path`. Written under explicit founder direction this session; `FPS/BPAnimInstance` is the only file that sits inside the claim. Naming also conflicts with CLAUDE.md class prefix `BR` — recorded, not re-litigated here.
+
+**Follow-up same session:** `ABPGameMode` sets DefaultPawn / PlayerController / PlayerState to the BP* classes. `Config/DefaultEngine.ini` `GlobalDefaultGameMode` → `/Script/Breachpoint.BPGameMode`. AnimInstance stays on the character meshes (`UBPAnimInstance`), not the GameMode. `ABPPlayer` deleted in favour of `ABPPlayerState`.
+mak
+
+---
+
+### 9 Aug 2026 — `ABP_Mannequin_Base` "corrupt" was a missing parent class, not a damaged file
+
+**Symptom:** the editor refused the asset with *"The Anim Blueprint could not be loaded because
+it is corrupt."*
+
+**Actual cause:** `Content/MigrateLyra/Heroes/Mannequin/Animations/ABP_Mannequin_Base.uasset` was
+saved out of the **NewMoons** project and its parent class is `/Script/NewMoons.NMAnimInstance`.
+No `NewMoons` module exists here, so UE cannot build the generated class without its super and
+reports the failure as corruption. The package is fine: 1.84 MB of real, LFS-materialised data.
+A strings sweep of the whole package found `/Script/NewMoons.NMAnimInstance` to be the ONLY
+unresolvable reference — every other module it wants (`ControlRig`, `ControlRigDeveloper`,
+`AnimGraph`, `AnimGraphRuntime`, `PropertyAccessNode`) is engine-supplied, and ControlRig is
+`EnabledByDefault: true` despite being absent from `Breachpoint.uproject`.
+
+**Why the obvious fix was not available:** reparenting in the editor operates on a LOADED asset.
+This one never loads, so Class Settings is unreachable. The redirect is the only door in.
+
+**Landed:**
+- `Config/DefaultEngine.ini` `[CoreRedirects]` —
+  `+ClassRedirects=(OldName="/Script/NewMoons.NMAnimInstance",NewName="/Script/Breachpoint.BPAnimInstance")`
+- `Source/Breachpoint/FPS/BPAnimInstance.h` — added `GameplayTag_IsADS` / `_IsFiring` /
+  `_IsDashing` / `_IsMelee`. The AnimGraph binds these four BY NAME against `NMAnimInstance`;
+  the spelling is load-bearing and a rename drops the pin silently. NewMoons also declares
+  `_IsReloading` / `_IsDead` — the graph references neither, so they are deliberately absent.
+
+**Rungs reached.** Rung 1 PASS 16:31–16:34 (all three targets, 11 actions each, zero warnings,
+each artifact newer than its start). A confirming run at 16:37 was INCONCLUSIVE by R20 — zero
+actions, nothing had changed. Editor launched clean (PID 11216) and the founder confirmed the
+asset opens. **That is an editor-load claim only** — not compiled-graph, not PIE, not
+multiplayer. The ABP's own Compile, the `ALI_ItemAnimLayers` linked-layer interface, and the
+ControlRig nodes are all unverified.
+
+**Same session, second breakage — fixing one copy proved nothing about the others.** `Content`
+holds THREE `ABP_Mannequin_Base.uasset` and they do not share a parent class:
+
+| copy | parent | outcome |
+|---|---|---|
+| `Content/MigrateLyra/Heroes/...` | `/Script/NewMoons.NMAnimInstance` | redirect #1, confirmed loading |
+| `Content/Characters/Heroes/...` | `/Script/LyraGame.LyraAnimInstance` | redirect #2, UNVERIFIED |
+| `Content/FPSTemplate/Demo/...` | `/Script/Engine.AnimInstance` | fine, engine parent |
+
+After redirect #1 the editor log still carried **322** `Failed to load Class
+/Script/LyraGame.LyraAnimInstance as Parent` warnings — a different missing class in a
+different copy. Added
+`+ClassRedirects=(OldName="/Script/LyraGame.LyraAnimInstance",NewName="/Script/Breachpoint.BPAnimInstance")`.
+That copy binds exactly one member, `GroundDistance`, which `UBPAnimInstance` already declares
+with Lyra's spelling and type, so no header change was required. Needs an editor restart to
+take effect and has NOT been observed loading.
+
+The MigrateLyra copy also still logs a benign `VerifyImport: Failed to find script package for
+import object 'Package /Script/NewMoons'` — the CLASS redirect resolves the parent, but the
+package import reference stays in the package until the asset is re-saved.
+
+**`contract_gap` BP82-8:** the redirect is applied in memory on every load. Re-saving the ABP
+would bake `UBPAnimInstance` in as the real parent permanently, but that writes to
+`Content/MigrateLyra/`, which is in neither `owner_path` nor `binary_locks` — `guard_laws.py`
+blocks it. Unresolved: add `Content/MigrateLyra/` to the claim, or leave the asset living off
+the redirect. Note the redirect must then survive forever; deleting it re-breaks the asset.
