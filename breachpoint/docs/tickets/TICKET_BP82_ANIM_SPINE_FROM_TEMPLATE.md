@@ -1354,3 +1354,26 @@ including the packet's own binary_lock `ABP_ItemAnimLayersBase` and all seven
 `ABP_FPSMT_*AnimLayers`. A missing node provider is a **candidate** cause of the T-pose logged
 earlier — untested, and the editor has not been restarted against the new plugin set.
 `GeometryScripting` stays off: zero migrated assets reference it.
+
+### 10 Aug 2026 — `contract_gap BP82-12` CLOSED by the founder; rung 1 `20260810-124256` PASS
+
+The founder deleted `BRHUDDirector.cpp:22-24` directly — the agent stayed blocked, as filed. The
+diff is the four lines and nothing else; `#include "UI/BRUIManagerSubsystem.h"` is correctly kept,
+since the three accessor call sites still need it.
+
+```
+target             exit  start                    artifact mtime           newer  verdict
+BreachpointEditor  0     2026-08-10T12:42:56.979  2026-08-10T12:43:21.559  YES    PASS   (5 actions)
+Breachpoint        0     2026-08-10T12:43:22.544  2026-08-10T12:44:17.476  YES    PASS   (4 actions)
+BreachpointServer  0     2026-08-10T12:44:25.249  2026-08-10T12:45:17.084  YES    PASS   (4 actions)
+OVERALL RUNG 1 : PASS (exit 0)
+```
+
+The Editor target that was INCONCLUSIVE at `20260810-120905` is now a real PASS — 5 actions, fresh
+artifact, editor closed so the link was clean.
+
+**Honesty ladder — where this actually sits.** Rung 1 only. The ensure fired at *runtime*, inside
+`AddLocalPlayer` during PIE startup; no compile can exercise that path, so "compiles" is not
+"the ensure is gone". Unproven until a PIE start completes without breaking into the debugger, and
+untested beyond that: listen-server, dedicated, packaged. The T-pose question is likewise still
+open — `AnimationWarping` is enabled in config but no editor session has yet run against it.

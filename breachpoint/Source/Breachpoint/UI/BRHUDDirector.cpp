@@ -19,10 +19,6 @@ void UBRHUDDirector::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
-	// The UI manager owns the ViewModels this class feeds; initialise after it so the getters
-	// below never race the construction in HandleLocalPlayerAdded.
-	Collection.InitializeDependency<UBRUIManagerSubsystem>();
-
 	// H4: travel is the one lifecycle event neither the widgets nor the VMs can see. Both VMs
 	// survive travel (GameInstance-outered) while their timers and TimeSource die with the old
 	// world — without this hook, frozen scores stayed Live and the old map's kills carried
