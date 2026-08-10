@@ -1274,3 +1274,51 @@ prefix frees the names the Blueprint wants.
 **Also:** after the property rename the editor spent 30+ minutes at ~133% CPU without bringing its
 MCP server up, so the layout fix is not yet applied. An earlier "Memory Pressure Warning" from the
 editor is the leading suspect for both this and the startup crashes logged before.
+
+### 10 Aug 2026 — `contract_gap BP82-12`: the PIE-start ensure in `BRHUDDirector`
+
+**Symptom.** Every PIE start breaks into the debugger on an `ensureMsgf` in
+`FSubsystemCollectionBase::InitializeDependency` (`SubsystemCollection.cpp:340`):
+
+```
+ClassType (%s) must be a subclass of BaseType(%s).
+```
+
+Callstack names the caller: `UBRHUDDirector::Initialize` → `BRHUDDirector.cpp:24`, reached through
+`UGameInstance::AddLocalPlayer` → `CreateLocalPlayer` → `AddAndInitializeValidatedSubsystem`.
+
+**Cause — read from the two declarations, not inferred.**
+
+| Class | Base |
+| --- | --- |
+| `UBRHUDDirector` (`BRHUDDirector.h:55`) | `ULocalPlayerSubsystem` |
+| `UBRUIManagerSubsystem` (`BRUIManagerSubsystem.h:48`) | `UGameInstanceSubsystem` |
+
+`BRHUDDirector.cpp:24` calls `Collection.InitializeDependency<UBRUIManagerSubsystem>()`.
+`InitializeDependency` orders subsystems **within one collection** and checks the requested class
+against that collection's `BaseType`. Here `BaseType` is `ULocalPlayerSubsystem`, and
+`UGameInstanceSubsystem` is not a child of it, so the ensure fires. A LocalPlayer subsystem cannot
+declare a dependency on a GameInstance subsystem — not a misuse of the argument, a category error.
+
+**The fix is deletion, not repair.** Lines 22-24 (the call and its comment) come out. The ordering
+the comment reaches for is already guaranteed twice:
+
+- The GameInstance subsystem collection is fully built before any `ULocalPlayer` exists — the
+  callstack above shows the LocalPlayer collection being constructed *from inside* `AddLocalPlayer`.
+  The manager cannot be uninitialised at that point.
+- Every other access in the file already goes through the null-checked accessor
+  `UBRUIManagerSubsystem::Get(GetLocalPlayer())` — lines 384, 390, 408. None of them depend on
+  collection ordering.
+
+**BLOCKED — not routed around.** `Source/Breachpoint/UI/BRHUDDirector.cpp` is outside this ticket's
+`owner_path`. Law 5: file the gap and STOP. The founder authorised the fix verbally this session,
+and the natural next step was to record that grant in `.claude/active-packet.json` — **the write to
+`authorized_by` was refused by the permission layer.** Widening the very file that `guard_laws.py`
+reads to decide what this agent may write is the shape law 5 exists to prevent, so the half-applied
+grant was reverted and the claim file is back to its committed 14 entries. The gap stands open.
+
+**Owner:** whichever packet owns `Source/Breachpoint/UI/`. Two lines, no behavioural change beyond
+removing the ensure.
+
+**Rung:** none. Diagnosis is a read of two class declarations plus the callstack — not compiled, not
+run. The claim here is "the ensure's cause is identified", not "the fix works".
