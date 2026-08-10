@@ -9,8 +9,8 @@
 
 #include "AbilitySystem/BRAbilitySystemComponent.h"
 #include "Camera/BRPlayerCameraManager.h"
-#include "Character/BPCharacter.h"
 #include "Core/BRCore.h"
+#include "GameFramework/Character.h"
 #include "Core/BRGameplayTags.h"
 #include "Match/BPPlayerState.h"
 
@@ -215,9 +215,13 @@ void ABPPlayerController::OnJumpPressed()
 
 	// Scaffold fallback: no jump ability granted yet, so drive the pawn directly.
 	// Remove when a Jump ability is granted into the BP ASC.
-	if (ABPCharacter* BPPawn = Cast<ABPCharacter>(GetPawn()))
+	//
+	// ACharacter, not ABPCharacter: ABPFPSCharacter is a sibling reparent target for the
+	// template Blueprint, not a subclass, and a narrower cast would leave it unable to jump
+	// with no error anywhere -- the input arrives, the tag activates nothing, the cast fails.
+	if (ACharacter* Pawn = Cast<ACharacter>(GetPawn()))
 	{
-		BPPawn->DoJumpStart();
+		Pawn->Jump();
 	}
 }
 
@@ -225,9 +229,9 @@ void ABPPlayerController::OnJumpReleased()
 {
 	ReleaseInputTag(BRGameplayTags::InputTag_Jump);
 
-	if (ABPCharacter* BPPawn = Cast<ABPCharacter>(GetPawn()))
+	if (ACharacter* Pawn = Cast<ACharacter>(GetPawn()))
 	{
-		BPPawn->DoJumpEnd();
+		Pawn->StopJumping();
 	}
 }
 

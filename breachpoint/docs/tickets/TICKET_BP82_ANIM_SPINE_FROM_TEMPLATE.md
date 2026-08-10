@@ -797,3 +797,480 @@ would bake `UBPAnimInstance` in as the real parent permanently, but that writes 
 `Content/MigrateLyra/`, which is in neither `owner_path` nor `binary_locks` — `guard_laws.py`
 blocks it. Unresolved: add `Content/MigrateLyra/` to the claim, or leave the asset living off
 the redirect. Note the redirect must then survive forever; deleting it re-breaks the asset.
+**`contract_gap` BP82-9: nothing spawns the pawn that has the meshes.** Reported from the
+editor, 9 Aug 2026 — "on begin play I do not see the character", `/Game/Characters/BP`.
+
+Root cause, read from source, not guessed:
+
+- `Config/DefaultEngine.ini:38` — `GlobalDefaultGameMode=/Script/Breachpoint.BPGameMode`.
+- `Source/Breachpoint/Match/BPGameMode.cpp:11` — `DefaultPawnClass = ABPCharacter::StaticClass()`,
+  the bare C++ class.
+- `Source/Breachpoint/Character/BPCharacter.cpp` — the constructor creates `First Person Mesh`
+  and configures `GetMesh()`, but assigns **no** `SkeletalMesh` to either. That is correct under
+  law 3; a `ConstructorHelpers` hard ref would be the violation.
+- `Content/Characters/BP.uasset` — BP child of `ABPCharacter` (R26), and the only thing in the
+  project that carries the mesh defaults: `/Game/MigrateLyra/Heroes/Mannequin/Meshes/SKM_Manny`
+  and `.../Animations/ABP_Mannequin_Base`. Nothing spawns it.
+
+So PIE spawns a pawn with two empty mesh components. `FirstPersonCameraComponent` is attached to
+the `head` socket of an empty `FirstPersonMesh`, so the camera also sits at the component origin.
+Invisible pawn, not a missing asset — consistent with the 46054d0 finding ("the character spawned
+all along").
+
+The `[/Script/Breachpoint.BRGameMode]` ini section is inert for this and cannot be made to work:
+`AGameModeBase::DefaultPawnClass` carries no `Config` specifier (already documented at
+`DefaultEngine.ini:40-56`).
+
+Two routes, both real, neither takeable inside this packet as written:
+
+1. **C++, mirrors the existing pattern.** Add a `Config` `TSoftClassPtr<APawn>` to `ABPGameMode`
+   and override `GetDefaultPawnClassForController_Implementation`, pinned in `DefaultGame.ini`
+   exactly as `ABPCharacter` resolves `MoveAction`/`LookAction`. Soft ref, so law 3 holds.
+   BLOCKED: `Source/Breachpoint/Match/` is in neither `owner_path` nor `binary_locks`;
+   `guard_laws.py` refused the edit.
+2. **BP child + ini.** Create a BP child of `ABPGameMode` holding `DefaultPawnClass` as a default
+   value (R26) and point `GlobalDefaultGameMode` at it. Both `Content/Characters/` and
+   `Config/DefaultEngine.ini` ARE in `owner_path`, and the claim authorises "create/delete
+   Blueprints as needed" — but a GameMode Blueprint belongs in `Content/Core/`, which is not,
+   and this packet is the anim spine, not match wiring.
+
+Unresolved: add `Source/Breachpoint/Match/` to the claim and take route 1, or authorise route 2.
+No edit made either way.
+
+**BP82-9 resolved, and what the first standalone run actually showed.** 9 Aug 2026.
+
+Founder authorised widening `owner_path` with `Source/Breachpoint/Match/`. Landed:
+`ABPGameMode` gained a `Config` `TSoftClassPtr<APawn> DefaultPawnClassOverride` and an override
+of `GetDefaultPawnClassForController_Implementation`, pinned in `DefaultGame.ini` to
+`/Game/Characters/BP.BP_C`. Soft ref, so law 3 holds. Rung 1 PARTIAL: `BreachpointEditor` PASS,
+exit 0, zero warnings, relinked `libUnrealEditor-Breachpoint-0001.dylib`. Server target not
+attempted — launcher install ships no server binaries.
+
+**A second cause was hiding behind the first.** `Config/DefaultEngine.ini` is not what picks the
+GameMode for the arena. `BR_Arena01` overrides it in World Settings:
+`LogLoad: Game class is 'GM_BP_C'` → `Content/Core/GM_BP.uasset`, a BP child of `ABPGameMode`
+whose `DefaultPawnClass` is `/Game/Characters/BP_ShooterCharacter` — **an asset that does not
+exist in `Content/Characters/`**. So the real break was a dangling class ref in a Blueprint, not
+the C++ default. The new override wins regardless because it is consulted ahead of
+`DefaultPawnClass`, but GM_BP's dead ref should still be cleaned up or the next reader will
+re-derive this from scratch.
+
+**PIE is unusable right now — assert on Stop, not on Play.**
+`Assertion failed: GameViewport.IsUnique() [SLevelViewport.cpp:5196]` in
+`SLevelViewport::EndPlayInEditorSession`. Something holds a second `TSharedPtr<FSceneViewport>`
+at teardown. Ruled out by reading source, not by guessing: `Source/Breachpoint` holds zero
+`TSharedPtr<FSceneViewport>` (only raw `UGameViewportClient*`, which does not take that ref),
+and `SlateInspectorToolset`'s ref cache is `TWeakPtr<SWidget>`. Cause is in the editor/plugin
+layer and is UNDIAGNOSED. Workaround in use: test with standalone
+`-game -windowed`, which never enters that path and is a stronger rung than PIE anyway.
+
+**Standalone `-game` on BR_Arena01 — observed, with a screen capture:**
+- Pawn spawns and is possessed. First-person camera in the arena, crosshair, HUD bar.
+- The character mesh RENDERS — torso, shoulder straps and arms visible at the frame edges.
+- Input works. A synthetic `W` translated the view through the arena.
+- **Camera is misplaced.** It is attached to `FirstPersonCameraComponent -> FirstPersonMesh`
+  socket `head`; the socket is not resolving, so the camera falls back to the component origin
+  and sits inside/above the body looking down. This is the "I cannot see the character"
+  symptom and it is a CAMERA bug, not a missing mesh.
+- `BP.uasset` carries exactly ONE `AnimClass` and one mesh assignment across its two mesh
+  components. Which component got it is still unread — that needs the editor.
+
+Rung: **standalone single-player, one machine.** Not PIE, not listen, not dedicated, not
+packaged. No claim beyond what the capture shows.
+
+**Still open for "playable character":** camera/socket fix; confirm 1P vs 3P mesh + AnimClass
+assignment; animations never observed playing; and there is NO weapon on the BP path at all —
+`BPCharacter.h` declares no weapon member and nothing equips anything.
+
+**Correction to the entry above, and the real reason the pawn is invisible.** 9 Aug 2026, later.
+
+**The standalone run reported above was executing OLD code. That claim is withdrawn.** UBT wrote
+the fix to `libUnrealEditor-Breachpoint-0001.dylib` because the running editor held the base file
+locked, but `Binaries/Mac/UnrealEditor.modules` maps the module to
+`libUnrealEditor-Breachpoint.dylib` — the pre-change 18:54 build. So the pawn that spawned and
+responded to input in that capture was NOT produced by `DefaultPawnClassOverride`. The
+observations (a pawn exists, input moves it) stand; the attribution did not. Rebuilt at 20:47
+with the editor closed: base dylib now carries the change and the manifest points at it. PASS,
+exit 0. **Still unverified at runtime.**
+
+R19's "binary newer than start" check passed on BOTH builds and did not catch this. The check
+proves *a* binary was written, not that the binary the engine will LOAD was written. Worth
+hardening `run-ubt.sh` to assert the touched file matches `UnrealEditor.modules`.
+
+**Root cause of the invisible character, read from the live CDO over MCP — not inferred:**
+
+| property | value |
+|---|---|
+| `Default__BP_C.firstPersonMesh` | **`None`** |
+| `CharacterMesh0.skeletalMesh` | `/Game/MigrateLyra/Heroes/Mannequin/Meshes/SKM_Manny` |
+| `CharacterMesh0.animClass` | `ABP_Mannequin_Base_C` |
+| `CharacterMesh0.animationMode` | `AnimationBlueprint` |
+| `CharacterMesh0.bOwnerNoSee` | **`true`** |
+
+The 3P mesh is fully and correctly configured — and `bOwnerNoSee` means the owning player can
+never see it. The 1P mesh, which is the one the owner is supposed to see, is null on the CDO even
+though `ABPCharacter`'s constructor creates it with a plain
+`UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<USkeletalMeshComponent>`. `BP.uasset`
+was saved against an older `ABPCharacter` and its serialized `None` overrides the constructor.
+`compile_blueprint` was tried first and does NOT repopulate it — verified, still `None` after.
+
+This also explains the camera: `FirstPersonCameraComponent` is attached to `FirstPersonMesh`
+socket `head`, and with a null 1P mesh there is no socket to resolve, so it falls back to the
+component origin. Camera bug and mesh bug are the same bug.
+
+Not yet decided: repair `BP.uasset` in place (needs a component the CDO does not expose) or
+delete and recreate the R26 child fresh against the current C++ CDO. Recreate is the likely call
+— it is defaults-only by definition, so nothing is lost.
+
+**New blocker: the editor now crashes on startup, repeatedly.** Three reports in ten minutes
+(`~/Library/Logs/DiagnosticReports/CrashReportClientEditor-2026-08-09-2040*/2044*/2050*.ips`),
+the last a `SIGSEGV` / `KERN_INVALID_ADDRESS at 0x10` in the crash reporter itself. Two of the
+three predate the 20:47 rebuild, so this is not caused by it. Undiagnosed. Nothing further can be
+verified until the editor boots.
+
+**Weapon route decided by the founder:** BR C++ equipment
+(`BREquipmentComponent` / `BRWeaponInstance` / `BRWeaponPickup`), not the FPSTemplate Blueprints.
+`UBREquipmentComponent` already carries slots, `SetActiveSlot`, server RPCs with validation,
+ability-set granting per slot, and `ResolveOwnerMeshes` / `RefreshOwnerAnimLayers` for 1P+3P.
+Nothing is wired to `ABPCharacter` yet — it declares no weapon member. Not started; blocked
+behind a visible character.
+
+---
+
+### 9 Aug 2026 — `ABPFPSCharacter`: a reparent target for `BP_FPST_Character`
+
+**Founder ask:** *"something simple to parent with `/Game/Characters/BP_FPST_Character`."*
+The `BP.uasset` route above is abandoned rather than repaired — its null `firstPersonMesh` is a
+serialization artifact of an older CDO, and the template's own character Blueprint already has a
+correct component tree, so recreating one by hand buys nothing.
+
+**Read from the package before designing, not assumed.** `strings` on
+`Content/Characters/BP_FPST_Character.uasset`:
+
+| fact | value |
+|---|---|
+| parent class | `/Script/Engine.Character` — a pure Blueprint, so any `ACharacter` subclass is a legal reparent |
+| components it brings | `CapsuleComponent`, `CharacterMesh0`, `CameraComponent`, `SpringArmComponent`, `CameraBoom`, `FollowCamera` |
+| behaviour it brings | camera-mode toggle, camera rotation lag, per-weapon camera-recoil curves |
+
+**That inventory is the whole design.** The parent class creates **zero components**. `ABPCharacter`
+is the wrong parent for this Blueprint precisely because it creates two: the pawn would carry
+two `UCameraComponent`s and `APawn::CalcCamera` takes the first one it finds, so which camera you
+look through would be decided by component search order. That is the same failure shape as the
+invisible-character bug logged above, and it would have been read as "the reparent broke it".
+
+**Landed:**
+- `Source/Breachpoint/FPS/BPFPSCharacter.{h,cpp}` — `ACharacter` + `IAbilitySystemInterface`.
+  Constructor sets `bCanEverTick=false` and nothing else. ASC forwarded from `ABPPlayerState`,
+  `InitAbilityActorInfo` on both `PossessedBy` and `OnRep_PlayerState`. Move/Look bound in C++
+  from soft config paths; **Jump deliberately not bound here** — it lives on the controller and a
+  second binding would fire it twice per press. `DoMove` works off `GetControlRotation().Yaw`,
+  not the actor's forward vector, because the template does not force
+  `bUseControllerRotationYaw` and can toggle to the spring-arm camera.
+- `Source/Breachpoint/Match/BPPlayerController.cpp` — the scaffold jump fallback now casts to
+  `ACharacter`, not `ABPCharacter`. `ABPFPSCharacter` is a **sibling**, not a subclass, so the
+  narrow cast would have left it unable to jump with no error at any layer: input arrives, the
+  tag activates nothing (no jump ability granted yet), and the cast silently fails.
+- `Config/DefaultGame.ini` — `DefaultPawnClassOverride` →
+  `/Game/Characters/BP_FPST_Character.BP_FPST_Character_C`; new
+  `[/Script/Breachpoint.BPFPSCharacter]` carrying the same three input actions as
+  `[/Script/Breachpoint.BPCharacter]`, so the two pawns swap by editing one line.
+
+**`contract_gap` BP82-11 → `Source/Breachpoint/Character/` (owner: builder, BP96).** The ask named
+`Source/Breachpoint/Character` and `guard_laws.py` blocked the write — `Character/` is not in this
+packet's `owner_path`, unlike `Match/`, which was added on 9 Aug. The file went to `FPS/` instead,
+which this packet does own and which already hosts `BRFPSCharacter`, so nothing was routed around.
+Unresolved: whether the BP* pawns belong in `Character/` beside `ABPCharacter` or in `FPS/`. They
+are currently split across both folders, which is the worse of the two answers.
+
+**Rungs reached — PARTIAL by environment, and that is the ceiling here.**
+
+| target | result | evidence |
+|---|---|---|
+| `BreachpointEditor` | **PASS** 22:07:37, 38.5 s | `Result: Succeeded`, touched `BreachpointEditor.target` |
+| `Breachpoint` | **PASS** 22:08:37, 71.6 s | `Result: Succeeded`, touched `CodeResources` |
+| `BreachpointServer` | **not run** | launcher install, no server binaries — cannot link |
+
+Compilation of the new unit confirmed rather than inferred: `BPFPSCharacter.gen.cpp`,
+`BPFPSCharacter.generated.h` and `BPFPSCharacter.cpp.o` all exist under `Intermediate/Build`.
+Rung 2 was **not** run — `Tools/run-specs.ps1` has no macOS counterpart.
+
+**Nothing above rung 1 is claimed, and the reparent itself is UNVERIFIED.** `BP_FPST_Character`
+has not been reparented — that is an editor action, and the editor was crashing on startup as of
+the previous entry. Until it is done, `DefaultPawnClassOverride` points at a Blueprint whose
+parent is still `/Script/Engine.Character`, which spawns and moves under its own graph but never
+reaches a line of `ABPFPSCharacter`. Not seen in PIE, not seen networked, not seen on three views.
+
+---
+
+### 9 Aug 2026 — the T-pose after reparenting to `ABRFPSCharacter`, diagnosed
+
+**Symptom (founder, in PIE):** reparent `BP_FPST_Character` from `/Script/Engine.Character` to
+`ABRFPSCharacter` → the character T-poses. Reparenting to a stock empty wizard class
+(`Character/MyCharacter.h`, `ACharacter` + empty `BeginPlay`/`Tick`/`SetupPlayerInputComponent`)
+→ it works.
+
+**Cause — `ABRFPSCharacter::BeginPlay` → `ApplyAnimInstanceClasses()`, not the reparent.** The
+Blueprint's `CharacterMesh0` keeps its mesh and its `ABP_Mannequin_Base_C` through the reparent;
+`BeginPlay` then reassigns the anim class at runtime to the config-pinned
+`ABP_BRMannequin3P_C`. Correct in the editor viewport, T-pose the moment you press Play — which
+is why this reads as "the reparent broke the reference" and is not.
+
+**`ABP_BRMannequin1P/3P` are class stubs, measured not assumed:**
+
+| | `ABP_BRMannequin3P` | `ABP_Mannequin_Base` |
+|---|---|---|
+| bytes on disk | 34,880 | 2,955,783 |
+| state-machine nodes (`strings` grep) | 0 | `LocomotionSM` |
+| `ALI_ItemAnimLayers` references | 0 | implements it |
+
+Their only real content is the parent class `UBRAnimInstance3P`. The spine computes state on the
+worker thread and emits no pose, so the mesh renders its reference pose. The default-layer link
+cannot rescue it either: with no layer interface declared, `LinkAnimClassLayers` is a silent
+no-op — the exact failure `BRProceduralAnimComponent.cpp:90` warns about in a comment.
+
+**This is not a config fix.** Pointing `ThirdPersonAnimClass` at `ABP_Mannequin_Base_C` would
+restore poses but that asset's parent is redirected to `UBPAnimInstance`, so
+`GetThirdPersonAnimInstance()`'s `Cast<UBRAnimInstance>` returns null and recoil + layer
+forwarding go dead. Authoring the `ABP_BRMannequin*` graphs — state machine plus the
+`ALI_ItemAnimLayers` interface — is the remaining BP82 work and it is a Tier-4 asset job.
+
+**Correction to the entry above: `ABPFPSCharacter` had `bCanEverTick = false` and that was
+wrong for a reparent target.** `BP_FPST_Character` inherits `bCanEverTick` true from `ACharacter`
+and drives five procedural components from its own Event Tick, so the flag would have switched
+off the Blueprint's animation without touching the Blueprint — a second, independent way to get a
+motionless character, and one that would have been read as a repeat of this same bug. The
+constructor is now empty. Law 4 governs Tick in code this project writes; it is not enforced by
+silently disabling a bought asset's graph. Recompiled `BreachpointEditor` PASS 22:21:30, 19.0 s,
+touched `libUnrealEditor-Breachpoint-0004.dylib`.
+
+**Still open:** three candidate parents now exist for this Blueprint — `AMyCharacter`
+(`Character/`, stock and empty), `ABPFPSCharacter` (`FPS/`, empty + ASC + Move/Look), and
+`ABRFPSCharacter` (`FPS/`, the production spine, blocked behind the ABP authoring above).
+`contract_gap BP82-11` already records that the BP* pawns are split across `Character/` and
+`FPS/`; `AMyCharacter` makes that three folders' worth of the same decision, unmade.
+
+**CONFIRMED same session, founder in PIE: `BP_FPST_Character` reparented to `ABPFPSCharacter`
+animates and plays.** The reparent claim above is retired.
+
+**The rung, stated exactly.** This is editor PIE, single process, **owning client only**. It
+proves: the reparent is legal, the Blueprint's component tree and `ABP_Mannequin_Base_C` survive
+a C++ parent, and a parent that creates no components and asserts no tick setting does not
+disturb the template's own animation. It proves nothing about the listen-server path, the
+simulated proxy, or the packaged build — law 7's three views have **not** been taken, and no
+multiplayer claim is made here.
+
+**One thing NOT proven, recorded so it is not later quoted as though it were.** The empty
+constructor landed as a prediction: that `bCanEverTick = false` would kill the Blueprint's
+Event-Tick-driven procedural components. `ABPFPSCharacter` was never actually run with the flag
+set to false, so the working result is consistent with that prediction but does not establish it.
+The change stands on the design argument — a reparent target has no business asserting tick
+settings for a Blueprint it knows nothing about — and not on evidence.
+
+**Config hygiene, same session.** `[/Script/Breachpoint.BRFPSCharacter]` appeared **twice** in
+`DefaultGame.ini` (the anim classes at 158, `DefaultWeaponAnimLayer` at 174). Behaviour was
+already correct — `FConfigFile` does `FindOrAddSection`, so a repeated header appends rather than
+replaces and all three keys were live — but the split meant an editor of one block could not see
+the other, which for a *scalar* key is a silent last-writer-wins. Merged into one section;
+`DefaultWeaponAnimLayer` keeps its explanatory comment inline. A sweep of every file in `Config/`
+found no other duplicated section. The stub-ABP T-pose is also now noted at the section itself,
+so the next reader does not diagnose it a second time from the config side.
+
+**BP_FPST_Character graph transferred to AMyCharacter (C++).** 9 Aug 2026, later still.
+
+Founder authorised the transfer; `owner_path` widened with `Source/Breachpoint/Character/`.
+
+**Extraction first, code second.** `read_graph_dsl` cannot read a COLLAPSED graph — it dies in
+`_fingerprint` on `unreal.Blueprint.cast(graph.get_outer())`, because a collapsed graph's outer
+is the `K2Node_Composite`, not the Blueprint. That killed 3 of the 5 subgraphs. Worked around by
+rebuilding exec order from the pin graph directly (`find_nodes` + `get_node_infos`, then walking
+Exec output pins). All 19 entry points recovered. Caveat recorded because it will mislead the
+next reader: where a pin carries BOTH a literal and a wire, the walker printed the literal, so
+`SetMaxWalkSpeed=0.0` and `AddControllerYawInput Val=0.0` are placeholders for wired values.
+
+**The graph is far smaller than its node count.** 288 nodes in "Weapon" reduce to 7 methods.
+`X` / `Z` / `MouseWheelUp` / `MouseWheelDown` each carried a byte-identical swap chain, each
+containing the holster branch twice — EIGHT copies of one `SwapWeapon(bNext)`. Melee was four
+copies of one trace. Fire was the same trace→tracer→impact→damage→hit chain twice, once for
+single and once inside a 6-iteration spread loop.
+
+**Landed:** all 20 variables (`IsAiming?` → `bIsAiming`; `?` is not a legal C++ identifier), all
+11 functions, BeginPlay's 4-way Sequence in order, every input handler, `SwapWeapon`, `FireEvent`,
+`MeleeAttack`, `HitEffectEvent`. Rung 1 PARTIAL: `BreachpointEditor` PASS, exit 0, ZERO warnings,
+and it touched `libUnrealEditor-Breachpoint.dylib` — the base file `UnrealEditor.modules` loads,
+not a `-0001`. That check is now part of how this ticket reports a build.
+
+**Four deliberate deviations from 1:1, each forced by a law:**
+
+| graph did | C++ does | why |
+|---|---|---|
+| engine point-damage node ×6, `BaseDamage=10.0` | one `DealDamage()` seam, applies nothing yet | law 2 bans the API; law 3 bans the literal |
+| `EventTick` line-trace every frame | `AimTraceTimer` at 0.033s | law 4 |
+| `CreateWidget` + `AddToViewport` | not reproduced | bypasses `BRUIManagerSubsystem` |
+| hardcoded weapon/grenade class paths | soft, in `DefaultGame.ini` | law 3 |
+
+**Creates NO components, on purpose.** The camera stack and the nine `BPC_FPST_*` components stay
+on the Blueprint's SCS and are resolved by name in `PostInitializeComponents`. Re-creating them
+would duplicate the tree, and assigning `Mesh` from C++ is exactly what T-poses the character —
+the founder's stated constraint. Anim changes go through `LinkAnimClassLayers` only; no
+`SkeletalMesh` or `AnimClass` write exists anywhere in the new C++.
+
+**What is NOT ported, and is honestly stubbed.** 20 `virtual` hooks (`ChangePose`, `SetADS`,
+`SetLeaning`, `WeaponTrace`, `ImpactEffect`, `ShowCrosshair`, …) are EMPTY. Those functions live
+on Blueprint component classes; calling them from C++ needs a `ProcessEvent` parameter layout
+that would be guessed, and a wrong guess is silent memory corruption, not a compile error. The
+exec order AROUND them is correct, so porting a component is a local change to one hook. Montage
+playback and the `Target_Manny` / `Target_Mann_UE4` casts are stubbed for the same reason.
+
+**Rung: COMPILES. Nothing here has been run.** Not PIE (the editor still asserts on Stop and has
+been crashing on startup), not standalone, not multiplayer.
+
+**BLOCKING NEXT STEP, and it is destructive so it was not done unasked:** the Blueprint still
+owns its 20 variables and its whole graph. A BP variable that shadows a parent C++ member is a
+COMPILE ERROR, so `BP_FPST_Character` will not compile until those 20 are deleted along with the
+graphs now living in C++. Delete-and-verify is its own pass.
+
+**Verification pass: "are you sure it is 1:1?" — it was not. Four inferences were wrong.**
+9 Aug 2026.
+
+The first extraction preferred a pin's LITERAL over its incoming WIRE, so EVERY branch read
+`Condition=true` and every wired scalar read `0.0`. That is why ~30 things in the first port
+were inferences wearing the costume of reads. Re-ran with the wire always winning and the
+producing node resolved recursively into an expression, plus a branch→condition→then/else map.
+
+**Closed clean, no code change needed:**
+- Variable defaults, read from the CDO: `AimWalkSpeed=250`, `SprintWalkSpeed=900`,
+  `DefaultWalkSpeed=600`, `LookSensitivity=1`. All four matched what had been guessed. They are
+  reads now, not guesses.
+- `CanJumpInternal`: `get_graph` returns "Cannot find graph CanJumpInternal in Blueprint".
+  `list_functions` reporting it `bIsImplemented` refers to the PARENT's implementation. There is
+  no override to port; calling `Super` is correct. The apparent contradiction is resolved.
+- Every wired scalar confirmed: `SetMaxWalkSpeed` takes Default/Aim/Sprint, yaw/pitch take
+  Turn/Lookup axis, `SetLeaning` really is the literals -1/0/+1, FOV really is 80/90 at speed 12.
+
+**Four REAL bugs the first port shipped, now fixed:**
+
+| site | was | actually |
+|---|---|---|
+| crouch | `bIsCrouched ? UnCrouch : Crouch` | `(!bIsCrouched AND !IsFalling) ? Crouch : UnCrouch` — the falling guard was missing, so crouch mid-air crouched instead of uncrouching |
+| sprint | unconditional | gated on `ForwardAxisValue > 0`, no else — you could sprint backwards |
+| `HitEffectEvent` | no guard | gated on `HitActor != LastHitActor` — without it a held trigger replays the elimination sound and anim every trace |
+| `SwapWeapon` unarmed test | `!IsValid(GetCurrentWeapon())` | `Equal(Enum)` on weapon TYPE — a valid actor in the unarmed slot took the wrong arm |
+
+**Also recovered:** the elimination branch is the TARGET's `GetIsDead`, not a character-side flag.
+The melee trace fires from `PlayMontage.OnNotifyBegin` gated on the notify name being exactly
+`AN_FPST_Melee`, on `AM_MM_Knife_Swing01`. The spread branch is
+`NotEqual(Enum) ? single Trace : ForLoop`.
+
+**STILL NOT VERIFIED, and now honestly labelled in code rather than hidden in a literal:** the
+enum OPERANDS on the `Equal(Enum)`/`NotEqual(Enum)` nodes never resolved. The comparisons are the
+graph's; the values are not. They became `UnarmedWeaponType = 0` and `SpreadWeaponType = 3`,
+EditDefaultsOnly with a comment saying exactly which half is a guess, so correcting one is a
+config edit rather than a hunt through branches.
+
+Rebuilt: PASS, exit 0, zero warnings, base dylib 23:21, manifest correct. Rung is still
+**COMPILES**. Nothing in this entry has been run.
+
+**New Blueprint `/Game/Characters/BP_FPSCharacter` created.** 9 Aug 2026, 23:33.
+
+Fresh child of `AMyCharacter` rather than stripping `BP_FPST_Character`. Reason: `remove_variable`
+exists but there is NO remove-graph tool, so a duplicate-and-strip would leave 288 nodes of graph
+referencing variables that had just been deleted. A fresh asset has neither problem, and the
+1.67 MB original stays untouched as the reference.
+
+**Landed and saved (40 KB):** parented to `/Script/Breachpoint.MyCharacter`, plus 12 components —
+`Arrow_MeleeTraceStart` and all nine `BPC_FPST_*` with their exact names, plus a camera and a
+spring arm.
+
+**Two things worth knowing about the editor tooling, both learned the hard way:**
+
+1. `BlueprintTools.create`'s `asset_type` is the PARENT CLASS, not the asset type. Passing
+   `/Script/Engine.Blueprint` pops a modal — "Cannot create a blueprint based on the class
+   'Blueprint'" — and because MCP tool calls run on the game thread, that modal DEADLOCKS the
+   whole MCP server until someone clicks OK. A hung tool call is the symptom; a modal is the
+   cause. Worth checking for a window named "Message" before assuming the server died.
+2. `ActorTools.add_component` honours its `name` argument EXCEPT where the name collides with a
+   property the parent C++ class already declares. `FPSCamera` and `CameraBoom` are `UPROPERTY`s
+   on `AMyCharacter`, so UE silently named those components `Camera` and `SpringArm`. Silent,
+   no warning, and it breaks name-based resolution. Fixed in C++ by falling back to a
+   `FindComponentByClass` lookup when the name misses; rebuilt PASS, exit 0, zero warnings.
+
+**NOT DONE — the mesh is unassigned, and it needs a human.** `ObjectTools.set_properties` against
+`Default__BP_FPSCharacter_C:CharacterMesh0` returns `false` for every property, before and after
+compile+save. The toolset cannot write an INHERITED component template on a Blueprint CDO. So the
+values below have to be set by hand in the BP editor, copied from `BP_FPST_Character`:
+
+| field | value |
+|---|---|
+| Skeletal Mesh | `/Game/FPSTemplate/Demo/Characters/Heroes/Mannequin/Meshes/SKM_Manny_Y` |
+| Anim Class | `ABP_Mannequin_Base_C` |
+| Relative Location | `(0, 0, -89)` |
+| Relative Rotation | `yaw 270` |
+| Owner No See | `false` — this template's body IS visible to its own player |
+
+Until that is set the pawn spawns invisible, which is the same symptom as BP82-9 and a different
+cause, so name it correctly if it reappears.
+
+**Also observed:** the editor showed a "Memory Pressure Warning — your system is running low on
+memory". That is a plausible cause of the repeated startup crashes logged earlier and was not
+considered at the time.
+
+**Weapon pin-type mismatch, and the component-layout pass.** 10 Aug 2026.
+
+**Reported from the editor:** `BP_FPSCharacter` failed to compile, 2 fatal issues —
+"Actor Object Reference is not compatible with BP FPST Base Weapon Object Reference" on both a
+Target and a Return Value pin.
+
+Cause was a deviation in the first port that had been under-sold. `AMyCharacter` typed its whole
+weapon API as `AActor*` (`GetCurrentWeapon`, `CurrWeapon`, `AllWeapons`) because C++ may not hard
+reference a Blueprint class. The Blueprint side types the same things as `BP_FPST_BaseWeapon`, so
+every pin between the two was incompatible. Founder chose the C++ base class route over adding
+cast nodes.
+
+Added `Source/Breachpoint/Weapons/BPWeaponBase.h/.cpp` — `ABPWeaponBase : AActor`, and it declares
+NOTHING. That emptiness is deliberate and load-bearing: `BP_FPST_BaseWeapon` already owns
+`GetAttachSocketName`, `GetCrosshairType`, `GetFireAnimMontage`, `GetReloadAnimMontage`,
+`GetLinkAnimLayerClass` and more, and a Blueprint function whose name matches a parent UFUNCTION
+is a compile error rather than an override. Adding any member here without checking that asset
+first breaks all five weapon Blueprints at once. Retyped the character's API to `ABPWeaponBase*`.
+Build PASS, exit 0, zero warnings.
+
+**REQUIRED, not yet done:** reparent `BP_FPST_BaseWeapon` to `BPWeaponBase` in the editor. Until
+then `CreateWeapons` calls `TryLoadClass<ABPWeaponBase>` on four paths that are not that class,
+so it logs an error per weapon and spawns none. The C++ change and the reparent must land
+together.
+
+**Component layout, measured rather than assumed.** Spawned both Blueprints as probe actors and
+walked the live component trees (`get_components` + `get_parent_component`), then removed the
+probes. `BP_FPST_Character` is:
+
+```
+CollisionCylinder
+├─ CharacterMesh0            loc(0,0,-89)  rot(yaw 270)
+│   └─ FPSCamera             loc(10,5,0)   rot(yaw 90, roll -90)
+├─ CameraBoom                loc(0,0,8.492264)
+│   └─ FollowCamera
+└─ Arrow_MeleeTraceStart     loc(0,0,50.370297)
+```
+The nine `BPC_FPST_*` are non-scene components with no attachment. There is NO `FPSCam` component
+despite a CDO property of that name.
+
+`BP_FPSCharacter` currently differs: `Camera` and `SpringArm` (misnamed, both flat under the
+capsule), no `FollowCamera` at all, no transforms, mesh unassigned. `set_parent_component` already
+moved the camera onto `CharacterMesh0` and that call WORKS.
+
+**Renamed the five cached component pointers to `Cached*`** (`CachedFPSCamera`,
+`CachedCameraBoom`, …). Reason: a Blueprint cannot name an SCS component after a property its
+parent C++ class declares — while `AMyCharacter` owned a property called `FPSCamera`, adding an
+`FPSCamera` component to a child silently produced one called `Camera`, with no warning. The
+prefix frees the names the Blueprint wants.
+
+**Two tool limits that bound what can be automated here:**
+- `ActorTools.set_parent_component` WORKS — hierarchy is fixable over MCP.
+- `ObjectTools.set_properties` returns `false` for EVERY component template, on both the CDO path
+  and the `_GEN_VARIABLE` class path, before and after compile+save. Reads work; writes do not.
+  So component transforms and the mesh assignment CANNOT be automated and must be set by hand.
+
+**Also:** after the property rename the editor spent 30+ minutes at ~133% CPU without bringing its
+MCP server up, so the layout fix is not yet applied. An earlier "Memory Pressure Warning" from the
+editor is the leading suspect for both this and the startup crashes logged before.
