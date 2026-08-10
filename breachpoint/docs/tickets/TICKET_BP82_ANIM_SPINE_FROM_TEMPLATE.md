@@ -1417,6 +1417,48 @@ refused. Nothing is broken — PIE simply bypasses the only thing that opens hos
 >
 > Outside this ticket's `owner_path`. Filed, not routed around.
 
+**10 Aug 2026 — founder asked for option 3 (PIE bypass). Patch written, NOT applied.**
+
+Still blocked: `Source/Breachpoint/Online/` is outside `owner_path`. Worth naming the tempting
+wrong move — `Source/Breachpoint/Match/` *is* in the claim, and a GameMode could reach over and
+call `NotifyServerReadyForPlayers()` from there. That would satisfy the hook and violate the law it
+enforces: same workaround, different folder, chosen to dodge the block. Not done.
+
+Drop-in for `BRSessionsSubsystem::HandlePostLoadMap`, after the `bIsHost && SessionState ==
+Hosting` block (ends line 1051), before the `Travelling` check. `Engine/World.h` is already
+included at line 9; `EnsureServerLifecycle()` is idempotent (line 1061).
+
+```cpp
+#if WITH_EDITOR
+	// PIE's "Play as Listen Server" never runs the front-end host flow: no session is created, so
+	// bIsHost stays false, the branch above never runs, NotifyServerReadyForPlayers is never
+	// called, HostingState stays Initializing, and ValidateJoin refuses every client with
+	// hosting_not_open. Open the gate for a PIE listen server so editor multiplayer is testable.
+	//
+	// Scoped three ways on purpose: WITH_EDITOR keeps it out of packaged builds, WorldType == PIE
+	// keeps it out of -game runs launched from the editor binary, and NM_ListenServer keeps it off
+	// clients and dedicated servers. It is still a divergence from the shipping path — hosting via
+	// the front end remains the only route that exercises the real gate.
+	if (LoadedWorld && LoadedWorld->WorldType == EWorldType::PIE
+		&& LoadedWorld->GetNetMode() == NM_ListenServer)
+	{
+		EnsureServerLifecycle();
+		if (ServerLifecycle != nullptr)
+		{
+			ServerLifecycle->InitializeHosting(GetGameInstance());
+			ServerLifecycle->NotifyServerReadyForPlayers();
+		}
+		return;
+	}
+#endif
+```
+
+**The cost, stated once so it is not discovered later.** After this, PIE stops testing the join
+gate. `ValidateJoin`'s rejection path — the one that refuses players when hosting is ending, and
+the `AdmittedPlayerIds` bookkeeping around it — will never run in PIE again. Whatever regresses
+there is invisible until a front-end host test or rung 4. Option 1 (host via the front end) remains
+the only route that tests what ships, and this bypass does not remove the need for it.
+
 ### 10 Aug 2026 — the four weapons fail to spawn: `BP_FPST_BaseWeapon` was never reparented
 
 **NOT a contract_gap — this is undone work inside BP82's own claim.** `Content/FPSTemplate/` is in
