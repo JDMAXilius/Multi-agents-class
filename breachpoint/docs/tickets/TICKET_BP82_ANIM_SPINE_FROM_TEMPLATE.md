@@ -1377,3 +1377,80 @@ artifact, editor closed so the link was clean.
 "the ensure is gone". Unproven until a PIE start completes without breaking into the debugger, and
 untested beyond that: listen-server, dedicated, packaged. The T-pose question is likewise still
 open — `AnimationWarping` is enabled in config but no editor session has yet run against it.
+
+### 10 Aug 2026 — PIE 1×listen-server + 1×client: the client is rejected at join
+
+**Confirmed first: the `BRHUDDirector` ensure is GONE.** This PIE session started both instances with
+zero `must be a subclass of BaseType` hits in the log. `3194e82` is now verified at the PIE rung,
+not merely "compiles".
+
+PIE settings are correct and are not the problem — `PlayNetMode=PIE_ListenServer`,
+`PlayNumberOfClients=2`, `RunUnderOneProcess=True`. Both instances spawn and the client opens a
+connection. The server then refuses it:
+
+```
+LogNet: Error: BroadcastNetworkFailure: FailureType = PendingConnectionFailure,
+ErrorString = This match is no longer accepting players.
+```
+
+**Cause — our own gate, behaving as designed.**
+
+| Step | Where |
+| --- | --- |
+| `IsAcceptingPlayers()` is `HostingState == Hosting`, nothing else | `BRListenServerLifecycle.h:31` |
+| only `NotifyServerReadyForPlayers()` sets `Hosting`, and only from `Initializing` | `BRListenServerLifecycle.cpp:38-48` |
+| it is called from exactly ONE site, gated on `bIsHost && SessionState == Hosting` | `BRSessionsSubsystem.cpp:1042-1048` |
+| rejection text + code `hosting_not_open` | `BRListenServerLifecycle.cpp:60-64` |
+
+PIE's "Play as Listen Server" never runs the front-end host flow, so no session is created,
+`bIsHost` stays false, the gate never opens, `HostingState` stays `Initializing`, and every join is
+refused. Nothing is broken — PIE simply bypasses the only thing that opens hosting.
+
+> **`contract_gap BP82-13` → `Source/Breachpoint/Online/` (owner: services-builder, D4).**
+> Options, in the order I would rank them:
+> 1. Test through the front end (host via the menu). No code, and it is the only route that
+>    exercises the path that ships.
+> 2. A console command that calls `NotifyServerReadyForPlayers()` for tests. Explicit; no silent
+>    divergence between PIE and shipping.
+> 3. A PIE-aware bypass in `HandlePostLoadMap` (`WorldType == PIE && NetMode == NM_ListenServer`).
+>    Cheapest, but PIE then stops testing the real gate — the least attractive for that reason.
+>
+> Outside this ticket's `owner_path`. Filed, not routed around.
+
+### 10 Aug 2026 — the four weapons fail to spawn: `BP_FPST_BaseWeapon` was never reparented
+
+**NOT a contract_gap — this is undone work inside BP82's own claim.** `Content/FPSTemplate/` is in
+`owner_path` and `BP_FPST_BaseWeapon.uasset` is not in `binary_locks`. It is recorded here because
+it needs an editor session, not because anyone is blocked.
+
+The log's wording misleads. `MyCharacter` prints "failed to load" for a null return, so it reads as
+a missing asset. All four assets exist at exactly the logged paths. The engine gives the real
+reason one line above each error:
+
+```
+LogUObjectGlobals: Warning: BlueprintGeneratedClass
+  /Game/FPSTemplate/Blueprints/Weapons/BP_FPST_Weapon_Pistol.BP_FPST_Weapon_Pistol_C
+  is not a child class of Class /Script/Breachpoint.BPWeaponBase
+```
+
+They load. They fail the **type filter** in `MyCharacter.cpp:346`,
+`StartupWeaponClasses[Index].TryLoadClass<ABPWeaponBase>()`, which returns null for a class that is
+not a child of `ABPWeaponBase`.
+
+`ABPWeaponBase.h:9-10` states the intended shape: *"`BP_FPST_BaseWeapon` reparents onto this, and
+its four children (Pistol, Rifle, Shotgun, Knife) inherit it."* The C++ class landed in `0cee043`
+and `DefaultGame.ini` points `StartupWeaponClasses` at the four children — but the reparent itself
+was never performed. `BP_FPST_BaseWeapon` still derives directly from `AActor`.
+
+**Fix: reparent `BP_FPST_BaseWeapon` → `ABPWeaponBase`, once.** All four children inherit it; none
+of them needs touching. Same shape as the `ABP_ItemAnimLayersBase` reparent under BP82-7.
+
+Downstream of this, and expected to clear with it: `PIE: Error: Blueprint Runtime Error: "Accessed
+None trying to read (real) property CallFunc_GetCurrentWeapon_ReturnValue" ... Blueprint:
+BP_FPSCharacter`. No weapon spawns, so `GetCurrentWeapon` returns null.
+
+**Caveat on evidence.** The child chain was read out of the `.uasset` strings and roots at
+`/Script/Engine.Actor`; a direct read of `BP_FPST_BaseWeapon`'s parent pointer was cut short when a
+tool became unavailable. The conclusion does not rest on it — the engine warning is decisive that
+these classes are not children of `ABPWeaponBase`, and the header names the base as the reparent
+target. Worth one confirming glance at Class Settings before the reparent.
