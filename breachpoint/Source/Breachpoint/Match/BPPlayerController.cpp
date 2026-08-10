@@ -219,9 +219,9 @@ void ABPPlayerController::OnJumpPressed()
 	// ACharacter, not ABPCharacter: ABPFPSCharacter is a sibling reparent target for the
 	// template Blueprint, not a subclass, and a narrower cast would leave it unable to jump
 	// with no error anywhere -- the input arrives, the tag activates nothing, the cast fails.
-	if (ACharacter* Pawn = Cast<ACharacter>(GetPawn()))
+	if (ACharacter* PawnAsCharacter = Cast<ACharacter>(GetPawn()))
 	{
-		Pawn->Jump();
+		PawnAsCharacter->Jump();
 	}
 }
 
@@ -229,9 +229,9 @@ void ABPPlayerController::OnJumpReleased()
 {
 	ReleaseInputTag(BRGameplayTags::InputTag_Jump);
 
-	if (ACharacter* Pawn = Cast<ACharacter>(GetPawn()))
+	if (ACharacter* PawnAsCharacter = Cast<ACharacter>(GetPawn()))
 	{
-		Pawn->StopJumping();
+		PawnAsCharacter->StopJumping();
 	}
 }
 
