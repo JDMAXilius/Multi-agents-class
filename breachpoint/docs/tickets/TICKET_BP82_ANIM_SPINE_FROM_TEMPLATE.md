@@ -1322,3 +1322,35 @@ removing the ensure.
 
 **Rung:** none. Diagnosis is a read of two class declarations plus the callstack — not compiled, not
 run. The claim here is "the ensure's cause is identified", not "the fix works".
+
+### 10 Aug 2026 — rung 1, run stamp `20260810-120905`: 2 PASS, 1 INCONCLUSIVE
+
+Triggered by a C4458 that broke the Editor target: `BPPlayerController.cpp:222,232` declared a
+local `ACharacter* Pawn` inside the scaffold jump fallback, hiding `AController::Pawn`. Renamed to
+`PawnAsCharacter` at both sites (commit `748e804`); the `ACharacter` cast target is unchanged and
+still deliberate.
+
+```
+target             exit  start                    artifact mtime           newer  verdict
+BreachpointEditor  0     2026-08-10T12:09:05.901  2026-08-10T12:08:20.702  NO     INCONCLUSIVE
+Breachpoint        0     2026-08-10T12:09:26.493  2026-08-10T12:24:53.260  YES    PASS
+BreachpointServer  0     2026-08-10T12:25:02.245  2026-08-10T12:34:52.525  YES    PASS
+OVERALL RUNG 1 : INCONCLUSIVE (exit 2)
+```
+
+`Breachpoint` executed **1048** actions and `BreachpointServer` **1014**, both from scratch — those
+binaries were ABSENT before this run — and both artifacts pass the R19 assertion. Since the
+monolithic targets compile the same module source as the Editor, the C4458 fix is compile-proven
+twice over.
+
+`BreachpointEditor` is INCONCLUSIVE for the honest reason: an IDE build had already produced the DLL
+at 12:08:20, so UBT ran **zero** actions and the artifact predates the run (R20). Not a pass. It
+will resolve on the next run once `BRHUDDirector.cpp` changes.
+
+Also this session: `AnimationWarping` enabled in `Breachpoint.uproject` (commit `8812d9d`). The
+stock template enables it, Breachpoint did not, and it is **not** `EnabledByDefault` in 5.8 —
+verified in the engine `.uplugin`. 30 assets under `Content/FPSTemplate/` import its nodes,
+including the packet's own binary_lock `ABP_ItemAnimLayersBase` and all seven
+`ABP_FPSMT_*AnimLayers`. A missing node provider is a **candidate** cause of the T-pose logged
+earlier — untested, and the editor has not been restarted against the new plugin set.
+`GeometryScripting` stays off: zero migrated assets reference it.
