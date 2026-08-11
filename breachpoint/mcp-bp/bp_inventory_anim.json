@@ -1,0 +1,3237 @@
+{
+ "sets": {
+  "anim_spine": [
+   {
+    "found": true,
+    "notes": [],
+    "path": "/Game/FPSTemplate/Demo/Characters/Heroes/Mannequin/Animations/ABP_Mannequin_Base",
+    "properties": {
+     "aDSStateChanged": false,
+     "additiveLeanAngle": 0,
+     "aimPitch": -2.788732,
+     "aimSpineWeights_UE4": {
+      "head": 0.15,
+      "neck_01": 0.2,
+      "spine_01": 0.25,
+      "spine_02": 0.2,
+      "spine_03": 0.2
+     },
+     "aimSpineWeights_UE5": {
+      "head": 0.1,
+      "neck_01": 0.15,
+      "neck_02": 0.2,
+      "spine_01": 0.15,
+      "spine_02": 0.1,
+      "spine_03": 0.1,
+      "spine_04": 0.1,
+      "spine_05": 0.1
+     },
+     "aimYaw": 0,
+     "applyCrouchAlpha": 0,
+     "applyPelvisWeight": 0,
+     "applySwayAlpha": 0,
+     "bEnableRootYawOffset": true,
+     "bFPSMode": false,
+     "bFPSWalkMode": false,
+     "bPropagateNotifiesToLinkedInstances": false,
+     "bReceiveNotifiesFromLinkedInstances": false,
+     "bSprinting": false,
+     "bUnarmed": false,
+     "bUseMainInstanceMontageEvaluationData": false,
+     "basePoseLocation": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+     },
+     "basePoseRotation": {
+      "pitch": 0,
+      "roll": 0,
+      "yaw": 0
+     },
+     "camRotCurrent": {
+      "pitch": 0,
+      "roll": 0,
+      "yaw": 0
+     },
+     "camRotOffset": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+     },
+     "camRotPrev": {
+      "pitch": 0,
+      "roll": 0,
+      "yaw": 0
+     },
+     "camRotRate": {
+      "pitch": 0,
+      "roll": 0,
+      "yaw": 0
+     },
+     "cardinalDirectionDeadZone": 10,
+     "cardinalDirectionFromAcceleration": "Forward",
+     "crouchStateChange": false,
+     "currPoseLocation": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+     },
+     "currPoseRotation": {
+      "pitch": 0,
+      "roll": 0,
+      "yaw": 0
+     },
+     "displacementSinceLastUpdate": 0,
+     "displacementSpeed": 0,
+     "enableControlRig": false,
+     "fPSPelvisWeight": 0.2,
+     "gameplayTag_IsADS": false,
+     "gameplayTag_IsDashing": false,
+     "gameplayTag_IsFiring": false,
+     "gameplayTag_IsMelee": false,
+     "gameplayTag_IsReloading": false,
+     "groundDistance": 0,
+     "hasAcceleration": false,
+     "hasVelocity": false,
+     "head_CameraShake_Alpha": 1,
+     "isADS_Upper": false,
+     "isCrouching": false,
+     "isFalling": false,
+     "isFirstUpdate": true,
+     "isJumping": false,
+     "isOnGround": false,
+     "isRunningIntoWall": false,
+     "lastLinkedLayer": "None",
+     "lastPivotTime": 0,
+     "leanAdditiveAlpha": 0,
+     "leanOppRotation": {
+      "pitch": 0,
+      "roll": 0,
+      "yaw": 0
+     },
+     "leanRotation": {
+      "pitch": 0,
+      "roll": 0,
+      "yaw": 0
+     },
+     "leanSpineWeights_UE4": {
+      "head(Opposite Angle Weight)": 0.25,
+      "neck_01": 0.2,
+      "spine_01": 0.3,
+      "spine_02": 0.3,
+      "spine_03": 0.2
+     },
+     "leanSpineWeights_UE5": {
+      "head(Opposite Angle Weight)": 0.25,
+      "neck_01": 0.1,
+      "neck_02": 0,
+      "spine_01": 0.2,
+      "spine_02": 0.2,
+      "spine_03": 0.2,
+      "spine_04": 0.2,
+      "spine_05": 0.1
+     },
+     "leftJointTargetLocation": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+     },
+     "linkedLayerChanged": false,
+     "localAcceleration2D": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+     },
+     "localVelocity2D": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+     },
+     "localVelocityDirection": "Forward",
+     "localVelocityDirectionAngle": 0,
+     "localVelocityDirectionAngleWithOffset": 0,
+     "localVelocityDirectionNoOffset": "Forward",
+     "montagePoseOffsetLocation": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+     },
+     "montagePoseOffsetRotation": {
+      "pitch": 0,
+      "roll": 0,
+      "yaw": 0
+     },
+     "onAllMontageInstancesEnded": "()",
+     "onMontageBlendedIn": "()",
+     "onMontageBlendingOut": "()",
+     "onMontageEnded": "()",
+     "onMontageSectionChanged": "()",
+     "onMontageStarted": "()",
+     "pitch": -0.417859,
+     "pitchRotator": {
+      "pitch": 0,
+      "roll": 0,
+      "yaw": 0
+     },
+     "pivotDirection2D": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+     },
+     "pivotInitialDirection": "Forward",
+     "procApplyLocation": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+     },
+     "procApplyRotation": {
+      "pitch": 0,
+      "roll": 0,
+      "yaw": 0
+     },
+     "rightJointTargetLocation": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+     },
+     "rootMotionMode": "RootMotionFromMontagesOnly",
+     "rootYawOffset": 0,
+     "rootYawOffsetAngleClamp": {
+      "x": -120,
+      "y": 100
+     },
+     "rootYawOffsetAngleClampCrouched": {
+      "x": -90,
+      "y": 80
+     },
+     "rootYawOffsetMode": "BlendOut",
+     "rootYawOffsetSpringState": {},
+     "startDirection": "Forward",
+     "timeSinceFiredWeapon": 9999,
+     "timeToJumpApex": 0,
+     "turnYawCurveValue": 0,
+     "upperbodyDynamicAdditiveWeight": 0,
+     "useFootPlacement": true,
+     "wasADSLastUpdate": false,
+     "worldLocation": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+     },
+     "worldRotation": {
+      "pitch": 0,
+      "roll": 0,
+      "yaw": 0
+     },
+     "worldVelocity": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+     },
+     "yawDeltaSinceLastUpdate": 0,
+     "yawDeltaSpeed": 0
+    },
+    "property_count": 96,
+    "schema": {
+     "aDSStateChanged": {
+      "type": "boolean"
+     },
+     "additiveLeanAngle": {
+      "type": "number"
+     },
+     "aimPitch": {
+      "type": "number"
+     },
+     "aimSpineWeights_UE4": {
+      "properties": {
+       "head": {
+        "type": "number"
+       },
+       "neck_01": {
+        "type": "number"
+       },
+       "spine_01": {
+        "type": "number"
+       },
+       "spine_02": {
+        "type": "number"
+       },
+       "spine_03": {
+        "type": "number"
+       }
+      },
+      "required": [
+       "spine_01",
+       "spine_02",
+       "spine_03",
+       "neck_01",
+       "head"
+      ],
+      "title": "S_Procedural_AimSpineInfoItem_UE4",
+      "type": "object"
+     },
+     "aimSpineWeights_UE5": {
+      "properties": {
+       "head": {
+        "type": "number"
+       },
+       "neck_01": {
+        "type": "number"
+       },
+       "neck_02": {
+        "type": "number"
+       },
+       "spine_01": {
+        "type": "number"
+       },
+       "spine_02": {
+        "type": "number"
+       },
+       "spine_03": {
+        "type": "number"
+       },
+       "spine_04": {
+        "type": "number"
+       },
+       "spine_05": {
+        "type": "number"
+       }
+      },
+      "required": [
+       "spine_01",
+       "spine_02",
+       "spine_03",
+       "spine_04",
+       "spine_05",
+       "neck_01",
+       "neck_02",
+       "head"
+      ],
+      "title": "S_Procedural_AimSpineInfoItem_UE5",
+      "type": "object"
+     },
+     "aimYaw": {
+      "type": "number"
+     },
+     "applyCrouchAlpha": {
+      "type": "number"
+     },
+     "applyPelvisWeight": {
+      "type": "number"
+     },
+     "applySwayAlpha": {
+      "type": "number"
+     },
+     "bEnableRootYawOffset": {
+      "type": "boolean"
+     },
+     "bFPSMode": {
+      "type": "boolean"
+     },
+     "bFPSWalkMode": {
+      "type": "boolean"
+     },
+     "bPropagateNotifiesToLinkedInstances": {
+      "description": "Whether to propagate notifies to any linked anim instances",
+      "type": "boolean"
+     },
+     "bReceiveNotifiesFromLinkedInstances": {
+      "description": "Whether to process notifies from any linked anim instances",
+      "type": "boolean"
+     },
+     "bSprinting": {
+      "type": "boolean"
+     },
+     "bUnarmed": {
+      "type": "boolean"
+     },
+     "bUseMainInstanceMontageEvaluationData": {
+      "description": "If true, linked instances will use the main instance's montage data. (i.e. playing a montage on a main instance will play it on the linked layer too.)",
+      "type": "boolean"
+     },
+     "basePoseLocation": {
+      "properties": {
+       "x": {
+        "type": "number"
+       },
+       "y": {
+        "type": "number"
+       },
+       "z": {
+        "type": "number"
+       }
+      },
+      "required": [
+       "x",
+       "y",
+       "z"
+      ],
+      "title": "Vector",
+      "type": "object"
+     },
+     "basePoseRotation": {
+      "properties": {
+       "pitch": {
+        "description": "Pitch (degrees) around Y axis",
+        "type": "number"
+       },
+       "roll": {
+        "description": "Roll (degrees) around X axis",
+        "type": "number"
+       },
+       "yaw": {
+        "description": "Yaw (degrees) around Z axis",
+        "type": "number"
+       }
+      },
+      "required": [
+       "pitch",
+       "yaw",
+       "roll"
+      ],
+      "title": "Rotator",
+      "type": "object"
+     },
+     "camRotCurrent": {
+      "properties": {
+       "pitch": {
+        "description": "Pitch (degrees) around Y axis",
+        "type": "number"
+       },
+       "roll": {
+        "description": "Roll (degrees) around X axis",
+        "type": "number"
+       },
+       "yaw": {
+        "description": "Yaw (degrees) around Z axis",
+        "type": "number"
+       }
+      },
+      "required": [
+       "pitch",
+       "yaw",
+       "roll"
+      ],
+      "title": "Rotator",
+      "type": "object"
+     },
+     "camRotOffset": {
+      "properties": {
+       "x": {
+        "type": "number"
+       },
+       "y": {
+        "type": "number"
+       },
+       "z": {
+        "type": "number"
+       }
+      },
+      "required": [
+       "x",
+       "y",
+       "z"
+      ],
+      "title": "Vector",
+      "type": "object"
+     },
+     "camRotPrev": {
+      "properties": {
+       "pitch": {
+        "description": "Pitch (degrees) around Y axis",
+        "type": "number"
+       },
+       "roll": {
+        "description": "Roll (degrees) around X axis",
+        "type": "number"
+       },
+       "yaw": {
+        "description": "Yaw (degrees) around Z axis",
+        "type": "number"
+       }
+      },
+      "required": [
+       "pitch",
+       "yaw",
+       "roll"
+      ],
+      "title": "Rotator",
+      "type": "object"
+     },
+     "camRotRate": {
+      "properties": {
+       "pitch": {
+        "description": "Pitch (degrees) around Y axis",
+        "type": "number"
+       },
+       "roll": {
+        "description": "Roll (degrees) around X axis",
+        "type": "number"
+       },
+       "yaw": {
+        "description": "Yaw (degrees) around Z axis",
+        "type": "number"
+       }
+      },
+      "required": [
+       "pitch",
+       "yaw",
+       "roll"
+      ],
+      "title": "Rotator",
+      "type": "object"
+     },
+     "cardinalDirectionDeadZone": {
+      "type": "number"
+     },
+     "cardinalDirectionFromAcceleration": {
+      "enum": [
+       "Forward",
+       "Backward",
+       "Left",
+       "Right"
+      ],
+      "title": "AnimEnum_CardinalDirection",
+      "type": "string"
+     },
+     "crouchStateChange": {
+      "type": "boolean"
+     },
+     "currPoseLocation": {
+      "properties": {
+       "x": {
+        "type": "number"
+       },
+       "y": {
+        "type": "number"
+       },
+       "z": {
+        "type": "number"
+       }
+      },
+      "required": [
+       "x",
+       "y",
+       "z"
+      ],
+      "title": "Vector",
+      "type": "object"
+     },
+     "currPoseRotation": {
+      "properties": {
+       "pitch": {
+        "description": "Pitch (degrees) around Y axis",
+        "type": "number"
+       },
+       "roll": {
+        "description": "Roll (degrees) around X axis",
+        "type": "number"
+       },
+       "yaw": {
+        "description": "Yaw (degrees) around Z axis",
+        "type": "number"
+       }
+      },
+      "required": [
+       "pitch",
+       "yaw",
+       "roll"
+      ],
+      "title": "Rotator",
+      "type": "object"
+     },
+     "displacementSinceLastUpdate": {
+      "type": "number"
+     },
+     "displacementSpeed": {
+      "type": "number"
+     },
+     "enableControlRig": {
+      "type": "boolean"
+     },
+     "fPSPelvisWeight": {
+      "type": "number"
+     },
+     "gameplayTag_IsADS": {
+      "description": "Bound to a gameplay tag from the Ability System Component. Search for \"GameplayTagPropertyMap\" in Class Defaults.",
+      "type": "boolean"
+     },
+     "gameplayTag_IsDashing": {
+      "description": "Bound to a gameplay tag from the Ability System Component. Search for \"GameplayTagPropertyMap\" in Class Defaults.",
+      "type": "boolean"
+     },
+     "gameplayTag_IsFiring": {
+      "description": "Bound to a gameplay tag from the Ability System Component. Search for \"GameplayTagPropertyMap\" in Class Defaults.",
+      "type": "boolean"
+     },
+     "gameplayTag_IsMelee": {
+      "description": "Bound to a gameplay tag from the Ability System Component. Search for \"GameplayTagPropertyMap\" in Class Defaults.",
+      "type": "boolean"
+     },
+     "gameplayTag_IsReloading": {
+      "description": "Bound to a gameplay tag from the Ability System Component. Search for \"GameplayTagPropertyMap\" in Class Defaults.",
+      "type": "boolean"
+     },
+     "groundDistance": {
+      "type": "number"
+     },
+     "hasAcceleration": {
+      "type": "boolean"
+     },
+     "hasVelocity": {
+      "type": "boolean"
+     },
+     "head_CameraShake_Alpha": {
+      "type": "number"
+     },
+     "isADS_Upper": {
+      "type": "boolean"
+     },
+     "isCrouching": {
+      "type": "boolean"
+     },
+     "isFalling": {
+      "type": "boolean"
+     },
+     "isFirstUpdate": {
+      "type": "boolean"
+     },
+     "isJumping": {
+      "type": "boolean"
+     },
+     "isOnGround": {
+      "type": "boolean"
+     },
+     "isRunningIntoWall": {
+      "type": "boolean"
+     },
+     "lastLinkedLayer": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.AnimInstance",
+      "type": "object"
+     },
+     "lastPivotTime": {
+      "type": "number"
+     },
+     "leanAdditiveAlpha": {
+      "type": "number"
+     },
+     "leanOppRotation": {
+      "properties": {
+       "pitch": {
+        "description": "Pitch (degrees) around Y axis",
+        "type": "number"
+       },
+       "roll": {
+        "description": "Roll (degrees) around X axis",
+        "type": "number"
+       },
+       "yaw": {
+        "description": "Yaw (degrees) around Z axis",
+        "type": "number"
+       }
+      },
+      "required": [
+       "pitch",
+       "yaw",
+       "roll"
+      ],
+      "title": "Rotator",
+      "type": "object"
+     },
+     "leanRotation": {
+      "properties": {
+       "pitch": {
+        "description": "Pitch (degrees) around Y axis",
+        "type": "number"
+       },
+       "roll": {
+        "description": "Roll (degrees) around X axis",
+        "type": "number"
+       },
+       "yaw": {
+        "description": "Yaw (degrees) around Z axis",
+        "type": "number"
+       }
+      },
+      "required": [
+       "pitch",
+       "yaw",
+       "roll"
+      ],
+      "title": "Rotator",
+      "type": "object"
+     },
+     "leanSpineWeights_UE4": {
+      "properties": {
+       "head(Opposite Angle Weight)": {
+        "type": "number"
+       },
+       "neck_01": {
+        "type": "number"
+       },
+       "spine_01": {
+        "type": "number"
+       },
+       "spine_02": {
+        "type": "number"
+       },
+       "spine_03": {
+        "type": "number"
+       }
+      },
+      "required": [
+       "spine_01",
+       "spine_02",
+       "spine_03",
+       "neck_01",
+       "head(Opposite Angle Weight)"
+      ],
+      "title": "S_Procedural_LeanSpineInfoItem_UE4",
+      "type": "object"
+     },
+     "leanSpineWeights_UE5": {
+      "properties": {
+       "head(Opposite Angle Weight)": {
+        "type": "number"
+       },
+       "neck_01": {
+        "type": "number"
+       },
+       "neck_02": {
+        "type": "number"
+       },
+       "spine_01": {
+        "type": "number"
+       },
+       "spine_02": {
+        "type": "number"
+       },
+       "spine_03": {
+        "type": "number"
+       },
+       "spine_04": {
+        "type": "number"
+       },
+       "spine_05": {
+        "type": "number"
+       }
+      },
+      "required": [
+       "spine_01",
+       "spine_02",
+       "spine_03",
+       "spine_04",
+       "spine_05",
+       "neck_01",
+       "neck_02",
+       "head(Opposite Angle Weight)"
+      ],
+      "title": "S_Procedural_LeanSpineInfoItem_UE5",
+      "type": "object"
+     },
+     "leftJointTargetLocation": {
+      "properties": {
+       "x": {
+        "type": "number"
+       },
+       "y": {
+        "type": "number"
+       },
+       "z": {
+        "type": "number"
+       }
+      },
+      "required": [
+       "x",
+       "y",
+       "z"
+      ],
+      "title": "Vector",
+      "type": "object"
+     },
+     "linkedLayerChanged": {
+      "type": "boolean"
+     },
+     "localAcceleration2D": {
+      "properties": {
+       "x": {
+        "type": "number"
+       },
+       "y": {
+        "type": "number"
+       },
+       "z": {
+        "type": "number"
+       }
+      },
+      "required": [
+       "x",
+       "y",
+       "z"
+      ],
+      "title": "Vector",
+      "type": "object"
+     },
+     "localVelocity2D": {
+      "properties": {
+       "x": {
+        "type": "number"
+       },
+       "y": {
+        "type": "number"
+       },
+       "z": {
+        "type": "number"
+       }
+      },
+      "required": [
+       "x",
+       "y",
+       "z"
+      ],
+      "title": "Vector",
+      "type": "object"
+     },
+     "localVelocityDirection": {
+      "enum": [
+       "Forward",
+       "Backward",
+       "Left",
+       "Right"
+      ],
+      "title": "AnimEnum_CardinalDirection",
+      "type": "string"
+     },
+     "localVelocityDirectionAngle": {
+      "type": "number"
+     },
+     "localVelocityDirectionAngleWithOffset": {
+      "type": "number"
+     },
+     "localVelocityDirectionNoOffset": {
+      "enum": [
+       "Forward",
+       "Backward",
+       "Left",
+       "Right"
+      ],
+      "title": "AnimEnum_CardinalDirection",
+      "type": "string"
+     },
+     "montagePoseOffsetLocation": {
+      "properties": {
+       "x": {
+        "type": "number"
+       },
+       "y": {
+        "type": "number"
+       },
+       "z": {
+        "type": "number"
+       }
+      },
+      "required": [
+       "x",
+       "y",
+       "z"
+      ],
+      "title": "Vector",
+      "type": "object"
+     },
+     "montagePoseOffsetRotation": {
+      "properties": {
+       "pitch": {
+        "description": "Pitch (degrees) around Y axis",
+        "type": "number"
+       },
+       "roll": {
+        "description": "Roll (degrees) around X axis",
+        "type": "number"
+       },
+       "yaw": {
+        "description": "Yaw (degrees) around Z axis",
+        "type": "number"
+       }
+      },
+      "required": [
+       "pitch",
+       "yaw",
+       "roll"
+      ],
+      "title": "Rotator",
+      "type": "object"
+     },
+     "onAllMontageInstancesEnded": {},
+     "onMontageBlendedIn": {},
+     "onMontageBlendingOut": {},
+     "onMontageEnded": {},
+     "onMontageSectionChanged": {},
+     "onMontageStarted": {},
+     "pitch": {
+      "type": "number"
+     },
+     "pitchRotator": {
+      "properties": {
+       "pitch": {
+        "description": "Pitch (degrees) around Y axis",
+        "type": "number"
+       },
+       "roll": {
+        "description": "Roll (degrees) around X axis",
+        "type": "number"
+       },
+       "yaw": {
+        "description": "Yaw (degrees) around Z axis",
+        "type": "number"
+       }
+      },
+      "required": [
+       "pitch",
+       "yaw",
+       "roll"
+      ],
+      "title": "Rotator",
+      "type": "object"
+     },
+     "pivotDirection2D": {
+      "properties": {
+       "x": {
+        "type": "number"
+       },
+       "y": {
+        "type": "number"
+       },
+       "z": {
+        "type": "number"
+       }
+      },
+      "required": [
+       "x",
+       "y",
+       "z"
+      ],
+      "title": "Vector",
+      "type": "object"
+     },
+     "pivotInitialDirection": {
+      "enum": [
+       "Forward",
+       "Backward",
+       "Left",
+       "Right"
+      ],
+      "title": "AnimEnum_CardinalDirection",
+      "type": "string"
+     },
+     "procApplyLocation": {
+      "properties": {
+       "x": {
+        "type": "number"
+       },
+       "y": {
+        "type": "number"
+       },
+       "z": {
+        "type": "number"
+       }
+      },
+      "required": [
+       "x",
+       "y",
+       "z"
+      ],
+      "title": "Vector",
+      "type": "object"
+     },
+     "procApplyRotation": {
+      "properties": {
+       "pitch": {
+        "description": "Pitch (degrees) around Y axis",
+        "type": "number"
+       },
+       "roll": {
+        "description": "Roll (degrees) around X axis",
+        "type": "number"
+       },
+       "yaw": {
+        "description": "Yaw (degrees) around Z axis",
+        "type": "number"
+       }
+      },
+      "required": [
+       "pitch",
+       "yaw",
+       "roll"
+      ],
+      "title": "Rotator",
+      "type": "object"
+     },
+     "rightJointTargetLocation": {
+      "properties": {
+       "x": {
+        "type": "number"
+       },
+       "y": {
+        "type": "number"
+       },
+       "z": {
+        "type": "number"
+       }
+      },
+      "required": [
+       "x",
+       "y",
+       "z"
+      ],
+      "title": "Vector",
+      "type": "object"
+     },
+     "rootMotionMode": {
+      "description": "Sets where this blueprint pulls Root Motion from",
+      "enum": [
+       "NoRootMotionExtraction",
+       "IgnoreRootMotion",
+       "RootMotionFromEverything",
+       "RootMotionFromMontagesOnly"
+      ],
+      "title": "ERootMotionMode",
+      "type": "string"
+     },
+     "rootYawOffset": {
+      "type": "number"
+     },
+     "rootYawOffsetAngleClamp": {
+      "description": "Limit for how much we can offset the root's yaw during turn in place.",
+      "properties": {
+       "x": {
+        "type": "number"
+       },
+       "y": {
+        "type": "number"
+       }
+      },
+      "required": [
+       "x",
+       "y"
+      ],
+      "title": "Vector2D",
+      "type": "object"
+     },
+     "rootYawOffsetAngleClampCrouched": {
+      "description": "Limit for how much we can offset the root's yaw during turn in place.\r\nX = left limit\r\nY = right limit",
+      "properties": {
+       "x": {
+        "type": "number"
+       },
+       "y": {
+        "type": "number"
+       }
+      },
+      "required": [
+       "x",
+       "y"
+      ],
+      "title": "Vector2D",
+      "type": "object"
+     },
+     "rootYawOffsetMode": {
+      "enum": [
+       "BlendOut",
+       "Hold",
+       "Accumulate"
+      ],
+      "title": "AnimEnum_RootYawOffsetMode",
+      "type": "string"
+     },
+     "rootYawOffsetSpringState": {
+      "title": "FloatSpringState",
+      "type": "object"
+     },
+     "startDirection": {
+      "enum": [
+       "Forward",
+       "Backward",
+       "Left",
+       "Right"
+      ],
+      "title": "AnimEnum_CardinalDirection",
+      "type": "string"
+     },
+     "timeSinceFiredWeapon": {
+      "type": "number"
+     },
+     "timeToJumpApex": {
+      "type": "number"
+     },
+     "turnYawCurveValue": {
+      "type": "number"
+     },
+     "upperbodyDynamicAdditiveWeight": {
+      "type": "number"
+     },
+     "useFootPlacement": {
+      "type": "boolean"
+     },
+     "wasADSLastUpdate": {
+      "type": "boolean"
+     },
+     "worldLocation": {
+      "properties": {
+       "x": {
+        "type": "number"
+       },
+       "y": {
+        "type": "number"
+       },
+       "z": {
+        "type": "number"
+       }
+      },
+      "required": [
+       "x",
+       "y",
+       "z"
+      ],
+      "title": "Vector",
+      "type": "object"
+     },
+     "worldRotation": {
+      "properties": {
+       "pitch": {
+        "description": "Pitch (degrees) around Y axis",
+        "type": "number"
+       },
+       "roll": {
+        "description": "Roll (degrees) around X axis",
+        "type": "number"
+       },
+       "yaw": {
+        "description": "Yaw (degrees) around Z axis",
+        "type": "number"
+       }
+      },
+      "required": [
+       "pitch",
+       "yaw",
+       "roll"
+      ],
+      "title": "Rotator",
+      "type": "object"
+     },
+     "worldVelocity": {
+      "properties": {
+       "x": {
+        "type": "number"
+       },
+       "y": {
+        "type": "number"
+       },
+       "z": {
+        "type": "number"
+       }
+      },
+      "required": [
+       "x",
+       "y",
+       "z"
+      ],
+      "title": "Vector",
+      "type": "object"
+     },
+     "yawDeltaSinceLastUpdate": {
+      "type": "number"
+     },
+     "yawDeltaSpeed": {
+      "type": "number"
+     }
+    }
+   },
+   {
+    "found": true,
+    "notes": [],
+    "path": "/Game/FPSTemplate/Demo/Characters/Heroes/Mannequin/Animations/LinkedLayers/ABP_ItemAnimLayersBase",
+    "properties": {
+     "aDS_Pivot_Cardinals": {
+      "backward": "None",
+      "forward": "None",
+      "left": "None",
+      "right": "None"
+     },
+     "aDS_Start_Cardinals": {
+      "backward": "None",
+      "forward": "None",
+      "left": "None",
+      "right": "None"
+     },
+     "aDS_Stop_Cardinals": {
+      "backward": "None",
+      "forward": "None",
+      "left": "None",
+      "right": "None"
+     },
+     "aimOffsetBlendWeight": 1,
+     "aim_FPSPelvisPose": {
+      "refPath": "/Game/FPSTemplate/Animations/FPS/UE5/MM_Pelvis_Rifle_Idle_Hipfire.MM_Pelvis_Rifle_Idle_Hipfire"
+     },
+     "aim_FPSPelvisPoseCrouch": {
+      "refPath": "/Game/FPSTemplate/Demo/Characters/Heroes/Mannequin/Animations/Locomotion/Rifle/MM_Rifle_Crouch_OverridePose.MM_Rifle_Crouch_OverridePose"
+     },
+     "aim_HipFirePose": "None",
+     "aim_HipFirePose_Crouch": "None",
+     "alpha01_spine_01": 0.15000000596046448,
+     "alpha02_spine_02": 0.10000000149011612,
+     "alpha03_spine_03": 0.10000000149011612,
+     "alpha04_spine_04": 0.10000000149011612,
+     "alpha05_spine_05": 0.10000000149011612,
+     "alpha06_neck_01": 0.15000000596046448,
+     "alpha07_neck_02": 0.20000000298023224,
+     "alpha08_head": 0.10000000149011612,
+     "bPropagateNotifiesToLinkedInstances": false,
+     "bReceiveNotifiesFromLinkedInstances": false,
+     "bS_FPS_ADS_Idle_Move": {
+      "refPath": "/Game/FPSTemplate/Animations/FPS/UE5/Pistol/BS_MM_Pistol_ADS_Move_BasePose.BS_MM_Pistol_ADS_Move_BasePose"
+     },
+     "bS_FPS_ADS_Idle_Move_Additive": "None",
+     "bS_FPS_Idle_Move": {
+      "refPath": "/Game/FPSTemplate/Animations/FPS/UE5/Pistol/BS_MM_Pistol_Move_BasePose.BS_MM_Pistol_Move_BasePose"
+     },
+     "bS_FPS_Idle_Move_Additive": "None",
+     "bUseMainInstanceMontageEvaluationData": false,
+     "crouch_Idle": "None",
+     "crouch_Idle_Entry": "None",
+     "crouch_Idle_Exit": "None",
+     "crouch_Pivot_Cardinals": {
+      "backward": "None",
+      "forward": "None",
+      "left": "None",
+      "right": "None"
+     },
+     "crouch_Start_Cardinals": {
+      "backward": "None",
+      "forward": "None",
+      "left": "None",
+      "right": "None"
+     },
+     "crouch_Stop_Cardinals": {
+      "backward": "None",
+      "forward": "None",
+      "left": "None",
+      "right": "None"
+     },
+     "crouch_TurnInPlace_Left": "None",
+     "crouch_TurnInPlace_Right": "None",
+     "crouch_Walk_Cardinals": {
+      "backward": "None",
+      "forward": "None",
+      "left": "None",
+      "right": "None"
+     },
+     "currentIdleBreakIndex": 0,
+     "disableHandIK": false,
+     "enableLeftHandPoseOverride": false,
+     "fPS_Grip_Idle_Pose": "None",
+     "fPS_Jump_ADS_Idle": "None",
+     "fPS_Jump_Idle": "None",
+     "fPS_Neck_Idle_Pose": "None",
+     "fPS_Sprint": {
+      "refPath": "/Game/FPSTemplate/Animations/FPS/UE5/Rifle/Anim_FPS_Rifle_Sprint.Anim_FPS_Rifle_Sprint"
+     },
+     "fPS_Sprint_Additive": "None",
+     "fPS_Wiggle_Aim_In": {
+      "refPath": "/Game/FPSTemplate/Animations/FPS/UE5/Common/Anim_FPS_Common_Aim_In.Anim_FPS_Common_Aim_In"
+     },
+     "fPS_Wiggle_Aim_Out": {
+      "refPath": "/Game/FPSTemplate/Animations/FPS/UE5/Common/Anim_FPS_Common_Aim_Out.Anim_FPS_Common_Aim_Out"
+     },
+     "fPS_Wiggle_Crouch_In": {
+      "refPath": "/Game/FPSTemplate/Animations/FPS/UE5/Common/Anim_FPS_Common_Aim_Out.Anim_FPS_Common_Aim_Out"
+     },
+     "fPS_Wiggle_Crouch_Out": {
+      "refPath": "/Game/FPSTemplate/Animations/FPS/UE5/Common/Anim_FPS_Common_Aim_In.Anim_FPS_Common_Aim_In"
+     },
+     "hand FKWeight": 1,
+     "handIK_Left_Alpha": 1,
+     "handIK_Right_Alpha": 1,
+     "hipFireUpperBodyOverrideWeight": 0,
+     "idleAimOffset": "None",
+     "idleBreakDelayTime": 0,
+     "idle_ADS": "None",
+     "idle_Breaks": [],
+     "idle_Hipfire": "None",
+     "jog_Cardinals": {
+      "backward": "None",
+      "forward": "None",
+      "left": "None",
+      "right": "None"
+     },
+     "jog_Pivot_Cardinals": {
+      "backward": "None",
+      "forward": "None",
+      "left": "None",
+      "right": "None"
+     },
+     "jog_Start_Cardinals": {
+      "backward": "None",
+      "forward": "None",
+      "left": "None",
+      "right": "None"
+     },
+     "jog_Stop_Cardinals": {
+      "backward": "None",
+      "forward": "None",
+      "left": "None",
+      "right": "None"
+     },
+     "jumpDistanceCurveName": "GroundDistance",
+     "jump_Apex": "None",
+     "jump_FallLand": "None",
+     "jump_FallLoop": "None",
+     "jump_RecoveryAdditive": "None",
+     "jump_Start": "None",
+     "jump_StartLoop": "None",
+     "landRecoveryAlpha": 0,
+     "leftHandPoseOverrideWeight": 0,
+     "leftHandPose_Override": "None",
+     "locomotionDistanceCurveName": "Distance",
+     "onAllMontageInstancesEnded": "()",
+     "onMontageBlendedIn": "()",
+     "onMontageBlendingOut": "()",
+     "onMontageEnded": "()",
+     "onMontageSectionChanged": "()",
+     "onMontageStarted": "()",
+     "pivotStartingAcceleration": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+     },
+     "playRateClampCycle": {
+      "x": 0.8,
+      "y": 1.2
+     },
+     "playRateClampStartsPivots": {
+      "x": 0.6,
+      "y": 5
+     },
+     "proc_CrouchRotation": {
+      "pitch": -5,
+      "roll": 0,
+      "yaw": 0
+     },
+     "proc_CrouchTranslation": {
+      "x": -2,
+      "y": 0,
+      "z": -2
+     },
+     "raiseWeaponAfterFiringDuration": 0.5,
+     "raiseWeaponAfterFiringWhenCrouched": false,
+     "relaxedAimOffset": "None",
+     "rootMotionMode": "RootMotionFromMontagesOnly",
+     "sprintSpineAlpha": 0.4000000059604645,
+     "strideWarpingBlendInDurationScaled": 0.20000000298023224,
+     "strideWarpingBlendInStartOffset": 0.15000000596046448,
+     "strideWarpingCycleAlpha": 0,
+     "strideWarpingPivotAlpha": 0,
+     "strideWarpingStartAlpha": 0,
+     "timeAtPivotStop": 0,
+     "timeFalling": 0,
+     "timeUntilNextIdleBreak": 0,
+     "turnInPlaceAnimTime": 0,
+     "turnInPlaceRecoveryDirection": 0,
+     "turnInPlaceRotationDirection": 0,
+     "turnInPlace_Left": "None",
+     "turnInPlace_Right": "None",
+     "walkMode_Crouch_Walk_Cardinals": {
+      "backward": {
+       "refPath": "/Game/FPSTemplate/Demo/Characters/Heroes/Mannequin/Animations/Locomotion/Unarmed/MM_Unarmed_Crouch_Walk_Bwd.MM_Unarmed_Crouch_Walk_Bwd"
+      },
+      "forward": {
+       "refPath": "/Game/FPSTemplate/Demo/Characters/Heroes/Mannequin/Animations/Locomotion/Unarmed/MM_Unarmed_Crouch_Walk_Fwd.MM_Unarmed_Crouch_Walk_Fwd"
+      },
+      "left": {
+       "refPath": "/Game/FPSTemplate/Demo/Characters/Heroes/Mannequin/Animations/Locomotion/Unarmed/MM_Unarmed_Crouch_Walk_Left.MM_Unarmed_Crouch_Walk_Left"
+      },
+      "right": {
+       "refPath": "/Game/FPSTemplate/Demo/Characters/Heroes/Mannequin/Animations/Locomotion/Unarmed/MM_Unarmed_Crouch_Walk_Right.MM_Unarmed_Crouch_Walk_Right"
+      }
+     },
+     "walkMode_Walk_Cardinals": {
+      "backward": {
+       "refPath": "/Game/FPSTemplate/Demo/Characters/Heroes/Mannequin/Animations/Locomotion/Unarmed/MM_Unarmed_Walk_Bwd.MM_Unarmed_Walk_Bwd"
+      },
+      "forward": {
+       "refPath": "/Game/FPSTemplate/Demo/Characters/Heroes/Mannequin/Animations/Locomotion/Unarmed/MM_Unarmed_Walk_Fwd.MM_Unarmed_Walk_Fwd"
+      },
+      "left": {
+       "refPath": "/Game/FPSTemplate/Demo/Characters/Heroes/Mannequin/Animations/Locomotion/Unarmed/MM_Unarmed_Walk_Left.MM_Unarmed_Walk_Left"
+      },
+      "right": {
+       "refPath": "/Game/FPSTemplate/Demo/Characters/Heroes/Mannequin/Animations/Locomotion/Unarmed/MM_Unarmed_Walk_Right.MM_Unarmed_Walk_Right"
+      }
+     },
+     "walk_Cardinals": {
+      "backward": "None",
+      "forward": "None",
+      "left": "None",
+      "right": "None"
+     },
+     "wantsIdleBreak": false
+    },
+    "property_count": 102,
+    "schema": {
+     "aDS_Pivot_Cardinals": {
+      "properties": {
+       "backward": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "forward": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "left": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "right": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       }
+      },
+      "required": [
+       "forward",
+       "backward",
+       "left",
+       "right"
+      ],
+      "title": "AnimStruct_CardinalDirections",
+      "type": "object"
+     },
+     "aDS_Start_Cardinals": {
+      "properties": {
+       "backward": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "forward": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "left": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "right": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       }
+      },
+      "required": [
+       "forward",
+       "backward",
+       "left",
+       "right"
+      ],
+      "title": "AnimStruct_CardinalDirections",
+      "type": "object"
+     },
+     "aDS_Stop_Cardinals": {
+      "properties": {
+       "backward": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "forward": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "left": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "right": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       }
+      },
+      "required": [
+       "forward",
+       "backward",
+       "left",
+       "right"
+      ],
+      "title": "AnimStruct_CardinalDirections",
+      "type": "object"
+     },
+     "aimOffsetBlendWeight": {
+      "type": "number"
+     },
+     "aim_FPSPelvisPose": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.AnimSequence",
+      "type": "object"
+     },
+     "aim_FPSPelvisPoseCrouch": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.AnimSequence",
+      "type": "object"
+     },
+     "aim_HipFirePose": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.AnimSequence",
+      "type": "object"
+     },
+     "aim_HipFirePose_Crouch": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.AnimSequence",
+      "type": "object"
+     },
+     "alpha01_spine_01": {
+      "type": "number"
+     },
+     "alpha02_spine_02": {
+      "type": "number"
+     },
+     "alpha03_spine_03": {
+      "type": "number"
+     },
+     "alpha04_spine_04": {
+      "type": "number"
+     },
+     "alpha05_spine_05": {
+      "type": "number"
+     },
+     "alpha06_neck_01": {
+      "type": "number"
+     },
+     "alpha07_neck_02": {
+      "type": "number"
+     },
+     "alpha08_head": {
+      "type": "number"
+     },
+     "bPropagateNotifiesToLinkedInstances": {
+      "description": "Whether to propagate notifies to any linked anim instances",
+      "type": "boolean"
+     },
+     "bReceiveNotifiesFromLinkedInstances": {
+      "description": "Whether to process notifies from any linked anim instances",
+      "type": "boolean"
+     },
+     "bS_FPS_ADS_Idle_Move": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.BlendSpace",
+      "type": "object"
+     },
+     "bS_FPS_ADS_Idle_Move_Additive": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.BlendSpace",
+      "type": "object"
+     },
+     "bS_FPS_Idle_Move": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.BlendSpace",
+      "type": "object"
+     },
+     "bS_FPS_Idle_Move_Additive": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.BlendSpace",
+      "type": "object"
+     },
+     "bUseMainInstanceMontageEvaluationData": {
+      "description": "If true, linked instances will use the main instance's montage data. (i.e. playing a montage on a main instance will play it on the linked layer too.)",
+      "type": "boolean"
+     },
+     "crouch_Idle": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.AnimSequence",
+      "type": "object"
+     },
+     "crouch_Idle_Entry": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.AnimSequence",
+      "type": "object"
+     },
+     "crouch_Idle_Exit": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.AnimSequence",
+      "type": "object"
+     },
+     "crouch_Pivot_Cardinals": {
+      "properties": {
+       "backward": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "forward": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "left": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "right": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       }
+      },
+      "required": [
+       "forward",
+       "backward",
+       "left",
+       "right"
+      ],
+      "title": "AnimStruct_CardinalDirections",
+      "type": "object"
+     },
+     "crouch_Start_Cardinals": {
+      "properties": {
+       "backward": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "forward": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "left": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "right": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       }
+      },
+      "required": [
+       "forward",
+       "backward",
+       "left",
+       "right"
+      ],
+      "title": "AnimStruct_CardinalDirections",
+      "type": "object"
+     },
+     "crouch_Stop_Cardinals": {
+      "properties": {
+       "backward": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "forward": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "left": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "right": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       }
+      },
+      "required": [
+       "forward",
+       "backward",
+       "left",
+       "right"
+      ],
+      "title": "AnimStruct_CardinalDirections",
+      "type": "object"
+     },
+     "crouch_TurnInPlace_Left": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.AnimSequence",
+      "type": "object"
+     },
+     "crouch_TurnInPlace_Right": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.AnimSequence",
+      "type": "object"
+     },
+     "crouch_Walk_Cardinals": {
+      "properties": {
+       "backward": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "forward": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "left": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "right": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       }
+      },
+      "required": [
+       "forward",
+       "backward",
+       "left",
+       "right"
+      ],
+      "title": "AnimStruct_CardinalDirections",
+      "type": "object"
+     },
+     "currentIdleBreakIndex": {
+      "type": "integer"
+     },
+     "disableHandIK": {
+      "type": "boolean"
+     },
+     "enableLeftHandPoseOverride": {
+      "type": "boolean"
+     },
+     "fPS_Grip_Idle_Pose": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.AnimSequenceBase",
+      "type": "object"
+     },
+     "fPS_Jump_ADS_Idle": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.AnimSequenceBase",
+      "type": "object"
+     },
+     "fPS_Jump_Idle": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.AnimSequenceBase",
+      "type": "object"
+     },
+     "fPS_Neck_Idle_Pose": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.AnimSequenceBase",
+      "type": "object"
+     },
+     "fPS_Sprint": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.AnimSequenceBase",
+      "type": "object"
+     },
+     "fPS_Sprint_Additive": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.AnimSequenceBase",
+      "type": "object"
+     },
+     "fPS_Wiggle_Aim_In": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.AnimSequenceBase",
+      "type": "object"
+     },
+     "fPS_Wiggle_Aim_Out": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.AnimSequenceBase",
+      "type": "object"
+     },
+     "fPS_Wiggle_Crouch_In": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.AnimSequenceBase",
+      "type": "object"
+     },
+     "fPS_Wiggle_Crouch_Out": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.AnimSequenceBase",
+      "type": "object"
+     },
+     "hand FKWeight": {
+      "type": "number"
+     },
+     "handIK_Left_Alpha": {
+      "type": "number"
+     },
+     "handIK_Right_Alpha": {
+      "type": "number"
+     },
+     "hipFireUpperBodyOverrideWeight": {
+      "type": "number"
+     },
+     "idleAimOffset": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.AimOffsetBlendSpace",
+      "type": "object"
+     },
+     "idleBreakDelayTime": {
+      "type": "number"
+     },
+     "idle_ADS": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.AnimSequence",
+      "type": "object"
+     },
+     "idle_Breaks": {
+      "items": {
+       "properties": {
+        "refPath": {
+         "description": "The reference stored as a soft path string.",
+         "type": "string"
+        }
+       },
+       "required": [
+        "refPath"
+       ],
+       "title": "/Script/Engine.AnimSequence",
+       "type": "object"
+      },
+      "type": "array"
+     },
+     "idle_Hipfire": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.AnimSequence",
+      "type": "object"
+     },
+     "jog_Cardinals": {
+      "properties": {
+       "backward": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "forward": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "left": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "right": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       }
+      },
+      "required": [
+       "forward",
+       "backward",
+       "left",
+       "right"
+      ],
+      "title": "AnimStruct_CardinalDirections",
+      "type": "object"
+     },
+     "jog_Pivot_Cardinals": {
+      "properties": {
+       "backward": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "forward": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "left": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "right": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       }
+      },
+      "required": [
+       "forward",
+       "backward",
+       "left",
+       "right"
+      ],
+      "title": "AnimStruct_CardinalDirections",
+      "type": "object"
+     },
+     "jog_Start_Cardinals": {
+      "properties": {
+       "backward": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "forward": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "left": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "right": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       }
+      },
+      "required": [
+       "forward",
+       "backward",
+       "left",
+       "right"
+      ],
+      "title": "AnimStruct_CardinalDirections",
+      "type": "object"
+     },
+     "jog_Stop_Cardinals": {
+      "properties": {
+       "backward": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "forward": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "left": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "right": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       }
+      },
+      "required": [
+       "forward",
+       "backward",
+       "left",
+       "right"
+      ],
+      "title": "AnimStruct_CardinalDirections",
+      "type": "object"
+     },
+     "jumpDistanceCurveName": {
+      "type": "string"
+     },
+     "jump_Apex": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.AnimSequence",
+      "type": "object"
+     },
+     "jump_FallLand": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.AnimSequence",
+      "type": "object"
+     },
+     "jump_FallLoop": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.AnimSequence",
+      "type": "object"
+     },
+     "jump_RecoveryAdditive": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.AnimSequence",
+      "type": "object"
+     },
+     "jump_Start": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.AnimSequence",
+      "type": "object"
+     },
+     "jump_StartLoop": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.AnimSequence",
+      "type": "object"
+     },
+     "landRecoveryAlpha": {
+      "type": "number"
+     },
+     "leftHandPoseOverrideWeight": {
+      "type": "number"
+     },
+     "leftHandPose_Override": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.AnimSequence",
+      "type": "object"
+     },
+     "locomotionDistanceCurveName": {
+      "type": "string"
+     },
+     "onAllMontageInstancesEnded": {},
+     "onMontageBlendedIn": {},
+     "onMontageBlendingOut": {},
+     "onMontageEnded": {},
+     "onMontageSectionChanged": {},
+     "onMontageStarted": {},
+     "pivotStartingAcceleration": {
+      "properties": {
+       "x": {
+        "type": "number"
+       },
+       "y": {
+        "type": "number"
+       },
+       "z": {
+        "type": "number"
+       }
+      },
+      "required": [
+       "x",
+       "y",
+       "z"
+      ],
+      "title": "Vector",
+      "type": "object"
+     },
+     "playRateClampCycle": {
+      "properties": {
+       "x": {
+        "type": "number"
+       },
+       "y": {
+        "type": "number"
+       }
+      },
+      "required": [
+       "x",
+       "y"
+      ],
+      "title": "Vector2D",
+      "type": "object"
+     },
+     "playRateClampStartsPivots": {
+      "properties": {
+       "x": {
+        "type": "number"
+       },
+       "y": {
+        "type": "number"
+       }
+      },
+      "required": [
+       "x",
+       "y"
+      ],
+      "title": "Vector2D",
+      "type": "object"
+     },
+     "proc_CrouchRotation": {
+      "properties": {
+       "pitch": {
+        "description": "Pitch (degrees) around Y axis",
+        "type": "number"
+       },
+       "roll": {
+        "description": "Roll (degrees) around X axis",
+        "type": "number"
+       },
+       "yaw": {
+        "description": "Yaw (degrees) around Z axis",
+        "type": "number"
+       }
+      },
+      "required": [
+       "pitch",
+       "yaw",
+       "roll"
+      ],
+      "title": "Rotator",
+      "type": "object"
+     },
+     "proc_CrouchTranslation": {
+      "properties": {
+       "x": {
+        "type": "number"
+       },
+       "y": {
+        "type": "number"
+       },
+       "z": {
+        "type": "number"
+       }
+      },
+      "required": [
+       "x",
+       "y",
+       "z"
+      ],
+      "title": "Vector",
+      "type": "object"
+     },
+     "raiseWeaponAfterFiringDuration": {
+      "type": "number"
+     },
+     "raiseWeaponAfterFiringWhenCrouched": {
+      "type": "boolean"
+     },
+     "relaxedAimOffset": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.AimOffsetBlendSpace",
+      "type": "object"
+     },
+     "rootMotionMode": {
+      "description": "Sets where this blueprint pulls Root Motion from",
+      "enum": [
+       "NoRootMotionExtraction",
+       "IgnoreRootMotion",
+       "RootMotionFromEverything",
+       "RootMotionFromMontagesOnly"
+      ],
+      "title": "ERootMotionMode",
+      "type": "string"
+     },
+     "sprintSpineAlpha": {
+      "type": "number"
+     },
+     "strideWarpingBlendInDurationScaled": {
+      "type": "number"
+     },
+     "strideWarpingBlendInStartOffset": {
+      "type": "number"
+     },
+     "strideWarpingCycleAlpha": {
+      "type": "number"
+     },
+     "strideWarpingPivotAlpha": {
+      "type": "number"
+     },
+     "strideWarpingStartAlpha": {
+      "type": "number"
+     },
+     "timeAtPivotStop": {
+      "type": "number"
+     },
+     "timeFalling": {
+      "type": "number"
+     },
+     "timeUntilNextIdleBreak": {
+      "type": "number"
+     },
+     "turnInPlaceAnimTime": {
+      "type": "number"
+     },
+     "turnInPlaceRecoveryDirection": {
+      "type": "number"
+     },
+     "turnInPlaceRotationDirection": {
+      "type": "number"
+     },
+     "turnInPlace_Left": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.AnimSequence",
+      "type": "object"
+     },
+     "turnInPlace_Right": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.AnimSequence",
+      "type": "object"
+     },
+     "walkMode_Crouch_Walk_Cardinals": {
+      "properties": {
+       "backward": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "forward": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "left": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "right": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       }
+      },
+      "required": [
+       "forward",
+       "backward",
+       "left",
+       "right"
+      ],
+      "title": "AnimStruct_CardinalDirections",
+      "type": "object"
+     },
+     "walkMode_Walk_Cardinals": {
+      "properties": {
+       "backward": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "forward": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "left": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "right": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       }
+      },
+      "required": [
+       "forward",
+       "backward",
+       "left",
+       "right"
+      ],
+      "title": "AnimStruct_CardinalDirections",
+      "type": "object"
+     },
+     "walk_Cardinals": {
+      "properties": {
+       "backward": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "forward": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "left": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       },
+       "right": {
+        "description": "Represents a reference to a UObject or UClass.",
+        "properties": {
+         "refPath": {
+          "description": "The reference stored as a soft path string.",
+          "type": "string"
+         }
+        },
+        "required": [
+         "refPath"
+        ],
+        "title": "/Script/Engine.AnimSequence",
+        "type": "object"
+       }
+      },
+      "required": [
+       "forward",
+       "backward",
+       "left",
+       "right"
+      ],
+      "title": "AnimStruct_CardinalDirections",
+      "type": "object"
+     },
+     "wantsIdleBreak": {
+      "type": "boolean"
+     }
+    }
+   },
+   {
+    "found": true,
+    "notes": [
+     "could not parse the property list: "
+    ],
+    "path": "/Game/FPSTemplate/Demo/Characters/Heroes/Mannequin/Animations/LinkedLayers/ALI_ItemAnimLayers",
+    "properties": {},
+    "property_count": 0,
+    "schema": {}
+   },
+   {
+    "found": true,
+    "notes": [],
+    "path": "/Game/FPSTemplate/Demo/Characters/Heroes/Mannequin/Animations/ABP_Mannequin_Retarget",
+    "properties": {
+     "bPropagateNotifiesToLinkedInstances": false,
+     "bReceiveNotifiesFromLinkedInstances": false,
+     "bUseMainInstanceMontageEvaluationData": false,
+     "componentPlayingAnim": "None",
+     "onAllMontageInstancesEnded": "()",
+     "onMontageBlendedIn": "()",
+     "onMontageBlendingOut": "()",
+     "onMontageEnded": "()",
+     "onMontageSectionChanged": "()",
+     "onMontageStarted": "()",
+     "rootMotionMode": "RootMotionFromMontagesOnly"
+    },
+    "property_count": 11,
+    "schema": {
+     "bPropagateNotifiesToLinkedInstances": {
+      "description": "Whether to propagate notifies to any linked anim instances",
+      "type": "boolean"
+     },
+     "bReceiveNotifiesFromLinkedInstances": {
+      "description": "Whether to process notifies from any linked anim instances",
+      "type": "boolean"
+     },
+     "bUseMainInstanceMontageEvaluationData": {
+      "description": "If true, linked instances will use the main instance's montage data. (i.e. playing a montage on a main instance will play it on the linked layer too.)",
+      "type": "boolean"
+     },
+     "componentPlayingAnim": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.SkeletalMeshComponent",
+      "type": "object"
+     },
+     "onAllMontageInstancesEnded": {},
+     "onMontageBlendedIn": {},
+     "onMontageBlendingOut": {},
+     "onMontageEnded": {},
+     "onMontageSectionChanged": {},
+     "onMontageStarted": {},
+     "rootMotionMode": {
+      "description": "Sets where this blueprint pulls Root Motion from",
+      "enum": [
+       "NoRootMotionExtraction",
+       "IgnoreRootMotion",
+       "RootMotionFromEverything",
+       "RootMotionFromMontagesOnly"
+      ],
+      "title": "ERootMotionMode",
+      "type": "string"
+     }
+    }
+   },
+   {
+    "found": true,
+    "notes": [],
+    "path": "/Game/FPSTemplate/Demo/Characters/Heroes/Mannequin/Animations/ABP_Mannequin_CopyPose",
+    "properties": {
+     "bPropagateNotifiesToLinkedInstances": false,
+     "bReceiveNotifiesFromLinkedInstances": false,
+     "bUseMainInstanceMontageEvaluationData": false,
+     "componentPlayingAnim": "None",
+     "onAllMontageInstancesEnded": "()",
+     "onMontageBlendedIn": "()",
+     "onMontageBlendingOut": "()",
+     "onMontageEnded": "()",
+     "onMontageSectionChanged": "()",
+     "onMontageStarted": "()",
+     "rootMotionMode": "RootMotionFromMontagesOnly"
+    },
+    "property_count": 11,
+    "schema": {
+     "bPropagateNotifiesToLinkedInstances": {
+      "description": "Whether to propagate notifies to any linked anim instances",
+      "type": "boolean"
+     },
+     "bReceiveNotifiesFromLinkedInstances": {
+      "description": "Whether to process notifies from any linked anim instances",
+      "type": "boolean"
+     },
+     "bUseMainInstanceMontageEvaluationData": {
+      "description": "If true, linked instances will use the main instance's montage data. (i.e. playing a montage on a main instance will play it on the linked layer too.)",
+      "type": "boolean"
+     },
+     "componentPlayingAnim": {
+      "description": "Represents a reference to a UObject or UClass.",
+      "properties": {
+       "refPath": {
+        "description": "The reference stored as a soft path string.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "refPath"
+      ],
+      "title": "/Script/Engine.SkeletalMeshComponent",
+      "type": "object"
+     },
+     "onAllMontageInstancesEnded": {},
+     "onMontageBlendedIn": {},
+     "onMontageBlendingOut": {},
+     "onMontageEnded": {},
+     "onMontageSectionChanged": {},
+     "onMontageStarted": {},
+     "rootMotionMode": {
+      "description": "Sets where this blueprint pulls Root Motion from",
+      "enum": [
+       "NoRootMotionExtraction",
+       "IgnoreRootMotion",
+       "RootMotionFromEverything",
+       "RootMotionFromMontagesOnly"
+      ],
+      "title": "ERootMotionMode",
+      "type": "string"
+     }
+    }
+   }
+  ]
+ }
+}
