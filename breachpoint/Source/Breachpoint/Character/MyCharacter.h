@@ -132,6 +132,7 @@ public:
 	/** Warn once, not once per aim press, when an ADS component call is unreachable. */
 	bool bPoseCallWarned = false;
 	bool bFovCallWarned = false;
+	bool bLeanCallWarned = false;
 
 	/** Write a Blueprint component variable by name. Used when a call cannot resolve. */
 	static bool SetComponentFloatVar(UActorComponent* Component, const TCHAR* VarName,
@@ -533,7 +534,11 @@ protected:
 	virtual void SetADS(bool bADS);
 	virtual void SetADSUpper(bool bADSUpper);
 	virtual void SetSprinting(bool bSprinting);
-	virtual void SetLeaning(float Leaning) {}
+	/**
+	 * BPC_FPST_Procedural_AimAndLean.SetLeaning. NOT a stub any more - Q/E were bound from
+	 * the start and called into an empty hook, so leaning never did anything.
+	 */
+	virtual void SetLeaning(float Leaning);
 	virtual void SetUnarmed(bool bUnarmed);
 	virtual void ShowCrosshair(uint8 CrosshairType, bool bAiming) {}
 	/**

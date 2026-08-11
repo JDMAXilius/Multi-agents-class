@@ -49,6 +49,10 @@ namespace
 	const FName N_AttachSocketName(TEXT("AttachSocketName"));
 	const FName N_LinkAnimLayerClass(TEXT("LinkAnimLayerClass"));
 	const FName N_MuzzleSocketName(TEXT("MuzzleSocketName"));
+
+	/** BPC_FPST_Procedural_AimAndLean's own function and its pin. */
+	const TCHAR* F_SetLeaning = TEXT("SetLeaning");
+	const TCHAR* P_InLeaning = TEXT("InLeaning");
 	const FName N_MeleeAnimMontage(TEXT("MeleeAnimMontage"));
 	const FName N_FireAnimMontage(TEXT("FireAnimMontage"));
 	const FName N_AimFireAnimMontage(TEXT("AimFireAnimMontage"));
@@ -1328,6 +1332,40 @@ bool AMyCharacter::SetComponentBoolVar(UActorComponent* Component, const TCHAR* 
 		return true;
 	}
 	return false;
+}
+
+void AMyCharacter::SetLeaning(float Leaning)
+{
+	// BPC_FPST_Procedural_AimAndLean.SetLeaning(InLeaning), ported. NOT a stub any more.
+	//
+	// Q/E were bound from the start and called into an EMPTY hook, so leaning has never done
+	// anything since the port landed. That component owns the whole lean: SetLeaning writes
+	// TargetLeaning and its update interpolates CurrLeaning toward it, then feeds the spine
+	// weights. The values the graph passes are the literals -1 / 0 / +1, confirmed in the
+	// 9 Aug verification pass, and they are already what the input handlers send.
+	if (!AimAndLeanComp)
+	{
+		return;
+	}
+	FBPCall Call(AimAndLeanComp, F_SetLeaning);
+	if (!Call.IsBound())
+	{
+		if (!bLeanCallWarned)
+		{
+			bLeanCallWarned = true;
+			UE_LOG(LogMyCharacter, Warning,
+				TEXT("MyCharacter: BPC_FPST_Procedural_AimAndLean has no callable SetLeaning - "
+					 "Q/E will not lean."));
+		}
+		return;
+	}
+	if (!Call.SetFloat(P_InLeaning, Leaning))
+	{
+		UE_LOG(LogMyCharacter, Warning,
+			TEXT("MyCharacter: SetLeaning has no float parameter '%s' - nothing sent."), P_InLeaning);
+		return;
+	}
+	Call.Invoke();
 }
 
 void AMyCharacter::ChangePose(uint8 PoseType, uint8 ScopeType, float ChangeSpeed)
