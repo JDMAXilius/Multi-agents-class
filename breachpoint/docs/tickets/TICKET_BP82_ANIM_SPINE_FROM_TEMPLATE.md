@@ -2255,3 +2255,48 @@ one decision before writing the header.
 
 Rung unchanged: nothing here has been compiled or run. It is a read.
 
+port(BP82): BP_FPST_BaseWeapon's eight functions to C++, data stays on the assets
+
+Founder's call after the extraction measured the class: port the LOGIC, leave the DATA.
+Six of the eight bodies are one expression; the logic is about thirty lines. The ~48
+variables are per-weapon tuning the four children override anyway - a DT_Weapons row, not
+class members - and declaring them here would have been a compile error on all five weapon
+assets at once, needing a strip that no remove-graph tool can do.
+
+Ported 1:1 from the exec-order read (mcp-bp/weapon_graphs.json), not from the names:
+
+  GetCurrentFireMode()       -> AvailableFireModes[CurFireModeIndex]
+  NextFireMode()             -> CurFireModeIndex = (CurFireModeIndex + 1) % Length()
+  GetFireAnimMontage(t, aim) -> switch SkeletalType: 0=UE4 pair, 1=UE5 pair; aim picks Aim*
+  GetReloadBoltAnimMontage   -> the identical switch over the ReloadBolt set
+  GetScopeType()             -> IsValid(Scope) ? Scope GetScopeType : enumerator 0
+  PlayAnim(anim, looping)    -> SkeletalMesh PlayAnimation(anim, looping)
+  ResetAttachments()         -> destroy DefaultScope if valid, then Scope if valid
+  UserConstructionScript     -> EMPTY, not ported; noted so nobody hunts for a ninth
+
+The data seam is reflection BY NAME off the instance's own generated class, the same
+pattern AMyCharacter uses, so a renamed variable fails at the lookup and is logged rather
+than reading a wrong offset. Byte and enum array inners are both handled because a
+Blueprint enum array reaches C++ as either.
+
+TWO DELIBERATE DEVIATIONS, both guarding a crash the graph would take:
+- GetCurrentFireMode: the graph is a bare array Get with NO bounds check. Out of range
+  there yields a default-constructed enum. This returns Single - same observable result -
+  and logs it, because a silently bad index is how the 9 Aug swap bugs hid.
+- NextFireMode: the graph would modulo by Length() with no empty check, which is a divide
+  by zero, not a wrong answer. Empty array now logs and returns.
+
+Also corrected from the graph read: ResetAttachments only DESTROYS. An earlier reading of
+the asset's string table saw K2_AttachToComponent and concluded it re-attached.
+
+Rung 1 PASS 20260811-124414, three targets, exit 0, zero warnings. One FAIL on the way
+(20260811-124251): a second local named Ret in an else-if, C4456-as-error.
+
+NOT DONE, AND IT BLOCKS THE ASSETS COMPILING: BP_FPST_BaseWeapon still owns its own eight
+graphs, and a Blueprint function whose name matches a parent UFUNCTION is a compile error.
+Those eight must be deleted by hand in the editor - remove_variable exists over MCP, a
+remove-graph tool does not. Until then the weapon assets will not compile. Nothing has
+been run; this is COMPILES only.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
