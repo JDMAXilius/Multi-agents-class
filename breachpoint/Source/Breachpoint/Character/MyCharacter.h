@@ -192,6 +192,18 @@ protected:
 	UPROPERTY(Config, EditDefaultsOnly, Category = "Input")
 	int32 MappingContextPriority = 1;
 
+	/**
+	 * Clear every other mapping context before adding this pawn's own.
+	 *
+	 * The template character was the only thing in its world that added a context, so it
+	 * never had to share. Here ABPPlayerController adds two more on the same keys, and
+	 * priority alone did NOT resolve it -- 12 actions bound, 0 failed, the IMC verified to
+	 * map all eight, and still no input. This makes the possessed pawn's context exclusive,
+	 * which is what the template effectively had. Set false to go back to coexisting.
+	 */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "Input")
+	bool bExclusiveMappingContext = true;
+
 	UPROPERTY(Config, EditDefaultsOnly, Category = "Input")
 	TSoftObjectPtr<UInputAction> MoveAction;
 

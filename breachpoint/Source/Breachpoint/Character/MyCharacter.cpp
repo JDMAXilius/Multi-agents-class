@@ -370,6 +370,25 @@ void AMyCharacter::BeginPlay()
 		{
 			if (UInputMappingContext* Context = DefaultMappingContext.LoadSynchronous())
 			{
+				// EXCLUSIVE, and this is the fix that priority alone did not deliver.
+				//
+				// ABPPlayerController::SetupInputComponent adds its OWN two contexts (the BR
+				// DefaultMappingContext and MouseLookMappingContext) mapping the same physical
+				// keys to DIFFERENT actions. Raising this context to priority 1 SHOULD have
+				// won those conflicts and did not: with 12 actions bound, 0 failed, and
+				// IMC_FPST_Controls confirmed to map all eight IA_FPST_* actions, the pawn
+				// still took no input. Rather than keep reasoning about resolution order,
+				// reproduce the template's world exactly -- in it, this was the ONLY context.
+				//
+				// ClearAllMappings drops every context on this local player first. Set
+				// bExclusiveMappingContext=false under [/Script/Breachpoint.MyCharacter] to go
+				// back to coexisting-by-priority.
+				if (bExclusiveMappingContext)
+				{
+					Subsystem->ClearAllMappings();
+					UE_LOG(LogMyCharacter, Log,
+						TEXT("MyCharacter: cleared all mapping contexts -- this pawn owns input."));
+				}
 				// DEVIATION FROM 1:1, forced by an integration the template never had.
 				//
 				// The graph added this at priority 0. In the template's world nothing else
@@ -680,34 +699,64 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		return;
 	}
 
-	auto Bind = [Input, this](const TSoftObjectPtr<UInputAction>& Action, ETriggerEvent Event,
-			void (AMyCharacter::*Func)())
+	// Every bind is COUNTED and every failure is NAMED. A soft UInputAction that does not
+	// resolve used to be skipped in silence, which is indistinguishable from "the pawn takes
+	// no input" -- the exact symptom this whole class kept producing for other reasons. The
+	// summary at the end of this function is the positive assertion for input, the way
+	// "MyCharacter READY:" is for BeginPlay.
+	int32 Bound = 0;
+	int32 Failed = 0;
+
+	auto Bind = [Input, this, &Bound, &Failed](const TSoftObjectPtr<UInputAction>& Action,
+			ETriggerEvent Event, void (AMyCharacter::*Func)(), const TCHAR* Name)
 	{
 		if (UInputAction* Loaded = Action.LoadSynchronous())
 		{
 			Input->BindAction(Loaded, Event, this, Func);
+			++Bound;
+			return;
 		}
+		++Failed;
+		UE_LOG(LogMyCharacter, Error,
+			TEXT("MyCharacter: input action '%s' ('%s') did not resolve -- NOT bound."),
+			Name, *Action.ToSoftObjectPath().ToString());
 	};
 
 	if (UInputAction* Move = MoveAction.LoadSynchronous())
 	{
 		Input->BindAction(Move, ETriggerEvent::Triggered, this, &AMyCharacter::OnMove);
+		++Bound;
+	}
+	else
+	{
+		++Failed;
+		UE_LOG(LogMyCharacter, Error,
+			TEXT("MyCharacter: MoveAction ('%s') did not resolve -- NOT bound."),
+			*MoveAction.ToSoftObjectPath().ToString());
 	}
 	if (UInputAction* Look = LookAction.LoadSynchronous())
 	{
 		Input->BindAction(Look, ETriggerEvent::Triggered, this, &AMyCharacter::OnLook);
+		++Bound;
+	}
+	else
+	{
+		++Failed;
+		UE_LOG(LogMyCharacter, Error,
+			TEXT("MyCharacter: LookAction ('%s') did not resolve -- NOT bound."),
+			*LookAction.ToSoftObjectPath().ToString());
 	}
 
-	Bind(JumpAction, ETriggerEvent::Started, &AMyCharacter::OnJumpStarted);
-	Bind(JumpAction, ETriggerEvent::Completed, &AMyCharacter::OnJumpCompleted);
-	Bind(CrouchAction, ETriggerEvent::Triggered, &AMyCharacter::OnCrouchTriggered);
-	Bind(SprintAction, ETriggerEvent::Started, &AMyCharacter::OnSprintStarted);
-	Bind(SprintAction, ETriggerEvent::Completed, &AMyCharacter::OnSprintCompleted);
-	Bind(AimAction, ETriggerEvent::Started, &AMyCharacter::OnAimStarted);
-	Bind(AimAction, ETriggerEvent::Completed, &AMyCharacter::OnAimCompleted);
-	Bind(FireAction, ETriggerEvent::Started, &AMyCharacter::OnFireStarted);
-	Bind(FireAction, ETriggerEvent::Completed, &AMyCharacter::OnFireCompleted);
-	Bind(ReloadAction, ETriggerEvent::Triggered, &AMyCharacter::OnReload);
+	Bind(JumpAction, ETriggerEvent::Started, &AMyCharacter::OnJumpStarted, TEXT("JumpAction"));
+	Bind(JumpAction, ETriggerEvent::Completed, &AMyCharacter::OnJumpCompleted, TEXT("JumpAction"));
+	Bind(CrouchAction, ETriggerEvent::Triggered, &AMyCharacter::OnCrouchTriggered, TEXT("CrouchAction"));
+	Bind(SprintAction, ETriggerEvent::Started, &AMyCharacter::OnSprintStarted, TEXT("SprintAction"));
+	Bind(SprintAction, ETriggerEvent::Completed, &AMyCharacter::OnSprintCompleted, TEXT("SprintAction"));
+	Bind(AimAction, ETriggerEvent::Started, &AMyCharacter::OnAimStarted, TEXT("AimAction"));
+	Bind(AimAction, ETriggerEvent::Completed, &AMyCharacter::OnAimCompleted, TEXT("AimAction"));
+	Bind(FireAction, ETriggerEvent::Started, &AMyCharacter::OnFireStarted, TEXT("FireAction"));
+	Bind(FireAction, ETriggerEvent::Completed, &AMyCharacter::OnFireCompleted, TEXT("FireAction"));
+	Bind(ReloadAction, ETriggerEvent::Triggered, &AMyCharacter::OnReload, TEXT("ReloadAction"));
 
 	// The graph bound these to raw keys rather than to input actions. Kept as raw keys so
 	// the transfer is one for one; they become IA_* assets when the input ticket lands.
@@ -722,6 +771,12 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	PlayerInputComponent->BindKey(EKeys::Z, IE_Pressed, this, &AMyCharacter::OnSwapPrev);
 	PlayerInputComponent->BindKey(EKeys::MouseScrollDown, IE_Pressed, this, &AMyCharacter::OnSwapNext);
 	PlayerInputComponent->BindKey(EKeys::MouseScrollUp, IE_Pressed, this, &AMyCharacter::OnSwapPrev);
+
+	// Positive assertion. If this line is absent from a run, SetupPlayerInputComponent never
+	// ran and the pawn was never given an input stack -- a different bug from "bound 0".
+	UE_LOG(LogMyCharacter, Log,
+		TEXT("MyCharacter INPUT: bound=%d failed=%d, plus 11 raw keys. Controller=%s"),
+		Bound, Failed, *GetNameSafe(GetController()));
 }
 
 void AMyCharacter::OnMove(const FInputActionValue& Value)
