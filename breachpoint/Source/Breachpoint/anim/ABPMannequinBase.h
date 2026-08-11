@@ -67,19 +67,19 @@ struct FS_Procedural_AimSpineInfoItem_UE4
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spine")
-	float head = 0.15f;
+	double head = 0.15;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spine")
-	float neck_01 = 0.2f;
+	double neck_01 = 0.2;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spine")
-	float spine_01 = 0.25f;
+	double spine_01 = 0.25;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spine")
-	float spine_02 = 0.2f;
+	double spine_02 = 0.2;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spine")
-	float spine_03 = 0.2f;
+	double spine_03 = 0.2;
 };
 
 /** Mirrors `S_Procedural_AimSpineInfoItem_UE5`. */
@@ -89,28 +89,28 @@ struct FS_Procedural_AimSpineInfoItem_UE5
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spine")
-	float head = 0.1f;
+	double head = 0.1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spine")
-	float neck_01 = 0.15f;
+	double neck_01 = 0.15;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spine")
-	float neck_02 = 0.2f;
+	double neck_02 = 0.2;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spine")
-	float spine_01 = 0.15f;
+	double spine_01 = 0.15;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spine")
-	float spine_02 = 0.1f;
+	double spine_02 = 0.1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spine")
-	float spine_03 = 0.1f;
+	double spine_03 = 0.1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spine")
-	float spine_04 = 0.1f;
+	double spine_04 = 0.1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spine")
-	float spine_05 = 0.1f;
+	double spine_05 = 0.1;
 };
 
 /**
@@ -127,19 +127,19 @@ struct FS_Procedural_LeanSpineInfoItem_UE4
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spine",
 			  meta = (DisplayName = "head(Opposite Angle Weight)"))
-	float headOppositeAngleWeight = 0.25f;
+	double headOppositeAngleWeight = 0.25;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spine")
-	float neck_01 = 0.2f;
+	double neck_01 = 0.2;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spine")
-	float spine_01 = 0.3f;
+	double spine_01 = 0.3;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spine")
-	float spine_02 = 0.3f;
+	double spine_02 = 0.3;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spine")
-	float spine_03 = 0.3f;
+	double spine_03 = 0.3;
 };
 
 /** Mirrors `S_Procedural_LeanSpineInfoItem_UE5`. */
@@ -150,22 +150,22 @@ struct FS_Procedural_LeanSpineInfoItem_UE5
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spine",
 			  meta = (DisplayName = "head(Opposite Angle Weight)"))
-	float headOppositeAngleWeight = 0.25f;
+	double headOppositeAngleWeight = 0.25;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spine")
-	float neck_01 = 0.1f;
+	double neck_01 = 0.1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spine")
-	float neck_02 = 0.f;
+	double neck_02 = 0.;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spine")
-	float spine_01 = 0.2f;
+	double spine_01 = 0.2;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spine")
-	float spine_02 = 0.2f;
+	double spine_02 = 0.2;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spine")
-	float spine_03 = 0.2f;
+	double spine_03 = 0.2;
 };
 
 UCLASS(Blueprintable, BlueprintType)
@@ -202,13 +202,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Locomotion")
 	EAnimEnum_CardinalDirection LocalVelocityDirectionNoOffset = EAnimEnum_CardinalDirection::Forward;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Locomotion")
-	float LocalVelocityDirectionAngle = 0.f;
+	double LocalVelocityDirectionAngle = 0.0;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Locomotion")
-	float LocalVelocityDirectionAngleWithOffset = 0.f;
+	double LocalVelocityDirectionAngleWithOffset = 0.0;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Locomotion")
 	EAnimEnum_CardinalDirection CardinalDirectionFromAcceleration = EAnimEnum_CardinalDirection::Forward;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Locomotion")
-	float CardinalDirectionDeadZone = 10.f;
+	double CardinalDirectionDeadZone = 10.0;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Locomotion")
 	EAnimEnum_CardinalDirection StartDirection = EAnimEnum_CardinalDirection::Forward;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Locomotion")
@@ -216,11 +216,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Locomotion")
 	bool HasAcceleration = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Locomotion")
-	float DisplacementSinceLastUpdate = 0.f;
+	double DisplacementSinceLastUpdate = 0.0;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Locomotion")
-	float DisplacementSpeed = 0.f;
+	double DisplacementSpeed = 0.0;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Locomotion")
-	float GroundDistance = 0.f;
+	double GroundDistance = 0.0;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Locomotion")
 	bool IsRunningIntoWall = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Locomotion")
@@ -234,7 +234,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Air")
 	bool IsJumping = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Air")
-	float TimeToJumpApex = 0.f;
+	double TimeToJumpApex = 0.0;
 
 	// ---------------------------------------------------------------- crouch
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Crouch")
@@ -242,7 +242,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Crouch")
 	bool CrouchStateChange = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Crouch")
-	float ApplyCrouchAlpha = 0.f;
+	double ApplyCrouchAlpha = 0.0;
 
 	// ---------------------------------------------------------------- pivot
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Pivot")
@@ -250,31 +250,31 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Pivot")
 	EAnimEnum_CardinalDirection PivotInitialDirection = EAnimEnum_CardinalDirection::Forward;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Pivot")
-	float LastPivotTime = 0.f;
+	double LastPivotTime = 0.0;
 
 	// ---------------------------------------------------------------- aim
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Aim")
-	float AimPitch = -2.788732f;
+	double AimPitch = -2.788732;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Aim")
-	float AimYaw = 0.f;
+	double AimYaw = 0.0;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Aim")
-	float Pitch = -0.417859f;
+	double Pitch = -0.417859;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Aim")
 	FRotator PitchRotator = FRotator::ZeroRotator;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Aim")
-	float YawDeltaSinceLastUpdate = 0.f;
+	double YawDeltaSinceLastUpdate = 0.0;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Aim")
-	float YawDeltaSpeed = 0.f;
+	double YawDeltaSpeed = 0.0;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Aim")
-	float TurnYawCurveValue = 0.f;
+	double TurnYawCurveValue = 0.0;
 
 	// ---------------------------------------------------------------- rootyawoffset
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|RootYawOffset")
-	float RootYawOffset = 0.f;
+	double RootYawOffset = 0.0;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|RootYawOffset")
-	FVector2D RootYawOffsetAngleClamp = FVector2D(-120.f, 100.f);
+	FVector2D RootYawOffsetAngleClamp = FVector2D(-120.0, 100.0);
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|RootYawOffset")
-	FVector2D RootYawOffsetAngleClampCrouched = FVector2D(-90.f, 80.f);
+	FVector2D RootYawOffsetAngleClampCrouched = FVector2D(-90.0, 80.0);
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|RootYawOffset")
 	EAnimEnum_RootYawOffsetMode RootYawOffsetMode = EAnimEnum_RootYawOffsetMode::BlendOut;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|RootYawOffset")
@@ -288,9 +288,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Lean")
 	FRotator LeanOppRotation = FRotator::ZeroRotator;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Lean")
-	float LeanAdditiveAlpha = 0.f;
+	double LeanAdditiveAlpha = 0.0;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Lean")
-	float AdditiveLeanAngle = 0.f;
+	double AdditiveLeanAngle = 0.0;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Lean")
 	FS_Procedural_LeanSpineInfoItem_UE4 LeanSpineWeights_UE4;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Lean")
@@ -302,9 +302,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Spine")
 	FS_Procedural_AimSpineInfoItem_UE5 AimSpineWeights_UE5;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Spine")
-	float ApplyPelvisWeight = 0.f;
+	double ApplyPelvisWeight = 0.0;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Spine")
-	float FPSPelvisWeight = 0.2f;
+	double FPSPelvisWeight = 0.2;
 
 	// ---------------------------------------------------------------- camera
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Camera")
@@ -316,7 +316,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Camera")
 	FVector CamRotOffset = FVector::ZeroVector;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Camera")
-	float Head_CameraShake_Alpha = 1.f;
+	double Head_CameraShake_Alpha = 1.0;
 
 	// ---------------------------------------------------------------- poseoffset
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|PoseOffset")
@@ -374,15 +374,15 @@ public:
 
 	// ---------------------------------------------------------------- weapon
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Weapon")
-	float TimeSinceFiredWeapon = 9999.f;
+	double TimeSinceFiredWeapon = 9999.0;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Weapon")
-	float ApplySwayAlpha = 0.f;
+	double ApplySwayAlpha = 0.0;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|Weapon")
-	float UpperbodyDynamicAdditiveWeight = 0.f;
+	double UpperbodyDynamicAdditiveWeight = 0.0;
 
 	// ---------------------------------------------------------------- linkedlayer
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|LinkedLayer")
-	TSubclassOf<UAnimInstance> LastLinkedLayer = nullptr;
+	TObjectPtr<UAnimInstance> LastLinkedLayer = nullptr;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ABP Mannequin Base|LinkedLayer")
 	bool LinkedLayerChanged = false;
 };
