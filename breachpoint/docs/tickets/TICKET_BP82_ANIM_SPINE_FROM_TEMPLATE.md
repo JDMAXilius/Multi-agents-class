@@ -2382,3 +2382,48 @@ tool. Extraction and analysis are unaffected and remain in weapon_graphs.json.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
 
+fix(BP82): ADS FOV - the function name keeps its spaces, "Change Camera Target FOV"
+
+Founder reported ADS not working three times. The first two answers were assertions from
+reading the code; this one is from a measurement, and the measurement found it immediately.
+
+Added a startup diagnostic that resolves both ADS component calls at BeginPlay instead of
+waiting for an aim press, because a call that does not resolve is silent and looks exactly
+like "the animation is subtle". It printed:
+
+  MyCharacter ADS: PoseOffsetsComp=found ChangePose=callable |
+                   FPSCamComp=found ChangeCameraTargetFOV=UNRESOLVED
+
+So the weapon pose was moving all along and the FOV call had NEVER resolved. The function's
+name on BPC_FPSComp keeps its spaces - "Change Camera Target FOV" - and
+FindFunction("ChangeCameraTargetFOV") returns null against it.
+
+WHY THIS HID FOR THREE ROUNDS. read_graph_dsl rejects the spaced name as "not valid EdGraph",
+which I read as "it must be a macro, and reflection cannot call macros". Then reading it WITH
+spaces succeeded and printed the header as `(fn ChangeCameraTargetFOV (InTargetFov InSpeed))`
+- the reader normalising the name - which I took as proof the UFunction was unspaced. Both
+readings were wrong in the same direction. The DSL header is not the UFunction's name.
+
+Fixed with a three-step fallback so a rename cannot silently kill ADS again:
+  1. FindFunction("Change Camera Target FOV")
+  2. FindFunction("ChangeCameraTargetFOV")
+  3. write the three variables the function itself writes - TargetCameraFov,
+     CameraFovInterpSpeed, IsUpdateCameraFov - which is the same state change, since the
+     component's tick interpolates from there.
+Only if all three fail does it warn.
+
+VERIFIED by re-running the diagnostic: ChangeCameraTargetFOV=callable, hipFOV=90 aimFOV=80
+speed=12.
+
+The tracer needed no change. Its signature was confirmed against the graph in 022a14f -
+FireTracerEffect(InHitLocation, InMuzzleTransform), spawning at the muzzle, oriented by the
+muzzle, ending at the impact position, with a miss using TraceEnd so it reaches the aim end
+rather than the world origin.
+
+Rung 1 PASS 20260811-135530, three targets, exit 0, zero warnings.
+
+NOT CLAIMED: the FOV call now resolves and is invoked - nobody has yet SEEN the FOV narrow.
+That needs a human at the keyboard.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+

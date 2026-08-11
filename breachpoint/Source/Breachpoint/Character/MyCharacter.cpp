@@ -447,6 +447,29 @@ void AMyCharacter::BeginPlay()
 	const ABPWeaponBase* Startup = GetCurrentWeapon();
 	const USkeletalMeshComponent* MeshComp = GetMesh();
 	const UAnimInstance* Anim = MeshComp ? MeshComp->GetAnimInstance() : nullptr;
+	// ADS reachability, resolved at startup rather than on the first aim press. Both of these
+	// are Blueprint component calls found by name; when one does not resolve, ADS silently
+	// does nothing, which is indistinguishable from "the animation is subtle". Reported here
+	// so the answer is in the log before anyone presses a key.
+	//
+	// Note on the FOV one: its function name KEEPS THE SPACES - "Change Camera Target FOV".
+	// This diagnostic is what proved it, by reporting UNRESOLVED while ChangePose reported
+	// callable. The DSL header prints the unspaced form, which is the reader normalising the
+	// name, and trusting that header is what hid the bug.
+	const bool bPoseCallOk = PoseOffsetsComp
+		&& PoseOffsetsComp->FindFunction(TEXT("ChangePose")) != nullptr;
+	const bool bFovCallOk = FPSCamComp
+		&& (FPSCamComp->FindFunction(TEXT("Change Camera Target FOV")) != nullptr
+			|| FPSCamComp->FindFunction(TEXT("ChangeCameraTargetFOV")) != nullptr);
+	UE_LOG(LogMyCharacter, Log,
+		TEXT("MyCharacter ADS: PoseOffsetsComp=%s ChangePose=%s | FPSCamComp=%s "
+			 "ChangeCameraTargetFOV=%s | hipFOV=%.0f aimFOV=%.0f speed=%.0f"),
+		PoseOffsetsComp ? TEXT("found") : TEXT("MISSING"),
+		bPoseCallOk ? TEXT("callable") : TEXT("UNRESOLVED"),
+		FPSCamComp ? TEXT("found") : TEXT("MISSING"),
+		bFovCallOk ? TEXT("callable") : TEXT("UNRESOLVED"),
+		HipFOV, AimFOV, FOVChangeSpeed);
+
 	UE_LOG(LogMyCharacter, Log,
 		TEXT("MyCharacter READY: pawn=%s mesh=%s anim=%s animIface=%s weapons=%d/%d "
 			 "startType=%u current=%s socket=%s canCrouch=%s"),
@@ -1178,6 +1201,45 @@ void AMyCharacter::SetUnarmed(bool bUnarmed)
 // the anim-interface bools and nothing visibly moved.
 // -------------------------------------------------------------------------------------
 
+bool AMyCharacter::SetComponentFloatVar(UActorComponent* Component, const TCHAR* VarName,
+	float Value)
+{
+	if (!Component)
+	{
+		return false;
+	}
+	// A Blueprint "float" is a double in UE5; both are handled rather than one assumed.
+	if (const FDoubleProperty* P =
+			FindFProperty<FDoubleProperty>(Component->GetClass(), FName(VarName)))
+	{
+		P->SetPropertyValue_InContainer(Component, static_cast<double>(Value));
+		return true;
+	}
+	if (const FFloatProperty* P =
+			FindFProperty<FFloatProperty>(Component->GetClass(), FName(VarName)))
+	{
+		P->SetPropertyValue_InContainer(Component, Value);
+		return true;
+	}
+	return false;
+}
+
+bool AMyCharacter::SetComponentBoolVar(UActorComponent* Component, const TCHAR* VarName,
+	bool bValue)
+{
+	if (!Component)
+	{
+		return false;
+	}
+	if (const FBoolProperty* P =
+			FindFProperty<FBoolProperty>(Component->GetClass(), FName(VarName)))
+	{
+		P->SetPropertyValue_InContainer(Component, bValue);
+		return true;
+	}
+	return false;
+}
+
 void AMyCharacter::ChangePose(uint8 PoseType, uint8 ScopeType, float ChangeSpeed)
 {
 	if (!PoseOffsetsComp)
@@ -1209,19 +1271,45 @@ void AMyCharacter::ChangeCameraTargetFOV(float TargetFOV, float Speed)
 	{
 		return;
 	}
-	// NOTE: unlike ChangePose, this one is NOT a function graph on BPC_FPSComp - reading it
-	// returns "not valid EdGraph", so it is a custom event or a macro. FindFunction resolves
-	// custom events but NOT macros, so if this ever comes back unbound the FOV change simply
-	// will not happen. Warn once instead of returning in silence.
-	FBPCall Call(FPSCamComp, TEXT("ChangeCameraTargetFOV"));
+	// THE FUNCTION'S NAME KEEPS ITS SPACES: "Change Camera Target FOV".
+	//
+	// The startup diagnostic proved it - ChangePose resolved and ChangeCameraTargetFOV came
+	// back UNRESOLVED, so ADS moved the weapon pose and never touched the FOV. The DSL prints
+	// the header as `(fn ChangeCameraTargetFOV ...)`, which is the reader normalising the
+	// name; the UFunction itself is the spaced form. Reading the DSL and trusting its header
+	// is what hid this for three rounds.
+	//
+	// Spaced first, unspaced second, because either could be true of a hand-authored graph.
+	FBPCall Call(FPSCamComp, TEXT("Change Camera Target FOV"));
 	if (!Call.IsBound())
 	{
+		FBPCall Fallback(FPSCamComp, TEXT("ChangeCameraTargetFOV"));
+		if (Fallback.IsBound())
+		{
+			Fallback.SetFloat(TEXT("InTargetFov"), TargetFOV);
+			Fallback.SetFloat(TEXT("InSpeed"), Speed);
+			Fallback.Invoke();
+			return;
+		}
+
+		// Last resort: the function only does three variable writes -
+		//   SetTargetCameraFov(InTargetFov); SetCameraFovInterpSpeed(InSpeed);
+		//   SetIsUpdateCameraFov(true)
+		// - and the component's tick interpolates from there. Doing them directly is the same
+		// state change, so ADS still works even if the function is renamed again.
+		if (SetComponentFloatVar(FPSCamComp, TEXT("TargetCameraFov"), TargetFOV)
+			&& SetComponentFloatVar(FPSCamComp, TEXT("CameraFovInterpSpeed"), Speed))
+		{
+			SetComponentBoolVar(FPSCamComp, TEXT("IsUpdateCameraFov"), true);
+			return;
+		}
+
 		if (!bFovCallWarned)
 		{
 			bFovCallWarned = true;
 			UE_LOG(LogMyCharacter, Warning,
-				TEXT("MyCharacter: BPC_FPSCamComp has no callable ChangeCameraTargetFOV (it is "
-					 "likely a macro, which reflection cannot call) - ADS will not narrow the FOV."));
+				TEXT("MyCharacter: BPC_FPSCamComp exposes neither 'Change Camera Target FOV' nor "
+					 "its TargetCameraFov variables - ADS will not narrow the FOV."));
 		}
 		return;
 	}

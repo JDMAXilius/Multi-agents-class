@@ -126,6 +126,12 @@ public:
 	bool bPoseCallWarned = false;
 	bool bFovCallWarned = false;
 
+	/** Write a Blueprint component variable by name. Used when a call cannot resolve. */
+	static bool SetComponentFloatVar(UActorComponent* Component, const TCHAR* VarName,
+		float Value);
+	static bool SetComponentBoolVar(UActorComponent* Component, const TCHAR* VarName,
+		bool bValue);
+
 	/**
 	 * The current weapon's `FireDelay` and `SpreadAngle` — both are VARIABLES on
 	 * BP_FPST_BaseWeapon, read by reflection. The fallbacks are this class's own defaults,
