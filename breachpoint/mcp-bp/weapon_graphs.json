@@ -1,0 +1,108 @@
+{
+ "blueprint": "/Game/FPSTemplate/Blueprints/Weapons/BP_FPST_BaseWeapon",
+ "functions": {
+  "GetCurrentFireMode": {
+   "dsl": [
+    "(fn GetCurrentFireMode ()\n  (return (Utilities|Array|Get(acopy) (Variables|FPST|GetAvailableFireModes) (Variables|Default|GetCurFireModeIndex))))\n",
+    "{\"returnValue\":\"(fn GetCurrentFireMode ()\\n  (return (Utilities|Array|Get(acopy) (Variables|FPST|GetAvailableFireModes) (Variables|Default|GetCurFireModeIndex))))\\n\"}"
+   ]
+  },
+  "NextFireMode": {
+   "dsl": [
+    "(fn NextFireMode ()\n  (bind _result (Math|Integer|IncrementInt (Variables|Default|GetCurFireModeIndex))\n    (:\"  \"\n      (Variables|Default|SetCurFireModeIndex (Math|Integer|%(Integer) _result (Utilities|Array|Length (Variables|FPST|GetAvailableFireModes)))))))\n",
+    "{\"returnValue\":\"(fn NextFireMode ()\\n  (bind _result (Math|Integer|IncrementInt (Variables|Default|GetCurFireModeIndex))\\n    (:\\\"  \\\"\\n      (Variables|Default|SetCurFireModeIndex (Math|Integer|%(Integer) _result (Utilities|Array|Length (Variables|FPST|GetAvailableFireModes)))))))\\n\"}"
+   ]
+  },
+  "GetFireAnimMontage": {
+   "dsl": [
+    "(fn GetFireAnimMontage (InSkeletalType InAiming)\n  (switch Utilities|FlowControl|Switch|SwitchonE_FPST_SkeletalType InSkeletalType\n    (:NewEnumerator0\n      (if (Variables|GetInAiming)\n        (return (|GetAimFireAnimMontage_UE4))\n        (else\n          (return (|GetFireAnimMontage_UE4)))))\n    (:NewEnumerator1\n      (if (Variables|GetInAiming)\n        (return (Variables|FPST|Animations|Character|UE5|GetAimFireAnimMontage))\n        (else\n          (return (Variables|FPST|Animations|Character|UE5|GetFireAnimMontage)))))))\n",
+    "{\"returnValue\":\"(fn GetFireAnimMontage (InSkeletalType InAiming)\\n  (switch Utilities|FlowControl|Switch|SwitchonE_FPST_SkeletalType InSkeletalType\\n    (:NewEnumerator0\\n      (if (Variables|GetInAiming)\\n        (return (|GetAimFireAnimMontage_UE4))\\n        (else\\n          (return (|GetFireAnimMontage_UE4)))))\\n    (:NewEnumerator1\\n      (if (Variables|GetInAiming)\\n        (return (Variables|FPST|Animations|Character|UE5|GetAimFireAnimMontage))\\n        (else\\n          (return (Variables|FPST|Animations|Character|UE5|GetFireAnimMontage)))))))\\n\"}"
+   ]
+  },
+  "GetScopeType": {
+   "dsl": [
+    "(fn GetScopeType ()\n  (bind _scope (Variables|Default|GetScope))\n  (Utilities|IsValid _scope\n    (:\"Is Valid\"\n      (return (Class|BPFPSTBaseScope|GetScopeType _scope)))\n    (:\"Is Not Valid\"\n      (return \"NewEnumerator0\"))))\n",
+    "{\"returnValue\":\"(fn GetScopeType ()\\n  (bind _scope (Variables|Default|GetScope))\\n  (Utilities|IsValid _scope\\n    (:\\\"Is Valid\\\"\\n      (return (Class|BPFPSTBaseScope|GetScopeType _scope)))\\n    (:\\\"Is Not Valid\\\"\\n      (return \\\"NewEnumerator0\\\"))))\\n\"}"
+   ]
+  },
+  "GetReloadBoltAnimMontage": {
+   "dsl": [
+    "(fn GetReloadBoltAnimMontage (InSkeletalType InAiming)\n  (switch Utilities|FlowControl|Switch|SwitchonE_FPST_SkeletalType InSkeletalType\n    (:NewEnumerator0\n      (if (Variables|GetInAiming)\n        (return (|GetAimReloadBoltAnimMontage_UE4))\n        (else\n          (return (|GetReloadBoltAnimMontage_UE4)))))\n    (:NewEnumerator1\n      (if (Variables|GetInAiming)\n        (return (Variables|FPST|Animations|Character|UE5|BoltAction|GetAimReloadBoltAnimMontage))\n        (else\n          (return (Variables|FPST|Animations|Character|UE5|BoltAction|GetReloadBoltAnimMontage)))))))\n",
+    "{\"returnValue\":\"(fn GetReloadBoltAnimMontage (InSkeletalType InAiming)\\n  (switch Utilities|FlowControl|Switch|SwitchonE_FPST_SkeletalType InSkeletalType\\n    (:NewEnumerator0\\n      (if (Variables|GetInAiming)\\n        (return (|GetAimReloadBoltAnimMontage_UE4))\\n        (else\\n          (return (|GetReloadBoltAnimMontage_UE4)))))\\n    (:NewEnumerator1\\n      (if (Variables|GetInAiming)\\n        (return (Variables|FPST|Animations|Character|UE5|BoltAction|GetAimReloadBoltAnimMontage))\\n        (else\\n          (return (Variables|FPST|Animations|Character|UE5|BoltAction|GetReloadBoltAnimMontage)))))))\\n\"}"
+   ]
+  },
+  "PlayAnim": {
+   "dsl": [
+    "(fn PlayAnim (NewAnimToPlay bLooping)\n  (Components|Animation|PlayAnimation (Variables|Default|GetSkeletalMesh) NewAnimToPlay bLooping))\n",
+    "{\"returnValue\":\"(fn PlayAnim (NewAnimToPlay bLooping)\\n  (Components|Animation|PlayAnimation (Variables|Default|GetSkeletalMesh) NewAnimToPlay bLooping))\\n\"}"
+   ]
+  },
+  "ResetAttachments": {
+   "dsl": [
+    "(fn ResetAttachments ()\n  (bind _scope (Variables|Default|GetScope))\n  (bind _defaultscope (Variables|Default|GetDefaultScope))\n  (Utilities|IsValid _defaultscope\n    (:\"Is Valid\"\n      (Actor|DestroyActor _defaultscope)))\n  (Utilities|IsValid _scope\n    (:\"Is Valid\"\n      (Actor|DestroyActor _scope))))\n",
+    "{\"returnValue\":\"(fn ResetAttachments ()\\n  (bind _scope (Variables|Default|GetScope))\\n  (bind _defaultscope (Variables|Default|GetDefaultScope))\\n  (Utilities|IsValid _defaultscope\\n    (:\\\"Is Valid\\\"\\n      (Actor|DestroyActor _defaultscope)))\\n  (Utilities|IsValid _scope\\n    (:\\\"Is Valid\\\"\\n      (Actor|DestroyActor _scope))))\\n\"}"
+   ]
+  },
+  "UserConstructionScript": {
+   "dsl": [
+    "(fn ConstructionScript ())\n",
+    "{\"returnValue\":\"(fn ConstructionScript ())\\n\"}"
+   ]
+  }
+ },
+ "errors": [
+  "find_nodes(GetCurrentFireMode) -> **FAILED** Function \\\"find_nodes\\\", input param \\\"title\\\" is required by the function input schema Json, but is missing from the incoming function input params ",
+  "find_nodes(NextFireMode) -> **FAILED** Function \\\"find_nodes\\\", input param \\\"title\\\" is required by the function input schema Json, but is missing from the incoming function input params ",
+  "find_nodes(GetFireAnimMontage) -> **FAILED** Function \\\"find_nodes\\\", input param \\\"title\\\" is required by the function input schema Json, but is missing from the incoming function input params ",
+  "find_nodes(GetScopeType) -> **FAILED** Function \\\"find_nodes\\\", input param \\\"title\\\" is required by the function input schema Json, but is missing from the incoming function input params ",
+  "find_nodes(GetReloadBoltAnimMontage) -> **FAILED** Function \\\"find_nodes\\\", input param \\\"title\\\" is required by the function input schema Json, but is missing from the incoming function input params ",
+  "find_nodes(PlayAnim) -> **FAILED** Function \\\"find_nodes\\\", input param \\\"title\\\" is required by the function input schema Json, but is missing from the incoming function input params ",
+  "find_nodes(ResetAttachments) -> **FAILED** Function \\\"find_nodes\\\", input param \\\"title\\\" is required by the function input schema Json, but is missing from the incoming function input params ",
+  "find_nodes(UserConstructionScript) -> **FAILED** Function \\\"find_nodes\\\", input param \\\"title\\\" is required by the function input schema Json, but is missing from the incoming function input params "
+ ],
+ "list_functions": [
+  [
+   {
+    "name": "UserConstructionScript",
+    "description": "",
+    "bIsImplemented": true
+   },
+   {
+    "name": "PlayAnim",
+    "description": "",
+    "bIsImplemented": true
+   },
+   {
+    "name": "NextFireMode",
+    "description": "",
+    "bIsImplemented": true
+   },
+   {
+    "name": "GetCurrentFireMode",
+    "description": "",
+    "bIsImplemented": true
+   },
+   {
+    "name": "GetFireAnimMontage",
+    "description": "",
+    "bIsImplemented": true
+   },
+   {
+    "name": "GetReloadBoltAnimMontage",
+    "description": "",
+    "bIsImplemented": true
+   },
+   {
+    "name": "GetScopeType",
+    "description": "",
+    "bIsImplemented": true
+   },
+   {
+    "name": "ResetAttachments",
+    "description": "",
+    "bIsImplemented": true
+   }
+  ],
+  "{\"returnValue\":[{\"name\":\"UserConstructionScript\",\"description\":\"\",\"bIsImplemented\":true},{\"name\":\"PlayAnim\",\"description\":\"\",\"bIsImplemented\":true},{\"name\":\"NextFireMode\",\"description\":\"\",\"bIsImplemented\":true},{\"name\":\"GetCurrentFireMode\",\"description\":\"\",\"bIsImplemented\":true},{\"name\":\"GetFireAnimMontage\",\"description\":\"\",\"bIsImplemented\":true},{\"name\":\"GetReloadBoltAnimMontage\",\"description\":\"\",\"bIsImplemented\":true},{\"name\":\"GetScopeType\",\"description\":\"\",\"bIsImplemented\":true},{\"name\":\"ResetAttachments\",\"description\":\"\",\"bIsImplemented\":true}]}"
+ ]
+}

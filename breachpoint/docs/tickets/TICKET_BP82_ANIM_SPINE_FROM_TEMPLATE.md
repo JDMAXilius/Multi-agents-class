@@ -2195,3 +2195,63 @@ and the 6 graphs are emptied by hand because there is no remove-graph tool. The 
 BROKEN between the C++ landing and the strip completing, so those two steps belong in one
 session and must not be left half-done.
 
+
+### 11 Aug 2026 - BP_FPST_BaseWeapon: all eight graphs read
+
+Extraction complete. `mcp-bp/weapon_graphs.py` (committed) reads the graphs over MCP against a
+live editor; `mcp-bp/weapon_graphs.json` is the artifact. **Still no C++ written.**
+
+**`read_graph_dsl` worked on all eight** - none of these graphs is collapsed, so the
+`_fingerprint` failure that killed 3 of 5 subgraphs on the character never came up here.
+`find_nodes` fails on every call and that is NOT a defect: it requires a `title` to search for,
+it is a find-by-name tool, not a list-all. It was in the script only as the collapsed-graph
+fallback and was never needed.
+
+**`list_functions` found EIGHT functions; the offline string scan found seven.**
+`GetReloadBoltAnimMontage` has no `.K2Node_FunctionEntry_0` token in the `.uasset` string table,
+so scanning strings missed it entirely. That is the concrete argument for reading the live
+asset over parsing the file: the offline pass would have shipped a port with a missing function
+and nothing would have said so.
+
+**Three MCP schema traps, all of which returned a transport-level success:**
+1. The server reports tool failures INSIDE the payload as a `**FAILED**` string while the HTTP
+   call succeeds. The first version of this script printed `OK` seven times over seven errors.
+   Check the result, never the absence of an exception - the same shape as reading an empty log
+   as a passing run.
+2. `blueprint` must be a full OBJECT path. `/Game/X/BP_Y` is rejected as "not a valid object
+   path"; `/Game/X/BP_Y.BP_Y` is accepted.
+3. `read_graph_dsl` does NOT take `blueprint` + `graph_name`. It takes a `graph` reference:
+   `{"refPath": "/Game/X/BP_Y.BP_Y:FunctionName"}`.
+
+**The logic, verbatim from the DSL:**
+
+| function | signature | body |
+|---|---|---|
+| `GetCurrentFireMode` | `() -> E_FPST_FireMode` | `AvailableFireModes[CurFireModeIndex]` - array Get, **no bounds check** |
+| `NextFireMode` | `()` | `CurFireModeIndex = IncrementInt(CurFireModeIndex) % AvailableFireModes.Length()` |
+| `GetFireAnimMontage` | `(InSkeletalType, InAiming) -> AnimMontage` | switch on E_FPST_SkeletalType: `0` (UE4) -> `InAiming ? AimFireAnimMontage_UE4 : FireAnimMontage_UE4`; `1` (UE5) -> `InAiming ? AimFireAnimMontage : FireAnimMontage` |
+| `GetReloadBoltAnimMontage` | `(InSkeletalType, InAiming) -> AnimMontage` | identical switch over the ReloadBolt montage set |
+| `GetScopeType` | `() -> E_FPST_AttachmentScopeType` | `IsValid(Scope) ? Scope->GetScopeType() : enumerator 0` |
+| `PlayAnim` | `(NewAnimToPlay, bLooping)` | `SkeletalMesh->PlayAnimation(NewAnimToPlay, bLooping)` |
+| `ResetAttachments` | `()` | `if IsValid(DefaultScope) DestroyActor(DefaultScope)`, then `if IsValid(Scope) DestroyActor(Scope)` |
+| `UserConstructionScript` | `()` | **EMPTY** |
+
+**Two things the DSL corrects about earlier assumptions.**
+- `ResetAttachments` only DESTROYS. The offline string scan showed `K2_AttachToComponent` and
+  `EAttachmentRule` in this asset and I had read that as "ResetAttachments re-attaches". It does
+  not; those tokens belong elsewhere in the package. The graph is two IsValid-guarded destroys.
+- The whole class is far smaller than 48 variables and 8 functions suggests. Six of the eight
+  functions are one expression each. **The DATA is the asset; the LOGIC is about 30 lines.**
+  That is worth stating plainly before the port, because it reframes what the port is for:
+  moving ~48 tuning values into C++ buys little and costs the four weapon Blueprints, whereas
+  the logic is small enough to be trivially expressible.
+
+**Open question for the founder, now that the size is known rather than estimated.** The staged
+route (C++ surface, then strip the BP) still stands and is what was chosen. But the extraction
+says the variables are pure per-weapon DATA - exactly the shape `data-and-assets.md` calls a
+CSV row rather than a class. Landing 48 `UPROPERTY`s to hold values that four child Blueprints
+override anyway is a lot of breakage for little gain, and DT_Weapons.csv already exists. Worth
+one decision before writing the header.
+
+Rung unchanged: nothing here has been compiled or run. It is a read.
+
