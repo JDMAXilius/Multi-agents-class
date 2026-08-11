@@ -20,9 +20,13 @@
  *
  * One shared C++ base makes those pins agree with no cast nodes anywhere.
  *
- * It declares NOTHING on purpose. `BP_FPST_BaseWeapon` already owns functions named
- * `GetAttachSocketName`, `GetCrosshairType`, `GetFireAnimMontage`, `GetReloadAnimMontage`,
- * `GetLinkAnimLayerClass` and friends. A Blueprint function whose name matches a UFUNCTION on
+ * It declares NOTHING on purpose. `BP_FPST_BaseWeapon` already owns members named
+ * `AttachSocketName`, `MuzzleSocketName`, `WeaponType`, `GetCrosshairType`,
+ * `GetFireAnimMontage`, `GetReloadAnimMontage`, `GetLinkAnimLayerClass` and friends. The
+ * first three are VARIABLES, not getters — an earlier revision of this comment listed a
+ * `GetAttachSocketName` function that does not exist in the asset, and `AMyCharacter` reads
+ * the variable by reflection instead. A Blueprint member whose name matches a UPROPERTY or
+ * UFUNCTION on
  * its parent is a COMPILE ERROR, not an override — the same shadowing rule that silently
  * renamed this project's camera components. So every getter stays on the Blueprint until it
  * is deliberately moved down here in the same pass that deletes it from the graph.

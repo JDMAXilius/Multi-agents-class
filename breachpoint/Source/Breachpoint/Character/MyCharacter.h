@@ -72,6 +72,37 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Weapons")
 	void CreateWeapon(uint8 InWeaponType, TSubclassOf<ABPWeaponBase> InWeaponClass);
 
+	/**
+	 * Points CurrentWeaponIndex at StartupWeaponType. The graph's BeginPlay labels this
+	 * "Rifle - Start Weapon"; CreateWeapons on its own leaves index 0, which is whichever
+	 * weapon the config happens to list first.
+	 */
+	void SelectStartupWeapon();
+
+	/**
+	 * The weapon's own `AttachSocketName` FName variable, read by reflection — it is a
+	 * VARIABLE on BP_FPST_BaseWeapon, not a getter. NAME_None if the property is absent,
+	 * which attaches at the mesh root and is logged.
+	 */
+	FName GetWeaponAttachSocket(const ABPWeaponBase* InWeapon) const;
+
+	/**
+	 * The current weapon's `FireDelay` and `SpreadAngle` — both are VARIABLES on
+	 * BP_FPST_BaseWeapon, read by reflection. The fallbacks are this class's own defaults,
+	 * used only when there is no weapon or the property is gone.
+	 */
+	float GetWeaponFireDelay() const;
+	float GetWeaponSpreadAngle() const;
+
+	/**
+	 * `GetCurrentFireMode` IS a real UFUNCTION on BP_FPST_BaseWeapon (unlike the socket
+	 * name), returning an E_FPST_FireMode byte: 0=Single, 1=Auto, 2=Burst.
+	 */
+	uint8 GetWeaponFireMode() const;
+
+	/** The Burst arm's timer callback — BPC_FPST_FireTimer's BurstFireEvent. */
+	void BurstFireTick();
+
 	UFUNCTION(BlueprintCallable, Category = "Weapons")
 	void HideAllWeapons();
 
@@ -133,6 +164,14 @@ protected:
 	/** The four weapon classes CreateWeapons spawns. Soft: the graph hardcoded the paths. */
 	UPROPERTY(Config, EditDefaultsOnly, Category = "Weapons")
 	TArray<FSoftClassPath> StartupWeaponClasses;
+
+	/**
+	 * The E_FPST_WeaponType the character spawns holding. 2 = Rifle, matching the graph's
+	 * "Rifle - Start Weapon" group. This is a TYPE, not an index into StartupWeaponClasses,
+	 * so reordering that list cannot silently change which weapon you start with.
+	 */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "Weapons")
+	uint8 StartupWeaponType = 2;
 
 	/** Thrown by the G handler after GrenadeThrowDelay. Graph hardcoded BP_FPST_Grenade. */
 	UPROPERTY(Config, EditDefaultsOnly, Category = "Weapons")
@@ -231,17 +270,32 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Tuning")
 	float FireTraceDistance = 100000.f;
 
+	/** Fallback only. The live value is the WEAPON's own SpreadAngle — see GetWeaponSpreadAngle. */
 	UPROPERTY(EditDefaultsOnly, Category = "Tuning")
 	float SpreadAngle = 5.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Tuning")
 	int32 SpreadPelletCount = 6;
 
+	/** Fallback only. The live value is the WEAPON's own FireDelay — see GetWeaponFireDelay. */
+	UPROPERTY(EditDefaultsOnly, Category = "Tuning")
+	float FireDelay = 0.12f;
+
 	/**
-	 * E_FPST_WeaponType ordinals the graph compared against. UNVERIFIED — the enum operands
-	 * on those NotEqual(Enum)/Equal(Enum) nodes did not resolve, so the COMPARISON is the
-	 * graph's and the VALUE is a guess. Named and overridable rather than a magic number
-	 * buried in a branch, so correcting one is a config edit, not a code hunt.
+	 * Shots per burst. BPC_FPST_FireTimer compares BurstFireCount against a literal on a
+	 * GreaterEqual_IntInt node; that literal did not resolve out of the asset, so THIS
+	 * NUMBER IS A GUESS and the comparison is the component's. Three is the template's
+	 * conventional burst. Overridable so correcting it is a config edit.
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "Tuning")
+	int32 BurstShotCount = 3;
+
+	/**
+	 * E_FPST_WeaponType ordinals the graph compared against. VERIFIED 11 Aug 2026 — no longer
+	 * the guesses this comment used to admit to. E_FPST_WeaponType.uasset carries five named
+	 * enumerators in order (Unarmed, Pistol, Rifle, Shotgun, Knife) and each weapon asset's
+	 * own WeaponType default agrees: Pistol=NewEnumerator1, Rifle=NewEnumerator2,
+	 * Knife=NewEnumerator4. So Unarmed is 0 and the spread weapon is the Shotgun at 3.
 	 */
 	UPROPERTY(EditDefaultsOnly, Category = "Tuning")
 	uint8 UnarmedWeaponType = 0;
@@ -372,9 +426,17 @@ protected:
 	virtual void SetLeaning(float Leaning) {}
 	virtual void SetUnarmed(bool bUnarmed) {}
 	virtual void ShowCrosshair(uint8 CrosshairType, bool bAiming) {}
-	virtual void StartFire(uint8 FireType, float Delay) {}
-	virtual void StopFire() {}
-	virtual void NextFireMode() {}
+	/**
+	 * BPC_FPST_FireTimer.Start / .Stop, ported. NOT stubs any more.
+	 *
+	 * That component is a SwitchEnum on E_FPST_FireMode driving a looping timer that
+	 * broadcasts EventDispatcher_Fire; BeginPlay's then_3 bound FireEvent to it. Neither the
+	 * dispatcher nor the bind was reproducible from C++, so the switch and the timer live
+	 * here and call FireEvent() directly. Same three arms, same cadence.
+	 */
+	virtual void StartFire(uint8 FireType, float Delay);
+	virtual void StopFire();
+	virtual void NextFireMode();
 	virtual void FireCameraRecoil(bool bADS) {}
 	virtual void ReturnCameraRecoil() {}
 	/**
@@ -387,8 +449,16 @@ protected:
 	virtual void LinkWeaponAnimLayers(bool bUnarmed);
 	virtual void ChangeProceduralInfo(FName InfoName);
 	virtual void StartFireTimerComp();
-	virtual bool WeaponTrace(const FVector& Start, const FVector& Dir, float Distance, FHitResult& OutHit) { return false; }
-	virtual bool WeaponTraceWithSpread(const FVector& Start, const FVector& Dir, float Distance, float Spread, FHitResult& OutHit) { return false; }
+	/**
+	 * BPC_FPST_LineTracer.Trace / .TraceWithSpread, ported. NOT stubs any more.
+	 *
+	 * That component is a LineTraceSingle on TraceTypeQuery1 (Visibility) from
+	 * FireLocation to FireLocation + FireDirection * Distance, ignoring self; the spread
+	 * variant first scatters the direction through RandomUnitVectorInConeInDegrees. Both
+	 * returned false unconditionally before this, which is why nothing could ever be hit.
+	 */
+	virtual bool WeaponTrace(const FVector& Start, const FVector& Dir, float Distance, FHitResult& OutHit);
+	virtual bool WeaponTraceWithSpread(const FVector& Start, const FVector& Dir, float Distance, float Spread, FHitResult& OutHit);
 	virtual void FireTracerEffect(const FVector& HitLocation) {}
 	virtual void ImpactEffect(const FHitResult& Hit) {}
 	virtual void PlayWeaponAnim(bool bLooping) {}
@@ -400,4 +470,8 @@ private:
 
 	FTimerHandle AimTraceTimer;
 	FTimerHandle GrenadeThrowTimer;
+
+	/** BPC_FPST_FireTimer's FireTimerHandle and BurstFireCount, by their own names. */
+	FTimerHandle FireTimerHandle;
+	int32 BurstFireCount = 0;
 };

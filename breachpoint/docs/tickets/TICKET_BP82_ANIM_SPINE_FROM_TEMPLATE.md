@@ -1496,3 +1496,337 @@ BP_FPSCharacter`. No weapon spawns, so `GetCurrentWeapon` returns null.
 tool became unavailable. The conclusion does not rest on it — the engine warning is decisive that
 these classes are not children of `ABPWeaponBase`, and the header names the base as the reparent
 target. Worth one confirming glance at Class Settings before the reparent.
+
+### 11 Aug 2026 — `contract_gap BP82-14`: the port method has no skill file, and no owner can write one
+
+**Asked for:** a skill capturing how `BP_FPST_Character`'s graph was transferred 1:1 into
+`AMyCharacter` — so the next port (BP96's character, the nine `BPC_FPST_*` components, any future
+marketplace absorb) does not re-learn the wire-beats-literal rule by shipping four bugs first.
+
+**Blocked, correctly.** `.claude/hooks/guard_laws.py` refused the write:
+
+```
+BLOCKED by guard_laws: '.claude/skills/blueprint-to-cpp/SKILL.md' is outside this packet's
+owner_path [...] (ticket TICKET_BP82_ANIM_SPINE_FROM_TEMPLATE). Law 5.
+```
+
+`.claude/skills/` is in no packet's `owner_path`. This is not a BP82 oversight — **no ticket on the
+board owns the skills directory**, so the crew's own method files currently have no writer. Every
+existing skill predates the claim file.
+
+**Draft is written and complete**, 10 sections, held outside the repo at
+`…/scratchpad/blueprint-to-cpp/SKILL.md` pending authorisation. Content is a distillation of this
+Log's entries of 9–10 Aug: extraction before transcription; `read_graph_dsl` dying on collapsed
+graphs and the `find_nodes`+Exec-pin walk that replaces it; the wire-beats-literal rule and the
+four bugs the literal-preferring pass shipped; deviation table discipline; create-no-components and
+the `Cached*` prefix; `FBPCall` reflection instead of a guessed `ProcessEvent` layout; the empty
+C++ base class for the pin-type seam; fresh R26 child over duplicate-and-strip; the four editor
+tool limits; and what COMPILES is allowed to mean.
+
+**Two ways to close, founder's call:**
+
+1. Widen BP82's `owner_path` with `.claude/skills/` (same shape as the 9 Aug widening that added
+   `Source/Breachpoint/Character/`), via `/tickets` so the claim file stays the tickets skill's to
+   write. BP82 then lands the skill and closes this gap.
+2. File the skill as its own docs ticket with `.claude/skills/` as its `owner_path` — cleaner if
+   more method files are coming, and it gives the directory a permanent writer.
+
+Nothing was edited to unblock. No hook was bypassed, and `.claude/active-packet.json` was not
+touched.
+
+#### `contract_gap BP82-14` — founder ruling: not landed, held here
+
+Founder chose **neither** widening: the skill does not land as a file this session. The scratchpad
+is session-scoped and would be lost, so the full draft is preserved verbatim below. Whoever gives
+`.claude/skills/` an owner lifts this block into `.claude/skills/blueprint-to-cpp/SKILL.md`
+unchanged — it is a complete file including frontmatter, not an excerpt. The gap stays OPEN.
+
+~~~~markdown
+---
+name: blueprint-to-cpp
+description: Transferring an existing Blueprint's graph into C++ 1:1 — extracting exec order over the UE MCP bridge, the wire-beats-literal rule that makes an extraction a read instead of a guess, calling Blueprint component functions by reflection, and landing the result as an R26 child. Load for ANY task that ports, transcribes, absorbs, or "moves to C++" a graph from a marketplace/template Blueprint, and before deleting variables or graphs from the source asset. Laws 2/3/4/7 and R26 in CLAUDE.md are LAW; this skill is HOW a faithful port obeys them.
+---
+
+# Blueprint → C++ — porting a graph without inventing it
+
+**Written from BP82** (`docs/tickets/TICKET_BP82_ANIM_SPINE_FROM_TEMPLATE.md` §"BP_FPST_Character
+graph transferred to AMyCharacter", commit `0cee043`), where the FPS template character's
+288-node graph became `Source/Breachpoint/Character/MyCharacter.{h,cpp}`. Every rule below cost
+something to learn. Where this skill and a working build disagree, the build is right — correct
+this file in the packet that finds the disagreement.
+
+**The one idea:** a port has two halves, and the second is worthless without the first.
+**Extraction** is a measurement of an asset. **Transcription** is code. Do them in that order,
+in separate passes, and never let a transcription decision quietly rewrite an extraction result.
+A guess that reaches the C++ looks exactly like a read — that is the whole failure mode.
+
+## 1. Extract first, write code second
+
+Drive the running editor over the Unreal MCP bridge (`/unreal-mcp`; `/ue-editor` for the doctrine
+on when a script beats live editing). Read the asset **completely** before opening an editor on
+the `.h`.
+
+**`read_graph_dsl` cannot read a COLLAPSED graph.** It dies inside `_fingerprint` on
+`unreal.Blueprint.cast(graph.get_outer())`, because a collapsed graph's outer is the
+`K2Node_Composite`, not the Blueprint. On BP82 that silently killed 3 of 5 subgraphs — including
+BeginPlay. **The workaround is the actual method:** rebuild exec order from the pin graph
+yourself — `find_nodes` + `get_node_infos`, then walk Exec output pins from each entry point.
+All 19 entry points came back that way. If your extraction returns fewer entry points than the
+Blueprint's function list plus its events, you are missing a collapsed graph, not looking at a
+small Blueprint.
+
+Cross-check the recovered set against `list_functions` — and know that `bIsImplemented` there can
+refer to the **parent's** implementation. BP82 chased `CanJumpInternal` until `get_graph` answered
+"Cannot find graph CanJumpInternal in Blueprint": there was no override to port, and calling
+`Super` was correct all along.
+
+Read variable defaults from the **CDO**, not from the graph and never from memory.
+
+## 2. The wire beats the literal — the rule the whole port rests on
+
+A K2 pin can carry BOTH a default literal and an incoming wire. **The wire wins; the literal is
+dead data.** A naive walker prints the literal.
+
+BP82's first pass did exactly that, and so:
+
+- every `Branch` read `Condition = true`
+- every wired scalar read `0.0` — `SetMaxWalkSpeed=0.0`, `AddControllerYawInput Val=0.0`
+
+Roughly 30 "reads" in that port were inferences wearing the costume of reads. The re-run made the
+wire always win, **resolved the producing node recursively into an expression**, and built an
+explicit branch → condition → then/else map.
+
+That second pass is what turned the port 1:1. It closed four guesses as confirmed CDO reads
+(`AimWalkSpeed=250`, `SprintWalkSpeed=900`, `DefaultWalkSpeed=600`, `LookSensitivity=1` — all four
+happened to match, which is luck, not method) and it caught **four real bugs the first port had
+already shipped**:
+
+| site | port had | graph actually had |
+|---|---|---|
+| crouch | `bIsCrouched ? UnCrouch : Crouch` | `(!bIsCrouched && !IsFalling) ? Crouch : UnCrouch` — missing falling guard crouched mid-air |
+| sprint | unconditional | gated on `ForwardAxisValue > 0`, no else — you could sprint backwards |
+| `HitEffectEvent` | no guard | gated on `HitActor != LastHitActor` — a held trigger replayed the elimination sound every trace |
+| unarmed test | `!IsValid(GetCurrentWeapon())` | `Equal(Enum)` on weapon TYPE — a valid actor in the unarmed slot took the wrong arm |
+
+**Do the verification pass as a scheduled step, not when someone asks "are you sure?".**
+
+**When an operand genuinely will not resolve, say so in the code.** BP82's `Equal(Enum)` operands
+never resolved; they became `UnarmedWeaponType = 0` / `SpreadWeaponType = 3`, `EditDefaultsOnly`,
+with a comment naming which half is a guess. The comparison is the graph's; the value is not.
+That makes a correction a config edit instead of a hunt through branches.
+
+## 3. Collapse duplication — transcribe the behaviour, not the nodes
+
+288 nodes in BP82's "Weapon" graph reduced to **7 methods**. `X` / `Z` / `MouseWheelUp` /
+`MouseWheelDown` each held a byte-identical swap chain that itself contained the holster branch
+twice — eight copies of one `SwapWeapon(bNext)`. Melee was four copies of one trace. Fire was the
+same trace→tracer→impact→damage→hit chain twice, once single and once inside a 6-iteration spread
+loop, selected by `NotEqual(Enum) ? single : ForLoop`.
+
+Node count is not work. Count *distinct* chains.
+
+## 4. Deviations are allowed; silent deviations are not
+
+Every place the C++ departs from the graph is forced by a law, and each one is written into the
+class comment where the next reader hits it. BP82's four:
+
+| graph did | C++ does | law |
+|---|---|---|
+| engine point-damage node ×6, `BaseDamage = 10.0` | one `DealDamage()` seam | 2 bans the API, 3 bans the literal |
+| `EventTick` line-trace every frame | `AimTraceTimer` at 0.033s | 4 |
+| `CreateWidget` + `AddToViewport` | not reproduced | bypasses `BRUIManagerSubsystem` |
+| hardcoded weapon/grenade class paths | soft refs in `DefaultGame.ini` | 3 |
+
+A deviation that is not in the header comment and not in the ticket Log will be read as a bug by
+whoever reconciles the two next.
+
+## 5. Create no components. Touching `Mesh` is what T-poses the character
+
+The ported class calls **zero** `CreateDefaultSubobject`. The component tree stays on the
+Blueprint's SCS and is resolved by pointer in `PostInitializeComponents`. No `SkeletalMesh`, no
+`AnimClass`, no skeleton is ever written from C++ — anim changes go through `LinkAnimClassLayers`
+exactly as the graph did.
+
+**Resolve by name first, class second** (`MyCharacter.cpp:177-220`), because three cameras of one
+class cannot be told apart by type:
+
+```cpp
+CachedFPSCamera = Cast<UCameraComponent>(FindNamedComponent(N_FPSCamera));
+if (!CachedFPSCamera && !CachedFPSCam)
+{
+    CachedFPSCamera = FindComponentByClass<UCameraComponent>();  // safety net
+}
+```
+
+**Prefix every cached pointer `Cached*`.** A Blueprint **cannot** name an SCS component after a
+property its parent C++ class declares. While `AMyCharacter` owned a property called `FPSCamera`,
+adding an `FPSCamera` component to the child silently produced one named `Camera` — no warning,
+and name lookup then missed it. The prefix frees the names the Blueprint wants.
+
+**Measure the tree; do not assume it.** BP82 spawned both Blueprints as probe actors, walked the
+live trees with `get_components` + `get_parent_component`, then removed the probes. That found a
+CDO property `FPSCam` with **no component behind it**, and the real transforms
+(`CharacterMesh0` at `(0,0,-89)` yaw 270, `FPSCamera` under the *mesh*, not the capsule).
+
+## 6. Calling back into Blueprint components — by reflection, never by guessed layout
+
+Functions that live on Blueprint component classes cannot be called from C++ with a hand-built
+parameter struct. **A wrong `ProcessEvent` layout is silent memory corruption, not a compile
+error.** Two lawful answers:
+
+**(a) Stub the hook, honestly.** BP82 left 20 `virtual` hooks (`ChangePose`, `SetADS`,
+`SetLeaning`, `WeaponTrace`, `ImpactEffect`, `ShowCrosshair`, …) **empty**, with the exec order
+*around* them correct. Each hook is then the single place its component's port lands.
+
+**(b) Find the parameters by name off the `UFunction`** — `MyCharacter.cpp:62-165`, `FBPCall`.
+Allocate `Fn->ParmsSize`, `InitializeValue_InContainer` every `CPF_Parm` property, set params via
+`FindFProperty<FBoolProperty>(Fn, TEXT("bParamName"))`, `Invoke()`, then destroy them in the dtor.
+Nothing is guessed: a renamed pin returns `false` from the setter instead of corrupting a stack.
+Every `FBPCall` site is temporary and disappears the day its component is ported.
+
+## 7. Types across the seam — the base class, not the cast node
+
+C++ may not hard reference a Blueprint class, so a first port types the whole API `AActor*`. The
+Blueprint side types the same things as its own BP base — and **every pin between them is then
+incompatible**: "Actor Object Reference is not compatible with BP FPST Base Weapon Object
+Reference", 2 fatal issues, compile refused.
+
+The fix is a C++ base class the Blueprint reparents onto (`ABPWeaponBase : AActor`) — and it
+**declares nothing**. That emptiness is load-bearing: **a Blueprint function whose name matches a
+parent `UFUNCTION` is a compile error, not an override.** `BP_FPST_BaseWeapon` already owned
+`GetAttachSocketName`, `GetCrosshairType`, `GetFireAnimMontage`, `GetReloadAnimMontage`,
+`GetLinkAnimLayerClass`; adding any of those names to the new base breaks all five weapon
+Blueprints at once. Read the asset's function list **before** adding a member.
+
+**The C++ retype and the reparent must land together.** Between them, every
+`TryLoadClass<ABPWeaponBase>` on a path that is not yet that class logs an error and spawns
+nothing.
+
+## 8. Landing it — fresh R26 child, never strip the original
+
+**Create a new child of the C++ class. Do not duplicate-and-strip the source Blueprint.**
+`remove_variable` exists; there is **no remove-graph tool**. A stripped duplicate leaves hundreds
+of nodes referencing variables that were just deleted. A fresh asset has neither problem, and the
+original stays as the reference — BP82's 1.67 MB `BP_FPST_Character` versus the 40 KB
+`BP_FPSCharacter` that replaced it.
+
+The child must satisfy **R26**: direct BP child of a `BR`/`BP` C++ class, defaults only, empty
+graphs, no new members, named `BP_<CppClassWithoutPrefix>`. Anything expressible in
+`Config/DefaultGame.ini` goes there instead — including the spawned pawn class, which BP82 pinned
+as a soft `DefaultPawnClassOverride` so the game spawns the child with meshes, not the meshless
+C++ pawn.
+
+**The old asset still blocks its own compile.** Its variables now shadow parent C++ members, and
+**a BP variable shadowing a parent C++ member is a compile error**. Deleting the source's
+variables and graphs is its own delete-and-verify pass, it is destructive, and it does not happen
+unasked.
+
+## 9. Editor-tooling limits that bound what can be automated
+
+| tool | reality |
+|---|---|
+| `BlueprintTools.create` | `asset_type` is the **PARENT CLASS**. Passing `/Script/Engine.Blueprint` pops a modal, and because MCP calls run on the game thread that modal **DEADLOCKS the MCP server**. A hung tool call is the symptom; look for a window named "Message" before assuming the server died. |
+| `ActorTools.add_component` | Honours `name` **except** where it collides with a parent C++ `UPROPERTY` — then it silently renames. See §5. |
+| `ActorTools.set_parent_component` | Works. Hierarchy is fixable over MCP. |
+| `ObjectTools.set_properties` | Returns `false` for EVERY component-template property, on both the CDO path and the `_GEN_VARIABLE` class path, before and after compile+save. **Reads work; writes do not.** Component transforms and the mesh assignment are HAND work. |
+
+An inherited component template that cannot be written from the toolset gets a **table of exact
+values in the ticket Log** for a human to type — mesh, anim class, relative location/rotation,
+`bOwnerNoSee`. An unassigned mesh spawns an invisible pawn, which is the same *symptom* as several
+other bugs and a different *cause*; name it correctly if it reappears.
+
+If the editor sits at ~133% CPU without bringing its MCP server up, check for a **"Memory Pressure
+Warning"** in its log before diagnosing the bridge.
+
+## 10. Reporting a port
+
+The honesty ladder (law 6) applies unchanged, and a port lands at the bottom of it:
+
+- **COMPILES** means: the editor target built, exit 0, **zero warnings**, and it touched the base
+  binary (`libUnrealEditor-Breachpoint.dylib` / `.dll`), not a `-0001` hot-reload artifact — the
+  base `UnrealEditor.modules` is what loads. Check the manifest. That check is part of how a port
+  reports a build.
+- **COMPILES is not "ported".** BP82's entry says it plainly: not PIE, not standalone, not
+  multiplayer. Anything above rung 1 is a separate claim with its own evidence.
+- The Log gets: what landed, the deviation table, what is stubbed and why, what is a guess and
+  where the guess is named in code, and the blocking next step. A decision that lives only in chat
+  is lost.
+~~~~
+
+### 11 Aug 2026 — weapon spawn, hand attach, start weapon, and the fire chain
+
+Founder: "make sure we are creating the weapon correctly on start and it appears in my hands,
+default should be the rifle" then "make sure I am able to shoot the gun properly", both 1:1.
+
+**No editor was running and Remote Control :30010 was down, so none of this came over MCP.**
+Ground truth was read straight out of the `.uasset` string tables. That is weaker evidence than a
+graph read and it is labelled as such per finding below.
+
+**Enum ordinals: the two UNVERIFIED guesses from 9 Aug are now READS.** `E_FPST_WeaponType.uasset`
+carries five named enumerators in order — Unarmed, Pistol, Rifle, Shotgun, Knife — and each weapon
+asset's own `WeaponType` default agrees independently: Pistol `NewEnumerator1`, Rifle
+`NewEnumerator2`, Knife `NewEnumerator4`. So `UnarmedWeaponType = 0` and `SpreadWeaponType = 3`
+(the Shotgun) are correct, and the header comment that admitted they were guesses is replaced with
+the evidence. `E_FPST_FireMode` reads Single=0, Auto=1, Burst=2.
+
+**Four real defects found and fixed. Every one of them was silent.**
+
+| # | site | was | now |
+|---|---|---|---|
+| 1 | `CreateWeapon` | `AttachToComponent(GetMesh(), rules)` — no socket | attaches at the weapon's own `AttachSocketName` |
+| 2 | `BeginPlay` | `CurrentWeaponIndex` left at 0 = first SPAWNED weapon = Pistol | `SelectStartupWeapon()` → `StartupWeaponType` = 2 = Rifle |
+| 3 | `WeaponTrace` / `WeaponTraceWithSpread` | `{ return false; }` — inline stubs | real `LineTraceSingle` / cone scatter |
+| 4 | `StartFire` / `StopFire` | `{}` — empty stubs, and nothing ever called `FireEvent` | the FireTimer switch, ported |
+
+**1 — the weapon was at the character's feet, not in its hand.** `AttachSocketName` is a
+**VARIABLE** on `BP_FPST_BaseWeapon` (display name "Attach Socket Name"), base default `hand_r`,
+inherited by all four children. There is **no `GetAttachSocketName` function** — `BPWeaponBase.h`
+claimed one existed and that comment was wrong; corrected. Read by reflection
+(`FindFProperty<FNameProperty>`), never by casting to the BP type. A missing property or a socket
+the mesh does not have now logs a warning naming both, because attaching at the root is otherwise
+indistinguishable from working.
+
+**2 — the start weapon was the Pistol.** `CreateWeapons` alone leaves the index at 0, which is
+whichever class `StartupWeaponClasses` happens to list first. The graph's BeginPlay carries a node
+group commented **"Rifle - Start Weapon"** next to an enum pin literal `NewEnumerator2`. New
+`StartupWeaponType` (Config, default 2) is a **TYPE, not a list index**, so reordering the config
+cannot silently change what you spawn holding.
+
+**3 — nothing could ever be hit.** Both traces were `{ return false; }`. `BPC_FPST_LineTracer` is
+`LineTraceSingle` on `TraceTypeQuery1` (Visibility) from FireLocation to
+`FireLocation + FireDirection * Distance`, ignore-self, with the spread variant scattering through
+`RandomUnitVectorInConeInDegrees(ConeDir, ConeHalfAngleInDegrees)` first. Ported as read. Its
+`SpreadAngle` is the **weapon's** variable, not the character's — the character's is now the
+no-weapon fallback only, and the same for `FireDelay`.
+
+**4 — pulling the trigger did literally nothing.** `OnFireStarted` called an empty `StartFire`, and
+`FireEvent` had **no caller at all**: the graph reached it through
+`BPC_FPST_FireTimer`'s `EventDispatcher_Fire`, bound in BeginPlay's then_3, and neither the
+dispatcher nor the bind was ever reproduced. The component reads as a `SwitchEnum` on
+E_FPST_FireMode over `K2_SetTimerDelegate(bLooping)` with `FireTimerHandle`, `BurstFireCount`,
+`GreaterEqual_IntInt` and `K2_ClearAndInvalidateTimerHandle`. Ported into three arms — Single fires
+once with no timer; Auto fires immediately then loops at `FireDelay` while held; Burst counts to
+`BurstShotCount` and stops itself. `OnFireStarted` now passes the weapon's real
+`GetCurrentFireMode()` (a genuine UFUNCTION, called through `FBPCall`, which gained a
+`GetReturnByte` handling both FByteProperty and FEnumProperty) and its real `FireDelay`, instead of
+the fixed `FireMode_Default, 0.f` that made every weapon a single-shot.
+
+**Rung 1: PASS**, run stamp `20260811-090448`, all three targets, exit 0, **zero warnings**, every
+artifact newer than its start. (`20260811-085920` was the same, for the weapon/attach half alone.)
+
+**RUNG IS STILL "COMPILES". Nothing in this entry has been run — not PIE, not standalone, not
+multiplayer.** PIE remains blocked behind BP82-13. Specifically NOT claimed: that a weapon appears
+in the hand, that the rifle is what spawns, or that firing produces anything on screen.
+
+**Still missing for a shot that reads as a shot, and none of it is a bug:**
+- `DealDamage` still applies **nothing**. Law 2 — the engine damage API is banned and the one
+  pipeline is GAS. Traces land and hit actors resolve; nothing takes damage until that seam is
+  wired by the GAS ticket. This is the single biggest gap behind "shooting works".
+- `FireTracerEffect`, `ImpactEffect`, `FireCameraRecoil`, `PlayWeaponAnim`, `ShowCrosshair` are
+  still empty BPC_* hooks — no muzzle flash, no tracer, no impact FX, no recoil, no fire animation.
+- `BurstShotCount = 3` **is a guess.** The `GreaterEqual_IntInt` literal did not resolve out of the
+  asset; the comparison is the component's, the number is not. EditDefaultsOnly and commented as
+  such, so correcting it is a config edit.
+- The mesh on `BP_FPSCharacter` is still unassigned and still needs a human — `set_properties`
+  cannot write an inherited component template. Until then there is no `hand_r` to attach to and
+  defect 1 will look unfixed.

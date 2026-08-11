@@ -15,6 +15,8 @@
 #include "InputAction.h"
 #include "InputActionValue.h"
 #include "InputMappingContext.h"
+#include "Kismet/KismetMathLibrary.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "TimerManager.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogMyCharacter, Log, All);
@@ -37,6 +39,9 @@ namespace
 	const FName N_Recoil(TEXT("BPC_FPST_Procedural_Recoil"));
 	const FName N_SwayAndLag(TEXT("BPC_FPST_Procedural_SwayAndLag"));
 
+	/** The weapon-side FName variable holding the character-mesh socket to attach at. */
+	const FName N_AttachSocketName(TEXT("AttachSocketName"));
+
 	/** E_FPST_WeaponType / crosshair / pose enumerators, by the ordinals the graph used. */
 	constexpr uint8 Pose_HipStand = 1;
 	constexpr uint8 Pose_AimStand = 2;
@@ -45,7 +50,14 @@ namespace
 	constexpr uint8 Scope_Default = 0;
 	constexpr uint8 Crosshair_Default = 0;
 	constexpr uint8 Crosshair_None = 4;
-	constexpr uint8 FireMode_Default = 0;
+	/** E_FPST_FireMode, read from the asset: three named enumerators in this order. */
+	constexpr uint8 FireMode_Single = 0;
+	constexpr uint8 FireMode_Auto = 1;
+	constexpr uint8 FireMode_Burst = 2;
+
+	/** Weapon-side variables and the one weapon-side getter, all resolved by name. */
+	const FName N_FireDelay(TEXT("FireDelay"));
+	const FName N_SpreadAngle(TEXT("SpreadAngle"));
 
 	/**
 	 * Calls a BlueprintCallable function on a Blueprint class by name.
@@ -155,6 +167,28 @@ namespace
 				return P->GetPropertyValue_InContainer(Buffer);
 			}
 			return NAME_None;
+		}
+
+		/**
+		 * The function's ReturnValue as an enum ordinal. A Blueprint user-defined enum
+		 * reaches C++ as either an FByteProperty or an FEnumProperty depending on how the
+		 * pin was authored, so both are handled rather than guessed at.
+		 */
+		bool GetReturnByte(uint8& OutValue) const
+		{
+			if (const FByteProperty* P = FindFProperty<FByteProperty>(Fn, TEXT("ReturnValue")))
+			{
+				OutValue = P->GetPropertyValue_InContainer(Buffer);
+				return true;
+			}
+			if (const FEnumProperty* P = FindFProperty<FEnumProperty>(Fn, TEXT("ReturnValue")))
+			{
+				const FNumericProperty* Underlying = P->GetUnderlyingProperty();
+				const void* Addr = P->ContainerPtrToValuePtr<void>(Buffer);
+				OutValue = static_cast<uint8>(Underlying->GetSignedIntPropertyValue(Addr));
+				return true;
+			}
+			return false;
 		}
 
 	private:
@@ -276,6 +310,7 @@ void AMyCharacter::BeginPlay()
 	// then_1 — CreateWeapons -> HideAllWeapons -> unhide current -> LinkAnimClassLayers
 	//          -> ChangeInfo -> FireTimer.StartComp(Mesh)
 	CreateWeapons();
+	SelectStartupWeapon();
 	HideAllWeapons();
 	if (ABPWeaponBase* Current = GetCurrentWeapon())
 	{
@@ -355,6 +390,50 @@ void AMyCharacter::CreateWeapons()
 	}
 }
 
+void AMyCharacter::SelectStartupWeapon()
+{
+	// The graph's BeginPlay carries a node group commented "Rifle - Start Weapon" whose enum
+	// pin literal is E_FPST_WeaponType::NewEnumerator2 — Rifle. CreateWeapons alone leaves
+	// CurrentWeaponIndex at 0, which is the FIRST SPAWNED weapon (the Pistol, because the
+	// config lists Pistol first), not the start weapon. Without this the character spawns
+	// holding the pistol.
+	if (AvailableWeapons.Num() == 0)
+	{
+		return;
+	}
+
+	const int32 Found = AvailableWeapons.IndexOfByKey(StartupWeaponType);
+	if (Found != INDEX_NONE)
+	{
+		CurrentWeaponIndex = Found;
+		return;
+	}
+
+	CurrentWeaponIndex = 0;
+	UE_LOG(LogMyCharacter, Warning,
+		TEXT("MyCharacter: StartupWeaponType %u is not among the %d spawned weapons — falling "
+			 "back to slot 0. Check StartupWeaponClasses order against E_FPST_WeaponType."),
+		StartupWeaponType, AvailableWeapons.Num());
+}
+
+FName AMyCharacter::GetWeaponAttachSocket(const ABPWeaponBase* InWeapon) const
+{
+	if (!InWeapon)
+	{
+		return NAME_None;
+	}
+
+	// Same doctrine as FBPCall: find the member by NAME off the reflection data rather than
+	// casting to a Blueprint type. A renamed or deleted property yields NAME_None and the
+	// warning at the call site, never a bad read.
+	if (const FNameProperty* Prop =
+			FindFProperty<FNameProperty>(InWeapon->GetClass(), N_AttachSocketName))
+	{
+		return Prop->GetPropertyValue_InContainer(InWeapon);
+	}
+	return NAME_None;
+}
+
 void AMyCharacter::CreateWeapon(uint8 InWeaponType, TSubclassOf<ABPWeaponBase> InWeaponClass)
 {
 	if (!InWeaponClass)
@@ -373,12 +452,36 @@ void AMyCharacter::CreateWeapon(uint8 InWeaponType, TSubclassOf<ABPWeaponBase> I
 		return;
 	}
 
-	// AttachActorToComponent(Mesh, GetAttachSocketName, SnapToTarget, SnapToTarget).
-	// The socket name is a weapon-side getter; until that class is ported, attach to the
-	// mesh root, which is where a weapon with no socket would land anyway.
+	// AttachActorToComponent(Mesh, AttachSocketName, SnapToTarget, SnapToTarget).
+	//
+	// AttachSocketName is a VARIABLE on BP_FPST_BaseWeapon (display name "Attach Socket
+	// Name"), not a getter — there is no GetAttachSocketName function on that asset, and the
+	// graph read the property directly. Its base default is the Manny skeleton's `hand_r`
+	// bone; the four children inherit it. Read by reflection, because a hard reference to a
+	// Blueprint class is banned (law 3).
+	//
+	// Passing NAME_None here is what left the weapon at the mesh ROOT — under the character's
+	// feet rather than in its hand. Nothing about that failure is loud, so it is logged.
+	const FName SocketName = GetWeaponAttachSocket(Weapon);
 	Weapon->AttachToComponent(GetMesh(),
 		FAttachmentTransformRules(EAttachmentRule::SnapToTarget, EAttachmentRule::SnapToTarget,
-			EAttachmentRule::KeepWorld, /*bWeldSimulatedBodies=*/false));
+			EAttachmentRule::KeepWorld, /*bWeldSimulatedBodies=*/false),
+		SocketName);
+
+	if (SocketName.IsNone())
+	{
+		UE_LOG(LogMyCharacter, Warning,
+			TEXT("MyCharacter: '%s' has no AttachSocketName — attached at the mesh root, which "
+				 "puts it at the character's feet, not in its hand."),
+			*GetNameSafe(Weapon));
+	}
+	else if (GetMesh() && !GetMesh()->DoesSocketExist(SocketName))
+	{
+		UE_LOG(LogMyCharacter, Warning,
+			TEXT("MyCharacter: AttachSocketName '%s' on '%s' is neither a socket nor a bone on "
+				 "mesh '%s' — the weapon falls back to the mesh root."),
+			*SocketName.ToString(), *GetNameSafe(Weapon), *GetNameSafe(GetMesh()->GetSkeletalMeshAsset()));
+	}
 
 	const int32 Slot = static_cast<int32>(InWeaponType);
 	if (AllWeapons.IsValidIndex(Slot))
@@ -667,7 +770,9 @@ void AMyCharacter::OnFireStarted()
 	// Operands unresolved, so the armed test uses the named ordinal.
 	if (GetCurrentWeaponType() != UnarmedWeaponType)
 	{
-		StartFire(FireMode_Default, 0.f);
+		// The graph read both off the weapon: GetCurrentFireMode picks the arm, FireDelay
+		// sets the cadence. Passing a fixed 0 here is what made every weapon fire once.
+		StartFire(GetWeaponFireMode(), GetWeaponFireDelay());
 	}
 	else
 	{
@@ -747,6 +852,165 @@ void AMyCharacter::SwapWeapon(bool bNext)
 	}
 }
 
+// -------------------------------------------------------------------------------------
+// BPC_FPST_LineTracer, ported.
+// -------------------------------------------------------------------------------------
+
+bool AMyCharacter::WeaponTrace(const FVector& Start, const FVector& Dir, float Distance,
+	FHitResult& OutHit)
+{
+	// TempTraceEnd = FireLocation + FireDirection * Distance, then LineTraceSingle on
+	// TraceTypeQuery1 — the component's TraceChannel literal, which is Visibility.
+	const FVector End = Start + (Dir * Distance);
+
+	const TArray<AActor*> ActorsToIgnore;
+	return UKismetSystemLibrary::LineTraceSingle(
+		this, Start, End, UEngineTypes::ConvertToTraceType(ECC_Visibility),
+		/*bTraceComplex=*/false, ActorsToIgnore, EDrawDebugTrace::None, OutHit,
+		/*bIgnoreSelf=*/true, FLinearColor::Red, FLinearColor::Green, /*DrawTime=*/0.f);
+}
+
+bool AMyCharacter::WeaponTraceWithSpread(const FVector& Start, const FVector& Dir, float Distance,
+	float Spread, FHitResult& OutHit)
+{
+	// RandomUnitVectorInConeInDegrees(ConeDir, ConeHalfAngleInDegrees), then the same trace.
+	const FVector Scattered = UKismetMathLibrary::RandomUnitVectorInConeInDegrees(Dir, Spread);
+	return WeaponTrace(Start, Scattered, Distance, OutHit);
+}
+
+// -------------------------------------------------------------------------------------
+// BPC_FPST_FireTimer, ported. Start is a SwitchEnum on E_FPST_FireMode.
+// -------------------------------------------------------------------------------------
+
+void AMyCharacter::StartFire(uint8 FireType, float Delay)
+{
+	StopFire();
+
+	// The component's Delay pin came from the weapon's FireDelay; a zero from a caller that
+	// did not know the weapon means "ask the weapon", never "fire every frame".
+	const float Period = (Delay > 0.f) ? Delay : GetWeaponFireDelay();
+
+	switch (FireType)
+	{
+	case FireMode_Single:
+		// Single: broadcast once, no timer.
+		FireEvent();
+		break;
+
+	case FireMode_Auto:
+		// Auto: one immediate shot, then a looping timer for as long as the trigger is held.
+		FireEvent();
+		GetWorldTimerManager().SetTimer(FireTimerHandle, this, &AMyCharacter::FireEvent,
+			Period, /*bLoop=*/true);
+		break;
+
+	case FireMode_Burst:
+		// Burst: BurstFireEvent counts shots and stops itself at BurstShotCount.
+		BurstFireCount = 0;
+		BurstFireTick();
+		if (BurstShotCount > 1)
+		{
+			GetWorldTimerManager().SetTimer(FireTimerHandle, this, &AMyCharacter::BurstFireTick,
+				Period, /*bLoop=*/true);
+		}
+		break;
+
+	default:
+		UE_LOG(LogMyCharacter, Warning,
+			TEXT("MyCharacter: unknown E_FPST_FireMode %u — firing one shot."), FireType);
+		FireEvent();
+		break;
+	}
+}
+
+void AMyCharacter::BurstFireTick()
+{
+	++BurstFireCount;
+	if (BurstFireCount >= BurstShotCount)
+	{
+		// GreaterEqual_IntInt -> Stop. FireEnd's dispatcher had no subscriber in the graph.
+		StopFire();
+		return;
+	}
+	FireEvent();
+}
+
+void AMyCharacter::StopFire()
+{
+	GetWorldTimerManager().ClearTimer(FireTimerHandle);
+	BurstFireCount = 0;
+}
+
+void AMyCharacter::NextFireMode()
+{
+	// NextFireMode is the WEAPON's own function — it walks AvailableFireModes and advances
+	// CurFireModeIndex. Nothing character-side to port.
+	if (ABPWeaponBase* Weapon = GetCurrentWeapon())
+	{
+		FBPCall Call(Weapon, TEXT("NextFireMode"));
+		if (Call.IsBound())
+		{
+			Call.Invoke();
+		}
+	}
+}
+
+float AMyCharacter::GetWeaponFireDelay() const
+{
+	if (const ABPWeaponBase* Weapon = GetCurrentWeapon())
+	{
+		if (const FFloatProperty* P = FindFProperty<FFloatProperty>(Weapon->GetClass(), N_FireDelay))
+		{
+			const float Value = P->GetPropertyValue_InContainer(Weapon);
+			if (Value > 0.f)
+			{
+				return Value;
+			}
+		}
+		else if (const FDoubleProperty* P64 =
+					FindFProperty<FDoubleProperty>(Weapon->GetClass(), N_FireDelay))
+		{
+			const double Value = P64->GetPropertyValue_InContainer(Weapon);
+			if (Value > 0.0)
+			{
+				return static_cast<float>(Value);
+			}
+		}
+	}
+	return FireDelay;
+}
+
+float AMyCharacter::GetWeaponSpreadAngle() const
+{
+	if (const ABPWeaponBase* Weapon = GetCurrentWeapon())
+	{
+		if (const FFloatProperty* P = FindFProperty<FFloatProperty>(Weapon->GetClass(), N_SpreadAngle))
+		{
+			return P->GetPropertyValue_InContainer(Weapon);
+		}
+		if (const FDoubleProperty* P64 =
+				FindFProperty<FDoubleProperty>(Weapon->GetClass(), N_SpreadAngle))
+		{
+			return static_cast<float>(P64->GetPropertyValue_InContainer(Weapon));
+		}
+	}
+	return SpreadAngle;
+}
+
+uint8 AMyCharacter::GetWeaponFireMode() const
+{
+	if (ABPWeaponBase* Weapon = GetCurrentWeapon())
+	{
+		FBPCall Call(Weapon, TEXT("GetCurrentFireMode"));
+		uint8 Mode = FireMode_Single;
+		if (Call.IsBound() && Call.Invoke() && Call.GetReturnByte(Mode))
+		{
+			return Mode;
+		}
+	}
+	return FireMode_Single;
+}
+
 void AMyCharacter::FireEvent()
 {
 	FireCameraRecoil(bIsAiming);
@@ -785,10 +1049,13 @@ void AMyCharacter::FireEvent()
 	}
 	else
 	{
+		// SpreadAngle is the WEAPON's variable, not the character's — the shotgun's cone is
+		// its own number. This class's SpreadAngle is only the no-weapon fallback.
+		const float Cone = GetWeaponSpreadAngle();
 		for (int32 Pellet = 0; Pellet < SpreadPelletCount; ++Pellet)
 		{
 			FHitResult Hit;
-			ResolveHit(Hit, WeaponTraceWithSpread(Start, Dir, FireTraceDistance, SpreadAngle, Hit));
+			ResolveHit(Hit, WeaponTraceWithSpread(Start, Dir, FireTraceDistance, Cone, Hit));
 		}
 	}
 }
