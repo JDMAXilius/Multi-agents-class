@@ -1,0 +1,68 @@
+--- proving the content gaps from the repo ---
+  PROVEN     announcer_coverage: Four of eleven medals award in silence
+  PROVEN     coach_fallback: The offline coach line has no canned table to fall back to
+  PROVEN     bot_callsigns: Bots fill up to 7 of 8 slots and none of them has a name
+
+engine: ReplayEngine · model claude-sonnet-5 · recording recording.json
+knowledge base: 95 chunks from 8 sources (65 slice / 30 phase2)
+
+=== announcer: Announcer lines for the four medals that award in silence
+  retrieved 7 chunks (scope=slice):
+      38.41  slice   breachpoint/Content/Data/DT_Medals.csv:2-12
+      22.54  slice   breachpoint/Content/Data/DT_SpotterLines.csv:50-64
+      22.33  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:213-227
+      14.50  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:282-298
+      14.50  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:41-46
+      12.02  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:528-544
+      11.01  slice   breachpoint/Content/Data/DT_SpotterLines.csv:2-25
+  generated 12 rows · gate A passed
+  critic: FINDINGS — 4 finding(s), 2 blocking
+    [high  ] lore-break  S25a: unqualified 'Spree ended' plays for killing an enemy's spree but reads identically to a player's own
+    [high  ] lore-break  S25b: this is nearly a negation of S04b's 'Killing spree.' line and will read as the player's own spree be
+    [medium] lore-break  S25c: same whose-spree ambiguity as S25a/S25b, and the apostrophe contraction is not used elsewhere in the
+    [medium] redundancy  S23c: conveys the same single fact as S23a with no new information, so the trio does not provide the three
+  revised · gate B passed · canon lint clean
+  corrected rows: S25a, S25b
+  LANDED output/DT_SpotterLines_Additions.csv (12 rows)
+
+=== coach: The canned coach table that ships as the Spotter's offline fallback
+  retrieved 8 chunks (scope=slice):
+      46.19  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:556-562
+      43.47  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:282-298
+      21.26  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:213-227
+      14.91  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:409-423
+      14.73  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:426-440
+      13.37  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:399-406
+       9.94  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:329-342
+       8.19  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:113-123
+  generated 10 rows · gate A passed
+  critic: FINDINGS — 1 finding(s), 0 blocking
+    [medium] schema-risk C02: The value is interpolated raw with no unit (no '%' as used for accuracy_ar/accuracy_magnum) and the 
+  LANDED output/DT_CoachLines.csv (10 rows)
+
+=== callsigns: Callsigns for the bots that fill up to seven of eight slots
+  retrieved 6 chunks (scope=slice):
+      27.02  slice   breachpoint/Content/Data/DT_BotTuning.csv:2-4
+      20.82  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:195-210
+      19.94  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:49-55
+      15.30  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:399-406
+      10.78  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:24-38
+       9.15  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:264-279
+  generated 15 rows · gate A passed
+  critic: FINDINGS — 3 finding(s), 1 blocking
+    [high  ] lore-break  B09: The note cites 0.65 as Marine's push_threshold, but the shipped table has push_threshold=0.95 for Ma
+    [medium] redundancy  B08: IRONCLAD and LOCKSTEP both exist only to say 'this is the unmodified baseline profile,' so the two c
+    [medium] redundancy  B04: FALLBACK and BACKSTOP both encode the identical 'avoids first contact / falls back' persona, so the 
+  revised · gate B passed · canon lint clean
+  corrected rows: B09
+  LANDED output/DT_BotCallsigns.csv (15 rows)
+
+--- landed ---
+  output/DT_SpotterLines_Additions.csv  12 rows  — Announcer lines for the four medals that award in silence
+  output/DT_CoachLines.csv  10 rows  — The canned coach table that ships as the Spotter's offline fallback
+  output/DT_BotCallsigns.csv  15 rows  — Callsigns for the bots that fill up to seven of eight slots
+
+critic: 8 finding(s) across 3 job(s); 3 row(s) corrected before landing
+spend (recorded run): 8 calls · 18 in · 37,856 out · $1.1640
+
+trace: output/rag_trace.md · review: output/critic_log.md · gaps: output/gap_report.md

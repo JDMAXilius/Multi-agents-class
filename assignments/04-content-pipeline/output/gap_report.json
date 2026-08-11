@@ -1,0 +1,95 @@
+{
+  "announcer_coverage": {
+    "key": "announcer_coverage",
+    "title": "Four of eleven medals award in silence",
+    "promise": "Feed: killfeed + medals (Double Kill, Killing Spree, Grapple Kill, Rocket multi-kill) \u2014 canned, instant, deterministic.",
+    "citation": "BREACHPOINT-GDD-VERTICAL-SLICE.md \u00a72.9 (HUD)",
+    "proven": true,
+    "evidence": [
+      {
+        "check": "join DT_Medals.TriggerId -> DT_SpotterLines.TriggerId",
+        "result": "4 of 11 medals have no announcer line: Blast Radius (Kill.Rocket.Multi), Breach (Kill.First), Last Word (Match.SuddenDeath.Win), Spree Ender (Kill.SpreeEnder)",
+        "supports_gap": true
+      },
+      {
+        "check": "GDD \u00a72.9 names 'Rocket multi-kill' among shipped medals",
+        "result": "present in the GDD",
+        "supports_gap": true
+      }
+    ],
+    "orphans": [
+      {
+        "RowName": "M4",
+        "MedalName": "Blast Radius",
+        "Description": "Two or more killed with one rocket.",
+        "TriggerId": "Kill.Rocket.Multi"
+      },
+      {
+        "RowName": "M9",
+        "MedalName": "Breach",
+        "Description": "Scored the first kill of the match.",
+        "TriggerId": "Kill.First"
+      },
+      {
+        "RowName": "M10",
+        "MedalName": "Last Word",
+        "Description": "Scored the kill that won sudden death.",
+        "TriggerId": "Match.SuddenDeath.Win"
+      },
+      {
+        "RowName": "M11",
+        "MedalName": "Spree Ender",
+        "Description": "Killed an enemy who was on a killing spree.",
+        "TriggerId": "Kill.SpreeEnder"
+      }
+    ]
+  },
+  "coach_fallback": {
+    "key": "coach_fallback",
+    "title": "The offline coach line has no canned table to fall back to",
+    "promise": "Host-side, async, <= 12 calls/match, 3 s timeout, canned-line DataTable fallback shipped in the build. No connectivity => the game is identical minus flavor.",
+    "citation": "BREACHPOINT-GDD-VERTICAL-SLICE.md \u00a73.3 (The Runtime Agent \u2014 Spotter)",
+    "proven": true,
+    "evidence": [
+      {
+        "check": "Content/Data/*coach*.csv exists",
+        "result": "no coach table on disk",
+        "supports_gap": true
+      },
+      {
+        "check": "grep -i 'coach' across Source/Breachpoint (.cpp/.h)",
+        "result": "0 hits",
+        "supports_gap": true
+      },
+      {
+        "check": "DT_SpotterLines rows at match end that reference a telemetry stat",
+        "result": "6 match-end rows, 0 reference a stat (GDD requires the coach line to reference >= 1)",
+        "supports_gap": true
+      }
+    ]
+  },
+  "bot_callsigns": {
+    "key": "bot_callsigns",
+    "title": "Bots fill up to 7 of 8 slots and none of them has a name",
+    "promise": "Bots fill every unfilled slot. Solo play is Team Slayer with seven bots.",
+    "citation": "BREACHPOINT-GDD-VERTICAL-SLICE.md \u00a71.3 (Mode) + \u00a72.8 (Bots)",
+    "proven": true,
+    "evidence": [
+      {
+        "check": "killfeed/scoreboard reads a player name",
+        "result": "2 read sites: ['breachpoint/Source/Breachpoint/UI/BRHUDDirector.cpp:280', 'breachpoint/Source/Breachpoint/UI/BRHUDDirector.cpp:282']",
+        "supports_gap": true
+      },
+      {
+        "check": "anything ever sets a bot's display name",
+        "result": "0 write sites",
+        "supports_gap": true
+      },
+      {
+        "check": "Content/Data table of bot names exists",
+        "result": "no callsign table on disk",
+        "supports_gap": true
+      }
+    ]
+  }
+}

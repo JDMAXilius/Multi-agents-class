@@ -1,0 +1,11 @@
+RowName,ConditionId,TelemetryField,Threshold,Text,Priority
+C01,LostFightsLowShields,fights_lost_below_40_shields,4,You lost {fights_lost_below_40_shields} fights below 40% shields — break off and let them recharge before re-engaging.,1
+C02,LowShieldConversion,shield_break_to_kill_conversion,0.5,You broke shields but only converted {shield_break_to_kill_conversion} of those breaks into kills — finish the fight before shields reset.,2
+C03,ShortTimeAlive,time_alive,60,"You were only alive for {time_alive}s total — you're pushing into fights before shields recharge, hold cover longer.",3
+C04,LowARAccuracy,accuracy_ar,20,"Your AR accuracy was {accuracy_ar}% — you're spraying at range, switch to Magnum or burst-fire past 15 meters.",4
+C05,LowMagnumAccuracy,accuracy_magnum,25,Your Magnum accuracy was {accuracy_magnum}% — take the extra half-second to land the precision shot instead of spamming triggers.,5
+C06,RocketNeglected,rocket_holds,1,"You held the Rocket only {rocket_holds} times — it respawns every 90s, path through it to control the map.",6
+C07,RearMeleeFlanker,melee_kills_rear,3,"You landed {melee_kills_rear} rear melee kills — your flanking angles are working, keep rotating behind fights to punish backs.",7
+C08,GrappleAggressor,grapple_kills,3,"You landed {grapple_kills} grapple kills — closing distance before the shot is working, keep opening fights with the Grappleshot.",8
+C09,GrenadeDenial,grenade_kills,3,"You landed {grenade_kills} grenade kills — you're clearing angles before pushing, keep leading fights with a frag.",9
+C10,HighAssistsLowKills,assists,8,"You racked up {assists} assists — you're softening shields for teammates to finish, start closing more of those fights yourself.",10
