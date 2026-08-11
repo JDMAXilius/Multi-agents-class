@@ -402,6 +402,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Tuning")
 	float GrenadeThrowDelay = 0.2f;
 
+	/** P on the control board. Not a gameplay number - a debug convenience. */
+	UPROPERTY(EditDefaultsOnly, Category = "Tuning")
+	float SlomoTimeDilation = 0.25f;
+
 	/** EventTick traced every frame; this is that trace's period instead. */
 	UPROPERTY(EditDefaultsOnly, Category = "Tuning")
 	float AimTraceInterval = 0.033f;
@@ -473,6 +477,22 @@ protected:
 	void OnFireCompleted();
 	void OnReload();
 	void OnNextFireModeKey();
+
+	// The DEBUG and ETC groups from the template's control board.
+	void OnDebugFPSMode();
+	void OnDebugTPSMode();
+	void OnDebugTPSView();
+	void OnDebugSideView();
+	void OnToggleFPSWalkMode();
+	void OnToggleSlomo();
+	void OnToggleCameraRotationLag();
+
+	/** Calls a BPC_FPSComp function by name, reporting a miss rather than doing nothing. */
+	bool CallCamCompFunc(const TCHAR* FunctionName);
+
+	bool bFPSWalkMode = false;
+	bool bSlomo = false;
+	bool bCameraRotationLag = false;
 	void OnLeanLeftPressed();
 	void OnLeanLeftReleased();
 	void OnLeanRightPressed();

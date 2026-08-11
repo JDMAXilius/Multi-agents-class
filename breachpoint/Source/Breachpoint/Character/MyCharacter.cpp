@@ -16,6 +16,7 @@
 #include "InputAction.h"
 #include "InputActionValue.h"
 #include "InputMappingContext.h"
+#include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "TimerManager.h"
@@ -860,10 +861,25 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	PlayerInputComponent->BindKey(EKeys::MouseScrollDown, IE_Pressed, this, &AMyCharacter::OnSwapNext);
 	PlayerInputComponent->BindKey(EKeys::MouseScrollUp, IE_Pressed, this, &AMyCharacter::OnSwapPrev);
 
+	// The DEBUG and ETC groups from the template's own control board (FPST v2.31). Raw keys,
+	// like the gameplay ones above, because the template binds them as keys and not as IA_*
+	// assets. Two of the board's entries are deliberately NOT bound:
+	//   O "Settings" - opening a settings screen from the pawn bypasses BRUIManagerSubsystem,
+	//     which owns the layer stack. Same reason BeginPlay does not CreateWidget.
+	//   I "Toggle Camera Mode" - no function on BPC_FPSComp matches it, and binding a key to
+	//     a guessed name would be a silent no-op dressed as a feature.
+	PlayerInputComponent->BindKey(EKeys::Seven, IE_Pressed, this, &AMyCharacter::OnDebugFPSMode);
+	PlayerInputComponent->BindKey(EKeys::Eight, IE_Pressed, this, &AMyCharacter::OnDebugTPSMode);
+	PlayerInputComponent->BindKey(EKeys::Nine, IE_Pressed, this, &AMyCharacter::OnDebugTPSView);
+	PlayerInputComponent->BindKey(EKeys::Zero, IE_Pressed, this, &AMyCharacter::OnDebugSideView);
+	PlayerInputComponent->BindKey(EKeys::Y, IE_Pressed, this, &AMyCharacter::OnToggleFPSWalkMode);
+	PlayerInputComponent->BindKey(EKeys::P, IE_Pressed, this, &AMyCharacter::OnToggleSlomo);
+	PlayerInputComponent->BindKey(EKeys::L, IE_Pressed, this, &AMyCharacter::OnToggleCameraRotationLag);
+
 	// Positive assertion. If this line is absent from a run, SetupPlayerInputComponent never
 	// ran and the pawn was never given an input stack -- a different bug from "bound 0".
 	UE_LOG(LogMyCharacter, Log,
-		TEXT("MyCharacter INPUT: bound=%d failed=%d, plus 11 raw keys. Controller=%s"),
+		TEXT("MyCharacter INPUT: bound=%d failed=%d, plus 18 raw keys. Controller=%s"),
 		Bound, Failed, *GetNameSafe(GetController()));
 }
 
@@ -1332,6 +1348,80 @@ bool AMyCharacter::SetComponentBoolVar(UActorComponent* Component, const TCHAR* 
 		return true;
 	}
 	return false;
+}
+
+bool AMyCharacter::CallCamCompFunc(const TCHAR* FunctionName)
+{
+	// Every DEBUG/ETC key below routes through here. The names come from BPC_FPSComp's own
+	// function list, and a miss is REPORTED - the whole point of this block is that the
+	// template's control board promises these keys and silence would mean "the key does
+	// nothing" with no way to tell why.
+	if (!FPSCamComp)
+	{
+		UE_LOG(LogMyCharacter, Warning,
+			TEXT("MyCharacter: no BPC_FPSCamComp - '%s' ignored."), FunctionName);
+		return false;
+	}
+	FBPCall Call(FPSCamComp, FunctionName);
+	if (!Call.IsBound())
+	{
+		UE_LOG(LogMyCharacter, Warning,
+			TEXT("MyCharacter: BPC_FPSCamComp has no '%s' - that debug key does nothing."),
+			FunctionName);
+		return false;
+	}
+	return Call.Invoke();
+}
+
+void AMyCharacter::OnDebugFPSMode()      { CallCamCompFunc(TEXT("ChangeFPSMode")); }
+void AMyCharacter::OnDebugTPSMode()      { CallCamCompFunc(TEXT("ChangeTPSMode")); }
+void AMyCharacter::OnDebugTPSView()      { CallCamCompFunc(TEXT("ChangeDebugFPSMode_TPSView")); }
+void AMyCharacter::OnDebugSideView()     { CallCamCompFunc(TEXT("ChangeDebugFPSMode_SideView")); }
+
+void AMyCharacter::OnToggleCameraRotationLag()
+{
+	// Its name carries spaces - "Set Enable Camera Rotation Lag" - the same shape that hid
+	// the ADS FOV bug. Spaced first, unspaced second.
+	bCameraRotationLag = !bCameraRotationLag;
+	if (!FPSCamComp)
+	{
+		return;
+	}
+	FBPCall Call(FPSCamComp, TEXT("Set Enable Camera Rotation Lag"));
+	if (!Call.IsBound())
+	{
+		FBPCall Alt(FPSCamComp, TEXT("SetEnableCameraRotationLag"));
+		if (!Alt.IsBound())
+		{
+			UE_LOG(LogMyCharacter, Warning,
+				TEXT("MyCharacter: no Set Enable Camera Rotation Lag on BPC_FPSCamComp."));
+			return;
+		}
+		Alt.SetBool(TEXT("InEnable"), bCameraRotationLag);
+		Alt.Invoke();
+		return;
+	}
+	Call.SetBool(TEXT("InEnable"), bCameraRotationLag);
+	Call.Invoke();
+}
+
+void AMyCharacter::OnToggleFPSWalkMode()
+{
+	// SetFPSWalkMode(InFPSWalkMode) is a BPI_FPST_AnimInterface message, so it goes to the
+	// AnimInstance rather than to the camera component. Toggled locally because the interface
+	// exposes a Get, and reading it back through reflection for one debug key is not worth
+	// the extra failure surface.
+	bFPSWalkMode = !bFPSWalkMode;
+	SendAnimInterfaceBool(TEXT("SetFPSWalkMode"), TEXT("InFPSWalkMode"), bFPSWalkMode);
+}
+
+void AMyCharacter::OnToggleSlomo()
+{
+	// P on the board. Engine-level, no component involved.
+	bSlomo = !bSlomo;
+	UGameplayStatics::SetGlobalTimeDilation(this, bSlomo ? SlomoTimeDilation : 1.f);
+	UE_LOG(LogMyCharacter, Log, TEXT("MyCharacter: slomo %s (dilation %.2f)"),
+		bSlomo ? TEXT("ON") : TEXT("OFF"), bSlomo ? SlomoTimeDilation : 1.f);
 }
 
 void AMyCharacter::SetLeaning(float Leaning)
