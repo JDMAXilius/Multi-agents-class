@@ -104,6 +104,13 @@ public:
 	 */
 	bool PlayWeaponMontage(FName VarName);
 
+	/**
+	 * The ray the player is actually aiming down - the controller's view point, NOT the
+	 * FPSCamera component, whose world transform sits at the character's feet. Returns false
+	 * when it had to fall back. See the body for why this deviates from the graph.
+	 */
+	bool GetAimRay(FVector& OutStart, FVector& OutDir) const;
+
 	/** The melee trace itself. Driven by the montage notify, not by the input event. */
 	void MeleeTrace();
 

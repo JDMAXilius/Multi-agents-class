@@ -2427,3 +2427,41 @@ That needs a human at the keyboard.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
 
+fix(BP82): trace from the view point - the FPSCamera component sits at the feet
+
+Founder: "ending impact is always at the line between floor and wall for each object".
+Measured, and the number is exact:
+
+  MyCharacter AIM: source=view start=(1200,2000,890) dir=(0.00,1.00,0.00)
+                 | FPSCamera component at (1210,2005,801)
+
+Z 890 versus 801 - a difference of 89, which is precisely CharacterMesh0's relative offset.
+FPSCamera is at relative (10,5,0) under the MESH, and the mesh is at (0,0,-89) under the
+capsule, so the component's world location is at the character's FEET. Every trace started
+89 units below the eyes and angled into the floor, which is why impacts landed on the
+floor/wall seam no matter where the player aimed. The component also carries the mesh's
+yaw 270 / roll -90, so its forward vector was not the view direction either.
+
+DEVIATION FROM 1:1, deliberate. The graph traced from FPSCamera's component transform. The
+template gets away with that because the camera is driven by pawn control rotation and what
+the player SEES is not the component transform. New GetAimRay() takes the ray from the
+controller's view point - that IS the crosshair - falling back to the camera component and
+then to the actor. Every trace now uses it: FireEvent, the HUD-dot AimTraceTick, and the
+first-person arm of MeleeTrace, all three of which had the same origin bug.
+
+Added a startup AIM line reporting both the view point and the camera component's world
+location, with the ~90 delta called out, so this specific confusion is one glance to
+diagnose rather than three rounds of guessing.
+
+The tracer geometry itself was already right and is unchanged - FireTracerEffect spawns at
+the MUZZLE and ends at InHitLocation. What was wrong was the hit location it was given,
+because the trace that produced it started in the wrong place.
+
+Rung 1 PASS 20260811-143941, three targets, exit 0, zero warnings. ADS unchanged and still
+callable: ChangePose=callable, ChangeCameraTargetFOV=callable.
+
+NOT CLAIMED: verified by the logged ray origin, not by watching a bullet. Nobody has yet
+seen a tracer land where the crosshair is.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+

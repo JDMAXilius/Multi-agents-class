@@ -470,6 +470,23 @@ void AMyCharacter::BeginPlay()
 		bFovCallOk ? TEXT("callable") : TEXT("UNRESOLVED"),
 		HipFOV, AimFOV, FOVChangeSpeed);
 
+	{
+		FVector AimStart;
+		FVector AimDir;
+		const bool bFromView = GetAimRay(AimStart, AimDir);
+		const UCameraComponent* CamComp =
+			CachedFPSCamera ? CachedFPSCamera.Get() : CachedFPSCam.Get();
+		UE_LOG(LogMyCharacter, Log,
+			TEXT("MyCharacter AIM: source=%s start=(%.0f,%.0f,%.0f) dir=(%.2f,%.2f,%.2f) | "
+				 "FPSCamera component at (%.0f,%.0f,%.0f) - if those Z values differ by ~90 the "
+				 "camera component is at the feet, which is why traces used to hit the floor."),
+			bFromView ? TEXT("view") : TEXT("fallback"),
+			AimStart.X, AimStart.Y, AimStart.Z, AimDir.X, AimDir.Y, AimDir.Z,
+			CamComp ? CamComp->GetComponentLocation().X : 0.f,
+			CamComp ? CamComp->GetComponentLocation().Y : 0.f,
+			CamComp ? CamComp->GetComponentLocation().Z : 0.f);
+	}
+
 	UE_LOG(LogMyCharacter, Log,
 		TEXT("MyCharacter READY: pawn=%s mesh=%s anim=%s animIface=%s weapons=%d/%d "
 			 "startType=%u current=%s socket=%s canCrouch=%s"),
@@ -507,7 +524,10 @@ void AMyCharacter::AimTraceTick()
 	}
 
 	FHitResult Hit;
-	const bool bHit = WeaponTrace(Cam->GetComponentLocation(), Cam->GetForwardVector(),
+	FVector AimStart;
+	FVector AimDir;
+	GetAimRay(AimStart, AimDir);
+	const bool bHit = WeaponTrace(AimStart, AimDir,
 		AimTraceDistance, Hit);
 	// HudWidget->ChangeTargetDotColor(bHit ? red : default) — with the UI ticket.
 	(void)bHit;
@@ -1607,6 +1627,43 @@ uint8 AMyCharacter::GetWeaponFireMode() const
 	return FireMode_Single;
 }
 
+bool AMyCharacter::GetAimRay(FVector& OutStart, FVector& OutDir) const
+{
+	// DEVIATION FROM 1:1, and the reason is geometry rather than taste.
+	//
+	// The graph traced from FPSCamera's component transform. On this character FPSCamera sits
+	// at relative (10,5,0) under CharacterMesh0, and CharacterMesh0 is at (0,0,-89) under the
+	// capsule - so the component's world location is down at the character's FEET, and it
+	// carries the mesh's yaw 270 / roll -90 as well. Firing from there sends every shot into
+	// the floor, which is why impacts landed on the floor/wall seam no matter where the player
+	// aimed. The template gets away with it because its camera is driven by pawn control
+	// rotation and the VIEW is not the component transform.
+	//
+	// The aim ray a player expects is the one they are looking down, so take it from the
+	// controller's view point - that IS the crosshair. Falls back to the camera component and
+	// then to the actor, so a trace always has a ray.
+	if (const APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		FVector ViewLocation;
+		FRotator ViewRotation;
+		PC->GetPlayerViewPoint(ViewLocation, ViewRotation);
+		OutStart = ViewLocation;
+		OutDir = ViewRotation.Vector();
+		return true;
+	}
+
+	if (const UCameraComponent* Cam = CachedFPSCamera ? CachedFPSCamera.Get() : CachedFPSCam.Get())
+	{
+		OutStart = Cam->GetComponentLocation();
+		OutDir = Cam->GetForwardVector();
+		return true;
+	}
+
+	OutStart = GetActorLocation();
+	OutDir = GetActorForwardVector();
+	return false;
+}
+
 void AMyCharacter::FireEvent()
 {
 	FireCameraRecoil(bIsAiming);
@@ -1615,13 +1672,9 @@ void AMyCharacter::FireEvent()
 	PlayWeaponMontage(bIsAiming ? N_AimFireAnimMontage : N_FireAnimMontage);
 	PlayWeaponAnim(/*bLooping=*/false);
 
-	const UCameraComponent* Cam = CachedFPSCamera ? CachedFPSCamera.Get() : CachedFPSCam.Get();
-	if (!Cam)
-	{
-		return;
-	}
-	const FVector Start = Cam->GetComponentLocation();
-	const FVector Dir = Cam->GetForwardVector();
+	FVector Start;
+	FVector Dir;
+	GetAimRay(Start, Dir);
 
 	// The graph's branch: one trace, or a ForLoop 0..5 of spread traces. Both arms then ran
 	// the identical tracer -> impact -> damage -> hit-event chain.
@@ -1692,8 +1745,8 @@ void AMyCharacter::MeleeTrace()
 	FVector Dir;
 	if (bFirstPerson)
 	{
-		Start = Cam->GetComponentLocation();
-		Dir = Cam->GetForwardVector();
+		// Same reason as GetAimRay: the camera COMPONENT is at the feet.
+		GetAimRay(Start, Dir);
 	}
 	else if (CachedArrowMeleeTraceStart)
 	{
