@@ -1886,3 +1886,61 @@ what will fire), and PIE is still blocked behind BP82-13.
 `SetFPSWalkMode` in the graph is UNKNOWN — the string is present on the character but the call
 site was not resolved without a graph read. If the sprint pose plays but the walk blend looks
 wrong, that is the first place to look.
+
+### 11 Aug 2026 — `BP_FPSCharacter` component tree synced 1:1, by committed script
+
+Founder asked for the mesh script. It was written, run, and it worked — but the first thing it
+found is that the premise was wrong.
+
+**"The mesh is unassigned and it needs a human" is STALE. Correcting the record.** Read off the
+asset: `CharacterMesh0` already carries `SKM_Manny_Y` and `ABP_Mannequin_Base_C`. The 10 Aug entry
+concluded the toolset could not write an inherited component template because MCP's
+`ObjectTools.set_properties` returned `false`. That conclusion was about **one API**, not about the
+engine. A headless `-run=pythonscript` commandlet using `SubobjectDataSubsystem` reads AND writes
+those templates without complaint — the same route `reparent_weapon_base.py` already used.
+
+**What was actually wrong** was the camera stack and four transforms:
+
+| component | was | now (= reference) |
+|---|---|---|
+| `Mesh` | loc(0,0,-90) yaw -90 | loc(0,0,**-89**) yaw **270** |
+| `FPSCamera` | loc(0,0,170) yaw 90 | loc(**10,5,0**) yaw 90 **roll -90** |
+| `SpringArm` | — | renamed **`CameraBoom`**, loc(0,0,8.492264), arm **340**, socket offset **(0,60,60)**, pawn-control rotation **on** |
+| `Camera` | — | renamed **`FollowCamera`**, loc(0,0,0) |
+| `Arrow_MeleeTraceStart` | loc(0,0,0) | loc(0,0,**50.370297**) |
+
+**The two renames are not cosmetic.** `AMyCharacter::PostInitializeComponents` resolves its cached
+pointers BY NAME first and looks for `CameraBoom` and `FollowCamera`. With them named `SpringArm`
+and `Camera`, the spring arm was only rescued by the class fallback and **`FollowCamera` was never
+found at all**. Those names existed because a Blueprint cannot name an SCS component after a
+property its parent C++ class declares — the same shadowing rule that caused the original silent
+rename, and the reason the C++ side now prefixes its own members `Cached*`, which freed the names.
+
+No reparenting was needed: `Camera` was already under `SpringArm`, so the rename pair produced the
+reference hierarchy as-is.
+
+**`mcp-bp/sync_character_components.py` — copies, never hardcodes.** Every value is read off
+`BP_FPST_Character` at run time, so the script cannot drift from the reference and a re-run
+re-syncs. Guarded on the target's CDO really being an `AMyCharacter` child before it writes
+anything. Idempotent: the confirming run reported **0 changes, RESULT: OK, exit 0**, and an
+independent read-only probe in a separate process shows the tree byte-identical to the reference.
+
+**Two traps this cost, both worth not paying twice:**
+
+1. **Never compare UE structs with `str()`.** A struct's repr embeds its memory ADDRESS —
+   `<Struct 'Vector' (0x000002C4B142C980) {x: 0.0, y: 0.0, z: -89.0}>` — so two structs holding
+   identical values never compare equal as text. The first run reported **44 write failures against
+   44 writes that had all succeeded**, and only the printed want/got values gave it away. Use `==`;
+   the script now has a `same()` helper and strips addresses for the log.
+2. **Never call `sys.exit()` from a `-run=pythonscript` commandlet.** Raising `SystemExit` crashes
+   UE inside `FPythonScriptPlugin::ShutdownPython` with an `EXCEPTION_ACCESS_VIOLATION` **after**
+   the commandlet has already printed `Success - 0 error(s)`. A fatal error that means nothing.
+   Both are documented in the script's own header.
+
+**Also learned:** `parent_class` is NOT a Python-exposed property on `Blueprint` — it raises. Go
+through `unreal.get_default_object(bp.generated_class())` and an `isinstance` check instead.
+
+**Rung: the asset is verified by re-read, and that is ALL.** Still not PIE, not standalone, not
+multiplayer. What this unblocks is that the four fixes committed earlier today can now be *seen*:
+there is a mesh with an `ABP_Mannequin_Base_C` that implements `BPI_FPST_AnimInterface`, so the
+sprint message has a receiver, and there is a `hand_r` bone for the weapon to attach to.
