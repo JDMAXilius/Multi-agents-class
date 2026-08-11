@@ -103,6 +103,17 @@ public:
 	/** The Burst arm's timer callback — BPC_FPST_FireTimer's BurstFireEvent. */
 	void BurstFireTick();
 
+	/**
+	 * Sends one bool-taking BPI_FPST_AnimInterface message to the mesh's AnimInstance.
+	 * ParamName is the interface's own pin name (`InSprinting`, `InADS`, …), which is what
+	 * the reflection lookup matches on — a renamed pin fails loudly instead of writing
+	 * into the wrong offset. Returns false if there is no AnimInstance or no such function.
+	 */
+	bool SendAnimInterfaceBool(const TCHAR* FunctionName, const TCHAR* ParamName, bool bValue);
+
+	/** Warn once per character, not once per frame, when the AnimBP lacks the interface. */
+	bool bAnimInterfaceWarned = false;
+
 	UFUNCTION(BlueprintCallable, Category = "Weapons")
 	void HideAllWeapons();
 
@@ -420,11 +431,21 @@ protected:
 
 	virtual void ChangePose(uint8 PoseType, uint8 ScopeType, float ChangeSpeed) {}
 	virtual void ChangeCameraTargetFOV(float TargetFOV, float Speed) {}
-	virtual void SetADS(bool bADS) {}
-	virtual void SetADSUpper(bool bADSUpper) {}
-	virtual void SetSprinting(bool bSprinting) {}
+	/**
+	 * BPI_FPST_AnimInterface messages. NOT stubs any more, and NOT component calls.
+	 *
+	 * These four are functions on a Blueprint INTERFACE that `ABP_Mannequin_Base`
+	 * implements; the character graph sent them to Mesh->GetAnimInstance(). The AnimBP
+	 * stores each into a bool that the linked layers (`ABP_ItemAnimLayersBase` and its
+	 * per-weapon children) read — `Sprinting` is what selects the `fPS_Sprint` pose. With
+	 * these empty, the AnimBP never learned the character's state and the sprint animation
+	 * could not play no matter what the movement component did.
+	 */
+	virtual void SetADS(bool bADS);
+	virtual void SetADSUpper(bool bADSUpper);
+	virtual void SetSprinting(bool bSprinting);
 	virtual void SetLeaning(float Leaning) {}
-	virtual void SetUnarmed(bool bUnarmed) {}
+	virtual void SetUnarmed(bool bUnarmed);
 	virtual void ShowCrosshair(uint8 CrosshairType, bool bAiming) {}
 	/**
 	 * BPC_FPST_FireTimer.Start / .Stop, ported. NOT stubs any more.

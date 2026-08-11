@@ -853,6 +853,87 @@ void AMyCharacter::SwapWeapon(bool bNext)
 }
 
 // -------------------------------------------------------------------------------------
+// BPI_FPST_AnimInterface — how the character talks to the AnimBP.
+//
+// The template does NOT push state through a component and it does NOT have the AnimBP
+// cast back to the character and pull. It is a Blueprint INTERFACE implemented by
+// ABP_Mannequin_Base, and the character sends messages to Mesh->GetAnimInstance():
+//
+//   SetSprinting(InSprinting) · SetADS(InADS) · SetADS_Upper(InADS_Upper)
+//   SetUnarmed(InUnarmed) · SetFPSMode · SetFPSWalkMode · SetControllerPitch
+//   SetAimAndLeanInfo · SetPoseTransform · SetMontagePoseOffset · SetFPSPelvisWeight …
+//
+// ABP_Mannequin_Base stores each into a variable; ABP_ItemAnimLayersBase and its
+// per-weapon children read those to choose the pose — `Sprinting` is what selects the
+// fPS_Sprint pose slot. An interface function implemented by a Blueprint IS a real
+// UFUNCTION on the generated class, so FindFunction resolves it and no hard reference to
+// any Blueprint type is needed (law 3).
+//
+// Only the bool-taking messages are wired here. The struct-taking ones
+// (SetAimAndLeanInfo, SetPoseTransform, SetProcApplyTransform) carry S_Procedural_*
+// user-defined structs whose layouts would have to be mirrored to be passed, and a wrong
+// mirror is silent corruption — they land with their procedural components.
+// -------------------------------------------------------------------------------------
+
+bool AMyCharacter::SendAnimInterfaceBool(const TCHAR* FunctionName, const TCHAR* ParamName,
+	bool bValue)
+{
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	UAnimInstance* Anim = MeshComp ? MeshComp->GetAnimInstance() : nullptr;
+	if (!Anim)
+	{
+		return false;
+	}
+
+	FBPCall Call(Anim, FunctionName);
+	if (!Call.IsBound())
+	{
+		if (!bAnimInterfaceWarned)
+		{
+			bAnimInterfaceWarned = true;
+			UE_LOG(LogMyCharacter, Warning,
+				TEXT("MyCharacter: AnimInstance '%s' has no '%s' — it does not implement "
+					 "BPI_FPST_AnimInterface, so sprint/ADS/unarmed state never reaches the "
+					 "AnimBP and those animations cannot play."),
+				*GetNameSafe(Anim->GetClass()), FunctionName);
+		}
+		return false;
+	}
+
+	if (!Call.SetBool(ParamName, bValue))
+	{
+		UE_LOG(LogMyCharacter, Warning,
+			TEXT("MyCharacter: '%s' has no bool parameter named '%s' — the interface pin was "
+				 "renamed. Nothing was sent."),
+			FunctionName, ParamName);
+		return false;
+	}
+
+	return Call.Invoke();
+}
+
+void AMyCharacter::SetSprinting(bool bSprinting)
+{
+	SendAnimInterfaceBool(TEXT("SetSprinting"), TEXT("InSprinting"), bSprinting);
+}
+
+void AMyCharacter::SetADS(bool bADS)
+{
+	SendAnimInterfaceBool(TEXT("SetADS"), TEXT("InADS"), bADS);
+}
+
+void AMyCharacter::SetADSUpper(bool bADSUpper)
+{
+	// The interface spells this one with an underscore; the C++ hook does not.
+	SendAnimInterfaceBool(TEXT("SetADS_Upper"), TEXT("InADS_Upper"), bADSUpper);
+}
+
+void AMyCharacter::SetUnarmed(bool bUnarmed)
+{
+	SendAnimInterfaceBool(TEXT("SetUnarmed"), TEXT("InUnarmed"), bUnarmed);
+}
+
+// -------------------------------------------------------------------------------------
 // BPC_FPST_LineTracer, ported.
 // -------------------------------------------------------------------------------------
 

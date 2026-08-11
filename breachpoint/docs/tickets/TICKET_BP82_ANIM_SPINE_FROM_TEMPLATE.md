@@ -1830,3 +1830,59 @@ in the hand, that the rifle is what spawns, or that firing produces anything on 
 - The mesh on `BP_FPSCharacter` is still unassigned and still needs a human — `set_properties`
   cannot write an inherited component template. Until then there is no `hand_r` to attach to and
   defect 1 will look unfixed.
+
+### 11 Aug 2026 — sprint reached the movement component but never the AnimBP
+
+Founder: "make sure on sprinting I am using the sprinting animations properly 1:1 — you may need
+to make sure you are communicating to the anim instance correctly." The suspicion was right, and
+the mechanism was not what the port assumed.
+
+**How the template actually talks to the AnimBP: a Blueprint INTERFACE, not a component.**
+
+`Content/FPSTemplate/Blueprints/Interfaces/BPI_FPST_AnimInterface` is implemented by
+`ABP_Mannequin_Base` (and `ABP_Mannequin_Base_UE4`). The character graph sends messages to
+`Mesh->GetAnimInstance()`; the AnimBP stores each into a variable; `ABP_ItemAnimLayersBase` and
+its per-weapon children read those to pick the pose. **`Sprinting` is what selects the
+`fPS_Sprint` slot.** Confirmed by which assets contain the symbols: the interface, both
+`ABP_Mannequin_Base` variants, both `ABP_ItemAnimLayersBase` variants, and the two character
+Blueprints — and nothing else. No component is in that path.
+
+The full interface surface, read from the asset:
+
+| kind | functions |
+|---|---|
+| bool | `SetSprinting(InSprinting)` `SetADS(InADS)` `SetADS_Upper(InADS_Upper)` `SetUnarmed(InUnarmed)` `GetADS` |
+| scalar / enum | `SetFPSMode(InFPSMode)` `GetFPSMode` `SetFPSWalkMode(InFPSWalkMode)` `GetFPSWalkMode` `SetControllerPitch(InPitch)` `SetFPSPelvisWeight(InWeight)` `SetFPSHeadCameraShakeAlpha(InAlpha)` `GetCameraPitchWeight` `GetLastLinkedLayer` |
+| struct | `SetAimAndLeanInfo` `SetPoseTransform` `SetProcApplyTransform` `SetMontagePoseOffset` |
+
+**The defect.** `SetSprinting`, `SetADS`, `SetADSUpper` and `SetUnarmed` were all
+`virtual … {}` — empty. `OnSprintStarted` set `MaxWalkSpeed = SprintWalkSpeed` and called
+`SetSprinting(true)` into nothing. So the character moved at 900 and the AnimBP never learned it
+was sprinting: correct speed, wrong animation, and no error anywhere. Same for ADS and for the
+unarmed swap, both of which already had live call sites.
+
+**Fixed.** New `SendAnimInterfaceBool(FunctionName, ParamName, bValue)` resolves the function off
+the AnimInstance by name and writes the argument by its interface pin name (`InSprinting`,
+`InADS`, `InADS_Upper`, `InUnarmed`) through the existing `FBPCall` reflection path — a Blueprint
+interface function IS a real UFUNCTION on the generated class, so no hard reference to any
+Blueprint type is needed (law 3). A missing function warns ONCE per character naming the AnimBP
+class; a renamed pin warns and sends nothing rather than writing into a wrong offset.
+
+**Deliberately NOT wired: the four struct-taking messages.** `SetAimAndLeanInfo`,
+`SetPoseTransform`, `SetProcApplyTransform` and `SetMontagePoseOffset` carry `S_Procedural_*`
+user-defined structs. Passing one means mirroring its layout, and a wrong mirror is silent memory
+corruption rather than a compile error. They land with their procedural components. The scalar
+and enum messages (`SetFPSMode`, `SetFPSWalkMode`, `SetControllerPitch`, …) are also still unsent
+— `FBPCall` has no setter for those yet; that is a small, safe extension when a caller needs one.
+
+**Rung 1: PASS**, run stamp `20260811-094108`, all three targets, exit 0, zero warnings.
+
+**RUNG IS STILL "COMPILES". The sprint animation has NOT been seen to play.** Two things have to
+be true before it can be, and neither is done: `BP_FPSCharacter`'s mesh and Anim Class are still
+unassigned (no `ABP_Mannequin_Base_C`, so nothing implements the interface and the new warning is
+what will fire), and PIE is still blocked behind BP82-13.
+
+**Open question this raises and does not answer.** Whether sprint also drives
+`SetFPSWalkMode` in the graph is UNKNOWN — the string is present on the character but the call
+site was not resolved without a graph read. If the sprint pose plays but the walk blend looks
+wrong, that is the first place to look.
