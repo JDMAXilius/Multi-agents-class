@@ -2077,3 +2077,60 @@ an FOV change, or a tracer. DealDamage still applies nothing (law 2). Not multip
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
 
+
+### 11 Aug 2026 - input: ABPPlayerController is the culprit, and a correction
+
+**Input works again.** Confirmed by the founder at the keyboard after the revert below. This
+entry records what that isolates, because the isolation is worth more than the revert.
+
+**CORRECTION to the 11 Aug entry above and to commit d094da3.** That entry claimed
+"DefaultPawnClassOverride named BP_FPST_Character_C ... every standalone run spawned a pawn
+executing NONE of the ported C++." **That was wrong.** The revert run disproves it: with
+BP_FPST_GameMode back on `/Script/Engine.GameModeBase`, the DEFAULT PlayerController, and
+`DefaultPawnClassOverride` pointed back at the template, `MyCharacter READY:` STILL prints and
+`pawn=BP_FPSCharacter_C_0` - because **BP_FPST_GameMode's own `DefaultPawnClass` already points
+at `/Game/Characters/BP_FPSCharacter`**. The ported pawn was in play the whole time.
+
+How the wrong conclusion was reached, because the shape of the mistake matters: the first
+standalone runs showed zero `LogMyCharacter` lines, and I read that as "the pawn never spawned".
+At that point the class logged **only warnings**, so silence was ambiguous - it read the same
+whether the code worked or never ran. That is the exact ambiguity the `MyCharacter READY:`
+positive assertion was added to kill, and it killed it one step too late to stop me publishing
+the inference. **An absence of warnings is not evidence of absence.**
+
+**What the reparent actually changed: the PlayerController.** `ABPGameMode`'s constructor sets
+`PlayerControllerClass = ABPPlayerController`. Reparenting BP_FPST_GameMode onto ABPGameMode put
+that controller into PIE for the first time. Reverting it restored `PlayerController_0`. Input
+died exactly when ABPPlayerController appeared and returned exactly when it left, with the pawn,
+the bindings and the mapping context identical on both sides of the change. **That isolates the
+cause to `ABPPlayerController`, not to the pawn, the context, or the bindings.**
+
+Two fixes were tried against it and BOTH FAILED, which is itself evidence:
+- `MappingContextPriority = 1` (above the controller's 0). No effect.
+- `bExclusiveMappingContext` -> `ClearAllMappings()` before adding IMC_FPST_Controls. No effect.
+
+Since neither priority nor exclusivity helped, **the contexts are probably not the mechanism at
+all.** `ABPPlayerController::SetupInputComponent` also binds its own `IA_*` actions with
+Started/Completed/Canceled on the CONTROLLER's input component, and a controller's input
+component sits ABOVE the pawn's on the input stack. That is the next thing to test and it was
+NOT tested here. `Source/Breachpoint/Match/` is inside this ticket's owner_path, so a probe is
+lawful; it simply was not reached before the founder called the revert.
+
+**What the instrumentation proved along the way** (all still in the code, all still true):
+`bound=12 failed=0` plus 11 raw keys, `IMC_FPST_Controls` verified to map all eight `IA_FPST_*`
+actions, context added at priority 1. The bindings, the actions and the context were never the
+problem. That is why guessing a third time was the wrong move.
+
+**Reverted:** `mcp-bp/revert_gamemode.py` (BP_FPST_GameMode -> GameModeBase, verified by
+re-read) and `DefaultPawnClassOverride` back to `BP_FPST_Character_C` - which, per the
+correction above, does not actually change which pawn spawns. **Not reverted:** any of the C++
+port. It is inert unless an AMyCharacter spawns, and one still does, so every ported feature is
+live on the pawn the founder is now driving.
+
+**To turn the ABPGameMode path back on:** re-run `mcp-bp/reparent_gamemode.py`. Expect the input
+bug to return with it, and start at ABPPlayerController's input component rather than at the
+mapping contexts.
+
+**Rung: RUNS, single player, input confirmed by a human.** Still not PIE-multiplayer, not
+dedicated. DealDamage still applies nothing (law 2).
+
