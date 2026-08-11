@@ -6,9 +6,9 @@
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 
-#include "FPS/BRAnimTypes.h"
-#include "FPS/BRRecoilTypes.h"
-#include "FPS/BRSwayAndLagTypes.h"
+#include "Animation/BRAnimTypes.h"
+#include "Animation/BRRecoilTypes.h"
+#include "Animation/BRSwayAndLagTypes.h"
 
 #include "BRAnimInstance.generated.h"
 

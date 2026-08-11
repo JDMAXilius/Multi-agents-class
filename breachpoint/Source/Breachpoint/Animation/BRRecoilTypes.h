@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 
-#include "FPS/BRProceduralTypes.h"
+#include "Animation/BRProceduralTypes.h"
 
 #include "BRRecoilTypes.generated.h"
 

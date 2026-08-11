@@ -1,4 +1,4 @@
-#include "FPS/BRAnimInstance1P.h"
+#include "Animation/BRAnimInstance1P.h"
 
 UBRAnimInstance1P::UBRAnimInstance1P()
 {

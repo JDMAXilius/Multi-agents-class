@@ -3,8 +3,8 @@
 #include "Camera/CameraComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 
-#include "FPS/BRAnimInstance.h"
-#include "FPS/BRProceduralAnimComponent.h"
+#include "Animation/BRAnimInstance.h"
+#include "Animation/BRProceduralAnimComponent.h"
 
 ABRFPSCharacter::ABRFPSCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

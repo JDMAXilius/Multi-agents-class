@@ -1,0 +1,794 @@
+[
+  {
+    "asset": "ABP_FPSMT_AssaultRifleAnimLayers",
+    "path": "Animations\\FPS\\UE5\\FPSMT\\AssaultRifle\\ABP_FPSMT_AssaultRifleAnimLayers.uasset",
+    "k2_nodes": 3,
+    "anim_graph_nodes": 0,
+    "game_refs": 78,
+    "in_inventory": false
+  },
+  {
+    "asset": "ABP_FPSMT_KnifeAnimLayers",
+    "path": "Animations\\FPS\\UE5\\FPSMT\\Knife\\ABP_FPSMT_KnifeAnimLayers.uasset",
+    "k2_nodes": 2,
+    "anim_graph_nodes": 0,
+    "game_refs": 74,
+    "in_inventory": false
+  },
+  {
+    "asset": "ABP_FPSMT_MachineGunAnimLayers",
+    "path": "Animations\\FPS\\UE5\\FPSMT\\MachineGun\\ABP_FPSMT_MachineGunAnimLayers.uasset",
+    "k2_nodes": 3,
+    "anim_graph_nodes": 0,
+    "game_refs": 78,
+    "in_inventory": false
+  },
+  {
+    "asset": "ABP_FPSMT_PistolAnimLayers",
+    "path": "Animations\\FPS\\UE5\\FPSMT\\Pistol\\ABP_FPSMT_PistolAnimLayers.uasset",
+    "k2_nodes": 3,
+    "anim_graph_nodes": 0,
+    "game_refs": 76,
+    "in_inventory": false
+  },
+  {
+    "asset": "ABP_FPSMT_ShotgunAnimLayers",
+    "path": "Animations\\FPS\\UE5\\FPSMT\\Shotgun\\ABP_FPSMT_ShotgunAnimLayers.uasset",
+    "k2_nodes": 3,
+    "anim_graph_nodes": 0,
+    "game_refs": 8,
+    "in_inventory": false
+  },
+  {
+    "asset": "ABP_FPSMT_SMGAnimLayers",
+    "path": "Animations\\FPS\\UE5\\FPSMT\\SMG\\ABP_FPSMT_SMGAnimLayers.uasset",
+    "k2_nodes": 3,
+    "anim_graph_nodes": 0,
+    "game_refs": 78,
+    "in_inventory": false
+  },
+  {
+    "asset": "ABP_FPSMT_SniperAnimLayers",
+    "path": "Animations\\FPS\\UE5\\FPSMT\\Sniper\\ABP_FPSMT_SniperAnimLayers.uasset",
+    "k2_nodes": 3,
+    "anim_graph_nodes": 0,
+    "game_refs": 78,
+    "in_inventory": false
+  },
+  {
+    "asset": "ABP_FPST_PoseCreator",
+    "path": "Animations\\PoseCreator\\ABP_FPST_PoseCreator.uasset",
+    "k2_nodes": 10,
+    "anim_graph_nodes": 10,
+    "game_refs": 4,
+    "in_inventory": false
+  },
+  {
+    "asset": "ABP_FPST_PoseCreator_UE4",
+    "path": "Animations\\PoseCreator\\ABP_FPST_PoseCreator_UE4.uasset",
+    "k2_nodes": 10,
+    "anim_graph_nodes": 10,
+    "game_refs": 4,
+    "in_inventory": false
+  },
+  {
+    "asset": "AN_FPST_ProceduralRecoil",
+    "path": "Blueprints\\AnimNotify\\AN_FPST_ProceduralRecoil.uasset",
+    "k2_nodes": 8,
+    "anim_graph_nodes": 0,
+    "game_refs": 5,
+    "in_inventory": false
+  },
+  {
+    "asset": "AN_MontagePoseOffset",
+    "path": "Blueprints\\AnimNotify\\AN_MontagePoseOffset.uasset",
+    "k2_nodes": 8,
+    "anim_graph_nodes": 0,
+    "game_refs": 3,
+    "in_inventory": false
+  },
+  {
+    "asset": "BP_FPST_GameMode",
+    "path": "Blueprints\\BP_FPST_GameMode.uasset",
+    "k2_nodes": 1,
+    "anim_graph_nodes": 0,
+    "game_refs": 2,
+    "in_inventory": false
+  },
+  {
+    "asset": "BP_FPST_GameMode_PoseCreator",
+    "path": "Blueprints\\BP_FPST_GameMode_PoseCreator.uasset",
+    "k2_nodes": 1,
+    "anim_graph_nodes": 0,
+    "game_refs": 2,
+    "in_inventory": false
+  },
+  {
+    "asset": "BP_FPST_Grenade",
+    "path": "Blueprints\\BP_FPST_Grenade.uasset",
+    "k2_nodes": 28,
+    "anim_graph_nodes": 0,
+    "game_refs": 8,
+    "in_inventory": false
+  },
+  {
+    "asset": "BP_KeyDescActor",
+    "path": "Blueprints\\BP_KeyDescActor.uasset",
+    "k2_nodes": 1,
+    "anim_graph_nodes": 0,
+    "game_refs": 2,
+    "in_inventory": false
+  },
+  {
+    "asset": "BP_BRFPS_CHARACTER",
+    "path": "Blueprints\\Characters\\BP_BRFPS_CHARACTER.uasset",
+    "k2_nodes": 1,
+    "anim_graph_nodes": 0,
+    "game_refs": 7,
+    "in_inventory": false
+  },
+  {
+    "asset": "BP_FPST_Character",
+    "path": "Blueprints\\Characters\\BP_FPST_Character.uasset",
+    "k2_nodes": 46,
+    "anim_graph_nodes": 0,
+    "game_refs": 47,
+    "in_inventory": true
+  },
+  {
+    "asset": "BP_FPST_Character_UE4",
+    "path": "Blueprints\\Characters\\BP_FPST_Character_UE4.uasset",
+    "k2_nodes": 50,
+    "anim_graph_nodes": 0,
+    "game_refs": 54,
+    "in_inventory": false
+  },
+  {
+    "asset": "BPC_FPSComp",
+    "path": "Blueprints\\Components\\BPC_FPSComp.uasset",
+    "k2_nodes": 25,
+    "anim_graph_nodes": 0,
+    "game_refs": 3,
+    "in_inventory": true
+  },
+  {
+    "asset": "BPC_FPSMT_Integration",
+    "path": "Blueprints\\Components\\BPC_FPSMT_Integration.uasset",
+    "k2_nodes": 19,
+    "anim_graph_nodes": 0,
+    "game_refs": 9,
+    "in_inventory": true
+  },
+  {
+    "asset": "BPC_FPST_FireTimer",
+    "path": "Blueprints\\Components\\BPC_FPST_FireTimer.uasset",
+    "k2_nodes": 16,
+    "anim_graph_nodes": 0,
+    "game_refs": 3,
+    "in_inventory": true
+  },
+  {
+    "asset": "BPC_FPST_LineTracer",
+    "path": "Blueprints\\Components\\BPC_FPST_LineTracer.uasset",
+    "k2_nodes": 9,
+    "anim_graph_nodes": 0,
+    "game_refs": 1,
+    "in_inventory": true
+  },
+  {
+    "asset": "BPC_FPST_Lyra_FireEffectComp",
+    "path": "Blueprints\\Components\\BPC_FPST_Lyra_FireEffectComp.uasset",
+    "k2_nodes": 14,
+    "anim_graph_nodes": 0,
+    "game_refs": 11,
+    "in_inventory": true
+  },
+  {
+    "asset": "BPC_FPST_Lyra_Integration",
+    "path": "Blueprints\\Components\\BPC_FPST_Lyra_Integration.uasset",
+    "k2_nodes": 26,
+    "anim_graph_nodes": 0,
+    "game_refs": 8,
+    "in_inventory": true
+  },
+  {
+    "asset": "BPC_FPST_MeleeCombo",
+    "path": "Blueprints\\Components\\BPC_FPST_MeleeCombo.uasset",
+    "k2_nodes": 18,
+    "anim_graph_nodes": 0,
+    "game_refs": 2,
+    "in_inventory": true
+  },
+  {
+    "asset": "BPC_FPST_Procedural_AimAndLean",
+    "path": "Blueprints\\Components\\Procedural\\BPC_FPST_Procedural_AimAndLean.uasset",
+    "k2_nodes": 10,
+    "anim_graph_nodes": 0,
+    "game_refs": 6,
+    "in_inventory": true
+  },
+  {
+    "asset": "BPC_FPST_Procedural_Base",
+    "path": "Blueprints\\Components\\Procedural\\BPC_FPST_Procedural_Base.uasset",
+    "k2_nodes": 3,
+    "anim_graph_nodes": 0,
+    "game_refs": 2,
+    "in_inventory": true
+  },
+  {
+    "asset": "BPC_FPST_Procedural_Manager",
+    "path": "Blueprints\\Components\\Procedural\\BPC_FPST_Procedural_Manager.uasset",
+    "k2_nodes": 17,
+    "anim_graph_nodes": 0,
+    "game_refs": 12,
+    "in_inventory": true
+  },
+  {
+    "asset": "BPC_FPST_Procedural_PoseOffsets",
+    "path": "Blueprints\\Components\\Procedural\\BPC_FPST_Procedural_PoseOffsets.uasset",
+    "k2_nodes": 21,
+    "anim_graph_nodes": 0,
+    "game_refs": 13,
+    "in_inventory": true
+  },
+  {
+    "asset": "BPC_FPST_Procedural_Recoil",
+    "path": "Blueprints\\Components\\Procedural\\BPC_FPST_Procedural_Recoil.uasset",
+    "k2_nodes": 19,
+    "anim_graph_nodes": 0,
+    "game_refs": 8,
+    "in_inventory": true
+  },
+  {
+    "asset": "BPC_FPST_Procedural_SwayAndLag",
+    "path": "Blueprints\\Components\\Procedural\\BPC_FPST_Procedural_SwayAndLag.uasset",
+    "k2_nodes": 16,
+    "anim_graph_nodes": 0,
+    "game_refs": 5,
+    "in_inventory": true
+  },
+  {
+    "asset": "BPI_FPST_AnimInterface",
+    "path": "Blueprints\\Interfaces\\BPI_FPST_AnimInterface.uasset",
+    "k2_nodes": 2,
+    "anim_graph_nodes": 0,
+    "game_refs": 5,
+    "in_inventory": false
+  },
+  {
+    "asset": "BPI_FPST_AnimLayerInterface",
+    "path": "Blueprints\\Interfaces\\BPI_FPST_AnimLayerInterface.uasset",
+    "k2_nodes": 2,
+    "anim_graph_nodes": 0,
+    "game_refs": 1,
+    "in_inventory": false
+  },
+  {
+    "asset": "BP_FPST_BasePoseCreator",
+    "path": "Blueprints\\PoseCreator\\BP_FPST_BasePoseCreator.uasset",
+    "k2_nodes": 30,
+    "anim_graph_nodes": 0,
+    "game_refs": 22,
+    "in_inventory": false
+  },
+  {
+    "asset": "BP_FPST_PoseCreator_UE4",
+    "path": "Blueprints\\PoseCreator\\BP_FPST_PoseCreator_UE4.uasset",
+    "k2_nodes": 3,
+    "anim_graph_nodes": 0,
+    "game_refs": 4,
+    "in_inventory": false
+  },
+  {
+    "asset": "BP_FPST_PoseCreator_UE5",
+    "path": "Blueprints\\PoseCreator\\BP_FPST_PoseCreator_UE5.uasset",
+    "k2_nodes": 3,
+    "anim_graph_nodes": 0,
+    "game_refs": 2,
+    "in_inventory": false
+  },
+  {
+    "asset": "ABP_FPST_Target_Mann_UE4",
+    "path": "Blueprints\\Targets\\ABP_FPST_Target_Mann_UE4.uasset",
+    "k2_nodes": 2,
+    "anim_graph_nodes": 4,
+    "game_refs": 3,
+    "in_inventory": false
+  },
+  {
+    "asset": "ABP_FPST_Target_Manny",
+    "path": "Blueprints\\Targets\\ABP_FPST_Target_Manny.uasset",
+    "k2_nodes": 2,
+    "anim_graph_nodes": 4,
+    "game_refs": 3,
+    "in_inventory": false
+  },
+  {
+    "asset": "BP_FPST_Target_Mann_UE4",
+    "path": "Blueprints\\Targets\\BP_FPST_Target_Mann_UE4.uasset",
+    "k2_nodes": 25,
+    "anim_graph_nodes": 0,
+    "game_refs": 10,
+    "in_inventory": false
+  },
+  {
+    "asset": "BP_FPST_Target_Manny",
+    "path": "Blueprints\\Targets\\BP_FPST_Target_Manny.uasset",
+    "k2_nodes": 25,
+    "anim_graph_nodes": 0,
+    "game_refs": 10,
+    "in_inventory": false
+  },
+  {
+    "asset": "BP_FPST_BaseAttachment",
+    "path": "Blueprints\\Weapons\\Attachments\\BP_FPST_BaseAttachment.uasset",
+    "k2_nodes": 2,
+    "anim_graph_nodes": 0,
+    "game_refs": 1,
+    "in_inventory": false
+  },
+  {
+    "asset": "BP_FPST_BaseScope",
+    "path": "Blueprints\\Weapons\\Attachments\\BP_FPST_BaseScope.uasset",
+    "k2_nodes": 4,
+    "anim_graph_nodes": 0,
+    "game_refs": 3,
+    "in_inventory": false
+  },
+  {
+    "asset": "BP_FPST_BaseWeapon",
+    "path": "Blueprints\\Weapons\\BP_FPST_BaseWeapon.uasset",
+    "k2_nodes": 16,
+    "anim_graph_nodes": 0,
+    "game_refs": 15,
+    "in_inventory": true
+  },
+  {
+    "asset": "BP_FPST_Weapon_Knife",
+    "path": "Blueprints\\Weapons\\BP_FPST_Weapon_Knife.uasset",
+    "k2_nodes": 3,
+    "anim_graph_nodes": 0,
+    "game_refs": 7,
+    "in_inventory": true
+  },
+  {
+    "asset": "BP_FPST_Weapon_Pistol",
+    "path": "Blueprints\\Weapons\\BP_FPST_Weapon_Pistol.uasset",
+    "k2_nodes": 3,
+    "anim_graph_nodes": 0,
+    "game_refs": 16,
+    "in_inventory": true
+  },
+  {
+    "asset": "BP_FPST_Weapon_Rifle",
+    "path": "Blueprints\\Weapons\\BP_FPST_Weapon_Rifle.uasset",
+    "k2_nodes": 3,
+    "anim_graph_nodes": 0,
+    "game_refs": 16,
+    "in_inventory": true
+  },
+  {
+    "asset": "BP_FPST_Weapon_Shotgun",
+    "path": "Blueprints\\Weapons\\BP_FPST_Weapon_Shotgun.uasset",
+    "k2_nodes": 3,
+    "anim_graph_nodes": 0,
+    "game_refs": 15,
+    "in_inventory": true
+  },
+  {
+    "asset": "BP_FPSMT_Weapon_AssaultRifle",
+    "path": "Blueprints\\Weapons\\FPSMT\\BP_FPSMT_Weapon_AssaultRifle.uasset",
+    "k2_nodes": 3,
+    "anim_graph_nodes": 0,
+    "game_refs": 2,
+    "in_inventory": false
+  },
+  {
+    "asset": "BP_FPSMT_Weapon_Knife",
+    "path": "Blueprints\\Weapons\\FPSMT\\BP_FPSMT_Weapon_Knife.uasset",
+    "k2_nodes": 3,
+    "anim_graph_nodes": 0,
+    "game_refs": 2,
+    "in_inventory": false
+  },
+  {
+    "asset": "BP_FPSMT_Weapon_MachineGun",
+    "path": "Blueprints\\Weapons\\FPSMT\\BP_FPSMT_Weapon_MachineGun.uasset",
+    "k2_nodes": 3,
+    "anim_graph_nodes": 0,
+    "game_refs": 2,
+    "in_inventory": false
+  },
+  {
+    "asset": "BP_FPSMT_Weapon_Pistol",
+    "path": "Blueprints\\Weapons\\FPSMT\\BP_FPSMT_Weapon_Pistol.uasset",
+    "k2_nodes": 3,
+    "anim_graph_nodes": 0,
+    "game_refs": 2,
+    "in_inventory": false
+  },
+  {
+    "asset": "BP_FPSMT_Weapon_Shotgun",
+    "path": "Blueprints\\Weapons\\FPSMT\\BP_FPSMT_Weapon_Shotgun.uasset",
+    "k2_nodes": 3,
+    "anim_graph_nodes": 0,
+    "game_refs": 2,
+    "in_inventory": false
+  },
+  {
+    "asset": "BP_FPSMT_Weapon_SMG",
+    "path": "Blueprints\\Weapons\\FPSMT\\BP_FPSMT_Weapon_SMG.uasset",
+    "k2_nodes": 3,
+    "anim_graph_nodes": 0,
+    "game_refs": 2,
+    "in_inventory": false
+  },
+  {
+    "asset": "BP_FPSMT_Weapon_SniperRifle",
+    "path": "Blueprints\\Weapons\\FPSMT\\BP_FPSMT_Weapon_SniperRifle.uasset",
+    "k2_nodes": 3,
+    "anim_graph_nodes": 0,
+    "game_refs": 2,
+    "in_inventory": false
+  },
+  {
+    "asset": "Widget_FPST_Reticle_Knife",
+    "path": "Blueprints\\Widgets\\Reticles\\Widget_FPST_Reticle_Knife.uasset",
+    "k2_nodes": 12,
+    "anim_graph_nodes": 0,
+    "game_refs": 5,
+    "in_inventory": false
+  },
+  {
+    "asset": "Widget_FPST_Reticle_Pistol",
+    "path": "Blueprints\\Widgets\\Reticles\\Widget_FPST_Reticle_Pistol.uasset",
+    "k2_nodes": 12,
+    "anim_graph_nodes": 0,
+    "game_refs": 5,
+    "in_inventory": false
+  },
+  {
+    "asset": "Widget_FPST_Reticle_Rifle",
+    "path": "Blueprints\\Widgets\\Reticles\\Widget_FPST_Reticle_Rifle.uasset",
+    "k2_nodes": 12,
+    "anim_graph_nodes": 0,
+    "game_refs": 5,
+    "in_inventory": false
+  },
+  {
+    "asset": "Widget_FPST_Reticle_Shotgun",
+    "path": "Blueprints\\Widgets\\Reticles\\Widget_FPST_Reticle_Shotgun.uasset",
+    "k2_nodes": 12,
+    "anim_graph_nodes": 0,
+    "game_refs": 6,
+    "in_inventory": false
+  },
+  {
+    "asset": "Widget_FPST_Hud",
+    "path": "Blueprints\\Widgets\\Widget_FPST_Hud.uasset",
+    "k2_nodes": 5,
+    "anim_graph_nodes": 0,
+    "game_refs": 7,
+    "in_inventory": false
+  },
+  {
+    "asset": "Widget_FPST_KeyDesc",
+    "path": "Blueprints\\Widgets\\Widget_FPST_KeyDesc.uasset",
+    "k2_nodes": 1,
+    "anim_graph_nodes": 0,
+    "game_refs": 1,
+    "in_inventory": false
+  },
+  {
+    "asset": "Widget_FPST_Settings",
+    "path": "Blueprints\\Widgets\\Widget_FPST_Settings.uasset",
+    "k2_nodes": 26,
+    "anim_graph_nodes": 0,
+    "game_refs": 3,
+    "in_inventory": false
+  },
+  {
+    "asset": "PDA_PoseOffsets",
+    "path": "DataAssets\\PDA_PoseOffsets.uasset",
+    "k2_nodes": 11,
+    "anim_graph_nodes": 0,
+    "game_refs": 12,
+    "in_inventory": false
+  },
+  {
+    "asset": "ANS_EmoteSound",
+    "path": "Demo\\Audio\\Sounds\\Emotes\\ANS_EmoteSound.uasset",
+    "k2_nodes": 10,
+    "anim_graph_nodes": 0,
+    "game_refs": 3,
+    "in_inventory": false
+  },
+  {
+    "asset": "BI_EmoteSoundInterface",
+    "path": "Demo\\Audio\\Sounds\\Emotes\\BI_EmoteSoundInterface.uasset",
+    "k2_nodes": 2,
+    "anim_graph_nodes": 0,
+    "game_refs": 1,
+    "in_inventory": false
+  },
+  {
+    "asset": "AN_Melee",
+    "path": "Demo\\Characters\\Heroes\\Abilities\\AN_Melee.uasset",
+    "k2_nodes": 2,
+    "anim_graph_nodes": 0,
+    "game_refs": 1,
+    "in_inventory": false
+  },
+  {
+    "asset": "AN_Reload",
+    "path": "Demo\\Characters\\Heroes\\Abilities\\AN_Reload.uasset",
+    "k2_nodes": 2,
+    "anim_graph_nodes": 0,
+    "game_refs": 1,
+    "in_inventory": false
+  },
+  {
+    "asset": "ABP_Mannequin_Base",
+    "path": "Demo\\Characters\\Heroes\\Mannequin\\Animations\\ABP_Mannequin_Base.uasset",
+    "k2_nodes": 50,
+    "anim_graph_nodes": 24,
+    "game_refs": 14,
+    "in_inventory": true
+  },
+  {
+    "asset": "ABP_Mannequin_CopyPose",
+    "path": "Demo\\Characters\\Heroes\\Mannequin\\Animations\\ABP_Mannequin_CopyPose.uasset",
+    "k2_nodes": 0,
+    "anim_graph_nodes": 3,
+    "game_refs": 2,
+    "in_inventory": true
+  },
+  {
+    "asset": "ABP_Mannequin_Retarget",
+    "path": "Demo\\Characters\\Heroes\\Mannequin\\Animations\\ABP_Mannequin_Retarget.uasset",
+    "k2_nodes": 8,
+    "anim_graph_nodes": 3,
+    "game_refs": 3,
+    "in_inventory": true
+  },
+  {
+    "asset": "ABP_Mannequin_TopDown",
+    "path": "Demo\\Characters\\Heroes\\Mannequin\\Animations\\ABP_Mannequin_TopDown.uasset",
+    "k2_nodes": 2,
+    "anim_graph_nodes": 0,
+    "game_refs": 3,
+    "in_inventory": false
+  },
+  {
+    "asset": "FootFXAnimModifier",
+    "path": "Demo\\Characters\\Heroes\\Mannequin\\Animations\\AnimModifiers\\FootFXAnimModifier.uasset",
+    "k2_nodes": 11,
+    "anim_graph_nodes": 0,
+    "game_refs": 5,
+    "in_inventory": false
+  },
+  {
+    "asset": "FootstepEffectTagModifier",
+    "path": "Demo\\Characters\\Heroes\\Mannequin\\Animations\\AnimModifiers\\FootstepEffectTagModifier.uasset",
+    "k2_nodes": 14,
+    "anim_graph_nodes": 0,
+    "game_refs": 4,
+    "in_inventory": false
+  },
+  {
+    "asset": "TurnYawAnimModifier",
+    "path": "Demo\\Characters\\Heroes\\Mannequin\\Animations\\AnimModifiers\\TurnYawAnimModifier.uasset",
+    "k2_nodes": 13,
+    "anim_graph_nodes": 0,
+    "game_refs": 2,
+    "in_inventory": false
+  },
+  {
+    "asset": "AN_PlayWeaponMontage",
+    "path": "Demo\\Characters\\Heroes\\Mannequin\\Animations\\AnimNotifies\\AN_PlayWeaponMontage.uasset",
+    "k2_nodes": 2,
+    "anim_graph_nodes": 0,
+    "game_refs": 1,
+    "in_inventory": false
+  },
+  {
+    "asset": "ABP_ItemAnimLayersBase",
+    "path": "Demo\\Characters\\Heroes\\Mannequin\\Animations\\LinkedLayers\\ABP_ItemAnimLayersBase.uasset",
+    "k2_nodes": 26,
+    "anim_graph_nodes": 28,
+    "game_refs": 27,
+    "in_inventory": true
+  },
+  {
+    "asset": "ALI_ItemAnimLayers",
+    "path": "Demo\\Characters\\Heroes\\Mannequin\\Animations\\LinkedLayers\\ALI_ItemAnimLayers.uasset",
+    "k2_nodes": 0,
+    "anim_graph_nodes": 3,
+    "game_refs": 1,
+    "in_inventory": true
+  },
+  {
+    "asset": "ABP_KnifeAnimLayers",
+    "path": "Demo\\Characters\\Heroes\\Mannequin\\Animations\\Locomotion\\Knife\\ABP_KnifeAnimLayers.uasset",
+    "k2_nodes": 2,
+    "anim_graph_nodes": 0,
+    "game_refs": 73,
+    "in_inventory": false
+  },
+  {
+    "asset": "ABP_PistolAnimLayers",
+    "path": "Demo\\Characters\\Heroes\\Mannequin\\Animations\\Locomotion\\Pistol\\ABP_PistolAnimLayers.uasset",
+    "k2_nodes": 3,
+    "anim_graph_nodes": 0,
+    "game_refs": 76,
+    "in_inventory": true
+  },
+  {
+    "asset": "ABP_PistolAnimLayers_Feminine",
+    "path": "Demo\\Characters\\Heroes\\Mannequin\\Animations\\Locomotion\\Pistol\\ABP_PistolAnimLayers_Feminine.uasset",
+    "k2_nodes": 3,
+    "anim_graph_nodes": 0,
+    "game_refs": 77,
+    "in_inventory": false
+  },
+  {
+    "asset": "ABP_RifleAnimLayers",
+    "path": "Demo\\Characters\\Heroes\\Mannequin\\Animations\\Locomotion\\Rifle\\ABP_RifleAnimLayers.uasset",
+    "k2_nodes": 3,
+    "anim_graph_nodes": 0,
+    "game_refs": 78,
+    "in_inventory": true
+  },
+  {
+    "asset": "ABP_RifleAnimLayers_Feminine",
+    "path": "Demo\\Characters\\Heroes\\Mannequin\\Animations\\Locomotion\\Rifle\\ABP_RifleAnimLayers_Feminine.uasset",
+    "k2_nodes": 3,
+    "anim_graph_nodes": 0,
+    "game_refs": 77,
+    "in_inventory": false
+  },
+  {
+    "asset": "ABP_ShotgunAnimLayers",
+    "path": "Demo\\Characters\\Heroes\\Mannequin\\Animations\\Locomotion\\Shotgun\\ABP_ShotgunAnimLayers.uasset",
+    "k2_nodes": 3,
+    "anim_graph_nodes": 0,
+    "game_refs": 9,
+    "in_inventory": false
+  },
+  {
+    "asset": "ABP_ShotgunAnimLayers_Feminine",
+    "path": "Demo\\Characters\\Heroes\\Mannequin\\Animations\\Locomotion\\Shotgun\\ABP_ShotgunAnimLayers_Feminine.uasset",
+    "k2_nodes": 3,
+    "anim_graph_nodes": 0,
+    "game_refs": 9,
+    "in_inventory": false
+  },
+  {
+    "asset": "ABP_UnarmedAnimLayers",
+    "path": "Demo\\Characters\\Heroes\\Mannequin\\Animations\\Locomotion\\Unarmed\\ABP_UnarmedAnimLayers.uasset",
+    "k2_nodes": 2,
+    "anim_graph_nodes": 0,
+    "game_refs": 69,
+    "in_inventory": true
+  },
+  {
+    "asset": "ABP_UnarmedAnimLayers_Feminine",
+    "path": "Demo\\Characters\\Heroes\\Mannequin\\Animations\\Locomotion\\Unarmed\\ABP_UnarmedAnimLayers_Feminine.uasset",
+    "k2_nodes": 2,
+    "anim_graph_nodes": 0,
+    "game_refs": 69,
+    "in_inventory": false
+  },
+  {
+    "asset": "ABP_Mannequin_Base_UE4",
+    "path": "Demo\\Characters\\Heroes\\Mannequin_UE4\\Animations\\ABP_Mannequin_Base_UE4.uasset",
+    "k2_nodes": 48,
+    "anim_graph_nodes": 22,
+    "game_refs": 13,
+    "in_inventory": false
+  },
+  {
+    "asset": "ABP_UE4_Mannequin_Retarget",
+    "path": "Demo\\Characters\\Heroes\\Mannequin_UE4\\Animations\\ABP_UE4_Mannequin_Retarget.uasset",
+    "k2_nodes": 2,
+    "anim_graph_nodes": 3,
+    "game_refs": 3,
+    "in_inventory": false
+  },
+  {
+    "asset": "ABP_ItemAnimLayersBase_UE4",
+    "path": "Demo\\Characters\\Heroes\\Mannequin_UE4\\Animations\\LinkedLayers\\ABP_ItemAnimLayersBase_UE4.uasset",
+    "k2_nodes": 24,
+    "anim_graph_nodes": 28,
+    "game_refs": 31,
+    "in_inventory": false
+  },
+  {
+    "asset": "ABP_KnifeAnimLayers_UE4",
+    "path": "Demo\\Characters\\Heroes\\Mannequin_UE4\\Animations\\Locomotion\\Knife\\ABP_KnifeAnimLayers_UE4.uasset",
+    "k2_nodes": 2,
+    "anim_graph_nodes": 0,
+    "game_refs": 74,
+    "in_inventory": false
+  },
+  {
+    "asset": "ABP_PistolAnimLayers_Feminine_UE4",
+    "path": "Demo\\Characters\\Heroes\\Mannequin_UE4\\Animations\\Locomotion\\Pistol\\ABP_PistolAnimLayers_Feminine_UE4.uasset",
+    "k2_nodes": 3,
+    "anim_graph_nodes": 0,
+    "game_refs": 72,
+    "in_inventory": false
+  },
+  {
+    "asset": "ABP_PistolAnimLayers_UE4",
+    "path": "Demo\\Characters\\Heroes\\Mannequin_UE4\\Animations\\Locomotion\\Pistol\\ABP_PistolAnimLayers_UE4.uasset",
+    "k2_nodes": 3,
+    "anim_graph_nodes": 0,
+    "game_refs": 75,
+    "in_inventory": false
+  },
+  {
+    "asset": "ABP_RifleAnimLayers_Feminine_UE4",
+    "path": "Demo\\Characters\\Heroes\\Mannequin_UE4\\Animations\\Locomotion\\Rifle\\ABP_RifleAnimLayers_Feminine_UE4.uasset",
+    "k2_nodes": 3,
+    "anim_graph_nodes": 0,
+    "game_refs": 75,
+    "in_inventory": false
+  },
+  {
+    "asset": "ABP_RifleAnimLayers_UE4",
+    "path": "Demo\\Characters\\Heroes\\Mannequin_UE4\\Animations\\Locomotion\\Rifle\\ABP_RifleAnimLayers_UE4.uasset",
+    "k2_nodes": 3,
+    "anim_graph_nodes": 0,
+    "game_refs": 76,
+    "in_inventory": false
+  },
+  {
+    "asset": "ABP_ShotgunAnimLayers_Feminine_UE4",
+    "path": "Demo\\Characters\\Heroes\\Mannequin_UE4\\Animations\\Locomotion\\Shotgun\\ABP_ShotgunAnimLayers_Feminine_UE4.uasset",
+    "k2_nodes": 4,
+    "anim_graph_nodes": 0,
+    "game_refs": 6,
+    "in_inventory": false
+  },
+  {
+    "asset": "ABP_ShotgunAnimLayers_UE4",
+    "path": "Demo\\Characters\\Heroes\\Mannequin_UE4\\Animations\\Locomotion\\Shotgun\\ABP_ShotgunAnimLayers_UE4.uasset",
+    "k2_nodes": 3,
+    "anim_graph_nodes": 0,
+    "game_refs": 10,
+    "in_inventory": false
+  },
+  {
+    "asset": "ABP_UnarmedAnimLayers_Feminine_UE4",
+    "path": "Demo\\Characters\\Heroes\\Mannequin_UE4\\Animations\\Locomotion\\Unarmed\\ABP_UnarmedAnimLayers_Feminine_UE4.uasset",
+    "k2_nodes": 2,
+    "anim_graph_nodes": 0,
+    "game_refs": 69,
+    "in_inventory": false
+  },
+  {
+    "asset": "ABP_UnarmedAnimLayers_UE4",
+    "path": "Demo\\Characters\\Heroes\\Mannequin_UE4\\Animations\\Locomotion\\Unarmed\\ABP_UnarmedAnimLayers_UE4.uasset",
+    "k2_nodes": 2,
+    "anim_graph_nodes": 0,
+    "game_refs": 68,
+    "in_inventory": false
+  },
+  {
+    "asset": "AN_FootPlant_Left",
+    "path": "Demo\\Effects\\AnimationNotifies\\AN_FootPlant_Left.uasset",
+    "k2_nodes": 11,
+    "anim_graph_nodes": 0,
+    "game_refs": 4,
+    "in_inventory": false
+  },
+  {
+    "asset": "AN_FootPlant_Left_Backup",
+    "path": "Demo\\Effects\\AnimationNotifies\\AN_FootPlant_Left_Backup.uasset",
+    "k2_nodes": 5,
+    "anim_graph_nodes": 0,
+    "game_refs": 2,
+    "in_inventory": false
+  }
+]

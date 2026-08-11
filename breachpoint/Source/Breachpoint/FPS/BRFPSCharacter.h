@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 
 #include "Character/BRCharacter.h"
-#include "FPS/BRRecoilTypes.h"
+#include "Animation/BRRecoilTypes.h"
 
 #include "BRFPSCharacter.generated.h"
 

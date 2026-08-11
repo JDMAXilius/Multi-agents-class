@@ -1,4 +1,4 @@
-#include "FPS/BRProceduralSolver.h"
+#include "Animation/BRProceduralSolver.h"
 
 namespace BRProcedural
 {

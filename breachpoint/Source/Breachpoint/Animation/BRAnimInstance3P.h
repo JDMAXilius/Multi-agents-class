@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 
-#include "FPS/BRAnimInstance.h"
+#include "Animation/BRAnimInstance.h"
 
 #include "BRAnimInstance3P.generated.h"
 

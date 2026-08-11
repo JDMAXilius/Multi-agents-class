@@ -9,6 +9,16 @@ DEFINE_LOG_CATEGORY_STATIC(LogBPFPSWeapon, Log, All);
 namespace
 {
 	/**
+	 * WN_ prefix, not N_, and that is load-bearing.
+	 *
+	 * MyCharacter.cpp declares its own N_FireAnimMontage / N_AimFireAnimMontage in an
+	 * anonymous namespace. Anonymous namespaces are per translation unit - until a UNITY
+	 * build concatenates both .cpp files into one TU, at which point the two sets of
+	 * constants collide and every one of them is a C2374/C2086 redefinition. It surfaced
+	 * the moment a folder move changed which files share a unity blob, which is exactly
+	 * the kind of failure that looks like the move broke something and did not.
+	 */
+	/**
 	 * The Blueprint variable names this class reads. Every one was read off the live asset,
 	 * not guessed: `mcp-bp/bp_inventory_weapons.json` for the CDO types and defaults,
 	 * `mcp-bp/weapon_graphs.json` for which function touches which.
@@ -17,22 +27,22 @@ namespace
 	 * `attachSocketName`. The REAL UPROPERTY name is PascalCase, and that is what
 	 * FindFProperty matches. A lookup with the inventory's spelling silently finds nothing.
 	 */
-	const FName N_AvailableFireModes(TEXT("AvailableFireModes"));
-	const FName N_CurFireModeIndex(TEXT("CurFireModeIndex"));
-	const FName N_Scope(TEXT("Scope"));
-	const FName N_DefaultScope(TEXT("DefaultScope"));
-	const FName N_SkeletalMesh(TEXT("SkeletalMesh"));
+	const FName WN_AvailableFireModes(TEXT("AvailableFireModes"));
+	const FName WN_CurFireModeIndex(TEXT("CurFireModeIndex"));
+	const FName WN_Scope(TEXT("Scope"));
+	const FName WN_DefaultScope(TEXT("DefaultScope"));
+	const FName WN_SkeletalMesh(TEXT("SkeletalMesh"));
 
 	/** The two montage sets, UE5 then UE4, in the order the switch selects them. */
-	const FName N_FireAnimMontage(TEXT("FireAnimMontage"));
-	const FName N_AimFireAnimMontage(TEXT("AimFireAnimMontage"));
-	const FName N_FireAnimMontage_UE4(TEXT("FireAnimMontage_UE4"));
-	const FName N_AimFireAnimMontage_UE4(TEXT("AimFireAnimMontage_UE4"));
+	const FName WN_FireAnimMontage(TEXT("FireAnimMontage"));
+	const FName WN_AimFireAnimMontage(TEXT("AimFireAnimMontage"));
+	const FName WN_FireAnimMontage_UE4(TEXT("FireAnimMontage_UE4"));
+	const FName WN_AimFireAnimMontage_UE4(TEXT("AimFireAnimMontage_UE4"));
 
-	const FName N_ReloadBoltAnimMontage(TEXT("ReloadBoltAnimMontage"));
-	const FName N_AimReloadBoltAnimMontage(TEXT("AimReloadBoltAnimMontage"));
-	const FName N_ReloadBoltAnimMontage_UE4(TEXT("ReloadBoltAnimMontage_UE4"));
-	const FName N_AimReloadBoltAnimMontage_UE4(TEXT("AimReloadBoltAnimMontage_UE4"));
+	const FName WN_ReloadBoltAnimMontage(TEXT("ReloadBoltAnimMontage"));
+	const FName WN_AimReloadBoltAnimMontage(TEXT("AimReloadBoltAnimMontage"));
+	const FName WN_ReloadBoltAnimMontage_UE4(TEXT("ReloadBoltAnimMontage_UE4"));
+	const FName WN_AimReloadBoltAnimMontage_UE4(TEXT("AimReloadBoltAnimMontage_UE4"));
 
 	/**
 	 * E_FPST_SkeletalType, by the ordinals the switch used. Enumerator 0 is the UE4 mannequin
@@ -125,7 +135,7 @@ USkeletalMeshComponent* ABPFPSWeapon::GetWeaponMesh() const
 	// apart. `SkeletalMesh` is the SCS name in BP_FPST_BaseWeapon.
 	for (UActorComponent* Component : GetComponents())
 	{
-		if (Component && Component->GetFName() == N_SkeletalMesh)
+		if (Component && Component->GetFName() == WN_SkeletalMesh)
 		{
 			if (USkeletalMeshComponent* AsMesh = Cast<USkeletalMeshComponent>(Component))
 			{
@@ -143,10 +153,10 @@ USkeletalMeshComponent* ABPFPSWeapon::GetWeaponMesh() const
 uint8 ABPFPSWeapon::GetCurrentFireMode() const
 {
 	int32 Index = 0;
-	GetIntVar(N_CurFireModeIndex, Index);
+	GetIntVar(WN_CurFireModeIndex, Index);
 
 	uint8 Mode = FireModeSingle;
-	if (GetByteArrayElement(N_AvailableFireModes, Index, Mode))
+	if (GetByteArrayElement(WN_AvailableFireModes, Index, Mode))
 	{
 		return Mode;
 	}
@@ -155,13 +165,13 @@ uint8 ABPFPSWeapon::GetCurrentFireMode() const
 	// default-constructed enum. Same observable result, but said out loud.
 	UE_LOG(LogBPFPSWeapon, Warning,
 		TEXT("%s: CurFireModeIndex %d is outside AvailableFireModes (len %d) — returning Single."),
-		*GetName(), Index, GetArrayLength(N_AvailableFireModes));
+		*GetName(), Index, GetArrayLength(WN_AvailableFireModes));
 	return FireModeSingle;
 }
 
 void ABPFPSWeapon::NextFireMode()
 {
-	const int32 Length = GetArrayLength(N_AvailableFireModes);
+	const int32 Length = GetArrayLength(WN_AvailableFireModes);
 	if (Length <= 0)
 	{
 		// The graph would divide by zero here. It never does in practice because every weapon
@@ -172,8 +182,8 @@ void ABPFPSWeapon::NextFireMode()
 	}
 
 	int32 Index = 0;
-	GetIntVar(N_CurFireModeIndex, Index);
-	SetIntVar(N_CurFireModeIndex, (Index + 1) % Length);
+	GetIntVar(WN_CurFireModeIndex, Index);
+	SetIntVar(WN_CurFireModeIndex, (Index + 1) % Length);
 }
 
 UAnimMontage* ABPFPSWeapon::GetFireAnimMontage(uint8 InSkeletalType, bool InAiming) const
@@ -181,9 +191,9 @@ UAnimMontage* ABPFPSWeapon::GetFireAnimMontage(uint8 InSkeletalType, bool InAimi
 	if (InSkeletalType == SkeletalType_UE4)
 	{
 		return GetObjectVar<UAnimMontage>(
-			InAiming ? N_AimFireAnimMontage_UE4 : N_FireAnimMontage_UE4);
+			InAiming ? WN_AimFireAnimMontage_UE4 : WN_FireAnimMontage_UE4);
 	}
-	return GetObjectVar<UAnimMontage>(InAiming ? N_AimFireAnimMontage : N_FireAnimMontage);
+	return GetObjectVar<UAnimMontage>(InAiming ? WN_AimFireAnimMontage : WN_FireAnimMontage);
 }
 
 UAnimMontage* ABPFPSWeapon::GetReloadBoltAnimMontage(uint8 InSkeletalType, bool InAiming) const
@@ -191,15 +201,15 @@ UAnimMontage* ABPFPSWeapon::GetReloadBoltAnimMontage(uint8 InSkeletalType, bool 
 	if (InSkeletalType == SkeletalType_UE4)
 	{
 		return GetObjectVar<UAnimMontage>(
-			InAiming ? N_AimReloadBoltAnimMontage_UE4 : N_ReloadBoltAnimMontage_UE4);
+			InAiming ? WN_AimReloadBoltAnimMontage_UE4 : WN_ReloadBoltAnimMontage_UE4);
 	}
 	return GetObjectVar<UAnimMontage>(
-		InAiming ? N_AimReloadBoltAnimMontage : N_ReloadBoltAnimMontage);
+		InAiming ? WN_AimReloadBoltAnimMontage : WN_ReloadBoltAnimMontage);
 }
 
 uint8 ABPFPSWeapon::GetScopeType() const
 {
-	AActor* ScopeActor = GetObjectVar<AActor>(N_Scope);
+	AActor* ScopeActor = GetObjectVar<AActor>(WN_Scope);
 	if (!IsValid(ScopeActor))
 	{
 		return ScopeTypeNone;
@@ -259,14 +269,14 @@ void ABPFPSWeapon::PlayAnim(UAnimSequenceBase* NewAnimToPlay, bool bLooping)
 void ABPFPSWeapon::ResetAttachments()
 {
 	// Order matters and is the graph's: DefaultScope first, then Scope. Both IsValid-guarded.
-	if (AActor* DefaultScopeActor = GetObjectVar<AActor>(N_DefaultScope))
+	if (AActor* DefaultScopeActor = GetObjectVar<AActor>(WN_DefaultScope))
 	{
 		if (IsValid(DefaultScopeActor))
 		{
 			DefaultScopeActor->Destroy();
 		}
 	}
-	if (AActor* ScopeActor = GetObjectVar<AActor>(N_Scope))
+	if (AActor* ScopeActor = GetObjectVar<AActor>(WN_Scope))
 	{
 		if (IsValid(ScopeActor))
 		{

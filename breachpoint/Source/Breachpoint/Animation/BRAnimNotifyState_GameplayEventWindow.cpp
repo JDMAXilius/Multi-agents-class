@@ -1,8 +1,8 @@
-#include "FPS/BRAnimNotifyState_GameplayEventWindow.h"
+#include "Animation/BRAnimNotifyState_GameplayEventWindow.h"
 
 #include "Components/SkeletalMeshComponent.h"
 
-#include "FPS/BRAnimInstance.h"
+#include "Animation/BRAnimInstance.h"
 
 namespace
 {
