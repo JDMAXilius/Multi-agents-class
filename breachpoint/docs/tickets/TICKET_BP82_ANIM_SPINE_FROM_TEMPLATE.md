@@ -2134,3 +2134,64 @@ mapping contexts.
 **Rung: RUNS, single player, input confirmed by a human.** Still not PIE-multiplayer, not
 dedicated. DealDamage still applies nothing (law 2).
 
+
+### 11 Aug 2026 - BP_FPST_BaseWeapon extraction (step 1 of the C++ port)
+
+Founder asked for BP_FPST_BaseWeapon ported 1:1 onto ABPWeaponBase, using the blueprint-to-cpp
+method. That method's step 1 is "extract completely before writing any code", so this entry is
+the extraction. **No C++ has been written yet, on purpose.**
+
+**Scale, measured:** 305 KB, **6 real functions** - `GetCurrentFireMode`, `GetFireAnimMontage`,
+`GetScopeType`, `NextFireMode`, `PlayAnim`, `ResetAttachments` - plus UserConstructionScript,
+**2 components** (`DefaultSceneRoot`, `SkeletalMesh`), and ~48 authored variables. Far smaller
+than the character was.
+
+**`mcp-bp/bp_extract.py --set weapons` works on this asset** and its output is committed as
+`mcp-bp/bp_inventory_weapons.json`. Two things about that tool worth knowing before the next
+reader loses half an hour the way I did:
+- It **camelCases** every key. `AttachSocketName` comes back as `attachSocketName`. A
+  PascalCase lookup returns nothing and looks exactly like "the variable does not exist".
+- Its `properties` block mixes the ~48 authored variables in with every inherited AActor
+  property, 124 in total. There is no authored/inherited flag; subtract by name.
+
+**CDO defaults, read not guessed:**
+
+| variable | type | base default |
+|---|---|---|
+| `AttachSocketName` | Name | `hand_r` |
+| `MuzzleSocketName` | Name | `Muzzle` |
+| `FireDelay` | double | 0.1 |
+| `SpreadAngle` | double | **0.1** |
+| `ShotCount` | int | **1** |
+| `ReloadBoltDelay` | double | 0.4 |
+| `CurFireModeIndex` | int | 0 |
+| `AvailableFireModes` | array<E_FPST_FireMode> | `[Single]` |
+| `WeaponType` | E_FPST_WeaponType | `Unarmed` |
+| `CrosshairType` | E_FPST_CrosshairType | `Rifle` |
+| `HolsterAnimMontage`, `UnholsterAnimMontage` | AnimMontage | real refs on the BASE |
+| every other montage / AnimSeq / scope / layer class | object | None on the base; children set them |
+
+**TWO NUMBERS I SHIPPED TODAY ARE WRONG, and this is how they were caught.** `AMyCharacter`
+carries `SpreadAngle = 5.f` and `SpreadPelletCount = 6`, both invented on 9 Aug as "named
+constants rather than magic numbers buried in a branch". The asset says the weapon's own
+`SpreadAngle` is **0.1** and the pellet count is a weapon variable called **`ShotCount`,
+defaulting to 1** - there is no `SpreadPelletCount` anywhere in the template. `FireEvent` already
+reads the weapon's SpreadAngle (fixed earlier today), so the 5.0 is only a no-weapon fallback and
+is harmless; **the pellet count is NOT read from the weapon at all and 6 is pure invention.**
+That is a live defect in shipped code, not a stale comment.
+
+`E_FPST_CrosshairType` also enumerates `None, Pistol, Rifle, ...`, which does not match the
+`Crosshair_Default = 0` / `Crosshair_None = 4` constants in MyCharacter.cpp. Those came from the
+same 9 Aug guessing pass and need re-reading against this enum before anything trusts them.
+
+**STILL MISSING, and it blocks the C++:** the six function graphs. `bp_extract.py` returns
+properties only - no graphs, no exec order. Writing `GetCurrentFireMode` or `ResetAttachments`
+from their names would be inference wearing the costume of a read, which is the one thing the
+method exists to prevent. Direct MCP graph reads are the next step.
+
+**Founder's chosen route (recorded so it is not re-litigated): STAGED.** Write the full C++
+surface first, then strip the Blueprint in one go - a committed script deletes the ~48 variables,
+and the 6 graphs are emptied by hand because there is no remove-graph tool. The weapons are
+BROKEN between the C++ landing and the strip completing, so those two steps belong in one
+session and must not be left half-done.
+
