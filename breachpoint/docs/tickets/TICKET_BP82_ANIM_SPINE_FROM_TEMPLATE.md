@@ -2342,3 +2342,43 @@ warnings added here are what will identify a failure the moment you aim or fire.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
 
+revert(BP82): back out the eight-function port - it broke all five weapon assets
+
+I broke the founder's game. The port in 76f523b declared GetCurrentFireMode, NextFireMode,
+GetFireAnimMontage, GetReloadBoltAnimMontage, GetScopeType, PlayAnim and ResetAttachments as
+UFUNCTIONs on ABPWeaponBase while BP_FPST_BaseWeapon still owned graphs of the same names. A
+Blueprint member whose name matches a parent UFUNCTION is a COMPILE ERROR, so the base failed
+to compile, the four children lost their parent chain, and the log filled with
+
+  BlueprintGeneratedClass BP_FPST_Weapon_Rifle_C is not a child class of
+  Class /Script/Breachpoint.BPWeaponBase
+  MyCharacter: StartupWeaponClasses[1] ... failed to load.
+
+No weapons spawned. That failure mode was named in the 76f523b commit message and in the
+header comment as the blocking next step, and I opened the editor for a play test anyway
+without first doing the graph deletion the port depended on. Landing half of a two-part
+destructive change and handing it over to be tested is the mistake, not the collision.
+
+Backed out: BPWeaponBase.h/.cpp restored to the empty class at 14d55be. Re-ran
+mcp-bp/reparent_weapon_base.py because the failed compile had dropped the parent link.
+
+VERIFIED by a standalone run, not by reasoning:
+  MyCharacter READY: pawn=BP_FPSCharacter_C_0 ... weapons=4/4 startType=2
+    current=BP_FPST_Weapon_Rifle_C_0 socket=weapon_r_rifle canCrouch=YES
+  and ZERO "is not a child class" lines.
+
+Rung 1 PASS 20260811-133410, three targets, exit 0, zero warnings.
+
+NOT DONE: the founder asked to reparent the four CHILD weapons directly onto ABPWeaponBase.
+That would be worse, and it is why it was not done. Their variables are DECLARED on
+BP_FPST_BaseWeapon and only overridden per child; reparenting the children away from it
+deletes every one of those overrides - the montages, sockets, fire modes, ShotCount, the lot.
+The children are already children of ABPWeaponBase transitively through the base, which is
+what the verification above shows.
+
+The eight-function port is preserved in git at 76f523b. Relanding it needs the seven graphs
+deleted from BP_FPST_BaseWeapon FIRST, by hand, in the same session - there is no remove-graph
+tool. Extraction and analysis are unaffected and remain in weapon_graphs.json.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
