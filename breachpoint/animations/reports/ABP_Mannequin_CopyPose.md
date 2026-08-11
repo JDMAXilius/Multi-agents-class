@@ -8,12 +8,12 @@ Read from the checked-out `.uasset`. No editor involved.
 ## Accuracy cross-check vs `bp_inventory.json`
 
 | | |
-|---|---|
+|---|---:|
 | properties the editor reported | 11 |
 | recovered offline | **1** |
 | not in the name table | 10 |
 
-Not found offline (inherited, not declared by this asset):
+Not found offline - inherited, not declared by this asset:
 
 - `bPropagateNotifiesToLinkedInstances`
 - `bReceiveNotifiesFromLinkedInstances`
@@ -72,7 +72,7 @@ Not found offline (inherited, not declared by this asset):
 
 ## Other names (163)
 
-Listed in full rather than dropped - bone names, slot names, curve names, state and transition names, engine node properties and designer-authored graph names all land here, and which is which needs a human or the editor. No rule separates them by spelling; see the note in the source.
+Listed in full rather than dropped. Bone names, slot names, curve names, state and transition names, engine node properties and designer-authored graph names all land here, and which is which needs a human or the editor. No rule separates them by spelling; see the note in the source.
 
 - `ABP_Mannequin_CopyPose`
 - `ABP_Mannequin_CopyPose_C`

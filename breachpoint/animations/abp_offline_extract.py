@@ -1,88 +1,107 @@
 """
-abp_offline_extract.py - read a Blueprint/AnimBlueprint .uasset WITHOUT a running editor.
+abp_offline_extract.py - read a Blueprint / AnimBlueprint `.uasset` with no editor running.
 
-    python abp_offline_extract.py <asset.uasset> [more.uasset ...] [--out DIR] [--inventory PATH]
+    python animations/abp_offline_extract.py <asset.uasset> [...] [--inventory J] [--out DIR]
+    python animations/abp_offline_extract.py --sweep Content/FPSTemplate [--inventory J] [--out DIR]
 
 WHY THIS EXISTS
 ---------------
-`mcp-bp/read_graphs.py` reads graphs through the editor's MCP server, which means a live
-editor, a loaded project, and a human at the keyboard. `docs/ANIM-PORT-LEDGER.md` records the
-consequence: verdicts were reached from a curated 14-asset target list, and the 29 assets nobody
-pointed the tool at stayed invisible until a founder challenge. A reader that runs on the
-CHECKED-OUT FILES needs no target list, so "what did we not look at" stops being a question the
-tool can get wrong.
+`mcp-bp/read_graphs.py` reads graphs through the editor's MCP server: a live editor, a loaded
+project, a human at the keyboard, and a path supplied per asset. It works. Its one structural
+weakness is recorded in `docs/ANIM-PORT-LEDGER.md`, which paid for it: a curated target list is
+a claim about what matters, and every conclusion drawn from it inherits that claim silently.
+"14/14 found" read as completeness and only ever meant "14/14 of what I was told to look at."
 
-WHAT IT READS, AND HOW FAR TO TRUST IT
---------------------------------------
-Uncooked .uasset files carry a name table: every distinct FName the package uses, which for a
-Blueprint includes every node class, every declared property, every referenced package, and
-every function and graph name. This tool parses that table and classifies it.
+This reader runs on the checked-out files. It needs no target list, so "what did we never look
+at" stops being a question the tool can get wrong. It complements `mcp-bp/`; it does not
+replace it, for the reason under LIMITS.
 
-**Self-validating.** Pass `--inventory mcp-bp/bp_inventory.json` and it cross-checks the
-properties it recovered against what the live-editor extraction found for the same asset, and
-prints the delta. On `ABP_Mannequin_Base` it recovers 88 of the inventory's 96, and the 8 it
-does not are all stock `UAnimInstance` members (`onMontage*`, `rootMotionMode`,
-`bUseMainInstanceMontageEvaluationData`) -- absent from the name table precisely because the
-Blueprint inherits rather than declares them. Read that as the tool's accuracy statement: it
-sees what the asset DECLARES, and inherited members are the editor's to report.
+HOW IT READS
+------------
+An uncooked `.uasset` carries a name table: every distinct FName the package uses. For a
+Blueprint that includes every node class, every declared property, every referenced package,
+and every function and graph name. This parses that table and classifies it.
 
-**What it CANNOT read, and does not guess.** Node-to-node topology -- which pin feeds which,
-what order execution takes, which state transitions to which. That lives in the export table's
-tagged property streams, and this package is written by a source engine build whose
-FPackageFileSummary does not match the documented layout (`SavedHash` in place of the package
-GUID, legacy file version -9). Every attempt to walk exports here was rejected by the
-validator rather than reported at low confidence. So: this tool tells you WHAT IS IN a graph,
-never HOW IT IS WIRED. A verdict needing topology still needs the editor, and should say so.
+The table is located by structural probe rather than by reading the summary's NameOffset. That
+is deliberate: this project's packages come from a source engine build whose
+`FPackageFileSummary` does not match the documented layout -- legacy file version -9, and a
+20-byte `SavedHash` where the package GUID used to be -- so a version-driven walk of the
+summary desynchronises and reads garbage. Twelve consecutive well-formed length-prefixed
+ASCII names is a signature random bytes do not produce, and it does not care which build wrote
+the file.
+
+ACCURACY IS MEASURED, NOT ASSERTED
+----------------------------------
+Pass `--inventory mcp-bp/bp_inventory.json` and every run cross-checks itself against the
+live-editor extraction already committed for the same asset, and prints the delta. On
+`ABP_Mannequin_Base` it recovers 88 of 96; all 8 misses are stock `UAnimInstance` members
+(`onMontage*` x6, `rootMotionMode`, `bUseMainInstanceMontageEvaluationData`) which are absent
+from the name table precisely because the Blueprint inherits rather than declares them. Read
+that as the accuracy statement: it sees what an asset DECLARES, and inherited members are the
+editor's to report.
+
+LIMITS -- READ BEFORE QUOTING ANY NUMBER FROM THIS
+--------------------------------------------------
+**No topology.** Pin links, execution order, state transitions, blend weights: not read, and
+not guessed. That data lives in the export table's tagged property streams, and export walks
+against these packages were attempted and rejected by their own validator rather than reported
+at low confidence.
+
+So this answers *what is in a graph*, never *how it is wired*. A verdict that needs topology
+needs the editor, and should say so.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import re
 import struct
 import sys
-from collections import Counter
 from pathlib import Path
 
 PKG_TAG = 0x9E2A83C1
 
-# The name table's start is found by structural probe rather than read from the summary: the
-# summary layout is engine-build-specific (see module docstring) and the table is not.
+# How far into the file to look for the name table before giving up.
 NAME_TABLE_SEARCH_LIMIT = 8192
-NAME_HASH_BYTES = 4  # editor packages store two case-preserving hashes after each name
 
+# Editor packages store two case-preserving hashes after each name entry.
+NAME_HASH_BYTES = 4
+
+# A run this long of well-formed names is the table; shorter runs occur by chance.
+PROBE_RUN = 12
+
+
+# --------------------------------------------------------------------------- name table
 
 def read_name_table(data: bytes):
-    """Return (names, start_offset, end_offset). Raises if no table validates."""
+    """Return (names, start_offset, end_offset), or raise if no table validates."""
+
     def run(start, limit=None):
-        q, out = start, []
+        pos, out = start, []
         while limit is None or len(out) < limit:
-            if q + 4 > len(data):
+            if pos + 4 > len(data):
                 break
-            length = struct.unpack_from('<i', data, q)[0]
-            if not (0 < length < 300):
+            length = struct.unpack_from('<i', data, pos)[0]
+            if not 0 < length < 300:
                 break
-            chunk = data[q + 4:q + 4 + length]
+            chunk = data[pos + 4:pos + 4 + length]
             if chunk[-1:] != b'\x00' or not all(32 <= c < 127 for c in chunk[:-1]):
                 break
             out.append(chunk[:-1].decode('ascii'))
-            q += 4 + length + NAME_HASH_BYTES
-        return out, q
+            pos += 4 + length + NAME_HASH_BYTES
+        return out, pos
 
-    if struct.unpack_from('<I', data, 0)[0] != PKG_TAG:
+    if len(data) < 4 or struct.unpack_from('<I', data, 0)[0] != PKG_TAG:
         raise ValueError('not an Unreal package (bad tag)')
 
-    for start in range(0, min(NAME_TABLE_SEARCH_LIMIT, len(data))):
-        probe, _ = run(start, limit=12)
-        # A real table opens with 12 consecutive well-formed names. Random bytes do not.
-        if len(probe) == 12:
+    for start in range(min(NAME_TABLE_SEARCH_LIMIT, len(data))):
+        if len(run(start, limit=PROBE_RUN)[0]) == PROBE_RUN:
             names, end = run(start)
             return names, start, end
     raise ValueError('no name table found')
 
 
-# ---------------------------------------------------------------- classification
+# --------------------------------------------------------------------------- classification
 
 CLASSIFIERS = [
     ('anim_graph_nodes', lambda n: n.startswith('AnimGraphNode')),
@@ -92,28 +111,28 @@ CLASSIFIERS = [
     ('edgraph', lambda n: n.startswith('EdGraph')),
 ]
 
-# EdGraph pin categories and wildcards. A fixed engine vocabulary, not content -- filtered so
-# they stop showing up as "names this asset introduces".
+# EdGraph pin categories and wildcards: a fixed engine vocabulary, filtered out so they stop
+# reading as "names this asset introduces".
 PIN_TYPE_KEYWORDS = {
-    'bool', 'byte', 'class', 'delegate', 'double', 'exec', 'execute', 'float', 'int', 'int64',
-    'name', 'object', 'real', 'self', 'string', 'struct', 'text', 'then', 'else', 'tooltip',
-    'wildcard', 'softclass', 'softobject', 'interface', 'field',
+    'bool', 'byte', 'class', 'delegate', 'double', 'else', 'exec', 'execute', 'field', 'float',
+    'int', 'int64', 'interface', 'name', 'object', 'real', 'self', 'softclass', 'softobject',
+    'string', 'struct', 'text', 'then', 'tooltip', 'wildcard',
 }
 
-# NOTE ON WHY THERE IS NO PROPERTY REGEX HERE.
+# WHY THERE IS NO "DECLARED PROPERTY" REGEX HERE.
 #
-# The obvious rule -- "a declared property is lowerCamel" -- was written, run, and thrown away.
-# It scored 8 correct out of 116 on `ABP_Mannequin_Base`. Blueprint properties are stored
+# The obvious rule -- a declared property is lowerCamel -- was written, measured, and thrown
+# away. It scored 8 correct out of 116 on ABP_Mannequin_Base. Blueprint properties are stored
 # UpperCamel in the name table (`AimPitch`); it is the MCP inventory that lowercases the first
-# letter (`aimPitch`), so the rule matched engine node internals (`bAllowConduitEntryStates`,
-# `bMeshSpaceRotationBlend`) and skeleton bone names instead, and would have reported 116
+# letter (`aimPitch`). So the rule matched engine node internals (`bAllowConduitEntryStates`,
+# `bMeshSpaceRotationBlend`) and skeleton bone names instead, and would have published 116
 # confident findings of which 108 were noise.
 #
-# Nothing distinguishes a Blueprint-declared `AimPitch` from an engine node's own property by
-# spelling alone -- both are UpperCamel and both are in the table. So declared properties are
-# reported ONLY where the inventory confirms them, and everything else is listed as
-# `other_names` for a human to read. An inventory-less run says "I cannot tell" rather than
-# guessing, which is the difference between this being evidence and being an opinion.
+# Nothing separates a Blueprint-declared `AimPitch` from an engine node's own property by
+# spelling: both are UpperCamel, both are in the table. Properties are therefore reported ONLY
+# where the inventory confirms them, and everything else is listed under `other_names` for a
+# human to read. A run without `--inventory` says "I cannot tell" instead of guessing, which is
+# the difference between this being evidence and being an opinion.
 
 
 def classify(names):
@@ -124,27 +143,27 @@ def classify(names):
         'pin_type_keywords': [],
         'other_names': [],
     })
-    for n in names:
-        if n.startswith('/Game') or n.startswith('/Engine'):
-            buckets['referenced_game_assets'].append(n)
-            continue
-        if n.startswith('/Script'):
-            buckets['referenced_script_modules'].append(n)
-            continue
-        if n.lower() in PIN_TYPE_KEYWORDS:
-            buckets['pin_type_keywords'].append(n)
-            continue
-        for key, test in CLASSIFIERS:
-            if test(n):
-                buckets[key].append(n)
-                break
+    for name in names:
+        if name.startswith('/Game') or name.startswith('/Engine'):
+            buckets['referenced_game_assets'].append(name)
+        elif name.startswith('/Script'):
+            buckets['referenced_script_modules'].append(name)
+        elif name.lower() in PIN_TYPE_KEYWORDS:
+            buckets['pin_type_keywords'].append(name)
         else:
-            buckets['other_names'].append(n)
+            for key, test in CLASSIFIERS:
+                if test(name):
+                    buckets[key].append(name)
+                    break
+            else:
+                buckets['other_names'].append(name)
     return buckets
 
 
-def inventory_properties(inventory_path, asset_package):
-    """Properties the live-editor extraction recorded for this asset, if it recorded any."""
+# --------------------------------------------------------------------------- cross-check
+
+def inventory_properties(inventory_path, asset_stem):
+    """What the live-editor extraction recorded for this asset, if it recorded anything."""
     try:
         data = json.loads(Path(inventory_path).read_text())
     except Exception as exc:
@@ -153,10 +172,12 @@ def inventory_properties(inventory_path, asset_package):
         if not isinstance(entries, list):
             continue
         for entry in entries:
-            if isinstance(entry, dict) and entry.get('path', '').endswith(asset_package):
+            if isinstance(entry, dict) and entry.get('path', '').endswith(asset_stem):
                 return entry.get('properties', {}), None
     return None, 'asset not present in inventory'
 
+
+# --------------------------------------------------------------------------- per-asset
 
 def extract(path: Path, inventory_path=None):
     data = path.read_bytes()
@@ -179,16 +200,17 @@ def extract(path: Path, inventory_path=None):
         if props is None:
             result['cross_check'] = {'status': 'skipped', 'reason': err}
         else:
-            lowered = {n.lower(): n for n in names}
-            found = sorted(k for k in props if k.lower() in lowered)
-            missing = sorted(k for k in props if k.lower() not in lowered)
-            # Report the name table's own spelling: the asset says `AimPitch`, the inventory
-            # says `aimPitch`, and a port has to type the former.
-            result['buckets']['declared_properties'] = [lowered[k.lower()] for k in found]
+            by_lower = {n.lower(): n for n in names}
+            found = sorted(k for k in props if k.lower() in by_lower)
+            missing = sorted(k for k in props if k.lower() not in by_lower)
+            confirmed_lower = {k.lower() for k in found}
+
+            # Report the asset's own spelling: it says `AimPitch`, the inventory says
+            # `aimPitch`, and a port has to type the former.
+            result['buckets']['declared_properties'] = [by_lower[k] for k in confirmed_lower]
             result['counts']['declared_properties'] = len(found)
             result['buckets']['other_names'] = [
-                n for n in result['buckets']['other_names']
-                if n.lower() not in {k.lower() for k in found}
+                n for n in result['buckets']['other_names'] if n.lower() not in confirmed_lower
             ]
             result['counts']['other_names'] = len(result['buckets']['other_names'])
             result['cross_check'] = {
@@ -202,66 +224,64 @@ def extract(path: Path, inventory_path=None):
     return result
 
 
+SECTION_ORDER = [
+    ('referenced_game_assets', 'Referenced content packages'),
+    ('referenced_script_modules', 'Engine modules this graph pulls from'),
+    ('anim_graph_nodes', 'AnimGraph node classes present'),
+    ('anim_runtime_nodes', 'Anim runtime nodes'),
+    ('k2_nodes', 'K2 (event graph) node classes present'),
+    ('control_rig', 'Control Rig'),
+    ('declared_properties', 'Declared properties (inventory-confirmed, asset spelling)'),
+    ('edgraph', 'EdGraph internals'),
+    ('pin_type_keywords', 'Pin type vocabulary'),
+]
+
+
 def to_markdown(r):
-    lines = ['# %s - offline declaration inventory' % r['asset'], '']
-    lines.append('Read from the checked-out `.uasset`. No editor involved.')
-    lines.append('')
-    lines.append('- file size: %s bytes' % format(r['file_size'], ','))
-    lines.append('- name table: %d entries at offset %d' % (r['name_table']['count'], r['name_table']['offset']))
-    lines.append('')
+    lines = ['# %s - offline declaration inventory' % r['asset'], '',
+             'Read from the checked-out `.uasset`. No editor involved.', '',
+             '- file size: %s bytes' % format(r['file_size'], ','),
+             '- name table: %d entries at offset %d'
+             % (r['name_table']['count'], r['name_table']['offset']), '']
 
     cc = r.get('cross_check')
     if cc and cc['status'] == 'ran':
-        lines += ['## Accuracy cross-check vs `bp_inventory.json`', '',
-                  '| | |', '|---|---|',
+        lines += ['## Accuracy cross-check vs `bp_inventory.json`', '', '| | |', '|---|---:|',
                   '| properties the editor reported | %d |' % cc['inventory_property_count'],
                   '| recovered offline | **%d** |' % cc['recovered_offline'],
                   '| not in the name table | %d |' % len(cc['not_in_name_table']), '']
         if cc['not_in_name_table']:
-            lines += ['Not found offline (inherited, not declared by this asset):', '']
-            lines += ['- `%s`' % n for n in cc['not_in_name_table']]
-            lines.append('')
+            lines += ['Not found offline - inherited, not declared by this asset:', '']
+            lines += ['- `%s`' % n for n in cc['not_in_name_table']] + ['']
+    elif cc:
+        lines += ['## Accuracy cross-check', '',
+                  'Not run: %s. Declared properties are not reported without it - see the '
+                  'note in `abp_offline_extract.py`.' % cc['reason'], '']
 
-    order = [
-        ('referenced_game_assets', 'Referenced content packages'),
-        ('referenced_script_modules', 'Engine modules this graph pulls from'),
-        ('anim_graph_nodes', 'AnimGraph node classes present'),
-        ('anim_runtime_nodes', 'Anim runtime nodes'),
-        ('k2_nodes', 'K2 (event graph) node classes present'),
-        ('control_rig', 'Control Rig'),
-        ('declared_properties', 'Declared properties (inventory-confirmed, asset spelling)'),
-        ('edgraph', 'EdGraph internals'),
-        ('pin_type_keywords', 'Pin type vocabulary'),
-    ]
-    for key, title in order:
+    for key, title in SECTION_ORDER:
         vals = r['buckets'].get(key) or []
-        if not vals:
-            continue
-        lines += ['## %s (%d)' % (title, len(vals)), '']
-        lines += ['- `%s`' % v for v in vals]
-        lines.append('')
+        if vals:
+            lines += ['## %s (%d)' % (title, len(vals)), ''] + ['- `%s`' % v for v in sorted(vals)] + ['']
 
-    unc = r['buckets'].get('other_names') or []
-    if unc:
-        lines += ['## Other names (%d)' % len(unc), '',
-                  'Listed in full rather than dropped - bone names, slot names, curve names, '
+    other = r['buckets'].get('other_names') or []
+    if other:
+        lines += ['## Other names (%d)' % len(other), '',
+                  'Listed in full rather than dropped. Bone names, slot names, curve names, '
                   'state and transition names, engine node properties and designer-authored '
                   'graph names all land here, and which is which needs a human or the editor. '
                   'No rule separates them by spelling; see the note in the source.', '']
-        lines += ['- `%s`' % v for v in unc]
-        lines.append('')
+        lines += ['- `%s`' % v for v in sorted(other)] + ['']
 
-    lines += ['## Limits', '', r['limits'], '']
-    return '\n'.join(lines)
+    return '\n'.join(lines + ['## Limits', '', r['limits'], ''])
 
+
+# --------------------------------------------------------------------------- sweep
 
 def sweep(root: Path, inventory_path=None):
     """Every graph-bearing asset under `root`, and whether the inventory knows about it.
 
-    This is the mode that answers the question a curated target list cannot: not "did the 14
-    assets I named extract cleanly" but "what is actually in this folder". `read_graphs.py`
-    needs a path per asset, so its coverage is always a claim someone made in advance;
-    this walks the tree and lets the files answer.
+    This is the mode a curated target list cannot provide: not "did the assets I named
+    extract cleanly" but "what is actually in this folder".
     """
     known = set()
     if inventory_path:
@@ -280,13 +300,13 @@ def sweep(root: Path, inventory_path=None):
         try:
             names, _, _ = read_name_table(path.read_bytes())
         except Exception:
-            continue  # not a package we can read, or not a graph asset -- silently skipped
+            continue  # not a package this can read; skipped rather than counted
         buckets = classify(names)
         if not (buckets['k2_nodes'] or buckets['anim_graph_nodes']):
-            continue  # carries no graph; nothing a port would want
+            continue  # carries no graph, so nothing a port would want
         rows.append({
             'asset': path.stem,
-            'path': str(path.relative_to(root)),
+            'path': str(path.relative_to(root)).replace('\\', '/'),
             'k2_nodes': len(buckets['k2_nodes']),
             'anim_graph_nodes': len(buckets['anim_graph_nodes']),
             'game_refs': len(buckets['referenced_game_assets']),
@@ -296,43 +316,46 @@ def sweep(root: Path, inventory_path=None):
 
 
 def sweep_markdown(rows, root):
-    covered = [r for r in rows if r['in_inventory']]
     missing = [r for r in rows if not r['in_inventory']]
-    lines = [
-        '# Graph-bearing assets under `%s`' % root,
-        '',
-        'Found by walking the checked-out files, not by naming targets in advance.',
-        '',
-        '| | |', '|---|---|',
-        '| graph-bearing assets on disk | **%d** |' % len(rows),
-        '| present in `bp_inventory.json` | %d |' % len(covered),
-        '| **absent from the inventory** | **%d** |' % len(missing),
-        '',
-    ]
+    lines = ['# Graph-bearing assets under `%s`' % root, '',
+             'Found by walking the checked-out files, not by naming targets in advance.', '',
+             '| | |', '|---|---:|',
+             '| graph-bearing assets on disk | **%d** |' % len(rows),
+             '| present in `bp_inventory.json` | %d |' % (len(rows) - len(missing)),
+             '| **absent from the inventory** | **%d** |' % len(missing), '']
+
     if missing:
         lines += ['## Absent from the inventory', '',
                   '| Asset | K2 node classes | AnimGraph node classes | Content refs |',
                   '|---|---:|---:|---:|']
         for r in sorted(missing, key=lambda x: -(x['k2_nodes'] + x['anim_graph_nodes'])):
-            lines.append('| `%s` | %d | %d | %d |' % (
-                r['asset'], r['k2_nodes'], r['anim_graph_nodes'], r['game_refs']))
+            lines.append('| `%s` | %d | %d | %d |'
+                         % (r['asset'], r['k2_nodes'], r['anim_graph_nodes'], r['game_refs']))
         lines.append('')
-    lines += ['## Read this as coverage, not as a verdict', '',
-              'A high node-class count means the asset carries a graph, not that the graph is '
-              'worth porting -- `ANIM-PORT-LEDGER.md` decides that, per asset, with the '
-              'editor where topology matters. What this table settles is which assets have '
-              'never been looked at.', '']
-    return '\n'.join(lines)
 
+    return '\n'.join(lines + [
+        '## Read this as coverage, not as a verdict', '',
+        'A high node-class count means an asset carries a graph, not that the graph is worth '
+        'porting -- `docs/ANIM-PORT-LEDGER.md` decides that, per asset, with the editor where '
+        'topology matters. What this table settles is which assets have never been looked at.',
+        ''])
+
+
+# --------------------------------------------------------------------------- cli
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('assets', nargs='*', type=Path)
-    ap.add_argument('--sweep', type=Path, default=None,
-                    help='walk a content directory and report every graph-bearing asset')
-    ap.add_argument('--out', type=Path, default=None, help='directory for .json/.md output')
-    ap.add_argument('--inventory', default=None, help='path to mcp-bp/bp_inventory.json for cross-check')
-    args = ap.parse_args(argv)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('assets', nargs='*', type=Path, help='.uasset files to inventory')
+    parser.add_argument('--sweep', type=Path, default=None,
+                        help='walk a content directory and report every graph-bearing asset')
+    parser.add_argument('--inventory', default=None,
+                        help='mcp-bp/bp_inventory.json, for the accuracy cross-check')
+    parser.add_argument('--out', type=Path, default=None, help='directory for .json/.md output')
+    args = parser.parse_args(argv)
+
+    if not args.assets and not args.sweep:
+        parser.error('give at least one .uasset, or --sweep DIR')
 
     if args.sweep:
         rows = sweep(args.sweep, args.inventory)
@@ -344,35 +367,27 @@ def main(argv=None):
             (args.out / 'sweep.json').write_text(json.dumps(rows, indent=2))
             (args.out / 'sweep.md').write_text(sweep_markdown(rows, args.sweep), encoding='utf-8')
             print('wrote sweep.json and sweep.md to %s' % args.out)
-        if not args.assets:
-            return 0
 
-    results = []
     for path in args.assets:
         try:
             r = extract(path, args.inventory)
         except Exception as exc:
             print('FAILED %s: %s' % (path.name, exc), file=sys.stderr)
             continue
-        results.append(r)
+
         cc = r.get('cross_check', {})
-        note = ''
-        if cc.get('status') == 'ran':
-            note = '  cross-check %d/%d' % (cc['recovered_offline'], cc['inventory_property_count'])
-        print('%-34s names=%-5d props=%-4s anim_nodes=%-3d k2_nodes=%-3d refs=%d%s' % (
-            r['asset'], r['name_table']['count'],
-            r['counts'].get('declared_properties', '?'),
-            r['counts']['anim_graph_nodes'], r['counts']['k2_nodes'],
-            r['counts']['referenced_game_assets'], note))
+        note = ('  cross-check %d/%d' % (cc['recovered_offline'], cc['inventory_property_count'])
+                if cc.get('status') == 'ran' else '')
+        print('%-34s names=%-5d props=%-4s anim_nodes=%-3d k2_nodes=%-3d refs=%d%s'
+              % (r['asset'], r['name_table']['count'], r['counts'].get('declared_properties', '?'),
+                 r['counts']['anim_graph_nodes'], r['counts']['k2_nodes'],
+                 r['counts']['referenced_game_assets'], note))
 
         if args.out:
             args.out.mkdir(parents=True, exist_ok=True)
-            stem = path.stem
-            (args.out / (stem + '.json')).write_text(json.dumps(r, indent=2))
-            (args.out / (stem + '.md')).write_text(to_markdown(r), encoding='utf-8')
+            (args.out / (path.stem + '.json')).write_text(json.dumps(r, indent=2))
+            (args.out / (path.stem + '.md')).write_text(to_markdown(r), encoding='utf-8')
 
-    if args.out:
-        print('\nwrote %d report pair(s) to %s' % (len(results), args.out))
     return 0
 
 

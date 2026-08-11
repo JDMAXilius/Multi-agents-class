@@ -1,9 +1,9 @@
-# Graph-bearing assets under `D:\Documents\Claude\Multi-agents-class\breachpoint\Content\FPSTemplate`
+# Graph-bearing assets under `Content\FPSTemplate`
 
 Found by walking the checked-out files, not by naming targets in advance.
 
 | | |
-|---|---|
+|---|---:|
 | graph-bearing assets on disk | **99** |
 | present in `bp_inventory.json` | 27 |
 | **absent from the inventory** | **72** |
@@ -87,4 +87,4 @@ Found by walking the checked-out files, not by naming targets in advance.
 
 ## Read this as coverage, not as a verdict
 
-A high node-class count means the asset carries a graph, not that the graph is worth porting -- `ANIM-PORT-LEDGER.md` decides that, per asset, with the editor where topology matters. What this table settles is which assets have never been looked at.
+A high node-class count means an asset carries a graph, not that the graph is worth porting -- `docs/ANIM-PORT-LEDGER.md` decides that, per asset, with the editor where topology matters. What this table settles is which assets have never been looked at.

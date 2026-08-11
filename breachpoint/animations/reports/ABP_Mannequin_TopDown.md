@@ -5,6 +5,10 @@ Read from the checked-out `.uasset`. No editor involved.
 - file size: 73,127 bytes
 - name table: 290 entries at offset 621
 
+## Accuracy cross-check
+
+Not run: asset not present in inventory. Declared properties are not reported without it - see the note in `abp_offline_extract.py`.
+
 ## Referenced content packages (3)
 
 - `/Game/FPSTemplate/Demo/Characters/Heroes/Mannequin/Animations/ABP_Mannequin_Base`
@@ -87,7 +91,7 @@ Read from the checked-out `.uasset`. No editor involved.
 
 ## Other names (231)
 
-Listed in full rather than dropped - bone names, slot names, curve names, state and transition names, engine node properties and designer-authored graph names all land here, and which is which needs a human or the editor. No rule separates them by spelling; see the note in the source.
+Listed in full rather than dropped. Bone names, slot names, curve names, state and transition names, engine node properties and designer-authored graph names all land here, and which is which needs a human or the editor. No rule separates them by spelling; see the note in the source.
 
 - `A`
 - `ABP_Mannequin_Base_C`

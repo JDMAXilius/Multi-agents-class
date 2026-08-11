@@ -8,12 +8,12 @@ Read from the checked-out `.uasset`. No editor involved.
 ## Accuracy cross-check vs `bp_inventory.json`
 
 | | |
-|---|---|
+|---|---:|
 | properties the editor reported | 96 |
 | recovered offline | **88** |
 | not in the name table | 8 |
 
-Not found offline (inherited, not declared by this asset):
+Not found offline - inherited, not declared by this asset:
 
 - `bUseMainInstanceMontageEvaluationData`
 - `onAllMontageInstancesEnded`
@@ -191,13 +191,6 @@ Not found offline (inherited, not declared by this asset):
 - `ApplyCrouchAlpha`
 - `ApplyPelvisWeight`
 - `ApplySwayAlpha`
-- `bEnableRootYawOffset`
-- `bFPSMode`
-- `bFPSWalkMode`
-- `bPropagateNotifiesToLinkedInstances`
-- `bReceiveNotifiesFromLinkedInstances`
-- `bSprinting`
-- `bUnarmed`
 - `BasePoseLocation`
 - `BasePoseRotation`
 - `CamRotCurrent`
@@ -223,7 +216,6 @@ Not found offline (inherited, not declared by this asset):
 - `HasVelocity`
 - `Head_CameraShake_Alpha`
 - `IsADS_Upper`
-- `isCrouching`
 - `IsFalling`
 - `IsFirstUpdate`
 - `IsJumping`
@@ -270,6 +262,14 @@ Not found offline (inherited, not declared by this asset):
 - `WorldVelocity`
 - `YawDeltaSinceLastUpdate`
 - `YawDeltaSpeed`
+- `bEnableRootYawOffset`
+- `bFPSMode`
+- `bFPSWalkMode`
+- `bPropagateNotifiesToLinkedInstances`
+- `bReceiveNotifiesFromLinkedInstances`
+- `bSprinting`
+- `bUnarmed`
+- `isCrouching`
 
 ## EdGraph internals (4)
 
@@ -306,7 +306,7 @@ Not found offline (inherited, not declared by this asset):
 
 ## Other names (1094)
 
-Listed in full rather than dropped - bone names, slot names, curve names, state and transition names, engine node properties and designer-authored graph names all land here, and which is which needs a human or the editor. No rule separates them by spelling; see the note in the source.
+Listed in full rather than dropped. Bone names, slot names, curve names, state and transition names, engine node properties and designer-authored graph names all land here, and which is which needs a human or the editor. No rule separates them by spelling; see the note in the source.
 
 - `37fb60c3-4e18-70bb-f6da-28b68080015e`
 - `A`
