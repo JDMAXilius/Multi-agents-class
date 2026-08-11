@@ -71,7 +71,7 @@ $ python3 run_pipeline.py --gaps
 |---|---|---|---|
 | **1** | Four of eleven medals award **in total silence** | §2.9: "killfeed + medals (Double Kill, Killing Spree, Grapple Kill, **Rocket multi-kill**) — canned, instant, deterministic" | Joining `DT_Medals.TriggerId` → `DT_SpotterLines.TriggerId` leaves **4 orphans**: Blast Radius (`Kill.Rocket.Multi`), Breach (`Kill.First`), Last Word (`Match.SuddenDeath.Win`), Spree Ender (`Kill.SpreeEnder`) |
 | **2** | The Spotter's **offline fallback table does not exist** | §3.3: "canned-line DataTable fallback shipped in the build … **No connectivity ⇒ the game is identical minus flavor**" | No `*coach*.csv` in `Content/Data`; **0 hits** for `coach` across all `.cpp/.h`; of 6 match-end rows in `DT_SpotterLines`, **0** reference a telemetry stat, which §3.3 requires of a coach line |
-| **3** | **Bots have no names**, and bots are most of the killfeed | §1.3: "Solo play is Team Slayer with **seven bots**" | `BRHUDDirector.cpp:280,282` render `GetPlayerName()`; **0** sites anywhere set a bot name; no callsign table on disk |
+| **3** | **Bots have no names**, and bots are most of the killfeed | §1.3: "Solo play is Team Slayer with **seven bots**" | `BRHUDDirector.cpp:276,278` render `GetPlayerName()`; **0** sites anywhere set a bot name; no callsign table on disk |
 
 The gap prover is a gate, not a preamble. If a gap ever stops being provable — someone
 lands the table — the pipeline exits `4` and refuses to generate, because filling a filled

@@ -77,7 +77,7 @@
     "evidence": [
       {
         "check": "killfeed/scoreboard reads a player name",
-        "result": "2 read sites: ['breachpoint/Source/Breachpoint/UI/BRHUDDirector.cpp:280', 'breachpoint/Source/Breachpoint/UI/BRHUDDirector.cpp:282']",
+        "result": "2 read sites: ['breachpoint/Source/Breachpoint/UI/BRHUDDirector.cpp:276', 'breachpoint/Source/Breachpoint/UI/BRHUDDirector.cpp:278']",
         "supports_gap": true
       },
       {
