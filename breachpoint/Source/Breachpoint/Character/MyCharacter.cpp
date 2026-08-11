@@ -456,6 +456,32 @@ void AMyCharacter::BeginPlay()
 	// This diagnostic is what proved it, by reporting UNRESOLVED while ChangePose reported
 	// callable. The DSL header prints the unspaced form, which is the reader normalising the
 	// name, and trusting that header is what hid the bug.
+	// Every anim-interface message this class sends, resolved at startup. animIface=YES on the
+	// READY line only ever checked SetSprinting; ADS goes through SetADS and SetADS_Upper, and
+	// a name that does not resolve is silent - the pose simply never changes.
+	if (const USkeletalMeshComponent* DiagMesh = GetMesh())
+	{
+		if (UAnimInstance* DiagAnim = DiagMesh->GetAnimInstance())
+		{
+			auto Probe = [DiagAnim](const TCHAR* Name, const TCHAR* Spaced) -> const TCHAR*
+			{
+				if (DiagAnim->FindFunction(FName(Name)))
+				{
+					return TEXT("ok");
+				}
+				return DiagAnim->FindFunction(FName(Spaced)) ? TEXT("ok(spaced)") : TEXT("MISSING");
+			};
+			UE_LOG(LogMyCharacter, Log,
+				TEXT("MyCharacter ANIMIFACE: SetSprinting=%s SetADS=%s SetADS_Upper=%s "
+					 "SetUnarmed=%s GetFPSMode=%s"),
+				Probe(TEXT("SetSprinting"), TEXT("Set Sprinting")),
+				Probe(TEXT("SetADS"), TEXT("Set ADS")),
+				Probe(TEXT("SetADS_Upper"), TEXT("Set ADS Upper")),
+				Probe(TEXT("SetUnarmed"), TEXT("Set Unarmed")),
+				Probe(TEXT("GetFPSMode"), TEXT("Get FPS Mode")));
+		}
+	}
+
 	const bool bPoseCallOk = PoseOffsetsComp
 		&& PoseOffsetsComp->FindFunction(TEXT("ChangePose")) != nullptr;
 	const bool bFovCallOk = FPSCamComp
@@ -719,7 +745,21 @@ uint8 AMyCharacter::GetCrosshairType() const
 
 uint8 AMyCharacter::GetCurrentWeaponScopeType() const
 {
-	// Valid weapon -> BPFPSTBaseScope::GetScopeType; invalid -> enumerator 0.
+	// Valid weapon -> the WEAPON's GetScopeType; invalid -> enumerator 0.
+	//
+	// This used to return Scope_Default unconditionally, which meant every ChangePose call -
+	// including both ADS arms - asked for the no-scope pose no matter what optic the weapon
+	// carried. GetScopeType IS a real UFUNCTION on BP_FPST_BaseWeapon (confirmed in the graph
+	// extraction: IsValid(Scope) ? Scope->GetScopeType() : enumerator 0), so it is callable.
+	if (ABPWeaponBase* Weapon = GetCurrentWeapon())
+	{
+		FBPCall Call(Weapon, TEXT("GetScopeType"));
+		uint8 ScopeType = Scope_Default;
+		if (Call.IsBound() && Call.Invoke() && Call.GetReturnByte(ScopeType))
+		{
+			return ScopeType;
+		}
+	}
 	return Scope_Default;
 }
 
@@ -1096,6 +1136,28 @@ bool AMyCharacter::SendAnimInterfaceBool(const TCHAR* FunctionName, const TCHAR*
 	FBPCall Call(Anim, FunctionName);
 	if (!Call.IsBound())
 	{
+		// A Blueprint function's name can KEEP ITS SPACES - that is exactly what hid the ADS
+		// FOV bug for three rounds ("Change Camera Target FOV"). An interface implemented by
+		// hand can carry the same shape, so try the spaced spelling before giving up:
+		// SetADS_Upper -> "Set ADS Upper".
+		const FString Spaced = FString(FunctionName)
+			.Replace(TEXT("_"), TEXT(" "))
+			.Replace(TEXT("SetADS"), TEXT("Set ADS"))
+			.Replace(TEXT("SetSprinting"), TEXT("Set Sprinting"))
+			.Replace(TEXT("SetUnarmed"), TEXT("Set Unarmed"));
+		FBPCall Alt(Anim, *Spaced);
+		if (Alt.IsBound())
+		{
+			if (!Alt.SetBool(ParamName, bValue))
+			{
+				const FString SpacedParam = FString(ParamName)
+					.Replace(TEXT("In"), TEXT("In "), ESearchCase::CaseSensitive)
+					.Replace(TEXT("_"), TEXT(" "));
+				Alt.SetBool(*SpacedParam, bValue);
+			}
+			return Alt.Invoke();
+		}
+
 		if (!bAnimInterfaceWarned)
 		{
 			bAnimInterfaceWarned = true;
@@ -1200,13 +1262,21 @@ void AMyCharacter::SetSprinting(bool bSprinting)
 
 void AMyCharacter::SetADS(bool bADS)
 {
-	SendAnimInterfaceBool(TEXT("SetADS"), TEXT("InADS"), bADS);
+	// Logged because "the AnimBP does not go into ADS" and "the message never reached the
+	// AnimBP" look identical from outside. This says which: a false here means the interface
+	// call did not land, a true means the AnimBP was told and did not react - two completely
+	// different investigations.
+	const bool bSent = SendAnimInterfaceBool(TEXT("SetADS"), TEXT("InADS"), bADS);
+	UE_LOG(LogMyCharacter, Log, TEXT("MyCharacter: SetADS(%s) -> anim interface %s"),
+		bADS ? TEXT("true") : TEXT("false"), bSent ? TEXT("SENT") : TEXT("NOT SENT"));
 }
 
 void AMyCharacter::SetADSUpper(bool bADSUpper)
 {
 	// The interface spells this one with an underscore; the C++ hook does not.
-	SendAnimInterfaceBool(TEXT("SetADS_Upper"), TEXT("InADS_Upper"), bADSUpper);
+	const bool bSent = SendAnimInterfaceBool(TEXT("SetADS_Upper"), TEXT("InADS_Upper"), bADSUpper);
+	UE_LOG(LogMyCharacter, Log, TEXT("MyCharacter: SetADS_Upper(%s) -> anim interface %s"),
+		bADSUpper ? TEXT("true") : TEXT("false"), bSent ? TEXT("SENT") : TEXT("NOT SENT"));
 }
 
 void AMyCharacter::SetUnarmed(bool bUnarmed)
