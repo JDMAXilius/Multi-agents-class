@@ -74,6 +74,7 @@ namespace
 	/** Weapon-side variables and the one weapon-side getter, all resolved by name. */
 	const FName N_FireDelay(TEXT("FireDelay"));
 	const FName N_SpreadAngle(TEXT("SpreadAngle"));
+	const FName N_ShotCount(TEXT("ShotCount"));
 
 	/**
 	 * Calls a BlueprintCallable function on a Blueprint class by name.
@@ -1183,9 +1184,17 @@ void AMyCharacter::ChangePose(uint8 PoseType, uint8 ScopeType, float ChangeSpeed
 	{
 		return;
 	}
+	// Signature verified against the graph: (InPoseType, InScopeType, InChangeSpeed).
 	FBPCall Call(PoseOffsetsComp, TEXT("ChangePose"));
 	if (!Call.IsBound())
 	{
+		if (!bPoseCallWarned)
+		{
+			bPoseCallWarned = true;
+			UE_LOG(LogMyCharacter, Warning,
+				TEXT("MyCharacter: BPC_FPST_Procedural_PoseOffsets has no callable ChangePose - "
+					 "the ADS weapon pose will not move."));
+		}
 		return;
 	}
 	Call.SetByte(TEXT("InPoseType"), PoseType);
@@ -1200,9 +1209,20 @@ void AMyCharacter::ChangeCameraTargetFOV(float TargetFOV, float Speed)
 	{
 		return;
 	}
+	// NOTE: unlike ChangePose, this one is NOT a function graph on BPC_FPSComp - reading it
+	// returns "not valid EdGraph", so it is a custom event or a macro. FindFunction resolves
+	// custom events but NOT macros, so if this ever comes back unbound the FOV change simply
+	// will not happen. Warn once instead of returning in silence.
 	FBPCall Call(FPSCamComp, TEXT("ChangeCameraTargetFOV"));
 	if (!Call.IsBound())
 	{
+		if (!bFovCallWarned)
+		{
+			bFovCallWarned = true;
+			UE_LOG(LogMyCharacter, Warning,
+				TEXT("MyCharacter: BPC_FPSCamComp has no callable ChangeCameraTargetFOV (it is "
+					 "likely a macro, which reflection cannot call) - ADS will not narrow the FOV."));
+		}
 		return;
 	}
 	Call.SetFloat(TEXT("InTargetFov"), TargetFOV);
@@ -1284,13 +1304,24 @@ void AMyCharacter::FireTracerEffect(const FVector& HitLocation)
 	{
 		return;
 	}
-	// BOTH ends. The tracer is drawn muzzle -> hit point: passing only InHitLocation left
-	// InMuzzleTransform at IDENTITY, which starts every tracer at the WORLD ORIGIN.
+	// The graph read settles the signature - it takes EXACTLY two parameters:
+	//
+	//   (fn FireTracerEffect (InHitLocation InMuzzleTransform)
+	//     SpawnSystemAtLocation(TracerNS, InMuzzleTransform.location, InMuzzleTransform.rotation)
+	//     NiagaraSetVectorArray(tracer, "User.ImpactPositions", [InHitLocation])
+	//     SetNiagaraVariable(Bool)(tracer, "User.Trigger", true))
+	//
+	// So the Niagara system is spawned AT THE MUZZLE, oriented BY THE MUZZLE, and the far end
+	// is the single impact position. That is the whole muzzle -> aim-end behaviour, and both
+	// values matter: passing only InHitLocation left InMuzzleTransform at IDENTITY, which
+	// started every tracer at the WORLD ORIGIN.
+	//
+	// `InFireLocation` and `InFireDirection` used to be set here too. They are NOT parameters
+	// of this function - they belong to BPC_FPST_LineTracer - so both Sets silently returned
+	// false and were dead code. Removed rather than left looking meaningful.
 	const FTransform Muzzle = GetMuzzleTransform();
 	Call.SetStruct(TEXT("InMuzzleTransform"), TBaseStructure<FTransform>::Get(), &Muzzle);
 	Call.SetVector(TEXT("InHitLocation"), HitLocation);
-	Call.SetVector(TEXT("InFireLocation"), Muzzle.GetLocation());
-	Call.SetVector(TEXT("InFireDirection"), Muzzle.GetUnitAxis(EAxis::X));
 	Call.Invoke();
 }
 
@@ -1437,6 +1468,26 @@ float AMyCharacter::GetWeaponFireDelay() const
 	return FireDelay;
 }
 
+int32 AMyCharacter::GetWeaponShotCount() const
+{
+	// `ShotCount` is a WEAPON variable, read off the asset: 1 on every weapon EXCEPT the
+	// shotgun, which is 6. This class used to hardcode a SpreadPelletCount of 6 for every
+	// spread weapon - a 9 Aug guess that happened to match the shotgun and would have been
+	// wrong for any second spread weapon ever added.
+	if (const ABPWeaponBase* Weapon = GetCurrentWeapon())
+	{
+		if (const FIntProperty* Prop = FindFProperty<FIntProperty>(Weapon->GetClass(), N_ShotCount))
+		{
+			const int32 Value = Prop->GetPropertyValue_InContainer(Weapon);
+			if (Value > 0)
+			{
+				return Value;
+			}
+		}
+	}
+	return SpreadPelletCount;
+}
+
 float AMyCharacter::GetWeaponSpreadAngle() const
 {
 	if (const ABPWeaponBase* Weapon = GetCurrentWeapon())
@@ -1514,7 +1565,8 @@ void AMyCharacter::FireEvent()
 		// SpreadAngle is the WEAPON's variable, not the character's — the shotgun's cone is
 		// its own number. This class's SpreadAngle is only the no-weapon fallback.
 		const float Cone = GetWeaponSpreadAngle();
-		for (int32 Pellet = 0; Pellet < SpreadPelletCount; ++Pellet)
+		const int32 Pellets = GetWeaponShotCount();
+		for (int32 Pellet = 0; Pellet < Pellets; ++Pellet)
 		{
 			FHitResult Hit;
 			ResolveHit(Hit, WeaponTraceWithSpread(Start, Dir, FireTraceDistance, Cone, Hit));

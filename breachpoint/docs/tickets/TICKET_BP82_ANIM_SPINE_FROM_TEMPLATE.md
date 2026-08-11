@@ -2300,3 +2300,45 @@ been run; this is COMPILES only.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
 
+fix(BP82): tracer signature read from the graph; ShotCount; ADS calls warn instead of vanishing
+
+THE TRACER, settled by reading BPC_FPST_Lyra_FireEffectComp instead of its string table:
+
+  (fn FireTracerEffect (InHitLocation InMuzzleTransform)
+    SpawnSystemAtLocation(TracerNS, InMuzzleTransform.location, InMuzzleTransform.rotation)
+    NiagaraSetVectorArray(tracer, "User.ImpactPositions", [InHitLocation])
+    SetNiagaraVariable(Bool)(tracer, "User.Trigger", true))
+
+EXACTLY two parameters. The Niagara system spawns AT the muzzle, oriented BY the muzzle, and
+the far end is the single impact position - that is the whole muzzle-to-aim-end behaviour.
+This code was also setting InFireLocation and InFireDirection, which are NOT parameters of
+this function (they belong to BPC_FPST_LineTracer), so both Sets silently returned false and
+were dead code. Removed rather than left looking meaningful.
+
+The two ends themselves were already right and are unchanged: InMuzzleTransform comes from
+the WEAPON's own SkeletalMesh socket named by its MuzzleSocketName variable, and InHitLocation
+is bHit ? ImpactPoint : TraceEnd - so a miss reaches the aim-end instead of the world origin.
+
+SHOTCOUNT. AMyCharacter hardcoded SpreadPelletCount=6 for every spread weapon, guessed on
+9 Aug. The asset says the pellet count is the WEAPON's ShotCount: 6 on the shotgun, 1 on
+everything else. Now read per weapon, with the old constant demoted to a fallback. The guess
+happened to match the shotgun and would have been wrong for any second spread weapon.
+
+ADS. ChangePose's signature is confirmed against the graph - (InPoseType, InScopeType,
+InChangeSpeed) - and matches what was implemented. ChangeCameraTargetFOV is NOT a function
+graph on BPC_FPSComp (read_graph_dsl returns "not valid EdGraph"), so it is a custom event or
+a macro; FindFunction resolves events but NOT macros. Both call sites now warn once when
+unbound instead of returning in silence, so "ADS does nothing" names its own cause in the log
+rather than looking like the pose or FOV simply not moving.
+
+Also: mcp-bp/read_graphs.py, generalised out of weapon_graphs.py, and its list_functions
+unwrapping fixed - the payload nests deeper than one level and assuming a depth raised
+TypeError.
+
+Rung 1 PASS 20260811-130019 and 20260811-125139, three targets, exit 0, zero warnings.
+
+NOT CLAIMED: no harness run injects input, so ADS and the tracer are still unwatched. The
+warnings added here are what will identify a failure the moment you aim or fire.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+

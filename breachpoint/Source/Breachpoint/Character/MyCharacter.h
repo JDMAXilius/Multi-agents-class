@@ -122,6 +122,10 @@ public:
 	/** OnPlayMontageNotifyBegin is bound once, lazily, not every montage play. */
 	bool bMontageNotifyBound = false;
 
+	/** Warn once, not once per aim press, when an ADS component call is unreachable. */
+	bool bPoseCallWarned = false;
+	bool bFovCallWarned = false;
+
 	/**
 	 * The current weapon's `FireDelay` and `SpreadAngle` — both are VARIABLES on
 	 * BP_FPST_BaseWeapon, read by reflection. The fallbacks are this class's own defaults,
@@ -129,6 +133,12 @@ public:
 	 */
 	float GetWeaponFireDelay() const;
 	float GetWeaponSpreadAngle() const;
+
+	/**
+	 * The weapon's own `ShotCount` - pellets per trigger pull. 1 on every template
+	 * weapon except the shotgun, which is 6. Falls back to SpreadPelletCount.
+	 */
+	int32 GetWeaponShotCount() const;
 
 	/**
 	 * `GetCurrentFireMode` IS a real UFUNCTION on BP_FPST_BaseWeapon (unlike the socket
@@ -341,6 +351,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Tuning")
 	float SpreadAngle = 5.f;
 
+	/**
+	 * Fallback only. The live value is the WEAPON's own ShotCount - see GetWeaponShotCount.
+	 * Was 6 for every spread weapon, guessed on 9 Aug; the asset says 6 is the SHOTGUN's and
+	 * every other weapon is 1.
+	 */
 	UPROPERTY(EditDefaultsOnly, Category = "Tuning")
 	int32 SpreadPelletCount = 6;
 
