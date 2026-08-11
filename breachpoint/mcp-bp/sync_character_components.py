@@ -70,6 +70,18 @@ CLASS_PROPS = [
     (unreal.CameraComponent, ['field_of_view', 'use_pawn_control_rotation']),
     (unreal.SkeletalMeshComponent, ['skeletal_mesh_asset', 'anim_class', 'owner_no_see',
                                     'visible_in_scene_capture_only', 'cast_shadow']),
+    # Crouch is the reason CharacterMovement is here. ACharacter::Crouch() is a SILENT no-op
+    # unless NavAgentProps.bCanCrouch is true, and that flag lives on the movement component's
+    # template — it is not something AMyCharacter's constructor sets. The template Blueprint
+    # has it on; a fresh child does not. Same for the crouched capsule height and speed, which
+    # are what make a crouch look like a crouch rather than a shrink.
+    (unreal.CharacterMovementComponent, ['nav_agent_props', 'crouched_half_height',
+                                         'max_walk_speed_crouched', 'set_can_walk_off_ledges',
+                                         'can_walk_off_ledges_when_crouching',
+                                         'jump_z_velocity', 'air_control',
+                                         'max_walk_speed', 'braking_deceleration_walking',
+                                         'rotation_rate', 'b_orient_rotation_to_movement',
+                                         'b_use_controller_desired_rotation']),
 ]
 
 FAILURES = []
@@ -104,6 +116,14 @@ def components_by_name(blueprint):
     return out
 
 
+def describe(value):
+    """Struct repr without the address, so the change log is readable and diffable."""
+    text = str(value)
+    if '{' in text and '}' in text:
+        return text[text.index('{'):text.rindex('}') + 1]
+    return text
+
+
 def same(a, b):
     """
     Value equality that works for UE structs.
@@ -112,19 +132,18 @@ def same(a, b):
     "<Struct 'Vector' (0x000002C4B142C980) {x: 0.0, y: 0.0, z: -89.0}>" — so two structs holding
     identical values never compare equal as text. The first version of this script did exactly
     that and reported 44 write failures against writes that had all succeeded.
+
+    Nor is `==` alone enough. Some UE structs expose no value equality to Python — notably
+    FNavAgentProperties, the one carrying bCanCrouch — so `a == b` is False for two structs whose
+    fields are identical. That misreported a successful bCanCrouch write as a failure. So: trust
+    `==` when it says True, and otherwise fall back to comparing the address-stripped text.
     """
     try:
-        return bool(a == b)
+        if bool(a == b):
+            return True
     except Exception:
-        return str(a) == str(b)
-
-
-def describe(value):
-    """Struct repr without the address, so the change log is readable and diffable."""
-    text = str(value)
-    if '{' in text and '}' in text:
-        return text[text.index('{'):text.rindex('}') + 1]
-    return text
+        pass
+    return describe(a) == describe(b)
 
 
 def copy_prop(src_obj, dst_obj, prop, label):

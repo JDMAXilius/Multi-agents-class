@@ -1944,3 +1944,83 @@ through `unreal.get_default_object(bp.generated_class())` and an `isinstance` ch
 multiplayer. What this unblocks is that the four fixes committed earlier today can now be *seen*:
 there is a mesh with an `ABP_Mannequin_Base_C` that implements `BPI_FPST_AnimInterface`, so the
 sprint message has a receiver, and there is a `hand_r` bone for the weapon to attach to.
+
+### 11 Aug 2026 - IT RUNS. And the pawn had never been the ported one.
+
+Founder: link layer anim from the current weapon, crouch, melee, "make the gun able to shoot
+bullets", 1:1. Doing that turned up why none of today's earlier work had ever executed.
+
+**THE BUG BEHIND EVERY SILENT LOG.** `DefaultPawnClassOverride` named
+`/Game/Characters/BP_FPST_Character.BP_FPST_Character_C` - a copy of the TEMPLATE character
+parented to `ABPFPSCharacter`. **That class is not an `AMyCharacter`.** Every standalone run
+spawned a pawn running NONE of the ported C++. Repointed at `BP_FPSCharacter.BP_FPSCharacter_C`.
+
+Two things hid it. `BR_Arena01`'s World Settings pin `DefaultGameMode = BP_FPST_GameMode_C`,
+which OVERRIDES `GlobalDefaultGameMode` in `DefaultEngine.ini`, so `ABPGameMode` never ran and
+the pawn override was moot twice over. The runs below use `?game=` on the URL to get past that
+without touching the map, which is outside `owner_path`. **That map override is still there.**
+And the port logs only WARNINGS, so a silent log read identically whether the code worked or
+never ran. The new `MyCharacter READY:` positive assertion in BeginPlay is what made it legible.
+
+**RUNG CHANGE - first observed run of anything on this ticket.** Standalone, single player,
+`Saved/Logs/standalone-final.log`:
+
+    LogMyCharacter: MyCharacter READY: pawn=BP_FPSCharacter_C_0 mesh=SKM_Manny_Y
+      anim=ABP_Mannequin_Base_C animIface=YES weapons=4/4 startType=2
+      current=BP_FPST_Weapon_Rifle_C_1 socket=weapon_r_rifle canCrouch=YES
+
+Zero warnings; none of the four instrumented failure modes fired. Term by term: the ported pawn
+spawned, mesh and AnimBP resolved, `animIface=YES` means ABP_Mannequin_Base_C really implements
+BPI_FPST_AnimInterface so the sprint/ADS/unarmed messages have a receiver, all four weapons
+spawned (the reparent holds), start weapon is type 2 = Rifle, attached at socket
+`weapon_r_rifle`. Note that is NOT `hand_r`: hand_r is the BASE default and the rifle overrides
+AttachSocketName - exactly why it is read per weapon instead of assumed.
+
+**Five fixes. Four are the same shape: a getter that does not exist.**
+
+1. `LinkAnimLayerClass` is a VARIABLE. LinkWeaponAnimLayers called `GetLinkAnimLayerClass`,
+   IsBound() was always false, LayerClass stayed null, and **the weapon's anim layer was never
+   linked** - every weapon animated with whatever was already on the mesh. Now read by
+   reflection (hard and soft class pins), and it warns when the weapon has none.
+2. Melee had no swing. The graph PLAYS MeleeAnimMontage and traces from its `AN_FPST_Melee`
+   notify - damage lands mid-animation, not on the key press. PlayWeaponMontage binds
+   OnPlayMontageNotifyBegin once; HandleMontageNotifyBegin gates on the name and calls the new
+   MeleeTrace(). No montage -> immediate trace rather than nothing. Fire and reload play their
+   montages too, Aim* variants while ADS.
+3. Crouch was a SILENT no-op. ACharacter::Crouch() does nothing unless NavAgentProps.bCanCrouch
+   is true, and that lives on the movement component's TEMPLATE, not in the C++ constructor.
+   The template Blueprint has it on; a fresh child does not. Synced from the reference with
+   CrouchedHalfHeight, MaxWalkSpeedCrouched, bCanWalkOffLedgesWhenCrouching, JumpZVelocity
+   420->700, AirControl 0.05->0.35, MaxWalkSpeed 600->500, BrakingDecelerationWalking
+   2048->2000. `canCrouch=YES` above is that, confirmed at runtime.
+4. The bullet is HITSCAN - there is no projectile actor in the template. What reads as a bullet
+   is the tracer Niagara BPC_FPST_Lyra_FireEffectComp spawns to the hit point, plus the
+   surface-typed impact FX/decal/sound. Its FireTracerEffect(InHitLocation) and
+   ImpactEffect(InHitResult) are real UFUNCTIONs; both hooks now call them by reflection.
+   FBPCall gained SetStruct/SetVector, type-checked against the UFunction's own struct.
+   Niagara assets and ImpactEffectInfoMap stay on the Blueprint (law 3).
+5. **INPUT WAS DEAD, and the fix is a DEVIATION FROM 1:1.** Founder reported the pawn taking no
+   input after the override repoint. Cause: the graph added IMC_FPST_Controls at priority 0,
+   which was fine in the template's world because nothing else added a context. Here
+   `ABPPlayerController::BeginPlay` adds its OWN two contexts (BR DefaultMappingContext and
+   MouseLookMappingContext) at priority 0 as well, mapping the same physical keys to DIFFERENT
+   actions. At equal priority those shadow IMC_FPST_Controls, the IA_FPST_* bindings never
+   trigger, and the pawn is input-dead with nothing logged. New config
+   `MappingContextPriority` (default 1) puts the possessed character's own context above the
+   controller's. Documented at the call site as forced by an integration the template never had.
+
+**Rung 1: PASS** `20260811-112519`, three targets, exit 0, zero warnings. One FAIL on the way
+(`20260811-111332`): a local `UClass* Owner` shadowed `AActor::Owner`, C4458-as-error.
+
+**Sync script, second trap in the same helper.** `same()` trusted `==`, but some UE structs
+expose no value equality to Python - **FNavAgentProperties, the one carrying bCanCrouch** - so a
+successful crouch write reported as a failure. Now: trust `==` when True, else compare
+address-stripped text. Re-run is 0 changes, RESULT: OK, exit 0.
+
+**NOT CLAIMED.** The runs were UNATTENDED - no input injected - so firing, melee, crouch and
+sprint were never TRIGGERED by the harness. What is proven is that everything they depend on is
+live at BeginPlay. Nobody has yet seen a tracer, a swing, or a sprint animation. DealDamage
+still applies nothing (law 2, GAS owns the pipeline), so nothing takes damage when a shot lands.
+Not PIE-multiplayer, not dedicated. The map's GameMode override is the next real blocker and
+`Content/Maps/` is outside `owner_path`.
+

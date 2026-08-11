@@ -1,6 +1,7 @@
 #include "Character/MyCharacter.h"
 
 #include "Animation/AnimInstance.h"
+#include "Animation/AnimMontage.h"
 #include "Blueprint/UserWidget.h"
 #include "Weapons/BPWeaponBase.h"
 #include "Camera/CameraComponent.h"
@@ -39,8 +40,22 @@ namespace
 	const FName N_Recoil(TEXT("BPC_FPST_Procedural_Recoil"));
 	const FName N_SwayAndLag(TEXT("BPC_FPST_Procedural_SwayAndLag"));
 
-	/** The weapon-side FName variable holding the character-mesh socket to attach at. */
+	/**
+	 * Weapon-side VARIABLES, read by reflection. None of these is a getter — BP_FPST_BaseWeapon
+	 * exposes real UFUNCTIONs only for GetCurrentFireMode, NextFireMode, GetFireAnimMontage and
+	 * GetReloadBoltAnimMontage. Assuming a Get* exists for the rest is the single most repeated
+	 * mistake in this port; check the asset before adding a name here.
+	 */
 	const FName N_AttachSocketName(TEXT("AttachSocketName"));
+	const FName N_LinkAnimLayerClass(TEXT("LinkAnimLayerClass"));
+	const FName N_MeleeAnimMontage(TEXT("MeleeAnimMontage"));
+	const FName N_FireAnimMontage(TEXT("FireAnimMontage"));
+	const FName N_AimFireAnimMontage(TEXT("AimFireAnimMontage"));
+	const FName N_ReloadAnimMontage(TEXT("ReloadAnimMontage"));
+	const FName N_AimReloadAnimMontage(TEXT("AimReloadAnimMontage"));
+
+	/** The notify the graph gated the melee trace on, on AM_MM_Knife_Swing01. */
+	const FName N_MeleeNotify(TEXT("AN_FPST_Melee"));
 
 	/** E_FPST_WeaponType / crosshair / pose enumerators, by the ordinals the graph used. */
 	constexpr uint8 Pose_HipStand = 1;
@@ -138,6 +153,25 @@ namespace
 				return true;
 			}
 			return false;
+		}
+
+		/** A struct parameter, checked against the UFunction's OWN struct type first. */
+		bool SetStruct(const TCHAR* ParamName, UScriptStruct* Type, const void* Value) const
+		{
+			if (FStructProperty* P = FindFProperty<FStructProperty>(Fn, FName(ParamName)))
+			{
+				if (P->Struct == Type)
+				{
+					P->CopySingleValue(P->ContainerPtrToValuePtr<void>(Buffer), Value);
+					return true;
+				}
+			}
+			return false;
+		}
+
+		bool SetVector(const TCHAR* ParamName, const FVector& Value) const
+		{
+			return SetStruct(ParamName, TBaseStructure<FVector>::Get(), &Value);
 		}
 
 		bool Invoke()
@@ -297,7 +331,22 @@ void AMyCharacter::BeginPlay()
 		{
 			if (UInputMappingContext* Context = DefaultMappingContext.LoadSynchronous())
 			{
-				Subsystem->AddMappingContext(Context, 0);
+				// DEVIATION FROM 1:1, forced by an integration the template never had.
+				//
+				// The graph added this at priority 0. In the template's world nothing else
+				// added a context, so 0 was fine. Here ABPPlayerController::BeginPlay adds
+				// its OWN two contexts (the BR DefaultMappingContext and MouseLookMappingContext)
+				// at priority 0 as well, and they map the same physical keys to DIFFERENT
+				// actions. At equal priority those shadow IMC_FPST_Controls, the IA_FPST_*
+				// actions bound in SetupPlayerInputComponent never trigger, and the pawn is
+				// input-dead with nothing logged.
+				//
+				// Higher number wins, so the possessed character's own context outranks the
+				// controller's generic one. Config-overridable rather than a literal.
+				Subsystem->AddMappingContext(Context, MappingContextPriority);
+				UE_LOG(LogMyCharacter, Log,
+					TEXT("MyCharacter: added '%s' at priority %d."),
+					*Context->GetName(), MappingContextPriority);
 			}
 			else
 			{
@@ -331,6 +380,26 @@ void AMyCharacter::BeginPlay()
 
 	GetWorldTimerManager().SetTimer(AimTraceTimer, this, &AMyCharacter::AimTraceTick,
 		AimTraceInterval, /*bLoop=*/true);
+
+	// A POSITIVE assertion, not a warning. Everything else this class logs fires only on
+	// failure, which makes a silent log ambiguous: it reads the same whether the port worked
+	// or the pawn never spawned at all. This line is the difference, and a standalone run
+	// that does not contain it did not run this character.
+	const ABPWeaponBase* Startup = GetCurrentWeapon();
+	const USkeletalMeshComponent* MeshComp = GetMesh();
+	const UAnimInstance* Anim = MeshComp ? MeshComp->GetAnimInstance() : nullptr;
+	UE_LOG(LogMyCharacter, Log,
+		TEXT("MyCharacter READY: pawn=%s mesh=%s anim=%s animIface=%s weapons=%d/%d "
+			 "startType=%u current=%s socket=%s canCrouch=%s"),
+		*GetName(),
+		MeshComp ? *GetNameSafe(MeshComp->GetSkeletalMeshAsset()) : TEXT("NONE"),
+		*GetNameSafe(Anim ? Anim->GetClass() : nullptr),
+		(Anim && Anim->FindFunction(TEXT("SetSprinting"))) ? TEXT("YES") : TEXT("NO"),
+		AvailableWeapons.Num(), StartupWeaponClasses.Num(),
+		GetCurrentWeaponType(),
+		*GetNameSafe(Startup),
+		*GetWeaponAttachSocket(Startup).ToString(),
+		(GetCharacterMovement() && GetCharacterMovement()->CanEverCrouch()) ? TEXT("YES") : TEXT("NO"));
 }
 
 void AMyCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -793,6 +862,7 @@ void AMyCharacter::OnReload()
 		return;
 	}
 	// PlayMontage(Mesh, ReloadAnimMontage) -> PlayAnim(WeaponReloadAnimSeq, false)
+	PlayWeaponMontage(bIsAiming ? N_AimReloadAnimMontage : N_ReloadAnimMontage);
 	PlayWeaponAnim(/*bLooping=*/false);
 }
 
@@ -912,6 +982,79 @@ bool AMyCharacter::SendAnimInterfaceBool(const TCHAR* FunctionName, const TCHAR*
 	return Call.Invoke();
 }
 
+UClass* AMyCharacter::GetWeaponClassVar(const ABPWeaponBase* InWeapon, FName VarName) const
+{
+	if (!InWeapon)
+	{
+		return nullptr;
+	}
+	// Not named 'Owner': AActor already has a member by that name and shadowing it is a
+	// C4458, which this project builds as an error.
+	UClass* WeaponClass = InWeapon->GetClass();
+
+	// Authored as a hard class ref most of the time, but a soft one is legal on the same pin.
+	if (const FClassProperty* Hard = FindFProperty<FClassProperty>(WeaponClass, VarName))
+	{
+		return Cast<UClass>(Hard->GetObjectPropertyValue_InContainer(InWeapon));
+	}
+	if (const FSoftClassProperty* Soft = FindFProperty<FSoftClassProperty>(WeaponClass, VarName))
+	{
+		const FSoftObjectPtr& Ptr = Soft->GetPropertyValue_InContainer(InWeapon);
+		return Cast<UClass>(Ptr.LoadSynchronous());
+	}
+	return nullptr;
+}
+
+UAnimMontage* AMyCharacter::GetWeaponMontage(const ABPWeaponBase* InWeapon, FName VarName) const
+{
+	if (!InWeapon)
+	{
+		return nullptr;
+	}
+	if (const FObjectPropertyBase* Prop =
+			FindFProperty<FObjectPropertyBase>(InWeapon->GetClass(), VarName))
+	{
+		return Cast<UAnimMontage>(Prop->GetObjectPropertyValue_InContainer(InWeapon));
+	}
+	return nullptr;
+}
+
+bool AMyCharacter::PlayWeaponMontage(FName VarName)
+{
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	UAnimInstance* Anim = MeshComp ? MeshComp->GetAnimInstance() : nullptr;
+	if (!Anim)
+	{
+		return false;
+	}
+
+	UAnimMontage* Montage = GetWeaponMontage(GetCurrentWeapon(), VarName);
+	if (!Montage)
+	{
+		return false;
+	}
+
+	// Bind once. The melee trace is driven by this montage's notify, not by the input event.
+	if (!bMontageNotifyBound)
+	{
+		Anim->OnPlayMontageNotifyBegin.AddDynamic(this, &AMyCharacter::HandleMontageNotifyBegin);
+		bMontageNotifyBound = true;
+	}
+
+	return Anim->Montage_Play(Montage) > 0.f;
+}
+
+void AMyCharacter::HandleMontageNotifyBegin(FName NotifyName,
+	const FBranchingPointNotifyPayload& Payload)
+{
+	// The graph hung the melee trace off PlayMontage's OnNotifyBegin gated on the notify NAME
+	// being exactly AN_FPST_Melee. Any other notify on any other montage is not ours.
+	if (NotifyName == N_MeleeNotify)
+	{
+		MeleeTrace();
+	}
+}
+
 void AMyCharacter::SetSprinting(bool bSprinting)
 {
 	SendAnimInterfaceBool(TEXT("SetSprinting"), TEXT("InSprinting"), bSprinting);
@@ -931,6 +1074,48 @@ void AMyCharacter::SetADSUpper(bool bADSUpper)
 void AMyCharacter::SetUnarmed(bool bUnarmed)
 {
 	SendAnimInterfaceBool(TEXT("SetUnarmed"), TEXT("InUnarmed"), bUnarmed);
+}
+
+// -------------------------------------------------------------------------------------
+// BPC_FPST_Lyra_FireEffectComp — the visible bullet.
+//
+// The template's fire is HITSCAN: there is no projectile actor anywhere in it. What you
+// see as a bullet is the tracer Niagara system this component spawns from the muzzle to
+// the hit point, plus the surface-typed impact FX/decal/sound at the far end. Both are
+// real UFUNCTIONs on the component (FireTracerEffect, ImpactEffect), so they are called
+// by reflection with their own pin names rather than reimplemented here — the Niagara
+// assets and the ImpactEffectInfoMap stay on the Blueprint where they belong (law 3).
+// -------------------------------------------------------------------------------------
+
+void AMyCharacter::FireTracerEffect(const FVector& HitLocation)
+{
+	if (!FireEffectComp)
+	{
+		return;
+	}
+	FBPCall Call(FireEffectComp, TEXT("FireTracerEffect"));
+	if (!Call.IsBound())
+	{
+		return;
+	}
+	// Muzzle transform is the weapon's; with no weapon the camera is the honest fallback.
+	Call.SetVector(TEXT("InHitLocation"), HitLocation);
+	Call.Invoke();
+}
+
+void AMyCharacter::ImpactEffect(const FHitResult& Hit)
+{
+	if (!FireEffectComp)
+	{
+		return;
+	}
+	FBPCall Call(FireEffectComp, TEXT("ImpactEffect"));
+	if (!Call.IsBound())
+	{
+		return;
+	}
+	Call.SetStruct(TEXT("InHitResult"), TBaseStructure<FHitResult>::Get(), &Hit);
+	Call.Invoke();
 }
 
 // -------------------------------------------------------------------------------------
@@ -1095,7 +1280,9 @@ uint8 AMyCharacter::GetWeaponFireMode() const
 void AMyCharacter::FireEvent()
 {
 	FireCameraRecoil(bIsAiming);
-	// PlayMontage(Mesh, FireAnimMontage) -> PlayAnim(WeaponFireAnimSeq, false)
+	// PlayMontage(Mesh, FireAnimMontage) -> PlayAnim(WeaponFireAnimSeq, false).
+	// The montage is a weapon VARIABLE and the graph picked the Aim* variant while ADS.
+	PlayWeaponMontage(bIsAiming ? N_AimFireAnimMontage : N_FireAnimMontage);
 	PlayWeaponAnim(/*bLooping=*/false);
 
 	const UCameraComponent* Cam = CachedFPSCamera ? CachedFPSCamera.Get() : CachedFPSCam.Get();
@@ -1143,10 +1330,24 @@ void AMyCharacter::FireEvent()
 
 void AMyCharacter::MeleeAttack()
 {
-	// The graph hung this off PlayMontage's OnNotifyBegin, gated on the notify NAME being
-	// exactly 'AN_FPST_Melee' on AM_MM_Knife_Swing01, then branched on FPSMode into two
-	// identical traces (1P and 3P start points). One trace here; the notify seam lands with
-	// the montage, and when it does the name to compare is AN_FPST_Melee.
+	// The graph PLAYS the montage and traces from its AN_FPST_Melee notify — the swing lands
+	// damage mid-animation, not on the key press. That seam is now real: PlayWeaponMontage
+	// binds OnPlayMontageNotifyBegin, and HandleMontageNotifyBegin calls MeleeTrace.
+	if (PlayWeaponMontage(N_MeleeAnimMontage))
+	{
+		return;
+	}
+
+	// No MeleeAnimMontage on this weapon (or no AnimInstance yet). Trace immediately rather
+	// than silently doing nothing — melee still functions, it just has no swing to sell it.
+	UE_LOG(LogMyCharacter, Verbose,
+		TEXT("MyCharacter: no MeleeAnimMontage on the current weapon — tracing without it."));
+	MeleeTrace();
+}
+
+void AMyCharacter::MeleeTrace()
+{
+	// The graph branched on FPSMode into two identical traces (1P and 3P start points).
 	const FVector Start = CachedArrowMeleeTraceStart
 		? CachedArrowMeleeTraceStart->GetComponentLocation()
 		: GetActorLocation();
@@ -1221,11 +1422,17 @@ void AMyCharacter::LinkWeaponAnimLayers(bool bUnarmed)
 	{
 		if (ABPWeaponBase* Weapon = GetCurrentWeapon())
 		{
-			FBPCall Call(Weapon, TEXT("GetLinkAnimLayerClass"));
-			if (Call.IsBound() && Call.Invoke())
-			{
-				LayerClass = Call.GetReturnClass();
-			}
+			// `LinkAnimLayerClass` is a VARIABLE on BP_FPST_BaseWeapon — there is no
+			// GetLinkAnimLayerClass function, exactly like AttachSocketName. This used to call
+			// one, IsBound() was always false, LayerClass stayed null, and the weapon's layer
+			// was NEVER linked: every weapon animated with whatever was already on the mesh.
+			LayerClass = GetWeaponClassVar(Weapon, N_LinkAnimLayerClass);
+		}
+		if (!LayerClass)
+		{
+			UE_LOG(LogMyCharacter, Warning,
+				TEXT("MyCharacter: current weapon has no LinkAnimLayerClass — the weapon's anim "
+					 "layer was not linked, so it keeps the previous weapon's pose set."));
 		}
 	}
 	else if (!UnarmedAnimLayerClass.IsNull())

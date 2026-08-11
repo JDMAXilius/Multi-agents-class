@@ -12,7 +12,9 @@ class UCameraComponent;
 class UInputAction;
 class UInputMappingContext;
 class USpringArmComponent;
+class UAnimMontage;
 class UUserWidget;
+struct FBranchingPointNotifyPayload;
 struct FInputActionValue;
 
 /**
@@ -87,6 +89,31 @@ public:
 	FName GetWeaponAttachSocket(const ABPWeaponBase* InWeapon) const;
 
 	/**
+	 * A weapon-side UClass variable (`LinkAnimLayerClass`), read by reflection. Handles both a
+	 * hard and a soft class pin, because either is legal on that variable.
+	 */
+	UClass* GetWeaponClassVar(const ABPWeaponBase* InWeapon, FName VarName) const;
+
+	/** A weapon-side UAnimMontage* variable (`MeleeAnimMontage`, `FireAnimMontage`, …). */
+	UAnimMontage* GetWeaponMontage(const ABPWeaponBase* InWeapon, FName VarName) const;
+
+	/**
+	 * Plays one of the current weapon's montages on the mesh, binding the montage-notify
+	 * delegate the first time. Returns false when there is no AnimInstance or the weapon has
+	 * no montage in that slot — callers fall back rather than silently doing nothing.
+	 */
+	bool PlayWeaponMontage(FName VarName);
+
+	/** The melee trace itself. Driven by the montage notify, not by the input event. */
+	void MeleeTrace();
+
+	UFUNCTION()
+	void HandleMontageNotifyBegin(FName NotifyName, const FBranchingPointNotifyPayload& Payload);
+
+	/** OnPlayMontageNotifyBegin is bound once, lazily, not every montage play. */
+	bool bMontageNotifyBound = false;
+
+	/**
 	 * The current weapon's `FireDelay` and `SpreadAngle` — both are VARIABLES on
 	 * BP_FPST_BaseWeapon, read by reflection. The fallbacks are this class's own defaults,
 	 * used only when there is no weapon or the property is gone.
@@ -147,6 +174,14 @@ protected:
 
 	UPROPERTY(Config, EditDefaultsOnly, Category = "Input")
 	TSoftObjectPtr<UInputMappingContext> DefaultMappingContext;
+
+	/**
+	 * Priority for the context above. Higher wins. Must stay ABOVE the priority
+	 * ABPPlayerController uses for its own contexts (0), or those shadow this one on the
+	 * same physical keys and the pawn takes no input at all — silently.
+	 */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "Input")
+	int32 MappingContextPriority = 1;
 
 	UPROPERTY(Config, EditDefaultsOnly, Category = "Input")
 	TSoftObjectPtr<UInputAction> MoveAction;
@@ -480,8 +515,13 @@ protected:
 	 */
 	virtual bool WeaponTrace(const FVector& Start, const FVector& Dir, float Distance, FHitResult& OutHit);
 	virtual bool WeaponTraceWithSpread(const FVector& Start, const FVector& Dir, float Distance, float Spread, FHitResult& OutHit);
-	virtual void FireTracerEffect(const FVector& HitLocation) {}
-	virtual void ImpactEffect(const FHitResult& Hit) {}
+	/**
+	 * BPC_FPST_Lyra_FireEffectComp, ported. NOT stubs any more — these are the visible
+	 * bullet. The template's fire is hitscan with no projectile actor; the tracer Niagara
+	 * system and the surface-typed impact FX are what a player reads as a shot.
+	 */
+	virtual void FireTracerEffect(const FVector& HitLocation);
+	virtual void ImpactEffect(const FHitResult& Hit);
 	virtual void PlayWeaponAnim(bool bLooping) {}
 
 private:
