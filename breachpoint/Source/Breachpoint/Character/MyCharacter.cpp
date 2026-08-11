@@ -48,6 +48,7 @@ namespace
 	 */
 	const FName N_AttachSocketName(TEXT("AttachSocketName"));
 	const FName N_LinkAnimLayerClass(TEXT("LinkAnimLayerClass"));
+	const FName N_MuzzleSocketName(TEXT("MuzzleSocketName"));
 	const FName N_MeleeAnimMontage(TEXT("MeleeAnimMontage"));
 	const FName N_FireAnimMontage(TEXT("FireAnimMontage"));
 	const FName N_AimFireAnimMontage(TEXT("AimFireAnimMontage"));
@@ -148,6 +149,44 @@ namespace
 		bool SetName(const TCHAR* ParamName, FName Value) const
 		{
 			if (FNameProperty* P = FindFProperty<FNameProperty>(Fn, FName(ParamName)))
+			{
+				P->SetPropertyValue_InContainer(Buffer, Value);
+				return true;
+			}
+			return false;
+		}
+
+		bool SetByte(const TCHAR* ParamName, uint8 Value) const
+		{
+			if (FByteProperty* P = FindFProperty<FByteProperty>(Fn, FName(ParamName)))
+			{
+				P->SetPropertyValue_InContainer(Buffer, Value);
+				return true;
+			}
+			if (FEnumProperty* P = FindFProperty<FEnumProperty>(Fn, FName(ParamName)))
+			{
+				FNumericProperty* Underlying = P->GetUnderlyingProperty();
+				Underlying->SetIntPropertyValue(P->ContainerPtrToValuePtr<void>(Buffer),
+					static_cast<int64>(Value));
+				return true;
+			}
+			return false;
+		}
+
+		/**
+		 * A float parameter. A Blueprint "float" pin is a DOUBLE in UE5, but a function
+		 * authored against a C++ float is still FFloatProperty, so both are handled --
+		 * writing 4 bytes into an 8-byte slot is exactly the silent corruption this class
+		 * exists to prevent.
+		 */
+		bool SetFloat(const TCHAR* ParamName, float Value) const
+		{
+			if (FDoubleProperty* P = FindFProperty<FDoubleProperty>(Fn, FName(ParamName)))
+			{
+				P->SetPropertyValue_InContainer(Buffer, static_cast<double>(Value));
+				return true;
+			}
+			if (FFloatProperty* P = FindFProperty<FFloatProperty>(Fn, FName(ParamName)))
 			{
 				P->SetPropertyValue_InContainer(Buffer, Value);
 				return true;
@@ -1077,6 +1116,98 @@ void AMyCharacter::SetUnarmed(bool bUnarmed)
 }
 
 // -------------------------------------------------------------------------------------
+// BPC_FPST_Procedural_PoseOffsets.ChangePose and BPC_FPSCamComp.ChangeCameraTargetFOV.
+// These two are what make ADS read as ADS: the weapon pose interpolates to the aim offset
+// and the camera FOV narrows. Both were empty hooks, so aiming changed the walk speed and
+// the anim-interface bools and nothing visibly moved.
+// -------------------------------------------------------------------------------------
+
+void AMyCharacter::ChangePose(uint8 PoseType, uint8 ScopeType, float ChangeSpeed)
+{
+	if (!PoseOffsetsComp)
+	{
+		return;
+	}
+	FBPCall Call(PoseOffsetsComp, TEXT("ChangePose"));
+	if (!Call.IsBound())
+	{
+		return;
+	}
+	Call.SetByte(TEXT("InPoseType"), PoseType);
+	Call.SetByte(TEXT("InScopeType"), ScopeType);
+	Call.SetFloat(TEXT("InChangeSpeed"), ChangeSpeed);
+	Call.Invoke();
+}
+
+void AMyCharacter::ChangeCameraTargetFOV(float TargetFOV, float Speed)
+{
+	if (!FPSCamComp)
+	{
+		return;
+	}
+	FBPCall Call(FPSCamComp, TEXT("ChangeCameraTargetFOV"));
+	if (!Call.IsBound())
+	{
+		return;
+	}
+	Call.SetFloat(TEXT("InTargetFov"), TargetFOV);
+	Call.SetFloat(TEXT("InSpeed"), Speed);
+	Call.Invoke();
+}
+
+/** The AnimBP's current FPSMode, via BPI_FPST_AnimInterface. Non-zero = first person. */
+uint8 AMyCharacter::GetAnimFPSMode() const
+{
+	const USkeletalMeshComponent* MeshComp = GetMesh();
+	UAnimInstance* Anim = MeshComp ? MeshComp->GetAnimInstance() : nullptr;
+	if (!Anim)
+	{
+		return 0;
+	}
+	FBPCall Call(Anim, TEXT("GetFPSMode"));
+	uint8 Mode = 0;
+	if (Call.IsBound() && Call.Invoke() && Call.GetReturnByte(Mode))
+	{
+		return Mode;
+	}
+	return 0;
+}
+
+/**
+ * The muzzle, for the tracer. `MuzzleSocketName` is a VARIABLE on BP_FPST_BaseWeapon and the
+ * socket lives on the WEAPON's own SkeletalMesh component, not on the character. Falls back
+ * to the weapon's actor transform, then the camera, so a tracer always has a start.
+ */
+FTransform AMyCharacter::GetMuzzleTransform() const
+{
+	if (const ABPWeaponBase* Weapon = GetCurrentWeapon())
+	{
+		FName MuzzleName = NAME_None;
+		if (const FNameProperty* Prop =
+				FindFProperty<FNameProperty>(Weapon->GetClass(), N_MuzzleSocketName))
+		{
+			MuzzleName = Prop->GetPropertyValue_InContainer(Weapon);
+		}
+		if (const USkeletalMeshComponent* WeaponMesh =
+				Weapon->FindComponentByClass<USkeletalMeshComponent>())
+		{
+			if (!MuzzleName.IsNone() && WeaponMesh->DoesSocketExist(MuzzleName))
+			{
+				return WeaponMesh->GetSocketTransform(MuzzleName);
+			}
+			return WeaponMesh->GetComponentTransform();
+		}
+		return Weapon->GetActorTransform();
+	}
+
+	if (const UCameraComponent* Cam = CachedFPSCamera ? CachedFPSCamera.Get() : CachedFPSCam.Get())
+	{
+		return Cam->GetComponentTransform();
+	}
+	return GetActorTransform();
+}
+
+// -------------------------------------------------------------------------------------
 // BPC_FPST_Lyra_FireEffectComp — the visible bullet.
 //
 // The template's fire is HITSCAN: there is no projectile actor anywhere in it. What you
@@ -1098,8 +1229,13 @@ void AMyCharacter::FireTracerEffect(const FVector& HitLocation)
 	{
 		return;
 	}
-	// Muzzle transform is the weapon's; with no weapon the camera is the honest fallback.
+	// BOTH ends. The tracer is drawn muzzle -> hit point: passing only InHitLocation left
+	// InMuzzleTransform at IDENTITY, which starts every tracer at the WORLD ORIGIN.
+	const FTransform Muzzle = GetMuzzleTransform();
+	Call.SetStruct(TEXT("InMuzzleTransform"), TBaseStructure<FTransform>::Get(), &Muzzle);
 	Call.SetVector(TEXT("InHitLocation"), HitLocation);
+	Call.SetVector(TEXT("InFireLocation"), Muzzle.GetLocation());
+	Call.SetVector(TEXT("InFireDirection"), Muzzle.GetUnitAxis(EAxis::X));
 	Call.Invoke();
 }
 
@@ -1297,7 +1433,10 @@ void AMyCharacter::FireEvent()
 	// the identical tracer -> impact -> damage -> hit-event chain.
 	auto ResolveHit = [this](const FHitResult& Hit, bool bHit)
 	{
-		FireTracerEffect(Hit.ImpactPoint);
+		// On a MISS FHitResult::ImpactPoint is (0,0,0), so firing at the sky sent the tracer
+		// to the WORLD ORIGIN. LineTraceSingle fills TraceEnd either way; that is the far end
+		// of the shot and what the tracer must reach.
+		FireTracerEffect(bHit ? Hit.ImpactPoint : Hit.TraceEnd);
 		if (!bHit)
 		{
 			return;
@@ -1347,13 +1486,30 @@ void AMyCharacter::MeleeAttack()
 
 void AMyCharacter::MeleeTrace()
 {
-	// The graph branched on FPSMode into two identical traces (1P and 3P start points).
-	const FVector Start = CachedArrowMeleeTraceStart
-		? CachedArrowMeleeTraceStart->GetComponentLocation()
-		: GetActorLocation();
-	const FVector Dir = CachedArrowMeleeTraceStart
-		? CachedArrowMeleeTraceStart->GetForwardVector()
-		: GetActorForwardVector();
+	// The graph branched on FPSMode into two traces with DIFFERENT start points: first
+	// person swings from the camera, third person from Arrow_MeleeTraceStart. Collapsing
+	// them to the arrow made the 1P swing originate behind the view and miss things the
+	// player was looking straight at.
+	const UCameraComponent* Cam = CachedFPSCamera ? CachedFPSCamera.Get() : CachedFPSCam.Get();
+	const bool bFirstPerson = (GetAnimFPSMode() != 0) && Cam != nullptr;
+
+	FVector Start;
+	FVector Dir;
+	if (bFirstPerson)
+	{
+		Start = Cam->GetComponentLocation();
+		Dir = Cam->GetForwardVector();
+	}
+	else if (CachedArrowMeleeTraceStart)
+	{
+		Start = CachedArrowMeleeTraceStart->GetComponentLocation();
+		Dir = CachedArrowMeleeTraceStart->GetForwardVector();
+	}
+	else
+	{
+		Start = GetActorLocation();
+		Dir = GetActorForwardVector();
+	}
 
 	FHitResult Hit;
 	if (!WeaponTrace(Start, Dir, MeleeTraceDistance, Hit))

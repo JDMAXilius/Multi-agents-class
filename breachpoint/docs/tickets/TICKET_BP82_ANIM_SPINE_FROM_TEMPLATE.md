@@ -2024,3 +2024,56 @@ still applies nothing (law 2, GAS owns the pipeline), so nothing takes damage wh
 Not PIE-multiplayer, not dedicated. The map's GameMode override is the next real blocker and
 `Content/Maps/` is outside `owner_path`.
 
+fix(BP82): PIE runs the ported pawn; melee 1P/3P, muzzle tracer, ADS pose+FOV
+
+PIE. BR_Arena01's World Settings pin DefaultGameMode=BP_FPST_GameMode_C, and a map's
+World Settings BEAT GlobalDefaultGameMode, so ABPGameMode never ran and PIE had never
+exercised any ported C++. Content/Maps/ is outside owner_path, so instead of editing the
+map (law 5) mcp-bp/reparent_gamemode.py reparents BP_FPST_GameMode - which IS in
+owner_path - onto ABPGameMode, making the map's EXISTING override resolve to our C++
+GameMode. No map edit, no claim change, no contract_gap. Same shape as the weapon-base
+reparent. Verified by re-read: CDO is an ABPGameMode child, DefaultPawnClassOverride
+resolves to BP_FPSCharacter_C.
+
+Proven with a standalone run using NO ?game= override - the map's own GameMode now does
+the right thing:
+
+  Game class is 'BP_FPST_GameMode_C'
+  MyCharacter: added 'IMC_FPST_Controls' at priority 1.
+  MyCharacter READY: pawn=BP_FPSCharacter_C_0 mesh=SKM_Manny_Y anim=ABP_Mannequin_Base_C
+    animIface=YES weapons=4/4 startType=2 current=BP_FPST_Weapon_Rifle_C_0
+    socket=weapon_r_rifle canCrouch=YES
+
+MELEE 1:1. The graph branched on FPSMode into two traces with DIFFERENT start points:
+first person swings from the camera, third person from Arrow_MeleeTraceStart. The port
+had collapsed both to the arrow, so a 1P swing started behind the view and missed things
+the player was looking straight at. GetAnimFPSMode() reads FPSMode back through
+BPI_FPST_AnimInterface (GetFPSMode is a real interface getter) and the branch is restored.
+
+TRACER MUZZLE -> AIM END. Two defects, both silent:
+- FireTracerEffect was passed only InHitLocation, leaving InMuzzleTransform at IDENTITY,
+  so every tracer started at the WORLD ORIGIN. Now passes InMuzzleTransform,
+  InFireLocation and InFireDirection. The muzzle comes from the WEAPON's own
+  SkeletalMesh socket named by its MuzzleSocketName variable - not from the character.
+- On a MISS, FHitResult::ImpactPoint is (0,0,0), so firing at the sky sent the tracer to
+  the world origin too. LineTraceSingle fills TraceEnd either way; that is the far end of
+  the shot and what the tracer must reach.
+
+ADS 1:1. ChangePose and ChangeCameraTargetFOV were empty hooks, so aiming changed the
+walk speed and the anim-interface bools and nothing visibly moved - no weapon pose shift,
+no FOV narrowing. Both are real UFUNCTIONs:
+BPC_FPST_Procedural_PoseOffsets.ChangePose(InPoseType, InScopeType, InChangeSpeed) and
+BPC_FPSCamComp.ChangeCameraTargetFOV(InTargetFov, InSpeed). Called by reflection.
+
+FBPCall gained SetByte and SetFloat. SetFloat handles FDoubleProperty AND FFloatProperty:
+a Blueprint "float" pin is a DOUBLE in UE5, and writing 4 bytes into an 8-byte slot is
+exactly the silent corruption this class exists to prevent.
+
+Rung 1 PASS 20260811-114024, three targets, exit 0, zero warnings.
+
+NOT CLAIMED: still no injected input in any harness run. Melee, ADS and the tracer are
+wired and their preconditions are verified at BeginPlay, but nobody has yet SEEN a swing,
+an FOV change, or a tracer. DealDamage still applies nothing (law 2). Not multiplayer.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+

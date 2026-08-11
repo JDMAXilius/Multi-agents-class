@@ -107,6 +107,15 @@ public:
 	/** The melee trace itself. Driven by the montage notify, not by the input event. */
 	void MeleeTrace();
 
+	/** The AnimBP's FPSMode via BPI_FPST_AnimInterface. Non-zero = first person. */
+	uint8 GetAnimFPSMode() const;
+
+	/**
+	 * Muzzle transform for the tracer -- the WEAPON's own SkeletalMesh socket named by its
+	 * `MuzzleSocketName` VARIABLE, not anything on the character.
+	 */
+	FTransform GetMuzzleTransform() const;
+
 	UFUNCTION()
 	void HandleMontageNotifyBegin(FName NotifyName, const FBranchingPointNotifyPayload& Payload);
 
@@ -464,8 +473,13 @@ protected:
 	// local change to one hook rather than a re-read of the graph.
 	// ---------------------------------------------------------------------------------
 
-	virtual void ChangePose(uint8 PoseType, uint8 ScopeType, float ChangeSpeed) {}
-	virtual void ChangeCameraTargetFOV(float TargetFOV, float Speed) {}
+	/**
+	 * BPC_FPST_Procedural_PoseOffsets.ChangePose and BPC_FPSCamComp.ChangeCameraTargetFOV.
+	 * NOT stubs any more -- these are what make ADS read as ADS. While they were empty,
+	 * aiming changed the walk speed and the anim-interface bools and nothing visibly moved.
+	 */
+	virtual void ChangePose(uint8 PoseType, uint8 ScopeType, float ChangeSpeed);
+	virtual void ChangeCameraTargetFOV(float TargetFOV, float Speed);
 	/**
 	 * BPI_FPST_AnimInterface messages. NOT stubs any more, and NOT component calls.
 	 *
