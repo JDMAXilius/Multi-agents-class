@@ -8,7 +8,9 @@ The complete file-by-file manifest, the reasoning behind every collapse, and the
 decisions are in **[`docs/BREACHPOINT-NEXT-STRUCTURE.md`](../../docs/BREACHPOINT-NEXT-STRUCTURE.md)**.
 The evidence behind the manifest — six reference projects read on disk plus the EOS/Steam/
 GameLift docs — is **[`docs/BREACHPOINT-NEXT-RESEARCH.md`](../../docs/BREACHPOINT-NEXT-RESEARCH.md)**.
-Read both before adding the first file.
+Who covers what — the seven programming domains (5 resident, 2 overlay) and the testing split —
+is **[`docs/BREACHPOINT-NEXT-DOMAINS.md`](../../docs/BREACHPOINT-NEXT-DOMAINS.md)**.
+Read them before adding the first file.
 
 **63 units · 121 files · 15 top-level folders · 8 subfolders** — against 272 files in the
 module it replaces, and against Lyra's 482 (Lyra is a platform; this is a game).
