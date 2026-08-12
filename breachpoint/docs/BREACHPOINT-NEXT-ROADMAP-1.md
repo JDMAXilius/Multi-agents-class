@@ -8,6 +8,14 @@ project documents do not bind it.
 
 ---
 
+## Status — 12 August 2026
+
+**Goals 1–5 DONE, founder-verified at Stage B** (Checkpoint A: walk/look standalone ✓ ·
+Checkpoint B: jump + crouch on both windows, client+server ✓). Goal 6 C++ written and
+review-complete (one blocking anim-thread race found and fixed; all graph-facing properties
+now published only from the thread-safe update). Goal 7 scripts in progress. Next:
+**Checkpoint C** — run the `Tools/bn/` scripts, then the mannequin animates in both windows.
+
 ## The one-line goal
 
 A first-person character on the mannequin skeleton, possessed and playable — ASC living on the
