@@ -16,7 +16,9 @@ import sys
 
 import unreal
 
-LEVEL_PATH = "/Game/BN/L_BNTest"
+# Maps/ is content-only - no Source/BreachpointNext counterpart.
+# docs/BREACHPOINT-NEXT-CONTENT-LAYOUT.md
+LEVEL_PATH = "/Game/BN/Maps/L_BNTest"
 TEMPLATE_PATH = "/Engine/Maps/Templates/Template_Default"  # UE5's Basic template
 GAME_MODE_CLASS_PATH = "/Script/BreachpointNext.BNGameMode"
 CUBE_PATH = "/Engine/BasicShapes/Cube"

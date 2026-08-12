@@ -144,6 +144,10 @@ Source/BreachpointNext/
 Editor-side (thin, defaults only): `BP_BRCharacter` (meshes + ABP class) · reparented FPS ABP ·
 `IMC_BRNext` · a test map whose WorldSettings points at `BRGameMode`.
 
+Where each of those lands, and the complete editor-artifact inventory with its blockers:
+**[`BREACHPOINT-NEXT-CONTENT-LAYOUT.md`](BREACHPOINT-NEXT-CONTENT-LAYOUT.md)** — `/Game/BN/<Domain>`
+mirrors `Source/BreachpointNext/<Domain>`, and R1 authors exactly four assets.
+
 ---
 
 ## Goal 1 — The module exists

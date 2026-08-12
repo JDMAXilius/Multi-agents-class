@@ -25,7 +25,8 @@ import sys
 
 import unreal
 
-BP_PACKAGE_PATH = "/Game/BN"
+# /Game/BN/<Domain> mirrors Source/BreachpointNext/<Domain> - docs/BREACHPOINT-NEXT-CONTENT-LAYOUT.md
+BP_PACKAGE_PATH = "/Game/BN/Characters"
 BP_NAME = "BP_BNCharacter"
 BP_PATH = BP_PACKAGE_PATH + "/" + BP_NAME
 PARENT_CLASS_PATH = "/Script/BreachpointNext.BNCharacter"

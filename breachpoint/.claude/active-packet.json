@@ -1,10 +1,12 @@
 {
-  "ticket": "TICKET_BP82_ANIM_SPINE_FROM_TEMPLATE - finish the Animation/ -> Animations/ rename",
+  "ticket": "BREACHPOINT-NEXT - the Content/BN layout and the editor-artifact inventory",
   "owner_path": [
-    "Source/Breachpoint/",
-    "docs/tickets/TICKET_BP82_ANIM_SPINE_FROM_TEMPLATE.md",
-    "docs/ANIM-PORT-LEDGER.md"
+    "docs/BREACHPOINT-NEXT-CONTENT-LAYOUT.md",
+    "docs/BREACHPOINT-NEXT-ROADMAP-1.md",
+    "Tools/bn/",
+    "Config/DefaultGame.ini",
+    "Content/BN/"
   ],
   "binary_locks": [],
-  "authorized_by": "founder, 12 Aug 2026 - 'fix the BP82 include renames and the duplicate isCrouching'. Scope is exactly those two: rewrite the project-header includes the folder move left behind, and drop the one spurious member. No other BP82 work."
+  "authorized_by": "founder, 12 Aug 2026 - 'make a total list and organize folder structure layout'. Establishes the /Game/BN content taxonomy and repoints the two unrun scripts at it. No asset is moved: BP_BNCharacter and L_BNTest do not exist yet, and the input assets are already in the right home."
 }
