@@ -23,8 +23,12 @@ standalone AND in client+server from the first build.
   input assets, and one thin defaults-only BP child per class that needs asset defaults.
 - **Multiplayer from line one.** No local-only state that pretends. Old code that isn't
   multiplayer-correct is not a reference.
-- **Founder tests; the crew builds.** Testing protocol at the bottom; three checkpoints, each
-  a thing you can run.
+- **Founder tests; the crew builds — including the editor work.** Every roadmap ships its
+  asset setup as committed Python scripts run through the editor (Unreal MCP / Editor Script
+  Plugin), followed by a read-back audit proving the result. The founder's hands touch only
+  the play button. (Standing rule for ALL roadmaps, not just this one.)
+- **Variables: only the necessary ones. Asset references: soft (`TSoftObjectPtr`/
+  `TSoftClassPtr`) wherever UE allows it.**
 
 ## Reuse verdict (you asked — here it is)
 
@@ -132,12 +136,28 @@ Editor-side (thin, defaults only): `BP_BRCharacter` (meshes + ABP class) · repa
 
 | # | Task |
 |---|---|
-| 6.1 | `BRAnimInstance`: `NativeInitializeAnimation` caches character + ASC; thread-safe update computes Speed/Direction; **no logic remains in the ABP event graph** |
+| 6.1 | `BRAnimInstance`: `NativeInitializeAnimation` caches character + ASC; thread-safe update computes Speed/Direction; **no logic remains in the ABP event graph**. Variables: only what the graph actually reads — nothing exposed "just in case" |
 | 6.2 | Booleans the template ABP exposed become tag-driven state: the instance registers ASC tag-change delegates for `State.Movement.*` and exposes the results to the graph |
-| 6.3 | Reparent the FPS template ABP to `UBRAnimInstance`; delete its event graph; AnimGraph + linked layers untouched this pass (layer C++ migration = the Animation roadmap) |
-| 6.4 | `BP_BRCharacter`: 1P arms owner-only, 3P mannequin hidden-to-owner — both meshes assigned, ABP on the 3P (1P layer wiring stays minimal this pass) |
+| 6.3 | Reparent the FPS template ABP to `UBRAnimInstance`; delete its event graph; AnimGraph + linked-layer *graphs* untouched this pass (layer C++ migration = the Animation roadmap) |
+| 6.4 | **Linked layers hooked up correctly, unarmed by default:** `BRCharacter` exposes the current-weapon seam (returns none — no weapons exist yet); at anim init the layer class resolves from it — none → the **Unarmed** layer class, held as a `TSoftClassPtr` and linked via `LinkAnimClassLayers`. When weapons arrive, the layer swaps through this seam with zero animation edits |
+| 6.5 | `BP_BRCharacter`: 1P arms owner-only, 3P mannequin hidden-to-owner — both meshes assigned, ABP on the 3P (1P layer wiring stays minimal this pass) |
 
-**Objective (Checkpoint C):** the mannequin animates from tag-driven states — idle/walk/jump/crouch — in standalone and in both PIE windows.
+**Objective (Checkpoint C):** the mannequin animates from tag-driven states — idle/walk/jump/crouch — through the linked unarmed layer, in standalone and in both PIE windows.
+
+## Goal 7 — Asset wiring by automation (the founder touches nothing)
+
+*Every editor-side artifact this roadmap needs is created by committed scripts through the
+editor (Unreal MCP / Python Editor Script Plugin) — the same generated-scripts method the UI
+work proved — then read back and audited.*
+
+| # | Task |
+|---|---|
+| 7.1 | Script: create `BP_BRCharacter` (child of `BRCharacter`, defaults only) — assign 1P/3P meshes, ABP class, visibility flags; all asset paths as soft references |
+| 7.2 | Script: reparent the FPS template ABP to `UBRAnimInstance`; clear its event graph; verify the unarmed layer link resolves |
+| 7.3 | Script: create `IMC_BRNext` with the four mappings (reusing the existing IA assets); create/point the test map's WorldSettings at `BRGameMode` |
+| 7.4 | Read-back audit script: every property set in 7.1–7.3 is read back from the live editor and diffed against the intended values — the audit output is the proof, not "the script ran" |
+
+**Objective:** from a fresh pull, the founder runs the scripts (or asks the crew to), opens the test map, presses Play. No manual editor setup steps exist anywhere in this roadmap.
 
 ---
 
