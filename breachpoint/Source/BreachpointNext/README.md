@@ -13,6 +13,10 @@ Read both before adding the first file.
 **63 units · 121 files · 15 top-level folders · 8 subfolders** — against 272 files in the
 module it replaces, and against Lyra's 482 (Lyra is a platform; this is a game).
 
+Every file carries a tier: ✅ **SPINE** (40 units — the first networked playable: move, shoot,
+damage, die, respawn, HUD) · 🎯 **SLICE** (23 units — committed, built on the spine) ·
+⏳ **NAMED** (not created; recorded triggers only).
+
 ```
 Core  Data  Input  AbilitySystem  Characters  Actors  Weapons  Animation
 AI  UI  Match  Online  Interfaces  Utilities  Tests
