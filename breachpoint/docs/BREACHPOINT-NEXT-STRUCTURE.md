@@ -1,10 +1,18 @@
 # BREACHPOINT NEXT — the framework, file by file
 
-**Revised:** 12 August 2026 (v2 — file-level) · **Status:** structure and manifest only. No code.
+**Revised:** 12 August 2026 (v3 — research-checked) · **Status:** structure and manifest only. No code.
 **Location:** `Source/BreachpointNext/` — a sibling of `Source/Breachpoint/`, not wired to any build.
 
-**62 units · 119 files · 15 top-level folders · 8 subfolders.**
+**63 units · 121 files · 15 top-level folders · 8 subfolders.**
 The module it replaces has **272 files across 34 folders**, and that comparison is the point.
+
+**Provenance.** This manifest is derived from what the game needs, not from what the old tree
+has. Every unit traces to one of: a project law, or a finding in
+[`BREACHPOINT-NEXT-RESEARCH.md`](BREACHPOINT-NEXT-RESEARCH.md) — six reference projects read on
+disk (Lyra 482 files · OnSight 395 · ZoransResistance 250 · NewMoons 87 · ShooterCore 42 ·
+UE5_Multiplayer_FPS 38) plus the Epic/AWS docs for EOS + Steam + GameLift. Where a name here
+matches an old-tree name, that is convergence on the same engine concept (a GameMode is a
+GameMode), not inheritance.
 
 > **Not set in stone.** This is the target shape, and it is expected to move once code is
 > written against it. When a better approach shows up, the structure changes — that is the
@@ -128,11 +136,14 @@ Source/BreachpointNext/
 │       ├── BRScoreboardScreen.h/.cpp
 │       └── BRPauseScreen.h/.cpp
 │
-├── Match/ ────────────────────────────────────────────────────────── 4 units · 8 files
+├── Match/ ────────────────────────────────────────────────────────── 5 units · 10 files
 │   ├── BRGameMode.h/.cpp            server-only: phases, spawn selection, scoring rules
 │   ├── BRGameState.h/.cpp           replicated match truth: phase, timer, team scores
 │   ├── BRPlayerState.h/.cpp         the ASC host — outlives the pawn, so respawn is free
-│   └── BRPlayerController.h/.cpp    input owner · UI owner · client RPC target
+│   ├── BRPlayerController.h/.cpp    input owner · UI owner · client RPC target
+│   └── BRMatchMessages.h/.cpp       verb messages ("X killed Y with Z") + replicated broadcast
+│                                    — gameplay→UI decoupling via GameplayMessageRouter
+│                                    (Lyra's Messages/ pattern; see RESEARCH §2)
 │
 ├── Online/ ───────────────────────────────────────────────────────── 2 units · 4 files
 │   ├── BRServerLifecycle.h/.cpp     IBRServerLifecycle — listen now, dedicated behind the seam
@@ -164,6 +175,7 @@ Source/BreachpointNext/
 | **No `Phases/`, `Scoring/`, `Respawn/`** | ~8 | These are methods on `BRGameMode`/`BRGameState`. A folder implies a class; a class implies a lifetime; they have neither. |
 | **CommonUI does the layer stack** | ~6 | `BRPrimaryLayout` + layer tags replaces a hand-rolled screen manager. |
 | **No custom AbilityTasks or TargetData yet** | ~6 | `WaitTargetData`, `WaitGameplayEvent`, `PlayMontageAndWait` and `FGameplayAbilityTargetData_SingleTargetHit` cover the slice. Write one when the engine's actually falls short. |
+| **`Online/` stays at 2 units despite EOS + Steam + GameLift** | ~10 | EOS+Steam coexistence is `OnlineSubsystemEOSPlus` **configuration**, not per-service classes; the game codes only against the abstract interfaces (Lyra's CommonSession pattern, NewMoons' one-file proof). GameLift is Phase 2: implementation #2 of `IBRServerLifecycle`, whose interface is GameLift-shaped (session-activated · admission · health · terminate) from day one. |
 
 ---
 

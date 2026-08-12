@@ -6,10 +6,12 @@ builds exactly as before.
 
 The complete file-by-file manifest, the reasoning behind every collapse, and the three open
 decisions are in **[`docs/BREACHPOINT-NEXT-STRUCTURE.md`](../../docs/BREACHPOINT-NEXT-STRUCTURE.md)**.
-Read it before adding the first file.
+The evidence behind the manifest — six reference projects read on disk plus the EOS/Steam/
+GameLift docs — is **[`docs/BREACHPOINT-NEXT-RESEARCH.md`](../../docs/BREACHPOINT-NEXT-RESEARCH.md)**.
+Read both before adding the first file.
 
-**62 units · 119 files · 15 top-level folders · 8 subfolders** — against 272 files in the
-module it replaces.
+**63 units · 121 files · 15 top-level folders · 8 subfolders** — against 272 files in the
+module it replaces, and against Lyra's 482 (Lyra is a platform; this is a game).
 
 ```
 Core  Data  Input  AbilitySystem  Characters  Actors  Weapons  Animation
