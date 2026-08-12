@@ -1,4 +1,4 @@
-#include "Animation/BRProceduralSolver.h"
+#include "Animations/BRProceduralSolver.h"
 
 namespace BRProcedural
 {

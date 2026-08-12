@@ -1,8 +1,8 @@
-#include "Animation/BRAnimNotify_GameplayEvent.h"
+#include "Animations/BRAnimNotify_GameplayEvent.h"
 
 #include "Components/SkeletalMeshComponent.h"
 
-#include "Animation/BRAnimInstance.h"
+#include "Animations/BRAnimInstance.h"
 
 UBRAnimNotify_GameplayEvent::UBRAnimNotify_GameplayEvent()
 {

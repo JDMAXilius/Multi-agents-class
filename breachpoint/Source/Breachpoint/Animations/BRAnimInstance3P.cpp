@@ -1,4 +1,4 @@
-#include "Animation/BRAnimInstance3P.h"
+#include "Animations/BRAnimInstance3P.h"
 
 UBRAnimInstance3P::UBRAnimInstance3P()
 {

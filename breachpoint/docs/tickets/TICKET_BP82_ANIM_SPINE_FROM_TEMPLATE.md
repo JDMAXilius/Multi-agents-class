@@ -2465,3 +2465,41 @@ seen a tracer land where the crosshair is.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
 
+
+### 12 Aug 2026 — windows terminal. The folder move finished: includes rewritten, `IsCrouching` dropped.
+
+The `Animation/` → `Animations/` rename was staged but half-done: the files had moved, the
+`#include "Animation/…"` lines had not, and UHT was rejecting
+`BRMannequinAnimInstance.h` before any of it — `IsCrouching` (line 127) and `isCrouching`
+(line 211) are one name to FName, and two UPROPERTYs cannot share it.
+
+**Which spelling is real — decided on evidence, not on which looked more like the house style.**
+The first guess was to keep the UpperCamel `IsCrouching`, and it was wrong. The report's
+`declared_properties` bucket — the ABP's actual variable list — contains **`isCrouching`**, and
+`other_names` contains `__CustomProperty_isCrouching_008CB870…`, the Blueprint custom-property
+marker, also lowercase. `IsCrouching` appears ONLY in `other_names`: it is
+`UCharacterMovementComponent::IsCrouching()`, a called engine function pulled into the package
+name table by a K2 node. The generator had joined a function name into the property list.
+
+So `IsCrouching` was deleted and `isCrouching` kept — which is the header's own documented rule
+(the offline report gives real names; do not re-case them) applied in the direction that
+surprises: the real name here genuinely starts lowercase, exactly like its neighbours
+`bFPSMode`, `bSprinting`, `bUnarmed`.
+
+All 53 members were then diffed against `declared_properties`. `IsCrouching` was the ONLY
+mismatch; the other 52 match the declared list exactly. The port's casing is otherwise sound.
+
+**Includes.** 37 includes across 21 files rewritten to `Animations/`, scoped by basename to the
+20 project anim headers. The six engine headers that also live under `Animation/` —
+`AnimInstance.h`, `AnimMontage.h`, `AnimSequenceBase.h`, `WidgetAnimation.h`,
+`AnimNotifies/AnimNotify.h`, `AnimNotifies/AnimNotifyState.h` — were left untouched, as was
+`BreachpointNext`'s own correctly-singular `Animation/BNAnimInstance.h`. Nothing still names
+the deleted `BPMannequinAnimInstance.h`.
+
+Rung 1 PASS 20260812-153945, three targets, exit 0, whole tree intact — the first full-tree
+rung-1 since the rename began. `BRMannequinAnimInstance.cpp` compiles into all three.
+
+NOT CLAIMED: this is a compile, nothing more. Nothing is reparented onto
+`UBRMannequinAnimInstance`, no ABP was touched, and no mannequin has been watched to animate.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>

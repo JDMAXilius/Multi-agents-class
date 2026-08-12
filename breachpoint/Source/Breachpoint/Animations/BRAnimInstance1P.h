@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 
-#include "Animation/BRAnimInstance.h"
+#include "Animations/BRAnimInstance.h"
 
 #include "BRAnimInstance1P.generated.h"
 

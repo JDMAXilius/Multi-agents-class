@@ -1,4 +1,4 @@
-#include "Animation/BRAnimInstance.h"
+#include "Animations/BRAnimInstance.h"
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
@@ -9,8 +9,8 @@
 #include "GameFramework/Pawn.h"
 
 #include "Core/BRGameplayTags.h"
-#include "Animation/BRAnimLayerInterface.h"
-#include "Animation/BRProceduralSolver.h"
+#include "Animations/BRAnimLayerInterface.h"
+#include "Animations/BRProceduralSolver.h"
 
 namespace
 {

@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 
-#include "Animation/BRProceduralTypes.h"
+#include "Animations/BRProceduralTypes.h"
 
 #include "BRAimAndLeanTypes.generated.h"
 

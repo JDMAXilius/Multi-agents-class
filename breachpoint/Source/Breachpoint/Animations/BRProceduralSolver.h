@@ -2,12 +2,12 @@
 
 #include "CoreMinimal.h"
 
-#include "Animation/BRAimAndLeanTypes.h"
-#include "Animation/BRAnimTypes.h"
-#include "Animation/BRPoseOffsetTypes.h"
-#include "Animation/BRProceduralTypes.h"
-#include "Animation/BRRecoilTypes.h"
-#include "Animation/BRSwayAndLagTypes.h"
+#include "Animations/BRAimAndLeanTypes.h"
+#include "Animations/BRAnimTypes.h"
+#include "Animations/BRPoseOffsetTypes.h"
+#include "Animations/BRProceduralTypes.h"
+#include "Animations/BRRecoilTypes.h"
+#include "Animations/BRSwayAndLagTypes.h"
 
 /**
  * The procedural maths, as free functions over plain data.

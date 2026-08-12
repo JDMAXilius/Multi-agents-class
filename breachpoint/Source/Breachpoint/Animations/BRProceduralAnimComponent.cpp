@@ -1,9 +1,9 @@
-#include "Animation/BRProceduralAnimComponent.h"
+#include "Animations/BRProceduralAnimComponent.h"
 
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/Character.h"
 
-#include "Animation/BRAnimInstance.h"
+#include "Animations/BRAnimInstance.h"
 
 UBRProceduralAnimComponent::UBRProceduralAnimComponent()
 {

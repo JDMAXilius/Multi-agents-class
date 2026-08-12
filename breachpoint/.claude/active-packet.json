@@ -1,15 +1,10 @@
 {
-  "ticket": "BREACHPOINT-NEXT-ROADMAP-1 G4/G7 - PlayerController input on soft asset refs",
+  "ticket": "TICKET_BP82_ANIM_SPINE_FROM_TEMPLATE - finish the Animation/ -> Animations/ rename",
   "owner_path": [
-    "Source/BreachpointNext/",
-    "Tools/bn/",
-    "Config/DefaultGame.ini",
-    "docs/BREACHPOINT-NEXT-ROADMAP-1.md",
-    "Content/BN/"
+    "Source/Breachpoint/",
+    "docs/tickets/TICKET_BP82_ANIM_SPINE_FROM_TEMPLATE.md",
+    "docs/ANIM-PORT-LEDGER.md"
   ],
-  "binary_locks": [
-    "Content/BN/Input/IMC_BNNext.uasset",
-    "Content/BN/Input/DA_BNInput.uasset"
-  ],
-  "authorized_by": "founder, 12 Aug 2026 - go over the BreachpointNext PlayerController and Character; inputs on the PlayerController as soft references, set correctly in the editor. Supersedes the stale BP82 claim (that packet's work is staged, uncommitted, and untouched by this one)."
+  "binary_locks": [],
+  "authorized_by": "founder, 12 Aug 2026 - 'fix the BP82 include renames and the duplicate isCrouching'. Scope is exactly those two: rewrite the project-header includes the folder move left behind, and drop the one spurious member. No other BP82 work."
 }

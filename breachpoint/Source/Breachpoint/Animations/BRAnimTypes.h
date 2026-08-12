@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 
-#include "Animation/BRSwayAndLagTypes.h"
+#include "Animations/BRSwayAndLagTypes.h"
 
 #include "BRAnimTypes.generated.h"
 

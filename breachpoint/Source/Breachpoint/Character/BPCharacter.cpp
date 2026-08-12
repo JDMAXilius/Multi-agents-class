@@ -5,7 +5,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "EnhancedInputComponent.h"
-#include "Animation/BPAnimInstance.h"
+#include "Animations/BPAnimInstance.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "InputAction.h"
 #include "InputActionValue.h"

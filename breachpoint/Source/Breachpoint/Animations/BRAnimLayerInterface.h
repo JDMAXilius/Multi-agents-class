@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
 
-#include "Animation/BRSwayAndLagTypes.h"
+#include "Animations/BRSwayAndLagTypes.h"
 
 #include "BRAnimLayerInterface.generated.h"
 

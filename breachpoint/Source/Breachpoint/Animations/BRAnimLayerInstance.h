@@ -3,7 +3,7 @@
 #include "Animation/AnimInstance.h"
 #include "CoreMinimal.h"
 
-#include "Animation/BRAnimLayerInterface.h"
+#include "Animations/BRAnimLayerInterface.h"
 
 #include "BRAnimLayerInstance.generated.h"
 

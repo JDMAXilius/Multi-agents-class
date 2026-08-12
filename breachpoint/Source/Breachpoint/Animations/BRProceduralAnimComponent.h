@@ -3,10 +3,10 @@
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
 
-#include "Animation/BRAimAndLeanTypes.h"
-#include "Animation/BRPoseOffsetTypes.h"
-#include "Animation/BRRecoilTypes.h"
-#include "Animation/BRSwayAndLagTypes.h"
+#include "Animations/BRAimAndLeanTypes.h"
+#include "Animations/BRPoseOffsetTypes.h"
+#include "Animations/BRRecoilTypes.h"
+#include "Animations/BRSwayAndLagTypes.h"
 
 #include "BRProceduralAnimComponent.generated.h"
 
