@@ -48,12 +48,26 @@ are pure-C++ domains and should stay empty — GEs, cues and attribute sets are 
 |---|---|---|---|---|
 | 1 | Mapping context | `Input/IMC_BNNext` | — | **done**, audited 21/21 |
 | 2 | Input config | `Input/DA_BNInput` | — | **done**, audited 21/21 |
-| 3 | GameMode BP | `Core/BP_BNGameMode` | defaults-only child of `ABNGameMode` | pending |
-| 4 | PlayerController BP | `Core/BP_BNPlayerController` | defaults-only child of `ABNPlayerController` | pending |
-| 5 | PlayerState BP | `Core/BP_BNPlayerState` | defaults-only child of `ABNPlayerState` | pending |
-| 6 | Character BP | `Characters/BP_BNCharacter` | defaults-only child of `ABNCharacter` | pending |
-| 7 | Anim Blueprint | `Animation/ABP_BNMannequin` | duplicate + reparent — **not** R26 | pending |
-| 8 | Character table | `Data/DT_BNCharacter` | needs row struct + CSV first | pending |
+| 3 | GameMode BP | `Core/BP_BNGameMode` | defaults-only child of `ABNGameMode` | **done** |
+| 4 | PlayerController BP | `Core/BP_BNPlayerController` | defaults-only child of `ABNPlayerController` | **done** |
+| 5 | PlayerState BP | `Core/BP_BNPlayerState` | defaults-only child of `ABNPlayerState` | **done** |
+| 6 | Character BP | `Characters/BP_BNCharacter` | defaults-only child of `ABNCharacter` | **done** |
+| 7 | Anim Blueprint | `Animation/ABP_BNMannequin` | duplicate + reparent — **not** R26 | **done** |
+| 8 | Character table | `Data/DT_BNCharacter` | needs row struct + CSV first | blocked |
+
+3–7 were created 12 Aug 2026 through the in-editor MCP server, parent-class audit 5/5.
+Two things learned there, both worth keeping:
+
+- `BlueprintTools.create`'s `asset_type` is the **parent class**, not the Blueprint kind.
+  Passing `/Script/Engine.Blueprint` makes `UBlueprintFactory` raise its *Pick Parent Class*
+  modal, which blocks the editor's game thread forever on an unattended call — every later MCP
+  call then hangs and the editor has to be killed.
+- Reparenting `ABP_BNMannequin` to `UBNAnimInstance` **absorbed 9 BP variables** into the C++
+  parent: `DisplacementSpeed` · `HasAcceleration` · `HasVelocity` · `IsCrouching` · `IsFalling`
+  · `IsJumping` · `IsOnGround` · `LocalVelocity2D` · `LocalVelocityDirectionAngle`. Those graph
+  nodes now read the C++ property. All 126 graphs survived, and it compiles clean with
+  warnings-as-errors — the migration working exactly as intended. (`UBNAnimInstance` spells it
+  `isCrouching`; the ABP's `IsCrouching` bound anyway, FName being case-insensitive.)
 
 All of 3–6 are legal under R26: a direct BP child of a `BR`/`BN` C++ class, defaults only,
 empty graphs, no new members, named `BP_<CppClassWithoutPrefix>`. #7 is the deliberate
