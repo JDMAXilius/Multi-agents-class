@@ -310,10 +310,13 @@ criteria rather than leaving it to the refuter, so trope-y candidates lose befor
 ## 9. The retrieval tweak — measured, not remembered
 
 The first live run used the obvious retriever: both GDDs, no boost. Its artifacts are
-committed under `output/naive/`, and it is still runnable:
+committed verbatim under [`output/naive/`](output/naive/) — the trace, the critic log and
+the 12 rows it landed — alongside `recording_naive.json`, the raw model exchanges they came
+from. That run predates the JUDGE stage, so it is kept as archival evidence rather than
+replayed; the retriever half of it is still reproducible against today's index:
 
 ```bash
-python3 run_pipeline.py --live --naive --job announcer --recording recording_naive.json
+python3 run_pipeline.py --naive --dry-run --job announcer   # naive retrieval, no model
 ```
 
 **Two failures, both retrieval, not prompting:**
