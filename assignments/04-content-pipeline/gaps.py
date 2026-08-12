@@ -202,7 +202,56 @@ def gap_bot_callsigns() -> Gap:
 
 # --------------------------------------------------------------------------
 
-BUILDERS = [gap_announcer_coverage, gap_coach_fallback, gap_bot_callsigns]
+# --------------------------------------------------------------------------
+# Gap 4 — arena landmarks the announcer never names
+# --------------------------------------------------------------------------
+#
+# Proven, and deliberately NOT filled by this pipeline. spotter.md permits a
+# line to name a place the manifest named, so the content is legal — but a
+# per-zone callout needs a zone-entry trigger, and no such trigger exists in
+# DT_SpotterLines or in the runtime. Generating lines for an event the game
+# cannot raise is the same defect as the coach thresholds: content ahead of the
+# system that would fire it. The pipeline reports it so the gap is on record
+# for whoever cuts that ticket.
+
+def gap_arena_callouts() -> Gap:
+    gap = Gap(
+        key="arena_callouts",
+        title="Six of seven named arena landmarks are never spoken",
+        promise="Footstep and weapon audio are the information system … the 35 m "
+                "sightline cap and open three-level sightlines mean threats are "
+                "usually visible before they are lethal.",
+        citation="BREACHPOINT-GDD-VERTICAL-SLICE.md §2.7 (Information Without Radar)")
+
+    manifest = DATA / "arena_manifest.json"
+    names = [l["name"] for l in json.loads(
+        manifest.read_text(encoding="utf-8"))["landmarks"]] if manifest.exists() else []
+    spoken = " ".join(r["Text"] for r in _rows("DT_SpotterLines.csv")).lower()
+    silent = [n for n in names if n.lower() not in spoken]
+
+    gap.evidence.append(Evidence(
+        check="arena_manifest landmarks named by any line in DT_SpotterLines",
+        result=(f"{len(silent)} of {len(names)} never spoken: " + ", ".join(silent)),
+        supports_gap=bool(silent)))
+
+    # The reason it is not filled, checked rather than asserted.
+    triggers = {r["TriggerId"] for r in _rows("DT_SpotterLines.csv")}
+    zone = [t for t in triggers if "zone" in t.lower() or "callout" in t.lower()]
+    gap.evidence.append(Evidence(
+        check="a zone/callout trigger exists to fire a per-landmark line",
+        result=(f"{len(zone)} zone triggers: {zone}" if zone
+                else "none — no event the game raises would play such a line"),
+        supports_gap=not zone))
+
+    gap.not_filled_reason = (      # type: ignore[attr-defined]
+        "No zone-entry trigger exists, so a per-landmark line has nothing to fire "
+        "it. Filed for the ticket that adds the trigger; generating the lines "
+        "first would be content ahead of its system.")
+    return gap
+
+
+BUILDERS = [gap_announcer_coverage, gap_coach_fallback, gap_bot_callsigns,
+            gap_arena_callouts]
 
 
 def repo_available() -> bool:
@@ -234,6 +283,9 @@ def render(gaps: list[Gap]) -> str:
         out.append(f"**The GDD promises:** {g.promise}  ")
         out.append(f"**Source:** {g.citation}")
         out.append("")
+        if getattr(g, "not_filled_reason", None):
+            out.append(f"> **Proven but deliberately NOT filled.** {g.not_filled_reason}")
+            out.append("")
         out.append("| Check | Result | Supports the gap |")
         out.append("|---|---|---|")
         for e in g.evidence:

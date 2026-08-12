@@ -50,6 +50,12 @@ KB_SOURCES = [
     ("breachpoint/Content/Data/DT_BotTuning.csv", "slice", 1.0),
     ("breachpoint/Content/Data/DT_MatchRules.csv", "slice", 1.0),
     ("breachpoint/Content/Data/arena_manifest.json", "slice", 1.0),
+    # The SHIPPED telemetry schema. Added after the first run shipped coach
+    # lines keyed to nine stats the game does not record: GDD Appendix C
+    # describes the telemetry we WANT, and the header is the telemetry we HAVE.
+    # A knowledge base of design documents alone cannot tell those apart, which
+    # is the sharpest retrieval lesson this pipeline produced. See README §6.
+    ("breachpoint/Source/Breachpoint/Telemetry/BRTelemetrySubsystem.h", "slice", 1.0),
     ("breachpoint/BREACHPOINT-GDD-FULL-CONCEPT.md", "phase2", 1.0),
 ]
 
@@ -297,7 +303,42 @@ def build_index(repo_root: Path, sources=KB_SOURCES) -> Index:
             chunks += chunk_csv(path, rel, canon)
         elif path.suffix == ".json":
             chunks += chunk_json(path, rel, canon)
+        elif path.suffix in (".h", ".cpp"):
+            chunks += chunk_cpp(path, rel, canon)
     return Index(chunks)
+
+
+CPP_DECL_RE = re.compile(r"^(?:USTRUCT|UENUM|UCLASS)\s*\(|^(?:struct|enum class|class)\s+\w+")
+
+
+def chunk_cpp(path: Path, rel: str, canon: str) -> list[Chunk]:
+    """One chunk per struct/enum/class declaration.
+
+    A header is in the knowledge base for one reason: it is the only place that
+    says what the game ACTUALLY records, as opposed to what a design document
+    says it will. Chunking per declaration keeps a struct's field list intact,
+    which is the unit a generator needs to key content to real data.
+    """
+    lines = path.read_text(encoding="utf-8").splitlines()
+    starts = [i for i, l in enumerate(lines) if CPP_DECL_RE.match(l.strip())]
+    if not starts:
+        return [Chunk(id=f"{rel}#0", source=rel, heading=path.name, canon=canon,
+                      line_start=1, line_end=len(lines),
+                      text=f"{path.name}\n" + "\n".join(lines))]
+    starts.append(len(lines))
+    chunks = []
+    for i in range(len(starts) - 1):
+        a, b = starts[i], starts[i + 1]
+        body = "\n".join(lines[a:b]).strip()
+        if not body:
+            continue
+        name = re.search(r"\b(?:struct|enum class|class)\s+(\w+)", body)
+        heading = f"{path.name} :: {name.group(1)}" if name else path.name
+        chunks.append(Chunk(
+            id=f"{rel}#{a}", source=rel, heading=heading, canon=canon,
+            line_start=a + 1, line_end=b,
+            text=f"{heading}  (the SHIPPED schema — what the game records today)\n{body}"))
+    return chunks
 
 
 def format_context(hits: list[tuple[Chunk, float]]) -> str:

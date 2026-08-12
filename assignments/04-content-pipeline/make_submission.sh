@@ -17,10 +17,19 @@ REPO="$(cd "$HERE/../.." && pwd)"
 OUT="$HERE/BREACHPOINT-content-pipeline.zip"
 STAGE="$(mktemp -d)/BREACHPOINT-content-pipeline"
 
-mkdir -p "$STAGE/kb" "$STAGE/output"
-cp "$HERE"/run_pipeline.py "$HERE"/rag.py "$HERE"/gaps.py "$HERE"/README.md \
-   "$HERE"/recording.json "$HERE"/recording_naive.json "$STAGE/"
+mkdir -p "$STAGE/kb" "$STAGE/output" "$STAGE/agents/curators"
+cp "$HERE"/run_pipeline.py "$HERE"/rag.py "$HERE"/gaps.py "$HERE"/crew.py \
+   "$HERE"/README.md "$HERE"/recording.json "$HERE"/recording_naive.json "$STAGE/"
 cp -r "$HERE"/output/. "$STAGE/output/"
+
+# The two crew definitions the pipeline drives. Same reasoning as the KB mirror:
+# they are loaded from the live crew in the repo, and a zip has no repo, so
+# crew.py falls back to ./agents/. They are copied, never edited — the repo
+# remains the one place they are authored.
+AGENTS="$REPO/breachpoint/.claude/agents"
+[ -d "$AGENTS" ] || { echo "error: crew agents not found at $AGENTS" >&2; exit 1; }
+cp "$AGENTS/critic.md" "$STAGE/agents/"
+cp "$AGENTS/curators/spotter.md" "$STAGE/agents/curators/"
 
 # Mirror the knowledge base, reading the source list from rag.py so the zip can
 # never fall out of sync with what the pipeline actually indexes.
