@@ -6,15 +6,26 @@ Run inside the UE 5.8 editor (Python Editor Script Plugin):
 
 Packet run order: 20_bp_character.py -> 30_reparent_abp.py -> 40_unarmed_layer.py.
 
-REPORT-FIRST migration: picks the mannequin ABP (prefer ABP_BRMannequin3P, else the
-FPSTemplate character ABP), prints a full matched/unmatched variable table (every BP
-variable on the ABP vs every property the new C++ parent exposes), reparents to
-/Script/BreachpointNext.BNAnimInstance, deletes ONLY the BP variables whose name AND
-type provably match a C++ property (so the graph re-resolves to C++), lists the rest
-as NEEDS DECISION, and clears the event graph only if nothing is left unmatched.
+DUPLICATE-FIRST, REPORT-FIRST migration. It picks the mannequin ABP (prefer
+ABP_BRMannequin3P, else the FPSTemplate character ABP) and **duplicates it** to
+/Game/BN/Animation/ABP_BNMannequin. Everything after that happens on the duplicate:
+the source is read and never written, which is what leaves ABP_BRMannequin3P and all
+of FPSTemplate/ to BP82.
+
+On the duplicate it prints a full matched/unmatched variable table (every BP variable
+vs every property the new C++ parent exposes), reparents to
+/Script/BreachpointNext.BNAnimInstance, and deletes ONLY the BP variables whose name
+AND type provably match a C++ property, so those graph nodes re-resolve to the
+inherited C++ property. The rest are listed as NEEDS DECISION.
+
+THE EVENT GRAPH IS PRESERVED. See ALLOW_GRAPH_CLEAR below - it is off, and stays off
+until the ubergraph has been ported to C++ 1:1 and verified by a human. Deleting
+matched variables does not lose logic; deleting the graph does, and there is no other
+copy of it.
+
 Compiles, saves, then reads everything back and prints an intent-vs-actual audit
 table. The audit table is the proof, not "the script ran". Idempotent: a second run
-finds the parent already correct, zero matched variables left, and re-audits.
+finds the duplicate present, the parent already correct, and re-audits.
 
 Exits non-zero if the audit diffs, so a caller can gate on it.
 """
@@ -30,7 +41,17 @@ CONFIG = {
     "abp_fallback": "/Game/FPSTemplate/Demo/Characters/Heroes/Mannequin/Animations/ABP_Mannequin_Base",
     "abp_search_root": "/Game/FPSTemplate",
     "new_parent": "/Script/BreachpointNext.BNAnimInstance",
+    # The DUPLICATE is what BN owns and mutates. The source above is read only, which
+    # is what keeps ABP_BRMannequin3P and everything under FPSTemplate/ BP82's.
+    "bn_duplicate": "/Game/BN/Animation/ABP_BNMannequin",
 }
+
+# THE FOUNDER'S RULE, 12 Aug 2026: the event graph is not cleared until its logic has been
+# moved to C++ 1:1 AND verified. A matched variable list is NOT that bar - it says nothing
+# about whether the ubergraph maths (cardinal direction, root-yaw offset, spring interp)
+# has been ported. Flipping this to True before that port is done silently destroys the
+# only copy of that logic. It stays False until a human has done the move.
+ALLOW_GRAPH_CLEAR = False
 
 AUDIT_FMT = "%-32s | %-52s | %-52s | %s"
 
@@ -219,10 +240,24 @@ def main():
             % CONFIG["new_parent"])
         return 1
 
-    bp = unreal.EditorAssetLibrary.load_asset(abp_path)
-    if bp is None or not isinstance(bp, unreal.AnimBlueprint):
+    source = unreal.EditorAssetLibrary.load_asset(abp_path)
+    if source is None or not isinstance(source, unreal.AnimBlueprint):
         unreal.log_error("NOT AN ANIM BLUEPRINT: %s. Nothing was modified." % abp_path)
         return 1
+
+    # Work on a BN-owned duplicate. The source ABP is never written - it belongs to BP82.
+    target_path = CONFIG["bn_duplicate"]
+    if unreal.EditorAssetLibrary.does_asset_exist(target_path):
+        bp = unreal.EditorAssetLibrary.load_asset(target_path)
+        unreal.log("DUPLICATE: %s already exists, converging it." % target_path)
+    else:
+        bp = unreal.EditorAssetLibrary.duplicate_asset(abp_path, target_path)
+        if bp is None:
+            unreal.log_error("DUPLICATE FAILED: %s -> %s. Nothing was modified."
+                             % (abp_path, target_path))
+            return 1
+        unreal.log("DUPLICATE: %s -> %s (source untouched)" % (abp_path, target_path))
+    abp_path = target_path
 
     # (b) report FIRST - the founder sees the full picture before any mutation.
     matched, unmatched = classify(bp, new_parent)
@@ -244,8 +279,13 @@ def main():
         unreal.BlueprintEditorLibrary.remove_member_variable(bp, name)
         removed.append(name)
 
-    # (e) event graph: only safe to touch when nothing unmatched could be fed by it.
-    if unmatched:
+    # (e) event graph. Preserved by default - see ALLOW_GRAPH_CLEAR at the top. The old
+    # "clear it once every variable matched" behaviour is exactly the trapdoor that rule
+    # closes: matched variables are not a ported ubergraph.
+    if not ALLOW_GRAPH_CLEAR:
+        graph_ok, graph_msg = True, ("PRESERVED - ALLOW_GRAPH_CLEAR is off until the "
+                                     "ubergraph is ported to C++ 1:1 and verified")
+    elif unmatched:
         graph_ok, graph_msg = True, ("left in place - %d unmatched variable(s) may "
                                      "be fed by it, FLAGGED" % len(unmatched))
     else:

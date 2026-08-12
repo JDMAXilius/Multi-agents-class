@@ -8,83 +8,116 @@ The law it serves is CLAUDE.md 7: an asset exists only where UE has no C++ path,
 ## The rule
 
 **`/Game/BN/<Domain>/` mirrors `Source/BreachpointNext/<Domain>/`.** An asset lives in the
-folder named after the code that loads it. If you can't name the source folder, the asset
-probably shouldn't exist.
+folder named after the code that loads it. `Core/` is the exception the founder set: it holds
+the three match-frame Blueprints (GameMode, PlayerController, PlayerState) whose C++ stays in
+`Source/BreachpointNext/Match/`.
 
-Three consequences, each deliberate:
+Two further consequences, each deliberate:
 
 1. **Only folders that hold something get created.** STRUCTURE principle 1 — a folder holding
-   one file is a naming problem, and an empty one is worse. There is no `.gitkeep` scaffolding
-   here; the tree below grows a folder the day a script writes into it.
-2. **Content-only folders are allowed where the mirror has no counterpart.** `Maps/` is the
-   one today: levels are not code and `Source/BreachpointNext/Maps/` will never exist. Call
-   these out here rather than inventing a fake source folder to justify them.
-3. **Reused assets are NOT copied into `/Game/BN/`.** The mannequin, its animations and the
-   four `IA_FPST_*` stay where they live and are referenced. `/Game/BN/` means *BN authored
-   this*, not *BN uses this*. Copying to claim ownership is how a content tree doubles in size.
+   one file is a naming problem, and an empty one is worse. No `.gitkeep` scaffolding here.
+2. **Reference by default; duplicate only where BN will diverge.** `SK_Mannequin`, the
+   animation set and the four `IA_FPST_*` are consumed as-is and stay where they live.
+   The mannequin ABP is the one duplicate, because BN reparents it and migrates its graph —
+   that is divergence, not reuse. Duplicating also leaves the FPSTemplate original untouched,
+   which is what dissolves the BP82 lock collision.
 
 ## The tree
 
 ```
 Content/BN/
-├── Characters/   BP_BNCharacter                 R26 defaults-only child of ABNCharacter
-├── Input/        IMC_BNNext · DA_BNInput        the two the controller soft-references
-└── Maps/         L_BNTest                       content-only: no source counterpart
+├── Core/         BP_BNGameMode · BP_BNPlayerController · BP_BNPlayerState
+├── Characters/   BP_BNCharacter
+├── Animation/    ABP_BNMannequin          duplicate of the FPS ABP, reparented
+├── Input/        IMC_BNNext · DA_BNInput
+└── Data/         DT_BNCharacter           (see "The data tables" below)
 ```
 
-That is the whole of Roadmap 1 — **four assets**. Folders reserved for later roadmaps, created
-only when their first asset is:
+**No map.** `L_BNTest` is descoped — Roadmap 1 runs in an existing level whose WorldSettings
+point at the GameMode. `Tools/bn/setup_r1_testmap.py` is retained but unused; it is not part of
+the artifact list below.
 
-| Folder | Mirrors | First expected occupant |
-|---|---|---|
-| `Animation/` | `Source/BreachpointNext/Animation/` | a BN-authored AnimGraph or linked layer — the Animation roadmap. R1 reparents the FPSTemplate ABP **in place**; nothing lands here yet. |
-| `Weapons/` | `Weapons/` | weapon meshes/montages — out of scope for R1 |
-| `UI/` | `UI/` | WBP layout assets (Tier 4) — out of scope for R1 |
-| `AI/` | `AI/` | `ST_Bot`, EQS queries — out of scope for R1 |
-| `Data/` | `Data/` | tuning CSVs import here; row structs stay in C++ |
-| `FX/` | *(none — content-only)* | Niagara, MetaSounds, materials |
+Reserved, created only when their first asset is: `Weapons/` · `UI/` · `AI/` · `FX/`
+(content-only). `AbilitySystem/`, `Actors/`, `Online/`, `Interfaces/`, `Utilities/`, `Tests/`
+are pure-C++ domains and should stay empty — GEs, cues and attribute sets are C++ classes
+(CLAUDE.md 2). An asset under any of those is a finding.
 
-`Core/`, `Match/`, `Online/`, `Interfaces/`, `Utilities/`, `Tests/`, `Actors/`,
-`AbilitySystem/` are **expected to stay empty forever** — they are pure-C++ domains. An asset
-appearing under any of them is a finding: GEs, cues and attribute sets are C++ classes
-(CLAUDE.md 2), and the PlayerController needs no Blueprint child because its asset references
-are soft + `Config` in `DefaultGame.ini`.
+## Every artifact the editor produces
 
-## Every artifact the editor produces, and what makes it
-
-| # | Artifact | Path | Script | Status |
+| # | Artifact | Path | R26 shape | Status |
 |---|---|---|---|---|
-| 1 | Mapping context | `/Game/BN/Input/IMC_BNNext` | `10_input_assets.py` | **done**, audited 21/21 |
-| 2 | Input config | `/Game/BN/Input/DA_BNInput` | `10_input_assets.py` | **done**, audited 21/21 |
-| 3 | Character BP | `/Game/BN/Characters/BP_BNCharacter` | `20_bp_character.py` | pending |
-| 4 | Test map | `/Game/BN/Maps/L_BNTest` | `setup_r1_testmap.py` | pending |
-| — | `UnarmedAnimLayer=` | `Config/DefaultGame.ini` | `40_unarmed_layer.py` | pending — **not an asset**, a soft class path |
-| — | Reparent the mannequin ABP | in place, under `FPSTemplate/` | `30_reparent_abp.py` | pending — **modifies**, does not create |
+| 1 | Mapping context | `Input/IMC_BNNext` | — | **done**, audited 21/21 |
+| 2 | Input config | `Input/DA_BNInput` | — | **done**, audited 21/21 |
+| 3 | GameMode BP | `Core/BP_BNGameMode` | defaults-only child of `ABNGameMode` | pending |
+| 4 | PlayerController BP | `Core/BP_BNPlayerController` | defaults-only child of `ABNPlayerController` | pending |
+| 5 | PlayerState BP | `Core/BP_BNPlayerState` | defaults-only child of `ABNPlayerState` | pending |
+| 6 | Character BP | `Characters/BP_BNCharacter` | defaults-only child of `ABNCharacter` | pending |
+| 7 | Anim Blueprint | `Animation/ABP_BNMannequin` | duplicate + reparent — **not** R26 | pending |
+| 8 | Character table | `Data/DT_BNCharacter` | needs row struct + CSV first | pending |
 
-Reused and never copied: `SK_Mannequin` · `IA_FPST_Move/Look/Jump/Crouch` · the mannequin
-animation set · the unarmed linked-layer ABP.
+All of 3–6 are legal under R26: a direct BP child of a `BR`/`BN` C++ class, defaults only,
+empty graphs, no new members, named `BP_<CppClassWithoutPrefix>`. #7 is the deliberate
+exception — it carries a graph, and it is Tier 4 (AnimGraph) where C++ has no path.
 
-## Three open blockers
+## The ABP: duplicate, reparent, and **keep the graph**
 
-1. **`UnarmedAnimLayer` is ambiguous.** `40_unarmed_layer.py` writes a value only when exactly
-   one plausible unarmed layer exists; there are nine (`ABP_UnarmedAnimLayers` in four separate
-   trees, each with a `_Feminine` twin, plus `ABP_Unarmed`). It will list them and leave the key
-   empty, and `ResolveAnimLayerClass()` returns null. Precedent: the old module chose
-   `FPSTemplate/Demo/.../Locomotion/Unarmed/ABP_UnarmedAnimLayers_C`.
-2. **No 1P arms mesh exists.** `20_bp_character.py`'s search over `/Game/FPSTemplate` and
-   `/Game/FirstPerson` finds none, so it skips the `Mesh1P` component and says so in the audit.
-   Stage B's "own arms visible (1P)" cannot pass until that art is sourced — Tier 4, not
-   scriptable.
-3. **The ABP reparent collides with BP82's locks.** `30_reparent_abp.py` prefers
-   `ABP_BRMannequin3P`, on BP82's `binary_locks`; its fallback `ABP_Mannequin_Base` sits under
-   `Content/FPSTemplate/`, also BP82's owner path. Law 7 needs that released or handed over
-   before the script runs.
+`30_reparent_abp.py` changes shape. It must:
 
-## Changed on 12 Aug 2026 when this layout was set
+1. **Duplicate** the FPS ABP to `/Game/BN/Animation/ABP_BNMannequin`. The source is read, never
+   written — so `ABP_BRMannequin3P` and `ABP_Mannequin_Base` stay BP82's, untouched.
+2. **Reparent the duplicate** to `UBNAnimInstance`.
+3. **Leave the event graph alone.** The founder's rule: the graph is not cleared until its
+   logic has been moved to C++ **1:1 and verified**. Variable names matching C++ properties is
+   *not* that bar — a matched variable list says nothing about whether the ubergraph maths
+   (cardinal direction, root-yaw offset, spring interpolation) has been ported. Graph clearing
+   becomes an explicit opt-in flag that defaults off, and stays off until the port is done.
 
-`20_bp_character.py` and `setup_r1_testmap.py` wrote to `/Game/BN/` root while the input
-assets already sat in `/Game/BN/Input/` — the tree was inconsistent from its second asset
-onward. Both were repointed at `Characters/` and `Maps/`, and `DefaultGame.ini`'s
-`DefaultPawnClassPath` followed. **No asset moved:** neither had been created yet, and the
-input pair was already home. Doing it now cost one line each; doing it after the first PIE run
-would have meant a redirector.
+The old behaviour — reparent in place and clear the graph once variables matched — is exactly
+the trapdoor this rule closes.
+
+## The data tables
+
+The instruction was to port the old module's tables. **Read on disk, none of the seven fits
+the character spine**, so nothing is ported wholesale:
+
+| Old table | Fits R1? |
+|---|---|
+| `DT_Weapons` · `CT_Combat` | no — weapons and damage are out of scope |
+| `DT_BotAmbitions` · `DT_BotTuning` | no — AI is out of scope |
+| `DT_MatchRules` | no — no respawn or match flow in R1 |
+| `DT_Medals` · `DT_SpotterLines` | no — post-match flavour |
+
+What the spine *does* need is a table that does not exist yet, and it pays off a live law-3
+debt: `UBNGE_InitAttributes` hardcodes **Health 100 · Shield 100 · MoveSpeed 600** in C++
+(`Effects/BNGameplayEffects.cpp`). Those are tuning numbers and law 3 puts them in a CSV.
+
+So `DT_BNCharacter` is authored fresh, in the old module's idiom (`FBRWeaponRow` et al. as the
+pattern), and needs three things in order:
+
+1. `FBNCharacterRow : FTableRowBase` in `Source/BreachpointNext/Data/BNDataRows.h`
+2. `Content/Data/DT_BNCharacter.csv` — the numbers, one row per character archetype
+3. the DT asset, imported by a committed script (`Tools/reimport-tables.ps1` is the precedent)
+
+Then `UBNGE_InitAttributes` reads the row instead of carrying literals.
+
+## Two conflicts the Blueprints introduce
+
+**The pawn class gets two owners.** `ABNGameMode::InitGame` overrides `DefaultPawnClass` from
+`DefaultGame.ini`'s `DefaultPawnClassPath`, and it runs *after* construction — so the ini wins
+over anything `BP_BNGameMode` sets in its own pawn field. Two sources of truth, the quieter one
+winning. Pick one before both exist: either the BP owns the pawn and the ini line is deleted,
+or the ini stays authoritative and the BP's pawn field is left untouched and documented as dead.
+
+**The controller's config properties must survive subclassing.** `InputConfig` and
+`MappingContexts` are `UPROPERTY(Config)` read from `[/Script/BreachpointNext.BNPlayerController]`.
+A BP child's CDO is built from the C++ CDO, so the values should carry — but "should" is not
+evidence. The existing CDO audit rows in `10_input_assets.py` must be re-pointed at
+`BP_BNPlayerController_C` once it exists, and re-run.
+
+## Changed on 12 Aug 2026
+
+- Layout set; `20_bp_character.py` repointed at `Characters/`.
+- `L_BNTest` and the map script descoped — no map needed.
+- `Core/` reserved for the GM/PC/PS Blueprints, reversing this document's first draft, which
+  had asserted `Core/` would stay empty forever.
+- The ABP moved from reparent-in-place to duplicate-then-reparent, with graph clearing gated.

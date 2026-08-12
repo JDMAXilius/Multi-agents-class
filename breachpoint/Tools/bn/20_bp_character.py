@@ -81,6 +81,12 @@ def choose_mannequin_abp(config):
     """Deterministic ABP choice - duplicated verbatim from 30_reparent_abp.py and
     driven by that file's CONFIG (read via ast above), so both scripts always
     agree on the target asset."""
+    # 30 now works on a BN-owned DUPLICATE and leaves the source to BP82. Once that
+    # duplicate exists it IS the anim class - pointing the character at the FPSTemplate
+    # original would hand it the un-reparented brain.
+    bn = config.get("bn_duplicate")
+    if bn and unreal.EditorAssetLibrary.does_asset_exist(bn):
+        return bn, "bn_duplicate"
     for key in ("abp_preferred", "abp_fallback"):
         path = config[key]
         if unreal.EditorAssetLibrary.does_asset_exist(path):
