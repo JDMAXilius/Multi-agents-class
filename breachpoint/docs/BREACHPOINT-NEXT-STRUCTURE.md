@@ -1,214 +1,205 @@
-# BREACHPOINT NEXT — the folder architecture
+# BREACHPOINT NEXT — the framework, file by file
 
-**Cut:** 12 August 2026 · **Status:** structure only — no code, no build wiring.
-**Location:** `Source/BreachpointNext/` (sibling of the existing `Source/Breachpoint/` module).
+**Revised:** 12 August 2026 (v2 — file-level) · **Status:** structure and manifest only. No code.
+**Location:** `Source/BreachpointNext/` — a sibling of `Source/Breachpoint/`, not wired to any build.
 
-This document is the **visual structure** of the reworked framework: where every future file
-goes, and — more importantly — what may *not* go there. It is the map, not the build. Nothing
-in `Breachpoint.uproject`, `Breachpoint.Build.cs`, or the three `*.Target.cs` files was touched;
-`BreachpointNext/` contains only directories and `.gitkeep` markers, so UBT does not see it and
-the existing module compiles exactly as before.
+**62 units · 119 files · 15 top-level folders · 8 subfolders.**
+The module it replaces has **272 files across 34 folders**, and that comparison is the point.
 
-**Why a parallel tree and not an in-place cleanup.** The current module carries 272 source files
-across 34 folders, including 36 UE-template files (`Variant_Horror/`, `Variant_Shooter/`, the three
-`breachpoint*` files) that nothing in the `BR` tree references, plus two folders that are the same
-discipline spelled twice (`anim/` and `Animation/`, `Weapons/` and `FPS/`). A parallel tree means
-every file that lands in it landed on purpose: nothing arrives by inheritance.
+> **Not set in stone.** This is the target shape, and it is expected to move once code is
+> written against it. When a better approach shows up, the structure changes — that is the
+> rule, not an exception to it. What this document buys is that every change is then a
+> *decision* rather than an accretion.
 
 ---
 
-## The three rules that produced this shape
+## The brief this shape answers
 
-1. **One home per concept.** If a file could plausibly live in two folders, the structure is
-   wrong. Projectiles live in `Actors/Projectiles/` and are *referenced* by `Weapons/` — they are
-   not duplicated there.
-2. **A folder is an ownership boundary.** Every top-level folder maps to a discipline in
-   `docs/method/ENGINEERING-DISCIPLINES.md`, so a packet's `owner_path` is always a real path and
-   `guard_laws.py` has something to enforce.
-3. **The folder shape encodes the laws.** `AbilitySystem/Effects/Damage/` being the *only*
-   damage folder is CLAUDE.md law 2 made structural. `Data/Rows/` being the only place a
-   `FTableRowBase` lives is law 3. There is no `Tick/` anything, because of law 4.
+UE 5.8 · native C++ only · multiplayer-native (server-authoritative from the first line) ·
+**GAS purity** · **CommonUI purity** · **less is more**.
+
+Five principles decided every call below. Where they conflicted, the one higher on this list won:
+
+1. **Fewer files, straight to the point.** A file exists because something needs a name. A class
+   that is one function is a function. A folder that holds one file is a naming problem, not a
+   structure. UE lets several `UCLASS`es share a header — that is used deliberately here
+   (`BRMovementAbilities`, `BRGameplayEffects`, `BRAnimNotifies`) wherever the classes are small,
+   related, and always change together.
+2. **Modularity where reuse is real.** Reuse when the second caller exists — not in anticipation
+   of one. Every "generic" layer in the old tree that had exactly one user is gone.
+3. **One home per concept.** If a file could plausibly live in two folders, the structure is wrong.
+4. **Group by domain, never by base class.** This is why there is no `Subsystems/`, no
+   `Managers/`, no `Components/` at the root. A subsystem lives with the thing it serves.
+5. **The shape encodes the laws.** One damage folder (law 2). One row-struct header (law 3).
+   No `Tick/` anything (law 4). No `Blueprints/` (R18). Bots and players share one pawn, because
+   "there is no privileged path" is an architecture statement, not a comment.
 
 ---
 
-## The visual structure
+## The complete tree
 
 ```
 Source/BreachpointNext/
 │
-├── Core/ ─────────────────── the vocabulary everything else speaks
-│   ├── Tags/                 native GameplayTag declarations — ONE source of truth
-│   ├── Types/                shared enums + plain structs, zero logic
-│   ├── Logging/              log categories
-│   ├── Collision/            channels, profiles, trace queries
-│   └── Settings/             UDeveloperSettings — config-backed, never gameplay numbers
+├── Core/ ─────────────────────────────────────────────────────────── 3 units · 5 files
+│   ├── BRGameplayTags.h/.cpp        every native tag, declared once
+│   ├── BRTypes.h                    enums + POD structs (ETeam, EMatchPhase) — header-only
+│   └── BRCore.h/.cpp                log categories · collision channels · team attitude solver
 │
-├── Data/ ─────────────────── law 3: data is not code
-│   ├── Rows/                 every FTableRowBase struct
-│   ├── Assets/               UPrimaryDataAsset definitions
-│   └── Providers/            table ownership + soft-ref resolution (TSoftObjectPtr only)
+├── Data/ ─────────────────────────────────────────────────────────── 3 units · 5 files
+│   ├── BRDataRows.h                 EVERY FTableRowBase, one header — header-only
+│   ├── BRGameData.h/.cpp            GameInstance subsystem: owns the tables, resolves soft refs
+│   └── BRAssetSettings.h/.cpp       UDeveloperSettings: soft refs to tables + ability sets
 │
-├── Input/ ────────────────── intent in, tags out
-│   ├── Config/               InputConfig DataAsset: InputAction → InputTag
-│   └── Components/           the owned InputComponent; produces a TAG, never a call
+├── Input/ ────────────────────────────────────────────────────────── 2 units · 3 files
+│   ├── BRInputConfig.h/.cpp         DataAsset: InputAction → InputTag. No gameplay knowledge
+│   └── BRInputComponent.h           templated tag binding — header-only, no .cpp to write
 │
-├── AbilitySystem/ ────────── law 2: abilities are the only verb
-│   ├── Abilities/
-│   │   ├── Combat/           fire, reload, melee, grenade
-│   │   ├── Movement/         sprint, jump, grapple, crouch
-│   │   └── Equipment/        equip, swap, drop, pickup
-│   ├── Effects/
-│   │   ├── Calculations/     ExecCalcs + ModifierMagnitudeCalculations
-│   │   └── Damage/           THE one damage door — the only spec builder in the codebase
-│   ├── Attributes/           AttributeSets + clamping
-│   ├── Components/           the ASC subclass, ability-granting components
-│   ├── Cues/                 GameplayCue handlers as C++ classes (law 2: all FX via cues)
-│   ├── Tasks/                AbilityTasks
-│   ├── TargetData/           client→server hit transport inside the prediction window
-│   └── Sets/                 AbilitySet DataAssets: what to grant, handles to revoke
+├── AbilitySystem/ ────────────────────────────────────────────────── 16 units · 32 files
+│   ├── BRAbilitySet.h/.cpp          DataAsset: what to grant, handles to revoke on unequip
+│   ├── BRGameplayAbility.h/.cpp     the base: activation policy, input tag, cost/cooldown
+│   ├── BRGameplayCues.h/.cpp        every cue handler as C++ — several UCLASS, one file
+│   │
+│   ├── Abilities/ ───────────────────────────────────────────────── 8 units · 16 files
+│   │   ├── BRGA_Fire.h/.cpp         predicted fire; hitscan OR projectile from the weapon row
+│   │   ├── BRGA_Reload.h/.cpp
+│   │   ├── BRGA_Melee.h/.cpp        notify-window trace
+│   │   ├── BRGA_Grenade.h/.cpp
+│   │   ├── BRGA_Grapple.h/.cpp      predicted pull via a CMC root-motion source
+│   │   ├── BRGA_Equip.h/.cpp        equip · swap · drop — one verb family, one class
+│   │   ├── BRGA_Death.h/.cpp
+│   │   └── BRMovementAbilities.h/.cpp   Sprint · Jump · Crouch — 3 UCLASS, one file
+│   │
+│   ├── Attributes/ ──────────────────────────────────────────────── 1 unit · 2 files
+│   │   └── BRAttributeSet.h/.cpp    Health · Shield · IncomingDamage · move magnitudes. ONE set
+│   │
+│   ├── Components/ ──────────────────────────────────────────────── 1 unit · 2 files
+│   │   └── BRAbilitySystemComponent.h/.cpp   input buffer · tag activation · batched RPC
+│   │
+│   └── Effects/ ─────────────────────────────────────────────────── 3 units · 6 files
+│       ├── BRGameplayEffects.h/.cpp     the generic GE set (cost, cooldown, damage, state
+│       │                                tags) — SetByCaller-driven, several UCLASS, one file
+│       ├── BRDamage.h/.cpp              THE one damage door. The only spec builder that exists
+│       └── BRDamageExecution.h/.cpp     shields→health, headshot, friendly fire
 │
-├── Characters/ ───────────── the pawn is a body, not a brain
-│   ├── Player/               the player pawn
-│   ├── Bot/                  the bot pawn — same pawn contract, no privileged path
-│   ├── Components/           per-pawn components (health display, team, footsteps)
-│   ├── Movement/             the CMC subclass + FSavedMove
-│   └── Camera/               camera modes, view target, spectator
+├── Characters/ ───────────────────────────────────────────────────── 4 units · 8 files
+│   ├── BRCharacter.h/.cpp                    ONE pawn. Players and bots both possess it
+│   ├── BRCharacterMovementComponent.h/.cpp   CMC subclass + FSavedMove_BR in the same header
+│   ├── BRHealthComponent.h/.cpp              attribute → gameplay bridge; owns death detection
+│   └── BRCameraComponent.h/.cpp              first-person view, recoil/kick offsets
 │
-├── Actors/ ───────────────── things that exist in the world
-│   ├── Pickups/              weapon/ammo/powerup pickups
-│   ├── Projectiles/          the ONE projectile home (weapons reference, never redefine)
-│   ├── Volumes/              kill volumes, capture zones, out-of-bounds
-│   ├── Interactables/        doors, terminals, switches
-│   └── Spawning/             spawn points and spawn-selection actors
+├── Actors/ ───────────────────────────────────────────────────────── 3 units · 6 files
+│   ├── BRProjectile.h/.cpp          ONE projectile, row-driven (grenade, rocket, plasma)
+│   ├── BRPickup.h/.cpp              ONE pickup, row-driven (weapon, ammo, powerup)
+│   └── BRPlayerStart.h/.cpp         team-tagged spawn; the SCORING lives in the GameMode
 │
-├── Weapons/ ──────────────── the equipment layer (rework decision D-2 lives here)
-│   ├── Equipment/            slots, the quickbar, the manager component
-│   ├── Instances/            per-weapon runtime instance objects
-│   ├── Firing/               hitscan trace, spread, recoil, fire modes
-│   ├── Ammo/                 reserves, magazines, the named GAS-purity exception
-│   └── Attachments/          scopes, barrels — Phase 2, folder reserved
+├── Weapons/ ──────────────────────────────────────────────────────── 2 units · 4 files
+│   ├── BRWeapon.h/.cpp              the weapon actor: mesh + replicated state. No firing logic
+│   └── BREquipmentComponent.h/.cpp  slots, swap, grant/revoke the weapon's AbilitySet
 │
-├── Animation/ ────────────── law: the graph reads fields, never computes
-│   ├── Instances/            AnimInstances (thread-safe update only)
-│   ├── Layers/               linked anim layers + IBRAnimLayer
-│   ├── Notifies/             AnimNotify / AnimNotifyState (melee windows, footsteps)
-│   ├── Nodes/                custom FAnimNode_* (blocked on an editor module — see ledger)
-│   └── Data/                 anim DataAssets, montage tables
+├── Animation/ ────────────────────────────────────────────────────── 3 units · 6 files
+│   ├── BRAnimInstance.h/.cpp        thread-safe update. The graph READS fields, never computes
+│   ├── BRAnimLayer.h/.cpp           IBRAnimLayer + the linked-layer base; class from a soft row
+│   └── BRAnimNotifies.h/.cpp        melee window · footstep · fire — several UCLASS, one file
 │
-├── AI/ ───────────────────── three-layer brain: ambitions → StateTree → GAS hand
-│   ├── StateTree/            the spine
-│   │   ├── Tasks/
-│   │   ├── Conditions/
-│   │   └── Evaluators/
-│   ├── BehaviorTree/         where BT is the better fit — tasks/decorators/services
-│   │   ├── Tasks/
-│   │   ├── Decorators/
-│   │   └── Services/
-│   ├── EQS/                  EnvQuery generators, tests, contexts
-│   ├── Perception/           sight/hearing config, the bot's world model
-│   ├── Controllers/          AIController, blackboard wiring
-│   └── Ambitions/            the GOAP-style ambition scorer (deterministic, no LLM)
+├── AI/ ───────────────────────────────────────────────────────────── 4 units · 8 files
+│   ├── BRAIController.h/.cpp        possession, perception config, StateTree host
+│   ├── BRAmbitionScorer.h/.cpp      the ambition layer: deterministic utility, no LLM, no Tick
+│   └── StateTree/ ──────────────────────────────────────────────── 2 units · 4 files
+│       ├── BRStateTreeTasks.h/.cpp        several FStateTreeTaskCommonBase, one file
+│       └── BRStateTreeConditions.h/.cpp   several FStateTreeConditionCommonBase, one file
 │
-├── UI/ ───────────────────── CommonUI + MVVM; UI never mutates authoritative state
-│   ├── Components/           reusable widgets (buttons, bars, tiles)
-│   ├── Screens/              full activatable screens
-│   ├── HUD/                  in-match layer
-│   ├── ViewModels/           the ONLY thing widgets bind to — zero polling, zero Tick
-│   ├── Styles/               style assets/classes, tokens
-│   └── Layers/               the CommonUI activatable stack + layer registration
+├── UI/ ───────────────────────────────────────────────────────────── 11 units · 22 files
+│   ├── BRUISubsystem.h/.cpp         LocalPlayer subsystem: the ONLY thing that pushes a screen
+│   ├── BRPrimaryLayout.h/.cpp       the CommonUI activatable stack + layer tags
+│   ├── BRActivatableWidget.h/.cpp   the screen base: input mode, visibility, back handling
+│   │
+│   ├── Components/ ──────────────────────────────────────────────── 3 units · 6 files
+│   │   ├── BRButton.h/.cpp          UCommonButtonBase subclass — the whole button module
+│   │   ├── BRProgressBar.h/.cpp     health · shield · reload — one bar, driven by a ViewModel
+│   │   └── BRReticle.h/.cpp         crosshair + hitmarker
+│   │
+│   ├── ViewModels/ ─────────────────────────────────────────────── 2 units · 4 files
+│   │   ├── BRPlayerViewModel.h/.cpp   health, shield, ammo, equipped weapon
+│   │   └── BRMatchViewModel.h/.cpp    phase, timer, team scores, killfeed
+│   │
+│   └── Screens/ ────────────────────────────────────────────────── 3 units · 6 files
+│       ├── BRHUDScreen.h/.cpp
+│       ├── BRScoreboardScreen.h/.cpp
+│       └── BRPauseScreen.h/.cpp
 │
-├── Match/ ────────────────── the match frame
-│   ├── GameModes/            server-only rules authority
-│   ├── GameStates/           replicated match truth
-│   ├── Host/                 PlayerState + PlayerController — the ASC host pair
-│   ├── Phases/               warmup → live → post
-│   ├── Scoring/              score, kill attribution, killfeed, medals
-│   └── Respawn/              death, respawn timing, spawn selection
+├── Match/ ────────────────────────────────────────────────────────── 4 units · 8 files
+│   ├── BRGameMode.h/.cpp            server-only: phases, spawn selection, scoring rules
+│   ├── BRGameState.h/.cpp           replicated match truth: phase, timer, team scores
+│   ├── BRPlayerState.h/.cpp         the ASC host — outlives the pawn, so respawn is free
+│   └── BRPlayerController.h/.cpp    input owner · UI owner · client RPC target
 │
-├── Subsystems/ ───────────── lifetime-scoped services
-│   ├── GameInstance/         survives level travel
-│   ├── World/                per-world
-│   └── LocalPlayer/          per-local-player (settings, input mapping, UI routing)
+├── Online/ ───────────────────────────────────────────────────────── 2 units · 4 files
+│   ├── BRServerLifecycle.h/.cpp     IBRServerLifecycle — listen now, dedicated behind the seam
+│   └── BRSessionSubsystem.h/.cpp    create · find · join
 │
-├── Online/ ───────────────── D4: sessions, lifecycle, platform
-│   ├── Session/              create/find/join
-│   ├── Lifecycle/            IBRServerLifecycle — listen now, dedicated later
-│   └── Platform/             Steam identity; never trusted without validation
+├── Interfaces/ ───────────────────────────────────────────────────── 1 unit · 2 files
+│   └── BRInterfaces.h/.cpp          IBRTeamAgent, IBRInteractable — so folders talk w/o including
 │
-├── Audio/ ────────────────── D6
-│   ├── Components/           audio components, occlusion, mix control
-│   └── Data/                 sound tables, MetaSound parameter contracts
+├── Utilities/ ────────────────────────────────────────────────────── 2 units · 4 files
+│   ├── BRStatics.h/.cpp             pure helpers only. Nothing here owns state
+│   └── BRCheatManager.h/.cpp        give weapon · set health · spawn bot — the testing lever
 │
-├── Telemetry/ ────────────── measurement, never gameplay
-│   ├── Events/               event structs
-│   └── Sinks/                where they go
-│
-├── Interfaces/ ───────────── cross-discipline UINTERFACEs, so folders talk without including
-│
-├── Utilities/ ────────────── helpers only; nothing here owns state
-│   ├── Libraries/            UBlueprintFunctionLibrary statics
-│   ├── Math/                 pure functions
-│   └── Debug/                cheat manager, debug draw, console commands
-│
-├── Tests/ ────────────────── D7
-│   ├── Specs/                automation specs (Breachpoint.Sim.*, Breachpoint.Bots.*)
-│   └── Gauntlet/             the networked rung — server + 2 clients, assert in threes
-│
-└── Python/ ──────────────── editor-side automation (NOT compiled; UBT ignores non-C++)
-    ├── editor/               commandlets, Remote Control, editor entry points
-    ├── generators/           generated-scripts-over-live-editing: blockouts, input, WBPs
-    └── audits/               read-back audits that prove an asset matches its spec
+└── Tests/ ────────────────────────────────────────────────────────── 2 units · 2 files
+    ├── BRSimSpec.cpp                damage, attributes, equipment — .cpp only, no header
+    └── BRBotSpec.cpp                bot determinism
 ```
 
-**19 top-level folders · 82 leaf directories.**
-
 ---
 
-## Folder ownership — who writes where
+## Where the file count went — the decisions worth arguing with
 
-| Folder | Discipline | Owning agent |
+| Decision | Files saved | Why it holds |
 |---|---|---|
-| `Core/`, `Data/`, `Utilities/`, `Interfaces/` | shared vocabulary | `builder` (single-writer; changes are contract-level) |
-| `AbilitySystem/`, `Weapons/`, `Characters/`, `Actors/` | D1 gameplay math | `sim-builder` |
-| `Match/`, `Subsystems/` | D1 + D2 | `sim-builder` / `netcode-builder` |
-| replication surfaces anywhere | D2 authority | `netcode-builder` (packet + critic REFUTER) |
-| `Animation/` | D3 | `anim-builder` |
-| `Online/` | D4 | `services-builder` |
-| `UI/` | D5 | `ui-builder` |
-| `Audio/` | D6 | `builder` |
-| `Tests/` | D7 | `builder` / `verifier` runs it |
-| `AI/` | D8 | `ai-builder` |
-| `Input/` | intent layer | `builder` |
-| `Python/` | tooling | any builder, per the `ue-editor` skill |
+| **One pawn, not player + bot** | ~6 | Law: bots press the same tags through the same ASC. Two pawn classes create the privileged path the law forbids. |
+| **One projectile, one pickup, row-driven** | ~10 | Grenade vs rocket is a data row, not a subclass. The moment it isn't, subclass — not before. |
+| **One AttributeSet** | ~4 | Splitting into Health/Combat/Movement sets buys nothing at 4v4; it costs an extra `GetSet` at every callsite. |
+| **Firing lives in `BRGA_Fire`, not a `Firing/` layer** | ~8 | Spread, recoil and the trace are the ability's job. A weapon that computes its own fire is a second damage path waiting to happen. |
+| **Several `UCLASS` per file where they always change together** | ~12 | Sprint/Jump/Crouch are 40 lines each. Three files, three headers, three includes for that is ceremony. |
+| **No `Phases/`, `Scoring/`, `Respawn/`** | ~8 | These are methods on `BRGameMode`/`BRGameState`. A folder implies a class; a class implies a lifetime; they have neither. |
+| **CommonUI does the layer stack** | ~6 | `BRPrimaryLayout` + layer tags replaces a hand-rolled screen manager. |
+| **No custom AbilityTasks or TargetData yet** | ~6 | `WaitTargetData`, `WaitGameplayEvent`, `PlayMontageAndWait` and `FGameplayAbilityTargetData_SingleTargetHit` cover the slice. Write one when the engine's actually falls short. |
 
 ---
 
-## Deliberate omissions — folders that will NOT be created
+## Four folders from v1 that are not here
 
-| Not here | Why |
+I removed these when the file-level pass gave each of them zero files. Each is one `mkdir` away.
+
+| Removed | Why |
 |---|---|
-| `Variant_*/` | the template is not the architecture; it was the whole reason for the rework |
-| a second animation folder | `anim/` and `Animation/` in the old tree are one discipline spelled twice |
-| `FPS/` | first-person is a camera and a mesh, not a discipline — it lives in `Characters/Camera/` |
-| `Blueprints/` | R18: zero Blueprint classes; the R26 exception is a defaults-only child and lives in `Content/`, not `Source/` |
-| `Managers/` | a manager is a subsystem or a component; the name hides which |
-| `Common/`, `Misc/`, `Shared/` | the folders where architecture goes to die |
-| `Damage/` at top level | there is one damage door and it is inside `AbilitySystem/Effects/Damage/` |
+| **`Subsystems/`** | Grouping by base class is the same mistake as `Managers/`. `BRGameData` is a subsystem and belongs in `Data/`; `BRUISubsystem` belongs in `UI/`. The folder can only ever hold "things that happen to inherit from the same thing." |
+| **`Audio/`** | Law 2 routes all FX — sound included — through GameplayCues, which are already C++ classes in `AbilitySystem/BRGameplayCues`. The one real gap (unwired UI sounds) is a `CommonButtonStyle` field, not a C++ file. |
+| **`Telemetry/`** | Nothing in the vertical slice writes an event. Add it with its first file. |
+| **`Python/`** | Your Python already lives in `Tools/` (`gen_ui`, `gen_input`, `blockout`, `reimport_tables`). A second Python home inside `Source/` splits the tooling for no gain. |
+
+Also gone from v1: `Actors/Volumes`, `Actors/Interactables`, `Weapons/Attachments`, `Animation/Nodes`
+(blocked on an editor module the project doesn't have), `AI/EQS`, `AI/Perception`, `AI/Ambitions`,
+`UI/Styles`, `UI/Layers`, `UI/HUD` — all zero-file at slice scope.
 
 ---
 
-## What is NOT decided yet
+## Three open decisions
 
-These are open, and naming them here is cheaper than discovering them mid-packet:
+1. **`BehaviorTree/` — StateTree or both?** You named both. Running both means two brains and two
+   places to look for one bug. `BREACHPOINT-AI-BOTS.md` already specifies a StateTree spine, and
+   UE 5.8's direction is StateTree, so the tree above is **StateTree-only**. Say the word if a
+   specific behaviour wants BT and it comes back.
+2. **Second module, or rename over `Source/Breachpoint/`?** Nothing here forecloses either. A
+   second module means `BreachpointNext.Build.cs` + a `Modules` entry in the `.uproject`.
+3. **Flat, or `Public/`+`Private/`?** This tree is flat. `OnSight` (the reference) uses the split.
+   Flipping is mechanical while there are no files; after, it is a 119-file move.
 
-1. **Second module vs replacement.** Does `BreachpointNext` become a second compiled module
-   (its own `.Build.cs` + a `Modules` entry in the `.uproject`), or does it get renamed over
-   `Source/Breachpoint/` once populated? Nothing here forecloses either.
-2. **Public/Private split.** The reference project (`OnSight`) uses `Public/` + `Private/`;
-   the current Breachpoint module does not. This tree is flat — flipping to the split is a
-   mechanical move if you want it, but it doubles every path.
-3. **Migration order.** Which files move first, and whether anything moves at all versus being
-   rewritten against the new shape.
-4. **Relationship to `docs/BREACHPOINT-GAMEPLAY-REWORK.md`.** That document's 29 units / 53
-   files fit inside this tree, but it targets `Source/Breachpoint/` by path. One of the two
-   needs to be repointed before BP90–BP102 are executed.
+---
+
+## What is deliberately not created
+
+`Variant_*` · a second animation folder · `FPS/` (first-person is a camera and a mesh, not a
+discipline) · `Blueprints/` (R18; the R26 defaults-only child lives in `Content/`) · `Managers/` ·
+`Common/`, `Misc/`, `Shared/` · a top-level `Damage/` — there is one door and it is
+`AbilitySystem/Effects/BRDamage`.

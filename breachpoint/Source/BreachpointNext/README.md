@@ -1,29 +1,37 @@
 # BreachpointNext — the reworked framework tree
 
-**Structure only.** This folder contains directories and `.gitkeep` markers — no source files,
-no `.Build.cs`, no entry in `Breachpoint.uproject`. UBT does not see it, and
-`Source/Breachpoint/` builds exactly as it did before.
+**Structure and manifest only.** Directories and `.gitkeep` markers — no source files, no
+`.Build.cs`, no entry in `Breachpoint.uproject`. UBT does not see it, and `Source/Breachpoint/`
+builds exactly as before.
 
-The full visual structure, the ownership table, the deliberate omissions, and the four open
+The complete file-by-file manifest, the reasoning behind every collapse, and the three open
 decisions are in **[`docs/BREACHPOINT-NEXT-STRUCTURE.md`](../../docs/BREACHPOINT-NEXT-STRUCTURE.md)**.
 Read it before adding the first file.
 
-## The short version
-
-19 top-level folders, one per concept, each a real `owner_path`:
+**62 units · 119 files · 15 top-level folders · 8 subfolders** — against 272 files in the
+module it replaces.
 
 ```
-Core  Data  Input  AbilitySystem  Characters  Actors  Weapons  Animation  AI  UI
-Match  Subsystems  Online  Audio  Telemetry  Interfaces  Utilities  Tests  Python
+Core  Data  Input  AbilitySystem  Characters  Actors  Weapons  Animation
+AI  UI  Match  Online  Interfaces  Utilities  Tests
 ```
 
-Three rules govern where a file goes:
+## Before you add a file
 
-1. **One home per concept.** If it could live in two folders, the structure is wrong.
-2. **A folder is an ownership boundary** — it maps to a discipline (D1–D8) so packets can
-   name it and `guard_laws.py` can enforce it.
-3. **The shape encodes the laws.** One damage folder (law 2). One row-struct folder (law 3).
-   No `Tick/` anything (law 4). No `Blueprints/` (R18).
+Five principles decide it, in this order:
 
-Before creating a folder that is not here, check the *deliberate omissions* table in the
-structure doc — several plausible-looking folders are excluded on purpose.
+1. **Fewer files, straight to the point.** A class that is one function is a function. A folder
+   holding one file is a naming problem. Several `UCLASS` may share a header when they are small,
+   related, and always change together.
+2. **Modularity where reuse is real** — when the second caller exists, not in anticipation of one.
+3. **One home per concept.** Plausible in two folders means the structure is wrong.
+4. **Group by domain, never by base class.** No `Subsystems/`, no `Managers/`, no root
+   `Components/`. A subsystem lives with the thing it serves.
+5. **The shape encodes the laws.** One damage door. One row-struct header. No `Tick/`. No
+   `Blueprints/`. One pawn for players and bots.
+
+Check the *not created* and *four folders removed* tables in the structure doc before adding a
+folder — several plausible-looking ones are absent on purpose.
+
+**This will change.** The manifest is a target, not a contract. When code proves a better shape,
+change it — and record why in the structure doc.
