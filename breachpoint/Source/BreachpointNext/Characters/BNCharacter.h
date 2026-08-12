@@ -20,11 +20,18 @@ public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	virtual void OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
+	virtual void OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
 
 	UClass* GetCurrentWeaponAnimLayer() const;
 	UClass* ResolveAnimLayerClass();
 
 protected:
+	// Camera height above the capsule centre, standing. Crouch shifts it down by the
+	// capsule's own shrink, otherwise the view floats above the crouched head.
+	static constexpr float CameraStandingHeight = 64.f;
+
 	UPROPERTY(Config)
 	FSoftClassPath UnarmedAnimLayer;
 

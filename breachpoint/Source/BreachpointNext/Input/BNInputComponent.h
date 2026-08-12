@@ -11,12 +11,17 @@ class BREACHPOINTNEXT_API UBNInputComponent : public UEnhancedInputComponent
 	GENERATED_BODY()
 
 public:
+	// False = the tag has no InputAction in the config, i.e. that control is dead.
+	// Callers log it; a silent miss is how input "works on my machine" and ships broken.
 	template <class UserClass, typename FuncType>
-	void BindActionByTag(const UBNInputConfig* Config, FGameplayTag InputTag, ETriggerEvent TriggerEvent, UserClass* Object, FuncType Func)
+	bool BindActionByTag(const UBNInputConfig* Config, FGameplayTag InputTag, ETriggerEvent TriggerEvent, UserClass* Object, FuncType Func)
 	{
-		if (const UInputAction* Action = Config ? Config->FindInputActionByTag(InputTag) : nullptr)
+		const UInputAction* Action = Config ? Config->FindInputActionByTag(InputTag) : nullptr;
+		if (!Action)
 		{
-			BindAction(Action, TriggerEvent, Object, Func);
+			return false;
 		}
+		BindAction(Action, TriggerEvent, Object, Func);
+		return true;
 	}
 };

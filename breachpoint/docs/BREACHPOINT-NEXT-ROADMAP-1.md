@@ -16,6 +16,52 @@ review-complete (one blocking anim-thread race found and fixed; all graph-facing
 now published only from the thread-safe update). Goal 7 scripts in progress. Next:
 **Checkpoint C** — run the `Tools/bn/` scripts, then the mannequin animates in both windows.
 
+### Log — 12 August 2026, G4 reworked onto real input assets
+
+G4 shipped with the controller calling `NewObject<UInputAction>` in `SetupInputComponent`:
+four transient InputActions and a transient IMC, fabricated per run. It played at Checkpoint A,
+but there was no asset to open, nothing for the founder to change without a rebuild, and
+`BNInputConfig`/`BNInputComponent` — built by G4.1 — were dead code the controller never called.
+Reworked to the shape G4.2 actually specifies:
+
+- `ABNPlayerController` is `Config=Game` and holds exactly two references, both
+  `TSoftObjectPtr`: `InputConfig` and `MappingContexts[]` (added at priority = index).
+  Set in `DefaultGame.ini`, so no BP child of the controller has to exist (law 7 prefers the ini).
+- The controller creates its own `UBNInputComponent` before `Super::SetupInputComponent()` —
+  the engine's sanctioned override point. It does NOT ride the project-wide
+  `DefaultInputComponentClass`, which names the OLD module's `BRInputComponent`; NEXT depends
+  on nothing there.
+- `BindActionByTag` now returns bool and every miss is logged. A tag with no InputAction used
+  to bind nothing, silently — that is how a dead control ships.
+- `Tools/bn/10_input_assets.py` creates `IMC_BNNext` + `DA_BNInput`, reusing the FPSTemplate IAs
+  per the reuse verdict but ONLY when the asset's value type matches what the handler reads;
+  otherwise it creates a BN-owned IA and says so in the audit. It audits the
+  `ABNPlayerController` CDO, not just the assets — the CDO rows prove the ini actually resolved.
+- Mappings replicate the founder-verified Checkpoint A feel exactly (swizzle+negate on Move,
+  negate-Y on Look). Gamepad is deliberately NOT added: reproduce verified behaviour in assets
+  first, add new behaviour as its own change.
+
+Also found and fixed, unrelated to the rework: **`BreachpointNext.Build.cs` never had
+`PublicIncludePaths.Add("BreachpointNext")`.** The module has no Public/Private split, so its
+own root was not on the include path and every `.cpp` failed to open its own header. The module
+had never been compiled on the founder's machine — it landed from the cloud branch. The old
+module carries the equivalent line; this one was missing since creation.
+
+Character, same pass: crouch moved the camera by the capsule's shrink only, leaving the view
+floating above the crouched head — `OnStartCrouch`/`OnEndCrouch` now offset it by
+`HalfHeightAdjust`. The `MoveSpeed` attribute delegate was never unregistered, and the ASC
+outlives the pawn (it is the PlayerState's), so every respawn left a dead binding on it;
+removed in `EndPlay`. `GetMesh()->SetOwnerNoSee(true)` moved into the C++ constructor so the
+class is correct without the BP.
+
+**Rung 1: PARTIAL.** All 15 `BreachpointNext` compile actions pass, zero errors. The target
+still FAILS on `Source/Breachpoint/` — BP82's in-flight folder rename (`Animation/` →
+`Animations/`) moved the files but not the `#include "Animation/..."` lines, and
+`BRMannequinAnimInstance.h` declares both `IsCrouching` and `isCrouching`, which UHT rejects as
+one name. Untouched here: that is BP82's packet. Checkpoint A/B cannot be re-run, and
+`10_input_assets.py` cannot run, until it compiles — the script correctly refuses when
+`/Script/BreachpointNext.BNInputConfig` will not load.
+
 ## The one-line goal
 
 A first-person character on the mannequin skeleton, possessed and playable — ASC living on the

@@ -5,6 +5,7 @@
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
 ABNCharacter::ABNCharacter()
@@ -13,13 +14,45 @@ ABNCharacter::ABNCharacter()
 
 	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
 	CameraComponent->SetupAttachment(GetCapsuleComponent());
-	CameraComponent->SetRelativeLocation(FVector(0.f, 0.f, 64.f));
+	CameraComponent->SetRelativeLocation(FVector(0.f, 0.f, CameraStandingHeight));
 	CameraComponent->bUsePawnControlRotation = true;
 
 	bUseControllerRotationYaw = true;
 
+	// The 3P body is everyone else's view of us; the owner sees the 1P arms instead.
+	GetMesh()->SetOwnerNoSee(true);
+
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 	GetCharacterMovement()->bCanWalkOffLedgesWhenCrouching = true;
+}
+
+void ABNCharacter::OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
+{
+	Super::OnStartCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
+	CameraComponent->SetRelativeLocation(FVector(0.f, 0.f, CameraStandingHeight - HalfHeightAdjust));
+}
+
+void ABNCharacter::OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
+{
+	Super::OnEndCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
+	CameraComponent->SetRelativeLocation(FVector(0.f, 0.f, CameraStandingHeight));
+}
+
+void ABNCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	// The ASC outlives the pawn (it is the PlayerState's); an unregistered binding
+	// per respawn accumulates on it forever.
+	if (MoveSpeedChangedHandle.IsValid())
+	{
+		if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
+		{
+			ASC->GetGameplayAttributeValueChangeDelegate(UBNAttributeSet::GetMoveSpeedAttribute())
+				.Remove(MoveSpeedChangedHandle);
+		}
+		MoveSpeedChangedHandle.Reset();
+	}
+
+	Super::EndPlay(EndPlayReason);
 }
 
 UAbilitySystemComponent* ABNCharacter::GetAbilitySystemComponent() const

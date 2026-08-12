@@ -5,17 +5,26 @@
 #include "BNPlayerController.generated.h"
 
 class UBNAbilitySystemComponent;
-class UInputAction;
+class UBNInputConfig;
 class UInputMappingContext;
 struct FInputActionValue;
 
-UCLASS()
+UCLASS(Config=Game)
 class BREACHPOINTNEXT_API ABNPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 
 protected:
 	virtual void SetupInputComponent() override;
+
+	// The controller's only asset references, and the only place input assets are named.
+	// Soft + Config, so DefaultGame.ini sets them and no Blueprint child is needed.
+	UPROPERTY(Config, EditDefaultsOnly, Category = "Input")
+	TSoftObjectPtr<UBNInputConfig> InputConfig;
+
+	// Added at priority = index: ini order is context order.
+	UPROPERTY(Config, EditDefaultsOnly, Category = "Input")
+	TArray<TSoftObjectPtr<UInputMappingContext>> MappingContexts;
 
 	void HandleMove(const FInputActionValue& Value);
 	void HandleLook(const FInputActionValue& Value);
@@ -25,19 +34,4 @@ protected:
 	void HandleCrouchReleased();
 
 	UBNAbilitySystemComponent* GetBNAbilitySystemComponent() const;
-
-	UPROPERTY()
-	TObjectPtr<UInputAction> MoveAction;
-
-	UPROPERTY()
-	TObjectPtr<UInputAction> LookAction;
-
-	UPROPERTY()
-	TObjectPtr<UInputAction> JumpAction;
-
-	UPROPERTY()
-	TObjectPtr<UInputAction> CrouchAction;
-
-	UPROPERTY()
-	TObjectPtr<UInputMappingContext> DefaultMappingContext;
 };

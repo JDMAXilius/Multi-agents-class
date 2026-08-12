@@ -1,28 +1,15 @@
 {
-  "ticket": "TICKET_BP82_ANIM_SPINE_FROM_TEMPLATE",
+  "ticket": "BREACHPOINT-NEXT-ROADMAP-1 G4/G7 - PlayerController input on soft asset refs",
   "owner_path": [
-    "mcp-bp/",
-    "Source/Breachpoint/FPS/",
-    "Source/Breachpoint/Match/",
-    "Source/Breachpoint/Character/",
-    "Source/Breachpoint/Weapons/BPWeaponBase.h",
-    "Source/Breachpoint/Weapons/BPWeaponBase.cpp",
-    "docs/contracts/animation.md",
-    "docs/ANIM-PORT-LEDGER.md",
-    "docs/tickets/TICKET_BP82_ANIM_SPINE_FROM_TEMPLATE.md",
+    "Source/BreachpointNext/",
+    "Tools/bn/",
     "Config/DefaultGame.ini",
-    "Content/Characters/",
-    "Content/FPSTemplate/",
-    "Config/DefaultEngine.ini",
-    "Breachpoint.uproject"
+    "docs/BREACHPOINT-NEXT-ROADMAP-1.md",
+    "Content/BN/"
   ],
   "binary_locks": [
-    "Content/Characters/ABP_BRMannequin1P.uasset",
-    "Content/Characters/ABP_BRMannequin3P.uasset",
-    "Content/Characters/BP_BRcharacter.uasset",
-    "Content/FPSTemplate/Demo/Characters/Heroes/Mannequin/Animations/LinkedLayers/ABP_ItemAnimLayersBase.uasset",
-    "Content/FPSTemplate/Blueprints/BP_FPST_GameMode.uasset",
-    "Content/Core/PC_BR.uasset"
+    "Content/BN/Input/IMC_BNNext.uasset",
+    "Content/BN/Input/DA_BNInput.uasset"
   ],
-  "authorized_by": "founder, 8 Aug 2026 - integrate from the editor, create/delete Blueprints as needed; 9 Aug 2026 - Source/Breachpoint/Match/ added to resolve contract_gap BP82-9 (BPGameMode spawns the meshless C++ pawn)"
+  "authorized_by": "founder, 12 Aug 2026 - go over the BreachpointNext PlayerController and Character; inputs on the PlayerController as soft references, set correctly in the editor. Supersedes the stale BP82 claim (that packet's work is staged, uncommitted, and untouched by this one)."
 }
