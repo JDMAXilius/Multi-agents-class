@@ -44,7 +44,7 @@ REUSE_ROOT = "/Game/FPSTemplate/Input/Actions"
 # Modifier shorthand used in KEYS below: (python class name, {property: value}).
 SWIZZLE = ("InputModifierSwizzleAxis", {})               # default order YXZ: X<->Y
 NEGATE_ALL = ("InputModifierNegate", {})
-NEGATE_Y = ("InputModifierNegate", {"b_x": False, "b_y": True, "b_z": False})
+NEGATE_Y = ("InputModifierNegate", {"x": False, "y": True, "z": False})
 
 # The four controls, and the exact mappings the C++ handlers were verified against
 # at Checkpoint A. Move reads Axis.Y as forward, so W/S are swizzled onto Y;
@@ -53,7 +53,7 @@ ACTIONS = [
     {
         "id": "Move",
         "tag": "Input.Move",
-        "value_type": "AXIS2_D",
+        "value_type": "AXIS2D",
         "reuse": REUSE_ROOT + "/IA_FPST_Move",
         "keys": [("W", [SWIZZLE]), ("S", [SWIZZLE, NEGATE_ALL]),
                  ("D", []), ("A", [NEGATE_ALL])],
@@ -61,7 +61,7 @@ ACTIONS = [
     {
         "id": "Look",
         "tag": "Input.Look",
-        "value_type": "AXIS2_D",
+        "value_type": "AXIS2D",
         "reuse": REUSE_ROOT + "/IA_FPST_Look",
         "keys": [("Mouse2D", [NEGATE_Y])],
     },
@@ -97,13 +97,9 @@ def _value_type(name):
 
 
 def _make_key(key_name):
-    for attempt in (lambda: unreal.Key(key_name=key_name), lambda: unreal.Key(key_name)):
-        try:
-            return attempt()
-        except Exception:
-            continue
+    # FKey's python constructor takes no arguments; key_name is Read-Write.
     key = unreal.Key()
-    key.key_name = key_name
+    key.set_editor_property("key_name", key_name)
     return key
 
 
@@ -116,22 +112,10 @@ def _key_name_of(key):
 
 
 def _make_tag(tag_name):
-    for lib_name in ("BlueprintGameplayTagLibrary", "GameplayTagLibrary"):
-        lib = getattr(unreal, lib_name, None)
-        fn = getattr(lib, "request_gameplay_tag", None) if lib else None
-        if fn is not None:
-            try:
-                return fn(unreal.Name(tag_name))
-            except Exception:
-                continue
-    for attempt in (lambda: unreal.GameplayTag(tag_name=tag_name),
-                    lambda: unreal.GameplayTag(tag_name)):
-        try:
-            return attempt()
-        except Exception:
-            continue
+    # FGameplayTag.TagName is Read-Only and python has no RequestGameplayTag; the struct's
+    # own text importer is the one route in. Round-tripped by _tag_name_of in the audit.
     tag = unreal.GameplayTag()
-    tag.tag_name = tag_name
+    tag.import_text('(TagName="%s")' % tag_name)
     return tag
 
 
@@ -139,8 +123,7 @@ def _tag_name_of(tag):
     try:
         return str(tag.get_editor_property("tag_name"))
     except Exception:
-        pass
-    return str(getattr(tag, "tag_name", tag))
+        return str(tag)
 
 
 def _path_of(value):
@@ -158,12 +141,22 @@ def _asset_path(package_path):
     return "%s.%s" % (package_path, package_path.rsplit("/", 1)[-1])
 
 
+def _class_label(asset_class):
+    """asset_class arrives either as a python type (unreal.InputAction) or as a
+    unreal.Class instance (from load_class); only the latter has get_name()."""
+    if isinstance(asset_class, type):
+        return asset_class.__name__
+    try:
+        return str(asset_class.get_name())
+    except Exception:
+        return ""
+
+
 def _create_asset(name, package_path, asset_class):
     """AssetTools accepts a null factory for plain UObject-derived assets; the
     dedicated factories are tried first only because they set editor metadata."""
     tools = unreal.AssetToolsHelpers.get_asset_tools()
-    factory_name = asset_class.get_name() + "Factory"
-    factory_class = getattr(unreal, factory_name, None)
+    factory_class = getattr(unreal, _class_label(asset_class) + "Factory", None)
     if factory_class is not None:
         try:
             return tools.create_asset(name, package_path, asset_class, factory_class())
@@ -229,7 +222,14 @@ def build_mapping_context(actions_by_id):
             mapping.set_editor_property(
                 "modifiers", [_make_modifier(m, imc) for m in modifier_specs])
             mappings.append(mapping)
-    imc.set_editor_property("mappings", mappings)
+
+    # UE 5.8 deprecated the flat `mappings` array in favour of the DefaultKeyMappings
+    # struct. Write the live one and empty the deprecated one, so a PostLoad migration
+    # of leftovers cannot double every binding.
+    data = unreal.InputMappingContextMappingData()
+    data.set_editor_property("mappings", mappings)
+    imc.set_editor_property("default_key_mappings", data)
+    imc.set_editor_property("mappings", [])
 
     if not unreal.EditorAssetLibrary.save_asset(IMC_PATH):
         unreal.log_error("SAVE FAILED: %s" % IMC_PATH)
@@ -286,7 +286,12 @@ def audit(routes):
     rows.append(("IMC exists on disk", "True", str(imc is not None)))
     rows.append(("InputConfig exists on disk", "True", str(config is not None)))
 
-    mappings = list(imc.get_editor_property("mappings")) if imc else []
+    mappings = []
+    if imc:
+        data = imc.get_editor_property("default_key_mappings")
+        mappings = list(data.get_editor_property("mappings")) if data else []
+        rows.append(("deprecated `mappings` array empty", "0",
+                     str(len(list(imc.get_editor_property("mappings"))))))
     bindings = list(config.get_editor_property("bindings")) if config else []
 
     for spec in ACTIONS:

@@ -54,6 +54,31 @@ outlives the pawn (it is the PlayerState's), so every respawn left a dead bindin
 removed in `EndPlay`. `GetMesh()->SetOwnerNoSee(true)` moved into the C++ constructor so the
 class is correct without the BP.
 
+**Editor run — DONE, 21/21.** `10_input_assets.py` ran through `UnrealEditor-Cmd
+-run=pythonscript` (the MCP bridge lives in the editor process and was not reachable this
+session). It created `/Game/BN/Input/IMC_BNNext` and `/Game/BN/Input/DA_BNInput`, reused all
+four `IA_FPST_*` (every value type already matched — Move/Look AXIS2D, Jump/Crouch BOOLEAN, so
+no BN-owned IA was needed), and audited 21 rows clean. Re-run: still 21/21, idempotent. The two
+rows that matter are the last two — the `ABNPlayerController` CDO resolves both assets out of
+`DefaultGame.ini`, which is the claim "input is wired" actually rests on.
+
+Four UE-5.8 Python surfaces the script had to be corrected against, all found by probing the
+live editor rather than by guessing:
+- `FKey`'s python constructor takes no arguments; `key_name` is set via `set_editor_property`.
+- `FGameplayTag.TagName` is Read-Only and python has no `RequestGameplayTag` — the struct's
+  `import_text('(TagName="…")')` is the only way in.
+- `UInputModifierNegate`'s properties are `x/y/z`, not `bX/bY/bZ`.
+- **`UInputMappingContext::Mappings` is deprecated in 5.8** — the live property is
+  `DefaultKeyMappings`. The script writes that and empties the deprecated array, so a PostLoad
+  migration of leftovers cannot double every binding. An audit row asserts it stays empty.
+
+Two C++ changes fell out of the editor work, both about scriptability, neither changing
+runtime behaviour: `FBNInputBinding` needed `BlueprintType` (UE generates no python bindings
+for unexposed structs, so no committed script could build a row), and its properties plus
+`UBNInputConfig::Bindings` moved from `EditDefaultsOnly` to `EditAnywhere` — a DataAsset on
+disk IS an instance, so `EditDefaultsOnly` sets `CPF_DisableEditOnInstance` and python refuses
+to write with "cannot be edited on instances". Same details panel either way.
+
 **Rung 1: PARTIAL.** All 15 `BreachpointNext` compile actions pass, zero errors. The target
 still FAILS on `Source/Breachpoint/` — BP82's in-flight folder rename (`Animation/` →
 `Animations/`) moved the files but not the `#include "Animation/..."` lines, and
