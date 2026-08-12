@@ -12,3 +12,12 @@ class BREACHPOINTNEXT_API UBNGE_InitAttributes : public UGameplayEffect
 public:
 	UBNGE_InitAttributes();
 };
+
+UCLASS()
+class BREACHPOINTNEXT_API UBNGE_State : public UGameplayEffect
+{
+	GENERATED_BODY()
+
+public:
+	UBNGE_State();
+};

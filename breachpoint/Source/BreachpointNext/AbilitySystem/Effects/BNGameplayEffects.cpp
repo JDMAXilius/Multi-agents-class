@@ -27,3 +27,8 @@ UBNGE_InitAttributes::UBNGE_InitAttributes()
 		Modifiers.Add(Modifier);
 	}
 }
+
+UBNGE_State::UBNGE_State()
+{
+	DurationPolicy = EGameplayEffectDurationType::Infinite;
+}

@@ -3,6 +3,8 @@
 #include "AbilitySystem/BNAbilitySystemComponent.h"
 #include "AbilitySystem/Attributes/BNAttributeSet.h"
 #include "AbilitySystem/Effects/BNGameplayEffects.h"
+#include "AbilitySystem/Abilities/BNMovementAbilities.h"
+#include "Core/BNGameplayTags.h"
 
 ABNPlayerState::ABNPlayerState()
 {
@@ -43,5 +45,15 @@ void ABNPlayerState::GrantDefaults()
 	{
 		FBNAbilitySetHandles Handles;
 		DefaultAbilitySet->GiveToAbilitySystem(AbilitySystemComponent, Handles);
+	}
+	else
+	{
+		FGameplayAbilitySpec JumpSpec(UBNGA_Jump::StaticClass(), 1);
+		JumpSpec.GetDynamicSpecSourceTags().AddTag(BNTags::Input_Jump);
+		AbilitySystemComponent->GiveAbility(JumpSpec);
+
+		FGameplayAbilitySpec CrouchSpec(UBNGA_Crouch::StaticClass(), 1);
+		CrouchSpec.GetDynamicSpecSourceTags().AddTag(BNTags::Input_Crouch);
+		AbilitySystemComponent->GiveAbility(CrouchSpec);
 	}
 }

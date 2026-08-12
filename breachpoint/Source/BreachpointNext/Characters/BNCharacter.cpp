@@ -16,6 +16,9 @@ ABNCharacter::ABNCharacter()
 	CameraComponent->bUsePawnControlRotation = true;
 
 	bUseControllerRotationYaw = true;
+
+	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
+	GetCharacterMovement()->bCanWalkOffLedgesWhenCrouching = true;
 }
 
 UAbilitySystemComponent* ABNCharacter::GetAbilitySystemComponent() const
