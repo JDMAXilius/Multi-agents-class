@@ -13,6 +13,6 @@ public class BreachpointServerTarget : TargetRules
 		Type = TargetType.Server;
 		DefaultBuildSettings = BuildSettingsVersion.V7;
 		IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_8;
-		ExtraModuleNames.Add("Breachpoint");
+		ExtraModuleNames.AddRange(new string[] { "Breachpoint", "BreachpointNext" });
 	}
 }

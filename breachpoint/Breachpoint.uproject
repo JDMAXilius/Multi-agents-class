@@ -13,6 +13,14 @@
 				"AIModule",
 				"UMG"
 			]
+		},
+		{
+			"Name": "BreachpointNext",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine"
+			]
 		}
 	],
 	"Plugins": [
