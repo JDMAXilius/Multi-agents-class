@@ -161,6 +161,14 @@ work proved — then read back and audited.*
 
 ---
 
+## How the crew runs this roadmap
+
+Executed by the NEXT crew ([`BREACHPOINT-NEXT-CREW.md`](BREACHPOINT-NEXT-CREW.md) — 3 agents)
+in four waves: **W1** G1+G2 (done, pre-crew) · **W2** G3+G4 → `bn-builder`, reviewed by
+`bn-critic`, ends at Checkpoint A · **W3** G5 → same loop, Checkpoint B · **W4** G6
+(`bn-builder`) + G7 (`bn-editor`), Checkpoint C. Every wave: build → one-lens multiplayer
+review → merge → checkpoint. The founder's Stage B pass is the only DONE.
+
 ## The founder's test protocol (the definition of done)
 
 **Stage A — standalone PIE.** Walk, look, jump, crouch. Everything responds; no log spam.
