@@ -114,6 +114,33 @@ pattern), and needs three things in order:
 
 Then `UBNGE_InitAttributes` reads the row instead of carrying literals.
 
+## The defaults, set 12 Aug 2026 — audit 10/10
+
+| Asset | Property | Value |
+|---|---|---|
+| `BP_BNGameMode` | `DefaultPawnClass` | `BP_BNCharacter_C` |
+| | `PlayerControllerClass` | `BP_BNPlayerController_C` |
+| | `PlayerStateClass` | `BP_BNPlayerState_C` |
+| `BP_BNCharacter` | mesh `SkeletalMeshAsset` | `SKM_Manny` |
+| | mesh `AnimClass` | `ABP_BNMannequin_C` |
+| | mesh `AnimationMode` | `AnimationBlueprint` |
+| | mesh `bOwnerNoSee` | `true`, inherited from the C++ constructor |
+| `BP_BNPlayerController` | `InputConfig` · `MappingContexts` | inherited from `DefaultGame.ini` — **no override needed** |
+| `BP_BNPlayerState` | `InitEffect` | `BNGE_InitAttributes`, inherited from the C++ constructor |
+
+Three things that came out of doing it:
+
+1. **`SK_Mannequin` is a Skeleton, not a SkeletalMesh.** Assigning it is refused with
+   "not valid SkeletalMesh". The mesh is `SKM_Manny`, same folder. `20_bp_character.py` has
+   carried the wrong path since it was written and would have failed identically — fixed.
+2. **The controller's `Config` properties survive subclassing** — the open question from the
+   first draft, answered. `BP_BNPlayerController`'s CDO resolves both from
+   `[/Script/BreachpointNext.BNPlayerController]` with no override, so the Blueprint stays
+   genuinely empty; its `.uasset` was not even dirtied by this pass, nor was the PlayerState's.
+3. **The GameMode's three class fields already held the BP classes before they were set**,
+   while the C++ CDO held the C++ classes. The mechanism is unexplained. They were written
+   explicitly regardless, so the state is intentional rather than incidental.
+
 ## Two conflicts the Blueprints introduce
 
 **The pawn class gets two owners.** `ABNGameMode::InitGame` overrides `DefaultPawnClass` from

@@ -30,7 +30,10 @@ BP_PACKAGE_PATH = "/Game/BN/Characters"
 BP_NAME = "BP_BNCharacter"
 BP_PATH = BP_PACKAGE_PATH + "/" + BP_NAME
 PARENT_CLASS_PATH = "/Script/BreachpointNext.BNCharacter"
-MESH_3P_PATH = "/Game/FPSTemplate/Demo/Characters/Heroes/Mannequin/Meshes/SK_Mannequin"
+# SKM_Manny, not SK_Mannequin: the latter is at the same path but is the SKELETON, and
+# assigning it to SkeletalMeshAsset is refused ("not valid SkeletalMesh"). Confirmed live
+# via AssetTools.get_asset_class -> "Skeleton".
+MESH_3P_PATH = "/Game/FPSTemplate/Demo/Characters/Heroes/Mannequin/Meshes/SKM_Manny"
 ARMS_SEARCH_ROOTS = ("/Game/FPSTemplate", "/Game/FirstPerson")
 ARMS_NAME_TOKENS = ("arms", "hands")
 ARMS_COMPONENT_NAME = "Mesh1P"
