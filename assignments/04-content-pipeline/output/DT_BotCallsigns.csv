@@ -1,16 +1,16 @@
 RowName,Callsign,ProfileHint,Note
-B01,HOLDFAST,Recruit,Reads as a bot that holds a line rather than presses it — fits Recruit's 500ms reaction and dulled aim.
-B02,TRIPWIRE,Recruit,"An alarm, not a shooter — matches Recruit's rare grenade use and 25% accuracy."
-B03,BACKSTOP,Recruit,"Last line, not first contact — suits the slowest, softest tuning row."
-B04,FALLBACK,Recruit,"Named for retreating, not engaging — matches Recruit's dulled StateTree behavior."
-B05,STANDBY,Recruit,Waits before it acts — pairs with the 500ms reaction floor.
-B06,LOCKSTEP,Marine,"Moves with the squad, nothing flashy — the baseline profile in a word."
-B07,FIREWALL,Marine,"Solid and situational, like the 45% accuracy / situational grenade row."
-B08,IRONCLAD,Marine,"Dependable middle ground — no edge, no gap, just Marine's default numbers."
-B09,WARDEN,Marine,"Holds a post competently — matches Marine's 0.65 cover_preference, steady not sharp."
-B10,ANCHOR,Marine,Keeps the line where the default profile keeps it — the baseline callsign.
-B11,DEADBOLT,Veteran,Locks on and doesn't let go — fits 65% accuracy and the tightest aim_error.
-B12,CROSSFIRE,Veteran,Aggressive engagement fits the sharpened StateTree and 1.00 rocket_contest.
-B13,NIGHTFALL,Veteran,Quiet until it commits — matches Veteran's tactical grenade use.
-B14,REDLINE,Veteran,Pushed to the fastest setting — pairs with Veteran's 220ms reaction.
-B15,GRIDLOCK,Veteran,Shuts an area down cleanly — fits the 0.85 cover_preference and short commit_window.
+B01,Dulledge,Recruit,"GDD: 'Same StateTree, dulled' is the exact descriptor for the Recruit behavior column"
+B02,Softaim,Recruit,"accuracy_pct=0.25, lowest of the three rows"
+B03,Shakygrip,Recruit,"reaction_jitter_ms=120, highest jitter of the three rows"
+B04,Slowdraw,Recruit,reaction_ms=500 (slowest of the three profiles) — the callsign names the delay itself
+B05,Wideshot,Recruit,"aim_error_deg=8.0, widest cone of the three rows, hence a shot that misses wide"
+B06,Midpace,Marine,"reaction_ms=320, exact middle of 500/320/220 across the three rows"
+B07,Evenkeel,Marine,"reaction_jitter_ms=80, mid value between Recruit's 120 and Veteran's 60"
+B08,Steadyaim,Marine,"accuracy_pct=0.45, the middle value of the three rows"
+B09,Coverwise,Marine,"cover_preference=0.65, mid value between Recruit's 0.45 and Veteran's 0.85"
+B10,Tightline,Marine,"aim_error_deg=5.0, mid value between Recruit's 8.0 and Veteran's 3.0"
+B11,Honedline,Veteran,"GDD: 'Same StateTree, sharpened' is the exact descriptor for the Veteran behavior column"
+B12,Tightaim,Veteran,"aim_error_deg=3.0, lowest (tightest) of the three rows"
+B13,Coverlock,Veteran,"cover_preference=0.85, highest of the three rows"
+B14,Longtrack,Veteran,"target_memory_s=5.0, highest of the three rows"
+B15,Deadeye,Veteran,"accuracy_pct=0.65, highest of the three rows"

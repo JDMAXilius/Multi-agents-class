@@ -91,5 +91,24 @@
         "supports_gap": true
       }
     ]
+  },
+  "arena_callouts": {
+    "key": "arena_callouts",
+    "title": "Six of seven named arena landmarks are never spoken",
+    "promise": "Footstep and weapon audio are the information system \u2026 the 35 m sightline cap and open three-level sightlines mean threats are usually visible before they are lethal.",
+    "citation": "BREACHPOINT-GDD-VERTICAL-SLICE.md \u00a72.7 (Information Without Radar)",
+    "proven": true,
+    "evidence": [
+      {
+        "check": "arena_manifest landmarks named by any line in DT_SpotterLines",
+        "result": "6 of 7 never spoken: Mezzanine Catwalks, The Gantry, South Barricade, North Barricade, West Stack, East Stack",
+        "supports_gap": true
+      },
+      {
+        "check": "a zone/callout trigger exists to fire a per-landmark line",
+        "result": "none \u2014 no event the game raises would play such a line",
+        "supports_gap": true
+      }
+    ]
   }
 }

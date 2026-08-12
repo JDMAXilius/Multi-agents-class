@@ -5,308 +5,331 @@
 Gameplay Ability System, Steam listen server). Shields over finite health, a two-weapon
 carry, one contested Rocket Launcher on a 90 s timer, and a Grappleshot.
 
-A RAG pipeline that reads BREACHPOINT's own design document and shipped data tables, then
-writes three pieces of content the game is provably missing — and refuses to land any of
-it until an adversarial critic has argued against it.
+A RAG pipeline that reads BREACHPOINT's own design document, shipped data tables **and
+shipped code**, generates a pool of candidates, ranks them, and only then lets an
+adversarial critic try to break the survivors.
 
 ```bash
 python3 run_pipeline.py          # replay the committed run — stdlib only, no API key
 ```
 
+It drives the project's **real crew** — `curators/spotter.md` and `critic.md`, loaded from
+`breachpoint/.claude/agents/`, not copied — because the crew already contains the authored
+owner of this exact job.
+
 ---
 
-## 1. The knowledge base is the game's real GDD
+## 1. The knowledge base is the game's own material
 
 No placeholder lore, and no copy of the GDD that could quietly drift from it. `rag.py`
 indexes the capstone's live files, in place, by repo-relative path:
 
 | Source | Chunks | Canon | Why it is in the KB |
 |---|---:|---|---|
-| `breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md` | 37 | `slice` | The document the game is being built from — the shipped design |
-| `breachpoint/Content/Data/DT_SpotterLines.csv` | 3 | `slice` | 63 shipped announcer lines — **the authored voice itself**, not a description of it |
-| `breachpoint/Content/Data/DT_Medals.csv` | 1 | `slice` | The 11 medals and the trigger each one fires on |
-| `breachpoint/Content/Data/DT_Weapons.csv` | 1 | `slice` | The three-weapon sandbox, with real tuning |
-| `breachpoint/Content/Data/DT_BotTuning.csv` | 1 | `slice` | The Recruit/Marine/Veteran profiles |
-| `breachpoint/Content/Data/DT_MatchRules.csv` | 1 | `slice` | 25 kills / 8:00 / sudden death |
-| `breachpoint/Content/Data/arena_manifest.json` | 21 | `slice` | The arena and its callout landmarks |
-| `breachpoint/BREACHPOINT-GDD-FULL-CONCEPT.md` | 30 | `phase2` | The Phase-2 game — **indexed but tagged, because it is the trap** (§9) |
+| `BREACHPOINT-GDD-VERTICAL-SLICE.md` | 37 | `slice` | The document the game is built from |
+| `Content/Data/DT_SpotterLines.csv` | 3 | `slice` | 63 shipped announcer lines — **the authored voice itself**, not a description of it |
+| `Content/Data/DT_Medals.csv` | 1 | `slice` | The 11 medals and the trigger each fires on |
+| `Content/Data/DT_Weapons.csv` | 1 | `slice` | The three-weapon sandbox with real tuning |
+| `Content/Data/DT_BotTuning.csv` | 1 | `slice` | The Recruit/Marine/Veteran profiles |
+| `Content/Data/DT_MatchRules.csv` | 1 | `slice` | 25 kills / 8:00 / sudden death |
+| `Content/Data/arena_manifest.json` | 21 | `slice` | The arena and its named callouts |
+| **`Source/…/Telemetry/BRTelemetrySubsystem.h`** | 16 | `slice` | **The telemetry the game actually records** — see §6 |
+| `BREACHPOINT-GDD-FULL-CONCEPT.md` | 30 | `phase2` | The Phase-2 game — indexed but tagged, because it is the trap (§9) |
 
-**95 chunks, 8 sources, 65 slice / 30 phase2.**
+**111 chunks, 9 sources, 81 slice / 30 phase2.**
 
-Two decisions carry most of the retrieval quality:
+Three decisions carry the retrieval quality:
 
-**Chunks are headed sections, not fixed windows.** A GDD is already structured. `### 2.7
-Information Without Radar` is a semantically complete unit, and a 512-character window
-would sever the sentence "the slice cuts it" from the heading that makes it findable.
-Every chunk keeps its heading trail, source file and line span, so every citation in
-`output/rag_trace.md` reads `file:line-line` and can be opened.
+**Chunks are headed sections, not fixed windows.** A GDD is already structured; `### 2.7
+Information Without Radar` is a complete unit, and a 512-character window would sever "the
+slice cuts it" from the heading that makes it findable. Headers chunk per `struct`, so a
+field list stays intact. Every chunk keeps its heading trail, source and line span, so
+every citation in `output/rag_trace.md` can be opened.
 
 **Chunks are tagged `slice` or `phase2`.** BREACHPOINT has two GDDs describing the same
 game at two scopes, and the Phase-2 one documents systems the slice explicitly cuts. Both
-are true documents, which is exactly what makes an untagged KB dangerous: retrieval will
-happily hand back a cut system as canon. §9 shows it doing precisely that.
+are true documents, which is what makes an untagged KB dangerous. §9 shows it failing.
 
-> BM25, implemented in `rag.py`, not embeddings. At ~95 chunks recall is not the
-> constraint, the queries are full of rare exact tokens that lexical search is *better*
-> at (`Kill.Rocket.Multi`, `Grappleshot`, `push_threshold`), and it adds no dependency and
-> no network call. At 10,000 chunks the answer flips; here an embedding index would be a
-> worse retriever with more moving parts.
+**A design document is not a schema.** Adding the C++ header was not tidiness — it was the
+fix for the worst defect this pipeline produced. §6.
+
+> BM25, implemented in `rag.py`, not embeddings. `CREW_PLAYBOOK.md` §14 reached the same
+> conclusion independently: *"No vector store: at this project's scale the corpus fits in
+> context, and a folder of version-controlled docs beats a database you have to keep in
+> sync."* At 111 chunks recall is not the constraint, and the queries are full of rare
+> exact tokens lexical search is *better* at — `Kill.Rocket.Multi`, `SelfInflictedDeaths`,
+> `push_threshold`.
 
 ---
 
-## 2. The three gaps, proven from the repo before anything is generated
+## 2. The agents are the project's, not the assignment's
 
-"Content my game needs" is a claim, and claims in this project carry evidence
-(`CLAUDE.md` law 6). So the pipeline opens with `gaps.py`, which does not describe what is
-missing — it runs checks against the shipped files that pass or fail:
+Assignment #3 loaded the crew's real definitions rather than copying them, on the grounds
+that a copy is a fork that drifts. This does the same, and it matters more here:
+`CREW_MAP.md` already routes *"Flavor text the game ships (`DT_SpotterLines`, medals)"* to
+**spotter — available now**.
+
+Reading `spotter.md` means inheriting constraints no generic "write announcer lines"
+prompt would produce:
+
+- generate a **POOL** (~10 per slot) — *"one option is not a choice"*
+- hard caps: **48 characters** for an event line, **140** for a coach line
+- a line may only name a place the arena manifest named
+- **no lore, no fiction, no characters** — inventing narrative is a finding
+- fallback lines must stand alone — no live score, no player name
+- **coach lines are M4-gated**: without telemetry they are *"invented advice"*
+
+`crew.py` **parses the character caps out of `spotter.md`** rather than hard-coding them,
+and exits if the parse fails. A gate that guesses its own threshold is not a gate — and it
+means editing `spotter.md` changes this pipeline's gates.
+
+---
+
+## 3. The three gaps, proven from the repo before anything is generated
+
+"Content my game needs" is a claim, and claims here carry evidence (`CLAUDE.md` law 6). So
+the pipeline opens with `gaps.py`, which runs checks that pass or fail against real files:
 
 ```
 $ python3 run_pipeline.py --gaps
-  PROVEN     announcer_coverage: Four of eleven medals award in silence
-  PROVEN     coach_fallback:     The offline coach line has no canned table to fall back to
-  PROVEN     bot_callsigns:      Bots fill up to 7 of 8 slots and none of them has a name
+  PROVEN  announcer_coverage: Four of eleven medals award in silence
+  PROVEN  coach_fallback:     The offline coach line has no canned table to fall back to
+  PROVEN  bot_callsigns:      Bots fill up to 7 of 8 slots and none of them has a name
+  PROVEN  arena_callouts:     Six of seven named arena landmarks are never spoken  (not filled)
 ```
 
 | # | The gap | The GDD's promise | The proof (machine-checked) |
 |---|---|---|---|
-| **1** | Four of eleven medals award **in total silence** | §2.9: "killfeed + medals (Double Kill, Killing Spree, Grapple Kill, **Rocket multi-kill**) — canned, instant, deterministic" | Joining `DT_Medals.TriggerId` → `DT_SpotterLines.TriggerId` leaves **4 orphans**: Blast Radius (`Kill.Rocket.Multi`), Breach (`Kill.First`), Last Word (`Match.SuddenDeath.Win`), Spree Ender (`Kill.SpreeEnder`) |
-| **2** | The Spotter's **offline fallback table does not exist** | §3.3: "canned-line DataTable fallback shipped in the build … **No connectivity ⇒ the game is identical minus flavor**" | No `*coach*.csv` in `Content/Data`; **0 hits** for `coach` across all `.cpp/.h`; of 6 match-end rows in `DT_SpotterLines`, **0** reference a telemetry stat, which §3.3 requires of a coach line |
-| **3** | **Bots have no names**, and bots are most of the killfeed | §1.3: "Solo play is Team Slayer with **seven bots**" | `BRHUDDirector.cpp:276,278` render `GetPlayerName()`; **0** sites anywhere set a bot name; no callsign table on disk |
+| **1** | Four of eleven medals award **in total silence** | §2.9: "killfeed + medals (Double Kill, Killing Spree, Grapple Kill, **Rocket multi-kill**) — canned, instant, deterministic" | Joining `DT_Medals.TriggerId` → `DT_SpotterLines.TriggerId` leaves **4 orphans**: Blast Radius, Breach, Last Word, Spree Ender |
+| **2** | The Spotter's **offline fallback table does not exist** | §3.3: "canned-line DataTable fallback shipped in the build … **No connectivity ⇒ the game is identical minus flavor**" | No `*coach*.csv`; **0 hits** for `coach` across all `.cpp/.h`; of 6 match-end rows, **0** reference a telemetry stat |
+| **3** | **Bots have no names**, and bots are most of the killfeed | §1.3: "Solo play is Team Slayer with **seven bots**" | `BRHUDDirector.cpp:276,278` render `GetPlayerName()`; **0** sites set a bot name; no callsign table |
+| **4** | Six of seven arena landmarks are **never spoken** | §2.7: without radar, "footstep and weapon audio are the information system" | Only *The Core* appears in any line. **Proven and deliberately NOT filled** — no zone trigger exists to fire a per-landmark line, so the content would be ahead of its system |
 
-The gap prover is a gate, not a preamble. If a gap ever stops being provable — someone
-lands the table — the pipeline exits `4` and refuses to generate, because filling a filled
-gap is waste and the honest place to catch that is before the model is called.
+The prover is a gate, not a preamble: if a gap stops being provable the pipeline exits `4`
+rather than generate into a filled gap. Gap 4 shows the converse — a proven gap the
+pipeline **declines** to fill, with the reason recorded.
 
 Full output: **[`output/gap_report.md`](output/gap_report.md)**.
 
 ---
 
-## 3. What it generated
+## 4. What it generated
 
 | Output | Rows | What the game does with it |
 |---|---:|---|
-| **[`output/DT_SpotterLines_Additions.csv`](output/DT_SpotterLines_Additions.csv)** | 12 | Appends to the shipped `DT_SpotterLines` — 3 announcer variants for each of the 4 silent medals, so a player earning one twice doesn't hear the same clip |
-| **[`output/DT_CoachLines.csv`](output/DT_CoachLines.csv)** | 10 | The canned match-end coach table. Each row is a telemetry condition + a line with a `{substitution_token}`, so the offline fallback still "references ≥ 1 telemetry stat" as §3.3 demands |
-| **[`output/DT_BotCallsigns.csv`](output/DT_BotCallsigns.csv)** | 15 | Killfeed/scoreboard names for bots, spread 5/5/5 across the Recruit, Marine and Veteran tuning profiles |
+| **[`DT_SpotterLines_Additions.csv`](output/DT_SpotterLines_Additions.csv)** | 12 | Appends to the shipped table — 3 announcer variants for each silent medal |
+| **[`DT_CoachLines.csv`](output/DT_CoachLines.csv)** | 12 | The canned match-end coach table, keyed to real telemetry, 2 per predicate |
+| **[`DT_BotCallsigns.csv`](output/DT_BotCallsigns.csv)** | 15 | Killfeed names, 5 per tuning profile |
 
-Every schema field matches a real table in `Content/Data/` or a field name lifted from the
-GDD's Appendix C telemetry schema. Nothing in `output/` was written by hand.
+**118 candidates were generated to land these 39 rows.** Nothing in `output/` was written
+by hand.
 
 ---
 
-## 4. Architecture
+## 5. Architecture
 
 ```mermaid
 flowchart TD
     subgraph KB["knowledge base — the game's own files"]
-        GDD["BREACHPOINT-GDD-VERTICAL-SLICE.md<br/>tagged canon: slice"]
-        FULL["BREACHPOINT-GDD-FULL-CONCEPT.md<br/>tagged canon: phase2"]
-        TABLES[("Content/Data/*.csv<br/>63 shipped announcer lines<br/>= the voice spec")]
+        GDD["GDD-VERTICAL-SLICE.md<br/>canon: slice"]
+        FULL["GDD-FULL-CONCEPT.md<br/>canon: phase2"]
+        TABLES[("Content/Data/*.csv<br/>63 shipped lines = the voice spec")]
+        HDR[("BRTelemetrySubsystem.h<br/>what the game RECORDS")]
     end
 
-    GAPS{{"gaps.py — prove the gap from disk<br/>medal join · grep · schema check<br/>NOT PROVEN ⇒ exit 4, generate nothing"}}
-    KB --> IDX["rag.py — heading-aware chunker<br/>+ BM25 · 95 chunks"]
-    IDX -- "scope=slice, boost exemplars" --> RET["retrieve top-k<br/>(citation + line span + score)"]
+    GAPS{{"gaps.py — prove the gap from disk<br/>NOT PROVEN ⇒ exit 4, generate nothing"}}
+    KB --> IDX["rag.py — heading/struct-aware chunker<br/>+ BM25 · 111 chunks"]
+    IDX -- "scope=slice, boost exemplars" --> RET["retrieve top-k<br/>citation + line span + score"]
     GAPS --> RET
+    HDR ==> SLOTS{{"slots built from REAL fields<br/>a predicate with no backing<br/>field never becomes a slot"}}
+    SLOTS --> GEN
 
-    RET -- "context (verbatim)" --> GEN["GENERATOR<br/>'everything you know must come<br/>from the retrieved context'"]
-    GEN --> GA{{"gate A — deterministic<br/>schema · word caps · enum values<br/>RowName uniqueness"}}
-    GA -- "exact error fed back, 1 retry" --> GEN
-    GA --> LINT{{"canon lint — deterministic<br/>greps §6's CUT systems +<br/>foreign IP. Cannot be argued with."}}
+    RET -- "context (verbatim)" --> GEN["SPOTTER — spotter.md<br/>generate a POOL, ~10 per slot"]
+    GEN --> GA{{"gate A — schema · char caps<br/>· sources[] non-empty · enums<br/>exact error fed back, 1 retry"}}
+    GA -- retry --> GEN
+    GA --> JUDGE["CRITIC — JUDGE mode<br/>rank every candidate per slot"]
+    JUDGE --> SEL[["the PIPELINE slices top K<br/>selection is arithmetic, not judgment"]]
 
-    LINT --> CRIT["CRITIC — REFUTER mode<br/>lore-break · tone-drift ·<br/>schema-risk · redundancy"]
-    CRIT -- "high severity only" --> REV["GENERATOR — revise<br/>touch ONLY the named rows"]
-    REV --> GB{{"gate B — re-validate<br/>+ re-lint"}}
+    SEL --> LINT{{"canon lint — deterministic<br/>§6 CUT systems · foreign IP<br/>· invented narrative"}}
+    LINT --> ROWCHK{{"row invariant<br/>(same rule as gate A)"}}
+    ROWCHK --> REF["CRITIC — REFUTER mode<br/>attack the survivors"]
+    REF -- "high severity only" --> REV["SPOTTER — revise<br/>only the named rows"]
+    REV --> GB{{"gate B — re-validate<br/>SAME invariant + re-lint"}}
     GB -- "lint still dirty" --> STOP(["exit 3 — not landed"])
-    CRIT -- "PASS / medium+low" --> LAND
+    REF -- "PASS / medium+low" --> LAND
     GB --> LAND[["land the CSV"]]
 
-    CRIT -. "medium + low" .-> RISK[("open_risks.json<br/>carried to the human lead")]
-    LAND --> CSV[("DT_SpotterLines_Additions.csv<br/>DT_CoachLines.csv<br/>DT_BotCallsigns.csv")]
-    RET -.-> TRACE[("rag_trace.md — query,<br/>chunk, output side by side")]
-    CRIT -.-> CLOG[("critic_log.md — before,<br/>finding, after")]
+    REF -. "medium + low" .-> RISK[("open_risks.json")]
+    LAND --> CSV[("3 game-ready tables")]
+    RET -.-> TRACE[("rag_trace.md")]
+    JUDGE -.-> JLOG[("judge_log.md")]
+    REF -.-> CLOG[("critic_log.md")]
 ```
+
+**The pool stage is the project's own doctrine, not an invention.** `CREW_PLAYBOOK.md` §13:
+
+> Divergent jobs add ONE stage to the standard pipeline — **generate → score → select** —
+> before the critic. The scorer is the critic in JUDGE mode ranking candidates; the REFUTER
+> pass still runs on the survivors.
+
+That is Class 05's *"generate 10, keep 3"*, and the playbook is blunter about why:
+*"Restraint is failure — one option is not a choice."* **The pipeline, not the model,
+performs the selection** — it slices the top K from the judge's ranking, so selection is
+arithmetic and cannot drift.
 
 **Two reviewers, on purpose.** The **canon lint** is deterministic Python that greps for
-the systems §6 lists as cut (motion tracker, radar, plasma, vehicles, FFA, flag modes) and
-for another game's vocabulary. It cannot be talked out of a finding, and it fired in the
-naive run when the LLM critic rated the same line only `medium`. The **critic** argues
-about meaning, which no regex can. Neither alone is enough.
+systems §6 lists as cut, another game's vocabulary, and invented narrative. It cannot be
+talked out of a finding, and in the naive run it blocked a line the LLM critic rated only
+`medium`. The **critic** argues about meaning, which no regex can.
 
-**Only `high` blocks.** Medium and low findings are real and go to
-[`output/open_risks.json`](output/open_risks.json) rather than evaporating — the same rule
-Assignment #3 landed on after a first version that found something every round and let
-nothing ship.
+**Only `high` blocks.** Medium and low go to
+[`output/open_risks.json`](output/open_risks.json) rather than evaporating.
 
 ---
 
-## 5. RAG, shown rather than claimed
+## 6. The defect that mattered most — and it was mine
 
-**[`output/rag_trace.md`](output/rag_trace.md)** (772 lines) carries all three jobs: the
-exact query, every retrieved chunk *verbatim as the generator received it* with its
-citation, canon tag and BM25 score, and the landed rows beneath. One worked example, from
-the callsigns job:
+The first version of this pipeline shipped a coach table where **nine of ten rows keyed on
+telemetry the game does not record**: `fights_lost_below_40_shields`, `accuracy_ar`,
+`grapple_kills`, `rocket_holds`.
 
-**Query** — `scope=slice`, boost `{DT_BotTuning.csv: 2.0}`
-```
-bots fill every unfilled slot difficulty profiles Recruit Marine Veteran
-killfeed scoreboard player name team slayer
-```
+They came from GDD **Appendix C**, which describes the telemetry BREACHPOINT *intends* to
+collect. `BRTelemetrySubsystem.h` records what it *has*: `Kills`, `Deaths`, `Assists`,
+`SelfInflictedDeaths`, `FriendlyFireKills`, `TimeInMatchSeconds`. A knowledge base of
+design documents **cannot tell those apart** — both read as authoritative statements about
+the same system.
 
-**Top chunk** — `breachpoint/Content/Data/DT_BotTuning.csv:2-4`, canon `slice`, BM25 **27.02**
-```text
-DT_BotTuning.csv (existing shipped table)
-Name,reaction_ms,...,accuracy_pct,aim_error_deg,switch_margin,...,rocket_contest,push_threshold,cover_preference,...
-Recruit,500,20,120,0.25,8.0,0.30,1400,400,0.30,1.00,0.45,35.0,90.0,2.0,600,...
-Marine,320,20,80,0.45,5.0,0.20,900,300,0.60,0.95,0.65,35.0,90.0,3.5,350,...
-Veteran,220,20,60,0.65,3.0,0.15,600,200,1.00,0.85,0.85,35.0,90.0,5.0,220,...
-```
+`spotter.md` had predicted it exactly:
 
-**Output** — retrieved values appear in the generated rows, per row, as reasoning:
-```
-B05,STANDBY, Recruit, Waits before it acts — pairs with the 500ms reaction floor.
-B11,DEADBOLT,Veteran, Locks on and doesn't let go — fits 65% accuracy and the tightest aim_error.
-B14,REDLINE, Veteran, Pushed to the fastest setting — pairs with Veteran's 220ms reaction.
-```
+> **Coach lines — M4 and not before:** … *a coach line without a real predicate behind it
+> is invented advice.*
 
-Every one of those numbers is in the chunk above. `0.65` appears in **no other retrieved
-chunk** — it exists only in this table — so B09's citation of it is traceable to this
-retrieval and nothing else. (`500`/`220` also appear in the §2.8 bot table at
-`…VERTICAL-SLICE.md:195-210`, which was retrieved at rank 2; I am not claiming those two
-are uniquely sourced.) That is the retrieval being load-bearing rather than decorative —
-and §6 shows what happened on the one row where the generator misread this same table.
+Three structural fixes, not a prompt tweak:
 
----
+1. The header is **in the knowledge base**, with a per-declaration C++ chunker.
+2. Coach **slots are built from the real field set** — a predicate with no backing field
+   never becomes a slot, so the model is never offered the chance to invent one.
+3. A gate checks every declared field against the parsed `UPROPERTY` names, matching
+   **whole names**. The first matcher used a substring test, which passes
+   `melee_kills_rear` against `Kills` — that is how nine bad rows survived review.
 
-## 6. What the critic caught
+### Two more defects, both in my code, both found by running it
 
-**8 findings across 3 jobs; 3 rows corrected before landing.** Full log with computed
-before/after diffs: **[`output/critic_log.md`](output/critic_log.md)**. Three worth naming.
+**The matcher silently deleted half the work.** `snake_to_pascal("SelfInflictedDeaths")`
+returns `"Selfinflicteddeaths"` — correct for snake_case input, silently wrong for input
+already in PascalCase. Three of six predicates were dropped as "not recorded", the table
+landed with 6 rows instead of 12, and **nothing complained**, because a dropped slot just
+looks like a smaller table. Fixed by normalising both sides; and dropped slots are now
+**logged**, so "the matcher is broken" and "the table is small" cannot look alike.
 
-### A factual contradiction with a retrieved chunk — `high`, corrected
+**The revision gate was weaker than the generation gate.** The critic correctly demanded
+every `TelemetryField` be the exact PascalCase `UPROPERTY` name — UE resolves properties by
+name and the lookup is case-sensitive, so `deaths` never matches `Deaths` and the row can
+never fire. The spotter changed the column and left the `{snake_case}` token in the text,
+and **12 of 12 rows landed with the declared field and the substitution token
+disagreeing** — a defect introduced *by the correction*, waved through by a post-review
+check looser than the pre-review one. Both paths now share one invariant function.
 
-The strongest catch in the run, because the critic refuted the generator using the very
-chunk both had been given.
+> That last one generalises past this assignment: **a review loop whose post-review check is
+> looser than its pre-review check can have the reviewer's own correction introduce the
+> defect**, and it looks like success the whole way through.
 
-| | |
-|---|---|
-| **Row** | `B09` (callsign WARDEN) |
-| **Objected to** | `matches Marine's 0.65 push_threshold, steady not sharp.` |
-| **Canon cited** | `DT_BotTuning.csv:3` — `Marine,320,20,80,0.45,5.0,0.20,900,300,0.60,0.95,0.65,…` |
-| **Why** | "The note cites 0.65 as Marine's `push_threshold`, but the shipped table has `push_threshold=0.95` for Marine — **0.65 is actually `cover_preference`**, so the row misstates a canonical data value." |
-| **Correction landed** | `matches Marine's 0.65 cover_preference, steady not sharp.` |
-
-The generator read the right row and grabbed the wrong column. A human reviewer skims past
-that; a critic holding the same chunk counts the commas.
-
-### A collision with an existing shipped row — `high` ×2, corrected
-
-`Kill.SpreeEnder` fires when *you end someone else's* spree. The generator wrote it from
-the wrong point of view, and the critic caught that it collided with a line already in the
-table:
-
-| Row | Before | Finding | After |
-|---|---|---|---|
-| `S25a` | `Spree ended.` | reads identically to the player's *own* spree being interrupted — inverts what medal M11 rewards | `Enemy spree ended.` |
-| `S25b` | `Killing spree stopped.` | "nearly a negation of **S04b's** `Killing spree.`" — two rows in one table that read as opposites | `Their spree, stopped.` |
-
-Catching S25b required holding both the *generated* rows and the *shipped* table at once.
-That is a retrieval result, not a prompt result: `DT_SpotterLines.csv:50-64` was in context.
-
-### Tone drift the deterministic lint caught first — naive run
-
-In the pre-tweak run (§9) the generator wrote `Nice shot.` for a spree-ender. The LLM
-critic rated it `medium` — "a direct, chatty compliment to the player, breaking the
-third-person telegraphic register." The canon lint rated the same string `high` and
-blocked the landing. The regex was right and the model was too generous; this is the
-argument for keeping both reviewers.
+Verified on the landed table: **0 of 12 mismatches**, down from 12 of 12.
 
 ---
 
-## 7. Does it sound like BREACHPOINT?
+## 7. What the critic caught
+
+**7 findings across 3 jobs; 4 rows corrected before landing.** Full log with
+pipeline-computed before/after diffs: **[`output/critic_log.md`](output/critic_log.md)**.
+
+### A table-wide logic defect no single row would reveal — `high`
+
+The critic worked out that the `Priority` column encoded **two opposite conventions**:
+
+> C02 (`Deaths>=15`) is a strict subset of C01 (`Deaths>12`), and C01's Priority (1) beats
+> C02's Priority (2) … so **C02 never fires for any Deaths value**; a player with 20 deaths
+> still gets C01's milder *'Peek less, hold cover more'* line. … No single consistent
+> tie-break rule makes all 12 rows reachable: lower-wins kills C02/C04, higher-wins kills
+> C05/C07/C09/C11 instead.
+
+This is only visible when several rows compete for one slot — which is what the pool stage
+produces. The correction landed, and the pipeline verifies it: **6 of 6 field pairs now
+consistent, every row reachable.**
+
+### A factual contradiction with a retrieved chunk — earlier run, `high`
+
+> **`B09`** — *"matches Marine's 0.65 push_threshold"*. Canon cited: `DT_BotTuning.csv:3`
+> — `push_threshold=0.95`; **0.65 is `cover_preference`**. The generator read the right row
+> and grabbed the wrong column. Corrected before landing.
+
+### Arithmetic the generator asserted and could not support — `medium`, carried
+
+> **`B08`** — *"aim_error_deg=5.0, exact midpoint of Recruit 8.0 and Veteran 3.0"*. The
+> midpoint of 8.0 and 3.0 is **5.5**. The shipped value is right; the stated derivation is
+> false, *"so any curator trusting this Note's formula will derive wrong numbers next
+> time."*
+
+Rated `medium`, so per the project's rule it **landed anyway**, into `open_risks.json`.
+That trade-off is deliberate — a reviewer that always finds something lets nothing ship —
+and this is it firing in public rather than described in the abstract.
+
+---
+
+## 8. Does it sound like BREACHPOINT?
 
 Measured against the 63 shipped lines, not judged by feel:
 
 | | shipped (63) | **landed (12)** | naive run (12) |
 |---|---|---|---|
 | Words per line — min/median/max | 1 / 2 / 6 | **2 / 3 / 4** | 3 / 4 / 5 |
-| Mean words | 2.49 | **3.08** | 4.08 |
+| Characters, max (cap 48) | 27 | **26** | 30 |
 | Exclamation marks | 0 | **0** | 0 |
 | `Kill.*` rows scoped `Audience=Self` | 100% | **100%** | **0%** |
 
-**Verdict: yes, with one reservation.**
+**Verdict: yes.** The announcer additions sit inside the shipped register — clipped,
+declarative, no exclamation, every kill-event row scoped `Self` with
+`RepeatCooldown_s=20`, matching all 24 shipped `Kill.*` rows. Max length 26 characters
+against a 48 cap; the shipped table's own max is 27.
 
-The announcer additions sit inside the shipped register — clipped, declarative, no
-exclamation, and every kill-event row scoped `Self` and `RepeatCooldown_s=20`, matching how
-all 24 shipped `Kill.*` rows are scoped. The landed set runs ~0.6 words longer on average
-than the shipped table, which is the honest miss: `Rocket kill. Multiple down.` is a
-touch wordier than `Rocket denied.` It is inside the shipped 1–6 range, so it will not
-sound foreign, but the shipped table is terser than what I generated.
+The coach lines land at 104 characters against the 140 cap, 12/12 carrying a telemetry
+token that now matches its declared field exactly, and every field name lifted from the
+header rather than invented. The callsigns are the strongest fit — `Dulledge`, `Midpace`,
+`Honedline` — all ≤ 9 characters against a 12-character budget, spread 5/5/5, and each
+`Note` citing a specific value from `DT_BotTuning` rather than a vibe.
 
-The coach lines land squarely: 20 words max against the GDD's 30-word cap, 10/10 carrying
-a telemetry token, and every field name drawn from Appendix C rather than invented. The
-callsigns are the strongest fit — `HOLDFAST`, `DEADBOLT`, `GRIDLOCK` read as squad
-callsigns next to a human Steam name, all ≤ 9 characters against a 12-character killfeed
-budget, and spread exactly 5/5/5 across the tuning profiles.
-
-**One output is more derivative than I would like.** Coach row `C01` came back as *"You
-lost {fights_lost_below_40_shields} fights below 40% shields — break off and let them
-recharge"* — which is very nearly §3.3's own worked example. That is retrieval doing its
-job loudly, but it means C01 is quotation, not authorship. The other nine rows are novel;
-C01 stays because the line is genuinely correct, and it is flagged here rather than
-quietly counted as generated content.
-
----
-
-## 8. Honest limits
-
-The rungs this work has and has not climbed (`CLAUDE.md` law 6 — *compiles ≠ works*):
-
-- **These are CSVs on disk, not imported DataTables.** Nothing here has been through UE's
-  importer, and no line has been heard in a match. The schema is validated against the
-  shipped tables' columns and value domains; that is a text-level check, not an engine one.
-  Importing them is a separate ticket with a binary-asset lock.
-- **Generator and critic are the same model.** Assignment #3's separation was structural —
-  the verifier had no write tools. Here the separation is only role and prompt, which is
-  weaker, and the C02 finding below is the kind of thing a genuinely independent reviewer
-  might have caught in the first pass instead of the second.
-- **One medium finding is a real defect that shipped to `open_risks.json`.** Coach `C02`
-  compares `shield_break_to_kill_conversion` against a 0–1 threshold while the accuracy
-  fields in the same table are 0–100, so the line may render "converted 0.42 of those
-  breaks." It is carried, not fixed — fixing it is a telemetry-schema decision, not a
-  content one.
-- **Five medium findings total are carried, not applied**, including two redundancy calls
-  (`FALLBACK`/`BACKSTOP`, `IRONCLAD`/`LOCKSTEP` encode near-identical personas).
+**The honest weakness:** the callsign critic flagged that *"13 of the 15 rows invent
+generic-shooter nickname tropes."* It rated this `medium`, so it landed. I think it is half
+right — `Dulledge` and `Honedline` quote the GDD's own words for those columns
+(*"Same StateTree, dulled"* / *"sharpened"*), but `Slowdraw` and `Fastdraw` are a
+shooter-naming reflex. If I ran this again I would put the finding in the *judge's* ranking
+criteria rather than leaving it to the refuter, so trope-y candidates lose before they win.
 
 ---
 
 ## 9. The retrieval tweak — measured, not remembered
 
-The first live run used the obvious retriever: both GDDs indexed together, no boost. It is
-still runnable, and its artifacts are committed under `output/naive/` so the comparison is
-reproducible:
+The first live run used the obvious retriever: both GDDs, no boost. Its artifacts are
+committed under `output/naive/`, and it is still runnable:
 
 ```bash
 python3 run_pipeline.py --live --naive --job announcer --recording recording_naive.json
 ```
 
-**Two failures, both caused by retrieval rather than by the prompt:**
+**Two failures, both retrieval, not prompting:**
 
-1. **43% of the context was the wrong game.** Three of seven chunks came from
-   `BREACHPOINT-GDD-FULL-CONCEPT.md` — the Phase-2 document describing systems the slice
-   cuts. Nothing in the generator's prompt could distinguish them from shipped canon,
-   because both files are true documents about BREACHPOINT.
-2. **The voice exemplars never made it into context at all.** `DT_SpotterLines.csv` — the
-   63 lines that *are* the announcer voice — lost on pure BM25 to prose *about* the HUD.
-   The generator was told "match the shipped voice" and handed no shipped voice.
+1. **43% of the context was the wrong game.** Three of seven chunks came from the Phase-2
+   GDD, describing systems the slice cuts. Nothing in the prompt could distinguish them —
+   both files are true documents about BREACHPOINT.
+2. **The voice exemplars never reached context at all.** `DT_SpotterLines.csv` — the 63
+   lines that *are* the announcer voice — lost on pure BM25 to prose *about* the HUD. The
+   generator was told "match the shipped voice" and handed no shipped voice.
 
-The output showed both. `Nice shot.` and `First blood. Breach secured.` (stock shooter
-slang, flagged by the critic as "not established anywhere in the canon"), a line 8 words
-long against a 6-word ceiling that gate A bounced, and **`Audience=All` on all 12 rows**
-when every one of the 24 shipped `Kill.*` rows is `Self` — a convention the generator
-could not have followed because it never saw it.
+The output showed both: `Nice shot.`, `First blood. Breach secured.`, a line 8 words long
+against a 6-word ceiling, and **`Audience=All` on all 12 rows** when every shipped `Kill.*`
+row is `Self` — a convention it could not follow because it never saw it.
 
-**The tweak, two lines in `Index.search`:**
+**The tweak, two arguments:**
 
 ```python
 hits = index.search(job.query, k=job.k,
@@ -315,60 +338,80 @@ hits = index.search(job.query, k=job.k,
                            "DT_Medals.csv": 2.0})
 ```
 
-`scope` filters retrieval to chunks tagged as shipped canon. `boost` multiplies the score
-of chunks whose source path matches — the job declaring that the table it is extending
-outranks prose about that table.
-
-**Result:** `DT_SpotterLines.csv:50-64` went from absent to rank 2 (BM25 22.54), all three
+**Result:** `DT_SpotterLines.csv:50-64` went from absent to rank 2 (BM25 23.41), all three
 Phase-2 chunks dropped out, `Audience` correctness went **0% → 100%**, and mean line length
 fell from 4.08 words to 3.08 against a shipped 2.49.
 
-The general lesson, and the one I did not expect: **the highest-value chunk in a game
-content KB is usually a data table, and it is the chunk plain lexical scoring is worst at
-retrieving.** Prose about the announcer is full of the words "announcer" and "voice"; the
-announcer's actual lines contain neither. Scoring alone will not find your style guide when
-your style guide is a CSV.
+> The lesson I did not expect: **the highest-value chunk in a game content KB is usually a
+> data table or a header, and those are exactly what lexical scoring is worst at
+> retrieving.** Prose about the announcer is full of the words "announcer" and "voice"; the
+> announcer's actual lines contain neither. Scoring alone will not find your style guide
+> when your style guide is a CSV, or your schema when your schema is a `.h`.
 
 ---
 
-## 10. Running it
+## 10. Honest limits
+
+- **These are CSVs on disk, not imported DataTables.** Nothing has been through UE's
+  importer and no line has been heard in a match. Schema validation is text-level, not
+  engine-level. Importing them is a separate ticket with a binary-asset lock — which is why
+  they are **not** copied into `breachpoint/Content/Data/`.
+- **Spotter and critic are the same model**, separated by role and prompt. Assignment #3's
+  separation was structural (the verifier had no write tools); this is weaker.
+- **Coach lines remain M4-gated in spirit.** They now key only to fields the game records,
+  which removes the "invented predicate" half of `spotter.md`'s objection. The **thresholds**
+  (`Deaths >= 15`, `TimeInMatchSeconds <= 120`) are still authored without soak data, and
+  calibrating them is M4 work.
+- **Five medium findings are carried, not applied** — including the `B08` arithmetic above.
+- **Cost is real:** $4.18 for the committed run, ~$10.50 across three live runs while the
+  two code defects in §6 were found and fixed. The previous single-pass pipeline cost
+  $1.16. A pool of 118 candidates is roughly 8× the tokens of generating 39 rows directly;
+  the two `high` findings it surfaced would not have been visible without it.
+
+---
+
+## 11. Running it
 
 ```bash
-python3 run_pipeline.py                 # replay the committed run — stdlib only, no API key
-python3 run_pipeline.py --gaps          # prove the three gaps, call nothing
-python3 run_pipeline.py --dry-run       # assemble every prompt, call nothing
-python3 run_pipeline.py --dry-run --live   # + one tiny round trip per agent (auth/model/transport)
-python3 run_pipeline.py --live          # real calls, re-records
+python3 run_pipeline.py                    # replay the committed run — stdlib only, no API key
+python3 run_pipeline.py --gaps             # prove the four gaps, call nothing
+python3 run_pipeline.py --dry-run          # assemble every prompt, call nothing
+python3 run_pipeline.py --dry-run --live   # + one tiny round trip per agent/stage
+python3 run_pipeline.py --live             # real calls, re-records
 python3 run_pipeline.py --live --job coach --model claude-haiku-4-5
-python3 rag.py "rocket launcher respawn timer"   # query the KB directly
+python3 crew.py                            # show which agent definitions are loaded
+python3 rag.py "telemetry fields the game records"   # query the KB directly
 ```
 
-**Replay is not a printout.** Retrieval, both gates, the canon lint, the bounce logic,
-CSV assembly and the open-risk split all execute for real; only the model responses come
-from `recording.json`, and the engine asserts each one arrives at the same
-`agent/stage/job` the pipeline asked for. The three CSVs are rewritten byte-identically on
-every replay.
+**Replay is not a printout.** Retrieval, both gates, the canon lint, the telemetry-field
+check, the row invariant, the judge's selection arithmetic, the bounce loop and CSV
+assembly all execute for real; only the model responses come from `recording.json`, and the
+engine asserts each arrives at the same `agent/stage/job` the pipeline asked for. The three
+CSVs are rewritten byte-identically on every replay.
 
-**Committed live run:** `claude-sonnet-5`, 8 calls, 37,856 output tokens, **$1.16**.
-Per-call usage is recorded in `recording.json` and rolled up at exit — Class 04 lists
-context tracking first among the things a framework hides, so here it is a number.
+**Committed live run:** `claude-sonnet-5`, 11 calls, 145,942 output tokens, **$4.18**.
 
-## 11. Files
+## 12. Files
 
 ```
-run_pipeline.py     orchestrator, engines, 3 jobs, gates, canon lint   ← the pipeline
-rag.py              heading-aware chunker + BM25 + canon tagging       ← retrieval
-gaps.py             proves the three gaps from disk                    ← the gate before generation
-recording.json      the committed live run — 8 exchanges, prompts included
+run_pipeline.py     orchestrator · engines · 3 jobs · gates · canon lint     ← the pipeline
+rag.py              chunker (md/csv/json/C++) + BM25 + canon tagging         ← retrieval
+gaps.py             proves four gaps from disk                               ← the gate before generation
+crew.py             loads the REAL spotter.md / critic.md, parses their caps ← the crew
+recording.json      the committed live run — 11 exchanges, prompts included
 recording_naive.json  the pre-tweak run, kept as evidence for §9
+make_submission.sh  builds the zip; mirrors the KB + agent definitions, self-tests the replay
+TICKET_SUBMIT.md    the submission checklist
 output/
-  DT_SpotterLines_Additions.csv   12 announcer lines    ← deliverable
-  DT_CoachLines.csv               10 coach lines        ← deliverable
-  DT_BotCallsigns.csv             15 bot callsigns      ← deliverable
-  rag_trace.md        query · retrieved chunk · output, side by side, all 3 jobs
-  critic_log.md       every finding, with computed before/after diffs
-  gap_report.md       the three gaps and the checks that prove them
-  open_risks.json     the 5 non-blocking findings, carried to the human lead
-  naive/              the pre-tweak artifacts, for §9's comparison
+  DT_SpotterLines_Additions.csv   12 announcer lines   ← deliverable
+  DT_CoachLines.csv               12 coach lines       ← deliverable
+  DT_BotCallsigns.csv             15 bot callsigns     ← deliverable
+  rag_trace.md      query · retrieved chunk · output, side by side, all 3 jobs
+  judge_log.md      the full pool, the ranking, and what was left behind
+  critic_log.md     every finding, with computed before/after diffs
+  gap_report.md     the four gaps and the checks that prove them
+  open_risks.json   the non-blocking findings, carried to the human lead
+  run_log.txt       transcript of the committed run
+  naive/            the pre-tweak artifacts, for §9's comparison
 README.md           this file
 ```

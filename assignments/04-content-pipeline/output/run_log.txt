@@ -2,67 +2,86 @@
   PROVEN     announcer_coverage: Four of eleven medals award in silence
   PROVEN     coach_fallback: The offline coach line has no canned table to fall back to
   PROVEN     bot_callsigns: Bots fill up to 7 of 8 slots and none of them has a name
+  PROVEN     arena_callouts: Six of seven named arena landmarks are never spoken  (not filled)
 
+crew: /home/user/Multi-agents-class/breachpoint/.claude/agents — the live crew
+  spotter.md 4,082 chars · critic.md 3,849 chars · char caps parsed from spotter.md: {'event': 48, 'coach': 140}
+  shipped telemetry fields read from BRTelemetrySubsystem.h: 31
 engine: ReplayEngine · model claude-sonnet-5 · recording recording.json
-knowledge base: 95 chunks from 8 sources (65 slice / 30 phase2)
+knowledge base: 111 chunks from 9 sources (81 slice / 30 phase2)
 
 === announcer: Announcer lines for the four medals that award in silence
   retrieved 7 chunks (scope=slice):
-      38.41  slice   breachpoint/Content/Data/DT_Medals.csv:2-12
-      22.54  slice   breachpoint/Content/Data/DT_SpotterLines.csv:50-64
-      22.33  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:213-227
-      14.50  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:282-298
-      14.50  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:41-46
-      12.02  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:528-544
-      11.01  slice   breachpoint/Content/Data/DT_SpotterLines.csv:2-25
-  generated 12 rows · gate A passed
-  critic: FINDINGS — 4 finding(s), 2 blocking
-    [high  ] lore-break  S25a: unqualified 'Spree ended' plays for killing an enemy's spree but reads identically to a player's own
-    [high  ] lore-break  S25b: this is nearly a negation of S04b's 'Killing spree.' line and will read as the player's own spree be
-    [medium] lore-break  S25c: same whose-spree ambiguity as S25a/S25b, and the apostrophe contraction is not used elsewhere in the
-    [medium] redundancy  S23c: conveys the same single fact as S23a with no new information, so the trio does not provide the three
-  revised · gate B passed · canon lint clean
-  corrected rows: S25a, S25b
+      39.70  slice   breachpoint/Content/Data/DT_Medals.csv:2-12
+      23.41  slice   breachpoint/Content/Data/DT_SpotterLines.csv:50-64
+      23.06  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:213-227
+      15.12  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:41-46
+      14.80  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:282-298
+      12.32  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:528-544
+      11.09  slice   breachpoint/Content/Data/DT_SpotterLines.csv:2-25
+        gate rejected (1/2): candidate Kill.Rocket.Multi-01 missing keys ['audience', 'repeat_cooldown_s']
+  pool: 40 candidates across 4 slots (~10 each) · gate A passed
+  judged · kept 12 of 40 (3 per slot)
+    Kill.Rocket.Multi: Kill.Rocket.Multi-04 won — -04 'Rocket multi-kill.' pins directly to the TriggerId and the M4/weapon-radius sources w
+    Kill.First: Kill.First-08 won — -08 'Breach scored.' ties the exact medal name to an active verb in one clean beat, while 
+    Match.SuddenDeath.Win: Match.SuddenDeath.Win-01 won — -01 'Sudden death. Match won.' is a near-verbatim splice of two existing shipped rows (S17
+    Kill.SpreeEnder: Kill.SpreeEnder-01 won — -01 'Spree ended.' matches S04b's register exactly and states the outcome plainly; -04 'Sp
+  refuted: FINDINGS — 2 finding(s), 0 blocking
+    [medium] redundancy  S22b: S22a ("Rocket multi-kill.") and S22b ("Multi-kill. Rocket.") are the same two words reordered, 
+    [low   ] tone-drift  S22c: "Group kill" is not terminology used anywhere in the shipped medal or spotter tables, which con
   LANDED output/DT_SpotterLines_Additions.csv (12 rows)
 
-=== coach: The canned coach table that ships as the Spotter's offline fallback
+=== coach: The canned coach table, keyed only to telemetry the game records
   retrieved 8 chunks (scope=slice):
-      46.19  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:556-562
-      43.47  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:282-298
-      21.26  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:213-227
-      14.91  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:409-423
-      14.73  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:426-440
-      13.37  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:399-406
-       9.94  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:329-342
-       8.19  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:113-123
-  generated 10 rows · gate A passed
-  critic: FINDINGS — 1 finding(s), 0 blocking
-    [medium] schema-risk C02: The value is interpolated raw with no unit (no '%' as used for accuracy_ar/accuracy_magnum) and the 
-  LANDED output/DT_CoachLines.csv (10 rows)
+      31.71  slice   breachpoint/Source/Breachpoint/Telemetry/BRTelemetrySubsystem.h:53-90
+      30.79  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:556-562
+      30.52  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:282-298
+      15.52  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:213-227
+      12.14  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:426-440
+      11.38  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:329-342
+      10.62  slice   breachpoint/Source/Breachpoint/Telemetry/BRTelemetrySubsystem.h:141-218
+       9.27  slice   breachpoint/Content/Data/DT_SpotterLines.csv:26-49
+  pool: 48 candidates across 6 slots (~8 each) · gate A passed
+  judged · kept 12 of 48 (2 per slot)
+    LowKillDeathRatio: LowKillDeathRatio-03 won — -03 is the shortest line that states only the confirmed Deaths stat with generic, cause-ag
+    HighAssistsFewKills: HighAssistsFewKills-08 won — -08 is the shortest line that sticks to what Assists actually proves (damage without a kil
+    SelfInflicted: SelfInflicted-03 won — -03 is the shortest line that never invents a cause of death the struct can't support (no 
+    FriendlyFire: FriendlyFire-02 won — -02 is the only candidate that grounds its advice in an actual struct field (TeamId), and 
+    ShortMatchTime: ShortMatchTime-05 won — -05 is the best-grounded line, hedging between two causes and tying 'arriving late' to the
+    LowKills: LowKills-08 won — -08 is the shortest line in the entire pool and stays purely prescriptive without claiming
+  refuted: FINDINGS — 3 finding(s), 3 blocking
+    [high  ] redundancy  C02: C02 (Deaths>=15) is a strict subset of C01 (Deaths>12), and C01's Priority (1) beats C02's Prio
+    [high  ] redundancy  C04: C04 (Assists>=10) is a strict subset of C03 (Assists>=5), and C03's Priority (3) beats C04's Pr
+    [high  ] schema-risk table-wide: The Priority column encodes two opposite severity-ordering conventions: for SelfInflictedDeaths
+  revised · gate B passed · canon lint clean
+  corrected rows: C01, C02, C03, C04
+  LANDED output/DT_CoachLines.csv (12 rows)
 
 === callsigns: Callsigns for the bots that fill up to seven of eight slots
   retrieved 6 chunks (scope=slice):
-      27.02  slice   breachpoint/Content/Data/DT_BotTuning.csv:2-4
-      20.82  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:195-210
-      19.94  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:49-55
-      15.30  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:399-406
-      10.78  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:24-38
-       9.15  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:264-279
-  generated 15 rows · gate A passed
-  critic: FINDINGS — 3 finding(s), 1 blocking
-    [high  ] lore-break  B09: The note cites 0.65 as Marine's push_threshold, but the shipped table has push_threshold=0.95 for Ma
-    [medium] redundancy  B08: IRONCLAD and LOCKSTEP both exist only to say 'this is the unmodified baseline profile,' so the two c
-    [medium] redundancy  B04: FALLBACK and BACKSTOP both encode the identical 'avoids first contact / falls back' persona, so the 
-  revised · gate B passed · canon lint clean
-  corrected rows: B09
+      26.97  slice   breachpoint/Content/Data/DT_BotTuning.csv:2-4
+      24.20  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:195-210
+      13.76  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:49-55
+      11.17  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:399-406
+       9.68  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:24-38
+       9.14  slice   breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:264-279
+  pool: 30 candidates across 3 slots (~10 each) · gate A passed
+  judged · kept 15 of 30 (5 per slot)
+    Recruit: Recruit-08 won — Dulledge lifts the GDD's own descriptor for the Recruit column ('Same StateTree, dulled') 
+    Marine: Marine-02 won — Midpace is the shortest zero-risk candidate and names the exact stat the GDD headlines for
+    Veteran: Veteran-06 won — Honedline quotes the GDD's own descriptor for the Veteran column ('Same StateTree, sharpen
+  refuted: FINDINGS — 2 finding(s), 0 blocking
+    [medium] tone-drift  B02: 13 of the 15 rows invent generic-shooter nickname tropes (Deadeye, Wideshot, Slowdraw, Shakygri
+    [medium] schema-risk B01: None of RowName, Callsign, ProfileHint, or Note exist in the shipped DT_BotTuning schema. If th
   LANDED output/DT_BotCallsigns.csv (15 rows)
 
 --- landed ---
   output/DT_SpotterLines_Additions.csv  12 rows  — Announcer lines for the four medals that award in silence
-  output/DT_CoachLines.csv  10 rows  — The canned coach table that ships as the Spotter's offline fallback
+  output/DT_CoachLines.csv  12 rows  — The canned coach table, keyed only to telemetry the game records
   output/DT_BotCallsigns.csv  15 rows  — Callsigns for the bots that fill up to seven of eight slots
 
-critic: 8 finding(s) across 3 job(s); 3 row(s) corrected before landing
-spend (recorded run): 8 calls · 18 in · 37,856 out · $1.1640
+pool: 118 candidates generated, 39 kept (79 discarded by the judge)
+critic: 7 finding(s) across 3 job(s); 4 row(s) corrected before landing
+spend (recorded run): 11 calls · 80 in · 145,942 out · $4.1760
 
-trace: output/rag_trace.md · review: output/critic_log.md · gaps: output/gap_report.md
+trace: output/rag_trace.md · pool: output/judge_log.md · review: output/critic_log.md · gaps: output/gap_report.md

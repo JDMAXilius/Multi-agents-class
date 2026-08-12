@@ -1,13 +1,13 @@
 RowName,TriggerId,Text,Audience,Weight,RepeatCooldown_s
-S22a,Kill.Rocket.Multi,Rocket kill. Multiple down.,Self,1.0,20
-S22b,Kill.Rocket.Multi,Blast radius.,Self,1.0,20
-S22c,Kill.Rocket.Multi,Two down. One rocket.,Self,1.0,20
-S23a,Kill.First,First kill.,Self,1.0,20
-S23b,Kill.First,Opening kill scored.,Self,1.0,20
-S23c,Kill.First,Match's first kill.,Self,1.0,20
-S24a,Match.SuddenDeath.Win,Sudden death won.,Team,1.0,0
+S22a,Kill.Rocket.Multi,Rocket multi-kill.,Self,1.0,20
+S22b,Kill.Rocket.Multi,Multi-kill. Rocket.,Self,1.0,20
+S22c,Kill.Rocket.Multi,Group kill. Rocket.,Self,1.0,20
+S23a,Kill.First,Breach scored.,Self,1.0,20
+S23b,Kill.First,Breach.,Self,1.0,20
+S23c,Kill.First,First down.,Self,1.0,20
+S24a,Match.SuddenDeath.Win,Sudden death. Match won.,Team,1.0,0
 S24b,Match.SuddenDeath.Win,Final kill. Match won.,Team,1.0,0
-S24c,Match.SuddenDeath.Win,Last kill. Match complete.,Team,1.0,0
-S25a,Kill.SpreeEnder,Enemy spree ended.,Self,1.0,20
-S25b,Kill.SpreeEnder,"Their spree, stopped.",Self,1.0,20
-S25c,Kill.SpreeEnder,Spree's over.,Self,1.0,20
+S24c,Match.SuddenDeath.Win,Match won in sudden death.,Team,1.0,0
+S25a,Kill.SpreeEnder,Spree ended.,Self,1.0,20
+S25b,Kill.SpreeEnder,Spree broken.,Self,1.0,20
+S25c,Kill.SpreeEnder,Spree ender.,Self,1.0,20

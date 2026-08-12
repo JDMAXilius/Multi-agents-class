@@ -1,8 +1,9 @@
 # RAG trace — query, retrieved chunk, generated output, side by side
 
 One section per content type. The chunk text below is *verbatim* what the
-generator received; the rows below it are what came back. Every citation is
-`file:line-line` against this repo, so any claim here can be opened and checked.
+spotter received; the rows beneath are what survived judging and review.
+Every citation is `file:line-line` against this repo, so any claim here can
+be opened and checked.
 
 ## announcer
 
@@ -14,7 +15,7 @@ announcer callout line medal killfeed rocket multi kill first kill of the match 
 
 ### Retrieved chunks
 
-<details open><summary><b>[1] breachpoint/Content/Data/DT_Medals.csv:2-12</b> — canon <code>slice</code>, BM25 38.41 — DT_Medals.csv</summary>
+<details open><summary><b>[1] breachpoint/Content/Data/DT_Medals.csv:2-12</b> — canon <code>slice</code>, BM25 39.7 — DT_Medals.csv</summary>
 
 ```text
 DT_Medals.csv (existing shipped table)
@@ -34,7 +35,7 @@ M11,Spree Ender,Killed an enemy who was on a killing spree.,Kill.SpreeEnder
 
 </details>
 
-<details open><summary><b>[2] breachpoint/Content/Data/DT_SpotterLines.csv:50-64</b> — canon <code>slice</code>, BM25 22.54 — DT_SpotterLines.csv</summary>
+<details open><summary><b>[2] breachpoint/Content/Data/DT_SpotterLines.csv:50-64</b> — canon <code>slice</code>, BM25 23.41 — DT_SpotterLines.csv</summary>
 
 ```text
 DT_SpotterLines.csv (existing shipped table)
@@ -58,7 +59,7 @@ S21b1,Score.Blowout.Deficit,Down heavy.,Team,1.0,8
 
 </details>
 
-<details open><summary><b>[3] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:213-227</b> — canon <code>slice</code>, BM25 22.33 — BREACHPOINT — VERTICAL SLICE > 2. Game Mechanics (Player-Facing Actions and Loop) > 2.9 What the Player Sees (HUD)</summary>
+<details open><summary><b>[3] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:213-227</b> — canon <code>slice</code>, BM25 23.06 — BREACHPOINT — VERTICAL SLICE > 2. Game Mechanics (Player-Facing Actions and Loop) > 2.9 What the Player Sees (HUD)</summary>
 
 ```text
 BREACHPOINT — VERTICAL SLICE > 2. Game Mechanics (Player-Facing Actions and Loop) > 2.9 What the Player Sees (HUD)
@@ -81,7 +82,21 @@ BREACHPOINT — VERTICAL SLICE > 2. Game Mechanics (Player-Facing Actions and Lo
 
 </details>
 
-<details open><summary><b>[4] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:282-298</b> — canon <code>slice</code>, BM25 14.5 — BREACHPOINT — VERTICAL SLICE > 3. AI Architecture (What Each Agent Does, Through Its Effect on Gameplay) > 3.3 The Runtime Agent — Spotter</summary>
+<details open><summary><b>[4] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:41-46</b> — canon <code>slice</code>, BM25 15.12 — BREACHPOINT — VERTICAL SLICE > 1. Executive Summary > 1.2 Win and Loss Conditions</summary>
+
+```text
+BREACHPOINT — VERTICAL SLICE > 1. Executive Summary > 1.2 Win and Loss Conditions
+
+- **Win:** first team to **25 kills**, or the higher team score when the
+  **8:00** timer expires.
+- **Tiebreak:** sudden death — no respawns, first kill wins, **60-second
+  cap**; if uncontested, higher team damage dealt wins.
+- **Loss:** any other scoreline at the timer.
+```
+
+</details>
+
+<details open><summary><b>[5] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:282-298</b> — canon <code>slice</code>, BM25 14.8 — BREACHPOINT — VERTICAL SLICE > 3. AI Architecture (What Each Agent Does, Through Its Effect on Gameplay) > 3.3 The Runtime Agent — Spotter</summary>
 
 ```text
 BREACHPOINT — VERTICAL SLICE > 3. AI Architecture (What Each Agent Does, Through Its Effect on Gameplay) > 3.3 The Runtime Agent — Spotter
@@ -106,21 +121,7 @@ load-bearing.
 
 </details>
 
-<details open><summary><b>[5] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:41-46</b> — canon <code>slice</code>, BM25 14.5 — BREACHPOINT — VERTICAL SLICE > 1. Executive Summary > 1.2 Win and Loss Conditions</summary>
-
-```text
-BREACHPOINT — VERTICAL SLICE > 1. Executive Summary > 1.2 Win and Loss Conditions
-
-- **Win:** first team to **25 kills**, or the higher team score when the
-  **8:00** timer expires.
-- **Tiebreak:** sudden death — no respawns, first kill wins, **60-second
-  cap**; if uncontested, higher team damage dealt wins.
-- **Loss:** any other scoreline at the timer.
-```
-
-</details>
-
-<details open><summary><b>[6] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:528-544</b> — canon <code>slice</code>, BM25 12.02 — BREACHPOINT — VERTICAL SLICE > Appendix A — Combat Tuning (first pass)</summary>
+<details open><summary><b>[6] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:528-544</b> — canon <code>slice</code>, BM25 12.32 — BREACHPOINT — VERTICAL SLICE > Appendix A — Combat Tuning (first pass)</summary>
 
 ```text
 BREACHPOINT — VERTICAL SLICE > Appendix A — Combat Tuning (first pass)
@@ -145,7 +146,7 @@ BREACHPOINT — VERTICAL SLICE > Appendix A — Combat Tuning (first pass)
 
 </details>
 
-<details open><summary><b>[7] breachpoint/Content/Data/DT_SpotterLines.csv:2-25</b> — canon <code>slice</code>, BM25 11.01 — DT_SpotterLines.csv</summary>
+<details open><summary><b>[7] breachpoint/Content/Data/DT_SpotterLines.csv:2-25</b> — canon <code>slice</code>, BM25 11.09 — DT_SpotterLines.csv</summary>
 
 ```text
 DT_SpotterLines.csv (existing shipped table)
@@ -178,64 +179,92 @@ S08c,Kill.Melee.Rear,Blindside.,Self,1.0,20
 
 </details>
 
-### Generated output (post-review, as landed)
+### Sources the spotter cited across its pool
+
+- `breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:41-46 (sudden death, first kill wins)`
+- `breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:41-46 (tiebreak, first kill wins)`
+- `breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:41-46 (win conditions)`
+- `breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:528-544 (Rocket Launcher entry)`
+- `breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:528-544 (Rocket Launcher radius entry)`
+- `breachpoint/Content/Data/DT_Medals.csv:2-12 (M10 Last Word)`
+- `breachpoint/Content/Data/DT_Medals.csv:2-12 (M11 Spree Ender)`
+- `breachpoint/Content/Data/DT_Medals.csv:2-12 (M11)`
+- `breachpoint/Content/Data/DT_Medals.csv:2-12 (M4 Blast Radius)`
+- `breachpoint/Content/Data/DT_Medals.csv:2-12 (M4)`
+- `breachpoint/Content/Data/DT_Medals.csv:2-12 (M9 Breach)`
+- `breachpoint/Content/Data/DT_Medals.csv:2-12 (M9)`
+- `breachpoint/Content/Data/DT_SpotterLines.csv:2-25 (S01a 'Kill confirmed.' register)`
+- `breachpoint/Content/Data/DT_SpotterLines.csv:2-25 (S01a 'Kill confirmed.')`
+- `breachpoint/Content/Data/DT_SpotterLines.csv:2-25 (S01c 'Hostile down.' register)`
+- `breachpoint/Content/Data/DT_SpotterLines.csv:2-25 (S02a 'You're down.' register)`
+- `breachpoint/Content/Data/DT_SpotterLines.csv:2-25 (S03b 'Two down.' multi-kill pattern)`
+- `breachpoint/Content/Data/DT_SpotterLines.csv:2-25 (S03b 'Two down.')`
+- `breachpoint/Content/Data/DT_SpotterLines.csv:2-25 (S04b 'Killing spree.')`
+- `breachpoint/Content/Data/DT_SpotterLines.csv:50-64 (S17a 'Sudden death. No respawns.', S18a 'Match won.')`
+- `breachpoint/Content/Data/DT_SpotterLines.csv:50-64 (S17a-c sudden death lines)`
+- `breachpoint/Content/Data/DT_SpotterLines.csv:50-64 (S17c 'Sudden death.', S18c 'Match complete. Victory.')`
+- `breachpoint/Content/Data/DT_SpotterLines.csv:50-64 (S18a 'Match won.')`
+- `breachpoint/Content/Data/DT_SpotterLines.csv:50-64 (S18a, S17a)`
+- `breachpoint/Content/Data/DT_SpotterLines.csv:50-64 (S18c 'Match complete. Victory.', S17c 'Sudden death.')`
+
+### Generated output (post-judge, post-review, as landed)
 
 ```json
 [
  {
   "RowName": "S22a",
   "TriggerId": "Kill.Rocket.Multi",
-  "Text": "Rocket kill. Multiple down.",
+  "Text": "Rocket multi-kill.",
   "Audience": "Self",
-  "Weight": 1.0,
+  "Weight": "1.0",
   "RepeatCooldown_s": 20
  },
  {
   "RowName": "S22b",
   "TriggerId": "Kill.Rocket.Multi",
-  "Text": "Blast radius.",
+  "Text": "Multi-kill. Rocket.",
   "Audience": "Self",
-  "Weight": 1.0,
+  "Weight": "1.0",
   "RepeatCooldown_s": 20
  },
  {
   "RowName": "S22c",
   "TriggerId": "Kill.Rocket.Multi",
-  "Text": "Two down. One rocket.",
+  "Text": "Group kill. Rocket.",
   "Audience": "Self",
-  "Weight": 1.0,
+  "Weight": "1.0",
   "RepeatCooldown_s": 20
  },
  {
   "RowName": "S23a",
   "TriggerId": "Kill.First",
-  "Text": "First kill.",
+  "Text": "Breach scored.",
   "Audience": "Self",
-  "Weight": 1.0,
+  "Weight": "1.0",
   "RepeatCooldown_s": 20
  },
  {
   "RowName": "S23b",
   "TriggerId": "Kill.First",
-  "Text": "Opening kill scored.",
+  "Text": "Breach.",
   "Audience": "Self",
-  "Weight": 1.0,
+  "Weight": "1.0",
   "RepeatCooldown_s": 20
  },
  {
   "RowName": "S23c",
   "TriggerId": "Kill.First",
-  "Text": "Match's first kill.",
+  "Text": "First down.",
   "Audience": "Self",
-  "Weight": 1.0,
+  "Weight": "1.0",
   "RepeatCooldown_s": 20
  },
  {
   "RowName": "S24a",
   "TriggerId": "Match.SuddenDeath.Win",
-  "Text": "Sudden death won.",
+  "Text": "Sudden death. Match won.",
   "Audience": "Team",
-  "Weight": 1.0,
+  "Weight": "1.0",
   "RepeatCooldown_s": 0
  },
  {
@@ -243,39 +272,39 @@ S08c,Kill.Melee.Rear,Blindside.,Self,1.0,20
   "TriggerId": "Match.SuddenDeath.Win",
   "Text": "Final kill. Match won.",
   "Audience": "Team",
-  "Weight": 1.0,
+  "Weight": "1.0",
   "RepeatCooldown_s": 0
  },
  {
   "RowName": "S24c",
   "TriggerId": "Match.SuddenDeath.Win",
-  "Text": "Last kill. Match complete.",
+  "Text": "Match won in sudden death.",
   "Audience": "Team",
-  "Weight": 1.0,
+  "Weight": "1.0",
   "RepeatCooldown_s": 0
  },
  {
   "RowName": "S25a",
   "TriggerId": "Kill.SpreeEnder",
-  "Text": "Enemy spree ended.",
+  "Text": "Spree ended.",
   "Audience": "Self",
-  "Weight": 1.0,
+  "Weight": "1.0",
   "RepeatCooldown_s": 20
  },
  {
   "RowName": "S25b",
   "TriggerId": "Kill.SpreeEnder",
-  "Text": "Their spree, stopped.",
+  "Text": "Spree broken.",
   "Audience": "Self",
-  "Weight": 1.0,
+  "Weight": "1.0",
   "RepeatCooldown_s": 20
  },
  {
   "RowName": "S25c",
   "TriggerId": "Kill.SpreeEnder",
-  "Text": "Spree's over.",
+  "Text": "Spree ender.",
   "Audience": "Self",
-  "Weight": 1.0,
+  "Weight": "1.0",
   "RepeatCooldown_s": 20
  }
 ]
@@ -285,15 +314,60 @@ S08c,Kill.Melee.Rear,Blindside.,Self,1.0,20
 
 ## coach
 
-**Query** (`scope=slice`, boost `{'DT_SpotterLines.csv': 1.5}`)
+**Query** (`scope=slice`, boost `{'BRTelemetrySubsystem.h': 3.0}`)
 
 ```
-spotter coach line match end telemetry stat fights lost below 40% shields accuracy grapple rocket holds shield break conversion canned fallback no connectivity
+telemetry fields recorded per player match kills deaths assists self inflicted friendly fire time in match spotter coach line canned fallback no connectivity
 ```
 
 ### Retrieved chunks
 
-<details open><summary><b>[1] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:556-562</b> — canon <code>slice</code>, BM25 46.19 — BREACHPOINT — VERTICAL SLICE > Appendix C — Telemetry Schema</summary>
+<details open><summary><b>[1] breachpoint/Source/Breachpoint/Telemetry/BRTelemetrySubsystem.h:53-90</b> — canon <code>slice</code>, BM25 31.71 — BRTelemetrySubsystem.h :: FBRPlayerMatchTelemetry</summary>
+
+```text
+BRTelemetrySubsystem.h :: FBRPlayerMatchTelemetry  (the SHIPPED schema — what the game records today)
+struct FBRPlayerMatchTelemetry
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	int32 PlayerKey = 0;
+
+	UPROPERTY()
+	uint8 TeamId = 255;
+
+	UPROPERTY()
+	bool bIsBot = false;
+
+	UPROPERTY()
+	bool bJoinedInProgress = false;
+
+	UPROPERTY()
+	int32 Kills = 0;
+
+	UPROPERTY()
+	int32 Deaths = 0;
+
+	UPROPERTY()
+	int32 Assists = 0;
+
+	UPROPERTY()
+	int32 SelfInflictedDeaths = 0;
+
+	UPROPERTY()
+	int32 FriendlyFireKills = 0;
+
+	UPROPERTY()
+	float TimeInMatchSeconds = 0.f;
+
+	UPROPERTY()
+	bool bLeftEarly = false;
+};
+```
+
+</details>
+
+<details open><summary><b>[2] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:556-562</b> — canon <code>slice</code>, BM25 30.79 — BREACHPOINT — VERTICAL SLICE > Appendix C — Telemetry Schema</summary>
 
 ```text
 BREACHPOINT — VERTICAL SLICE > Appendix C — Telemetry Schema
@@ -308,7 +382,7 @@ time alive. Consumed by: Spotter (coach lines), the tuning-curator
 
 </details>
 
-<details open><summary><b>[2] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:282-298</b> — canon <code>slice</code>, BM25 43.47 — BREACHPOINT — VERTICAL SLICE > 3. AI Architecture (What Each Agent Does, Through Its Effect on Gameplay) > 3.3 The Runtime Agent — Spotter</summary>
+<details open><summary><b>[3] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:282-298</b> — canon <code>slice</code>, BM25 30.52 — BREACHPOINT — VERTICAL SLICE > 3. AI Architecture (What Each Agent Does, Through Its Effect on Gameplay) > 3.3 The Runtime Agent — Spotter</summary>
 
 ```text
 BREACHPOINT — VERTICAL SLICE > 3. AI Architecture (What Each Agent Does, Through Its Effect on Gameplay) > 3.3 The Runtime Agent — Spotter
@@ -333,7 +407,7 @@ load-bearing.
 
 </details>
 
-<details open><summary><b>[3] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:213-227</b> — canon <code>slice</code>, BM25 21.26 — BREACHPOINT — VERTICAL SLICE > 2. Game Mechanics (Player-Facing Actions and Loop) > 2.9 What the Player Sees (HUD)</summary>
+<details open><summary><b>[4] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:213-227</b> — canon <code>slice</code>, BM25 15.52 — BREACHPOINT — VERTICAL SLICE > 2. Game Mechanics (Player-Facing Actions and Loop) > 2.9 What the Player Sees (HUD)</summary>
 
 ```text
 BREACHPOINT — VERTICAL SLICE > 2. Game Mechanics (Player-Facing Actions and Loop) > 2.9 What the Player Sees (HUD)
@@ -356,30 +430,7 @@ BREACHPOINT — VERTICAL SLICE > 2. Game Mechanics (Player-Facing Actions and Lo
 
 </details>
 
-<details open><summary><b>[4] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:409-423</b> — canon <code>slice</code>, BM25 14.91 — BREACHPOINT — VERTICAL SLICE > 5. Scope and Schedule > 5.2 Schedule — six weeks, each ending runnable</summary>
-
-```text
-BREACHPOINT — VERTICAL SLICE > 5. Scope and Schedule > 5.2 Schedule — six weeks, each ending runnable
-
-> **`BREACHPOINT-ROADMAP.md` is authoritative for sequencing.** The table
-> below is the original week-by-week sketch; the roadmap re-cut it into six
-> parallel pods and moved work accordingly (Rocket and HUD v1 pull into W3,
-> bots start W3 and complete at M4, Steam holds at W5). Where the two
-> disagree, follow the roadmap.
-
-| Wk | Deliverable | Gate |
-|---|---|---|
-| **1** | Ladder bootstrap (specs + Gauntlet skeleton); FPS template + module layout; **GAS core ported**; **shields/health**; AR firing; `IBRServerLifecycle` stub | Breaking a dummy's shields feels good |
-| **2** | Magnum + two-weapon carry + swap; **grenades**; **melee + rear-kill** | ⚠️ **THE GOLDEN TRIANGLE FUN TEST** — see §7.2 |
-| **3** | **Grappleshot** (netcode packet + REFUTER pass); map blockout from Arena Architect manifest | Traversal is fun; grapple is used offensively |
-| **4** | Bots (StateTree + EQS + 3 scalars); Team Slayer scoring, teams, scored respawns; nightly soaks begin | ⚠️ **GO / NO-GO** — a full 4v4 match vs. bots plays end-to-end |
-| **5** | Rocket Launcher + 90 s timer; CommonUI HUD; Steam listen server + host/invite; MetaSounds cues | Two humans + six bots, online, full match |
-| **6** | Balance pass (crew telemetry); polish; Steam demo depot; capstone presentation | **Shipped** |
-```
-
-</details>
-
-<details open><summary><b>[5] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:426-440</b> — canon <code>slice</code>, BM25 14.73 — BREACHPOINT — VERTICAL SLICE > 5. Scope and Schedule > 5.3 Cut Order (pre-declared — used, not improvised)</summary>
+<details open><summary><b>[5] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:426-440</b> — canon <code>slice</code>, BM25 12.14 — BREACHPOINT — VERTICAL SLICE > 5. Scope and Schedule > 5.3 Cut Order (pre-declared — used, not improvised)</summary>
 
 ```text
 BREACHPOINT — VERTICAL SLICE > 5. Scope and Schedule > 5.3 Cut Order (pre-declared — used, not improvised)
@@ -402,23 +453,7 @@ different, worse project.
 
 </details>
 
-<details open><summary><b>[6] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:399-406</b> — canon <code>slice</code>, BM25 13.37 — BREACHPOINT — VERTICAL SLICE > 5. Scope and Schedule > 5.1 Shipped Scope</summary>
-
-```text
-BREACHPOINT — VERTICAL SLICE > 5. Scope and Schedule > 5.1 Shipped Scope
-
-Team Slayer 4v4 (bots filling any slot, 3 difficulty settings); **1**
-three-level arena map; **3** weapons (AR, Magnum, Rocket on a 90 s
-timer); frag grenades; melee including rear-kill; **Grappleshot**;
-shields-over-health; scored respawns; CommonUI HUD + minimal front end;
-canned medals + killfeed; Spotter agent with canned fallback; MetaSounds
-combat and footstep audio; Steam listen server + demo depot.
-**Nothing else.**
-```
-
-</details>
-
-<details open><summary><b>[7] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:329-342</b> — canon <code>slice</code>, BM25 9.94 — BREACHPOINT — VERTICAL SLICE > 4. Technical Strategy > 4.2 Token Budget (runtime, per match)</summary>
+<details open><summary><b>[6] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:329-342</b> — canon <code>slice</code>, BM25 11.38 — BREACHPOINT — VERTICAL SLICE > 4. Technical Strategy > 4.2 Token Budget (runtime, per match)</summary>
 
 ```text
 BREACHPOINT — VERTICAL SLICE > 4. Technical Strategy > 4.2 Token Budget (runtime, per match)
@@ -440,125 +475,269 @@ Caps enforced server-side; every failure path falls back to canned lines.
 
 </details>
 
-<details open><summary><b>[8] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:113-123</b> — canon <code>slice</code>, BM25 8.19 — BREACHPOINT — VERTICAL SLICE > 2. Game Mechanics (Player-Facing Actions and Loop) > 2.3 Shields Over Health — the signature system</summary>
+<details open><summary><b>[7] breachpoint/Source/Breachpoint/Telemetry/BRTelemetrySubsystem.h:141-218</b> — canon <code>slice</code>, BM25 10.62 — BRTelemetrySubsystem.h :: BREACHPOINT_API</summary>
 
 ```text
-BREACHPOINT — VERTICAL SLICE > 2. Game Mechanics (Player-Facing Actions and Loop) > 2.3 Shields Over Health — the signature system
+BRTelemetrySubsystem.h :: BREACHPOINT_API  (the SHIPPED schema — what the game records today)
+class BREACHPOINT_API UBRTelemetrySubsystem : public UWorldSubsystem
+{
+	GENERATED_BODY()
 
-Two damage layers, both GAS attributes on the PlayerState-owned ASC:
+public:
+	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	virtual void OnWorldBeginPlay(UWorld& InWorld) override;
+	virtual void Deinitialize() override;
 
-- **Shields (100)** — recharge at 60/s beginning **2.5 s** after the last
-  damage taken. Distinct audio + visual cue on break and on recharge.
-- **Health (100)** — **never regenerates.** The only reset is death.
+	void RecordEvent(const FBRTelemetryEvent& Event);
 
-Consequences that define the pacing: fights have a natural break-off
-point; a wounded player is a hunted player; re-engaging is a real
-decision, not a reflex. **Built first (Week 1)** because every other
-number is tuned against it.
+	void RecordPlayerEvent(FName EventId, const APlayerState* Subject, const APlayerState* Object,
+		float Value, FName Detail);
+
+	int32 GetPlayerKey(const APlayerState* Player);
+
+	const FBRMatchTelemetryRecord& GetMatchRecord() const { return Record; }
+
+	bool IsFinalized() const { return bFinalized; }
+
+	FBRMatchTelemetryFinalizedSignature OnMatchTelemetryFinalized;
+	FBRTelemetryEventRecordedSignature OnTelemetryEventRecorded;
+
+protected:
+	UPROPERTY(Config)
+	int32 MaxRetainedEvents = 2048;
+
+	UPROPERTY(Config)
+	bool bTelemetryEnabled = true;
+
+private:
+	bool HasTelemetryAuthority() const;
+
+	void TryBindMatchSources();
+
+	void TryBindServerLifecycle();
+
+	void HandlePlayerKilled(APlayerState* Killer, APlayerState* Victim, const TArray<APlayerState*>& Assists);
+	void HandleMatchPhaseChanged(EBRMatchPhase OldPhase, EBRMatchPhase NewPhase);
+	void HandleKillFeedEntryAdded(const FBRKillFeedEntry& Entry);
+	void HandlePostLogin(AGameModeBase* GameMode, APlayerController* NewPlayer);
+	void HandleLogout(AGameModeBase* GameMode, AController* Exiting);
+	void HandleHostingEnding(const FBRHostingEndNotice& Notice);
+
+	FBRPlayerMatchTelemetry* FindOrAddPlayerRow(const APlayerState* Player);
+
+	FBRPlayerMatchTelemetry* FindPlayerRowByKey(int32 PlayerKey);
+
+	void FinalizeRecord(EBRMatchTelemetryOutcome Outcome);
+
+	float GetServerTime() const;
+
+	FBRMatchTelemetryRecord Record;
+
+	TMap<FObjectKey, int32> PlayerKeys;
+
+	int32 NextPlayerKey = 1;
+
+	bool bFinalized = false;
+	bool bMatchSourcesBound = false;
+	bool bLifecycleBound = false;
+
+	float LiveStartServerTime = 0.f;
+	float WarmupStartServerTime = 0.f;
+
+	bool bMatchIsLive = false;
+
+	FDelegateHandle PlayerKilledHandle;
+	FDelegateHandle PhaseChangedHandle;
+	FDelegateHandle KillFeedHandle;
+	FDelegateHandle PostLoginHandle;
+	FDelegateHandle LogoutHandle;
+	FDelegateHandle HostingEndingHandle;
+
+	UPROPERTY()
+	TScriptInterface<IBRServerLifecycle> BoundLifecycle;
+};
 ```
 
 </details>
 
-### Generated output (post-review, as landed)
+<details open><summary><b>[8] breachpoint/Content/Data/DT_SpotterLines.csv:26-49</b> — canon <code>slice</code>, BM25 9.27 — DT_SpotterLines.csv</summary>
+
+```text
+DT_SpotterLines.csv (existing shipped table)
+RowName,TriggerId,Text,Audience,Weight,RepeatCooldown_s
+S09a,Kill.Melee,Melee kill.,Self,1.0,20
+S09b,Kill.Melee,Contact kill.,Self,1.0,20
+S09c,Kill.Melee,Melee finish.,Self,1.0,20
+S10a,Kill.Grenade,Grenade kill.,Self,1.0,20
+S10b,Kill.Grenade,Nowhere to go.,Self,1.0,20
+S10c,Kill.Grenade,Frag kill.,Self,1.0,20
+S11a,Rocket.Spawned,Rocket up at the Core.,All,1.0,8
+S11b,Rocket.Spawned,Rocket is live at the Core.,All,1.0,8
+S11c,Rocket.Spawned,The Core is contested.,All,1.0,8
+S12b,Rocket.PickedUp.Enemy,Rocket taken.,Team,1.0,8
+S12c,Rocket.PickedUp.Enemy,Power weapon lost.,Team,1.0,8
+S12f,Rocket.PickedUp.Enemy,Rocket off the pad.,Team,1.0,8
+S13a,Rocket.Denied,Rocket denied.,Team,1.0,8
+S13b,Rocket.Denied,Denied at the Core.,Team,1.0,8
+S13c,Rocket.Denied,Carrier down.,Team,1.0,8
+S14a,Kill.Grapple,Grapple kill.,Self,1.0,20
+S14b,Kill.Grapple,Pulled in and killed.,Self,1.0,20
+S14c,Kill.Grapple,Grapple closed the gap.,Self,1.0,20
+S15a,Match.Phase.Warmup,Warmup.,All,1.0,0
+S15b,Match.Phase.Warmup,Bots filling empty slots.,All,1.0,0
+S15c,Match.Phase.Warmup,Standing by.,All,1.0,0
+S16a,Match.Phase.Live,Match live.,All,1.0,0
+S16b,Match.Phase.Live,Weapons hot.,All,1.0,0
+S16c,Match.Phase.Live,Team Slayer. Live.,All,1.0,0
+```
+
+</details>
+
+### Sources the spotter cited across its pool
+
+- `[1] BRTelemetrySubsystem.h (TeamId field confirms team identity is tracked)`
+- `[1] BRTelemetrySubsystem.h (bJoinedInProgress confirms late arrival is a tracked case)`
+- `[1] BRTelemetrySubsystem.h:53-90 (FBRPlayerMatchTelemetry.Assists)`
+- `[1] BRTelemetrySubsystem.h:53-90 (FBRPlayerMatchTelemetry.Deaths)`
+- `[1] BRTelemetrySubsystem.h:53-90 (FBRPlayerMatchTelemetry.FriendlyFireKills)`
+- `[1] BRTelemetrySubsystem.h:53-90 (FBRPlayerMatchTelemetry.Kills)`
+- `[1] BRTelemetrySubsystem.h:53-90 (FBRPlayerMatchTelemetry.SelfInflictedDeaths)`
+- `[1] BRTelemetrySubsystem.h:53-90 (FBRPlayerMatchTelemetry.TimeInMatchSeconds)`
+- `[3] GDD:282-298 (Spotter coach-line pattern)`
+- `[3] GDD:282-298 (Spotter coach-line pattern: stat — correction)`
+- `[8] DT_SpotterLines.csv (Kill.Grenade / Rocket triggers confirm explosive weapons exist)`
+- `[8] DT_SpotterLines.csv (Kill.Grenade / Rocket triggers)`
+- `[8] DT_SpotterLines.csv (Kill.Grenade trigger confirms grenades exist)`
+
+### Generated output (post-judge, post-review, as landed)
 
 ```json
 [
  {
   "RowName": "C01",
-  "ConditionId": "LostFightsLowShields",
-  "TelemetryField": "fights_lost_below_40_shields",
-  "Threshold": 4,
-  "Text": "You lost {fights_lost_below_40_shields} fights below 40% shields \u2014 break off and let them recharge before re-engaging.",
-  "Priority": 1
- },
- {
-  "RowName": "C02",
-  "ConditionId": "LowShieldConversion",
-  "TelemetryField": "shield_break_to_kill_conversion",
-  "Threshold": 0.5,
-  "Text": "You broke shields but only converted {shield_break_to_kill_conversion} of those breaks into kills \u2014 finish the fight before shields reset.",
+  "ConditionId": "RepeatedDeaths",
+  "TelemetryField": "Deaths",
+  "Comparison": ">",
+  "Threshold": 12,
+  "Text": "{Deaths} deaths this match. Peek less, hold cover more.",
   "Priority": 2
  },
  {
-  "RowName": "C03",
-  "ConditionId": "ShortTimeAlive",
-  "TelemetryField": "time_alive",
-  "Threshold": 60,
-  "Text": "You were only alive for {time_alive}s total \u2014 you're pushing into fights before shields recharge, hold cover longer.",
-  "Priority": 3
+  "RowName": "C02",
+  "ConditionId": "HighDeathCount",
+  "TelemetryField": "Deaths",
+  "Comparison": ">=",
+  "Threshold": 15,
+  "Text": "Died {Deaths} times. Disengage sooner \u2014 reposition before the fight, not after.",
+  "Priority": 1
  },
  {
-  "RowName": "C04",
-  "ConditionId": "LowARAccuracy",
-  "TelemetryField": "accuracy_ar",
-  "Threshold": 20,
-  "Text": "Your AR accuracy was {accuracy_ar}% \u2014 you're spraying at range, switch to Magnum or burst-fire past 15 meters.",
+  "RowName": "C03",
+  "ConditionId": "MinorAssistGap",
+  "TelemetryField": "Assists",
+  "Comparison": ">=",
+  "Threshold": 5,
+  "Text": "{Assists} assists. Damage without kills wins nothing \u2014 commit to the last hit.",
   "Priority": 4
  },
  {
+  "RowName": "C04",
+  "ConditionId": "HighAssistLowFinish",
+  "TelemetryField": "Assists",
+  "Comparison": ">=",
+  "Threshold": 10,
+  "Text": "{Assists} assists this match. You're softening kills, not closing them \u2014 finish what you start.",
+  "Priority": 3
+ },
+ {
   "RowName": "C05",
-  "ConditionId": "LowMagnumAccuracy",
-  "TelemetryField": "accuracy_magnum",
-  "Threshold": 25,
-  "Text": "Your Magnum accuracy was {accuracy_magnum}% \u2014 take the extra half-second to land the precision shot instead of spamming triggers.",
+  "ConditionId": "SelfInflictedRepeat",
+  "TelemetryField": "SelfInflictedDeaths",
+  "Comparison": ">",
+  "Threshold": 1,
+  "Text": "{SelfInflictedDeaths} self-inflicted deaths. Check your range before the shot, not after.",
   "Priority": 5
  },
  {
   "RowName": "C06",
-  "ConditionId": "RocketNeglected",
-  "TelemetryField": "rocket_holds",
+  "ConditionId": "SelfInflictedAny",
+  "TelemetryField": "SelfInflictedDeaths",
+  "Comparison": ">=",
   "Threshold": 1,
-  "Text": "You held the Rocket only {rocket_holds} times \u2014 it respawns every 90s, path through it to control the map.",
+  "Text": "{SelfInflictedDeaths} self-inflicted deaths. Stop firing point-blank \u2014 you're not the only one in range.",
   "Priority": 6
  },
  {
   "RowName": "C07",
-  "ConditionId": "RearMeleeFlanker",
-  "TelemetryField": "melee_kills_rear",
+  "ConditionId": "FriendlyFireElevated",
+  "TelemetryField": "FriendlyFireKills",
+  "Comparison": ">=",
   "Threshold": 3,
-  "Text": "You landed {melee_kills_rear} rear melee kills \u2014 your flanking angles are working, keep rotating behind fights to punish backs.",
+  "Text": "{FriendlyFireKills} friendly fire kills this match. Check team ID before you fire in a scrum.",
   "Priority": 7
  },
  {
   "RowName": "C08",
-  "ConditionId": "GrappleAggressor",
-  "TelemetryField": "grapple_kills",
-  "Threshold": 3,
-  "Text": "You landed {grapple_kills} grapple kills \u2014 closing distance before the shot is working, keep opening fights with the Grappleshot.",
+  "ConditionId": "FriendlyFirePresent",
+  "TelemetryField": "FriendlyFireKills",
+  "Comparison": ">=",
+  "Threshold": 2,
+  "Text": "{FriendlyFireKills} friendly fire kills. Confirm the target before you commit the shot.",
   "Priority": 8
  },
  {
   "RowName": "C09",
-  "ConditionId": "GrenadeDenial",
-  "TelemetryField": "grenade_kills",
-  "Threshold": 3,
-  "Text": "You landed {grenade_kills} grenade kills \u2014 you're clearing angles before pushing, keep leading fights with a frag.",
+  "ConditionId": "MinimalMatchPresence",
+  "TelemetryField": "TimeInMatchSeconds",
+  "Comparison": "<=",
+  "Threshold": 120,
+  "Text": "{TimeInMatchSeconds}s of match time logged. Low presence \u2014 you're either dying fast or arriving late.",
   "Priority": 9
  },
  {
   "RowName": "C10",
-  "ConditionId": "HighAssistsLowKills",
-  "TelemetryField": "assists",
-  "Threshold": 8,
-  "Text": "You racked up {assists} assists \u2014 you're softening shields for teammates to finish, start closing more of those fights yourself.",
+  "ConditionId": "BriefMatchPresence",
+  "TelemetryField": "TimeInMatchSeconds",
+  "Comparison": "<",
+  "Threshold": 240,
+  "Text": "{TimeInMatchSeconds}s of time in match. Short match presence \u2014 check your spawn-to-fight routing.",
   "Priority": 10
+ },
+ {
+  "RowName": "C11",
+  "ConditionId": "ExtremelyLowKills",
+  "TelemetryField": "Kills",
+  "Comparison": "<",
+  "Threshold": 3,
+  "Text": "{Kills} kills. Low count \u2014 contest more, retreat less.",
+  "Priority": 11
+ },
+ {
+  "RowName": "C12",
+  "ConditionId": "VeryLowKillCount",
+  "TelemetryField": "Kills",
+  "Comparison": "<",
+  "Threshold": 4,
+  "Text": "{Kills} kills logged. Low finish count \u2014 close distance before you commit to the fight.",
+  "Priority": 12
  }
 ]
 ```
 
-> **What the un-tweaked retriever would have returned instead:** `breachpoint/BREACHPOINT-GDD-FULL-CONCEPT.md:414-419`, `breachpoint/BREACHPOINT-GDD-FULL-CONCEPT.md:243-258`, `breachpoint/BREACHPOINT-GDD-FULL-CONCEPT.md:288-299` — see README §The retrieval tweak.
+> **What the un-tweaked retriever would have returned instead:** `breachpoint/BREACHPOINT-GDD-FULL-CONCEPT.md:243-258`, `breachpoint/BREACHPOINT-GDD-FULL-CONCEPT.md:414-419`, `breachpoint/BREACHPOINT-GDD-FULL-CONCEPT.md:288-299` — see README §The retrieval tweak.
 
 ## callsigns
 
-**Query** (`scope=slice`, boost `{'DT_BotTuning.csv': 2.0}`)
+**Query** (`scope=slice`, boost `{'DT_BotTuning.csv': 2.5}`)
 
 ```
-bots fill every unfilled slot difficulty profiles Recruit Marine Veteran killfeed scoreboard player name team slayer
+bots fill every unfilled slot difficulty profiles Recruit Marine Veteran reaction accuracy cover preference killfeed scoreboard
 ```
 
 ### Retrieved chunks
 
-<details open><summary><b>[1] breachpoint/Content/Data/DT_BotTuning.csv:2-4</b> — canon <code>slice</code>, BM25 27.02 — DT_BotTuning.csv</summary>
+<details open><summary><b>[1] breachpoint/Content/Data/DT_BotTuning.csv:2-4</b> — canon <code>slice</code>, BM25 26.97 — DT_BotTuning.csv</summary>
 
 ```text
 DT_BotTuning.csv (existing shipped table)
@@ -570,7 +749,7 @@ Veteran,220,20,60,0.65,3.0,0.15,600,200,1.00,0.85,0.85,35.0,90.0,5.0,220,/Game/A
 
 </details>
 
-<details open><summary><b>[2] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:195-210</b> — canon <code>slice</code>, BM25 20.82 — BREACHPOINT — VERTICAL SLICE > 2. Game Mechanics (Player-Facing Actions and Loop) > 2.8 Bots — one brain, dialed</summary>
+<details open><summary><b>[2] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:195-210</b> — canon <code>slice</code>, BM25 24.2 — BREACHPOINT — VERTICAL SLICE > 2. Game Mechanics (Player-Facing Actions and Loop) > 2.8 Bots — one brain, dialed</summary>
 
 ```text
 BREACHPOINT — VERTICAL SLICE > 2. Game Mechanics (Player-Facing Actions and Loop) > 2.8 Bots — one brain, dialed
@@ -594,7 +773,7 @@ the real combat code (§4.5).
 
 </details>
 
-<details open><summary><b>[3] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:49-55</b> — canon <code>slice</code>, BM25 19.94 — BREACHPOINT — VERTICAL SLICE > 1. Executive Summary > 1.3 Mode</summary>
+<details open><summary><b>[3] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:49-55</b> — canon <code>slice</code>, BM25 13.76 — BREACHPOINT — VERTICAL SLICE > 1. Executive Summary > 1.3 Mode</summary>
 
 ```text
 BREACHPOINT — VERTICAL SLICE > 1. Executive Summary > 1.3 Mode
@@ -609,7 +788,7 @@ game** — it is the same code with the roster changed.
 
 </details>
 
-<details open><summary><b>[4] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:399-406</b> — canon <code>slice</code>, BM25 15.3 — BREACHPOINT — VERTICAL SLICE > 5. Scope and Schedule > 5.1 Shipped Scope</summary>
+<details open><summary><b>[4] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:399-406</b> — canon <code>slice</code>, BM25 11.17 — BREACHPOINT — VERTICAL SLICE > 5. Scope and Schedule > 5.1 Shipped Scope</summary>
 
 ```text
 BREACHPOINT — VERTICAL SLICE > 5. Scope and Schedule > 5.1 Shipped Scope
@@ -625,7 +804,7 @@ combat and footstep audio; Steam listen server + demo depot.
 
 </details>
 
-<details open><summary><b>[5] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:24-38</b> — canon <code>slice</code>, BM25 10.78 — BREACHPOINT — VERTICAL SLICE > 1. Executive Summary > 1.1 Concept</summary>
+<details open><summary><b>[5] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:24-38</b> — canon <code>slice</code>, BM25 9.68 — BREACHPOINT — VERTICAL SLICE > 1. Executive Summary > 1.1 Concept</summary>
 
 ```text
 BREACHPOINT — VERTICAL SLICE > 1. Executive Summary > 1.1 Concept
@@ -648,7 +827,7 @@ path — nothing is silently dropped.
 
 </details>
 
-<details open><summary><b>[6] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:264-279</b> — canon <code>slice</code>, BM25 9.15 — BREACHPOINT — VERTICAL SLICE > 3. AI Architecture (What Each Agent Does, Through Its Effect on Gameplay) > 3.2 The Dev-Time Crew (Claude + Unreal MCP)</summary>
+<details open><summary><b>[6] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:264-279</b> — canon <code>slice</code>, BM25 9.14 — BREACHPOINT — VERTICAL SLICE > 3. AI Architecture (What Each Agent Does, Through Its Effect on Gameplay) > 3.2 The Dev-Time Crew (Claude + Unreal MCP)</summary>
 
 ```text
 BREACHPOINT — VERTICAL SLICE > 3. AI Architecture (What Each Agent Does, Through Its Effect on Gameplay) > 3.2 The Dev-Time Crew (Claude + Unreal MCP)
@@ -672,101 +851,106 @@ regressions — are the verifier's automated testing, not a content agent.)*
 
 </details>
 
-### Generated output (post-review, as landed)
+### Sources the spotter cited across its pool
+
+- `[1] breachpoint/Content/Data/DT_BotTuning.csv:2-4`
+- `[2] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:195-210`
+
+### Generated output (post-judge, post-review, as landed)
 
 ```json
 [
  {
   "RowName": "B01",
-  "Callsign": "HOLDFAST",
+  "Callsign": "Dulledge",
   "ProfileHint": "Recruit",
-  "Note": "Reads as a bot that holds a line rather than presses it \u2014 fits Recruit's 500ms reaction and dulled aim."
+  "Note": "GDD: 'Same StateTree, dulled' is the exact descriptor for the Recruit behavior column"
  },
  {
   "RowName": "B02",
-  "Callsign": "TRIPWIRE",
+  "Callsign": "Softaim",
   "ProfileHint": "Recruit",
-  "Note": "An alarm, not a shooter \u2014 matches Recruit's rare grenade use and 25% accuracy."
+  "Note": "accuracy_pct=0.25, lowest of the three rows"
  },
  {
   "RowName": "B03",
-  "Callsign": "BACKSTOP",
+  "Callsign": "Shakygrip",
   "ProfileHint": "Recruit",
-  "Note": "Last line, not first contact \u2014 suits the slowest, softest tuning row."
+  "Note": "reaction_jitter_ms=120, highest jitter of the three rows"
  },
  {
   "RowName": "B04",
-  "Callsign": "FALLBACK",
+  "Callsign": "Slowdraw",
   "ProfileHint": "Recruit",
-  "Note": "Named for retreating, not engaging \u2014 matches Recruit's dulled StateTree behavior."
+  "Note": "reaction_ms=500 (slowest of the three profiles) \u2014 the callsign names the delay itself"
  },
  {
   "RowName": "B05",
-  "Callsign": "STANDBY",
+  "Callsign": "Wideshot",
   "ProfileHint": "Recruit",
-  "Note": "Waits before it acts \u2014 pairs with the 500ms reaction floor."
+  "Note": "aim_error_deg=8.0, widest cone of the three rows, hence a shot that misses wide"
  },
  {
   "RowName": "B06",
-  "Callsign": "LOCKSTEP",
+  "Callsign": "Midpace",
   "ProfileHint": "Marine",
-  "Note": "Moves with the squad, nothing flashy \u2014 the baseline profile in a word."
+  "Note": "reaction_ms=320, exact middle of 500/320/220 across the three rows"
  },
  {
   "RowName": "B07",
-  "Callsign": "FIREWALL",
+  "Callsign": "Evenkeel",
   "ProfileHint": "Marine",
-  "Note": "Solid and situational, like the 45% accuracy / situational grenade row."
+  "Note": "reaction_jitter_ms=80, mid value between Recruit's 120 and Veteran's 60"
  },
  {
   "RowName": "B08",
-  "Callsign": "IRONCLAD",
+  "Callsign": "Steadyaim",
   "ProfileHint": "Marine",
-  "Note": "Dependable middle ground \u2014 no edge, no gap, just Marine's default numbers."
+  "Note": "accuracy_pct=0.45, the middle value of the three rows"
  },
  {
   "RowName": "B09",
-  "Callsign": "WARDEN",
+  "Callsign": "Coverwise",
   "ProfileHint": "Marine",
-  "Note": "Holds a post competently \u2014 matches Marine's 0.65 cover_preference, steady not sharp."
+  "Note": "cover_preference=0.65, mid value between Recruit's 0.45 and Veteran's 0.85"
  },
  {
   "RowName": "B10",
-  "Callsign": "ANCHOR",
+  "Callsign": "Tightline",
   "ProfileHint": "Marine",
-  "Note": "Keeps the line where the default profile keeps it \u2014 the baseline callsign."
+  "Note": "aim_error_deg=5.0, mid value between Recruit's 8.0 and Veteran's 3.0"
  },
  {
   "RowName": "B11",
-  "Callsign": "DEADBOLT",
+  "Callsign": "Honedline",
   "ProfileHint": "Veteran",
-  "Note": "Locks on and doesn't let go \u2014 fits 65% accuracy and the tightest aim_error."
+  "Note": "GDD: 'Same StateTree, sharpened' is the exact descriptor for the Veteran behavior column"
  },
  {
   "RowName": "B12",
-  "Callsign": "CROSSFIRE",
+  "Callsign": "Tightaim",
   "ProfileHint": "Veteran",
-  "Note": "Aggressive engagement fits the sharpened StateTree and 1.00 rocket_contest."
+  "Note": "aim_error_deg=3.0, lowest (tightest) of the three rows"
  },
  {
   "RowName": "B13",
-  "Callsign": "NIGHTFALL",
+  "Callsign": "Coverlock",
   "ProfileHint": "Veteran",
-  "Note": "Quiet until it commits \u2014 matches Veteran's tactical grenade use."
+  "Note": "cover_preference=0.85, highest of the three rows"
  },
  {
   "RowName": "B14",
-  "Callsign": "REDLINE",
+  "Callsign": "Longtrack",
   "ProfileHint": "Veteran",
-  "Note": "Pushed to the fastest setting \u2014 pairs with Veteran's 220ms reaction."
+  "Note": "target_memory_s=5.0, highest of the three rows"
  },
  {
   "RowName": "B15",
-  "Callsign": "GRIDLOCK",
+  "Callsign": "Deadeye",
   "ProfileHint": "Veteran",
-  "Note": "Shuts an area down cleanly \u2014 fits the 0.85 cover_preference and short commit_window."
+  "Note": "accuracy_pct=0.65, highest of the three rows"
  }
 ]
 ```
 
-> **What the un-tweaked retriever would have returned instead:** `breachpoint/BREACHPOINT-GDD-FULL-CONCEPT.md:38-47`, `breachpoint/BREACHPOINT-GDD-FULL-CONCEPT.md:171-182` — see README §The retrieval tweak.
+> **What the un-tweaked retriever would have returned instead:** `breachpoint/BREACHPOINT-GDD-FULL-CONCEPT.md:171-182`, `breachpoint/BREACHPOINT-GDD-FULL-CONCEPT.md:38-47` — see README §The retrieval tweak.

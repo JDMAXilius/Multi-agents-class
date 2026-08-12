@@ -1,80 +1,69 @@
 # Critic log — what was caught, and the correction
 
-`before` and `after` are the generator's own rows, captured on either side of
-the review. The diff is computed by the pipeline, not written by hand.
+This is the REFUTER pass, which runs on the survivors of the JUDGE pass
+(`output/judge_log.md`). `before` and `after` are the spotter's own rows,
+captured either side of review; the diff is computed by the pipeline.
 
-## announcer — verdict `FINDINGS`, 4 finding(s), 2 blocking
+## announcer — verdict `FINDINGS`, 2 finding(s), 0 blocking
 
-### `S25a` — lore-break (high)
+### `S22b` — redundancy (medium)
 
-- **objected to:** `Spree ended.`
-- **canon cited:** M11: Spree Ender,Killed the enemy who was on a killing spree.,Kill.SpreeEnder; contrast S04b: Kill.Spree,"Killing spree."
-- **why:** unqualified 'Spree ended' plays for killing an enemy's spree but reads identically to a player's own spree being interrupted, misrepresenting the positive event M11 actually describes.
-- **proposed fix:** `Enemy spree ended.`
+- **objected to:** `Multi-kill. Rocket.`
+- **canon cited:** Compare to established triads e.g. DT_SpotterLines.csv S03a-c: "Double kill." / "Two down." / "Back to back." — three lexically distinct phrasings for one trigger.
+- **why:** S22a ("Rocket multi-kill.") and S22b ("Multi-kill. Rocket.") are the same two words reordered, so of the three lines meant to give spoken variety for Kill.Rocket.Multi, only two distinct ideas actually exist — a player will hear what sounds like the same callout twice.
+- **proposed fix:** `Replace S22b with a genuinely distinct phrasing, e.g. "Two with one rocket." (echoing the Blast Radius medal description "Two or more killed with one rocket").`
 
-### `S25b` — lore-break (high)
+### `S22c` — tone-drift (low)
 
-- **objected to:** `Killing spree stopped.`
-- **canon cited:** M11: Spree Ender,Killed the enemy who was on a killing spree.,Kill.SpreeEnder; contrast S04b: Kill.Spree,"Killing spree."
-- **why:** this is nearly a negation of S04b's 'Killing spree.' line and will read as the player's own spree being stopped rather than the enemy's, contradicting the trigger's actual meaning.
-- **proposed fix:** `Their spree, stopped.`
-
-### `S25c` — lore-break (medium)
-
-- **objected to:** `Spree's over.`
-- **canon cited:** M11: Spree Ender,Killed the enemy who was on a killing spree.,Kill.SpreeEnder
-- **why:** same whose-spree ambiguity as S25a/S25b, and the apostrophe contraction is not used elsewhere in the canon's terse Self-line register.
-- **proposed fix:** `Ended their spree.`
-
-### `S23c` — redundancy (medium)
-
-- **objected to:** `Match's first kill.`
-- **canon cited:** S23a: Kill.First,"First kill."
-- **why:** conveys the same single fact as S23a with no new information, so the trio does not provide the three-way variation the table pattern (e.g. S03a/S03b/S03c) relies on.
-- **proposed fix:** `Blood first drawn.`
-
-### Correction applied
-
-| Row | Before | After |
-|---|---|---|
-| `S25a`.Text | `Spree ended.` | `Enemy spree ended.` |
-| `S25b`.Text | `Killing spree stopped.` | `Their spree, stopped.` |
-
-## coach — verdict `FINDINGS`, 1 finding(s), 0 blocking
-
-### `C02` — schema-risk (medium)
-
-- **objected to:** `You broke shields but only converted {shield_break_to_kill_conversion} of those breaks into kills — finish the fight before shields reset.`
-- **why:** The value is interpolated raw with no unit (no '%' as used for accuracy_ar/accuracy_magnum) and the Threshold (0.5) is on a 0–1 scale while the table's other ratio-type fields (accuracy_ar: 20, accuracy_magnum: 25) are on a 0–100 scale, so either the line will read as an unnatural decimal ('converted 0.42 of those breaks') or the threshold comparison is on the wrong scale and the condition fires almost every match, undermining the 'one specific, earned correction' design.
-- **proposed fix:** `You broke shields but only converted {shield_break_to_kill_conversion}% of those breaks into kills — finish the fight before shields reset. (store/compare the backing stat on the same 0–100 scale as the accuracy fields, or explicitly document it as a 0–1 fraction and set Threshold accordingly)`
+- **objected to:** `Group kill. Rocket.`
+- **why:** "Group kill" is not terminology used anywhere in the shipped medal or spotter tables, which consistently say "Multi" (Kill.Multi.Double, Kill.Rocket.Multi) or the medal name "Blast Radius" — introducing a new synonym breaks the established callout vocabulary the other rows in this table follow.
+- **proposed fix:** `"Blast radius." (directly echoing the M4 medal name, matching how S04b echoes "Killing Spree" and S08c echoes "Blindside").`
 
 _No blocking finding, so no row changed._
 
-## callsigns — verdict `FINDINGS`, 3 finding(s), 1 blocking
+## coach — verdict `FINDINGS`, 3 finding(s), 3 blocking
 
-### `B09` — lore-break (high)
+### `C02` — redundancy (high)
 
-- **objected to:** `matches Marine's 0.65 push_threshold, steady not sharp.`
-- **canon cited:** DT_BotTuning.csv:3 — Marine,320,20,80,0.45,5.0,0.20,900,300,0.60,0.95,0.65,... (push_threshold=0.95; 0.65 is cover_preference)
-- **why:** The note cites 0.65 as Marine's push_threshold, but the shipped table has push_threshold=0.95 for Marine — 0.65 is actually cover_preference, so the row misstates a canonical data value.
-- **proposed fix:** `matches Marine's 0.65 cover_preference, steady not sharp.`
+- **objected to:** `Died {Deaths} times. Disengage sooner — reposition before the fight, not after.`
+- **why:** C02 (Deaths>=15) is a strict subset of C01 (Deaths>12), and C01's Priority (1) beats C02's Priority (2) under the standard lower-number-wins convention required to keep the SelfInflictedDeaths/FriendlyFire/TimeInMatch/Kills pairs functional — so C02 never fires for any Deaths value; a player with 20 deaths still gets C01's milder 'Peek less, hold cover more' line.
+- **proposed fix:** `Swap the Priority values: give C02 the lower/dominant number (e.g. C01=2, C02=1) so the more-severe row wins the overlap, matching the ordering convention used by every other field-pair.`
 
-### `B08` — redundancy (medium)
+### `C04` — redundancy (high)
 
-- **objected to:** `Dependable middle ground — no edge, no gap, just Marine's default numbers.`
-- **canon cited:** B06 LOCKSTEP note: "Moves with the squad, nothing flashy — the baseline profile in a word."
-- **why:** IRONCLAD and LOCKSTEP both exist only to say 'this is the unmodified baseline profile,' so the two callsigns give Marine no distinct identities between them.
-- **proposed fix:** `Reground IRONCLAD in a specific tuning trait (e.g. its 900ms commit_window or 0.20 switch_margin) instead of restating 'default, nothing special.'`
+- **objected to:** `{Assists} assists this match. You're softening kills, not closing them — finish what you start.`
+- **why:** C04 (Assists>=10) is a strict subset of C03 (Assists>=5), and C03's Priority (3) beats C04's Priority (4) under the same convention, so C04 never fires for any Assists value — a player with 14 assists still gets C03's generic line instead of the escalated one written for them.
+- **proposed fix:** `Swap the Priority values: give C04 the lower/dominant number (e.g. C03=4, C04=3) so the more-severe row wins the overlap, matching the ordering convention used by every other field-pair.`
 
-### `B04` — redundancy (medium)
+### `table-wide` — schema-risk (high)
 
-- **objected to:** `Named for retreating, not engaging — matches Recruit's dulled StateTree behavior.`
-- **canon cited:** B03 BACKSTOP note: "Last line, not first contact — suits the slowest, softest tuning row."
-- **why:** FALLBACK and BACKSTOP both encode the identical 'avoids first contact / falls back' persona, so the two Recruit callsigns don't provide distinguishable variation.
-- **proposed fix:** `Differentiate FALLBACK via a different tuning axis (e.g. its 120ms reaction_jitter or 2.0s target_memory_s) rather than repeating BACKSTOP's 'avoids engagement' theme.`
+- **objected to:** `Priority: 1..12 (sequential, one per row)`
+- **why:** The Priority column encodes two opposite severity-ordering conventions: for SelfInflictedDeaths/FriendlyFireKills/TimeInMatchSeconds/Kills, the narrower more-severe row has the lower Priority number (correct under a lower-wins resolver); for Deaths/Assists it's reversed — the narrower more-severe row (C02/C04) has the higher number. No single consistent tie-break rule makes all 12 rows reachable: lower-wins kills C02/C04, higher-wins kills C05/C07/C09/C11 instead, silently substituting the milder sibling line at thresholds meant to trigger the severe one.
+- **proposed fix:** `Renumber Priority so that, within every pair, the row whose condition range is the subset (the more specific/severe threshold) always gets the priority value that wins ties under whatever resolver is implemented — pick one direction and apply it uniformly across all six pairs.`
 
 ### Correction applied
 
 | Row | Before | After |
 |---|---|---|
-| `B09`.Note | `Holds a post competently — matches Marine's 0.65 push_threshold, steady not sharp.` | `Holds a post competently — matches Marine's 0.65 cover_preference, steady not sharp.` |
+| `C01`.Priority | `1` | `2` |
+| `C02`.Priority | `2` | `1` |
+| `C03`.Priority | `3` | `4` |
+| `C04`.Priority | `4` | `3` |
+
+## callsigns — verdict `FINDINGS`, 2 finding(s), 0 blocking
+
+### `B02` — tone-drift (medium)
+
+- **objected to:** `Softaim / Shakygrip / Slowdraw / Wideshot / Midpace / Evenkeel / Steadyaim / Coverwise / Tightline / Tightaim / Coverlock / Longtrack / Deadeye`
+- **canon cited:** [1] DT_BotTuning.csv row schema: Name,reaction_ms,reaction_quantum_ms,... — the only Name values that exist in the shipped table are 'Recruit', 'Marine', 'Veteran'. No Callsign/personality field exists anywhere in the retrieved canon.
+- **why:** 13 of the 15 rows invent generic-shooter nickname tropes (Deadeye, Wideshot, Slowdraw, Shakygrip, Softaim, etc.) for a table whose canon precedent is three sober tier names and a spreadsheet of tuning scalars — nothing in the shipped data or the GDD prose establishes a callsign-naming convention, so this register doesn't match what actually ships. (B01 'Dulledge' and B11 'Honedline' are the exception — those are tightly grounded in the GDD's literal 'dulled'/'sharpened' descriptors and are fine.)
+- **proposed fix:** `Either drop the Callsign field entirely and key rows by Name+index (e.g. Recruit_01..05), or if callsigns are wanted, derive all 15 the way B01/B11 were derived — from the GDD's own descriptor language for that tier — rather than inventing unrelated FPS nickname tropes.`
+
+### `B01` — schema-risk (medium)
+
+- **objected to:** `"RowName": "B01", "Callsign": "Dulledge", "ProfileHint": "Recruit"`
+- **canon cited:** [1] DT_BotTuning.csv header: Name,reaction_ms,reaction_quantum_ms,reaction_jitter_ms,accuracy_pct,aim_error_deg,switch_margin,commit_window_ms,commit_jitter_ms,rocket_contest,push_threshold,cover_preference,sight_radius_m,sight_fov_deg,target_memory_s,engage_update_ms,StateTreeSoftPath
+- **why:** None of RowName, Callsign, ProfileHint, or Note exist in the shipped DT_BotTuning schema. If this content is meant to land as new rows in that table it breaks import (unknown columns / no numeric scalars at all); if it's meant to be a separate roster table, the reviewed content never names that table or its relationship to the 3 canonical tuning rows, so there's no defined destination for this data.
+- **proposed fix:** `State explicitly which table/asset this roster targets and how ProfileHint resolves to the DT_BotTuning row it inherits scalars from (e.g. a foreign-key-style lookup), rather than leaving it implicit.`
+
+_No blocking finding, so no row changed._

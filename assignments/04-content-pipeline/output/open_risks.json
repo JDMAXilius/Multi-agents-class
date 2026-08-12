@@ -1,52 +1,42 @@
 [
   {
     "job": "announcer",
-    "row": "S25c",
-    "kind": "lore-break",
+    "row": "S22b",
+    "kind": "redundancy",
     "severity": "medium",
-    "quote": "Spree's over.",
-    "canon": "M11: Spree Ender,Killed the enemy who was on a killing spree.,Kill.SpreeEnder",
-    "why": "same whose-spree ambiguity as S25a/S25b, and the apostrophe contraction is not used elsewhere in the canon's terse Self-line register.",
-    "fix": "Ended their spree."
+    "quote": "Multi-kill. Rocket.",
+    "canon": "Compare to established triads e.g. DT_SpotterLines.csv S03a-c: \"Double kill.\" / \"Two down.\" / \"Back to back.\" \u2014 three lexically distinct phrasings for one trigger.",
+    "why": "S22a (\"Rocket multi-kill.\") and S22b (\"Multi-kill. Rocket.\") are the same two words reordered, so of the three lines meant to give spoken variety for Kill.Rocket.Multi, only two distinct ideas actually exist \u2014 a player will hear what sounds like the same callout twice.",
+    "fix": "Replace S22b with a genuinely distinct phrasing, e.g. \"Two with one rocket.\" (echoing the Blast Radius medal description \"Two or more killed with one rocket\")."
   },
   {
     "job": "announcer",
-    "row": "S23c",
-    "kind": "redundancy",
-    "severity": "medium",
-    "quote": "Match's first kill.",
-    "canon": "S23a: Kill.First,\"First kill.\"",
-    "why": "conveys the same single fact as S23a with no new information, so the trio does not provide the three-way variation the table pattern (e.g. S03a/S03b/S03c) relies on.",
-    "fix": "Blood first drawn."
+    "row": "S22c",
+    "kind": "tone-drift",
+    "severity": "low",
+    "quote": "Group kill. Rocket.",
+    "canon": "",
+    "why": "\"Group kill\" is not terminology used anywhere in the shipped medal or spotter tables, which consistently say \"Multi\" (Kill.Multi.Double, Kill.Rocket.Multi) or the medal name \"Blast Radius\" \u2014 introducing a new synonym breaks the established callout vocabulary the other rows in this table follow.",
+    "fix": "\"Blast radius.\" (directly echoing the M4 medal name, matching how S04b echoes \"Killing Spree\" and S08c echoes \"Blindside\")."
   },
   {
-    "job": "coach",
-    "row": "C02",
+    "job": "callsigns",
+    "row": "B02",
+    "kind": "tone-drift",
+    "severity": "medium",
+    "quote": "Softaim / Shakygrip / Slowdraw / Wideshot / Midpace / Evenkeel / Steadyaim / Coverwise / Tightline / Tightaim / Coverlock / Longtrack / Deadeye",
+    "canon": "[1] DT_BotTuning.csv row schema: Name,reaction_ms,reaction_quantum_ms,... \u2014 the only Name values that exist in the shipped table are 'Recruit', 'Marine', 'Veteran'. No Callsign/personality field exists anywhere in the retrieved canon.",
+    "why": "13 of the 15 rows invent generic-shooter nickname tropes (Deadeye, Wideshot, Slowdraw, Shakygrip, Softaim, etc.) for a table whose canon precedent is three sober tier names and a spreadsheet of tuning scalars \u2014 nothing in the shipped data or the GDD prose establishes a callsign-naming convention, so this register doesn't match what actually ships. (B01 'Dulledge' and B11 'Honedline' are the exception \u2014 those are tightly grounded in the GDD's literal 'dulled'/'sharpened' descriptors and are fine.)",
+    "fix": "Either drop the Callsign field entirely and key rows by Name+index (e.g. Recruit_01..05), or if callsigns are wanted, derive all 15 the way B01/B11 were derived \u2014 from the GDD's own descriptor language for that tier \u2014 rather than inventing unrelated FPS nickname tropes."
+  },
+  {
+    "job": "callsigns",
+    "row": "B01",
     "kind": "schema-risk",
     "severity": "medium",
-    "quote": "You broke shields but only converted {shield_break_to_kill_conversion} of those breaks into kills \u2014 finish the fight before shields reset.",
-    "canon": "",
-    "why": "The value is interpolated raw with no unit (no '%' as used for accuracy_ar/accuracy_magnum) and the Threshold (0.5) is on a 0\u20131 scale while the table's other ratio-type fields (accuracy_ar: 20, accuracy_magnum: 25) are on a 0\u2013100 scale, so either the line will read as an unnatural decimal ('converted 0.42 of those breaks') or the threshold comparison is on the wrong scale and the condition fires almost every match, undermining the 'one specific, earned correction' design.",
-    "fix": "You broke shields but only converted {shield_break_to_kill_conversion}% of those breaks into kills \u2014 finish the fight before shields reset. (store/compare the backing stat on the same 0\u2013100 scale as the accuracy fields, or explicitly document it as a 0\u20131 fraction and set Threshold accordingly)"
-  },
-  {
-    "job": "callsigns",
-    "row": "B08",
-    "kind": "redundancy",
-    "severity": "medium",
-    "quote": "Dependable middle ground \u2014 no edge, no gap, just Marine's default numbers.",
-    "canon": "B06 LOCKSTEP note: \"Moves with the squad, nothing flashy \u2014 the baseline profile in a word.\"",
-    "why": "IRONCLAD and LOCKSTEP both exist only to say 'this is the unmodified baseline profile,' so the two callsigns give Marine no distinct identities between them.",
-    "fix": "Reground IRONCLAD in a specific tuning trait (e.g. its 900ms commit_window or 0.20 switch_margin) instead of restating 'default, nothing special.'"
-  },
-  {
-    "job": "callsigns",
-    "row": "B04",
-    "kind": "redundancy",
-    "severity": "medium",
-    "quote": "Named for retreating, not engaging \u2014 matches Recruit's dulled StateTree behavior.",
-    "canon": "B03 BACKSTOP note: \"Last line, not first contact \u2014 suits the slowest, softest tuning row.\"",
-    "why": "FALLBACK and BACKSTOP both encode the identical 'avoids first contact / falls back' persona, so the two Recruit callsigns don't provide distinguishable variation.",
-    "fix": "Differentiate FALLBACK via a different tuning axis (e.g. its 120ms reaction_jitter or 2.0s target_memory_s) rather than repeating BACKSTOP's 'avoids engagement' theme."
+    "quote": "\"RowName\": \"B01\", \"Callsign\": \"Dulledge\", \"ProfileHint\": \"Recruit\"",
+    "canon": "[1] DT_BotTuning.csv header: Name,reaction_ms,reaction_quantum_ms,reaction_jitter_ms,accuracy_pct,aim_error_deg,switch_margin,commit_window_ms,commit_jitter_ms,rocket_contest,push_threshold,cover_preference,sight_radius_m,sight_fov_deg,target_memory_s,engage_update_ms,StateTreeSoftPath",
+    "why": "None of RowName, Callsign, ProfileHint, or Note exist in the shipped DT_BotTuning schema. If this content is meant to land as new rows in that table it breaks import (unknown columns / no numeric scalars at all); if it's meant to be a separate roster table, the reviewed content never names that table or its relationship to the 3 canonical tuning rows, so there's no defined destination for this data.",
+    "fix": "State explicitly which table/asset this roster targets and how ProfileHint resolves to the DT_BotTuning row it inherits scalars from (e.g. a foreign-key-style lookup), rather than leaving it implicit."
   }
 ]
