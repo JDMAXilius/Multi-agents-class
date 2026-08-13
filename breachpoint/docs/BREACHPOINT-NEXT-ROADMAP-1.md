@@ -102,18 +102,22 @@ standalone AND in client+server from the first build.
   input assets, and one thin defaults-only BP child per class that needs asset defaults.
 - **Multiplayer from line one.** No local-only state that pretends. Old code that isn't
   multiplayer-correct is not a reference.
-- **Founder tests; the crew builds — including the editor work.** Every roadmap ships its
-  asset setup as committed Python scripts run through the editor (Unreal MCP / Editor Script
-  Plugin), followed by a read-back audit proving the result. The founder's hands touch only
-  the play button. (Standing rule for ALL roadmaps, not just this one.)
-- **But say so when the founder doing it by hand is faster — always, up front.** The rule
-  above exists to save the founder work, not to make automation a dogma that costs them time.
-  Scripting earns its keep when a step will be re-run (fresh pull, another machine), covers
-  many assets, or needs an audit as proof. It does NOT when the job is a couple of clicks on
-  one asset, or when the decisive step is something UE's Python cannot do — graph/node editing
-  above all, where the script can only print manual instructions anyway. In those cases the
-  honest answer is "do this one yourself, here are the exact steps", said **before** a script
-  is written, not after it is delivered.
+- **No more scripts by default** (founder, 13 Aug 2026 — supersedes the scripts-first rule this
+  replaced). `Tools/bn/` stays as history; nothing new joins it unless the founder asks, or the
+  lead proposes one and the founder agrees FIRST. Writing a script is no longer the reflex.
+- **Everything is C++.** All logic, all state, all GAS, tag management, multiplayer-correct from
+  line one. Nothing moves to a Blueprint graph because it was easier there. The BP child holds
+  defaults and asset references — nothing else, no graph.
+- **The editor's job is narrow, and it is a handoff.** Two things only: create a new asset that
+  **inherits from its C++ class**, and set up its asset references/defaults. Ideally the terminal
+  session does it through the **Unreal MCP** — that is the preferred path, not scripts. Whenever
+  C++ needs an asset that does not exist, or an asset needs a C++ class that does not exist,
+  **say so explicitly**; the two halves stay in sync by telling each other, never by assuming.
+- **The time test decides who acts, and it is stated up front.** A couple of minutes of clicking
+  for the founder → the lead guides, the founder clicks. Longer than that, or the work is where
+  an agent would flail (many assets, repeated setup, anything needing proof) → the lead does it
+  via terminal + MCP. Judge per task, say the judgement out loud **before** starting, and if a
+  chosen path starts fighting back, stop and hand the rest over rather than sinking time into it.
 - **Variables: only the necessary ones. Asset references: soft (`TSoftObjectPtr`/
   `TSoftClassPtr`) wherever UE allows it.**
 
