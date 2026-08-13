@@ -11,8 +11,12 @@ UBNGameplayAbility::UBNGameplayAbility()
 
 // The dead activate nothing. Here rather than as ActivationBlockedTags in the constructor for the
 // reason UBNGA_Lean resolves its tag in a virtual — native tags are not guaranteed registered
-// while CDOs are built. It runs on the client too, so the owner never predicts a verb the server
-// is about to refuse. UBNGA_Death itself activates BEFORE the tag exists, and is refused after.
+// while CDOs are built. UBNGA_Death itself activates BEFORE the tag exists, and is refused after.
+//
+// What this check removes is the ACTIVATION, on both roles. It does not close the replication
+// window: State.Dead reaches the owning client one hop after the server applies it, so an input
+// inside that hop activates locally, plays its predicted cue, and is then refused server-side —
+// residue is a muzzle flash the server never fired. Symmetric on respawn, and cosmetic only.
 bool UBNGameplayAbility::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, FGameplayTagContainer* OptionalRelevantTags) const
 {
 	if (!Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags))

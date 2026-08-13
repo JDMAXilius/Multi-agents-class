@@ -4,19 +4,101 @@
 #include "Core/BNGameplayTags.h"
 #include "Input/BNInputComponent.h"
 #include "Input/BNInputConfig.h"
+#include "AbilitySystem/Attributes/BNAttributeSet.h"
+#include "AbilitySystem/Effects/BNDamage.h"
 #include "Match/BNPlayerState.h"
-#include "Utilities/BNCheatManager.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "InputMappingContext.h"
 #include "GameFramework/Pawn.h"
 
-ABNPlayerController::ABNPlayerController()
-{
-	// The testing lever, wired from line one (Lyra does the same). Not shipped: cheats are not
-	// gameplay, and the class this names has exec functions that move attributes.
 #if !UE_BUILD_SHIPPING
-	CheatClass = UBNCheatManager::StaticClass();
+namespace
+{
+	/** True when the call was forwarded and this machine must do nothing else. */
+	bool BNForwardToAuthority(APlayerController* PC, const FString& Command)
+	{
+		if (!PC || PC->HasAuthority())
+		{
+			return false;
+		}
+
+		// The engine's own console-to-server channel: the server runs the identical command on
+		// its own copy of this controller, which is the machine allowed to move an attribute.
+		PC->ServerCheat(Command);
+		return true;
+	}
+}
+#endif
+
+void ABNPlayerController::BeginPlay()
+{
+	Super::BeginPlay();
+
+#if !UE_BUILD_SHIPPING
+	// ServerCheat is swallowed unless the SERVER's copy of this controller holds a cheat manager,
+	// and AGameModeBase::AllowCheats says no outside the editor — so a packaged development
+	// listen-server would eat every forwarded lever. Forced here, authority side only; the class
+	// is the engine's plain UCheatManager, because the levers themselves are execs on this
+	// controller and reach ProcessConsoleExec without one.
+	if (HasAuthority() && !CheatManager)
+	{
+		AddCheats(true);
+	}
+#endif
+}
+
+void ABNPlayerController::BNDamageSelf(float Amount)
+{
+#if !UE_BUILD_SHIPPING
+	if (BNForwardToAuthority(this, FString::Printf(TEXT("BNDamageSelf %f"), Amount)))
+	{
+		return;
+	}
+
+	APawn* ControlledPawn = GetPawn();
+	BNDamage::ApplyDamage(ControlledPawn, ControlledPawn, Amount, FHitResult());
+#endif
+}
+
+void ABNPlayerController::BNKillSelf()
+{
+#if !UE_BUILD_SHIPPING
+	if (BNForwardToAuthority(this, TEXT("BNKillSelf")))
+	{
+		return;
+	}
+
+	const ABNPlayerState* PS = GetPlayerState<ABNPlayerState>();
+	const UAbilitySystemComponent* ASC = PS ? PS->GetAbilitySystemComponent() : nullptr;
+	if (!ASC)
+	{
+		return;
+	}
+
+	// Lethal is COMPUTED and paid through the door, never asserted by writing zero: death has to
+	// arrive the way a bullet's would, or this lever tests a path nothing else uses.
+	APawn* ControlledPawn = GetPawn();
+	BNDamage::ApplyDamage(ControlledPawn, ControlledPawn,
+		ASC->GetNumericAttribute(UBNAttributeSet::GetHealthAttribute())
+			+ ASC->GetNumericAttribute(UBNAttributeSet::GetShieldAttribute()),
+		FHitResult());
+#endif
+}
+
+void ABNPlayerController::BNRefill()
+{
+#if !UE_BUILD_SHIPPING
+	if (BNForwardToAuthority(this, TEXT("BNRefill")))
+	{
+		return;
+	}
+
+	// Through the init GE, the same one respawn uses. Nothing here hand-sets an attribute.
+	if (ABNPlayerState* PS = GetPlayerState<ABNPlayerState>())
+	{
+		PS->ApplyInitAttributes();
+	}
 #endif
 }
 
@@ -97,10 +179,14 @@ void ABNPlayerController::SetupInputComponent()
 	Bind(BNTags::Input_Lean_Left, ETriggerEvent::Completed, &ABNPlayerController::HandleLeanLeftReleased);
 	Bind(BNTags::Input_Lean_Right, ETriggerEvent::Started, &ABNPlayerController::HandleLeanRightPressed);
 	Bind(BNTags::Input_Lean_Right, ETriggerEvent::Completed, &ABNPlayerController::HandleLeanRightReleased);
+#if !UE_BUILD_SHIPPING
 	// ANNOUNCED, not created: IA_BNDebugDamageSelf + its DA_BNInput row + its IMC_BNNext mapping
 	// do not exist yet, so until the founder adds them this binding logs its "that control is
-	// dead" line every run — which is the announcement being loud rather than silent.
+	// dead" line every run — which is the announcement being loud rather than silent. The BINDING
+	// is guarded, not just the handler: a shipping listen-server host is an authority, so an
+	// unguarded key would damage the host for real.
 	Bind(BNTags::Input_Debug_DamageSelf, ETriggerEvent::Started, &ABNPlayerController::HandleDebugDamagePressed);
+#endif
 }
 
 void ABNPlayerController::HandleMove(const FInputActionValue& Value)
@@ -246,8 +332,9 @@ void ABNPlayerController::HandleLeanRightReleased()
 
 void ABNPlayerController::HandleDebugDamagePressed()
 {
-	// One keypress, the SAME route as the console command — the key gets no path of its own.
-	UBNCheatManager::RouteDamageSelf(this);
+	// One keypress, the SAME exec the console runs — the key gets no path of its own, and no
+	// second authority hop to keep in sync.
+	BNDamageSelf();
 }
 
 UBNAbilitySystemComponent* ABNPlayerController::GetBNAbilitySystemComponent() const
