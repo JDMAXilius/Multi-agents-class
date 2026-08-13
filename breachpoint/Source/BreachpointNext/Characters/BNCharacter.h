@@ -18,6 +18,7 @@ public:
 	ABNCharacter();
 
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	virtual void BeginPlay() override;
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -40,6 +41,11 @@ protected:
 
 	bool bUnarmedAnimLayerResolveAttempted = false;
 
+	/** The layer class currently linked on the 3P mesh; the character is the ONE owner of linking. */
+	UPROPERTY(Transient)
+	TObjectPtr<UClass> LinkedAnimLayerClass;
+
+	void InitializeAnimLayer();
 	void InitializeAbilitySystem();
 	void OnMoveSpeedChanged(const FOnAttributeChangeData& Data);
 

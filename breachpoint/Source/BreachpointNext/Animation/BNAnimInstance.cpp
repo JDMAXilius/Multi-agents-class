@@ -2,8 +2,65 @@
 #include "Characters/BNCharacter.h"
 #include "Core/BNGameplayTags.h"
 #include "AbilitySystemComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
+
+namespace
+{
+	// AnimEnum_CardinalDirection / AnimEnum_RootYawOffsetMode, by enumerator order.
+	constexpr uint8 BN_CardinalForward = 0;
+	constexpr uint8 BN_CardinalBackward = 1;
+	constexpr uint8 BN_CardinalLeft = 2;
+	constexpr uint8 BN_CardinalRight = 3;
+
+	constexpr uint8 BN_YawModeBlendOut = 0;
+	constexpr uint8 BN_YawModeAccumulate = 2;
+
+	const FName BN_TurnYawWeightCurve(TEXT("TurnYawWeight"));
+	const FName BN_RemainingTurnYawCurve(TEXT("RemainingTurnYaw"));
+
+	// The source's SelectCardinalDirectionFromAngle: the held direction's dead zone doubles
+	// so a jog along a 45-degree seam does not flicker between cardinals.
+	uint8 SelectCardinalDirectionFromAngle(double Angle, double DeadZone, uint8 CurrentDirection, bool bUseCurrentDirection)
+	{
+		const double AbsAngle = FMath::Abs(Angle);
+		double FwdDeadZone = DeadZone;
+		double BwdDeadZone = DeadZone;
+		if (bUseCurrentDirection)
+		{
+			if (CurrentDirection == BN_CardinalForward)
+			{
+				FwdDeadZone *= 2.0;
+			}
+			else if (CurrentDirection == BN_CardinalBackward)
+			{
+				BwdDeadZone *= 2.0;
+			}
+		}
+		if (AbsAngle <= 45.0 + FwdDeadZone)
+		{
+			return BN_CardinalForward;
+		}
+		if (AbsAngle >= 135.0 - BwdDeadZone)
+		{
+			return BN_CardinalBackward;
+		}
+		return Angle > 0.0 ? BN_CardinalRight : BN_CardinalLeft;
+	}
+
+	uint8 GetOppositeCardinalDirection(uint8 In)
+	{
+		switch (In)
+		{
+		case BN_CardinalForward:  return BN_CardinalBackward;
+		case BN_CardinalBackward: return BN_CardinalForward;
+		case BN_CardinalLeft:     return BN_CardinalRight;
+		default:                  return BN_CardinalLeft;
+		}
+	}
+}
 
 void UBNAnimInstance::NativeInitializeAnimation()
 {
@@ -13,7 +70,6 @@ void UBNAnimInstance::NativeInitializeAnimation()
 	MovementComponent = Character ? Character->GetCharacterMovement() : nullptr;
 
 	ResolveAbilitySystem();
-	RefreshAnimLayer();
 }
 
 void UBNAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
@@ -34,33 +90,204 @@ void UBNAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	{
 		ResolveAbilitySystem();
 	}
-	RefreshAnimLayer();
 
-	const FVector Velocity = MovementComponent->Velocity;
-	SnapVelocity2D = FVector(Velocity.X, Velocity.Y, 0.0);
+	SnapWorldVelocity = MovementComponent->Velocity;
+	SnapWorldAcceleration = MovementComponent->GetCurrentAcceleration();
+	SnapWorldLocation = Character->GetActorLocation();
 	SnapRotation = Character->GetActorRotation();
-	bSnapHasAcceleration = !MovementComponent->GetCurrentAcceleration().IsNearlyZero();
+	SnapGravityZ = MovementComponent->GetGravityZ();
+	// Replicated on every machine (RemoteViewPitch on proxies) — the source read it too.
+	SnapBaseAimPitch = Character->GetBaseAimRotation().Pitch;
+	SnapGroundDistance = ComputeGroundDistance();
+	bSnapAnyMontagePlaying = IsAnyMontagePlaying();
 	bSnapFalling = MovementComponent->IsFalling();
 	bSnapInAirTag = bTagInAir;
 	bSnapCrouching = bTagCrouching;
 	bSnapJumping = bTagJumping;
+
+	// The character owns layer linking; this pass only watches the mesh for the swap edge.
+	UClass* CurrentLayerClass = nullptr;
+	if (USkeletalMeshComponent* Mesh = GetOwningComponent())
+	{
+		for (UAnimInstance* Linked : Mesh->GetLinkedAnimInstances())
+		{
+			if (Linked)
+			{
+				CurrentLayerClass = Linked->GetClass();
+				break;
+			}
+		}
+	}
+	bSnapLayerChanged = CurrentLayerClass != ObservedLayerClass;
+	ObservedLayerClass = CurrentLayerClass;
 }
 
 void UBNAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 {
 	Super::NativeThreadSafeUpdateAnimation(DeltaSeconds);
 
-	DisplacementSpeed = SnapVelocity2D.Size();
-	LocalVelocity2D = SnapRotation.UnrotateVector(SnapVelocity2D);
-	LocalVelocityDirectionAngle = CalculateDirection(SnapVelocity2D, SnapRotation);
-	HasVelocity = DisplacementSpeed > UE_KINDA_SMALL_NUMBER;
-	HasAcceleration = bSnapHasAcceleration;
+	const FVector WorldVelocity2D(SnapWorldVelocity.X, SnapWorldVelocity.Y, 0.0);
+	const FVector WorldAcceleration2D(SnapWorldAcceleration.X, SnapWorldAcceleration.Y, 0.0);
+
+	// ---- location
+	DisplacementSinceLastUpdate = IsFirstUpdate ? 0.0 : FVector::Dist2D(SnapWorldLocation, PreviousWorldLocation);
+	DisplacementSpeed = (!IsFirstUpdate && DeltaSeconds > 0.f) ? DisplacementSinceLastUpdate / DeltaSeconds : 0.0;
+	PreviousWorldLocation = SnapWorldLocation;
+
+	// ---- rotation
+	YawDeltaSinceLastUpdate = IsFirstUpdate ? 0.0 : FRotator::NormalizeAxis(SnapRotation.Yaw - PreviousYaw);
+	YawDeltaSpeed = DeltaSeconds > 0.f ? YawDeltaSinceLastUpdate / DeltaSeconds : 0.0;
+	PreviousYaw = SnapRotation.Yaw;
+	// The source's lean factors; crouched leans less.
+	AdditiveLeanAngle = YawDeltaSpeed * (bSnapCrouching ? 0.025 : 0.0375);
+
+	// ---- velocity
+	const bool bWasMovingLastUpdate = HasVelocity;
+	LocalVelocity2D = SnapRotation.UnrotateVector(WorldVelocity2D);
+	LocalVelocityDirectionAngle = CalculateDirection(WorldVelocity2D, SnapRotation);
+	LocalVelocityDirectionAngleWithOffset = FRotator::NormalizeAxis(LocalVelocityDirectionAngle - RootYawOffset);
+	LocalVelocityDirection = SelectCardinalDirectionFromAngle(
+		LocalVelocityDirectionAngleWithOffset, CardinalDirectionDeadZone, LocalVelocityDirection, bWasMovingLastUpdate);
+	LocalVelocityDirectionNoOffset = SelectCardinalDirectionFromAngle(
+		LocalVelocityDirectionAngle, CardinalDirectionDeadZone, LocalVelocityDirectionNoOffset, bWasMovingLastUpdate);
+	HasVelocity = !FMath::IsNearlyZero(WorldVelocity2D.SizeSquared());
+
+	// ---- acceleration
+	LocalAcceleration2D = SnapRotation.UnrotateVector(WorldAcceleration2D);
+	HasAcceleration = !WorldAcceleration2D.IsNearlyZero();
+	PivotDirection2D = FMath::Lerp(PivotDirection2D, WorldAcceleration2D.GetSafeNormal(), 0.5).GetSafeNormal();
+	// The pivot cardinal is where the player came FROM: opposite of where acceleration points.
+	CardinalDirectionFromAcceleration = GetOppositeCardinalDirection(SelectCardinalDirectionFromAngle(
+		CalculateDirection(PivotDirection2D, SnapRotation), CardinalDirectionDeadZone, CardinalDirectionFromAcceleration, false));
+
+	// ---- wall heuristic: pushing hard, barely moving, accel roughly perpendicular to travel.
+	IsRunningIntoWall =
+		LocalAcceleration2D.Size2D() > 0.1 &&
+		LocalVelocity2D.Size2D() < 200.0 &&
+		FMath::IsWithinInclusive(
+			FVector::DotProduct(LocalAcceleration2D.GetSafeNormal(), LocalVelocity2D.GetSafeNormal()), -0.6, 0.6);
+
+	// ---- character state (tag-driven; states stay tags)
 	// Tag OR CMC: walking off a ledge activates no jump ability, so the InAir tag alone
 	// would miss it — the movement component covers that half.
 	IsFalling = bSnapInAirTag || bSnapFalling;
 	IsOnGround = !IsFalling;
 	isCrouching = bSnapCrouching;
 	IsJumping = bSnapJumping;
+
+	CrouchStateChange = !IsFirstUpdate && bSnapCrouching != bWasCrouchingLastUpdate;
+	bWasCrouchingLastUpdate = bSnapCrouching;
+	ApplyCrouchAlpha = isCrouching ? 1.0 : 0.0;
+
+	GroundDistance = SnapGroundDistance;
+
+	// ---- jump apex: derived, never a countdown — -Vz/g, zero once descending.
+	TimeToJumpApex = (IsFalling && SnapWorldVelocity.Z > 0.0 && SnapGravityZ < 0.0)
+		? -SnapWorldVelocity.Z / SnapGravityZ
+		: 0.0;
+
+	// ---- blend weights
+	UpperbodyDynamicAdditiveWeight = (bSnapAnyMontagePlaying && IsOnGround)
+		? 1.0
+		: FMath::FInterpTo(UpperbodyDynamicAdditiveWeight, 0.0, static_cast<double>(DeltaSeconds), 6.0);
+
+	// ---- root yaw offset / turn in place
+	if (IsFirstUpdate)
+	{
+		RootYawOffset = 0.0;
+		AimYaw = 0.0;
+		TurnYawCurveValue = 0.0;
+		PreviousTurnYawCurveValue = 0.0;
+	}
+	// In the source the graph's state functions drive the mode; idle accumulates and
+	// everything else blends out, which is their net effect.
+	RootYawOffsetMode = (HasVelocity || HasAcceleration || IsFalling) ? BN_YawModeBlendOut : BN_YawModeAccumulate;
+	if (RootYawOffsetMode == BN_YawModeAccumulate)
+	{
+		SetRootYawOffset(RootYawOffset - YawDeltaSinceLastUpdate);
+	}
+	else
+	{
+		SetRootYawOffset(UKismetMathLibrary::FloatSpringInterp(
+			static_cast<float>(RootYawOffset), 0.f, RootYawOffsetSpringState,
+			/*Stiffness*/ 80.f, /*CriticalDampingFactor*/ 1.f, DeltaSeconds, /*Mass*/ 1.f));
+	}
+	ProcessTurnYawCurve();
+
+	// ---- aim
+	AimPitch = FRotator::NormalizeAxis(SnapBaseAimPitch);
+	// AimYaw was written by SetRootYawOffset above, as the source does.
+
+	// ---- linked layer edge
+	LinkedLayerChanged = !IsFirstUpdate && bSnapLayerChanged;
+
+	IsFirstUpdate = false;
+}
+
+void UBNAnimInstance::SetRootYawOffset(double InRootYawOffset)
+{
+	if (!bEnableRootYawOffset)
+	{
+		RootYawOffset = 0.0;
+		AimYaw = 0.0;
+		return;
+	}
+
+	const FVector2D Clamp = isCrouching ? RootYawOffsetAngleClampCrouched : RootYawOffsetAngleClamp;
+	const double Normalized = FRotator::NormalizeAxis(InRootYawOffset);
+	RootYawOffset = Clamp.X < Clamp.Y ? FMath::Clamp(Normalized, Clamp.X, Clamp.Y) : Normalized;
+	AimYaw = -RootYawOffset;
+}
+
+void UBNAnimInstance::ProcessTurnYawCurve()
+{
+	PreviousTurnYawCurveValue = TurnYawCurveValue;
+
+	const double TurnYawWeight = GetCurveValue(BN_TurnYawWeightCurve);
+	if (FMath::IsNearlyZero(TurnYawWeight))
+	{
+		TurnYawCurveValue = 0.0;
+		PreviousTurnYawCurveValue = 0.0;
+		return;
+	}
+
+	// The turn animation's RemainingTurnYaw curve is normalized by its weight; the offset
+	// shrinks by exactly the yaw the animation consumed this frame.
+	TurnYawCurveValue = GetCurveValue(BN_RemainingTurnYawCurve) / TurnYawWeight;
+	if (PreviousTurnYawCurveValue != 0.0)
+	{
+		SetRootYawOffset(RootYawOffset - (TurnYawCurveValue - PreviousTurnYawCurveValue));
+	}
+}
+
+double UBNAnimInstance::ComputeGroundDistance() const
+{
+	if (!Character || !MovementComponent)
+	{
+		return 0.0;
+	}
+	if (MovementComponent->MovementMode == MOVE_Walking || MovementComponent->MovementMode == MOVE_NavWalking)
+	{
+		return 0.0;
+	}
+
+	const UCapsuleComponent* Capsule = Character->GetCapsuleComponent();
+	UWorld* World = Character->GetWorld();
+	if (!Capsule || !World)
+	{
+		return 0.0;
+	}
+
+	constexpr double TraceLength = 100000.0;
+	const double HalfHeight = Capsule->GetUnscaledCapsuleHalfHeight();
+	const FVector TraceStart = Character->GetActorLocation();
+	const FVector TraceEnd = TraceStart - FVector(0.0, 0.0, TraceLength + HalfHeight);
+
+	FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(BNAnimGroundDistance), false, Character);
+	FHitResult Hit;
+	World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, Capsule->GetCollisionObjectType(), QueryParams);
+
+	return Hit.bBlockingHit ? FMath::Max(static_cast<double>(Hit.Distance) - HalfHeight, 0.0) : TraceLength;
 }
 
 void UBNAnimInstance::NativeUninitializeAnimation()
@@ -100,26 +327,6 @@ void UBNAnimInstance::ResolveAbilitySystem()
 	bTagCrouching = ASC->HasMatchingGameplayTag(BNTags::State_Movement_Crouching);
 	bTagJumping = ASC->HasMatchingGameplayTag(BNTags::State_Movement_Jumping);
 	bTagInAir = ASC->HasMatchingGameplayTag(BNTags::State_Movement_InAir);
-}
-
-void UBNAnimInstance::RefreshAnimLayer()
-{
-	if (!Character)
-	{
-		return;
-	}
-
-	UClass* LayerClass = Character->ResolveAnimLayerClass();
-	if (!LayerClass || LayerClass == LinkedLayerClass)
-	{
-		return;
-	}
-
-	if (USkeletalMeshComponent* Mesh = GetOwningComponent())
-	{
-		Mesh->LinkAnimClassLayers(LayerClass);
-		LinkedLayerClass = LayerClass;
-	}
 }
 
 void UBNAnimInstance::OnTagChanged(const FGameplayTag Tag, int32 NewCount)

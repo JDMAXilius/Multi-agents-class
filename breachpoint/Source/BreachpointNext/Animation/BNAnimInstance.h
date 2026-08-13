@@ -3,12 +3,24 @@
 #include "CoreMinimal.h"
 #include "Animation/AnimInstance.h"
 #include "GameplayTagContainer.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "BNAnimInstance.generated.h"
 
 class ABNCharacter;
 class UCharacterMovementComponent;
 class UAbilitySystemComponent;
 
+/**
+ * The mannequin ABP's per-frame brain, ported from the ABP_Mannequin_Base record so the
+ * duplicate's event graph can be cleared. Two passes, never mixed: NativeUpdateAnimation
+ * (game thread) snapshots UObject state; NativeThreadSafeUpdateAnimation (worker) is the
+ * C++ writer of every graph-facing property.
+ *
+ * Properties are BlueprintReadWrite for the migration window only — the un-cleared event
+ * graph must still be able to set them. Once the graph is cleared, C++ is the sole writer.
+ * Names are the asset's (including `isCrouching`): a name is how a property survives the
+ * reparent, so they are not tidied.
+ */
 UCLASS()
 class BREACHPOINTNEXT_API UBNAnimInstance : public UAnimInstance
 {
@@ -21,37 +33,138 @@ public:
 	virtual void NativeUninitializeAnimation() override;
 
 protected:
-	UPROPERTY(BlueprintReadOnly, Category = "BN")
+	// ---------------------------------------------------------------- locomotion
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
 	FVector LocalVelocity2D = FVector::ZeroVector;
 
-	UPROPERTY(BlueprintReadOnly, Category = "BN")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	FVector LocalAcceleration2D = FVector::ZeroVector;
+
+	/** Distance covered per second — the source's distance-matching input, NOT |velocity|:
+	 *  a slide to a stop keeps velocity long after it stops covering ground. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
 	double DisplacementSpeed = 0.0;
 
-	UPROPERTY(BlueprintReadOnly, Category = "BN")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	double DisplacementSinceLastUpdate = 0.0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
 	double LocalVelocityDirectionAngle = 0.0;
 
-	UPROPERTY(BlueprintReadOnly, Category = "BN")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	double LocalVelocityDirectionAngleWithOffset = 0.0;
+
+	// Cardinal values follow AnimEnum_CardinalDirection (Forward, Backward, Left, Right).
+	// uint8 because the BP variables are typed to an asset enum no native type can name.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	uint8 LocalVelocityDirection = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	uint8 LocalVelocityDirectionNoOffset = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	uint8 CardinalDirectionFromAcceleration = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	FVector PivotDirection2D = FVector::ZeroVector;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	double CardinalDirectionDeadZone = 10.0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
 	bool HasVelocity = false;
 
-	UPROPERTY(BlueprintReadOnly, Category = "BN")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
 	bool HasAcceleration = false;
 
-	UPROPERTY(BlueprintReadOnly, Category = "BN")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	bool IsRunningIntoWall = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	bool IsFirstUpdate = true;
+
+	// ---------------------------------------------------------------- air
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
 	bool IsFalling = false;
 
-	UPROPERTY(BlueprintReadOnly, Category = "BN")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
 	bool IsOnGround = true;
 
-	UPROPERTY(BlueprintReadOnly, Category = "BN")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
 	bool IsJumping = false;
 
-	UPROPERTY(BlueprintReadOnly, Category = "BN")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	double TimeToJumpApex = 0.0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	double GroundDistance = 0.0;
+
+	// ---------------------------------------------------------------- crouch
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
 	bool isCrouching = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	bool CrouchStateChange = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	double ApplyCrouchAlpha = 0.0;
+
+	// ---------------------------------------------------------------- aim, lean
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	double AimPitch = 0.0;
+
+	/** Written only through SetRootYawOffset (= -RootYawOffset), as the source does. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	double AimYaw = 0.0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	double YawDeltaSinceLastUpdate = 0.0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	double YawDeltaSpeed = 0.0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	double AdditiveLeanAngle = 0.0;
+
+	// ---------------------------------------------------------------- root yaw offset / turn in place
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	double RootYawOffset = 0.0;
+
+	// Values follow AnimEnum_RootYawOffsetMode (BlendOut, Hold, Accumulate).
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	uint8 RootYawOffsetMode = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	FVector2D RootYawOffsetAngleClamp = FVector2D(-120.0, 100.0);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	FVector2D RootYawOffsetAngleClampCrouched = FVector2D(-90.0, 80.0);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	bool bEnableRootYawOffset = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	double TurnYawCurveValue = 0.0;
+
+	// ---------------------------------------------------------------- additives / layers
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	double UpperbodyDynamicAdditiveWeight = 0.0;
+
+	/** One-frame edge: the mesh's linked layer class changed since last update. The CHARACTER
+	 *  owns the linking; this instance only observes the swap. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	bool LinkedLayerChanged = false;
 
 private:
 	void ResolveAbilitySystem();
-	void RefreshAnimLayer();
 	void OnTagChanged(const FGameplayTag Tag, int32 NewCount);
+
+	// Worker-thread helpers, ported 1:1 from the source's function graphs.
+	void SetRootYawOffset(double InRootYawOffset);
+	void ProcessTurnYawCurve();
+
+	// Game thread. Walking answers 0 without a trace; airborne traces down.
+	double ComputeGroundDistance() const;
 
 	UPROPERTY(Transient)
 	TObjectPtr<ABNCharacter> Character;
@@ -62,8 +175,9 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UAbilitySystemComponent> AbilitySystem;
 
+	/** Last linked-layer class seen on the mesh — compare-only, for the LinkedLayerChanged edge. */
 	UPROPERTY(Transient)
-	TObjectPtr<UClass> LinkedLayerClass;
+	TObjectPtr<UClass> ObservedLayerClass;
 
 	FDelegateHandle CrouchTagHandle;
 	FDelegateHandle JumpTagHandle;
@@ -73,11 +187,25 @@ private:
 	bool bTagCrouching = false;
 	bool bTagJumping = false;
 
-	FVector SnapVelocity2D = FVector::ZeroVector;
+	// Game-thread snapshot, worker-thread input. The only channel between the two passes.
+	FVector SnapWorldVelocity = FVector::ZeroVector;
+	FVector SnapWorldAcceleration = FVector::ZeroVector;
+	FVector SnapWorldLocation = FVector::ZeroVector;
 	FRotator SnapRotation = FRotator::ZeroRotator;
-	bool bSnapHasAcceleration = false;
+	double SnapGravityZ = -980.0;
+	double SnapBaseAimPitch = 0.0;
+	double SnapGroundDistance = 0.0;
+	bool bSnapAnyMontagePlaying = false;
+	bool bSnapLayerChanged = false;
 	bool bSnapFalling = false;
 	bool bSnapInAirTag = false;
 	bool bSnapCrouching = false;
 	bool bSnapJumping = false;
+
+	// Worker-thread history.
+	FFloatSpringState RootYawOffsetSpringState;
+	double PreviousTurnYawCurveValue = 0.0;
+	double PreviousYaw = 0.0;
+	FVector PreviousWorldLocation = FVector::ZeroVector;
+	bool bWasCrouchingLastUpdate = false;
 };

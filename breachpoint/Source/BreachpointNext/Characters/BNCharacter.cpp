@@ -26,6 +26,15 @@ ABNCharacter::ABNCharacter()
 	GetCharacterMovement()->bCanWalkOffLedgesWhenCrouching = true;
 }
 
+void ABNCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// Layer linking is local-cosmetic and runs on EVERY machine — sim proxies never see a
+	// possession event, so BeginPlay is their hook; the mesh's anim instance exists by now.
+	InitializeAnimLayer();
+}
+
 void ABNCharacter::OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
 {
 	Super::OnStartCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
@@ -66,6 +75,7 @@ void ABNCharacter::PossessedBy(AController* NewController)
 	Super::PossessedBy(NewController);
 
 	InitializeAbilitySystem();
+	InitializeAnimLayer();
 
 	if (ABNPlayerState* PS = GetPlayerState<ABNPlayerState>())
 	{
@@ -78,6 +88,27 @@ void ABNCharacter::OnRep_PlayerState()
 	Super::OnRep_PlayerState();
 
 	InitializeAbilitySystem();
+	InitializeAnimLayer();
+}
+
+// Current weapon drives the layer — none today, so the unarmed layer links. Runs wherever
+// called; skips silently until the mesh has an anim instance, then links exactly once per class.
+void ABNCharacter::InitializeAnimLayer()
+{
+	USkeletalMeshComponent* Mesh = GetMesh();
+	if (!Mesh || !Mesh->GetAnimInstance())
+	{
+		return;
+	}
+
+	UClass* LayerClass = ResolveAnimLayerClass();
+	if (!LayerClass || LayerClass == LinkedAnimLayerClass)
+	{
+		return;
+	}
+
+	Mesh->LinkAnimClassLayers(LayerClass);
+	LinkedAnimLayerClass = LayerClass;
 }
 
 void ABNCharacter::InitializeAbilitySystem()
