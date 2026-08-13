@@ -132,3 +132,26 @@ _(terminal: append the three answers, the asset paths and parameter lists, and t
   but left the on-disk file; since the editor and the referencer check both agree the asset is
   gone, the file was removed with `git rm` — the on-disk state now matches the editor's. E2/D2
   closed: `/Game/BN/Animation/ABP_BNMannequin` no longer exists anywhere. **Ticket DONE.**
+
+- 13 Aug 2026 (mac terminal, founder-test follow-up) — **founder tested: aim still camera-only,
+  VFX "still the old ones". Both diagnosed; both are C++/design calls for the lead.**
+  1. **Aim root cause: `bFPSMode` — open decision #1 now has its answer.** The C++ Pitch chain
+     is real and consumed (this ticket's Part 1), BUT every aim-pitch layer is on the FPS pose
+     path, gated by `AnimGraph.K2Node_VariableGet_0 (bFPSMode) → BlendListByBool_2` between two
+     cached poses. `bFPSMode` is a BP variable written ONLY by the `SetFPSMode` interface event.
+     What fills it in the template: the CAMERA component — `ChangeFPSMode` on the camera BPC
+     (MyCharacter.cpp:1376 debug key Seven routes there; MyCharacter itself only ever READS it
+     via GetAnimFPSMode :1540). BN never fires the event → bFPSMode stays false → the FPS
+     branch (and with it the whole pitch spine chain) never runs → camera moves, arms/weapon
+     do not. The lead owes the seam: publish an FPS-mode signal from `UBNAnimInstance` (per-
+     instance: locally-viewed-first-person true, sim proxies false, exactly how the template
+     behaves) and retype the one graph read — same pattern as Pitch.
+  2. **VFX root cause: scope, not wiring.** The Config cues DO fire the template systems
+     (muzzle `NS_WeaponFire_MuzzleFlash_Rifle` verified on the CDO), but BN's whole impact is
+     ONE system (`NS_ImpactConcrete`) for every surface, no decals, no impact sounds, no
+     tracer — while the template's "visible bullet" is tracer (`User.ImpactPositions[]` +
+     `User.Trigger`) + per-surface `ImpactEffectInfoMap` (decal `NS_ImpactDecals` + effect +
+     MetaSound, fallback SurfaceType2) + montage-driven audio. Side by side that reads as "old
+     minimal FX". The gap is exactly the three C++ packets this ticket's Part 2 fact-found for
+     the lead: tracer cue array-params rewrite, impact cue surface-map upgrade (decal + sound),
+     and the sound field. No asset is missing — all paths are in Part 2's log entry above.
