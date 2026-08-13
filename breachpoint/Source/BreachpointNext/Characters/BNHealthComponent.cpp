@@ -45,6 +45,13 @@ void UBNHealthComponent::HandleRecentDamageChanged(const FGameplayTag Tag, int32
 
 void UBNHealthComponent::SetShieldRechargeActive(bool bActive)
 {
+	// The switch. Off = the recharge GE is never applied, so the shield behaves exactly as it did
+	// before this work landed: it drains and stays drained until a respawn.
+	if (bActive && !bShieldRechargeEnabled)
+	{
+		return;
+	}
+
 	UAbilitySystemComponent* ASC = CachedAbilitySystem.Get();
 	if (!ASC || !ASC->IsOwnerActorAuthoritative())
 	{

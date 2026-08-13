@@ -28,7 +28,7 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FBNDeathSignature, UBNHealthComponent*);
  * be set during CDO construction, where native tags are not guaranteed registered — see the GE's
  * own comment. This is the same RegisterGameplayTagEvent mechanism UBNAnimInstance already uses.
  */
-UCLASS()
+UCLASS(Config = Game)
 class BREACHPOINTNEXT_API UBNHealthComponent : public UActorComponent
 {
 	GENERATED_BODY()
@@ -52,6 +52,19 @@ protected:
 
 	/** Authority only. Idempotent — the handle is what makes a second call a no-op. */
 	void SetShieldRechargeActive(bool bActive);
+
+	/** OFF by default, deliberately (founder: "do health component after you're done with
+	 *  everything"). The recharge is a real change to how a fight FEELS — shields coming back after
+	 *  four seconds rewrites every duel — and it must not arrive unannounced in the middle of a
+	 *  playtest aimed at aim, melee and grenades.
+	 *
+	 *  The structural half of this work is NOT gated and stays live: MaxHealth/MaxShield and their
+	 *  clamps are prerequisites, not features. Nothing can draw a health bar without a denominator,
+	 *  and an unclamped pool is a bug waiting whether or not anything recharges.
+	 *
+	 *  Flip to True in DefaultGame.ini under [/Script/BreachpointNext.BNHealthComponent]. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Health")
+	bool bShieldRechargeEnabled = false;
 
 	FActiveGameplayEffectHandle ShieldRechargeHandle;
 
