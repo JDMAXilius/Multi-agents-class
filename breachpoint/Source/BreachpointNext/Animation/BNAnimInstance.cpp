@@ -102,7 +102,9 @@ void UBNAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	bSnapAnyMontagePlaying = IsAnyMontagePlaying();
 	bSnapFalling = MovementComponent->IsFalling();
 	bSnapInAirTag = bTagInAir;
-	bSnapCrouching = bTagCrouching;
+	// Tag OR CMC, the IsFalling pattern: the owning client's CMC predicts bIsCrouched
+	// instantly, so the pose doesn't wait ~½RTT for the replicated tag.
+	bSnapCrouching = bTagCrouching || Character->bIsCrouched;
 	bSnapJumping = bTagJumping;
 
 	// The character owns layer linking; this pass only watches the mesh for the swap edge.

@@ -2,6 +2,7 @@
 #include "Core/BNGameplayTags.h"
 #include "Abilities/Tasks/AbilityTask_WaitInputRelease.h"
 #include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 // Known gap this wave: walking off a ledge without jumping applies no State.Movement.InAir tag.
 
@@ -14,7 +15,21 @@ void UBNGA_Jump::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 	}
 
 	ACharacter* Character = Cast<ACharacter>(ActorInfo->AvatarActor.Get());
-	if (!Character || !Character->CanJump())
+	if (!Character)
+	{
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
+	}
+
+	// The founder's verified jump: uncrouch first, then jump.
+	const bool bWasCrouched = Character->bIsCrouched;
+	if (bWasCrouched)
+	{
+		Character->UnCrouch();
+	}
+	// CanJump() still sees bIsCrouched until the CMC's next update clears it, so the gate is
+	// skipped on the uncrouch path — Jump() self-gates in CheckJumpInput.
+	if (!bWasCrouched && !Character->CanJump())
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
@@ -75,33 +90,19 @@ void UBNGA_Crouch::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 		return;
 	}
 
-	Character->Crouch();
-	CrouchingHandle = ApplyStateTag(BNTags::State_Movement_Crouching);
-
-	UAbilityTask_WaitInputRelease* ReleaseTask = UAbilityTask_WaitInputRelease::WaitInputRelease(this);
-	ReleaseTask->OnRelease.AddDynamic(this, &UBNGA_Crouch::OnInputRelease);
-	ReleaseTask->ReadyForActivation();
-}
-
-void UBNGA_Crouch::OnInputRelease(float TimeHeld)
-{
-	if (ACharacter* Character = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
+	// The founder's verified toggle: (!bIsCrouched && !IsFalling) ? Crouch : UnCrouch.
+	// The IsFalling term matters — pressing crouch mid-air UNcrouches, it never crouches.
+	// The crouch tag is NOT owned here: the character's OnStartCrouch/OnEndCrouch apply and
+	// remove it on the authority, off the engine's replicated crouch state.
+	const UCharacterMovementComponent* Move = Character->GetCharacterMovement();
+	if (!Character->bIsCrouched && !(Move && Move->IsFalling()))
+	{
+		Character->Crouch();
+	}
+	else
 	{
 		Character->UnCrouch();
 	}
-	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
-}
 
-void UBNGA_Crouch::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
-{
-	if (ACharacter* Character = ActorInfo ? Cast<ACharacter>(ActorInfo->AvatarActor.Get()) : nullptr)
-	{
-		if (Character->bIsCrouched)
-		{
-			Character->UnCrouch();
-		}
-	}
-	RemoveStateTag(CrouchingHandle);
-
-	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 }

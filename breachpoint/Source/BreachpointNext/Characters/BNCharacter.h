@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "AbilitySystemInterface.h"
+#include "GameplayEffectTypes.h"
 #include "UObject/SoftObjectPath.h"
 #include "BNCharacter.generated.h"
 
@@ -51,6 +52,10 @@ protected:
 
 	void InitializeAbilitySystem();
 	void OnMoveSpeedChanged(const FOnAttributeChangeData& Data);
+
+	/** State.Movement.Crouching GE, applied by OnStartCrouch on the authority — the ONE owner
+	 *  of the crouch tag; abilities only drive the engine crouch. */
+	FActiveGameplayEffectHandle CrouchStateHandle;
 
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UCameraComponent> CameraComponent;

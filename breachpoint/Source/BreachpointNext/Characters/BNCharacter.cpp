@@ -1,6 +1,8 @@
 #include "Characters/BNCharacter.h"
 #include "AbilitySystem/BNAbilitySystemComponent.h"
 #include "AbilitySystem/Attributes/BNAttributeSet.h"
+#include "AbilitySystem/Effects/BNGameplayEffects.h"
+#include "Core/BNGameplayTags.h"
 #include "Match/BNPlayerState.h"
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
@@ -35,16 +37,41 @@ void ABNCharacter::BeginPlay()
 	InitializeAnimLayer();
 }
 
+// The crouch tag's ONE owner: the engine's crouch events, authority-side. Engine crouch
+// replicates via compressed flags and these events fire on every machine; the authority
+// gate makes the tag server-truth, replicated to everyone by the ASC.
 void ABNCharacter::OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
 {
 	Super::OnStartCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
 	CameraComponent->SetRelativeLocation(FVector(0.f, 0.f, CameraStandingHeight - HalfHeightAdjust));
+
+	if (HasAuthority() && !CrouchStateHandle.IsValid())
+	{
+		if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
+		{
+			const FGameplayEffectSpecHandle Spec = ASC->MakeOutgoingSpec(UBNGE_State::StaticClass(), 1.f, ASC->MakeEffectContext());
+			if (Spec.IsValid())
+			{
+				Spec.Data->DynamicGrantedTags.AddTag(BNTags::State_Movement_Crouching);
+				CrouchStateHandle = ASC->ApplyGameplayEffectSpecToSelf(*Spec.Data);
+			}
+		}
+	}
 }
 
 void ABNCharacter::OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
 {
 	Super::OnEndCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
 	CameraComponent->SetRelativeLocation(FVector(0.f, 0.f, CameraStandingHeight));
+
+	if (HasAuthority() && CrouchStateHandle.IsValid())
+	{
+		if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
+		{
+			ASC->RemoveActiveGameplayEffect(CrouchStateHandle);
+		}
+		CrouchStateHandle = FActiveGameplayEffectHandle();
+	}
 }
 
 void ABNCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
