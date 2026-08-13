@@ -181,3 +181,16 @@ _(terminal session: append the read-back table, what was duplicated, anything ha
     `NS_WeaponFire_MuzzleFlash_Rifle`, `NS_ImpactConcrete`, `NS_WeaponFire_Tracer` (its BeamEnd
     user-param contract UNVERIFIED — the C++ expects user Vector `BeamEnd`).
     Until ruled, fire/reload run with montages and no FX — cues degrade silently by design.
+
+- 13 Aug 2026 (mac terminal) — **FX ruling executed: founder chose the Config route** ('do the
+  config c++ change for the fx'). The three cue classes are `Config=Game`; `Effect` (and the
+  tracer's `BeamEndParameter`) are `UPROPERTY(Config)`; `DefaultGame.ini` fills muzzle
+  (`NS_WeaponFire_MuzzleFlash_Rifle`) and impact (`NS_ImpactConcrete`) from the template.
+  **Tracer deliberately unset** — `NS_WeaponFire_Tracer`'s real contract, read from
+  `BPC_FPST_Lyra_FireEffectComp.FireTracerEffect` via the MCP graph DSL, is vector-array
+  `User.ImpactPositions` + bool `User.Trigger`, which the single-vector `BeamEnd` cue cannot
+  drive; a BeamEnd-contract system is owed to the FX pass (recorded in the ini comment too).
+  Editor closed for the build per R21/R29, both targets PASS, editor relaunched, and the CDOs
+  read back through the MCP: muzzle + impact resolve, tracer `None`. Checkpoint K is the
+  founder's: LMB fires with flash + impact + montage, R reloads, ammo refills — no tracer
+  beam, by documented design.

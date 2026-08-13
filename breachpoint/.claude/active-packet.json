@@ -3,7 +3,10 @@
   "owner_path": [
     "Content/BN/",
     "docs/BREACHPOINT-NEXT-TASK-DT-BNWEAPONS.md",
-    "docs/BREACHPOINT-NEXT-TASK-R2-W2-ASSETS.md"
+    "docs/BREACHPOINT-NEXT-TASK-R2-W2-ASSETS.md",
+    "Source/BreachpointNext/AbilitySystem/BNGameplayCues.h",
+    "Source/BreachpointNext/AbilitySystem/BNGameplayCues.cpp",
+    "Config/DefaultGame.ini"
   ],
   "binary_locks": [
     "Content/BN/Data/DT_BNWeapons.uasset",
@@ -12,5 +15,5 @@
     "Content/BN/Input/DA_BNInput.uasset",
     "Content/BN/Input/IMC_BNNext.uasset"
   ],
-  "authorized_by": "founder, 13 Aug 2026 - 'start doing all of those' after the R2 board readout. Both tickets are cut 'For: the terminal session (editor + MCP in reach)', which this session is: green build 8befcd9, editor live on BR_Arena01, MCP answering on :8000. R2-W2 extends DT-BNWEAPONS and its owner_path Content/BN/ covers both. Supersedes the CLOSED ABP-REPAIR claim (ae8d38e) and its two compile-repair extensions."
+  "authorized_by": "founder, 13 Aug 2026 - 'start doing all of those' after the R2 board readout. Both tickets are cut 'For: the terminal session (editor + MCP in reach)', which this session is: green build 8befcd9, editor live on BR_Arena01, MCP answering on :8000. R2-W2 extends DT-BNWEAPONS and its owner_path Content/BN/ covers both. Supersedes the CLOSED ABP-REPAIR claim (ae8d38e) and its two compile-repair extensions. BNGameplayCues.h/.cpp + Config/DefaultGame.ini are a founder-granted EXTENSION (13 Aug 2026, 'do the config c++ change for the fx'): the ruling on the announced blocker — cue Effect refs become UPROPERTY(Config), filled from ini with the template systems."
 }

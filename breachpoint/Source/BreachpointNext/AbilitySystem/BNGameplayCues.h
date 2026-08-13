@@ -45,7 +45,7 @@ protected:
 	static void SpawnAt(const UObject* WorldContext, UFXSystemAsset* Asset, const FVector& Location, const FRotator& Rotation, FName VectorParameterName, const FVector& VectorParameterValue);
 };
 
-UCLASS(meta = (DisplayName = "GC_BN_Weapon_MuzzleFlash"))
+UCLASS(Config = Game, meta = (DisplayName = "GC_BN_Weapon_MuzzleFlash"))
 class BREACHPOINTNEXT_API UBNGameplayCue_MuzzleFlash : public UBNGameplayCue_Base
 {
 	GENERATED_BODY()
@@ -56,11 +56,11 @@ public:
 
 protected:
 
-	UPROPERTY(EditDefaultsOnly, Category = "BN|Cue")
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Cue")
 	TSoftObjectPtr<UFXSystemAsset> Effect;
 };
 
-UCLASS(meta = (DisplayName = "GC_BN_Weapon_Impact"))
+UCLASS(Config = Game, meta = (DisplayName = "GC_BN_Weapon_Impact"))
 class BREACHPOINTNEXT_API UBNGameplayCue_Impact : public UBNGameplayCue_Base
 {
 	GENERATED_BODY()
@@ -71,11 +71,11 @@ public:
 
 protected:
 
-	UPROPERTY(EditDefaultsOnly, Category = "BN|Cue")
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Cue")
 	TSoftObjectPtr<UFXSystemAsset> Effect;
 };
 
-UCLASS(meta = (DisplayName = "GC_BN_Weapon_Tracer"))
+UCLASS(Config = Game, meta = (DisplayName = "GC_BN_Weapon_Tracer"))
 class BREACHPOINTNEXT_API UBNGameplayCue_Tracer : public UBNGameplayCue_Base
 {
 	GENERATED_BODY()
@@ -86,12 +86,12 @@ public:
 
 protected:
 
-	UPROPERTY(EditDefaultsOnly, Category = "BN|Cue")
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Cue")
 	TSoftObjectPtr<UFXSystemAsset> Effect;
 
 	/** The contract with the FX author: the tracer system must expose a user Vector parameter of
 	 *  this name and draw its beam from the emitter to it. ANNOUNCED alongside the asset. */
-	UPROPERTY(EditDefaultsOnly, Category = "BN|Cue")
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Cue")
 	FName BeamEndParameter = TEXT("BeamEnd");
 };
 
