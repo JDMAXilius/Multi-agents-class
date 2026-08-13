@@ -177,3 +177,15 @@ _(terminal: append the three answers, the asset paths and parameter lists, and t
      founder's earlier session: `BPC_FPST_Lyra_FireEffectComp` reverted again per the standing
      ruling; `ABP_Mannequin_Base`'s 16:40 on-disk change left UNCOMMITTED for the founder to
      keep or discard — it is not needed by this fix.
+
+- 13 Aug 2026 (mac terminal, G1 discovery in progress) — founder retest after the fix packet:
+  **better, but the character still does not aim with the camera** — consistent with
+  ROADMAP-3 G1's own root cause (the pose is procedural-component territory). Discovery so
+  far, mined from the layer package's name table (bindings do not reflect through MCP):
+  the FSP pitch chain's ModifyBone bindings read **`GetMainAnimBPThreadSafe.PitchRotator`**
+  (and the lean chain `...LeanRotation`; weights via `AimSpineWeights_UE5`/`Lean...`), i.e.
+  the layers pull the MAIN ABP's `PitchRotator`, which `UpdateRotationData` writes from the
+  C++ `Pitch` as `MakeRotator(Pitch)` into the FIRST MakeRotator pin (= Roll). The chain
+  looks complete on paper; a live PIE probe of the anim instance (Pitch / PitchRotator /
+  bFPSMode at runtime) is the next step and was cut short when the editor session ended.
+  G1 (the C++ aim computation + publish) remains the open goal.
