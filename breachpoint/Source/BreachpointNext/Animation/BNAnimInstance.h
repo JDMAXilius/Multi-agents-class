@@ -109,6 +109,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
 	double ApplyCrouchAlpha = 0.0;
 
+	// ---------------------------------------------------------------- weapon / pose selection
+	/** The upper-body layer's pose selector. Name is the asset's — ABP_Mannequin_Base's
+	 *  `bUnarmed`, which its BPI_FPST_AnimInterface `SetUnarmed` event used to write. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	bool bUnarmed = false;
+
 	// ---------------------------------------------------------------- aim, lean
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
 	double AimPitch = 0.0;
@@ -198,6 +204,7 @@ private:
 	bool bSnapInAirTag = false;
 	bool bSnapCrouching = false;
 	bool bSnapJumping = false;
+	bool bSnapUnarmed = false;
 
 	// Worker-thread history.
 	FFloatSpringState RootYawOffsetSpringState;

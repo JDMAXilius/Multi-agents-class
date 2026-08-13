@@ -106,6 +106,9 @@ void UBNAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	// instantly, so the pose doesn't wait ~½RTT for the replicated tag.
 	bSnapCrouching = bTagCrouching || Character->bIsCrouched;
 	bSnapJumping = bTagJumping;
+	// The weapon seam, not the local pawn: it answers off the character's own weapon state, so
+	// server, owner and sim proxies all reach the same pose set for the character they render.
+	bSnapUnarmed = Character->GetCurrentWeaponAnimLayer() == nullptr;
 
 	// The character owns layer linking; this pass only watches the mesh for the swap edge.
 	// No layer yet (e.g. a sim proxy whose anim instance didn't exist at BeginPlay): re-trigger
@@ -188,6 +191,7 @@ void UBNAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 	IsOnGround = !IsFalling;
 	isCrouching = bSnapCrouching;
 	IsJumping = bSnapJumping;
+	bUnarmed = bSnapUnarmed;
 
 	bNativeCrouchStateChange = !bNativeFirstUpdate && bSnapCrouching != bWasCrouchingLastUpdate;
 	bWasCrouchingLastUpdate = bSnapCrouching;
