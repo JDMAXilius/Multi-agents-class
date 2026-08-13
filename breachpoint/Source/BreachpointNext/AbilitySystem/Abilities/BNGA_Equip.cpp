@@ -17,16 +17,12 @@ void UBNGA_Equip::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const
 	}
 
 	const ABNCharacter* Character = ActorInfo ? Cast<ABNCharacter>(ActorInfo->AvatarActor.Get()) : nullptr;
-	UBNEquipmentComponent* Equipment = Character ? Character->GetEquipmentComponent() : nullptr;
-
-	// End BEFORE the equip. These verbs live in the WEAPON's ability set, so the swap revokes
-	// the very spec that is running; ending first leaves ClearAbility nothing active to cancel.
-	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
-
-	if (Equipment)
+	if (UBNEquipmentComponent* Equipment = Character ? Character->GetEquipmentComponent() : nullptr)
 	{
 		ExecuteEquip(Equipment);
 	}
+
+	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 }
 
 void UBNGA_Equip::ExecuteEquip(UBNEquipmentComponent* Equipment)

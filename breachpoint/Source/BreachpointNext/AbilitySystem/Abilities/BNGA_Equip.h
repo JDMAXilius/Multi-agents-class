@@ -7,7 +7,10 @@
 class UBNEquipmentComponent;
 
 /**
- * Equip · swap next · swap previous — one verb family, the BNMovementAbilities shape.
+ * Equip · swap next · swap previous — one verb family, the BNMovementAbilities shape. Granted
+ * by ABNPlayerState::GrantDefaults beside Jump and Crouch, NOT by the weapon's ability set:
+ * swap belongs to the inventory, and an ability the swap revokes by running hands the next
+ * press a dead spec handle.
  *
  * ServerOnly, NOT LocalPredicted, and deliberately: CurrentIndex is a plain replicated int32
  * the server owns outright. A client that guessed it has no rollback — GAS predicts ability

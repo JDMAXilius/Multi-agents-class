@@ -77,20 +77,11 @@ void UBNEquipmentComponent::InitializeCarriedWeapons()
 
 void UBNEquipmentComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	// The ASC is the PlayerState's and outlives this pawn: a grant left behind is a dead
-	// weapon's verbs living on the next body. Same lesson as the MoveSpeed delegate.
 	if (AActor* Owner = GetOwner())
 	{
 		if (Owner->HasAuthority())
 		{
-			if (GrantedSet)
-			{
-				if (UBNAbilitySystemComponent* ASC = GetAbilitySystem())
-				{
-					GrantedSet->TakeFromAbilitySystem(ASC, GrantedHandles);
-				}
-				GrantedSet = nullptr;
-			}
+			RevokeGrantedAbilitySet();
 
 			for (ABNWeapon* Weapon : Weapons)
 			{
@@ -186,32 +177,47 @@ void UBNEquipmentComponent::ApplyCurrentWeapon()
 void UBNEquipmentComponent::UpdateGrantedAbilitySet()
 {
 	const AActor* Owner = GetOwner();
-	UBNAbilitySystemComponent* ASC = GetAbilitySystem();
-	if (!Owner || !Owner->HasAuthority() || !ASC)
+	if (!Owner || !Owner->HasAuthority())
 	{
 		return;
 	}
 
-	if (GrantedSet)
-	{
-		GrantedSet->TakeFromAbilitySystem(ASC, GrantedHandles);
-		GrantedSet = nullptr;
-	}
+	RevokeGrantedAbilitySet();
 
+	UBNAbilitySystemComponent* ASC = GetAbilitySystem();
 	const ABNWeapon* Weapon = GetCurrentWeapon();
 	const FBNWeaponRow* Row = Weapon ? Weapon->GetRow() : nullptr;
-	if (!Row || Row->AbilitySet.IsNull())
+	if (!ASC || !Row || Row->AbilitySet.IsNull())
 	{
 		return;
 	}
 
 	// Authority-side, one small data asset: an async grant would leave the weapon equipped
-	// with dead verbs for as long as the load took.
+	// with dead verbs for as long as the load took. The swap verbs are NOT in here — they are
+	// the inventory's, granted once by ABNPlayerState::GrantDefaults.
 	if (UBNAbilitySet* Set = Row->AbilitySet.LoadSynchronous())
 	{
 		Set->GiveToAbilitySystem(ASC, GrantedHandles);
 		GrantedSet = Set;
+		GrantedASC = ASC;
 	}
+}
+
+void UBNEquipmentComponent::RevokeGrantedAbilitySet()
+{
+	// Through the CACHED ASC, never a fresh PlayerState lookup: APawn::UnPossessed() nulls
+	// PlayerState before the corpse is destroyed, so at EndPlay the lookup answers null, the
+	// revoke silently never happens, and the next body grants a SECOND copy onto the same
+	// persistent ASC — two specs on one input tag, compounding every life.
+	if (GrantedSet)
+	{
+		if (UBNAbilitySystemComponent* ASC = GrantedASC.Get())
+		{
+			GrantedSet->TakeFromAbilitySystem(ASC, GrantedHandles);
+		}
+		GrantedSet = nullptr;
+	}
+	GrantedASC.Reset();
 }
 
 UBNAbilitySystemComponent* UBNEquipmentComponent::GetAbilitySystem() const

@@ -49,6 +49,9 @@ protected:
 	/** Authority only: revoke the previous weapon's set, grant the current one's. */
 	void UpdateGrantedAbilitySet();
 
+	/** Authority only, and always through GrantedASC — see the comment on the definition. */
+	void RevokeGrantedAbilitySet();
+
 	UBNAbilitySystemComponent* GetAbilitySystem() const;
 
 	// Row names, not classes — the row is the weapon's identity. Set in DefaultGame.ini,
@@ -69,4 +72,8 @@ protected:
 	TObjectPtr<UBNAbilitySet> GrantedSet;
 
 	FBNAbilitySetHandles GrantedHandles;
+
+	/** The ASC the grant actually landed on. EndPlay cannot re-derive it: APawn::UnPossessed()
+	 *  nulls PlayerState before the corpse is destroyed. */
+	TWeakObjectPtr<UBNAbilitySystemComponent> GrantedASC;
 };

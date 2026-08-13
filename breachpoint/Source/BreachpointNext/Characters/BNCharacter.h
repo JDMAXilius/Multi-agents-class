@@ -68,4 +68,8 @@ protected:
 	TObjectPtr<UBNEquipmentComponent> EquipmentComponent;
 
 	FDelegateHandle MoveSpeedChangedHandle;
+
+	/** Cached at init. APawn::UnPossessed() nulls PlayerState before the corpse is destroyed,
+	 *  so EndPlay cannot reach the ASC through a fresh GetPlayerState<>() lookup. */
+	TWeakObjectPtr<UAbilitySystemComponent> CachedAbilitySystem;
 };

@@ -80,17 +80,20 @@ void ABNCharacter::OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdj
 
 void ABNCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	// The ASC outlives the pawn (it is the PlayerState's); an unregistered binding
-	// per respawn accumulates on it forever.
+	// The ASC outlives the pawn (it is the PlayerState's); an unregistered binding per respawn
+	// accumulates on it forever. Through the CACHED ASC, never GetAbilitySystemComponent():
+	// APawn::UnPossessed() nulls PlayerState before the corpse is destroyed, so the fresh
+	// lookup answers null here and the removal this code thought it did never happened.
 	if (MoveSpeedChangedHandle.IsValid())
 	{
-		if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
+		if (UAbilitySystemComponent* ASC = CachedAbilitySystem.Get())
 		{
 			ASC->GetGameplayAttributeValueChangeDelegate(UBNAttributeSet::GetMoveSpeedAttribute())
 				.Remove(MoveSpeedChangedHandle);
 		}
 		MoveSpeedChangedHandle.Reset();
 	}
+	CachedAbilitySystem.Reset();
 
 	Super::EndPlay(EndPlayReason);
 }
@@ -140,13 +143,23 @@ void ABNCharacter::InitializeAnimLayer()
 	}
 
 	UClass* LayerClass = ResolveAnimLayerClass();
-	if (!LayerClass || LayerClass == LinkedAnimLayerClass)
+	if (LayerClass == LinkedAnimLayerClass)
 	{
 		return;
 	}
 
-	MeshComp->LinkAnimClassLayers(LayerClass);
+	// LinkAnimClassLayers never unlinks the outgoing set, so a resolve that yields nothing
+	// would leave the previous weapon's layer posing the character on every machine.
+	if (LinkedAnimLayerClass)
+	{
+		MeshComp->UnlinkAnimClassLayers(LinkedAnimLayerClass.Get());
+	}
 	LinkedAnimLayerClass = LayerClass;
+
+	if (LayerClass)
+	{
+		MeshComp->LinkAnimClassLayers(LayerClass);
+	}
 }
 
 void ABNCharacter::InitializeAbilitySystem()
@@ -159,6 +172,7 @@ void ABNCharacter::InitializeAbilitySystem()
 
 	UBNAbilitySystemComponent* ASC = PS->GetBNAbilitySystemComponent();
 	ASC->InitAbilityActorInfo(PS, this);
+	CachedAbilitySystem = ASC;
 
 	if (!MoveSpeedChangedHandle.IsValid())
 	{
