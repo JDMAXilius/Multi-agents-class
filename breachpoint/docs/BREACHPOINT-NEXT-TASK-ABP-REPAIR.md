@@ -1,90 +1,178 @@
-# TASK — the BN-owned anim layer chain, through the Unreal MCP
+# TASK — the BN anim layer chain · CLOSED, by a different route than planned
 
-**Cut:** 13 August 2026 by the cloud lead · **For:** the terminal session (editor + MCP in reach)
-**Binds to:** the NEXT doc family only. **Owner path:** `Content/BN/Animation/` + `Config/DefaultGame.ini`.
-**Supersedes** this file's 13 Aug `GroundDistance_0` task — the founder fixed that by hand.
+**Cut:** 13 August 2026 by the cloud lead · **Closed:** 13 August 2026, terminal session
+**Binds to:** the NEXT doc family only. **Owner path:** `Content/BN/Animation/` +
+`Config/DefaultGame.ini` (as planned) — **what actually shipped wrote `Content/FPSTemplate/`.**
 
-**Founder's instruction:** do this through the Unreal MCP **if it is quick**. It is four small
-steps and the founder can do them in ~2 minutes by hand, so **the MCP has to beat that or get
-out of the way**. If any step fights back, stop and hand the remaining steps back as clicks —
-do not burn twenty minutes automating two.
+> **STATUS: done — terminal 13 Aug 2026 (`ae8d38e`). Read "What actually shipped" before
+> anything else: the four steps below were NOT executed and must not be executed now.**
+> Supersedes this file's 13 Aug `GroundDistance_0` task — the founder fixed that by hand.
 
-## The symptom this fixes
+## What actually shipped
 
-The founder's character walks with the **lower body only; the upper body is frozen**, and the log
-spams `Accessed None trying to read (real) property CallFunc_GetMainAnimBPThreadSafe_ReturnValue`
-from `ABP_ItemAnimLayersBase`.
+The founder reparented **`ABP_Mannequin_Base` itself** — the FPSTemplate original — onto
+`/Script/BreachpointNext.BNAnimInstance`. No BN duplicates were made. No cast was retargeted.
+`Config/DefaultGame.ini` was not touched.
 
-The FPS graph splits at the spine: lower body from the main ABP's locomotion (working — it is fed
-by the 27 ported C++ properties on `UBNAnimInstance`), upper body from the **linked layer**, which
-picks its pose by reading the main ABP. `GetMainAnimBPThreadSafe` casts the owning anim instance
-to `ABP_Mannequin_Base`. BN's main is `ABP_BNMannequin` — a **duplicate**, therefore a *sibling*
-of that class, not a child — so the cast returns None, the layer selects no pose, and the upper
-body falls to reference pose.
+It works because the cast was never the thing to fix. `GetMainAnimBPThreadSafe` casts to
+`ABP_Mannequin_Base`, and `ABP_Mannequin_Base` now **is-a** `UBNAnimInstance` — so the cast
+resolves, the layer selects poses again, and everything already wired to the template main ABP
+keeps working with no rewiring at all. In the founder's words: *everything else is connecting
+to that.*
 
-Evidence for the mechanism, from the founder's own working reference, `MyCharacter.cpp:1134`:
-*"`ABP_Mannequin_Base` stores each into a variable; `ABP_ItemAnimLayersBase` and its per-weapon
-children read those to choose the pose — `Sprinting` is what selects the `fPS_Sprint` pose slot."*
+Confirmed from the bytes rather than the account: `ABP_Mannequin_Base` carries 158
+`BNAnimInstance` references and `ABP_ItemAnimLayersBase` 57. The main ABP's −18 KB is its
+Blueprint variables dropping out to re-resolve against the C++ properties — the same
+substitution `30_reparent_abp.py` performs on a duplicate, applied to the original instead.
+`ABP_ItemAnimLayersBase` (+23.7 KB) and `ABP_ItemAnimLayersBase_UE4` (+1.4 KB) moved as
+dependents.
 
-## The four steps
+**Verified rung: founder-reported, editor standalone.** Upper body moving with the lower, and
+crouch working. NOT PIE-multiplayer, NOT listen+client, not verified by anyone but the founder.
+The three-way multiplayer claim is still owed.
 
-Everything happens on **BN copies**. `ABP_Mannequin_Base`, `ABP_ItemAnimLayersBase` and
-`ABP_UnarmedAnimLayers` under `FPSTemplate/` are **read-only** — that ruling is what protects the
-founder's working `BP_FPSCharacter` setup, and it is not up for renegotiation here.
+### What this route costs, recorded so it is not rediscovered
+
+- **`FPSTemplate/` is no longer read-only in practice.** That ruling existed to protect the
+  founder's working `BP_FPSCharacter` setup. `BP_FPSCharacter` now inherits `UBNAnimInstance`
+  through the shared main ABP. It was not separately exercised. **The ruling and this reality
+  need reconciling** — that is a live question, not a settled one.
+- **`Config/DefaultGame.ini:232` stays pointed at the FPSTemplate layer,** and under this route
+  that is correct, not an oversight.
+- **`Content/BN/Animation/ABP_BNMannequin.uasset` is now unused by this path.** Untouched since
+  `8742c01`. Decide whether it is deleted or kept before it rots into a second source of truth.
+- **`Tools/bn/45_bn_anim_layers.py` is unnecessary for this route** and was never run. It was
+  repaired at `ecf7589` anyway (its cast target silently inherited `30_reparent_abp.py`'s
+  `new_parent`, overriding the BP-class correction and landing as a false green) — so if the
+  duplicate route is ever revived, the script is correct and unrun rather than broken.
+
+## The four steps — NOT EXECUTED, kept only as the road not taken
+
+Do not run these. They describe BN duplicates that do not exist and a cast retarget that was
+never needed. They are preserved because the reasoning below them is still the best written
+account of the bug, and because reviving them is a real option if sharing the main ABP with
+`BP_FPSCharacter` turns out to be a problem.
 
 1. Duplicate `ABP_ItemAnimLayersBase` → `/Game/BN/Animation/ABP_BNItemAnimLayersBase`.
 2. Duplicate `ABP_UnarmedAnimLayers` → `/Game/BN/Animation/ABP_BNUnarmedAnimLayers`, then reparent
    it to `ABP_BNItemAnimLayersBase`.
 3. In `ABP_BNItemAnimLayersBase` → `GetMainAnimBPThreadSafe`: retarget the cast to
    **`ABP_BNMannequin`** (`/Game/BN/Animation/ABP_BNMannequin.ABP_BNMannequin_C`).
-4. `Config/DefaultGame.ini` → `UnarmedAnimLayer=/Game/BN/Animation/ABP_BNUnarmedAnimLayers.ABP_BNUnarmedAnimLayers_C`
-   (line 232 today still points at the FPSTemplate layer).
+4. `Config/DefaultGame.ini` → `UnarmedAnimLayer=/Game/BN/Animation/ABP_BNUnarmedAnimLayers.ABP_BNUnarmedAnimLayers_C`.
 
-`Tools/bn/45_bn_anim_layers.py` already implements all four with a 14-row read-back audit and is
-idempotent — running it is likely faster than driving the MCP call-by-call. Its cast target
-constant is already `ABP_BNMannequin`.
+## The symptom this fixed
 
-## Why the cast targets the BP class and NOT the C++ class
+The founder's character walked with the **lower body only; the upper body frozen**, and the log
+spammed `Accessed None trying to read (real) property CallFunc_GetMainAnimBPThreadSafe_ReturnValue`
+from `ABP_ItemAnimLayersBase`.
 
-This was corrected once already; do not "improve" it back. The layer reads pose-selection
-variables — `Sprinting`, `Unarmed`, the ADS bools — that live as **Blueprint variables** on
-`ABP_BNMannequin` and were never ported to C++. `ABP_BNMannequin` **is-a** `UBNAnimInstance`, so
-casting to the BP class resolves the 27 ported C++ properties *and* those BP variables: a superset.
-Casting to `/Script/BreachpointNext.BNAnimInstance` would break every BP-only read. The cast moves
-down to the C++ class only once C++ carries everything the layer reads.
+The FPS graph splits at the spine: lower body from the main ABP's locomotion (working — it is fed
+by the 27 ported C++ properties on `UBNAnimInstance`), upper body from the **linked layer**, which
+picks its pose by reading the main ABP. `GetMainAnimBPThreadSafe` casts the owning anim instance
+to `ABP_Mannequin_Base`. Under the duplicate plan, BN's main was `ABP_BNMannequin` — a *sibling*
+of that class, not a child — so the cast returned None. **The shipped fix removes the sibling
+relationship instead of retargeting the cast.**
 
-## What will not be scriptable, and is not a failure
+Evidence for the mechanism, from the founder's own working reference, `MyCharacter.cpp:1134`:
+*"`ABP_Mannequin_Base` stores each into a variable; `ABP_ItemAnimLayersBase` and its per-weapon
+children read those to choose the pose — `Sprinting` is what selects the `fPS_Sprint` pose slot."*
+
+## Why a cast to the BP class, if one is ever added again
+
+Under the duplicate route the cast had to target `ABP_BNMannequin`, the **Blueprint** class, not
+`/Script/BreachpointNext.BNAnimInstance`. This was corrected once (`a3efbf8`) and then silently
+un-corrected by the script's config inheritance (`ecf7589`) — it has now bitten twice, so it is
+written down twice. The layer reads pose-selection variables — `Sprinting`, `Unarmed`, the ADS
+bools — that live as **Blueprint variables** and were never ported to C++. The BP class is-a
+`UBNAnimInstance`, so casting to it resolves the ported C++ properties *and* those BP variables: a
+superset. Casting to the C++ class breaks every BP-only read. This applies to the shipped route
+too — the same BP variables now live on the reparented `ABP_Mannequin_Base`.
+
+## What was never scriptable, and was not a failure
 
 - **A cast node's pins are typed at construction**, and `UEdGraphPin` has not been a `UObject`
-  since 4.15 — so a successful `TargetType` write can still leave a stale `As ABP Mannequin Base`
-  output pin. **Delete and recreate the node** rather than editing it. The BN base's compile
-  status is the only proof; treat it as the gate.
-- **The function's return-value pin type** lives in `FUserPinInfo` — unreflected both ways. Eyeball
-  it even when everything else reports clean.
+  since 4.15 — a successful `TargetType` write can still leave a stale output pin. Delete and
+  recreate the node rather than editing it.
+- **The function's return-value pin type** lives in `FUserPinInfo` — unreflected both ways.
 - **Local variables typed to `ABP_Mannequin_Base`** can be read and flagged but not retyped.
 
-## Done means
+## OPEN DEFECT — the arms are stiff
 
-`ABP_BNItemAnimLayersBase` and `ABP_BNUnarmedAnimLayers` exist under `/Game/BN/Animation/`, the BN
-unarmed layer's parent is the BN base, the cast reads `ABP_BNMannequin`, the ini points at the BN
-copy, both layer assets compile clean, and the audit is pasted into the Log below.
+Carried out of this task, not fixed by it. The founder's read was that the FPSTemplate character's
+**procedural-animation components** are missing on the BN character. Half right, and the half that
+is wrong matters, because it points at the wrong fix.
 
-Then the founder's checkpoint run is unblocked: **upper body moving with the lower**, look-down-
-see-body, crouch toggle, crouch-jump — standalone, then listen-server + client.
+`MyCharacter.cpp:1124` is explicit: *"The template does **NOT** push state through a component and
+it does NOT have the AnimBP cast back to the character and pull. It is a Blueprint **INTERFACE**
+(`BPI_FPST_AnimInterface`) implemented by `ABP_Mannequin_Base`, and the character sends messages to
+`Mesh->GetAnimInstance()`."* There is no component to add for the pose side. There is a set of
+messages nobody sends.
 
-## Standing rule that governs this task
+**`BNCharacter` sends none of them.** Its only `GetAnimInstance()` reference is a null check at
+`BNCharacter.cpp:127`. `MyCharacter`, by contrast, sends the bools that drive upper-body pose
+selection:
 
-Say up front when the founder doing it by hand is faster (Roadmap 1, operating rules). For this
-task that judgement has already been made and it is finely balanced: four clicks versus an MCP
-session. **Automate only what is genuinely quicker; hand back the rest as steps.**
+| message | sent from | selects |
+|---|---|---|
+| `SetSprinting` | `MyCharacter.cpp:952`, `961` | the `fPS_Sprint` pose slot |
+| `SetADS` / `SetADS_Upper` | `967-968`, `981-982` | aim-down-sights upper body |
+| `SetUnarmed` | `1105`, `1118` | the unarmed layer's pose |
 
-## Roadmap 2 note, so it is not re-learned
+That is why **crouch works and the arms do not**. Crouch, velocity and falling are computed inside
+`BNAnimInstance::NativeUpdateAnimation` straight off the CharacterMovementComponent and need no
+interface. Upper-body pose selection comes *only* from those bools, so the layer sits on its
+default pose.
 
-Per-weapon layers parent to `ABP_BNItemAnimLayersBase`, **never** the template base — a weapon
-layer on the template base inherits the template cast and reintroduces this exact Accessed-None
-bug, one weapon at a time.
+Where the founder's instinct is right is the tier below. The struct-taking messages —
+`SetAimAndLeanInfo`, `SetPoseTransform`, `SetProcApplyTransform` — carry the sway/lean/recoil
+offsets and are unwired in `MyCharacter` **too**. `MyCharacter.cpp:1141` says why: they carry
+`S_Procedural_*` user-defined structs *"whose layouts would have to be mirrored to be passed, and a
+wrong mirror is silent corruption — they land with their procedural components."* Roadmap 1 line
+280 already schedules that as post-R1 work.
+
+**So it is two jobs, not one:**
+
+1. **Next** — port `SendAnimInterfaceBool` and its four callers into `BNCharacter`. One function
+   plus the input hooks; no new components. **Trap:** `MyCharacter.cpp:1162-1167` — the
+   interface's Blueprint display names contain spaces (`SetADS` → `"Set ADS"`), so the send
+   mangles the string to resolve `FindFunction`. Get it wrong and it fails **silently**.
+   **Open question before building it:** are these sends local-only presentation, or must they be
+   driven off replicated state so an observing client sees the right upper body? That decision is
+   netcode-builder's, and it gates the packet.
+2. **Later** — the `S_Procedural_*` structs with their components, per Roadmap 1 line 280.
+
+This diagnosis is from reading code, not from the editor. It is unverified — but it predicts
+exactly what the founder observes, including crouch working.
+
+## Roadmap 2 note — INVERTED by the shipped route
+
+The original note said per-weapon layers must parent to `ABP_BNItemAnimLayersBase` and **never**
+the template base. **That is now backwards.** There is no BN base; the template base is the BN
+base. Per-weapon layers parent to `ABP_ItemAnimLayersBase`, whose cast resolves because
+`ABP_Mannequin_Base` is-a `UBNAnimInstance`. The hazard the note guarded against — a weapon layer
+inheriting a cast that returns None — cannot occur while every layer shares one main ABP. It comes
+back the moment a second main ABP exists, so if `ABP_BNMannequin` is ever revived, revive this note
+with it.
 
 ## Log
 
-_(terminal session: append what the MCP did, what was handed back as manual, and the compile/audit
-read-back here)_
+**13 Aug 2026 · terminal session**
+
+- Pulled `9b1de57`. Build was already current — the pull carried only `.py` and `.md`; newest
+  source (`BNCharacter.cpp`, 01:15) predates the DLLs (01:17). Nothing was rebuilt.
+- `8742c01` — committed five founder on-disk asset edits that predated the session, to give the
+  editor work a clean revert point.
+- `ecf7589` — repaired `Tools/bn/45_bn_anim_layers.py`. `main()` read `cast_target` from
+  `30_reparent_abp.py`'s `new_parent`, so `a3efbf8`'s BP-class correction was dead code and every
+  run would have retargeted the cast at the C++ class. The is-a audit row compared two values that
+  were both then the C++ class, so it would have passed: a **false green**, which the script's own
+  docstring calls worse than a red. Manual steps 7–9 carried the same regression and are what the
+  founder would have followed, since the graph edit was expected to come back `MANUAL-REQUIRED`.
+  Fixed, syntax-checked, **never run** — the founder took a different route.
+- `guard_laws.py` blocked the first attempt at that repair, correctly: the claim still named the
+  finished compile-repair packet. Re-claimed rather than routed around.
+- `ae8d38e` — the founder's reparent route, landed. See "What actually shipped".
+- Not done, and deliberately: `Config/DefaultGame.ini` untouched, no BN duplicates, `45_*.py`
+  unrun.
+- Carried forward: the stiff-arms defect above, the `FPSTemplate/` read-only reconciliation, the
+  fate of `ABP_BNMannequin.uasset`, and the owed listen+client verification.
