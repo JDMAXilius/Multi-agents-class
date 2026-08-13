@@ -97,6 +97,20 @@ C++ landed with Wave 3. Three more rows and three more mappings, same two assets
 surface is written only by the procedural component this roadmap defers to R3. Recorded in full
 in the Wave 3 commit. The keys should still fire the abilities and flip the tags.
 
+### 6 · Wave 4 — fire and reload *(added 13 Aug, batched here too)*
+
+C++ landed with Wave 4. **These are NOT needed for Checkpoint I** (weapons + switching) — do §1–§5
+first, hand that back, and treat this section as the follow-on for Checkpoint K.
+
+| Asset | Detail |
+|---|---|
+| `/Game/BN/Input/IA_BN_Fire`, `IA_BN_Reload` | `UInputAction`, Boolean. `IA_FPST_Weapon_Fire` / `_Reload` exist in the template — reuse if the value type matches, same rule as sprint |
+| `DA_BNInput` rows | ↔ tags `Input.Weapon.Fire`, `Input.Weapon.Reload` |
+| `IMC_BNNext` mappings | LMB = fire, R = reload |
+| **`DA_BNAbilitySet_Rifle` / `_Pistol`** | now they have content: list `UBNGA_Fire` (tag `Input.Weapon.Fire`) and `UBNGA_Reload` (tag `Input.Weapon.Reload`). Parent `UBNAbilitySet`, referenced from the row's `AbilitySet` column. **Swap is NOT in here** — it is PlayerState-granted, and putting it back would restore the self-revoking bug Wave 2 fixed |
+| `FireMontage` / `ReloadMontage` on the rows | the template's per-weapon montages, soft refs |
+| Niagara: muzzle · impact · tracer | referenced by the C++ cue classes. **The tracer system MUST expose a user Vector parameter named `BeamEnd`** — the beam's far end; the cue writes it. Cues degrade silently when unset, so a missing system is invisible rather than fatal |
+
 ## Read back and report
 
 Fresh-load every asset and print an intent-vs-actual table: each asset's path and parent/type, the
