@@ -107,6 +107,8 @@ void UBNAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	bSnapCrouching = bTagCrouching || Character->bIsCrouched;
 	bSnapJumping = bTagJumping;
 	bSnapSprinting = bTagSprinting;
+	bSnapLeanLeft = bTagLeanLeft;
+	bSnapLeanRight = bTagLeanRight;
 	// The weapon seam, not the local pawn: it answers off the character's own weapon state, so
 	// server, owner and sim proxies all reach the same pose set for the character they render.
 	bSnapUnarmed = Character->GetCurrentWeaponAnimLayer() == nullptr;
@@ -233,8 +235,20 @@ void UBNAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 	}
 	ProcessTurnYawCurve();
 
-	// ---- aim
-	AimPitch = FRotator::NormalizeAxis(SnapBaseAimPitch);
+	// ---- aim. The delta an aim offset wants: the view's pitch against the actor's, which the
+	// CMC holds at zero. NormalizeAxis is load-bearing on a simulated proxy — GetBaseAimRotation
+	// decompresses RemoteViewPitch into 0..360 there, so +-90 only survives normalized.
+	// Nothing here reads locally-controlled-only state, which is why every machine agrees.
+	const double AimPitchDelta = FRotator::NormalizeAxis(SnapBaseAimPitch - SnapRotation.Pitch);
+	AimPitch = AimPitchDelta;
+	Pitch = FMath::Clamp(AimPitchDelta, AimPitchClamp.X, AimPitchClamp.Y);
+
+	// ---- lean. The State.Lean.* tags are the input and they replicate (Mixed carries GE-granted
+	// tags to simulated proxies), so a proxy leans the way its owner does. Both sides held cancel.
+	const double TargetLeaning = (bSnapLeanRight ? 1.0 : 0.0) - (bSnapLeanLeft ? 1.0 : 0.0);
+	NativeCurrLeaning = FMath::FInterpTo(NativeCurrLeaning, TargetLeaning, static_cast<double>(DeltaSeconds), LeanInterpSpeed);
+	LeanRotation = FRotator(0.0, 0.0, NativeCurrLeaning * LeanAngle);
+	LeanOppRotation = FRotator(0.0, 0.0, -LeanRotation.Roll);
 
 	// ---- linked layer edge
 	bNativeLinkedLayerChanged = !bNativeFirstUpdate && bSnapLayerChanged;
@@ -332,12 +346,16 @@ void UBNAnimInstance::NativeUninitializeAnimation()
 		AbilitySystem->UnregisterGameplayTagEvent(JumpTagHandle, BNTags::State_Movement_Jumping, EGameplayTagEventType::NewOrRemoved);
 		AbilitySystem->UnregisterGameplayTagEvent(InAirTagHandle, BNTags::State_Movement_InAir, EGameplayTagEventType::NewOrRemoved);
 		AbilitySystem->UnregisterGameplayTagEvent(SprintTagHandle, BNTags::State_Movement_Sprinting, EGameplayTagEventType::NewOrRemoved);
+		AbilitySystem->UnregisterGameplayTagEvent(LeanLeftTagHandle, BNTags::State_Lean_Left, EGameplayTagEventType::NewOrRemoved);
+		AbilitySystem->UnregisterGameplayTagEvent(LeanRightTagHandle, BNTags::State_Lean_Right, EGameplayTagEventType::NewOrRemoved);
 		AbilitySystem = nullptr;
 	}
 	CrouchTagHandle.Reset();
 	JumpTagHandle.Reset();
 	InAirTagHandle.Reset();
 	SprintTagHandle.Reset();
+	LeanLeftTagHandle.Reset();
+	LeanRightTagHandle.Reset();
 
 	Super::NativeUninitializeAnimation();
 }
@@ -360,11 +378,15 @@ void UBNAnimInstance::ResolveAbilitySystem()
 	JumpTagHandle = ASC->RegisterGameplayTagEvent(BNTags::State_Movement_Jumping, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &UBNAnimInstance::OnTagChanged);
 	InAirTagHandle = ASC->RegisterGameplayTagEvent(BNTags::State_Movement_InAir, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &UBNAnimInstance::OnTagChanged);
 	SprintTagHandle = ASC->RegisterGameplayTagEvent(BNTags::State_Movement_Sprinting, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &UBNAnimInstance::OnTagChanged);
+	LeanLeftTagHandle = ASC->RegisterGameplayTagEvent(BNTags::State_Lean_Left, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &UBNAnimInstance::OnTagChanged);
+	LeanRightTagHandle = ASC->RegisterGameplayTagEvent(BNTags::State_Lean_Right, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &UBNAnimInstance::OnTagChanged);
 
 	bTagCrouching = ASC->HasMatchingGameplayTag(BNTags::State_Movement_Crouching);
 	bTagJumping = ASC->HasMatchingGameplayTag(BNTags::State_Movement_Jumping);
 	bTagInAir = ASC->HasMatchingGameplayTag(BNTags::State_Movement_InAir);
 	bTagSprinting = ASC->HasMatchingGameplayTag(BNTags::State_Movement_Sprinting);
+	bTagLeanLeft = ASC->HasMatchingGameplayTag(BNTags::State_Lean_Left);
+	bTagLeanRight = ASC->HasMatchingGameplayTag(BNTags::State_Lean_Right);
 }
 
 void UBNAnimInstance::OnTagChanged(const FGameplayTag Tag, int32 NewCount)
@@ -385,5 +407,13 @@ void UBNAnimInstance::OnTagChanged(const FGameplayTag Tag, int32 NewCount)
 	else if (Tag == BNTags::State_Movement_Sprinting)
 	{
 		bTagSprinting = bActive;
+	}
+	else if (Tag == BNTags::State_Lean_Left)
+	{
+		bTagLeanLeft = bActive;
+	}
+	else if (Tag == BNTags::State_Lean_Right)
+	{
+		bTagLeanRight = bActive;
 	}
 }

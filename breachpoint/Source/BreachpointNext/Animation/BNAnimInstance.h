@@ -125,9 +125,35 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
 	double AimPitch = 0.0;
 
+	/** The asset's `Pitch` — what BPI_FPST_AnimInterface's SetControllerPitch(InPitch) used to
+	 *  write, and what nothing has written since. The aim-offset side of the pose reads it. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	double Pitch = 0.0;
+
+	UPROPERTY(EditAnywhere, Category = "BN")
+	FVector2D AimPitchClamp = FVector2D(-90.0, 90.0);
+
 	/** Written only through SetRootYawOffset (= -RootYawOffset), as the source does. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
 	double AimYaw = 0.0;
+
+	/** The spine's lean, and the head's counter-lean — the two rotations SetAimAndLeanInfo
+	 *  carried as InLeanRotation / InOppLeanRotation. The asset's LeanSpineWeights_UE4/UE5 share
+	 *  them out per bone; the head entry there is labelled "Opposite Angle Weight", which is what
+	 *  the second rotation is for: the body tips, the gaze stays put. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	FRotator LeanRotation = FRotator::ZeroRotator;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	FRotator LeanOppRotation = FRotator::ZeroRotator;
+
+	/** Source measurements: max lean 12 degrees, chased by an interp at 8 (not a spring — lean
+	 *  settles without overshoot). */
+	UPROPERTY(EditAnywhere, Category = "BN")
+	double LeanAngle = 12.0;
+
+	UPROPERTY(EditAnywhere, Category = "BN")
+	double LeanInterpSpeed = 8.0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
 	double YawDeltaSinceLastUpdate = 0.0;
@@ -192,11 +218,15 @@ private:
 	FDelegateHandle JumpTagHandle;
 	FDelegateHandle InAirTagHandle;
 	FDelegateHandle SprintTagHandle;
+	FDelegateHandle LeanLeftTagHandle;
+	FDelegateHandle LeanRightTagHandle;
 
 	bool bTagInAir = false;
 	bool bTagCrouching = false;
 	bool bTagJumping = false;
 	bool bTagSprinting = false;
+	bool bTagLeanLeft = false;
+	bool bTagLeanRight = false;
 
 	// Game-thread snapshot, worker-thread input. The only channel between the two passes.
 	FVector SnapWorldVelocity = FVector::ZeroVector;
@@ -214,6 +244,8 @@ private:
 	bool bSnapJumping = false;
 	bool bSnapUnarmed = false;
 	bool bSnapSprinting = false;
+	bool bSnapLeanLeft = false;
+	bool bSnapLeanRight = false;
 
 	// Worker-thread history.
 	FFloatSpringState RootYawOffsetSpringState;
@@ -237,6 +269,7 @@ private:
 	FVector NativePivotDirection2D = FVector::ZeroVector;
 	uint8 NativeCardinalFromAcceleration = 0;
 	double NativeUpperbodyAdditiveWeight = 0.0;
+	double NativeCurrLeaning = 0.0;
 	uint8 NativeLocalVelocityDirection = 0;
 	uint8 NativeLocalVelocityDirectionNoOffset = 0;
 };
