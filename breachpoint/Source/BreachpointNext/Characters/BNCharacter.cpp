@@ -14,9 +14,10 @@ ABNCharacter::ABNCharacter()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
+	// The camera rides the MESH, not the capsule — the animation set is full-body first
+	// person, so the animated body carries the view. Rotation still comes from the controller.
 	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
-	CameraComponent->SetupAttachment(GetCapsuleComponent());
-	CameraComponent->SetRelativeLocation(FVector(0.f, 0.f, CameraStandingHeight));
+	CameraComponent->SetupAttachment(GetMesh(), CameraAttachSocket);
 	CameraComponent->bUsePawnControlRotation = true;
 
 	bUseControllerRotationYaw = true;
@@ -42,8 +43,9 @@ void ABNCharacter::BeginPlay()
 // gate makes the tag server-truth, replicated to everyone by the ASC.
 void ABNCharacter::OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
 {
+	// No camera offset here: Super moves the mesh by HalfHeightAdjust and the camera is the
+	// mesh's child, so the view follows — and the crouch animation lowers the head itself.
 	Super::OnStartCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
-	CameraComponent->SetRelativeLocation(FVector(0.f, 0.f, CameraStandingHeight - HalfHeightAdjust));
 
 	if (HasAuthority() && !CrouchStateHandle.IsValid())
 	{
@@ -62,7 +64,6 @@ void ABNCharacter::OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightA
 void ABNCharacter::OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
 {
 	Super::OnEndCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
-	CameraComponent->SetRelativeLocation(FVector(0.f, 0.f, CameraStandingHeight));
 
 	if (HasAuthority() && CrouchStateHandle.IsValid())
 	{

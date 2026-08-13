@@ -34,9 +34,10 @@ public:
 	void InitializeAnimLayer();
 
 protected:
-	// Camera height above the capsule centre, standing. Crouch shifts it down by the
-	// capsule's own shrink, otherwise the view floats above the crouched head.
-	static constexpr float CameraStandingHeight = 64.f;
+	/** Bone/socket the camera rides on the mesh. True first person: the animated body carries
+	 *  the view, so crouch and head motion need no manual camera offset. */
+	UPROPERTY(EditDefaultsOnly, Category = "Camera")
+	FName CameraAttachSocket = TEXT("head");
 
 	UPROPERTY(Config)
 	FSoftClassPath UnarmedAnimLayer;
