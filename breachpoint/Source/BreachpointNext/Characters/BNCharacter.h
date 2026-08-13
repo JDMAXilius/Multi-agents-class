@@ -28,6 +28,10 @@ public:
 	UClass* GetCurrentWeaponAnimLayer() const;
 	UClass* ResolveAnimLayerClass();
 
+	/** Links the resolved layer on the 3P mesh. Guards for a missing anim instance and links
+	 *  once per class; public so the anim instance can re-trigger it — the character owns it. */
+	void InitializeAnimLayer();
+
 protected:
 	// Camera height above the capsule centre, standing. Crouch shifts it down by the
 	// capsule's own shrink, otherwise the view floats above the crouched head.
@@ -45,7 +49,6 @@ protected:
 	UPROPERTY(Transient)
 	TObjectPtr<UClass> LinkedAnimLayerClass;
 
-	void InitializeAnimLayer();
 	void InitializeAbilitySystem();
 	void OnMoveSpeedChanged(const FOnAttributeChangeData& Data);
 

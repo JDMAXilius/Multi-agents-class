@@ -106,15 +106,24 @@ void UBNAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	bSnapJumping = bTagJumping;
 
 	// The character owns layer linking; this pass only watches the mesh for the swap edge.
+	// No layer yet (e.g. a sim proxy whose anim instance didn't exist at BeginPlay): re-trigger
+	// the character's InitializeAnimLayer — it guards and links once per class — then re-scan.
 	UClass* CurrentLayerClass = nullptr;
 	if (USkeletalMeshComponent* Mesh = GetOwningComponent())
 	{
-		for (UAnimInstance* Linked : Mesh->GetLinkedAnimInstances())
+		for (int32 Pass = 0; Pass < 2 && !CurrentLayerClass; ++Pass)
 		{
-			if (Linked)
+			for (UAnimInstance* Linked : Mesh->GetLinkedAnimInstances())
 			{
-				CurrentLayerClass = Linked->GetClass();
-				break;
+				if (Linked)
+				{
+					CurrentLayerClass = Linked->GetClass();
+					break;
+				}
+			}
+			if (!CurrentLayerClass && Pass == 0)
+			{
+				Character->InitializeAnimLayer();
 			}
 		}
 	}
@@ -130,35 +139,38 @@ void UBNAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 	const FVector WorldAcceleration2D(SnapWorldAcceleration.X, SnapWorldAcceleration.Y, 0.0);
 
 	// ---- location
-	DisplacementSinceLastUpdate = IsFirstUpdate ? 0.0 : FVector::Dist2D(SnapWorldLocation, PreviousWorldLocation);
-	DisplacementSpeed = (!IsFirstUpdate && DeltaSeconds > 0.f) ? DisplacementSinceLastUpdate / DeltaSeconds : 0.0;
+	DisplacementSinceLastUpdate = bNativeFirstUpdate ? 0.0 : FVector::Dist2D(SnapWorldLocation, PreviousWorldLocation);
+	DisplacementSpeed = (!bNativeFirstUpdate && DeltaSeconds > 0.f) ? DisplacementSinceLastUpdate / DeltaSeconds : 0.0;
 	PreviousWorldLocation = SnapWorldLocation;
 
 	// ---- rotation
-	YawDeltaSinceLastUpdate = IsFirstUpdate ? 0.0 : FRotator::NormalizeAxis(SnapRotation.Yaw - PreviousYaw);
-	YawDeltaSpeed = DeltaSeconds > 0.f ? YawDeltaSinceLastUpdate / DeltaSeconds : 0.0;
+	NativeYawDeltaSinceLastUpdate = bNativeFirstUpdate ? 0.0 : FRotator::NormalizeAxis(SnapRotation.Yaw - PreviousYaw);
+	NativeYawDeltaSpeed = DeltaSeconds > 0.f ? NativeYawDeltaSinceLastUpdate / DeltaSeconds : 0.0;
 	PreviousYaw = SnapRotation.Yaw;
 	// The source's lean factors; crouched leans less.
-	AdditiveLeanAngle = YawDeltaSpeed * (bSnapCrouching ? 0.025 : 0.0375);
+	AdditiveLeanAngle = NativeYawDeltaSpeed * (bSnapCrouching ? 0.025 : 0.0375);
 
 	// ---- velocity
-	const bool bWasMovingLastUpdate = HasVelocity;
+	const bool bWasMovingLastUpdate = bNativeWasMoving;
 	LocalVelocity2D = SnapRotation.UnrotateVector(WorldVelocity2D);
 	LocalVelocityDirectionAngle = CalculateDirection(WorldVelocity2D, SnapRotation);
-	LocalVelocityDirectionAngleWithOffset = FRotator::NormalizeAxis(LocalVelocityDirectionAngle - RootYawOffset);
-	LocalVelocityDirection = SelectCardinalDirectionFromAngle(
-		LocalVelocityDirectionAngleWithOffset, CardinalDirectionDeadZone, LocalVelocityDirection, bWasMovingLastUpdate);
-	LocalVelocityDirectionNoOffset = SelectCardinalDirectionFromAngle(
-		LocalVelocityDirectionAngle, CardinalDirectionDeadZone, LocalVelocityDirectionNoOffset, bWasMovingLastUpdate);
+	LocalVelocityDirectionAngleWithOffset = FRotator::NormalizeAxis(LocalVelocityDirectionAngle - NativeRootYawOffset);
+	NativeLocalVelocityDirection = SelectCardinalDirectionFromAngle(
+		LocalVelocityDirectionAngleWithOffset, CardinalDirectionDeadZone, NativeLocalVelocityDirection, bWasMovingLastUpdate);
+	NativeLocalVelocityDirectionNoOffset = SelectCardinalDirectionFromAngle(
+		LocalVelocityDirectionAngle, CardinalDirectionDeadZone, NativeLocalVelocityDirectionNoOffset, bWasMovingLastUpdate);
+	LocalVelocityDirection = NativeLocalVelocityDirection;
+	LocalVelocityDirectionNoOffset = NativeLocalVelocityDirectionNoOffset;
 	HasVelocity = !FMath::IsNearlyZero(WorldVelocity2D.SizeSquared());
+	bNativeWasMoving = HasVelocity;
 
 	// ---- acceleration
 	LocalAcceleration2D = SnapRotation.UnrotateVector(WorldAcceleration2D);
 	HasAcceleration = !WorldAcceleration2D.IsNearlyZero();
-	PivotDirection2D = FMath::Lerp(PivotDirection2D, WorldAcceleration2D.GetSafeNormal(), 0.5).GetSafeNormal();
+	NativePivotDirection2D = FMath::Lerp(NativePivotDirection2D, WorldAcceleration2D.GetSafeNormal(), 0.5).GetSafeNormal();
 	// The pivot cardinal is where the player came FROM: opposite of where acceleration points.
-	CardinalDirectionFromAcceleration = GetOppositeCardinalDirection(SelectCardinalDirectionFromAngle(
-		CalculateDirection(PivotDirection2D, SnapRotation), CardinalDirectionDeadZone, CardinalDirectionFromAcceleration, false));
+	NativeCardinalFromAcceleration = GetOppositeCardinalDirection(SelectCardinalDirectionFromAngle(
+		CalculateDirection(NativePivotDirection2D, SnapRotation), CardinalDirectionDeadZone, NativeCardinalFromAcceleration, false));
 
 	// ---- wall heuristic: pushing hard, barely moving, accel roughly perpendicular to travel.
 	IsRunningIntoWall =
@@ -175,7 +187,7 @@ void UBNAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 	isCrouching = bSnapCrouching;
 	IsJumping = bSnapJumping;
 
-	CrouchStateChange = !IsFirstUpdate && bSnapCrouching != bWasCrouchingLastUpdate;
+	bNativeCrouchStateChange = !bNativeFirstUpdate && bSnapCrouching != bWasCrouchingLastUpdate;
 	bWasCrouchingLastUpdate = bSnapCrouching;
 	ApplyCrouchAlpha = isCrouching ? 1.0 : 0.0;
 
@@ -187,76 +199,90 @@ void UBNAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 		: 0.0;
 
 	// ---- blend weights
-	UpperbodyDynamicAdditiveWeight = (bSnapAnyMontagePlaying && IsOnGround)
+	NativeUpperbodyAdditiveWeight = (bSnapAnyMontagePlaying && IsOnGround)
 		? 1.0
-		: FMath::FInterpTo(UpperbodyDynamicAdditiveWeight, 0.0, static_cast<double>(DeltaSeconds), 6.0);
+		: FMath::FInterpTo(NativeUpperbodyAdditiveWeight, 0.0, static_cast<double>(DeltaSeconds), 6.0);
 
 	// ---- root yaw offset / turn in place
-	if (IsFirstUpdate)
+	if (bNativeFirstUpdate)
 	{
-		RootYawOffset = 0.0;
-		AimYaw = 0.0;
-		TurnYawCurveValue = 0.0;
+		NativeRootYawOffset = 0.0;
+		NativeTurnYawCurveValue = 0.0;
 		PreviousTurnYawCurveValue = 0.0;
 	}
 	// In the source the graph's state functions drive the mode; idle accumulates and
 	// everything else blends out, which is their net effect.
-	RootYawOffsetMode = (HasVelocity || HasAcceleration || IsFalling) ? BN_YawModeBlendOut : BN_YawModeAccumulate;
-	if (RootYawOffsetMode == BN_YawModeAccumulate)
+	NativeRootYawOffsetMode = (HasVelocity || HasAcceleration || IsFalling) ? BN_YawModeBlendOut : BN_YawModeAccumulate;
+	if (NativeRootYawOffsetMode == BN_YawModeAccumulate)
 	{
-		SetRootYawOffset(RootYawOffset - YawDeltaSinceLastUpdate);
+		SetRootYawOffset(NativeRootYawOffset - NativeYawDeltaSinceLastUpdate);
 	}
 	else
 	{
 		SetRootYawOffset(UKismetMathLibrary::FloatSpringInterp(
-			static_cast<float>(RootYawOffset), 0.f, RootYawOffsetSpringState,
+			static_cast<float>(NativeRootYawOffset), 0.f, RootYawOffsetSpringState,
 			/*Stiffness*/ 80.f, /*CriticalDampingFactor*/ 1.f, DeltaSeconds, /*Mass*/ 1.f));
 	}
 	ProcessTurnYawCurve();
 
 	// ---- aim
 	AimPitch = FRotator::NormalizeAxis(SnapBaseAimPitch);
-	// AimYaw was written by SetRootYawOffset above, as the source does.
 
 	// ---- linked layer edge
-	LinkedLayerChanged = !IsFirstUpdate && bSnapLayerChanged;
+	bNativeLinkedLayerChanged = !bNativeFirstUpdate && bSnapLayerChanged;
 
-	IsFirstUpdate = false;
+	// ---- gated publish: while the event graph is live it owns these RMW/edge outputs and
+	// repeats the same math on the shared fields; publishing both would double-count.
+	// Shared IsFirstUpdate is NEVER written from native — the graph keeps its own until cleared.
+	if (bNativeOwnsTurnState)
+	{
+		RootYawOffset = NativeRootYawOffset;
+		AimYaw = -NativeRootYawOffset;
+		RootYawOffsetMode = NativeRootYawOffsetMode;
+		TurnYawCurveValue = NativeTurnYawCurveValue;
+		YawDeltaSinceLastUpdate = NativeYawDeltaSinceLastUpdate;
+		YawDeltaSpeed = NativeYawDeltaSpeed;
+		CrouchStateChange = bNativeCrouchStateChange;
+		LinkedLayerChanged = bNativeLinkedLayerChanged;
+		PivotDirection2D = NativePivotDirection2D;
+		CardinalDirectionFromAcceleration = NativeCardinalFromAcceleration;
+		UpperbodyDynamicAdditiveWeight = NativeUpperbodyAdditiveWeight;
+	}
+
+	bNativeFirstUpdate = false;
 }
 
 void UBNAnimInstance::SetRootYawOffset(double InRootYawOffset)
 {
 	if (!bEnableRootYawOffset)
 	{
-		RootYawOffset = 0.0;
-		AimYaw = 0.0;
+		NativeRootYawOffset = 0.0;
 		return;
 	}
 
-	const FVector2D Clamp = isCrouching ? RootYawOffsetAngleClampCrouched : RootYawOffsetAngleClamp;
+	const FVector2D Clamp = bSnapCrouching ? RootYawOffsetAngleClampCrouched : RootYawOffsetAngleClamp;
 	const double Normalized = FRotator::NormalizeAxis(InRootYawOffset);
-	RootYawOffset = Clamp.X < Clamp.Y ? FMath::Clamp(Normalized, Clamp.X, Clamp.Y) : Normalized;
-	AimYaw = -RootYawOffset;
+	NativeRootYawOffset = Clamp.X < Clamp.Y ? FMath::Clamp(Normalized, Clamp.X, Clamp.Y) : Normalized;
 }
 
 void UBNAnimInstance::ProcessTurnYawCurve()
 {
-	PreviousTurnYawCurveValue = TurnYawCurveValue;
+	PreviousTurnYawCurveValue = NativeTurnYawCurveValue;
 
 	const double TurnYawWeight = GetCurveValue(BN_TurnYawWeightCurve);
 	if (FMath::IsNearlyZero(TurnYawWeight))
 	{
-		TurnYawCurveValue = 0.0;
+		NativeTurnYawCurveValue = 0.0;
 		PreviousTurnYawCurveValue = 0.0;
 		return;
 	}
 
 	// The turn animation's RemainingTurnYaw curve is normalized by its weight; the offset
 	// shrinks by exactly the yaw the animation consumed this frame.
-	TurnYawCurveValue = GetCurveValue(BN_RemainingTurnYawCurve) / TurnYawWeight;
+	NativeTurnYawCurveValue = GetCurveValue(BN_RemainingTurnYawCurve) / TurnYawWeight;
 	if (PreviousTurnYawCurveValue != 0.0)
 	{
-		SetRootYawOffset(RootYawOffset - (TurnYawCurveValue - PreviousTurnYawCurveValue));
+		SetRootYawOffset(NativeRootYawOffset - (NativeTurnYawCurveValue - PreviousTurnYawCurveValue));
 	}
 }
 

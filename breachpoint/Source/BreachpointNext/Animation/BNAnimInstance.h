@@ -14,7 +14,8 @@ class UAbilitySystemComponent;
  * The mannequin ABP's per-frame brain, ported from the ABP_Mannequin_Base record so the
  * duplicate's event graph can be cleared. Two passes, never mixed: NativeUpdateAnimation
  * (game thread) snapshots UObject state; NativeThreadSafeUpdateAnimation (worker) is the
- * C++ writer of every graph-facing property.
+ * C++ writer of every graph-facing property — RMW/edge fields publish only under
+ * bNativeOwnsTurnState, because the live event graph still runs the same accumulators.
  *
  * Properties are BlueprintReadWrite for the migration window only — the un-cleared event
  * graph must still be able to set them. Once the graph is cleared, C++ is the sole writer.
@@ -33,6 +34,12 @@ public:
 	virtual void NativeUninitializeAnimation() override;
 
 protected:
+	// false = the live event graph owns the RMW/edge accumulator outputs (today); true = C++
+	// owns them — set when the graph is cleared. Native always computes them against private
+	// history either way; this only gates the publish.
+	UPROPERTY(EditAnywhere, Category = "BN")
+	bool bNativeOwnsTurnState = false;
+
 	// ---------------------------------------------------------------- locomotion
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
 	FVector LocalVelocity2D = FVector::ZeroVector;
@@ -159,7 +166,8 @@ private:
 	void ResolveAbilitySystem();
 	void OnTagChanged(const FGameplayTag Tag, int32 NewCount);
 
-	// Worker-thread helpers, ported 1:1 from the source's function graphs.
+	// Worker-thread helpers, ported 1:1 from the source's function graphs. Both operate on
+	// the PRIVATE accumulators; shared properties are only touched in the gated publish.
 	void SetRootYawOffset(double InRootYawOffset);
 	void ProcessTurnYawCurve();
 
@@ -208,4 +216,22 @@ private:
 	double PreviousYaw = 0.0;
 	FVector PreviousWorldLocation = FVector::ZeroVector;
 	bool bWasCrouchingLastUpdate = false;
+	bool bNativeWasMoving = false;
+
+	// Private accumulators/edges — native math NEVER reads a shared property back; while the
+	// event graph is live it repeats these RMWs on the shared fields, so two live writers on
+	// one accumulator would double-count. Published only under bNativeOwnsTurnState.
+	bool bNativeFirstUpdate = true;
+	double NativeRootYawOffset = 0.0;
+	uint8 NativeRootYawOffsetMode = 0;
+	double NativeTurnYawCurveValue = 0.0;
+	double NativeYawDeltaSinceLastUpdate = 0.0;
+	double NativeYawDeltaSpeed = 0.0;
+	bool bNativeCrouchStateChange = false;
+	bool bNativeLinkedLayerChanged = false;
+	FVector NativePivotDirection2D = FVector::ZeroVector;
+	uint8 NativeCardinalFromAcceleration = 0;
+	double NativeUpperbodyAdditiveWeight = 0.0;
+	uint8 NativeLocalVelocityDirection = 0;
+	uint8 NativeLocalVelocityDirectionNoOffset = 0;
 };
