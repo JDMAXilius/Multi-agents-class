@@ -11,7 +11,7 @@
 	GAMEPLAYATTRIBUTE_VALUE_SETTER(PropertyName) \
 	GAMEPLAYATTRIBUTE_VALUE_INITTER(PropertyName)
 
-UCLASS()
+UCLASS(Config = Game)
 class BREACHPOINTNEXT_API UBNAttributeSet : public UAttributeSet
 {
 	GENERATED_BODY()
@@ -37,6 +37,24 @@ public:
 	FGameplayAttributeData Shield;
 	ATTRIBUTE_ACCESSORS(UBNAttributeSet, Shield)
 
+	/** The ceilings, and their absence was a real hole: nothing knew what "full" meant. Without a
+	 *  max there is no bar to draw (a fraction needs a denominator), no way to say when a shield
+	 *  has finished recharging, and no clamp — an overheal or an over-recharge climbed forever.
+	 *  Replicated because the UI reads them on every machine, not just the server's. */
+	UPROPERTY(ReplicatedUsing = OnRep_MaxHealth)
+	FGameplayAttributeData MaxHealth;
+	ATTRIBUTE_ACCESSORS(UBNAttributeSet, MaxHealth)
+
+	UPROPERTY(ReplicatedUsing = OnRep_MaxShield)
+	FGameplayAttributeData MaxShield;
+	ATTRIBUTE_ACCESSORS(UBNAttributeSet, MaxShield)
+
+	/** Seconds after the last landed damage before the shield starts coming back. THE tuning knob
+	 *  of the whole dance. It lives here because this is what applies the window, and one owner
+	 *  beats two agreeing. Not an attribute: no GE ever needs to modify it. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Shield")
+	float ShieldRechargeDelay = 4.f;
+
 	UPROPERTY(ReplicatedUsing = OnRep_MoveSpeed)
 	FGameplayAttributeData MoveSpeed;
 	ATTRIBUTE_ACCESSORS(UBNAttributeSet, MoveSpeed)
@@ -53,6 +71,12 @@ protected:
 
 	UFUNCTION()
 	void OnRep_Shield(const FGameplayAttributeData& OldShield);
+
+	UFUNCTION()
+	void OnRep_MaxHealth(const FGameplayAttributeData& OldMaxHealth);
+
+	UFUNCTION()
+	void OnRep_MaxShield(const FGameplayAttributeData& OldMaxShield);
 
 	UFUNCTION()
 	void OnRep_MoveSpeed(const FGameplayAttributeData& OldMoveSpeed);

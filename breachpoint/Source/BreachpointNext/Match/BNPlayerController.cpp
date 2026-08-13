@@ -136,12 +136,12 @@ void ABNPlayerController::BNAimDebug()
 	UBNAnimInstance* Anim = BNLocalAnimInstance(this);
 	if (!Anim)
 	{
-		UE_LOG(LogBreachpointNext, Warning,
+		UE_LOG(LogBN, Warning,
 			TEXT("BNAimDebug: no UBNAnimInstance on the local pawn's mesh — either the pawn is not "
 				 "possessed yet or the mesh's ABP does not inherit UBNAnimInstance."));
 		return;
 	}
-	UE_LOG(LogBreachpointNext, Log, TEXT("%s"), *Anim->DescribeAimState());
+	UE_LOG(LogBN, Log, TEXT("%s"), *Anim->DescribeAimState());
 #endif
 }
 
@@ -151,7 +151,7 @@ void ABNPlayerController::BNAimAxis(int32 Axis)
 	if (UBNAnimInstance* Anim = BNLocalAnimInstance(this))
 	{
 		Anim->SetAimPitchAxis(BNAxisFromIndex(Axis));
-		UE_LOG(LogBreachpointNext, Log, TEXT("%s"), *Anim->DescribeAimState());
+		UE_LOG(LogBN, Log, TEXT("%s"), *Anim->DescribeAimState());
 	}
 #endif
 }
@@ -162,7 +162,7 @@ void ABNPlayerController::BNLeanAxis(int32 Axis)
 	if (UBNAnimInstance* Anim = BNLocalAnimInstance(this))
 	{
 		Anim->SetLeanAxis(BNAxisFromIndex(Axis));
-		UE_LOG(LogBreachpointNext, Log, TEXT("%s"), *Anim->DescribeAimState());
+		UE_LOG(LogBN, Log, TEXT("%s"), *Anim->DescribeAimState());
 	}
 #endif
 }

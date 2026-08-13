@@ -34,6 +34,11 @@ namespace BNTags
 
 	/** Fire rate. Held by the cooldown GE UBNGA_Fire applies; its duration is the row's FireDelay. */
 	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Cooldown_Weapon_Fire);
+	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Cooldown_Grenade);
+
+	/** Applied by every landed damage. Blocks shield recharge while it is present — the delay in
+	 *  the shield dance is this tag's duration, not a timer anyone hand-runs. */
+	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Combat_RecentDamage);
 
 	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_MuzzleFlash);
 	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_Impact);

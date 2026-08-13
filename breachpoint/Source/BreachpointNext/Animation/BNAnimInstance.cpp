@@ -293,18 +293,24 @@ FString UBNAnimInstance::DescribeAimState() const
 	// broken link: no BaseAim = the view is not reaching the pawn; Pitch fine but PitchRotator
 	// zero = the publish; both fine and no motion = the ABP's binding or the bFPSMode gate.
 	static const UEnum* AxisEnum = StaticEnum<EBNSpineAxis>();
+	const auto AxisName = [](const UEnum* Enum, EBNSpineAxis Axis)
+	{
+		// Guarded: this is a debug string, and a debug string must never be the thing that crashes
+		// the session it was added to diagnose.
+		return Enum ? Enum->GetNameStringByValue(static_cast<int64>(Axis)) : FString(TEXT("?"));
+	};
 	return FString::Printf(
 		TEXT("BNAim | BaseAimPitch %.1f  ActorPitch %.1f  ->  AimPitch %.1f  Pitch %.1f  ")
 		TEXT("PitchRotator (P %.1f Y %.1f R %.1f) axis %s | bFPSMode %s  bUnarmed %s | ")
 		TEXT("Lean curr %.2f  LeanRotation (P %.1f Y %.1f R %.1f) axis %s | Layer %s"),
 		SnapBaseAimPitch, SnapRotation.Pitch, AimPitch, Pitch,
 		PitchRotator.Pitch, PitchRotator.Yaw, PitchRotator.Roll,
-		*AxisEnum->GetNameStringByValue(static_cast<int64>(AimPitchAxis)),
+		*AxisName(AxisEnum, AimPitchAxis),
 		bFPSMode ? TEXT("true") : TEXT("false"),
 		bUnarmed ? TEXT("true") : TEXT("false"),
 		NativeCurrLeaning,
 		LeanRotation.Pitch, LeanRotation.Yaw, LeanRotation.Roll,
-		*AxisEnum->GetNameStringByValue(static_cast<int64>(LeanAxis)),
+		*AxisName(AxisEnum, LeanAxis),
 		*GetNameSafe(ObservedLayerClass));
 }
 

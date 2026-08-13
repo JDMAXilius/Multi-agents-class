@@ -4,6 +4,8 @@
 #include "BreachpointNext.h"
 #include "Core/BNGameplayTags.h"
 #include "AbilitySystemBlueprintLibrary.h"
+#include "AbilitySystemGlobals.h"
+#include "GameplayCueManager.h"
 #include "AbilitySystemComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -193,26 +195,39 @@ void ABNProjectile::Explode()
 		BNDamage::ApplyDamage(Thrower, Target, Amount, BlastHit);
 	}
 
-	// Law 6: the bang is a cue, never a spawn from actor code. Routed through the THROWER's ASC
-	// because that is what multicasts it — the projectile has no ASC of its own. A thrower who
-	// died before the fuse ran leaves no ASC to route through, so the cue is skipped rather than
-	// faked; the damage above has already been paid either way.
-	if (UAbilitySystemComponent* ThrowerASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Thrower))
+	// Law 6: the bang is a cue, never a spawn from actor code. But it is multicast from the
+	// PROJECTILE, not routed through the thrower's ASC — that route early-returns wherever the
+	// thrower's AvatarActor is null on the receiving machine, so an observer who had culled or
+	// never seen the thrower would take the blast in silence. This actor is relevant to everyone
+	// who can see the explosion, by definition, because it is standing where the explosion is.
+	MulticastExplosion(Center);
+
+	// NOT Destroy(): a multicast sent by an actor torn down in the same frame is not reliably
+	// delivered. Hide it, stop it, and let it die a beat later.
+	SetActorHiddenInGame(true);
+	SetActorEnableCollision(false);
+	ProjectileMovement->StopMovementImmediately();
+	SetLifeSpan(0.5f);
+}
+
+void ABNProjectile::MulticastExplosion_Implementation(const FVector Center)
+{
+	// Runs on every machine including the server. The cue manager is the same door
+	// UGameplayCueNotify_Static handlers are reached through, so UBNGameplayCue_Explosion answers
+	// here exactly as it would through an ASC — law 6 is satisfied by the handler, not the router.
+	UGameplayCueManager* CueManager = UAbilitySystemGlobals::Get().GetGameplayCueManager();
+	if (!CueManager)
 	{
-		FGameplayCueParameters Params;
-		Params.Location = Center;
-		Params.Normal = FVector::UpVector;
-		Params.Instigator = Thrower;
-		Params.SourceObject = this;
-		Params.RawMagnitude = Radius;
-		ThrowerASC->ExecuteGameplayCue(BNTags::GameplayCue_Grenade_Explode, Params);
-	}
-	else
-	{
-		UE_LOG(LogBN, Verbose, TEXT("BNProjectile: no thrower ASC at detonation — blast dealt, cue skipped."));
+		return;
 	}
 
-	Destroy();
+	FGameplayCueParameters Params;
+	Params.Location = Center;
+	Params.Normal = FVector::UpVector;
+	Params.Instigator = GetInstigator();
+	Params.SourceObject = this;
+	Params.RawMagnitude = Radius;
+	CueManager->HandleGameplayCue(this, BNTags::GameplayCue_Grenade_Explode, EGameplayCueEvent::Executed, Params);
 }
 
 void ABNProjectile::EndPlay(const EEndPlayReason::Type EndPlayReason)

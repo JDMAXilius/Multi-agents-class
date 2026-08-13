@@ -32,6 +32,9 @@ public:
 	UBNGA_Grenade();
 
 protected:
+	virtual const FGameplayTagContainer* GetCooldownTags() const override;
+	virtual void ApplyCooldown(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) const override;
+
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
@@ -51,6 +54,13 @@ protected:
 	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Grenade")
 	float ThrowDelay = 0.2f;
 
+	/** THE rate limit, and it was missing entirely: CommitAbility with no cost and no cooldown
+	 *  returns true and spends nothing, so the only bound was ThrowDelay — about five replicated
+	 *  90-damage projectiles a second, indefinitely, all server-side. A cooldown GE rather than a
+	 *  timer, so GAS predicts and rolls it back for free (purity law 4). */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Grenade")
+	float CooldownDuration = 4.f;
+
 	/** Where it leaves the hand, along the thrower's own axes — the reference's
 	 *  forward*50 + up*50 (MyCharacter.cpp:1001), kept as data so it can be nudged to the socket. */
 	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Grenade")
@@ -60,4 +70,7 @@ protected:
 	float SpawnUpOffset = 50.f;
 
 	FTimerHandle ThrowTimer;
+
+	/** Built on first use, not in the constructor — the tag-registration order rule. */
+	mutable FGameplayTagContainer CooldownTags;
 };

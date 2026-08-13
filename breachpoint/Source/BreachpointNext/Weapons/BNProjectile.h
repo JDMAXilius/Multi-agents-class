@@ -57,6 +57,13 @@ protected:
 	/** Authority only. Overlap, dedupe, line-of-sight, falloff, one GE per survivor. */
 	void Explode();
 
+	/** The bang, sent from the PROJECTILE rather than routed through the thrower's ASC — that route
+	 *  early-returns wherever the thrower's AvatarActor is null on the receiving machine, so an
+	 *  observer who had culled the thrower would take the blast in silence. This actor is relevant
+	 *  to everyone who can see the explosion by definition: it is standing where it happens. */
+	UFUNCTION(NetMulticast, Unreliable)
+	void MulticastExplosion(const FVector Center);
+
 	UPROPERTY(VisibleAnywhere, Category = "BN|Projectile")
 	TObjectPtr<USphereComponent> CollisionComponent;
 

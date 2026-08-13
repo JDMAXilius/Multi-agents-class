@@ -5,6 +5,23 @@ UBNGE_InitAttributes::UBNGE_InitAttributes()
 {
 	DurationPolicy = EGameplayEffectDurationType::Instant;
 
+	// ORDER IS LOAD-BEARING: the maxes go FIRST. Modifiers apply in order and PreAttributeChange now
+	// clamps Health to MaxHealth — so setting Health before MaxHealth clamps it against a max that
+	// is still the default 0, and every player would spawn dead.
+	{
+		FGameplayModifierInfo Modifier;
+		Modifier.ModifierOp = EGameplayModOp::Override;
+		Modifier.Attribute = UBNAttributeSet::GetMaxHealthAttribute();
+		Modifier.ModifierMagnitude = FScalableFloat(100.f);
+		Modifiers.Add(Modifier);
+	}
+	{
+		FGameplayModifierInfo Modifier;
+		Modifier.ModifierOp = EGameplayModOp::Override;
+		Modifier.Attribute = UBNAttributeSet::GetMaxShieldAttribute();
+		Modifier.ModifierMagnitude = FScalableFloat(100.f);
+		Modifiers.Add(Modifier);
+	}
 	{
 		FGameplayModifierInfo Modifier;
 		Modifier.ModifierOp = EGameplayModOp::Override;
@@ -68,4 +85,42 @@ UBNGE_FireCooldown::UBNGE_FireCooldown()
 	FSetByCallerFloat Duration;
 	Duration.DataName = BNSetByCaller::FireDelay;
 	DurationMagnitude = FGameplayEffectModifierMagnitude(Duration);
+}
+
+UBNGE_GrenadeCooldown::UBNGE_GrenadeCooldown()
+{
+	DurationPolicy = EGameplayEffectDurationType::HasDuration;
+
+	FSetByCallerFloat Duration;
+	Duration.DataName = BNSetByCaller::GrenadeCooldown;
+	DurationMagnitude = FGameplayEffectModifierMagnitude(Duration);
+
+	// The tag rides the SPEC rather than being set here, for the construction-order reason
+	// UBNGE_State documents: native tags are not guaranteed registered while CDOs are built.
+}
+
+UBNGE_RecentDamage::UBNGE_RecentDamage()
+{
+	DurationPolicy = EGameplayEffectDurationType::HasDuration;
+
+	FSetByCallerFloat Duration;
+	Duration.DataName = BNSetByCaller::RecentDamageWindow;
+	DurationMagnitude = FGameplayEffectModifierMagnitude(Duration);
+}
+
+UBNGE_ShieldRecharge::UBNGE_ShieldRecharge()
+{
+	// Infinite and always applied; the tag requirement below is what turns it on and off, so
+	// nothing ever applies or removes this GE in response to being shot.
+	DurationPolicy = EGameplayEffectDurationType::Infinite;
+
+	// Per period, not per second — the period is set alongside this in the ini-facing constants
+	// below, and the two are read together as "this much shield every this long".
+	Period = FScalableFloat(BNShield::RechargePeriod);
+
+	FGameplayModifierInfo Modifier;
+	Modifier.ModifierOp = EGameplayModOp::Additive;
+	Modifier.Attribute = UBNAttributeSet::GetShieldAttribute();
+	Modifier.ModifierMagnitude = FScalableFloat(BNShield::RechargePerPeriod);
+	Modifiers.Add(Modifier);
 }

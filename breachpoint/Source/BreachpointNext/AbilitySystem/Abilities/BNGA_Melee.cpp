@@ -73,6 +73,17 @@ void UBNGA_Melee::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const
 		UBNAbilityTask_ServerWaitClientTargetData* Wait = UBNAbilityTask_ServerWaitClientTargetData::ServerWaitForClientTargetData(this, NAME_None, /*TriggerOnce=*/true);
 		Wait->ValidData.AddDynamic(this, &UBNGA_Melee::OnTargetDataReceived);
 		Wait->ReadyForActivation();
+
+		// And a way out, which Fire does not need and melee does. Fire's remote instance is cleaned
+		// up by the weapon set being revoked on pawn destruction; melee is a PlayerState grant with
+		// no such revoke, so losing the client's EndAbility would leave this spec Active forever —
+		// and AbilityInputTagPressed only fires on !Spec.IsActive(), which would kill melee for that
+		// player for the rest of the match. Seconds, so an honest claim (~1 RTT) is never cut off.
+		World->GetTimerManager().SetTimer(SwingTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
+		{
+			UE_LOG(LogBN, Verbose, TEXT("BNGA_Melee: authority timeout — the swinger's EndAbility never arrived."));
+			EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+		}), FMath::Max(AuthorityTimeout, 1.f), /*bLoop=*/false);
 		return;
 	}
 

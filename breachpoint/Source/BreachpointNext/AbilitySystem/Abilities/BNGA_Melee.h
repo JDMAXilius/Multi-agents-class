@@ -69,6 +69,16 @@ protected:
 	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Melee")
 	float FallbackConnectTime = 0.25f;
 
+	/** The authority's own way out. Fire can leave its remote instance running because the WEAPON's
+	 *  ability set is revoked on pawn destruction and clearing the spec cancels it; melee is granted
+	 *  by the PlayerState and has no such backstop, so any path that loses the client's EndAbility
+	 *  would leave the spec Active forever — and AbilityInputTagPressed only activates when
+	 *  !Spec.IsActive(), so melee would be dead for that player for the rest of the match.
+	 *  Generous on purpose: a claim arrives within ~1 RTT of the swing, so seconds cannot cut off
+	 *  an honest one. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Melee")
+	float AuthorityTimeout = 5.f;
+
 	FTimerHandle SwingTimer;
 	FTimerHandle ConnectTimer;
 

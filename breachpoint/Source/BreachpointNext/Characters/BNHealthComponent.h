@@ -2,6 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "GameplayEffectTypes.h"
+#include "GameplayTagContainer.h"
 #include "BNHealthComponent.generated.h"
 
 class UAbilitySystemComponent;
@@ -11,10 +13,20 @@ struct FOnAttributeChangeData;
 DECLARE_MULTICAST_DELEGATE_OneParam(FBNDeathSignature, UBNHealthComponent*);
 
 /**
- * Watches the Health attribute and says "this one is dead" exactly once. That is the whole class:
- * no damage, no mitigation, no respawn — the verdict is UBNGA_Death's and the respawn is the game
- * mode's. Holds no replicated state of its own; Health already replicates on the ASC, so every
- * machine reaches zero on its own and the delegate fires there without a second channel.
+ * Two jobs, and no more than two.
+ *
+ * 1. Watches Health and says "this one is dead" exactly once. The verdict is UBNGA_Death's and the
+ *    respawn is the game mode's. No replicated state of its own: Health already replicates on the
+ *    ASC, so every machine reaches zero on its own without a second channel.
+ *
+ * 2. Runs the shield dance's gate. UBNGE_ShieldRecharge is a dumb periodic adder that does not know
+ *    when to run; this watches State.Combat.RecentDamage and removes the recharge while that tag is
+ *    up, re-applying it when the tag expires. Authority only — the recharge is an attribute change
+ *    and attribute changes are the server's. Clients see the result replicate like any other.
+ *
+ * The gate lives HERE rather than as OngoingTagRequirements on the GE because those would have to
+ * be set during CDO construction, where native tags are not guaranteed registered — see the GE's
+ * own comment. This is the same RegisterGameplayTagEvent mechanism UBNAnimInstance already uses.
  */
 UCLASS()
 class BREACHPOINTNEXT_API UBNHealthComponent : public UActorComponent
@@ -34,6 +46,16 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	void HandleHealthChanged(const FOnAttributeChangeData& Data);
+
+	/** RecentDamage arrived or expired: stop the recharge, or start it again. */
+	void HandleRecentDamageChanged(const FGameplayTag Tag, int32 NewCount);
+
+	/** Authority only. Idempotent — the handle is what makes a second call a no-op. */
+	void SetShieldRechargeActive(bool bActive);
+
+	FActiveGameplayEffectHandle ShieldRechargeHandle;
+
+	FDelegateHandle RecentDamageHandle;
 
 	/** Cached, per Wave 2's lesson: the ASC is the PlayerState's and outlives this pawn, so
 	 *  EndPlay cannot reach it through a fresh lookup — UnPossessed() nulls PlayerState first. */

@@ -1,6 +1,8 @@
 #include "AbilitySystem/Abilities/BNGA_Grenade.h"
 
 #include "BreachpointNext.h"
+#include "Core/BNGameplayTags.h"
+#include "AbilitySystem/Effects/BNGameplayEffects.h"
 #include "Weapons/BNProjectile.h"
 #include "AbilitySystemComponent.h"
 #include "Animation/AnimMontage.h"
@@ -10,10 +12,44 @@
 
 UBNGA_Grenade::UBNGA_Grenade()
 {
-	// See the header: a predicted projectile is two simulations that diverge on the first bounce,
-	// with nothing to reconcile them. The throw ANIMATION still reaches every machine, because the
-	// ASC replicates the montage it plays.
-	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::ServerOnly;
+	// LocalPredicted, and NOT ServerOnly — that was a real bug the critic caught. The ASC replicates
+	// RepAnimMontageInfo COND_SkipOwner, and a ServerOnly ability runs no code on the owning client,
+	// so a remote client throwing would have seen NO throw animation on its own screen while every
+	// other machine saw one. The listen host is authority AND locally controlled, which is exactly
+	// why it looked fine in one window.
+	//
+	// What is predicted is only the ANIMATION. The projectile is still the server's alone —
+	// SpawnGrenade is authority-gated — so nothing here predicts a flight that would diverge on the
+	// first bounce, which was the real reason for the original policy.
+	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
+}
+
+const FGameplayTagContainer* UBNGA_Grenade::GetCooldownTags() const
+{
+	// Built on first use rather than in the constructor, per the tag-registration order rule.
+	if (CooldownTags.IsEmpty())
+	{
+		CooldownTags.AddTag(BNTags::Cooldown_Grenade);
+	}
+	return &CooldownTags;
+}
+
+void UBNGA_Grenade::ApplyCooldown(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) const
+{
+	if (CooldownDuration <= 0.f)
+	{
+		return;
+	}
+
+	const FGameplayEffectSpecHandle Spec = MakeOutgoingGameplayEffectSpec(UBNGE_GrenadeCooldown::StaticClass(), GetAbilityLevel());
+	if (!Spec.IsValid())
+	{
+		return;
+	}
+
+	Spec.Data->SetSetByCallerMagnitude(BNSetByCaller::GrenadeCooldown, CooldownDuration);
+	Spec.Data->DynamicGrantedTags.AddTag(BNTags::Cooldown_Grenade);
+	ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, Spec);
 }
 
 void UBNGA_Grenade::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
@@ -58,11 +94,11 @@ void UBNGA_Grenade::SpawnGrenade()
 		return;
 	}
 
-	// ServerOnly already guarantees this, but the ability could be granted wrongly one day and a
-	// client-spawned projectile is invisible to everyone else — a silent failure worth a loud line.
+	// THE line that keeps the projectile the server's while the animation is predicted. Every
+	// machine reaches here; only one throws. Not a warning — a client arriving here is the normal,
+	// expected half of a LocalPredicted ability, not a fault.
 	if (!ActorInfo->IsNetAuthority())
 	{
-		UE_LOG(LogBN, Warning, TEXT("BNGA_Grenade: reached SpawnGrenade without authority — nothing thrown."));
 		return;
 	}
 

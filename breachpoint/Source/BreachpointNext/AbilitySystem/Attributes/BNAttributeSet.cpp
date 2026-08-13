@@ -1,4 +1,6 @@
 #include "AbilitySystem/Attributes/BNAttributeSet.h"
+#include "AbilitySystem/Effects/BNGameplayEffects.h"
+#include "Core/BNGameplayTags.h"
 #include "BreachpointNext.h"
 #include "GameplayEffectExtension.h"
 #include "Net/UnrealNetwork.h"
@@ -9,6 +11,8 @@ void UBNAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 
 	DOREPLIFETIME_CONDITION_NOTIFY(UBNAttributeSet, Health, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UBNAttributeSet, Shield, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UBNAttributeSet, MaxHealth, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UBNAttributeSet, MaxShield, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UBNAttributeSet, MoveSpeed, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UBNAttributeSet, SprintSpeedMultiplier, COND_None, REPNOTIFY_Always);
 }
@@ -17,9 +21,20 @@ void UBNAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, fl
 {
 	Super::PreAttributeChange(Attribute, NewValue);
 
-	if (Attribute == GetHealthAttribute() || Attribute == GetShieldAttribute())
+	// Clamped at BOTH ends now. The floor was always here; the ceiling could not exist until
+	// MaxHealth/MaxShield did, which is why a recharge would previously have climbed forever.
+	if (Attribute == GetHealthAttribute())
 	{
-		NewValue = FMath::Max(NewValue, 0.f);
+		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxHealth());
+	}
+	else if (Attribute == GetShieldAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxShield());
+	}
+	else if (Attribute == GetMaxHealthAttribute() || Attribute == GetMaxShieldAttribute())
+	{
+		// A max of zero would divide the UI by zero and pin the pool shut.
+		NewValue = FMath::Max(NewValue, UE_KINDA_SMALL_NUMBER);
 	}
 	else if (Attribute == GetMoveSpeedAttribute() || Attribute == GetSprintSpeedMultiplierAttribute())
 	{
@@ -57,6 +72,23 @@ void UBNAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallback
 		SetHealth(FMath::Max(0.f, HealthBefore - (Damage - FromShield)));
 	}
 
+	// Slam the recharge window shut. This is the ONLY thing that stops the shield coming back, and
+	// it lives here rather than in the damage door because it must fire for every point of damage
+	// this set ever drains, whatever applied it. Re-applying refreshes the duration, so sustained
+	// fire holds the shield down for as long as it keeps landing.
+	if (UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent())
+	{
+		const FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
+		const FGameplayEffectSpecHandle Spec = ASC->MakeOutgoingSpec(UBNGE_RecentDamage::StaticClass(), 1.f, Context);
+		if (Spec.IsValid())
+		{
+			// Tag on the SPEC, not the CDO — the construction-order rule again.
+			Spec.Data->DynamicGrantedTags.AddTag(BNTags::State_Combat_RecentDamage);
+			Spec.Data->SetSetByCallerMagnitude(BNSetByCaller::RecentDamageWindow, ShieldRechargeDelay);
+			ASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+		}
+	}
+
 	// THE TEST. The roadmap asks for exactly this line and nothing else logs damage.
 	UE_LOG(LogBN, Log, TEXT("BNDamage: %s -> %s, %.1f | shield %.0f -> %.0f | health %.0f -> %.0f"),
 		*GetNameSafe(Data.EffectSpec.GetEffectContext().GetOriginalInstigator()),
@@ -72,6 +104,16 @@ void UBNAttributeSet::OnRep_Health(const FGameplayAttributeData& OldHealth)
 void UBNAttributeSet::OnRep_Shield(const FGameplayAttributeData& OldShield)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UBNAttributeSet, Shield, OldShield);
+}
+
+void UBNAttributeSet::OnRep_MaxHealth(const FGameplayAttributeData& OldMaxHealth)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UBNAttributeSet, MaxHealth, OldMaxHealth);
+}
+
+void UBNAttributeSet::OnRep_MaxShield(const FGameplayAttributeData& OldMaxShield)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UBNAttributeSet, MaxShield, OldMaxShield);
 }
 
 void UBNAttributeSet::OnRep_MoveSpeed(const FGameplayAttributeData& OldMoveSpeed)
