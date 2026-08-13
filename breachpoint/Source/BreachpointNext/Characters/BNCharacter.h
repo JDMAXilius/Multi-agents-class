@@ -7,6 +7,7 @@
 #include "UObject/SoftObjectPath.h"
 #include "BNCharacter.generated.h"
 
+class UBNEquipmentComponent;
 class UCameraComponent;
 struct FOnAttributeChangeData;
 
@@ -28,6 +29,8 @@ public:
 
 	UClass* GetCurrentWeaponAnimLayer() const;
 	UClass* ResolveAnimLayerClass();
+
+	UBNEquipmentComponent* GetEquipmentComponent() const { return EquipmentComponent; }
 
 	/** Links the resolved layer on the 3P mesh. Guards for a missing anim instance and links
 	 *  once per class; public so the anim instance can re-trigger it — the character owns it. */
@@ -60,6 +63,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UCameraComponent> CameraComponent;
+
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<UBNEquipmentComponent> EquipmentComponent;
 
 	FDelegateHandle MoveSpeedChangedHandle;
 };

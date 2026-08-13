@@ -32,6 +32,8 @@ protected:
 	void HandleJumpReleased();
 	void HandleCrouchPressed();
 	void HandleCrouchReleased();
+	void HandleWeaponNextPressed();
+	void HandleWeaponPreviousPressed();
 
 	UBNAbilitySystemComponent* GetBNAbilitySystemComponent() const;
 };

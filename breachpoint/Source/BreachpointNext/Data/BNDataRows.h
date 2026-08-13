@@ -6,6 +6,7 @@
 
 class UAnimInstance;
 class UAnimMontage;
+class UBNAbilitySet;
 class USkeletalMesh;
 
 // Our own enum, not the template's E_FPST_FireMode asset enum. Same three modes in the same
@@ -90,4 +91,10 @@ struct FBNWeaponRow : public FTableRowBase
 
 	UPROPERTY(EditAnywhere, Category = "Assets")
 	TSoftObjectPtr<UAnimMontage> ReloadMontage;
+
+	// The weapon's own verbs, granted on equip and revoked on swap, authority only. Precedent:
+	// the old module's Config/DefaultGame.ini — "Fire, Reload and Swap live in the WEAPON's
+	// ability set (DT_Weapons column AbilitySet), not in StartupAbilitySet".
+	UPROPERTY(EditAnywhere, Category = "Assets")
+	TSoftObjectPtr<UBNAbilitySet> AbilitySet;
 };

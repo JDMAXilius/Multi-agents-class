@@ -73,6 +73,9 @@ void ABNPlayerController::SetupInputComponent()
 	Bind(BNTags::Input_Jump, ETriggerEvent::Completed, &ABNPlayerController::HandleJumpReleased);
 	Bind(BNTags::Input_Crouch, ETriggerEvent::Started, &ABNPlayerController::HandleCrouchPressed);
 	Bind(BNTags::Input_Crouch, ETriggerEvent::Completed, &ABNPlayerController::HandleCrouchReleased);
+	// Press only: the swap verbs are one-shot, so there is no release event to forward.
+	Bind(BNTags::Input_Weapon_Next, ETriggerEvent::Started, &ABNPlayerController::HandleWeaponNextPressed);
+	Bind(BNTags::Input_Weapon_Previous, ETriggerEvent::Started, &ABNPlayerController::HandleWeaponPreviousPressed);
 }
 
 void ABNPlayerController::HandleMove(const FInputActionValue& Value)
@@ -125,6 +128,22 @@ void ABNPlayerController::HandleCrouchReleased()
 	if (UBNAbilitySystemComponent* ASC = GetBNAbilitySystemComponent())
 	{
 		ASC->AbilityInputTagReleased(BNTags::Input_Crouch);
+	}
+}
+
+void ABNPlayerController::HandleWeaponNextPressed()
+{
+	if (UBNAbilitySystemComponent* ASC = GetBNAbilitySystemComponent())
+	{
+		ASC->AbilityInputTagPressed(BNTags::Input_Weapon_Next);
+	}
+}
+
+void ABNPlayerController::HandleWeaponPreviousPressed()
+{
+	if (UBNAbilitySystemComponent* ASC = GetBNAbilitySystemComponent())
+	{
+		ASC->AbilityInputTagPressed(BNTags::Input_Weapon_Previous);
 	}
 }
 

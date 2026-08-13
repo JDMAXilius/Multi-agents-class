@@ -4,6 +4,7 @@
 #include "AbilitySystem/Effects/BNGameplayEffects.h"
 #include "Core/BNGameplayTags.h"
 #include "Match/BNPlayerState.h"
+#include "Weapons/BNEquipmentComponent.h"
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -19,6 +20,8 @@ ABNCharacter::ABNCharacter()
 	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
 	CameraComponent->SetupAttachment(GetMesh(), CameraAttachSocket);
 	CameraComponent->bUsePawnControlRotation = true;
+
+	EquipmentComponent = CreateDefaultSubobject<UBNEquipmentComponent>(TEXT("EquipmentComponent"));
 
 	bUseControllerRotationYaw = true;
 
@@ -109,6 +112,13 @@ void ABNCharacter::PossessedBy(AController* NewController)
 	{
 		PS->GrantDefaults();
 	}
+
+	// After GrantDefaults: the weapon's ability set is granted onto the same ASC, so the
+	// PlayerState's own grant must already have happened. Authority-gated inside.
+	if (EquipmentComponent)
+	{
+		EquipmentComponent->InitializeCarriedWeapons();
+	}
 }
 
 void ABNCharacter::OnRep_PlayerState()
@@ -168,10 +178,11 @@ void ABNCharacter::OnMoveSpeedChanged(const FOnAttributeChangeData& Data)
 	GetCharacterMovement()->MaxWalkSpeed = Data.NewValue;
 }
 
-// The current-weapon seam: no weapons exist yet — the weapons roadmap returns the equipped layer here.
+// The current-weapon seam. Null (no weapon, no layer on the row) still means unarmed, and the
+// unarmed fallback below stands unchanged — which is why no animation code moved this wave.
 UClass* ABNCharacter::GetCurrentWeaponAnimLayer() const
 {
-	return nullptr;
+	return EquipmentComponent ? EquipmentComponent->GetCurrentWeaponAnimLayer() : nullptr;
 }
 
 UClass* ABNCharacter::ResolveAnimLayerClass()
