@@ -103,7 +103,13 @@ CONFIG = {
     # The cast's new target. Cross-checked against 30_reparent_abp.py's CONFIG
     # ["new_parent"], which is the single source of truth for the C++ class -
     # if the two ever disagree, 30 wins and this script says so.
-    "cast_target": "/Script/BreachpointNext.BNAnimInstance",
+    # The BP class, not the C++ class, and the distinction is load-bearing. The layer reads
+    # pose-selection variables (Sprinting, Unarmed, ADS...) that live as BLUEPRINT variables on
+    # ABP_BNMannequin, not in C++. ABP_BNMannequin IS-A UBNAnimInstance, so casting to the BP
+    # class resolves both the 27 ported C++ properties AND those BP variables - a superset.
+    # Move this down to /Script/BreachpointNext.BNAnimInstance only when C++ carries everything
+    # the layer reads; doing it early makes the BP-only reads fail to resolve.
+    "cast_target": "/Game/BN/Animation/ABP_BNMannequin.ABP_BNMannequin_C",
     "cast_function": "GetMainAnimBPThreadSafe",
     "ini_section": "[/Script/BreachpointNext.BNCharacter]",
     "ini_key": "UnarmedAnimLayer",
@@ -153,12 +159,12 @@ MANUAL-REQUIRED - retarget the cast by hand, then re-run this script.
       feeds its Object pin, and what its "As %(old)s" output pin feeds
       (normally the function's Return Value node).
    4. Delete that cast node. Drag off the SAME Object pin, type
-      "Cast To BNAnimInstance", and pick it from the list.
+      "Cast To ABP_BNMannequin", and pick it from the list.
    5. If the old node was a pure cast (no white exec pins - it will have been,
       this function is thread-safe), right-click the new node -> "Convert to
       pure cast". If the old node had exec pins, reconnect them in the same
       order instead.
-   6. Wire the new "As BNAnimInstance" output to whatever the old output fed
+   6. Wire the new "As ABP BNMannequin" output to whatever the old output fed
       (the Return Value node).
    7. My Blueprint panel -> select the %(fn)s function itself ->
       Details panel -> OUTPUTS: change the return value's type from
