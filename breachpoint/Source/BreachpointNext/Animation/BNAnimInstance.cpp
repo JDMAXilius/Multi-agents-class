@@ -111,11 +111,13 @@ void UBNAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	// No layer yet (e.g. a sim proxy whose anim instance didn't exist at BeginPlay): re-trigger
 	// the character's InitializeAnimLayer — it guards and links once per class — then re-scan.
 	UClass* CurrentLayerClass = nullptr;
-	if (USkeletalMeshComponent* Mesh = GetOwningComponent())
+	// const on purpose: the mutable GetLinkedAnimInstances() overload is private to
+	// USkeletalMeshComponent - only the const one is public, and reading is all this wants.
+	if (const USkeletalMeshComponent* MeshComp = GetOwningComponent())
 	{
 		for (int32 Pass = 0; Pass < 2 && !CurrentLayerClass; ++Pass)
 		{
-			for (UAnimInstance* Linked : Mesh->GetLinkedAnimInstances())
+			for (UAnimInstance* Linked : MeshComp->GetLinkedAnimInstances())
 			{
 				if (Linked)
 				{

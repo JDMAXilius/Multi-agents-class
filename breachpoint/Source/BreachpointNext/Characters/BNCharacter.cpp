@@ -122,8 +122,8 @@ void ABNCharacter::OnRep_PlayerState()
 // called; skips silently until the mesh has an anim instance, then links exactly once per class.
 void ABNCharacter::InitializeAnimLayer()
 {
-	USkeletalMeshComponent* Mesh = GetMesh();
-	if (!Mesh || !Mesh->GetAnimInstance())
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	if (!MeshComp || !MeshComp->GetAnimInstance())
 	{
 		return;
 	}
@@ -134,7 +134,7 @@ void ABNCharacter::InitializeAnimLayer()
 		return;
 	}
 
-	Mesh->LinkAnimClassLayers(LayerClass);
+	MeshComp->LinkAnimClassLayers(LayerClass);
 	LinkedAnimLayerClass = LayerClass;
 }
 

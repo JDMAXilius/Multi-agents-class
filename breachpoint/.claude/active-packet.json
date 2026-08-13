@@ -1,12 +1,8 @@
 {
-  "ticket": "BREACHPOINT-NEXT - the Content/BN layout and the editor-artifact inventory",
+  "ticket": "R1 - first-person spine, local compile repair",
   "owner_path": [
-    "docs/BREACHPOINT-NEXT-CONTENT-LAYOUT.md",
-    "docs/BREACHPOINT-NEXT-ROADMAP-1.md",
-    "Tools/bn/",
-    "Config/DefaultGame.ini",
-    "Content/BN/"
+    "Source/BreachpointNext/"
   ],
   "binary_locks": [],
-  "authorized_by": "founder, 12 Aug 2026 - 'make a total list and organize folder structure layout'. Establishes the /Game/BN content taxonomy and repoints the two unrun scripts at it. No asset is moved: BP_BNCharacter and L_BNTest do not exist yet, and the input assets are already in the right home."
+  "authorized_by": "founder, 13 Aug 2026 - 'build project and open editor'. The R1 commits pulled from origin/main (87854ae..29a915f) do not compile against UE_5.8_Source on this machine: C2248 on the private GetLinkedAnimInstances() overload, C4458 on a local named Mesh. Scope is the compile repair only - no behaviour change. Supersedes the 12 Aug BREACHPOINT-NEXT layout claim, whose commits landed at 9f26128."
 }
