@@ -23,11 +23,17 @@ read off the result throws. The layer IS linked and IS running; it simply cannot
 see the main. Nothing about the link, the interface, or LinkAnimClassLayers is
 broken, which is why the errors look like a wiring fault and are not one.
 
-FOUNDER'S DECISION, 13 Aug 2026 (Option A, approved): duplicate the layer chain
-into BN and retarget the cast at the C++ class. Casting to `UBNAnimInstance` is
-the architecturally correct answer, not a workaround - all 27 ported
-graph-facing properties are C++ properties on that class, so the layer reads C++
-directly and never again depends on a Blueprint class being its ancestor.
+FOUNDER'S DECISION, 13 Aug 2026 (Option A, approved - CORRECTED same day at
+a3efbf8): duplicate the layer chain into BN and retarget the cast at
+`ABP_BNMannequin`, the BLUEPRINT class, NOT the C++ class. This was corrected
+once already; do not "improve" it back. The layer reads pose-selection variables
+(`Sprinting`, `Unarmed`, the ADS bools) that live as BLUEPRINT variables on
+ABP_BNMannequin and were never ported to C++. ABP_BNMannequin IS-A
+UBNAnimInstance, so casting to the BP class resolves the 27 ported C++
+properties AND those BP variables: a superset. Casting at
+`/Script/BreachpointNext.BNAnimInstance` resolves only the former and breaks
+every BP-only read. The cast moves down to the C++ class only once C++ carries
+everything the layer reads.
 
 WHAT THIS SCRIPT DOES
 ---------------------
@@ -47,7 +53,7 @@ WHAT THIS SCRIPT DOES
 3. REPARENT ABP_BNUnarmedAnimLayers onto ABP_BNItemAnimLayersBase's generated
    class, so the BN copy inherits the BN base rather than the template base.
 4. RETARGET THE CAST in ABP_BNItemAnimLayersBase.GetMainAnimBPThreadSafe at
-   /Script/BreachpointNext.BNAnimInstance. UE 5.8 python exposes almost no graph
+   /Game/BN/Animation/ABP_BNMannequin.ABP_BNMannequin_C. UE 5.8 python exposes almost no graph
    editing, so this is PROBED, not assumed: the script walks the blueprint's
    graphs, prints every cast node it can see with its current target, and tries
    the retarget only through surfaces it has proven exist (see ALLOW_NODE_SURGERY
@@ -100,9 +106,10 @@ CONFIG = {
     # BN-owned duplicates - the only assets this script writes.
     "bn_base": "/Game/BN/Animation/ABP_BNItemAnimLayersBase",
     "bn_unarmed": "/Game/BN/Animation/ABP_BNUnarmedAnimLayers",
-    # The cast's new target. Cross-checked against 30_reparent_abp.py's CONFIG
-    # ["new_parent"], which is the single source of truth for the C++ class -
-    # if the two ever disagree, 30 wins and this script says so.
+    # The cast's new target. NOT taken from 30_reparent_abp.py's CONFIG
+    # ["new_parent"]: that is ABP_BNMannequin's PARENT (the C++ class), while
+    # this is what the layer's cast POINTS AT (ABP_BNMannequin itself). Two
+    # different questions - see main(), where conflating them was a live bug.
     # The BP class, not the C++ class, and the distinction is load-bearing. The layer reads
     # pose-selection variables (Sprinting, Unarmed, ADS...) that live as BLUEPRINT variables on
     # ABP_BNMannequin, not in C++. ABP_BNMannequin IS-A UBNAnimInstance, so casting to the BP
@@ -168,19 +175,25 @@ MANUAL-REQUIRED - retarget the cast by hand, then re-run this script.
       (the Return Value node).
    7. My Blueprint panel -> select the %(fn)s function itself ->
       Details panel -> OUTPUTS: change the return value's type from
-      %(old)s to BNAnimInstance (Object Reference).
+      %(old)s to ABP_BNMannequin (Object Reference).
    8. Same Details panel -> LOCAL VARIABLES: retype any local variable typed to
-      %(old)s to BNAnimInstance (Object Reference). This script prints
+      %(old)s to ABP_BNMannequin (Object Reference). This script prints
       the local-variable table above; anything flagged there must be retyped
       here. The function's return-value PIN type cannot be read from python at
       all (FUserPinInfo is not reflected), so step 7 must be eyeballed even when
       this script reports nothing.
-   9. Compile. Callers that read a property off this function's result should
-      re-resolve to the C++ property of the same name on UBNAnimInstance. Any
-      node that stays red is a property that exists on %(old)s but NOT
-      on UBNAnimInstance - report it to the founder as a porting gap. Do NOT
-      re-add a Blueprint variable to make the red go away; that recreates the
-      shadowing bug 30/35 just finished unwinding.
+      NOTE, and it is the whole point: steps 4-8 all say ABP_BNMannequin, the
+      BLUEPRINT class. Do NOT pick BNAnimInstance from the type list because it
+      looks like the tidier answer - the pose-selection variables this function's
+      callers read (Sprinting, Unarmed, the ADS bools) are BP variables on
+      ABP_BNMannequin and do not exist on the C++ class. Picking the C++ class
+      here is the exact regression a3efbf8 corrected.
+   9. Compile. Callers read their properties off ABP_BNMannequin, which carries
+      both the ported C++ properties and the BP-only ones, so a correct retarget
+      leaves NO red nodes. Any node that stays red is a genuine break - report
+      it; do not "fix" it by retyping anything back to %(old)s. Do NOT
+      re-add a Blueprint variable that 30/35 deleted to make a red go away; that
+      recreates the shadowing bug they just finished unwinding.
   10. Save, then re-run this script. The cast row flips to OK and the exit code
       goes to zero. Until then it stays non-zero, on purpose."""
 
@@ -548,19 +561,27 @@ def _class_path_of_asset(path):
 
 def main():
     shared = _read_shared_config()
-    cast_target = shared.get("new_parent", CONFIG["cast_target"])
-    if cast_target != CONFIG["cast_target"]:
-        unreal.log_warning(
-            "CAST TARGET: %s says new_parent=%s, this script's CONFIG says %s. "
-            "30 is the single source of truth - using %s."
-            % (REPARENT_SCRIPT, cast_target, CONFIG["cast_target"], cast_target))
+    # The cast target is THIS script's call and is NOT inherited from 30.
+    # 30's new_parent answers "what is ABP_BNMannequin's parent?" (the C++
+    # class). The cast answers "what does the layer point at?" (ABP_BNMannequin
+    # itself). Reading the first as the second silently retargets the cast at
+    # /Script/BreachpointNext.BNAnimInstance, breaking every BP-only
+    # pose-variable read - and the is-a audit row still reads OK, so it lands as
+    # a false green. That was the shipped behaviour until this line; a3efbf8's
+    # correction to CONFIG["cast_target"] was dead code underneath it.
+    cast_target = CONFIG["cast_target"]
+    # 30's value is still evidence, for one thing only: proving the is-a that
+    # makes casting at the BP class a superset of casting at the C++ class.
+    bn_main_expected_parent = shared.get("new_parent", "")
 
     new_class = unreal.load_class(None, cast_target)
     if new_class is None:
         unreal.log_error(
-            "CLASS LOAD FAILED: %s - the BreachpointNext C++ module is not "
-            "compiled, or UBNAnimInstance is not present. Compile the module "
-            "and re-run. Nothing was modified." % cast_target)
+            "CLASS LOAD FAILED: %s - ABP_BNMannequin is absent or has never "
+            "compiled. Run 30_reparent_abp.py and 35_repair_abp.py first, and "
+            "confirm the BreachpointNext module is compiled (the BP class "
+            "cannot load if its C++ parent is missing). Nothing was modified."
+            % cast_target)
         return 1
 
     probe_report()
@@ -632,18 +653,23 @@ def main():
                % (sorted(old_class_paths) or "asset not loadable - matching by "
                   "name %s instead" % sorted(old_class_names)))
 
-    # The BN main anim instance is what makes the retarget correct: it IS a
-    # UBNAnimInstance, so a cast to the C++ class succeeds where the cast to the
-    # template BP class could never have.
+    # The BN main anim instance is what makes the retarget correct. The cast
+    # points at ABP_BNMannequin itself, and ABP_BNMannequin IS-A UBNAnimInstance
+    # - so the layer resolves the ported C++ properties AND the BP-only
+    # pose-selection variables that were never ported. Casting at the C++ class
+    # instead would resolve only the former. That is the whole argument, so the
+    # parent is checked and printed rather than assumed.
     bn_main = shared.get("bn_duplicate", "")
     bn_main_parent = "(asset absent)"
     if bn_main and unreal.EditorAssetLibrary.does_asset_exist(bn_main):
         bn_main_bp = unreal.EditorAssetLibrary.load_asset(bn_main)
         if bn_main_bp is not None:
             bn_main_parent = _parent_path(bn_main_bp)
-    unreal.log("BN main anim instance %s parent=%s (must be %s for the "
-               "retargeted cast to succeed at runtime)"
-               % (bn_main, bn_main_parent, cast_target))
+    unreal.log("BN main anim instance %s parent=%s (must be %s - that is-a is "
+               "what makes the cast at %s a SUPERSET of a cast at the C++ class)"
+               % (bn_main, bn_main_parent,
+                  bn_main_expected_parent or "(unreadable from %s)" % REPARENT_SCRIPT,
+                  cast_target))
 
     # ---------- (2) DUPLICATE into BN ----------
     dup_notes = []
@@ -817,7 +843,9 @@ def main():
          cast_actual),
         ("residual refs to old main class on BN base", "none",
          ", ".join(residual) if residual else "none"),
-        ("BN main anim instance is-a cast target", cast_target, bn_main_parent),
+        ("BN main anim instance parent (the is-a the cast rests on)",
+         bn_main_expected_parent or "(unreadable from %s)" % REPARENT_SCRIPT,
+         bn_main_parent),
         ("ini %s" % CONFIG["ini_key"], ini_value,
          ini_actual if key_idx is not None else "(key missing)"),
         ("BN base compiles clean", "True",

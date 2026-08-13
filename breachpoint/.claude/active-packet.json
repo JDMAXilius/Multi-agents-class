@@ -1,8 +1,14 @@
 {
-  "ticket": "R1 - first-person spine, local compile repair",
+  "ticket": "NEXT R1 - the BN-owned anim layer chain (docs/BREACHPOINT-NEXT-TASK-ABP-REPAIR.md)",
   "owner_path": [
-    "Source/BreachpointNext/"
+    "Content/BN/Animation/",
+    "Config/DefaultGame.ini",
+    "Tools/bn/45_bn_anim_layers.py",
+    "docs/BREACHPOINT-NEXT-TASK-ABP-REPAIR.md"
   ],
-  "binary_locks": [],
-  "authorized_by": "founder, 13 Aug 2026 - 'build project and open editor'. The R1 commits pulled from origin/main (87854ae..29a915f) do not compile against UE_5.8_Source on this machine: C2248 on the private GetLinkedAnimInstances() overload, C4458 on a local named Mesh. Scope is the compile repair only - no behaviour change. Supersedes the 12 Aug BREACHPOINT-NEXT layout claim, whose commits landed at 9f26128."
+  "binary_locks": [
+    "Content/BN/Animation/ABP_BNItemAnimLayersBase.uasset",
+    "Content/BN/Animation/ABP_BNUnarmedAnimLayers.uasset"
+  ],
+  "authorized_by": "founder, 13 Aug 2026 - 'what is next' then 'yes, fix the script'. Supersedes the R1 compile-repair claim, whose work landed at ffb1f2d and whose owner_path (Source/BreachpointNext/) covers none of the paths this task writes. The task doc declares owner_path Content/BN/Animation/ + Config/DefaultGame.ini; Tools/bn/45_bn_anim_layers.py is an EXTENSION granted directly by the founder after review found the script's cast-target resolution contradicts the correction landed at a3efbf8. The task doc is included so the audit can be pasted into its ## Log, which the task's own 'Done means' requires."
 }
