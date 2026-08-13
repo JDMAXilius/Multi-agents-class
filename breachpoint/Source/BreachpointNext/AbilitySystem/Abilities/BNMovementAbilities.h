@@ -20,6 +20,10 @@ protected:
 	UFUNCTION()
 	void OnLanded(const FHitResult& Hit);
 
+	/** DEBT A1: the avatar can be destroyed in mid-air, and then it never lands. */
+	UFUNCTION()
+	void OnAvatarDestroyed(AActor* DestroyedActor);
+
 	UFUNCTION()
 	void OnInputRelease(float TimeHeld);
 

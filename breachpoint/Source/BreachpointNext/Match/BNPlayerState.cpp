@@ -3,6 +3,7 @@
 #include "AbilitySystem/BNAbilitySystemComponent.h"
 #include "AbilitySystem/Attributes/BNAttributeSet.h"
 #include "AbilitySystem/Effects/BNGameplayEffects.h"
+#include "AbilitySystem/Abilities/BNGA_Death.h"
 #include "AbilitySystem/Abilities/BNGA_Equip.h"
 #include "AbilitySystem/Abilities/BNMovementAbilities.h"
 #include "Core/BNGameplayTags.h"
@@ -25,6 +26,20 @@ UAbilitySystemComponent* ABNPlayerState::GetAbilitySystemComponent() const
 	return AbilitySystemComponent;
 }
 
+void ABNPlayerState::ApplyInitAttributes()
+{
+	if (!AbilitySystemComponent || !AbilitySystemComponent->IsOwnerActorAuthoritative() || !InitEffect)
+	{
+		return;
+	}
+
+	const FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(InitEffect, 1.f, AbilitySystemComponent->MakeEffectContext());
+	if (SpecHandle.IsValid())
+	{
+		AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+	}
+}
+
 void ABNPlayerState::GrantDefaults()
 {
 	if (bDefaultsGranted || !AbilitySystemComponent || !AbilitySystemComponent->IsOwnerActorAuthoritative())
@@ -33,14 +48,11 @@ void ABNPlayerState::GrantDefaults()
 	}
 	bDefaultsGranted = true;
 
-	if (InitEffect)
-	{
-		const FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(InitEffect, 1.f, AbilitySystemComponent->MakeEffectContext());
-		if (SpecHandle.IsValid())
-		{
-			AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-		}
-	}
+	ApplyInitAttributes();
+
+	// Granted OUTSIDE the set/fallback split and with no input tag: death is not a key and not a
+	// weapon's verb. UBNHealthComponent's verdict activates it by class, on the authority.
+	AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(UBNGA_Death::StaticClass(), 1));
 
 	if (DefaultAbilitySet)
 	{

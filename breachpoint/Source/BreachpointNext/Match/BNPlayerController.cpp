@@ -5,10 +5,20 @@
 #include "Input/BNInputComponent.h"
 #include "Input/BNInputConfig.h"
 #include "Match/BNPlayerState.h"
+#include "Utilities/BNCheatManager.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "InputMappingContext.h"
 #include "GameFramework/Pawn.h"
+
+ABNPlayerController::ABNPlayerController()
+{
+	// The testing lever, wired from line one (Lyra does the same). Not shipped: cheats are not
+	// gameplay, and the class this names has exec functions that move attributes.
+#if !UE_BUILD_SHIPPING
+	CheatClass = UBNCheatManager::StaticClass();
+#endif
+}
 
 void ABNPlayerController::SetupInputComponent()
 {
@@ -87,6 +97,10 @@ void ABNPlayerController::SetupInputComponent()
 	Bind(BNTags::Input_Lean_Left, ETriggerEvent::Completed, &ABNPlayerController::HandleLeanLeftReleased);
 	Bind(BNTags::Input_Lean_Right, ETriggerEvent::Started, &ABNPlayerController::HandleLeanRightPressed);
 	Bind(BNTags::Input_Lean_Right, ETriggerEvent::Completed, &ABNPlayerController::HandleLeanRightReleased);
+	// ANNOUNCED, not created: IA_BNDebugDamageSelf + its DA_BNInput row + its IMC_BNNext mapping
+	// do not exist yet, so until the founder adds them this binding logs its "that control is
+	// dead" line every run — which is the announcement being loud rather than silent.
+	Bind(BNTags::Input_Debug_DamageSelf, ETriggerEvent::Started, &ABNPlayerController::HandleDebugDamagePressed);
 }
 
 void ABNPlayerController::HandleMove(const FInputActionValue& Value)
@@ -228,6 +242,12 @@ void ABNPlayerController::HandleLeanRightReleased()
 	{
 		ASC->AbilityInputTagReleased(BNTags::Input_Lean_Right);
 	}
+}
+
+void ABNPlayerController::HandleDebugDamagePressed()
+{
+	// One keypress, the SAME route as the console command — the key gets no path of its own.
+	UBNCheatManager::RouteDamageSelf(this);
 }
 
 UBNAbilitySystemComponent* ABNPlayerController::GetBNAbilitySystemComponent() const

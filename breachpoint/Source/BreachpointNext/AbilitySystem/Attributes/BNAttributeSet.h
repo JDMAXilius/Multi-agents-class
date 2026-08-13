@@ -19,6 +19,15 @@ class BREACHPOINTNEXT_API UBNAttributeSet : public UAttributeSet
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
+	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
+
+	/** SERVER-ONLY META attribute, deliberately NOT replicated and never read by anything: the
+	 *  damage GE writes it, PostGameplayEffectExecute drains it into Shield then Health and zeroes
+	 *  it in the same call. It is the whole of this wave's pipeline — no execution calculation,
+	 *  no mitigation — and the door that writes it is AbilitySystem/Effects/BNDamage. */
+	UPROPERTY()
+	FGameplayAttributeData IncomingDamage;
+	ATTRIBUTE_ACCESSORS(UBNAttributeSet, IncomingDamage)
 
 	UPROPERTY(ReplicatedUsing = OnRep_Health)
 	FGameplayAttributeData Health;

@@ -1,5 +1,6 @@
 #include "AbilitySystem/Abilities/BNGA_Fire.h"
 
+#include "AbilitySystem/Effects/BNDamage.h"
 #include "AbilitySystem/Effects/BNGameplayEffects.h"
 #include "BreachpointNext.h"
 #include "Characters/BNCharacter.h"
@@ -437,11 +438,14 @@ void UBNGA_Fire::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Ta
 		}
 
 		const float ServerDistance = FVector::Dist(ServerHit.ImpactPoint, ViewLocation);
-		UE_LOG(LogBN, Log, TEXT("BNGA_Fire: validated hit — %s hit %s at %s, %.0f uu. No damage this wave; G5 owns the one damage door."),
+		UE_LOG(LogBN, Log, TEXT("BNGA_Fire: validated hit — %s hit %s at %s, %.0f uu."),
 			*GetNameSafe(Avatar), *GetNameSafe(HitActor), *ServerHit.ImpactPoint.ToCompactString(), ServerDistance);
 
-		// G5's damage call goes HERE, against ServerHit and nothing else — no engine damage API is
-		// reachable from this file, so there is no second path to unbuild later.
+		// THE one damage door, and the only call to it in this file. Built from the SERVER's own
+		// ServerHit — never the client's Claim — and from the ROW, which is where the damage and
+		// the headshot multiplier live. No engine damage API is reachable from here, so there is
+		// no second path to unbuild when the real pipeline replaces BNDamage's insides.
+		BNDamage::ApplyWeaponDamage(Avatar, *Row, ServerHit);
 
 		FGameplayCueParameters ImpactParams;
 		ImpactParams.Location = ServerHit.ImpactPoint;

@@ -1,7 +1,9 @@
 #include "Characters/BNCharacter.h"
 #include "AbilitySystem/BNAbilitySystemComponent.h"
+#include "AbilitySystem/Abilities/BNGA_Death.h"
 #include "AbilitySystem/Attributes/BNAttributeSet.h"
 #include "AbilitySystem/Effects/BNGameplayEffects.h"
+#include "Characters/BNHealthComponent.h"
 #include "Core/BNGameplayTags.h"
 #include "Match/BNPlayerState.h"
 #include "Weapons/BNEquipmentComponent.h"
@@ -22,6 +24,7 @@ ABNCharacter::ABNCharacter()
 	CameraComponent->bUsePawnControlRotation = true;
 
 	EquipmentComponent = CreateDefaultSubobject<UBNEquipmentComponent>(TEXT("EquipmentComponent"));
+	HealthComponent = CreateDefaultSubobject<UBNHealthComponent>(TEXT("HealthComponent"));
 
 	bUseControllerRotationYaw = true;
 
@@ -39,6 +42,24 @@ void ABNCharacter::BeginPlay()
 	// Layer linking is local-cosmetic and runs on EVERY machine — sim proxies never see a
 	// possession event, so BeginPlay is their hook; the mesh's anim instance exists by now.
 	InitializeAnimLayer();
+
+	// Bound once per pawn, on every machine; the handler is what gates on authority. The delegate
+	// lives on a component this character owns, so it dies with the body and leaks nothing onto
+	// the persistent ASC.
+	HealthComponent->OnDeath.AddUObject(this, &ABNCharacter::HandleDeath);
+}
+
+void ABNCharacter::HandleDeath(UBNHealthComponent* /*Component*/)
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	if (UAbilitySystemComponent* ASC = CachedAbilitySystem.Get())
+	{
+		ASC->TryActivateAbilityByClass(UBNGA_Death::StaticClass());
+	}
 }
 
 // The crouch tag's ONE owner: the engine's crouch events, authority-side. Engine crouch
@@ -93,6 +114,20 @@ void ABNCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 		}
 		MoveSpeedChangedHandle.Reset();
 	}
+
+	// DEBT A2 (crouch critic, 9b59d79): OnEndCrouch never fires when the pawn is DESTROYED, so
+	// this GE would stay on the persistent ASC and the next body would spawn permanently tagged
+	// Crouching — and a fresh crouch would then stack a second one. Same cached-ASC route as the
+	// delegate above, and for the same reason: the PlayerState is already null by now.
+	if (CrouchStateHandle.IsValid())
+	{
+		if (UAbilitySystemComponent* ASC = CachedAbilitySystem.Get())
+		{
+			ASC->RemoveActiveGameplayEffect(CrouchStateHandle);
+		}
+		CrouchStateHandle = FActiveGameplayEffectHandle();
+	}
+
 	CachedAbilitySystem.Reset();
 
 	Super::EndPlay(EndPlayReason);
@@ -173,6 +208,10 @@ void ABNCharacter::InitializeAbilitySystem()
 	UBNAbilitySystemComponent* ASC = PS->GetBNAbilitySystemComponent();
 	ASC->InitAbilityActorInfo(PS, this);
 	CachedAbilitySystem = ASC;
+
+	// Every machine: Health replicates, so each one reaches zero on its own and the component
+	// reports it there — death is never a flag one machine sends to the others.
+	HealthComponent->InitializeWithAbilitySystem(ASC);
 
 	if (!MoveSpeedChangedHandle.IsValid())
 	{

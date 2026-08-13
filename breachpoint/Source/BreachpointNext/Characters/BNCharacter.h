@@ -8,6 +8,7 @@
 #include "BNCharacter.generated.h"
 
 class UBNEquipmentComponent;
+class UBNHealthComponent;
 class UCameraComponent;
 struct FOnAttributeChangeData;
 
@@ -57,6 +58,10 @@ protected:
 	void InitializeAbilitySystem();
 	void OnMoveSpeedChanged(const FOnAttributeChangeData& Data);
 
+	/** The health component's verdict, turned into the death VERB on the authority. The component
+	 *  knows nothing about abilities and the ability knows nothing about attributes. */
+	void HandleDeath(UBNHealthComponent* Component);
+
 	/** State.Movement.Crouching GE, applied by OnStartCrouch on the authority — the ONE owner
 	 *  of the crouch tag; abilities only drive the engine crouch. */
 	FActiveGameplayEffectHandle CrouchStateHandle;
@@ -66,6 +71,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UBNEquipmentComponent> EquipmentComponent;
+
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<UBNHealthComponent> HealthComponent;
 
 	FDelegateHandle MoveSpeedChangedHandle;
 

@@ -13,9 +13,9 @@ struct FGameplayAbilityTargetDataHandle;
  * swap, which Wave 2 moved to the PlayerState because it revoked itself by running. Fire does not
  * revoke itself, so weapon-granting is correct and is what the row's AbilitySet column is for.
  *
- * NO DAMAGE THIS WAVE. The ability produces a server-validated hit and stops there. G5 owns the
- * one damage door; when BNDamage exists it is called from OnTargetDataReceived and nothing else
- * here changes. No engine damage API is ever called — there is no second damage path to unbuild.
+ * The ability produces a server-validated hit and hands it to BNDamage — the one door — from
+ * OnTargetDataReceived, against the SERVER's hit result and nothing client-supplied. No engine
+ * damage API is ever called, so there is no second damage path to unbuild.
  *
  * Who does what: the LOCALLY-CONTROLLED machine owns cadence — it activates, runs the repeat, and
  * decides when fire ends. The AUTHORITY owns the truth — it pays ammo, enforces the rate, and is

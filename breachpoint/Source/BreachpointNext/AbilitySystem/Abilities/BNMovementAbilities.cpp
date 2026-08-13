@@ -49,9 +49,25 @@ void UBNGA_Jump::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 
 	Character->LandedDelegate.AddDynamic(this, &UBNGA_Jump::OnLanded);
 
+	// DEBT A1 (Wave 3 critic, 27302a7): landing is the ONLY thing that ended this ability, and a
+	// pawn destroyed in mid-air never lands. LandedDelegate never fires, EndAbility never runs,
+	// and the Jumping/InAir GEs stay on the PERSISTENT PlayerState ASC forever — Space becomes a
+	// dead key for the rest of the match, because the spec is still active on the next body.
+	// Bound as the event it is rather than polled; UBNGA_Sprint::CheckGate's avatar-invalid guard
+	// is the same rule on a timer. NOT left to death cancelling abilities: travel and a plain
+	// DestroyPawn destroy the avatar without anyone dying.
+	Character->OnDestroyed.AddDynamic(this, &UBNGA_Jump::OnAvatarDestroyed);
+
 	UAbilityTask_WaitInputRelease* ReleaseTask = UAbilityTask_WaitInputRelease::WaitInputRelease(this);
 	ReleaseTask->OnRelease.AddDynamic(this, &UBNGA_Jump::OnInputRelease);
 	ReleaseTask->ReadyForActivation();
+}
+
+void UBNGA_Jump::OnAvatarDestroyed(AActor* DestroyedActor)
+{
+	// Cancelled, not completed: nothing landed. EndAbility below removes both state GEs from the
+	// ASC, which is still perfectly reachable — it is the one thing that outlived the pawn.
+	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 }
 
 void UBNGA_Jump::OnInputRelease(float TimeHeld)
@@ -76,6 +92,7 @@ void UBNGA_Jump::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGame
 	if (ACharacter* Character = ActorInfo ? Cast<ACharacter>(ActorInfo->AvatarActor.Get()) : nullptr)
 	{
 		Character->LandedDelegate.RemoveDynamic(this, &UBNGA_Jump::OnLanded);
+		Character->OnDestroyed.RemoveDynamic(this, &UBNGA_Jump::OnAvatarDestroyed);
 	}
 	RemoveStateTag(JumpingHandle);
 	RemoveStateTag(InAirHandle);

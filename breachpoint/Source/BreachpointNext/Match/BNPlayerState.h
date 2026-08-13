@@ -25,6 +25,10 @@ public:
 
 	void GrantDefaults();
 
+	/** The ONE way attributes reach their starting numbers — first life and every respawn.
+	 *  Authority only. Nothing anywhere hand-sets Health, Shield or MoveSpeed. */
+	void ApplyInitAttributes();
+
 protected:
 	UPROPERTY()
 	TObjectPtr<UBNAbilitySystemComponent> AbilitySystemComponent;

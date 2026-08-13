@@ -14,6 +14,9 @@ class BREACHPOINTNEXT_API ABNPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 
+public:
+	ABNPlayerController();
+
 protected:
 	virtual void SetupInputComponent() override;
 
@@ -43,6 +46,7 @@ protected:
 	void HandleLeanLeftReleased();
 	void HandleLeanRightPressed();
 	void HandleLeanRightReleased();
+	void HandleDebugDamagePressed();
 
 	UBNAbilitySystemComponent* GetBNAbilitySystemComponent() const;
 };
