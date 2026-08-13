@@ -8,6 +8,7 @@ void UBNAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 	DOREPLIFETIME_CONDITION_NOTIFY(UBNAttributeSet, Health, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UBNAttributeSet, Shield, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UBNAttributeSet, MoveSpeed, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UBNAttributeSet, SprintSpeedMultiplier, COND_None, REPNOTIFY_Always);
 }
 
 void UBNAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
@@ -18,7 +19,7 @@ void UBNAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, fl
 	{
 		NewValue = FMath::Max(NewValue, 0.f);
 	}
-	else if (Attribute == GetMoveSpeedAttribute())
+	else if (Attribute == GetMoveSpeedAttribute() || Attribute == GetSprintSpeedMultiplierAttribute())
 	{
 		NewValue = FMath::Max(NewValue, UE_KINDA_SMALL_NUMBER);
 	}
@@ -37,4 +38,9 @@ void UBNAttributeSet::OnRep_Shield(const FGameplayAttributeData& OldShield)
 void UBNAttributeSet::OnRep_MoveSpeed(const FGameplayAttributeData& OldMoveSpeed)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UBNAttributeSet, MoveSpeed, OldMoveSpeed);
+}
+
+void UBNAttributeSet::OnRep_SprintSpeedMultiplier(const FGameplayAttributeData& OldSprintSpeedMultiplier)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UBNAttributeSet, SprintSpeedMultiplier, OldSprintSpeedMultiplier);
 }

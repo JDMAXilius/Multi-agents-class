@@ -76,6 +76,12 @@ void ABNPlayerController::SetupInputComponent()
 	// Press only: the swap verbs are one-shot, so there is no release event to forward.
 	Bind(BNTags::Input_Weapon_Next, ETriggerEvent::Started, &ABNPlayerController::HandleWeaponNextPressed);
 	Bind(BNTags::Input_Weapon_Previous, ETriggerEvent::Started, &ABNPlayerController::HandleWeaponPreviousPressed);
+	Bind(BNTags::Input_Sprint, ETriggerEvent::Started, &ABNPlayerController::HandleSprintPressed);
+	Bind(BNTags::Input_Sprint, ETriggerEvent::Completed, &ABNPlayerController::HandleSprintReleased);
+	Bind(BNTags::Input_Lean_Left, ETriggerEvent::Started, &ABNPlayerController::HandleLeanLeftPressed);
+	Bind(BNTags::Input_Lean_Left, ETriggerEvent::Completed, &ABNPlayerController::HandleLeanLeftReleased);
+	Bind(BNTags::Input_Lean_Right, ETriggerEvent::Started, &ABNPlayerController::HandleLeanRightPressed);
+	Bind(BNTags::Input_Lean_Right, ETriggerEvent::Completed, &ABNPlayerController::HandleLeanRightReleased);
 }
 
 void ABNPlayerController::HandleMove(const FInputActionValue& Value)
@@ -144,6 +150,54 @@ void ABNPlayerController::HandleWeaponPreviousPressed()
 	if (UBNAbilitySystemComponent* ASC = GetBNAbilitySystemComponent())
 	{
 		ASC->AbilityInputTagPressed(BNTags::Input_Weapon_Previous);
+	}
+}
+
+void ABNPlayerController::HandleSprintPressed()
+{
+	if (UBNAbilitySystemComponent* ASC = GetBNAbilitySystemComponent())
+	{
+		ASC->AbilityInputTagPressed(BNTags::Input_Sprint);
+	}
+}
+
+void ABNPlayerController::HandleSprintReleased()
+{
+	if (UBNAbilitySystemComponent* ASC = GetBNAbilitySystemComponent())
+	{
+		ASC->AbilityInputTagReleased(BNTags::Input_Sprint);
+	}
+}
+
+void ABNPlayerController::HandleLeanLeftPressed()
+{
+	if (UBNAbilitySystemComponent* ASC = GetBNAbilitySystemComponent())
+	{
+		ASC->AbilityInputTagPressed(BNTags::Input_Lean_Left);
+	}
+}
+
+void ABNPlayerController::HandleLeanLeftReleased()
+{
+	if (UBNAbilitySystemComponent* ASC = GetBNAbilitySystemComponent())
+	{
+		ASC->AbilityInputTagReleased(BNTags::Input_Lean_Left);
+	}
+}
+
+void ABNPlayerController::HandleLeanRightPressed()
+{
+	if (UBNAbilitySystemComponent* ASC = GetBNAbilitySystemComponent())
+	{
+		ASC->AbilityInputTagPressed(BNTags::Input_Lean_Right);
+	}
+}
+
+void ABNPlayerController::HandleLeanRightReleased()
+{
+	if (UBNAbilitySystemComponent* ASC = GetBNAbilitySystemComponent())
+	{
+		ASC->AbilityInputTagReleased(BNTags::Input_Lean_Right);
 	}
 }
 

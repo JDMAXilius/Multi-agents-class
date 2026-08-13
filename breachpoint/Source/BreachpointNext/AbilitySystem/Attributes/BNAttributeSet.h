@@ -32,6 +32,12 @@ public:
 	FGameplayAttributeData MoveSpeed;
 	ATTRIBUTE_ACCESSORS(UBNAttributeSet, MoveSpeed)
 
+	/** Sprint's speed factor. An attribute, not a literal, so the sprint GE's magnitude captures
+	 *  it and a tuning change never touches ability code. */
+	UPROPERTY(ReplicatedUsing = OnRep_SprintSpeedMultiplier)
+	FGameplayAttributeData SprintSpeedMultiplier;
+	ATTRIBUTE_ACCESSORS(UBNAttributeSet, SprintSpeedMultiplier)
+
 protected:
 	UFUNCTION()
 	void OnRep_Health(const FGameplayAttributeData& OldHealth);
@@ -41,4 +47,7 @@ protected:
 
 	UFUNCTION()
 	void OnRep_MoveSpeed(const FGameplayAttributeData& OldMoveSpeed);
+
+	UFUNCTION()
+	void OnRep_SprintSpeedMultiplier(const FGameplayAttributeData& OldSprintSpeedMultiplier);
 };

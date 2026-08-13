@@ -106,6 +106,7 @@ void UBNAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	// instantly, so the pose doesn't wait ~½RTT for the replicated tag.
 	bSnapCrouching = bTagCrouching || Character->bIsCrouched;
 	bSnapJumping = bTagJumping;
+	bSnapSprinting = bTagSprinting;
 	// The weapon seam, not the local pawn: it answers off the character's own weapon state, so
 	// server, owner and sim proxies all reach the same pose set for the character they render.
 	bSnapUnarmed = Character->GetCurrentWeaponAnimLayer() == nullptr;
@@ -192,6 +193,7 @@ void UBNAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 	isCrouching = bSnapCrouching;
 	IsJumping = bSnapJumping;
 	bUnarmed = bSnapUnarmed;
+	bSprinting = bSnapSprinting;
 
 	bNativeCrouchStateChange = !bNativeFirstUpdate && bSnapCrouching != bWasCrouchingLastUpdate;
 	bWasCrouchingLastUpdate = bSnapCrouching;
@@ -329,11 +331,13 @@ void UBNAnimInstance::NativeUninitializeAnimation()
 		AbilitySystem->UnregisterGameplayTagEvent(CrouchTagHandle, BNTags::State_Movement_Crouching, EGameplayTagEventType::NewOrRemoved);
 		AbilitySystem->UnregisterGameplayTagEvent(JumpTagHandle, BNTags::State_Movement_Jumping, EGameplayTagEventType::NewOrRemoved);
 		AbilitySystem->UnregisterGameplayTagEvent(InAirTagHandle, BNTags::State_Movement_InAir, EGameplayTagEventType::NewOrRemoved);
+		AbilitySystem->UnregisterGameplayTagEvent(SprintTagHandle, BNTags::State_Movement_Sprinting, EGameplayTagEventType::NewOrRemoved);
 		AbilitySystem = nullptr;
 	}
 	CrouchTagHandle.Reset();
 	JumpTagHandle.Reset();
 	InAirTagHandle.Reset();
+	SprintTagHandle.Reset();
 
 	Super::NativeUninitializeAnimation();
 }
@@ -355,10 +359,12 @@ void UBNAnimInstance::ResolveAbilitySystem()
 	CrouchTagHandle = ASC->RegisterGameplayTagEvent(BNTags::State_Movement_Crouching, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &UBNAnimInstance::OnTagChanged);
 	JumpTagHandle = ASC->RegisterGameplayTagEvent(BNTags::State_Movement_Jumping, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &UBNAnimInstance::OnTagChanged);
 	InAirTagHandle = ASC->RegisterGameplayTagEvent(BNTags::State_Movement_InAir, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &UBNAnimInstance::OnTagChanged);
+	SprintTagHandle = ASC->RegisterGameplayTagEvent(BNTags::State_Movement_Sprinting, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &UBNAnimInstance::OnTagChanged);
 
 	bTagCrouching = ASC->HasMatchingGameplayTag(BNTags::State_Movement_Crouching);
 	bTagJumping = ASC->HasMatchingGameplayTag(BNTags::State_Movement_Jumping);
 	bTagInAir = ASC->HasMatchingGameplayTag(BNTags::State_Movement_InAir);
+	bTagSprinting = ASC->HasMatchingGameplayTag(BNTags::State_Movement_Sprinting);
 }
 
 void UBNAnimInstance::OnTagChanged(const FGameplayTag Tag, int32 NewCount)
@@ -375,5 +381,9 @@ void UBNAnimInstance::OnTagChanged(const FGameplayTag Tag, int32 NewCount)
 	else if (Tag == BNTags::State_Movement_InAir)
 	{
 		bTagInAir = bActive;
+	}
+	else if (Tag == BNTags::State_Movement_Sprinting)
+	{
+		bTagSprinting = bActive;
 	}
 }

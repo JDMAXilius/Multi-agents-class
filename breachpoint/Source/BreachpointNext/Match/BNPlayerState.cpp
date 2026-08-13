@@ -68,5 +68,19 @@ void ABNPlayerState::GrantDefaults()
 		FGameplayAbilitySpec SwapPreviousSpec(UBNGA_SwapPrevious::StaticClass(), 1);
 		SwapPreviousSpec.GetDynamicSpecSourceTags().AddTag(BNTags::Input_Weapon_Previous);
 		AbilitySystemComponent->GiveAbility(SwapPreviousSpec);
+
+		// Character verbs, not weapon verbs: sprint and lean belong to the body and must survive
+		// every weapon swap, so they are granted here and never by a weapon's ability set.
+		FGameplayAbilitySpec SprintSpec(UBNGA_Sprint::StaticClass(), 1);
+		SprintSpec.GetDynamicSpecSourceTags().AddTag(BNTags::Input_Sprint);
+		AbilitySystemComponent->GiveAbility(SprintSpec);
+
+		FGameplayAbilitySpec LeanLeftSpec(UBNGA_LeanLeft::StaticClass(), 1);
+		LeanLeftSpec.GetDynamicSpecSourceTags().AddTag(BNTags::Input_Lean_Left);
+		AbilitySystemComponent->GiveAbility(LeanLeftSpec);
+
+		FGameplayAbilitySpec LeanRightSpec(UBNGA_LeanRight::StaticClass(), 1);
+		LeanRightSpec.GetDynamicSpecSourceTags().AddTag(BNTags::Input_Lean_Right);
+		AbilitySystemComponent->GiveAbility(LeanRightSpec);
 	}
 }

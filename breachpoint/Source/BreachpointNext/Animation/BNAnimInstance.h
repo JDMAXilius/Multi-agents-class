@@ -115,6 +115,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
 	bool bUnarmed = false;
 
+	/** The upper body's sprint pose selector (the `fPS_Sprint` slot). Name is the asset's —
+	 *  ABP_Mannequin_Base's `bSprinting`, which BPI_FPST_AnimInterface's `SetSprinting` wrote.
+	 *  Driven here by State.Movement.Sprinting; that tag is what replaces the message. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	bool bSprinting = false;
+
 	// ---------------------------------------------------------------- aim, lean
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
 	double AimPitch = 0.0;
@@ -185,10 +191,12 @@ private:
 	FDelegateHandle CrouchTagHandle;
 	FDelegateHandle JumpTagHandle;
 	FDelegateHandle InAirTagHandle;
+	FDelegateHandle SprintTagHandle;
 
 	bool bTagInAir = false;
 	bool bTagCrouching = false;
 	bool bTagJumping = false;
+	bool bTagSprinting = false;
 
 	// Game-thread snapshot, worker-thread input. The only channel between the two passes.
 	FVector SnapWorldVelocity = FVector::ZeroVector;
@@ -205,6 +213,7 @@ private:
 	bool bSnapCrouching = false;
 	bool bSnapJumping = false;
 	bool bSnapUnarmed = false;
+	bool bSnapSprinting = false;
 
 	// Worker-thread history.
 	FFloatSpringState RootYawOffsetSpringState;
