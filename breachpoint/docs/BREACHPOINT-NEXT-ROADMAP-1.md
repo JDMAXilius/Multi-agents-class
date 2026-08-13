@@ -106,6 +106,14 @@ standalone AND in client+server from the first build.
   asset setup as committed Python scripts run through the editor (Unreal MCP / Editor Script
   Plugin), followed by a read-back audit proving the result. The founder's hands touch only
   the play button. (Standing rule for ALL roadmaps, not just this one.)
+- **But say so when the founder doing it by hand is faster — always, up front.** The rule
+  above exists to save the founder work, not to make automation a dogma that costs them time.
+  Scripting earns its keep when a step will be re-run (fresh pull, another machine), covers
+  many assets, or needs an audit as proof. It does NOT when the job is a couple of clicks on
+  one asset, or when the decisive step is something UE's Python cannot do — graph/node editing
+  above all, where the script can only print manual instructions anyway. In those cases the
+  honest answer is "do this one yourself, here are the exact steps", said **before** a script
+  is written, not after it is delivered.
 - **Variables: only the necessary ones. Asset references: soft (`TSoftObjectPtr`/
   `TSoftClassPtr`) wherever UE allows it.**
 
