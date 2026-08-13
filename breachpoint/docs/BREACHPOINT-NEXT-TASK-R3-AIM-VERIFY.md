@@ -72,3 +72,57 @@ read-back pasted into the Log. **That is the whole ticket.**
 ## Log
 
 _(terminal: append the three answers, the asset paths and parameter lists, and the deletion result)_
+
+- 13 Aug 2026 (mac terminal) — **Parts 1–2 DONE, Part 3 attempted and handed back.** All read
+  through the live editor's MCP after a green rebuild of the ad6d383 C++.
+
+  **Part 1 — the ABP DOES consume the variables; G1's fix lands.**
+  1. **`Pitch`: read well beyond the event graph.** `BlueprintThreadSafeUpdateAnimation` calls
+     `UpdateRotationData` every frame, whose DSL reads
+     `SetPitchRotator(MakeRotator(GetPitch))`; `UpdateAimingData` similarly sets `AimPitch`
+     (NormalizeAxis of a property access). The AnimGraph applies pitch through linked layer
+     `FSP_FullBody_Aiming_Pitch_FPS_Upper` (+`_Neck`) — a spine_01→spine_05→neck_01/02→head
+     Transform(Modify)Bone chain; spine_01's alpha literal (0.15) matches
+     `AimSpineWeights_UE5.spine_01`. The EventGraph's `EventSetControllerPitch → SetPitch` is
+     just another writer of the same variable, now superseded by C++. **Caveat recorded:** the
+     ModifyBone rotation pins carry `AnimGraphNodeBinding_Base` property-access bindings whose
+     source path the MCP cannot reflect — the chain is verified by mechanism and weight match,
+     not by reading the binding string.
+  2. **`LeanRotation` / `LeanOppRotation`: writers only.** EventGraph setters (off the
+     never-fired `SetAimAndLeanInfo`) are the ONLY hits across all 126 graphs of
+     `ABP_Mannequin_Base`; no reader anywhere, and no lean layer graph exists in
+     `ABP_ItemAnimLayersBase`. The lean pose surface genuinely does not exist — consistent
+     with Wave 3's "no visible tilt" note. Finding reported, graph NOT touched.
+  3. **Spine weights hold on the CDO:** `AimSpineWeights_UE5` = spine_01 .15 / spine_02–05 .10
+     / neck_01 .15 / neck_02 .20 / head .10; `LeanSpineWeights_UE5` = spine_01–04 .20 /
+     spine_05 .10 / neck_01 .10 / neck_02 0 / head(OppositeAngleWeight) .25.
+
+  **Part 2 — FX discovery (paths only, nothing wired):**
+  - **2.1 Tracer:** `/Game/FPSTemplate/Demo/Effects/Particles/Weapons/NS_WeaponFire_Tracer`
+    (also the CDO default of `BPC_FPST_Lyra_FireEffectComp.tracerNS`). Parameters the template
+    itself writes (from `FireTracerEffect`): `User.ImpactPositions` (vector ARRAY, via
+    NiagaraSetVectorArray) + `User.Trigger` (bool). The system's full exposedParameters list is
+    NOT reflectable through this MCP (documented miss) — the graph-observed set is the contract
+    the template exercises.
+  - **2.2 Impact:** surface-driven via `ImpactEffectInfoMap` on the component CDO, fallback
+    SurfaceType2. Decal is `NS_ImpactDecals` for ALL surfaces; effects: SurfaceType1 (character)
+    `NS_ImpactSparksCharacter2` + `sfx_ImpactCharacter_nl_meta_Preset`, SurfaceType2 (concrete)
+    `NS_ImpactConcrete` + `sfx_ImpactPlaster_nl_meta`, SurfaceType3 (glass) `NS_ImpactGlass` +
+    `sfx_ImpactGlass_nl_meta_Preset`. Decal params written: `User.Trigger` (bool),
+    `User.ImpactSurfaces` (int32[]), `User.ImpactPositions` (position[]), `User.ImpactNormals`
+    (vector[]), `User.NumberOfHits` (int32); the impact system takes the same minus
+    Trigger/Surfaces. Sound is `PlaySoundAtLocation` from the map row.
+  - **2.3 Weapon sounds:** fire = `MSS_Weapons_Rifle2_Fire` (the `Rifle/` folder has only
+    DryFire; `Rifle2/` carries the fire MetaSound) and `MSS_Weapons_Pistol_Fire`. **No
+    standalone reload sound exists** — reload audio rides the montage as notifies
+    (`AM_MM_Rifle_Reload` depends on `Weapons_Rifle_ClipOut_01`/`ClipIn_01`/`Bolt_01`), so
+    `BNGA_Reload` playing the same montages gets its audio free; searched `Demo/Audio` for
+    "Fire"/"Reload" and the three weapon folders.
+
+  **Part 3 — deletion handed back.** `get_referencers` on `/Game/BN/Animation/ABP_BNMannequin`
+  = [] (confirmed dead). `AssetTools.delete` returned true on BOTH the package and object path
+  forms, but `exists` and the on-disk file refute it every time — the editor is silently
+  refusing (likely a loaded-asset/confirmation path the tool cannot cross). Per the rules this
+  is a hand-back, not a workaround: **one founder click** — Content Browser →
+  `BN/Animation/ABP_BNMannequin` → Delete. `git rm` while the editor may hold the package was
+  deliberately NOT done.
