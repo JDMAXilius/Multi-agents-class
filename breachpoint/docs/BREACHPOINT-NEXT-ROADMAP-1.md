@@ -120,6 +120,10 @@ standalone AND in client+server from the first build.
   chosen path starts fighting back, stop and hand the rest over rather than sinking time into it.
 - **Variables: only the necessary ones. Asset references: soft (`TSoftObjectPtr`/
   `TSoftClassPtr`) wherever UE allows it.**
+- **Push to `main` always** (founder, 13 Aug 2026 — standing, no longer asked per turn). Work is
+  committed to the development branch and then fast-forwarded to `main` in the same pass; the
+  founder pulls `main` on the laptop to test, so work that stops at the branch is work they
+  cannot reach. Fast-forward only, never force-push.
 
 ## Reuse verdict (you asked — here it is)
 
