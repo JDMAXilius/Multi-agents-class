@@ -84,11 +84,25 @@ void UBNGA_Melee::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const
 		Anim->OnPlayMontageNotifyBegin.AddDynamic(this, &UBNGA_Melee::OnMontageNotifyBegin);
 	}
 
-	// No montage, or no anim instance to hear it: swing immediately rather than swallow the input
-	// silently — the reference does exactly this and says why (MyCharacter.cpp:1926-1930).
 	if (!BoundAnimInstance.IsValid())
 	{
+		// No montage, or no anim instance to hear it: swing immediately rather than swallow the
+		// input silently — the reference does exactly this (MyCharacter.cpp:1926-1930).
 		SwingTrace();
+	}
+	else
+	{
+		// The notify has a deadline. See FallbackConnectTime — if AN_FPST_Melee is a plain
+		// UAnimNotify rather than a Play Montage Notify, the delegate above never fires and this
+		// is the only thing between "melee connects" and "melee silently does nothing".
+		World->GetTimerManager().SetTimer(ConnectTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
+		{
+			if (!bSwung)
+			{
+				UE_LOG(LogBN, Verbose, TEXT("BNGA_Melee: notify '%s' did not fire — connecting on the fallback clock."), *ConnectNotifyName.ToString());
+				SwingTrace();
+			}
+		}), FMath::Max(FallbackConnectTime, 0.01f), /*bLoop=*/false);
 	}
 
 	// The ability's own lifetime. With a montage this is the timeout that keeps a notify-less
@@ -249,6 +263,7 @@ void UBNGA_Melee::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGam
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(SwingTimer);
+		World->GetTimerManager().ClearTimer(ConnectTimer);
 	}
 
 	// The anim instance outlives this ability instance, so a binding left behind would fire the

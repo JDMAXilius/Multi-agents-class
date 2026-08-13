@@ -59,7 +59,18 @@ protected:
 	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Melee")
 	float SwingDuration = 1.f;
 
+	/** THE SAFETY NET, and it is not optional. `OnPlayMontageNotifyBegin` fires only for notifies
+	 *  of the "Play Montage Notify" type — a plain UAnimNotify subclass, which is what an
+	 *  `AN_`-prefixed asset usually is, does NOT raise it. If `AN_FPST_Melee` turns out to be the
+	 *  latter, the binding never fires and melee would swing the weapon and damage nothing, silently.
+	 *  So the connect also has a clock: if the notify has not landed by here, swing anyway. bSwung
+	 *  means whichever arrives first wins and the second is a no-op, so a real notify still owns
+	 *  the timing when it exists. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Melee")
+	float FallbackConnectTime = 0.25f;
+
 	FTimerHandle SwingTimer;
+	FTimerHandle ConnectTimer;
 
 	/** One connect per activation: a montage carrying two notifies must not swing twice. */
 	bool bSwung = false;

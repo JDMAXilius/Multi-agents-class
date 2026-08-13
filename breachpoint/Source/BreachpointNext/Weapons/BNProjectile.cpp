@@ -13,6 +13,7 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
+#include "Net/UnrealNetwork.h"
 #include "TimerManager.h"
 
 ABNProjectile::ABNProjectile()
@@ -36,10 +37,32 @@ ABNProjectile::ABNProjectile()
 	MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
-	ProjectileMovement->SetUpdatedComponent(CollisionComponent);
+	// Assigned, not SetUpdatedComponent(): the setter registers delegates and walks the component
+	// hierarchy, which is not safe while the CDO is still being built. The engine's own projectiles
+	// assign the property here and let the component bind on registration.
+	ProjectileMovement->UpdatedComponent = CollisionComponent;
 	ProjectileMovement->bShouldBounce = true;
 	ProjectileMovement->ProjectileGravityScale = 1.f;
 	ProjectileMovement->bRotationFollowsVelocity = false;
+}
+
+void ABNProjectile::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(ABNProjectile, InitialVelocity);
+}
+
+void ABNProjectile::OnRep_InitialVelocity()
+{
+	// The arc, reproduced. Without this a client's grenade spawns at REST — Launch() runs on the
+	// server only and a projectile movement component's Velocity is not part of anything that
+	// replicates — so it would drop at the thrower's feet and then be yanked along by replicated
+	// movement corrections. Same initial velocity + same gravity = the same flight on every
+	// machine, with ReplicatedMovement only nudging it.
+	if (ProjectileMovement)
+	{
+		ProjectileMovement->Velocity = InitialVelocity;
+	}
 }
 
 void ABNProjectile::BeginPlay()
@@ -47,6 +70,14 @@ void ABNProjectile::BeginPlay()
 	Super::BeginPlay();
 
 	ProjectileMovement->Bounciness = Bounciness;
+
+	// The grenade leaves the hand INSIDE the thrower's capsule (forward 50, up 50 against a ~34uu
+	// radius), so without this it bounces straight off them and back into their face on the first
+	// frame. Ignoring the thrower for movement is what lets it get clear.
+	if (AActor* Thrower = GetInstigator())
+	{
+		CollisionComponent->IgnoreActorWhenMoving(Thrower, true);
+	}
 
 	// Cosmetics on every machine — the grenade must look like a grenade on the client watching it
 	// as much as on the server simulating it.
@@ -75,7 +106,11 @@ void ABNProjectile::Launch(const FVector& Direction)
 	{
 		return;
 	}
-	ProjectileMovement->Velocity = Direction.GetSafeNormal() * LaunchSpeed;
+	// Replicated so every client reproduces the same arc from the same start — see
+	// OnRep_InitialVelocity. Set before the first replication of this actor, which is why
+	// UBNGA_Grenade launches it in the same frame it spawns it.
+	InitialVelocity = Direction.GetSafeNormal() * LaunchSpeed;
+	ProjectileMovement->Velocity = InitialVelocity;
 }
 
 void ABNProjectile::Explode()
@@ -92,7 +127,7 @@ void ABNProjectile::Explode()
 	}
 
 	const FVector Center = GetActorLocation();
-	AActor* Thrower = GetInstigator() ? static_cast<AActor*>(GetInstigator()) : GetOwner();
+	AActor* Thrower = GetInstigator() ? Cast<AActor>(GetInstigator()) : GetOwner();
 
 	// THE radial rule, purity law 3: our own overlap query, then one GE per target through the one
 	// door. No AActor::TakeDamage, no ApplyRadialDamage, no FDamageEvent anywhere in this path.

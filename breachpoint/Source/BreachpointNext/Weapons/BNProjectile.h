@@ -44,6 +44,15 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	/** The launch velocity, replicated so a client reproduces the same arc instead of watching a
+	 *  grenade spawn at rest and get dragged along by movement corrections. */
+	UPROPERTY(ReplicatedUsing = OnRep_InitialVelocity)
+	FVector InitialVelocity = FVector::ZeroVector;
+
+	UFUNCTION()
+	void OnRep_InitialVelocity();
 
 	/** Authority only. Overlap, dedupe, line-of-sight, falloff, one GE per survivor. */
 	void Explode();
