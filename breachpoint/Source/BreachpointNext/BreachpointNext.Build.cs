@@ -21,6 +21,11 @@ public class BreachpointNext : ModuleRules
 			"DeveloperSettings"
 		});
 
+		// PRIVATE: AbilitySystem/BNGameplayCues.cpp spawns cue FX through
+		// UNiagaraFunctionLibrary, but its header types the assets as TSoftObjectPtr<UFXSystemAsset>
+		// — the Engine-module base of both FX systems — so no public header names a Niagara type.
+		PrivateDependencyModuleNames.Add("Niagara");
+
 		// Every .cpp in this module includes its own header module-root-relative
 		// ("Match/BNPlayerController.h"). The module has no Public/Private split, so
 		// without this the root is not on the include path and NOTHING here compiles.

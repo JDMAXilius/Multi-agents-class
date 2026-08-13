@@ -76,6 +76,11 @@ void ABNPlayerController::SetupInputComponent()
 	// Press only: the swap verbs are one-shot, so there is no release event to forward.
 	Bind(BNTags::Input_Weapon_Next, ETriggerEvent::Started, &ABNPlayerController::HandleWeaponNextPressed);
 	Bind(BNTags::Input_Weapon_Previous, ETriggerEvent::Started, &ABNPlayerController::HandleWeaponPreviousPressed);
+	// Fire needs the release: Auto holds the ability open for as long as the trigger is held.
+	// Reload is one-shot, so press only, like the swap verbs.
+	Bind(BNTags::Input_Weapon_Fire, ETriggerEvent::Started, &ABNPlayerController::HandleFirePressed);
+	Bind(BNTags::Input_Weapon_Fire, ETriggerEvent::Completed, &ABNPlayerController::HandleFireReleased);
+	Bind(BNTags::Input_Weapon_Reload, ETriggerEvent::Started, &ABNPlayerController::HandleReloadPressed);
 	Bind(BNTags::Input_Sprint, ETriggerEvent::Started, &ABNPlayerController::HandleSprintPressed);
 	Bind(BNTags::Input_Sprint, ETriggerEvent::Completed, &ABNPlayerController::HandleSprintReleased);
 	Bind(BNTags::Input_Lean_Left, ETriggerEvent::Started, &ABNPlayerController::HandleLeanLeftPressed);
@@ -150,6 +155,30 @@ void ABNPlayerController::HandleWeaponPreviousPressed()
 	if (UBNAbilitySystemComponent* ASC = GetBNAbilitySystemComponent())
 	{
 		ASC->AbilityInputTagPressed(BNTags::Input_Weapon_Previous);
+	}
+}
+
+void ABNPlayerController::HandleFirePressed()
+{
+	if (UBNAbilitySystemComponent* ASC = GetBNAbilitySystemComponent())
+	{
+		ASC->AbilityInputTagPressed(BNTags::Input_Weapon_Fire);
+	}
+}
+
+void ABNPlayerController::HandleFireReleased()
+{
+	if (UBNAbilitySystemComponent* ASC = GetBNAbilitySystemComponent())
+	{
+		ASC->AbilityInputTagReleased(BNTags::Input_Weapon_Fire);
+	}
+}
+
+void ABNPlayerController::HandleReloadPressed()
+{
+	if (UBNAbilitySystemComponent* ASC = GetBNAbilitySystemComponent())
+	{
+		ASC->AbilityInputTagPressed(BNTags::Input_Weapon_Reload);
 	}
 }
 

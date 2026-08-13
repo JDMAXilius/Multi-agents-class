@@ -8,6 +8,8 @@ namespace BNTags
 	UE_DEFINE_GAMEPLAY_TAG(Input_Crouch, "Input.Crouch");
 	UE_DEFINE_GAMEPLAY_TAG(Input_Weapon_Next, "Input.Weapon.Next");
 	UE_DEFINE_GAMEPLAY_TAG(Input_Weapon_Previous, "Input.Weapon.Previous");
+	UE_DEFINE_GAMEPLAY_TAG(Input_Weapon_Fire, "Input.Weapon.Fire");
+	UE_DEFINE_GAMEPLAY_TAG(Input_Weapon_Reload, "Input.Weapon.Reload");
 	UE_DEFINE_GAMEPLAY_TAG(Input_Sprint, "Input.Sprint");
 	UE_DEFINE_GAMEPLAY_TAG(Input_Lean_Left, "Input.Lean.Left");
 	UE_DEFINE_GAMEPLAY_TAG(Input_Lean_Right, "Input.Lean.Right");
@@ -18,4 +20,11 @@ namespace BNTags
 	UE_DEFINE_GAMEPLAY_TAG(State_Movement_Sprinting, "State.Movement.Sprinting");
 	UE_DEFINE_GAMEPLAY_TAG(State_Lean_Left, "State.Lean.Left");
 	UE_DEFINE_GAMEPLAY_TAG(State_Lean_Right, "State.Lean.Right");
+	UE_DEFINE_GAMEPLAY_TAG(State_Weapon_Reloading, "State.Weapon.Reloading");
+
+	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Weapon_Fire, "Cooldown.Weapon.Fire");
+
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_MuzzleFlash, "GameplayCue.Weapon.MuzzleFlash");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_Impact, "GameplayCue.Weapon.Impact");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_Tracer, "GameplayCue.Weapon.Tracer");
 }

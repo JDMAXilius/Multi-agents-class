@@ -37,14 +37,33 @@ public:
 
 	USkeletalMeshComponent* GetWeaponMesh() const { return WeaponMesh; }
 
+	// FOUNDER'S RULING, Wave 4: ammo lives on the WEAPON, not as an attribute. Each weapon keeps
+	// its own magazine across swaps, but attributes live on the ASC and the ASC sits on the
+	// PlayerState — one ASC, many weapons — so an attribute would need N attributes or a map and
+	// does neither well. The GAS-purity ledger names ammo as its exception for exactly this reason.
+	int32 GetCurrentAmmo() const { return CurrentAmmo; }
+	int32 GetMagazineSize() const;
+	bool HasAmmo(int32 Count = 1) const { return Count > 0 && CurrentAmmo >= Count; }
+
+	/** Authority only, both of them. A client decrement would be unrecoverable: property
+	 *  replication only sends on CHANGE, so a guess the server never made is never corrected. */
+	bool ConsumeAmmo(int32 Count);
+	void Reload();
+
 protected:
 	UFUNCTION()
 	void OnRep_RowName();
+
+	UFUNCTION()
+	void OnRep_CurrentAmmo();
 
 	void ApplyRow();
 
 	UPROPERTY(ReplicatedUsing = OnRep_RowName)
 	FName RowName;
+
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentAmmo)
+	int32 CurrentAmmo = 0;
 
 	UPROPERTY(VisibleAnywhere, Category = "Weapon")
 	TObjectPtr<USkeletalMeshComponent> WeaponMesh;

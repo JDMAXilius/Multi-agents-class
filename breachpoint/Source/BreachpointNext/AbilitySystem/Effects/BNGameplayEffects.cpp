@@ -60,3 +60,12 @@ UBNGE_Sprint::UBNGE_Sprint()
 	Modifier.ModifierMagnitude = FGameplayEffectModifierMagnitude(FromMultiplier);
 	Modifiers.Add(Modifier);
 }
+
+UBNGE_FireCooldown::UBNGE_FireCooldown()
+{
+	DurationPolicy = EGameplayEffectDurationType::HasDuration;
+
+	FSetByCallerFloat Duration;
+	Duration.DataName = BNSetByCaller::FireDelay;
+	DurationMagnitude = FGameplayEffectModifierMagnitude(Duration);
+}

@@ -34,6 +34,9 @@ protected:
 	void HandleCrouchReleased();
 	void HandleWeaponNextPressed();
 	void HandleWeaponPreviousPressed();
+	void HandleFirePressed();
+	void HandleFireReleased();
+	void HandleReloadPressed();
 	void HandleSprintPressed();
 	void HandleSprintReleased();
 	void HandleLeanLeftPressed();

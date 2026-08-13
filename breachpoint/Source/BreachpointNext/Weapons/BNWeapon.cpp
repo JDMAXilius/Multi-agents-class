@@ -30,6 +30,7 @@ void ABNWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetim
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ABNWeapon, RowName);
+	DOREPLIFETIME(ABNWeapon, CurrentAmmo);
 }
 
 void ABNWeapon::SetRowName(FName InRowName)
@@ -75,6 +76,44 @@ void ABNWeapon::ApplyRow()
 	}
 
 	CachedAnimLayerClass = Row->AnimLayerClass.IsNull() ? nullptr : Row->AnimLayerClass.LoadSynchronous();
+
+	// The magazine starts full, on the authority, at the moment the identity is known — a weapon
+	// never exists on the server holding zero rounds it was never meant to have.
+	if (HasAuthority())
+	{
+		CurrentAmmo = Row->MagazineSize;
+	}
+}
+
+int32 ABNWeapon::GetMagazineSize() const
+{
+	const FBNWeaponRow* Row = GetRow();
+	return Row ? Row->MagazineSize : 0;
+}
+
+bool ABNWeapon::ConsumeAmmo(int32 Count)
+{
+	if (!HasAuthority() || !HasAmmo(Count))
+	{
+		return false;
+	}
+
+	CurrentAmmo -= Count;
+	return true;
+}
+
+void ABNWeapon::Reload()
+{
+	if (HasAuthority())
+	{
+		CurrentAmmo = GetMagazineSize();
+	}
+}
+
+void ABNWeapon::OnRep_CurrentAmmo()
+{
+	// The clients' observation point, and behaviourless on purpose this wave: nothing off the
+	// authority writes ammo, so there is no local guess to reconcile. The ammo readout binds here.
 }
 
 FTransform ABNWeapon::GetMuzzleTransform() const
