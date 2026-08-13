@@ -162,3 +162,22 @@ _(terminal session: append the read-back table, what was duplicated, anything ha
   - **Checkpoint I is now the founder's:** spawn holding the rifle, wheel to the pistol and
     back, second window shows the right weapon and pose set. Lean keys will flip tags with no
     visible tilt — expected, per this ticket.
+
+- 13 Aug 2026 (mac terminal) — **§6 follow-on: everything wireable is wired; the FX hookup is
+  ANNOUNCED as needing a C++ surface, per this ticket's own rule.** Read-back:
+  - `IA_FPST_Weapon_Fire` and `IA_FPST_Weapon_Reload` both verified `valueType=Boolean` in-editor
+    → reused, no new IAs. `DA_BNInput` at 11 bindings (+`Input.Weapon.Fire`, `Input.Weapon.Reload`);
+    `IMC_BNNext` at 14 mappings (+LeftMouseButton→Fire, R→Reload), deprecated array still 0.
+  - `DA_BNAbilitySet_Rifle` / `_Pistol` created at `/Game/BN/Data/`, each read back
+    `abilities=[BNGA_Fire↔Input.Weapon.Fire, BNGA_Reload↔Input.Weapon.Reload]`, `effects=[]`,
+    swap NOT included. Both DT rows' `AbilitySet` read back pointing at them.
+  - `FireMontage`/`ReloadMontage` were already on the rows from the DT ticket.
+  - **Niagara muzzle/impact/tracer — announced, stopped:** (a) this MCP server exposes no
+    Niagara toolset, so systems cannot be authored from here; (b) even given systems, the cue
+    classes' `Effect` refs are `EditDefaultsOnly` C++ CDO properties with NO Config surface —
+    nothing persistent can fill them without either `UPROPERTY(Config)` + ini (one-line C++
+    change, forbidden to this ticket) or R26 defaults-only BP children of the cue classes.
+    Founder decision needed. Candidate systems already in the template if reuse is ruled in:
+    `NS_WeaponFire_MuzzleFlash_Rifle`, `NS_ImpactConcrete`, `NS_WeaponFire_Tracer` (its BeamEnd
+    user-param contract UNVERIFIED — the C++ expects user Vector `BeamEnd`).
+    Until ruled, fire/reload run with montages and no FX — cues degrade silently by design.
