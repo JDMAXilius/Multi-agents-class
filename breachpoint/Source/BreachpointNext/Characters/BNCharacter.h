@@ -8,6 +8,7 @@
 #include "BNCharacter.generated.h"
 
 class UCameraComponent;
+class USkeletalMeshComponent;
 struct FOnAttributeChangeData;
 
 UCLASS(Config=Game)
@@ -57,8 +58,15 @@ protected:
 	 *  of the crouch tag; abilities only drive the engine crouch. */
 	FActiveGameplayEffectHandle CrouchStateHandle;
 
+	// The two-mesh FPS standard, per the founder's MyCharacter reference: capsule → camera →
+	// Mesh1P (owner-only arms), while the inherited 3P Mesh is owner-no-see. Same subobject
+	// and property name "Mesh1P" on purpose — a BP child must never create its own (the SCS
+	// naming trap: a BP component may not shadow a parent C++ property).
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UCameraComponent> CameraComponent;
+
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<USkeletalMeshComponent> Mesh1P;
 
 	FDelegateHandle MoveSpeedChangedHandle;
 };

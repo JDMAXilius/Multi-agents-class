@@ -24,6 +24,16 @@ ABNCharacter::ABNCharacter()
 	// The 3P body is everyone else's view of us; the owner sees the 1P arms instead.
 	GetMesh()->SetOwnerNoSee(true);
 
+	// Owner-only arms under the camera, so they follow the view (and inherit the crouch
+	// camera offset — no separate offset ever). Cosmetic only; no asset until arms exist.
+	Mesh1P = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Mesh1P"));
+	Mesh1P->SetupAttachment(CameraComponent);
+	Mesh1P->SetOnlyOwnerSee(true);
+	Mesh1P->bCastDynamicShadow = false;
+	Mesh1P->CastShadow = false;
+	Mesh1P->SetCollisionProfileName(TEXT("NoCollision"));
+	Mesh1P->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
+
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 	GetCharacterMovement()->bCanWalkOffLedgesWhenCrouching = true;
 }
