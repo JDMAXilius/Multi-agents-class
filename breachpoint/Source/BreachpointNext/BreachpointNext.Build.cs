@@ -16,7 +16,9 @@ public class BreachpointNext : ModuleRules
 			"GameplayAbilities",
 			"GameplayTags",
 			"GameplayTasks",
-			"NetCore"
+			"NetCore",
+			// UBNAssetSettings derives UDeveloperSettings, which lives in its own module.
+			"DeveloperSettings"
 		});
 
 		// Every .cpp in this module includes its own header module-root-relative
