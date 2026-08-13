@@ -161,8 +161,6 @@ void UBNAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 		LocalVelocityDirectionAngleWithOffset, CardinalDirectionDeadZone, NativeLocalVelocityDirection, bWasMovingLastUpdate);
 	NativeLocalVelocityDirectionNoOffset = SelectCardinalDirectionFromAngle(
 		LocalVelocityDirectionAngle, CardinalDirectionDeadZone, NativeLocalVelocityDirectionNoOffset, bWasMovingLastUpdate);
-	LocalVelocityDirection = NativeLocalVelocityDirection;
-	LocalVelocityDirectionNoOffset = NativeLocalVelocityDirectionNoOffset;
 	HasVelocity = !FMath::IsNearlyZero(WorldVelocity2D.SizeSquared());
 	bNativeWasMoving = HasVelocity;
 
@@ -236,18 +234,18 @@ void UBNAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 	// ---- gated publish: while the event graph is live it owns these RMW/edge outputs and
 	// repeats the same math on the shared fields; publishing both would double-count.
 	// Shared IsFirstUpdate is NEVER written from native — the graph keeps its own until cleared.
+	// The enum-typed outputs (cardinals + RootYawOffsetMode) have no shared property at all:
+	// they get UENUMs + a graph retype at clear-day, and publish from the private members then.
 	if (bNativeOwnsTurnState)
 	{
 		RootYawOffset = NativeRootYawOffset;
 		AimYaw = -NativeRootYawOffset;
-		RootYawOffsetMode = NativeRootYawOffsetMode;
 		TurnYawCurveValue = NativeTurnYawCurveValue;
 		YawDeltaSinceLastUpdate = NativeYawDeltaSinceLastUpdate;
 		YawDeltaSpeed = NativeYawDeltaSpeed;
 		CrouchStateChange = bNativeCrouchStateChange;
 		LinkedLayerChanged = bNativeLinkedLayerChanged;
 		PivotDirection2D = NativePivotDirection2D;
-		CardinalDirectionFromAcceleration = NativeCardinalFromAcceleration;
 		UpperbodyDynamicAdditiveWeight = NativeUpperbodyAdditiveWeight;
 	}
 

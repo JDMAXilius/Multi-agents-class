@@ -61,17 +61,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
 	double LocalVelocityDirectionAngleWithOffset = 0.0;
 
-	// Cardinal values follow AnimEnum_CardinalDirection (Forward, Backward, Left, Right).
-	// uint8 because the BP variables are typed to an asset enum no native type can name.
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
-	uint8 LocalVelocityDirection = 0;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
-	uint8 LocalVelocityDirectionNoOffset = 0;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
-	uint8 CardinalDirectionFromAcceleration = 0;
-
+	// The enum-typed outputs (LocalVelocityDirection/NoOffset, CardinalDirectionFromAcceleration,
+	// RootYawOffsetMode) have NO published UPROPERTY: the graph's asset-enum pins cannot bind a
+	// byte property. They stay BP-owned until graph-clear day, when they land as UENUMs with the
+	// graph retyped in the same change. Native computes them fully against private members below.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
 	FVector PivotDirection2D = FVector::ZeroVector;
 
@@ -136,10 +129,6 @@ protected:
 	// ---------------------------------------------------------------- root yaw offset / turn in place
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
 	double RootYawOffset = 0.0;
-
-	// Values follow AnimEnum_RootYawOffsetMode (BlendOut, Hold, Accumulate).
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
-	uint8 RootYawOffsetMode = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
 	FVector2D RootYawOffsetAngleClamp = FVector2D(-120.0, 100.0);
