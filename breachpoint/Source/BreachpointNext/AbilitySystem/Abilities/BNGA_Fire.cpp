@@ -113,6 +113,11 @@ void UBNGA_Fire::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 	// path. A rejection therefore consumes nothing and leaves no cooldown stuck: the client never
 	// wrote ammo, and its predicted cooldown GE is keyed to the rejected prediction key, which GAS
 	// discards with the key.
+	// RECORDED, not fixed: the server spends shot 0's round on the ACTIVATION, before any claim
+	// arrives, so a player tap-spamming fire drains their own magazine even if no TargetData ever
+	// follows. Self-harm again — the shot is paid for, it simply produces no hit — and moving the
+	// charge onto the claim would put the cost outside the commit path this packet was told to
+	// keep it in.
 	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
@@ -301,6 +306,10 @@ void UBNGA_Fire::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Ta
 	// The RATE is the server's, not the client's: the shooter owns cadence but cannot beat this
 	// floor, so a client sending a hundred claims in one frame pays for one shot and is ignored
 	// ninety-nine times.
+	// RECORDED, not fixed: this is a wall-clock delta, not a per-claim budget. A client hitch can
+	// queue several honest claims that then dispatch inside one server frame, and every one after
+	// the first is dropped — after the shooter has already seen its own muzzle flash. It only ever
+	// costs the hitching player their own shots, so it is a self-harm, not an exploit.
 	const float Now = World->GetTimeSeconds();
 	if (ShotsJudged > 0 && Row->FireDelay > 0.f && (Now - LastAcceptedShotTime) < Row->FireDelay * BNRateFloorFraction)
 	{
@@ -329,14 +338,20 @@ void UBNGA_Fire::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Ta
 	++ShotsJudged;
 	LastAcceptedShotTime = Now;
 
-	// The server does NOT trust the hit. It re-derives the shot from its own view of the world and
-	// keeps only what that view can account for: no more pellets than the row allows; a real
-	// victim that is neither the shooter nor its own weapon; an impact inside the row's Range of
-	// the SERVER's view point; an impact inside the row's cone off the SERVER's aim direction; and
-	// an impact sitting on the claimed actor's bounds AS THE SERVER SEES THEM, so a client cannot
-	// name a victim it is nowhere near.
-	// KNOWN LIMIT, recorded rather than hidden: there is no lag-compensated rewind this wave, so a
-	// target is judged at its CURRENT server position — a fast mover is forgiving inside tolerance.
+	// The client's TargetData is a CLAIM. The only thing it is allowed to assert is WHICH actor it
+	// hit and roughly where; the server produces the hit itself and everything downstream — impact
+	// point, normal, physical material, actor, cue locations and G5's damage line — is built from
+	// the SERVER's own FHitResult. Nothing client-supplied survives into the authoritative result.
+	//
+	// Order: cheap pre-filters first (pellet count, real victim, range, cone, bounds), then the
+	// server's own line trace along the claimed direction. Without that trace an enemy behind a
+	// wall passes every pre-filter — it is inside the cone, inside range, and the claimed point is
+	// inside its bounds — and the shot would be validated straight through geometry. That is a
+	// wallhack the moment G5 lands damage on this line.
+	//
+	// This is CONFIRMATION, not lag-compensated rewind: the server traces against the world as it
+	// stands now, so the stated limit is unchanged — a target is judged at its CURRENT server
+	// position and a fast mover stays forgiving inside tolerance.
 	FVector ViewLocation;
 	FRotator ViewRotation;
 	if (const APlayerController* PC = ActorInfo->PlayerController.Get())
@@ -354,63 +369,84 @@ void UBNGA_Fire::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Ta
 	const float MaxAngle = FMath::Max(0.f, Row->SpreadAngle) + BNValidationAngleTolerance;
 	const int32 Count = FMath::Min(TargetData.Num(), FMath::Max(1, Row->ShotCount));
 
+	FCollisionQueryParams QueryParams(FName(TEXT("BNWeaponConfirm")), /*bTraceComplex=*/false, Avatar);
+	QueryParams.AddIgnoredActor(Weapon);
+
+	// The validated hit is NOT predicted state, so its cues must not ride the shooter's prediction
+	// key. A multicast carrying that key is skipped on the machine that GENERATED it — which is
+	// exactly the shooter — so tracer and impact would reach every machine except the one that
+	// fired. An explicit empty key makes the multicast reach the shooter too, and it is still the
+	// only execution on any machine because nothing predicts these locally (unlike MuzzleFlash,
+	// which the shooter does predict and therefore must keep on the activation key).
+	FScopedPredictionWindow UnpredictedCues(ASC, FPredictionKey());
+
 	for (int32 Index = 0; Index < Count; ++Index)
 	{
 		const FGameplayAbilityTargetData* Data = TargetData.Get(Index);
-		const FHitResult* Hit = Data ? Data->GetHitResult() : nullptr;
-		if (!Hit)
+		const FHitResult* Claim = Data ? Data->GetHitResult() : nullptr;
+		if (!Claim)
 		{
 			continue;
 		}
 
-		// On a MISS ImpactPoint is (0,0,0) and TraceEnd is the far end of the shot — the tracer
-		// must reach the latter (MyCharacter.cpp:1885-1890 learned this by firing at the sky and
-		// watching the tracer fly to the world origin). Clamped to the server's own range so the
-		// end point is never further than the weapon could reach.
-		FVector TracerEnd = Hit->bBlockingHit ? Hit->ImpactPoint : Hit->TraceEnd;
-		const FVector ToEnd = TracerEnd - ViewLocation;
-		if (ToEnd.SizeSquared() > FMath::Square(MaxRange))
-		{
-			TracerEnd = ViewLocation + ToEnd.GetSafeNormal() * MaxRange;
-		}
-
-		FGameplayCueParameters TracerParams;
-		TracerParams.Location = TracerEnd;
-		TracerParams.Instigator = Avatar;
-		TracerParams.SourceObject = Weapon;
-		K2_ExecuteGameplayCueWithParams(BNTags::GameplayCue_Weapon_Tracer, TracerParams);
-
-		AActor* HitActor = Hit->GetActor();
-		if (!Hit->bBlockingHit || !IsValid(HitActor) || HitActor == Avatar || HitActor == Weapon)
+		// On a MISS ImpactPoint is (0,0,0) and TraceEnd is the far end of the shot — the shot's
+		// direction has to come from the latter (MyCharacter.cpp:1885-1890 learned this by firing
+		// at the sky and watching the tracer fly to the world origin).
+		const FVector ClaimPoint = Claim->bBlockingHit ? Claim->ImpactPoint : Claim->TraceEnd;
+		const FVector ToClaim = ClaimPoint - ViewLocation;
+		if (ToClaim.SizeSquared() > FMath::Square(MaxRange))
 		{
 			continue;
 		}
-
-		const FVector ToImpact = Hit->ImpactPoint - ViewLocation;
-		if (ToImpact.SizeSquared() > FMath::Square(MaxRange))
-		{
-			continue;
-		}
-		const double AimDot = FMath::Clamp(FVector::DotProduct(ToImpact.GetSafeNormal(), ServerAim), -1.0, 1.0);
+		const double AimDot = FMath::Clamp(FVector::DotProduct(ToClaim.GetSafeNormal(), ServerAim), -1.0, 1.0);
 		if (FMath::RadiansToDegrees(FMath::Acos(AimDot)) > MaxAngle)
 		{
 			continue;
 		}
-		if (!HitActor->GetComponentsBoundingBox(true).ExpandBy(BNValidationDistanceTolerance).IsInside(Hit->ImpactPoint))
+
+		// The server's own shot, along the claimed direction, at the row's range, on the same
+		// channel, ignoring the shooter and its weapon. From here on nothing reads Claim except
+		// the ONE thing the client is allowed to assert: which actor it says it hit.
+		FHitResult ServerHit;
+		World->LineTraceSingleByChannel(ServerHit, ViewLocation, ViewLocation + ToClaim.GetSafeNormal() * Row->Range, ECC_Visibility, QueryParams);
+
+		FGameplayCueParameters TracerParams;
+		TracerParams.Location = ServerHit.bBlockingHit ? ServerHit.ImpactPoint : ServerHit.TraceEnd;
+		TracerParams.Instigator = Avatar;
+		TracerParams.SourceObject = Weapon;
+		K2_ExecuteGameplayCueWithParams(BNTags::GameplayCue_Weapon_Tracer, TracerParams);
+
+		// A claimed miss stays a miss: the server does not award a hit the shooter never asserted.
+		AActor* ClaimedActor = Claim->GetActor();
+		if (!Claim->bBlockingHit || !IsValid(ClaimedActor))
 		{
 			continue;
 		}
 
-		UE_LOG(LogBN, Log, TEXT("BNGA_Fire: validated hit — %s hit %s at %s, %.0f uu. No damage this wave; G5 owns the one damage door."),
-			*GetNameSafe(Avatar), *GetNameSafe(HitActor), *Hit->ImpactPoint.ToCompactString(), ToImpact.Size());
+		// The claimed victim must be within its own bounds of the claimed point AS THE SERVER SEES
+		// THEM, and — the check that closes the wall — must be what the server's trace hits FIRST.
+		if (!ClaimedActor->GetComponentsBoundingBox(true).ExpandBy(BNValidationDistanceTolerance).IsInside(ClaimPoint))
+		{
+			continue;
+		}
 
-		// G5's damage call goes HERE and nothing else about this ability changes. No engine damage
-		// API is reachable from this file — there is no second path to unbuild later.
+		AActor* HitActor = ServerHit.GetActor();
+		if (!ServerHit.bBlockingHit || HitActor != ClaimedActor || HitActor == Avatar || HitActor == Weapon)
+		{
+			continue;
+		}
+
+		const float ServerDistance = FVector::Dist(ServerHit.ImpactPoint, ViewLocation);
+		UE_LOG(LogBN, Log, TEXT("BNGA_Fire: validated hit — %s hit %s at %s, %.0f uu. No damage this wave; G5 owns the one damage door."),
+			*GetNameSafe(Avatar), *GetNameSafe(HitActor), *ServerHit.ImpactPoint.ToCompactString(), ServerDistance);
+
+		// G5's damage call goes HERE, against ServerHit and nothing else — no engine damage API is
+		// reachable from this file, so there is no second path to unbuild later.
 
 		FGameplayCueParameters ImpactParams;
-		ImpactParams.Location = Hit->ImpactPoint;
-		ImpactParams.Normal = Hit->ImpactNormal;
-		ImpactParams.PhysicalMaterial = Hit->PhysMaterial.Get();
+		ImpactParams.Location = ServerHit.ImpactPoint;
+		ImpactParams.Normal = ServerHit.ImpactNormal;
+		ImpactParams.PhysicalMaterial = ServerHit.PhysMaterial.Get();
 		ImpactParams.Instigator = Avatar;
 		ImpactParams.SourceObject = Weapon;
 		K2_ExecuteGameplayCueWithParams(BNTags::GameplayCue_Weapon_Impact, ImpactParams);
