@@ -25,7 +25,8 @@ namespace
 
 		// The engine's own console-to-server channel: the server runs the identical command on
 		// its own copy of this controller, which is the machine allowed to move an attribute.
-		PC->ServerCheat(Command);
+		// (ServerExec, not ServerCheat — UE 5.8 removed the latter; same channel, 128-char cap.)
+		PC->ServerExec(Command);
 		return true;
 	}
 }
@@ -36,11 +37,11 @@ void ABNPlayerController::BeginPlay()
 	Super::BeginPlay();
 
 #if !UE_BUILD_SHIPPING
-	// ServerCheat is swallowed unless the SERVER's copy of this controller holds a cheat manager,
-	// and AGameModeBase::AllowCheats says no outside the editor — so a packaged development
-	// listen-server would eat every forwarded lever. Forced here, authority side only; the class
-	// is the engine's plain UCheatManager, because the levers themselves are execs on this
-	// controller and reach ProcessConsoleExec without one.
+	// The forwarded ServerExec runs ConsoleCommand on the server's copy of this controller, and
+	// this controller's own exec levers reach ProcessConsoleExec without a cheat manager — but
+	// the engine's stock cheats (God, etc.) still need one, and AGameModeBase::AllowCheats says
+	// no outside the editor, so a packaged development listen-server would eat those. Forced
+	// here, authority side only; the class is the engine's plain UCheatManager.
 	if (HasAuthority() && !CheatManager)
 	{
 		AddCheats(true);

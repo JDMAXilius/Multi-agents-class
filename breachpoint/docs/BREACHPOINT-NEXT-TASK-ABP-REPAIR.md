@@ -195,3 +195,10 @@ with it.
   Rung 1 measured this session: BreachpointEditor FAIL, Breachpoint FAIL (this one error
   only), BreachpointServer expected-PARTIAL (Launcher install). Everything else, including
   the Wave-4/5 GAS work and the landed TargetData listener, compiles.
+- 13 Aug 2026 (mac terminal, closing) — founder authorized a second extension
+  (`Match/BNPlayerController.cpp` only) after ruling reversed: the editor could not open on a
+  red Editor target. `ServerCheat` → `ServerExec` landed (same channel in 5.8, 128-char cap),
+  BeginPlay's cheat-manager comment corrected to the ServerExec mechanism. Measured:
+  BreachpointEditor PASS, Breachpoint PASS, BreachpointServer not runnable on a Launcher
+  install — PARTIAL by the ladder's own rule, not rung 1. "Compiles" rung only; nothing above
+  it is claimed. Founder testing the build in person.

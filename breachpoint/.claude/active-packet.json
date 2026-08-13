@@ -5,7 +5,8 @@
     "Config/DefaultGame.ini",
     "Tools/bn/45_bn_anim_layers.py",
     "docs/BREACHPOINT-NEXT-TASK-ABP-REPAIR.md",
-    "Source/BreachpointNext/AbilitySystem/"
+    "Source/BreachpointNext/AbilitySystem/",
+    "Source/BreachpointNext/Match/BNPlayerController.cpp"
   ],
   "binary_locks": [
     "Content/BN/Animation/ABP_BNItemAnimLayersBase.uasset",
