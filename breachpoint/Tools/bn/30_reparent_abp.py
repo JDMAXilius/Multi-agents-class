@@ -129,10 +129,17 @@ def _type_proof(pintype, cpp_value):
             sub = pintype.get_editor_property("pin_sub_category_object")
         except Exception:
             pass
-        if cat in ("struct", "byte", "enum") and sub is not None:
-            subname = sub.get_name()
-            # Python strips the E prefix from enum type names (EFoo -> Foo).
-            return subname == vtype or subname == "E" + vtype
+        # THE FOUNDER'S RULING, 13 Aug 2026: enum variables stay BP-owned until
+        # graph-clear day (the UENUM port and the graph retype land together).
+        # A uint8 C++ property can hold the value, but enum-typed graph nodes
+        # (Equal (Enum), enum defaults like 'NewEnumerator2') cannot bind a byte
+        # property - byte-vs-enum is NEVER a match. Any enum pin (asset enum or
+        # otherwise) is permanently excluded from absorption/deletion here; the
+        # 35_repair_abp.py restore exists because this exclusion once didn't.
+        if cat == "enum" or (cat == "byte" and sub is not None):
+            return False
+        if cat == "struct" and sub is not None:
+            return sub.get_name() == vtype
     except Exception:
         return False
     return False  # object/class refs: a None default proves nothing - needs decision
