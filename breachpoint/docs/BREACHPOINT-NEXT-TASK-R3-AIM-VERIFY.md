@@ -1,4 +1,5 @@
 # TICKET — R3 aim: verify the ABP consumes `Pitch`, then the FX assets
+> STATUS: in-progress — mac terminal 13 Aug 2026 (ad6d383). Claimed on the founder's 'yes pick it up'; building first (BNAnimInstance changed at ad6d383), then editor+MCP.
 
 **Cut:** 13 August 2026 by the cloud lead · **For:** the terminal session (editor + MCP)
 **Binds to:** the NEXT doc family. **Read [`BREACHPOINT-NEXT-ASSET-RULES.md`](BREACHPOINT-NEXT-ASSET-RULES.md) FIRST** —
