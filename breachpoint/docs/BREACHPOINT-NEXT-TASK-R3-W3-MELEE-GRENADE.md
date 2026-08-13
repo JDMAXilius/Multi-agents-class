@@ -47,24 +47,39 @@ audible either way. Filling these is what makes the pistol sound like a pistol.
 
 Per ASSET-RULES §3: `UBNGA_Melee` and `UBNGA_Grenade` are C++ classes, granted in
 `ABNPlayerState::GrantDefaults`. They are **not** in either `DA_BNAbilitySet` and must not be added
-— two grants means two specs. The grenade actor is `BP_FPST_Grenade`, referenced from
-`DefaultGame.ini`, not copied.
+— two grants means two specs.
+
+**The grenade actor is `ABNProjectile`, a C++ class — NOT `BP_FPST_Grenade`.** That changed after
+the first pass, on purity law 3: *"the engine damage API is BANNED … Radial = our own overlap query
+→ per-target GE application."* A template Blueprint grenade explodes through `ApplyRadialDamage`,
+which would have been a second damage pipeline bypassing attributes, shields and death — damage
+`BNDamage` never logged and GAS never saw. `ABNProjectile` does the contract's own prescription
+instead, and still wears the template's art (`SM_grenade`, `NS_Grenade_Trail`,
+`NS_Grenade_Explosion`, `MSS_Explosions_Grenade`), all soft-referenced from `DefaultGame.ini`.
+
+Nothing in the editor is needed for the grenade at all — no Blueprint, no asset. Its tuning
+(fuse 3s, 90 damage, 150/500 radii, line-of-sight on) is ini.
 
 ## How to test
 
 **Stage A, standalone PIE:**
 - **V** — the weapon swings. The connect lands in the montage's `AN_FPST_Melee` notify window, not
   on the press, so damage arrives a beat after the key. Impact FX and a decal appear on what you hit.
-- **G** — a grenade leaves the hand ~0.2s after the press and flies where you were **looking**,
-  not where the body faced.
-- Log lines to expect: `BNGA_Melee: validated connect — … for 40` and `BNGA_Grenade: … threw …`.
+- **G** — a grenade leaves the hand ~0.2s after the press, flies where you were **looking**,
+  bounces, and detonates on a 3s fuse with FX and a bang.
+- Log lines to expect: `BNGA_Melee: validated connect — … for 40`, `BNGA_Grenade: … threw …`,
+  and one `BNProjectile: blast — <target> for <damage> at <distance>uu` **per target hit**.
+- **Stand behind cover next to a grenade** — the blast should not reach you. Line-of-sight is on.
 
 **Stage B, listen server + client — this is the one that counts:**
 - Melee from the CLIENT: the host must see the swing animation and the victim must lose health on
   the **server's** judgement. A connect the server's own trace does not confirm is rejected
   silently (by design — that is the wallhack close).
 - Grenade from the CLIENT: the projectile is the server's alone, so it appears on both windows
-  from one spawn. If it appears on only one, that is a finding.
+  from one spawn and bounces the same way on both. If it appears on only one, that is a finding.
+- Grenade damage on the CLIENT: every point of blast damage is the server's. Throw one at the host
+  from a client window and watch the host's health — and the `BNProjectile: blast` line, which
+  should appear on the **server's** log only.
 - Melee across a **weapon swap**: it must still work, because it is granted by the PlayerState,
   not by the weapon.
 

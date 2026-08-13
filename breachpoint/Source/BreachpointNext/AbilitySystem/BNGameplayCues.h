@@ -132,6 +132,26 @@ protected:
 	TSoftObjectPtr<UFXSystemAsset> Effect;
 };
 
+UCLASS(Config = Game, meta = (DisplayName = "GC_BN_Grenade_Explode"))
+class BREACHPOINTNEXT_API UBNGameplayCue_Explosion : public UBNGameplayCue_Base
+{
+	GENERATED_BODY()
+
+public:
+	virtual FGameplayTag GetHandledCueTag() const override;
+	virtual bool OnExecute_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters) const override;
+
+protected:
+
+	/** The bang. Spawned at the blast's own location, NOT at the target — the projectile is gone by
+	 *  the time this runs, so Parameters.Location is the only record of where it went off. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Cue")
+	TSoftObjectPtr<UFXSystemAsset> Effect;
+
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Cue")
+	TSoftObjectPtr<USoundBase> Sound;
+};
+
 /**
  * Native cue handlers are NOT discovered on their own: UGameplayCueManager builds its runtime set
  * by scanning CONTENT paths for cue assets, and a C++ class lives in no content path. Without this

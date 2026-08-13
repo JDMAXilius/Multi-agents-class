@@ -1,0 +1,94 @@
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GameFramework/Actor.h"
+#include "Engine/TimerHandle.h"
+#include "BNProjectile.generated.h"
+
+class UFXSystemAsset;
+class UProjectileMovementComponent;
+class USphereComponent;
+class UStaticMesh;
+class UStaticMeshComponent;
+
+/**
+ * The thrown grenade, in C++, and it exists for exactly one reason: purity law 3.
+ *
+ * The template's `BP_FPST_Grenade` is a Blueprint whose explosion is (almost certainly) the engine
+ * damage API — `ApplyRadialDamage` — which the contract BANS outright. Spawning it would have
+ * imported a second damage pipeline that bypasses attributes, shields and death entirely: damage
+ * that BNDamage never logged and GAS never saw. The contract names the cure in the same breath —
+ * *"Radial = our own overlap query -> per-target GE application"* — and this is that query.
+ *
+ * Multiplayer: the projectile is the SERVER'S. It replicates its movement, so every machine watches
+ * one simulation rather than guessing at its own; the fuse, the overlap and every point of damage
+ * are authority-only. Nothing here is predicted, which is the same call UBNGA_Grenade makes and for
+ * the same reason — two simulated projectiles diverge on the first bounce with nothing to
+ * reconcile them.
+ *
+ * Every asset it wears is the template's, referenced through Config: SM_grenade, NS_Grenade_Trail,
+ * and the explosion cue's own NS_Grenade_Explosion + MSS_Explosions_Grenade.
+ */
+UCLASS(Config = Game)
+class BREACHPOINTNEXT_API ABNProjectile : public AActor
+{
+	GENERATED_BODY()
+
+public:
+	ABNProjectile();
+
+	/** The thrower's aim, applied as launch velocity. Authority only — called by UBNGA_Grenade
+	 *  immediately after spawn, before the fuse can matter. */
+	void Launch(const FVector& Direction);
+
+protected:
+	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+	/** Authority only. Overlap, dedupe, line-of-sight, falloff, one GE per survivor. */
+	void Explode();
+
+	UPROPERTY(VisibleAnywhere, Category = "BN|Projectile")
+	TObjectPtr<USphereComponent> CollisionComponent;
+
+	UPROPERTY(VisibleAnywhere, Category = "BN|Projectile")
+	TObjectPtr<UStaticMeshComponent> MeshComponent;
+
+	UPROPERTY(VisibleAnywhere, Category = "BN|Projectile")
+	TObjectPtr<UProjectileMovementComponent> ProjectileMovement;
+
+	// ---------------------------------------------------------------- tuning, all Config
+	/** Seconds from leaving the hand to the bang. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Projectile")
+	float FuseTime = 3.f;
+
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Projectile")
+	float LaunchSpeed = 1600.f;
+
+	/** Full damage inside InnerRadius, falling linearly to zero at Radius. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Projectile")
+	float Damage = 90.f;
+
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Projectile")
+	float InnerRadius = 150.f;
+
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Projectile")
+	float Radius = 500.f;
+
+	/** A wall stops a blast. Server-side, same discipline as the fire confirm trace — without it
+	 *  a grenade on the far side of cover kills through it. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Projectile")
+	bool bRequireLineOfSight = true;
+
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Projectile")
+	float Bounciness = 0.3f;
+
+	// ---------------------------------------------------------------- assets, all template, soft
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Projectile")
+	TSoftObjectPtr<UStaticMesh> Mesh;
+
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Projectile")
+	TSoftObjectPtr<UFXSystemAsset> TrailEffect;
+
+	FTimerHandle FuseTimer;
+};

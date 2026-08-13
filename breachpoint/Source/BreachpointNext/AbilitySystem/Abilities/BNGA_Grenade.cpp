@@ -1,6 +1,7 @@
 #include "AbilitySystem/Abilities/BNGA_Grenade.h"
 
 #include "BreachpointNext.h"
+#include "Weapons/BNProjectile.h"
 #include "AbilitySystemComponent.h"
 #include "Animation/AnimMontage.h"
 #include "Engine/World.h"
@@ -65,11 +66,15 @@ void UBNGA_Grenade::SpawnGrenade()
 		return;
 	}
 
-	UClass* Class = GrenadeClass.IsNull() ? nullptr : GrenadeClass.LoadSynchronous();
+	// Defaults to ABNProjectile — BN's own C++ grenade. It is NOT the template's BP_FPST_Grenade,
+	// and that is purity law 3: a Blueprint grenade explodes through ApplyRadialDamage, the banned
+	// engine damage API, which would be a second damage pipeline bypassing attributes, shields and
+	// death. ABNProjectile does the contract's own prescription instead — overlap query, one GE per
+	// target through BNDamage. It still WEARS the template's assets (SM_grenade, NS_Grenade_Trail).
+	UClass* Class = GrenadeClass.IsNull() ? ABNProjectile::StaticClass() : GrenadeClass.LoadSynchronous();
 	if (!Class)
 	{
-		UE_LOG(LogBN, Warning, TEXT("BNGA_Grenade: GrenadeClass is unset or failed to load — nothing thrown. "
-			"Set it under [/Script/BreachpointNext.BNGA_Grenade] in DefaultGame.ini."));
+		UE_LOG(LogBN, Warning, TEXT("BNGA_Grenade: GrenadeClass is set but failed to load — nothing thrown."));
 		return;
 	}
 
@@ -86,7 +91,17 @@ void UBNGA_Grenade::SpawnGrenade()
 	Params.Owner = Avatar;
 	Params.Instigator = Avatar;
 
-	AActor* Grenade = World->SpawnActor<AActor>(Class, FTransform(Avatar->GetBaseAimRotation(), Origin), Params);
+	const FRotator ThrowRotation = Avatar->GetBaseAimRotation();
+	AActor* Grenade = World->SpawnActor<AActor>(Class, FTransform(ThrowRotation, Origin), Params);
+
+	// Launched after the spawn rather than through the transform: a projectile movement component
+	// reads its velocity, not its rotation, and a grenade spawned facing the right way with zero
+	// speed simply drops at the thrower's feet.
+	if (ABNProjectile* Projectile = Cast<ABNProjectile>(Grenade))
+	{
+		Projectile->Launch(ThrowRotation.Vector());
+	}
+
 	UE_LOG(LogBN, Log, TEXT("BNGA_Grenade: %s threw %s."), *GetNameSafe(Avatar), *GetNameSafe(Grenade));
 }
 

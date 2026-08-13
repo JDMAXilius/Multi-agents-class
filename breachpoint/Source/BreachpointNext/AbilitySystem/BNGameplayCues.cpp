@@ -148,6 +148,24 @@ bool UBNGameplayCue_Impact::OnExecute_Implementation(AActor* MyTarget, const FGa
 	return true;
 }
 
+FGameplayTag UBNGameplayCue_Explosion::GetHandledCueTag() const
+{
+	return BNTags::GameplayCue_Grenade_Explode;
+}
+
+bool UBNGameplayCue_Explosion::OnExecute_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters) const
+{
+	// NOT ResolveMuzzle: the source object is the projectile, which the authority has already
+	// destroyed by the time this reaches a client. Parameters.Location is the blast's own record.
+	SpawnAt(MyTarget, Resolve(Effect), Parameters.Location, FRotator::ZeroRotator);
+
+	if (USoundBase* Loaded = Sound.IsNull() ? nullptr : Sound.LoadSynchronous())
+	{
+		UGameplayStatics::PlaySoundAtLocation(MyTarget, Loaded, Parameters.Location);
+	}
+	return true;
+}
+
 FGameplayTag UBNGameplayCue_Tracer::GetHandledCueTag() const
 {
 	return BNTags::GameplayCue_Weapon_Tracer;
