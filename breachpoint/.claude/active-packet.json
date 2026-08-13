@@ -4,11 +4,12 @@
     "Content/BN/Animation/",
     "Config/DefaultGame.ini",
     "Tools/bn/45_bn_anim_layers.py",
-    "docs/BREACHPOINT-NEXT-TASK-ABP-REPAIR.md"
+    "docs/BREACHPOINT-NEXT-TASK-ABP-REPAIR.md",
+    "Source/BreachpointNext/AbilitySystem/"
   ],
   "binary_locks": [
     "Content/BN/Animation/ABP_BNItemAnimLayersBase.uasset",
     "Content/BN/Animation/ABP_BNUnarmedAnimLayers.uasset"
   ],
-  "authorized_by": "founder, 13 Aug 2026 - 'what is next' then 'yes, fix the script'. Supersedes the R1 compile-repair claim, whose work landed at ffb1f2d and whose owner_path (Source/BreachpointNext/) covers none of the paths this task writes. The task doc declares owner_path Content/BN/Animation/ + Config/DefaultGame.ini; Tools/bn/45_bn_anim_layers.py is an EXTENSION granted directly by the founder after review found the script's cast-target resolution contradicts the correction landed at a3efbf8. The task doc is included so the audit can be pasted into its ## Log, which the task's own 'Done means' requires."
+  "authorized_by": "founder, 13 Aug 2026 - 'what is next' then 'yes, fix the script'. Supersedes the R1 compile-repair claim, whose work landed at ffb1f2d and whose owner_path (Source/BreachpointNext/) covers none of the paths this task writes. The task doc declares owner_path Content/BN/Animation/ + Config/DefaultGame.ini; Tools/bn/45_bn_anim_layers.py is an EXTENSION granted directly by the founder after review found the script's cast-target resolution contradicts the correction landed at a3efbf8. The task doc is included so the audit can be pasted into its ## Log, which the task's own 'Done means' requires. Source/BreachpointNext/AbilitySystem/ is a SECOND founder-granted EXTENSION (13 Aug 2026, this session): R2-G4's BNGA_Fire.cpp includes AbilityTask_ServerWaitClientTargetData.h, an ActionRPG-sample class the cloud session referenced but never wrote, so rung 1 fails on all three targets; the repair is the missing task class plus the corrected include."
 }

@@ -10,7 +10,7 @@
 #include "Weapons/BNWeapon.h"
 #include "AbilitySystemComponent.h"
 #include "Abilities/GameplayAbilityTargetTypes.h"
-#include "Abilities/Tasks/AbilityTask_ServerWaitClientTargetData.h"
+#include "AbilitySystem/Tasks/BNAbilityTask_ServerWaitClientTargetData.h"
 #include "Abilities/Tasks/AbilityTask_WaitInputRelease.h"
 #include "Animation/AnimMontage.h"
 #include "CollisionQueryParams.h"
@@ -145,7 +145,7 @@ void UBNGA_Fire::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 		// the wait task while the claim was still in flight and throw every Single shot away.
 		// The backstop if the shooter never ends it: UBNEquipmentComponent::EndPlay revokes the
 		// weapon's set on pawn destruction, and clearing the spec cancels this instance.
-		UAbilityTask_ServerWaitClientTargetData* Wait = UAbilityTask_ServerWaitClientTargetData::ServerWaitForClientTargetData(this, NAME_None, /*TriggerOnce=*/false);
+		UBNAbilityTask_ServerWaitClientTargetData* Wait = UBNAbilityTask_ServerWaitClientTargetData::ServerWaitForClientTargetData(this, NAME_None, /*TriggerOnce=*/false);
 		Wait->ValidData.AddDynamic(this, &UBNGA_Fire::OnTargetDataReceived);
 		Wait->ReadyForActivation();
 

@@ -176,3 +176,16 @@ with it.
   unrun.
 - Carried forward: the stiff-arms defect above, the `FPSTemplate/` read-only reconciliation, the
   fate of `ABP_BNMannequin.uasset`, and the owed listen+client verification.
+- 13 Aug 2026 (mac terminal) — **contract_gap, filed against the R2-G4 fire/cheat packet.**
+  Rung 1 found two compile breaks in the pulled R2-G4 work (committed from a cloud session
+  with no engine):
+  1. `BNGA_Fire.cpp` included `Abilities/Tasks/AbilityTask_ServerWaitClientTargetData.h` — an
+     ActionRPG-sample class the engine does not ship. FIXED under a founder-granted extension
+     (`Source/BreachpointNext/AbilitySystem/`): new `UBNAbilityTask_ServerWaitClientTargetData`
+     in `AbilitySystem/Tasks/`, include + call site corrected.
+  2. `BNCheatManager.cpp:23` calls `APlayerController::ServerCheat`, which UE 5.8 removed
+     (`ServerExec` is the replacement channel). NOT fixed — `Utilities/` is outside this
+     packet's owner_path, the guard blocked the write, and the founder ruled "stop here".
+     **Rung 1 stays RED until the R2-G4 owner lands the one-line `ServerExec` swap.**
+  3. `BreachpointServer` cannot link on this Launcher install — expected PARTIAL per
+     `run-ubt.sh`, not a defect.
