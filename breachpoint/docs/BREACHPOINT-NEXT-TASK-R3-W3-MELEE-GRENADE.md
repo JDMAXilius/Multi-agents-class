@@ -7,17 +7,34 @@ never author) and §5 (do only what is listed) govern this.
 The C++ is landed and complete. **Nothing below creates an asset** — every asset named already
 exists. Six edits to three existing assets, then melee and grenade are live.
 
-## 1. Input — four rows, two assets, zero new files
+## 1. Input — two new BN assets, then four rows
 
-Both InputActions already exist and are reused in place (§2: existing assets are referenced, never
-copied into `/Game/BN/`).
+**CORRECTED 13 Aug (founder: "all assets are in the FPSTemplate folder").** An earlier version of
+this ticket pointed at `/Game/Input/Actions/IA_Melee` and `IA_Grenade`. Those exist, but they are
+**outside FPSTemplate** — leftovers from a different template in the project. They are not ours to
+use.
+
+`/Game/FPSTemplate/Input/Actions/` ships only Aim, Crouch, Jump, Look, Move, Sprint, Weapon_Fire and
+Weapon_Reload. **There is no melee or grenade InputAction in the template**, so ASSET-RULES §4's
+second clause applies — *"reuse a template `IA_*` when its value type matches; create a BN-owned one
+otherwise."*
+
+Create two, in `/Game/BN/Input/`, alongside the four BN input assets already there
+(`IA_BNWeaponNext`, `IA_BNWeaponPrevious`, `IA_BN_LeanLeft`, `IA_BN_LeanRight`):
+
+| Create | Value type |
+|---|---|
+| `IA_BN_Melee` | Digital (bool) — same shape as `IA_BN_LeanLeft` |
+| `IA_BN_Grenade` | Digital (bool) |
+
+Then the four rows:
 
 | Asset | Add |
 |---|---|
-| `DA_BNInput` | row: tag `Input.Melee` → `/Game/Input/Actions/IA_Melee` |
-| `DA_BNInput` | row: tag `Input.Grenade` → `/Game/Input/Actions/IA_Grenade` |
-| `IMC_BNNext` | mapping: `IA_Melee` → **V** (the reference used F; V avoids the crouch row) |
-| `IMC_BNNext` | mapping: `IA_Grenade` → **G** (the reference's key, `MyCharacter.cpp:856`) |
+| `DA_BNInput` | row: tag `Input.Melee` → `IA_BN_Melee` |
+| `DA_BNInput` | row: tag `Input.Grenade` → `IA_BN_Grenade` |
+| `IMC_BNNext` | mapping: `IA_BN_Melee` → **V** (the reference used F; V avoids the crouch row) |
+| `IMC_BNNext` | mapping: `IA_BN_Grenade` → **G** (the reference's key, `MyCharacter.cpp:856`) |
 
 Until these exist, both bindings log *"that control is dead"* every run. That is the announcement
 being loud on purpose — the abilities are granted and reachable the moment the rows land.

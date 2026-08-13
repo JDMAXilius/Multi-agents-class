@@ -16,6 +16,30 @@ ships the effects, sounds, weapons, meshes, montages and animations. **Use them.
   nothing suitable exists — and then say so explicitly in the Log, naming what you searched.
 - Initiative that produces a redundant asset is not initiative; it is a second source of truth.
 
+### 1b. There are exactly TWO places an asset may come from
+
+**Founder, 13 Aug 2026: "all assets are in the FPSTemplate folder — remember that."**
+
+`Content/` also holds `Characters/`, `MigrateLyra/`, `Input/`, `UI/`, `Variant_Shooter/`,
+`Variant_Horror/`, `FirstPerson/` — leftovers from other templates the project was built over.
+Several of them hold **same-named duplicates** of FPSTemplate assets: `ABP_Mannequin_Base` exists
+in three places, `AM_MM_Rifle_Melee` in three, `IA_Fire` in three.
+
+| Source | Verdict |
+|---|---|
+| `/Game/FPSTemplate/…` | **The** content source. Reference in place. |
+| `/Game/BN/…` | Ours, for what the template does not have. |
+| Anything else | **Not ours.** Not a fallback, not "close enough" — a different template's leftovers. |
+
+A duplicate outside FPSTemplate is not a convenience; it is the wrong copy of the right asset, and
+picking it produces a bug that looks like the asset is broken. **When a search returns several
+matches, the FPSTemplate one is the answer** — and if FPSTemplate has none, the answer is a BN-owned
+asset, never the leftover.
+
+*This rule was written because a ticket got it wrong: the melee/grenade handoff pointed at
+`/Game/Input/Actions/IA_Melee`, which is not FPSTemplate's. FPSTemplate ships no melee InputAction
+at all, so the correct answer was a BN-owned one.*
+
 ## 2. Where a new asset goes — and when it should not move
 
 | Case | Rule |
