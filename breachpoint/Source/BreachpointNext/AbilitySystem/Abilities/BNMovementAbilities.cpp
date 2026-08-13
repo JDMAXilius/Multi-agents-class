@@ -21,15 +21,19 @@ void UBNGA_Jump::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 		return;
 	}
 
-	// The founder's verified jump: uncrouch first, then jump.
-	const bool bWasCrouched = Character->bIsCrouched;
-	if (bWasCrouched)
+	// The founder's verified jump: uncrouch first, then jump. IMMEDIATE, not the deferred
+	// bWantsToCrouch request — CMC->UnCrouch(false) resizes the capsule now (encroachment-
+	// checked, fires OnEndCrouch so the character drops the tag), so the CanJump() gate sees
+	// the real answer this tick; blocked overhead leaves bIsCrouched true and the gate refuses.
+	if (Character->bIsCrouched)
 	{
-		Character->UnCrouch();
+		if (UCharacterMovementComponent* Move = Character->GetCharacterMovement())
+		{
+			Move->bWantsToCrouch = false;
+			Move->UnCrouch(false);
+		}
 	}
-	// CanJump() still sees bIsCrouched until the CMC's next update clears it, so the gate is
-	// skipped on the uncrouch path — Jump() self-gates in CheckJumpInput.
-	if (!bWasCrouched && !Character->CanJump())
+	if (!Character->CanJump())
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
