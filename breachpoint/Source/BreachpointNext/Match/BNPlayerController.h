@@ -34,6 +34,21 @@ public:
 	UFUNCTION(Exec)
 	void BNRefill();
 
+	// The aim probe and its two levers. Purely local and purely cosmetic — the anim instance is a
+	// per-machine object, so none of these forward to the server and none of them touch gameplay
+	// state. They exist because the bone-space axis is a MEASURED property of the rig that no
+	// amount of reading the source settles, and a rebuild per guess is the wrong price.
+	UFUNCTION(Exec)
+	void BNAimDebug();
+
+	/** 0 Roll · 1 Pitch · 2 Yaw — the axis that bends the spine up/down. */
+	UFUNCTION(Exec)
+	void BNAimAxis(int32 Axis);
+
+	/** 0 Roll · 1 Pitch · 2 Yaw — the axis that tips the torso sideways. */
+	UFUNCTION(Exec)
+	void BNLeanAxis(int32 Axis);
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;

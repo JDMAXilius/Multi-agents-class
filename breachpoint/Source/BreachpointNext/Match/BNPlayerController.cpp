@@ -7,6 +7,9 @@
 #include "AbilitySystem/Attributes/BNAttributeSet.h"
 #include "AbilitySystem/Effects/BNDamage.h"
 #include "Match/BNPlayerState.h"
+#include "Animation/BNAnimInstance.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "GameFramework/Character.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "InputMappingContext.h"
@@ -99,6 +102,67 @@ void ABNPlayerController::BNRefill()
 	if (ABNPlayerState* PS = GetPlayerState<ABNPlayerState>())
 	{
 		PS->ApplyInitAttributes();
+	}
+#endif
+}
+
+#if !UE_BUILD_SHIPPING
+namespace
+{
+	/** The anim instance this machine renders for the local pawn. Local by design: an anim
+	 *  instance is per-machine, so there is nothing here for the server to own. */
+	UBNAnimInstance* BNLocalAnimInstance(const APlayerController* PC)
+	{
+		const ACharacter* Char = PC ? Cast<ACharacter>(PC->GetPawn()) : nullptr;
+		const USkeletalMeshComponent* MeshComp = Char ? Char->GetMesh() : nullptr;
+		return MeshComp ? Cast<UBNAnimInstance>(MeshComp->GetAnimInstance()) : nullptr;
+	}
+
+	EBNSpineAxis BNAxisFromIndex(int32 Axis)
+	{
+		switch (Axis)
+		{
+		case 1:  return EBNSpineAxis::Pitch;
+		case 2:  return EBNSpineAxis::Yaw;
+		default: return EBNSpineAxis::Roll;
+		}
+	}
+}
+#endif
+
+void ABNPlayerController::BNAimDebug()
+{
+#if !UE_BUILD_SHIPPING
+	UBNAnimInstance* Anim = BNLocalAnimInstance(this);
+	if (!Anim)
+	{
+		UE_LOG(LogBreachpointNext, Warning,
+			TEXT("BNAimDebug: no UBNAnimInstance on the local pawn's mesh — either the pawn is not "
+				 "possessed yet or the mesh's ABP does not inherit UBNAnimInstance."));
+		return;
+	}
+	UE_LOG(LogBreachpointNext, Log, TEXT("%s"), *Anim->DescribeAimState());
+#endif
+}
+
+void ABNPlayerController::BNAimAxis(int32 Axis)
+{
+#if !UE_BUILD_SHIPPING
+	if (UBNAnimInstance* Anim = BNLocalAnimInstance(this))
+	{
+		Anim->SetAimPitchAxis(BNAxisFromIndex(Axis));
+		UE_LOG(LogBreachpointNext, Log, TEXT("%s"), *Anim->DescribeAimState());
+	}
+#endif
+}
+
+void ABNPlayerController::BNLeanAxis(int32 Axis)
+{
+#if !UE_BUILD_SHIPPING
+	if (UBNAnimInstance* Anim = BNLocalAnimInstance(this))
+	{
+		Anim->SetLeanAxis(BNAxisFromIndex(Axis));
+		UE_LOG(LogBreachpointNext, Log, TEXT("%s"), *Anim->DescribeAimState());
 	}
 #endif
 }

@@ -78,6 +78,13 @@ protected:
 
 	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Cue")
 	TSoftObjectPtr<UFXSystemAsset> Effect;
+
+	/** The gunshot. There was no sound field on this cue at all, which is the whole reason the
+	 *  weapon has been silent while reload and footsteps were audible — those ride montage and
+	 *  locomotion anim notifies, which never went through a cue. Attached to the muzzle rather
+	 *  than played at a world location so it follows a moving shooter. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Cue")
+	TSoftObjectPtr<USoundBase> Sound;
 };
 
 UCLASS(Config = Game, meta = (DisplayName = "GC_BN_Weapon_Impact"))

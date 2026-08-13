@@ -11,6 +11,35 @@ class UCharacterMovementComponent;
 class UAbilitySystemComponent;
 
 /**
+ * Which component of a BONE-SPACE rotator carries an angle.
+ *
+ * The aim and lean chains are Transform(Modify)Bone nodes running in bone space on spine_01..05
+ * plus the neck and head. A spine bone's local axes are NOT the world's, so "pitch the torso up"
+ * is not FRotator::Pitch — on this skeleton it is Roll, which is why the asset's own graph builds
+ * the aim rotator as MakeRotator(Pitch) into the FIRST pin. This is a measured property of the
+ * Manny rig, not a derivable one, so it is data: BNAimAxis / BNLeanAxis flip it live in PIE
+ * rather than costing a rebuild per guess.
+ */
+UENUM()
+enum class EBNSpineAxis : uint8
+{
+	Roll  UMETA(DisplayName = "Roll (X)"),
+	Pitch UMETA(DisplayName = "Pitch (Y)"),
+	Yaw   UMETA(DisplayName = "Yaw (Z)")
+};
+
+/** One angle on one axis; every other component stays zero. */
+FORCEINLINE FRotator BNMakeAxisRotator(EBNSpineAxis Axis, double Degrees)
+{
+	switch (Axis)
+	{
+	case EBNSpineAxis::Pitch: return FRotator(Degrees, 0.0, 0.0);
+	case EBNSpineAxis::Yaw:   return FRotator(0.0, Degrees, 0.0);
+	default:                  return FRotator(0.0, 0.0, Degrees);
+	}
+}
+
+/**
  * The mannequin ABP's per-frame brain, ported from the ABP_Mannequin_Base record so the
  * duplicate's event graph can be cleared. Two passes, never mixed: NativeUpdateAnimation
  * (game thread) snapshots UObject state; NativeThreadSafeUpdateAnimation (worker) is the
@@ -32,6 +61,15 @@ public:
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 	virtual void NativeThreadSafeUpdateAnimation(float DeltaSeconds) override;
 	virtual void NativeUninitializeAnimation() override;
+
+	/** The PIE probe R3 has been owed since the aim chain went dark: one line naming every value
+	 *  in the chain, so "the pose does not move" stops being a guess about which link is zero. */
+	FString DescribeAimState() const;
+
+	/** Live axis flips for the founder's playtest — the bone-space answer is measured, not
+	 *  derived, and a rebuild per guess is the wrong price. */
+	void SetAimPitchAxis(EBNSpineAxis Axis) { AimPitchAxis = Axis; }
+	void SetLeanAxis(EBNSpineAxis Axis) { LeanAxis = Axis; }
 
 protected:
 	// false = the live event graph owns the RMW/edge accumulator outputs (today); true = C++
@@ -139,6 +177,21 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
 	bool bFPSMode = false;
 
+	/** THE aim property. The linked aim layers (FSP_FullBody_Aiming_Pitch_FPS_Upper/_Neck) do not
+	 *  read `Pitch` — their ModifyBone rotation pins bind to `GetMainAnimBPThreadSafe.PitchRotator`,
+	 *  and until now nothing in C++ declared it. The asset's UpdateRotationData built it from
+	 *  `Pitch`, but that is a Blueprint hop BN cannot verify from source and evidently is not
+	 *  landing; writing the rotator directly removes the hop. `Pitch` stays published because the
+	 *  asset's own graph still reads it, so both halves agree either way. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	FRotator PitchRotator = FRotator::ZeroRotator;
+
+	/** Bone-space axis that bends the spine up/down. Roll is the asset's own answer (its
+	 *  MakeRotator(Pitch) fills pin 1); flip live with `BNAimAxis 0|1|2` if the torso bends
+	 *  the wrong way. */
+	UPROPERTY(EditAnywhere, Category = "BN")
+	EBNSpineAxis AimPitchAxis = EBNSpineAxis::Roll;
+
 	UPROPERTY(EditAnywhere, Category = "BN")
 	FVector2D AimPitchClamp = FVector2D(-90.0, 90.0);
 
@@ -155,6 +208,13 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
 	FRotator LeanOppRotation = FRotator::ZeroRotator;
+
+	/** Bone-space axis that tips the torso sideways — a DIFFERENT axis from the aim bend, since
+	 *  the two motions are perpendicular on the same bones. Roll was the first guess and the
+	 *  founder's playtest reported it as "a little up and down", i.e. it produced the aim bend
+	 *  instead of a lean; Yaw is the remaining cross-axis. `BNLeanAxis 0|1|2` settles it live. */
+	UPROPERTY(EditAnywhere, Category = "BN")
+	EBNSpineAxis LeanAxis = EBNSpineAxis::Yaw;
 
 	/** Source measurements: max lean 12 degrees, chased by an interp at 8 (not a spring — lean
 	 *  settles without overshoot). */

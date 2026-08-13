@@ -8,6 +8,7 @@ class UAnimInstance;
 class UAnimMontage;
 class UBNAbilitySet;
 class USkeletalMesh;
+class USoundBase;
 
 // Our own enum, not the template's E_FPST_FireMode asset enum. Same three modes in the same
 // order (MyCharacter.cpp:74-77), so an imported number still means what it meant.
@@ -91,6 +92,14 @@ struct FBNWeaponRow : public FTableRowBase
 
 	UPROPERTY(EditAnywhere, Category = "Assets")
 	TSoftObjectPtr<UAnimMontage> ReloadMontage;
+
+	/** The gunshot. Per weapon, so it belongs on the row rather than on the cue: the rifle and the
+	 *  pistol are two sounds and one cue class serves both. The muzzle cue reads it off the firing
+	 *  weapon and falls back to its own Config sound when a row leaves it empty. Reload needs no
+	 *  twin — that audio rides the reload montage's own notifies, which is why reload was already
+	 *  audible while the shot was silent. */
+	UPROPERTY(EditAnywhere, Category = "Assets")
+	TSoftObjectPtr<USoundBase> FireSound;
 
 	// The weapon's own verbs, granted on equip and revoked on swap, authority only. Precedent:
 	// the old module's Config/DefaultGame.ini — "Fire, Reload and Swap live in the WEAPON's

@@ -2,6 +2,7 @@
 
 #include "Core/BNGameplayTags.h"
 #include "Weapons/BNWeapon.h"
+#include "Data/BNDataRows.h"
 #include "AbilitySystemGlobals.h"
 #include "GameplayCueManager.h"
 #include "GameplayCueSet.h"
@@ -71,6 +72,24 @@ bool UBNGameplayCue_MuzzleFlash::OnExecute_Implementation(AActor* MyTarget, cons
 {
 	const FTransform Muzzle = ResolveMuzzle(MyTarget, Parameters);
 	SpawnAt(MyTarget, Resolve(Effect), Muzzle.GetLocation(), Muzzle.Rotator());
+
+	// The shot. Per-weapon first — one cue class serves rifle and pistol, and they are not the
+	// same sound — then the cue's own Config line as the fallback.
+	TSoftObjectPtr<USoundBase> ShotSound = Sound;
+	if (const ABNWeapon* Weapon = Cast<ABNWeapon>(Parameters.SourceObject.Get()))
+	{
+		if (const FBNWeaponRow* Row = Weapon->GetRow())
+		{
+			if (!Row->FireSound.IsNull())
+			{
+				ShotSound = Row->FireSound;
+			}
+		}
+	}
+	if (USoundBase* Loaded = ShotSound.IsNull() ? nullptr : ShotSound.LoadSynchronous())
+	{
+		UGameplayStatics::PlaySoundAtLocation(MyTarget, Loaded, Muzzle.GetLocation());
+	}
 	return true;
 }
 

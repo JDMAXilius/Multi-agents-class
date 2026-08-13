@@ -6,6 +6,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "UObject/ReflectedTypeAccessors.h"
 
 namespace
 {
@@ -246,13 +247,21 @@ void UBNAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 	const double AimPitchDelta = FRotator::NormalizeAxis(SnapBaseAimPitch - SnapRotation.Pitch);
 	AimPitch = AimPitchDelta;
 	Pitch = FMath::Clamp(AimPitchDelta, AimPitchClamp.X, AimPitchClamp.Y);
+	// The scalar above is what the asset's graph reads; THIS is what the aim layers read. The
+	// layers bind to GetMainAnimBPThreadSafe.PitchRotator, so leaving it to a Blueprint hop meant
+	// the whole spine chain applied a zero rotator — the arms and weapon held still while the
+	// camera, which takes control rotation directly, moved. Writing it here closes that gap.
+	PitchRotator = BNMakeAxisRotator(AimPitchAxis, Pitch);
 
 	// ---- lean. The State.Lean.* tags are the input and they replicate (Mixed carries GE-granted
 	// tags to simulated proxies), so a proxy leans the way its owner does. Both sides held cancel.
 	const double TargetLeaning = (bSnapLeanRight ? 1.0 : 0.0) - (bSnapLeanLeft ? 1.0 : 0.0);
 	NativeCurrLeaning = FMath::FInterpTo(NativeCurrLeaning, TargetLeaning, static_cast<double>(DeltaSeconds), LeanInterpSpeed);
-	LeanRotation = FRotator(0.0, 0.0, NativeCurrLeaning * LeanAngle);
-	LeanOppRotation = FRotator(0.0, 0.0, -LeanRotation.Roll);
+	const double LeanDegrees = NativeCurrLeaning * LeanAngle;
+	LeanRotation = BNMakeAxisRotator(LeanAxis, LeanDegrees);
+	// The head's counter-tilt: the body tips, the gaze stays level. Same axis, opposite sign —
+	// the asset's LeanSpineWeights head entry is literally named "Opposite Angle Weight".
+	LeanOppRotation = BNMakeAxisRotator(LeanAxis, -LeanDegrees);
 
 	// ---- linked layer edge
 	bNativeLinkedLayerChanged = !bNativeFirstUpdate && bSnapLayerChanged;
@@ -276,6 +285,27 @@ void UBNAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 	}
 
 	bNativeFirstUpdate = false;
+}
+
+FString UBNAnimInstance::DescribeAimState() const
+{
+	// Every link in the aim chain on one line, in the order it flows. A zero anywhere names the
+	// broken link: no BaseAim = the view is not reaching the pawn; Pitch fine but PitchRotator
+	// zero = the publish; both fine and no motion = the ABP's binding or the bFPSMode gate.
+	static const UEnum* AxisEnum = StaticEnum<EBNSpineAxis>();
+	return FString::Printf(
+		TEXT("BNAim | BaseAimPitch %.1f  ActorPitch %.1f  ->  AimPitch %.1f  Pitch %.1f  ")
+		TEXT("PitchRotator (P %.1f Y %.1f R %.1f) axis %s | bFPSMode %s  bUnarmed %s | ")
+		TEXT("Lean curr %.2f  LeanRotation (P %.1f Y %.1f R %.1f) axis %s | Layer %s"),
+		SnapBaseAimPitch, SnapRotation.Pitch, AimPitch, Pitch,
+		PitchRotator.Pitch, PitchRotator.Yaw, PitchRotator.Roll,
+		*AxisEnum->GetNameStringByValue(static_cast<int64>(AimPitchAxis)),
+		bFPSMode ? TEXT("true") : TEXT("false"),
+		bUnarmed ? TEXT("true") : TEXT("false"),
+		NativeCurrLeaning,
+		LeanRotation.Pitch, LeanRotation.Yaw, LeanRotation.Roll,
+		*AxisEnum->GetNameStringByValue(static_cast<int64>(LeanAxis)),
+		*GetNameSafe(ObservedLayerClass));
 }
 
 void UBNAnimInstance::SetRootYawOffset(double InRootYawOffset)
