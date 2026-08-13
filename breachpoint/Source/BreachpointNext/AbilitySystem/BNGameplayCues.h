@@ -5,9 +5,29 @@
 #include "GameplayTagContainer.h"
 #include "Subsystems/WorldSubsystem.h"
 #include "UObject/SoftObjectPtr.h"
+#include "Chaos/ChaosEngineInterface.h"
 #include "BNGameplayCues.generated.h"
 
 class UFXSystemAsset;
+class USoundBase;
+
+/** One surface's answer, the template's ImpactEffectInfoMap row: which burst plays and which
+ *  sound, keyed by the hit's physical surface. The decal system is shared across surfaces
+ *  (the template points every row at NS_ImpactDecals) so it lives on the cue, not here. */
+USTRUCT()
+struct FBNImpactEffectRow
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly, Category = "BN|Cue")
+	TEnumAsByte<EPhysicalSurface> Surface = SurfaceType_Default;
+
+	UPROPERTY(EditDefaultsOnly, Category = "BN|Cue")
+	TSoftObjectPtr<UFXSystemAsset> Effect;
+
+	UPROPERTY(EditDefaultsOnly, Category = "BN|Cue")
+	TSoftObjectPtr<USoundBase> Sound;
+};
 
 /**
  * Weapon FX, law 2: every effect this game shows comes through a cue, and every cue handler is a
@@ -42,7 +62,7 @@ protected:
 	 *  .cpp:1557-1580). Falls back to the target's transform when SourceObject is not a weapon. */
 	static FTransform ResolveMuzzle(const AActor* Target, const FGameplayCueParameters& Parameters);
 
-	static void SpawnAt(const UObject* WorldContext, UFXSystemAsset* Asset, const FVector& Location, const FRotator& Rotation, FName VectorParameterName, const FVector& VectorParameterValue);
+	static void SpawnAt(const UObject* WorldContext, UFXSystemAsset* Asset, const FVector& Location, const FRotator& Rotation);
 };
 
 UCLASS(Config = Game, meta = (DisplayName = "GC_BN_Weapon_MuzzleFlash"))
@@ -71,8 +91,19 @@ public:
 
 protected:
 
+	/** The fallback burst when no row matches the surface (or the hit carries no phys mat) —
+	 *  the template's own fallback is its SurfaceType2 (concrete) row. */
 	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Cue")
 	TSoftObjectPtr<UFXSystemAsset> Effect;
+
+	/** The bullet hole. One system for every surface, exactly as the template's map has it;
+	 *  told which look to wear via User.ImpactSurfaces. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Cue")
+	TSoftObjectPtr<UFXSystemAsset> Decal;
+
+	/** Per-surface burst + sound, the template's ImpactEffectInfoMap flattened for ini. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Cue")
+	TArray<FBNImpactEffectRow> SurfaceRows;
 };
 
 UCLASS(Config = Game, meta = (DisplayName = "GC_BN_Weapon_Tracer"))
@@ -86,13 +117,12 @@ public:
 
 protected:
 
+	/** The template's own tracer contract, read from BPC_FPST_Lyra_FireEffectComp's
+	 *  FireTracerEffect graph: spawn at the muzzle, write the hit into the vector ARRAY
+	 *  `User.ImpactPositions`, then fire `User.Trigger`. The earlier single-vector BeamEnd
+	 *  contract was this cue's invention and matched no shipped system. */
 	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Cue")
 	TSoftObjectPtr<UFXSystemAsset> Effect;
-
-	/** The contract with the FX author: the tracer system must expose a user Vector parameter of
-	 *  this name and draw its beam from the emitter to it. ANNOUNCED alongside the asset. */
-	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Cue")
-	FName BeamEndParameter = TEXT("BeamEnd");
 };
 
 /**

@@ -17,6 +17,9 @@ public class BreachpointNext : ModuleRules
 			"GameplayTags",
 			"GameplayTasks",
 			"NetCore",
+			// FBNImpactEffectRow carries a TEnumAsByte<EPhysicalSurface>; the enum's reflection
+			// constructor lives here, and the editor target links modularly.
+			"PhysicsCore",
 			// UBNAssetSettings derives UDeveloperSettings, which lives in its own module.
 			"DeveloperSettings"
 		});

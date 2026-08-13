@@ -6,11 +6,31 @@
 #include "GameplayCueManager.h"
 #include "GameplayCueSet.h"
 #include "GameFramework/Actor.h"
+#include "Kismet/GameplayStatics.h"
 #include "NiagaraComponent.h"
+#include "NiagaraDataInterfaceArrayFunctionLibrary.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 #include "Particles/ParticleSystem.h"
+#include "PhysicalMaterials/PhysicalMaterial.h"
+#include "Sound/SoundBase.h"
 #include "UObject/UObjectHash.h"
+
+namespace
+{
+	/** cpp-local so no header names a Niagara type: spawn and hand back the component for
+	 *  user-parameter writes. Null when the asset is unset — cues degrade silently by law. */
+	UNiagaraComponent* BNSpawnSystem(const UObject* WorldContext, UFXSystemAsset* Asset, const FVector& Location, const FRotator& Rotation)
+	{
+		UNiagaraSystem* System = Cast<UNiagaraSystem>(Asset);
+		if (!WorldContext || !System)
+		{
+			return nullptr;
+		}
+		return UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			WorldContext, System, Location, Rotation, FVector(1.f), /*bAutoDestroy=*/true, /*bAutoActivate=*/true);
+	}
+}
 
 void UBNGameplayCue_Base::PostInitProperties()
 {
@@ -37,21 +57,9 @@ FTransform UBNGameplayCue_Base::ResolveMuzzle(const AActor* Target, const FGamep
 	return Target ? Target->GetActorTransform() : FTransform::Identity;
 }
 
-void UBNGameplayCue_Base::SpawnAt(const UObject* WorldContext, UFXSystemAsset* Asset, const FVector& Location, const FRotator& Rotation, FName VectorParameterName, const FVector& VectorParameterValue)
+void UBNGameplayCue_Base::SpawnAt(const UObject* WorldContext, UFXSystemAsset* Asset, const FVector& Location, const FRotator& Rotation)
 {
-	UNiagaraSystem* System = Cast<UNiagaraSystem>(Asset);
-	if (!WorldContext || !System)
-	{
-		return;
-	}
-
-	UNiagaraComponent* Component = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-		WorldContext, System, Location, Rotation, FVector(1.f), /*bAutoDestroy=*/true, /*bAutoActivate=*/true);
-
-	if (Component && !VectorParameterName.IsNone())
-	{
-		Component->SetVectorParameter(VectorParameterName, VectorParameterValue);
-	}
+	BNSpawnSystem(WorldContext, Asset, Location, Rotation);
 }
 
 FGameplayTag UBNGameplayCue_MuzzleFlash::GetHandledCueTag() const
@@ -62,7 +70,7 @@ FGameplayTag UBNGameplayCue_MuzzleFlash::GetHandledCueTag() const
 bool UBNGameplayCue_MuzzleFlash::OnExecute_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters) const
 {
 	const FTransform Muzzle = ResolveMuzzle(MyTarget, Parameters);
-	SpawnAt(MyTarget, Resolve(Effect), Muzzle.GetLocation(), Muzzle.Rotator(), NAME_None, FVector::ZeroVector);
+	SpawnAt(MyTarget, Resolve(Effect), Muzzle.GetLocation(), Muzzle.Rotator());
 	return true;
 }
 
@@ -73,7 +81,51 @@ FGameplayTag UBNGameplayCue_Impact::GetHandledCueTag() const
 
 bool UBNGameplayCue_Impact::OnExecute_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters) const
 {
-	SpawnAt(MyTarget, Resolve(Effect), Parameters.Location, Parameters.Normal.Rotation(), NAME_None, FVector::ZeroVector);
+	// The surface picks the row, exactly the template's map lookup; no phys mat (or no matching
+	// row) falls back to Effect — the template's own fallback is its concrete row.
+	const UPhysicalMaterial* PhysMat = Cast<UPhysicalMaterial>(Parameters.PhysicalMaterial.Get());
+	const EPhysicalSurface Surface = PhysMat ? PhysMat->SurfaceType.GetValue() : SurfaceType_Default;
+
+	TSoftObjectPtr<UFXSystemAsset> BurstAsset = Effect;
+	TSoftObjectPtr<USoundBase> SoundAsset;
+	for (const FBNImpactEffectRow& Row : SurfaceRows)
+	{
+		if (Row.Surface == Surface)
+		{
+			BurstAsset = Row.Effect;
+			SoundAsset = Row.Sound;
+			break;
+		}
+	}
+
+	// The template writes the same hit into BOTH systems; the decal additionally learns the
+	// surface (its look selector) and the trigger. Param names and types are the template's
+	// own (position array for positions, vector array for normals) — a wrong type here fails
+	// silently, which is what buried the first tracer.
+	const TArray<FVector> Positions = { Parameters.Location };
+	const TArray<FVector> Normals = { FVector(Parameters.Normal) };
+
+	if (UNiagaraComponent* DecalComp = BNSpawnSystem(MyTarget, Resolve(Decal), Parameters.Location, Parameters.Normal.Rotation()))
+	{
+		UNiagaraDataInterfaceArrayFunctionLibrary::SetNiagaraArrayPosition(DecalComp, TEXT("ImpactPositions"), Positions);
+		UNiagaraDataInterfaceArrayFunctionLibrary::SetNiagaraArrayVector(DecalComp, TEXT("ImpactNormals"), Normals);
+		const TArray<int32> Surfaces = { static_cast<int32>(Surface) };
+		UNiagaraDataInterfaceArrayFunctionLibrary::SetNiagaraArrayInt32(DecalComp, TEXT("ImpactSurfaces"), Surfaces);
+		DecalComp->SetVariableInt(TEXT("NumberOfHits"), 1);
+		DecalComp->SetVariableBool(TEXT("Trigger"), true);
+	}
+
+	if (UNiagaraComponent* BurstComp = BNSpawnSystem(MyTarget, Resolve(BurstAsset), Parameters.Location, Parameters.Normal.Rotation()))
+	{
+		UNiagaraDataInterfaceArrayFunctionLibrary::SetNiagaraArrayPosition(BurstComp, TEXT("ImpactPositions"), Positions);
+		UNiagaraDataInterfaceArrayFunctionLibrary::SetNiagaraArrayVector(BurstComp, TEXT("ImpactNormals"), Normals);
+		BurstComp->SetVariableInt(TEXT("NumberOfHits"), 1);
+	}
+
+	if (USoundBase* Sound = SoundAsset.IsNull() ? nullptr : SoundAsset.LoadSynchronous())
+	{
+		UGameplayStatics::PlaySoundAtLocation(MyTarget, Sound, Parameters.Location);
+	}
 	return true;
 }
 
@@ -84,9 +136,15 @@ FGameplayTag UBNGameplayCue_Tracer::GetHandledCueTag() const
 
 bool UBNGameplayCue_Tracer::OnExecute_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters) const
 {
-	// Muzzle to impact: the start is the weapon's own socket, the end rides the beam parameter.
+	// The template's FireTracerEffect, verbatim: spawn at the muzzle, hand the system the hit
+	// as a one-element VECTOR array, then pull the trigger. Vector array — not position — is
+	// what the template's own graph calls for this system (NiagaraSetVectorArray).
 	const FTransform Muzzle = ResolveMuzzle(MyTarget, Parameters);
-	SpawnAt(MyTarget, Resolve(Effect), Muzzle.GetLocation(), Muzzle.Rotator(), BeamEndParameter, Parameters.Location);
+	if (UNiagaraComponent* Tracer = BNSpawnSystem(MyTarget, Resolve(Effect), Muzzle.GetLocation(), Muzzle.Rotator()))
+	{
+		UNiagaraDataInterfaceArrayFunctionLibrary::SetNiagaraArrayVector(Tracer, TEXT("ImpactPositions"), { Parameters.Location });
+		Tracer->SetVariableBool(TEXT("Trigger"), true);
+	}
 	return true;
 }
 

@@ -372,6 +372,9 @@ void UBNGA_Fire::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Ta
 
 	FCollisionQueryParams QueryParams(FName(TEXT("BNWeaponConfirm")), /*bTraceComplex=*/false, Avatar);
 	QueryParams.AddIgnoredActor(Weapon);
+	// The impact cue picks its per-surface row off Parameters.PhysicalMaterial; without this
+	// the hit carries none and every impact falls back to the default surface.
+	QueryParams.bReturnPhysicalMaterial = true;
 
 	// The validated hit is NOT predicted state, so its cues must not ride the shooter's prediction
 	// key. A multicast carrying that key is skipped on the machine that GENERATED it — which is

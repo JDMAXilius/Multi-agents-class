@@ -107,6 +107,9 @@ void UBNAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	bSnapCrouching = bTagCrouching || Character->bIsCrouched;
 	bSnapJumping = bTagJumping;
 	bSnapSprinting = bTagSprinting;
+	// Locally controlled AND player: the listen host's own pawn and each client's own pawn
+	// pose FPS; bots and every remotely-viewed character take the third-person branch.
+	bSnapFPSMode = Character->IsLocallyControlled() && Character->IsPlayerControlled();
 	bSnapLeanLeft = bTagLeanLeft;
 	bSnapLeanRight = bTagLeanRight;
 	// The weapon seam, not the local pawn: it answers off the character's own weapon state, so
@@ -196,6 +199,7 @@ void UBNAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 	IsJumping = bSnapJumping;
 	bUnarmed = bSnapUnarmed;
 	bSprinting = bSnapSprinting;
+	bFPSMode = bSnapFPSMode;
 
 	bNativeCrouchStateChange = !bNativeFirstUpdate && bSnapCrouching != bWasCrouchingLastUpdate;
 	bWasCrouchingLastUpdate = bSnapCrouching;

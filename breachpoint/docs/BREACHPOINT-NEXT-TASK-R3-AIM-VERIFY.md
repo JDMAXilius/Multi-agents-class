@@ -155,3 +155,25 @@ _(terminal: append the three answers, the asset paths and parameter lists, and t
      minimal FX". The gap is exactly the three C++ packets this ticket's Part 2 fact-found for
      the lead: tracer cue array-params rewrite, impact cue surface-map upgrade (decal + sound),
      and the sound field. No asset is missing — all paths are in Part 2's log entry above.
+
+- 13 Aug 2026 (mac terminal, fix packet — founder authorized both fixes) — **landed.**
+  1. **Aim:** `UBNAnimInstance` snapshots + publishes `bFPSMode` (locally-controlled player
+     pawn = FPS pose, everything else third person — the template's own per-instance answer).
+     The surprise: the ABP has NO BP-local `bFPSMode` variable at all — the AnimGraph's get
+     node was resolving a name that existed NOWHERE, which is why the gate read false forever.
+     With the C++ property now supplying the name, the ABP compiles clean and
+     `Default__ABP_Mannequin_Base_C.bFPSMode` reads back through the MCP; the node still feeds
+     `BlendListByBool_2`. No graph edit and no ABP resave was needed — the rebind is
+     compile-on-load. (MCP quirk logged: `AssetTools.exists/save_assets` answer false/"does
+     not exist" for this FPSTemplate path while ObjectTools/BlueprintTools read it fine.)
+  2. **VFX:** tracer cue rewritten to the template contract (`User.ImpactPositions[]` vector
+     array + `User.Trigger`), wired to `NS_WeaponFire_Tracer`. Impact cue upgraded to the
+     template's surface map: shared `NS_ImpactDecals` (surface/positions/normals/hits/trigger
+     params), per-surface burst + MetaSound rows in ini (character/concrete/glass, concrete
+     fallback), sound via PlaySoundAtLocation. `BNGA_Fire`'s confirm trace now sets
+     `bReturnPhysicalMaterial` so the surface lookup has data. `PhysicsCore` added to the
+     module (the enum's reflection lives there; the editor target links modularly).
+  3. Rung 1: BreachpointEditor + Breachpoint PASS. Stray dirty template assets from the
+     founder's earlier session: `BPC_FPST_Lyra_FireEffectComp` reverted again per the standing
+     ruling; `ABP_Mannequin_Base`'s 16:40 on-disk change left UNCOMMITTED for the founder to
+     keep or discard — it is not needed by this fix.

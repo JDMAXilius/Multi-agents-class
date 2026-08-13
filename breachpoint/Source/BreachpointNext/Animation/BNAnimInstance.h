@@ -130,6 +130,15 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
 	double Pitch = 0.0;
 
+	/** The asset's `bFPSMode` — the BlendListByBool gate in front of EVERY aim-pitch layer.
+	 *  The template's CAMERA component fired SetFPSMode on view change; BN has no camera
+	 *  component and is first-person only, so the rule collapses to the same per-instance
+	 *  answer the template produced: my own pawn poses FPS, every other machine's view of me
+	 *  poses third person. BlueprintReadWrite so the asset's now-dead SetFPSMode event setter
+	 *  still compiles once its BP-local duplicate variable is removed. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	bool bFPSMode = false;
+
 	UPROPERTY(EditAnywhere, Category = "BN")
 	FVector2D AimPitchClamp = FVector2D(-90.0, 90.0);
 
@@ -244,6 +253,7 @@ private:
 	bool bSnapJumping = false;
 	bool bSnapUnarmed = false;
 	bool bSnapSprinting = false;
+	bool bSnapFPSMode = false;
 	bool bSnapLeanLeft = false;
 	bool bSnapLeanRight = false;
 
