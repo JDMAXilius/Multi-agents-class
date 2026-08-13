@@ -139,3 +139,26 @@ and back, and confirm the **other window** shows the right weapon and the right 
 ## Log
 
 _(terminal session: append the read-back table, what was duplicated, anything handed back)_
+
+- 13 Aug 2026 (mac terminal) — **§1–§5 DONE, saved, read back fresh.** §6 not started (correctly
+  gated behind the Checkpoint I handoff). Read-back, intent vs actual:
+  - **§1 table:** per the DT ticket's Log (values + the set_rows soft-ref trap recorded there).
+    `AnimLayerClass` actual: `/Game/BN/Animation/ABP_BNWeaponLayers_Rifle.ABP_BNWeaponLayers_Rifle_C`
+    and `..._Pistol_C`. `AbilitySet` both rows `None`, as §1 orders.
+  - **§2 layers:** duplicated `ABP_RifleAnimLayers` / `ABP_PistolAnimLayers` (the classes the
+    weapon CDOs' `LinkAnimLayerClass` actually name, under `Animations/Locomotion/<Weapon>/` —
+    NOT under `LinkedLayers/` as the ticket guessed) → `ABP_BNWeaponLayers_Rifle` / `_Pistol`.
+    Asset-registry ParentClass read back `ABP_ItemAnimLayersBase_C` on both, `IsDataOnly=True` —
+    the template base IS the base, no BN base made. FPSTemplate originals untouched.
+  - **§3+§5 input:** `IA_BNWeaponNext` / `IA_BNWeaponPrevious` / `IA_BN_LeanLeft` /
+    `IA_BN_LeanRight` created, all read back `valueType=Boolean`. **`IA_FPST_Sprint` verified
+    Boolean in-editor → reused**, per the ticket's rule. `DA_BNInput` read back 9 bindings:
+    the 4 originals + Next/Previous/Sprint/Lean.Left/Lean.Right with exact tags (tags set fine
+    through MCP set_properties — the Python TagName trap does not apply on this path).
+    `IMC_BNNext` read back 12 mappings: original 7 (W/S/A modifiers verified intact: 1/2/1)
+    + MouseScrollUp→Next, MouseScrollDown→Previous, LeftShift→Sprint, Q→LeanLeft, E→LeanRight.
+    **Deprecated `Mappings` array read back length 0.**
+  - Nothing handed back; the MCP fought only on set_rows soft refs (solved, recorded).
+  - **Checkpoint I is now the founder's:** spawn holding the rifle, wheel to the pistol and
+    back, second window shows the right weapon and pose set. Lean keys will flip tags with no
+    visible tilt — expected, per this ticket.

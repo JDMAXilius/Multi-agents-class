@@ -88,3 +88,28 @@ Then Wave 2 can spawn a weapon.
 ## Log
 
 _(terminal session: append the read-back table, anything unresolved, and anything handed back)_
+
+- 13 Aug 2026 (mac terminal) — **DONE.** Table created by `DataTableTools.create` with
+  `RowStruct=/Script/BreachpointNext.BNWeaponRow` set in the factory call (no picker raised).
+  Read-back after save, intent vs actual:
+
+  | Field | Rifle | Pistol | Source |
+  |---|---|---|---|
+  | FireDelay | 0.1 | 0.1 | read from BP_FPST_Weapon_* CDO |
+  | SpreadAngle | 0.1 | 0.1 | read from CDO |
+  | ShotCount | 1 | 1 | read from CDO |
+  | FireMode | Auto | Single | `availableFireModes[curFireModeIndex]`: Rifle `[Auto][0]`, Pistol `[Single,Burst][0]` |
+  | AttachSocketName | weapon_r_rifle | weapon_r_pistol | read from CDO |
+  | MuzzleSocketName | Muzzle | Muzzle | read from CDO |
+  | WeaponMesh | SK_Rifle | SK_Pistol | read from the SCS template `SkeletalMesh_GEN_VARIABLE.skeletalMeshAsset` (the CDO component ref is null) |
+  | AnimLayerClass | ABP_BNWeaponLayers_Rifle_C | ABP_BNWeaponLayers_Pistol_C | per R2-W2 §1/§2 — the BN duplicates, NOT the template classes the CDO names (`ABP_RifleAnimLayers_C`/`ABP_PistolAnimLayers_C`), recorded here as the deliberate divergence |
+  | FireMontage | AM_MM_Rifle_Fire | AM_MM_Pistol_Fire | read from CDO |
+  | ReloadMontage | AM_MM_Rifle_Reload | AM_MM_Pistol_Reload | read from CDO |
+  | Damage / HeadshotMultiplier / Range / ReloadTime / BurstShotCount | 20 / 2 / 10000 / 2 / 3 | same | C++ defaults, per ticket |
+  | MagazineSize | 30 | 30 | **unresolved** — no magazine/ammo-shaped property exists anywhere on the weapon BP CDO (full property list checked); C++ default kept |
+  | DisplayName | "" | "" | not in the ticket's field list; struct default |
+  | AbilitySet | None | None | per R2-W2 §1 — null until G4 |
+
+  One MCP trap found and paid: `set_rows` silently drops `{"refPath":...}` objects for
+  soft-ptr columns — all four soft refs read back `None` on the first write. Plain soft-path
+  strings ("/Game/....SK_Rifle") land correctly. Scalars/names/enums were fine either way.
