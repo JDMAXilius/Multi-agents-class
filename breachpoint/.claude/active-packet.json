@@ -1,16 +1,16 @@
 {
-  "ticket": "NEXT R1 - the BN-owned anim layer chain (docs/BREACHPOINT-NEXT-TASK-ABP-REPAIR.md)",
+  "ticket": "NEXT R2 asset handoff - DT_BNWEAPONS + R2-W2-ASSETS (docs/BREACHPOINT-NEXT-TASK-DT-BNWEAPONS.md, docs/BREACHPOINT-NEXT-TASK-R2-W2-ASSETS.md)",
   "owner_path": [
-    "Content/BN/Animation/",
-    "Config/DefaultGame.ini",
-    "Tools/bn/45_bn_anim_layers.py",
-    "docs/BREACHPOINT-NEXT-TASK-ABP-REPAIR.md",
-    "Source/BreachpointNext/AbilitySystem/",
-    "Source/BreachpointNext/Match/BNPlayerController.cpp"
+    "Content/BN/",
+    "docs/BREACHPOINT-NEXT-TASK-DT-BNWEAPONS.md",
+    "docs/BREACHPOINT-NEXT-TASK-R2-W2-ASSETS.md"
   ],
   "binary_locks": [
-    "Content/BN/Animation/ABP_BNItemAnimLayersBase.uasset",
-    "Content/BN/Animation/ABP_BNUnarmedAnimLayers.uasset"
+    "Content/BN/Data/DT_BNWeapons.uasset",
+    "Content/BN/Animation/ABP_BNWeaponLayers_Rifle.uasset",
+    "Content/BN/Animation/ABP_BNWeaponLayers_Pistol.uasset",
+    "Content/BN/Input/DA_BNInput.uasset",
+    "Content/BN/Input/IMC_BNNext.uasset"
   ],
-  "authorized_by": "founder, 13 Aug 2026 - 'what is next' then 'yes, fix the script'. Supersedes the R1 compile-repair claim, whose work landed at ffb1f2d and whose owner_path (Source/BreachpointNext/) covers none of the paths this task writes. The task doc declares owner_path Content/BN/Animation/ + Config/DefaultGame.ini; Tools/bn/45_bn_anim_layers.py is an EXTENSION granted directly by the founder after review found the script's cast-target resolution contradicts the correction landed at a3efbf8. The task doc is included so the audit can be pasted into its ## Log, which the task's own 'Done means' requires. Source/BreachpointNext/AbilitySystem/ is a SECOND founder-granted EXTENSION (13 Aug 2026, this session): R2-G4's BNGA_Fire.cpp includes AbilityTask_ServerWaitClientTargetData.h, an ActionRPG-sample class the cloud session referenced but never wrote, so rung 1 fails on all three targets; the repair is the missing task class plus the corrected include."
+  "authorized_by": "founder, 13 Aug 2026 - 'start doing all of those' after the R2 board readout. Both tickets are cut 'For: the terminal session (editor + MCP in reach)', which this session is: green build 8befcd9, editor live on BR_Arena01, MCP answering on :8000. R2-W2 extends DT-BNWEAPONS and its owner_path Content/BN/ covers both. Supersedes the CLOSED ABP-REPAIR claim (ae8d38e) and its two compile-repair extensions."
 }
