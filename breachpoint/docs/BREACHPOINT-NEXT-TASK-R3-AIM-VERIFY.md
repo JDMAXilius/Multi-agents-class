@@ -126,3 +126,9 @@ _(terminal: append the three answers, the asset paths and parameter lists, and t
   is a hand-back, not a workaround: **one founder click** — Content Browser →
   `BN/Animation/ABP_BNMannequin` → Delete. `git rm` while the editor may hold the package was
   deliberately NOT done.
+
+- 13 Aug 2026 (mac terminal, closing) — **Part 3 landed on the fresh editor session.** With the
+  asset unloaded, `AssetTools.delete` cleared it from the registry (`exists` reads back false)
+  but left the on-disk file; since the editor and the referencer check both agree the asset is
+  gone, the file was removed with `git rm` — the on-disk state now matches the editor's. E2/D2
+  closed: `/Game/BN/Animation/ABP_BNMannequin` no longer exists anywhere. **Ticket DONE.**
