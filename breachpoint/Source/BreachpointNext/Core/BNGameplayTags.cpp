@@ -13,6 +13,8 @@ namespace BNTags
 	UE_DEFINE_GAMEPLAY_TAG(Input_Sprint, "Input.Sprint");
 	UE_DEFINE_GAMEPLAY_TAG(Input_Lean_Left, "Input.Lean.Left");
 	UE_DEFINE_GAMEPLAY_TAG(Input_Lean_Right, "Input.Lean.Right");
+	UE_DEFINE_GAMEPLAY_TAG(Input_Melee, "Input.Melee");
+	UE_DEFINE_GAMEPLAY_TAG(Input_Grenade, "Input.Grenade");
 	UE_DEFINE_GAMEPLAY_TAG(Input_Debug_DamageSelf, "Input.Debug.DamageSelf");
 
 	UE_DEFINE_GAMEPLAY_TAG(State, "State");

@@ -5,6 +5,8 @@
 #include "AbilitySystem/Effects/BNGameplayEffects.h"
 #include "AbilitySystem/Abilities/BNGA_Death.h"
 #include "AbilitySystem/Abilities/BNGA_Equip.h"
+#include "AbilitySystem/Abilities/BNGA_Grenade.h"
+#include "AbilitySystem/Abilities/BNGA_Melee.h"
 #include "AbilitySystem/Abilities/BNMovementAbilities.h"
 #include "Core/BNGameplayTags.h"
 
@@ -53,6 +55,19 @@ void ABNPlayerState::GrantDefaults()
 	// Granted OUTSIDE the set/fallback split and with no input tag: death is not a key and not a
 	// weapon's verb. UBNHealthComponent's verdict activates it by class, on the authority.
 	AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(UBNGA_Death::StaticClass(), 1));
+
+	// Body verbs, granted OUTSIDE the set/fallback split on purpose: melee and grenade must exist
+	// whether or not DefaultAbilitySet is configured, must survive every weapon swap, and must not
+	// wait on an editor edit to two DA_BNAbilitySet assets to become reachable. Melee still reads
+	// its montage, damage and reach from the CURRENT weapon's row.
+	// If either later joins DefaultAbilitySet, delete it here — two grants means two specs.
+	FGameplayAbilitySpec MeleeSpec(UBNGA_Melee::StaticClass(), 1);
+	MeleeSpec.GetDynamicSpecSourceTags().AddTag(BNTags::Input_Melee);
+	AbilitySystemComponent->GiveAbility(MeleeSpec);
+
+	FGameplayAbilitySpec GrenadeSpec(UBNGA_Grenade::StaticClass(), 1);
+	GrenadeSpec.GetDynamicSpecSourceTags().AddTag(BNTags::Input_Grenade);
+	AbilitySystemComponent->GiveAbility(GrenadeSpec);
 
 	if (DefaultAbilitySet)
 	{

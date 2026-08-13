@@ -61,6 +61,16 @@ struct FBNWeaponRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, Category = "Combat")
 	float Range = 10000.f;
 
+	/** Melee is its own damage number, not the shot's: a rifle butt has no headshot rule and no
+	 *  falloff, so it goes through BNDamage's flat door rather than the weapon-shaped one. */
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	float MeleeDamage = 40.f;
+
+	/** Reach. `MyCharacter::MeleeTraceDistance` measured 120 (.h:359); the trace is data here for
+	 *  the same reason Range is — a literal in the ability would need a rebuild to tune. */
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	float MeleeRange = 120.f;
+
 	UPROPERTY(EditAnywhere, Category = "Ammo")
 	int32 MagazineSize = 30;
 
@@ -100,6 +110,12 @@ struct FBNWeaponRow : public FTableRowBase
 	 *  audible while the shot was silent. */
 	UPROPERTY(EditAnywhere, Category = "Assets")
 	TSoftObjectPtr<USoundBase> FireSound;
+
+	/** The swing. Its connect window is the montage's own `AN_FPST_Melee` notify — the record
+	 *  notes that is the one melee notify the template ships, so it is reused rather than
+	 *  re-authored. With no montage the ability swings immediately and still damages. */
+	UPROPERTY(EditAnywhere, Category = "Assets")
+	TSoftObjectPtr<UAnimMontage> MeleeMontage;
 
 	// The weapon's own verbs, granted on equip and revoked on swap, authority only. Precedent:
 	// the old module's Config/DefaultGame.ini — "Fire, Reload and Swap live in the WEAPON's

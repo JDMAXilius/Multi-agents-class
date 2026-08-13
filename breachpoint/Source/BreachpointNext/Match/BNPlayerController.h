@@ -79,6 +79,8 @@ protected:
 	void HandleLeanLeftReleased();
 	void HandleLeanRightPressed();
 	void HandleLeanRightReleased();
+	void HandleMeleePressed();
+	void HandleGrenadePressed();
 	void HandleDebugDamagePressed();
 
 	UBNAbilitySystemComponent* GetBNAbilitySystemComponent() const;

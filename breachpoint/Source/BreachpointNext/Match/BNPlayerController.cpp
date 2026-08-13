@@ -167,6 +167,22 @@ void ABNPlayerController::BNLeanAxis(int32 Axis)
 #endif
 }
 
+void ABNPlayerController::HandleMeleePressed()
+{
+	if (UBNAbilitySystemComponent* ASC = GetBNAbilitySystemComponent())
+	{
+		ASC->AbilityInputTagPressed(BNTags::Input_Melee);
+	}
+}
+
+void ABNPlayerController::HandleGrenadePressed()
+{
+	if (UBNAbilitySystemComponent* ASC = GetBNAbilitySystemComponent())
+	{
+		ASC->AbilityInputTagPressed(BNTags::Input_Grenade);
+	}
+}
+
 void ABNPlayerController::SetupInputComponent()
 {
 	// NEXT owns its input component outright. The project-wide DefaultInputComponentClass
@@ -244,6 +260,12 @@ void ABNPlayerController::SetupInputComponent()
 	Bind(BNTags::Input_Lean_Left, ETriggerEvent::Completed, &ABNPlayerController::HandleLeanLeftReleased);
 	Bind(BNTags::Input_Lean_Right, ETriggerEvent::Started, &ABNPlayerController::HandleLeanRightPressed);
 	Bind(BNTags::Input_Lean_Right, ETriggerEvent::Completed, &ABNPlayerController::HandleLeanRightReleased);
+	// ANNOUNCED, not created: IA_BN_Melee and IA_BN_Grenade plus their DA_BNInput rows and
+	// IMC_BNNext mappings are the editor half of R3 W3. Until they exist Bind logs its "that
+	// control is dead" line and the abilities are unreachable — loudly unreachable, which is the
+	// point. The C++ half is complete: both abilities activate off these tags.
+	Bind(BNTags::Input_Melee, ETriggerEvent::Started, &ABNPlayerController::HandleMeleePressed);
+	Bind(BNTags::Input_Grenade, ETriggerEvent::Started, &ABNPlayerController::HandleGrenadePressed);
 #if !UE_BUILD_SHIPPING
 	// ANNOUNCED, not created: IA_BNDebugDamageSelf + its DA_BNInput row + its IMC_BNNext mapping
 	// do not exist yet, so until the founder adds them this binding logs its "that control is
