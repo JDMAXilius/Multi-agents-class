@@ -7,15 +7,15 @@ Run inside the UE 5.8 editor (Python Editor Script Plugin):
 Packet run order: 20_bp_character.py -> 30_reparent_abp.py -> 40_unarmed_layer.py.
 
 Creates /Game/BN/BP_BNCharacter as a Blueprint child of the C++ ABNCharacter if
-absent (R26: defaults only - zero graphs, zero new logic). On the CDO: the 3P
-mannequin mesh on the inherited character mesh with owner_no_see, the anim class
-pointed at the ABP that 30_reparent_abp.py will migrate (same CONFIG, read out of
-that file so the two scripts cannot disagree), and a 1P arms component ONLY IF a
-first-person arms skeletal mesh actually exists on disk (none does today - the
-search runs live so the script converges the day one lands). Compiles, saves,
-then reads every value back and prints an intent-vs-actual diff table. The audit
-table is the proof, not "the script ran". Idempotent: a second run finds
-everything set and re-audits.
+absent (R26: defaults only - zero graphs, zero new logic). On the CDO: the
+mannequin mesh on the inherited character mesh with owner_no_see FALSE (true
+first person - the founder's animation set is full-body, the owner sees their
+own mannequin), and the anim class pointed at the ABP that 30_reparent_abp.py
+will migrate (same CONFIG, read out of that file so the two scripts cannot
+disagree). The former 1P-arms component branch was replaced by true-FP
+full-body. Compiles, saves, then reads every value back and prints an
+intent-vs-actual diff table. The audit table is the proof, not "the script
+ran". Idempotent: a second run finds everything set and re-audits.
 
 Exits non-zero if the audit diffs, so a caller can gate on it.
 """
@@ -34,12 +34,7 @@ PARENT_CLASS_PATH = "/Script/BreachpointNext.BNCharacter"
 # assigning it to SkeletalMeshAsset is refused ("not valid SkeletalMesh"). Confirmed live
 # via AssetTools.get_asset_class -> "Skeleton".
 MESH_3P_PATH = "/Game/FPSTemplate/Demo/Characters/Heroes/Mannequin/Meshes/SKM_Manny"
-ARMS_SEARCH_ROOTS = ("/Game/FPSTemplate", "/Game/FirstPerson")
-ARMS_NAME_TOKENS = ("arms", "hands")
-ARMS_COMPONENT_NAME = "Mesh1P"
-# The C++ subobject is named CameraComponent (BNCharacter.cpp); "Camera" kept for
-# tolerance if the C++ name ever shortens.
-CAMERA_COMPONENT_NAMES = ("Camera", "CameraComponent")
+# True-FP full-body replaced the former 1P-arms component branch (founder ruling).
 REPARENT_SCRIPT = "30_reparent_abp.py"
 
 AUDIT_FMT = "%-32s | %-52s | %-52s | %s"
@@ -104,12 +99,6 @@ def choose_mannequin_abp(config):
     return None, None
 
 
-def _find_arms_mesh():
-    candidates = [p for p in _find_assets("SkeletalMesh", ARMS_SEARCH_ROOTS)
-                  if any(t in p.rsplit("/", 1)[-1].lower() for t in ARMS_NAME_TOKENS)]
-    return candidates[0] if candidates else None
-
-
 def _set_skeletal_mesh(component, mesh):
     try:
         component.set_editor_property("skeletal_mesh_asset", mesh)  # 5.1+ name
@@ -124,62 +113,6 @@ def _get_skeletal_mesh(component):
         except Exception:
             continue
     return None
-
-
-# --- 1P arms component through SubobjectDataSubsystem (the 5.x SCS surface) ------
-
-def _gather(bp):
-    sds = unreal.get_editor_subsystem(unreal.SubobjectDataSubsystem)
-    lib = unreal.SubobjectDataBlueprintFunctionLibrary
-    out = []
-    for handle in sds.k2_gather_subobject_data_for_blueprint(bp):
-        data = sds.k2_find_subobject_data_from_handle(handle)
-        out.append((handle, str(lib.get_variable_name(data)), lib.get_object(data)))
-    return sds, out
-
-
-def _find_named(entries, name):
-    for handle, var_name, obj in entries:
-        if var_name == name:
-            return handle, obj
-    return None, None
-
-
-def _ensure_arms_component(bp, arms_mesh):
-    """Returns (component_template or None, note). Creation failure is reported,
-    never raised - the audit rows carry the verdict."""
-    try:
-        sds, entries = _gather(bp)
-        _handle, existing = _find_named(entries, ARMS_COMPONENT_NAME)
-        if existing is None:
-            parent_handle, note = None, "attached under camera"
-            for handle, var_name, obj in entries:
-                if isinstance(obj, unreal.CameraComponent) \
-                        and var_name in CAMERA_COMPONENT_NAMES:
-                    parent_handle = handle
-                    break
-            if parent_handle is None:
-                # No discoverable camera: root attach, called out in the audit.
-                parent_handle, note = entries[0][0], "attached under root (no camera found)"
-            params = unreal.AddNewSubobjectParams(
-                parent_handle=parent_handle,
-                new_class=unreal.SkeletalMeshComponent,
-                blueprint_context=bp)
-            result = sds.add_new_subobject(params)
-            new_handle = result[0] if isinstance(result, tuple) else result
-            sds.rename_subobject(new_handle, unreal.Text(ARMS_COMPONENT_NAME))
-            _sds, entries = _gather(bp)
-            _handle, existing = _find_named(entries, ARMS_COMPONENT_NAME)
-            if existing is None:
-                fail = result[1] if isinstance(result, tuple) and len(result) > 1 else "?"
-                return None, "add_new_subobject produced no component (%s)" % fail
-        else:
-            note = "already present"
-        _set_skeletal_mesh(existing, arms_mesh)
-        existing.set_editor_property("only_owner_see", True)
-        return existing, note
-    except Exception as err:
-        return None, "SubobjectDataSubsystem path failed: %s" % err
 
 
 def main():
@@ -226,7 +159,9 @@ def main():
     cdo = unreal.get_default_object(bp.get_editor_property("generated_class"))
     mesh_comp = cdo.get_editor_property("mesh")  # ACharacter's CharacterMesh0
     _set_skeletal_mesh(mesh_comp, mesh_3p)
-    mesh_comp.set_editor_property("owner_no_see", True)
+    # True first person: full-body, the owner sees their own mannequin. Converges the
+    # old True the earlier runs saved on the CDO - the C++ default alone cannot clear it.
+    mesh_comp.set_editor_property("owner_no_see", False)
     if abp_class is not None:
         mesh_comp.set_editor_property("animation_mode",
                                       unreal.AnimationMode.ANIMATION_BLUEPRINT)
@@ -234,13 +169,6 @@ def main():
             mesh_comp.set_editor_property("anim_class", abp_class)
         except Exception:
             mesh_comp.set_anim_instance_class(abp_class)
-
-    arms_mesh_path = _find_arms_mesh()
-    arms_comp, arms_note = None, "skipped - no 1P arms skeletal mesh under %s" \
-        % (ARMS_SEARCH_ROOTS,)
-    if arms_mesh_path is not None:
-        arms_mesh = unreal.EditorAssetLibrary.load_asset(arms_mesh_path)
-        arms_comp, arms_note = _ensure_arms_component(bp, arms_mesh)
 
     unreal.BlueprintEditorLibrary.compile_blueprint(bp)
     if not unreal.EditorAssetLibrary.save_asset(BP_PATH):
@@ -268,30 +196,12 @@ def main():
          actual_parent.get_path_name() if actual_parent else "None"),
         ("3P mesh asset", "%s.%s" % (MESH_3P_PATH, MESH_3P_PATH.rsplit("/", 1)[-1]),
          actual_mesh.get_path_name() if actual_mesh else "None"),
-        ("3P owner_no_see", "True",
+        ("mesh owner_no_see (true FP, full-body)", "False",
          str(mesh_comp.get_editor_property("owner_no_see"))),
-        ("3P anim class (per %s)" % REPARENT_SCRIPT, abp_intent,
+        ("anim class (per %s)" % REPARENT_SCRIPT, abp_intent,
          actual_anim.get_path_name() if actual_anim else
          ("none - no candidate ABP on disk" if abp_path is None else "None")),
     ]
-
-    _sds, entries = _gather(bp)
-    _handle, arms_actual = _find_named(entries, ARMS_COMPONENT_NAME)
-    if arms_mesh_path is None:
-        rows.append(("1P arms component", "absent (no arms mesh found by search)",
-                     "absent (no arms mesh found by search)" if arms_actual is None
-                     else "present unexpectedly"))
-    else:
-        rows.append(("1P arms component (%s)" % arms_note, "present",
-                     "present" if arms_actual is not None else "absent"))
-        if arms_actual is not None:
-            actual_arms_mesh = _get_skeletal_mesh(arms_actual)
-            rows.append(("1P arms mesh asset",
-                         "%s.%s" % (arms_mesh_path, arms_mesh_path.rsplit("/", 1)[-1]),
-                         actual_arms_mesh.get_path_name() if actual_arms_mesh
-                         else "None"))
-            rows.append(("1P only_owner_see", "True",
-                         str(arms_actual.get_editor_property("only_owner_see"))))
 
     rows.append(("compiles clean", "True",
                  str(status == unreal.BlueprintStatus.BS_UP_TO_DATE)))
