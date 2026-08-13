@@ -189,3 +189,9 @@ with it.
      **Rung 1 stays RED until the R2-G4 owner lands the one-line `ServerExec` swap.**
   3. `BreachpointServer` cannot link on this Launcher install — expected PARTIAL per
      `run-ubt.sh`, not a defect.
+- 13 Aug 2026 (mac terminal, follow-up) — `145a2b5` deleted `BNCheatManager` but moved the
+  same removed-API call into `Match/BNPlayerController.cpp:28` (`PC->ServerCheat(...)`).
+  Same one-line fix owed (`ServerExec`), same ruling applies — stays with the R2-G5 owner.
+  Rung 1 measured this session: BreachpointEditor FAIL, Breachpoint FAIL (this one error
+  only), BreachpointServer expected-PARTIAL (Launcher install). Everything else, including
+  the Wave-4/5 GAS work and the landed TargetData listener, compiles.
