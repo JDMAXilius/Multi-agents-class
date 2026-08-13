@@ -80,6 +80,23 @@ the deprecated array empty, or a PostLoad migration doubles every binding.
 - **`DA_BNAbilitySet_Rifle` / `_Pistol`** — not for this checkpoint (see above). They arrive with
   G4, holding Fire and Reload.
 
+### 5 · Wave 3 input — sprint and lean *(added 13 Aug, batched here to save a second trip)*
+
+C++ landed with Wave 3. Three more rows and three more mappings, same two assets as §3.
+
+| Asset | Detail |
+|---|---|
+| `Input.Sprint` action | **Probably reuse** `/Game/FPSTemplate/Input/Actions/IA_FPST_Sprint`. The handler reads no value — it needs only Started/Completed on a digital action. **Confirm the value type is BOOLEAN in the editor before adding the row**; R1's reuse verdict allows a template IA only when the type matches, and this one is an LFS pointer here so it could not be verified from the repo. If it is not Boolean, create `/Game/BN/Input/IA_BN_Sprint` instead and say so |
+| `/Game/BN/Input/IA_BN_LeanLeft` | `UInputAction`, Boolean — new, the template ships no lean action |
+| `/Game/BN/Input/IA_BN_LeanRight` | `UInputAction`, Boolean — new |
+| `DA_BNInput` rows | the three actions ↔ tags `Input.Sprint`, `Input.Lean.Left`, `Input.Lean.Right` |
+| `IMC_BNNext` mappings | **Shift** = sprint, **Q** = lean left, **E** = lean right (the reference's keys, `MyCharacter.cpp:852-855`) |
+
+**Expect lean to produce no visible tilt, and that is not a bug in this ticket.** The lean
+*state* is built and replicates; the animation has nowhere to receive it, because the ABP's lean
+surface is written only by the procedural component this roadmap defers to R3. Recorded in full
+in the Wave 3 commit. The keys should still fire the abilities and flip the tags.
+
 ## Read back and report
 
 Fresh-load every asset and print an intent-vs-actual table: each asset's path and parent/type, the
