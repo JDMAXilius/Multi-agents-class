@@ -40,6 +40,11 @@ namespace BNTags
 	 *  the shield dance is this tag's duration, not a timer anyone hand-runs. */
 	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Combat_RecentDamage);
 
+	/** Shield at zero. Named by gas-purity/SKILL.md §5 — "State.Dead/State.Shields.Broken rules
+	 *  live in tags, not branches" — so the shield-down state is queryable by UI, audio and
+	 *  abilities without any of them reading the attribute and re-deciding what "broken" means. */
+	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Shields_Broken);
+
 	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_MuzzleFlash);
 	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_Impact);
 	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_Tracer);

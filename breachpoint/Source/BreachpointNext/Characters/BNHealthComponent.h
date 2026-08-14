@@ -50,25 +50,32 @@ protected:
 	/** RecentDamage arrived or expired: stop the recharge, or start it again. */
 	void HandleRecentDamageChanged(const FGameplayTag Tag, int32 NewCount);
 
+	/** Shield crossed zero in either direction: raise or clear State.Shields.Broken. */
+	void HandleShieldChanged(const FOnAttributeChangeData& Data);
+
+	/** Authority only. Idempotent, like the recharge — the handle is the guard. */
+	void SetShieldsBroken(bool bBroken);
+
 	/** Authority only. Idempotent — the handle is what makes a second call a no-op. */
 	void SetShieldRechargeActive(bool bActive);
 
-	/** OFF by default, deliberately (founder: "do health component after you're done with
-	 *  everything"). The recharge is a real change to how a fight FEELS — shields coming back after
-	 *  four seconds rewrites every duel — and it must not arrive unannounced in the middle of a
-	 *  playtest aimed at aim, melee and grenades.
+	/** ON, as of the founder's go-ahead. It was gated off for one commit while the rest of R3
+	 *  landed, because the recharge is a real change to how a fight FEELS — shields returning after
+	 *  2.5s rewrites every duel — and that should not arrive unannounced mid-playtest.
 	 *
-	 *  The structural half of this work is NOT gated and stays live: MaxHealth/MaxShield and their
-	 *  clamps are prerequisites, not features. Nothing can draw a health bar without a denominator,
-	 *  and an unclamped pool is a bug waiting whether or not anything recharges.
-	 *
-	 *  Flip to True in DefaultGame.ini under [/Script/BreachpointNext.BNHealthComponent]. */
+	 *  Kept as a switch rather than hardcoded: it is the fastest way to answer "is the recharge
+	 *  making this fight strange?" without a rebuild. `bShieldRechargeEnabled=False` in
+	 *  DefaultGame.ini under [/Script/BreachpointNext.BNHealthComponent] turns the dance off. */
 	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Health")
-	bool bShieldRechargeEnabled = false;
+	bool bShieldRechargeEnabled = true;
 
 	FActiveGameplayEffectHandle ShieldRechargeHandle;
 
+	FActiveGameplayEffectHandle ShieldBrokenHandle;
+
 	FDelegateHandle RecentDamageHandle;
+
+	FDelegateHandle ShieldChangedHandle;
 
 	/** Cached, per Wave 2's lesson: the ASC is the PlayerState's and outlives this pawn, so
 	 *  EndPlay cannot reach it through a fresh lookup — UnPossessed() nulls PlayerState first. */
