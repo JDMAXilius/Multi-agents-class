@@ -1,5 +1,6 @@
 # TICKET — Core vocabulary and the data layer: tags, logs, teams, row structs, BRGameData
 
+> STATUS: in-progress — mac terminal 14 Aug 2026 (BP90 closed same session)
 > STATUS: open — cut 7 Aug 2026. Blocked on BP90 DONE. Runs in parallel with BP92.
 
 Founder directive: nothing in this layer activates. It is the vocabulary every later packet
