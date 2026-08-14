@@ -1,6 +1,6 @@
 # TICKET — Core vocabulary and the data layer: tags, logs, teams, row structs, BRGameData
 
-> STATUS: in-progress — mac terminal 14 Aug 2026 (BP90 closed same session)
+> STATUS: open — PAUSED 14 Aug 2026 mid-step-5, steps 1-4 landed; resume at the reimport (see Log)
 > STATUS: open — cut 7 Aug 2026. Blocked on BP90 DONE. Runs in parallel with BP92.
 
 Founder directive: nothing in this layer activates. It is the vocabulary every later packet
@@ -176,3 +176,15 @@ and `Equipment/BRWeaponPickup.cpp:319` (BP97, which should route through BRGameD
 rework §3.6). UI sites are out of rework scope entirely — the done-box needs either a
 scope ruling ("module" = the rework's folders) or those packets. Recorded as the box's
 blocker, not routed around.
+
+### 14 Aug 2026 — lead, PAUSED mid-step-5 (founder redirect to BreachpointNext)
+
+Steps 1–4 are LANDED and pushed (Core vocabulary, Data layer, ini table paths). Step 5:
+curator proposals for both CSVs are landed in `Content/Data/*.csv` in this commit —
+**proposed text only, NOT reimported**: the scripted reimport was killed mid-run on the
+founder's redirect, and the half-written `DT_Weapons.uasset` was reverted to HEAD. The
+uassets are therefore STALE against the CSVs (old FireMode column, no grapple curve rows).
+Step 6 (verifier) not run. Next pickup resumes at step 5: run
+`reimport_tables.py DT_Weapons CT_Combat` (BY NAME — ALL skips CT_*), then step 6.
+Curator risk flag for the soak: the three `Movement.Grapple.*` rows are paper numbers;
+PullSpeed/ArrivalRadius units inferred cm from consumer field names — if metre-read, 100× off.

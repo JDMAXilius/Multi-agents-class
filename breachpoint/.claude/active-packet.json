@@ -1,1 +1,0 @@
-{"ticket": "TICKET_BP91_FOUNDATION", "owner_path": ["Source/Breachpoint/Core/", "Source/Breachpoint/Data/", "Content/Data/", "docs/tickets/", "Config/"], "note": "Config/ added 14 Aug 2026: ticket step 4 mandates table paths come from Config/DefaultGame.ini; claim under-declared (same gap as BP90, see BP91 Log)."}

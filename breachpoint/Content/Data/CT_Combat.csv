@@ -6,6 +6,9 @@ Damage.Headshot.Multiplier,1.0,1.0,1.0
 Damage.Rear.Multiplier,1.0,1.0,1.0
 Movement.BaseSpeed,600.0,600.0,600.0
 Movement.Sprint.SpeedMultiplier,1.2,1.2,1.2
+Movement.Grapple.PullSpeed,2000.0,2000.0,2000.0
+Movement.Grapple.ArrivalRadius,150.0,150.0,150.0
+Movement.Grapple.MaxPullSeconds,1.5,1.5,1.5
 Shields.Regen.RatePerSecond,60.0,60.0,60.0
 Shields.Regen.DelaySeconds,2.5,2.5,2.5
 Shields.Regen.PeriodSeconds,0.25,0.25,0.25
