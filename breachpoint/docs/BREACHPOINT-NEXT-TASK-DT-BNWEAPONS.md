@@ -1,5 +1,5 @@
 # TICKET — create `DT_BNWeapons` through the Unreal MCP
-> STATUS: in-progress — mac terminal 13 Aug 2026 (8befcd9). Editor live, MCP on :8000.
+> STATUS: done — mac terminal 13 Aug 2026 (286f562). Read-back in the Log.
 
 **Cut:** 13 August 2026 by the cloud lead · **For:** the terminal session (editor + MCP in reach)
 **Binds to:** the NEXT doc family only · **Owner path:** `Content/BN/Data/`
