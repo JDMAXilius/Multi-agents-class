@@ -156,3 +156,16 @@ Nothing in the editor is needed for the grenade at all — no Blueprint, no asse
   runs later and wins), so the components' unique value today is Manager orchestration,
   SetAimAndLeanInfo's weights/structs, pose offsets, sway and recoil; if the lead wants the
   components to own aim outright, the native writers need a yield switch.
+
+- 14 Aug 2026 (mac terminal) — **the communications hub + the C++ yield, both landed.**
+  Founder confirmed the non-BN guard fixed the originals; our character's remaining break was
+  named "animation communications" and traced: `SetControllerPitch`/`SetFPSMode` are sent by
+  **`BPC_FPSComp`** — BP_FPSCharacter's "BPC_FPSCamComp" node is that class under a local name,
+  and it was the one component the first pass excluded as "just camera". Executed: (1)
+  `BPC_FPSComp_C` added to BP_BNCharacter's SCS under the same node name, 18/19 props copied
+  from the founder's character (ownerCharacter = runtime ref, skipped, typed plain ACharacter);
+  (2) `UBNAnimInstance.bNativeOwnsAimSurface` — the yield switch — guards every contested write
+  (Pitch/AimPitch/PitchRotator/bFPSMode/lean), default true, set FALSE on the shared ABP's
+  defaults so the template's own interface events now own the aim surface on BN pawns while
+  locomotion/tag states stay native; (3) both BPs compiled clean, saved, flag read back false.
+  The revert path is one checkbox on the ABP defaults.

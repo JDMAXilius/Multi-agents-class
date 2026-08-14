@@ -216,6 +216,15 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "BN")
 	FVector2D AimPitchClamp = FVector2D(-90.0, 90.0);
 
+	/** The yield switch, founder's ruling 14 Aug: with the template's procedural components on
+	 *  the character (BPC_FPSComp sending SetControllerPitch/SetFPSMode, the Manager sending
+	 *  SetAimAndLeanInfo), the ASSET's interface events own Pitch/PitchRotator/bFPSMode/lean —
+	 *  and this native publisher, which runs after them, must stand down or it stomps every
+	 *  message. True = the R3-G1 native path (no components needed); false = the template's
+	 *  own communications drive the pose. Set on the ABP's defaults, not per instance. */
+	UPROPERTY(EditAnywhere, Category = "BN")
+	bool bNativeOwnsAimSurface = true;
+
 	/** Written only through SetRootYawOffset (= -RootYawOffset), as the source does. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
 	double AimYaw = 0.0;

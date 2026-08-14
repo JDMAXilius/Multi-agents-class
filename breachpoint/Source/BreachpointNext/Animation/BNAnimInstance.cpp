@@ -227,7 +227,10 @@ void UBNAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 	IsJumping = bSnapJumping;
 	bUnarmed = bSnapUnarmed;
 	bSprinting = bSnapSprinting;
-	bFPSMode = bSnapFPSMode;
+	if (bNativeOwnsAimSurface)
+	{
+		bFPSMode = bSnapFPSMode;
+	}
 	GameplayTag_IsADS = bSnapADS;
 
 	bNativeADSStateChange = !bNativeFirstUpdate && bSnapADS != bWasADSLastUpdate;
@@ -275,24 +278,27 @@ void UBNAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 	// CMC holds at zero. NormalizeAxis is load-bearing on a simulated proxy — GetBaseAimRotation
 	// decompresses RemoteViewPitch into 0..360 there, so +-90 only survives normalized.
 	// Nothing here reads locally-controlled-only state, which is why every machine agrees.
-	const double AimPitchDelta = FRotator::NormalizeAxis(SnapBaseAimPitch - SnapRotation.Pitch);
-	AimPitch = AimPitchDelta;
-	Pitch = FMath::Clamp(AimPitchDelta, AimPitchClamp.X, AimPitchClamp.Y);
-	// The scalar above is what the asset's graph reads; THIS is what the aim layers read. The
-	// layers bind to GetMainAnimBPThreadSafe.PitchRotator, so leaving it to a Blueprint hop meant
-	// the whole spine chain applied a zero rotator — the arms and weapon held still while the
-	// camera, which takes control rotation directly, moved. Writing it here closes that gap.
-	PitchRotator = BNMakeAxisRotator(AimPitchAxis, Pitch);
+	if (bNativeOwnsAimSurface)
+	{
+		const double AimPitchDelta = FRotator::NormalizeAxis(SnapBaseAimPitch - SnapRotation.Pitch);
+		AimPitch = AimPitchDelta;
+		Pitch = FMath::Clamp(AimPitchDelta, AimPitchClamp.X, AimPitchClamp.Y);
+		// The scalar above is what the asset's graph reads; THIS is what the aim layers read. The
+		// layers bind to GetMainAnimBPThreadSafe.PitchRotator, so leaving it to a Blueprint hop meant
+		// the whole spine chain applied a zero rotator — the arms and weapon held still while the
+		// camera, which takes control rotation directly, moved. Writing it here closes that gap.
+		PitchRotator = BNMakeAxisRotator(AimPitchAxis, Pitch);
 
-	// ---- lean. The State.Lean.* tags are the input and they replicate (Mixed carries GE-granted
-	// tags to simulated proxies), so a proxy leans the way its owner does. Both sides held cancel.
-	const double TargetLeaning = (bSnapLeanRight ? 1.0 : 0.0) - (bSnapLeanLeft ? 1.0 : 0.0);
-	NativeCurrLeaning = FMath::FInterpTo(NativeCurrLeaning, TargetLeaning, static_cast<double>(DeltaSeconds), LeanInterpSpeed);
-	const double LeanDegrees = NativeCurrLeaning * LeanAngle;
-	LeanRotation = BNMakeAxisRotator(LeanAxis, LeanDegrees);
-	// The head's counter-tilt: the body tips, the gaze stays level. Same axis, opposite sign —
-	// the asset's LeanSpineWeights head entry is literally named "Opposite Angle Weight".
-	LeanOppRotation = BNMakeAxisRotator(LeanAxis, -LeanDegrees);
+		// ---- lean. The State.Lean.* tags are the input and they replicate (Mixed carries GE-granted
+		// tags to simulated proxies), so a proxy leans the way its owner does. Both sides held cancel.
+		const double TargetLeaning = (bSnapLeanRight ? 1.0 : 0.0) - (bSnapLeanLeft ? 1.0 : 0.0);
+		NativeCurrLeaning = FMath::FInterpTo(NativeCurrLeaning, TargetLeaning, static_cast<double>(DeltaSeconds), LeanInterpSpeed);
+		const double LeanDegrees = NativeCurrLeaning * LeanAngle;
+		LeanRotation = BNMakeAxisRotator(LeanAxis, LeanDegrees);
+		// The head's counter-tilt: the body tips, the gaze stays level. Same axis, opposite sign —
+		// the asset's LeanSpineWeights head entry is literally named "Opposite Angle Weight".
+		LeanOppRotation = BNMakeAxisRotator(LeanAxis, -LeanDegrees);
+	}
 
 	// ---- linked layer edge
 	bNativeLinkedLayerChanged = !bNativeFirstUpdate && bSnapLayerChanged;
