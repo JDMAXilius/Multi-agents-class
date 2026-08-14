@@ -4,6 +4,7 @@
 #include "BreachpointNext.h"
 #include "Characters/BNCharacter.h"
 #include "Data/BNDataRows.h"
+#include "Data/BNGameData.h"
 #include "Weapons/BNWeapon.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/World.h"
@@ -42,10 +43,33 @@ void UBNEquipmentComponent::InitializeCarriedWeapons()
 			continue;
 		}
 
+		// THE ROW FIRST — it decides whether to spawn at all and WHAT to spawn. A name with no row
+		// used to spawn anyway and join the cycle as a meshless ghost; now the ini names every
+		// intended weapon (all four) and each joins the rotation the moment its DT row lands.
+		const UGameInstance* GameInstance = World->GetGameInstance();
+		const UBNGameData* GameData = GameInstance ? GameInstance->GetSubsystem<UBNGameData>() : nullptr;
+		const FBNWeaponRow* Row = GameData ? GameData->FindWeaponRow(StartupRow) : nullptr;
+		if (!Row)
+		{
+			UE_LOG(LogBN, Error, TEXT("BNEquipmentComponent: startup row '%s' does not exist in the weapon table — skipped. Add the row to DT_BNWeapons and this weapon appears."),
+				*StartupRow.ToString());
+			continue;
+		}
+
+		// Subclass-through-data: the row may name an ABNWeapon subclass; none = the base, which is
+		// every current weapon. This is what makes ABNWeapon a BASE without a hierarchy existing.
+		UClass* SpawnClass = Row->WeaponClass.IsNull() ? ABNWeapon::StaticClass() : Row->WeaponClass.LoadSynchronous();
+		if (!SpawnClass)
+		{
+			UE_LOG(LogBN, Error, TEXT("BNEquipmentComponent: row '%s' names WeaponClass '%s' which failed to load — using ABNWeapon."),
+				*StartupRow.ToString(), *Row->WeaponClass.ToString());
+			SpawnClass = ABNWeapon::StaticClass();
+		}
+
 		// Deferred so the identity is set before BeginPlay — the weapon never exists, on any
 		// machine, in a state where its row is unknown.
 		ABNWeapon* Weapon = World->SpawnActorDeferred<ABNWeapon>(
-			ABNWeapon::StaticClass(), FTransform::Identity, Owner, InstigatorPawn,
+			SpawnClass, FTransform::Identity, Owner, InstigatorPawn,
 			ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 		if (!Weapon)
 		{
@@ -53,9 +77,12 @@ void UBNEquipmentComponent::InitializeCarriedWeapons()
 		}
 		Weapon->SetRowName(StartupRow);
 		Weapon->FinishSpawning(FTransform::Identity);
+		// Born HIDDEN, so the first ApplyCurrentWeapon is a real edge: the current weapon
+		// transitions hidden->shown and OnEquipped fires for the spawn equip too, not only for
+		// later swaps. bHidden replicates, so joining clients start from the same state.
+		Weapon->SetActorHiddenInGame(true);
 
-		const FBNWeaponRow* Row = Weapon->GetRow();
-		const FName Socket = Row ? Row->AttachSocketName : NAME_None;
+		const FName Socket = Row->AttachSocketName;
 		Weapon->AttachToComponent(Mesh,
 			FAttachmentTransformRules(EAttachmentRule::SnapToTarget, EAttachmentRule::SnapToTarget,
 				EAttachmentRule::KeepWorld, /*bWeldSimulatedBodies=*/false),
@@ -162,7 +189,20 @@ void UBNEquipmentComponent::ApplyCurrentWeapon()
 	{
 		if (ABNWeapon* Weapon = Weapons[Index])
 		{
-			Weapon->SetActorHiddenInGame(Index != CurrentIndex);
+			const bool bIsCurrent = Index == CurrentIndex;
+			const bool bWasHidden = Weapon->IsHidden();
+			Weapon->SetActorHiddenInGame(!bIsCurrent);
+			// The base-class seams, fired on the EDGE only — this function re-runs on every index
+			// change and both OnReps, and a hook that fires on every re-apply is not a hook, it is
+			// a tick with extra steps.
+			if (bIsCurrent && bWasHidden)
+			{
+				Weapon->OnEquipped();
+			}
+			else if (!bIsCurrent && !bWasHidden)
+			{
+				Weapon->OnUnequipped();
+			}
 		}
 	}
 

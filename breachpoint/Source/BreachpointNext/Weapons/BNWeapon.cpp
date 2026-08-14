@@ -31,6 +31,7 @@ void ABNWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetim
 
 	DOREPLIFETIME(ABNWeapon, RowName);
 	DOREPLIFETIME(ABNWeapon, CurrentAmmo);
+	DOREPLIFETIME(ABNWeapon, AmmoReserve);
 }
 
 void ABNWeapon::SetRowName(FName InRowName)
@@ -82,6 +83,7 @@ void ABNWeapon::ApplyRow()
 	if (HasAuthority())
 	{
 		CurrentAmmo = Row->MagazineSize;
+	AmmoReserve = Row->ReserveAmmo;
 	}
 }
 
@@ -104,10 +106,19 @@ bool ABNWeapon::ConsumeAmmo(int32 Count)
 
 void ABNWeapon::Reload()
 {
+	// The transfer, not a refill: before AmmoReserve existed this set CurrentAmmo = MagazineSize
+	// and ammo was silently infinite. An empty reserve now reloads nothing — the empty click.
 	if (HasAuthority())
 	{
-		CurrentAmmo = GetMagazineSize();
+		const int32 Moved = CalcReloadTransfer(GetMagazineSize(), CurrentAmmo, AmmoReserve);
+		CurrentAmmo += Moved;
+		AmmoReserve -= Moved;
 	}
+}
+
+void ABNWeapon::OnRep_AmmoReserve()
+{
+	// Behaviourless like OnRep_CurrentAmmo, for the same reason. The HUD's reserve readout binds here.
 }
 
 void ABNWeapon::OnRep_CurrentAmmo()

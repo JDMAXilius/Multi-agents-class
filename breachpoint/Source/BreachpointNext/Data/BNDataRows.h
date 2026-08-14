@@ -9,6 +9,7 @@ class UAnimMontage;
 class UBNAbilitySet;
 class USkeletalMesh;
 class USoundBase;
+class ABNWeapon;
 
 // Our own enum, not the template's E_FPST_FireMode asset enum. Same three modes in the same
 // order (MyCharacter.cpp:74-77), so an imported number still means what it meant.
@@ -78,6 +79,12 @@ struct FBNWeaponRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, Category = "Ammo")
 	int32 MagazineSize = 30;
 
+	/** The pool behind the magazine. Reload TRANSFERS from here (min(MagSize - InMag, Reserve) —
+	 *  UBRWeaponInstance's proven math); before this field existed, Reload() refilled the magazine
+	 *  from nothing and ammo was silently infinite. Knife: 0 and 0. */
+	UPROPERTY(EditAnywhere, Category = "Ammo")
+	int32 ReserveAmmo = 90;
+
 	UPROPERTY(EditAnywhere, Category = "Ammo")
 	float ReloadTime = 2.f;
 
@@ -90,6 +97,12 @@ struct FBNWeaponRow : public FTableRowBase
 	// character's (MyCharacter.cpp:52, 1557-1580).
 	UPROPERTY(EditAnywhere, Category = "Attachment")
 	FName MuzzleSocketName;
+
+	/** What ABNWeapon a subclass-through-data spawn produces. None = plain ABNWeapon, which every
+	 *  current weapon uses — the hierarchy exists the moment a weapon's BEHAVIOR (not values)
+	 *  differs, and not one day before (RESEARCH-WEAPON-BASE). */
+	UPROPERTY(EditAnywhere, Category = "Assets")
+	TSoftClassPtr<ABNWeapon> WeaponClass;
 
 	UPROPERTY(EditAnywhere, Category = "Assets")
 	TSoftObjectPtr<USkeletalMesh> WeaponMesh;
