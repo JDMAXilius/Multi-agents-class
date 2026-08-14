@@ -1,0 +1,16 @@
+{
+  "ticket": "NEXT R3 terminal batch - INPUT-WIRING + CUE-BLUEPRINTS + HIT-REACTIONS, after the PitchRotator dedupe",
+  "owner_path": [
+    "Content/BN/",
+    "Content/FPSTemplate/Demo/Characters/Heroes/Mannequin/Animations/ABP_Mannequin_Base.uasset",
+    "docs/BREACHPOINT-NEXT-TASK-INPUT-WIRING.md",
+    "docs/BREACHPOINT-NEXT-TASK-CUE-BLUEPRINTS.md",
+    "docs/BREACHPOINT-NEXT-TASK-HIT-REACTIONS.md"
+  ],
+  "binary_locks": [
+    "Content/FPSTemplate/Demo/Characters/Heroes/Mannequin/Animations/ABP_Mannequin_Base.uasset",
+    "Content/BN/Input/DA_BNInput.uasset",
+    "Content/BN/Input/IMC_BNNext.uasset"
+  ],
+  "authorized_by": "founder, 13 Aug 2026 - 'yes run that sequence' to the recommended order: build + PitchRotator dedupe (the AIM-DIAGNOSIS doc's own required editor step), then the three terminal tickets. ABP_Mannequin_Base is in owner_path for exactly ONE edit: removing the BP-local PitchRotator duplicate."
+}
