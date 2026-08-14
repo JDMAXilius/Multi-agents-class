@@ -1,5 +1,6 @@
 # TICKET — Strip the UE template out of the runtime module, and settle the three rework decisions
 
+> STATUS: in-progress — mac terminal 14 Aug 2026 (4cf813f)
 > STATUS: open — cut 7 Aug 2026 alongside `docs/BREACHPOINT-GAMEPLAY-REWORK.md`.
 > Root ticket of the gameplay rework. Nothing in Phase 1+ starts until this is DONE.
 
