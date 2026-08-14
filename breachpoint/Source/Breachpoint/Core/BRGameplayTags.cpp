@@ -2,56 +2,68 @@
 
 namespace BRGameplayTags
 {
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Jump, "Ability.Jump", "UBRGA_Jump's asset tag; jump is an ability, not a pawn call, so anything that must suppress jumping cancels THIS tag.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Sprint, "Ability.Sprint", "BRGA_Sprint's asset tag; what CancelAbilitiesWithTag must list to end a sprint.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Weapon_Fire, "Ability.Weapon.Fire", "BRGA_WeaponFire's asset tag (BP03); what a future ability would list to cancel firing.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Weapon_Reload, "Ability.Weapon.Reload", "UBRGA_Reload's asset tag (BP03); firing cancels a reload by listing THIS tag.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Weapon_Swap, "Ability.Weapon.Swap", "UBRGA_WeaponSwap's asset tag (BP03); firing cancels a swap by listing THIS tag.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Grapple, "Ability.Grapple", "UBRGA_Grapple's asset tag AND its cooldown tag (BP06); the cooldown is a predicted GE so it rolls back on rejection.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Melee, "Ability.Melee", "UBRGA_Melee's asset tag (BP05); firing cancels a melee by listing THIS tag.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Grenade, "Ability.Grenade", "UBRGA_Grenade's asset tag (BP05); declared natively so the constructor cannot race the tag registry.");
+	// ---- InputTag.* ------------------------------------------------------------------
+	UE_DEFINE_GAMEPLAY_TAG(InputTag_Move, "InputTag.Move");
+	UE_DEFINE_GAMEPLAY_TAG(InputTag_Look, "InputTag.Look");
+	UE_DEFINE_GAMEPLAY_TAG(InputTag_Jump, "InputTag.Jump");
+	UE_DEFINE_GAMEPLAY_TAG(InputTag_Crouch, "InputTag.Crouch");
+	UE_DEFINE_GAMEPLAY_TAG(InputTag_Sprint, "InputTag.Sprint");
+	UE_DEFINE_GAMEPLAY_TAG(InputTag_Weapon_Fire, "InputTag.Weapon.Fire");
+	UE_DEFINE_GAMEPLAY_TAG(InputTag_Weapon_Reload, "InputTag.Weapon.Reload");
+	UE_DEFINE_GAMEPLAY_TAG(InputTag_Weapon_Swap, "InputTag.Weapon.Swap");
+	UE_DEFINE_GAMEPLAY_TAG(InputTag_Grenade, "InputTag.Grenade");
+	UE_DEFINE_GAMEPLAY_TAG(InputTag_Melee, "InputTag.Melee");
+	UE_DEFINE_GAMEPLAY_TAG(InputTag_Grapple, "InputTag.Grapple");
 
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayCue_Weapon_AR_Fire, "GameplayCue.Weapon.AR.Fire", "AR fire FX; named by DT_Weapons.csv row AR.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayCue_Weapon_Magnum_Fire, "GameplayCue.Weapon.Magnum.Fire", "Magnum fire FX; named by DT_Weapons.csv row Magnum.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayCue_Weapon_Rocket_Fire, "GameplayCue.Weapon.Rocket.Fire", "Rocket fire FX; named by DT_Weapons.csv row Rocket.");
+	// ---- Ability.* -------------------------------------------------------------------
+	UE_DEFINE_GAMEPLAY_TAG(Ability_Sprint, "Ability.Sprint");
+	UE_DEFINE_GAMEPLAY_TAG(Ability_Jump, "Ability.Jump");
+	UE_DEFINE_GAMEPLAY_TAG(Ability_Melee, "Ability.Melee");
+	UE_DEFINE_GAMEPLAY_TAG(Ability_WeaponFire, "Ability.WeaponFire");
+	UE_DEFINE_GAMEPLAY_TAG(Ability_WeaponUtility, "Ability.WeaponUtility");
+	UE_DEFINE_GAMEPLAY_TAG(Ability_Grenade, "Ability.Grenade");
+	UE_DEFINE_GAMEPLAY_TAG(Ability_Grapple, "Ability.Grapple");
 
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Move, "InputTag.Move", "Native action: planar movement, handled by the CMC.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Look, "InputTag.Look", "Native action: look/aim, handled by the controller.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Jump, "InputTag.Jump", "Native action: jump, handled by the CMC.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Crouch, "InputTag.Crouch", "Native action: crouch, handled by the CMC.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Sprint, "InputTag.Sprint", "Ability action: sprint (WhileHeld activation policy).");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Fire, "InputTag.Fire", "Ability action: fire the equipped weapon.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Reload, "InputTag.Reload", "Ability action: reload the equipped weapon.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Swap, "InputTag.Swap", "Ability action: swap to the other weapon slot.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Grenade, "InputTag.Grenade", "Ability action: throw a grenade.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Melee, "InputTag.Melee", "Ability action: melee attack.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Grapple, "InputTag.Grapple", "Ability action: grapple.");
+	// ---- State.* ---------------------------------------------------------------------
+	UE_DEFINE_GAMEPLAY_TAG(State_Dead, "State.Dead");
+	UE_DEFINE_GAMEPLAY_TAG(State_Movement_Sprinting, "State.Movement.Sprinting");
+	UE_DEFINE_GAMEPLAY_TAG(State_Shields_Broken, "State.Shields.Broken");
+	UE_DEFINE_GAMEPLAY_TAG(State_Combat_RecentDamage, "State.Combat.RecentDamage");
 
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Cooldown, "State.Cooldown", "Granted by GE_Cooldown so the engine accepts it as a cooldown GE. SHARED by every cooldown, so it must never appear in an ability's GetCooldownTags or one ability's cooldown would gate them all.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Shields_Broken, "State.Shields.Broken", "Shields are at zero; applied and removed by GEs only.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Combat_RecentDamage, "State.Combat.RecentDamage", "Damage taken recently; gates shield regen.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Movement_Sprinting, "State.Movement.Sprinting", "Sprinting; read by the CMC for the speed multiplier.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Movement_Grappling, "State.Movement.Grappling", "Granted for BRGA_Grapple's lifetime. The state language, not a bool on the CMC.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Weapon_Reloading, "State.Weapon.Reloading", "Granted for the reload ability's lifetime; what a future fire-interrupts-reload rule would query.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Weapon_Swapping, "State.Weapon.Swapping", "Granted for the swap ability's lifetime; the window in which no weapon is authoritative.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Combat_Meleeing, "State.Combat.Meleeing", "Granted for BRGA_Melee's lifetime, including its trace window.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Combat_ThrowingGrenade, "State.Combat.ThrowingGrenade", "Granted for BRGA_Grenade's lifetime, cook included.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Dead, "State.Dead", "Dead; blocks every ability activation through one mechanism.");
+	// ---- payload ---------------------------------------------------------------------
+	UE_DEFINE_GAMEPLAY_TAG(Damage_Kinetic, "Damage.Kinetic");
+	UE_DEFINE_GAMEPLAY_TAG(Damage_Explosive, "Damage.Explosive");
+	UE_DEFINE_GAMEPLAY_TAG(Damage_Melee, "Damage.Melee");
+	UE_DEFINE_GAMEPLAY_TAG(Damage_Melee_Rear, "Damage.Melee.Rear");
+	UE_DEFINE_GAMEPLAY_TAG(Damage_Headshot, "Damage.Headshot");
 
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Damage_Kinetic, "Damage.Kinetic", "Damage type: hitscan/kinetic weapons.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Damage_Explosive, "Damage.Explosive", "Damage type: grenades, rockets, radial sources.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Damage_Melee, "Damage.Melee", "Damage type: melee.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Damage_Headshot, "Damage.Headshot", "Damage modifier: headshot multiplier in BRDamageExecCalc.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Damage_Rear, "Damage.Rear", "Damage modifier: rear arc, validated server-side.");
+	UE_DEFINE_GAMEPLAY_TAG(SetByCaller_BaseDamage, "SetByCaller.BaseDamage");
+	UE_DEFINE_GAMEPLAY_TAG(SetByCaller_RegenRate, "SetByCaller.RegenRate");
+	UE_DEFINE_GAMEPLAY_TAG(SetByCaller_CooldownDuration, "SetByCaller.CooldownDuration");
+	UE_DEFINE_GAMEPLAY_TAG(SetByCaller_Cost, "SetByCaller.Cost");
 
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(SetByCaller_BaseDamage, "SetByCaller.BaseDamage", "GE_Damage magnitude.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(SetByCaller_RegenRate, "SetByCaller.RegenRate", "GE_Regen periodic magnitude.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(SetByCaller_CooldownDuration, "SetByCaller.CooldownDuration", "GE_Cooldown duration magnitude.");
+	UE_DEFINE_GAMEPLAY_TAG(Event_Death, "Event.Death");
+	UE_DEFINE_GAMEPLAY_TAG(Event_Kill, "Event.Kill");
+	UE_DEFINE_GAMEPLAY_TAG(Event_Melee_WindowBegin, "Event.Melee.WindowBegin");
+	UE_DEFINE_GAMEPLAY_TAG(Event_Melee_WindowEnd, "Event.Melee.WindowEnd");
+	UE_DEFINE_GAMEPLAY_TAG(Event_Weapon_ReloadCommit, "Event.Weapon.ReloadCommit");
+	UE_DEFINE_GAMEPLAY_TAG(Event_Weapon_SwapCommit, "Event.Weapon.SwapCommit");
 
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Event_Death, "Event.Death", "Gameplay event: the owner died.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Event_Kill, "Event.Kill", "Gameplay event: the owner got a kill.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Event_Melee_WindowBegin, "Event.Melee.WindowBegin", "Montage notify seam (R17): melee trace window opens.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Event_Melee_WindowEnd, "Event.Melee.WindowEnd", "Montage notify seam (R17): melee trace window closes.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Event_Weapon_ReloadCommit, "Event.Weapon.ReloadCommit", "Montage notify seam (R17): the reload commits.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Event_Weapon_SwapCommit, "Event.Weapon.SwapCommit", "Montage notify seam (R17): the weapon swap commits.");
+	// ---- COMPAT (see header — deleted with their last pre-rework consumer) -----------
+	UE_DEFINE_GAMEPLAY_TAG(Ability_Weapon_Fire, "Ability.Weapon.Fire");
+	UE_DEFINE_GAMEPLAY_TAG(Ability_Weapon_Reload, "Ability.Weapon.Reload");
+	UE_DEFINE_GAMEPLAY_TAG(Ability_Weapon_Swap, "Ability.Weapon.Swap");
+	UE_DEFINE_GAMEPLAY_TAG(InputTag_Fire, "InputTag.Fire");
+	UE_DEFINE_GAMEPLAY_TAG(InputTag_Reload, "InputTag.Reload");
+	UE_DEFINE_GAMEPLAY_TAG(InputTag_Swap, "InputTag.Swap");
+	UE_DEFINE_GAMEPLAY_TAG(Damage_Rear, "Damage.Rear");
+	UE_DEFINE_GAMEPLAY_TAG(State_Cooldown, "State.Cooldown");
+	UE_DEFINE_GAMEPLAY_TAG(State_Movement_Grappling, "State.Movement.Grappling");
+	UE_DEFINE_GAMEPLAY_TAG(State_Weapon_Reloading, "State.Weapon.Reloading");
+	UE_DEFINE_GAMEPLAY_TAG(State_Weapon_Swapping, "State.Weapon.Swapping");
+	UE_DEFINE_GAMEPLAY_TAG(State_Combat_Meleeing, "State.Combat.Meleeing");
+	UE_DEFINE_GAMEPLAY_TAG(State_Combat_ThrowingGrenade, "State.Combat.ThrowingGrenade");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_AR_Fire, "GameplayCue.Weapon.AR.Fire");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_Magnum_Fire, "GameplayCue.Weapon.Magnum.Fire");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_Rocket_Fire, "GameplayCue.Weapon.Rocket.Fire");
 }

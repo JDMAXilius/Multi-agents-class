@@ -81,3 +81,27 @@ lands before `BRGameData` (the subsystem types its lookups on the rows).
 ## Log
 
 (append findings here, dated, newest last)
+
+### 14 Aug 2026 — builder, steps 1–2 landed (Core/ only)
+
+Full rewrite of `BRGameplayTags.h/.cpp` and `BRCore.h/.cpp`. Editor-target compile
+`Result: Succeeded` (clean-compile evidence only; full rung 1 is step 6).
+
+**Tags:** the four ticket families exactly, plus a COMPAT block kept only because
+pre-rework code outside Core/ still references the old strings (delete-with-last-consumer):
+`Ability.Weapon.{Fire,Reload,Swap}`, `InputTag.{Fire,Reload,Swap}`, `Damage.Rear`,
+`State.Cooldown`, `State.Movement.Grappling`, `State.Weapon.{Reloading,Swapping}`,
+`State.Combat.{Meleeing,ThrowingGrenade}`, `GameplayCue.Weapon.{AR,Magnum,Rocket}.Fire`.
+NOTE for BP94: `Damage.Melee.Rear` (new) and `Damage.Rear` (old) are BOTH registered;
+`BRCombatSpec` pins the old semantics — the exec-calc rewrite must migrate the spec.
+
+**BRCore:** added `LogBRCombat/LogBRNet/LogBRAI`; kept `LogBRAbility` (14 pre-rework log
+sites, removing = build break until BP93/BP95) and `BRUnits::MetresToUU` (8 call sites).
+Collision aliases already matched the ini — `BRCollision::{Projectile, WeaponTrace,
+MeleeTrace, GrappleTrace}` = GameTraceChannel1–4, mirrored verbatim (diff: none needed).
+
+**Findings — `RequestGameplayTag` outside Core/ (not fixed, outside owner path):**
+`Input/BRInputConfig.cpp:116` (BP92 kills it) · `AbilitySystem/Abilities/BRGA_Grenade.cpp:34`
+(runtime-string tag; BP101) · `Tests/BRCombatSpec.cpp:543,549` (BP94). The "grep is empty"
+done-box cannot tick until those packets land — recorded as the box's blocker, not routed
+around.
