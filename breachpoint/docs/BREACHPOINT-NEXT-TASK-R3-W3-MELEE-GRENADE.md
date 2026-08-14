@@ -118,3 +118,23 @@ Nothing in the editor is needed for the grenade at all — no Blueprint, no asse
 - **Melee has no whoosh sound.** `sfx_MeleeWhoosh_nl_meta_Preset` exists and is the obvious
   candidate, but the cue has no field for it — that is C++, and it belongs to the cue-asset
   migration rather than to this handoff.
+
+## Log
+
+- 14 Aug 2026 (mac terminal) — founder retest reported melee dead and aim still frozen; both
+  worked, one fixed here, one strongly suspected fixed:
+  1. **Melee root cause: §2 was never executed.** `BNGA_Melee` refuses to swing without the
+     row's montage, and both `MeleeMontage` cells were empty. Filled through the MCP
+     (`AM_MM_Rifle_Melee` / `AM_MM_Pistol_Melee`) plus the optional `FireSound` cells
+     (`MSS_Weapons_Rifle2_Fire` / `MSS_Weapons_Pistol_Fire` — the pistol now sounds like one).
+     Read back exact, saved. NOTE the save quirk and its workaround: `AssetTools.save_assets`
+     answers "Asset does not exist" when the registry view goes stale (always after any
+     `compile_blueprint` this session); `load_asset` first fixes it once, and the editor's own
+     File→Save All (SlateInspector `PressKey Ctrl+Shift+S`) is the reliable fallback.
+  2. **Aim: the value chain is PROVEN live in PIE** (pitch −3.5 → PitchRotator.Roll −3.5,
+     bFPSMode true, axis Roll) — the break has to be in the LAYER's consumption. Best candidate:
+     `ABP_ItemAnimLayersBase`'s compiled property-access bindings predate the PitchRotator
+     move to C++ and resolve against a variable that no longer exists — silently zero.
+     **The base layer was recompiled and resaved** (with the BN dupes recompiled; they carry no
+     local data and did not dirty). If aim still fails after this, run `BNAimDebug` and
+     `BNAimAxis 1` — the diagnosis doc's levers — and the zero names the remaining link.
