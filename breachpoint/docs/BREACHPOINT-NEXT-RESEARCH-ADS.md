@@ -1,7 +1,7 @@
 # ADS — aim down sights: the research
 
-**Cut:** 13 August 2026 by the cloud lead · **Status:** research complete, C++ HELD until the
-running critic pass's findings are fixed — ADS touches the same files.
+**Cut:** 13 August 2026 by the cloud lead · **Status:** BUILT — the critic's findings were fixed
+first, then the C++ landed exactly per §7's plan. Uncompiled like everything else this session.
 
 ROADMAP-3 predicted this packet's shape when it deferred it: *"ADS (needs G1's aim to exist first —
 it is the same machinery with a camera FOV blend)."* G1 exists. This is that machinery.

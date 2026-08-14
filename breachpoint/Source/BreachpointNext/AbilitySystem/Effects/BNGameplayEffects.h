@@ -36,6 +36,18 @@ public:
 	UBNGE_Sprint();
 };
 
+/** ADS's walk speed, sprint's mechanism: MULTIPLY on MoveSpeed, magnitude captured non-snapshot
+ *  from the ADSSpeedMultiplier attribute, so removal restores base speed through GE aggregation
+ *  and tuning lives in the attribute, never here. */
+UCLASS()
+class BREACHPOINTNEXT_API UBNGE_ADS : public UGameplayEffect
+{
+	GENERATED_BODY()
+
+public:
+	UBNGE_ADS();
+};
+
 namespace BNSetByCaller
 {
 	/** UBNGE_FireCooldown's duration key. An FName, not a tag: this GE's magnitude is configured

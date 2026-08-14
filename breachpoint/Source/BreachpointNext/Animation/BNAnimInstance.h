@@ -159,6 +159,27 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
 	bool bSprinting = false;
 
+	/** The asset's OWN name for its ADS flag — the pack modelled ADS as a gameplay-tag mirror
+	 *  before BN existed (old module port, ABPMannequinBase.h:351), and State.Weapon.ADS is that
+	 *  tag. Ungated: the event graph's only writer is the never-fired SetADS interface event. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	bool GameplayTag_IsADS = false;
+
+	/** The asset's ADS edge — CrouchStateChange's class exactly, so it publishes only under
+	 *  bNativeOwnsTurnState: the live event graph still runs the same edge math, and two writers
+	 *  of an edge double-fire it. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
+	bool ADSStateChanged = false;
+
+	/** The reference's measured AimFOV (MyCharacter.h:344) and AimPoseChangeSpeed (:353). The blend
+	 *  runs in NativeUpdateAnimation, owner-only — the per-frame presentation brain, not a new
+	 *  tick. The base FOV is captured from the camera on first sight, never hardcoded. */
+	UPROPERTY(EditAnywhere, Category = "BN")
+	float ADSFOV = 80.f;
+
+	UPROPERTY(EditAnywhere, Category = "BN")
+	float ADSFOVInterpSpeed = 18.f;
+
 	// ---------------------------------------------------------------- aim, lean
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN")
 	double AimPitch = 0.0;
@@ -289,6 +310,7 @@ private:
 	FDelegateHandle SprintTagHandle;
 	FDelegateHandle LeanLeftTagHandle;
 	FDelegateHandle LeanRightTagHandle;
+	FDelegateHandle ADSTagHandle;
 
 	bool bTagInAir = false;
 	bool bTagCrouching = false;
@@ -296,6 +318,7 @@ private:
 	bool bTagSprinting = false;
 	bool bTagLeanLeft = false;
 	bool bTagLeanRight = false;
+	bool bTagADS = false;
 
 	// Game-thread snapshot, worker-thread input. The only channel between the two passes.
 	FVector SnapWorldVelocity = FVector::ZeroVector;
@@ -316,6 +339,7 @@ private:
 	bool bSnapFPSMode = false;
 	bool bSnapLeanLeft = false;
 	bool bSnapLeanRight = false;
+	bool bSnapADS = false;
 
 	// Worker-thread history.
 	FFloatSpringState RootYawOffsetSpringState;
@@ -323,6 +347,7 @@ private:
 	double PreviousYaw = 0.0;
 	FVector PreviousWorldLocation = FVector::ZeroVector;
 	bool bWasCrouchingLastUpdate = false;
+	bool bWasADSLastUpdate = false;
 	bool bNativeWasMoving = false;
 
 	// Private accumulators/edges — native math NEVER reads a shared property back; while the
@@ -335,6 +360,7 @@ private:
 	double NativeYawDeltaSinceLastUpdate = 0.0;
 	double NativeYawDeltaSpeed = 0.0;
 	bool bNativeCrouchStateChange = false;
+	bool bNativeADSStateChange = false;
 	bool bNativeLinkedLayerChanged = false;
 	FVector NativePivotDirection2D = FVector::ZeroVector;
 	uint8 NativeCardinalFromAcceleration = 0;
@@ -342,4 +368,7 @@ private:
 	double NativeCurrLeaning = 0.0;
 	uint8 NativeLocalVelocityDirection = 0;
 	uint8 NativeLocalVelocityDirectionNoOffset = 0;
+
+	/** The camera's own FOV, captured on first sight; negative = not yet captured. */
+	float DefaultFOV = -1.f;
 };

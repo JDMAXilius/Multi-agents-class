@@ -13,6 +13,7 @@ namespace BNTags
 	UE_DEFINE_GAMEPLAY_TAG(Input_Sprint, "Input.Sprint");
 	UE_DEFINE_GAMEPLAY_TAG(Input_Lean_Left, "Input.Lean.Left");
 	UE_DEFINE_GAMEPLAY_TAG(Input_Lean_Right, "Input.Lean.Right");
+	UE_DEFINE_GAMEPLAY_TAG(Input_Weapon_ADS, "Input.Weapon.ADS");
 	UE_DEFINE_GAMEPLAY_TAG(Input_Melee, "Input.Melee");
 	UE_DEFINE_GAMEPLAY_TAG(Input_Grenade, "Input.Grenade");
 	UE_DEFINE_GAMEPLAY_TAG(Input_Debug_DamageSelf, "Input.Debug.DamageSelf");
@@ -27,6 +28,7 @@ namespace BNTags
 	UE_DEFINE_GAMEPLAY_TAG(State_Lean_Left, "State.Lean.Left");
 	UE_DEFINE_GAMEPLAY_TAG(State_Lean_Right, "State.Lean.Right");
 	UE_DEFINE_GAMEPLAY_TAG(State_Weapon_Reloading, "State.Weapon.Reloading");
+	UE_DEFINE_GAMEPLAY_TAG(State_Weapon_ADS, "State.Weapon.ADS");
 
 	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Weapon_Fire, "Cooldown.Weapon.Fire");
 	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Grenade, "Cooldown.Grenade");

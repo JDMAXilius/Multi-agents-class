@@ -33,6 +33,10 @@ public:
 
 	UBNEquipmentComponent* GetEquipmentComponent() const { return EquipmentComponent; }
 
+	/** For UBNAnimInstance's owner-only ADS FOV blend — the anim instance is the per-frame
+	 *  presentation brain, and the camera is presentation. */
+	UCameraComponent* GetFirstPersonCamera() const { return CameraComponent; }
+
 	/** Links the resolved layer on the 3P mesh. Guards for a missing anim instance and links
 	 *  once per class; public so the anim instance can re-trigger it — the character owns it. */
 	void InitializeAnimLayer();

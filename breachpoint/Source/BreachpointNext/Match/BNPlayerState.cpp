@@ -5,6 +5,7 @@
 #include "AbilitySystem/Effects/BNGameplayEffects.h"
 #include "AbilitySystem/Abilities/BNGA_Death.h"
 #include "AbilitySystem/Abilities/BNGA_Equip.h"
+#include "AbilitySystem/Abilities/BNGA_ADS.h"
 #include "AbilitySystem/Abilities/BNGA_Grenade.h"
 #include "AbilitySystem/Abilities/BNGA_HitReact.h"
 #include "AbilitySystem/Abilities/BNGA_Melee.h"
@@ -80,6 +81,10 @@ void ABNPlayerState::GrantDefaults()
 	FGameplayAbilitySpec GrenadeSpec(UBNGA_Grenade::StaticClass(), 1);
 	GrenadeSpec.GetDynamicSpecSourceTags().AddTag(BNTags::Input_Grenade);
 	AbilitySystemComponent->GiveAbility(GrenadeSpec);
+
+	FGameplayAbilitySpec ADSSpec(UBNGA_ADS::StaticClass(), 1);
+	ADSSpec.GetDynamicSpecSourceTags().AddTag(BNTags::Input_Weapon_ADS);
+	AbilitySystemComponent->GiveAbility(ADSSpec);
 
 	// No input tag: nobody presses "flinch". UBNHealthComponent activates it by class when health
 	// drops and stays above zero — death's shape, one delegate over.

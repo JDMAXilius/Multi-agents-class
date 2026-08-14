@@ -95,6 +95,12 @@ public:
 	FGameplayAttributeData SprintSpeedMultiplier;
 	ATTRIBUTE_ACCESSORS(UBNAttributeSet, SprintSpeedMultiplier)
 
+	/** ADS's speed factor, sprint's pattern exactly. 0.4167 is measured, not chosen: the
+	 *  reference's AimWalkSpeed 250 over its base 600 (MyCharacter.h:300,297). */
+	UPROPERTY(ReplicatedUsing = OnRep_ADSSpeedMultiplier)
+	FGameplayAttributeData ADSSpeedMultiplier;
+	ATTRIBUTE_ACCESSORS(UBNAttributeSet, ADSSpeedMultiplier)
+
 protected:
 	UFUNCTION()
 	void OnRep_Health(const FGameplayAttributeData& OldHealth);
@@ -116,4 +122,7 @@ protected:
 
 	UFUNCTION()
 	void OnRep_SprintSpeedMultiplier(const FGameplayAttributeData& OldSprintSpeedMultiplier);
+
+	UFUNCTION()
+	void OnRep_ADSSpeedMultiplier(const FGameplayAttributeData& OldADSSpeedMultiplier);
 };

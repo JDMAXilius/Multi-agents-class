@@ -19,6 +19,7 @@ void UBNAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 	DOREPLIFETIME_CONDITION_NOTIFY(UBNAttributeSet, Shield, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UBNAttributeSet, MoveSpeed, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UBNAttributeSet, SprintSpeedMultiplier, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UBNAttributeSet, ADSSpeedMultiplier, COND_None, REPNOTIFY_Always);
 }
 
 void UBNAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
@@ -55,7 +56,7 @@ void UBNAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, fl
 		// State.Shields.Broken on a pool that was supposed to not exist. Floor at zero, not above it.
 		NewValue = FMath::Max(NewValue, 0.f);
 	}
-	else if (Attribute == GetMoveSpeedAttribute() || Attribute == GetSprintSpeedMultiplierAttribute())
+	else if (Attribute == GetMoveSpeedAttribute() || Attribute == GetSprintSpeedMultiplierAttribute() || Attribute == GetADSSpeedMultiplierAttribute())
 	{
 		NewValue = FMath::Max(NewValue, UE_KINDA_SMALL_NUMBER);
 	}
@@ -125,11 +126,11 @@ void UBNAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallback
 	// this set ever drains, whatever applied it. Re-applying refreshes the duration, so sustained
 	// fire holds the shield down for as long as it keeps landing.
 	//
-	// Skipped entirely while shields are off: the tag's only consumer is the recharge, which is
-	// itself gated on there being a pool, so this would be a GE applied per bullet to gate nothing
-	// — six of them per shotgun shot. IF State.Combat.RecentDamage ever gains a second reader (an
-	// "in combat" HUD state is the obvious one), this gate has to go with it.
-	UAbilitySystemComponent* ASC = (GetMaxShield() > 0.f) ? GetOwningAbilitySystemComponent() : nullptr;
+	// The shields-off skip is GONE, on the schedule its own comment set: "IF State.Combat.
+	// RecentDamage ever gains a second reader, this gate has to go with it." Descope is that
+	// reader — UBNGA_ADS cancels itself when this tag arrives, shields or no shields — so the
+	// window now applies on every landed hit unconditionally.
+	UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent();
 	if (ASC)
 	{
 		const FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
@@ -178,4 +179,9 @@ void UBNAttributeSet::OnRep_MoveSpeed(const FGameplayAttributeData& OldMoveSpeed
 void UBNAttributeSet::OnRep_SprintSpeedMultiplier(const FGameplayAttributeData& OldSprintSpeedMultiplier)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UBNAttributeSet, SprintSpeedMultiplier, OldSprintSpeedMultiplier);
+}
+
+void UBNAttributeSet::OnRep_ADSSpeedMultiplier(const FGameplayAttributeData& OldADSSpeedMultiplier)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UBNAttributeSet, ADSSpeedMultiplier, OldADSSpeedMultiplier);
 }

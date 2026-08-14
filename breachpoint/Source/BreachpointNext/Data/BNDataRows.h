@@ -61,6 +61,10 @@ struct FBNWeaponRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, Category = "Combat")
 	float Range = 10000.f;
 
+	/** A knife does not aim. UBNGA_ADS refuses activation when the current row says no. */
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	bool bCanADS = true;
+
 	/** Melee is its own damage number, not the shot's: a rifle butt has no headshot rule and no
 	 *  falloff, so it goes through BNDamage's flat door rather than the weapon-shaped one. */
 	UPROPERTY(EditAnywhere, Category = "Combat")

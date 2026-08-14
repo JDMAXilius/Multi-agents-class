@@ -79,6 +79,8 @@ protected:
 	void HandleLeanLeftReleased();
 	void HandleLeanRightPressed();
 	void HandleLeanRightReleased();
+	void HandleADSPressed();
+	void HandleADSReleased();
 	void HandleMeleePressed();
 	void HandleGrenadePressed();
 	void HandleDebugDamagePressed();

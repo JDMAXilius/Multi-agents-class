@@ -53,6 +53,14 @@ UBNGE_InitAttributes::UBNGE_InitAttributes()
 		Modifiers.Add(Modifier);
 	}
 	{
+		// 250/600 in the founder's working reference (MyCharacter.h:300,297), as the ratio.
+		FGameplayModifierInfo Modifier;
+		Modifier.ModifierOp = EGameplayModOp::Override;
+		Modifier.Attribute = UBNAttributeSet::GetADSSpeedMultiplierAttribute();
+		Modifier.ModifierMagnitude = FScalableFloat(0.4167f);
+		Modifiers.Add(Modifier);
+	}
+	{
 		// 900/600 in the founder's working reference (MyCharacter.h:297,303), expressed as the ratio.
 		FGameplayModifierInfo Modifier;
 		Modifier.ModifierOp = EGameplayModOp::Override;
@@ -94,6 +102,27 @@ UBNGE_FireCooldown::UBNGE_FireCooldown()
 	FSetByCallerFloat Duration;
 	Duration.DataName = BNSetByCaller::FireDelay;
 	DurationMagnitude = FGameplayEffectModifierMagnitude(Duration);
+}
+
+UBNGE_ADS::UBNGE_ADS()
+{
+	// Sprint's constructor with one attribute swapped — see UBNGE_Sprint above for why the
+	// magnitude is captured non-snapshot from an attribute rather than written as a number.
+	DurationPolicy = EGameplayEffectDurationType::Infinite;
+
+	FAttributeBasedFloat FromMultiplier;
+	FromMultiplier.Coefficient = FScalableFloat(1.f);
+	FromMultiplier.AttributeCalculationType = EAttributeBasedFloatCalculationType::AttributeMagnitude;
+	FromMultiplier.BackingAttribute = FGameplayEffectAttributeCaptureDefinition(
+		UBNAttributeSet::GetADSSpeedMultiplierAttribute(), EGameplayEffectAttributeCaptureSource::Target, /*bSnapshot=*/false);
+
+	FGameplayModifierInfo Modifier;
+	// MultiplyAdditive, the 5.8 name — copied from UBNGE_Sprint, whose op this must match so the
+	// two multipliers aggregate the same way if both ever apply.
+	Modifier.ModifierOp = EGameplayModOp::MultiplyAdditive;
+	Modifier.Attribute = UBNAttributeSet::GetMoveSpeedAttribute();
+	Modifier.ModifierMagnitude = FGameplayEffectModifierMagnitude(FromMultiplier);
+	Modifiers.Add(Modifier);
 }
 
 UBNGE_GrenadeCooldown::UBNGE_GrenadeCooldown()
