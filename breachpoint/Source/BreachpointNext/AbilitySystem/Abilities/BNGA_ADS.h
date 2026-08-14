@@ -42,6 +42,12 @@ protected:
 	 *  own copy, the same way both copies of any LocalPredicted ability end. */
 	void OnRecentDamageChanged(const FGameplayTag Tag, int32 NewCount);
 
+	/** "Sprint wins", made real. CanActivateAbility refuses ADS while sprinting, but that guards
+	 *  only ONE direction — sprint has no ADS check, so starting a sprint mid-aim would have run
+	 *  BOTH speed multipliers (0.4167 x 1.5) with the gun still raised. The sprint tag's arrival
+	 *  cancels ADS, exactly as descope does, and the exclusion claim becomes true both ways. */
+	void OnSprintChanged(const FGameplayTag Tag, int32 NewCount);
+
 	/** Travel and plain destruction kill the avatar without a death — jump's lesson. Without this,
 	 *  the ADS state GE would sit on the persistent ASC until the next death's sweep. */
 	UFUNCTION()
@@ -50,4 +56,5 @@ protected:
 	FActiveGameplayEffectHandle ADSHandle;
 	FActiveGameplayEffectHandle SpeedHandle;
 	FDelegateHandle RecentDamageHandle;
+	FDelegateHandle SprintHandle;
 };

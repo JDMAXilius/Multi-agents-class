@@ -61,6 +61,8 @@ void UBNGA_ADS::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const F
 	// EndAbility — the anim instance's own listener pattern.
 	RecentDamageHandle = ASC->RegisterGameplayTagEvent(BNTags::State_Combat_RecentDamage, EGameplayTagEventType::NewOrRemoved)
 		.AddUObject(this, &UBNGA_ADS::OnRecentDamageChanged);
+	SprintHandle = ASC->RegisterGameplayTagEvent(BNTags::State_Movement_Sprinting, EGameplayTagEventType::NewOrRemoved)
+		.AddUObject(this, &UBNGA_ADS::OnSprintChanged);
 
 	if (AActor* Avatar = ActorInfo->AvatarActor.Get())
 	{
@@ -87,6 +89,16 @@ void UBNGA_ADS::OnRecentDamageChanged(const FGameplayTag Tag, int32 NewCount)
 	}
 }
 
+void UBNGA_ADS::OnSprintChanged(const FGameplayTag Tag, int32 NewCount)
+{
+	// Sprint wins, both directions now — see the header. Cancelled like descope: the ADS key is
+	// still held, and releasing sprint then re-pressing aim is the deliberate re-entry.
+	if (NewCount > 0)
+	{
+		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
+	}
+}
+
 void UBNGA_ADS::OnAvatarDestroyed(AActor* DestroyedActor)
 {
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
@@ -100,6 +112,11 @@ void UBNGA_ADS::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGamep
 		{
 			ASC->UnregisterGameplayTagEvent(RecentDamageHandle, BNTags::State_Combat_RecentDamage, EGameplayTagEventType::NewOrRemoved);
 			RecentDamageHandle.Reset();
+		}
+		if (SprintHandle.IsValid())
+		{
+			ASC->UnregisterGameplayTagEvent(SprintHandle, BNTags::State_Movement_Sprinting, EGameplayTagEventType::NewOrRemoved);
+			SprintHandle.Reset();
 		}
 		if (SpeedHandle.IsValid())
 		{
