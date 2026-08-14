@@ -105,3 +105,74 @@ MeleeTrace, GrappleTrace}` = GameTraceChannel1–4, mirrored verbatim (diff: non
 (runtime-string tag; BP101) · `Tests/BRCombatSpec.cpp:543,549` (BP94). The "grep is empty"
 done-box cannot tick until those packets land — recorded as the box's blocker, not routed
 around.
+
+### 14 Aug 2026 — sim-builder, steps 3–4 landed (Data/ only, tree left uncommitted for lead)
+
+`BRDataRows.h` rewritten (header-only; no `.cpp` ever existed) and `BRGameData.h/.cpp`
+created. `./Tools/run-ubt.sh BreachpointEditor` → `Result: Succeeded` (editor target only —
+PARTIAL by the script's own ruling; full rung 1 is step 6). No hard asset ref, no
+`ConstructorHelpers` — self-grepped.
+
+**FBRWeaponRow, canonical:** DamagePerShot · RPM · MagSize · ReserveMax (rounds) ·
+SpreadDegrees · RangeMax (m) · `FRuntimeFloatCurve DamageFalloff` (EMPTY curve = constant
+1.0, BP94 must pin that) · `TMap<FName,float> BodySectionMods` (absent section = 1.0) ·
+`EBRFireMode {Hitscan, Projectile}` · `TSoftObjectPtr<USkeletalMesh> HeldMeshSoftPath` ·
+`TSoftObjectPtr<UBRAbilitySet> AbilitySet`.
+
+**DECISION — ability-set soft-ref typing:** ticket says `TSoftClassPtr<UBRAbilitySet>`; kept
+`TSoftObjectPtr`. `UBRAbilitySet` EXISTS (`AbilitySystem/BRAbilitySet.h`, a
+`UPrimaryDataAsset` — rework §3.4 keeps it a DataAsset) and the live consumer
+(`BREquipmentComponent::ResolveAbilitySetForRow`, line 423) `LoadSynchronous()`s an
+INSTANCE. A class ptr to a DataAsset type would mean BP subclasses, which R18 bans. BP93
+owns the class and may overrule; the column moves with it.
+
+**DECISION — enum rename with alias:** `EBRDamageDelivery` → `EBRFireMode` (real UENUM, so
+future UPROPERTYs can use the rework name); `using EBRDamageDelivery = EBRFireMode;` keeps
+the two consumers (`BRGA_WeaponFire.cpp:66`, `BRCombatSpec.cpp:310`) compiling. Field keeps
+the compat NAME `DamageDelivery` — ONE field, no divergent twin. Old
+`EBRWeaponFireMode {Automatic, SemiAuto}` + `FireMode` field DELETED (zero consumers).
+Step 5's reimport re-types the stale `DT_Weapons.uasset` enum column; until then the old
+CSV's `FireMode` column imports as an unknown-column warning in `BRCombatSpec` (AddWarning
+path, not an error).
+
+**COMPAT fields kept (delete-with-last-consumer, consumers named):** DisplayName
+(`UI/BRHUDDirector.cpp:369`) · ReserveMags + `GetStartingReserveAmmo` (`BRCombatSpec` R4
+pins) · ReloadTime_s + EquipTime_s (`BRGA_WeaponUtility.cpp:33`, spec R3 swap-TTK pins) ·
+HeadshotMult (spec TTK pins; BP94 supersedes with BodySectionMods) · ProjectileSpeed +
+SplashRadius_m + SplashDamage (spec + `ValidateSchema`; BP101) · Range_m + Spread_deg
+(`BRGA_WeaponFire.cpp:71,233,247,346` validation; superseded by RangeMax/SpreadDegrees) ·
+MeshSoftPath (`BRWeaponPickup.cpp`) · First/ThirdPersonAnimBP (`BREquipmentComponent.cpp`)
+· FireCueTag (fire cue routing). Row helpers + `ValidateSchema` kept VERBATIM — `BRCombatSpec`
+pins them; no pin moved.
+
+**Structs kept out-of-rework-scope, verbatim:** `FBRSpotterLineRow`, `FBRMedalRow`,
+`FBRBot*Row` — their systems (UI, AI) are out of rework scope and their `DT_*.uasset`
+tables live in `Content/Data/`. **`FBRMatchRulesRow` KEEPS its pre-rework name** (ticket
+says `FBRMatchRules`): `DT_MatchRules.uasset` is serialized against the old name and there
+are zero code consumers to gain from a rename — rename when BP96 touches the table. New
+`FBRLoadoutRow`: PrimaryWeaponRow/SecondaryWeaponRow (FName keys into DT_Weapons) +
+GrenadeCount — no asset refs at all.
+
+**BRGameData:** `UCLASS(Config=Game)` GameInstance subsystem; `UPROPERTY(Config)
+FSoftObjectPath` table paths; loads via ONE `RequestAsyncLoad` at Initialize; missing
+table/row/curve = null/0 + one `LogBRCombat` warning, plus a row-struct check
+(`GetRowStruct() != FBRWeaponRow::StaticStruct()` → warned null, not a silent misread).
+No Tick, no timers. **Lead must add to `Config/DefaultGame.ini`** (outside my owner path;
+no section exists yet):
+
+```
+[/Script/Breachpoint.BRGameData]
+WeaponTablePath=/Game/Data/DT_Weapons.DT_Weapons
+CombatCurveTablePath=/Game/Data/CT_Combat.CT_Combat
+```
+
+**Findings — `RequestAsyncLoad` outside Data/ (not fixed, outside owner path):** the
+"only call site" done-box is blocked by 7 live sites + 1 comment:
+`UI/BRUIManagerSubsystem.cpp:72` · `UI/Components/BRFeatureCard.cpp:111` ·
+`UI/HUD/BRReticleWidget.cpp:402` · `Input/BRInputConfig.cpp:108` (BP92) ·
+`AI/BRBotController.cpp:91` (AI seam, out of rework scope — needs a ruling) ·
+`AbilitySystem/Cues/BRGameplayCues.cpp:322` (BP94) · `Equipment/BREquipmentComponent.cpp:706`
+and `Equipment/BRWeaponPickup.cpp:319` (BP97, which should route through BRGameData per
+rework §3.6). UI sites are out of rework scope entirely — the done-box needs either a
+scope ruling ("module" = the rework's folders) or those packets. Recorded as the box's
+blocker, not routed around.

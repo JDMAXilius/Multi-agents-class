@@ -1,6 +1,11 @@
 #pragma once
 
+// BP91 step 3 — every row struct, ONE header, no .cpp (rework §3.2).
+// Numbers live in Content/Data/*.csv; this file is schema only. A hard asset
+// UPROPERTY or a ConstructorHelpers call in this header is a finding (law 3).
+
 #include "CoreMinimal.h"
+#include "Curves/CurveFloat.h" // FRuntimeFloatCurve
 #include "Engine/DataTable.h"
 #include "GameplayTagContainer.h"
 #include "UObject/SoftObjectPtr.h"
@@ -8,99 +13,161 @@
 #include "BRDataRows.generated.h"
 
 class UAnimInstance;
+class UBRAbilitySet;
 class USkeletalMesh;
 class UStaticMesh;
 
+/**
+ * How a shot travels (rework §3.2 / §3.4: BRGA_WeaponFire reads this off the row and
+ * branches — one ability serves every weapon).
+ *
+ * This is the pre-rework EBRDamageDelivery under its rework name. The alias below keeps
+ * the two pre-rework consumers (BRGA_WeaponFire.cpp, Tests/BRCombatSpec.cpp) compiling;
+ * delete the alias with the last consumer (BP94/BP98). NOTE for step 5: the serialized
+ * DT_Weapons.uasset was built against the old enum name — the scripted reimport of the
+ * new CSV re-types it; do not hand-open the stale asset expecting the column to survive.
+ */
 UENUM(BlueprintType)
-enum class EBRWeaponFireMode : uint8
-{
-	Automatic,
-	SemiAuto
-};
-
-UENUM(BlueprintType)
-enum class EBRDamageDelivery : uint8
+enum class EBRFireMode : uint8
 {
 	Hitscan,
 	Projectile
 };
 
+// COMPAT alias, C++-only (never a UPROPERTY type — UHT does not resolve aliases).
+using EBRDamageDelivery = EBRFireMode;
+
+/**
+ * One weapon, one row. The row NAME is the weapon's identity everywhere (ini
+ * StartupWeaponRow, loadout rows, pickups); renaming a row is a breaking change.
+ */
 USTRUCT(BlueprintType)
 struct BREACHPOINT_API FBRWeaponRow : public FTableRowBase
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
-	FText DisplayName;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
-	EBRWeaponFireMode FireMode = EBRWeaponFireMode::SemiAuto;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
-	EBRDamageDelivery DamageDelivery = EBRDamageDelivery::Hitscan;
+	// ---- canonical numbers (BP91 schema) -------------------------------------------
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	float DamagePerShot = 0.f;
 
+	// Server rate gate: max sustained fire, rounds per minute.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	float RPM = 0.f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	int32 MagSize = 0;
 
+	// Max reserve ROUNDS carried outside the magazine.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
-	int32 ReserveMags = 0;
+	int32 ReserveMax = 0;
 
+	// Hip-fire cone half-angle, degrees. Also the server's direction-claim tolerance.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
-	float ReloadTime_s = 0.f;
+	float SpreadDegrees = 0.f;
 
+	// Hard range ceiling, metres. Beyond it a hitscan claim is rejected outright.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
-	float HeadshotMult = 1.f;
+	float RangeMax = 0.f;
 
+	// ---- shaping -------------------------------------------------------------------
+
+	// Damage multiplier over normalized distance (0 = muzzle, 1 = RangeMax).
+	// An EMPTY curve means "no falloff" — the exec calc treats it as constant 1.0,
+	// which BRDamageExecCalc (BP94) must implement and pin.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
-	float ProjectileSpeed = 0.f;
+	FRuntimeFloatCurve DamageFalloff;
 
+	// Per-body-section damage multipliers keyed by physics-asset section name
+	// ("head", "torso"...). A section absent from the map is 1.0. The weak point is
+	// DERIVED (any entry > 1.0), never declared (rework §3.4).
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
-	float SplashRadius_m = 0.f;
+	TMap<FName, float> BodySectionMods;
 
+	// COMPAT NAME, canonical field: how the shot travels. Pre-rework consumers read
+	// `DamageDelivery`; rename to FireMode with the last of them (BP94/BP98).
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
-	float SplashDamage = 0.f;
+	EBRFireMode DamageDelivery = EBRFireMode::Hitscan;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
-	float EquipTime_s = 0.f;
+	// ---- soft refs ONLY (law 3) ----------------------------------------------------
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
-	float Range_m = 0.f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
-	float Spread_deg = 0.f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
-	TSoftObjectPtr<class UBRAbilitySet> AbilitySet;
-
-	// The WORLD PICKUP mesh, static: what a dropped weapon looks like lying on the floor.
-	// Not the mesh a pawn holds — that one is skeletal, below.
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
-	TSoftObjectPtr<UStaticMesh> MeshSoftPath;
-
-	// The HELD mesh, skeletal, exactly as the template's BP_ShooterWeapon_* assets carry it.
-	// Skeletal and not static because the weapon animates in the hand — reload, bolt, recoil
-	// are on this skeleton, and a UStaticMesh copy of it is a prop that can only sit still.
+	// The HELD mesh, skeletal — reload/bolt/recoil animate on this skeleton.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	TSoftObjectPtr<USkeletalMesh> HeldMeshSoftPath;
 
-	// The anim BPs the CHARACTER's own meshes switch to while holding this weapon, which is
-	// how the hands come to grip it. Without them the pawn holds a rifle in an unarmed idle:
-	// the weapon is attached correctly and the arms have never heard of it. Matches
-	// AShooterCharacter::OnWeaponActivated, which sets exactly these two.
+	// The weapon's ability set (Fire/Reload/Swap specs), granted on equip.
+	// DECISION (BP91 Log): TSoftObjectPtr, not the ticket's TSoftClassPtr — UBRAbilitySet
+	// is a UPrimaryDataAsset (rework §3.4 keeps it a DataAsset) and the live consumer
+	// (BREquipmentComponent::ResolveAbilitySetForRow) loads an INSTANCE. BP93 owns the
+	// class; if it re-types the set as a class-per-weapon, this column moves with it.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	TSoftObjectPtr<UBRAbilitySet> AbilitySet;
+
+	// ---- COMPAT fields — pre-rework consumers outside Data/ still compile against
+	// ---- these. Each is delete-with-last-consumer; consumers named per field. ------
+
+	// COMPAT: UI/BRHUDDirector.cpp (weapon name lines).
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Compat")
+	FText DisplayName;
+
+	// COMPAT: GetStartingReserveAmmo below + Tests/BRCombatSpec.cpp (reserve = MagSize
+	// x ReserveMags). Superseded by ReserveMax; BP98's ammo model migrates the spec.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Compat")
+	int32 ReserveMags = 0;
+
+	// COMPAT: AbilitySystem/Abilities/BRGA_WeaponUtility.cpp (montage fallback timing).
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Compat")
+	float ReloadTime_s = 0.f;
+
+	// COMPAT: Tests/BRCombatSpec.cpp TTK pins. BP94's exec calc replaces this with
+	// BodySectionMods + CT_Combat's Damage.Headshot.Multiplier.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Compat")
+	float HeadshotMult = 1.f;
+
+	// COMPAT: ValidateSchema + Tests/BRCombatSpec.cpp; BP101's projectile row shape
+	// decides its successor. Metres per second.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Compat")
+	float ProjectileSpeed = 0.f;
+
+	// COMPAT: Tests/BRCombatSpec.cpp splash pins (both-or-neither rule below).
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Compat")
+	float SplashRadius_m = 0.f;
+
+	// COMPAT: Tests/BRCombatSpec.cpp splash pins.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Compat")
+	float SplashDamage = 0.f;
+
+	// COMPAT: BRGA_WeaponUtility.cpp + BRCombatSpec.cpp R3 swap-TTK pins.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Compat")
+	float EquipTime_s = 0.f;
+
+	// COMPAT: BRGA_WeaponFire.cpp range validation. Superseded by RangeMax (metres).
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Compat")
+	float Range_m = 0.f;
+
+	// COMPAT: BRGA_WeaponFire.cpp direction-claim validation. Superseded by SpreadDegrees.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Compat")
+	float Spread_deg = 0.f;
+
+	// COMPAT: Equipment/BRWeaponPickup.cpp — the world-pickup mesh, static.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Compat")
+	TSoftObjectPtr<UStaticMesh> MeshSoftPath;
+
+	// COMPAT: Equipment/BREquipmentComponent.cpp anim-layer switch. Deliberately
+	// OPTIONAL (see ValidateSchema note); BP99's anim seam decides its successor.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Compat")
 	TSoftClassPtr<UAnimInstance> FirstPersonAnimBP;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	// COMPAT: Equipment/BREquipmentComponent.cpp anim-layer switch.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Compat")
 	TSoftClassPtr<UAnimInstance> ThirdPersonAnimBP;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	// COMPAT: AbilitySystem fire cue routing; BP94's cue rework re-homes it.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Compat")
 	FGameplayTag FireCueTag;
+
+	// ---- row algebra (pinned by Tests/BRCombatSpec.cpp — behavior changes move the
+	// ---- pin LOUDLY in the same packet) --------------------------------------------
 
 	static constexpr float CmPerMetre = 100.f;
 
@@ -119,7 +186,7 @@ struct BREACHPOINT_API FBRWeaponRow : public FTableRowBase
 
 	bool ValidateSchema(FString& OutError) const
 	{
-		const bool bIsHitscan = (DamageDelivery == EBRDamageDelivery::Hitscan);
+		const bool bIsHitscan = (DamageDelivery == EBRFireMode::Hitscan);
 		if (bIsHitscan && ProjectileSpeed != 0.f)
 		{
 			OutError = TEXT("Hitscan row carries a non-zero ProjectileSpeed");
@@ -192,6 +259,107 @@ struct BREACHPOINT_API FBRWeaponRow : public FTableRowBase
 		return true;
 	}
 };
+
+/**
+ * One named loadout: which weapons fill the slots on spawn. Row-name keys into
+ * DT_Weapons — the row IS the weapon's identity — plus one count. No asset refs
+ * here at all: everything an asset touches hangs off the weapon row.
+ */
+USTRUCT(BlueprintType)
+struct BREACHPOINT_API FBRLoadoutRow : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Loadout")
+	FName PrimaryWeaponRow;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Loadout")
+	FName SecondaryWeaponRow;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Loadout")
+	int32 GrenadeCount = 0;
+
+	bool ValidateSchema(FString& OutError) const
+	{
+		if (PrimaryWeaponRow.IsNone())
+		{
+			OutError = TEXT("PrimaryWeaponRow is empty: this loadout spawns an unarmed player");
+			return false;
+		}
+		if (GrenadeCount < 0)
+		{
+			OutError = TEXT("GrenadeCount is negative");
+			return false;
+		}
+		return true;
+	}
+};
+
+/**
+ * Match rules, numbers only. KEPT under its pre-rework name (the ticket says
+ * FBRMatchRules): Content/Data/DT_MatchRules.uasset is serialized against
+ * "FBRMatchRulesRow" and renaming the struct orphans the table with zero code
+ * consumers to show for it. Rename when BP96 (Match rework) touches the table.
+ */
+USTRUCT(BlueprintType)
+struct BREACHPOINT_API FBRMatchRulesRow : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Match")
+	int32 ScoreLimit = 0;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Match")
+	float MatchDuration_s = 0.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Match")
+	float SuddenDeathCap_s = 0.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Match")
+	float Warmup_s = 0.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Match")
+	float RespawnDelay_s = 0.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Match")
+	float KillCreditWindow_s = 0.f;
+
+	bool ValidateSchema(FString& OutError) const
+	{
+		if (ScoreLimit <= 0)
+		{
+			OutError = TEXT("ScoreLimit must be positive (0 would end the match at kickoff)");
+			return false;
+		}
+		if (MatchDuration_s <= 0.f)
+		{
+			OutError = TEXT("MatchDuration_s must be positive");
+			return false;
+		}
+		if (SuddenDeathCap_s <= 0.f)
+		{
+			OutError = TEXT("SuddenDeathCap_s must be positive ('no overtime' is a ruling, not a zero)");
+			return false;
+		}
+		if (KillCreditWindow_s <= 0.f)
+		{
+			OutError = TEXT("KillCreditWindow_s must be positive (0 makes every kill instigator-less)");
+			return false;
+		}
+		if (Warmup_s < 0.f || RespawnDelay_s < 0.f)
+		{
+			OutError = TEXT("Warmup_s / RespawnDelay_s cannot be negative");
+			return false;
+		}
+		return true;
+	}
+};
+
+// =====================================================================================
+// Rows below serve systems the rework declares OUT OF SCOPE (UI spotter/medals, AI
+// brain — rework doc header) and their DT_*.uasset tables exist in Content/Data/.
+// Kept verbatim; each moves only when its owning system's packet moves it.
+// =====================================================================================
 
 class UStateTree;
 
@@ -444,58 +612,4 @@ struct BREACHPOINT_API FBRBotTuningRow : public FTableRowBase
 private:
 	UPROPERTY()
 	int32 reaction_ms = 0;
-};
-
-USTRUCT(BlueprintType)
-struct BREACHPOINT_API FBRMatchRulesRow : public FTableRowBase
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Match")
-	int32 ScoreLimit = 0;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Match")
-	float MatchDuration_s = 0.f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Match")
-	float SuddenDeathCap_s = 0.f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Match")
-	float Warmup_s = 0.f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Match")
-	float RespawnDelay_s = 0.f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Match")
-	float KillCreditWindow_s = 0.f;
-
-	bool ValidateSchema(FString& OutError) const
-	{
-		if (ScoreLimit <= 0)
-		{
-			OutError = TEXT("ScoreLimit must be positive (0 would end the match at kickoff)");
-			return false;
-		}
-		if (MatchDuration_s <= 0.f)
-		{
-			OutError = TEXT("MatchDuration_s must be positive");
-			return false;
-		}
-		if (SuddenDeathCap_s <= 0.f)
-		{
-			OutError = TEXT("SuddenDeathCap_s must be positive ('no overtime' is a ruling, not a zero)");
-			return false;
-		}
-		if (KillCreditWindow_s <= 0.f)
-		{
-			OutError = TEXT("KillCreditWindow_s must be positive (0 makes every kill instigator-less)");
-			return false;
-		}
-		if (Warmup_s < 0.f || RespawnDelay_s < 0.f)
-		{
-			OutError = TEXT("Warmup_s / RespawnDelay_s cannot be negative");
-			return false;
-		}
-		return true;
-	}
 };
