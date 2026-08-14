@@ -204,6 +204,25 @@ void UBNGameplayCueRegistrar::OnWorldBeginPlay(UWorld& InWorld)
 	TArray<UClass*> HandlerClasses;
 	GetDerivedClasses(UBNGameplayCue_Base::StaticClass(), HandlerClasses, /*bRecursive=*/true);
 
+	// MOST-DERIVED WINS, and this must land BEFORE any Blueprint child of a cue class exists.
+	//
+	// A BP child IS a derived class: it inherits GetHandledCueTag() and so registers under its C++
+	// parent's tag. UGameplayCueSet keys by tag and REPLACES on a duplicate, so without this the
+	// surviving handler depends on whatever order GetDerivedClasses happened to return — the muzzle
+	// flash would come from the C++ CDO on one run and the Blueprint on the next, with nothing in
+	// the log naming the winner.
+	//
+	// A class that another registered handler derives FROM is a base, not the handler: the BP child
+	// holding the editor's asset references is what should answer. With no BP children this selects
+	// exactly the same leaf classes as before, which is what makes it safe to land ahead of them.
+	HandlerClasses.RemoveAll([&HandlerClasses](const UClass* Candidate)
+	{
+		return HandlerClasses.ContainsByPredicate([Candidate](const UClass* Other)
+		{
+			return Other != Candidate && Other->IsChildOf(Candidate);
+		});
+	});
+
 	TArray<FGameplayCueReferencePair> CuesToAdd;
 	for (UClass* HandlerClass : HandlerClasses)
 	{
@@ -223,6 +242,10 @@ void UBNGameplayCueRegistrar::OnWorldBeginPlay(UWorld& InWorld)
 		// construction — and written back, so anything else reading GameplayCueTag agrees.
 		CDO->GameplayCueTag = Handled;
 		CuesToAdd.Emplace(Handled, FSoftObjectPath(HandlerClass));
+
+		// Named out loud, because "which class answered this tag" is otherwise invisible and is
+		// exactly what goes wrong when a Blueprint child is added and its assets do not appear.
+		UE_LOG(LogBN, Log, TEXT("BNCues: %s -> %s"), *Handled.ToString(), *HandlerClass->GetName());
 	}
 
 	if (!CuesToAdd.IsEmpty())
