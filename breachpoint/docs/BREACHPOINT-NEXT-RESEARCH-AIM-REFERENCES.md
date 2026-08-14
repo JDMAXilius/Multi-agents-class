@@ -102,6 +102,15 @@ full-body first person (the founder's stated preference), so it is a founder dec
 not a lead's. Cost: a 1P/3P mesh split, montage routing per mesh, owner-see rules.
 Benefit: the entire class of bug we have been hunting stops existing.
 
+## Ruling
+
+**14 Aug 2026, founder: "Do all."** The default-owner recommendation is executed:
+[TASK-AIM-NATIVE-OWNER](BREACHPOINT-NEXT-TASK-AIM-NATIVE-OWNER.md) flips the ABP default
+back to native (one checkbox, terminal) and executes the shotgun/knife DT rows in the same
+pass. The Mesh1P escape hatch stays PARKED — it was recorded as last resort and abandons the
+full-body first person; it activates only on an explicit founder call after the native path
+has had its fair test.
+
 ## What this changes right now
 
 1. Nothing about the in-flight fixes — the layer push + `BNAimNative` A/B + probe are the
