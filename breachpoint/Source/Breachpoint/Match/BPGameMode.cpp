@@ -9,13 +9,14 @@ ABPGameMode::ABPGameMode()
 	PrimaryActorTick.bCanEverTick = false;
 	PrimaryActorTick.bStartWithTickEnabled = false;
 
-	// Fallback only. The pawn that is actually spawned comes from DefaultPawnClassOverride —
+	/*// Fallback only. The pawn that is actually spawned comes from DefaultPawnClassOverride —
 	// this bare C++ class has no SkeletalMesh assigned and is invisible in PIE.
 	DefaultPawnClass = ABPCharacter::StaticClass();
 	PlayerControllerClass = ABPPlayerController::StaticClass();
-	PlayerStateClass = ABPPlayerState::StaticClass();
+	PlayerStateClass = ABPPlayerState::StaticClass();*/
 }
 
+/*
 UClass* ABPGameMode::GetDefaultPawnClassForController_Implementation(AController* InController)
 {
 	if (!DefaultPawnClassOverride.IsNull())
@@ -37,3 +38,4 @@ UClass* ABPGameMode::GetDefaultPawnClassForController_Implementation(AController
 
 	return Super::GetDefaultPawnClassForController_Implementation(InController);
 }
+*/

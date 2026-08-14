@@ -29,8 +29,8 @@ protected:
 	 * the C++ class directly gives an invisible pawn with its camera on a socket that does not
 	 * exist. Soft, so this stays a data reference (contract_gap BP82-9).
 	 */
-	UPROPERTY(Config, EditDefaultsOnly, Category = "Classes")
-	TSoftClassPtr<APawn> DefaultPawnClassOverride;
+	//UPROPERTY(Config, EditDefaultsOnly, Category = "Classes")
+	//TSoftClassPtr<APawn> DefaultPawnClassOverride;
 
-	virtual UClass* GetDefaultPawnClassForController_Implementation(AController* InController) override;
+	//virtual UClass* GetDefaultPawnClassForController_Implementation(AController* InController) override;
 };

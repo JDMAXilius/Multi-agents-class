@@ -8,8 +8,7 @@ public class Breachpoint : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		// ARCHITECTURE.md §3 dependency list. "Slate" removed 14 Aug 2026 (BP90): it was
-		// template-inherited for the variant template sources, which are deleted in this packet.
+		// ARCHITECTURE.md §3 dependency list.
 		PublicDependencyModuleNames.AddRange(new string[] {
 			"Core",
 			"CoreUObject",
@@ -42,6 +41,16 @@ public class Breachpoint : ModuleRules
 		// OnlineSubsystem is the API surface; the Steam *implementation* is selected by
 		// the enabled OnlineSubsystemSteam plugin + DefaultEngine.ini, never linked directly.
 		PrivateDependencyModuleNames.AddRange(new string[] {
+			// Slate: removed 14 Aug 2026 by BP90 on the premise that it was inherited from the
+			// deleted variant templates. That premise was WRONG and the removal failed at LINK,
+			// not at compile. UI/Components/BRItemGrid.cpp includes Components/TileView.h and
+			// UI/Components/BRItemTile.cpp includes Components/ListView.h; those UMG headers
+			// instantiate SListView<UObject*> INTO THIS MODULE'S translation unit, and its base
+			// STableViewBase lives in Slate, not SlateCore. Restored 14 Aug 2026. Do not remove
+			// while any BR widget owns a UListView/UTileView/UTreeView.
+			// PRIVATE, not Public: no BR public header names a Slate type -- BRItemGrid.h
+			// forward-declares UTileView only, so the instantiation never escapes these .cpps.
+			"Slate",
 			"OnlineSubsystem",
 			"OnlineSubsystemUtils",
 			"HTTP",
