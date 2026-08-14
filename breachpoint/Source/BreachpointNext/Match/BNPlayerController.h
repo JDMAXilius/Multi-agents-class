@@ -49,6 +49,12 @@ public:
 	UFUNCTION(Exec)
 	void BNLeanAxis(int32 Axis);
 
+	/** 1 = C++ owns the aim surface and pushes it into the linked layers; 0 = yield to the
+	 *  template's component/interface path. The saved ABP default picks the startup owner; this
+	 *  flips it live on the local instance so both paths A/B inside one PIE session. */
+	UFUNCTION(Exec)
+	void BNAimNative(int32 Enable);
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;

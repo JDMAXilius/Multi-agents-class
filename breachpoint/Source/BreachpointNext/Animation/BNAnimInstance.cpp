@@ -8,6 +8,7 @@
 #include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "UObject/ReflectedTypeAccessors.h"
+#include "UObject/UnrealType.h"
 
 namespace
 {
@@ -61,6 +62,84 @@ namespace
 		case BN_CardinalLeft:     return BN_CardinalRight;
 		default:                  return BN_CardinalLeft;
 		}
+	}
+
+	// Reflection setters for the layer push. The linked layers are Blueprint classes with no C++
+	// type, so a same-named property is the only address C++ has for them. Each one is a silent
+	// no-op when the name is absent or the type disagrees — a layer that does not model a value
+	// must not be crashed for it.
+	void BNSetBoolByName(UObject* Target, const FName Name, bool bValue)
+	{
+		if (const FBoolProperty* Prop = FindFProperty<FBoolProperty>(Target->GetClass(), Name))
+		{
+			Prop->SetPropertyValue_InContainer(Target, bValue);
+		}
+	}
+
+	void BNSetNumberByName(UObject* Target, const FName Name, double Value)
+	{
+		// BP "float" is double-width in UE5, but an absorbed or legacy property can still be a
+		// true float — accept either.
+		if (const FDoubleProperty* AsDouble = FindFProperty<FDoubleProperty>(Target->GetClass(), Name))
+		{
+			AsDouble->SetPropertyValue_InContainer(Target, Value);
+		}
+		else if (const FFloatProperty* AsFloat = FindFProperty<FFloatProperty>(Target->GetClass(), Name))
+		{
+			AsFloat->SetPropertyValue_InContainer(Target, static_cast<float>(Value));
+		}
+	}
+
+	void BNSetRotatorByName(UObject* Target, const FName Name, const FRotator& Value)
+	{
+		if (const FStructProperty* Prop = FindFProperty<FStructProperty>(Target->GetClass(), Name))
+		{
+			if (Prop->Struct == TBaseStructure<FRotator>::Get())
+			{
+				*Prop->ContainerPtrToValuePtr<FRotator>(Target) = Value;
+			}
+		}
+	}
+
+	// The probe's half of the same coin: every aim-related bool/number/rotator an instance's class
+	// declares, by value, so one BNAimDebug press shows what each LAYER actually holds — not what
+	// the main ABP hopes it holds.
+	FString BNDescribeAimProperties(const UAnimInstance& Instance)
+	{
+		FString Out;
+		for (TFieldIterator<FProperty> It(Instance.GetClass()); It; ++It)
+		{
+			const FProperty* Prop = *It;
+			const FString Name = Prop->GetName();
+			if (!Name.Contains(TEXT("Pitch")) && !Name.Contains(TEXT("FPS")) &&
+				!Name.Contains(TEXT("Lean")) && !Name.Contains(TEXT("Aim")) &&
+				!Name.Contains(TEXT("ADS")))
+			{
+				continue;
+			}
+			if (const FBoolProperty* AsBool = CastField<FBoolProperty>(Prop))
+			{
+				Out += FString::Printf(TEXT("  %s=%s"), *Name,
+					AsBool->GetPropertyValue_InContainer(&Instance) ? TEXT("true") : TEXT("false"));
+			}
+			else if (const FDoubleProperty* AsDouble = CastField<FDoubleProperty>(Prop))
+			{
+				Out += FString::Printf(TEXT("  %s=%.1f"), *Name, AsDouble->GetPropertyValue_InContainer(&Instance));
+			}
+			else if (const FFloatProperty* AsFloat = CastField<FFloatProperty>(Prop))
+			{
+				Out += FString::Printf(TEXT("  %s=%.1f"), *Name, AsFloat->GetPropertyValue_InContainer(&Instance));
+			}
+			else if (const FStructProperty* AsStruct = CastField<FStructProperty>(Prop))
+			{
+				if (AsStruct->Struct == TBaseStructure<FRotator>::Get())
+				{
+					const FRotator* Rot = AsStruct->ContainerPtrToValuePtr<FRotator>(&Instance);
+					Out += FString::Printf(TEXT("  %s=(P %.1f Y %.1f R %.1f)"), *Name, Rot->Pitch, Rot->Yaw, Rot->Roll);
+				}
+			}
+		}
+		return Out;
 	}
 }
 
@@ -160,6 +239,38 @@ void UBNAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	}
 	bSnapLayerChanged = CurrentLayerClass != ObservedLayerClass;
 	ObservedLayerClass = CurrentLayerClass;
+
+	// Deliver the aim surface to the LAYER instances — the values the worker pass computed last
+	// frame, one frame stale by construction, exactly as stale as the template's own game-thread
+	// interface events. Only while native owns the surface: yielded, the component path is the
+	// messenger and a second one would stomp it.
+	if (bNativeOwnsAimSurface)
+	{
+		PushAimSurfaceToLinkedLayers();
+	}
+}
+
+void UBNAnimInstance::PushAimSurfaceToLinkedLayers()
+{
+	const USkeletalMeshComponent* MeshComp = GetOwningComponent();
+	if (!MeshComp)
+	{
+		return;
+	}
+	for (UAnimInstance* Linked : MeshComp->GetLinkedAnimInstances())
+	{
+		if (!Linked || Linked == this)
+		{
+			continue;
+		}
+		BNSetBoolByName(Linked, TEXT("bFPSMode"), bFPSMode);
+		BNSetBoolByName(Linked, TEXT("GameplayTag_IsADS"), GameplayTag_IsADS);
+		BNSetNumberByName(Linked, TEXT("Pitch"), Pitch);
+		BNSetNumberByName(Linked, TEXT("AimPitch"), AimPitch);
+		BNSetRotatorByName(Linked, TEXT("PitchRotator"), PitchRotator);
+		BNSetRotatorByName(Linked, TEXT("LeanRotation"), LeanRotation);
+		BNSetRotatorByName(Linked, TEXT("LeanOppRotation"), LeanOppRotation);
+	}
 }
 
 void UBNAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
@@ -337,10 +448,12 @@ FString UBNAnimInstance::DescribeAimState() const
 		// the session it was added to diagnose.
 		return Enum ? Enum->GetNameStringByValue(static_cast<int64>(Axis)) : FString(TEXT("?"));
 	};
-	return FString::Printf(
-		TEXT("BNAim | BaseAimPitch %.1f  ActorPitch %.1f  ->  AimPitch %.1f  Pitch %.1f  ")
+	FString Out = FString::Printf(
+		TEXT("BNAim | owner %s (turn %s) | BaseAimPitch %.1f  ActorPitch %.1f  ->  AimPitch %.1f  Pitch %.1f  ")
 		TEXT("PitchRotator (P %.1f Y %.1f R %.1f) axis %s | bFPSMode %s  bUnarmed %s | ")
 		TEXT("Lean curr %.2f  LeanRotation (P %.1f Y %.1f R %.1f) axis %s | Layer %s"),
+		bNativeOwnsAimSurface ? TEXT("NATIVE") : TEXT("COMPONENTS"),
+		bNativeOwnsTurnState ? TEXT("native") : TEXT("graph"),
 		SnapBaseAimPitch, SnapRotation.Pitch, AimPitch, Pitch,
 		PitchRotator.Pitch, PitchRotator.Yaw, PitchRotator.Roll,
 		*AxisName(AxisEnum, AimPitchAxis),
@@ -350,6 +463,24 @@ FString UBNAnimInstance::DescribeAimState() const
 		LeanRotation.Pitch, LeanRotation.Yaw, LeanRotation.Roll,
 		*AxisName(AxisEnum, LeanAxis),
 		*GetNameSafe(ObservedLayerClass));
+
+	// The layer-side truth, one line per linked instance: what each layer's OWN aim variables hold
+	// right now. This is the half no probe has ever shown, and it is the half the pose is posed
+	// from — a live main ABP over dead layer lines is the communications gap; live layer lines
+	// over a dead pose is the binding or the axis.
+	if (const USkeletalMeshComponent* MeshComp = GetOwningComponent())
+	{
+		for (const UAnimInstance* Linked : MeshComp->GetLinkedAnimInstances())
+		{
+			if (!Linked || Linked == this)
+			{
+				continue;
+			}
+			Out += FString::Printf(TEXT("\nBNAim layer %s |%s"),
+				*Linked->GetClass()->GetName(), *BNDescribeAimProperties(*Linked));
+		}
+	}
+	return Out;
 }
 
 void UBNAnimInstance::SetRootYawOffset(double InRootYawOffset)

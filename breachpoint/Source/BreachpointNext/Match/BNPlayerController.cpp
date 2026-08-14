@@ -167,6 +167,17 @@ void ABNPlayerController::BNLeanAxis(int32 Axis)
 #endif
 }
 
+void ABNPlayerController::BNAimNative(int32 Enable)
+{
+#if !UE_BUILD_SHIPPING
+	if (UBNAnimInstance* Anim = BNLocalAnimInstance(this))
+	{
+		Anim->SetNativeOwnsAimSurface(Enable != 0);
+		UE_LOG(LogBN, Log, TEXT("%s"), *Anim->DescribeAimState());
+	}
+#endif
+}
+
 void ABNPlayerController::HandleADSPressed()
 {
 	if (UBNAbilitySystemComponent* ASC = GetBNAbilitySystemComponent())

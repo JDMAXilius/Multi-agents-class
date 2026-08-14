@@ -71,6 +71,12 @@ public:
 	void SetAimPitchAxis(EBNSpineAxis Axis) { AimPitchAxis = Axis; }
 	void SetLeanAxis(EBNSpineAxis Axis) { LeanAxis = Axis; }
 
+	/** The ownership lever, live. The saved ABP default decides who owns the aim surface at
+	 *  startup; this flips it on ONE instance so both paths can be A/B'd inside a single PIE
+	 *  session instead of costing an editor edit per guess. */
+	void SetNativeOwnsAimSurface(bool bOwns) { bNativeOwnsAimSurface = bOwns; }
+	bool GetNativeOwnsAimSurface() const { return bNativeOwnsAimSurface; }
+
 protected:
 	// false = the live event graph owns the RMW/edge accumulator outputs (today); true = C++
 	// owns them — set when the graph is cleared. Native always computes them against private
@@ -291,6 +297,17 @@ protected:
 private:
 	void ResolveAbilitySystem();
 	void OnTagChanged(const FGameplayTag Tag, int32 NewCount);
+
+	/** THE MISSING HALF of the native aim path, found when the pose stayed dead with every main-ABP
+	 *  value proven live: the aim layers are SEPARATE anim instances, and in the template the
+	 *  character's components message every instance on the mesh — main AND linked layers — through
+	 *  the anim interface. This class only ever wrote its own properties, so any layer gating or
+	 *  reading a LOCAL variable (its own bFPSMode under the BlendListByBool, rather than the
+	 *  GetMainAnimBPThreadSafe binding) never heard a word. Game thread, before the parallel update
+	 *  — the same timing the template's interface events get — and by reflection, because the layer
+	 *  classes are Blueprint and have no C++ type to include. A layer without a matching property
+	 *  is silently skipped, so this is a no-op exactly where it has nothing to say. */
+	void PushAimSurfaceToLinkedLayers();
 
 	// Worker-thread helpers, ported 1:1 from the source's function graphs. Both operate on
 	// the PRIVATE accumulators; shared properties are only touched in the gated publish.

@@ -95,3 +95,51 @@ reader exists. The first read was an MCP reflection limit, not a fact.
   but the table's two rows still need filling (`MSS_Weapons_Rifle2_Fire`, `MSS_Weapons_Pistol_Fire`).
 - **Editor-side GAS assets** — the founder's ruling that cues/abilities carry their asset refs in
   the editor rather than in ini. Supersedes ASSET-RULES §3; needs its own packet.
+
+## 14 Aug — the layer gap (cloud lead), after the founder pointed at UBNAnimInstance
+
+Founder report: aim still broken after the terminal's component pivot; suspicion aimed at
+`UBNAnimInstance` itself. The audit found a gap that has been present through EVERY layer of this
+saga, and that explains its most stubborn observation — main-ABP values proven live in PIE, pose
+dead anyway:
+
+**`UBNAnimInstance` has only ever written its own properties. Nothing — C++ or character — has
+ever delivered the aim surface to the LINKED LAYER instances.** The aim layers
+(`ABP_ItemAnimLayersBase` children) are separate anim instances. In the template, the character's
+components message every anim instance on the mesh — main AND layers — through
+`BPI_FPST_AnimInterface`. Any layer that gates or poses from a **local** variable (its own
+`bFPSMode` under the BlendListByBool, rather than a `GetMainAnimBPThreadSafe` binding into the
+main instance) never heard a word from the native path. `bFPSMode` defaulting false on the layer
+= every aim ModifyBone chain blended out = arms and weapon frozen while the camera (which takes
+control rotation directly) moves. Exactly the symptom.
+
+This also bounds the component pivot: it only helps if `BPC_FPSComp` actually fires on a BN pawn
+(its driving logic originates in BP_FPSCharacter's event graph; BP_BNCharacter's graph is empty by
+law R26) — and no probe could previously tell whether it does.
+
+Three C++ changes, no editor work required to test:
+
+1. **The layer push.** While `bNativeOwnsAimSurface` is true, `NativeUpdateAnimation` (game
+   thread, before the parallel update — the template's own timing) pushes `bFPSMode`,
+   `GameplayTag_IsADS`, `Pitch`, `AimPitch`, `PitchRotator`, `LeanRotation`, `LeanOppRotation`
+   into every linked layer instance by reflection (BP classes have no C++ type). Same-named
+   property absent = silent no-op. Yielded, it pushes nothing — the component path keeps sole
+   ownership of its messages.
+2. **The probe is now decisive.** `BNAimDebug` prints the surface OWNER
+   (`owner NATIVE|COMPONENTS`) and one extra line per linked layer dumping the layer's OWN
+   aim-related variables (every Pitch/FPS/Lean/Aim/ADS-named bool/number/rotator, by value).
+   Reading it: live main line + dead layer line = communications gap (the push or the components
+   are not landing); live layer line + dead pose = the ModifyBone binding or the axis.
+3. **`BNAimNative 0|1`** — flips `bNativeOwnsAimSurface` live on the local instance. The ABP's
+   saved default (currently **false**, terminal's edit) still picks the startup owner; this lever
+   lets both paths be A/B'd inside one PIE session without an editor edit per guess.
+
+**The founder's test, one PIE session:**
+- Move the camera up/down. `BNAimDebug`. The first line names the owner; the layer lines say what
+  the layers hold.
+- If broken: `BNAimNative 1`, aim again. If the pose now follows, the native path + layer push is
+  the fix — make it the default by clearing the ABP-default override on `bNativeOwnsAimSurface`
+  (one checkbox, the terminal's documented revert path).
+- If BOTH owners leave the pose dead while the layer lines show live values, the break is the
+  layers' ModifyBone consumption — paste the two `BNAimDebug` outputs (one per owner) and the
+  next diagnosis starts from named, non-zero values.
