@@ -51,9 +51,13 @@ public:
 
 	/** Seconds after the last landed damage before the shield starts coming back. THE tuning knob
 	 *  of the whole dance. It lives here because this is what applies the window, and one owner
-	 *  beats two agreeing. Not an attribute: no GE ever needs to modify it. */
+	 *  beats two agreeing. Not an attribute: no GE ever needs to modify it.
+	 *
+	 *  2.5, not a number I picked: the project already decided it. `gas-purity/SKILL.md` §2 calls
+	 *  State.Combat.RecentDamage "the 2.5 s regen gate tag" and says regen "starts after 2.5 s".
+	 *  I had written 4 without checking, which would have quietly re-tuned a settled design. */
 	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Shield")
-	float ShieldRechargeDelay = 4.f;
+	float ShieldRechargeDelay = 2.5f;
 
 	UPROPERTY(ReplicatedUsing = OnRep_MoveSpeed)
 	FGameplayAttributeData MoveSpeed;

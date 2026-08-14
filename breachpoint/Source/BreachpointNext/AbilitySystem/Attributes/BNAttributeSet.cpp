@@ -9,10 +9,14 @@ void UBNAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME_CONDITION_NOTIFY(UBNAttributeSet, Health, COND_None, REPNOTIFY_Always);
-	DOREPLIFETIME_CONDITION_NOTIFY(UBNAttributeSet, Shield, COND_None, REPNOTIFY_Always);
+	// THE MAXES FIRST, and for the same reason the init GE sets them first: properties replicate in
+	// registration order, so a joining client that received Health before MaxHealth would clamp it
+	// against a max still at zero and render a live player as dead. PreAttributeChange's zero-max
+	// guard is the belt to this braces — order is not a hard guarantee across bunches.
 	DOREPLIFETIME_CONDITION_NOTIFY(UBNAttributeSet, MaxHealth, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UBNAttributeSet, MaxShield, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UBNAttributeSet, Health, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UBNAttributeSet, Shield, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UBNAttributeSet, MoveSpeed, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UBNAttributeSet, SprintSpeedMultiplier, COND_None, REPNOTIFY_Always);
 }
@@ -23,13 +27,19 @@ void UBNAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, fl
 
 	// Clamped at BOTH ends now. The floor was always here; the ceiling could not exist until
 	// MaxHealth/MaxShield did, which is why a recharge would previously have climbed forever.
+	// A max of zero means "not initialised yet", NOT "this pool is empty". Clamping against it
+	// would zero a live player: on a joining client MaxHealth may not have arrived when Health
+	// does, and on the server the init GE's first modifier lands before its second. Floor only
+	// until a real ceiling exists.
 	if (Attribute == GetHealthAttribute())
 	{
-		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxHealth());
+		const float Max = GetMaxHealth();
+		NewValue = Max > 0.f ? FMath::Clamp(NewValue, 0.f, Max) : FMath::Max(NewValue, 0.f);
 	}
 	else if (Attribute == GetShieldAttribute())
 	{
-		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxShield());
+		const float Max = GetMaxShield();
+		NewValue = Max > 0.f ? FMath::Clamp(NewValue, 0.f, Max) : FMath::Max(NewValue, 0.f);
 	}
 	else if (Attribute == GetMaxHealthAttribute() || Attribute == GetMaxShieldAttribute())
 	{
