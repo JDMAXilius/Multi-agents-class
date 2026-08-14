@@ -29,25 +29,48 @@ data is pulled from the pawn's own state — the component/interface-event path 
 default anymore. The components STAY on BP_BNCharacter for what they are uniquely good at
 (sway, recoil, pose offsets); they just no longer own Pitch/PitchRotator/bFPSMode.
 
-## Step 2 — execute the shotgun/knife rows ticket
+## Step 2 — THE FOUNDER'S ROOT-CAUSE CALL: originals, not duplicates
 
-[TASK-DT-SHOTGUN-KNIFE](BREACHPOINT-NEXT-TASK-DT-SHOTGUN-KNIFE.md), exactly as written, no
-substitutions. It is the only blocker for the founder's "all four weapons in the swap" and
-its Log already says so.
+**Founder, 14 Aug: the linked layers are the case — the rifle/pistol rows link BN DUPLICATES
+of the template layer classes, not the originals.** The evidence chain agrees: the dupes were
+cut in R2-W2, BEFORE the main ABP reparent moved Pitch/PitchRotator/bFPSMode to C++, so their
+compiled property-access bindings predate the layout they read — silent zeros. Your own R3-W3
+log records the base layer recompile and that the dupes "did not dirty". And BP_FPSCharacter
+links the ORIGINALS on the SAME shared main ABP and aims correctly — the controlled experiment
+already ran.
 
-## Step 3 — read back
+In `DT_BNWeapons`, repoint two cells (plain path strings, the soft-ref trap as always):
+
+| Row | `AnimLayerClass` → |
+|---|---|
+| `Rifle` | `/Game/FPSTemplate/Demo/Characters/Heroes/Mannequin/Animations/Locomotion/Rifle/ABP_RifleAnimLayers.ABP_RifleAnimLayers_C` |
+| `Pistol` | `/Game/FPSTemplate/Demo/Characters/Heroes/Mannequin/Animations/Locomotion/Pistol/ABP_PistolAnimLayers.ABP_PistolAnimLayers_C` |
+
+Do NOT delete the `/Game/BN/Animation/ABP_BNWeaponLayers_*` duplicates in this pass — they come
+out after the playtest proves the originals, not before.
+
+## Step 3 — execute the shotgun/knife rows ticket
+
+[TASK-DT-SHOTGUN-KNIFE](BREACHPOINT-NEXT-TASK-DT-SHOTGUN-KNIFE.md), exactly as written — and
+its "one open decision" is now CLOSED by the founder's call above: use the TEMPLATE classes
+(`ABP_ShotgunAnimLayers_C` / `ABP_KnifeAnimLayers_C`, non-Feminine, non-UE4), not new
+duplicates. It is the only blocker for "all four weapons in the swap".
+
+## Step 4 — read back
 
 1. Reload the ABP fresh; print `bNativeOwnsAimSurface` from its Class Defaults — must be `true`.
-2. If PIE is available: possess, run `BNAimDebug`, paste the output. The first line must read
-   `owner NATIVE`, and each `BNAim layer` line should show a live `PitchRotator` while the
-   camera pitches. If any layer line stays zeroed while the main line moves, paste it and STOP
-   — that is a finding for the lead, not something to fix here.
-3. The DT ticket's own read-back table, per its spec.
+2. Reload `DT_BNWeapons` fresh; print all four rows' `AnimLayerClass` — every one must resolve
+   to a `/Game/FPSTemplate/...` original, none to `/Game/BN/Animation/`.
+3. If PIE is available: possess, run `BNAimDebug`, paste the output. The first line must read
+   `owner NATIVE`, and the `BNAim layer` lines should now name the ORIGINAL layer classes. If
+   the pose still holds still while the main line moves, paste the output and STOP — that is a
+   finding for the lead, not something to fix here.
+4. The DT ticket's own read-back table, per its spec.
 
 ## Done means
 
-Checkbox true and read back, both DT rows landed cell-perfect, read-backs pasted below.
-**That is the whole ticket.**
+Checkbox true, two cells repointed at originals, both new rows landed cell-perfect on template
+layer classes, read-backs pasted below. **That is the whole ticket.**
 
 ## Log
 
