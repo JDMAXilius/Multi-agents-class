@@ -1,6 +1,7 @@
 #include "Characters/BNHealthComponent.h"
 
 #include "AbilitySystem/Attributes/BNAttributeSet.h"
+#include "AbilitySystem/Abilities/BNGA_HitReact.h"
 #include "AbilitySystem/Effects/BNGameplayEffects.h"
 #include "Core/BNGameplayTags.h"
 #include "AbilitySystemComponent.h"
@@ -153,6 +154,17 @@ void UBNHealthComponent::HandleHealthChanged(const FOnAttributeChangeData& Data)
 	if (Data.NewValue > 0.f)
 	{
 		bDeathReported = false;
+
+		// Survivable damage flinches; lethal damage falls through to death below, which cancels
+		// every ability anyway — a corpse must not start a reaction it cannot finish. AUTHORITY
+		// only, exactly like the death activation: the GA is ServerOnly and its montage replicates.
+		if (Data.NewValue < Data.OldValue)
+		{
+			if (UAbilitySystemComponent* ASC = CachedAbilitySystem.Get(); ASC && ASC->IsOwnerActorAuthoritative())
+			{
+				ASC->TryActivateAbilityByClass(UBNGA_HitReact::StaticClass());
+			}
+		}
 		return;
 	}
 
