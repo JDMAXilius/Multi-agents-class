@@ -60,8 +60,13 @@ protected:
 	/** The bang, sent from the PROJECTILE rather than routed through the thrower's ASC — that route
 	 *  early-returns wherever the thrower's AvatarActor is null on the receiving machine, so an
 	 *  observer who had culled the thrower would take the blast in silence. This actor is relevant
-	 *  to everyone who can see the explosion by definition: it is standing where it happens. */
-	UFUNCTION(NetMulticast, Unreliable)
+	 *  to everyone who can see the explosion by definition: it is standing where it happens.
+	 *
+	 *  RELIABLE, per the critic: Unreliable meant one dropped packet and a client saw the victim's
+	 *  replicated Health fall and the grenade vanish with no bang and no way to recover inside the
+	 *  0.5s lifespan. Reliable multicasts are rationed, and a grenade detonation — rare, one-shot,
+	 *  gameplay-legible — is exactly what the ration is for. */
+	UFUNCTION(NetMulticast, Reliable)
 	void MulticastExplosion(const FVector Center);
 
 	UPROPERTY(VisibleAnywhere, Category = "BN|Projectile")

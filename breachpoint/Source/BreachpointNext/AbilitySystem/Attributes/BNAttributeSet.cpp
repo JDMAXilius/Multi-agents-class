@@ -41,14 +41,43 @@ void UBNAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, fl
 		const float Max = GetMaxShield();
 		NewValue = Max > 0.f ? FMath::Clamp(NewValue, 0.f, Max) : FMath::Max(NewValue, 0.f);
 	}
-	else if (Attribute == GetMaxHealthAttribute() || Attribute == GetMaxShieldAttribute())
+	else if (Attribute == GetMaxHealthAttribute())
 	{
-		// A max of zero would divide the UI by zero and pin the pool shut.
+		// Health's max may never be zero — everyone would spawn dead against it.
 		NewValue = FMath::Max(NewValue, UE_KINDA_SMALL_NUMBER);
+	}
+	else if (Attribute == GetMaxShieldAttribute())
+	{
+		// ZERO IS LEGAL HERE, and the difference from MaxHealth is load-bearing: MaxShield=0 is
+		// the shields-off configuration, and every shield gate asks GetMaxShield() > 0. The critic
+		// caught the epsilon floor turning that deliberate 0 into 1e-4 — which made HasShieldPool()
+		// true, applied the recharge at every spawn, a RecentDamage GE per bullet, and raised
+		// State.Shields.Broken on a pool that was supposed to not exist. Floor at zero, not above it.
+		NewValue = FMath::Max(NewValue, 0.f);
 	}
 	else if (Attribute == GetMoveSpeedAttribute() || Attribute == GetSprintSpeedMultiplierAttribute())
 	{
 		NewValue = FMath::Max(NewValue, UE_KINDA_SMALL_NUMBER);
+	}
+}
+
+// The BASE value's clamp — the critic's catch. PreAttributeChange clamps only the CURRENT value;
+// the periodic recharge is an Additive on Shield's BASE, so at full shield the base climbed +10
+// every 0.1s forever, dirtying the replicated attribute every period for every idle player —
+// constant churn to all clients doing nothing. Same rules as the current-value clamp, one layer down.
+void UBNAttributeSet::PreAttributeBaseChange(const FGameplayAttribute& Attribute, float& NewValue) const
+{
+	Super::PreAttributeBaseChange(Attribute, NewValue);
+
+	if (Attribute == GetHealthAttribute())
+	{
+		const float Max = GetMaxHealth();
+		NewValue = Max > 0.f ? FMath::Clamp(NewValue, 0.f, Max) : FMath::Max(NewValue, 0.f);
+	}
+	else if (Attribute == GetShieldAttribute())
+	{
+		const float Max = GetMaxShield();
+		NewValue = Max > 0.f ? FMath::Clamp(NewValue, 0.f, Max) : FMath::Max(NewValue, 0.f);
 	}
 }
 

@@ -11,16 +11,20 @@ class UBNAbilitySystemComponent;
 class UBNAttributeSet;
 class UGameplayEffect;
 
-UCLASS()
 /** Broadcast on the AUTHORITY when this player's pawn dies. The seam law 7 asks for: the death
  *  ability announces, and whoever cares subscribes — instead of the ability reaching into the
  *  GameMode by name. The PlayerState is the broadcaster because it is the persistent object and
- *  the one the GameMode already tracks per player. */
+ *  the one the GameMode already tracks per player.
+ *
+ *  Victim first, then killer. Killer may be NULL (world damage, disconnected mid-flight) and may
+ *  EQUAL the victim (their own grenade) — both are real cases the subscriber decides how to word.
+ *
+ *  This block sits ABOVE the UCLASS() macro on purpose: UnrealHeaderTool requires the class
+ *  definition to immediately follow UCLASS(), and anything between them stops the build. */
 class ABNPlayerState;
-/** Victim first, then killer. Killer may be NULL (world damage, disconnected mid-flight) and may
- *  EQUAL the victim (their own grenade) — both are real cases the subscriber decides how to word. */
 DECLARE_MULTICAST_DELEGATE_TwoParams(FBNPlayerDeathSignature, ABNPlayerState* /*Victim*/, ABNPlayerState* /*Killer*/);
 
+UCLASS()
 class BREACHPOINTNEXT_API ABNPlayerState : public APlayerState, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
