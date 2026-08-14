@@ -166,6 +166,16 @@ void UBNAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 {
 	Super::NativeThreadSafeUpdateAnimation(DeltaSeconds);
 
+	// ABP_Mannequin_Base is SHARED: the template's own characters run this class too (E1/D3),
+	// and their pawns are not ABNCharacter — the game-thread pass never fills a snapshot for
+	// them. Without this guard the pass below writes every published variable from zeroed
+	// snapshots each frame, stomping what the template's interface events wrote — which is
+	// exactly what broke BP_FPSCharacter. Not a BN pawn: the C++ publisher stands down whole.
+	if (!Character)
+	{
+		return;
+	}
+
 	const FVector WorldVelocity2D(SnapWorldVelocity.X, SnapWorldVelocity.Y, 0.0);
 	const FVector WorldAcceleration2D(SnapWorldAcceleration.X, SnapWorldAcceleration.Y, 0.0);
 
