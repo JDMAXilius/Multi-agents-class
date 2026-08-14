@@ -267,11 +267,11 @@ void ABNPlayerController::SetupInputComponent()
 	Bind(BNTags::Input_Melee, ETriggerEvent::Started, &ABNPlayerController::HandleMeleePressed);
 	Bind(BNTags::Input_Grenade, ETriggerEvent::Started, &ABNPlayerController::HandleGrenadePressed);
 #if !UE_BUILD_SHIPPING
-	// ANNOUNCED, not created: IA_BNDebugDamageSelf + its DA_BNInput row + its IMC_BNNext mapping
-	// do not exist yet, so until the founder adds them this binding logs its "that control is
-	// dead" line every run — which is the announcement being loud rather than silent. The BINDING
-	// is guarded, not just the handler: a shipping listen-server host is an authority, so an
-	// unguarded key would damage the host for real.
+	// The asset half is BREACHPOINT-NEXT-TASK-INPUT-WIRING.md: IA_BN_DebugDamageSelf on K, its
+	// DA_BNInput row and IMC_BNNext mapping. Until the terminal lands it, this binding logs its
+	// "that control is dead" line every run — the announcement staying loud rather than silent.
+	// The BINDING is guarded, not just the handler: a shipping listen-server host is an authority,
+	// so an unguarded key would damage the host for real.
 	Bind(BNTags::Input_Debug_DamageSelf, ETriggerEvent::Started, &ABNPlayerController::HandleDebugDamagePressed);
 #endif
 }

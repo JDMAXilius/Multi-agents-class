@@ -7,7 +7,13 @@ never author) and §5 (do only what is listed) govern this.
 The C++ is landed and complete. **Nothing below creates an asset** — every asset named already
 exists. Six edits to three existing assets, then melee and grenade are live.
 
-## 1. Input — two new BN assets, then four rows
+## 1. Input — SUPERSEDED, moved to [`BREACHPOINT-NEXT-TASK-INPUT-WIRING.md`](BREACHPOINT-NEXT-TASK-INPUT-WIRING.md)
+
+The input half now lives in the consolidated terminal ticket above, together with the take-damage
+test key the founder asked for — one ticket, one session, three keys. Everything below in this
+section is history, kept only so the correction note it carries survives.
+
+### (superseded) Input — two new BN assets, then four rows
 
 **CORRECTED 13 Aug (founder: "all assets are in the FPSTemplate folder").** An earlier version of
 this ticket pointed at `/Game/Input/Actions/IA_Melee` and `IA_Grenade`. Those exist, but they are
