@@ -261,17 +261,20 @@ void UBNAnimInstance::PushAimSurfaceToLinkedLayers()
 			continue;
 		}
 
-		// Lean ALWAYS: its only writer is native (BN's State.Lean.* tags — the components read
-		// template input events BN never fires), so yielding it would leave it written nowhere.
+		// Lean and ADS ALWAYS: their only writer is native. Lean's input is BN's State.Lean.*
+		// tags, which the components never read; ADS is the CHARACTER's message in the template
+		// (MyCharacter's OnAimStarted sends SetADS/SetADS_Upper — no component sends it), and
+		// BN's character speaks through the tag instead. Yielding either leaves it written nowhere.
 		BNSetRotatorByName(Linked, TEXT("LeanRotation"), LeanRotation);
 		BNSetRotatorByName(Linked, TEXT("LeanOppRotation"), LeanOppRotation);
+		BNSetBoolByName(Linked, TEXT("GameplayTag_IsADS"), GameplayTag_IsADS);
+		BNSetBoolByName(Linked, TEXT("IsADS_Upper"), GameplayTag_IsADS);
 
-		// The aim half yields while the components own the surface: they are the messenger there,
-		// and a second messenger with stale values would stomp every message.
+		// The aim-pitch half yields while the components own the surface: they are the messenger
+		// there, and a second messenger with stale values would stomp every message.
 		if (bNativeOwnsAimSurface)
 		{
 			BNSetBoolByName(Linked, TEXT("bFPSMode"), bFPSMode);
-			BNSetBoolByName(Linked, TEXT("GameplayTag_IsADS"), GameplayTag_IsADS);
 			BNSetNumberByName(Linked, TEXT("Pitch"), Pitch);
 			BNSetNumberByName(Linked, TEXT("AimPitch"), AimPitch);
 			BNSetRotatorByName(Linked, TEXT("PitchRotator"), PitchRotator);
@@ -349,6 +352,13 @@ void UBNAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 		bFPSMode = bSnapFPSMode;
 	}
 	GameplayTag_IsADS = bSnapADS;
+	// The asset's SECOND ADS flag, found in the MyCharacter comparison: OnAimStarted sends BOTH
+	// SetADS_Upper and SetADS, and they land in different variables — IsADS_Upper drives the
+	// upper-body/weapon-layer side of the aim pose, and it has had NO writer on BN pawns since
+	// the port. By reflection on THIS instance, not a declared C++ property: declaring it would
+	// rename the ABP's own variable to IsADS_Upper_0 on reparent-compile and the graph would
+	// silently follow the rename — the GroundDistance_0 trap.
+	BNSetBoolByName(this, TEXT("IsADS_Upper"), bSnapADS);
 
 	bNativeADSStateChange = !bNativeFirstUpdate && bSnapADS != bWasADSLastUpdate;
 	bWasADSLastUpdate = bSnapADS;

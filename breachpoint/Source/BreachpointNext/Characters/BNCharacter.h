@@ -62,6 +62,19 @@ protected:
 	void InitializeAbilitySystem();
 	void OnMoveSpeedChanged(const FOnAttributeChangeData& Data);
 
+	/** MyCharacter's OnAimStarted/Completed POSE half, found missing in the class comparison:
+	 *  its comment says outright these calls "are what make ADS read as ADS" — the weapon pose
+	 *  interpolating to the aim offset — and BN only ever did the FOV half. Driven by the
+	 *  replicated State.Weapon.ADS tag rather than the input edge, so every machine poses its
+	 *  view of the character; the call itself is ChangePose on the Blueprint PoseOffsets
+	 *  component, by reflection, exactly MyCharacter's FBPCall discipline. */
+	void HandleADSTagChanged(const FGameplayTag Tag, int32 NewCount);
+
+	FDelegateHandle ADSPoseTagHandle;
+
+	/** Warn once, not once per aim press — MyCharacter's own convention for these seams. */
+	bool bPoseCompWarned = false;
+
 	/** The health component's verdict, turned into the death VERB on the authority. The component
 	 *  knows nothing about abilities and the ability knows nothing about attributes. */
 	void HandleDeath(UBNHealthComponent* Component);

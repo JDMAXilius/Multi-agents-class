@@ -1,4 +1,5 @@
 #include "Characters/BNCharacter.h"
+#include "BreachpointNext.h"
 #include "AbilitySystem/BNAbilitySystemComponent.h"
 #include "AbilitySystem/Abilities/BNGA_Death.h"
 #include "AbilitySystem/Attributes/BNAttributeSet.h"
@@ -12,6 +13,102 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "UObject/UnrealType.h"
+
+namespace
+{
+	// The graph's E_FPST_PoseType ordinals and speed, from MyCharacter's verified port
+	// (OnAimStarted/OnAimCompleted): the pose pairs are hip/aim × stand/crouch, scope 0 is
+	// the default sight, and 18 is the template's AimPoseChangeSpeed.
+	constexpr uint8 BN_Pose_HipStand = 1;
+	constexpr uint8 BN_Pose_AimStand = 2;
+	constexpr uint8 BN_Pose_HipCrouch = 6;
+	constexpr uint8 BN_Pose_AimCrouch = 7;
+	constexpr uint8 BN_Scope_Default = 0;
+	constexpr float BN_AimPoseChangeSpeed = 18.f;
+
+	bool BNSetFnByte(UFunction* Fn, void* Buffer, const TCHAR* Name, uint8 Value)
+	{
+		if (const FByteProperty* AsByte = FindFProperty<FByteProperty>(Fn, FName(Name)))
+		{
+			AsByte->SetPropertyValue_InContainer(Buffer, Value);
+			return true;
+		}
+		if (const FEnumProperty* AsEnum = FindFProperty<FEnumProperty>(Fn, FName(Name)))
+		{
+			AsEnum->GetUnderlyingProperty()->SetIntPropertyValue(
+				AsEnum->ContainerPtrToValuePtr<void>(Buffer), static_cast<int64>(Value));
+			return true;
+		}
+		return false;
+	}
+
+	bool BNSetFnNumber(UFunction* Fn, void* Buffer, const TCHAR* Name, float Value)
+	{
+		if (const FDoubleProperty* AsDouble = FindFProperty<FDoubleProperty>(Fn, FName(Name)))
+		{
+			AsDouble->SetPropertyValue_InContainer(Buffer, static_cast<double>(Value));
+			return true;
+		}
+		if (const FFloatProperty* AsFloat = FindFProperty<FFloatProperty>(Fn, FName(Name)))
+		{
+			AsFloat->SetPropertyValue_InContainer(Buffer, Value);
+			return true;
+		}
+		return false;
+	}
+
+	/** MyCharacter's ChangePose seam in miniature: the PoseOffsets component is a Blueprint
+	 *  class with no C++ base, so the call goes through the UFunction's OWN parameter layout —
+	 *  a hand-written mirror struct passed to ProcessEvent is silent memory corruption the day
+	 *  the Blueprint's signature changes, which is the exact trap MyCharacter's FBPCall
+	 *  documents. Pin names verified against the graph: (InPoseType, InScopeType, InChangeSpeed). */
+	bool BNCallChangePose(UActorComponent* Comp, uint8 PoseType, uint8 ScopeType, float ChangeSpeed)
+	{
+		UFunction* Fn = Comp ? Comp->FindFunction(FName(TEXT("ChangePose"))) : nullptr;
+		if (!Fn)
+		{
+			return false;
+		}
+
+		TArray<uint8> Buffer;
+		Buffer.SetNumZeroed(FMath::Max<int32>(Fn->ParmsSize, 1));
+		for (TFieldIterator<FProperty> It(Fn); It && It->HasAnyPropertyFlags(CPF_Parm); ++It)
+		{
+			It->InitializeValue_InContainer(Buffer.GetData());
+		}
+
+		bool bAllSet = true;
+		bAllSet &= BNSetFnByte(Fn, Buffer.GetData(), TEXT("InPoseType"), PoseType);
+		bAllSet &= BNSetFnByte(Fn, Buffer.GetData(), TEXT("InScopeType"), ScopeType);
+		bAllSet &= BNSetFnNumber(Fn, Buffer.GetData(), TEXT("InChangeSpeed"), ChangeSpeed);
+		if (bAllSet)
+		{
+			Comp->ProcessEvent(Fn, Buffer.GetData());
+		}
+
+		for (TFieldIterator<FProperty> It(Fn); It && It->HasAnyPropertyFlags(CPF_Parm); ++It)
+		{
+			It->DestroyValue_InContainer(Buffer.GetData());
+		}
+		return bAllSet;
+	}
+
+	/** The Blueprint-owned PoseOffsets component, by name fragment — the SCS node the terminal
+	 *  added is named after its class (BPC_FPST_Procedural_PoseOffsets), and instance names may
+	 *  carry suffixes, so a Contains match is the robust lookup. */
+	UActorComponent* BNFindPoseOffsetsComp(const AActor* Owner)
+	{
+		for (UActorComponent* Comp : Owner->GetComponents())
+		{
+			if (Comp && Comp->GetName().Contains(TEXT("PoseOffsets")))
+			{
+				return Comp;
+			}
+		}
+		return nullptr;
+	}
+}
 
 ABNCharacter::ABNCharacter()
 {
@@ -113,6 +210,17 @@ void ABNCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 				.Remove(MoveSpeedChangedHandle);
 		}
 		MoveSpeedChangedHandle.Reset();
+	}
+
+	// Same cached-ASC route as the delegate above, same reason: the fresh lookup is already null.
+	if (ADSPoseTagHandle.IsValid())
+	{
+		if (UAbilitySystemComponent* ASC = CachedAbilitySystem.Get())
+		{
+			ASC->RegisterGameplayTagEvent(BNTags::State_Weapon_ADS, EGameplayTagEventType::NewOrRemoved)
+				.Remove(ADSPoseTagHandle);
+		}
+		ADSPoseTagHandle.Reset();
 	}
 
 	// DEBT A2 (crouch critic, 9b59d79): OnEndCrouch never fires when the pawn is DESTROYED, so
@@ -219,6 +327,15 @@ void ABNCharacter::InitializeAbilitySystem()
 			.AddUObject(this, &ABNCharacter::OnMoveSpeedChanged);
 	}
 
+	// Every machine, like the health binding above: the ADS tag replicates (Mixed carries
+	// GE-granted tags to simulated proxies), so each machine's own listener poses its own view
+	// of this character — cosmetics stay per-machine, the template's model exactly.
+	if (!ADSPoseTagHandle.IsValid())
+	{
+		ADSPoseTagHandle = ASC->RegisterGameplayTagEvent(BNTags::State_Weapon_ADS, EGameplayTagEventType::NewOrRemoved)
+			.AddUObject(this, &ABNCharacter::HandleADSTagChanged);
+	}
+
 	const float MoveSpeed = ASC->GetNumericAttribute(UBNAttributeSet::GetMoveSpeedAttribute());
 	if (MoveSpeed > 0.f)
 	{
@@ -229,6 +346,28 @@ void ABNCharacter::InitializeAbilitySystem()
 void ABNCharacter::OnMoveSpeedChanged(const FOnAttributeChangeData& Data)
 {
 	GetCharacterMovement()->MaxWalkSpeed = Data.NewValue;
+}
+
+void ABNCharacter::HandleADSTagChanged(const FGameplayTag /*Tag*/, int32 NewCount)
+{
+	const bool bADS = NewCount > 0;
+	const uint8 PoseType = bADS
+		? (bIsCrouched ? BN_Pose_AimCrouch : BN_Pose_AimStand)
+		: (bIsCrouched ? BN_Pose_HipCrouch : BN_Pose_HipStand);
+
+	// Scope 0 (default sight) until the weapon row carries a ScopeType column — MyCharacter read
+	// it off the weapon (GetCurrentWeaponScopeType); that column is a one-line DT addition later.
+	if (!BNCallChangePose(BNFindPoseOffsetsComp(this), PoseType, BN_Scope_Default, BN_AimPoseChangeSpeed))
+	{
+		if (!bPoseCompWarned)
+		{
+			bPoseCompWarned = true;
+			UE_LOG(LogBN, Warning,
+				TEXT("BNCharacter: no callable ChangePose on a PoseOffsets component — ADS narrows the FOV "
+					 "but the weapon never rises to the eye. The BPC_FPST_Procedural_PoseOffsets component "
+					 "(terminal's R3 pivot) is missing from BP_BNCharacter or its signature changed."));
+		}
+	}
 }
 
 // The current-weapon seam. Null (no weapon, no layer on the row) still means unarmed, and the
