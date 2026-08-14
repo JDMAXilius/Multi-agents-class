@@ -86,3 +86,9 @@ Log line per reaction (Verbose): `BNGA_HitReact: <victim> hit from <dir> for <am
 -> <montage>`. **The bone name in that line matters**: if it ever reads `None`, traces are hitting
 the capsule rather than the mesh — which would also mean headshots have never worked, and that is a
 finding to report.
+
+- 14 Aug 2026 (mac terminal) — **DONE.** `/Game/BN/AbilitySystem/` created;
+  `DA_BNHitReactions` on `UBNHitReactionSet` at the exact ini path. Nine rows read back
+  cell-perfect (Front L4/M2/H1, Back L1/M1, Left L1/M1, Right L1/M1 — the UE5 set, no UE4
+  variants, no invented Heavy rows), thresholds untouched at 25/50. Whole read-back was
+  string-path soft refs; nothing else touched.

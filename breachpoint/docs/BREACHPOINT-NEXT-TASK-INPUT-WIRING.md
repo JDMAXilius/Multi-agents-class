@@ -91,3 +91,10 @@ Everything below is one PIE session, no console typing needed (though `BNDamageS
    other player dead — the server log must print `<killer> eliminated <victim>` with the actual
    names, and the ragdoll must appear on BOTH windows. That is the line that proves the instigator
    now survives to the death instead of dying at the log line.
+
+- 14 Aug 2026 (mac terminal) — **DONE.** `IA_BN_Melee`/`IA_BN_Grenade`/`IA_BN_DebugDamageSelf`
+  created (all read back `valueType=Boolean`); `DA_BNInput` read back 15 bindings with the four
+  new tags exact (`Input.Melee`, `Input.Grenade`, `Input.Debug.DamageSelf`, `Input.Weapon.ADS`
+  → the TEMPLATE's `IA_FPST_Aim`, reused per §4); `IMC_BNNext` read back 18 mappings
+  (+V/G/K/RightMouseButton), deprecated array 0. **Acceptance: PIE log contains ZERO
+  "that control is dead" lines** — the four-run streak ends here.

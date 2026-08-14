@@ -107,3 +107,14 @@ the read-back table is pasted into the Log below.
 ## Log
 
 _(terminal: append the read-back table, the four BNCues lines verbatim, and anything handed back)_
+
+- 14 Aug 2026 (mac terminal) — **DONE.** Four BP children created with the parent set in the
+  create call (no picker raised), defaults only, every property set as plain soft-path strings
+  (the refPath trap avoided on read-back attempt #1). Fresh read-backs all exact, including
+  Impact's three SurfaceRows with sounds. **PIE log, verbatim per tag (final registration):**
+  `GameplayCue.Weapon.MuzzleFlash -> BP_BNCue_MuzzleFlash_C` · `GameplayCue.Weapon.Impact ->
+  BP_BNCue_Impact_C` · `GameplayCue.Weapon.Tracer -> BP_BNCue_Tracer_C` ·
+  `GameplayCue.Grenade.Explode -> BP_BNCue_Explosion_C`. **Finding for the lead (not fixed):**
+  the registrar also logs a `SKEL_BP_BNCue_*_C` registration line per tag before the real one —
+  GetDerivedClasses picks up the editor-only skeleton classes; harmless in PIE, worth a
+  class-flags filter. The ini lines were NOT touched, per this ticket's own fence.
