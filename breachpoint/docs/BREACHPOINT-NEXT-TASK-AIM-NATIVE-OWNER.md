@@ -1,5 +1,7 @@
 # TICKET — native becomes the default aim owner: ONE checkbox, nothing else
 
+> STATUS: in-progress — mac terminal 14 Aug 2026, editor live, MCP :8000
+
 **Cut:** 14 August 2026 by the cloud lead · **For:** the terminal session (editor + Unreal MCP)
 **Founder ruling:** "Do all" on the reference-research recommendations
 ([RESEARCH-AIM-REFERENCES](BREACHPOINT-NEXT-RESEARCH-AIM-REFERENCES.md)) — the
