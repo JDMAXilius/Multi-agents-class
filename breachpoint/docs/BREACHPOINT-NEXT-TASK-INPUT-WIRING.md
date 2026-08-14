@@ -30,24 +30,30 @@ BN-owned. All three are **Digital (bool)** — same shape as the existing `IA_BN
 | `IA_BN_Grenade` | Digital (bool) |
 | `IA_BN_DebugDamageSelf` | Digital (bool) |
 
-## Step 2 — three rows in `DA_BNInput`
+## Step 2 — FOUR rows in `DA_BNInput`
+
+*(Row 4 added 13 Aug with the ADS packet — its InputAction is the TEMPLATE's `IA_FPST_Aim`, reused
+in place per §4; create nothing for it. The `Input.Weapon.ADS` tag lands with the ADS C++ — if the
+row will not save because the tag does not exist yet, the build is stale: stop and report.)*
 
 | Tag (exact) | InputAction |
 |---|---|
 | `Input.Melee` | `IA_BN_Melee` |
 | `Input.Grenade` | `IA_BN_Grenade` |
 | `Input.Debug.DamageSelf` | `IA_BN_DebugDamageSelf` |
+| `Input.Weapon.ADS` | `/Game/FPSTemplate/Input/Actions/IA_FPST_Aim` — **existing template asset** |
 
 The tag strings are keys — `UBNInputConfig` resolves them literally. A typo is a silent dead
 control, which is what this ticket exists to end, not extend.
 
-## Step 3 — three mappings in `IMC_BNNext`
+## Step 3 — FOUR mappings in `IMC_BNNext`
 
 | InputAction | Key | Why this key |
 |---|---|---|
 | `IA_BN_Melee` | **V** | the reference used F; V avoids the crouch row |
 | `IA_BN_Grenade` | **G** | the reference's own key (`MyCharacter.cpp:856`) |
 | `IA_BN_DebugDamageSelf` | **K** | unused by anything; mnemonic enough for a debug key |
+| `IA_FPST_Aim` | **Right Mouse Button** | the genre's key, and the reference's |
 
 Taken keys, do not collide: V, G, Q/E (lean), R (reload), Space, C/Ctrl (crouch), Shift (sprint),
 mouse buttons and wheel (fire/swap).
@@ -55,12 +61,12 @@ mouse buttons and wheel (fire/swap).
 ## Step 4 — read back
 
 Reload all three assets fresh; print intent vs actual for every row and mapping. Then PIE and
-confirm the *"that control is dead"* line is GONE from the log for all three tags — that line's
+confirm the *"that control is dead"* line is GONE from the log for all four tags — that line's
 absence is this ticket's acceptance test.
 
 ## Scope
 
-Three assets created, three rows, three mappings, the read-back. Nothing else — no `Source/`, no
+Three assets created (ADS reuses a fourth, existing one), four rows, four mappings, the read-back. Nothing else — no `Source/`, no
 `DT_BNWeapons` (that is the R3-W3 doc's §2), no other asset touched.
 
 ## Log
