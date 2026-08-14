@@ -49,4 +49,9 @@ namespace BNTags
 	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_Impact);
 	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_Tracer);
 	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Grenade_Explode);
+
+	/** Death presentation. Executed from the authority's UBNGA_Death so it multicasts — the ability
+	 *  is ServerOnly and nothing in it runs on a client, so the cue is the ONLY route by which a
+	 *  corpse ragdolls on the machines watching it. */
+	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Character_Death);
 }

@@ -30,6 +30,16 @@ void UBNGA_Death::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const
 
 	DeadHandle = ApplyStateTag(BNTags::State_Dead);
 
+	// THE corpse, and the only route to one. This ability is ServerOnly, so nothing in it runs on a
+	// client — before this line, UBNHealthComponent::OnDeath fired on every machine and its one
+	// listener discarded it everywhere but here. An executed cue multicasts, so each machine
+	// ragdolls the copy it is rendering. No prediction key is involved: nothing predicts a death.
+	{
+		FGameplayCueParameters DeathParams;
+		DeathParams.Instigator = ActorInfo->AvatarActor.Get();
+		K2_ExecuteGameplayCueWithParams(BNTags::GameplayCue_Character_Death, DeathParams);
+	}
+
 	ACharacter* Character = Cast<ACharacter>(ActorInfo->AvatarActor.Get());
 	if (UCharacterMovementComponent* Move = Character ? Character->GetCharacterMovement() : nullptr)
 	{

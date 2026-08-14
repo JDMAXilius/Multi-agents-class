@@ -7,6 +7,9 @@
 #include "GameplayCueManager.h"
 #include "GameplayCueSet.h"
 #include "GameFramework/Actor.h"
+#include "GameFramework/Character.h"
+#include "Components/CapsuleComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraComponent.h"
 #include "NiagaraDataInterfaceArrayFunctionLibrary.h"
@@ -145,6 +148,53 @@ bool UBNGameplayCue_Impact::OnExecute_Implementation(AActor* MyTarget, const FGa
 	{
 		UGameplayStatics::PlaySoundAtLocation(MyTarget, Sound, Parameters.Location);
 	}
+	return true;
+}
+
+FGameplayTag UBNGameplayCue_Death::GetHandledCueTag() const
+{
+	return BNTags::GameplayCue_Character_Death;
+}
+
+bool UBNGameplayCue_Death::OnExecute_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters) const
+{
+	ACharacter* Character = Cast<ACharacter>(MyTarget);
+	USkeletalMeshComponent* MeshComp = Character ? Character->GetMesh() : nullptr;
+	if (!MeshComp)
+	{
+		return true;
+	}
+
+	if (USoundBase* Loaded = Sound.IsNull() ? nullptr : Sound.LoadSynchronous())
+	{
+		UGameplayStatics::PlaySoundAtLocation(MyTarget, Loaded, Character->GetActorLocation());
+	}
+
+	if (!bRagdoll)
+	{
+		return true;
+	}
+
+	// The CAPSULE stops colliding and the MESH starts. Both halves are needed: a corpse whose
+	// capsule still blocks is an invisible wall in the middle of a firefight, and a mesh left on
+	// its query-only profile falls through the floor it is supposed to land on.
+	if (UCapsuleComponent* Capsule = Character->GetCapsuleComponent())
+	{
+		Capsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+
+	// Detached first. The mesh is welded to the capsule, and simulating a welded body drags the
+	// actor's root with it — the corpse would tow its own capsule around the map.
+	MeshComp->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+	MeshComp->SetCollisionProfileName(RagdollCollisionProfile);
+	MeshComp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	MeshComp->SetAllBodiesSimulatePhysics(true);
+	MeshComp->WakeAllRigidBodies();
+
+	// Runs on every machine off one multicast, so each simulates its own corpse locally. They will
+	// not settle identically — physics is not deterministic across machines — and that is accepted:
+	// a corpse is cosmetic, it lives ~3 seconds, and replicating ragdoll bones would cost more
+	// bandwidth than every weapon in the game combined.
 	return true;
 }
 

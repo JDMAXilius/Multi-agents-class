@@ -132,6 +132,40 @@ protected:
 	TSoftObjectPtr<UFXSystemAsset> Effect;
 };
 
+/**
+ * The corpse. A ragdoll is a mesh state change, which is presentation — so law 6 puts it here, and
+ * that placement is also what makes it VISIBLE: UBNGA_Death is ServerOnly and nothing in it runs on
+ * a client, so an executed cue is the only route by which the machines watching a death see one.
+ *
+ * Before this existed, UBNHealthComponent::OnDeath fired on every machine and its one listener
+ * discarded it everywhere but the server — a signal broadcast everywhere and consumed nowhere.
+ */
+UCLASS(Config = Game, meta = (DisplayName = "GC_BN_Character_Death"))
+class BREACHPOINTNEXT_API UBNGameplayCue_Death : public UBNGameplayCue_Base
+{
+	GENERATED_BODY()
+
+public:
+	virtual FGameplayTag GetHandledCueTag() const override;
+	virtual bool OnExecute_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters) const override;
+
+protected:
+
+	/** Off = the corpse simply stops, which is what shipped before this. A switch because a ragdoll
+	 *  is the kind of thing that looks wrong in ways only a playtest reveals. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Cue")
+	bool bRagdoll = true;
+
+	/** The mesh's profile while simulating. "Ragdoll" is the engine's stock physics-body profile;
+	 *  a corpse must stop blocking the living, which is what it does. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Cue")
+	FName RagdollCollisionProfile = TEXT("Ragdoll");
+
+	/** Optional. FPSTemplate ships no death sound; left unset it costs nothing. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Cue")
+	TSoftObjectPtr<USoundBase> Sound;
+};
+
 UCLASS(Config = Game, meta = (DisplayName = "GC_BN_Grenade_Explode"))
 class BREACHPOINTNEXT_API UBNGameplayCue_Explosion : public UBNGameplayCue_Base
 {
