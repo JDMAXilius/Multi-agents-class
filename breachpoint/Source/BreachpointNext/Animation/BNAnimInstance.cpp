@@ -240,14 +240,11 @@ void UBNAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	bSnapLayerChanged = CurrentLayerClass != ObservedLayerClass;
 	ObservedLayerClass = CurrentLayerClass;
 
-	// Deliver the aim surface to the LAYER instances — the values the worker pass computed last
+	// Deliver the surface to the LAYER instances — the values the worker pass computed last
 	// frame, one frame stale by construction, exactly as stale as the template's own game-thread
-	// interface events. Only while native owns the surface: yielded, the component path is the
-	// messenger and a second one would stomp it.
-	if (bNativeOwnsAimSurface)
-	{
-		PushAimSurfaceToLinkedLayers();
-	}
+	// interface events. Always called: lean is native's whoever owns aim, so its half of the
+	// push cannot be gated. The aim half yields inside.
+	PushAimSurfaceToLinkedLayers();
 }
 
 void UBNAnimInstance::PushAimSurfaceToLinkedLayers()
@@ -263,13 +260,22 @@ void UBNAnimInstance::PushAimSurfaceToLinkedLayers()
 		{
 			continue;
 		}
-		BNSetBoolByName(Linked, TEXT("bFPSMode"), bFPSMode);
-		BNSetBoolByName(Linked, TEXT("GameplayTag_IsADS"), GameplayTag_IsADS);
-		BNSetNumberByName(Linked, TEXT("Pitch"), Pitch);
-		BNSetNumberByName(Linked, TEXT("AimPitch"), AimPitch);
-		BNSetRotatorByName(Linked, TEXT("PitchRotator"), PitchRotator);
+
+		// Lean ALWAYS: its only writer is native (BN's State.Lean.* tags — the components read
+		// template input events BN never fires), so yielding it would leave it written nowhere.
 		BNSetRotatorByName(Linked, TEXT("LeanRotation"), LeanRotation);
 		BNSetRotatorByName(Linked, TEXT("LeanOppRotation"), LeanOppRotation);
+
+		// The aim half yields while the components own the surface: they are the messenger there,
+		// and a second messenger with stale values would stomp every message.
+		if (bNativeOwnsAimSurface)
+		{
+			BNSetBoolByName(Linked, TEXT("bFPSMode"), bFPSMode);
+			BNSetBoolByName(Linked, TEXT("GameplayTag_IsADS"), GameplayTag_IsADS);
+			BNSetNumberByName(Linked, TEXT("Pitch"), Pitch);
+			BNSetNumberByName(Linked, TEXT("AimPitch"), AimPitch);
+			BNSetRotatorByName(Linked, TEXT("PitchRotator"), PitchRotator);
+		}
 	}
 }
 
@@ -399,17 +405,22 @@ void UBNAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 		// the whole spine chain applied a zero rotator — the arms and weapon held still while the
 		// camera, which takes control rotation directly, moved. Writing it here closes that gap.
 		PitchRotator = BNMakeAxisRotator(AimPitchAxis, Pitch);
-
-		// ---- lean. The State.Lean.* tags are the input and they replicate (Mixed carries GE-granted
-		// tags to simulated proxies), so a proxy leans the way its owner does. Both sides held cancel.
-		const double TargetLeaning = (bSnapLeanRight ? 1.0 : 0.0) - (bSnapLeanLeft ? 1.0 : 0.0);
-		NativeCurrLeaning = FMath::FInterpTo(NativeCurrLeaning, TargetLeaning, static_cast<double>(DeltaSeconds), LeanInterpSpeed);
-		const double LeanDegrees = NativeCurrLeaning * LeanAngle;
-		LeanRotation = BNMakeAxisRotator(LeanAxis, LeanDegrees);
-		// The head's counter-tilt: the body tips, the gaze stays level. Same axis, opposite sign —
-		// the asset's LeanSpineWeights head entry is literally named "Opposite Angle Weight".
-		LeanOppRotation = BNMakeAxisRotator(LeanAxis, -LeanDegrees);
 	}
+
+	// ---- lean. OUTSIDE the aim-ownership gate, deliberately, and this is the founder's "no
+	// leaning left or right" finding: lean's input is BN's OWN State.Lean.* tags (Q/E through
+	// UBNGA_Lean), which the template's components know nothing about — they read the template
+	// character's input events, which BN never fires, so a yielded native path left lean with NO
+	// writer at all. Aim has two candidate owners; lean has exactly one, and it is native,
+	// whoever owns the pitch surface. The tags replicate (Mixed carries GE-granted tags to
+	// simulated proxies), so a proxy leans the way its owner does. Both sides held cancel.
+	const double TargetLeaning = (bSnapLeanRight ? 1.0 : 0.0) - (bSnapLeanLeft ? 1.0 : 0.0);
+	NativeCurrLeaning = FMath::FInterpTo(NativeCurrLeaning, TargetLeaning, static_cast<double>(DeltaSeconds), LeanInterpSpeed);
+	const double LeanDegrees = NativeCurrLeaning * LeanAngle;
+	LeanRotation = BNMakeAxisRotator(LeanAxis, LeanDegrees);
+	// The head's counter-tilt: the body tips, the gaze stays level. Same axis, opposite sign —
+	// the asset's LeanSpineWeights head entry is literally named "Opposite Angle Weight".
+	LeanOppRotation = BNMakeAxisRotator(LeanAxis, -LeanDegrees);
 
 	// ---- linked layer edge
 	bNativeLinkedLayerChanged = !bNativeFirstUpdate && bSnapLayerChanged;

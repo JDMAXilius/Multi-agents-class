@@ -103,3 +103,11 @@ land. By hand in the editor this does not apply.
 ## Log
 
 _(append the read-back table, the AnimLayerClass verdict and why, and anything unresolved)_
+
+- 14 Aug 2026 (cloud lead) — **THIS TICKET IS NOW THE ONLY BLOCKER for the founder's "we need
+  all weapons, not only 2".** Everything else is already in place: `StartupWeaponRows` lists all
+  four (DefaultGame.ini), the C++ swap cycles `Weapons.Num()` with nothing hardcoded, and the
+  equipment component logs `startup row 'Shotgun' does not exist in the weapon table — skipped`
+  (same for Knife) on every boot — the loud skip doing its job. The moment these two rows land
+  in `DT_BNWeapons`, all four weapons join the swap cycle with zero further changes anywhere.
+  Terminal: execute the spec above exactly as written; the founder is waiting on it.
