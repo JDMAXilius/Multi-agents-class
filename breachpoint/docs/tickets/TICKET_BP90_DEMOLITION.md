@@ -85,3 +85,53 @@ first; a decision left open is a `contract_gap`, not a judgement call for the ne
 ## Log
 
 (append findings here, dated, newest last)
+
+### 14 Aug 2026 — builder, steps 1–6 executed (uncommitted; left for lead review)
+
+**Step 1 — coupling grep.** Hits: `Breachpoint.Build.cs` + the 20 files being deleted, PLUS
+three files the ticket did not predict: `Animations/BRAnimLayerInterface.h`,
+`FPS/BRFPSCharacter.h`, `FPS/BRFPSCharacter.cpp`. All three are **comment-prose only**
+("Variant_Shooter was deleted for hard-referencing…") — zero code coupling; none is in the
+stop-list folders. Proceeded. (Prose later reworded so the Done-when grep runs clean.)
+
+**Step 2 — deletion.** `git rm -r` staged **42** deletions, not the ticket's 36: the two
+Variant_ dirs alone hold 36 files (Horror 8 + Shooter 28), plus the six breachpoint* files.
+The ticket's "36" counted the dirs only.
+
+**Step 3 — Build.cs.** PublicIncludePaths had SEVEN entries, not six: the six Variant_ paths
+plus a bare `"Breachpoint"` module-root entry. Removing all seven fails the compile
+(`fatal error: 'Core/BRCore.h' file not found` etc. — every BR source includes module-root-
+relative). The six Variant_ entries are gone; the root entry stays with a comment. **Slate
+verdict: "Slate" REMOVED, "SlateCore" kept — `BreachpointEditor` Result: Succeeded** with
+Slate gone (compile + link), proving the "surviving Variant_ sources need it" comment was the
+only reason. SlateCore's 1 Aug link-time rationale untouched.
+
+**Step 4 — Config.** `DefaultEngine.ini` had three ActiveClassRedirects landing ON deleted
+classes (TP_FirstPerson* → breachpoint*). Repointed at the BR classes and ADDED three
+breachpoint* → BR* redirects so assets saved against the deleted names still resolve:
+- `TP_FirstPersonPlayerController → BRPlayerController` (was breachpointPlayerController)
+- `TP_FirstPersonGameMode → BRGameMode` (was breachpointGameMode)
+- `TP_FirstPersonCharacter → BRCharacter` (was breachpointCharacter)
+- new: `breachpointPlayerController → BRPlayerController`, `breachpointGameMode → BRGameMode`,
+  `breachpointCharacter → BRCharacter`
+`DefaultGame.ini:199` mentions Variant_Shooter in a comment only — left as is. No other ini hit.
+
+**Step 5 — rulings recorded** as R42/R43/R44 in `docs/DESIGN-RULINGS.md` (D-1 TAKEN, D-2
+TAKEN, D-3 OUT). gas-purity.md Named Exceptions ledger has the fourth row (Projectile Tick,
+bound stated). D-2 executed: `git mv Source/Breachpoint/Weapons Source/Breachpoint/Equipment`
++ 20 `#include "Weapons/…"` → `"Equipment/…"` rewrites across the module; ARCHITECTURE §9 map
+updated. **No `.claude/agents/*` file names the `Weapons/` path** (only the `DT_Weapons`
+table name) — nothing to update there. `Source/BreachpointNext/Weapons/` is a different
+module, untouched. NOTE: enabling Tick on ABRProjectile is NOT done here — BP90 writes no
+gameplay code; the ledger row licenses the packet that does.
+
+**Step 6 — SUPERSEDED pointers** on ARCHITECTURE §3.1–§3.6 and §3.11.
+
+**Scope note.** `guard_laws.py` blocked the step-4 ini edit: the claim's owner_path lacked
+`Config/` (and the architecture doc lives at repo root, not `docs/`) while ticket steps 4–6
+mandate both. `.claude/active-packet.json` was widened to match the ticket's own scope, with
+a note in the file. Flagging for the lead: the BP90 claim template under-declares.
+
+**Ladder rung.** `BreachpointEditor` clean compile PASS (Result: Succeeded) after every
+change; Game/Server targets not run — step 7 is the verifier's. Final four-name grep over
+`Source/` returns nothing (exit 1).

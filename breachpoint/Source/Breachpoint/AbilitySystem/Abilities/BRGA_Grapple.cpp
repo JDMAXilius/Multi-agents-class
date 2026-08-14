@@ -9,7 +9,7 @@
 #include "Engine/World.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/Pawn.h"
-#include "Weapons/BRWeaponPickup.h"
+#include "Equipment/BRWeaponPickup.h"
 
 namespace
 {

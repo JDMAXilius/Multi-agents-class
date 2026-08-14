@@ -108,12 +108,16 @@ Source/Breachpoint/
 
 ### 3.1 `Core/` — 2
 
+> SUPERSEDED by BREACHPOINT-GAMEPLAY-REWORK.md §2–§3 (14 Aug 2026).
+
 | File | Job |
 |---|---|
 | `BRGameplayTags.h/.cpp` | ALL native tags (`UE_DEFINE_GAMEPLAY_TAG`): `Ability.*`, `InputTag.*` (Move, Look, Jump, Crouch, Sprint, Fire, Reload, Swap, Grenade, Melee, Grapple), `State.*` (Shields.Broken, Combat.RecentDamage, Movement.Sprinting, Dead), `GameplayCue.*`, `Damage.*` (Kinetic, Explosive, Melee, Headshot, Rear), `SetByCaller.*` (BaseDamage, RegenRate, CooldownDuration), `Event.*` (Death, Kill, **Melee.WindowBegin, Melee.WindowEnd, Weapon.ReloadCommit, Weapon.SwapCommit** — the montage→gameplay notify seam, ruling R17; `Event.<Verb>.<Moment>` is the extension rule). One authoritative header. |
 | `BRCore.h/.cpp` | Log channels (LogBRCombat/Net/AI/Online/UI) + collision channel aliases matching DefaultEngine.ini. *(v2: merged from two files — same audience, one include.)* |
 
 ### 3.2 `Input/` — 2 *(v2: new — the owned input layer)*
+
+> SUPERSEDED by BREACHPOINT-GAMEPLAY-REWORK.md §2–§3 (14 Aug 2026).
 
 The advanced Enhanced Input → GAS bridge, authored ours (Lyra-pattern,
 zero Lyra code):
@@ -140,6 +144,8 @@ game grade) sits at the one choke point; and bots inject the *same tags*
 into the same ASC path — human and bot input are literally one API.
 
 ### 3.3 `AbilitySystem/` — 11
+
+> SUPERSEDED by BREACHPOINT-GAMEPLAY-REWORK.md §2–§3 (14 Aug 2026).
 
 | File | Job |
 |---|---|
@@ -176,6 +182,8 @@ into the same ASC path — human and bot input are literally one API.
 > was caught. See that ticket's Log.)*
 
 ### 3.4 `Character/` — 2
+
+> SUPERSEDED by BREACHPOINT-GAMEPLAY-REWORK.md §2–§3 (14 Aug 2026).
 
 **`BRCharacter.h/.cpp` — the pawn is a body, not a brain.** Rebased from
 the FPS template with its gameplay deleted. What it owns:
@@ -223,6 +231,8 @@ subclass owns:
 
 ### 3.5 `Weapons/` — 3
 
+> SUPERSEDED by BREACHPOINT-GAMEPLAY-REWORK.md §2–§3 (14 Aug 2026). The folder is `Equipment/` since D-2.
+
 `BREquipmentComponent.h/.cpp` (two-slot replicated subobjects; equip =
 grant weapon's `BRAbilitySet` + async-load soft mesh; pickup/drop RPC
 server-validated) · `BRWeaponInstance.h/.cpp` (replicated UObject: row
@@ -230,6 +240,8 @@ handle + ammo `COND_OwnerOnly`) · `BRWeaponPickup.h/.cpp`
 (`ABRWeaponPickup` + `ABRPowerWeaponSpawner` 90 s node).
 
 ### 3.6 `Match/` — 4
+
+> SUPERSEDED by BREACHPOINT-GAMEPLAY-REWORK.md §2–§3 (14 Aug 2026).
 
 `BRGameMode.h/.cpp` (phase machine on timers/events, kill attribution +
 double-KO, win/SD checks, scored respawns, bot fill via AI's manager) ·
@@ -295,6 +307,8 @@ ticketed to Claude terminal from day one; your cost is reading green/red,
 not authoring.
 
 ### 3.11 `Data/` — 1
+
+> SUPERSEDED by BREACHPOINT-GAMEPLAY-REWORK.md §2–§3 (14 Aug 2026).
 
 `BRDataRows.h` — every row struct, one header: `FBRWeaponRow` (numbers +
 **soft refs**: mesh, cues, ability set, MetaSounds), `FBRBotTuningRow`
@@ -516,7 +530,7 @@ Tools/
 
 | owner_path | Agent |
 |---|---|
-| `AbilitySystem/`, `Weapons/`, `Data/`, `Tests/` | sim-builder |
+| `AbilitySystem/`, `Equipment/` (was `Weapons/`, renamed 14 Aug 2026 per D-2), `Data/`, `Tests/` | sim-builder |
 | Any replicated surface + `Match/` + `BRGA_Grapple` | netcode-builder |
 | `AI/` | ai-builder |
 | `Online/` | services-builder |

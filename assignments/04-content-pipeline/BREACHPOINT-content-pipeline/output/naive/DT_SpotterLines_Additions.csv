@@ -1,0 +1,13 @@
+RowName,TriggerId,Text,Audience,Weight,RepeatCooldown_s
+S22a,Kill.Rocket.Multi,One rocket. Two down.,All,1.0,8
+S22b,Kill.Rocket.Multi,Direct hit. Multiple down.,All,1.0,8
+S22c,Kill.Rocket.Multi,Rocket connects. Blast Radius.,All,1.0,8
+S23a,Kill.First,First blood. Breach secured.,All,1.0,0
+S23b,Kill.First,Opening kill. Breach.,All,1.0,0
+S23c,Kill.First,First kill of the match.,All,1.0,0
+S24a,Match.SuddenDeath.Win,Sudden death. Match over.,All,1.0,0
+S24b,Match.SuddenDeath.Win,That's the Last Word.,All,1.0,0
+S24c,Match.SuddenDeath.Win,One shot. Match won.,All,1.0,0
+S25a,Kill.SpreeEnder,Spree ended. Confirmed kill.,All,1.0,8
+S25b,Kill.SpreeEnder,Killing spree stopped cold.,All,1.0,8
+S25c,Kill.SpreeEnder,Spree Ender. Down they go.,All,1.0,8

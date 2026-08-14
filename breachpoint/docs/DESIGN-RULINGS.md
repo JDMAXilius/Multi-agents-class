@@ -686,3 +686,31 @@ re-litigated inside a packet.
   **Removed with it, 4 Aug 2026:** the whole attribution apparatus — its verification script,
   the records it checked, and the packaging rule that shipped them. Content sourcing is now
   entirely a founder concern, handled outside this repo.
+
+## Gameplay rework decisions (14 Aug 2026 — founder rulings D-1/D-2/D-3 from BREACHPOINT-GAMEPLAY-REWORK.md §7, recorded at BP90)
+
+- **R42 (D-1). TAKEN — `ABRProjectile` gets a named Tick exception; the no-Tick law gains
+  exactly one ledgered hole.** Zorans' recursive `SetTimerForNextTick` was Tick wearing a hat:
+  same per-frame cost, hidden from every audit that greps for Tick. The exception is declared
+  honestly instead. **The bound:** Tick is enabled on `ABRProjectile` ONLY; the tick body does
+  position update + trace and nothing else — no gameplay decision lives in Tick; Tick is
+  disabled the moment the projectile deactivates. The corresponding row is in
+  `docs/contracts/gas-purity.md`'s Named Exceptions ledger (added in this packet, as the
+  contract requires). Any other class that wants Tick still needs its own ledger row in its
+  own packet.
+
+- **R43 (D-2). TAKEN — `Source/Breachpoint/Weapons/` is renamed `Equipment/`.** It holds
+  weapons, grenades, projectiles, and pickups; the old name undersold the contents. The
+  `git mv` landed in BP90 (14 Aug 2026) with the module-internal `#include "Weapons/..."` →
+  `"Equipment/..."` rewrites; `BREACHPOINT-ARCHITECTURE.md` §9's owner-path map now names
+  `Equipment/` (sim-builder). No `.claude/agents/*` file named the `Weapons/` path (they name
+  only the `DT_Weapons` table, which keeps its name). BP96–BP99 and all future tickets use
+  `Equipment/`. `Source/BreachpointNext/Weapons/` is a different module and is untouched by
+  this ruling.
+
+- **R44 (D-3). OUT OF SCOPE — the AI brain (`AI/`, 6 units) stays as-is behind the
+  input-tag seam.** The rework preserves that seam for free: `BRBotController` keeps pressing
+  InputTags on its own ASC, human and bot input remain one API. If AI is ever pulled into
+  scope, that is a new packet after BP101 (the §7 table names it BP103, owned by ai-builder,
+  re-fitting `BRBotFacts` to the new attribute names) — not a side effect of any rework
+  ticket.

@@ -1,0 +1,16 @@
+RowName,Callsign,ProfileHint,Note
+B01,Dulledge,Recruit,"GDD: 'Same StateTree, dulled' is the exact descriptor for the Recruit behavior column"
+B02,Softaim,Recruit,"accuracy_pct=0.25, lowest of the three rows"
+B03,Shakygrip,Recruit,"reaction_jitter_ms=120, highest jitter of the three rows"
+B04,Slowdraw,Recruit,reaction_ms=500 (slowest of the three profiles) — the callsign names the delay itself
+B05,Wideshot,Recruit,"aim_error_deg=8.0, widest cone of the three rows, hence a shot that misses wide"
+B06,Midpace,Marine,"reaction_ms=320, exact middle of 500/320/220 across the three rows"
+B07,Evenkeel,Marine,"reaction_jitter_ms=80, mid value between Recruit's 120 and Veteran's 60"
+B08,Steadyaim,Marine,"accuracy_pct=0.45, the middle value of the three rows"
+B09,Coverwise,Marine,"cover_preference=0.65, mid value between Recruit's 0.45 and Veteran's 0.85"
+B10,Tightline,Marine,"aim_error_deg=5.0, mid value between Recruit's 8.0 and Veteran's 3.0"
+B11,Honedline,Veteran,"GDD: 'Same StateTree, sharpened' is the exact descriptor for the Veteran behavior column"
+B12,Tightaim,Veteran,"aim_error_deg=3.0, lowest (tightest) of the three rows"
+B13,Coverlock,Veteran,"cover_preference=0.85, highest of the three rows"
+B14,Longtrack,Veteran,"target_memory_s=5.0, highest of the three rows"
+B15,Deadeye,Veteran,"accuracy_pct=0.65, highest of the three rows"

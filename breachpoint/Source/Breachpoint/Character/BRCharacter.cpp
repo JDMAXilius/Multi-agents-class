@@ -15,7 +15,7 @@
 #include "Input/BRInputConfig.h"
 #include "Match/BRPlayerController.h"
 #include "Match/BRPlayerState.h"
-#include "Weapons/BREquipmentComponent.h"
+#include "Equipment/BREquipmentComponent.h"
 
 ABRCharacter::ABRCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer.SetDefaultSubobjectClass<UBRCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))

@@ -8,8 +8,8 @@ public class Breachpoint : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		// ARCHITECTURE.md §3 dependency list. "Slate" is template-inherited and kept because
-		// the surviving Variant_* sources need it.
+		// ARCHITECTURE.md §3 dependency list. "Slate" removed 14 Aug 2026 (BP90): it was
+		// template-inherited for the variant template sources, which are deleted in this packet.
 		PublicDependencyModuleNames.AddRange(new string[] {
 			"Core",
 			"CoreUObject",
@@ -24,7 +24,6 @@ public class Breachpoint : ModuleRules
 			"GameplayStateTreeModule",
 			"NavigationSystem",
 			"UMG",
-			"Slate",
 			// SlateCore added 1 Aug 2026: UMG's SObjectWidget pulls SWidget, EVisibility,
 			// SNullWidget and FSlateAttributeMetaData, all of which live in SlateCore, not
 			// Slate. Without it the module compiles clean and fails at LINK with 13
@@ -64,14 +63,11 @@ public class Breachpoint : ModuleRules
 			"MoviePlayer"
 		});
 
+		// The six variant-template entries were removed 14 Aug 2026 (BP90) with the
+		// template sources. The module-root entry stays: every BR source includes module-
+		// root-relative ("Core/BRCore.h" etc.); removing it fails compile on file-not-found.
 		PublicIncludePaths.AddRange(new string[] {
-			"Breachpoint",
-			"Breachpoint/Variant_Horror",
-			"Breachpoint/Variant_Horror/UI",
-			"Breachpoint/Variant_Shooter",
-			"Breachpoint/Variant_Shooter/AI",
-			"Breachpoint/Variant_Shooter/UI",
-			"Breachpoint/Variant_Shooter/Weapons"
+			"Breachpoint"
 		});
 	}
 }

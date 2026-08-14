@@ -28,7 +28,7 @@
  * `USkeletalMeshComponent::LinkAnimClassLayers()`, and no C++ file names an asset.
  *
  * Adding a weapon therefore stays a row plus a layer asset and ZERO C++, which is the whole
- * reason §A.3 rejected Variant_Shooter's swap-the-whole-AnimInstance shape.
+ * reason §A.3 rejected the Shooter template's swap-the-whole-AnimInstance shape.
  *
  * WHY `BlueprintNativeEvent` AND NOT PURE VIRTUAL C++. Because of who implements it: the layer
  * IS an AnimBlueprint, so the implementor is an asset, and a pure-virtual `BlueprintCallable`

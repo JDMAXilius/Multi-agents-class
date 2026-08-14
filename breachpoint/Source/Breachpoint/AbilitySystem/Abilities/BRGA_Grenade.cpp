@@ -10,7 +10,7 @@
 #include "Engine/World.h"
 #include "TimerManager.h"
 
-#include "Weapons/BRProjectile.h"
+#include "Equipment/BRProjectile.h"
 
 namespace
 {

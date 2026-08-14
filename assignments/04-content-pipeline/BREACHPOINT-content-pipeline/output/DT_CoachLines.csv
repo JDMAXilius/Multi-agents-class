@@ -1,0 +1,13 @@
+RowName,ConditionId,TelemetryField,Comparison,Threshold,Text,Priority
+C01,RepeatedDeaths,Deaths,>,12,"{Deaths} deaths this match. Peek less, hold cover more.",2
+C02,HighDeathCount,Deaths,>=,15,"Died {Deaths} times. Disengage sooner — reposition before the fight, not after.",1
+C03,MinorAssistGap,Assists,>=,5,{Assists} assists. Damage without kills wins nothing — commit to the last hit.,4
+C04,HighAssistLowFinish,Assists,>=,10,"{Assists} assists this match. You're softening kills, not closing them — finish what you start.",3
+C05,SelfInflictedRepeat,SelfInflictedDeaths,>,1,"{SelfInflictedDeaths} self-inflicted deaths. Check your range before the shot, not after.",5
+C06,SelfInflictedAny,SelfInflictedDeaths,>=,1,{SelfInflictedDeaths} self-inflicted deaths. Stop firing point-blank — you're not the only one in range.,6
+C07,FriendlyFireElevated,FriendlyFireKills,>=,3,{FriendlyFireKills} friendly fire kills this match. Check team ID before you fire in a scrum.,7
+C08,FriendlyFirePresent,FriendlyFireKills,>=,2,{FriendlyFireKills} friendly fire kills. Confirm the target before you commit the shot.,8
+C09,MinimalMatchPresence,TimeInMatchSeconds,<=,120,{TimeInMatchSeconds}s of match time logged. Low presence — you're either dying fast or arriving late.,9
+C10,BriefMatchPresence,TimeInMatchSeconds,<,240,{TimeInMatchSeconds}s of time in match. Short match presence — check your spawn-to-fight routing.,10
+C11,ExtremelyLowKills,Kills,<,3,"{Kills} kills. Low count — contest more, retreat less.",11
+C12,VeryLowKillCount,Kills,<,4,{Kills} kills logged. Low finish count — close distance before you commit to the fight.,12

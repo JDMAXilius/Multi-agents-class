@@ -144,7 +144,7 @@ protected:
 	 *
 	 * SOFT, and that is the whole point of them being here. `Character/` must not name an
 	 * animation asset (law 3, and rework governing idea 5: *C++ knows tags and row handles, never
-	 * an asset*), and `Variant_Shooter` was deleted for hard-referencing an AnimInstance class per
+	 * an asset*), and the Shooter template was deleted for hard-referencing an AnimInstance class per
 	 * weapon. A soft class in config is the version that survives both rules: the ABP is named in
 	 * `DefaultGame.ini`, loaded on demand, and no C++ file mentions it.
 	 *

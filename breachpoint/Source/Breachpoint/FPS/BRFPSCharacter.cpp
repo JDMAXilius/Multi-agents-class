@@ -49,7 +49,7 @@ void ABRFPSCharacter::BeginPlay()
 void ABRFPSCharacter::ApplyAnimInstanceClasses()
 {
 	// Resolved from a SOFT class in config, so no C++ in this project names an animation asset.
-	// `Variant_Shooter` was deleted for hard-referencing an AnimInstance class per weapon; this is
+	// The Shooter template was deleted for hard-referencing an AnimInstance class per weapon; this is
 	// the shape that does the same job without the reference.
 	if (USkeletalMeshComponent* Mesh1P = GetFirstPersonMesh())
 	{

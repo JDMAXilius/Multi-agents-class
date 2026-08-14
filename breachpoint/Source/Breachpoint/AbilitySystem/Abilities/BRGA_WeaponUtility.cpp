@@ -8,8 +8,8 @@
 #include "Core/BRGameplayTags.h"
 #include "Data/BRDataRows.h"
 #include "GameFramework/Actor.h"
-#include "Weapons/BREquipmentComponent.h"
-#include "Weapons/BRWeaponInstance.h"
+#include "Equipment/BREquipmentComponent.h"
+#include "Equipment/BRWeaponInstance.h"
 
 namespace
 {

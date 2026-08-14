@@ -10,8 +10,8 @@
 #include "Data/BRDataRows.h"
 #include "Engine/World.h"
 #include "GameFramework/Pawn.h"
-#include "Weapons/BREquipmentComponent.h"
-#include "Weapons/BRWeaponInstance.h"
+#include "Equipment/BREquipmentComponent.h"
+#include "Equipment/BRWeaponInstance.h"
 
 namespace
 {

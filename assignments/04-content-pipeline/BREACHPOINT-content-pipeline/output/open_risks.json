@@ -1,0 +1,42 @@
+[
+  {
+    "job": "announcer",
+    "row": "S22b",
+    "kind": "redundancy",
+    "severity": "medium",
+    "quote": "Multi-kill. Rocket.",
+    "canon": "Compare to established triads e.g. DT_SpotterLines.csv S03a-c: \"Double kill.\" / \"Two down.\" / \"Back to back.\" \u2014 three lexically distinct phrasings for one trigger.",
+    "why": "S22a (\"Rocket multi-kill.\") and S22b (\"Multi-kill. Rocket.\") are the same two words reordered, so of the three lines meant to give spoken variety for Kill.Rocket.Multi, only two distinct ideas actually exist \u2014 a player will hear what sounds like the same callout twice.",
+    "fix": "Replace S22b with a genuinely distinct phrasing, e.g. \"Two with one rocket.\" (echoing the Blast Radius medal description \"Two or more killed with one rocket\")."
+  },
+  {
+    "job": "announcer",
+    "row": "S22c",
+    "kind": "tone-drift",
+    "severity": "low",
+    "quote": "Group kill. Rocket.",
+    "canon": "",
+    "why": "\"Group kill\" is not terminology used anywhere in the shipped medal or spotter tables, which consistently say \"Multi\" (Kill.Multi.Double, Kill.Rocket.Multi) or the medal name \"Blast Radius\" \u2014 introducing a new synonym breaks the established callout vocabulary the other rows in this table follow.",
+    "fix": "\"Blast radius.\" (directly echoing the M4 medal name, matching how S04b echoes \"Killing Spree\" and S08c echoes \"Blindside\")."
+  },
+  {
+    "job": "callsigns",
+    "row": "B02",
+    "kind": "tone-drift",
+    "severity": "medium",
+    "quote": "Softaim / Shakygrip / Slowdraw / Wideshot / Midpace / Evenkeel / Steadyaim / Coverwise / Tightline / Tightaim / Coverlock / Longtrack / Deadeye",
+    "canon": "[1] DT_BotTuning.csv row schema: Name,reaction_ms,reaction_quantum_ms,... \u2014 the only Name values that exist in the shipped table are 'Recruit', 'Marine', 'Veteran'. No Callsign/personality field exists anywhere in the retrieved canon.",
+    "why": "13 of the 15 rows invent generic-shooter nickname tropes (Deadeye, Wideshot, Slowdraw, Shakygrip, Softaim, etc.) for a table whose canon precedent is three sober tier names and a spreadsheet of tuning scalars \u2014 nothing in the shipped data or the GDD prose establishes a callsign-naming convention, so this register doesn't match what actually ships. (B01 'Dulledge' and B11 'Honedline' are the exception \u2014 those are tightly grounded in the GDD's literal 'dulled'/'sharpened' descriptors and are fine.)",
+    "fix": "Either drop the Callsign field entirely and key rows by Name+index (e.g. Recruit_01..05), or if callsigns are wanted, derive all 15 the way B01/B11 were derived \u2014 from the GDD's own descriptor language for that tier \u2014 rather than inventing unrelated FPS nickname tropes."
+  },
+  {
+    "job": "callsigns",
+    "row": "B01",
+    "kind": "schema-risk",
+    "severity": "medium",
+    "quote": "\"RowName\": \"B01\", \"Callsign\": \"Dulledge\", \"ProfileHint\": \"Recruit\"",
+    "canon": "[1] DT_BotTuning.csv header: Name,reaction_ms,reaction_quantum_ms,reaction_jitter_ms,accuracy_pct,aim_error_deg,switch_margin,commit_window_ms,commit_jitter_ms,rocket_contest,push_threshold,cover_preference,sight_radius_m,sight_fov_deg,target_memory_s,engage_update_ms,StateTreeSoftPath",
+    "why": "None of RowName, Callsign, ProfileHint, or Note exist in the shipped DT_BotTuning schema. If this content is meant to land as new rows in that table it breaks import (unknown columns / no numeric scalars at all); if it's meant to be a separate roster table, the reviewed content never names that table or its relationship to the 3 canonical tuning rows, so there's no defined destination for this data.",
+    "fix": "State explicitly which table/asset this roster targets and how ProfileHint resolves to the DT_BotTuning row it inherits scalars from (e.g. a foreign-key-style lookup), rather than leaving it implicit."
+  }
+]

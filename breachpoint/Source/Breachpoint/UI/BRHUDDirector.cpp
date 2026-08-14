@@ -12,8 +12,8 @@
 #include "Match/BRPlayerState.h"
 #include "UI/BRUIManagerSubsystem.h"
 #include "UI/BRViewModels.h"
-#include "Weapons/BREquipmentComponent.h"
-#include "Weapons/BRWeaponInstance.h"
+#include "Equipment/BREquipmentComponent.h"
+#include "Equipment/BRWeaponInstance.h"
 
 void UBRHUDDirector::Initialize(FSubsystemCollectionBase& Collection)
 {
