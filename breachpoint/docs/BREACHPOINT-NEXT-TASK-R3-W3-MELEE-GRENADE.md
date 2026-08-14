@@ -138,3 +138,21 @@ Nothing in the editor is needed for the grenade at all — no Blueprint, no asse
      **The base layer was recompiled and resaved** (with the BN dupes recompiled; they carry no
      local data and did not dirty). If aim still fails after this, run `BNAimDebug` and
      `BNAimAxis 1` — the diagnosis doc's levers — and the zero names the remaining link.
+
+- 14 Aug 2026 (mac terminal) — **FOUNDER RULING, from the playtest + screenshot of
+  BP_FPSCharacter: "the character is not having any of the procedural components that is why
+  is having all this issues. learn from my character and add those components."** Executed:
+  the five `BPC_FPST_Procedural_*` components (Manager, AimAndLean, PoseOffsets, Recoil,
+  SwayAndLag) added to `BP_BNCharacter`'s SCS via `ActorTools.add_component`, and every
+  configured property copied off BP_FPSCharacter's own component templates (Manager 8,
+  AimAndLean 10, PoseOffsets 26, Recoil 23, SwayAndLag 15 props; only the runtime
+  `ownerCharacter` ref skipped — typed plain ACharacter, so BNCharacter qualifies).
+  PoseOffsets' `DataAsset_PoseOffsets_UE5` read back verifying the copy. Compiled, saved.
+  NOT added, deliberately: the camera/fire/tracer components (BPC_FPSCamComp, FireTimer,
+  Lyra_FireEffectComp, LineTracer) — BN's GAS cues own that surface and doubling it would
+  double every muzzle flash. Two notes for the lead: (1) this supersedes BP_BNCharacter's
+  defaults-only R26 status by founder ruling; (2) `UBNAnimInstance` still natively writes
+  Pitch/PitchRotator/lean each frame — the components' aim writes race it (native threadsafe
+  runs later and wins), so the components' unique value today is Manager orchestration,
+  SetAimAndLeanInfo's weights/structs, pose offsets, sway and recoil; if the lead wants the
+  components to own aim outright, the native writers need a yield switch.
