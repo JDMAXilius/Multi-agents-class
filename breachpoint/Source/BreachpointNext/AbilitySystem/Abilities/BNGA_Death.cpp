@@ -1,7 +1,7 @@
 #include "AbilitySystem/Abilities/BNGA_Death.h"
 
 #include "Core/BNGameplayTags.h"
-#include "Match/BNGameMode.h"
+#include "Match/BNPlayerState.h"
 #include "AbilitySystemComponent.h"
 #include "Engine/World.h"
 #include "GameFramework/Character.h"
@@ -61,9 +61,14 @@ void UBNGA_Death::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const
 	Controller->SetIgnoreMoveInput(true);
 	Controller->SetIgnoreLookInput(true);
 
-	if (ABNGameMode* GameMode = GetWorld() ? GetWorld()->GetAuthGameMode<ABNGameMode>() : nullptr)
+	// ANNOUNCE, do not call. Law 7: "cross-system consequences travel as gameplay events
+	// (Event.Death -> GameMode) and delegates — an ability never reaches into GameMode". This used
+	// to be GameMode->RequestRespawn(Controller), which made a death ability depend on a game mode
+	// class, welded corpse lifetime to respawn delay, and left no room for a killfeed or scoring to
+	// hear about a death without another call bolted in here.
+	if (ABNPlayerState* PS = Controller->GetPlayerState<ABNPlayerState>())
 	{
-		GameMode->RequestRespawn(Controller);
+		PS->BroadcastDeath();
 	}
 
 	// Deliberately still ACTIVE: this ability is what holds the dead tag.

@@ -12,12 +12,26 @@ class UBNAttributeSet;
 class UGameplayEffect;
 
 UCLASS()
+/** Broadcast on the AUTHORITY when this player's pawn dies. The seam law 7 asks for: the death
+ *  ability announces, and whoever cares subscribes — instead of the ability reaching into the
+ *  GameMode by name. The PlayerState is the broadcaster because it is the persistent object and
+ *  the one the GameMode already tracks per player. */
+class ABNPlayerState;
+DECLARE_MULTICAST_DELEGATE_OneParam(FBNPlayerDeathSignature, ABNPlayerState*);
+
 class BREACHPOINTNEXT_API ABNPlayerState : public APlayerState, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
 public:
 	ABNPlayerState();
+
+	/** Authority only, and deliberately NOT a UPROPERTY delegate: subscribers are C++ systems
+	 *  (GameMode now; killfeed and scoring later), and a death is announced once per life. */
+	FBNPlayerDeathSignature OnPlayerDeath;
+
+	/** Called by UBNGA_Death. Nothing else should broadcast this. */
+	void BroadcastDeath();
 
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	UBNAbilitySystemComponent* GetBNAbilitySystemComponent() const { return AbilitySystemComponent; }
