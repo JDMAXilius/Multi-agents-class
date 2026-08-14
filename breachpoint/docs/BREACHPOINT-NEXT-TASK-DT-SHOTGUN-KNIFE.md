@@ -1,5 +1,7 @@
 # SPEC — `DT_BNWeapons` rows: Shotgun and Knife
 
+> STATUS: done — mac terminal 14 Aug 2026, executed under AIM-NATIVE-OWNER step 3 (read-back in both Logs).
+
 **Cut:** 13 August 2026 by the cloud lead · **For:** the founder at the editor
 **Binds:** [`ASSET-RULES`](BREACHPOINT-NEXT-ASSET-RULES.md) — **§1b especially**: every path below is
 `/Game/FPSTemplate/…`, and same-named duplicates exist elsewhere in `Content/` that are **not ours**.
@@ -111,3 +113,18 @@ _(append the read-back table, the AnimLayerClass verdict and why, and anything u
   (same for Knife) on every boot — the loud skip doing its job. The moment these two rows land
   in `DT_BNWeapons`, all four weapons join the swap cycle with zero further changes anywhere.
   Terminal: execute the spec above exactly as written; the founder is waiting on it.
+
+- 14 Aug 2026 (terminal) — **EXECUTED under AIM-NATIVE-OWNER step 3.** Both rows landed in
+  `/Game/BN/Data/DT_BNWeapons`, saved, read back cell-perfect. AnimLayerClass verdict: **template
+  originals** (`ABP_ShotgunAnimLayers_C` / `ABP_KnifeAnimLayers_C`, non-Feminine non-UE4) — the
+  founder's 14 Aug root-cause ruling closed the open decision; no duplicates created. CDO reads:
+  attach sockets `weapon_r_shotgun` / `weapon_r_knife`, muzzle `Muzzle`, shotgun fireDelay 0.1,
+  spreadAngle **5** (a real spread — the 0.1-worry did not materialize), fireMode Single
+  (`availableFireModes=["Single"]`), shotCount 6. Damage set 12 per this spec's suggestion.
+  **Unresolved: shotgun `magazineSize`** — no ammo/magazine property exists on
+  `BP_FPST_Weapon_Shotgun`'s CDO (124 props checked), C++ default 30 stands; reported to the
+  lead as placeholder-smell for a 6-shot pump gun. Knife: meleeDamage 100, meleeRange 150,
+  magazineSize 0, abilitySet None — melee-only as written. PIE boot: both
+  `startup row … does not exist — skipped` errors gone; all four weapons now in the swap cycle
+  (StartupWeaponRows already listed all four). Full read-back table in
+  [AIM-NATIVE-OWNER §Log](BREACHPOINT-NEXT-TASK-AIM-NATIVE-OWNER.md).
