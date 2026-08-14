@@ -1,1 +1,0 @@
-{"ticket": "TICKET_BP90_DEMOLITION", "owner_path": ["Source/Breachpoint/", "docs/", ".claude/", "Config/", "BREACHPOINT-ARCHITECTURE.md"], "note": "Config/ and BREACHPOINT-ARCHITECTURE.md added 14 Aug 2026: ticket steps 4-6 mandate the ini repoint and the architecture-doc edits (doc lives at repo root, not docs/); the claim under-declared the ticket."}

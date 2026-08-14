@@ -1,6 +1,6 @@
 # TICKET — Strip the UE template out of the runtime module, and settle the three rework decisions
 
-> STATUS: in-progress — mac terminal 14 Aug 2026 (4cf813f)
+> STATUS: done — mac terminal 14 Aug 2026
 > STATUS: open — cut 7 Aug 2026 alongside `docs/BREACHPOINT-GAMEPLAY-REWORK.md`.
 > Root ticket of the gameplay rework. Nothing in Phase 1+ starts until this is DONE.
 
@@ -65,15 +65,15 @@ first; a decision left open is a `contract_gap`, not a judgement call for the ne
 
 ## Done when
 
-- [ ] 36 template files are gone; `grep` for the four names returns nothing under `Source/`
-- [ ] `Breachpoint.Build.cs` has zero `PublicIncludePaths`; the `Slate` verdict is in the Log
-- [ ] No `Config/*.ini` references a deleted class
-- [ ] D-1, D-2, D-3 each have a dated ruling in `docs/DESIGN-RULINGS.md`
-- [ ] If D-1 taken: `gas-purity.md` ledger has a fourth row with its bound stated
-- [ ] If D-2 taken: `Equipment/` exists, owner-path map updated, no stale `Weapons/` reference
-- [ ] `BREACHPOINT-ARCHITECTURE.md` §3.1–§3.6, §3.11 carry SUPERSEDED pointers
-- [ ] Rung 1: Editor + Game GREEN, Server PARTIAL-by-environment, stated as such
-- [ ] Findings + decisions written to this ticket's Log
+- [x] 36 template files are gone; `grep` for the four names returns nothing under `Source/`
+- [x] `Breachpoint.Build.cs` has zero `PublicIncludePaths` *(one load-bearing module-root entry retained — see Log)*; the `Slate` verdict is in the Log
+- [x] No `Config/*.ini` references a deleted class
+- [x] D-1, D-2, D-3 each have a dated ruling in `docs/DESIGN-RULINGS.md`
+- [x] If D-1 taken: `gas-purity.md` ledger has a fourth row with its bound stated
+- [x] If D-2 taken: `Equipment/` exists, owner-path map updated, no stale `Weapons/` reference
+- [x] `BREACHPOINT-ARCHITECTURE.md` §3.1–§3.6, §3.11 carry SUPERSEDED pointers
+- [x] Rung 1: Editor + Game GREEN, Server PARTIAL-by-environment, stated as such
+- [x] Findings + decisions written to this ticket's Log
 
 ## Notes
 
@@ -135,3 +135,20 @@ a note in the file. Flagging for the lead: the BP90 claim template under-declare
 **Ladder rung.** `BreachpointEditor` clean compile PASS (Result: Succeeded) after every
 change; Game/Server targets not run — step 7 is the verifier's. Final four-name grep over
 `Source/` returns nothing (exit 1).
+
+### 14 Aug 2026 — verifier, step 7 (rung 1, all three targets)
+
+`./Tools/run-ubt.sh`, no arguments:
+- **PASS** BreachpointEditor (exit 0, touched libUnrealEditor-Breachpoint.dylib, 11.56 s)
+- **PASS** Breachpoint (exit 0, touched CodeResources, 28.52 s)
+- **PARTIAL-by-environment** BreachpointServer (exit 6, "Server targets are not currently
+  supported from this engine distribution" — Epic Launcher install, no server binaries).
+  Not a code failure; the known environment ceiling.
+
+### 14 Aug 2026 — lead, close
+
+All boxes verified. Deviations from the ticket text, all logged above and accepted: 42 files
+deleted not 36 (dirs recounted); one load-bearing module-root `PublicIncludePaths` entry
+retained (all six Variant_ entries gone — removing the root entry breaks every BR include);
+three comment-prose grep hits reworded. Claim-template gap (owner_path missing `Config/` +
+root-level ARCHITECTURE doc) noted for future ticket cuts. Phase 1 is unblocked.
