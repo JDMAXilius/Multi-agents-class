@@ -59,7 +59,8 @@ void UBNGA_ADS::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const F
 
 	// Descope: the tag's arrival cancels the aim. Registered per-instance and unregistered in
 	// EndAbility — the anim instance's own listener pattern.
-	RecentDamageHandle = ASC->RegisterGameplayTagEvent(BNTags::State_Combat_RecentDamage, EGameplayTagEventType::NewOrRemoved)
+	LastRecentDamageCount = ASC->GetTagCount(BNTags::State_Combat_RecentDamage);
+	RecentDamageHandle = ASC->RegisterGameplayTagEvent(BNTags::State_Combat_RecentDamage, EGameplayTagEventType::AnyCountChange)
 		.AddUObject(this, &UBNGA_ADS::OnRecentDamageChanged);
 	SprintHandle = ASC->RegisterGameplayTagEvent(BNTags::State_Movement_Sprinting, EGameplayTagEventType::NewOrRemoved)
 		.AddUObject(this, &UBNGA_ADS::OnSprintChanged);
@@ -81,9 +82,12 @@ void UBNGA_ADS::OnInputRelease(float TimeHeld)
 
 void UBNGA_ADS::OnRecentDamageChanged(const FGameplayTag Tag, int32 NewCount)
 {
-	// DESCOPE. Cancelled, not completed: the player did not choose to stop aiming. The key is
-	// still physically held after this, and that is correct Halo behaviour — re-aim is a re-press.
-	if (NewCount > 0)
+	// DESCOPE, on count INCREASE only — see the header for why neither NewOrRemoved nor a plain
+	// NewCount > 0 check survives overlapping damage windows. Cancelled, not completed: the player
+	// did not choose to stop aiming, the key is still held, and re-aim is a re-press.
+	const bool bHitLanded = NewCount > LastRecentDamageCount;
+	LastRecentDamageCount = NewCount;
+	if (bHitLanded)
 	{
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 	}
@@ -110,7 +114,7 @@ void UBNGA_ADS::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGamep
 	{
 		if (RecentDamageHandle.IsValid())
 		{
-			ASC->UnregisterGameplayTagEvent(RecentDamageHandle, BNTags::State_Combat_RecentDamage, EGameplayTagEventType::NewOrRemoved);
+			ASC->UnregisterGameplayTagEvent(RecentDamageHandle, BNTags::State_Combat_RecentDamage, EGameplayTagEventType::AnyCountChange);
 			RecentDamageHandle.Reset();
 		}
 		if (SprintHandle.IsValid())

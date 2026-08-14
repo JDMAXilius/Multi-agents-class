@@ -104,6 +104,13 @@ public:
  * The damage window. Applied by every landed point of damage, it holds State.Combat.RecentDamage
  * for its duration — and that tag is the ONLY thing standing between a hit and the shield starting
  * to come back. The "delay before recharge" is this GE's duration, not a timer anyone runs.
+ *
+ * DELIBERATELY NOT STACKED, and the reason is descope: UBNGA_ADS cancels on the tag COUNT
+ * increasing, which is how it sees hits 2..N while windows overlap. A stack-refresh policy would
+ * hold the count at 1 forever under sustained fire and blind descope to every hit after the
+ * first — the exact bug the critic caught in the NewOrRemoved listener. The cost is bounded GE
+ * churn (window/FireDelay concurrent instances per victim, worst case), recorded and accepted;
+ * revisit only with a mechanism that preserves a per-hit signal.
  */
 UCLASS()
 class BREACHPOINTNEXT_API UBNGE_RecentDamage : public UGameplayEffect

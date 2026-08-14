@@ -39,7 +39,14 @@ protected:
 	void OnInputRelease(float TimeHeld);
 
 	/** Descope. Fires on both the owning client's and the authority's instance — each cancels its
-	 *  own copy, the same way both copies of any LocalPredicted ability end. */
+	 *  own copy, the same way both copies of any LocalPredicted ability end.
+	 *
+	 *  Listens AnyCountChange and cancels only on an INCREASE — the critic's catch: RecentDamage
+	 *  GEs do not stack, so under sustained fire the tag count climbs 1->2->3 and NewOrRemoved
+	 *  (0<->1 only) never fired again — descope missed every hit after the first, in exactly the
+	 *  sustained-fire case it exists for. An increase means a hit landed; a DECREASE is an old
+	 *  window expiring, which must NOT descope a re-aim — hence the count comparison, not a
+	 *  NewCount > 0 check. */
 	void OnRecentDamageChanged(const FGameplayTag Tag, int32 NewCount);
 
 	/** "Sprint wins", made real. CanActivateAbility refuses ADS while sprinting, but that guards
@@ -56,5 +63,9 @@ protected:
 	FActiveGameplayEffectHandle ADSHandle;
 	FActiveGameplayEffectHandle SpeedHandle;
 	FDelegateHandle RecentDamageHandle;
+
+	/** The comparison baseline, seeded at activation so re-aiming MID-window does not instantly
+	 *  descope off the count that was already there. */
+	int32 LastRecentDamageCount = 0;
 	FDelegateHandle SprintHandle;
 };
