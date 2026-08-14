@@ -22,8 +22,9 @@ public:
 	 *  so a mode with no respawn simply does not subscribe. */
 	virtual void OnPostLogin(AController* NewPlayer) override;
 
-	/** The subscriber. Turns "this player died" into this mode's answer, which is a timed respawn. */
-	void HandlePlayerDeath(ABNPlayerState* PlayerState);
+	/** The subscriber. Turns "this player died" into this mode's answer: THE kill line, then a
+	 *  timed respawn. Scoring attaches here when it exists — the seam already carries the killer. */
+	void HandlePlayerDeath(ABNPlayerState* Victim, ABNPlayerState* Killer);
 
 	/** Authority: the ONE respawn path. Delay then RestartPlayer. */
 	void RequestRespawn(AController* Controller);

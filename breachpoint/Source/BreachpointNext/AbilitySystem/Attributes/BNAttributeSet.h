@@ -3,7 +3,28 @@
 #include "CoreMinimal.h"
 #include "AttributeSet.h"
 #include "AbilitySystemComponent.h"
+#include "Engine/HitResult.h"
 #include "BNAttributeSet.generated.h"
+
+/**
+ * The last damage this fighter took — AUTHORITY-ONLY, never replicated, refreshed by every landed
+ * hit at the one reaction point. It exists because the instigator used to reach
+ * PostGameplayEffectExecute inside the spec's context, get printed in the log line, and then be
+ * thrown away — so by the time anyone heard about a death, who caused it was gone. Kill credit
+ * reads it at death; the hit-reaction packet reads its HitResult for direction on every hit.
+ *
+ * The attribute set RECORDS this; it still never talks to game flow. The death GA is what reads.
+ */
+struct FBNLastDamage
+{
+	/** Weak on purpose: a grenade's thrower can disconnect while it is in flight, and a dangling
+	 *  killer must degrade to "died", never crash the credit. */
+	TWeakObjectPtr<AActor> Instigator;
+
+	FHitResult Hit;
+
+	float Amount = 0.f;
+};
 
 #define ATTRIBUTE_ACCESSORS(ClassName, PropertyName) \
 	GAMEPLAYATTRIBUTE_PROPERTY_GETTER(ClassName, PropertyName) \
@@ -20,6 +41,10 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
 	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
+
+	/** Meaningful on the AUTHORITY only — the capture happens in PostGameplayEffectExecute, which
+	 *  instant GEs run nowhere else. A client reading this gets a default-constructed nothing. */
+	const FBNLastDamage& GetLastDamage() const { return LastDamage; }
 
 	/** SERVER-ONLY META attribute, deliberately NOT replicated and never read by anything: the
 	 *  damage GE writes it, PostGameplayEffectExecute drains it into Shield then Health and zeroes
@@ -75,6 +100,9 @@ protected:
 
 	UFUNCTION()
 	void OnRep_Shield(const FGameplayAttributeData& OldShield);
+
+	/** See GetLastDamage(). Plain member, no UPROPERTY: never replicated, never serialized. */
+	FBNLastDamage LastDamage;
 
 	UFUNCTION()
 	void OnRep_MaxHealth(const FGameplayAttributeData& OldMaxHealth);

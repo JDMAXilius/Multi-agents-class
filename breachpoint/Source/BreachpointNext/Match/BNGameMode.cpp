@@ -41,15 +41,33 @@ void ABNGameMode::OnPostLogin(AController* NewPlayer)
 	}
 }
 
-void ABNGameMode::HandlePlayerDeath(ABNPlayerState* PlayerState)
+void ABNGameMode::HandlePlayerDeath(ABNPlayerState* Victim, ABNPlayerState* Killer)
 {
+	if (!Victim)
+	{
+		return;
+	}
+
+	// THE KILL LINE — the pipeline's deliverable, and the founder's test. Three wordings for three
+	// real cases, decided in the research doc so nobody rediscovers them: a null killer is world
+	// damage or a killer who disconnected mid-flight; killer == victim is their own grenade.
+	if (!Killer)
+	{
+		UE_LOG(LogBN, Log, TEXT("BNGameMode: %s died."), *Victim->GetPlayerName());
+	}
+	else if (Killer == Victim)
+	{
+		UE_LOG(LogBN, Log, TEXT("BNGameMode: %s eliminated themselves."), *Victim->GetPlayerName());
+	}
+	else
+	{
+		UE_LOG(LogBN, Log, TEXT("BNGameMode: %s eliminated %s."), *Killer->GetPlayerName(), *Victim->GetPlayerName());
+	}
+
 	// This mode's answer to a death is a timed respawn. Another mode's could be a spectator
 	// hand-off, or nothing at all — which is the point of hearing about the death instead of being
 	// called by the ability that caused it.
-	if (PlayerState)
-	{
-		RequestRespawn(Cast<AController>(PlayerState->GetOwner()));
-	}
+	RequestRespawn(Cast<AController>(Victim->GetOwner()));
 }
 
 void ABNGameMode::RequestRespawn(AController* Controller)

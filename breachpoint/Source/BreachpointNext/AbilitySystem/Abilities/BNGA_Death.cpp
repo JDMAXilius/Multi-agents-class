@@ -1,12 +1,14 @@
 #include "AbilitySystem/Abilities/BNGA_Death.h"
 
 #include "Core/BNGameplayTags.h"
+#include "AbilitySystem/Attributes/BNAttributeSet.h"
 #include "Match/BNPlayerState.h"
 #include "AbilitySystemComponent.h"
 #include "Engine/World.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
+#include "GameFramework/Pawn.h"
 
 UBNGA_Death::UBNGA_Death()
 {
@@ -68,7 +70,19 @@ void UBNGA_Death::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const
 	// hear about a death without another call bolted in here.
 	if (ABNPlayerState* PS = Controller->GetPlayerState<ABNPlayerState>())
 	{
-		PS->BroadcastDeath();
+		// The killer, read from the attribute set's capture — the instigator the damage door put in
+		// the spec's context, recorded at the one reaction point instead of being thrown away after
+		// the log line. A weak pointer that no longer resolves (killer disconnected while their
+		// grenade flew) degrades to null, which the subscriber words as "died", never a crash.
+		ABNPlayerState* KillerPS = nullptr;
+		if (const UBNAttributeSet* Attributes = ASC->GetSet<UBNAttributeSet>())
+		{
+			if (const APawn* KillerPawn = Cast<APawn>(Attributes->GetLastDamage().Instigator.Get()))
+			{
+				KillerPS = KillerPawn->GetPlayerState<ABNPlayerState>();
+			}
+		}
+		PS->BroadcastDeath(KillerPS);
 	}
 
 	// Deliberately still ACTIVE: this ability is what holds the dead tag.

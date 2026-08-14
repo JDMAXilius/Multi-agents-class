@@ -70,6 +70,15 @@ void UBNAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallback
 		return;
 	}
 
+	// THE CAPTURE, before the drain. This is the one point every damage passes through, and the
+	// spec's context is where the door put the instigator and the server-validated hit. Refreshed
+	// on every landed hit — not just the lethal one — because the hit-reaction packet needs the
+	// latest hit's direction, while kill credit only ever reads the final state.
+	const FGameplayEffectContextHandle& Context = Data.EffectSpec.GetEffectContext();
+	LastDamage.Instigator = Context.GetOriginalInstigator();
+	LastDamage.Hit = Context.GetHitResult() ? *Context.GetHitResult() : FHitResult();
+	LastDamage.Amount = Damage;
+
 	const float ShieldBefore = GetShield();
 	const float HealthBefore = GetHealth();
 

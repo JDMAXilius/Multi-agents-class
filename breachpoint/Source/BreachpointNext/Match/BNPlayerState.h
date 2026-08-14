@@ -17,7 +17,9 @@ UCLASS()
  *  GameMode by name. The PlayerState is the broadcaster because it is the persistent object and
  *  the one the GameMode already tracks per player. */
 class ABNPlayerState;
-DECLARE_MULTICAST_DELEGATE_OneParam(FBNPlayerDeathSignature, ABNPlayerState*);
+/** Victim first, then killer. Killer may be NULL (world damage, disconnected mid-flight) and may
+ *  EQUAL the victim (their own grenade) — both are real cases the subscriber decides how to word. */
+DECLARE_MULTICAST_DELEGATE_TwoParams(FBNPlayerDeathSignature, ABNPlayerState* /*Victim*/, ABNPlayerState* /*Killer*/);
 
 class BREACHPOINTNEXT_API ABNPlayerState : public APlayerState, public IAbilitySystemInterface
 {
@@ -30,8 +32,9 @@ public:
 	 *  (GameMode now; killfeed and scoring later), and a death is announced once per life. */
 	FBNPlayerDeathSignature OnPlayerDeath;
 
-	/** Called by UBNGA_Death. Nothing else should broadcast this. */
-	void BroadcastDeath();
+	/** Called by UBNGA_Death, which is what reads the killer off the attribute set's capture.
+	 *  Nothing else should broadcast this. */
+	void BroadcastDeath(ABNPlayerState* Killer);
 
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	UBNAbilitySystemComponent* GetBNAbilitySystemComponent() const { return AbilitySystemComponent; }
