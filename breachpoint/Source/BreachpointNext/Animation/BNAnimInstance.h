@@ -77,6 +77,14 @@ public:
 	void SetNativeOwnsAimSurface(bool bOwns) { bNativeOwnsAimSurface = bOwns; }
 	bool GetNativeOwnsAimSurface() const { return bNativeOwnsAimSurface; }
 
+	/** Live aim trace: one throttled line per interval while enabled, so the founder can WATCH
+	 *  the chain move (or not) instead of pressing a probe and inferring. `BNAimLog 1`. */
+	void SetAimLogEnabled(bool bEnabled) { bAimLogEnabled = bEnabled; AimLogAccumulator = 0.f; }
+
+	/** Re-print the link announcement on demand — `BNLayerCheck`. The automatic one fires on
+	 *  every link change; this is for "tell me again, now". */
+	void AnnounceLinkedLayers();
+
 protected:
 	// false = the live event graph owns the RMW/edge accumulator outputs (today); true = C++
 	// owns them — set when the graph is cleared. Native always computes them against private
@@ -311,6 +319,18 @@ private:
 	 *  classes are Blueprint and have no C++ type to include. A layer without a matching property
 	 *  is silently skipped, so this is a no-op exactly where it has nothing to say. */
 	void PushAimSurfaceToLinkedLayers();
+
+	/** THE SILENT-FAILURE ALARMS. Every one of these exists because a real bug hid behind a
+	 *  chain that failed without a word: layers that were never linked, layers that were
+	 *  BN duplicates reading a pre-reparent memory layout, and an aim surface written into
+	 *  properties no consumer had. Announced on the EDGE (link change / first sight), never
+	 *  per frame — a log that spams is a log that gets ignored. */
+	bool bLayerAnnounced = false;
+	float TimeSinceInit = 0.f;
+
+	/** Live-trace state for BNAimLog. */
+	bool bAimLogEnabled = false;
+	float AimLogAccumulator = 0.f;
 
 	// Worker-thread helpers, ported 1:1 from the source's function graphs. Both operate on
 	// the PRIVATE accumulators; shared properties are only touched in the gated publish.

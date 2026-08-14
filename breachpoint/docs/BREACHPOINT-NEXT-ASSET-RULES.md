@@ -94,6 +94,74 @@ and puts unrequested changes in the tree. The rules:
   substitute. The tracer parameter mismatch was handled exactly right: it stopped, recorded why,
   and left the field unset rather than inventing a system.
 
+## 5b. THE DUPLICATION LAW — the mistake that cost R3, in rules that prevent it
+
+**Founder's ruling, 14 Aug 2026, after duplicated anim layers were identified as the frozen-aim
+root cause.** These are not preferences. A violation is a `high` finding and gets reverted.
+
+### The law
+
+1. **NEVER duplicate an animation asset.** Anim Blueprints, anim layers, ABP children, linked
+   layer classes, montages: link, reference and reuse the FPSTemplate original. This is the
+   one category where duplication has now caused a multi-week bug.
+2. **Never duplicate ANY asset to "make a BN version" of it.** Ownership is not a reason.
+   BN-owned copies exist to hold DIVERGENT VALUES, and only when the divergence exists today.
+3. **A duplicate needs a written reason BEFORE it exists.** In the ticket, in advance, naming
+   the specific value that must differ and why the original cannot carry it. No reason written
+   = do not duplicate. "The lead can decide later" means: hand it back, do not copy.
+4. **A duplicate you did not create is not a precedent.** Finding `ABP_BNWeaponLayers_Rifle`
+   in a row is not permission to make `_Shotgun`. Copying an undocumented divergence is how a
+   habit forms — that is exactly how this bug spread from one row to two.
+5. **Anything already duplicated without a written reason is presumed WRONG** and gets
+   repointed at the original on sight, in a ticket, never silently.
+
+### Why — the mechanism, so it is understood and not just obeyed
+
+A duplicated anim layer keeps **property-access bindings compiled against the main AnimBP's
+layout on the day it was copied**. When the main ABP is reparented — as ours was, moving
+`Pitch` / `PitchRotator` / `bFPSMode` into C++ — the original layers get recompiled against
+the new layout and keep working. **The duplicates do not.** They resolve to zero, with no
+error, no warning, and no compile failure. The pose simply stops moving, and every upstream
+value looks perfect while you hunt for weeks.
+
+That is the trap: **duplication of an animation asset does not fail loudly. It fails silently
+and permanently.**
+
+### What the terminal does instead
+
+| Situation | Action |
+|---|---|
+| A ticket names a layer/ABP asset | Link the FPSTemplate original by path |
+| The original "does not work" | **Hand it back** with what you observed. Do not duplicate to route around it |
+| A row already points at a `/Game/BN/` anim asset | Report it in the Log as a suspected stale duplicate |
+| A ticket explicitly orders a duplicate WITH a written reason | Make it, and copy that reason into the asset's ticket Log |
+
+### The tell, in the log, at runtime
+
+C++ now announces this automatically on every link (§below and `BNLayerCheck`). A line reading
+`[BN DUPLICATE]` is a defect report, not a status line. If you see it after a pass of yours,
+you introduced it — fix it before closing the ticket.
+
+## 5c. THE LOGGING LAW — nothing communicates silently
+
+**Founder's standing order, 14 Aug 2026:** *"in every stuff that we have a communication for the
+animation, the anim instance, and the adding layers, we need to have logs."*
+
+Any code that hands a value across a boundary it cannot verify — into a Blueprint, an anim
+instance, a linked layer, a component function, or an ability — **must announce the outcome of
+that handoff, both ways.** Concretely:
+
+- **Whether the connection exists at all** (linked / not linked, function found / not found).
+- **WHICH one it is, by full path or class name.** Never "a layer" — name it.
+- **Whether each value landed or was rejected**, by property name.
+- **On the EDGE, never per frame.** Announce on change, on first sight, and on failure. A log
+  that spams is a log that gets ignored, which is the same as no log.
+- **A failure is `Warning` or `Error`, never silence.** Silence is what made every bug in R3
+  expensive.
+
+Live traces (per-frame streams) are allowed only behind an explicit console toggle that
+defaults OFF — `BNAimLog 1` is the pattern.
+
 ## 6. Current BN asset inventory (13 Aug 2026)
 
 All 16 live under `/Game/BN/`. Nothing BN-owned sits outside it.

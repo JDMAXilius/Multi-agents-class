@@ -179,6 +179,31 @@ void ABNPlayerController::BNAimNative(int32 Enable)
 #endif
 }
 
+void ABNPlayerController::BNLayerCheck()
+{
+#if !UE_BUILD_SHIPPING
+	if (UBNAnimInstance* Anim = BNLocalAnimInstance(this))
+	{
+		Anim->AnnounceLinkedLayers();
+	}
+	else
+	{
+		UE_LOG(LogBN, Warning, TEXT("BNLayerCheck: no UBNAnimInstance on the local pawn's mesh."));
+	}
+#endif
+}
+
+void ABNPlayerController::BNAimLog(int32 Enable)
+{
+#if !UE_BUILD_SHIPPING
+	if (UBNAnimInstance* Anim = BNLocalAnimInstance(this))
+	{
+		Anim->SetAimLogEnabled(Enable != 0);
+		UE_LOG(LogBN, Log, TEXT("BNAimLog: live aim trace %s."), Enable != 0 ? TEXT("ON (2 lines/sec)") : TEXT("OFF"));
+	}
+#endif
+}
+
 void ABNPlayerController::BNMelee()
 {
 #if !UE_BUILD_SHIPPING

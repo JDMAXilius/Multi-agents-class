@@ -101,6 +101,30 @@ namespace
 		}
 	}
 
+	/** Does this instance's class declare a property by this name, of a type the push can write?
+	 *  The push is deliberately silent per property (a layer that does not model a value must not
+	 *  be crashed for it) — this is how that silence becomes a one-time report instead. */
+	bool BNLayerHasProperty(const UObject* Target, const TCHAR* Name)
+	{
+		const FName PropName(Name);
+		UClass* Cls = Target->GetClass();
+		return FindFProperty<FBoolProperty>(Cls, PropName) != nullptr
+			|| FindFProperty<FDoubleProperty>(Cls, PropName) != nullptr
+			|| FindFProperty<FFloatProperty>(Cls, PropName) != nullptr
+			|| FindFProperty<FStructProperty>(Cls, PropName) != nullptr;
+	}
+
+	/** THE DUPLICATE DETECTOR — the founder's 14 Aug root cause, made self-announcing.
+	 *  A BN-owned copy of a template anim layer carries property-access bindings compiled against
+	 *  whatever the main ABP's layout was on the day it was duplicated. After the reparent moved
+	 *  Pitch/PitchRotator/bFPSMode into C++, a stale copy reads a layout that no longer exists and
+	 *  resolves to ZERO — silently, forever. Never diagnose that by hand again: the class path
+	 *  says it, so the log says it. */
+	bool BNIsBNOwnedLayer(const UObject* Layer)
+	{
+		return Layer->GetClass()->GetPathName().Contains(TEXT("/Game/BN/"));
+	}
+
 	// The probe's half of the same coin: every aim-related bool/number/rotator an instance's class
 	// declares, by value, so one BNAimDebug press shows what each LAYER actually holds — not what
 	// the main ABP hopes it holds.
@@ -240,11 +264,115 @@ void UBNAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	bSnapLayerChanged = CurrentLayerClass != ObservedLayerClass;
 	ObservedLayerClass = CurrentLayerClass;
 
+	// The announcement, on the EDGE. Also once at startup when nothing ever linked — that case
+	// changes nothing and would otherwise be the quietest failure of all: null stays null, no
+	// edge fires, and the pose is simply wrong forever with an empty log.
+	TimeSinceInit += DeltaSeconds;
+	if (bSnapLayerChanged || (!bLayerAnnounced && TimeSinceInit > 2.f))
+	{
+		AnnounceLinkedLayers();
+	}
+
 	// Deliver the surface to the LAYER instances — the values the worker pass computed last
 	// frame, one frame stale by construction, exactly as stale as the template's own game-thread
 	// interface events. Always called: lean is native's whoever owns aim, so its half of the
 	// push cannot be gated. The aim half yields inside.
 	PushAimSurfaceToLinkedLayers();
+
+	// The live aim trace, opt-in and throttled. Two lines a second while the founder moves the
+	// view: enough to watch the chain work or die, never enough to bury the log.
+	if (bAimLogEnabled)
+	{
+		AimLogAccumulator += DeltaSeconds;
+		if (AimLogAccumulator >= 0.5f)
+		{
+			AimLogAccumulator = 0.f;
+			UE_LOG(LogBN, Log, TEXT("%s"), *DescribeAimState());
+		}
+	}
+}
+
+// THE LINK ANNOUNCEMENT. Fired on every link change and once at startup even if nothing linked —
+// the founder's standing order after the duplicate-layer hunt: "if they are ever connected, if
+// they find something or they are not, and which one they are."
+//
+// Four questions, answered by name every time, so this class of bug can never again be invisible:
+//   1. Is anything linked at all?          (none = ERROR, the pose has no weapon layer)
+//   2. WHICH class, by full path?          (names the asset, not a guess)
+//   3. Original or a BN duplicate?         (duplicates = the stale-binding trap, WARNING)
+//   4. Did it accept each aim property?    (missing = the value is written nowhere)
+void UBNAnimInstance::AnnounceLinkedLayers()
+{
+	bLayerAnnounced = true;
+
+	const USkeletalMeshComponent* MeshComp = GetOwningComponent();
+	if (!MeshComp)
+	{
+		UE_LOG(LogBN, Error, TEXT("BNLayers: no skeletal mesh component — nothing can be linked or posed."));
+		return;
+	}
+
+	const AActor* Owner = GetOwningActor();
+	int32 Count = 0;
+	for (UAnimInstance* Linked : MeshComp->GetLinkedAnimInstances())
+	{
+		if (!Linked || Linked == this)
+		{
+			continue;
+		}
+		++Count;
+
+		// Every property the push writes, reported found/MISSING by name.
+		static const TCHAR* AimProps[] = { TEXT("PitchRotator"), TEXT("Pitch"), TEXT("AimPitch"), TEXT("bFPSMode") };
+		static const TCHAR* StateProps[] = { TEXT("LeanRotation"), TEXT("LeanOppRotation"), TEXT("GameplayTag_IsADS"), TEXT("IsADS_Upper") };
+
+		FString Found, Missing;
+		int32 AimFound = 0;
+		for (const TCHAR* Name : AimProps)
+		{
+			const bool bHas = BNLayerHasProperty(Linked, Name);
+			AimFound += bHas ? 1 : 0;
+			(bHas ? Found : Missing) += FString::Printf(TEXT(" %s"), Name);
+		}
+		for (const TCHAR* Name : StateProps)
+		{
+			(BNLayerHasProperty(Linked, Name) ? Found : Missing) += FString::Printf(TEXT(" %s"), Name);
+		}
+
+		const bool bBNOwned = BNIsBNOwnedLayer(Linked);
+		UE_LOG(LogBN, Log, TEXT("BNLayers: [%d] %s on %s | source %s | accepts:%s | MISSING:%s"),
+			Count, *Linked->GetClass()->GetPathName(), *GetNameSafe(Owner),
+			bBNOwned ? TEXT("BN DUPLICATE") : TEXT("template original"),
+			Found.IsEmpty() ? TEXT(" (none)") : *Found,
+			Missing.IsEmpty() ? TEXT(" (none)") : *Missing);
+
+		if (bBNOwned)
+		{
+			UE_LOG(LogBN, Warning,
+				TEXT("BNLayers: '%s' is a BN-OWNED DUPLICATE of a template layer. Duplicates carry property-access "
+					 "bindings compiled against the main ABP's layout ON THE DAY THEY WERE COPIED — after the "
+					 "reparent moved the aim surface into C++, a stale copy reads a layout that no longer exists "
+					 "and resolves to ZERO with no error. This is the 14 Aug frozen-aim root cause. Point the "
+					 "weapon row's AnimLayerClass at the FPSTemplate original unless a written reason says otherwise."),
+				*Linked->GetClass()->GetName());
+		}
+		if (AimFound == 0)
+		{
+			UE_LOG(LogBN, Error,
+				TEXT("BNLayers: '%s' declares NONE of the aim properties — every aim value written to it goes "
+					 "nowhere, so the arms and weapon cannot follow the camera through this layer."),
+				*Linked->GetClass()->GetName());
+		}
+	}
+
+	if (Count == 0)
+	{
+		UE_LOG(LogBN, Error,
+			TEXT("BNLayers: NO linked anim layers on %s. The character links the current weapon's AnimLayerClass — "
+				 "an empty DT_BNWeapons cell, a row that failed to load, or a weapon that never equipped all land "
+				 "here. Aim, ADS and weapon poses all depend on a layer being linked."),
+			*GetNameSafe(Owner));
+	}
 }
 
 void UBNAnimInstance::PushAimSurfaceToLinkedLayers()

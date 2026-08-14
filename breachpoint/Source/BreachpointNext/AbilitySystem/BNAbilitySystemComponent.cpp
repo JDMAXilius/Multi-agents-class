@@ -27,7 +27,14 @@ void UBNAbilitySystemComponent::AbilityInputTagPressed(FGameplayTag InputTag)
 		}
 		else
 		{
-			TryActivateAbility(Spec.Handle);
+			// THE ONE PLACE every input-driven ability's activation can be seen, verdict included.
+			// ADS, melee, grenade, fire, swap, lean, sprint all pass through here — so "I pressed
+			// it and nothing happened" stops being a mystery for ALL of them at once, rather than
+			// each ability needing its own instrumentation.
+			const bool bActivated = TryActivateAbility(Spec.Handle);
+			UE_LOG(LogBN, Log, TEXT("BNInput: %s -> %s : %s"),
+				*InputTag.ToString(), *GetNameSafe(Spec.Ability),
+				bActivated ? TEXT("ACTIVATED") : TEXT("REFUSED (blocked by tags, cost/cooldown, dead, or CanActivate said no)"));
 		}
 	}
 

@@ -61,6 +61,16 @@ public:
 	UFUNCTION(Exec)
 	void BNMelee();
 
+	/** Re-print the linked-layer report on demand: which layers are linked, by full path,
+	 *  original vs BN duplicate, and which aim properties each one accepts. */
+	UFUNCTION(Exec)
+	void BNLayerCheck();
+
+	/** 1 = stream the aim state twice a second so the chain can be WATCHED while moving the
+	 *  view; 0 = stop. The one-shot version is BNAimDebug. */
+	UFUNCTION(Exec)
+	void BNAimLog(int32 Enable);
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;

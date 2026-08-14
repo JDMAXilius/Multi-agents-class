@@ -1,5 +1,6 @@
 #include "AbilitySystem/Abilities/BNGA_ADS.h"
 
+#include "BreachpointNext.h"
 #include "AbilitySystem/Effects/BNGameplayEffects.h"
 #include "Characters/BNCharacter.h"
 #include "Core/BNGameplayTags.h"
@@ -22,6 +23,8 @@ bool UBNGA_ADS::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 	const UAbilitySystemComponent* ASC = ActorInfo ? ActorInfo->AbilitySystemComponent.Get() : nullptr;
 	if (!ASC || ASC->HasMatchingGameplayTag(BNTags::State_Movement_Sprinting))
 	{
+		UE_LOG(LogBN, Log, TEXT("BNGA_ADS: refused — %s."),
+			ASC ? TEXT("sprinting (sprint wins, release sprint to aim)") : TEXT("no ability system"));
 		return false;
 	}
 
@@ -30,7 +33,18 @@ bool UBNGA_ADS::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 	const UBNEquipmentComponent* Equipment = Character ? Character->GetEquipmentComponent() : nullptr;
 	const ABNWeapon* Weapon = Equipment ? Equipment->GetCurrentWeapon() : nullptr;
 	const FBNWeaponRow* Row = Weapon ? Weapon->GetRow() : nullptr;
-	return Row && Row->bCanADS;
+	if (!Row)
+	{
+		UE_LOG(LogBN, Warning, TEXT("BNGA_ADS: refused — no current weapon row (weapon %s). ADS reads bCanADS off the equipped weapon's DT row."),
+			*GetNameSafe(Weapon));
+		return false;
+	}
+	if (!Row->bCanADS)
+	{
+		UE_LOG(LogBN, Log, TEXT("BNGA_ADS: refused — the equipped weapon's row says bCanADS = false."));
+		return false;
+	}
+	return true;
 }
 
 void UBNGA_ADS::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
@@ -73,6 +87,13 @@ void UBNGA_ADS::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const F
 	UAbilityTask_WaitInputRelease* ReleaseTask = UAbilityTask_WaitInputRelease::WaitInputRelease(this);
 	ReleaseTask->OnRelease.AddDynamic(this, &UBNGA_ADS::OnInputRelease);
 	ReleaseTask->ReadyForActivation();
+
+	// ADS is ON, and the line names the two things that must follow from it: the tag that the
+	// anim instance and the pose call both listen to, and the speed GE. If this prints and the
+	// gun still does not rise, the break is downstream in the pose/layer, not in the ability.
+	UE_LOG(LogBN, Log, TEXT("BNGA_ADS: ACTIVE — State.Weapon.ADS %s, speed GE %s."),
+		ADSHandle.IsValid() ? TEXT("applied") : TEXT("FAILED to apply"),
+		SpeedHandle.IsValid() ? TEXT("applied") : TEXT("FAILED to apply"));
 }
 
 void UBNGA_ADS::OnInputRelease(float TimeHeld)
@@ -110,6 +131,11 @@ void UBNGA_ADS::OnAvatarDestroyed(AActor* DestroyedActor)
 
 void UBNGA_ADS::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
+	// Cancelled vs released is the whole diagnosis when ADS "drops on its own": cancelled means
+	// something took it (a hit's descope, or sprint), released means the button came up.
+	UE_LOG(LogBN, Log, TEXT("BNGA_ADS: ending — %s."),
+		bWasCancelled ? TEXT("CANCELLED (descoped by damage, or sprint started)") : TEXT("input released"));
+
 	if (UAbilitySystemComponent* ASC = ActorInfo ? ActorInfo->AbilitySystemComponent.Get() : nullptr)
 	{
 		if (RecentDamageHandle.IsValid())

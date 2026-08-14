@@ -302,6 +302,28 @@ void ABNCharacter::InitializeAnimLayer()
 	if (LayerClass)
 	{
 		MeshComp->LinkAnimClassLayers(LayerClass);
+
+		// The LINKING side of the founder's standing logging order — the anim instance announces
+		// what it FOUND linked, this announces what was DELIBERATELY linked and from where. Two
+		// independent reports: if they ever disagree, the linking failed silently.
+		const FString LayerPath = LayerClass->GetPathName();
+		UE_LOG(LogBN, Log, TEXT("BNLink: %s linked layer %s [%s]"),
+			*GetName(), *LayerPath,
+			LayerPath.Contains(TEXT("/Game/BN/")) ? TEXT("BN DUPLICATE") : TEXT("template original"));
+		if (LayerPath.Contains(TEXT("/Game/BN/")))
+		{
+			UE_LOG(LogBN, Warning,
+				TEXT("BNLink: that layer is a BN-owned DUPLICATE. Duplicated layers keep property-access bindings "
+					 "compiled against the main ABP's OLD layout and silently read zero after a reparent — the "
+					 "14 Aug frozen-aim root cause. Point the weapon row's AnimLayerClass at the FPSTemplate original."));
+		}
+	}
+	else
+	{
+		UE_LOG(LogBN, Warning,
+			TEXT("BNLink: %s resolved NO anim layer class — the weapon row's AnimLayerClass is empty or failed to "
+				 "load, and UnarmedAnimLayer is unset. The character will pose from the base ABP alone."),
+			*GetName());
 	}
 }
 
@@ -357,16 +379,20 @@ void ABNCharacter::HandleADSTagChanged(const FGameplayTag /*Tag*/, int32 NewCoun
 
 	// Scope 0 (default sight) until the weapon row carries a ScopeType column — MyCharacter read
 	// it off the weapon (GetCurrentWeaponScopeType); that column is a one-line DT addition later.
-	if (!BNCallChangePose(BNFindPoseOffsetsComp(this), PoseType, BN_Scope_Default, BN_AimPoseChangeSpeed))
+	// Logged both ways, on the tag edge: "ADS did nothing" and "ADS was never told" look identical
+	// from outside the game, and they are completely different investigations.
+	if (BNCallChangePose(BNFindPoseOffsetsComp(this), PoseType, BN_Scope_Default, BN_AimPoseChangeSpeed))
 	{
-		if (!bPoseCompWarned)
-		{
-			bPoseCompWarned = true;
-			UE_LOG(LogBN, Warning,
-				TEXT("BNCharacter: no callable ChangePose on a PoseOffsets component — ADS narrows the FOV "
-					 "but the weapon never rises to the eye. The BPC_FPST_Procedural_PoseOffsets component "
-					 "(terminal's R3 pivot) is missing from BP_BNCharacter or its signature changed."));
-		}
+		UE_LOG(LogBN, Log, TEXT("BNPose: %s -> ChangePose(%d) SENT (ADS %s)"),
+			*GetName(), PoseType, bADS ? TEXT("on") : TEXT("off"));
+	}
+	else if (!bPoseCompWarned)
+	{
+		bPoseCompWarned = true;
+		UE_LOG(LogBN, Warning,
+			TEXT("BNPose: no callable ChangePose on a PoseOffsets component — ADS narrows the FOV "
+				 "but the weapon never rises to the eye. The BPC_FPST_Procedural_PoseOffsets component "
+				 "(terminal's R3 pivot) is missing from BP_BNCharacter or its signature changed."));
 	}
 }
 
