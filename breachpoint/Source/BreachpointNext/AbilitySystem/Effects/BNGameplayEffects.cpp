@@ -15,11 +15,19 @@ UBNGE_InitAttributes::UBNGE_InitAttributes()
 		Modifier.ModifierMagnitude = FScalableFloat(100.f);
 		Modifiers.Add(Modifier);
 	}
+	// SHIELDS ARE OFF, on purpose (founder, 13 Aug 2026): "I want to see the health perfectly working
+	// first." A shield in front of health means every health test spends its first hits chewing
+	// through something else, and a wrong number in either pool looks identical from the outside.
+	// Zero here makes damage land on health directly and makes the log line read plainly.
+	//
+	// This is a PAUSE, not a removal. The whole dance is built and stays built — MaxShield, the
+	// recharge GE, the RecentDamage window, State.Shields.Broken. Restoring it is this one number
+	// back to 100.f, nothing else: everything downstream already gates itself on MaxShield > 0.
 	{
 		FGameplayModifierInfo Modifier;
 		Modifier.ModifierOp = EGameplayModOp::Override;
 		Modifier.Attribute = UBNAttributeSet::GetMaxShieldAttribute();
-		Modifier.ModifierMagnitude = FScalableFloat(100.f);
+		Modifier.ModifierMagnitude = FScalableFloat(0.f);
 		Modifiers.Add(Modifier);
 	}
 	{
@@ -30,10 +38,11 @@ UBNGE_InitAttributes::UBNGE_InitAttributes()
 		Modifiers.Add(Modifier);
 	}
 	{
+		// Matches MaxShield above. Restore to 100.f in the same edit that restores the max.
 		FGameplayModifierInfo Modifier;
 		Modifier.ModifierOp = EGameplayModOp::Override;
 		Modifier.Attribute = UBNAttributeSet::GetShieldAttribute();
-		Modifier.ModifierMagnitude = FScalableFloat(100.f);
+		Modifier.ModifierMagnitude = FScalableFloat(0.f);
 		Modifiers.Add(Modifier);
 	}
 	{

@@ -56,6 +56,11 @@ protected:
 	/** Authority only. Idempotent, like the recharge — the handle is the guard. */
 	void SetShieldsBroken(bool bBroken);
 
+	/** False while MaxShield is 0 — the shields-off configuration. Everything shield-shaped asks
+	 *  this first, so turning shields back on is one number in UBNGE_InitAttributes and nothing
+	 *  else. Health is untouched by it either way. */
+	bool HasShieldPool() const;
+
 	/** Authority only. Idempotent — the handle is what makes a second call a no-op. */
 	void SetShieldRechargeActive(bool bActive);
 

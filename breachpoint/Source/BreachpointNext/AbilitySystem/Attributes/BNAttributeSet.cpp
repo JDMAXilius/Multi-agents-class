@@ -86,7 +86,13 @@ void UBNAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallback
 	// it lives here rather than in the damage door because it must fire for every point of damage
 	// this set ever drains, whatever applied it. Re-applying refreshes the duration, so sustained
 	// fire holds the shield down for as long as it keeps landing.
-	if (UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent())
+	//
+	// Skipped entirely while shields are off: the tag's only consumer is the recharge, which is
+	// itself gated on there being a pool, so this would be a GE applied per bullet to gate nothing
+	// — six of them per shotgun shot. IF State.Combat.RecentDamage ever gains a second reader (an
+	// "in combat" HUD state is the obvious one), this gate has to go with it.
+	UAbilitySystemComponent* ASC = (GetMaxShield() > 0.f) ? GetOwningAbilitySystemComponent() : nullptr;
+	if (ASC)
 	{
 		const FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
 		const FGameplayEffectSpecHandle Spec = ASC->MakeOutgoingSpec(UBNGE_RecentDamage::StaticClass(), 1.f, Context);

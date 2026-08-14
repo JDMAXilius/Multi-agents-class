@@ -51,7 +51,17 @@ void UBNHealthComponent::HandleShieldChanged(const FOnAttributeChangeData& Data)
 	// Zero is broken, anything above it is not. Deliberately a THRESHOLD and not an edge: the
 	// recharge walks the shield up 10 at a time, so "crossed upward" would need history this does
 	// not keep, while a threshold is correct on every write including the first.
-	SetShieldsBroken(Data.NewValue <= 0.f);
+	//
+	// No pool means nothing to break. Without this, shields-off would leave every player
+	// permanently State.Shields.Broken — a tag that is supposed to mean "you are exposed RIGHT NOW"
+	// reduced to always-true, which is worse than absent for anything that later reads it.
+	SetShieldsBroken(HasShieldPool() && Data.NewValue <= 0.f);
+}
+
+bool UBNHealthComponent::HasShieldPool() const
+{
+	const UAbilitySystemComponent* ASC = CachedAbilitySystem.Get();
+	return ASC && ASC->GetNumericAttribute(UBNAttributeSet::GetMaxShieldAttribute()) > 0.f;
 }
 
 void UBNHealthComponent::SetShieldsBroken(bool bBroken)
@@ -94,6 +104,16 @@ void UBNHealthComponent::SetShieldRechargeActive(bool bActive)
 	// The switch. Off = the recharge GE is never applied, so the shield behaves exactly as it did
 	// before this work landed: it drains and stays drained until a respawn.
 	if (bActive && !bShieldRechargeEnabled)
+	{
+		return;
+	}
+
+	// And the shields-off case. With MaxShield at 0 there is no pool to refill, and the recharge is
+	// an ADD modifier — PreAttributeChange's zero-max branch floors but cannot cap, so an ungated
+	// recharge would walk Shield upward forever against a maximum of nothing. Gating here rather
+	// than teaching the clamp to tell "deliberately zero" from "not replicated yet", which it
+	// genuinely cannot.
+	if (bActive && !HasShieldPool())
 	{
 		return;
 	}
