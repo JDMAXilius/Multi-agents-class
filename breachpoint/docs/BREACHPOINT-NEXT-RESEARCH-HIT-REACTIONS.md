@@ -109,7 +109,21 @@ reaction personality is swapping one asset; adding a 5th direction montage is ad
 C++ changes when animation changes. The GA holds one Config soft ref to it (ini fallback now, BP
 child later per the migration packet).
 
-## 6. Not built, with reopening triggers
+## 6. The Halo question — asked, answered, and RULED
+
+Raised after this design landed: Halo does not do third-person hit-react animations on Spartans —
+its channels are shield VFX, the HUD indicator, descope and audio, and the one time it tried
+flinch (Halo 4's scoped aim punch) it reverted. BN's flinch already matches Halo where it is
+load-bearing — the victim keeps full control, no owner-side camera punch, feedback-to-victim is
+the HUD's job — but the observer-side body flinch itself is COD/Gears/Lyra language, not Halo's.
+
+**Founder's ruling, 13 Aug 2026: "Keep the flinch for now, we test it first."** The deviation is
+deliberate and pending the two-window playtest, not an oversight. The question the test answers:
+does the flinch read as combat legibility, or as un-Halo? Reversal, if it reads wrong, is
+emptying or not creating `DA_BNHitReactions` — one asset, zero code. Descope stays on record as
+the Halo-correct "hit while aiming" rule for the future ADS ability.
+
+## 7. Not built, with reopening triggers
 
 | Deferred | Trigger |
 |---|---|
