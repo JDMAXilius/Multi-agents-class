@@ -5,7 +5,8 @@
     "Content/FPSTemplate/Demo/Characters/Heroes/Mannequin/Animations/ABP_Mannequin_Base.uasset",
     "docs/BREACHPOINT-NEXT-TASK-INPUT-WIRING.md",
     "docs/BREACHPOINT-NEXT-TASK-CUE-BLUEPRINTS.md",
-    "docs/BREACHPOINT-NEXT-TASK-HIT-REACTIONS.md"
+    "docs/BREACHPOINT-NEXT-TASK-HIT-REACTIONS.md",
+    "Source/BreachpointNext/AbilitySystem/Attributes/BNAttributeSet.cpp"
   ],
   "binary_locks": [
     "Content/FPSTemplate/Demo/Characters/Heroes/Mannequin/Animations/ABP_Mannequin_Base.uasset",

@@ -133,8 +133,8 @@ void UBNAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallback
 	UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent();
 	if (ASC)
 	{
-		const FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
-		const FGameplayEffectSpecHandle Spec = ASC->MakeOutgoingSpec(UBNGE_RecentDamage::StaticClass(), 1.f, Context);
+		const FGameplayEffectContextHandle RechargeContext = ASC->MakeEffectContext();
+		const FGameplayEffectSpecHandle Spec = ASC->MakeOutgoingSpec(UBNGE_RecentDamage::StaticClass(), 1.f, RechargeContext);
 		if (Spec.IsValid())
 		{
 			// Tag on the SPEC, not the CDO — the construction-order rule again.
