@@ -1,5 +1,6 @@
 #include "Match/BNPlayerController.h"
 #include "AbilitySystem/BNAbilitySystemComponent.h"
+#include "AbilitySystem/Abilities/BNGA_Melee.h"
 #include "BreachpointNext.h"
 #include "Core/BNGameplayTags.h"
 #include "Input/BNInputComponent.h"
@@ -174,6 +175,23 @@ void ABNPlayerController::BNAimNative(int32 Enable)
 	{
 		Anim->SetNativeOwnsAimSurface(Enable != 0);
 		UE_LOG(LogBN, Log, TEXT("%s"), *Anim->DescribeAimState());
+	}
+#endif
+}
+
+void ABNPlayerController::BNMelee()
+{
+#if !UE_BUILD_SHIPPING
+	if (UAbilitySystemComponent* ASC = GetBNAbilitySystemComponent())
+	{
+		const bool bActivated = ASC->TryActivateAbilityByClass(UBNGA_Melee::StaticClass());
+		UE_LOG(LogBN, Log, TEXT("BNMelee: by-class activation -> %s."),
+			bActivated ? TEXT("ACTIVATED (if V does nothing, the input row/mapping is the break)")
+					   : TEXT("REFUSED (not granted, dead, or CanActivate said no — input is not the problem)"));
+	}
+	else
+	{
+		UE_LOG(LogBN, Warning, TEXT("BNMelee: no ASC — PlayerState not ready."));
 	}
 #endif
 }

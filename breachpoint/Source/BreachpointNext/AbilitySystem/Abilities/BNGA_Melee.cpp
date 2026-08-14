@@ -60,9 +60,31 @@ void UBNGA_Melee::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const
 	// Through the ASC so the swing replicates: simulated proxies must see the arm move, otherwise
 	// a melee kill arrives with no animation attached to it.
 	float MontageLength = 0.f;
-	if (UAnimMontage* Montage = (Row && !Row->MeleeMontage.IsNull()) ? Row->MeleeMontage.LoadSynchronous() : nullptr)
+	UAnimMontage* Montage = (Row && !Row->MeleeMontage.IsNull()) ? Row->MeleeMontage.LoadSynchronous() : nullptr;
+	if (Montage)
 	{
 		MontageLength = ASC->PlayMontage(this, ActivationInfo, Montage, 1.f);
+	}
+
+	// One line per swing, naming the link that is dead — "no melee attack happening" has been
+	// reported twice with the log silent, and a silent no-op is indistinguishable from a dead key.
+	if (!Row)
+	{
+		UE_LOG(LogBN, Warning, TEXT("BNGA_Melee: activated with NO current weapon row — no montage, damage or reach; the swing is a no-op."));
+	}
+	else if (!Montage)
+	{
+		UE_LOG(LogBN, Warning, TEXT("BNGA_Melee: row's MeleeMontage is unset or failed to load ('%s') — swinging on the fallback clock with no animation."),
+			*Row->MeleeMontage.ToString());
+	}
+	else if (MontageLength <= 0.f)
+	{
+		UE_LOG(LogBN, Warning, TEXT("BNGA_Melee: montage '%s' FAILED to play (length %.2f) — the ABP has no slot node for its slot, or another montage holds it."),
+			*GetNameSafe(Montage), MontageLength);
+	}
+	else
+	{
+		UE_LOG(LogBN, Log, TEXT("BNGA_Melee: swing — montage '%s' (%.2fs)."), *GetNameSafe(Montage), MontageLength);
 	}
 
 	if (!ActorInfo->IsLocallyControlled())

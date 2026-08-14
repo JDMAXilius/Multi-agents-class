@@ -55,6 +55,12 @@ public:
 	UFUNCTION(Exec)
 	void BNAimNative(int32 Enable);
 
+	/** Swing melee WITHOUT the input assets: activates the ability by class on the local ASC.
+	 *  V dead but this swinging = the DA_BNInput row / IMC mapping; both dead = the ability
+	 *  or the weapon row. One press splits the chain in half. */
+	UFUNCTION(Exec)
+	void BNMelee();
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;

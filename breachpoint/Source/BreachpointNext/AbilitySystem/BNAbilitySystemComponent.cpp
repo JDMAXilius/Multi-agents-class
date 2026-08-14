@@ -1,4 +1,5 @@
 #include "AbilitySystem/BNAbilitySystemComponent.h"
+#include "BreachpointNext.h"
 #include "Abilities/GameplayAbility.h"
 
 void UBNAbilitySystemComponent::AbilityInputTagPressed(FGameplayTag InputTag)
@@ -8,6 +9,7 @@ void UBNAbilitySystemComponent::AbilityInputTagPressed(FGameplayTag InputTag)
 		return;
 	}
 
+	bool bAnySpecListens = false;
 	ABILITYLIST_SCOPE_LOCK();
 	for (FGameplayAbilitySpec& Spec : ActivatableAbilities.Items)
 	{
@@ -15,6 +17,7 @@ void UBNAbilitySystemComponent::AbilityInputTagPressed(FGameplayTag InputTag)
 		{
 			continue;
 		}
+		bAnySpecListens = true;
 
 		AbilitySpecInputPressed(Spec);
 		if (Spec.IsActive())
@@ -26,6 +29,15 @@ void UBNAbilitySystemComponent::AbilityInputTagPressed(FGameplayTag InputTag)
 		{
 			TryActivateAbility(Spec.Handle);
 		}
+	}
+
+	// The gap between "the key works" and "the ability exists": the press crossed the input assets
+	// and reached the ASC, and then went nowhere. Without this line that outcome is silent and
+	// reads exactly like a dead key — with it, the log names which half of the chain to fix.
+	if (!bAnySpecListens)
+	{
+		UE_LOG(LogBN, Warning, TEXT("BNASC: input tag %s reached the ASC but NO granted ability carries it — the grant is missing (or defaults are not granted yet)."),
+			*InputTag.ToString());
 	}
 }
 
