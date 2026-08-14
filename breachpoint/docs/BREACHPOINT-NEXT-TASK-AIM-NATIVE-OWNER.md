@@ -1,6 +1,6 @@
 # TICKET — native becomes the default aim owner: ONE checkbox, nothing else
 
-> STATUS: in-progress — mac terminal 14 Aug 2026, editor live, MCP :8000
+> STATUS: done — mac terminal 14 Aug 2026. Checkbox true, four rows on template originals, Shotgun/Knife landed cell-perfect. BNAimDebug visual half handed to the founder (see Log).
 
 **Cut:** 14 August 2026 by the cloud lead · **For:** the terminal session (editor + Unreal MCP)
 **Founder ruling:** "Do all" on the reference-research recommendations
@@ -77,3 +77,54 @@ layer classes, read-backs pasted below. **That is the whole ticket.**
 ## Log
 
 _(terminal: read-backs, and anything handed back)_
+
+### 14 Aug 2026 — terminal, executed (read-backs below)
+
+**Step 1 — checkbox.** `ABP_Mannequin_Base` (FPSTemplate original) CDO: `bNativeOwnsAimSurface`
+was `false`, set to **`true`**, `compile_blueprint` run, saved via `load_asset`-first route.
+Fresh read-back after save: `{"bNativeOwnsAimSurface": true}`; `is_dirty` false.
+
+**Step 2 — the two cells.** `DT_BNWeapons` `animLayerClass`, plain path strings (soft-ref trap
+respected), read back after save:
+- Rifle → `/Game/FPSTemplate/.../Locomotion/Rifle/ABP_RifleAnimLayers.ABP_RifleAnimLayers_C`
+- Pistol → `/Game/FPSTemplate/.../Locomotion/Pistol/ABP_PistolAnimLayers.ABP_PistolAnimLayers_C`
+
+**Step 3 — Shotgun/Knife rows (DT-SHOTGUN-KNIFE executed; AnimLayerClass decision CLOSED =
+template classes).** All 8 asset paths verified via `exists` before landing. Read-back table —
+value / source:
+- Shotgun: damage 12 (spec), fireDelay 0.1 (CDO), spreadAngle **5** (CDO — a real spread, not
+  the 0.1 the spec feared), shotCount 6 (spec+CDO agree), fireMode Single (CDO
+  `availableFireModes=["Single"]`), attachSocketName **`weapon_r_shotgun`** (CDO
+  `BP_FPST_Weapon_Shotgun`), muzzleSocketName `Muzzle` (CDO), SKM_Shotgun mesh /
+  AM_MM_Shotgun_{Fire,Reload} / AM_MM_Shotgun_Melee / MSS_Weapons_Shotgun_Fire (spec, verified),
+  animLayerClass `ABP_ShotgunAnimLayers_C` (template original, non-Feminine non-UE4),
+  abilitySet DA_BNAbilitySet_Rifle (spec). **UNRESOLVED: magazineSize** — the weapon CDO
+  carries NO ammo/magazine property (124 props listed, zero mag/clip/ammo hits), so the C++
+  default **30** stands. REPORT, not fixed: a 6-pellet pump gun with a 30-round magazine reads
+  like placeholder data — lead's call.
+- Knife: meleeDamage 100 / meleeRange 150 / magazineSize 0 (spec), attachSocketName
+  **`weapon_r_knife`** (CDO `BP_FPST_Weapon_Knife`), SKM_Knife mesh + AM_MM_Knife_Swing01
+  (spec, verified), animLayerClass `ABP_KnifeAnimLayers_C` (template original),
+  fire/reload montage + fireSound + abilitySet all None (spec — melee-only row), muzzle left
+  default.
+
+**Step 4 — read-backs.** (1) ABP fresh: `true` ✓. (2) All four rows resolve to
+`/Game/FPSTemplate/...` originals, none to `/Game/BN/Animation/` ✓. (3) PIE ran on
+`BR_Arena01`: the `startup row 'Shotgun'/'Knife' does not exist — skipped` errors that fired
+on every prior boot are GONE, and `BNLink` names
+`ABP_RifleAnimLayers_C [template original]` at runtime. `BNAimDebug` was attempted through the
+status-bar Cmd console — the command echoed (`Cmd: BNAimDebug`) but produced no output lines;
+suspected editor-world (not PIE-world) execution context. The in-viewport console is not
+reachable through the available toolsets. **Handed back to the founder: run `BNAimDebug` in
+PIE and confirm `owner NATIVE` + pose follows the view.**
+
+**Observation for the lead (not interpreted, not acted on):** the `BNLayers` diagnostic on the
+template originals prints `accepts: AimPitch | MISSING: PitchRotator Pitch bFPSMode
+LeanRotation LeanOppRotation GameplayTag_IsADS IsADS_Upper`. If originals pull pose from the
+shared main ABP (the founder's controlled experiment), MISSING may be the expected shape for
+pull-based layers — but the diagnostic cannot distinguish that from a dead link. Worth one
+`BNAimDebug` while aiming.
+
+**Also touched then reverted:** the editor auto-reimported `Content/Data/DT_Weapons.uasset` +
+`CT_Combat.uasset` from BP91's landed CSVs on startup. Reverted — those binaries are BP91's
+owned assets and its scripted reimport + verification runs under that ticket, not this one.
