@@ -7,6 +7,7 @@
 #include "Weapons/BNWeapon.h"
 #include "Data/BNDataRows.h"
 #include "AbilitySystemGlobals.h"
+#include "AssetRegistry/IAssetRegistry.h"
 #include "GameplayCueManager.h"
 #include "GameplayCueSet.h"
 #include "GameFramework/Actor.h"
@@ -272,8 +273,38 @@ void UBNGameplayCueRegistrar::OnWorldBeginPlay(UWorld& InWorld)
 		return;
 	}
 
+	// Load the Blueprint children FIRST. GetDerivedClasses walks LOADED classes only, and the cue
+	// Blueprints have no referencer — on a cold boot they never load, the C++ CDO silently wins
+	// every tag, and the asset references set in the editor never apply (the ini fallback plays
+	// instead, which is invisible until an FX edit "does nothing"). The asset registry knows the
+	// inheritance without loading; anything under it that is not a /Script/ native class is a
+	// Blueprint-generated cue class and gets loaded here, so the most-derived filter below can see it.
+	if (const IAssetRegistry* AssetRegistry = IAssetRegistry::Get())
+	{
+		TSet<FTopLevelAssetPath> DerivedClassPaths;
+		AssetRegistry->GetDerivedClassNames(
+			{ UBNGameplayCue_Base::StaticClass()->GetClassPathName() }, /*ExcludedClassNames=*/{}, DerivedClassPaths);
+		for (const FTopLevelAssetPath& ClassPath : DerivedClassPaths)
+		{
+			if (!ClassPath.GetPackageName().ToString().StartsWith(TEXT("/Script/")))
+			{
+				FSoftClassPath(ClassPath.ToString()).TryLoadClass<UBNGameplayCue_Base>();
+			}
+		}
+	}
+
 	TArray<UClass*> HandlerClasses;
 	GetDerivedClasses(UBNGameplayCue_Base::StaticClass(), HandlerClasses, /*bRecursive=*/true);
+
+	// Editor-only compilation artifacts (SKEL_/REINST_) also show up as derived classes and used
+	// to log a phantom registration per tag before the real one — the CUE-BLUEPRINTS ticket's
+	// standing finding. They are never the handler; drop them before the most-derived filter so
+	// they cannot shadow the class they are scaffolding for.
+	HandlerClasses.RemoveAll([](const UClass* Candidate)
+	{
+		const FString Name = Candidate ? Candidate->GetName() : FString();
+		return Name.StartsWith(TEXT("SKEL_")) || Name.StartsWith(TEXT("REINST_"));
+	});
 
 	// MOST-DERIVED WINS, and this must land BEFORE any Blueprint child of a cue class exists.
 	//

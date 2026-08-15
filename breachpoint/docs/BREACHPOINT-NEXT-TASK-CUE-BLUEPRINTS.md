@@ -118,3 +118,12 @@ _(terminal: append the read-back table, the four BNCues lines verbatim, and anyt
   the registrar also logs a `SKEL_BP_BNCue_*_C` registration line per tag before the real one —
   GetDerivedClasses picks up the editor-only skeleton classes; harmless in PIE, worth a
   class-flags filter. The ini lines were NOT touched, per this ticket's own fence.
+
+- 15 Aug 2026 (mac terminal) — **The cold-boot hole closed, and the SKEL finding fixed.** The 14 Aug
+  acceptance had silently regressed: `GetDerivedClasses` walks LOADED classes only, and nothing
+  references the four BPs — on any fresh boot they never loaded and the C++ CDOs won every tag
+  (the editor-set FX refs never applied; the ini fallback played). The registrar now asks the
+  asset registry for derived class names and loads the non-native ones before the scan, and drops
+  `SKEL_`/`REINST_` editor artifacts before the most-derived filter (the standing finding above).
+  PIE cold-boot verbatim: MuzzleFlash/Impact/Tracer → `BP_BNCue_*_C`, Explode → `BP_BNCue_Explosion_C`,
+  Death → `BNGameplayCue_Death` (C++, correctly — no BP child exists). No phantom SKEL lines.
