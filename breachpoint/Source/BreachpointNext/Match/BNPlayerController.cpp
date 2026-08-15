@@ -1,263 +1,23 @@
 #include "Match/BNPlayerController.h"
 #include "AbilitySystem/BNAbilitySystemComponent.h"
-#include "AbilitySystem/Abilities/BNGA_Melee.h"
 #include "BreachpointNext.h"
 #include "Core/BNGameplayTags.h"
 #include "Input/BNInputComponent.h"
 #include "Input/BNInputConfig.h"
-#include "AbilitySystem/Attributes/BNAttributeSet.h"
-#include "AbilitySystem/Effects/BNDamage.h"
 #include "Match/BNPlayerState.h"
-#include "Animation/BNAnimInstance.h"
-#include "Components/SkeletalMeshComponent.h"
-#include "GameFramework/Character.h"
+#include "Match/BNPlayerCameraManager.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "InputMappingContext.h"
 #include "GameFramework/Pawn.h"
 
-#if !UE_BUILD_SHIPPING
-namespace
+ABNPlayerController::ABNPlayerController()
 {
-	/** True when the call was forwarded and this machine must do nothing else. */
-	bool BNForwardToAuthority(APlayerController* PC, const FString& Command)
-	{
-		if (!PC || PC->HasAuthority())
-		{
-			return false;
-		}
-
-		// The engine's own console-to-server channel: the server runs the identical command on
-		// its own copy of this controller, which is the machine allowed to move an attribute.
-		// (ServerExec, not ServerCheat — UE 5.8 removed the latter; same channel, 128-char cap.)
-		PC->ServerExec(Command);
-		return true;
-	}
-}
-#endif
-
-void ABNPlayerController::BeginPlay()
-{
-	Super::BeginPlay();
-
-#if !UE_BUILD_SHIPPING
-	// The forwarded ServerExec runs ConsoleCommand on the server's copy of this controller, and
-	// this controller's own exec levers reach ProcessConsoleExec without a cheat manager — but
-	// the engine's stock cheats (God, etc.) still need one, and AGameModeBase::AllowCheats says
-	// no outside the editor, so a packaged development listen-server would eat those. Forced
-	// here, authority side only; the class is the engine's plain UCheatManager.
-	if (HasAuthority() && !CheatManager)
-	{
-		AddCheats(true);
-	}
-#endif
-}
-
-void ABNPlayerController::BNDamageSelf(float Amount)
-{
-#if !UE_BUILD_SHIPPING
-	if (BNForwardToAuthority(this, FString::Printf(TEXT("BNDamageSelf %f"), Amount)))
-	{
-		return;
-	}
-
-	APawn* ControlledPawn = GetPawn();
-	BNDamage::ApplyDamage(ControlledPawn, ControlledPawn, Amount, FHitResult());
-#endif
-}
-
-void ABNPlayerController::BNKillSelf()
-{
-#if !UE_BUILD_SHIPPING
-	if (BNForwardToAuthority(this, TEXT("BNKillSelf")))
-	{
-		return;
-	}
-
-	const ABNPlayerState* PS = GetPlayerState<ABNPlayerState>();
-	const UAbilitySystemComponent* ASC = PS ? PS->GetAbilitySystemComponent() : nullptr;
-	if (!ASC)
-	{
-		return;
-	}
-
-	// Lethal is COMPUTED and paid through the door, never asserted by writing zero: death has to
-	// arrive the way a bullet's would, or this lever tests a path nothing else uses.
-	APawn* ControlledPawn = GetPawn();
-	BNDamage::ApplyDamage(ControlledPawn, ControlledPawn,
-		ASC->GetNumericAttribute(UBNAttributeSet::GetHealthAttribute())
-			+ ASC->GetNumericAttribute(UBNAttributeSet::GetShieldAttribute()),
-		FHitResult());
-#endif
-}
-
-void ABNPlayerController::BNRefill()
-{
-#if !UE_BUILD_SHIPPING
-	if (BNForwardToAuthority(this, TEXT("BNRefill")))
-	{
-		return;
-	}
-
-	// Through the init GE, the same one respawn uses. Nothing here hand-sets an attribute.
-	if (ABNPlayerState* PS = GetPlayerState<ABNPlayerState>())
-	{
-		PS->ApplyInitAttributes();
-	}
-#endif
-}
-
-#if !UE_BUILD_SHIPPING
-namespace
-{
-	/** The anim instance this machine renders for the local pawn. Local by design: an anim
-	 *  instance is per-machine, so there is nothing here for the server to own. */
-	UBNAnimInstance* BNLocalAnimInstance(const APlayerController* PC)
-	{
-		const ACharacter* Char = PC ? Cast<ACharacter>(PC->GetPawn()) : nullptr;
-		const USkeletalMeshComponent* MeshComp = Char ? Char->GetMesh() : nullptr;
-		return MeshComp ? Cast<UBNAnimInstance>(MeshComp->GetAnimInstance()) : nullptr;
-	}
-
-	EBNSpineAxis BNAxisFromIndex(int32 Axis)
-	{
-		switch (Axis)
-		{
-		case 1:  return EBNSpineAxis::Pitch;
-		case 2:  return EBNSpineAxis::Yaw;
-		default: return EBNSpineAxis::Roll;
-		}
-	}
-}
-#endif
-
-void ABNPlayerController::BNAimDebug()
-{
-#if !UE_BUILD_SHIPPING
-	UBNAnimInstance* Anim = BNLocalAnimInstance(this);
-	if (!Anim)
-	{
-		UE_LOG(LogBN, Warning,
-			TEXT("BNAimDebug: no UBNAnimInstance on the local pawn's mesh — either the pawn is not "
-				 "possessed yet or the mesh's ABP does not inherit UBNAnimInstance."));
-		return;
-	}
-	UE_LOG(LogBN, Log, TEXT("%s"), *Anim->DescribeAimState());
-#endif
-}
-
-void ABNPlayerController::BNAimAxis(int32 Axis)
-{
-#if !UE_BUILD_SHIPPING
-	if (UBNAnimInstance* Anim = BNLocalAnimInstance(this))
-	{
-		Anim->SetAimPitchAxis(BNAxisFromIndex(Axis));
-		UE_LOG(LogBN, Log, TEXT("%s"), *Anim->DescribeAimState());
-	}
-#endif
-}
-
-void ABNPlayerController::BNLeanAxis(int32 Axis)
-{
-#if !UE_BUILD_SHIPPING
-	if (UBNAnimInstance* Anim = BNLocalAnimInstance(this))
-	{
-		Anim->SetLeanAxis(BNAxisFromIndex(Axis));
-		UE_LOG(LogBN, Log, TEXT("%s"), *Anim->DescribeAimState());
-	}
-#endif
-}
-
-void ABNPlayerController::BNAimNative(int32 Enable)
-{
-#if !UE_BUILD_SHIPPING
-	if (UBNAnimInstance* Anim = BNLocalAnimInstance(this))
-	{
-		Anim->SetNativeOwnsAimSurface(Enable != 0);
-		UE_LOG(LogBN, Log, TEXT("%s"), *Anim->DescribeAimState());
-	}
-#endif
-}
-
-void ABNPlayerController::BNLayerCheck()
-{
-#if !UE_BUILD_SHIPPING
-	if (UBNAnimInstance* Anim = BNLocalAnimInstance(this))
-	{
-		Anim->AnnounceLinkedLayers();
-	}
-	else
-	{
-		UE_LOG(LogBN, Warning, TEXT("BNLayerCheck: no UBNAnimInstance on the local pawn's mesh."));
-	}
-#endif
-}
-
-void ABNPlayerController::BNAimLog(int32 Enable)
-{
-#if !UE_BUILD_SHIPPING
-	if (UBNAnimInstance* Anim = BNLocalAnimInstance(this))
-	{
-		Anim->SetAimLogEnabled(Enable != 0);
-		UE_LOG(LogBN, Log, TEXT("BNAimLog: live aim trace %s."), Enable != 0 ? TEXT("ON (2 lines/sec)") : TEXT("OFF"));
-	}
-#endif
-}
-
-void ABNPlayerController::BNMelee()
-{
-#if !UE_BUILD_SHIPPING
-	if (UAbilitySystemComponent* ASC = GetBNAbilitySystemComponent())
-	{
-		const bool bActivated = ASC->TryActivateAbilityByClass(UBNGA_Melee::StaticClass());
-		UE_LOG(LogBN, Log, TEXT("BNMelee: by-class activation -> %s."),
-			bActivated ? TEXT("ACTIVATED (if V does nothing, the input row/mapping is the break)")
-					   : TEXT("REFUSED (not granted, dead, or CanActivate said no — input is not the problem)"));
-	}
-	else
-	{
-		UE_LOG(LogBN, Warning, TEXT("BNMelee: no ASC — PlayerState not ready."));
-	}
-#endif
-}
-
-void ABNPlayerController::HandleADSPressed()
-{
-	if (UBNAbilitySystemComponent* ASC = GetBNAbilitySystemComponent())
-	{
-		ASC->AbilityInputTagPressed(BNTags::Input_Weapon_ADS);
-	}
-}
-
-void ABNPlayerController::HandleADSReleased()
-{
-	if (UBNAbilitySystemComponent* ASC = GetBNAbilitySystemComponent())
-	{
-		ASC->AbilityInputTagReleased(BNTags::Input_Weapon_ADS);
-	}
-}
-
-void ABNPlayerController::HandleMeleePressed()
-{
-	if (UBNAbilitySystemComponent* ASC = GetBNAbilitySystemComponent())
-	{
-		ASC->AbilityInputTagPressed(BNTags::Input_Melee);
-	}
-}
-
-void ABNPlayerController::HandleGrenadePressed()
-{
-	if (UBNAbilitySystemComponent* ASC = GetBNAbilitySystemComponent())
-	{
-		ASC->AbilityInputTagPressed(BNTags::Input_Grenade);
-	}
+	PlayerCameraManagerClass = ABNPlayerCameraManager::StaticClass();
 }
 
 void ABNPlayerController::SetupInputComponent()
 {
-	// NEXT owns its input component outright. The project-wide DefaultInputComponentClass
-	// names the OLD module's class, and this module depends on nothing there. Creating it
-	// before Super is the engine's own sanctioned override point.
 	if (!InputComponent)
 	{
 		InputComponent = NewObject<UBNInputComponent>(this, TEXT("BNInputComponent0"));
@@ -277,7 +37,7 @@ void ABNPlayerController::SetupInputComponent()
 		{
 			if (MappingContexts.IsEmpty())
 			{
-				UE_LOG(LogBN, Error, TEXT("BNPlayerController: MappingContexts is empty — set +MappingContexts under [/Script/BreachpointNext.BNPlayerController] in DefaultGame.ini. No key reaches any action."));
+				UE_LOG(LogBN, Error, TEXT("BNPlayerController: MappingContexts is empty — set +MappingContexts under [/Script/BreachpointNext.BNPlayerController] in DefaultGame.ini."));
 			}
 			for (int32 Index = 0; Index < MappingContexts.Num(); ++Index)
 			{
@@ -297,7 +57,7 @@ void ABNPlayerController::SetupInputComponent()
 	const UBNInputConfig* Config = InputConfig.LoadSynchronous();
 	if (!BNInput || !Config)
 	{
-		UE_LOG(LogBN, Error, TEXT("BNPlayerController: input not bound (component=%s, InputConfig='%s'). Run Tools/bn/10_input_assets.py and check DefaultGame.ini."),
+		UE_LOG(LogBN, Error, TEXT("BNPlayerController: input not bound (component=%s, InputConfig='%s')."),
 			BNInput ? TEXT("ok") : TEXT("wrong class"), *InputConfig.ToString());
 		return;
 	}
@@ -306,7 +66,7 @@ void ABNPlayerController::SetupInputComponent()
 	{
 		if (!BNInput->BindActionByTag(Config, Tag, Event, this, Func))
 		{
-			UE_LOG(LogBN, Error, TEXT("BNPlayerController: %s has no InputAction in '%s' — that control is dead."), *Tag.ToString(), *InputConfig.ToString());
+			UE_LOG(LogBN, Error, TEXT("BNPlayerController: %s has no InputAction in '%s'."), *Tag.ToString(), *InputConfig.ToString());
 		}
 	};
 
@@ -316,11 +76,8 @@ void ABNPlayerController::SetupInputComponent()
 	Bind(BNTags::Input_Jump, ETriggerEvent::Completed, &ABNPlayerController::HandleJumpReleased);
 	Bind(BNTags::Input_Crouch, ETriggerEvent::Started, &ABNPlayerController::HandleCrouchPressed);
 	Bind(BNTags::Input_Crouch, ETriggerEvent::Completed, &ABNPlayerController::HandleCrouchReleased);
-	// Press only: the swap verbs are one-shot, so there is no release event to forward.
 	Bind(BNTags::Input_Weapon_Next, ETriggerEvent::Started, &ABNPlayerController::HandleWeaponNextPressed);
 	Bind(BNTags::Input_Weapon_Previous, ETriggerEvent::Started, &ABNPlayerController::HandleWeaponPreviousPressed);
-	// Fire needs the release: Auto holds the ability open for as long as the trigger is held.
-	// Reload is one-shot, so press only, like the swap verbs.
 	Bind(BNTags::Input_Weapon_Fire, ETriggerEvent::Started, &ABNPlayerController::HandleFirePressed);
 	Bind(BNTags::Input_Weapon_Fire, ETriggerEvent::Completed, &ABNPlayerController::HandleFireReleased);
 	Bind(BNTags::Input_Weapon_Reload, ETriggerEvent::Started, &ABNPlayerController::HandleReloadPressed);
@@ -330,28 +87,16 @@ void ABNPlayerController::SetupInputComponent()
 	Bind(BNTags::Input_Lean_Left, ETriggerEvent::Completed, &ABNPlayerController::HandleLeanLeftReleased);
 	Bind(BNTags::Input_Lean_Right, ETriggerEvent::Started, &ABNPlayerController::HandleLeanRightPressed);
 	Bind(BNTags::Input_Lean_Right, ETriggerEvent::Completed, &ABNPlayerController::HandleLeanRightReleased);
-	// ANNOUNCED, not created: IA_BN_Melee and IA_BN_Grenade plus their DA_BNInput rows and
-	// IMC_BNNext mappings are the editor half of R3 W3. Until they exist Bind logs its "that
-	// control is dead" line and the abilities are unreachable — loudly unreachable, which is the
-	// point. The C++ half is complete: both abilities activate off these tags.
 	Bind(BNTags::Input_Weapon_ADS, ETriggerEvent::Started, &ABNPlayerController::HandleADSPressed);
 	Bind(BNTags::Input_Weapon_ADS, ETriggerEvent::Completed, &ABNPlayerController::HandleADSReleased);
 	Bind(BNTags::Input_Melee, ETriggerEvent::Started, &ABNPlayerController::HandleMeleePressed);
 	Bind(BNTags::Input_Grenade, ETriggerEvent::Started, &ABNPlayerController::HandleGrenadePressed);
-#if !UE_BUILD_SHIPPING
-	// The asset half is BREACHPOINT-NEXT-TASK-INPUT-WIRING.md: IA_BN_DebugDamageSelf on K, its
-	// DA_BNInput row and IMC_BNNext mapping. Until the terminal lands it, this binding logs its
-	// "that control is dead" line every run — the announcement staying loud rather than silent.
-	// The BINDING is guarded, not just the handler: a shipping listen-server host is an authority,
-	// so an unguarded key would damage the host for real.
-	Bind(BNTags::Input_Debug_DamageSelf, ETriggerEvent::Started, &ABNPlayerController::HandleDebugDamagePressed);
-#endif
 }
 
 void ABNPlayerController::HandleMove(const FInputActionValue& Value)
 {
 	APawn* ControlledPawn = GetPawn();
-	if (!ControlledPawn)
+	if (!ControlledPawn || IsDead())
 	{
 		return;
 	}
@@ -364,6 +109,11 @@ void ABNPlayerController::HandleMove(const FInputActionValue& Value)
 
 void ABNPlayerController::HandleLook(const FInputActionValue& Value)
 {
+	if (IsDead())
+	{
+		return;
+	}
+
 	const FVector2D Axis = Value.Get<FVector2D>();
 	AddYawInput(Axis.X);
 	AddPitchInput(Axis.Y);
@@ -489,15 +239,46 @@ void ABNPlayerController::HandleLeanRightReleased()
 	}
 }
 
-void ABNPlayerController::HandleDebugDamagePressed()
+void ABNPlayerController::HandleADSPressed()
 {
-	// One keypress, the SAME exec the console runs — the key gets no path of its own, and no
-	// second authority hop to keep in sync.
-	BNDamageSelf();
+	if (UBNAbilitySystemComponent* ASC = GetBNAbilitySystemComponent())
+	{
+		ASC->AbilityInputTagPressed(BNTags::Input_Weapon_ADS);
+	}
+}
+
+void ABNPlayerController::HandleADSReleased()
+{
+	if (UBNAbilitySystemComponent* ASC = GetBNAbilitySystemComponent())
+	{
+		ASC->AbilityInputTagReleased(BNTags::Input_Weapon_ADS);
+	}
+}
+
+void ABNPlayerController::HandleMeleePressed()
+{
+	if (UBNAbilitySystemComponent* ASC = GetBNAbilitySystemComponent())
+	{
+		ASC->AbilityInputTagPressed(BNTags::Input_Melee);
+	}
+}
+
+void ABNPlayerController::HandleGrenadePressed()
+{
+	if (UBNAbilitySystemComponent* ASC = GetBNAbilitySystemComponent())
+	{
+		ASC->AbilityInputTagPressed(BNTags::Input_Grenade);
+	}
 }
 
 UBNAbilitySystemComponent* ABNPlayerController::GetBNAbilitySystemComponent() const
 {
 	const ABNPlayerState* PS = GetPlayerState<ABNPlayerState>();
 	return PS ? PS->GetBNAbilitySystemComponent() : nullptr;
+}
+
+bool ABNPlayerController::IsDead() const
+{
+	const UBNAbilitySystemComponent* ASC = GetBNAbilitySystemComponent();
+	return ASC && ASC->HasMatchingGameplayTag(BNTags::State_Dead);
 }

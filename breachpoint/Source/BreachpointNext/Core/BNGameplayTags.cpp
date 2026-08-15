@@ -29,6 +29,8 @@ namespace BNTags
 	UE_DEFINE_GAMEPLAY_TAG(State_Lean_Right, "State.Lean.Right");
 	UE_DEFINE_GAMEPLAY_TAG(State_Weapon_Reloading, "State.Weapon.Reloading");
 	UE_DEFINE_GAMEPLAY_TAG(State_Weapon_ADS, "State.Weapon.ADS");
+	UE_DEFINE_GAMEPLAY_TAG(State_Weapon_Firing, "State.Weapon.Firing");
+	UE_DEFINE_GAMEPLAY_TAG(State_Weapon_Melee, "State.Weapon.Melee");
 
 	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Weapon_Fire, "Cooldown.Weapon.Fire");
 	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Grenade, "Cooldown.Grenade");

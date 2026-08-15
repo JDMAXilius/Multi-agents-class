@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "AbilitySystem/BNGameplayAbility.h"
 #include "Animation/AnimInstance.h"
+#include "Animation/AnimMontage.h"
 #include "Engine/TimerHandle.h"
 #include "BNGA_Melee.generated.h"
 
@@ -15,8 +16,8 @@ struct FGameplayAbilityTargetDataHandle;
  * the swing belongs to the body and must survive every weapon swap. Granting it per weapon would
  * also make it unreachable until both DA_BNAbilitySet assets are edited, and would leave a row
  * with a null AbilitySet unable to melee at all. It still reads its montage, damage and reach from
- * the CURRENT weapon's row — so swinging while genuinely unarmed is a no-op today rather than a
- * punch, which is honest until an unarmed row exists.
+ * the CURRENT weapon's row. Empty hands (the Unarmed swap slot) fall back to the optional
+ * `Unarmed` table row, then to the Config punch numbers/montage on this class.
  *
  * The swing is NOT the input event. `MyCharacter::MeleeAttack` (.cpp:1916-1930) plays the montage
  * and then does nothing until `HandleMontageNotifyBegin` sees the notify named `AN_FPST_Melee`
@@ -79,8 +80,21 @@ protected:
 	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Melee")
 	float AuthorityTimeout = 5.f;
 
+	/** Used only when there is no current weapon row (the Unarmed slot, or a missing Unarmed DT row). */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Melee")
+	TSoftObjectPtr<UAnimMontage> UnarmedMeleeMontage;
+
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Melee")
+	float UnarmedMeleeDamage = 40.f;
+
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Melee")
+	float UnarmedMeleeRange = 120.f;
+
 	FTimerHandle SwingTimer;
 	FTimerHandle ConnectTimer;
+
+	/** Granted for the swing's lifetime. Same GE path as reload / ADS — not a pawn bool. */
+	FActiveGameplayEffectHandle MeleeHandle;
 
 	/** One connect per activation: a montage carrying two notifies must not swing twice. */
 	bool bSwung = false;

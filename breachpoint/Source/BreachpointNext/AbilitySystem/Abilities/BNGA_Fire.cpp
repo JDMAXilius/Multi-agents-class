@@ -4,6 +4,7 @@
 #include "AbilitySystem/Effects/BNGameplayEffects.h"
 #include "BreachpointNext.h"
 #include "Characters/BNCharacter.h"
+#include "Core/BNCollision.h"
 #include "Core/BNGameplayTags.h"
 #include "Data/BNDataRows.h"
 #include "Weapons/BNEquipmentComponent.h"
@@ -52,7 +53,9 @@ bool UBNGA_Fire::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, con
 	// this wave, so a shot that interrupted a reload would be a shot with no defined ammo state.
 	// A partial-magazine model is what would make interrupting meaningful, and it does not exist.
 	const UAbilitySystemComponent* ASC = ActorInfo ? ActorInfo->AbilitySystemComponent.Get() : nullptr;
-	return ASC && !ASC->HasMatchingGameplayTag(BNTags::State_Weapon_Reloading);
+	return ASC
+		&& !ASC->HasMatchingGameplayTag(BNTags::State_Weapon_Reloading)
+		&& !ASC->HasMatchingGameplayTag(BNTags::State_Weapon_Melee);
 }
 
 bool UBNGA_Fire::CheckCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, FGameplayTagContainer* OptionalRelevantTags) const
@@ -136,6 +139,11 @@ void UBNGA_Fire::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 	ShotsJudged = 0;
 	LastAcceptedShotTime = 0.f;
 
+	// The ability IS the firing state. Applied on every role so Mixed replication carries
+	// State.Weapon.Firing to simulated proxies — NewMoons flipped a replicated bool on the pawn
+	// instead, which is the path this replaces.
+	FiringHandle = ApplyStateTag(BNTags::State_Weapon_Firing);
+
 	if (!ActorInfo->IsLocallyControlled())
 	{
 		// The authority's instance for a remote shooter: it fires nothing itself and NEVER ends
@@ -164,9 +172,20 @@ void UBNGA_Fire::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 	const bool bRepeats = (Row->FireMode == EBNFireMode::Auto)
 		|| (Row->FireMode == EBNFireMode::Burst && Row->BurstShotCount > 1);
 	UWorld* World = GetWorld();
-	if (!bRepeats || Row->FireDelay <= 0.f || !World)
+	if (Row->FireDelay <= 0.f || !World)
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+		return;
+	}
+
+	if (!bRepeats)
+	{
+		// Single: ending same-frame would apply and strip State.Weapon.Firing before any anim
+		// update saw it. Lifetime is the row's FireDelay — the same period cooldown already owns.
+		World->GetTimerManager().SetTimer(FireTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
+		{
+			EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+		}), Row->FireDelay, /*bLoop=*/false);
 		return;
 	}
 
@@ -272,7 +291,7 @@ void UBNGA_Fire::FireShot()
 		const FVector ShotDir = (ConeRadians > 0.f) ? FMath::VRandCone(AimDir, ConeRadians) : AimDir;
 
 		FHitResult Hit;
-		World->LineTraceSingleByChannel(Hit, ViewLocation, ViewLocation + ShotDir * Row->Range, ECC_Visibility, QueryParams);
+		World->LineTraceSingleByChannel(Hit, ViewLocation, ViewLocation + ShotDir * Row->Range, BNCollision::WeaponTrace, QueryParams);
 		TargetData.Add(new FGameplayAbilityTargetData_SingleTargetHit(Hit));
 	}
 
@@ -412,7 +431,7 @@ void UBNGA_Fire::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Ta
 		// channel, ignoring the shooter and its weapon. From here on nothing reads Claim except
 		// the ONE thing the client is allowed to assert: which actor it says it hit.
 		FHitResult ServerHit;
-		World->LineTraceSingleByChannel(ServerHit, ViewLocation, ViewLocation + ToClaim.GetSafeNormal() * Row->Range, ECC_Visibility, QueryParams);
+		World->LineTraceSingleByChannel(ServerHit, ViewLocation, ViewLocation + ToClaim.GetSafeNormal() * Row->Range, BNCollision::WeaponTrace, QueryParams);
 
 		FGameplayCueParameters TracerParams;
 		TracerParams.Location = ServerHit.bBlockingHit ? ServerHit.ImpactPoint : ServerHit.TraceEnd;
@@ -479,6 +498,7 @@ void UBNGA_Fire::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGame
 	ShotsFired = 0;
 	ShotsJudged = 0;
 	LastAcceptedShotTime = 0.f;
+	RemoveStateTag(FiringHandle);
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }

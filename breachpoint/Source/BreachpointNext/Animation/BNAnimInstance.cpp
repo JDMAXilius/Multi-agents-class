@@ -2,179 +2,208 @@
 #include "Characters/BNCharacter.h"
 #include "Core/BNGameplayTags.h"
 #include "AbilitySystemComponent.h"
+#include "Animation/AnimInstanceProxy.h"
+#include "Animation/AnimNodeBase.h"
+#include "BoneContainer.h"
+#include "BoneIndices.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "UObject/ReflectedTypeAccessors.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "UObject/UnrealType.h"
 
 namespace
 {
-	// AnimEnum_CardinalDirection / AnimEnum_RootYawOffsetMode, by enumerator order.
-	constexpr uint8 BN_CardinalForward = 0;
-	constexpr uint8 BN_CardinalBackward = 1;
-	constexpr uint8 BN_CardinalLeft = 2;
-	constexpr uint8 BN_CardinalRight = 3;
-
-	constexpr uint8 BN_YawModeBlendOut = 0;
-	constexpr uint8 BN_YawModeAccumulate = 2;
-
 	const FName BN_TurnYawWeightCurve(TEXT("TurnYawWeight"));
 	const FName BN_RemainingTurnYawCurve(TEXT("RemainingTurnYaw"));
 
-	// The source's SelectCardinalDirectionFromAngle: the held direction's dead zone doubles
-	// so a jog along a 45-degree seam does not flicker between cardinals.
-	uint8 SelectCardinalDirectionFromAngle(double Angle, double DeadZone, uint8 CurrentDirection, bool bUseCurrentDirection)
+	/** The source's SelectCardinalDirectionFromAngle: the held direction's dead zone doubles so a
+	 *  jog along a 45-degree seam does not flicker between cardinals. */
+	EBNCardinal SelectCardinalFromAngle(double Angle, double DeadZone, EBNCardinal Current, bool bUseCurrent)
 	{
-		const double AbsAngle = FMath::Abs(Angle);
 		double FwdDeadZone = DeadZone;
 		double BwdDeadZone = DeadZone;
-		if (bUseCurrentDirection)
+		if (bUseCurrent)
 		{
-			if (CurrentDirection == BN_CardinalForward)
+			if (Current == EBNCardinal::Forward)
 			{
 				FwdDeadZone *= 2.0;
 			}
-			else if (CurrentDirection == BN_CardinalBackward)
+			else if (Current == EBNCardinal::Backward)
 			{
 				BwdDeadZone *= 2.0;
 			}
 		}
+
+		const double AbsAngle = FMath::Abs(Angle);
 		if (AbsAngle <= 45.0 + FwdDeadZone)
 		{
-			return BN_CardinalForward;
+			return EBNCardinal::Forward;
 		}
 		if (AbsAngle >= 135.0 - BwdDeadZone)
 		{
-			return BN_CardinalBackward;
+			return EBNCardinal::Backward;
 		}
-		return Angle > 0.0 ? BN_CardinalRight : BN_CardinalLeft;
+		return Angle > 0.0 ? EBNCardinal::Right : EBNCardinal::Left;
 	}
 
-	uint8 GetOppositeCardinalDirection(uint8 In)
+	EBNCardinal OppositeCardinal(EBNCardinal In)
 	{
 		switch (In)
 		{
-		case BN_CardinalForward:  return BN_CardinalBackward;
-		case BN_CardinalBackward: return BN_CardinalForward;
-		case BN_CardinalLeft:     return BN_CardinalRight;
-		default:                  return BN_CardinalLeft;
+		case EBNCardinal::Forward:  return EBNCardinal::Backward;
+		case EBNCardinal::Backward: return EBNCardinal::Forward;
+		case EBNCardinal::Left:     return EBNCardinal::Right;
+		default:                    return EBNCardinal::Left;
 		}
 	}
 
-	// Reflection setters for the layer push. The linked layers are Blueprint classes with no C++
-	// type, so a same-named property is the only address C++ has for them. Each one is a silent
-	// no-op when the name is absent or the type disagrees — a layer that does not model a value
-	// must not be crashed for it.
-	void BNSetBoolByName(UObject* Target, const FName Name, bool bValue)
+	const FStructProperty* FindRotatorProperty(const UClass* Cls, const TCHAR* Name)
 	{
-		if (const FBoolProperty* Prop = FindFProperty<FBoolProperty>(Target->GetClass(), Name))
+		const FStructProperty* Prop = FindFProperty<FStructProperty>(Cls, FName(Name));
+		return (Prop && Prop->Struct == TBaseStructure<FRotator>::Get()) ? Prop : nullptr;
+	}
+
+	/** A BP "float" is double-width in UE5, but an absorbed or legacy property can still be a true
+	 *  float — FNumericProperty covers both. It also covers the integer types, which would assert
+	 *  on a floating-point write, so the kind is checked rather than assumed. */
+	const FNumericProperty* FindFloatingPointProperty(const UClass* Cls, const TCHAR* Name)
+	{
+		const FNumericProperty* Prop = FindFProperty<FNumericProperty>(Cls, FName(Name));
+		return (Prop && Prop->IsFloatingPoint()) ? Prop : nullptr;
+	}
+
+	/** Measured on ABP_Mannequin_Base's AimSpineWeights_UE5. Each bone takes a fraction so the
+	 *  accumulated chain equals the look angle — the same distribution the template's
+	 *  Transform(Modify)Bone alphas use. */
+	struct FBNAimBone
+	{
+		const TCHAR* Name;
+		float Weight;
+	};
+
+	const FBNAimBone BNAimBones[] = {
+		{ TEXT("spine_01"), 0.15f },
+		{ TEXT("spine_02"), 0.10f },
+		{ TEXT("spine_03"), 0.10f },
+		{ TEXT("spine_04"), 0.10f },
+		{ TEXT("spine_05"), 0.10f },
+		{ TEXT("neck_01"),  0.15f },
+		{ TEXT("neck_02"),  0.20f },
+		{ TEXT("head"),     0.10f },
+	};
+}
+
+struct FBNAnimInstanceProxy : public FAnimInstanceProxy
+{
+	FBNAnimInstanceProxy() = default;
+	explicit FBNAnimInstanceProxy(UAnimInstance* Instance)
+		: FAnimInstanceProxy(Instance)
+	{
+	}
+
+	virtual void PreEvaluateAnimation(UAnimInstance* InAnimInstance) override
+	{
+		FAnimInstanceProxy::PreEvaluateAnimation(InAnimInstance);
+
+		const UBNAnimInstance* Anim = Cast<UBNAnimInstance>(InAnimInstance);
+		if (!Anim)
 		{
-			Prop->SetPropertyValue_InContainer(Target, bValue);
+			bApplyAim = false;
+			return;
 		}
+
+		// Copied after NativeThreadSafeUpdateAnimation has published this frame's aim. Evaluate
+		// must not touch the UObject; these members are the only values the pose apply reads.
+		AimPitch = Anim->AimPitch;
+		AimYaw = Anim->AimYaw;
+		AimPitchAxis = Anim->AimPitchAxis;
+		AimYawAxis = Anim->AimYawAxis;
+		bApplyAim = Anim->Character != nullptr && !Anim->bTagDead;
 	}
 
-	void BNSetNumberByName(UObject* Target, const FName Name, double Value)
+	virtual bool Evaluate_WithRoot(FPoseContext& Output, FAnimNode_Base* InRootNode) override
 	{
-		// BP "float" is double-width in UE5, but an absorbed or legacy property can still be a
-		// true float — accept either.
-		if (const FDoubleProperty* AsDouble = FindFProperty<FDoubleProperty>(Target->GetClass(), Name))
+		EvaluateAnimationNode_WithRoot(Output, InRootNode);
+		if (bApplyAim && InRootNode && InRootNode == GetRootNode())
 		{
-			AsDouble->SetPropertyValue_InContainer(Target, Value);
+			ApplyAimToPose(Output);
 		}
-		else if (const FFloatProperty* AsFloat = FindFProperty<FFloatProperty>(Target->GetClass(), Name))
+		return true;
+	}
+
+private:
+	void ApplyAimToPose(FPoseContext& Output) const
+	{
+		if (FMath::IsNearlyZero(AimPitch) && FMath::IsNearlyZero(AimYaw))
 		{
-			AsFloat->SetPropertyValue_InContainer(Target, static_cast<float>(Value));
+			return;
 		}
-	}
 
-	void BNSetRotatorByName(UObject* Target, const FName Name, const FRotator& Value)
-	{
-		if (const FStructProperty* Prop = FindFProperty<FStructProperty>(Target->GetClass(), Name))
+		const FBoneContainer& Bones = Output.Pose.GetBoneContainer();
+		for (const FBNAimBone& Entry : BNAimBones)
 		{
-			if (Prop->Struct == TBaseStructure<FRotator>::Get())
-			{
-				*Prop->ContainerPtrToValuePtr<FRotator>(Target) = Value;
-			}
-		}
-	}
-
-	/** Does this instance's class declare a property by this name, of a type the push can write?
-	 *  The push is deliberately silent per property (a layer that does not model a value must not
-	 *  be crashed for it) — this is how that silence becomes a one-time report instead. */
-	bool BNLayerHasProperty(const UObject* Target, const TCHAR* Name)
-	{
-		const FName PropName(Name);
-		UClass* Cls = Target->GetClass();
-		return FindFProperty<FBoolProperty>(Cls, PropName) != nullptr
-			|| FindFProperty<FDoubleProperty>(Cls, PropName) != nullptr
-			|| FindFProperty<FFloatProperty>(Cls, PropName) != nullptr
-			|| FindFProperty<FStructProperty>(Cls, PropName) != nullptr;
-	}
-
-	/** THE DUPLICATE DETECTOR — the founder's 14 Aug root cause, made self-announcing.
-	 *  A BN-owned copy of a template anim layer carries property-access bindings compiled against
-	 *  whatever the main ABP's layout was on the day it was duplicated. After the reparent moved
-	 *  Pitch/PitchRotator/bFPSMode into C++, a stale copy reads a layout that no longer exists and
-	 *  resolves to ZERO — silently, forever. Never diagnose that by hand again: the class path
-	 *  says it, so the log says it. */
-	bool BNIsBNOwnedLayer(const UObject* Layer)
-	{
-		return Layer->GetClass()->GetPathName().Contains(TEXT("/Game/BN/"));
-	}
-
-	// The probe's half of the same coin: every aim-related bool/number/rotator an instance's class
-	// declares, by value, so one BNAimDebug press shows what each LAYER actually holds — not what
-	// the main ABP hopes it holds.
-	FString BNDescribeAimProperties(const UAnimInstance& Instance)
-	{
-		FString Out;
-		for (TFieldIterator<FProperty> It(Instance.GetClass()); It; ++It)
-		{
-			const FProperty* Prop = *It;
-			const FString Name = Prop->GetName();
-			if (!Name.Contains(TEXT("Pitch")) && !Name.Contains(TEXT("FPS")) &&
-				!Name.Contains(TEXT("Lean")) && !Name.Contains(TEXT("Aim")) &&
-				!Name.Contains(TEXT("ADS")))
+			const int32 MeshIndex = Bones.GetPoseBoneIndexForBoneName(FName(Entry.Name));
+			if (MeshIndex == INDEX_NONE)
 			{
 				continue;
 			}
-			if (const FBoolProperty* AsBool = CastField<FBoolProperty>(Prop))
+
+			const FCompactPoseBoneIndex Compact = Bones.MakeCompactPoseIndex(FMeshPoseBoneIndex(MeshIndex));
+			if (!Compact.IsValid())
 			{
-				Out += FString::Printf(TEXT("  %s=%s"), *Name,
-					AsBool->GetPropertyValue_InContainer(&Instance) ? TEXT("true") : TEXT("false"));
+				continue;
 			}
-			else if (const FDoubleProperty* AsDouble = CastField<FDoubleProperty>(Prop))
-			{
-				Out += FString::Printf(TEXT("  %s=%.1f"), *Name, AsDouble->GetPropertyValue_InContainer(&Instance));
-			}
-			else if (const FFloatProperty* AsFloat = CastField<FFloatProperty>(Prop))
-			{
-				Out += FString::Printf(TEXT("  %s=%.1f"), *Name, AsFloat->GetPropertyValue_InContainer(&Instance));
-			}
-			else if (const FStructProperty* AsStruct = CastField<FStructProperty>(Prop))
-			{
-				if (AsStruct->Struct == TBaseStructure<FRotator>::Get())
-				{
-					const FRotator* Rot = AsStruct->ContainerPtrToValuePtr<FRotator>(&Instance);
-					Out += FString::Printf(TEXT("  %s=(P %.1f Y %.1f R %.1f)"), *Name, Rot->Pitch, Rot->Yaw, Rot->Roll);
-				}
-			}
+
+			const FQuat PitchDelta(BNMakeAxisRotator(AimPitchAxis, AimPitch * static_cast<double>(Entry.Weight)));
+			const FQuat YawDelta(BNMakeAxisRotator(AimYawAxis, AimYaw * static_cast<double>(Entry.Weight)));
+			FTransform& Local = Output.Pose[Compact];
+			Local.SetRotation((PitchDelta * YawDelta * Local.GetRotation()).GetNormalized());
 		}
-		return Out;
 	}
+
+	double AimPitch = 0.0;
+	double AimYaw = 0.0;
+	EBNSpineAxis AimPitchAxis = EBNSpineAxis::Roll;
+	EBNSpineAxis AimYawAxis = EBNSpineAxis::Yaw;
+	bool bApplyAim = false;
+};
+
+void FBNLinkedLayer::Resolve(UAnimInstance& Layer)
+{
+	UClass* Cls = Layer.GetClass();
+	Instance = &Layer;
+	ResolvedClass = Cls;
+
+	FPSMode = FindFProperty<FBoolProperty>(Cls, FName(TEXT("bFPSMode")));
+	IsADS = FindFProperty<FBoolProperty>(Cls, FName(TEXT("GameplayTag_IsADS")));
+	IsADSUpper = FindFProperty<FBoolProperty>(Cls, FName(TEXT("IsADS_Upper")));
+	Pitch = FindFloatingPointProperty(Cls, TEXT("Pitch"));
+	AimPitch = FindFloatingPointProperty(Cls, TEXT("AimPitch"));
+	AimYaw = FindFloatingPointProperty(Cls, TEXT("AimYaw"));
+	PitchRotator = FindRotatorProperty(Cls, TEXT("PitchRotator"));
+	YawRotator = FindRotatorProperty(Cls, TEXT("YawRotator"));
+	LeanRotation = FindRotatorProperty(Cls, TEXT("LeanRotation"));
+	LeanOppRotation = FindRotatorProperty(Cls, TEXT("LeanOppRotation"));
 }
 
 void UBNAnimInstance::NativeInitializeAnimation()
 {
 	Super::NativeInitializeAnimation();
 
+	SelfIsADSUpper = FindFProperty<FBoolProperty>(GetClass(), FName(TEXT("IsADS_Upper")));
+
+	ResolveOwner();
+	ResolveAbilitySystem();
+}
+
+void UBNAnimInstance::ResolveOwner()
+{
 	Character = Cast<ABNCharacter>(TryGetPawnOwner());
 	MovementComponent = Character ? Character->GetCharacterMovement() : nullptr;
-
-	ResolveAbilitySystem();
+	Camera = Character ? Character->GetFirstPersonCamera() : nullptr;
 }
 
 void UBNAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
@@ -183,281 +212,215 @@ void UBNAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 	if (!Character)
 	{
-		Character = Cast<ABNCharacter>(TryGetPawnOwner());
-		MovementComponent = Character ? Character->GetCharacterMovement() : nullptr;
+		ResolveOwner();
 	}
 	if (!Character || !MovementComponent)
 	{
 		return;
 	}
-
 	if (!AbilitySystem)
 	{
 		ResolveAbilitySystem();
 	}
 
-	SnapWorldVelocity = MovementComponent->Velocity;
-	SnapWorldAcceleration = MovementComponent->GetCurrentAcceleration();
-	SnapWorldLocation = Character->GetActorLocation();
-	SnapRotation = Character->GetActorRotation();
-	SnapGravityZ = MovementComponent->GetGravityZ();
-	// Replicated on every machine (RemoteViewPitch on proxies) — the source read it too.
-	SnapBaseAimPitch = Character->GetBaseAimRotation().Pitch;
-	SnapGroundDistance = ComputeGroundDistance();
-	bSnapAnyMontagePlaying = IsAnyMontagePlaying();
-	bSnapFalling = MovementComponent->IsFalling();
-	bSnapInAirTag = bTagInAir;
-	// Tag OR CMC, the IsFalling pattern: the owning client's CMC predicts bIsCrouched
-	// instantly, so the pose doesn't wait ~½RTT for the replicated tag.
-	bSnapCrouching = bTagCrouching || Character->bIsCrouched;
-	bSnapJumping = bTagJumping;
-	bSnapSprinting = bTagSprinting;
-	// Locally controlled AND player: the listen host's own pawn and each client's own pawn
-	// pose FPS; bots and every remotely-viewed character take the third-person branch.
-	bSnapFPSMode = Character->IsLocallyControlled() && Character->IsPlayerControlled();
-	bSnapLeanLeft = bTagLeanLeft;
-	bSnapLeanRight = bTagLeanRight;
-	bSnapADS = bTagADS;
+	Snapshot.WorldVelocity = MovementComponent->Velocity;
+	Snapshot.WorldAcceleration = MovementComponent->GetCurrentAcceleration();
+	Snapshot.WorldLocation = Character->GetActorLocation();
+	Snapshot.ActorRotation = Character->GetActorRotation();
+	Snapshot.GravityZ = MovementComponent->GetGravityZ();
+	// Replicated on every machine — RemoteViewPitch on proxies. One getter, already normalized.
+	const FRotator AimRotation = Character->GetAimRotation();
+	Snapshot.BaseAimPitch = AimRotation.Pitch;
+	Snapshot.BaseAimYaw = AimRotation.Yaw;
+	Snapshot.GroundDistance = ComputeGroundDistance();
+	Snapshot.bAnyMontagePlaying = IsAnyMontagePlaying();
+	Snapshot.bFalling = MovementComponent->IsFalling();
+	Snapshot.bInAirTag = bTagInAir;
+	// Tag OR CMC: the owning client's movement component predicts bIsCrouched instantly, so the
+	// pose does not wait half a round trip for the replicated tag.
+	Snapshot.bCrouching = bTagCrouching || Character->bIsCrouched;
+	Snapshot.bJumping = bTagJumping;
+	Snapshot.bSprinting = bTagSprinting;
+	Snapshot.bLeanLeft = bTagLeanLeft;
+	Snapshot.bLeanRight = bTagLeanRight;
+	Snapshot.bADS = bTagADS;
+	Snapshot.bDead = bTagDead;
+	// Locally controlled AND player: the listen host's own pawn and each client's own pawn pose
+	// first person; bots and every remotely-viewed character take the third-person branch.
+	Snapshot.bLocallyControlled = Character->IsLocallyControlled();
+	Snapshot.bFPSMode = Snapshot.bLocallyControlled && Character->IsPlayerControlled();
+	// Answers off the character's own weapon state, so server, owner and proxies all reach the
+	// same pose set for the character they render.
+	Snapshot.bUnarmed = Character->GetCurrentWeaponAnimLayer() == nullptr;
 
-	// ---- ADS camera, owner only. The lens is the local player's alone — proxies get their ADS
-	// look from the pose. Game thread on purpose: this touches a UObject and is not graph-facing.
-	if (Character->IsLocallyControlled() && Character->IsPlayerControlled())
-	{
-		if (UCameraComponent* Camera = Character->GetFirstPersonCamera())
-		{
-			if (DefaultFOV <= 0.f)
-			{
-				DefaultFOV = Camera->FieldOfView;
-			}
-			const float TargetFOV = bTagADS ? ADSFOV : DefaultFOV;
-			Camera->SetFieldOfView(FMath::FInterpTo(Camera->FieldOfView, TargetFOV, DeltaSeconds, ADSFOVInterpSpeed));
-		}
-	}
-	// The weapon seam, not the local pawn: it answers off the character's own weapon state, so
-	// server, owner and sim proxies all reach the same pose set for the character they render.
-	bSnapUnarmed = Character->GetCurrentWeaponAnimLayer() == nullptr;
-
-	// The character owns layer linking; this pass only watches the mesh for the swap edge.
-	// No layer yet (e.g. a sim proxy whose anim instance didn't exist at BeginPlay): re-trigger
-	// the character's InitializeAnimLayer — it guards and links once per class — then re-scan.
-	UClass* CurrentLayerClass = nullptr;
-	// const on purpose: the mutable GetLinkedAnimInstances() overload is private to
-	// USkeletalMeshComponent - only the const one is public, and reading is all this wants.
-	if (const USkeletalMeshComponent* MeshComp = GetOwningComponent())
-	{
-		for (int32 Pass = 0; Pass < 2 && !CurrentLayerClass; ++Pass)
-		{
-			for (UAnimInstance* Linked : MeshComp->GetLinkedAnimInstances())
-			{
-				if (Linked)
-				{
-					CurrentLayerClass = Linked->GetClass();
-					break;
-				}
-			}
-			if (!CurrentLayerClass && Pass == 0)
-			{
-				Character->InitializeAnimLayer();
-			}
-		}
-	}
-	bSnapLayerChanged = CurrentLayerClass != ObservedLayerClass;
-	ObservedLayerClass = CurrentLayerClass;
-
-	// The announcement, on the EDGE. Also once at startup when nothing ever linked — that case
-	// changes nothing and would otherwise be the quietest failure of all: null stays null, no
-	// edge fires, and the pose is simply wrong forever with an empty log.
-	TimeSinceInit += DeltaSeconds;
-	if (bSnapLayerChanged || (!bLayerAnnounced && TimeSinceInit > 2.f))
-	{
-		AnnounceLinkedLayers();
-	}
-
-	// Deliver the surface to the LAYER instances — the values the worker pass computed last
-	// frame, one frame stale by construction, exactly as stale as the template's own game-thread
-	// interface events. Always called: lean is native's whoever owns aim, so its half of the
-	// push cannot be gated. The aim half yields inside.
+	RefreshLinkedLayers();
 	PushAimSurfaceToLinkedLayers();
-
-	// The live aim trace, opt-in and throttled. Two lines a second while the founder moves the
-	// view: enough to watch the chain work or die, never enough to bury the log.
-	if (bAimLogEnabled)
-	{
-		AimLogAccumulator += DeltaSeconds;
-		if (AimLogAccumulator >= 0.5f)
-		{
-			AimLogAccumulator = 0.f;
-			UE_LOG(LogBN, Log, TEXT("%s"), *DescribeAimState());
-		}
-	}
+	UpdateADSFieldOfView(DeltaSeconds);
 }
 
-// THE LINK ANNOUNCEMENT. Fired on every link change and once at startup even if nothing linked —
-// the founder's standing order after the duplicate-layer hunt: "if they are ever connected, if
-// they find something or they are not, and which one they are."
-//
-// Four questions, answered by name every time, so this class of bug can never again be invisible:
-//   1. Is anything linked at all?          (none = ERROR, the pose has no weapon layer)
-//   2. WHICH class, by full path?          (names the asset, not a guess)
-//   3. Original or a BN duplicate?         (duplicates = the stale-binding trap, WARNING)
-//   4. Did it accept each aim property?    (missing = the value is written nowhere)
-void UBNAnimInstance::AnnounceLinkedLayers()
+void UBNAnimInstance::RefreshLinkedLayers()
 {
-	bLayerAnnounced = true;
+	Snapshot.bLayerChanged = false;
 
 	const USkeletalMeshComponent* MeshComp = GetOwningComponent();
 	if (!MeshComp)
 	{
-		UE_LOG(LogBN, Error, TEXT("BNLayers: no skeletal mesh component — nothing can be linked or posed."));
 		return;
 	}
 
-	const AActor* Owner = GetOwningActor();
-	int32 Count = 0;
-	for (UAnimInstance* Linked : MeshComp->GetLinkedAnimInstances())
+	// The const overload is the only public one, and reading is all this wants. Two passes: a
+	// simulated proxy's anim instance may not have existed when the character first linked, and
+	// InitializeAnimLayer guards and links once per class, so re-triggering it is cheap.
+	UClass* CurrentLayerClass = nullptr;
+	for (int32 Pass = 0; Pass < 2 && !CurrentLayerClass; ++Pass)
 	{
-		if (!Linked || Linked == this)
+		for (const UAnimInstance* Linked : MeshComp->GetLinkedAnimInstances())
 		{
-			continue;
+			if (Linked && Linked != this)
+			{
+				CurrentLayerClass = Linked->GetClass();
+				break;
+			}
 		}
-		++Count;
-
-		// Every property the push writes, reported found/MISSING by name.
-		static const TCHAR* AimProps[] = { TEXT("PitchRotator"), TEXT("Pitch"), TEXT("AimPitch"), TEXT("bFPSMode") };
-		static const TCHAR* StateProps[] = { TEXT("LeanRotation"), TEXT("LeanOppRotation"), TEXT("GameplayTag_IsADS"), TEXT("IsADS_Upper") };
-
-		FString Found, Missing;
-		int32 AimFound = 0;
-		for (const TCHAR* Name : AimProps)
+		if (!CurrentLayerClass && Pass == 0)
 		{
-			const bool bHas = BNLayerHasProperty(Linked, Name);
-			AimFound += bHas ? 1 : 0;
-			(bHas ? Found : Missing) += FString::Printf(TEXT(" %s"), Name);
-		}
-		for (const TCHAR* Name : StateProps)
-		{
-			(BNLayerHasProperty(Linked, Name) ? Found : Missing) += FString::Printf(TEXT(" %s"), Name);
-		}
-
-		const bool bBNOwned = BNIsBNOwnedLayer(Linked);
-		UE_LOG(LogBN, Log, TEXT("BNLayers: [%d] %s on %s | source %s | accepts:%s | MISSING:%s"),
-			Count, *Linked->GetClass()->GetPathName(), *GetNameSafe(Owner),
-			bBNOwned ? TEXT("BN DUPLICATE") : TEXT("template original"),
-			Found.IsEmpty() ? TEXT(" (none)") : *Found,
-			Missing.IsEmpty() ? TEXT(" (none)") : *Missing);
-
-		if (bBNOwned)
-		{
-			UE_LOG(LogBN, Warning,
-				TEXT("BNLayers: '%s' is a BN-OWNED DUPLICATE of a template layer. Duplicates carry property-access "
-					 "bindings compiled against the main ABP's layout ON THE DAY THEY WERE COPIED — after the "
-					 "reparent moved the aim surface into C++, a stale copy reads a layout that no longer exists "
-					 "and resolves to ZERO with no error. This is the 14 Aug frozen-aim root cause. Point the "
-					 "weapon row's AnimLayerClass at the FPSTemplate original unless a written reason says otherwise."),
-				*Linked->GetClass()->GetName());
-		}
-		if (AimFound == 0)
-		{
-			UE_LOG(LogBN, Error,
-				TEXT("BNLayers: '%s' declares NONE of the aim properties — every aim value written to it goes "
-					 "nowhere, so the arms and weapon cannot follow the camera through this layer."),
-				*Linked->GetClass()->GetName());
+			Character->InitializeAnimLayer();
 		}
 	}
 
-	if (Count == 0)
+	Snapshot.bLayerChanged = CurrentLayerClass != ObservedLayerClass;
+	if (!Snapshot.bLayerChanged)
 	{
-		UE_LOG(LogBN, Error,
-			TEXT("BNLayers: NO linked anim layers on %s. The character links the current weapon's AnimLayerClass — "
-				 "an empty DT_BNWeapons cell, a row that failed to load, or a weapon that never equipped all land "
-				 "here. Aim, ADS and weapon poses all depend on a layer being linked."),
-			*GetNameSafe(Owner));
+		return;
+	}
+	ObservedLayerClass = CurrentLayerClass;
+
+	// Property addresses are resolved here and nowhere else: the set only changes on a weapon swap.
+	LinkedLayers.Reset();
+	for (UAnimInstance* Linked : MeshComp->GetLinkedAnimInstances())
+	{
+		if (Linked && Linked != this)
+		{
+			LinkedLayers.AddDefaulted_GetRef().Resolve(*Linked);
+		}
 	}
 }
 
 void UBNAnimInstance::PushAimSurfaceToLinkedLayers()
 {
-	const USkeletalMeshComponent* MeshComp = GetOwningComponent();
-	if (!MeshComp)
+	for (const FBNLinkedLayer& Layer : LinkedLayers)
 	{
-		return;
-	}
-	for (UAnimInstance* Linked : MeshComp->GetLinkedAnimInstances())
-	{
-		if (!Linked || Linked == this)
+		UAnimInstance* Instance = Layer.Instance.Get();
+		if (!Instance || Instance->GetClass() != Layer.ResolvedClass.Get())
 		{
 			continue;
 		}
 
-		// Lean and ADS ALWAYS: their only writer is native. Lean's input is BN's State.Lean.*
-		// tags, which the components never read; ADS is the CHARACTER's message in the template
-		// (MyCharacter's OnAimStarted sends SetADS/SetADS_Upper — no component sends it), and
-		// BN's character speaks through the tag instead. Yielding either leaves it written nowhere.
-		BNSetRotatorByName(Linked, TEXT("LeanRotation"), LeanRotation);
-		BNSetRotatorByName(Linked, TEXT("LeanOppRotation"), LeanOppRotation);
-		BNSetBoolByName(Linked, TEXT("GameplayTag_IsADS"), GameplayTag_IsADS);
-		BNSetBoolByName(Linked, TEXT("IsADS_Upper"), GameplayTag_IsADS);
-
-		// The aim-pitch half yields while the components own the surface: they are the messenger
-		// there, and a second messenger with stale values would stomp every message.
-		if (bNativeOwnsAimSurface)
+		// Lean and ADS reach the layers from here alone: lean's input is BN's own State.Lean.*
+		// tags, and ADS is the character's message in the template, which BN speaks as a tag.
+		if (Layer.LeanRotation)
 		{
-			BNSetBoolByName(Linked, TEXT("bFPSMode"), bFPSMode);
-			BNSetNumberByName(Linked, TEXT("Pitch"), Pitch);
-			BNSetNumberByName(Linked, TEXT("AimPitch"), AimPitch);
-			BNSetRotatorByName(Linked, TEXT("PitchRotator"), PitchRotator);
+			*Layer.LeanRotation->ContainerPtrToValuePtr<FRotator>(Instance) = LeanRotation;
+		}
+		if (Layer.LeanOppRotation)
+		{
+			*Layer.LeanOppRotation->ContainerPtrToValuePtr<FRotator>(Instance) = LeanOppRotation;
+		}
+		if (Layer.IsADS)
+		{
+			Layer.IsADS->SetPropertyValue_InContainer(Instance, GameplayTag_IsADS);
+		}
+		if (Layer.IsADSUpper)
+		{
+			Layer.IsADSUpper->SetPropertyValue_InContainer(Instance, GameplayTag_IsADS);
+		}
+		if (Layer.FPSMode)
+		{
+			Layer.FPSMode->SetPropertyValue_InContainer(Instance, bFPSMode);
+		}
+		if (Layer.Pitch)
+		{
+			Layer.Pitch->SetFloatingPointPropertyValue(Layer.Pitch->ContainerPtrToValuePtr<void>(Instance), Pitch);
+		}
+		if (Layer.AimPitch)
+		{
+			Layer.AimPitch->SetFloatingPointPropertyValue(Layer.AimPitch->ContainerPtrToValuePtr<void>(Instance), AimPitch);
+		}
+		if (Layer.AimYaw)
+		{
+			Layer.AimYaw->SetFloatingPointPropertyValue(Layer.AimYaw->ContainerPtrToValuePtr<void>(Instance), AimYaw);
+		}
+		if (Layer.PitchRotator)
+		{
+			*Layer.PitchRotator->ContainerPtrToValuePtr<FRotator>(Instance) = PitchRotator;
+		}
+		if (Layer.YawRotator)
+		{
+			*Layer.YawRotator->ContainerPtrToValuePtr<FRotator>(Instance) = YawRotator;
 		}
 	}
+}
+
+void UBNAnimInstance::UpdateADSFieldOfView(float DeltaSeconds)
+{
+	if (!Camera || !Snapshot.bFPSMode)
+	{
+		return;
+	}
+
+	if (DefaultFOV <= 0.f)
+	{
+		DefaultFOV = Camera->FieldOfView;
+	}
+	const float TargetFOV = bTagADS ? ADSFOV : DefaultFOV;
+	Camera->SetFieldOfView(FMath::FInterpTo(Camera->FieldOfView, TargetFOV, DeltaSeconds, ADSFOVInterpSpeed));
 }
 
 void UBNAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 {
 	Super::NativeThreadSafeUpdateAnimation(DeltaSeconds);
 
-	// ABP_Mannequin_Base is SHARED: the template's own characters run this class too (E1/D3),
-	// and their pawns are not ABNCharacter — the game-thread pass never fills a snapshot for
-	// them. Without this guard the pass below writes every published variable from zeroed
-	// snapshots each frame, stomping what the template's interface events wrote — which is
-	// exactly what broke BP_FPSCharacter. Not a BN pawn: the C++ publisher stands down whole.
+	// This ABP is SHARED: the template's own characters run this class too, and their pawns are
+	// not ABNCharacter, so the game-thread pass never fills a snapshot for them. Without this
+	// guard the pass below would publish zeroed values over whatever their graph wrote.
 	if (!Character)
 	{
 		return;
 	}
 
-	const FVector WorldVelocity2D(SnapWorldVelocity.X, SnapWorldVelocity.Y, 0.0);
-	const FVector WorldAcceleration2D(SnapWorldAcceleration.X, SnapWorldAcceleration.Y, 0.0);
+	const FVector WorldVelocity2D(Snapshot.WorldVelocity.X, Snapshot.WorldVelocity.Y, 0.0);
+	const FVector WorldAcceleration2D(Snapshot.WorldAcceleration.X, Snapshot.WorldAcceleration.Y, 0.0);
 
 	// ---- location
-	DisplacementSinceLastUpdate = bNativeFirstUpdate ? 0.0 : FVector::Dist2D(SnapWorldLocation, PreviousWorldLocation);
-	DisplacementSpeed = (!bNativeFirstUpdate && DeltaSeconds > 0.f) ? DisplacementSinceLastUpdate / DeltaSeconds : 0.0;
-	PreviousWorldLocation = SnapWorldLocation;
+	DisplacementSinceLastUpdate = bFirstUpdate ? 0.0 : FVector::Dist2D(Snapshot.WorldLocation, PreviousWorldLocation);
+	DisplacementSpeed = (!bFirstUpdate && DeltaSeconds > 0.f) ? DisplacementSinceLastUpdate / DeltaSeconds : 0.0;
+	PreviousWorldLocation = Snapshot.WorldLocation;
 
 	// ---- rotation
-	NativeYawDeltaSinceLastUpdate = bNativeFirstUpdate ? 0.0 : FRotator::NormalizeAxis(SnapRotation.Yaw - PreviousYaw);
-	NativeYawDeltaSpeed = DeltaSeconds > 0.f ? NativeYawDeltaSinceLastUpdate / DeltaSeconds : 0.0;
-	PreviousYaw = SnapRotation.Yaw;
+	YawDeltaSinceLastUpdate = bFirstUpdate ? 0.0 : FRotator::NormalizeAxis(Snapshot.ActorRotation.Yaw - PreviousYaw);
+	YawDeltaSpeed = DeltaSeconds > 0.f ? YawDeltaSinceLastUpdate / DeltaSeconds : 0.0;
+	PreviousYaw = Snapshot.ActorRotation.Yaw;
 	// The source's lean factors; crouched leans less.
-	AdditiveLeanAngle = NativeYawDeltaSpeed * (bSnapCrouching ? 0.025 : 0.0375);
+	AdditiveLeanAngle = YawDeltaSpeed * (Snapshot.bCrouching ? 0.025 : 0.0375);
 
 	// ---- velocity
-	const bool bWasMovingLastUpdate = bNativeWasMoving;
-	LocalVelocity2D = SnapRotation.UnrotateVector(WorldVelocity2D);
-	LocalVelocityDirectionAngle = CalculateDirection(WorldVelocity2D, SnapRotation);
-	LocalVelocityDirectionAngleWithOffset = FRotator::NormalizeAxis(LocalVelocityDirectionAngle - NativeRootYawOffset);
-	NativeLocalVelocityDirection = SelectCardinalDirectionFromAngle(
-		LocalVelocityDirectionAngleWithOffset, CardinalDirectionDeadZone, NativeLocalVelocityDirection, bWasMovingLastUpdate);
-	NativeLocalVelocityDirectionNoOffset = SelectCardinalDirectionFromAngle(
-		LocalVelocityDirectionAngle, CardinalDirectionDeadZone, NativeLocalVelocityDirectionNoOffset, bWasMovingLastUpdate);
+	LocalVelocity2D = Snapshot.ActorRotation.UnrotateVector(WorldVelocity2D);
+	LocalVelocityDirectionAngle = CalculateDirection(WorldVelocity2D, Snapshot.ActorRotation);
+	LocalVelocityDirectionAngleWithOffset = FRotator::NormalizeAxis(LocalVelocityDirectionAngle - RootYawOffset);
+	LocalVelocityDirection = SelectCardinalFromAngle(
+		LocalVelocityDirectionAngleWithOffset, CardinalDirectionDeadZone, LocalVelocityDirection, bWasMovingLastUpdate);
+	LocalVelocityDirectionNoOffset = SelectCardinalFromAngle(
+		LocalVelocityDirectionAngle, CardinalDirectionDeadZone, LocalVelocityDirectionNoOffset, bWasMovingLastUpdate);
 	HasVelocity = !FMath::IsNearlyZero(WorldVelocity2D.SizeSquared());
-	bNativeWasMoving = HasVelocity;
+	bWasMovingLastUpdate = HasVelocity;
 
 	// ---- acceleration
-	LocalAcceleration2D = SnapRotation.UnrotateVector(WorldAcceleration2D);
+	LocalAcceleration2D = Snapshot.ActorRotation.UnrotateVector(WorldAcceleration2D);
 	HasAcceleration = !WorldAcceleration2D.IsNearlyZero();
-	NativePivotDirection2D = FMath::Lerp(NativePivotDirection2D, WorldAcceleration2D.GetSafeNormal(), 0.5).GetSafeNormal();
+	PivotDirection2D = FMath::Lerp(PivotDirection2D, WorldAcceleration2D.GetSafeNormal(), 0.5).GetSafeNormal();
 	// The pivot cardinal is where the player came FROM: opposite of where acceleration points.
-	NativeCardinalFromAcceleration = GetOppositeCardinalDirection(SelectCardinalDirectionFromAngle(
-		CalculateDirection(NativePivotDirection2D, SnapRotation), CardinalDirectionDeadZone, NativeCardinalFromAcceleration, false));
+	CardinalFromAcceleration = OppositeCardinal(SelectCardinalFromAngle(
+		CalculateDirection(PivotDirection2D, Snapshot.ActorRotation), CardinalDirectionDeadZone, CardinalFromAcceleration, false));
 
 	// ---- wall heuristic: pushing hard, barely moving, accel roughly perpendicular to travel.
 	IsRunningIntoWall =
@@ -466,203 +429,155 @@ void UBNAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 		FMath::IsWithinInclusive(
 			FVector::DotProduct(LocalAcceleration2D.GetSafeNormal(), LocalVelocity2D.GetSafeNormal()), -0.6, 0.6);
 
-	// ---- character state (tag-driven; states stay tags)
-	// Tag OR CMC: walking off a ledge activates no jump ability, so the InAir tag alone
-	// would miss it — the movement component covers that half.
-	IsFalling = bSnapInAirTag || bSnapFalling;
+	// ---- character state. States are tags; the movement component covers what no ability owns.
+	// Walking off a ledge activates no jump ability, so the InAir tag alone would miss it.
+	IsFalling = Snapshot.bInAirTag || Snapshot.bFalling;
 	IsOnGround = !IsFalling;
-	isCrouching = bSnapCrouching;
-	IsJumping = bSnapJumping;
-	bUnarmed = bSnapUnarmed;
-	bSprinting = bSnapSprinting;
-	if (bNativeOwnsAimSurface)
+	isCrouching = Snapshot.bCrouching;
+	IsJumping = Snapshot.bJumping;
+	bUnarmed = Snapshot.bUnarmed;
+	bSprinting = Snapshot.bSprinting;
+	bFPSMode = Snapshot.bFPSMode;
+	GameplayTag_IsADS = Snapshot.bADS;
+	if (SelfIsADSUpper)
 	{
-		bFPSMode = bSnapFPSMode;
+		SelfIsADSUpper->SetPropertyValue_InContainer(this, Snapshot.bADS);
 	}
-	GameplayTag_IsADS = bSnapADS;
-	// The asset's SECOND ADS flag, found in the MyCharacter comparison: OnAimStarted sends BOTH
-	// SetADS_Upper and SetADS, and they land in different variables — IsADS_Upper drives the
-	// upper-body/weapon-layer side of the aim pose, and it has had NO writer on BN pawns since
-	// the port. By reflection on THIS instance, not a declared C++ property: declaring it would
-	// rename the ABP's own variable to IsADS_Upper_0 on reparent-compile and the graph would
-	// silently follow the rename — the GroundDistance_0 trap.
-	BNSetBoolByName(this, TEXT("IsADS_Upper"), bSnapADS);
 
-	bNativeADSStateChange = !bNativeFirstUpdate && bSnapADS != bWasADSLastUpdate;
-	bWasADSLastUpdate = bSnapADS;
-
-	bNativeCrouchStateChange = !bNativeFirstUpdate && bSnapCrouching != bWasCrouchingLastUpdate;
-	bWasCrouchingLastUpdate = bSnapCrouching;
+	ADSStateChanged = !bFirstUpdate && Snapshot.bADS != bWasADSLastUpdate;
+	bWasADSLastUpdate = Snapshot.bADS;
+	CrouchStateChange = !bFirstUpdate && Snapshot.bCrouching != bWasCrouchingLastUpdate;
+	bWasCrouchingLastUpdate = Snapshot.bCrouching;
 	ApplyCrouchAlpha = isCrouching ? 1.0 : 0.0;
-
-	GroundDistance = SnapGroundDistance;
+	LinkedLayerChanged = !bFirstUpdate && Snapshot.bLayerChanged;
+	GroundDistance = Snapshot.GroundDistance;
 
 	// ---- jump apex: derived, never a countdown — -Vz/g, zero once descending.
-	TimeToJumpApex = (IsFalling && SnapWorldVelocity.Z > 0.0 && SnapGravityZ < 0.0)
-		? -SnapWorldVelocity.Z / SnapGravityZ
+	TimeToJumpApex = (IsFalling && Snapshot.WorldVelocity.Z > 0.0 && Snapshot.GravityZ < 0.0)
+		? -Snapshot.WorldVelocity.Z / Snapshot.GravityZ
 		: 0.0;
 
 	// ---- blend weights
-	NativeUpperbodyAdditiveWeight = (bSnapAnyMontagePlaying && IsOnGround)
+	UpperbodyDynamicAdditiveWeight = (Snapshot.bAnyMontagePlaying && IsOnGround)
 		? 1.0
-		: FMath::FInterpTo(NativeUpperbodyAdditiveWeight, 0.0, static_cast<double>(DeltaSeconds), 6.0);
+		: FMath::FInterpTo(UpperbodyDynamicAdditiveWeight, 0.0, static_cast<double>(DeltaSeconds), 6.0);
 
-	// ---- root yaw offset / turn in place
-	if (bNativeFirstUpdate)
+	// ---- root yaw offset / turn in place. In the source the graph's state functions drive the
+	// mode; idle accumulates and everything else blends out, which is their net effect.
+	if (bFirstUpdate)
 	{
-		NativeRootYawOffset = 0.0;
-		NativeTurnYawCurveValue = 0.0;
+		RootYawOffset = 0.0;
+		TurnYawCurveValue = 0.0;
 		PreviousTurnYawCurveValue = 0.0;
 	}
-	// In the source the graph's state functions drive the mode; idle accumulates and
-	// everything else blends out, which is their net effect.
-	NativeRootYawOffsetMode = (HasVelocity || HasAcceleration || IsFalling) ? BN_YawModeBlendOut : BN_YawModeAccumulate;
-	if (NativeRootYawOffsetMode == BN_YawModeAccumulate)
+	const EBNRootYawOffsetMode YawMode = (HasVelocity || HasAcceleration || IsFalling)
+		? EBNRootYawOffsetMode::BlendOut
+		: EBNRootYawOffsetMode::Accumulate;
+	if (YawMode == EBNRootYawOffsetMode::Accumulate)
 	{
-		SetRootYawOffset(NativeRootYawOffset - NativeYawDeltaSinceLastUpdate);
+		SetRootYawOffset(RootYawOffset - YawDeltaSinceLastUpdate);
 	}
 	else
 	{
 		SetRootYawOffset(UKismetMathLibrary::FloatSpringInterp(
-			static_cast<float>(NativeRootYawOffset), 0.f, RootYawOffsetSpringState,
+			static_cast<float>(RootYawOffset), 0.f, RootYawOffsetSpringState,
 			/*Stiffness*/ 80.f, /*CriticalDampingFactor*/ 1.f, DeltaSeconds, /*Mass*/ 1.f));
 	}
 	ProcessTurnYawCurve();
 
-	// ---- aim. The delta an aim offset wants: the view's pitch against the actor's, which the
-	// CMC holds at zero. NormalizeAxis is load-bearing on a simulated proxy — GetBaseAimRotation
-	// decompresses RemoteViewPitch into 0..360 there, so +-90 only survives normalized.
-	// Nothing here reads locally-controlled-only state, which is why every machine agrees.
-	if (bNativeOwnsAimSurface)
+	if (Snapshot.bDead)
 	{
-		const double AimPitchDelta = FRotator::NormalizeAxis(SnapBaseAimPitch - SnapRotation.Pitch);
-		AimPitch = AimPitchDelta;
-		Pitch = FMath::Clamp(AimPitchDelta, AimPitchClamp.X, AimPitchClamp.Y);
-		// The scalar above is what the asset's graph reads; THIS is what the aim layers read. The
-		// layers bind to GetMainAnimBPThreadSafe.PitchRotator, so leaving it to a Blueprint hop meant
-		// the whole spine chain applied a zero rotator — the arms and weapon held still while the
-		// camera, which takes control rotation directly, moved. Writing it here closes that gap.
-		PitchRotator = BNMakeAxisRotator(AimPitchAxis, Pitch);
+		AimPitch = 0.0;
+		Pitch = 0.0;
+		AimYaw = 0.0;
+		SmoothedAimPitch = 0.0;
+		SmoothedAimYaw = 0.0;
+		PitchRotator = FRotator::ZeroRotator;
+		YawRotator = FRotator::ZeroRotator;
+		IsFirstUpdate = bFirstUpdate;
+		bFirstUpdate = false;
+		return;
 	}
 
-	// ---- lean. OUTSIDE the aim-ownership gate, deliberately, and this is the founder's "no
-	// leaning left or right" finding: lean's input is BN's OWN State.Lean.* tags (Q/E through
-	// UBNGA_Lean), which the template's components know nothing about — they read the template
-	// character's input events, which BN never fires, so a yielded native path left lean with NO
-	// writer at all. Aim has two candidate owners; lean has exactly one, and it is native,
-	// whoever owns the pitch surface. The tags replicate (Mixed carries GE-granted tags to
-	// simulated proxies), so a proxy leans the way its owner does. Both sides held cancel.
-	const double TargetLeaning = (bSnapLeanRight ? 1.0 : 0.0) - (bSnapLeanLeft ? 1.0 : 0.0);
-	NativeCurrLeaning = FMath::FInterpTo(NativeCurrLeaning, TargetLeaning, static_cast<double>(DeltaSeconds), LeanInterpSpeed);
-	const double LeanDegrees = NativeCurrLeaning * LeanAngle;
+	// ---- aim. View relative to the body, on both axes. The capsule yaws with the controller so
+	// owner AimYaw sits near zero and side-to-side is the body turning; AimPitch is the half the
+	// capsule cannot do. A proxy's actor rotation interpolates, so both axes are live there.
+	//
+	// NormalizeAxis is load-bearing on a simulated proxy: GetBaseAimRotation decompresses
+	// RemoteViewPitch into 0..360 there, so +-90 only survives normalized. This is the same
+	// correction the reference spells out as GetFixedAimRotation's 270..360 -> -90..0 remap,
+	// expressed as the one operation that also covers the locally-controlled case.
+	const double TargetAimPitch = FMath::Clamp(
+		FRotator::NormalizeAxis(Snapshot.BaseAimPitch - Snapshot.ActorRotation.Pitch),
+		AimPitchClamp.X, AimPitchClamp.Y);
+	const double TargetAimYaw = FMath::Clamp(
+		FRotator::NormalizeAxis(Snapshot.BaseAimYaw - Snapshot.ActorRotation.Yaw),
+		AimYawClamp.X, AimYawClamp.Y);
+
+	// The owner is exact and must never be filtered — its own view is the one thing in this class
+	// that carries zero latency, and smoothing it would put lag between the mouse and the gun.
+	// A proxy is quantised and arrives at net rate, so it gets chased instead of stepped to.
+	if (Snapshot.bLocallyControlled || ProxyAimInterpSpeed <= 0.f || bFirstUpdate)
+	{
+		SmoothedAimPitch = TargetAimPitch;
+		SmoothedAimYaw = TargetAimYaw;
+	}
+	else
+	{
+		SmoothedAimPitch = FMath::FInterpTo(SmoothedAimPitch, TargetAimPitch, static_cast<double>(DeltaSeconds), static_cast<double>(ProxyAimInterpSpeed));
+		SmoothedAimYaw = FMath::FInterpTo(SmoothedAimYaw, TargetAimYaw, static_cast<double>(DeltaSeconds), static_cast<double>(ProxyAimInterpSpeed));
+	}
+
+	AimPitch = SmoothedAimPitch;
+	Pitch = SmoothedAimPitch;
+	AimYaw = SmoothedAimYaw;
+	PitchRotator = BNMakeAxisRotator(AimPitchAxis, SmoothedAimPitch);
+	YawRotator = BNMakeAxisRotator(AimYawAxis, SmoothedAimYaw);
+
+	// ---- lean. The tags replicate, so a proxy leans the way its owner does; both sides held
+	// cancel.
+	const double TargetLeaning = (Snapshot.bLeanRight ? 1.0 : 0.0) - (Snapshot.bLeanLeft ? 1.0 : 0.0);
+	CurrentLeaning = FMath::FInterpTo(CurrentLeaning, TargetLeaning, static_cast<double>(DeltaSeconds), LeanInterpSpeed);
+	const double LeanDegrees = CurrentLeaning * LeanAngle;
 	LeanRotation = BNMakeAxisRotator(LeanAxis, LeanDegrees);
-	// The head's counter-tilt: the body tips, the gaze stays level. Same axis, opposite sign —
-	// the asset's LeanSpineWeights head entry is literally named "Opposite Angle Weight".
+	// The head's counter-tilt: the body tips, the gaze stays level.
 	LeanOppRotation = BNMakeAxisRotator(LeanAxis, -LeanDegrees);
 
-	// ---- linked layer edge
-	bNativeLinkedLayerChanged = !bNativeFirstUpdate && bSnapLayerChanged;
-
-	// ---- gated publish: while the event graph is live it owns these RMW/edge outputs and
-	// repeats the same math on the shared fields; publishing both would double-count.
-	// Shared IsFirstUpdate is NEVER written from native — the graph keeps its own until cleared.
-	// The enum-typed outputs (cardinals + RootYawOffsetMode) have no shared property at all:
-	// they get UENUMs + a graph retype at clear-day, and publish from the private members then.
-	if (bNativeOwnsTurnState)
-	{
-		RootYawOffset = NativeRootYawOffset;
-		AimYaw = -NativeRootYawOffset;
-		TurnYawCurveValue = NativeTurnYawCurveValue;
-		YawDeltaSinceLastUpdate = NativeYawDeltaSinceLastUpdate;
-		YawDeltaSpeed = NativeYawDeltaSpeed;
-		CrouchStateChange = bNativeCrouchStateChange;
-		ADSStateChanged = bNativeADSStateChange;
-		LinkedLayerChanged = bNativeLinkedLayerChanged;
-		PivotDirection2D = NativePivotDirection2D;
-		UpperbodyDynamicAdditiveWeight = NativeUpperbodyAdditiveWeight;
-	}
-
-	bNativeFirstUpdate = false;
-}
-
-FString UBNAnimInstance::DescribeAimState() const
-{
-	// Every link in the aim chain on one line, in the order it flows. A zero anywhere names the
-	// broken link: no BaseAim = the view is not reaching the pawn; Pitch fine but PitchRotator
-	// zero = the publish; both fine and no motion = the ABP's binding or the bFPSMode gate.
-	static const UEnum* AxisEnum = StaticEnum<EBNSpineAxis>();
-	const auto AxisName = [](const UEnum* Enum, EBNSpineAxis Axis)
-	{
-		// Guarded: this is a debug string, and a debug string must never be the thing that crashes
-		// the session it was added to diagnose.
-		return Enum ? Enum->GetNameStringByValue(static_cast<int64>(Axis)) : FString(TEXT("?"));
-	};
-	FString Out = FString::Printf(
-		TEXT("BNAim | owner %s (turn %s) | BaseAimPitch %.1f  ActorPitch %.1f  ->  AimPitch %.1f  Pitch %.1f  ")
-		TEXT("PitchRotator (P %.1f Y %.1f R %.1f) axis %s | bFPSMode %s  bUnarmed %s | ")
-		TEXT("Lean curr %.2f  LeanRotation (P %.1f Y %.1f R %.1f) axis %s | Layer %s"),
-		bNativeOwnsAimSurface ? TEXT("NATIVE") : TEXT("COMPONENTS"),
-		bNativeOwnsTurnState ? TEXT("native") : TEXT("graph"),
-		SnapBaseAimPitch, SnapRotation.Pitch, AimPitch, Pitch,
-		PitchRotator.Pitch, PitchRotator.Yaw, PitchRotator.Roll,
-		*AxisName(AxisEnum, AimPitchAxis),
-		bFPSMode ? TEXT("true") : TEXT("false"),
-		bUnarmed ? TEXT("true") : TEXT("false"),
-		NativeCurrLeaning,
-		LeanRotation.Pitch, LeanRotation.Yaw, LeanRotation.Roll,
-		*AxisName(AxisEnum, LeanAxis),
-		*GetNameSafe(ObservedLayerClass));
-
-	// The layer-side truth, one line per linked instance: what each layer's OWN aim variables hold
-	// right now. This is the half no probe has ever shown, and it is the half the pose is posed
-	// from — a live main ABP over dead layer lines is the communications gap; live layer lines
-	// over a dead pose is the binding or the axis.
-	if (const USkeletalMeshComponent* MeshComp = GetOwningComponent())
-	{
-		for (const UAnimInstance* Linked : MeshComp->GetLinkedAnimInstances())
-		{
-			if (!Linked || Linked == this)
-			{
-				continue;
-			}
-			Out += FString::Printf(TEXT("\nBNAim layer %s |%s"),
-				*Linked->GetClass()->GetName(), *BNDescribeAimProperties(*Linked));
-		}
-	}
-	return Out;
+	IsFirstUpdate = bFirstUpdate;
+	bFirstUpdate = false;
 }
 
 void UBNAnimInstance::SetRootYawOffset(double InRootYawOffset)
 {
 	if (!bEnableRootYawOffset)
 	{
-		NativeRootYawOffset = 0.0;
+		RootYawOffset = 0.0;
 		return;
 	}
 
-	const FVector2D Clamp = bSnapCrouching ? RootYawOffsetAngleClampCrouched : RootYawOffsetAngleClamp;
+	const FVector2D Clamp = Snapshot.bCrouching ? RootYawOffsetAngleClampCrouched : RootYawOffsetAngleClamp;
 	const double Normalized = FRotator::NormalizeAxis(InRootYawOffset);
-	NativeRootYawOffset = Clamp.X < Clamp.Y ? FMath::Clamp(Normalized, Clamp.X, Clamp.Y) : Normalized;
+	RootYawOffset = Clamp.X < Clamp.Y ? FMath::Clamp(Normalized, Clamp.X, Clamp.Y) : Normalized;
 }
 
 void UBNAnimInstance::ProcessTurnYawCurve()
 {
-	PreviousTurnYawCurveValue = NativeTurnYawCurveValue;
+	PreviousTurnYawCurveValue = TurnYawCurveValue;
 
 	const double TurnYawWeight = GetCurveValue(BN_TurnYawWeightCurve);
 	if (FMath::IsNearlyZero(TurnYawWeight))
 	{
-		NativeTurnYawCurveValue = 0.0;
+		TurnYawCurveValue = 0.0;
 		PreviousTurnYawCurveValue = 0.0;
 		return;
 	}
 
-	// The turn animation's RemainingTurnYaw curve is normalized by its weight; the offset
-	// shrinks by exactly the yaw the animation consumed this frame.
-	NativeTurnYawCurveValue = GetCurveValue(BN_RemainingTurnYawCurve) / TurnYawWeight;
+	// The turn animation's RemainingTurnYaw curve is normalized by its weight; the offset shrinks
+	// by exactly the yaw the animation consumed this frame.
+	TurnYawCurveValue = GetCurveValue(BN_RemainingTurnYawCurve) / TurnYawWeight;
 	if (PreviousTurnYawCurveValue != 0.0)
 	{
-		SetRootYawOffset(NativeRootYawOffset - (NativeTurnYawCurveValue - PreviousTurnYawCurveValue));
+		SetRootYawOffset(RootYawOffset - (TurnYawCurveValue - PreviousTurnYawCurveValue));
 	}
 }
 
@@ -696,8 +611,57 @@ double UBNAnimInstance::ComputeGroundDistance() const
 	return Hit.bBlockingHit ? FMath::Max(static_cast<double>(Hit.Distance) - HalfHeight, 0.0) : TraceLength;
 }
 
+void UBNAnimInstance::ResolveAbilitySystem()
+{
+	UAbilitySystemComponent* ASC = Character ? Character->GetAbilitySystemComponent() : nullptr;
+	if (!ASC)
+	{
+		return;
+	}
+
+	AbilitySystem = ASC;
+
+	auto Bind = [this, ASC](const FGameplayTag& Tag, FDelegateHandle& Handle, bool& Mirror)
+	{
+		Handle = ASC->RegisterGameplayTagEvent(Tag, EGameplayTagEventType::NewOrRemoved)
+			.AddUObject(this, &UBNAnimInstance::OnTagChanged);
+		// Seeded, not assumed: this instance can be created long after the tag was applied.
+		Mirror = ASC->HasMatchingGameplayTag(Tag);
+	};
+
+	Bind(BNTags::State_Movement_Crouching, CrouchTagHandle, bTagCrouching);
+	Bind(BNTags::State_Movement_Jumping, JumpTagHandle, bTagJumping);
+	Bind(BNTags::State_Movement_InAir, InAirTagHandle, bTagInAir);
+	Bind(BNTags::State_Movement_Sprinting, SprintTagHandle, bTagSprinting);
+	Bind(BNTags::State_Lean_Left, LeanLeftTagHandle, bTagLeanLeft);
+	Bind(BNTags::State_Lean_Right, LeanRightTagHandle, bTagLeanRight);
+	Bind(BNTags::State_Weapon_ADS, ADSTagHandle, bTagADS);
+	Bind(BNTags::State_Weapon_Reloading, ReloadTagHandle, bTagReloading);
+	Bind(BNTags::State_Weapon_Firing, FiringTagHandle, bTagFiring);
+	Bind(BNTags::State_Weapon_Melee, MeleeTagHandle, bTagMelee);
+	Bind(BNTags::State_Dead, DeadTagHandle, bTagDead);
+}
+
+void UBNAnimInstance::OnTagChanged(const FGameplayTag Tag, int32 NewCount)
+{
+	const bool bActive = NewCount > 0;
+	if (Tag == BNTags::State_Movement_Crouching)      { bTagCrouching = bActive; }
+	else if (Tag == BNTags::State_Movement_Jumping)   { bTagJumping = bActive; }
+	else if (Tag == BNTags::State_Movement_InAir)     { bTagInAir = bActive; }
+	else if (Tag == BNTags::State_Movement_Sprinting) { bTagSprinting = bActive; }
+	else if (Tag == BNTags::State_Lean_Left)          { bTagLeanLeft = bActive; }
+	else if (Tag == BNTags::State_Lean_Right)         { bTagLeanRight = bActive; }
+	else if (Tag == BNTags::State_Weapon_ADS)         { bTagADS = bActive; }
+	else if (Tag == BNTags::State_Weapon_Reloading)   { bTagReloading = bActive; }
+	else if (Tag == BNTags::State_Weapon_Firing)      { bTagFiring = bActive; }
+	else if (Tag == BNTags::State_Weapon_Melee)       { bTagMelee = bActive; }
+	else if (Tag == BNTags::State_Dead)               { bTagDead = bActive; }
+}
+
 void UBNAnimInstance::NativeUninitializeAnimation()
 {
+	// The ability system component lives on the PlayerState and outlives this instance, so an
+	// unregistered binding per respawn accumulates on it forever.
 	if (AbilitySystem)
 	{
 		AbilitySystem->UnregisterGameplayTagEvent(CrouchTagHandle, BNTags::State_Movement_Crouching, EGameplayTagEventType::NewOrRemoved);
@@ -707,8 +671,13 @@ void UBNAnimInstance::NativeUninitializeAnimation()
 		AbilitySystem->UnregisterGameplayTagEvent(LeanLeftTagHandle, BNTags::State_Lean_Left, EGameplayTagEventType::NewOrRemoved);
 		AbilitySystem->UnregisterGameplayTagEvent(LeanRightTagHandle, BNTags::State_Lean_Right, EGameplayTagEventType::NewOrRemoved);
 		AbilitySystem->UnregisterGameplayTagEvent(ADSTagHandle, BNTags::State_Weapon_ADS, EGameplayTagEventType::NewOrRemoved);
+		AbilitySystem->UnregisterGameplayTagEvent(ReloadTagHandle, BNTags::State_Weapon_Reloading, EGameplayTagEventType::NewOrRemoved);
+		AbilitySystem->UnregisterGameplayTagEvent(FiringTagHandle, BNTags::State_Weapon_Firing, EGameplayTagEventType::NewOrRemoved);
+		AbilitySystem->UnregisterGameplayTagEvent(MeleeTagHandle, BNTags::State_Weapon_Melee, EGameplayTagEventType::NewOrRemoved);
+		AbilitySystem->UnregisterGameplayTagEvent(DeadTagHandle, BNTags::State_Dead, EGameplayTagEventType::NewOrRemoved);
 		AbilitySystem = nullptr;
 	}
+
 	CrouchTagHandle.Reset();
 	JumpTagHandle.Reset();
 	InAirTagHandle.Reset();
@@ -716,70 +685,21 @@ void UBNAnimInstance::NativeUninitializeAnimation()
 	LeanLeftTagHandle.Reset();
 	LeanRightTagHandle.Reset();
 	ADSTagHandle.Reset();
+	ReloadTagHandle.Reset();
+	FiringTagHandle.Reset();
+	MeleeTagHandle.Reset();
+	DeadTagHandle.Reset();
+	LinkedLayers.Reset();
 
 	Super::NativeUninitializeAnimation();
 }
 
-void UBNAnimInstance::ResolveAbilitySystem()
+FAnimInstanceProxy* UBNAnimInstance::CreateAnimInstanceProxy()
 {
-	if (!Character)
-	{
-		return;
-	}
-
-	UAbilitySystemComponent* ASC = Character->GetAbilitySystemComponent();
-	if (!ASC)
-	{
-		return;
-	}
-
-	AbilitySystem = ASC;
-	CrouchTagHandle = ASC->RegisterGameplayTagEvent(BNTags::State_Movement_Crouching, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &UBNAnimInstance::OnTagChanged);
-	JumpTagHandle = ASC->RegisterGameplayTagEvent(BNTags::State_Movement_Jumping, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &UBNAnimInstance::OnTagChanged);
-	InAirTagHandle = ASC->RegisterGameplayTagEvent(BNTags::State_Movement_InAir, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &UBNAnimInstance::OnTagChanged);
-	SprintTagHandle = ASC->RegisterGameplayTagEvent(BNTags::State_Movement_Sprinting, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &UBNAnimInstance::OnTagChanged);
-	LeanLeftTagHandle = ASC->RegisterGameplayTagEvent(BNTags::State_Lean_Left, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &UBNAnimInstance::OnTagChanged);
-	LeanRightTagHandle = ASC->RegisterGameplayTagEvent(BNTags::State_Lean_Right, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &UBNAnimInstance::OnTagChanged);
-	ADSTagHandle = ASC->RegisterGameplayTagEvent(BNTags::State_Weapon_ADS, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &UBNAnimInstance::OnTagChanged);
-
-	bTagCrouching = ASC->HasMatchingGameplayTag(BNTags::State_Movement_Crouching);
-	bTagJumping = ASC->HasMatchingGameplayTag(BNTags::State_Movement_Jumping);
-	bTagInAir = ASC->HasMatchingGameplayTag(BNTags::State_Movement_InAir);
-	bTagSprinting = ASC->HasMatchingGameplayTag(BNTags::State_Movement_Sprinting);
-	bTagLeanLeft = ASC->HasMatchingGameplayTag(BNTags::State_Lean_Left);
-	bTagLeanRight = ASC->HasMatchingGameplayTag(BNTags::State_Lean_Right);
-	bTagADS = ASC->HasMatchingGameplayTag(BNTags::State_Weapon_ADS);
+	return new FBNAnimInstanceProxy(this);
 }
 
-void UBNAnimInstance::OnTagChanged(const FGameplayTag Tag, int32 NewCount)
+void UBNAnimInstance::DestroyAnimInstanceProxy(FAnimInstanceProxy* InProxy)
 {
-	const bool bActive = NewCount > 0;
-	if (Tag == BNTags::State_Movement_Crouching)
-	{
-		bTagCrouching = bActive;
-	}
-	else if (Tag == BNTags::State_Movement_Jumping)
-	{
-		bTagJumping = bActive;
-	}
-	else if (Tag == BNTags::State_Movement_InAir)
-	{
-		bTagInAir = bActive;
-	}
-	else if (Tag == BNTags::State_Movement_Sprinting)
-	{
-		bTagSprinting = bActive;
-	}
-	else if (Tag == BNTags::State_Lean_Left)
-	{
-		bTagLeanLeft = bActive;
-	}
-	else if (Tag == BNTags::State_Lean_Right)
-	{
-		bTagLeanRight = bActive;
-	}
-	else if (Tag == BNTags::State_Weapon_ADS)
-	{
-		bTagADS = bActive;
-	}
+	delete InProxy;
 }

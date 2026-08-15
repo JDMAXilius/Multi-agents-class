@@ -9,9 +9,7 @@ Packet run order: 10_input_assets.py -> 20_bp_character.py -> 30_reparent_abp.py
 
 Creates the two assets ABNPlayerController soft-references out of DefaultGame.ini:
 
-  /Game/BN/Input/IMC_BNNext   the mapping context - WASD / Mouse2D / Space / LeftCtrl,
-                              with exactly the modifiers the C++ handlers assume
-                              (swizzle+negate on Move, negate-Y on Look)
+  /Game/BN/Input/IMC_BNNext   the mapping context — move/look/combat/lean/swap
   /Game/BN/Input/DA_BNInput   the UBNInputConfig: InputAction <-> Input.* tag pairs
 
 InputActions are REUSED from /Game/FPSTemplate/Input/Actions (Roadmap 1's reuse
@@ -46,9 +44,8 @@ SWIZZLE = ("InputModifierSwizzleAxis", {})               # default order YXZ: X<
 NEGATE_ALL = ("InputModifierNegate", {})
 NEGATE_Y = ("InputModifierNegate", {"x": False, "y": True, "z": False})
 
-# The four controls, and the exact mappings the C++ handlers were verified against
-# at Checkpoint A. Move reads Axis.Y as forward, so W/S are swizzled onto Y;
-# HandleLook feeds AddPitchInput, so Look's Y is negated.
+# Full combat set. Move reads Axis.Y as forward, so W/S are swizzled onto Y;
+# HandleLook feeds AddPitchInput, so Look's Y is negated. Melee is F (founder).
 ACTIONS = [
     {
         "id": "Move",
@@ -78,6 +75,83 @@ ACTIONS = [
         "value_type": "BOOLEAN",
         "reuse": REUSE_ROOT + "/IA_FPST_Crouch",
         "keys": [("LeftControl", [])],
+    },
+    {
+        "id": "Sprint",
+        "tag": "Input.Sprint",
+        "value_type": "BOOLEAN",
+        "reuse": REUSE_ROOT + "/IA_FPST_Sprint",
+        "keys": [("LeftShift", [])],
+    },
+    {
+        "id": "Fire",
+        "tag": "Input.Weapon.Fire",
+        "value_type": "BOOLEAN",
+        "reuse": REUSE_ROOT + "/IA_FPST_Weapon_Fire",
+        "keys": [("LeftMouseButton", [])],
+    },
+    {
+        "id": "Reload",
+        "tag": "Input.Weapon.Reload",
+        "value_type": "BOOLEAN",
+        "reuse": REUSE_ROOT + "/IA_FPST_Weapon_Reload",
+        "keys": [("R", [])],
+    },
+    {
+        "id": "ADS",
+        "tag": "Input.Weapon.ADS",
+        "value_type": "BOOLEAN",
+        "reuse": REUSE_ROOT + "/IA_FPST_Aim",
+        "keys": [("RightMouseButton", [])],
+    },
+    {
+        "id": "LeanLeft",
+        "tag": "Input.Lean.Left",
+        "value_type": "BOOLEAN",
+        "reuse": BN_INPUT_PATH + "/IA_BN_LeanLeft",
+        "keys": [("Q", [])],
+    },
+    {
+        "id": "LeanRight",
+        "tag": "Input.Lean.Right",
+        "value_type": "BOOLEAN",
+        "reuse": BN_INPUT_PATH + "/IA_BN_LeanRight",
+        "keys": [("E", [])],
+    },
+    {
+        "id": "WeaponNext",
+        "tag": "Input.Weapon.Next",
+        "value_type": "BOOLEAN",
+        "reuse": BN_INPUT_PATH + "/IA_BNWeaponNext",
+        "keys": [("MouseWheelUp", [])],
+    },
+    {
+        "id": "WeaponPrevious",
+        "tag": "Input.Weapon.Previous",
+        "value_type": "BOOLEAN",
+        "reuse": BN_INPUT_PATH + "/IA_BNWeaponPrevious",
+        "keys": [("MouseWheelDown", [])],
+    },
+    {
+        "id": "Melee",
+        "tag": "Input.Melee",
+        "value_type": "BOOLEAN",
+        "reuse": BN_INPUT_PATH + "/IA_BN_Melee",
+        "keys": [("F", [])],
+    },
+    {
+        "id": "Grenade",
+        "tag": "Input.Grenade",
+        "value_type": "BOOLEAN",
+        "reuse": BN_INPUT_PATH + "/IA_BN_Grenade",
+        "keys": [("G", [])],
+    },
+    {
+        "id": "DebugDamageSelf",
+        "tag": "Input.Debug.DamageSelf",
+        "value_type": "BOOLEAN",
+        "reuse": BN_INPUT_PATH + "/IA_BN_DebugDamageSelf",
+        "keys": [("K", [])],
     },
 ]
 

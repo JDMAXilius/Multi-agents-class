@@ -4,15 +4,19 @@
 #include "AbilitySystem/Tasks/BNAbilityTask_ServerWaitClientTargetData.h"
 #include "BreachpointNext.h"
 #include "Characters/BNCharacter.h"
+#include "Core/BNCollision.h"
 #include "Core/BNGameplayTags.h"
 #include "Data/BNDataRows.h"
+#include "Data/BNGameData.h"
 #include "Weapons/BNEquipmentComponent.h"
 #include "Weapons/BNWeapon.h"
+#include "Engine/GameInstance.h"
 #include "AbilitySystemComponent.h"
 #include "Abilities/GameplayAbilityTargetTypes.h"
 #include "Animation/AnimMontage.h"
 #include "CollisionQueryParams.h"
 #include "Engine/World.h"
+#include "GameFramework/Actor.h"
 #include "GameFramework/PlayerController.h"
 #include "TimerManager.h"
 
@@ -33,8 +37,42 @@ namespace
 
 	const FBNWeaponRow* BNMeleeGetRow(const FGameplayAbilityActorInfo* ActorInfo)
 	{
-		const ABNWeapon* Weapon = BNMeleeGetWeapon(ActorInfo);
-		return Weapon ? Weapon->GetRow() : nullptr;
+		if (const ABNWeapon* Weapon = BNMeleeGetWeapon(ActorInfo))
+		{
+			if (const FBNWeaponRow* Row = Weapon->GetRow())
+			{
+				return Row;
+			}
+		}
+
+		// Empty-hand slot: an optional DT row named Unarmed supplies punch numbers/montage.
+		const UWorld* World = ActorInfo && ActorInfo->AvatarActor.IsValid() ? ActorInfo->AvatarActor->GetWorld() : nullptr;
+		const UGameInstance* GameInstance = World ? World->GetGameInstance() : nullptr;
+		const UBNGameData* GameData = GameInstance ? GameInstance->GetSubsystem<UBNGameData>() : nullptr;
+		return GameData ? GameData->FindWeaponRow(FName(TEXT("Unarmed"))) : nullptr;
+	}
+
+	struct FBNMeleeStats
+	{
+		float Damage = 40.f;
+		float Range = 120.f;
+		TSoftObjectPtr<UAnimMontage> Montage;
+	};
+
+	FBNMeleeStats BNMeleeResolveStats(const FBNWeaponRow* Row, float UnarmedDamage, float UnarmedRange, const TSoftObjectPtr<UAnimMontage>& UnarmedMontage)
+	{
+		FBNMeleeStats Stats;
+		if (Row)
+		{
+			Stats.Damage = Row->MeleeDamage;
+			Stats.Range = Row->MeleeRange;
+			Stats.Montage = Row->MeleeMontage;
+			return Stats;
+		}
+		Stats.Damage = UnarmedDamage;
+		Stats.Range = UnarmedRange;
+		Stats.Montage = UnarmedMontage;
+		return Stats;
 	}
 }
 
@@ -47,8 +85,10 @@ void UBNGA_Melee::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const
 	}
 
 	bSwung = false;
+	MeleeHandle = ApplyStateTag(BNTags::State_Weapon_Melee);
 
 	const FBNWeaponRow* Row = BNMeleeGetRow(ActorInfo);
+	const FBNMeleeStats Stats = BNMeleeResolveStats(Row, UnarmedMeleeDamage, UnarmedMeleeRange, UnarmedMeleeMontage);
 	UAbilitySystemComponent* ASC = ActorInfo ? ActorInfo->AbilitySystemComponent.Get() : nullptr;
 	UWorld* World = GetWorld();
 	if (!ASC || !World)
@@ -60,7 +100,7 @@ void UBNGA_Melee::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const
 	// Through the ASC so the swing replicates: simulated proxies must see the arm move, otherwise
 	// a melee kill arrives with no animation attached to it.
 	float MontageLength = 0.f;
-	UAnimMontage* Montage = (Row && !Row->MeleeMontage.IsNull()) ? Row->MeleeMontage.LoadSynchronous() : nullptr;
+	UAnimMontage* Montage = Stats.Montage.IsNull() ? nullptr : Stats.Montage.LoadSynchronous();
 	if (Montage)
 	{
 		MontageLength = ASC->PlayMontage(this, ActivationInfo, Montage, 1.f);
@@ -68,14 +108,10 @@ void UBNGA_Melee::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const
 
 	// One line per swing, naming the link that is dead — "no melee attack happening" has been
 	// reported twice with the log silent, and a silent no-op is indistinguishable from a dead key.
-	if (!Row)
+	if (!Montage)
 	{
-		UE_LOG(LogBN, Warning, TEXT("BNGA_Melee: activated with NO current weapon row — no montage, damage or reach; the swing is a no-op."));
-	}
-	else if (!Montage)
-	{
-		UE_LOG(LogBN, Warning, TEXT("BNGA_Melee: row's MeleeMontage is unset or failed to load ('%s') — swinging on the fallback clock with no animation."),
-			*Row->MeleeMontage.ToString());
+		UE_LOG(LogBN, Warning, TEXT("BNGA_Melee: MeleeMontage is unset or failed to load ('%s') — swinging on the fallback clock with no animation."),
+			*Stats.Montage.ToString());
 	}
 	else if (MontageLength <= 0.f)
 	{
@@ -168,10 +204,11 @@ void UBNGA_Melee::SwingTrace()
 	const FGameplayAbilityActorInfo* ActorInfo = CurrentActorInfo;
 	ABNWeapon* Weapon = BNMeleeGetWeapon(ActorInfo);
 	const FBNWeaponRow* Row = BNMeleeGetRow(ActorInfo);
+	const FBNMeleeStats Stats = BNMeleeResolveStats(Row, UnarmedMeleeDamage, UnarmedMeleeRange, UnarmedMeleeMontage);
 	UAbilitySystemComponent* ASC = ActorInfo ? ActorInfo->AbilitySystemComponent.Get() : nullptr;
 	UWorld* World = GetWorld();
 	const APlayerController* PC = ActorInfo ? ActorInfo->PlayerController.Get() : nullptr;
-	if (!Row || !ASC || !World || !PC)
+	if (!ASC || !World || !PC)
 	{
 		return;
 	}
@@ -190,7 +227,7 @@ void UBNGA_Melee::SwingTrace()
 	QueryParams.AddIgnoredActor(Weapon);
 
 	FHitResult Hit;
-	World->LineTraceSingleByChannel(Hit, ViewLocation, ViewLocation + ViewRotation.Vector() * Row->MeleeRange, ECC_Visibility, QueryParams);
+	World->LineTraceSingleByChannel(Hit, ViewLocation, ViewLocation + ViewRotation.Vector() * Stats.Range, BNCollision::MeleeTrace, QueryParams);
 
 	FGameplayAbilityTargetDataHandle TargetData;
 	TargetData.Add(new FGameplayAbilityTargetData_SingleTargetHit(Hit));
@@ -215,11 +252,12 @@ void UBNGA_Melee::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& T
 
 	AActor* Avatar = ActorInfo->AvatarActor.Get();
 	ABNWeapon* Weapon = BNMeleeGetWeapon(ActorInfo);
-	const FBNWeaponRow* Row = Weapon ? Weapon->GetRow() : nullptr;
+	const FBNWeaponRow* Row = BNMeleeGetRow(ActorInfo);
+	const FBNMeleeStats Stats = BNMeleeResolveStats(Row, UnarmedMeleeDamage, UnarmedMeleeRange, UnarmedMeleeMontage);
 	UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
 	UWorld* World = GetWorld();
 	const AController* Controller = ActorInfo->PlayerController.Get();
-	if (!Avatar || !Row || !ASC || !World || !Controller)
+	if (!Avatar || !ASC || !World || !Controller)
 	{
 		return;
 	}
@@ -240,7 +278,7 @@ void UBNGA_Melee::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& T
 	const FVector ServerAim = ViewRotation.Vector();
 
 	const FVector ToClaim = Claim->ImpactPoint - ViewLocation;
-	const float Reach = Row->MeleeRange + BNMeleeDistanceTolerance;
+	const float Reach = Stats.Range + BNMeleeDistanceTolerance;
 	if (ToClaim.SizeSquared() > FMath::Square(Reach))
 	{
 		UE_LOG(LogBN, Verbose, TEXT("BNGA_Melee: claim rejected — %.0fuu exceeds reach %.0f."), ToClaim.Size(), Reach);
@@ -259,7 +297,7 @@ void UBNGA_Melee::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& T
 	QueryParams.bReturnPhysicalMaterial = true;
 
 	FHitResult ServerHit;
-	World->LineTraceSingleByChannel(ServerHit, ViewLocation, ViewLocation + ToClaim.GetSafeNormal() * Reach, ECC_Visibility, QueryParams);
+	World->LineTraceSingleByChannel(ServerHit, ViewLocation, ViewLocation + ToClaim.GetSafeNormal() * Reach, BNCollision::MeleeTrace, QueryParams);
 
 	AActor* ClaimedActor = Claim->GetActor();
 	AActor* HitActor = ServerHit.GetActor();
@@ -276,11 +314,12 @@ void UBNGA_Melee::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& T
 	FScopedPredictionWindow UnpredictedCues(ASC, FPredictionKey());
 
 	UE_LOG(LogBN, Log, TEXT("BNGA_Melee: validated connect — %s hit %s for %.0f."),
-		*GetNameSafe(Avatar), *GetNameSafe(HitActor), Row->MeleeDamage);
+		*GetNameSafe(Avatar), *GetNameSafe(HitActor), Stats.Damage);
 
-	// THE one damage door, the flat melee number from the ROW. No headshot rule: a rifle butt does
-	// not care where it lands, and ApplyWeaponDamage would apply the shot's multiplier.
-	BNDamage::ApplyDamage(Avatar, HitActor, Row->MeleeDamage, ServerHit);
+	// THE one damage door, the flat melee number from the ROW (or the unarmed Config fallback).
+	// No headshot rule: a rifle butt does not care where it lands, and ApplyWeaponDamage would
+	// apply the shot's multiplier.
+	BNDamage::ApplyDamage(Avatar, HitActor, Stats.Damage, ServerHit);
 
 	FGameplayCueParameters ImpactParams;
 	ImpactParams.Location = ServerHit.ImpactPoint;
@@ -308,6 +347,7 @@ void UBNGA_Melee::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGam
 		Anim->OnPlayMontageNotifyBegin.RemoveDynamic(this, &UBNGA_Melee::OnMontageNotifyBegin);
 	}
 	BoundAnimInstance.Reset();
+	RemoveStateTag(MeleeHandle);
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }

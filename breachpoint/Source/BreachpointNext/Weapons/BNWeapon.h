@@ -43,6 +43,7 @@ public:
 	virtual void OnUnequipped() {}
 
 	USkeletalMeshComponent* GetWeaponMesh() const { return WeaponMesh; }
+	USkeletalMeshComponent* GetFirstPersonMesh() const { return FirstPersonMesh; }
 
 	// FOUNDER'S RULING, Wave 4: ammo lives on the WEAPON, not as an attribute. Each weapon keeps
 	// its own magazine across swaps, but attributes live on the ASC and the ASC sits on the
@@ -89,6 +90,11 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category = "Weapon")
 	TObjectPtr<USkeletalMeshComponent> WeaponMesh;
+
+	/** Owner-only copy. Same asset as WeaponMesh; tagged FirstPerson so it rides the camera's
+	 *  first-person pass with the character's 1P body. WeaponMesh is the world representation. */
+	UPROPERTY(VisibleAnywhere, Category = "Weapon")
+	TObjectPtr<USkeletalMeshComponent> FirstPersonMesh;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UClass> CachedAnimLayerClass;

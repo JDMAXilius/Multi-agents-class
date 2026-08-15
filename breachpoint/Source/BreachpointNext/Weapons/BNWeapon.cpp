@@ -8,6 +8,7 @@
 #include "Engine/GameInstance.h"
 #include "Engine/SkeletalMesh.h"
 #include "Engine/World.h"
+#include "GameFramework/Pawn.h"
 #include "Net/UnrealNetwork.h"
 
 ABNWeapon::ABNWeapon()
@@ -22,7 +23,18 @@ ABNWeapon::ABNWeapon()
 	WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	WeaponMesh->SetCollisionProfileName(TEXT("NoCollision"));
 	WeaponMesh->SetGenerateOverlapEvents(false);
+	WeaponMesh->SetOwnerNoSee(true);
+	WeaponMesh->SetFirstPersonPrimitiveType(EFirstPersonPrimitiveType::WorldSpaceRepresentation);
 	SetRootComponent(WeaponMesh);
+
+	FirstPersonMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("FirstPersonMesh"));
+	FirstPersonMesh->SetupAttachment(WeaponMesh);
+	FirstPersonMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	FirstPersonMesh->SetCollisionProfileName(TEXT("NoCollision"));
+	FirstPersonMesh->SetGenerateOverlapEvents(false);
+	FirstPersonMesh->SetOnlyOwnerSee(true);
+	FirstPersonMesh->SetFirstPersonPrimitiveType(EFirstPersonPrimitiveType::FirstPerson);
+	FirstPersonMesh->bCastDynamicShadow = false;
 }
 
 void ABNWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -74,6 +86,10 @@ void ABNWeapon::ApplyRow()
 	if (USkeletalMesh* Mesh = Row->WeaponMesh.LoadSynchronous())
 	{
 		WeaponMesh->SetSkeletalMeshAsset(Mesh);
+		if (FirstPersonMesh)
+		{
+			FirstPersonMesh->SetSkeletalMeshAsset(Mesh);
+		}
 	}
 
 	CachedAnimLayerClass = Row->AnimLayerClass.IsNull() ? nullptr : Row->AnimLayerClass.LoadSynchronous();
@@ -131,9 +147,13 @@ FTransform ABNWeapon::GetMuzzleTransform() const
 {
 	const FBNWeaponRow* Row = GetRow();
 	const FName Socket = Row ? Row->MuzzleSocketName : NAME_None;
-	if (WeaponMesh && !Socket.IsNone() && WeaponMesh->DoesSocketExist(Socket))
+	const APawn* PawnOwner = Cast<APawn>(GetOwner());
+	USkeletalMeshComponent* ViewMesh = (PawnOwner && PawnOwner->IsLocallyControlled() && FirstPersonMesh)
+		? FirstPersonMesh.Get()
+		: WeaponMesh.Get();
+	if (ViewMesh && !Socket.IsNone() && ViewMesh->DoesSocketExist(Socket))
 	{
-		return WeaponMesh->GetSocketTransform(Socket);
+		return ViewMesh->GetSocketTransform(Socket);
 	}
 	return GetActorTransform();
 }

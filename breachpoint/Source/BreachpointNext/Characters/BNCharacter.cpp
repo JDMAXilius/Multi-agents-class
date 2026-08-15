@@ -1,25 +1,28 @@
 #include "Characters/BNCharacter.h"
-#include "BreachpointNext.h"
 #include "AbilitySystem/BNAbilitySystemComponent.h"
 #include "AbilitySystem/Abilities/BNGA_Death.h"
 #include "AbilitySystem/Attributes/BNAttributeSet.h"
 #include "AbilitySystem/Effects/BNGameplayEffects.h"
 #include "Characters/BNHealthComponent.h"
+#include "Core/BNCollision.h"
 #include "Core/BNGameplayTags.h"
+#include "Data/BNDataRows.h"
 #include "Match/BNPlayerState.h"
 #include "Weapons/BNEquipmentComponent.h"
 #include "Animation/AnimInstance.h"
+#include "Animation/BNLAnimInstance.h"
+#include "Weapons/BNWeapon.h"
+#include "BreachpointNext.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Engine/SkeletalMesh.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/SpringArmComponent.h"
 #include "UObject/UnrealType.h"
 
 namespace
 {
-	// The graph's E_FPST_PoseType ordinals and speed, from MyCharacter's verified port
-	// (OnAimStarted/OnAimCompleted): the pose pairs are hip/aim × stand/crouch, scope 0 is
-	// the default sight, and 18 is the template's AimPoseChangeSpeed.
 	constexpr uint8 BN_Pose_HipStand = 1;
 	constexpr uint8 BN_Pose_AimStand = 2;
 	constexpr uint8 BN_Pose_HipCrouch = 6;
@@ -58,19 +61,11 @@ namespace
 		return false;
 	}
 
-	/** MyCharacter's ChangePose seam in miniature: the PoseOffsets component is a Blueprint
-	 *  class with no C++ base, so the call goes through the UFunction's OWN parameter layout —
-	 *  a hand-written mirror struct passed to ProcessEvent is silent memory corruption the day
-	 *  the Blueprint's signature changes, which is the exact trap MyCharacter's FBPCall
-	 *  documents. Pin names verified against the graph: (InPoseType, InScopeType, InChangeSpeed). */
-	bool BNCallChangePose(UActorComponent* Comp, uint8 PoseType, uint8 ScopeType, float ChangeSpeed)
+	/** Called through the UFunction's OWN parameter layout: a hand-written mirror struct passed to
+	 *  ProcessEvent is silent memory corruption the day the Blueprint's signature changes. Pin
+	 *  names verified against the graph: (InPoseType, InScopeType, InChangeSpeed). */
+	void BNCallChangePose(UObject* Comp, UFunction* Fn, uint8 PoseType, uint8 ScopeType, float ChangeSpeed)
 	{
-		UFunction* Fn = Comp ? Comp->FindFunction(FName(TEXT("ChangePose"))) : nullptr;
-		if (!Fn)
-		{
-			return false;
-		}
-
 		TArray<uint8> Buffer;
 		Buffer.SetNumZeroed(FMath::Max<int32>(Fn->ParmsSize, 1));
 		for (TFieldIterator<FProperty> It(Fn); It && It->HasAnyPropertyFlags(CPF_Parm); ++It)
@@ -91,22 +86,6 @@ namespace
 		{
 			It->DestroyValue_InContainer(Buffer.GetData());
 		}
-		return bAllSet;
-	}
-
-	/** The Blueprint-owned PoseOffsets component, by name fragment — the SCS node the terminal
-	 *  added is named after its class (BPC_FPST_Procedural_PoseOffsets), and instance names may
-	 *  carry suffixes, so a Contains match is the robust lookup. */
-	UActorComponent* BNFindPoseOffsetsComp(const AActor* Owner)
-	{
-		for (UActorComponent* Comp : Owner->GetComponents())
-		{
-			if (Comp && Comp->GetName().Contains(TEXT("PoseOffsets")))
-			{
-				return Comp;
-			}
-		}
-		return nullptr;
 	}
 }
 
@@ -114,36 +93,160 @@ ABNCharacter::ABNCharacter()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
-	// The camera rides the MESH, not the capsule — the animation set is full-body first
-	// person, so the animated body carries the view. Rotation still comes from the controller.
+	GetCapsuleComponent()->InitCapsuleSize(34.f, 96.f);
+
+	// Epic's FP template, two representations of one skeleton:
+	//   FirstPerson  — owner only, rendered in the camera's first-person pass (own FOV + scale)
+	//   WorldSpace   — everyone else, hidden from the owner so the two never draw on top of each other
+	// The 1P mesh is a FOLLOWER: SetLeaderPoseComponent(GetMesh()) so the native aim proxy poses
+	// once and both views agree. A second anim instance would be a second aim brain.
+	FirstPersonMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("FirstPersonMesh"));
+	FirstPersonMesh->SetupAttachment(GetMesh());
+	FirstPersonMesh->SetOnlyOwnerSee(true);
+	FirstPersonMesh->SetFirstPersonPrimitiveType(EFirstPersonPrimitiveType::FirstPerson);
+	FirstPersonMesh->SetCollisionProfileName(FName("NoCollision"));
+	FirstPersonMesh->bCastDynamicShadow = false;
+	FirstPersonMesh->bReceivesDecals = false;
+	FirstPersonMesh->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
+
+	GetMesh()->SetOwnerNoSee(true);
+	GetMesh()->SetFirstPersonPrimitiveType(EFirstPersonPrimitiveType::WorldSpaceRepresentation);
+
+	// The view rides the 1P head. Position from the socket (lagged); rotation from the controller.
+	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
+	CameraBoom->SetupAttachment(FirstPersonMesh, CameraAttachSocket);
+	CameraBoom->TargetArmLength = 0.f;
+	CameraBoom->bUsePawnControlRotation = true;
+	CameraBoom->bDoCollisionTest = false;
+	CameraBoom->bEnableCameraLag = true;
+	CameraBoom->CameraLagSpeed = 15.f;
+	CameraBoom->CameraLagMaxDistance = 10.f;
+	CameraBoom->bEnableCameraRotationLag = false;
+
 	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
-	CameraComponent->SetupAttachment(GetMesh(), CameraAttachSocket);
-	CameraComponent->bUsePawnControlRotation = true;
+	CameraComponent->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
+	CameraComponent->bUsePawnControlRotation = false;
+	// Manny's head socket is not camera-forward. These are the template's measured eye offset.
+	CameraComponent->SetRelativeLocationAndRotation(FVector(-2.8f, 5.89f, 0.0f), FRotator(0.0f, 90.0f, -90.0f));
+	// UE 5.5+ first-person pass: 1P primitives render at their own FOV and a scale that keeps
+	// the arms in frame without parenting them to the camera.
+	CameraComponent->bEnableFirstPersonFieldOfView = true;
+	CameraComponent->bEnableFirstPersonScale = true;
+	CameraComponent->FirstPersonFieldOfView = 70.f;
+	CameraComponent->FirstPersonScale = 0.6f;
 
 	EquipmentComponent = CreateDefaultSubobject<UBNEquipmentComponent>(TEXT("EquipmentComponent"));
 	HealthComponent = CreateDefaultSubobject<UBNHealthComponent>(TEXT("HealthComponent"));
 
+	// Weapon and melee traces are judged against the MESH, per bone, which is the only way a
+	// headshot can differ from a gut shot. The capsule is deliberately deaf to both: it is a
+	// movement volume, and a shot that resolves on a cylinder resolves on the wrong shape.
+	// (Neither profile answers ECC_Visibility, by engine default and on purpose — see BNCollision.h.)
+	GetMesh()->SetCollisionResponseToChannel(BNCollision::WeaponTrace, ECR_Block);
+	GetMesh()->SetCollisionResponseToChannel(BNCollision::MeleeTrace, ECR_Block);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(BNCollision::WeaponTrace, ECR_Ignore);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(BNCollision::MeleeTrace, ECR_Ignore);
+
+	// A dedicated server renders nothing, and hit confirmation is judged against the mesh's
+	// physics bodies — without RefreshBones those bodies sit in the reference pose and every
+	// server-side trace is scored against a T-pose.
+	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
+	GetMesh()->bReceivesDecals = false;
+
+	// Yaw only. Pitch and roll on the capsule would tip the whole character with the view; the
+	// spine bends instead, through the anim instance's aim chain. Side-to-side aim IS this yaw:
+	// the body (and the weapon welded to its hands) turns with the look. A separate aim-offset
+	// yaw only appears when the body lags the view — interpolation on a proxy, or a future
+	// turn-in-place that stops the capsule.
 	bUseControllerRotationYaw = true;
+	bUseControllerRotationPitch = false;
+	bUseControllerRotationRoll = false;
 
-	// True first person: the founder's animation set is full-body — the owner sees their
-	// own mannequin (default visibility, no owner-no-see, no separate arms mesh).
+	UCharacterMovementComponent* MoveComp = GetCharacterMovement();
+	MoveComp->bOrientRotationToMovement = false;
+	MoveComp->bUseControllerDesiredRotation = false;
+	MoveComp->NavAgentProps.bCanCrouch = true;
+	MoveComp->bCanWalkOffLedgesWhenCrouching = true;
+	MoveComp->AirControl = 0.5f;
+	MoveComp->BrakingDecelerationFalling = 1500.f;
+}
 
-	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
-	GetCharacterMovement()->bCanWalkOffLedgesWhenCrouching = true;
+FRotator ABNCharacter::GetAimRotation() const
+{
+	FRotator Aim = GetBaseAimRotation();
+	Aim.Pitch = FRotator::NormalizeAxis(Aim.Pitch);
+	Aim.Yaw = FRotator::NormalizeAxis(Aim.Yaw);
+	return Aim;
+}
+
+void ABNCharacter::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	// The BP child assigns the mannequin to GetMesh. The 1P mesh is the same skeleton, posed by
+	// the 3P instance — copy the asset here, after the child has written it.
+	if (FirstPersonMesh)
+	{
+		if (USkeletalMesh* Body = GetMesh()->GetSkeletalMeshAsset())
+		{
+			FirstPersonMesh->SetSkeletalMeshAsset(Body);
+		}
+		FirstPersonMesh->SetLeaderPoseComponent(GetMesh());
+	}
+
+	if (CameraBoom && CameraBoom->GetAttachSocketName() != CameraAttachSocket)
+	{
+		CameraBoom->AttachToComponent(FirstPersonMesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, CameraAttachSocket);
+	}
+
+	// The Blueprint editor preview never hits BeginPlay. Without this the Lyra main ABP has no
+	// linked item layer and the viewport is a T-pose even when PIE would walk.
+	InitializeAnimLayer();
+}
+
+void ABNCharacter::AttachWeaponMeshes(ABNWeapon* Weapon)
+{
+	if (!Weapon || !FirstPersonMesh)
+	{
+		return;
+	}
+
+	const FBNWeaponRow* Row = Weapon->GetRow();
+	const FName Socket = Row ? Row->AttachSocketName : NAME_None;
+	if (USkeletalMeshComponent* FPWeapon = Weapon->GetFirstPersonMesh())
+	{
+		FPWeapon->AttachToComponent(FirstPersonMesh,
+			FAttachmentTransformRules(EAttachmentRule::SnapToTarget, EAttachmentRule::SnapToTarget,
+				EAttachmentRule::KeepWorld, false),
+			Socket);
+	}
 }
 
 void ABNCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Layer linking is local-cosmetic and runs on EVERY machine — sim proxies never see a
-	// possession event, so BeginPlay is their hook; the mesh's anim instance exists by now.
 	InitializeAnimLayer();
+	ResolvePoseOffsets();
 
-	// Bound once per pawn, on every machine; the handler is what gates on authority. The delegate
-	// lives on a component this character owns, so it dies with the body and leaks nothing onto
-	// the persistent ASC.
+	// Bound on every machine; the handler is what gates on authority. The delegate lives on a
+	// component this character owns, so it dies with the body and leaks nothing onto the
+	// persistent ability system component.
 	HealthComponent->OnDeath.AddUObject(this, &ABNCharacter::HandleDeath);
+}
+
+void ABNCharacter::ResolvePoseOffsets()
+{
+	// By name fragment: the SCS node is named after its class (BPC_FPST_Procedural_PoseOffsets)
+	// and instance names may carry suffixes.
+	for (UActorComponent* Comp : GetComponents())
+	{
+		if (Comp && Comp->GetName().Contains(TEXT("PoseOffsets")))
+		{
+			PoseOffsetsComponent = Comp;
+			return;
+		}
+	}
 }
 
 void ABNCharacter::HandleDeath(UBNHealthComponent* /*Component*/)
@@ -159,13 +262,8 @@ void ABNCharacter::HandleDeath(UBNHealthComponent* /*Component*/)
 	}
 }
 
-// The crouch tag's ONE owner: the engine's crouch events, authority-side. Engine crouch
-// replicates via compressed flags and these events fire on every machine; the authority
-// gate makes the tag server-truth, replicated to everyone by the ASC.
 void ABNCharacter::OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
 {
-	// No camera offset here: Super moves the mesh by HalfHeightAdjust and the camera is the
-	// mesh's child, so the view follows — and the crouch animation lowers the head itself.
 	Super::OnStartCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
 
 	if (HasAuthority() && !CrouchStateHandle.IsValid())
@@ -180,6 +278,8 @@ void ABNCharacter::OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightA
 			}
 		}
 	}
+
+	RefreshWeaponPose();
 }
 
 void ABNCharacter::OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
@@ -194,50 +294,36 @@ void ABNCharacter::OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdj
 		}
 		CrouchStateHandle = FActiveGameplayEffectHandle();
 	}
+
+	RefreshWeaponPose();
 }
 
 void ABNCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	// The ASC outlives the pawn (it is the PlayerState's); an unregistered binding per respawn
-	// accumulates on it forever. Through the CACHED ASC, never GetAbilitySystemComponent():
-	// APawn::UnPossessed() nulls PlayerState before the corpse is destroyed, so the fresh
-	// lookup answers null here and the removal this code thought it did never happened.
-	if (MoveSpeedChangedHandle.IsValid())
+	if (UAbilitySystemComponent* ASC = CachedAbilitySystem.Get())
 	{
-		if (UAbilitySystemComponent* ASC = CachedAbilitySystem.Get())
+		if (MoveSpeedChangedHandle.IsValid())
 		{
 			ASC->GetGameplayAttributeValueChangeDelegate(UBNAttributeSet::GetMoveSpeedAttribute())
 				.Remove(MoveSpeedChangedHandle);
+			MoveSpeedChangedHandle.Reset();
 		}
-		MoveSpeedChangedHandle.Reset();
-	}
 
-	// Same cached-ASC route as the delegate above, same reason: the fresh lookup is already null.
-	if (ADSPoseTagHandle.IsValid())
-	{
-		if (UAbilitySystemComponent* ASC = CachedAbilitySystem.Get())
+		if (ADSPoseTagHandle.IsValid())
 		{
 			ASC->RegisterGameplayTagEvent(BNTags::State_Weapon_ADS, EGameplayTagEventType::NewOrRemoved)
 				.Remove(ADSPoseTagHandle);
+			ADSPoseTagHandle.Reset();
 		}
-		ADSPoseTagHandle.Reset();
-	}
 
-	// DEBT A2 (crouch critic, 9b59d79): OnEndCrouch never fires when the pawn is DESTROYED, so
-	// this GE would stay on the persistent ASC and the next body would spawn permanently tagged
-	// Crouching — and a fresh crouch would then stack a second one. Same cached-ASC route as the
-	// delegate above, and for the same reason: the PlayerState is already null by now.
-	if (CrouchStateHandle.IsValid())
-	{
-		if (UAbilitySystemComponent* ASC = CachedAbilitySystem.Get())
+		if (CrouchStateHandle.IsValid())
 		{
 			ASC->RemoveActiveGameplayEffect(CrouchStateHandle);
+			CrouchStateHandle = FActiveGameplayEffectHandle();
 		}
-		CrouchStateHandle = FActiveGameplayEffectHandle();
 	}
 
 	CachedAbilitySystem.Reset();
-
 	Super::EndPlay(EndPlayReason);
 }
 
@@ -259,8 +345,6 @@ void ABNCharacter::PossessedBy(AController* NewController)
 		PS->GrantDefaults();
 	}
 
-	// After GrantDefaults: the weapon's ability set is granted onto the same ASC, so the
-	// PlayerState's own grant must already have happened. Authority-gated inside.
 	if (EquipmentComponent)
 	{
 		EquipmentComponent->InitializeCarriedWeapons();
@@ -275,8 +359,6 @@ void ABNCharacter::OnRep_PlayerState()
 	InitializeAnimLayer();
 }
 
-// Current weapon drives the layer — none today, so the unarmed layer links. Runs wherever
-// called; skips silently until the mesh has an anim instance, then links exactly once per class.
 void ABNCharacter::InitializeAnimLayer()
 {
 	USkeletalMeshComponent* MeshComp = GetMesh();
@@ -291,8 +373,6 @@ void ABNCharacter::InitializeAnimLayer()
 		return;
 	}
 
-	// LinkAnimClassLayers never unlinks the outgoing set, so a resolve that yields nothing
-	// would leave the previous weapon's layer posing the character on every machine.
 	if (LinkedAnimLayerClass)
 	{
 		MeshComp->UnlinkAnimClassLayers(LinkedAnimLayerClass.Get());
@@ -302,28 +382,8 @@ void ABNCharacter::InitializeAnimLayer()
 	if (LayerClass)
 	{
 		MeshComp->LinkAnimClassLayers(LayerClass);
-
-		// The LINKING side of the founder's standing logging order — the anim instance announces
-		// what it FOUND linked, this announces what was DELIBERATELY linked and from where. Two
-		// independent reports: if they ever disagree, the linking failed silently.
-		const FString LayerPath = LayerClass->GetPathName();
-		UE_LOG(LogBN, Log, TEXT("BNLink: %s linked layer %s [%s]"),
-			*GetName(), *LayerPath,
-			LayerPath.Contains(TEXT("/Game/BN/")) ? TEXT("BN DUPLICATE") : TEXT("template original"));
-		if (LayerPath.Contains(TEXT("/Game/BN/")))
-		{
-			UE_LOG(LogBN, Warning,
-				TEXT("BNLink: that layer is a BN-owned DUPLICATE. Duplicated layers keep property-access bindings "
-					 "compiled against the main ABP's OLD layout and silently read zero after a reparent — the "
-					 "14 Aug frozen-aim root cause. Point the weapon row's AnimLayerClass at the FPSTemplate original."));
-		}
-	}
-	else
-	{
-		UE_LOG(LogBN, Warning,
-			TEXT("BNLink: %s resolved NO anim layer class — the weapon row's AnimLayerClass is empty or failed to "
-				 "load, and UnarmedAnimLayer is unset. The character will pose from the base ABP alone."),
-			*GetName());
+		UE_LOG(LogBN, Log, TEXT("BNCharacter: linked anim layer %s (Lyra=%s)."),
+			*GetNameSafe(LayerClass), UsesLyraAnim() ? TEXT("yes") : TEXT("no"));
 	}
 }
 
@@ -339,8 +399,6 @@ void ABNCharacter::InitializeAbilitySystem()
 	ASC->InitAbilityActorInfo(PS, this);
 	CachedAbilitySystem = ASC;
 
-	// Every machine: Health replicates, so each one reaches zero on its own and the component
-	// reports it there — death is never a flag one machine sends to the others.
 	HealthComponent->InitializeWithAbilitySystem(ASC);
 
 	if (!MoveSpeedChangedHandle.IsValid())
@@ -349,9 +407,6 @@ void ABNCharacter::InitializeAbilitySystem()
 			.AddUObject(this, &ABNCharacter::OnMoveSpeedChanged);
 	}
 
-	// Every machine, like the health binding above: the ADS tag replicates (Mixed carries
-	// GE-granted tags to simulated proxies), so each machine's own listener poses its own view
-	// of this character — cosmetics stay per-machine, the template's model exactly.
 	if (!ADSPoseTagHandle.IsValid())
 	{
 		ADSPoseTagHandle = ASC->RegisterGameplayTagEvent(BNTags::State_Weapon_ADS, EGameplayTagEventType::NewOrRemoved)
@@ -372,39 +427,80 @@ void ABNCharacter::OnMoveSpeedChanged(const FOnAttributeChangeData& Data)
 
 void ABNCharacter::HandleADSTagChanged(const FGameplayTag /*Tag*/, int32 NewCount)
 {
-	const bool bADS = NewCount > 0;
+	RefreshWeaponPose(NewCount);
+}
+
+void ABNCharacter::RefreshWeaponPose(int32 ADSCount)
+{
+	UFunction* ChangePose = PoseOffsetsComponent ? PoseOffsetsComponent->FindFunction(FName(TEXT("ChangePose"))) : nullptr;
+	if (!ChangePose)
+	{
+		return;
+	}
+
+	bool bADS = ADSCount > 0;
+	if (ADSCount < 0)
+	{
+		const UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+		bADS = ASC && ASC->HasMatchingGameplayTag(BNTags::State_Weapon_ADS);
+	}
+
 	const uint8 PoseType = bADS
 		? (bIsCrouched ? BN_Pose_AimCrouch : BN_Pose_AimStand)
 		: (bIsCrouched ? BN_Pose_HipCrouch : BN_Pose_HipStand);
 
-	// Scope 0 (default sight) until the weapon row carries a ScopeType column — MyCharacter read
-	// it off the weapon (GetCurrentWeaponScopeType); that column is a one-line DT addition later.
-	// Logged both ways, on the tag edge: "ADS did nothing" and "ADS was never told" look identical
-	// from outside the game, and they are completely different investigations.
-	if (BNCallChangePose(BNFindPoseOffsetsComp(this), PoseType, BN_Scope_Default, BN_AimPoseChangeSpeed))
-	{
-		UE_LOG(LogBN, Log, TEXT("BNPose: %s -> ChangePose(%d) SENT (ADS %s)"),
-			*GetName(), PoseType, bADS ? TEXT("on") : TEXT("off"));
-	}
-	else if (!bPoseCompWarned)
-	{
-		bPoseCompWarned = true;
-		UE_LOG(LogBN, Warning,
-			TEXT("BNPose: no callable ChangePose on a PoseOffsets component — ADS narrows the FOV "
-				 "but the weapon never rises to the eye. The BPC_FPST_Procedural_PoseOffsets component "
-				 "(terminal's R3 pivot) is missing from BP_BNCharacter or its signature changed."));
-	}
+	// Scope 0 until the weapon row carries a ScopeType column.
+	BNCallChangePose(PoseOffsetsComponent, ChangePose, PoseType, BN_Scope_Default, BN_AimPoseChangeSpeed);
 }
 
-// The current-weapon seam. Null (no weapon, no layer on the row) still means unarmed, and the
-// unarmed fallback below stands unchanged — which is why no animation code moved this wave.
 UClass* ABNCharacter::GetCurrentWeaponAnimLayer() const
 {
 	return EquipmentComponent ? EquipmentComponent->GetCurrentWeaponAnimLayer() : nullptr;
 }
 
+bool ABNCharacter::UsesLyraAnim() const
+{
+	const UAnimInstance* Anim = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
+	return Anim && Anim->IsA(UBNLAnimInstance::StaticClass());
+}
+
+UClass* ABNCharacter::ResolveLyraLayerForRow(FName RowName) const
+{
+	const FSoftClassPath* Path = &LyraUnarmedAnimLayer;
+	if (RowName == FName(TEXT("Pistol")))
+	{
+		Path = &LyraPistolAnimLayer;
+	}
+	else if (RowName == FName(TEXT("Rifle")))
+	{
+		Path = &LyraRifleAnimLayer;
+	}
+	else if (RowName == FName(TEXT("Shotgun")))
+	{
+		Path = &LyraShotgunAnimLayer;
+	}
+
+	if (UClass* Loaded = Path->IsNull() ? nullptr : Path->TryLoadClass<UAnimInstance>())
+	{
+		return Loaded;
+	}
+
+	if (UClass* Unarmed = LyraUnarmedAnimLayer.IsNull() ? nullptr : LyraUnarmedAnimLayer.TryLoadClass<UAnimInstance>())
+	{
+		return Unarmed;
+	}
+
+	return LyraItemAnimLayersBase.IsNull() ? nullptr : LyraItemAnimLayersBase.TryLoadClass<UAnimInstance>();
+}
+
 UClass* ABNCharacter::ResolveAnimLayerClass()
 {
+	if (UsesLyraAnim())
+	{
+		const ABNWeapon* Weapon = EquipmentComponent ? EquipmentComponent->GetCurrentWeapon() : nullptr;
+		return ResolveLyraLayerForRow(Weapon ? Weapon->GetRowName() : NAME_None);
+	}
+
 	if (UClass* WeaponLayer = GetCurrentWeaponAnimLayer())
 	{
 		return WeaponLayer;

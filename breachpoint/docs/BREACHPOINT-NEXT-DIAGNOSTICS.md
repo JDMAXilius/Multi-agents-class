@@ -4,58 +4,76 @@
 on the stuff that we are experiencing that is happening wrong."*
 
 Everything here is `LogBN`. Filter the output window to that category and the whole game reports
-itself. **Nothing here fires per frame** — announcements are on edges and failures — except the
-one live trace, which is opt-in and off by default.
+itself. **Nothing here fires per frame** — announcements are on edges and failures only.
 
 ## 1. What announces itself automatically, with no command typed
 
 | Prefix | When | What it settles |
 |---|---|---|
-| `BNLink:` | every time the character links a weapon's anim layer | WHICH layer class, by full path, and **`[template original]` vs `[BN DUPLICATE]`**. A duplicate also prints a WARNING naming it as the frozen-aim root cause |
-| `BNLayers:` | when the linked-layer set changes, and once at startup even if nothing linked | Whether layers are connected at all, which ones, and **which aim properties each one ACCEPTS vs is MISSING**, by name |
 | `BNInput:` | every input-driven ability press | `ADS/melee/grenade/... -> ACTIVATED` or `REFUSED`. Covers every ability at once |
 | `BNGA_ADS:` | ADS press, activate, end | The refusal REASON (sprinting / no row / `bCanADS` false), whether the tag and speed GE applied, and whether it ended by release or was CANCELLED (descoped by damage or sprint) |
-| `BNPose:` | ADS tag flips, both directions | Whether `ChangePose` reached the PoseOffsets component — the gun-rises-to-the-eye half of ADS, separate from the FOV half |
 | `BNGA_Melee:` | every swing | No weapon row / montage unset / montage refused to play (no ABP slot) / swing OK with montage name and length |
 | `BNDamage:` | every point of damage | instigator → victim, amount, shield and health before/after |
 | `BNCues:` | startup | which cue class won each tag |
 | `BNEquipmentComponent:` | startup, per weapon | a startup row that does not exist in the table is named and skipped |
+| `BNPlayerController:` | input setup | an empty `MappingContexts`, a context that failed to load, or an input tag with no `InputAction` in the config |
 
-**The three lines that mean "you found the bug":**
-- `[BN DUPLICATE]` — a stale layer copy. §5b of ASSET-RULES.
-- `MISSING: PitchRotator ...` — the aim value is being written into a layer that has no such
-  property; the pose cannot move through it.
-- `NO linked anim layers` — nothing is linked at all; aim, ADS and weapon poses are all dead.
+## 2. There are no console commands
 
-## 2. Commands, when you want to ask rather than wait
+`BNAimDebug`, `BNAimLog`, `BNAimNative`, `BNAimAxis`, `BNLeanAxis`, `BNLayerCheck`, `BNMelee`,
+`BNDamageSelf`, `BNKillSelf` and `BNRefill` were **removed from the source on 14 Aug 2026**, along
+with the `BNLink:`, `BNLayers:` and `BNPose:` log prefixes, when `BNCharacter`, `BNAnimInstance` and
+`BNPlayerController` were rebuilt to production shape. Typing them now does nothing.
 
-| Command | Does |
-|---|---|
-| `BNAimDebug` | One-shot: the whole aim chain on one line — owner (`NATIVE`/`COMPONENTS`), BaseAimPitch → Pitch → PitchRotator, axes, `bFPSMode`, lean — **plus one line per linked layer showing what that layer actually holds** |
-| `BNAimLog 1` / `0` | Streams that same state twice a second so the chain can be WATCHED while moving the view. Off by default |
-| `BNLayerCheck` | Re-prints the full link report on demand |
-| `BNAimNative 1` / `0` | Flips who owns the aim surface, live, to A/B both paths in one session |
-| `BNAimAxis 0\|1\|2` · `BNLeanAxis 0\|1\|2` | Bone-space axis (Roll/Pitch/Yaw) for aim and lean — measured, not derivable |
-| `BNMelee` | Activates melee BY CLASS, skipping the input assets. Swings here but not on V = the input row/mapping; dead both ways = the ability or the row |
-| `BNDamageSelf [n]` · `BNKillSelf` · `BNRefill` | Drive the damage/death/respawn chain from the console |
+They were scaffolding for one investigation — the frozen aim chain — and what survives of it is
+now the permanent code path: the linked layers are written by resolved address rather than a
+per-frame name lookup, and no gate exists for the component path to win. The
+`Input.Debug.DamageSelf` gameplay tag still exists in `BNGameplayTags`, unbound. Restoring any of
+these means restoring the code, not this row.
 
-## 3. How to read a frozen-aim session in under a minute
+**C++ is NOT yet the sole writer of the aim properties, and this sheet used to claim it was.**
+`ABP_Mannequin_Base` still carries its twenty Lyra update functions and still runs them from
+`BlueprintThreadSafeUpdateAnimation`, which the engine invokes *after* the native thread-safe pass.
+Where both write, the graph wins. `PitchRotator` and `bFPSMode` are the exceptions — the asset
+declares neither, so those two are sole-writer today.
 
-1. Look at the startup lines. `BNLink` + `BNLayers` tell you what is linked and whether it can
-   receive aim at all. **Most aim bugs die right here.**
-2. Move the view, run `BNAimDebug`.
-   - Main line's `PitchRotator` at zero → the value is not being produced (upstream).
-   - Main line live, layer lines zero/missing → the value is produced but not consumed (the
-     layer — duplicate, or a layer that does not model aim).
-   - Both live and the body still still → the layer's ModifyBone chain or the axis. That is the
-     only case that needs an editor investigation, and by then everything else is excluded.
-3. Hold aim: `BNGA_ADS: ACTIVE` plus `BNPose: ChangePose SENT` = both halves of ADS fired. FOV
-   without `BNPose` = the pose component is missing.
-4. Press V: `BNGA_Melee` names the dead link, or `BNInput: Input.Melee -> REFUSED`, or nothing
-   at all (which means the key never reached the ASC — an input-asset problem).
+## 3. Reading an aim or pose failure now
+
+The chain is short enough to bisect by observation:
+
+1. **Nothing poses at all, on any machine** — no anim layer is linked. The character links the
+   current weapon's `AnimLayerClass`; an empty `DT_BNWeapons` cell or a row that failed to load
+   lands here, and `BNEquipmentComponent:` will have named the bad row at startup.
+2. **The body poses but the aim does not follow the camera** — a **shadowed property**. Read the
+   `.uasset` name table before theorising: on 14 Aug 2026 `ABP_Mannequin_Base` was found to still
+   declare its own `AimPitch`, `AimYaw` and `isCrouching` as Blueprint variables
+   (`__CustomProperty_AimPitch_<guid>` and friends in the name table). After the reparent onto
+   `UBNAnimInstance` there are then *two* properties of each name, and since the Blueprint class is
+   the most-derived, every binding that resolves by name finds the Blueprint one. C++ writes a
+   property nothing reads. The fix is to delete the Blueprint variable, not to touch C++.
+
+   The earlier entry here blamed a **BN-owned duplicate** of a template layer. That was wrong and
+   is retracted: there is no `Content/BN/` folder in this repo and no duplicated layer exists. The
+   weapon layers are the FPSTemplate and Lyra originals, and `ABP_RifleAnimLayers` already contains
+   the `IdleAimOffset`/`RelaxedAimOffset` blendspace nodes over the shipped `AO_MM_Rifle_*` assets.
+   The pipe was always built; it was reading the wrong end.
+
+   To audit any ABP for this class of fault without opening the editor, extract the printable
+   strings from the `.uasset` and list every `__CustomProperty_<Name>_<guid>` — that is the exact
+   set of Blueprint-declared variables. Anything in that set which also exists as a C++ `UPROPERTY`
+   on the parent is a shadow, and a shadow is silent.
+3. **The aim follows but bends the wrong way** — the bone-space axis. `AimPitchAxis` and `LeanAxis`
+   are `EditDefaultsOnly` on the ABP's own defaults; they are a measured property of the Manny rig,
+   not a derivable one, so they are set there and not guessed in code.
+4. **ADS changes FOV but the gun does not rise** — the PoseOffsets component or its `ChangePose`
+   entry point was not found. The two halves of ADS are independent by design: FOV is the camera,
+   the pose is the component.
+5. **Press V and nothing happens** — `BNGA_Melee:` names the dead link, or `BNInput: Input.Melee ->
+   REFUSED` names the refusal, or neither appears, which means the key never reached the ability
+   system component at all and the problem is in the input assets.
 
 ## 4. The rule these came from
 
 ASSET-RULES §5c: anything that hands a value across a boundary it cannot verify must announce
-the outcome, name the counterpart, and fail loudly. Every entry above exists because a real bug
+the outcome, name the counterpart, and fail loudly. Every entry in §1 exists because a real bug
 once hid behind that boundary in silence.

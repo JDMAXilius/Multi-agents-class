@@ -1,5 +1,8 @@
 #include "AbilitySystem/BNGameplayCues.h"
 
+#include "BreachpointNext.h"
+#include "Characters/BNCharacter.h"
+#include "Core/BNCollision.h"
 #include "Core/BNGameplayTags.h"
 #include "Weapons/BNWeapon.h"
 #include "Data/BNDataRows.h"
@@ -175,6 +178,18 @@ bool UBNGameplayCue_Death::OnExecute_Implementation(AActor* MyTarget, const FGam
 		return true;
 	}
 
+	// The owner has been looking at the 1P mesh. A ragdoll on the hidden 3P body would be
+	// invisible to them — drop the 1P follower and let them see the world mesh fall.
+	if (ABNCharacter* BNChar = Cast<ABNCharacter>(Character))
+	{
+		if (USkeletalMeshComponent* FPMesh = BNChar->GetFirstPersonMesh())
+		{
+			FPMesh->SetLeaderPoseComponent(nullptr);
+			FPMesh->SetHiddenInGame(true);
+		}
+		MeshComp->SetOwnerNoSee(false);
+	}
+
 	// The CAPSULE stops colliding and the MESH starts. Both halves are needed: a corpse whose
 	// capsule still blocks is an invisible wall in the middle of a firefight, and a mesh left on
 	// its query-only profile falls through the floor it is supposed to land on.
@@ -188,6 +203,12 @@ bool UBNGameplayCue_Death::OnExecute_Implementation(AActor* MyTarget, const FGam
 	MeshComp->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
 	MeshComp->SetCollisionProfileName(RagdollCollisionProfile);
 	MeshComp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	// A corpse falls and slides, but it does not soak up gunfire. The Ragdoll profile answers the
+	// weapon channels with the channel default (Block), so leaving this alone would give a body
+	// three seconds as a bullet sponge in front of whoever is still alive behind it. Stated here
+	// as a decision, not inherited from a response table nobody chose.
+	MeshComp->SetCollisionResponseToChannel(BNCollision::WeaponTrace, ECR_Ignore);
+	MeshComp->SetCollisionResponseToChannel(BNCollision::MeleeTrace, ECR_Ignore);
 	MeshComp->SetAllBodiesSimulatePhysics(true);
 	MeshComp->WakeAllRigidBodies();
 

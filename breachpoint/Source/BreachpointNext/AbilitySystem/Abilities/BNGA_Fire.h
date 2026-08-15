@@ -71,4 +71,6 @@ protected:
 
 	/** Built on first use, not in the constructor — see the definition. */
 	mutable FGameplayTagContainer CooldownTags;
+
+	FActiveGameplayEffectHandle FiringHandle;
 };

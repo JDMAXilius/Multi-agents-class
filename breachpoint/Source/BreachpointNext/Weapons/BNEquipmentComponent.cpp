@@ -43,9 +43,18 @@ void UBNEquipmentComponent::InitializeCarriedWeapons()
 			continue;
 		}
 
+		// Empty hands are a slot, not a weapon actor. A null entry keeps the swap index honest
+		// (Unarmed → Pistol → Rifle → Shotgun → Knife) and ResolveAnimLayerClass falls through
+		// to UnarmedAnimLayer. An optional DT row named Unarmed still feeds melee numbers.
+		if (StartupRow == FName(TEXT("Unarmed")))
+		{
+			Weapons.Add(nullptr);
+			continue;
+		}
+
 		// THE ROW FIRST — it decides whether to spawn at all and WHAT to spawn. A name with no row
 		// used to spawn anyway and join the cycle as a meshless ghost; now the ini names every
-		// intended weapon (all four) and each joins the rotation the moment its DT row lands.
+		// intended weapon and each joins the rotation the moment its DT row lands.
 		const UGameInstance* GameInstance = World->GetGameInstance();
 		const UBNGameData* GameData = GameInstance ? GameInstance->GetSubsystem<UBNGameData>() : nullptr;
 		const FBNWeaponRow* Row = GameData ? GameData->FindWeaponRow(StartupRow) : nullptr;
@@ -97,6 +106,11 @@ void UBNEquipmentComponent::InitializeCarriedWeapons()
 		}
 
 		Weapons.Add(Weapon);
+
+		if (ABNCharacter* BNChar = Cast<ABNCharacter>(Owner))
+		{
+			BNChar->AttachWeaponMeshes(Weapon);
+		}
 	}
 
 	EquipIndex(0);
@@ -210,6 +224,10 @@ void UBNEquipmentComponent::ApplyCurrentWeapon()
 	// re-calling it after every index change — here, on every machine — IS the layer swap.
 	if (ABNCharacter* Character = Cast<ABNCharacter>(GetOwner()))
 	{
+		for (ABNWeapon* Weapon : Weapons)
+		{
+			Character->AttachWeaponMeshes(Weapon);
+		}
 		Character->InitializeAnimLayer();
 	}
 }
