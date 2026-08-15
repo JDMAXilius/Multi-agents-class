@@ -62,6 +62,17 @@ The chain is short enough to bisect by observation:
    strings from the `.uasset` and list every `__CustomProperty_<Name>_<guid>` — that is the exact
    set of Blueprint-declared variables. Anything in that set which also exists as a C++ `UPROPERTY`
    on the parent is a shadow, and a shadow is silent.
+
+   > **MEASURED 15 Aug 2026 (terminal, live editor)** — the string-table audit OVERCOUNTS. The
+   > `.uasset` name table for `ABP_Mannequin_Base` (post-906a4d9) still carries
+   > `__CustomProperty_{AimPitch, AimYaw, isCrouching, isMoving2D}`, but the LOADED class has
+   > exactly ONE property per name (108 walked via TFieldIterator, zero duplicates, zero
+   > `__CustomProperty_*`), and `list_variables` shows none of the four as Blueprint variables.
+   > Name-table strings survive from stale compiled-out bytecode; only the live class layout —
+   > or the editor's own variable list — proves a shadow. There is nothing to delete on the
+   > current asset; if aim still misbehaves, the shadow theory is exhausted for the main ABP
+   > and §3.3 (axis) / §2's graph-wins note are the remaining suspects. Layer ABPs
+   > (`ABP_ItemAnimLayersBase` both copies, `ABP_RifleAnimLayers`) audit clean even on strings.
 3. **The aim follows but bends the wrong way** — the bone-space axis. `AimPitchAxis` and `LeanAxis`
    are `EditDefaultsOnly` on the ABP's own defaults; they are a measured property of the Manny rig,
    not a derivable one, so they are set there and not guessed in code.
