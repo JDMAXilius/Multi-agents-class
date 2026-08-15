@@ -18,7 +18,6 @@ namespace BNTags
 	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Input_Weapon_ADS);
 	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Input_Melee);
 	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Input_Grenade);
-	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Input_Debug_DamageSelf);
 
 	/** The ROOT, and it is load-bearing: respawn sweeps every State.* GE off the persistent ASC
 	 *  with one query, so a state tag a dead life left behind cannot reach the next body. */

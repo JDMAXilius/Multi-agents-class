@@ -16,7 +16,6 @@ namespace BNTags
 	UE_DEFINE_GAMEPLAY_TAG(Input_Weapon_ADS, "Input.Weapon.ADS");
 	UE_DEFINE_GAMEPLAY_TAG(Input_Melee, "Input.Melee");
 	UE_DEFINE_GAMEPLAY_TAG(Input_Grenade, "Input.Grenade");
-	UE_DEFINE_GAMEPLAY_TAG(Input_Debug_DamageSelf, "Input.Debug.DamageSelf");
 
 	UE_DEFINE_GAMEPLAY_TAG(State, "State");
 

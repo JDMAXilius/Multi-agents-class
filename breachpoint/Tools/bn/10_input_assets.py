@@ -146,13 +146,6 @@ ACTIONS = [
         "reuse": BN_INPUT_PATH + "/IA_BN_Grenade",
         "keys": [("G", [])],
     },
-    {
-        "id": "DebugDamageSelf",
-        "tag": "Input.Debug.DamageSelf",
-        "value_type": "BOOLEAN",
-        "reuse": BN_INPUT_PATH + "/IA_BN_DebugDamageSelf",
-        "keys": [("K", [])],
-    },
 ]
 
 AUDIT_FMT = "%-38s | %-56s | %-56s | %s"
