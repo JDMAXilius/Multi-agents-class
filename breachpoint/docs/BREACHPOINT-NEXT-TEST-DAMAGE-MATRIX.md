@@ -63,6 +63,35 @@ Damage is the server's alone, so every line above is a **server-log** line. In a
 - **Melee across a weapon swap** — must still work; melee is granted by the PlayerState, not the
   weapon, so swapping cannot revoke it.
 
+## 3b. The two damage rules, and how to turn them on
+
+Both landed 17 Aug **inert** — every weapon behaves exactly as it did before them until a row
+says otherwise. They live inside `BNDamage::ApplyWeaponDamage`, so no ability was touched.
+
+**Body sections** (Zorans' shape). Every bone resolves to head / torso / arm / leg by substring,
+so `neck_01`, `spine_03` and `upperarm_l` all land correctly without being listed. **Neck counts
+as head** — the convention everywhere that has the distinction. An unrecognised bone resolves to
+torso, never to a free hit. Row columns: `HeadshotMultiplier` (already 2.0 and unchanged),
+`TorsoMultiplier`, `ArmMultiplier`, `LegMultiplier` — the last three default to 1.0.
+*To tune:* set e.g. `LegMultiplier = 0.75` on the Rifle row. Nothing else.
+
+**Distance falloff** (Lyra's concept, three numbers instead of a curve asset):
+`FalloffStartDistance` (full damage out to here), `FalloffEndDistance`, `FalloffMinMultiplier`.
+Disabled while `End <= Start`, which is the default 0/0. Distance is measured from the shot's own
+origin, not the shooter's feet.
+*To tune:* Shotgun `Start = 500`, `End = 2000`, `Min = 0.3` gives it a real close-range identity.
+
+**To see either working:** raise the log to Verbose for `LogBN` and every landed bullet prints
+its own arithmetic —
+
+```
+BNDamage: 20.0 base x2.00 head (bone 'head') x1.00 falloff @ 412uu = 40.0
+```
+
+If a number ever looks wrong, that line names which of the three factors produced it. And a
+`bone 'None'` in it means the trace resolved on something with no skeleton — headshots could
+never fire in that state.
+
 ## 4. Known, stated rather than hidden
 
 - **Shotgun magazine is 30** — the weapon CDO carries no magazine property, so the C++ default

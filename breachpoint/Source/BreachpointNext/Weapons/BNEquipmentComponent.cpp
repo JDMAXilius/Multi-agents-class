@@ -127,6 +127,19 @@ void UBNEquipmentComponent::InitializeCarriedWeapons()
 				: TEXT("NONE (row has no AbilitySet — this weapon cannot fire)"),
 			Row->MeleeDamage, Row->MeleeRange, Row->MagazineSize);
 
+		// The two damage RULES, stated only when a row has opted into them — a silent default is
+		// not news, but a row that quietly halves damage at range would be.
+		if (bCanShoot && Row->FalloffEndDistance > Row->FalloffStartDistance)
+		{
+			UE_LOG(LogBN, Log, TEXT("BNLoadout: '%s' falloff — full to %.0fuu, then down to x%.2f by %.0fuu."),
+				*StartupRow.ToString(), Row->FalloffStartDistance, FMath::Clamp(Row->FalloffMinMultiplier, 0.f, 1.f), Row->FalloffEndDistance);
+		}
+		if (bCanShoot && (Row->TorsoMultiplier != 1.f || Row->ArmMultiplier != 1.f || Row->LegMultiplier != 1.f))
+		{
+			UE_LOG(LogBN, Log, TEXT("BNLoadout: '%s' body sections — head x%.2f, torso x%.2f, arm x%.2f, leg x%.2f."),
+				*StartupRow.ToString(), Row->HeadshotMultiplier, Row->TorsoMultiplier, Row->ArmMultiplier, Row->LegMultiplier);
+		}
+
 		if (bCanShoot && Row->Damage <= 0.f)
 		{
 			UE_LOG(LogBN, Error, TEXT("BNLoadout: '%s' can fire but its row Damage is %.1f — every confirmed hit will apply nothing."),

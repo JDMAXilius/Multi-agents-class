@@ -34,8 +34,39 @@ struct FBNWeaponRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, Category = "Combat")
 	float Damage = 20.f;
 
+	// ---- positional damage. Zorans' bone→section shape (ZoransCharacterBase.cpp:157), reduced to
+	// the four sections a Manny actually has. HeadshotMultiplier keeps its name and its meaning:
+	// it IS the head section's multiplier, so no row that already sets it changes behaviour.
+	// The other three default to 1.0 — landing this changes NOTHING until a row is tuned, which
+	// is the point: the capability is data, the decision is yours.
 	UPROPERTY(EditAnywhere, Category = "Combat")
 	float HeadshotMultiplier = 2.f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	float TorsoMultiplier = 1.f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	float ArmMultiplier = 1.f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	float LegMultiplier = 1.f;
+
+	// ---- distance falloff. Lyra evaluates a rich curve per weapon
+	// (LyraRangedWeaponInstance.cpp:125); three numbers express the same shape without a curve
+	// asset per weapon, and a DataTable can hold them. DISABLED by default (End = 0), so a row
+	// that says nothing keeps doing full damage at every range, exactly as today.
+	//
+	//   distance <= Start        -> full damage
+	//   Start .. End             -> linear down to MinMultiplier
+	//   distance >= End          -> MinMultiplier
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	float FalloffStartDistance = 0.f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	float FalloffEndDistance = 0.f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float FalloffMinMultiplier = 1.f;
 
 	// Seconds between shots, not rounds-per-minute: the template's `FireDelay` variable is
 	// already a period and feeds the fire timer directly (MyCharacter.h:143-149, .cpp:1685).
