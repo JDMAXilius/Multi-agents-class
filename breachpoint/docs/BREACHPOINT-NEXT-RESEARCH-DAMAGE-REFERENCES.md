@@ -51,7 +51,23 @@ Two rows deserve calling out:
 
 ## 3. The three things the references have that BN does not
 
-### 3a. Friendly fire — the only one that blocks 4v4
+### 3a. Friendly fire — PARKED by founder ruling, 17 Aug 2026
+
+> **FOUNDER RULING: no teams. Matchmaking targets FREE-FOR-ALL, and only free-for-all.**
+> *"Right now we don't need to worry about teams… we're just gonna be focusing on free-for-all.
+> Keep it simple for now. Have in mind that we're gonna be making it later, but right now I don't
+> want you to focus on that."*
+>
+> **What this means for the pipeline: nothing is missing.** In free-for-all every player is a
+> legal target for every other player, which is exactly what `BNDamage` does today. The gap
+> below is not a gap under FFA — it is a feature the mode does not have.
+>
+> **When teams arrive**, the work is one gate inside `BNDamage::ApplyDamage` — never at the call
+> sites — and self-damage stays exempt. All five damage sources are covered by that one edit.
+> Nothing else in the pipeline moves. Recorded here so the next reader does not mistake FFA for
+> an oversight, and does not start sprinkling team checks through the abilities.
+
+The reference detail, kept for the day it matters:
 
 Both team-based references gate damage on team attitude, and they do it **inside the damage
 calculation**, not at the call sites:
@@ -96,5 +112,10 @@ knowing the ceiling.
 is stricter than all of them on the two things that matter most in a competitive shooter: one
 damage entry point, and server validation of every client claim.
 
-Priority of the gaps: **friendly fire (before 4v4 exists) > distance falloff > per-bone
-sections**. None of them changes the pipeline's shape — all three are edits *inside* the door.
+**Under the free-for-all ruling (17 Aug), the pipeline is FEATURE-COMPLETE.** Everyone may damage
+everyone, which is what it already does. The remaining two items are tuning, not correctness:
+distance falloff and per-bone sections, in that order, whenever the shooting stops feeling right.
+Friendly fire is parked with teams (§3a).
+
+None of the three changes the pipeline's shape — all are edits *inside* the door, which is the
+whole reason the door exists.
