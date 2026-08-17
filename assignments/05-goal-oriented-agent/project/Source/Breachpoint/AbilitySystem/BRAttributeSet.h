@@ -1,0 +1,120 @@
+#pragma once
+
+#include "AbilitySystemComponent.h"
+#include "AttributeSet.h"
+#include "CoreMinimal.h"
+
+#include "BRAttributeSet.generated.h"
+
+struct FGameplayEffectSpec;
+
+// C++ FALLBACKS, mirroring Content/Data/CT_Combat.csv. The CSV stays the authority: ApplyInitStats
+// overrides every one of these from the curve table at spawn. They exist so a fighter is never in
+// a nonsense state - zero max health, zero move speed - when a curve row is missing or the
+// DataTable has not been reimported after a CSV edit. If these and the CSV ever disagree, the CSV
+// is right and these are stale.
+namespace BRAttributeDefaults
+{
+	inline constexpr float MaxHealth = 100.f;
+	inline constexpr float MaxShields = 100.f;
+	inline constexpr float MaxGrenades = 2.f;
+	inline constexpr float MoveSpeedBase = 600.f;
+	inline constexpr float SprintSpeedMultiplier = 1.2f;
+}
+
+DECLARE_MULTICAST_DELEGATE_FourParams(FBROnDeathSignature, AActor*, AActor*, AActor*, const FGameplayEffectSpec&);
+
+UCLASS(meta = (DisplayName = "BR Attribute Set"))
+class BREACHPOINT_API UBRAttributeSet : public UAttributeSet
+{
+	GENERATED_BODY()
+
+public:
+	UBRAttributeSet();
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
+
+	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Attributes", ReplicatedUsing = OnRep_Shields)
+	FGameplayAttributeData Shields;
+	ATTRIBUTE_ACCESSORS_BASIC(UBRAttributeSet, Shields);
+
+	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Attributes", ReplicatedUsing = OnRep_MaxShields)
+	FGameplayAttributeData MaxShields;
+	ATTRIBUTE_ACCESSORS_BASIC(UBRAttributeSet, MaxShields);
+
+	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Attributes", ReplicatedUsing = OnRep_Health)
+	FGameplayAttributeData Health;
+	ATTRIBUTE_ACCESSORS_BASIC(UBRAttributeSet, Health);
+
+	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Attributes", ReplicatedUsing = OnRep_MaxHealth)
+	FGameplayAttributeData MaxHealth;
+	ATTRIBUTE_ACCESSORS_BASIC(UBRAttributeSet, MaxHealth);
+
+	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Attributes", ReplicatedUsing = OnRep_Grenades)
+	FGameplayAttributeData Grenades;
+	ATTRIBUTE_ACCESSORS_BASIC(UBRAttributeSet, Grenades);
+
+	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Attributes", ReplicatedUsing = OnRep_MaxGrenades)
+	FGameplayAttributeData MaxGrenades;
+	ATTRIBUTE_ACCESSORS_BASIC(UBRAttributeSet, MaxGrenades);
+
+	// MOVEMENT: the VALUE lives here so a GameplayEffect can buff or debuff it. The sprint
+	// on/off STATE deliberately does not - it stays as bWantsToSprint in FSavedMove_BR, because
+	// that is the field a client correction replays. See gas-purity.md's movement exception.
+	//
+	// Zero means "no override": the CMC keeps its own configured speed. That is what makes these
+	// safe to add before CT_Combat.csv carries a row for them.
+	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Attributes", ReplicatedUsing = OnRep_MoveSpeedBase)
+	FGameplayAttributeData MoveSpeedBase;
+	ATTRIBUTE_ACCESSORS_BASIC(UBRAttributeSet, MoveSpeedBase);
+
+	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Attributes", ReplicatedUsing = OnRep_SprintSpeedMultiplier)
+	FGameplayAttributeData SprintSpeedMultiplier;
+	ATTRIBUTE_ACCESSORS_BASIC(UBRAttributeSet, SprintSpeedMultiplier);
+
+	UPROPERTY(BlueprintReadOnly, Category = "Breachpoint|Attributes")
+	FGameplayAttributeData IncomingDamage;
+	ATTRIBUTE_ACCESSORS_BASIC(UBRAttributeSet, IncomingDamage);
+
+	FBROnDeathSignature OnDeath;
+
+	bool HasReportedDeath() const { return bDeathReported; }
+
+protected:
+	UFUNCTION()
+	void OnRep_Shields(const FGameplayAttributeData& OldValue);
+
+	UFUNCTION()
+	void OnRep_MaxShields(const FGameplayAttributeData& OldValue);
+
+	UFUNCTION()
+	void OnRep_Health(const FGameplayAttributeData& OldValue);
+
+	UFUNCTION()
+	void OnRep_MaxHealth(const FGameplayAttributeData& OldValue);
+
+	UFUNCTION()
+	void OnRep_Grenades(const FGameplayAttributeData& OldValue);
+
+	UFUNCTION()
+	void OnRep_MaxGrenades(const FGameplayAttributeData& OldValue);
+
+	UFUNCTION()
+	void OnRep_MoveSpeedBase(const FGameplayAttributeData& OldValue);
+
+	UFUNCTION()
+	void OnRep_SprintSpeedMultiplier(const FGameplayAttributeData& OldValue);
+
+private:
+	float ApplyIncomingDamageShieldsFirst(float RawDamage);
+
+	void CheckForDeath(const FGameplayEffectModCallbackData& Data);
+
+	void UpdateShieldsBrokenState();
+
+	bool bDeathReported = false;
+};

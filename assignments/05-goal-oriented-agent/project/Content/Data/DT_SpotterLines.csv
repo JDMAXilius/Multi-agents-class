@@ -1,0 +1,64 @@
+RowName,TriggerId,Text,Audience,Weight,RepeatCooldown_s
+S01a,Kill.Confirmed,Kill confirmed.,Self,1.0,20
+S01b,Kill.Confirmed,Target down.,Self,1.0,20
+S01c,Kill.Confirmed,Hostile down.,Self,1.0,20
+S02a,Death.Self,You're down.,Self,1.0,20
+S02b,Death.Self,Shields gone. Health gone.,Self,1.0,20
+S02c,Death.Self,Killed in action.,Self,1.0,20
+S03a,Kill.Multi.Double,Double kill.,Self,1.0,20
+S03b,Kill.Multi.Double,Two down.,Self,1.0,20
+S03c,Kill.Multi.Double,Back to back.,Self,1.0,20
+S04a,Kill.Multi.Triple,Triple kill.,Self,1.0,20
+S04b,Kill.Spree,Killing spree.,Self,1.0,20
+S04c,Kill.Multi.Triple,Three down.,Self,1.0,20
+S05a,Shield.Break.Enemy,Shields down.,Self,1.0,20
+S05b,Shield.Break.Enemy,Shields stripped.,Self,1.0,20
+S05c,Shield.Break.Enemy,Flesh exposed.,Self,1.0,20
+S06a,Shield.Break.Self,Shields gone.,Self,1.0,20
+S06b,Shield.Break.Self,You're on health.,Self,1.0,20
+S06c,Shield.Break.Self,Last layer.,Self,1.0,20
+S07a,Kill.Headshot,Headshot.,Self,1.0,20
+S07b,Kill.Headshot,Precision kill.,Self,1.0,20
+S07c,Kill.Headshot,Clean headshot.,Self,1.0,20
+S08a,Kill.Melee.Rear,Rear kill.,Self,1.0,20
+S08b,Kill.Melee.Rear,From behind.,Self,1.0,20
+S08c,Kill.Melee.Rear,Blindside.,Self,1.0,20
+S09a,Kill.Melee,Melee kill.,Self,1.0,20
+S09b,Kill.Melee,Contact kill.,Self,1.0,20
+S09c,Kill.Melee,Melee finish.,Self,1.0,20
+S10a,Kill.Grenade,Grenade kill.,Self,1.0,20
+S10b,Kill.Grenade,Nowhere to go.,Self,1.0,20
+S10c,Kill.Grenade,Frag kill.,Self,1.0,20
+S11a,Rocket.Spawned,Rocket up at the Core.,All,1.0,8
+S11b,Rocket.Spawned,Rocket is live at the Core.,All,1.0,8
+S11c,Rocket.Spawned,The Core is contested.,All,1.0,8
+S12b,Rocket.PickedUp.Enemy,Rocket taken.,Team,1.0,8
+S12c,Rocket.PickedUp.Enemy,Power weapon lost.,Team,1.0,8
+S12f,Rocket.PickedUp.Enemy,Rocket off the pad.,Team,1.0,8
+S13a,Rocket.Denied,Rocket denied.,Team,1.0,8
+S13b,Rocket.Denied,Denied at the Core.,Team,1.0,8
+S13c,Rocket.Denied,Carrier down.,Team,1.0,8
+S14a,Kill.Grapple,Grapple kill.,Self,1.0,20
+S14b,Kill.Grapple,Pulled in and killed.,Self,1.0,20
+S14c,Kill.Grapple,Grapple closed the gap.,Self,1.0,20
+S15a,Match.Phase.Warmup,Warmup.,All,1.0,0
+S15b,Match.Phase.Warmup,Bots filling empty slots.,All,1.0,0
+S15c,Match.Phase.Warmup,Standing by.,All,1.0,0
+S16a,Match.Phase.Live,Match live.,All,1.0,0
+S16b,Match.Phase.Live,Weapons hot.,All,1.0,0
+S16c,Match.Phase.Live,Team Slayer. Live.,All,1.0,0
+S17a,Match.Phase.SuddenDeath,Sudden death. No respawns.,All,1.0,0
+S17b,Match.Phase.SuddenDeath,Next kill wins.,All,1.0,0
+S17c,Match.Phase.SuddenDeath,Sudden death.,All,1.0,0
+S18a,Match.End.Win,Match won.,Team,1.0,0
+S18b,Match.End.Win,Win confirmed.,Team,1.0,0
+S18c,Match.End.Win,Match complete. Victory.,Team,1.0,0
+S19a,Match.End.Loss,Match lost.,Team,1.0,0
+S19b,Match.End.Loss,Loss recorded.,Team,1.0,0
+S19c,Match.End.Loss,Match complete. Defeat.,Team,1.0,0
+S20a,Score.Comeback,Lead retaken.,Team,1.0,8
+S20b,Score.Comeback,Deficit closed.,Team,1.0,8
+S20c,Score.Comeback,Score is level.,Team,1.0,8
+S21a1,Score.Blowout.Lead,Wide lead.,Team,1.0,8
+S21a2,Score.Blowout.Lead,Lead is holding.,Team,1.0,8
+S21b1,Score.Blowout.Deficit,Down heavy.,Team,1.0,8

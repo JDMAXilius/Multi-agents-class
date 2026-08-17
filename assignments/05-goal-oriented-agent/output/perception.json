@@ -1,0 +1,294 @@
+{
+  "pinned_project": "project",
+  "files_scanned": 114,
+  "symbols_found": 303,
+  "data_tables": [
+    "CT_Combat.csv",
+    "DT_BotAmbitions.csv",
+    "DT_BotTuning.csv",
+    "DT_MatchRules.csv",
+    "DT_Medals.csv",
+    "DT_SpotterLines.csv",
+    "DT_Weapons.csv"
+  ],
+  "features": [
+    {
+      "id": "team-slayer-4v4-bots-filling-any-slot-3-",
+      "text": "Team Slayer 4v4 (bots filling any slot, 3 difficulty settings)",
+      "keys": [
+        "team",
+        "slayer",
+        "bots",
+        "difficulty",
+        "setting"
+      ],
+      "gdd_mentions": 62,
+      "built": true,
+      "evidence": [
+        "team -> UBREnvQueryContext_Teammates (Source/Breachpoint/AI/BREnvQueryContexts.h)",
+        "setting -> UBRGameUserSettings (Source/Breachpoint/UI/Settings/BRGameUserSettings.h)"
+      ],
+      "inputs": [
+        "FBRSettingsOption (Source/Breachpoint/UI/Settings/BRSettingsValueObjects.h)",
+        "FBRSpringSetting (Source/Breachpoint/Animation/BRProceduralTypes.h)"
+      ],
+      "integration": 15,
+      "score": 0.0,
+      "terms": {}
+    },
+    {
+      "id": "1-three-level-arena-map",
+      "text": "1 three-level arena map",
+      "keys": [
+        "arena"
+      ],
+      "gdd_mentions": 12,
+      "built": false,
+      "evidence": [
+        "no U/A/I class matches any of ['arena']"
+      ],
+      "inputs": [],
+      "integration": 0,
+      "score": 16.0,
+      "terms": {
+        "central": 12.0,
+        "inputs_ready": 0.0,
+        "integration": 0.0,
+        "breadth": 4.0
+      }
+    },
+    {
+      "id": "3-weapons-ar-magnum-rocket-on-a-90-s-tim",
+      "text": "3 weapons (AR, Magnum, Rocket on a 90 s timer)",
+      "keys": [
+        "weapon",
+        "magnum",
+        "rocket"
+      ],
+      "gdd_mentions": 64,
+      "built": true,
+      "evidence": [
+        "weapon -> ABRPowerWeaponSpawner (Source/Breachpoint/Weapons/BRWeaponPickup.h)",
+        "rocket -> UBREnvQueryContext_RocketPad (Source/Breachpoint/AI/BREnvQueryContexts.h)"
+      ],
+      "inputs": [
+        "FBRFPSWeaponSockets (Source/Breachpoint/Animation/BRFPSWeaponAnimTypes.h)",
+        "FBRWeaponAbilityGrant (Source/Breachpoint/Weapons/BREquipmentComponent.h)",
+        "FBRWeaponFireCueFX (Source/Breachpoint/AbilitySystem/Cues/BRGameplayCues.h)",
+        "FBRWeaponRow (Source/Breachpoint/AbilitySystem/Abilities/BRGA_WeaponFire.h)",
+        "DT_Weapons.csv",
+        "FBRSTTask_ContestRocket (Source/Breachpoint/AI/BRStateTreeTasks.h)",
+        "FBRSTTask_ContestRocketInstanceData (Source/Breachpoint/AI/BRStateTreeTasks.h)"
+      ],
+      "integration": 9,
+      "score": 0.0,
+      "terms": {}
+    },
+    {
+      "id": "frag-grenades",
+      "text": "frag grenades",
+      "keys": [
+        "frag",
+        "grenade"
+      ],
+      "gdd_mentions": 21,
+      "built": true,
+      "evidence": [
+        "grenade -> UBRGA_Grenade (Source/Breachpoint/AbilitySystem/Abilities/BRGA_Grenade.h)"
+      ],
+      "inputs": [
+        "FBRGrenadeTuning (Source/Breachpoint/AbilitySystem/Abilities/BRGA_Grenade.h)"
+      ],
+      "integration": 2,
+      "score": 0.0,
+      "terms": {}
+    },
+    {
+      "id": "melee-including-rear-kill",
+      "text": "melee including rear-kill",
+      "keys": [
+        "melee",
+        "rear",
+        "kill"
+      ],
+      "gdd_mentions": 49,
+      "built": true,
+      "evidence": [
+        "melee -> UBRGA_Melee (Source/Breachpoint/AbilitySystem/Abilities/BRGA_Melee.h)",
+        "kill -> UBRKillfeed (Source/Breachpoint/UI/HUD/BRKillfeed.h)"
+      ],
+      "inputs": [
+        "FBRKillFeedEntry (Source/Breachpoint/Match/BRGameState.h)",
+        "FBRKillfeedViewEntry (Source/Breachpoint/UI/BRUITypes.h)"
+      ],
+      "integration": 3,
+      "score": 0.0,
+      "terms": {}
+    },
+    {
+      "id": "grappleshot",
+      "text": "Grappleshot",
+      "keys": [
+        "grappleshot"
+      ],
+      "gdd_mentions": 14,
+      "built": true,
+      "evidence": [
+        "grappleshot -> UBREnvQueryContext_GrapplePerches (Source/Breachpoint/AI/BREnvQueryContexts.h)"
+      ],
+      "inputs": [
+        "FBRGrappleTuning (Source/Breachpoint/Character/BRCharacterMovementComponent.h)"
+      ],
+      "integration": 2,
+      "score": 0.0,
+      "terms": {}
+    },
+    {
+      "id": "shields-over-health",
+      "text": "shields-over-health",
+      "keys": [
+        "shield",
+        "over",
+        "health"
+      ],
+      "gdd_mentions": 49,
+      "built": true,
+      "evidence": [
+        "shield -> UBRGE_ShieldsBroken (Source/Breachpoint/AbilitySystem/Effects/BRGameplayEffects.h)",
+        "over -> UBREnvQueryContext_CoverPoints (Source/Breachpoint/AI/BREnvQueryContexts.h)"
+      ],
+      "inputs": [],
+      "integration": 3,
+      "score": 0.0,
+      "terms": {}
+    },
+    {
+      "id": "scored-respawns",
+      "text": "scored respawns",
+      "keys": [
+        "scored",
+        "respawn"
+      ],
+      "gdd_mentions": 15,
+      "built": true,
+      "evidence": [
+        "respawn -> UBRScreen_DeathRespawn (Source/Breachpoint/UI/Screens/BRScreen_DeathRespawn.h)"
+      ],
+      "inputs": [
+        "FBRProjectileSpawnParams (Source/Breachpoint/Weapons/BRProjectile.h)"
+      ],
+      "integration": 1,
+      "score": 0.0,
+      "terms": {}
+    },
+    {
+      "id": "commonui-hud-minimal-front-end",
+      "text": "CommonUI HUD + minimal front end",
+      "keys": [
+        "commonui"
+      ],
+      "gdd_mentions": 3,
+      "built": true,
+      "evidence": [
+        "commonui -> UCommonActionWidget (Source/Breachpoint/UI/Components/BRButtonPrompt.h)"
+      ],
+      "inputs": [],
+      "integration": 6,
+      "score": 0.0,
+      "terms": {}
+    },
+    {
+      "id": "canned-medals-killfeed",
+      "text": "canned medals + killfeed",
+      "keys": [
+        "canned",
+        "medal",
+        "killfeed"
+      ],
+      "gdd_mentions": 22,
+      "built": true,
+      "evidence": [
+        "killfeed -> UBRKillfeed (Source/Breachpoint/UI/HUD/BRKillfeed.h)"
+      ],
+      "inputs": [
+        "FBRMedalRow (Source/Breachpoint/Data/BRDataRows.h)",
+        "DT_Medals.csv",
+        "FBRKillFeedEntry (Source/Breachpoint/Match/BRGameState.h)",
+        "FBRKillfeedViewEntry (Source/Breachpoint/UI/BRUITypes.h)"
+      ],
+      "integration": 2,
+      "score": 0.0,
+      "terms": {}
+    },
+    {
+      "id": "spotter-agent-with-canned-fallback",
+      "text": "Spotter agent with canned fallback",
+      "keys": [
+        "spotter",
+        "agent",
+        "canned",
+        "fallback"
+      ],
+      "gdd_mentions": 40,
+      "built": false,
+      "evidence": [
+        "no U/A/I class matches any of ['spotter', 'agent', 'canned', 'fallback'] \u2014 but its data exists (FBRSpotterLineRow (Source/Breachpoint/Data/BRDataRows.h), DT_SpotterLines.csv)"
+      ],
+      "inputs": [
+        "FBRSpotterLineRow (Source/Breachpoint/Data/BRDataRows.h)",
+        "DT_SpotterLines.csv"
+      ],
+      "integration": 0,
+      "score": 106.0,
+      "terms": {
+        "central": 40.0,
+        "inputs_ready": 50.0,
+        "integration": 0.0,
+        "breadth": 16.0
+      }
+    },
+    {
+      "id": "metasounds-combat-and-footstep-audio",
+      "text": "MetaSounds combat and footstep audio",
+      "keys": [
+        "metasound",
+        "combat",
+        "footstep",
+        "audio"
+      ],
+      "gdd_mentions": 21,
+      "built": true,
+      "evidence": [
+        "combat -> UBRCombatCurveConfig (Source/Breachpoint/AbilitySystem/BRCombatCurves.h)"
+      ],
+      "inputs": [
+        "FBRCombatAttributeBindings (Source/Breachpoint/UI/BRViewModels.h)",
+        "CT_Combat.csv"
+      ],
+      "integration": 2,
+      "score": 0.0,
+      "terms": {}
+    },
+    {
+      "id": "steam-listen-server-demo-depot",
+      "text": "Steam listen server + demo depot",
+      "keys": [
+        "steam",
+        "listen",
+        "server",
+        "demo",
+        "depot"
+      ],
+      "gdd_mentions": 44,
+      "built": true,
+      "evidence": [
+        "listen -> UBRListenServerLifecycle (Source/Breachpoint/Online/BRListenServerLifecycle.h)",
+        "server -> IBRServerLifecycle (Source/Breachpoint/Online/BRServerLifecycle.h)"
+      ],
+      "inputs": [],
+      "integration": 4,
+      "score": 0.0,
+      "terms": {}
+    }
+  ]
+}

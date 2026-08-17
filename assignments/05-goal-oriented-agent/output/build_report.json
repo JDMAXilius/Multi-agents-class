@@ -1,0 +1,9 @@
+{
+  "selected": "spotter-agent-with-canned-fallback",
+  "class": "UBRSpotterSubsystem",
+  "header": "Source/Breachpoint/Telemetry/BRSpotterSubsystem.h",
+  "source": "Source/Breachpoint/Telemetry/BRSpotterSubsystem.cpp",
+  "rationale": "Placed in Telemetry/ because UBRSpotterSubsystem structurally mirrors UBRTelemetrySubsystem (host-authoritative WorldSubsystem, bind-at-OnWorldBeginPlay, Config-driven knobs) and directly consumes it \u2014 coach lines are resolved by rejoining GameState's live PlayerArray against Telemetry's finalized record via the already-public GetPlayerKey, with no new lookup API invented. Fully implemented and compilable: canned-line weighted/cooldown selection from DT_SpotterLines, the \u226412-calls and 3s-timeout config surface, and delegate dispatch to a UI-facing OnSpotterLineReady signal (the shipped default is canned-only, bEnableModelSpotter=false, matching cut-order item 4's 'config flip'). Deliberately left as TODOs rather than invented: the actual model/HTTP client (none exists anywhere in this codebase) and notable-event classification (spree streaks, rocket multi-kills) which needs a medal-evaluator system that isn't built in C++ yet \u2014 HandleKillFeedEntryAdded is wired up as the documented landing point for that system to call RequestEventLine once it exists.",
+  "verify_problems": [],
+  "gap_closed_on_rescan": true
+}

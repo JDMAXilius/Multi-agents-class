@@ -1,0 +1,12 @@
+RowName,MedalName,Description,TriggerId
+M1,Double Kill,Two kills in quick succession.,Kill.Multi.Double
+M2,Killing Spree,Multiple kills without dying.,Kill.Spree
+M3,Grapple Kill,Killed an enemy using the Grappleshot.,Kill.Grapple
+M4,Blast Radius,Two or more killed with one rocket.,Kill.Rocket.Multi
+M5,Blindside,Killed an enemy with a melee from the rear arc.,Kill.Melee.Rear
+M6,Headshot,Killed with a shot to the head.,Kill.Headshot
+M7,Area Denial,Killed with a grenade.,Kill.Grenade
+M8,Denial,Killed the enemy carrying the rocket.,Rocket.Denied
+M9,Breach,Scored the first kill of the match.,Kill.First
+M10,Last Word,Scored the kill that won sudden death.,Match.SuddenDeath.Win
+M11,Spree Ender,Killed an enemy who was on a killing spree.,Kill.SpreeEnder
