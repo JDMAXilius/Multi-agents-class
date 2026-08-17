@@ -101,6 +101,11 @@ protected:
 	 *  stale address. */
 	void ResolvePoseOffsets();
 
+	/** Announces at BeginPlay whether this body can actually be hit. A Blueprint pawn can
+	 *  out-serialise the constructor's channel responses, and when it does, every weapon in the
+	 *  game misses every player with no error — so the answer is printed rather than assumed. */
+	void VerifyDamageCollision() const;
+
 	UPROPERTY(Transient)
 	TObjectPtr<UActorComponent> PoseOffsetsComponent;
 

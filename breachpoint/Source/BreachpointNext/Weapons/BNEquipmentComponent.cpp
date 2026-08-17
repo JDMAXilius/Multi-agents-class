@@ -111,6 +111,32 @@ void UBNEquipmentComponent::InitializeCarriedWeapons()
 		{
 			BNChar->AttachWeaponMeshes(Weapon);
 		}
+
+		// THE LOADOUT AUDIT — one line per weapon, at spawn, stating exactly what it can do to
+		// someone. "Damage works" is four separate questions (does it shoot, for how much, does it
+		// swing, for how much), and each weapon answers them differently: the knife deliberately
+		// cannot shoot, the shotgun's damage is per PELLET, and a row with no AbilitySet grants no
+		// Fire ability at all — which looks identical to a broken trigger from inside the game.
+		const bool bCanShoot = !Row->AbilitySet.IsNull();
+		const float ShotTotal = Row->Damage * static_cast<float>(FMath::Max(1, Row->ShotCount));
+		UE_LOG(LogBN, Log,
+			TEXT("BNLoadout: '%s' — fire: %s | melee: %.0f dmg at %.0fuu | mag %d"),
+			*StartupRow.ToString(),
+			bCanShoot
+				? *FString::Printf(TEXT("%.0f x%d = %.0f/shot (head x%.1f)"), Row->Damage, FMath::Max(1, Row->ShotCount), ShotTotal, Row->HeadshotMultiplier)
+				: TEXT("NONE (row has no AbilitySet — this weapon cannot fire)"),
+			Row->MeleeDamage, Row->MeleeRange, Row->MagazineSize);
+
+		if (bCanShoot && Row->Damage <= 0.f)
+		{
+			UE_LOG(LogBN, Error, TEXT("BNLoadout: '%s' can fire but its row Damage is %.1f — every confirmed hit will apply nothing."),
+				*StartupRow.ToString(), Row->Damage);
+		}
+		if (Row->MeleeDamage <= 0.f)
+		{
+			UE_LOG(LogBN, Warning, TEXT("BNLoadout: '%s' has MeleeDamage %.1f — swinging it will connect and do nothing."),
+				*StartupRow.ToString(), Row->MeleeDamage);
+		}
 	}
 
 	EquipIndex(0);

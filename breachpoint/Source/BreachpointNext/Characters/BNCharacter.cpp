@@ -228,11 +228,61 @@ void ABNCharacter::BeginPlay()
 
 	InitializeAnimLayer();
 	ResolvePoseOffsets();
+	VerifyDamageCollision();
 
 	// Bound on every machine; the handler is what gates on authority. The delegate lives on a
 	// component this character owns, so it dies with the body and leaks nothing onto the
 	// persistent ability system component.
 	HealthComponent->OnDeath.AddUObject(this, &ABNCharacter::HandleDeath);
+}
+
+// THE HITTABILITY CHECK — every weapon's damage depends on this and nothing else reports it.
+//
+// The constructor sets the mesh to Block WeaponTrace/MeleeTrace, but a constructor value is only
+// a DEFAULT: a Blueprint that serialised its own collision settings out-serialises it, silently.
+// That matters right now because the pawn the game mode spawns is BP_FPSCharacter — a Blueprint
+// authored long before these channels existed and reparented onto this class afterwards. If its
+// mesh does not answer the channels, EVERY bullet and EVERY swing passes straight through every
+// player and hits the wall behind them, with a perfectly valid FHitResult and no error anywhere.
+// That is precisely the failure this project keeps paying for, so it announces itself instead.
+void ABNCharacter::VerifyDamageCollision() const
+{
+	const USkeletalMeshComponent* MeshComp = GetMesh();
+	const UCapsuleComponent* Capsule = GetCapsuleComponent();
+	if (!MeshComp || !Capsule)
+	{
+		return;
+	}
+
+	const bool bMeshBlocksWeapon = MeshComp->GetCollisionResponseToChannel(BNCollision::WeaponTrace) == ECR_Block;
+	const bool bMeshBlocksMelee = MeshComp->GetCollisionResponseToChannel(BNCollision::MeleeTrace) == ECR_Block;
+	const bool bMeshCollides = MeshComp->GetCollisionEnabled() != ECollisionEnabled::NoCollision;
+
+	if (bMeshBlocksWeapon && bMeshBlocksMelee && bMeshCollides)
+	{
+		UE_LOG(LogBN, Log, TEXT("BNHit: %s is hittable — mesh blocks WeaponTrace and MeleeTrace (profile '%s')."),
+			*GetName(), *MeshComp->GetCollisionProfileName().ToString());
+	}
+	else
+	{
+		UE_LOG(LogBN, Error,
+			TEXT("BNHit: %s CANNOT BE SHOT. Mesh collision '%s': enabled=%s, WeaponTrace=%s, MeleeTrace=%s. "
+				 "Bullets and melee will pass through this character and hit the wall behind it. The pawn's "
+				 "Blueprint has out-serialised the C++ collision defaults — set the mesh to Block the BRWeapon "
+				 "and BRMelee channels on the Blueprint's mesh component, or clear its collision override."),
+			*GetName(), *MeshComp->GetCollisionProfileName().ToString(),
+			bMeshCollides ? TEXT("yes") : TEXT("NO"),
+			bMeshBlocksWeapon ? TEXT("Block") : TEXT("NOT BLOCKING"),
+			bMeshBlocksMelee ? TEXT("Block") : TEXT("NOT BLOCKING"));
+	}
+
+	// The capsule must stay deaf, or every shot resolves on a cylinder and no headshot can exist.
+	if (Capsule->GetCollisionResponseToChannel(BNCollision::WeaponTrace) != ECR_Ignore)
+	{
+		UE_LOG(LogBN, Warning,
+			TEXT("BNHit: %s's capsule answers WeaponTrace — shots will resolve on the movement cylinder "
+				 "instead of the body, so bone-based headshots can never fire."), *GetName());
+	}
 }
 
 void ABNCharacter::ResolvePoseOffsets()
