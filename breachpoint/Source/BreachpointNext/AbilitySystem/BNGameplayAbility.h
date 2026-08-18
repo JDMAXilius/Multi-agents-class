@@ -13,6 +13,8 @@ public:
 	UBNGameplayAbility();
 
 protected:
+	bool IgnoresMatchFreeze() const { return bIgnoreMatchFreeze; }
+
 	virtual bool CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags = nullptr, const FGameplayTagContainer* TargetTags = nullptr, FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
 
 	/** The match freeze exists to stop players ACTING — shooting, swinging, throwing. It is not

@@ -78,6 +78,10 @@ protected:
 	UPROPERTY(Config)
 	float PostMatchDuration = 10.f;
 
+	/** Bumped by every BeginMatch. A respawn timer armed in an older generation is dropped when it
+	 *  fires rather than destroying a pawn that belongs to the round after it. */
+	int32 MatchGeneration = 0;
+
 	/** ONE timer for the whole match clock (law 4: no Tick, no per-frame poll). */
 	FTimerHandle MatchTimerHandle;
 	FTimerHandle PostMatchTimerHandle;

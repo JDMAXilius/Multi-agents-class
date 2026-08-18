@@ -4,6 +4,7 @@
 #include "Match/BNGameState.h"
 #include "Match/BNPlayerController.h"
 #include "Match/BNPlayerState.h"
+#include "AbilitySystem/BNAbilitySystemComponent.h"
 #include "AbilitySystem/Attributes/BNAttributeSet.h"
 #include "AbilitySystem/Effects/BNGameplayEffects.h"
 #include "BreachpointNext.h"
@@ -71,11 +72,19 @@ void ABNGameMode::HandlePlayerDeath(ABNPlayerState* Victim, ABNPlayerState* Kill
 	// CREDIT, before the line that prints it. A death always costs the victim; a kill is only a
 	// kill when someone ELSE caused it. Killer == victim is their own grenade and a null killer is
 	// world damage or a killer who left mid-flight — neither scores, both still cost a death.
-	Victim->AddDeath();
-
-	if (Killer && Killer != Victim)
+	// Only a kill DURING the match scores. A grenade that lands after the buzzer still kills, still
+	// ragdolls and still prints — but the scoreboard is final the moment the winner is announced,
+	// or the post-match shows a top scorer who is not the winner, wrongly and on every machine.
+	const ABNGameState* ScoringState = GetGameState<ABNGameState>();
+	const bool bMatchLive = ScoringState && ScoringState->GetMatchState() == EBNMatchState::InProgress;
+	if (bMatchLive)
 	{
-		Killer->AddKill();
+		Victim->AddDeath();
+
+		if (Killer && Killer != Victim)
+		{
+			Killer->AddKill();
+		}
 	}
 
 	// THE KILL LINE — the pipeline's deliverable, and the founder's test. Three wordings for three
@@ -99,7 +108,7 @@ void ABNGameMode::HandlePlayerDeath(ABNPlayerState* Victim, ABNPlayerState* Kill
 
 	// 3.2 — the score limit, checked where the kill was credited. EndMatch itself refuses unless
 	// the match is InProgress, so a second elimination inside the same frame cannot end it twice.
-	if (Killer && Killer != Victim && Killer->GetKills() >= ScoreLimit)
+	if (bMatchLive && Killer && Killer != Victim && Killer->GetKills() >= ScoreLimit)
 	{
 		EndMatch(Killer);
 	}
@@ -119,11 +128,23 @@ void ABNGameMode::RequestRespawn(AController* Controller)
 	}
 
 	// The timer is the GAME MODE's, never the dying pawn's: the corpse is destroyed before the
-	// delay is up and a timer living on it would be destroyed with it. Not stored — a respawn
-	// already in flight is never cancelled this wave, so there is no handle anyone reads.
+	// delay is up and a timer living on it would be destroyed with it.
+	//
+	// It also carries the GENERATION it was armed in. A player killed near the end of a round has a
+	// respawn in flight when the restart rebodies everyone; without this the stale timer fires a
+	// second or two into the NEW round and unpossesses and destroys a perfectly live pawn, which
+	// every other client sees as a player blinking out and reappearing at a start point. Comparing
+	// generations costs one int and needs no map of handles to keep in sync.
+	const int32 ArmedGeneration = MatchGeneration;
 	FTimerHandle Handle;
 	World->GetTimerManager().SetTimer(Handle,
-		FTimerDelegate::CreateUObject(this, &ABNGameMode::RespawnPlayer, TWeakObjectPtr<AController>(Controller)),
+		FTimerDelegate::CreateWeakLambda(this, [this, WeakController = TWeakObjectPtr<AController>(Controller), ArmedGeneration]()
+		{
+			if (ArmedGeneration == MatchGeneration)
+			{
+				RespawnPlayer(WeakController);
+			}
+		}),
 		FMath::Max(0.1f, RespawnDelay), /*bLoop=*/false);
 }
 
@@ -219,6 +240,9 @@ void ABNGameMode::BeginMatch()
 
 	// An END STAMP, not a countdown: one replicated write that is already correct for a client
 	// joining at any moment. The mode's timer is the server's own copy of the same deadline.
+	// Every round is its own generation, so respawns armed in the last one are ignored in this one.
+	++MatchGeneration;
+
 	GS->SetMatchEndServerTime(GS->GetServerWorldTimeSeconds() + TimeLimit);
 	GS->SetMatchState(EBNMatchState::InProgress);
 	SetAllPlayersFrozen(false);
@@ -332,6 +356,14 @@ void ABNGameMode::SetPlayerFrozen(ABNPlayerState* InPlayerState, bool bFrozen)
 	{
 		Spec.Data->DynamicGrantedTags.AddTag(BNTags::State_Match_Frozen);
 		FrozenHandles.Add(Key, ASC->ApplyGameplayEffectSpecToSelf(*Spec.Data));
+	}
+
+	// And STOP what is already running. Refusing activation does nothing to an ability that keeps
+	// its own loop: a player holding an Auto trigger at the buzzer would go on killing through the
+	// entire post-match, with the server confirming every shot. Death and hit-react survive this.
+	if (UBNAbilitySystemComponent* BNASC = InPlayerState->GetBNAbilitySystemComponent())
+	{
+		BNASC->CancelAbilitiesBlockedByFreeze();
 	}
 }
 

@@ -116,6 +116,19 @@ PostMatchDuration=10
 RespawnDelay=3
 ```
 
+## Known limitation, accepted with its trigger written down
+
+**`MinPlayers` is only enforced on the FIRST match of a session.** `TryStartMatch` is called from
+`OnPostLogin`, and `RestartMatch` goes PostMatch → InProgress directly, so round two onward begins
+regardless of how many players remain. On a dedicated server configured `MinPlayers > 1` this means
+an emptied server loops empty matches forever and a lone joiner lands in a running match, unfrozen.
+
+**Unreachable on the shipped config** (`MinPlayers=1`), which is why it is accepted rather than
+fixed: the honest fix routes the restart back through `WaitingToStart`, and that interacts with
+`RespawnPlayer`'s InProgress gate — players would sit as corpses in a warmup that nobody can end.
+That is a rework of the restart path for a configuration R4 does not ship. **Reopen this the moment
+`MinPlayers` is raised above 1, or a dedicated server enters the picture.**
+
 ## Deferred beyond R4, deliberately
 
 Scoreboard and match HUD (the state and delegates R4 lands are what they will bind to) · sessions,

@@ -1,5 +1,6 @@
 #include "AbilitySystem/BNAbilitySystemComponent.h"
 #include "BreachpointNext.h"
+#include "AbilitySystem/BNGameplayAbility.h"
 #include "Abilities/GameplayAbility.h"
 
 void UBNAbilitySystemComponent::AbilityInputTagPressed(FGameplayTag InputTag)
@@ -69,5 +70,27 @@ void UBNAbilitySystemComponent::AbilityInputTagReleased(FGameplayTag InputTag)
 			InvokeReplicatedEvent(EAbilityGenericReplicatedEvent::InputReleased, Spec.Handle,
 				Spec.GetPrimaryInstance() ? Spec.GetPrimaryInstance()->GetCurrentActivationInfo().GetActivationPredictionKey() : FPredictionKey());
 		}
+	}
+}
+
+void UBNAbilitySystemComponent::CancelAbilitiesBlockedByFreeze()
+{
+	// Collected under the lock, cancelled outside it: cancelling mutates the same list.
+	TArray<FGameplayAbilitySpecHandle> ToCancel;
+	{
+		ABILITYLIST_SCOPE_LOCK();
+		for (const FGameplayAbilitySpec& Spec : ActivatableAbilities.Items)
+		{
+			const UBNGameplayAbility* Ability = Cast<UBNGameplayAbility>(Spec.Ability);
+			if (Spec.IsActive() && Ability && !Ability->IgnoresMatchFreeze())
+			{
+				ToCancel.Add(Spec.Handle);
+			}
+		}
+	}
+
+	for (const FGameplayAbilitySpecHandle& Handle : ToCancel)
+	{
+		CancelAbilityHandle(Handle);
 	}
 }
