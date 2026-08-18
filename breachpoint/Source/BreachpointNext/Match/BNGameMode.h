@@ -18,9 +18,16 @@ public:
 
 	virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
 
-	/** Subscribes this mode to a player's death announcement. Called as each PlayerState appears —
-	 *  the mode LISTENS for deaths rather than being called by the ability that causes them (law 7),
-	 *  so a mode with no respawn simply does not subscribe. */
+	/** The ONE initialization seam for both kinds of player: the engine calls it for humans in the
+	 *  login flow, the bot fill calls it for bots — an AIController never sees OnPostLogin.
+	 *  Subscribes this mode to the player's death announcement (law 7: the mode LISTENS for deaths
+	 *  rather than being called by the ability that causes them) and freezes a warmup/post-match
+	 *  joiner. The engine may call it more than once per controller, so the subscription is
+	 *  guarded against doubling. */
+	virtual void GenericPlayerInitialization(AController* C) override;
+
+	/** Humans only. The arrival is what can satisfy MinPlayers, so only the start gate lives here;
+	 *  everything both kinds of player need moved to GenericPlayerInitialization. */
 	virtual void OnPostLogin(AController* NewPlayer) override;
 
 	/** The subscriber. Turns "this player died" into this mode's answer: THE kill line, then a

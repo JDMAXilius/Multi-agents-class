@@ -36,30 +36,38 @@ void ABNGameMode::InitGame(const FString& MapName, const FString& Options, FStri
 	}*/
 }
 
-void ABNGameMode::OnPostLogin(AController* NewPlayer)
+void ABNGameMode::GenericPlayerInitialization(AController* C)
 {
-	Super::OnPostLogin(NewPlayer);
+	Super::GenericPlayerInitialization(C);
 
-	// Subscribed here rather than in the PlayerState's own BeginPlay: OnPostLogin is the engine's
-	// guarantee that this controller HAS a PlayerState, and the mode is the one object that
-	// outlives every pawn and every death, so nothing has to re-subscribe on respawn.
-	ABNPlayerState* PS = NewPlayer ? NewPlayer->GetPlayerState<ABNPlayerState>() : nullptr;
-	if (PS)
+	// Subscribed here rather than in the PlayerState's own BeginPlay: by this point the controller
+	// HAS a PlayerState, and the mode is the one object that outlives every pawn and every death,
+	// so nothing has to re-subscribe on respawn. HERE and not OnPostLogin because an AIController
+	// never sees OnPostLogin — the engine calls this for humans, the bot fill calls it for bots.
+	// It can run more than once per controller (seamless travel does), so the guard keeps one
+	// death from printing two kill lines and arming two respawns.
+	ABNPlayerState* PS = C ? C->GetPlayerState<ABNPlayerState>() : nullptr;
+	if (PS && !PS->OnPlayerDeath.IsBoundToObject(this))
 	{
 		PS->OnPlayerDeath.AddUObject(this, &ABNGameMode::HandlePlayerDeath);
 	}
 
-	// The arrival itself is what can satisfy MinPlayers, so the gate is asked here and nowhere else.
-	TryStartMatch();
-
-	// And if it did not start the match, this player joined a warmup or a post-match and must be
+	// A player initialized outside a running match joined a warmup or a post-match and must be
 	// frozen like everyone already here — otherwise the one machine that joined late is the one
-	// machine that can shoot.
+	// machine that can shoot. A first arrival that starts the match is thawed by BeginMatch.
 	const ABNGameState* GS = GetGameState<ABNGameState>();
 	if (PS && GS && GS->GetMatchState() != EBNMatchState::InProgress)
 	{
 		SetPlayerFrozen(PS, true);
 	}
+}
+
+void ABNGameMode::OnPostLogin(AController* NewPlayer)
+{
+	Super::OnPostLogin(NewPlayer);
+
+	// The arrival itself is what can satisfy MinPlayers, so the gate is asked here and nowhere else.
+	TryStartMatch();
 }
 
 void ABNGameMode::HandlePlayerDeath(ABNPlayerState* Victim, ABNPlayerState* Killer)

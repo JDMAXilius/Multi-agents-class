@@ -17,7 +17,8 @@
 #include "CollisionQueryParams.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
-#include "GameFramework/PlayerController.h"
+#include "GameFramework/Controller.h"
+#include "GameFramework/Pawn.h"
 #include "TimerManager.h"
 
 namespace
@@ -207,8 +208,11 @@ void UBNGA_Melee::SwingTrace()
 	const FBNMeleeStats Stats = BNMeleeResolveStats(Row, UnarmedMeleeDamage, UnarmedMeleeRange, UnarmedMeleeMontage);
 	UAbilitySystemComponent* ASC = ActorInfo ? ActorInfo->AbilitySystemComponent.Get() : nullptr;
 	UWorld* World = GetWorld();
-	const APlayerController* PC = ActorInfo ? ActorInfo->PlayerController.Get() : nullptr;
-	if (!ASC || !World || !PC)
+	// The pawn's controller, not ActorInfo->PlayerController: null for a bot, and an
+	// AIController's GetPlayerViewPoint is the pawn's eye view — a PlayerController's is unchanged.
+	const APawn* AvatarPawn = ActorInfo ? Cast<APawn>(ActorInfo->AvatarActor.Get()) : nullptr;
+	const AController* ViewController = AvatarPawn ? AvatarPawn->GetController() : nullptr;
+	if (!ASC || !World || !ViewController)
 	{
 		return;
 	}
@@ -221,7 +225,7 @@ void UBNGA_Melee::SwingTrace()
 	// Arrow_MeleeTraceStart has no BN equivalent and needs none: BN is first person.
 	FVector ViewLocation;
 	FRotator ViewRotation;
-	PC->GetPlayerViewPoint(ViewLocation, ViewRotation);
+	ViewController->GetPlayerViewPoint(ViewLocation, ViewRotation);
 
 	FCollisionQueryParams QueryParams(FName(TEXT("BNMeleeSwing")), /*bTraceComplex=*/false, ActorInfo->AvatarActor.Get());
 	QueryParams.AddIgnoredActor(Weapon);
@@ -256,7 +260,9 @@ void UBNGA_Melee::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& T
 	const FBNMeleeStats Stats = BNMeleeResolveStats(Row, UnarmedMeleeDamage, UnarmedMeleeRange, UnarmedMeleeMontage);
 	UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
 	UWorld* World = GetWorld();
-	const AController* Controller = ActorInfo->PlayerController.Get();
+	// Same seam as SwingTrace's: the pawn's controller answers the view for human and bot alike.
+	const APawn* AvatarPawn = Cast<APawn>(Avatar);
+	const AController* Controller = AvatarPawn ? AvatarPawn->GetController() : nullptr;
 	if (!Avatar || !ASC || !World || !Controller)
 	{
 		return;

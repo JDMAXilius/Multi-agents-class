@@ -17,6 +17,11 @@ public class BreachpointNext : ModuleRules
 			"GameplayTags",
 			"GameplayTasks",
 			"NetCore",
+			// ABNBotController: AAIController + perception live in AIModule; the StateTree pair
+			// carries UStateTreeAIComponent (GameplayStateTree) atop the runtime (StateTreeModule).
+			"AIModule",
+			"StateTreeModule",
+			"GameplayStateTreeModule",
 			// FBNImpactEffectRow carries a TEnumAsByte<EPhysicalSurface>; the enum's reflection
 			// constructor lives here, and the editor target links modularly.
 			"PhysicsCore",

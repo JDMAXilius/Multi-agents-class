@@ -16,7 +16,8 @@
 #include "Animation/AnimMontage.h"
 #include "CollisionQueryParams.h"
 #include "Engine/World.h"
-#include "GameFramework/PlayerController.h"
+#include "GameFramework/Controller.h"
+#include "GameFramework/Pawn.h"
 #include "TimerManager.h"
 
 namespace
@@ -257,8 +258,11 @@ void UBNGA_Fire::FireShot()
 	const FBNWeaponRow* Row = Weapon ? Weapon->GetRow() : nullptr;
 	UAbilitySystemComponent* ASC = ActorInfo ? ActorInfo->AbilitySystemComponent.Get() : nullptr;
 	UWorld* World = GetWorld();
-	const APlayerController* PC = ActorInfo ? ActorInfo->PlayerController.Get() : nullptr;
-	if (!Row || !ASC || !World || !PC)
+	// The pawn's controller, not ActorInfo->PlayerController: null for a bot, and an
+	// AIController's GetPlayerViewPoint is the pawn's eye view — a PlayerController's is unchanged.
+	const APawn* AvatarPawn = ActorInfo ? Cast<APawn>(ActorInfo->AvatarActor.Get()) : nullptr;
+	const AController* ViewController = AvatarPawn ? AvatarPawn->GetController() : nullptr;
+	if (!Row || !ASC || !World || !ViewController)
 	{
 		return;
 	}
@@ -275,7 +279,7 @@ void UBNGA_Fire::FireShot()
 	// sent every shot into the floor. The view point IS the crosshair.
 	FVector ViewLocation;
 	FRotator ViewRotation;
-	PC->GetPlayerViewPoint(ViewLocation, ViewRotation);
+	ViewController->GetPlayerViewPoint(ViewLocation, ViewRotation);
 	const FVector AimDir = ViewRotation.Vector();
 
 	FCollisionQueryParams QueryParams(FName(TEXT("BNWeaponFire")), /*bTraceComplex=*/false, ActorInfo->AvatarActor.Get());
@@ -374,9 +378,12 @@ void UBNGA_Fire::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Ta
 	// position and a fast mover stays forgiving inside tolerance.
 	FVector ViewLocation;
 	FRotator ViewRotation;
-	if (const APlayerController* PC = ActorInfo->PlayerController.Get())
+	const APawn* AvatarPawn = Cast<APawn>(Avatar);
+	if (const AController* ViewController = AvatarPawn ? AvatarPawn->GetController() : nullptr)
 	{
-		PC->GetPlayerViewPoint(ViewLocation, ViewRotation);
+		// The pawn's controller: a PlayerController answers the crosshair unchanged, an
+		// AIController answers the pawn's eye view — same seam as FireShot's.
+		ViewController->GetPlayerViewPoint(ViewLocation, ViewRotation);
 	}
 	else
 	{
