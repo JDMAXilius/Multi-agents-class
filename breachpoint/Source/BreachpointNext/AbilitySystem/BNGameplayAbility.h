@@ -12,9 +12,11 @@ class BREACHPOINTNEXT_API UBNGameplayAbility : public UGameplayAbility
 public:
 	UBNGameplayAbility();
 
-protected:
+	/** Public because the ASC asks it from outside when the match freezes: the freeze has to cancel
+	 *  what is already running, and it must not cancel the abilities that ignore it. */
 	bool IgnoresMatchFreeze() const { return bIgnoreMatchFreeze; }
 
+protected:
 	virtual bool CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags = nullptr, const FGameplayTagContainer* TargetTags = nullptr, FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
 
 	/** The match freeze exists to stop players ACTING — shooting, swinging, throwing. It is not
