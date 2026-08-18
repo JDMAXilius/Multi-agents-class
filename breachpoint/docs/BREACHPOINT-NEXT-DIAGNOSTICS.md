@@ -17,6 +17,10 @@ itself. **Nothing here fires per frame** — announcements are on edges and fail
 | `BNCues:` | startup | which cue class won each tag |
 | `BNEquipmentComponent:` | startup, per weapon | a startup row that does not exist in the table is named and skipped |
 | `BNPlayerController:` | input setup | an empty `MappingContexts`, a context that failed to load, or an input tag with no `InputAction` in the config |
+| `BNHit:` | per pawn, at BeginPlay | whether that body **can be shot at all** — mesh blocking the weapon/melee channels. `CANNOT BE SHOT` means a Blueprint out-serialised the C++ collision and every weapon misses every player |
+| `BNLoadout:` | per weapon, at spawn | what each weapon can do: fire damage × pellets and the headshot multiplier, or `NONE (row has no AbilitySet)`, plus melee damage, reach and magazine. Falloff and body-section lines appear only for rows that opted in |
+| `BNGameState:` | every match state change, both roles | `match state -> WaitingToStart / InProgress / PostMatch`, and `winner resolved -> …` when a late-arriving winner reference lands |
+| `BNGameMode:` | every elimination, and the buzzer | the kill line with the running score (`eliminated X. (Y: 3 kills)`), and `match over. Winner: …` — `none (tie)` is a legal outcome |
 
 ## 2. There are no console commands
 
@@ -82,6 +86,23 @@ The chain is short enough to bisect by observation:
 5. **Press V and nothing happens** — `BNGA_Melee:` names the dead link, or `BNInput: Input.Melee ->
    REFUSED` names the refusal, or neither appears, which means the key never reached the ability
    system component at all and the problem is in the input assets.
+
+## 3b. Reading a match failure
+
+1. **No `BNGameState:` line at all, ever** — the GameState class is not ours. Every score and the
+   whole clock are landing on an object nothing reads. That is the `TASK-R4-GAMESTATE-CLASS`
+   editor ticket, and nothing else about the match can be judged until it is settled.
+2. **Stuck in `WaitingToStart`** — the start gate was never satisfied: `MinPlayers` in
+   `DefaultGame.ini`.
+3. **A kill that does not score** — read the kill line's wording. `eliminated themselves` and
+   `died` deliberately award no kill; only `X eliminated Y` does. A kill landing after the buzzer
+   also does not score, by design — the scoreboard is final the moment the winner is announced.
+4. **Anything happening during the post-match freeze** — a press should print
+   `BNInput: … REFUSED`. Death and hit-react are the two deliberate exceptions: a grenade in
+   flight still kills and still ragdolls after the buzzer, it just does not score.
+5. **A player blinking out shortly after a restart** — a respawn timer from the previous round
+   fired into the new one. That is generation-guarded (`fe958a2`); if it reappears, the guard
+   regressed.
 
 ## 4. The rule these came from
 

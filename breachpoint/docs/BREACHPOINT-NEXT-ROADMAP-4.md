@@ -116,6 +116,18 @@ PostMatchDuration=10
 RespawnDelay=3
 ```
 
+## Status — 17 Aug 2026
+
+| Wave | Goals | State |
+|---|---|---|
+| 1 | G1 GameState · G2 scoring | **LANDED** `070112e`, critic pass `523fdce` (1 blocking + 2 notes, all fixed) |
+| 2 | G3 rules · G4 freeze | **LANDED** `7b834e0`, critic pass `fe958a2` (1 blocking + 3 notes, 3 fixed, 1 accepted below) |
+| — | compile-risk sweep | `e625c51` — one real error found and fixed (a protected getter the ASC calls from outside) |
+| — | editor ticket | `TASK-R4-GAMESTATE-CLASS` — OPEN, waiting on the terminal |
+
+**Not compiled.** No toolchain is reachable from the cloud session; the founder's first build is
+the first real test. Protocol: `BREACHPOINT-NEXT-TEST-MATCH.md`.
+
 ## Known limitation, accepted with its trigger written down
 
 **`MinPlayers` is only enforced on the FIRST match of a session.** `TryStartMatch` is called from
