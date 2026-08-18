@@ -35,7 +35,7 @@ criterion**, and the README's claim that a grader needs nothing but **Python 3.8
       see Log, 18 Aug 2026)
 - [x] `./make_submission.sh` builds `BREACHPOINT-goal-oriented-agent.zip` (364K, 167 files)
       and self-tests the replay from the staged copy
-- [ ] Committed and pushed to `main`
+- [x] Committed and pushed to `main` — `126ba7e`
 - [ ] Submitted on the course form
 
 ## Steps (in order)
