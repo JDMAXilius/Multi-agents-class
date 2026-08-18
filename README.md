@@ -18,7 +18,7 @@ ships from.
 |---|---|
 | **`breachpoint/`** | **The active project.** [Vertical-slice GDD](breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md) (the six-week build) · [full-concept GDD](breachpoint/BREACHPOINT-GDD-FULL-CONCEPT.md) (Phase-2 target) · [Architecture](breachpoint/BREACHPOINT-ARCHITECTURE.md) (44 class-units, file-by-file) · [Authoring Matrix](breachpoint/BREACHPOINT-AUTHORING-MATRIX.md) (**R18: zero Blueprint classes** — the four tiers and who authors each: crew C++/text · generated script · you in the editor) · [Bot AI](breachpoint/BREACHPOINT-AI-BOTS.md) (**GOAP ambitions → StateTree spine → GAS hand** — the Halo-researched three-layer brain) · [GameLift Plan](breachpoint/BREACHPOINT-GAMELIFT-PLAN.md) (Phase-2 dedicated servers: the seam gaps fixed in-slice, five cost-gated rungs, Steam-derived identity) · [Roadmap](breachpoint/BREACHPOINT-ROADMAP.md) (six pods, six milestones) · [Quality Bars](breachpoint/docs/BREACHPOINT-QUALITY-BARS.md) (budgets, DoD, playtest protocol, ship checklist) |
 | **`breachpoint/` (cont.)** | **The crew studio now lives INSIDE the game repo** — `breachpoint/.claude/` (12 agents, 7 skills, law-enforcement hooks) and `breachpoint/docs/` ([rulings ledger](breachpoint/docs/DESIGN-RULINGS.md) · [crew map](breachpoint/docs/CREW_MAP.md) · [playbook](breachpoint/docs/CREW_PLAYBOOK.md) · contracts · [the board](breachpoint/docs/tickets/), BP00–BP16). `crew/` at the root is an empty leftover of the move. Start here: [`breachpoint/README.md`](breachpoint/README.md) |
-| **`assignments/`** | Course submissions of record — **start at [`assignments/README.md`](assignments/README.md)**, the index and submission guide. — [Assignment #1](assignments/01-gdd-first-draft/) (*Slash Roller: Arena* first-draft GDD) · [#2](assignments/02-gdd-final-draft/) (**Breachpoint** final GDD, Markdown + styled PDF) · [#3](assignments/03-agent-crew/) (**the runnable agent crew** — 4 agents producing Breachpoint's `DT_Weapons.csv` + `arena_manifest.json`, with replay mode and Mermaid architecture) · [#4](assignments/04-content-pipeline/) (**the dynamic content pipeline** — BM25 RAG over the real GDD + shipped DataTables, an adversarial critic, and three landed content tables filling gaps the pipeline *proves* the game has) · [#5](assignments/05-goal-oriented-agent/) (**the goal-oriented coding agent** — reads the GDD, scans a pinned copy of the codebase, ranks the gaps deterministically, and writes the missing `UBRSpotterSubsystem`) |
+| **`assignments/`** | Course submissions of record. **Start at [`assignments/README.md`](assignments/README.md)** — the index, run commands, and submission guide. [Assignment #1](assignments/01-gdd-first-draft/) (*Slash Roller: Arena* first-draft GDD) · [#2](assignments/02-gdd-final-draft/) (**Breachpoint** final GDD, Markdown + styled PDF) · [#3](assignments/03-agent-crew/) (**the runnable agent crew** — 4 agents producing Breachpoint's `DT_Weapons.csv` + `arena_manifest.json`, with replay mode and Mermaid architecture) · [#4](assignments/04-content-pipeline/) (**the dynamic content pipeline** — BM25 RAG over the real GDD + shipped DataTables, an adversarial critic, and three landed content tables filling gaps the pipeline *proves* the game has) · [#5](assignments/05-goal-oriented-agent/) (**the goal-oriented coding agent** — reads the GDD, scans a pinned copy of the codebase, ranks the gaps deterministically, and writes the missing `UBRSpotterSubsystem`) |
 | **`docs/course/`** | Course-wide references — [the GDD writing standard](docs/course/GDD-FORMAT-GUIDE.md) · [Game Developers Conference overview](docs/course/GDC-overview.md) |
 | **`docs/method/`** | The crew methodology — [engineering disciplines D1–D8](docs/method/ENGINEERING-DISCIPLINES.md) · [crew operations plan](docs/method/CREW-OPERATIONS.md) (topology, model economics, metrics — v2-synced) · [researched best-practice validation](docs/method/ARCHITECTURE-VALIDATION.md) · [roster design history](docs/method/CREW-ROSTER.md) (superseded by [`breachpoint/docs/CREW_MAP.md`](breachpoint/docs/CREW_MAP.md)) |
 | **`docs/decisions/`** | Decision records — [the A/B scope comparison](docs/decisions/SCOPE-COMPARISON.md) that chose Breachpoint's vertical slice (Option C) |
@@ -41,11 +41,14 @@ ships from.
 
 ## Status & next action
 
-**Coursework: complete.** Assignments [#1](assignments/01-gdd-first-draft/),
-[#2](assignments/02-gdd-final-draft/), [#3](assignments/03-agent-crew/),
-[#4](assignments/04-content-pipeline/) and
-[#5](assignments/05-goal-oriented-agent/) are all
-submitted. **From here this repo is a Breachpoint project, not a course project** — the
+**Coursework: all five built.** Assignments [#1](assignments/01-gdd-first-draft/),
+[#2](assignments/02-gdd-final-draft/), [#3](assignments/03-agent-crew/) and
+[#4](assignments/04-content-pipeline/) are submitted;
+[**#5**](assignments/05-goal-oriented-agent/) is built and pushed but **not yet
+submitted** (due 13 Aug, landed 17 Aug — it needs a short late note). The index,
+run commands and submission steps are in
+[`assignments/README.md`](assignments/README.md).
+**From here this repo is a Breachpoint project, not a course project** — the
 crew, the board, and the docs serve the build. The board is
 [`breachpoint/docs/tickets/`](breachpoint/docs/tickets/) (BP00–BP15); `assignments/` is a record, not a
 workstream. Assignment #5 is **self-contained in `assignments/05-goal-oriented-agent/`** and reads a
@@ -58,8 +61,8 @@ and verifier-proven ([BP13 Log](breachpoint/docs/tickets/TICKET_BP13_DATA_CREW.m
 
 The game repo **exists** — `breachpoint/` is its root, the module compiles, and PIE runs our
 GameMode. Read [`breachpoint/docs/tickets/HANDOFF.md`](breachpoint/docs/tickets/HANDOFF.md)
-first; it records where every ticket actually stands. Then, in a local Claude terminal
-(everything below needs UE 5.8 installed — it cannot run in a cloud container):
+first; it records where every ticket actually stands. Everything on the board needs UE 5.8
+installed — it cannot run in a cloud container.
 
 **The board is `ls breachpoint/docs/tickets/`** — that directory is the authority, not a list
 here. This README has been wrong about the board twice; it now points at it instead of
