@@ -44,6 +44,9 @@ namespace
 
 UBNGA_HitReact::UBNGA_HitReact()
 {
+	// Damage that lands while frozen still reacts — the flinch is a reaction, not an action.
+	bIgnoreMatchFreeze = true;
+
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::ServerOnly;
 
 	// A second hit mid-flinch restarts the reaction rather than being swallowed — sustained fire

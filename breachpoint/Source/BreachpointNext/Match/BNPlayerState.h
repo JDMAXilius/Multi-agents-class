@@ -52,6 +52,10 @@ public:
 	void AddKill();
 	void AddDeath();
 
+	/** Authority only. The match restart is the only caller: without it a restarted match keeps
+	 *  every score, and the first elimination of the new round instantly re-ends it. */
+	void ResetScore();
+
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	UBNAbilitySystemComponent* GetBNAbilitySystemComponent() const { return AbilitySystemComponent; }
 	UBNAttributeSet* GetAttributeSet() const { return AttributeSet; }

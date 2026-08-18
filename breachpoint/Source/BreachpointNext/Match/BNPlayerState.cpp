@@ -51,6 +51,15 @@ void ABNPlayerState::AddDeath()
 	}
 }
 
+void ABNPlayerState::ResetScore()
+{
+	if (HasAuthority())
+	{
+		Kills = 0;
+		Deaths = 0;
+	}
+}
+
 // The OnReps exist so a client can SEE the number land — the scoreboard binds to them later, and
 // until it does they are how "both machines agree" is checked.
 void ABNPlayerState::OnRep_Kills()

@@ -9,9 +9,10 @@ UBNGameplayAbility::UBNGameplayAbility()
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
 }
 
-// The dead activate nothing. Here rather than as ActivationBlockedTags in the constructor for the
-// reason UBNGA_Lean resolves its tag in a virtual — native tags are not guaranteed registered
-// while CDOs are built. UBNGA_Death itself activates BEFORE the tag exists, and is refused after.
+// The dead activate nothing, and neither does anyone the match has frozen. Here rather than as
+// ActivationBlockedTags in the constructor for the reason UBNGA_Lean resolves its tag in a
+// virtual — native tags are not guaranteed registered while CDOs are built. UBNGA_Death itself
+// activates BEFORE the tag exists, and is refused after.
 //
 // What this check removes is the ACTIVATION, on both roles. It does not close the replication
 // window: State.Dead reaches the owning client one hop after the server applies it, so an input
@@ -25,7 +26,15 @@ bool UBNGameplayAbility::CanActivateAbility(const FGameplayAbilitySpecHandle Han
 	}
 
 	const UAbilitySystemComponent* ASC = ActorInfo ? ActorInfo->AbilitySystemComponent.Get() : nullptr;
-	return !ASC || !ASC->HasMatchingGameplayTag(BNTags::State_Dead);
+	if (!ASC)
+	{
+		return true;
+	}
+	if (ASC->HasMatchingGameplayTag(BNTags::State_Dead))
+	{
+		return false;
+	}
+	return bIgnoreMatchFreeze || !ASC->HasMatchingGameplayTag(BNTags::State_Match_Frozen);
 }
 
 FActiveGameplayEffectHandle UBNGameplayAbility::ApplyStateTag(FGameplayTag Tag)

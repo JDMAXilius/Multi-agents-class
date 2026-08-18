@@ -5,6 +5,7 @@
 #include "Match/BNPlayerController.h"
 #include "Match/BNPlayerState.h"
 #include "AbilitySystem/Attributes/BNAttributeSet.h"
+#include "AbilitySystem/Effects/BNGameplayEffects.h"
 #include "BreachpointNext.h"
 #include "AbilitySystemComponent.h"
 #include "Engine/World.h"
@@ -41,9 +42,22 @@ void ABNGameMode::OnPostLogin(AController* NewPlayer)
 	// Subscribed here rather than in the PlayerState's own BeginPlay: OnPostLogin is the engine's
 	// guarantee that this controller HAS a PlayerState, and the mode is the one object that
 	// outlives every pawn and every death, so nothing has to re-subscribe on respawn.
-	if (ABNPlayerState* PS = NewPlayer ? NewPlayer->GetPlayerState<ABNPlayerState>() : nullptr)
+	ABNPlayerState* PS = NewPlayer ? NewPlayer->GetPlayerState<ABNPlayerState>() : nullptr;
+	if (PS)
 	{
 		PS->OnPlayerDeath.AddUObject(this, &ABNGameMode::HandlePlayerDeath);
+	}
+
+	// The arrival itself is what can satisfy MinPlayers, so the gate is asked here and nowhere else.
+	TryStartMatch();
+
+	// And if it did not start the match, this player joined a warmup or a post-match and must be
+	// frozen like everyone already here — otherwise the one machine that joined late is the one
+	// machine that can shoot.
+	const ABNGameState* GS = GetGameState<ABNGameState>();
+	if (PS && GS && GS->GetMatchState() != EBNMatchState::InProgress)
+	{
+		SetPlayerFrozen(PS, true);
 	}
 }
 
@@ -83,6 +97,13 @@ void ABNGameMode::HandlePlayerDeath(ABNPlayerState* Victim, ABNPlayerState* Kill
 			*Killer->GetPlayerName(), *Victim->GetPlayerName(), *Killer->GetPlayerName(), Killer->GetKills());
 	}
 
+	// 3.2 — the score limit, checked where the kill was credited. EndMatch itself refuses unless
+	// the match is InProgress, so a second elimination inside the same frame cannot end it twice.
+	if (Killer && Killer != Victim && Killer->GetKills() >= ScoreLimit)
+	{
+		EndMatch(Killer);
+	}
+
 	// This mode's answer to a death is a timed respawn. Another mode's could be a spectator
 	// hand-off, or nothing at all — which is the point of hearing about the death instead of being
 	// called by the ability that caused it.
@@ -110,6 +131,14 @@ void ABNGameMode::RespawnPlayer(TWeakObjectPtr<AController> WeakController)
 {
 	AController* Controller = WeakController.Get();
 	if (!Controller)
+	{
+		return;
+	}
+
+	// 3.5 — a respawn armed during play can land after the match ended. Nobody stands up outside
+	// InProgress; the restart is what puts everyone back on their feet.
+	const ABNGameState* GS = GetGameState<ABNGameState>();
+	if (!GS || GS->GetMatchState() != EBNMatchState::InProgress)
 	{
 		return;
 	}
@@ -166,4 +195,163 @@ void ABNGameMode::RespawnPlayer(TWeakObjectPtr<AController> WeakController)
 	// FindPlayerStart already picks an APlayerStart, and a BN subclass would hold nothing until
 	// teams and spawn scoring exist — which is a later roadmap's, not this fence's.
 	RestartPlayer(Controller);
+}
+
+void ABNGameMode::TryStartMatch()
+{
+	ABNGameState* GS = GetGameState<ABNGameState>();
+	if (!GS || GS->GetMatchState() != EBNMatchState::WaitingToStart || GetNumPlayers() < MinPlayers)
+	{
+		return;
+	}
+
+	BeginMatch();
+}
+
+void ABNGameMode::BeginMatch()
+{
+	ABNGameState* GS = GetGameState<ABNGameState>();
+	UWorld* World = GetWorld();
+	if (!GS || !World)
+	{
+		return;
+	}
+
+	// An END STAMP, not a countdown: one replicated write that is already correct for a client
+	// joining at any moment. The mode's timer is the server's own copy of the same deadline.
+	GS->SetMatchEndServerTime(GS->GetServerWorldTimeSeconds() + TimeLimit);
+	GS->SetMatchState(EBNMatchState::InProgress);
+	SetAllPlayersFrozen(false);
+
+	World->GetTimerManager().SetTimer(MatchTimerHandle, this, &ABNGameMode::OnTimeLimitReached,
+		FMath::Max(1.f, TimeLimit), /*bLoop=*/false);
+}
+
+void ABNGameMode::OnTimeLimitReached()
+{
+	const ABNGameState* GS = GetGameState<ABNGameState>();
+	if (!GS)
+	{
+		return;
+	}
+
+	// The sole leader wins. GetLeaders returns the whole tie set precisely so this can tell a
+	// decided match from a tied one, and a tie is a null winner rather than an arbitrary pick.
+	TArray<ABNPlayerState*> Leaders;
+	GS->GetLeaders(Leaders);
+	EndMatch(Leaders.Num() == 1 ? Leaders[0] : nullptr);
+}
+
+void ABNGameMode::EndMatch(ABNPlayerState* InWinner)
+{
+	ABNGameState* GS = GetGameState<ABNGameState>();
+	UWorld* World = GetWorld();
+	if (!GS || !World || GS->GetMatchState() != EBNMatchState::InProgress)
+	{
+		return;
+	}
+
+	// The clock is done whichever condition fired — the score limit leaves it armed otherwise.
+	World->GetTimerManager().ClearTimer(MatchTimerHandle);
+
+	// Winner BEFORE the state, so the two land in the same bunch and no client ever sees PostMatch
+	// announced against a winner the server has not written yet.
+	GS->SetWinner(InWinner);
+	GS->SetMatchState(EBNMatchState::PostMatch);
+	SetAllPlayersFrozen(true);
+
+	UE_LOG(LogBN, Log, TEXT("BNGameMode: match over. Winner: %s"),
+		InWinner ? *InWinner->GetPlayerName() : TEXT("none (tie)"));
+
+	World->GetTimerManager().SetTimer(PostMatchTimerHandle, this, &ABNGameMode::RestartMatch,
+		FMath::Max(1.f, PostMatchDuration), /*bLoop=*/false);
+}
+
+void ABNGameMode::RestartMatch()
+{
+	ABNGameState* GS = GetGameState<ABNGameState>();
+	if (!GS)
+	{
+		return;
+	}
+
+	GS->SetWinner(nullptr);
+
+	// Every score to zero. Without this the restarted match inherits the old one's kills and the
+	// first elimination of the new round crosses the limit again immediately.
+	for (APlayerState* PS : GS->PlayerArray)
+	{
+		if (ABNPlayerState* BNPS = Cast<ABNPlayerState>(PS))
+		{
+			BNPS->ResetScore();
+		}
+	}
+
+	// The state goes back FIRST: the freeze comes off here and RespawnPlayer refuses outside
+	// InProgress, so the order below is the only one that both thaws and rebodies everyone.
+	BeginMatch();
+
+	// Copied, because RestartPlayer spawns actors while this iterates.
+	TArray<TObjectPtr<APlayerState>> Players = GS->PlayerArray;
+	for (APlayerState* PS : Players)
+	{
+		RespawnPlayer(TWeakObjectPtr<AController>(PS ? Cast<AController>(PS->GetOwner()) : nullptr));
+	}
+}
+
+void ABNGameMode::SetPlayerFrozen(ABNPlayerState* InPlayerState, bool bFrozen)
+{
+	UAbilitySystemComponent* ASC = InPlayerState ? InPlayerState->GetAbilitySystemComponent() : nullptr;
+	if (!ASC)
+	{
+		return;
+	}
+
+	// Built once: the map's key type is the weak pointer, and a raw pointer passed straight to
+	// Find/Remove would hash as an address rather than as an object index and never match.
+	const TWeakObjectPtr<ABNPlayerState> Key(InPlayerState);
+
+	if (!bFrozen)
+	{
+		FActiveGameplayEffectHandle Handle;
+		if (FrozenHandles.RemoveAndCopyValue(Key, Handle) && Handle.IsValid())
+		{
+			ASC->RemoveActiveGameplayEffect(Handle);
+		}
+		return;
+	}
+
+	if (FrozenHandles.Contains(Key))
+	{
+		return;
+	}
+
+	// The PERSISTENT PlayerState's ASC, so the freeze outlives the pawn a post-match death takes.
+	const FGameplayEffectSpecHandle Spec = ASC->MakeOutgoingSpec(UBNGE_State::StaticClass(), 1.f, ASC->MakeEffectContext());
+	if (Spec.IsValid())
+	{
+		Spec.Data->DynamicGrantedTags.AddTag(BNTags::State_Match_Frozen);
+		FrozenHandles.Add(Key, ASC->ApplyGameplayEffectSpecToSelf(*Spec.Data));
+	}
+}
+
+void ABNGameMode::SetAllPlayersFrozen(bool bFrozen)
+{
+	const ABNGameState* GS = GetGameState<ABNGameState>();
+	if (!GS)
+	{
+		return;
+	}
+
+	for (APlayerState* PS : GS->PlayerArray)
+	{
+		SetPlayerFrozen(Cast<ABNPlayerState>(PS), bFrozen);
+	}
+
+	// Thawing clears the map outright, which is also what collects the entries of players who left
+	// while frozen — their weak keys never come back to be removed one at a time.
+	if (!bFrozen)
+	{
+		FrozenHandles.Reset();
+	}
 }

@@ -12,6 +12,9 @@
 
 UBNGA_Death::UBNGA_Death()
 {
+	// A death that lands during the post-match is still a death.
+	bIgnoreMatchFreeze = true;
+
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::ServerOnly;
 }
 

@@ -48,6 +48,11 @@ namespace BNTags
 	 *  abilities without any of them reading the attribute and re-deciding what "broken" means. */
 	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Shields_Broken);
 
+	/** Warmup and post-match. The MODE owns it, so the refusal is the server's and every machine
+	 *  can read it — a disabled input is a claim the server cannot verify. Under State so respawn's
+	 *  State.* sweep cannot carry a stale freeze into a new body. */
+	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Match_Frozen);
+
 	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_MuzzleFlash);
 	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_Impact);
 	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_Tracer);

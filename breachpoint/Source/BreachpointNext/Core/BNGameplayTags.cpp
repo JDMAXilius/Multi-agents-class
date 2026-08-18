@@ -36,6 +36,7 @@ namespace BNTags
 
 	UE_DEFINE_GAMEPLAY_TAG(State_Combat_RecentDamage, "State.Combat.RecentDamage");
 	UE_DEFINE_GAMEPLAY_TAG(State_Shields_Broken, "State.Shields.Broken");
+	UE_DEFINE_GAMEPLAY_TAG(State_Match_Frozen, "State.Match.Frozen");
 
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_MuzzleFlash, "GameplayCue.Weapon.MuzzleFlash");
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_Impact, "GameplayCue.Weapon.Impact");
