@@ -4,8 +4,10 @@
 #include "GameFramework/GameModeBase.h"
 #include "GameplayEffectTypes.h"
 #include "UObject/SoftObjectPath.h"
+#include "UObject/SoftObjectPtr.h"
 #include "BNGameMode.generated.h"
 
+class ABNBotController;
 class ABNPlayerState;
 
 UCLASS(Config=Game)
@@ -48,6 +50,16 @@ protected:
 	/** MinPlayers present while still waiting, and the match begins. */
 	void TryStartMatch();
 
+	/** G4 — the fill. Authority, WaitingToStart only: tops the lobby up to TargetPlayers with
+	 *  bots, counting humans (GetNumPlayers) plus the bots already spawned, so a human joining
+	 *  warmup re-triggering TryStartMatch never over-spawns. Never runs mid-match or post-match —
+	 *  mid-match backfill is R5's named deferral. */
+	void EnsureBotFill();
+
+	/** One bot, Lyra's way: spawn the controller (transient — never saved into a map), name its
+	 *  PlayerState, GenericPlayerInitialization, RestartPlayer. Null on failure, loudly. */
+	ABNBotController* SpawnBot(int32 Index);
+
 	/** Restamps the clock, arms the ONE time-limit timer, thaws everyone, announces InProgress.
 	 *  Both the first start and the in-place restart run this body. */
 	void BeginMatch();
@@ -81,6 +93,22 @@ protected:
 	/** Default 1 so solo PIE always runs. */
 	UPROPERTY(Config)
 	int32 MinPlayers = 1;
+
+	/** The lobby size bots fill up to. Humans + bots together reach this, never exceed it. */
+	UPROPERTY(Config)
+	int32 TargetPlayers = 4;
+
+	/** In order; a bot past the end of the list falls back to "Bot <n>". */
+	UPROPERTY(Config)
+	TArray<FString> BotNames;
+
+	/** Soft (law 3): the ini names the C++ class path, nothing here hard-references it. */
+	UPROPERTY(Config)
+	TSoftClassPtr<ABNBotController> BotControllerClass;
+
+	/** Server-only bookkeeping — bots exist nowhere else, so nothing here replicates. */
+	UPROPERTY()
+	TArray<TObjectPtr<ABNBotController>> SpawnedBots;
 
 	UPROPERTY(Config)
 	float PostMatchDuration = 10.f;

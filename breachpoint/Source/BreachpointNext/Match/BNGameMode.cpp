@@ -1,4 +1,5 @@
 #include "Match/BNGameMode.h"
+#include "AI/BNBotController.h"
 #include "Characters/BNCharacter.h"
 #include "Core/BNGameplayTags.h"
 #include "Match/BNGameState.h"
@@ -229,12 +230,94 @@ void ABNGameMode::RespawnPlayer(TWeakObjectPtr<AController> WeakController)
 void ABNGameMode::TryStartMatch()
 {
 	ABNGameState* GS = GetGameState<ABNGameState>();
-	if (!GS || GS->GetMatchState() != EBNMatchState::WaitingToStart || GetNumPlayers() < MinPlayers)
+	if (!GS || GS->GetMatchState() != EBNMatchState::WaitingToStart)
+	{
+		return;
+	}
+
+	// The fill happens when a start is ATTEMPTED — before the MinPlayers gate can early-return —
+	// so the lobby is topped up whether or not this attempt begins the match.
+	EnsureBotFill();
+
+	if (GetNumPlayers() < MinPlayers)
 	{
 		return;
 	}
 
 	BeginMatch();
+}
+
+void ABNGameMode::EnsureBotFill()
+{
+	const ABNGameState* GS = GetGameState<ABNGameState>();
+	if (!HasAuthority() || !GS || GS->GetMatchState() != EBNMatchState::WaitingToStart)
+	{
+		return;
+	}
+
+	// GetNumPlayers counts humans only (PlayerControllers), which is exactly right — the bots
+	// already here are counted from our own book, pruned of anything destroyed.
+	SpawnedBots.RemoveAll([](const TObjectPtr<ABNBotController>& Bot) { return !IsValid(Bot); });
+
+	const int32 BotsNeeded = TargetPlayers - GetNumPlayers() - SpawnedBots.Num();
+	if (BotsNeeded <= 0)
+	{
+		return;
+	}
+
+	int32 Filled = 0;
+	for (int32 i = 0; i < BotsNeeded; ++i)
+	{
+		if (SpawnBot(SpawnedBots.Num()))
+		{
+			++Filled;
+		}
+	}
+
+	UE_LOG(LogBN, Log, TEXT("BNBots: filled %d bots to reach %d"), Filled, TargetPlayers);
+}
+
+ABNBotController* ABNGameMode::SpawnBot(int32 Index)
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return nullptr;
+	}
+
+	UClass* ControllerClass = BotControllerClass.LoadSynchronous();
+	if (!ControllerClass)
+	{
+		UE_LOG(LogBN, Error, TEXT("BNBots: BotControllerClass '%s' did not resolve — no bot spawned."),
+			*BotControllerClass.ToString());
+		return nullptr;
+	}
+
+	// Lyra's flags: transient, so a bot controller can never be saved into a map.
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	SpawnParams.ObjectFlags |= RF_Transient;
+
+	ABNBotController* NewBot = World->SpawnActor<ABNBotController>(ControllerClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+	if (!NewBot)
+	{
+		UE_LOG(LogBN, Error, TEXT("BNBots: SpawnActor failed for %s — no bot spawned."), *GetNameSafe(ControllerClass));
+		return nullptr;
+	}
+
+	// The name lands on the PlayerState bWantsPlayerState already made — the same name the kill
+	// line, the leaders query and the winner announcement all read.
+	if (APlayerState* PS = NewBot->GetPlayerState<APlayerState>())
+	{
+		PS->SetPlayerName(BotNames.IsValidIndex(Index) ? BotNames[Index] : FString::Printf(TEXT("Bot %d"), Index));
+	}
+
+	// The ONE initialization seam (G2): death subscription + warmup freeze, same as a human.
+	GenericPlayerInitialization(NewBot);
+	RestartPlayer(NewBot);
+
+	SpawnedBots.Add(NewBot);
+	return NewBot;
 }
 
 void ABNGameMode::BeginMatch()
