@@ -75,7 +75,7 @@ below comes from a fresh run rather than from files shipped in the archive.
 | **R3 — Detect gaps** | There must be both built and missing verdicts — all-missing means the matcher is broken — and **every** verdict must carry evidence. |
 | **R4 — Prioritise** | Each candidate's score is **recomputed from its own stored terms**, and the winner is recomputed by taking the maximum. A selection that did not follow from the printed reasoning fails here. |
 | **R5 — Generate code** | The `.h`/`.cpp` must exist and be non-trivial, the agent's own structural verification must have landed clean, and its **re-scan must confirm the gap it selected is now closed**. |
-| **D1 — Runnable agent** | Required files present, and `agent.py`'s imports are checked against `sys.stdlib_module_names` — a third-party import fails the check. |
+| **D1 — Runnable agent** | Required files present, and `agent.py`'s imports are resolved through `importlib.util.find_spec` and classified by spec origin — a third-party import fails the check. (Origin, not `sys.stdlib_module_names`, so the check itself runs on Python 3.8+ like everything else here.) |
 | **D2 — README** | Must answer all three required questions (what it built · why that feature · did it run in your game). |
 
 Section 4 tests the claims the write-up makes that a reader would otherwise have to trust:
