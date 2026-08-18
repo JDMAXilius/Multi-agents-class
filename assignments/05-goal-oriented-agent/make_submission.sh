@@ -36,27 +36,20 @@ GENERATED="Source/Breachpoint/Telemetry/BRSpotterSubsystem"
   echo "error: the generated feature is missing from the source folder — run" >&2
   echo "       'python3 agent.py' before packaging" >&2; exit 1; }
 
-# Prove the package runs, from the staged copy, with its outputs removed first
-# so "it ran" cannot be satisfied by the files we just copied in.
-( cd "$STAGE" \
-  && rm -f "project/$GENERATED.h" "project/$GENERATED.cpp" \
-  && python3 agent.py >/dev/null 2>&1 \
-  && [ -s "project/$GENERATED.h" ] \
-  && [ -s "project/$GENERATED.cpp" ] ) \
-  || { echo "error: staged package failed its own replay — not zipping" >&2; exit 1; }
-
-# The re-run also rewrites output/; confirm the run reported a clean verify
-# rather than silently landing a file with problems.
-python3 - "$STAGE" <<'PY'
-import json, sys, pathlib
-report = json.loads((pathlib.Path(sys.argv[1]) / "output" / "build_report.json")
-                    .read_text(encoding="utf-8"))
-if report.get("verify_problems"):
-    sys.exit(f"error: staged replay landed with problems: {report['verify_problems']}")
-if not report.get("gap_closed_on_rescan"):
-    sys.exit("error: staged replay did not close the gap it selected")
-print(f"  staged replay: {report['class']} written, verify clean, gap closed")
-PY
+# Prove the package passes its own verification, run FROM the staged copy — the
+# same script the grader is told to run, in the same layout they will have. This
+# deletes the generated code and re-runs the agent before checking anything, so
+# "it ran" cannot be satisfied by the files we just copied in.
+echo "  running verify.sh from the staged copy…"
+if ( cd "$STAGE" && ./verify.sh >/tmp/stage-verify.$$.log 2>&1 ); then
+  sed -n 's/^/    /p' /tmp/stage-verify.$$.log | grep -E "PASS|ALL CHECKS" | tail -3
+  rm -f /tmp/stage-verify.$$.log
+else
+  echo "error: staged package failed ./verify.sh — not zipping" >&2
+  sed 's/^/    /' /tmp/stage-verify.$$.log >&2
+  rm -f /tmp/stage-verify.$$.log
+  exit 1
+fi
 
 rm -f "$OUT"
 ( cd "$(dirname "$STAGE")" && zip -qr "$OUT" "$(basename "$STAGE")" )

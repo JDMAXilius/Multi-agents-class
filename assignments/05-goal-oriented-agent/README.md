@@ -8,10 +8,17 @@ An agent that reads BREACHPOINT's GDD, scans its source, finds what the design p
 the code does not have, decides which gap to close first — and writes the C++.
 
 ```bash
+./verify.sh                 # ← START HERE: checks every requirement, exit 0 = all pass
 python3 agent.py            # replay the committed run — stdlib only, no API key
 python3 agent.py --rank     # just the reasoning: gaps + scores, no model call at all
 python3 agent.py --live     # real model call for the code-generation step
 ```
+
+**Don't take this document's word for anything.** `./verify.sh` deletes the agent's output,
+re-runs it from scratch, and checks each assignment requirement against what that run
+produced — including recomputing the ranking from its own stored terms to confirm the
+selection followed from the printed reasoning. Every check prints the evidence it used.
+[`TICKET_VERIFY.md`](TICKET_VERIFY.md) explains each one.
 
 ---
 
@@ -225,8 +232,11 @@ asserting the first time it fires.
 ## Files
 
 ```
+verify.sh           checks every assignment requirement against a fresh run  ← run this first
+TICKET_VERIFY.md    what each check does, and what it deliberately does not prove
 agent.py            the agent — read GDD · scan · gap · rank · generate · verify   (652 lines)
 freeze_project.sh   builds the pinned target and writes its provenance             (103 lines)
+make_submission.sh  builds the zip; refuses to ship a package that fails verify.sh
 recording.json      the committed live run, so replay needs no API key
 project/            THE FROZEN TARGET — pinned at 13a3882, never the live tree
   GDD.md              the real vertical-slice GDD

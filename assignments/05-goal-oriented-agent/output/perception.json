@@ -1,7 +1,7 @@
 {
   "pinned_project": "project",
-  "files_scanned": 114,
-  "symbols_found": 303,
+  "files_scanned": 116,
+  "symbols_found": 304,
   "data_tables": [
     "CT_Combat.csv",
     "DT_BotAmbitions.csv",
@@ -230,22 +230,17 @@
         "fallback"
       ],
       "gdd_mentions": 40,
-      "built": false,
+      "built": true,
       "evidence": [
-        "no U/A/I class matches any of ['spotter', 'agent', 'canned', 'fallback'] \u2014 but its data exists (FBRSpotterLineRow (Source/Breachpoint/Data/BRDataRows.h), DT_SpotterLines.csv)"
+        "spotter -> UBRSpotterSubsystem (Source/Breachpoint/Telemetry/BRSpotterSubsystem.h)"
       ],
       "inputs": [
         "FBRSpotterLineRow (Source/Breachpoint/Data/BRDataRows.h)",
         "DT_SpotterLines.csv"
       ],
-      "integration": 0,
-      "score": 106.0,
-      "terms": {
-        "central": 40.0,
-        "inputs_ready": 50.0,
-        "integration": 0.0,
-        "breadth": 16.0
-      }
+      "integration": 2,
+      "score": 0.0,
+      "terms": {}
     },
     {
       "id": "metasounds-combat-and-footstep-audio",
