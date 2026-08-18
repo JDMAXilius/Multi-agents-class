@@ -113,6 +113,24 @@ BotControllerClass=/Script/BreachpointNext.BNBotController
 (sight radius / aim error / burst+dwell seconds ride the controller's and tasks' own Config
 defaults; numbers land in ini only when the founder tunes them.)
 
+## Known limitation, accepted with its trigger written down
+
+**The fill can overshoot when `MinPlayers > 1`.** Human 1's arrival fills to TargetPlayers during
+warmup; human 2's arrival then starts the match one wide (bot removal is deferred). Unreachable on
+the shipped config (`MinPlayers=1` — the first human both fills and starts), same acceptance shape
+as R4's MinPlayers limitation. **Reopen the moment `MinPlayers` is raised above 1** — the fix is
+the deferred remove-a-bot seam (Lyra's `RemoveOneBot`), not a rework.
+
+## Status — 18 Aug 2026
+
+| Wave | Goals | State |
+|---|---|---|
+| 1 | G1 controller · G2 seams | **LANDED** `29ad9b2`, critic **PASS** (all five windows walked clean) |
+| 2 | G3 vocabulary+POI · G4 fill | **LANDED** `1b01f70`, critic **PASS on the net dimension**, 4 notes: 2 fixed (monotonic bot names; one-time no-POI warning), 1 accepted above, 1 answered in the ST ticket's transition design |
+| — | ST asset ticket | `TASK-R5-ST-BNBOT` — OPEN, terminal, after the founder's build |
+
+**Not compiled.** The founder's build is the first real test.
+
 ## Deferred beyond R5, deliberately — each with its slot
 
 GOAP brain + `DT_BotAmbitions` (sits above the tree, sets its parameters) · EQS (replaces the POI

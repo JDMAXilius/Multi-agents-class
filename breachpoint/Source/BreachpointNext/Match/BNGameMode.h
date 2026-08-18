@@ -110,6 +110,10 @@ protected:
 	UPROPERTY()
 	TArray<TObjectPtr<ABNBotController>> SpawnedBots;
 
+	/** Monotonic, never reused: naming from the live book's COUNT hands a warmup refill the same
+	 *  name twice, and two Ossians make every kill line and the winner announce ambiguous. */
+	int32 NextBotNameIndex = 0;
+
 	UPROPERTY(Config)
 	float PostMatchDuration = 10.f;
 

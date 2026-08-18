@@ -89,6 +89,23 @@ Everything above is the server's truth. In a two-window PIE (listen server + cli
   is an end stamp, not a countdown) and, if it joins during warmup or post-match, is frozen like
   everyone else.
 
+## 5b. The bots (R5) — the fill and the fight
+
+Solo PIE, `TargetPlayers=4`, after the terminal's `TASK-R5-ST-BNBOT` ticket:
+
+- Startup: `BNBots: filled 3 bots to reach 4`, three named PlayerStates (Marcus, Vale, Ossian).
+- Bots ROAM between the four placed points when nothing is visible; when one sees you — or
+  another bot — it turns, closes, and fires **through the same fire ability** (`BNInput:` lines
+  show its presses exactly like yours; `BNLoadout` applied to it at spawn).
+- Bot kills and deaths score normally; a bot can win the match, and `match over. Winner: Vale`
+  is a pass, not a bug.
+- During warmup/post-match, bots are frozen like everyone else. A bot that still stares at you
+  while frozen is correct (perception runs; the trigger is refused).
+- `BNBots: no ABNPointOfInterest placed in this level` once = the points ticket step was skipped;
+  bots will stand until they see a target.
+- Two-window rung: on the CLIENT, bots move, pose, shoot and die exactly like remote humans —
+  everything a client sees of a bot rides the same pawn/PlayerState replication (critic-verified).
+
 ## 6. Known and accepted
 
 - **`MinPlayers` is only enforced on the session's FIRST match** — the restart goes straight back

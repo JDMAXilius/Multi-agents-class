@@ -268,7 +268,7 @@ void ABNGameMode::EnsureBotFill()
 	int32 Filled = 0;
 	for (int32 i = 0; i < BotsNeeded; ++i)
 	{
-		if (SpawnBot(SpawnedBots.Num()))
+		if (SpawnBot(NextBotNameIndex++))
 		{
 			++Filled;
 		}

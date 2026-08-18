@@ -179,6 +179,9 @@ struct FBNMoveToPointOfInterestTaskInstanceData
 	UPROPERTY(EditAnywhere, Category = "Parameter")
 	float DwellSeconds = 2.f;
 
+	/** Internal: warned once — a level with no points must be SAID, not spun on in silence. */
+	bool bWarnedNoPointsOfInterest = false;
+
 	/** Internal: last point visited, so the roam never picks the same spot twice running. Weak —
 	 *  a deleted point must not dangle. Persists across state re-entries by instance-data lifetime. */
 	TWeakObjectPtr<ABNPointOfInterest> LastPoint;

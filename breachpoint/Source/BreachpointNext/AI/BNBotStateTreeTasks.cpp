@@ -285,6 +285,13 @@ EStateTreeRunStatus FBNMoveToPointOfInterestTask::EnterState(FStateTreeExecution
 	ABNPointOfInterest* Pick = Nearest ? Nearest : NearestAny;
 	if (!Pick)
 	{
+		// Once, not per re-enter: the tree re-selects Roam after every failure, and a level with
+		// no points would otherwise spin here in SILENCE — the exact failure shape §5c banned.
+		if (!InstanceData.bWarnedNoPointsOfInterest)
+		{
+			InstanceData.bWarnedNoPointsOfInterest = true;
+			UE_LOG(LogBN, Warning, TEXT("BNBots: no ABNPointOfInterest placed in this level — bots have nowhere to roam and will stand until they see a target."));
+		}
 		return EStateTreeRunStatus::Failed;
 	}
 
