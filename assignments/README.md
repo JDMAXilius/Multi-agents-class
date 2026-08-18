@@ -81,8 +81,21 @@ mode. Drives the project's real crew definitions from `breachpoint/.claude/agent
 Reads the GDD, scans the codebase, detects gaps, ranks them **deterministically**, and writes
 the C++ for the top one.
 
+**Grading this one takes one command:**
+
+```bash
+cd assignments/05-goal-oriented-agent && ./verify.sh
+```
+
+It deletes the agent's output, re-runs it, and checks every assignment requirement against
+that fresh run — including recomputing the ranking from its own stored terms to confirm the
+selection followed from the printed reasoning. Exit 0 means all checks passed;
+[`TICKET_VERIFY.md`](05-goal-oriented-agent/TICKET_VERIFY.md) explains each one and states
+plainly what it does *not* prove.
+
 | Look at | For |
 |---|---|
+| [`TICKET_VERIFY.md`](05-goal-oriented-agent/TICKET_VERIFY.md) | the terminal ticket — what to run and what each check verifies |
 | [`README.md`](05-goal-oriented-agent/README.md) | the write-up, incl. the honest "did it run in your game?" |
 | `output/ranking.json` | every candidate, every scoring term, the weights, the selection |
 | `output/perception.json` | 13 features, 303 declarations, every built/missing verdict |

@@ -5,26 +5,8 @@
     "integration": 2.0,
     "breadth": 4.0
   },
-  "selected": "spotter-agent-with-canned-fallback",
+  "selected": "1-three-level-arena-map",
   "candidates": [
-    {
-      "id": "spotter-agent-with-canned-fallback",
-      "text": "Spotter agent with canned fallback",
-      "score": 106.0,
-      "terms": {
-        "central": 40.0,
-        "inputs_ready": 50.0,
-        "integration": 0.0,
-        "breadth": 16.0
-      },
-      "inputs": [
-        "FBRSpotterLineRow (Source/Breachpoint/Data/BRDataRows.h)",
-        "DT_SpotterLines.csv"
-      ],
-      "evidence": [
-        "no U/A/I class matches any of ['spotter', 'agent', 'canned', 'fallback'] \u2014 but its data exists (FBRSpotterLineRow (Source/Breachpoint/Data/BRDataRows.h), DT_SpotterLines.csv)"
-      ]
-    },
     {
       "id": "1-three-level-arena-map",
       "text": "1 three-level arena map",
