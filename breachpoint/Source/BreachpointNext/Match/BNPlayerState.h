@@ -40,6 +40,18 @@ public:
 	 *  Nothing else should broadcast this. */
 	void BroadcastDeath(ABNPlayerState* Killer);
 
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	/** Two integers, not the engine's float Score: an FFA scoreboard reads counts, and a float
+	 *  invites rounding questions nobody wants to answer. */
+	int32 GetKills() const { return Kills; }
+	int32 GetDeaths() const { return Deaths; }
+
+	/** Authority only. The GameMode's death handler is the only caller — the credit rules live
+	 *  there, with the killer in hand, not here. */
+	void AddKill();
+	void AddDeath();
+
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	UBNAbilitySystemComponent* GetBNAbilitySystemComponent() const { return AbilitySystemComponent; }
 	UBNAttributeSet* GetAttributeSet() const { return AttributeSet; }
@@ -51,6 +63,18 @@ public:
 	void ApplyInitAttributes();
 
 protected:
+	UFUNCTION()
+	void OnRep_Kills();
+
+	UFUNCTION()
+	void OnRep_Deaths();
+
+	UPROPERTY(ReplicatedUsing = OnRep_Kills)
+	int32 Kills = 0;
+
+	UPROPERTY(ReplicatedUsing = OnRep_Deaths)
+	int32 Deaths = 0;
+
 	UPROPERTY()
 	TObjectPtr<UBNAbilitySystemComponent> AbilitySystemComponent;
 

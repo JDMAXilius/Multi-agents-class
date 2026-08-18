@@ -26,6 +26,9 @@ public:
 	 *  timed respawn. Scoring attaches here when it exists — the seam already carries the killer. */
 	void HandlePlayerDeath(ABNPlayerState* Victim, ABNPlayerState* Killer);
 
+	/** Read by ABNGameState, which mirrors it so clients can render "12 / 25". */
+	int32 GetScoreLimit() const { return ScoreLimit; }
+
 	/** Authority: the ONE respawn path. Delay then RestartPlayer. */
 	void RequestRespawn(AController* Controller);
 
@@ -38,4 +41,7 @@ protected:
 
 	UPROPERTY(Config)
 	float RespawnDelay = 3.f;
+
+	UPROPERTY(Config)
+	int32 ScoreLimit = 25;
 };

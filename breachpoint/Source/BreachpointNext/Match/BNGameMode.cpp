@@ -1,6 +1,7 @@
 #include "Match/BNGameMode.h"
 #include "Characters/BNCharacter.h"
 #include "Core/BNGameplayTags.h"
+#include "Match/BNGameState.h"
 #include "Match/BNPlayerController.h"
 #include "Match/BNPlayerState.h"
 #include "AbilitySystem/Attributes/BNAttributeSet.h"
@@ -13,6 +14,10 @@
 
 ABNGameMode::ABNGameMode()
 {
+	// The match has to have somewhere to live that a client can read. BP_BNGameMode may still
+	// out-serialise this dropdown the way it does the pawn class — that read-back is bn-editor's.
+	GameStateClass = ABNGameState::StaticClass();
+
 	/*DefaultPawnClass = ABNCharacter::StaticClass();
 	PlayerControllerClass = ABNPlayerController::StaticClass();
 	PlayerStateClass = ABNPlayerState::StaticClass();*/
@@ -49,20 +54,33 @@ void ABNGameMode::HandlePlayerDeath(ABNPlayerState* Victim, ABNPlayerState* Kill
 		return;
 	}
 
+	// CREDIT, before the line that prints it. A death always costs the victim; a kill is only a
+	// kill when someone ELSE caused it. Killer == victim is their own grenade and a null killer is
+	// world damage or a killer who left mid-flight — neither scores, both still cost a death.
+	Victim->AddDeath();
+
+	if (Killer && Killer != Victim)
+	{
+		Killer->AddKill();
+	}
+
 	// THE KILL LINE — the pipeline's deliverable, and the founder's test. Three wordings for three
 	// real cases, decided in the research doc so nobody rediscovers them: a null killer is world
 	// damage or a killer who disconnected mid-flight; killer == victim is their own grenade.
 	if (!Killer)
 	{
-		UE_LOG(LogBN, Log, TEXT("BNGameMode: %s died."), *Victim->GetPlayerName());
+		UE_LOG(LogBN, Log, TEXT("BNGameMode: %s died. (%d deaths)"),
+			*Victim->GetPlayerName(), Victim->GetDeaths());
 	}
 	else if (Killer == Victim)
 	{
-		UE_LOG(LogBN, Log, TEXT("BNGameMode: %s eliminated themselves."), *Victim->GetPlayerName());
+		UE_LOG(LogBN, Log, TEXT("BNGameMode: %s eliminated themselves. (%d deaths)"),
+			*Victim->GetPlayerName(), Victim->GetDeaths());
 	}
 	else
 	{
-		UE_LOG(LogBN, Log, TEXT("BNGameMode: %s eliminated %s."), *Killer->GetPlayerName(), *Victim->GetPlayerName());
+		UE_LOG(LogBN, Log, TEXT("BNGameMode: %s eliminated %s. (%s: %d kills)"),
+			*Killer->GetPlayerName(), *Victim->GetPlayerName(), *Killer->GetPlayerName(), Killer->GetKills());
 	}
 
 	// This mode's answer to a death is a timed respawn. Another mode's could be a spectator

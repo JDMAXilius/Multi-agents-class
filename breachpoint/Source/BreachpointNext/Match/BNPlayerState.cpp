@@ -11,6 +11,8 @@
 #include "AbilitySystem/Abilities/BNGA_Melee.h"
 #include "AbilitySystem/Abilities/BNMovementAbilities.h"
 #include "Core/BNGameplayTags.h"
+#include "BreachpointNext.h"
+#include "Net/UnrealNetwork.h"
 
 ABNPlayerState::ABNPlayerState()
 {
@@ -23,6 +25,42 @@ ABNPlayerState::ABNPlayerState()
 	InitEffect = UBNGE_InitAttributes::StaticClass();
 
 	SetNetUpdateFrequency(100.f);
+}
+
+void ABNPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ABNPlayerState, Kills);
+	DOREPLIFETIME(ABNPlayerState, Deaths);
+}
+
+void ABNPlayerState::AddKill()
+{
+	if (HasAuthority())
+	{
+		++Kills;
+	}
+}
+
+void ABNPlayerState::AddDeath()
+{
+	if (HasAuthority())
+	{
+		++Deaths;
+	}
+}
+
+// The OnReps exist so a client can SEE the number land — the scoreboard binds to them later, and
+// until it does they are how "both machines agree" is checked.
+void ABNPlayerState::OnRep_Kills()
+{
+	UE_LOG(LogBN, Verbose, TEXT("BNPlayerState: %s kills -> %d"), *GetPlayerName(), Kills);
+}
+
+void ABNPlayerState::OnRep_Deaths()
+{
+	UE_LOG(LogBN, Verbose, TEXT("BNPlayerState: %s deaths -> %d"), *GetPlayerName(), Deaths);
 }
 
 UAbilitySystemComponent* ABNPlayerState::GetAbilitySystemComponent() const
