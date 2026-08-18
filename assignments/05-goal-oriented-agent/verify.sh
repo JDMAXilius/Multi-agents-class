@@ -161,12 +161,23 @@ need = ["agent.py", "README.md", "recording.json", "project/GDD.md",
 missing = [n for n in need if not pathlib.Path(n).exists()]
 assert not missing, f"missing: {missing}"
 src = pathlib.Path("agent.py").read_text(encoding="utf-8")
-# stdlib only: no third-party import should appear
-import re
+# stdlib only: no third-party import should appear. Resolved by spec origin rather
+# than sys.stdlib_module_names, which only exists on Python 3.10+ (this repo's
+# graders run 3.9).
+import re, importlib.util, sysconfig
+STDLIB = sysconfig.get_paths()["stdlib"]
 mods = {m.split(".")[0] for m in re.findall(r"^\s*(?:import|from)\s+([\w.]+)",
                                             src, re.M)}
-third = mods - set(__import__("sys").stdlib_module_names) - {"crew", "rag", "gaps",
-                                                             "agent", "anthropic"}
+def is_stdlib(name):
+    try:
+        origin = getattr(importlib.util.find_spec(name), "origin", None) or ""
+    except (ImportError, ValueError):
+        return False
+    if origin in ("built-in", "frozen"):
+        return True
+    return origin.startswith(STDLIB) and "-packages" not in origin
+third = {m for m in mods - {"crew", "rag", "gaps", "agent", "anthropic"}
+         if not is_stdlib(m)}
 assert not third, f"non-stdlib imports: {third}"
 print(f"{len(need)} required files present; agent.py imports stdlib only")
 PY
