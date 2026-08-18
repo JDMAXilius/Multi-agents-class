@@ -103,6 +103,19 @@ void ABNGameState::OnRep_MatchState()
 	HandleMatchStateChanged();
 }
 
+// Only once the match is actually over: a winner resolving while play continues is the reference
+// arriving late, not an outcome, and re-announcing PostMatch is what a reader that rendered a tie
+// needs in order to correct itself.
+void ABNGameState::OnRep_Winner()
+{
+	if (MatchState == EBNMatchState::PostMatch)
+	{
+		UE_LOG(LogBN, Log, TEXT("BNGameState: winner resolved -> %s"),
+			Winner ? *Winner->GetPlayerName() : TEXT("none (tie)"));
+		OnMatchStateChanged.Broadcast(MatchState);
+	}
+}
+
 void ABNGameState::HandleMatchStateChanged()
 {
 	// Guarded, because this is a LOG: a line added to explain the session must never be the thing

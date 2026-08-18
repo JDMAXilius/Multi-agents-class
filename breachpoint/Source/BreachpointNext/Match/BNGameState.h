@@ -17,6 +17,11 @@ enum class EBNMatchState : uint8
 /** Fires on EVERY machine: the server from SetMatchState, remote clients from OnRep_MatchState.
  *  Native (not dynamic) to match the OnPlayerDeath seam — the readers are C++ systems.
  *
+ *  SUBSCRIBERS MUST ALSO READ GetMatchState() WHEN THEY SUBSCRIBE. On a client joining mid-match
+ *  this fires from the GameState channel's INITIAL bunch — before that client's controller or HUD
+ *  exists to have subscribed — so a reader that waits only for the delegate never learns the state
+ *  it joined into. Subscribe, then read once; every transition after that is the delegate's.
+ *
  *  Declared above UCLASS() because UnrealHeaderTool requires the class definition to immediately
  *  follow the macro. */
 DECLARE_MULTICAST_DELEGATE_OneParam(FBNMatchStateSignature, EBNMatchState /*NewState*/);
@@ -53,6 +58,9 @@ protected:
 	UFUNCTION()
 	void OnRep_MatchState();
 
+	UFUNCTION()
+	void OnRep_Winner();
+
 	/** The one body both the server's setter and the clients' OnRep run. */
 	void HandleMatchStateChanged();
 
@@ -69,6 +77,11 @@ protected:
 	UPROPERTY(Replicated)
 	int32 ScoreLimit = 0;
 
-	UPROPERTY(Replicated)
+	/** RepNotify'd, and the notify is not decoration: a client joining during PostMatch can open
+	 *  the GameState channel before the winner's PlayerState channel, so this arrives as an
+	 *  unmapped GUID — null at the moment the state change is announced, which renders a decided
+	 *  match as a tie. The GUID resolves a moment later, and without a notify nothing would ever
+	 *  say so. */
+	UPROPERTY(ReplicatedUsing = OnRep_Winner)
 	TObjectPtr<ABNPlayerState> Winner;
 };

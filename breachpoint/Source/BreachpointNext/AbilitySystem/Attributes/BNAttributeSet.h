@@ -15,11 +15,20 @@
  *
  * The attribute set RECORDS this; it still never talks to game flow. The death GA is what reads.
  */
+class APlayerState;
+
 struct FBNLastDamage
 {
 	/** Weak on purpose: a grenade's thrower can disconnect while it is in flight, and a dangling
 	 *  killer must degrade to "died", never crash the credit. */
 	TWeakObjectPtr<AActor> Instigator;
+
+	/** The killer's PLAYER STATE, resolved at capture — and the one that actually pays the credit.
+	 *  Instigator holds the killer's PAWN, and a pawn is destroyed by its own player's respawn: a
+	 *  grenade thrown three seconds before its thrower died would find a dangling pointer and score
+	 *  nothing, printing a real kill as world damage. A PlayerState outlives every pawn its player
+	 *  ever wears, so it survives the window the pawn cannot. */
+	TWeakObjectPtr<APlayerState> InstigatorPlayerState;
 
 	FHitResult Hit;
 

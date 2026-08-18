@@ -3,6 +3,8 @@
 #include "Core/BNGameplayTags.h"
 #include "BreachpointNext.h"
 #include "GameplayEffectExtension.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerState.h"
 #include "Net/UnrealNetwork.h"
 
 void UBNAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -106,6 +108,23 @@ void UBNAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallback
 	// latest hit's direction, while kill credit only ever reads the final state.
 	const FGameplayEffectContextHandle& Context = Data.EffectSpec.GetEffectContext();
 	LastDamage.Instigator = Context.GetOriginalInstigator();
+
+	// The PlayerState, resolved HERE while everything is still alive rather than at death, when the
+	// killer's pawn may already have been destroyed by their own respawn. The instigator ASC's owner
+	// IS the PlayerState in this project, so that is the direct route; the pawn is the fallback for
+	// damage whose source has no ability system at all.
+	LastDamage.InstigatorPlayerState = nullptr;
+	if (const UAbilitySystemComponent* SourceASC = Context.GetInstigatorAbilitySystemComponent())
+	{
+		LastDamage.InstigatorPlayerState = Cast<APlayerState>(SourceASC->GetOwnerActor());
+	}
+	if (!LastDamage.InstigatorPlayerState.IsValid())
+	{
+		if (const APawn* InstigatorPawn = Cast<APawn>(LastDamage.Instigator.Get()))
+		{
+			LastDamage.InstigatorPlayerState = InstigatorPawn->GetPlayerState();
+		}
+	}
 	LastDamage.Hit = Context.GetHitResult() ? *Context.GetHitResult() : FHitResult();
 	LastDamage.Amount = Damage;
 

@@ -77,9 +77,17 @@ void UBNGA_Death::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const
 		ABNPlayerState* KillerPS = nullptr;
 		if (const UBNAttributeSet* Attributes = ASC->GetSet<UBNAttributeSet>())
 		{
-			if (const APawn* KillerPawn = Cast<APawn>(Attributes->GetLastDamage().Instigator.Get()))
+			const FBNLastDamage& LastDamage = Attributes->GetLastDamage();
+
+			// The PLAYER STATE first: it outlives every pawn, so a grenade that kills after its
+			// thrower has died and respawned still credits the thrower. The pawn is the fallback.
+			KillerPS = Cast<ABNPlayerState>(LastDamage.InstigatorPlayerState.Get());
+			if (!KillerPS)
 			{
-				KillerPS = KillerPawn->GetPlayerState<ABNPlayerState>();
+				if (const APawn* KillerPawn = Cast<APawn>(LastDamage.Instigator.Get()))
+				{
+					KillerPS = KillerPawn->GetPlayerState<ABNPlayerState>();
+				}
 			}
 		}
 		PS->BroadcastDeath(KillerPS);
