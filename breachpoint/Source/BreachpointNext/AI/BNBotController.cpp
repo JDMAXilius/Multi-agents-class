@@ -10,6 +10,7 @@
 #include "Match/BNPlayerState.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Components/StateTreeAIComponent.h"
+#include "StateTree.h"
 #include "Engine/GameInstance.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerState.h"
@@ -103,6 +104,26 @@ void ABNBotController::OnPossess(APawn* InPawn)
 		}
 	}
 	RescoreBrain();
+
+	// The tree arrives by ini soft path, set BEFORE logic starts — no Blueprint child exists to
+	// hold the reference, and that is deliberate (C++-first). Idempotent across respawns: the
+	// same tree on the same component is a no-op re-set.
+	if (StateTreeAI)
+	{
+		if (UStateTree* Tree = BotStateTree.LoadSynchronous())
+		{
+			StateTreeAI->SetStateTree(Tree);
+		}
+		else if (!BotStateTree.IsNull())
+		{
+			UE_LOG(LogBN, Warning, TEXT("BNBotController: BotStateTree '%s' failed to load — bots will stand still. Check the [/Script/BreachpointNext.BNBotController] ini path against the asset."),
+				*BotStateTree.ToString());
+		}
+		else
+		{
+			UE_LOG(LogBN, Warning, TEXT("BNBotController: BotStateTree is unset — bots will stand still until TASK-R5-ST-BNBOT lands the tree and the ini names it."));
+		}
+	}
 
 	// Fresh logic per body: OnUnPossess stopped it, so this is a clean start on the new pawn.
 	if (StateTreeAI)

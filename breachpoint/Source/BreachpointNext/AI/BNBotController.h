@@ -9,6 +9,7 @@ class UAIPerceptionComponent;
 class UAISenseConfig_Sight;
 class UBNAbilitySystemComponent;
 class UBNBotBrain;
+class UStateTree;
 class UStateTreeAIComponent;
 enum class EBNBotAmbition : uint8;
 struct FAIStimulus;
@@ -77,6 +78,13 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category = "Bot")
 	TObjectPtr<UAISenseConfig_Sight> SightConfig;
+
+	/** THE TREE, by soft path from ini — C++-first: without this, assigning the StateTree would
+	 *  require a Blueprint child of this controller just to hold one reference. Resolved in
+	 *  OnPossess before StartLogic; unset or unresolved is a LOUD warning, because the visible
+	 *  symptom (bots stand still) says nothing about the cause. */
+	UPROPERTY(Config)
+	TSoftObjectPtr<UStateTree> BotStateTree;
 
 	UPROPERTY(Config, EditDefaultsOnly, Category = "Bot|Sight")
 	float SightRadius = 2500.f;
