@@ -1,13 +1,19 @@
 #include "AI/BNBotController.h"
 
 #include "AbilitySystem/BNAbilitySystemComponent.h"
+#include "AbilitySystem/Attributes/BNAttributeSet.h"
+#include "AI/BNBotBrain.h"
 #include "BreachpointNext.h"
 #include "Characters/BNCharacter.h"
 #include "Core/BNGameplayTags.h"
+#include "Data/BNGameData.h"
 #include "Match/BNPlayerState.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Components/StateTreeAIComponent.h"
+#include "Engine/GameInstance.h"
 #include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerState.h"
+#include "GameplayEffectTypes.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
 
@@ -78,6 +84,26 @@ void ABNBotController::OnPossess(APawn* InPawn)
 		BotPerception->RequestStimuliListenerUpdate();
 	}
 
+	// Fresh mind per life: the brain carries only ambition + commit window, both of which a
+	// respawn should reset. Rescoring is EVENT-driven from here on — never a tick.
+	Brain = NewObject<UBNBotBrain>(this);
+	if (UBNAbilitySystemComponent* ASC = GetBotASC())
+	{
+		BrainEventASC = ASC;
+		if (!HealthChangedHandle.IsValid())
+		{
+			HealthChangedHandle = ASC->GetGameplayAttributeValueChangeDelegate(UBNAttributeSet::GetHealthAttribute())
+				.AddUObject(this, &ABNBotController::OnHealthChanged);
+		}
+		LastRecentDamageCount = ASC->GetTagCount(BNTags::State_Combat_RecentDamage);
+		if (!RecentDamageHandle.IsValid())
+		{
+			RecentDamageHandle = ASC->RegisterGameplayTagEvent(BNTags::State_Combat_RecentDamage, EGameplayTagEventType::AnyCountChange)
+				.AddUObject(this, &ABNBotController::OnRecentDamageTagChanged);
+		}
+	}
+	RescoreBrain();
+
 	// Fresh logic per body: OnUnPossess stopped it, so this is a clean start on the new pawn.
 	if (StateTreeAI)
 	{
@@ -93,6 +119,25 @@ void ABNBotController::OnUnPossess()
 	{
 		StateTreeAI->StopLogic(TEXT("Unpossessed"));
 	}
+
+	// Unregister on the SAME ASC the handles were taken from (ABNCharacter's EndPlay discipline),
+	// then drop the brain — that also mutes the rescore ClearCurrentTarget would fire mid-teardown.
+	if (UBNAbilitySystemComponent* ASC = BrainEventASC.Get())
+	{
+		if (HealthChangedHandle.IsValid())
+		{
+			ASC->GetGameplayAttributeValueChangeDelegate(UBNAttributeSet::GetHealthAttribute())
+				.Remove(HealthChangedHandle);
+		}
+		if (RecentDamageHandle.IsValid())
+		{
+			ASC->UnregisterGameplayTagEvent(RecentDamageHandle, BNTags::State_Combat_RecentDamage, EGameplayTagEventType::AnyCountChange);
+		}
+	}
+	HealthChangedHandle.Reset();
+	RecentDamageHandle.Reset();
+	BrainEventASC.Reset();
+	Brain = nullptr;
 
 	ClearCurrentTarget();
 
@@ -137,18 +182,44 @@ void ABNBotController::ReleaseInputTag(FGameplayTag InputTag)
 
 AActor* ABNBotController::GetCurrentTarget() const
 {
+	// Survive obedience (R6 G2 2.2): report no target so Engage exits by its own condition; the
+	// enemy is still held as the threat — see GetThreat.
+	if (Brain && Brain->GetAmbition() == EBNBotAmbition::Survive)
+	{
+		return nullptr;
+	}
+	return GetThreat();
+}
+
+AActor* ABNBotController::GetThreat() const
+{
 	AActor* Target = TargetEnemy.Get();
 	return IsValidTarget(Target) ? Target : nullptr;
 }
 
+EBNBotAmbition ABNBotController::GetAmbition() const
+{
+	return Brain ? Brain->GetAmbition() : EBNBotAmbition::Roam;
+}
+
 void ABNBotController::SetCurrentTarget(AActor* Target)
 {
+	if (TargetEnemy.Get() == Target)
+	{
+		return;
+	}
 	TargetEnemy = Target;
+	RescoreBrain();
 }
 
 void ABNBotController::ClearCurrentTarget()
 {
+	const bool bHadTarget = TargetEnemy.IsValid();
 	TargetEnemy.Reset();
+	if (bHadTarget)
+	{
+		RescoreBrain();
+	}
 }
 
 void ABNBotController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
@@ -163,7 +234,9 @@ void ABNBotController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 	}
 
 	// Keep a live target once held; the slot refills the moment the current one dies or is lost.
-	if (!GetCurrentTarget() && IsValidTarget(Actor))
+	// GetThreat, not GetCurrentTarget: the slot rule reads the raw slot, or Survive (which hides
+	// the target) would let every new sighting overwrite the very threat being fled.
+	if (!GetThreat() && IsValidTarget(Actor))
 	{
 		SetCurrentTarget(Actor);
 	}
@@ -194,4 +267,71 @@ bool ABNBotController::IsValidTarget(AActor* Actor) const
 	// Alive means the ASC says so — no ASC yet means not a target yet, never a guess.
 	const UAbilitySystemComponent* ASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Character);
 	return ASC && !ASC->HasMatchingGameplayTag(BNTags::State_Dead);
+}
+
+void ABNBotController::RescoreBrain()
+{
+	const UWorld* World = GetWorld();
+	if (!Brain || !World)
+	{
+		return;
+	}
+
+	// The facts are distilled HERE — the brain never touches an actor, a world, or a clock.
+	AActor* Threat = GetThreat();
+	FBNBotFacts Facts;
+	Facts.bHasTarget = Threat != nullptr;
+	if (const UBNAbilitySystemComponent* ASC = GetBotASC())
+	{
+		const float MaxHealth = ASC->GetNumericAttribute(UBNAttributeSet::GetMaxHealthAttribute());
+		if (MaxHealth > 0.f)
+		{
+			Facts.HealthNorm = FMath::Clamp(ASC->GetNumericAttribute(UBNAttributeSet::GetHealthAttribute()) / MaxHealth, 0.f, 1.f);
+		}
+	}
+	const APawn* MyPawn = GetPawn();
+	if (Threat && MyPawn && SightRadius > 0.f)
+	{
+		Facts.DistToTargetNorm = FMath::Clamp(FVector::Dist(MyPawn->GetActorLocation(), Threat->GetActorLocation()) / SightRadius, 0.f, 1.f);
+	}
+
+	const UGameInstance* GI = GetGameInstance();
+	const UBNGameData* Data = GI ? GI->GetSubsystem<UBNGameData>() : nullptr;
+	auto ResolveRow = [Data](EBNBotAmbition Ambition) -> FBNBotAmbitionRow
+	{
+		const FBNBotAmbitionRow* Row = Data ? Data->FindBotAmbitionRow(Ambition) : nullptr;
+		return Row ? *Row : UBNBotBrain::DefaultRow(Ambition);
+	};
+
+	if (Brain->Rescore(Facts, ResolveRow(EBNBotAmbition::Fight), ResolveRow(EBNBotAmbition::Survive),
+			ResolveRow(EBNBotAmbition::Roam), World->GetTimeSeconds()))
+	{
+		// The mind-reading line (§5c): once per ambition CHANGE, never per rescore.
+		const APlayerState* PS = PlayerState;
+		UE_LOG(LogBN, Log, TEXT("BNBrain: %s wants %s (u=%.2f) because %s."),
+			PS ? *PS->GetPlayerName() : *GetName(),
+			*UBNBotBrain::AmbitionRowName(Brain->GetAmbition()).ToString(),
+			Brain->GetUtility(),
+			*Brain->GetWinningConsideration());
+	}
+}
+
+void ABNBotController::OnHealthChanged(const FOnAttributeChangeData& Data)
+{
+	if (Data.NewValue != Data.OldValue)
+	{
+		RescoreBrain();
+	}
+}
+
+void ABNBotController::OnRecentDamageTagChanged(const FGameplayTag Tag, int32 NewCount)
+{
+	// Count INCREASE only (BNGA_ADS's proven baseline pattern): a decrease is a damage window
+	// expiring, and rescoring on danger receding would flee at exactly the wrong moment.
+	const bool bDamaged = NewCount > LastRecentDamageCount;
+	LastRecentDamageCount = NewCount;
+	if (bDamaged)
+	{
+		RescoreBrain();
+	}
 }

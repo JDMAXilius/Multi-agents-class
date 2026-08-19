@@ -1,5 +1,6 @@
 #include "AI/BNBotStateTreeTasks.h"
 
+#include "AI/BNBotBrain.h"
 #include "AI/BNBotController.h"
 #include "AI/BNPointOfInterest.h"
 #include "AbilitySystem/BNAbilitySystemComponent.h"
@@ -262,27 +263,32 @@ EStateTreeRunStatus FBNMoveToPointOfInterestTask::EnterState(FStateTreeExecution
 
 	// Nearest point that is not the last one; the last one only as a fallback when it is the
 	// only point in the level (a one-POI map still roams rather than failing forever).
-	const FVector From = Pawn->GetActorLocation();
-	ABNPointOfInterest* Nearest = nullptr;
-	ABNPointOfInterest* NearestAny = nullptr;
-	float BestDistSq = TNumericLimits<float>::Max();
-	float BestAnyDistSq = TNumericLimits<float>::Max();
+	// Survive flips the rule (R6 G2 2.4): FARTHEST from the threat instead of nearest to me —
+	// same never-the-last-point law, same single-POI fallback.
+	const ABNBotController* Bot = Cast<ABNBotController>(Controller);
+	const AActor* Threat = (Bot && Bot->GetAmbition() == EBNBotAmbition::Survive) ? Bot->GetThreat() : nullptr;
+	const bool bFarthest = Threat != nullptr;
+	const FVector From = bFarthest ? Threat->GetActorLocation() : Pawn->GetActorLocation();
+	ABNPointOfInterest* Best = nullptr;
+	ABNPointOfInterest* BestAny = nullptr;
+	float BestDistSq = bFarthest ? -1.f : TNumericLimits<float>::Max();
+	float BestAnyDistSq = BestDistSq;
 	for (TActorIterator<ABNPointOfInterest> It(World); It; ++It)
 	{
 		const float DistSq = FVector::DistSquared(From, It->GetActorLocation());
-		if (DistSq < BestAnyDistSq)
+		if (bFarthest ? DistSq > BestAnyDistSq : DistSq < BestAnyDistSq)
 		{
 			BestAnyDistSq = DistSq;
-			NearestAny = *It;
+			BestAny = *It;
 		}
-		if (*It != InstanceData.LastPoint.Get() && DistSq < BestDistSq)
+		if (*It != InstanceData.LastPoint.Get() && (bFarthest ? DistSq > BestDistSq : DistSq < BestDistSq))
 		{
 			BestDistSq = DistSq;
-			Nearest = *It;
+			Best = *It;
 		}
 	}
 
-	ABNPointOfInterest* Pick = Nearest ? Nearest : NearestAny;
+	ABNPointOfInterest* Pick = Best ? Best : BestAny;
 	if (!Pick)
 	{
 		// Once, not per re-enter: the tree re-selects Roam after every failure, and a level with

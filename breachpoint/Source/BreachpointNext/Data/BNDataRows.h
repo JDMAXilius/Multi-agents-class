@@ -171,3 +171,29 @@ struct FBNWeaponRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, Category = "Assets")
 	TSoftObjectPtr<UBNAbilitySet> AbilitySet;
 };
+
+/** One ambition's tuning (R6). Row names are the EBNBotAmbition literals: Fight, Survive, Roam.
+ *  The C++ fallback values live in UBNBotBrain::DefaultRow — the table OVERRIDES, never
+ *  duplicates, and a missing table means the defaults drive after one warning. */
+USTRUCT(BlueprintType)
+struct FBNBotAmbitionRow : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Ambition")
+	float BaseUtility = 1.f;
+
+	UPROPERTY(EditAnywhere, Category = "Ambition")
+	float HealthWeight = 1.f;
+
+	UPROPERTY(EditAnywhere, Category = "Ambition")
+	float TargetWeight = 1.f;
+
+	/** Named slot: no coded evaluator reads it this wave (considerations are health and target). */
+	UPROPERTY(EditAnywhere, Category = "Ambition")
+	float DistanceWeight = 0.f;
+
+	/** Hysteresis window: the chosen ambition holds this long — commitment is legibility. */
+	UPROPERTY(EditAnywhere, Category = "Ambition")
+	float CommitSeconds = 3.f;
+};
