@@ -70,6 +70,14 @@ teammate considerations. Each lands as a table row + an evaluator when its SYSTE
 One wave: the brain, its feeding, and its numbers are one coherent diff; splitting them would
 review a brain nothing calls.
 
+## Status — 19 Aug 2026
+
+Single wave **LANDED** `5f0b360`, critic **PASS** with one note — the Survive interrupt was a
+utility ratio that real weights could never satisfy (a bot at 5% health stood firing through its
+whole commit). Fixed in the follow-up commit as the roadmap's own sentence made data:
+`InterruptBelowHealthNorm` on the Survive row, shipped 0.35. Editor ticket
+`TASK-R6-DT-AMBITIONS` OPEN. **Not compiled** — the founder's build is the first real test.
+
 ## Deferred beyond R6, deliberately
 
 Plans of ≤3 Steps (R10 — today each ambition is one continuous behavior, so a plan is overhead);

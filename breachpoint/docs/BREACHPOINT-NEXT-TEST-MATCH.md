@@ -106,6 +106,25 @@ Solo PIE, `TargetPlayers=4`, after the terminal's `TASK-R5-ST-BNBOT` ticket:
 - Two-window rung: on the CLIENT, bots move, pose, shoot and die exactly like remote humans —
   everything a client sees of a bot rides the same pawn/PlayerState replication (critic-verified).
 
+## 5c. The brain (R6) — reading a bot's mind
+
+One log line per ambition CHANGE, never per rescore:
+
+```
+BNBrain: Vale wants Fight (u=1.00) because target in sight.
+BNBrain: Vale wants Survive (u=1.14) because health low.
+```
+
+- Shoot a bot below **35% health**: it must break off — even mid-firefight, immediately, commit
+  window or not (that interrupt was the critic's find: the old ratio rule could never fire) — and
+  its roam flips to the point FARTHEST from you.
+- A healthy bot that sees you commits to Fight for at least its CommitSeconds — visible
+  commitment is the intended feel; instant flip-flopping is the bug.
+- No `BNBrain:` spam under sustained fire = correct (rescores happen per hit, the LINE only on
+  change).
+- Tuning is `DT_BNBotAmbitions` (terminal ticket `TASK-R6-DT-AMBITIONS`) — until it lands, the
+  C++ defaults drive and one warning says so.
+
 ## 6. Known and accepted
 
 - **`MinPlayers` is only enforced on the session's FIRST match** — the restart goes straight back

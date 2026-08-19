@@ -19,6 +19,7 @@ FBNBotAmbitionRow UBNBotBrain::DefaultRow(EBNBotAmbition Ambition)
 		Row.TargetWeight = 0.f;
 		Row.DistanceWeight = 0.f;
 		Row.CommitSeconds = 5.f;
+		Row.InterruptBelowHealthNorm = 0.35f;
 		break;
 	case EBNBotAmbition::Roam:
 	default:
@@ -69,13 +70,14 @@ bool UBNBotBrain::Rescore(const FBNBotFacts& Facts, const FBNBotAmbitionRow& Fig
 		WinnerU = FightU;
 	}
 
-	const float HeldU = CurrentAmbition == EBNBotAmbition::Fight ? FightU
-		: CurrentAmbition == EBNBotAmbition::Survive ? SurviveU : RoamU;
 
-	// The ONE interrupt: Survive at better than 2x the held ambition's utility breaks any commit
-	// window — the "health just collapsed" escape hatch, deliberately a single comparison.
+	// The ONE interrupt: health below the Survive row's threshold breaks any commit window,
+	// immediately. NOT a utility ratio — the critic proved that form unreachable with real
+	// weights (Survive's ceiling 1.2 can never double Fight's 1.0), which left a bot at 5%
+	// health standing and firing through its whole commit. One number, on the row, data.
 	const bool bSurviveInterrupt = CurrentAmbition != EBNBotAmbition::Survive
-		&& SurviveU > 0.f && SurviveU > HeldU * 2.f;
+		&& SurviveRow.InterruptBelowHealthNorm > 0.f
+		&& Facts.HealthNorm < SurviveRow.InterruptBelowHealthNorm;
 
 	// Hysteresis: the held ambition stands until its window passes — bots visibly COMMIT.
 	if (NowSeconds < CommitEndSeconds && !bSurviveInterrupt)

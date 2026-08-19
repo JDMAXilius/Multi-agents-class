@@ -196,4 +196,11 @@ struct FBNBotAmbitionRow : public FTableRowBase
 	/** Hysteresis window: the chosen ambition holds this long — commitment is legibility. */
 	UPROPERTY(EditAnywhere, Category = "Ambition")
 	float CommitSeconds = 3.f;
+
+	/** Meaningful on the SURVIVE row only: health below this fraction interrupts ANY commit,
+	 *  immediately. The critic proved a ratio-based interrupt was unreachable with real weights —
+	 *  a bot at 5% health stood firing through its whole Fight window. A threshold is the roadmap's
+	 *  own sentence ("health crossing the Survive threshold interrupts anything") as one number. */
+	UPROPERTY(EditAnywhere, Category = "Ambition", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float InterruptBelowHealthNorm = 0.f;
 };
