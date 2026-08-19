@@ -19,7 +19,7 @@ itself. **Nothing here fires per frame** — announcements are on edges and fail
 | `BNPlayerController:` | input setup | an empty `MappingContexts`, a context that failed to load, or an input tag with no `InputAction` in the config |
 | `BNHit:` | per pawn, at BeginPlay | whether that body **can be shot at all** — mesh blocking the weapon/melee channels. `CANNOT BE SHOT` means a Blueprint out-serialised the C++ collision and every weapon misses every player |
 | `BNLoadout:` | per weapon, at spawn | what each weapon can do: fire damage × pellets and the headshot multiplier, or `NONE (row has no AbilitySet)`, plus melee damage, reach and magazine. Falloff and body-section lines appear only for rows that opted in |
-| `BNGameState:` | every match state change, both roles | `match state -> WaitingToStart / InProgress / PostMatch`, and `winner resolved -> …` when a late-arriving winner reference lands |
+| `BNGameState:` | every match state change, both roles | `match state -> WaitingToStart / InProgress / WaitingPostMatch` — the ENGINE's own MatchState names since 19 Aug (the machine is `AGameMode`'s; the engine prints its own `LogGameMode: Match State Changed` beside ours) — and `winner resolved -> …` when a late-arriving winner reference lands |
 | `BNGameMode:` | every elimination, and the buzzer | the kill line with the running score (`eliminated X. (Y: 3 kills)`), and `match over. Winner: …` — `none (tie)` is a legal outcome |
 
 ## 2. There are no console commands
@@ -89,11 +89,14 @@ The chain is short enough to bisect by observation:
 
 ## 3b. Reading a match failure
 
-1. **No `BNGameState:` line at all, ever** — the GameState class is not ours. Every score and the
-   whole clock are landing on an object nothing reads. That is the `TASK-R4-GAMESTATE-CLASS`
-   editor ticket, and nothing else about the match can be judged until it is settled.
+1. **No `BNGameState:` line at all, ever** — the world is not running `ABNGameMode` at all.
+   Since 19 Aug the GameState class is FORCED in `ABNGameMode::InitGame` — after any Blueprint's
+   serialisation, before the GameState spawns — so a `BP_BNGameMode` dropdown can no longer take
+   it away and the old `TASK-R4-GAMESTATE-CLASS` ticket is closed as superseded. Check the map's
+   World Settings GameMode override.
 2. **Stuck in `WaitingToStart`** — the start gate was never satisfied: `MinPlayers` in
-   `DefaultGame.ini`.
+   `DefaultGame.ini`. The gate is `ReadyToStartMatch`, polled by the engine's own machine, and it
+   counts HUMANS only — four bots alone never start a match, by design.
 3. **A kill that does not score** — read the kill line's wording. `eliminated themselves` and
    `died` deliberately award no kill; only `X eliminated Y` does. A kill landing after the buzzer
    also does not score, by design — the scoreboard is final the moment the winner is announced.

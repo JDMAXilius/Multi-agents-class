@@ -7,9 +7,10 @@
 
 void ABNGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
+	// MatchState itself is the PARENT's property now — AGameState replicates it. Only BN's own
+	// three ride here.
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(ABNGameState, MatchState);
 	DOREPLIFETIME(ABNGameState, MatchEndServerTime);
 	DOREPLIFETIME(ABNGameState, ScoreLimit);
 	DOREPLIFETIME(ABNGameState, Winner);
@@ -68,20 +69,6 @@ void ABNGameState::GetLeaders(TArray<ABNPlayerState*>& OutLeaders) const
 	}
 }
 
-void ABNGameState::SetMatchState(EBNMatchState NewState)
-{
-	if (!HasAuthority() || MatchState == NewState)
-	{
-		return;
-	}
-
-	MatchState = NewState;
-
-	// The server runs no OnRep, so it announces here — same body, so every machine logs and
-	// broadcasts exactly once for the same transition.
-	HandleMatchStateChanged();
-}
-
 void ABNGameState::SetMatchEndServerTime(double InEndServerTime)
 {
 	if (HasAuthority())
@@ -100,31 +87,25 @@ void ABNGameState::SetWinner(ABNPlayerState* InWinner)
 
 void ABNGameState::OnRep_MatchState()
 {
-	HandleMatchStateChanged();
+	Super::OnRep_MatchState();
+
+	// An FName prints itself — no StaticEnum guard needed, which is the smaller reason this went
+	// native. The bigger one: this body runs on every machine for every transition, server
+	// included, because AGameState::SetMatchState calls the OnRep by hand on authority.
+	UE_LOG(LogBN, Log, TEXT("BNGameState: match state -> %s"), *GetMatchState().ToString());
+
+	OnMatchStateChanged.Broadcast(GetMatchState());
 }
 
 // Only once the match is actually over: a winner resolving while play continues is the reference
-// arriving late, not an outcome, and re-announcing PostMatch is what a reader that rendered a tie
-// needs in order to correct itself.
+// arriving late, not an outcome, and re-announcing the ended state is what a reader that rendered
+// a tie needs in order to correct itself.
 void ABNGameState::OnRep_Winner()
 {
-	if (MatchState == EBNMatchState::PostMatch)
+	if (HasMatchEnded())
 	{
 		UE_LOG(LogBN, Log, TEXT("BNGameState: winner resolved -> %s"),
 			Winner ? *Winner->GetPlayerName() : TEXT("none (tie)"));
-		OnMatchStateChanged.Broadcast(MatchState);
+		OnMatchStateChanged.Broadcast(GetMatchState());
 	}
-}
-
-void ABNGameState::HandleMatchStateChanged()
-{
-	// Guarded, because this is a LOG: a line added to explain the session must never be the thing
-	// that ends it. Same rule the aim probe's axis name learned the hard way.
-	const UEnum* StateEnum = StaticEnum<EBNMatchState>();
-	const FString StateName = StateEnum
-		? StateEnum->GetNameStringByValue(static_cast<int64>(MatchState))
-		: FString::Printf(TEXT("%d"), static_cast<int32>(MatchState));
-	UE_LOG(LogBN, Log, TEXT("BNGameState: match state -> %s"), *StateName);
-
-	OnMatchStateChanged.Broadcast(MatchState);
 }

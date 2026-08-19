@@ -1,7 +1,10 @@
 # TEST — the free-for-all match, proven in one session
 
 **Cut:** 17 August 2026 by the cloud lead · covers Roadmap 4 (G1–G4), commits `070112e` →
-`fe958a2`. Filter the log to **`LogBN`**. There are no console commands; everything below is
+`fe958a2`. **Revised 19 Aug 2026:** the match states are the ENGINE's own
+(`WaitingToStart` / `InProgress` / `WaitingPostMatch` — the machine is `AGameMode`'s, not a BN
+enum), so the state names below changed and the engine adds its own `LogGameMode: Match State
+Changed from X to Y` lines beside ours. Filter the log to **`LogBN`**; everything below is
 automatic.
 
 ## 0. Solo PIE — the match must start on its own
@@ -9,13 +12,15 @@ automatic.
 `MinPlayers=1`, so one player is a match. Press play and expect, in order:
 
 ```
+BNGameState: match state -> WaitingToStart
 BNGameState: match state -> InProgress
 ```
 
 **If it says `WaitingToStart` and stays there**, the mode never satisfied its own start gate —
-check `MinPlayers` in `DefaultGame.ini`. **If no `BNGameState:` line appears at all**, the
-GameState class is not ours: that is the `TASK-R4-GAMESTATE-CLASS` editor ticket, and every score
-in the session is landing on an object nothing reads.
+check `MinPlayers` in `DefaultGame.ini`. **If no `BNGameState:` line appears at all**, the world
+is not running our mode at all (the GameState class is FORCED in `ABNGameMode::InitGame`, after
+any Blueprint's serialisation, so a BP dropdown can no longer take it away — the old
+`TASK-R4-GAMESTATE-CLASS` ticket is closed as superseded). Check the map's GameMode override.
 
 ## 1. Scoring — one line per elimination
 
@@ -41,7 +46,7 @@ kill yourself, respawn, and let the grenade kill someone. The thrower must still
 
 ```
 BNGameMode: match over. Winner: PlayerA
-BNGameState: match state -> PostMatch
+BNGameState: match state -> WaitingPostMatch
 ```
 
 **By time** — set `TimeLimit=30` and wait. The sole leader wins; **a tie leaves the winner null**
@@ -65,8 +70,13 @@ For `PostMatchDuration` seconds after the buzzer:
 At the end of the post-match:
 
 ```
+BNGameState: match state -> WaitingToStart
 BNGameState: match state -> InProgress
 ```
+
+The restart passes THROUGH warmup — that one-frame `WaitingToStart` is the machine re-running the
+bot fill and re-asking the start gate, which is what made `MinPlayers` hold on every round instead
+of only the first. Then:
 
 - every score back to **0**
 - everyone alive again, at a start point
@@ -127,9 +137,14 @@ BNBrain: Vale wants Survive (u=1.14) because health low.
 
 ## 6. Known and accepted
 
-- **`MinPlayers` is only enforced on the session's FIRST match** — the restart goes straight back
-  to InProgress. Unreachable at `MinPlayers=1`; reopens the moment it is raised or a dedicated
-  server appears (ROADMAP-4, "Known limitation").
+- ~~`MinPlayers` is only enforced on the session's FIRST match~~ — **closed 19 Aug 2026** by the
+  native-machine migration: the restart re-enters `WaitingToStart` and the engine's own poll
+  re-asks the gate, so a round only begins while `MinPlayers` humans are present. If every human
+  leaves during the post-match, the mode now sits in warmup instead of restarting an empty match.
+- **Bots yield seats.** The fill CONVERGES on `TargetPlayers`: a human joining a warmup that bots
+  already filled despawns the newest bot (`BNBots: 1 bot(s) yielded seats to humans`). This closed
+  R5's recorded fill-overshoot at `MinPlayers>1`. Mid-MATCH backfill/removal is still the named
+  deferral it always was.
 - **No scoreboard, no match HUD.** R4 landed the replicated state and the delegates a HUD will
   bind to; the widget is a later wave. Until then the log is the scoreboard.
 - **Nothing here has been compiled.** Every line above is written-not-compiled per the honesty

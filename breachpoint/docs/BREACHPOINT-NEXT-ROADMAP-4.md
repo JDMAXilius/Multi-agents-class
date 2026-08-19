@@ -99,11 +99,12 @@ on a client, and the refusal is the server's (`BNInput: … REFUSED` appears on 
 Two waves, not four: G1+G2 and G3+G4 are each one coherent diff. Splitting further buys review
 passes nobody needs.
 
-## The editor ticket (`bn-editor`)
+## The editor ticket (`bn-editor`) — CLOSED 19 Aug, superseded
 
-`BP_BNGameMode` may out-serialise `GameStateClass` the way `BP_BNGameMode`'s pawn class already
-out-serialises its dropdown. One check, one read-back: confirm the Blueprint's GameState Class is
-`BNGameState` or empty (so the C++ default stands). Nothing else in the asset is touched.
+`BP_BNGameMode` may out-serialise `GameStateClass` the way it does the pawn dropdown — which is
+why the check existed. It no longer can: `ABNGameMode::InitGame` forces the class at runtime,
+after the Blueprint's serialisation, so the dropdown is cosmetic and the terminal has nothing to
+inspect. See the tombstone in `TASK-R4-GAMESTATE-CLASS`.
 
 ## Config, so none of these numbers is a code change
 
@@ -123,23 +124,22 @@ RespawnDelay=3
 | 1 | G1 GameState · G2 scoring | **LANDED** `070112e`, critic pass `523fdce` (1 blocking + 2 notes, all fixed) |
 | 2 | G3 rules · G4 freeze | **LANDED** `7b834e0`, critic pass `fe958a2` (1 blocking + 3 notes, 3 fixed, 1 accepted below) |
 | — | compile-risk sweep | `e625c51` — one real error found and fixed (a protected getter the ASC calls from outside) |
-| — | editor ticket | `TASK-R4-GAMESTATE-CLASS` — OPEN, waiting on the terminal |
+| — | editor ticket | `TASK-R4-GAMESTATE-CLASS` — **CLOSED 19 Aug**, superseded by the native `InitGame` assignment |
+| 3 | native machine | **LANDED 19 Aug** — `ABNGameMode : AGameMode`, `ABNGameState : AGameState`; the `EBNMatchState` enum deleted for the engine's own MatchState FNames; restart re-enters warmup (closes the limitation below); the fill converges (bots yield seats) |
 
 **Not compiled.** No toolchain is reachable from the cloud session; the founder's first build is
 the first real test. Protocol: `BREACHPOINT-NEXT-TEST-MATCH.md`.
 
-## Known limitation, accepted with its trigger written down
+## Known limitation — CLOSED 19 Aug 2026 by the native-machine migration
 
-**`MinPlayers` is only enforced on the FIRST match of a session.** `TryStartMatch` is called from
-`OnPostLogin`, and `RestartMatch` goes PostMatch → InProgress directly, so round two onward begins
-regardless of how many players remain. On a dedicated server configured `MinPlayers > 1` this means
-an emptied server loops empty matches forever and a lone joiner lands in a running match, unfrozen.
-
-**Unreachable on the shipped config** (`MinPlayers=1`), which is why it is accepted rather than
-fixed: the honest fix routes the restart back through `WaitingToStart`, and that interacts with
-`RespawnPlayer`'s InProgress gate — players would sit as corpses in a warmup that nobody can end.
-That is a rework of the restart path for a configuration R4 does not ship. **Reopen this the moment
-`MinPlayers` is raised above 1, or a dedicated server enters the picture.**
+**`MinPlayers` was only enforced on the FIRST match of a session.** The accepted entry said the
+honest fix "routes the restart back through `WaitingToStart`" — the migration to `AGameMode` did
+exactly that: `RestartMatch` now sets `WaitingToStart` and the engine's own poll re-asks
+`ReadyToStartMatch` before every round, so an emptied server sits in warmup instead of looping
+empty matches. The corpses-in-warmup interaction the entry feared is handled the other way
+around: dead players are NOT rebodied in warmup — `HandleMatchHasStarted` rebodies everyone the
+moment a restart begins (`MatchGeneration > 1`), so nobody waits as a corpse longer than the
+warmup itself lasts, and a warmup only lasts while the gate is unsatisfied.
 
 ## Deferred beyond R4, deliberately
 

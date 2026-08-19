@@ -17,24 +17,144 @@
 
 ABNGameMode::ABNGameMode()
 {
-	// The match has to have somewhere to live that a client can read. BP_BNGameMode may still
-	// out-serialise this dropdown the way it does the pawn class — that read-back is bn-editor's.
+	// A constructor value is only a default a Blueprint child can out-serialise; InitGame below is
+	// what makes it stick. Kept anyway so the bare C++ class is correct with no BP in play.
 	GameStateClass = ABNGameState::StaticClass();
-
-	/*DefaultPawnClass = ABNCharacter::StaticClass();
-	PlayerControllerClass = ABNPlayerController::StaticClass();
-	PlayerStateClass = ABNPlayerState::StaticClass();*/
 }
 
 void ABNGameMode::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage)
 {
 	Super::InitGame(MapName, Options, ErrorMessage);
 
-	/*
+	// FORCED, after the Blueprint's serialisation and before PreInitializeComponents spawns the
+	// GameState — the same precedent as the pawn path below. This is the line that closed the
+	// TASK-R4-GAMESTATE-CLASS editor ticket: no dropdown on BP_BNGameMode can undo it, so the
+	// match state, the clock and every score always land on the GameState the game reads.
+	GameStateClass = ABNGameState::StaticClass();
+
+	// The ini names the pawn; the dropdown is only what you see. This assignment is the one the
+	// DefaultGame.ini comment promises — it was found commented out on 19 Aug and restored, with
+	// the guard that keeps a bad path from replacing a working dropdown value with null.
 	if (UClass* PawnClass = DefaultPawnClassPath.TryLoadClass<APawn>())
 	{
 		DefaultPawnClass = PawnClass;
-	}*/
+	}
+	else if (DefaultPawnClassPath.IsValid())
+	{
+		UE_LOG(LogBN, Warning, TEXT("BNGameMode: DefaultPawnClassPath '%s' did not resolve — the Blueprint's own Default Pawn Class stands."),
+			*DefaultPawnClassPath.ToString());
+	}
+}
+
+bool ABNGameMode::ReadyToStartMatch_Implementation()
+{
+	// The gate, nothing else: the parent polls this every warmup frame, so it must not spawn,
+	// fill, or log. Humans only — a lobby of four bots is not a match anyone asked for.
+	return GetNumPlayers() >= MinPlayers;
+}
+
+bool ABNGameMode::PlayerCanRestart_Implementation(APlayerController* Player)
+{
+	// Warmup restarts skip the PARENT's InProgress-only gate but keep the GRANDPARENT's real
+	// checks (valid controller, CanRestartPlayer). Everything else defers to the parent, which is
+	// what keeps corpses down during WaitingPostMatch.
+	if (GetMatchState() == MatchState::WaitingToStart)
+	{
+		return AGameModeBase::PlayerCanRestart_Implementation(Player);
+	}
+
+	return Super::PlayerCanRestart_Implementation(Player);
+}
+
+void ABNGameMode::HandleMatchIsWaitingToStart()
+{
+	// Super may fire world BeginPlay (first boot); it must run before anything here spawns.
+	Super::HandleMatchIsWaitingToStart();
+
+	EnsureBotFill();
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	// A human who logged in during EnteringMap was refused a body (PlayerCanRestart said no
+	// before warmup existed). Stand them up now — warmup bodies are the design.
+	for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+	{
+		APlayerController* PC = It->Get();
+		if (PC && !PC->GetPawn() && PlayerCanRestart(PC))
+		{
+			RestartPlayer(PC);
+		}
+	}
+}
+
+void ABNGameMode::HandleMatchHasStarted()
+{
+	// The parent notifies the match started and stands up any pawnless human. State is already
+	// InProgress when this runs — the machine set it before dispatching here.
+	Super::HandleMatchHasStarted();
+
+	ABNGameState* GS = GetGameState<ABNGameState>();
+	UWorld* World = GetWorld();
+	if (!GS || !World)
+	{
+		return;
+	}
+
+	// Every round is its own generation, so respawns armed in the last one are ignored in this
+	// one. 1 is the first match; anything above is an in-place restart.
+	++MatchGeneration;
+
+	// An END STAMP, not a countdown: one replicated write that is already correct for a client
+	// joining at any moment. The mode's timer is the server's own copy of the same deadline.
+	GS->SetMatchEndServerTime(GS->GetServerWorldTimeSeconds() + TimeLimit);
+	SetAllPlayersFrozen(false);
+
+	World->GetTimerManager().SetTimer(MatchTimerHandle, this, &ABNGameMode::OnTimeLimitReached,
+		FMath::Max(1.f, TimeLimit), /*bLoop=*/false);
+
+	// A RESTART rebodies everyone: fresh attributes at fresh start points is what "new round"
+	// means, and the last round's survivors must not carry 10 health into this one. The first
+	// match deliberately does not — its players were born seconds ago in this very warmup, and
+	// destroying them to respawn them is a visible hitch for nothing. Thaw ran first, so the
+	// respawn's State.* sweep finds no freeze handles left to stale.
+	if (MatchGeneration > 1)
+	{
+		TArray<TObjectPtr<APlayerState>> Players = GS->PlayerArray;
+		for (APlayerState* PS : Players)
+		{
+			RespawnPlayer(TWeakObjectPtr<AController>(PS ? Cast<AController>(PS->GetOwner()) : nullptr));
+		}
+	}
+}
+
+void ABNGameMode::HandleMatchHasEnded()
+{
+	Super::HandleMatchHasEnded();
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	// The clock is done whichever condition fired — the score limit leaves it armed otherwise.
+	World->GetTimerManager().ClearTimer(MatchTimerHandle);
+
+	SetAllPlayersFrozen(true);
+
+	// The winner was written BEFORE the state flipped (FinishMatch's ordering), so reading it
+	// here is reading a decision, not a race.
+	const ABNGameState* GS = GetGameState<ABNGameState>();
+	const ABNPlayerState* Winner = GS ? GS->GetWinner() : nullptr;
+	UE_LOG(LogBN, Log, TEXT("BNGameMode: match over. Winner: %s"),
+		Winner ? *Winner->GetPlayerName() : TEXT("none (tie)"));
+
+	World->GetTimerManager().SetTimer(PostMatchTimerHandle, this, &ABNGameMode::RestartMatch,
+		FMath::Max(1.f, PostMatchDuration), /*bLoop=*/false);
 }
 
 void ABNGameMode::GenericPlayerInitialization(AController* C)
@@ -55,9 +175,8 @@ void ABNGameMode::GenericPlayerInitialization(AController* C)
 
 	// A player initialized outside a running match joined a warmup or a post-match and must be
 	// frozen like everyone already here — otherwise the one machine that joined late is the one
-	// machine that can shoot. A first arrival that starts the match is thawed by BeginMatch.
-	const ABNGameState* GS = GetGameState<ABNGameState>();
-	if (PS && GS && GS->GetMatchState() != EBNMatchState::InProgress)
+	// machine that can shoot. Thawing is HandleMatchHasStarted's, the moment the machine starts.
+	if (PS && !IsMatchInProgress())
 	{
 		SetPlayerFrozen(PS, true);
 	}
@@ -67,8 +186,9 @@ void ABNGameMode::OnPostLogin(AController* NewPlayer)
 {
 	Super::OnPostLogin(NewPlayer);
 
-	// The arrival itself is what can satisfy MinPlayers, so the gate is asked here and nowhere else.
-	TryStartMatch();
+	// The arrival changed the seat math — a bot may have to yield. The START needs no call: the
+	// parent's next Tick asks ReadyToStartMatch, which now counts this human.
+	EnsureBotFill();
 }
 
 void ABNGameMode::HandlePlayerDeath(ABNPlayerState* Victim, ABNPlayerState* Killer)
@@ -84,8 +204,7 @@ void ABNGameMode::HandlePlayerDeath(ABNPlayerState* Victim, ABNPlayerState* Kill
 	// Only a kill DURING the match scores. A grenade that lands after the buzzer still kills, still
 	// ragdolls and still prints — but the scoreboard is final the moment the winner is announced,
 	// or the post-match shows a top scorer who is not the winner, wrongly and on every machine.
-	const ABNGameState* ScoringState = GetGameState<ABNGameState>();
-	const bool bMatchLive = ScoringState && ScoringState->GetMatchState() == EBNMatchState::InProgress;
+	const bool bMatchLive = IsMatchInProgress();
 	if (bMatchLive)
 	{
 		Victim->AddDeath();
@@ -115,11 +234,12 @@ void ABNGameMode::HandlePlayerDeath(ABNPlayerState* Victim, ABNPlayerState* Kill
 			*Killer->GetPlayerName(), *Victim->GetPlayerName(), *Killer->GetPlayerName(), Killer->GetKills());
 	}
 
-	// 3.2 — the score limit, checked where the kill was credited. EndMatch itself refuses unless
-	// the match is InProgress, so a second elimination inside the same frame cannot end it twice.
+	// 3.2 — the score limit, checked where the kill was credited. FinishMatch itself refuses
+	// unless the match is InProgress, so a second elimination inside the same frame cannot end it
+	// twice.
 	if (bMatchLive && Killer && Killer != Victim && Killer->GetKills() >= ScoreLimit)
 	{
-		EndMatch(Killer);
+		FinishMatch(Killer);
 	}
 
 	// This mode's answer to a death is a timed respawn. Another mode's could be a spectator
@@ -167,8 +287,7 @@ void ABNGameMode::RespawnPlayer(TWeakObjectPtr<AController> WeakController)
 
 	// 3.5 — a respawn armed during play can land after the match ended. Nobody stands up outside
 	// InProgress; the restart is what puts everyone back on their feet.
-	const ABNGameState* GS = GetGameState<ABNGameState>();
-	if (!GS || GS->GetMatchState() != EBNMatchState::InProgress)
+	if (!IsMatchInProgress())
 	{
 		return;
 	}
@@ -227,30 +346,18 @@ void ABNGameMode::RespawnPlayer(TWeakObjectPtr<AController> WeakController)
 	RestartPlayer(Controller);
 }
 
-void ABNGameMode::TryStartMatch()
-{
-	ABNGameState* GS = GetGameState<ABNGameState>();
-	if (!GS || GS->GetMatchState() != EBNMatchState::WaitingToStart)
-	{
-		return;
-	}
-
-	// The fill happens when a start is ATTEMPTED — before the MinPlayers gate can early-return —
-	// so the lobby is topped up whether or not this attempt begins the match.
-	EnsureBotFill();
-
-	if (GetNumPlayers() < MinPlayers)
-	{
-		return;
-	}
-
-	BeginMatch();
-}
-
 void ABNGameMode::EnsureBotFill()
 {
-	const ABNGameState* GS = GetGameState<ABNGameState>();
-	if (!HasAuthority() || !GS || GS->GetMatchState() != EBNMatchState::WaitingToStart)
+	if (!HasAuthority() || GetMatchState() != MatchState::WaitingToStart)
+	{
+		return;
+	}
+
+	// A lobby with no one in it needs no bots. The machine enters warmup at StartPlay, BEFORE the
+	// local player logs in — filling then would spawn a full bot lobby only to yield a seat one
+	// frame later. Waiting for the first human keeps the boot quiet and the log identical to R5's:
+	// one "filled 3 bots to reach 4" when the human arrives.
+	if (GetNumPlayers() == 0)
 	{
 		return;
 	}
@@ -260,7 +367,24 @@ void ABNGameMode::EnsureBotFill()
 	SpawnedBots.RemoveAll([](const TObjectPtr<ABNBotController>& Bot) { return !IsValid(Bot); });
 
 	const int32 BotsNeeded = TargetPlayers - GetNumPlayers() - SpawnedBots.Num();
-	if (BotsNeeded <= 0)
+
+	// OVER target: humans arrived after the fill (the machine enters warmup before the local
+	// player logs in, so the first fill legitimately runs at zero humans). Newest bots yield
+	// their seats — popping the tail keeps the named veterans and their scores.
+	if (BotsNeeded < 0)
+	{
+		int32 Yielded = 0;
+		for (int32 i = BotsNeeded; i < 0 && SpawnedBots.Num() > 0; ++i)
+		{
+			DespawnBot(SpawnedBots.Pop());
+			++Yielded;
+		}
+		UE_LOG(LogBN, Log, TEXT("BNBots: %d bot(s) yielded seats to humans (%d humans, %d bots, target %d)"),
+			Yielded, GetNumPlayers(), SpawnedBots.Num(), TargetPlayers);
+		return;
+	}
+
+	if (BotsNeeded == 0)
 	{
 		return;
 	}
@@ -320,26 +444,22 @@ ABNBotController* ABNGameMode::SpawnBot(int32 Index)
 	return NewBot;
 }
 
-void ABNGameMode::BeginMatch()
+void ABNGameMode::DespawnBot(ABNBotController* Bot)
 {
-	ABNGameState* GS = GetGameState<ABNGameState>();
-	UWorld* World = GetWorld();
-	if (!GS || !World)
+	if (!Bot)
 	{
 		return;
 	}
 
-	// An END STAMP, not a countdown: one replicated write that is already correct for a client
-	// joining at any moment. The mode's timer is the server's own copy of the same deadline.
-	// Every round is its own generation, so respawns armed in the last one are ignored in this one.
-	++MatchGeneration;
-
-	GS->SetMatchEndServerTime(GS->GetServerWorldTimeSeconds() + TimeLimit);
-	GS->SetMatchState(EBNMatchState::InProgress);
-	SetAllPlayersFrozen(false);
-
-	World->GetTimerManager().SetTimer(MatchTimerHandle, this, &ABNGameMode::OnTimeLimitReached,
-		FMath::Max(1.f, TimeLimit), /*bLoop=*/false);
+	// Pawn first — OnUnPossess is what stops the tree and unhooks the brain's delegates — then
+	// the controller, whose destruction is what retires its PlayerState from PlayerArray and
+	// every roster built on it.
+	if (APawn* BotPawn = Bot->GetPawn())
+	{
+		Bot->UnPossess();
+		BotPawn->Destroy();
+	}
+	Bot->Destroy();
 }
 
 void ABNGameMode::OnTimeLimitReached()
@@ -354,32 +474,22 @@ void ABNGameMode::OnTimeLimitReached()
 	// decided match from a tied one, and a tie is a null winner rather than an arbitrary pick.
 	TArray<ABNPlayerState*> Leaders;
 	GS->GetLeaders(Leaders);
-	EndMatch(Leaders.Num() == 1 ? Leaders[0] : nullptr);
+	FinishMatch(Leaders.Num() == 1 ? Leaders[0] : nullptr);
 }
 
-void ABNGameMode::EndMatch(ABNPlayerState* InWinner)
+void ABNGameMode::FinishMatch(ABNPlayerState* InWinner)
 {
 	ABNGameState* GS = GetGameState<ABNGameState>();
-	UWorld* World = GetWorld();
-	if (!GS || !World || GS->GetMatchState() != EBNMatchState::InProgress)
+	if (!GS || !IsMatchInProgress())
 	{
 		return;
 	}
 
-	// The clock is done whichever condition fired — the score limit leaves it armed otherwise.
-	World->GetTimerManager().ClearTimer(MatchTimerHandle);
-
-	// Winner BEFORE the state, so the two land in the same bunch and no client ever sees PostMatch
-	// announced against a winner the server has not written yet.
+	// Winner BEFORE the state, so the two land in the same bunch and no client ever sees the end
+	// announced against a winner the server has not written yet. Then the machine's own verb —
+	// EndMatch flips to WaitingPostMatch and dispatches HandleMatchHasEnded.
 	GS->SetWinner(InWinner);
-	GS->SetMatchState(EBNMatchState::PostMatch);
-	SetAllPlayersFrozen(true);
-
-	UE_LOG(LogBN, Log, TEXT("BNGameMode: match over. Winner: %s"),
-		InWinner ? *InWinner->GetPlayerName() : TEXT("none (tie)"));
-
-	World->GetTimerManager().SetTimer(PostMatchTimerHandle, this, &ABNGameMode::RestartMatch,
-		FMath::Max(1.f, PostMatchDuration), /*bLoop=*/false);
+	EndMatch();
 }
 
 void ABNGameMode::RestartMatch()
@@ -402,16 +512,11 @@ void ABNGameMode::RestartMatch()
 		}
 	}
 
-	// The state goes back FIRST: the freeze comes off here and RespawnPlayer refuses outside
-	// InProgress, so the order below is the only one that both thaws and rebodies everyone.
-	BeginMatch();
-
-	// Copied, because RestartPlayer spawns actors while this iterates.
-	TArray<TObjectPtr<APlayerState>> Players = GS->PlayerArray;
-	for (APlayerState* PS : Players)
-	{
-		RespawnPlayer(TWeakObjectPtr<AController>(PS ? Cast<AController>(PS->GetOwner()) : nullptr));
-	}
+	// Back to warmup, THROUGH the machine: HandleMatchIsWaitingToStart re-runs the fill (which is
+	// also what replaces a bot that fell out last round), the parent's poll asks ReadyToStartMatch
+	// on the next tick, and HandleMatchHasStarted rebodies everyone because the generation says
+	// restart. Everyone is already frozen from the post-match, and stays frozen until that start.
+	SetMatchState(MatchState::WaitingToStart);
 }
 
 void ABNGameMode::SetPlayerFrozen(ABNPlayerState* InPlayerState, bool bFrozen)

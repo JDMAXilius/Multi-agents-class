@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/GameModeBase.h"
+#include "GameFramework/GameMode.h"
 #include "GameplayEffectTypes.h"
 #include "UObject/SoftObjectPath.h"
 #include "UObject/SoftObjectPtr.h"
@@ -10,15 +10,54 @@
 class ABNBotController;
 class ABNPlayerState;
 
+/** AGameMode, not GameModeBase: the match machine is the ENGINE'S — the replicated MatchState
+ *  FNames, StartMatch/EndMatch, the Handle* transition hooks, and FGameModeEvents that the old
+ *  module's session subsystem already listens to. BN implements the machine's own seams instead
+ *  of running a private enum beside it. The cycle is WaitingToStart -> InProgress ->
+ *  WaitingPostMatch -> WaitingToStart, in place — RestartGame()'s ServerTravel is deliberately
+ *  NOT used, so the listen server's connections survive every round.
+ *
+ *  Law 4 note, stated rather than hidden: AGameMode's own Tick polls ReadyToStartMatch during
+ *  warmup and ReadyToEndMatch during play. That tick is the parent's and exists either way; the
+ *  queries it polls are trivial. Match END stays event-driven regardless (see ReadyToEndMatch). */
 UCLASS(Config=Game)
-class BREACHPOINTNEXT_API ABNGameMode : public AGameModeBase
+class BREACHPOINTNEXT_API ABNGameMode : public AGameMode
 {
 	GENERATED_BODY()
 
 public:
 	ABNGameMode();
 
+	/** Runs BEFORE PreInitializeComponents spawns the GameState, and AFTER any Blueprint child's
+	 *  serialisation — so the classes forced here cannot be out-serialised by a BP_BNGameMode
+	 *  dropdown. This is what closed the TASK-R4-GAMESTATE-CLASS editor ticket. */
 	virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
+
+	/** THE START GATE, on the machine's own seam: the parent's Tick polls this during
+	 *  WaitingToStart and calls StartMatch the frame it first says yes. Bots do not count —
+	 *  GetNumPlayers() is humans — and the bot FILL does not live here: a query polled every
+	 *  warmup frame must not spawn actors, so the fill rides the event edges instead
+	 *  (HandleMatchIsWaitingToStart and OnPostLogin). bDelayedStart is ignored by this override. */
+	virtual bool ReadyToStartMatch_Implementation() override;
+
+	/** Warmup bodies are real: BN's lobby is frozen pawns on the floor, not spectators in a void.
+	 *  The parent refuses all restarts outside InProgress; this opens WaitingToStart as well.
+	 *  WaitingPostMatch stays closed — corpses do not stand up during the post-match. */
+	virtual bool PlayerCanRestart_Implementation(APlayerController* Player) override;
+
+	/** Entering warmup — the first boot and every in-place restart. Super may fire world
+	 *  BeginPlay; then the bot fill converges the lobby, and any pawnless human is stood up. */
+	virtual void HandleMatchIsWaitingToStart() override;
+
+	/** The match beginning, wherever StartMatch was triggered from. Everything the old BeginMatch
+	 *  did: new generation, clock stamp + buzzer timer, thaw. On a RESTART (generation > 1) it
+	 *  also rebodies everyone — fresh attributes at fresh start points is what "new round" means. */
+	virtual void HandleMatchHasStarted() override;
+
+	/** The match over, wherever EndMatch was triggered from. Clears the buzzer, freezes everyone,
+	 *  prints the winner line (the winner was written BEFORE the state flipped — FinishMatch's
+	 *  ordering), and arms the post-match timer toward RestartMatch. */
+	virtual void HandleMatchHasEnded() override;
 
 	/** The ONE initialization seam for both kinds of player: the engine calls it for humans in the
 	 *  login flow, the bot fill calls it for bots — an AIController never sees OnPostLogin.
@@ -28,12 +67,12 @@ public:
 	 *  guarded against doubling. */
 	virtual void GenericPlayerInitialization(AController* C) override;
 
-	/** Humans only. The arrival is what can satisfy MinPlayers, so only the start gate lives here;
-	 *  everything both kinds of player need moved to GenericPlayerInitialization. */
+	/** Humans only. The arrival changes the seat math, so the fill converges here; the start
+	 *  itself is the parent's poll asking ReadyToStartMatch — nothing to call by hand. */
 	virtual void OnPostLogin(AController* NewPlayer) override;
 
 	/** The subscriber. Turns "this player died" into this mode's answer: THE kill line, then a
-	 *  timed respawn. Scoring attaches here when it exists — the seam already carries the killer. */
+	 *  timed respawn. The score-limit check lives here because this is where the kill credits. */
 	void HandlePlayerDeath(ABNPlayerState* Victim, ABNPlayerState* Killer);
 
 	/** Read by ABNGameState, which mirrors it so clients can render "12 / 25". */
@@ -47,30 +86,38 @@ protected:
 	 *  Refuses outside InProgress — a corpse must not stand up during the post-match. */
 	void RespawnPlayer(TWeakObjectPtr<AController> WeakController);
 
-	/** MinPlayers present while still waiting, and the match begins. */
-	void TryStartMatch();
+	/** Decides, then ends: writes the winner onto the GameState FIRST, then runs the parent's
+	 *  EndMatch() so the state flip replicates in the same bunch as a winner that is already
+	 *  there. InWinner may be null — a tie at the buzzer is a legal, renderable outcome.
+	 *  Not named EndMatch: the parent's EndMatch() is the machine's verb and stays visible.
+	 *
+	 *  ReadyToEndMatch is deliberately NOT overridden (the parent's constant false): the score
+	 *  limit must fire on the exact kill that crossed it, and the buzzer must decide the winner
+	 *  before the state flips — a poll-driven EndMatch() flips state with no winner written. */
+	void FinishMatch(ABNPlayerState* InWinner);
 
-	/** G4 — the fill. Authority, WaitingToStart only: tops the lobby up to TargetPlayers with
-	 *  bots, counting humans (GetNumPlayers) plus the bots already spawned, so a human joining
-	 *  warmup re-triggering TryStartMatch never over-spawns. Never runs mid-match or post-match —
-	 *  mid-match backfill is R5's named deferral. */
+	/** G4 — the fill, now a CONVERGENCE: authority, WaitingToStart only. Short of TargetPlayers
+	 *  spawns bots; OVER it (a human claimed a seat a bot was warming) despawns the newest bots
+	 *  until humans + bots == TargetPlayers. That closes R5's recorded overshoot: the machine
+	 *  enters warmup before the local player logs in, so the first fill runs at zero humans. */
 	void EnsureBotFill();
 
 	/** One bot, Lyra's way: spawn the controller (transient — never saved into a map), name its
 	 *  PlayerState, GenericPlayerInitialization, RestartPlayer. Null on failure, loudly. */
 	ABNBotController* SpawnBot(int32 Index);
 
-	/** Restamps the clock, arms the ONE time-limit timer, thaws everyone, announces InProgress.
-	 *  Both the first start and the in-place restart run this body. */
-	void BeginMatch();
-
-	/** InWinner may be null: a tie at the buzzer is a legal, renderable outcome. */
-	void EndMatch(ABNPlayerState* InWinner);
+	/** The reverse, for seat-yield: pawn first, then controller — destroying the controller is
+	 *  what retires its PlayerState from every roster. */
+	void DespawnBot(ABNBotController* Bot);
 
 	/** The time limit's timer fires here. Sole leader wins; a tie leaves Winner null. */
 	void OnTimeLimitReached();
 
-	/** IN PLACE — no ServerTravel, no map reload, so the listen server's connections survive. */
+	/** IN PLACE — no ServerTravel, no map reload. Clears the winner and every score, then sends
+	 *  the machine back to WaitingToStart; the parent's poll starts the next round the moment the
+	 *  gate holds, and HandleMatchHasStarted rebodies everyone because the generation says restart.
+	 *  If the humans left during the post-match, the mode simply sits in warmup — which is new,
+	 *  and correct: the old code restarted an empty match. */
 	void RestartMatch();
 
 	/** The freeze, as GAS state: a UBNGE_State spec carrying State.Match.Frozen. The tag rides the
@@ -94,7 +141,7 @@ protected:
 	UPROPERTY(Config)
 	int32 MinPlayers = 1;
 
-	/** The lobby size bots fill up to. Humans + bots together reach this, never exceed it. */
+	/** The lobby size the fill converges to. Humans + bots together reach this, never exceed it. */
 	UPROPERTY(Config)
 	int32 TargetPlayers = 4;
 
@@ -117,8 +164,9 @@ protected:
 	UPROPERTY(Config)
 	float PostMatchDuration = 10.f;
 
-	/** Bumped by every BeginMatch. A respawn timer armed in an older generation is dropped when it
-	 *  fires rather than destroying a pawn that belongs to the round after it. */
+	/** Bumped by every match start; 1 is the first match, above 1 is a restart. A respawn timer
+	 *  armed in an older generation is dropped when it fires rather than destroying a pawn that
+	 *  belongs to the round after it. */
 	int32 MatchGeneration = 0;
 
 	/** ONE timer for the whole match clock (law 4: no Tick, no per-frame poll). */

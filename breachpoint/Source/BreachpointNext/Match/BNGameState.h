@@ -1,33 +1,28 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/GameStateBase.h"
+#include "GameFramework/GameState.h"
 #include "BNGameState.generated.h"
 
 class ABNPlayerState;
 
-UENUM()
-enum class EBNMatchState : uint8
-{
-	WaitingToStart,
-	InProgress,
-	PostMatch
-};
-
-/** Fires on EVERY machine: the server from SetMatchState, remote clients from OnRep_MatchState.
- *  Native (not dynamic) to match the OnPlayerDeath seam — the readers are C++ systems.
+/** Fires on EVERY machine: the server from AGameState::SetMatchState (which runs the OnRep by
+ *  hand on authority), remote clients from replication. The states are the ENGINE'S OWN
+ *  MatchState FNames — WaitingToStart, InProgress, WaitingPostMatch — not a BN enum: the machine
+ *  that changes them lives in AGameMode, and the old Breachpoint module's session subsystem
+ *  already speaks these exact names through FGameModeEvents.
  *
  *  SUBSCRIBERS MUST ALSO READ GetMatchState() WHEN THEY SUBSCRIBE. On a client joining mid-match
  *  this fires from the GameState channel's INITIAL bunch — before that client's controller or HUD
  *  exists to have subscribed — so a reader that waits only for the delegate never learns the state
- *  it joined into. Subscribe, then read once; every transition after that is the delegate's.
- *
- *  Declared above UCLASS() because UnrealHeaderTool requires the class definition to immediately
- *  follow the macro. */
-DECLARE_MULTICAST_DELEGATE_OneParam(FBNMatchStateSignature, EBNMatchState /*NewState*/);
+ *  it joined into. Subscribe, then read once; every transition after that is the delegate's. */
+DECLARE_MULTICAST_DELEGATE_OneParam(FBNMatchStateSignature, FName /*NewState*/);
 
+/** AGameState, not GameStateBase: the parent carries the replicated MatchState FName, its OnRep,
+ *  and HasMatchStarted/HasMatchEnded — the native match machine's client half. BN adds only what
+ *  the engine doesn't have: the clock stamp, the score limit mirror, and the winner. */
 UCLASS()
-class BREACHPOINTNEXT_API ABNGameState : public AGameStateBase
+class BREACHPOINTNEXT_API ABNGameState : public AGameState
 {
 	GENERATED_BODY()
 
@@ -37,7 +32,6 @@ public:
 
 	FBNMatchStateSignature OnMatchStateChanged;
 
-	EBNMatchState GetMatchState() const { return MatchState; }
 	double GetMatchEndServerTime() const { return MatchEndServerTime; }
 	int32 GetScoreLimit() const { return ScoreLimit; }
 	ABNPlayerState* GetWinner() const { return Winner; }
@@ -49,23 +43,20 @@ public:
 	/** Everyone tied at the top of the kill count. Empty when nobody is playing. */
 	void GetLeaders(TArray<ABNPlayerState*>& OutLeaders) const;
 
-	/** Authority only. The server has no OnRep, so each of these fires the delegate itself. */
-	void SetMatchState(EBNMatchState NewState);
+	/** Authority only. Neither has an OnRep body of its own that announces — the state machine's
+	 *  announcement (OnRep_MatchState below) is the one broadcast readers subscribe to. */
 	void SetMatchEndServerTime(double InEndServerTime);
 	void SetWinner(ABNPlayerState* InWinner);
 
 protected:
-	UFUNCTION()
-	void OnRep_MatchState();
+	/** The engine's own notify, on every machine (the server calls it by hand from SetMatchState).
+	 *  Super runs the native client handlers (NotifyMatchStarted and friends); BN adds the LogBN
+	 *  line and the delegate. ONE body for all machines, so every transition logs and broadcasts
+	 *  exactly once. */
+	virtual void OnRep_MatchState() override;
 
 	UFUNCTION()
 	void OnRep_Winner();
-
-	/** The one body both the server's setter and the clients' OnRep run. */
-	void HandleMatchStateChanged();
-
-	UPROPERTY(ReplicatedUsing = OnRep_MatchState)
-	EBNMatchState MatchState = EBNMatchState::WaitingToStart;
 
 	/** THE END STAMP, not a countdown. A ticking replicated counter is a per-second write to every
 	 *  client for the whole match, and a late joiner reads whatever value happened to be in flight.

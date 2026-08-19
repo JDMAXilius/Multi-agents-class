@@ -1,52 +1,28 @@
-# TICKET — the GameState class on BP_BNGameMode: one check, one read-back
+# TICKET — the GameState class on BP_BNGameMode — **CLOSED 19 Aug 2026, superseded**
 
-**Cut:** 17 August 2026 by the cloud lead · **For:** `bn-editor` / the terminal session (Unreal MCP)
-**Read [`ASSET-RULES`](BREACHPOINT-NEXT-ASSET-RULES.md) §5 first.** Serves R4-G1 task 1.4.
+**Cut:** 17 August 2026 · **Closed:** 19 August 2026 by the cloud lead, without editor work.
 
-## THE SCOPE
+## Why it closed
 
-This ticket **inspects one property on one asset** and changes it only if it is wrong. It creates
-nothing, touches no other asset, and does not enter `Source/`. Extra work found is a Log entry,
-not a licence. The read-back IS the deliverable.
+The ticket existed because a Blueprint child can out-serialise a C++ constructor default, so
+`BP_BNGameMode`'s **GameState Class** dropdown had to be inspected by hand. That race no longer
+exists: `ABNGameMode::InitGame` now FORCES `GameStateClass = ABNGameState::StaticClass()` at
+runtime — after the Blueprint's own serialisation, before `PreInitializeComponents` spawns the
+GameState — the exact precedent `DefaultPawnClassPath` already documents in `DefaultGame.ini`
+("the details panel is only what you see, not what spawns").
 
-## Why it exists
+Landed with the native match-state migration (`ABNGameMode : AGameMode`,
+`ABNGameState : AGameState`), same commit.
 
-R4 adds `ABNGameState` and the game mode's C++ constructor sets
-`GameStateClass = ABNGameState::StaticClass()`. **A constructor value is only a default.** This
-project has already been bitten twice by a Blueprint out-serialising one:
+## What remains true
 
-- `BP_BNGameMode`'s *Default Pawn Class* dropdown loses to `BNGameMode::InitGame`'s ini path —
-  the details panel shows one thing and another spawns (documented in `DefaultGame.ini`).
-- `BP_FPSCharacter`'s serialised mesh collision can silently override the C++ trace-channel
-  responses, which is why `BNHit:` now announces hittability at BeginPlay.
-
-If `BP_BNGameMode` carries its own `GameStateClass`, the match state, the clock and every score
-land on a GameState the game never spawns — and nothing errors. One look now costs nothing.
-
-## Step 1 — inspect
-
-On **`/Game/BN/Core/BP_BNGameMode`**, read the **GameState Class** property (Class Defaults →
-Classes category).
-
-| Reads as | Do |
-|---|---|
-| `BNGameState` (the C++ class) | nothing — record it and stop |
-| **empty / None** | nothing — the C++ default stands, which is the intended state. Record and stop |
-| any other class (e.g. `GameStateBase`, a BP GameState) | **set it to `BNGameState`**, compile, save |
-
-If `BNGameState` is not in the class picker at all, the module is stale — **stop and report**. Do
-not substitute a similar-looking class; that is how a wrong parent lands.
-
-## Step 2 — read back
-
-Reload the asset fresh and print `GameStateClass` again, plus the resolved class path. Paste it
-into the Log below, intent vs actual.
-
-## Done means
-
-The property is `BNGameState` or empty, read back from a fresh load, pasted below. That is the
-whole ticket.
+- The dropdown on `BP_BNGameMode` is now cosmetic for this property. Setting it to `BNGameState`
+  anyway is harmless and reads nicer; nothing depends on it.
+- The failure this ticket guarded against — scores and clock landing on a GameState nothing
+  reads — now presents differently: **no `BNGameState:` lines at all** means the map is not
+  running `ABNGameMode` in the first place (World Settings GameMode override), per
+  DIAGNOSTICS §3b.1.
 
 ## Log
 
-_(terminal: the read-back, and anything handed back)_
+Closed without editor work — the read-back this ticket asked for has nothing left to prove.
