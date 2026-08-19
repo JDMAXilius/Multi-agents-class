@@ -134,7 +134,7 @@ void ABNBotController::OnPossess(APawn* InPawn)
 
 void ABNBotController::OnUnPossess()
 {
-	APawn* OldPawn = GetPawn();
+	APawn* PreviousPawn = GetPawn();
 
 	if (StateTreeAI)
 	{
@@ -166,7 +166,7 @@ void ABNBotController::OnUnPossess()
 	// breaks the respawned bot — clear it if this dying pawn is still the avatar.
 	if (UBNAbilitySystemComponent* ASC = GetBotASC())
 	{
-		if (OldPawn && ASC->GetAvatarActor() == OldPawn)
+		if (PreviousPawn && ASC->GetAvatarActor() == PreviousPawn)
 		{
 			ASC->SetAvatarActor(nullptr);
 		}
@@ -279,14 +279,14 @@ UBNAbilitySystemComponent* ABNBotController::GetBotASC() const
 
 bool ABNBotController::IsValidTarget(AActor* Actor) const
 {
-	ABNCharacter* Character = Cast<ABNCharacter>(Actor);
-	if (!Character || Character == GetPawn())
+	ABNCharacter* TargetCharacter = Cast<ABNCharacter>(Actor);
+	if (!TargetCharacter || TargetCharacter == GetPawn())
 	{
 		return false;
 	}
 
 	// Alive means the ASC says so — no ASC yet means not a target yet, never a guess.
-	const UAbilitySystemComponent* ASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Character);
+	const UAbilitySystemComponent* ASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetCharacter);
 	return ASC && !ASC->HasMatchingGameplayTag(BNTags::State_Dead);
 }
 

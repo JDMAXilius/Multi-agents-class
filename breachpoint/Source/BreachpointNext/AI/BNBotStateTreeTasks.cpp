@@ -4,6 +4,7 @@
 #include "AI/BNBotController.h"
 #include "AI/BNPointOfInterest.h"
 #include "AbilitySystem/BNAbilitySystemComponent.h"
+#include "BreachpointNext.h"
 #include "Core/BNGameplayTags.h"
 #include "Match/BNPlayerState.h"
 #include "AIController.h"
@@ -31,8 +32,17 @@ namespace
 	FVector JitteredFocalPoint(const AAIController& Controller, const AActor& Target, float AimErrorDegrees)
 	{
 		const APawn* Pawn = Controller.GetPawn();
-		const FVector Eye = Pawn ? Pawn->GetPawnViewLocation() : Controller.GetActorLocation();
 		const FVector TargetLoc = Target.GetActorLocation();
+
+		// No body, no apex for the cone. AController hides its transform on purpose — a controller's
+		// location is the origin or a corpse's last spot — so the honest degenerate answer is the
+		// true target, never geometry we invented.
+		if (!Pawn)
+		{
+			return TargetLoc;
+		}
+
+		const FVector Eye = Pawn->GetPawnViewLocation();
 
 		const FVector TrueDir = (TargetLoc - Eye).GetSafeNormal();
 		if (AimErrorDegrees <= 0.f || TrueDir.IsNearlyZero())
