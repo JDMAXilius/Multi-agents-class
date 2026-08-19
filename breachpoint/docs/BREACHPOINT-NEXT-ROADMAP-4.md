@@ -126,6 +126,7 @@ RespawnDelay=3
 | — | compile-risk sweep | `e625c51` — one real error found and fixed (a protected getter the ASC calls from outside) |
 | — | editor ticket | `TASK-R4-GAMESTATE-CLASS` — **CLOSED 19 Aug**, superseded by the native `InitGame` assignment |
 | 3 | native machine | **LANDED 19 Aug** — `ABNGameMode : AGameMode`, `ABNGameState : AGameState`; the `EBNMatchState` enum deleted for the engine's own MatchState FNames; restart re-enters warmup (closes the limitation below); the fill converges (bots yield seats) |
+| — | critic pass (native machine) | **SHIP, 0 blocking.** 7 of 8 engine-behavior claims confirmed; 1 comment premise corrected (PIE logs the player in BEFORE StartPlay). Fixed: stale end-stamp cleared at match end · warmup-dead bot rebodied at first start · winner-leaves-during-post-match no longer re-announced as a tie · a leaver's warmup seat refills next tick (Logout). Accepted with notes: clients never see the zero-frame restart warmup hop (TEST-MATCH §4) · restart double-spawns post-match corpses (one redundant spawn per corpse, comment in HandleMatchHasStarted) |
 
 **Not compiled.** No toolchain is reachable from the cloud session; the founder's first build is
 the first real test. Protocol: `BREACHPOINT-NEXT-TEST-MATCH.md`.

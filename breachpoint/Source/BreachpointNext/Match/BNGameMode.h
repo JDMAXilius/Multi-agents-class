@@ -71,6 +71,12 @@ public:
 	 *  itself is the parent's poll asking ReadyToStartMatch — nothing to call by hand. */
 	virtual void OnPostLogin(AController* NewPlayer) override;
 
+	/** The other edge of the seat math: a human leaving warmup opens a seat a bot should take.
+	 *  Deferred one tick because inside Logout the leaver is still iterable and every count is
+	 *  off by one. Mid-match leaves change nothing — the fill's own guard refuses outside
+	 *  warmup, so mid-match backfill stays the named deferral it always was. */
+	virtual void Logout(AController* Exiting) override;
+
 	/** The subscriber. Turns "this player died" into this mode's answer: THE kill line, then a
 	 *  timed respawn. The score-limit check lives here because this is where the kill credits. */
 	void HandlePlayerDeath(ABNPlayerState* Victim, ABNPlayerState* Killer);
@@ -98,8 +104,9 @@ protected:
 
 	/** G4 — the fill, now a CONVERGENCE: authority, WaitingToStart only. Short of TargetPlayers
 	 *  spawns bots; OVER it (a human claimed a seat a bot was warming) despawns the newest bots
-	 *  until humans + bots == TargetPlayers. That closes R5's recorded overshoot: the machine
-	 *  enters warmup before the local player logs in, so the first fill runs at zero humans. */
+	 *  until humans + bots == TargetPlayers. That closes R5's recorded overshoot. EDGE-driven,
+	 *  not continuous: it runs on warmup entry, human join, and human leave — between edges the
+	 *  lobby is whatever the last edge left (critic's precision, worth keeping precise). */
 	void EnsureBotFill();
 
 	/** One bot, Lyra's way: spawn the controller (transient — never saved into a map), name its

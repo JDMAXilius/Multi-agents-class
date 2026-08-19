@@ -76,7 +76,9 @@ BNGameState: match state -> InProgress
 
 The restart passes THROUGH warmup — that one-frame `WaitingToStart` is the machine re-running the
 bot fill and re-asking the start gate, which is what made `MinPlayers` hold on every round instead
-of only the first. Then:
+of only the first. **Server log only:** both transitions happen inside one server frame, so
+clients replicate straight to `InProgress` and never see the hop — a client window printing only
+the `InProgress` line at restart is correct, not a missed transition (critic-verified). Then:
 
 - every score back to **0**
 - everyone alive again, at a start point

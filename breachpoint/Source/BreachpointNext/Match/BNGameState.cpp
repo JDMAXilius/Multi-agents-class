@@ -102,10 +102,22 @@ void ABNGameState::OnRep_MatchState()
 // a tie needs in order to correct itself.
 void ABNGameState::OnRep_Winner()
 {
-	if (HasMatchEnded())
+	if (!HasMatchEnded())
 	{
-		UE_LOG(LogBN, Log, TEXT("BNGameState: winner resolved -> %s"),
-			Winner ? *Winner->GetPlayerName() : TEXT("none (tie)"));
-		OnMatchStateChanged.Broadcast(GetMatchState());
+		return;
 	}
+
+	if (Winner)
+	{
+		UE_LOG(LogBN, Log, TEXT("BNGameState: winner resolved -> %s"), *Winner->GetPlayerName());
+		OnMatchStateChanged.Broadcast(GetMatchState());
+		return;
+	}
+
+	// Null DURING the post-match is not a tie — it is the winner LEAVING and their PlayerState
+	// dying under this reference (the critic's find: re-broadcasting here rewrote a decided
+	// match into "none (tie)" on every client). The result stands; say what happened and stay
+	// out of the delegate. A real tie never passes through this notify at all — its winner was
+	// null before the state flipped, so the property never changes.
+	UE_LOG(LogBN, Log, TEXT("BNGameState: the winner left during the post-match — the result stands."));
 }

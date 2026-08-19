@@ -118,15 +118,21 @@ void ABNGameMode::HandleMatchHasStarted()
 
 	// A RESTART rebodies everyone: fresh attributes at fresh start points is what "new round"
 	// means, and the last round's survivors must not carry 10 health into this one. The first
-	// match deliberately does not — its players were born seconds ago in this very warmup, and
-	// destroying them to respawn them is a visible hitch for nothing. Thaw ran first, so the
-	// respawn's State.* sweep finds no freeze handles left to stale.
-	if (MatchGeneration > 1)
+	// match rebodies only the PAWNLESS — its live players were born seconds ago in this very
+	// warmup and destroying them to respawn them is a visible hitch for nothing, but a bot that
+	// died to a hazard DURING warmup (death ignores the freeze, its respawn was refused outside
+	// InProgress, and Super above stands up PlayerControllers only) would otherwise ghost through
+	// the whole first match as a scoreboard row with no body — the critic's find. Thaw ran first,
+	// so the respawn's State.* sweep finds no freeze handles left to stale. Known cost, accepted:
+	// on a restart, a corpse Super just stood up is destroyed and stood up again — one redundant
+	// spawn per corpse per round beats a special case in the one path that must never miss anyone.
+	TArray<TObjectPtr<APlayerState>> Players = GS->PlayerArray;
+	for (APlayerState* PS : Players)
 	{
-		TArray<TObjectPtr<APlayerState>> Players = GS->PlayerArray;
-		for (APlayerState* PS : Players)
+		AController* Controller = PS ? Cast<AController>(PS->GetOwner()) : nullptr;
+		if (Controller && (MatchGeneration > 1 || !Controller->GetPawn()))
 		{
-			RespawnPlayer(TWeakObjectPtr<AController>(PS ? Cast<AController>(PS->GetOwner()) : nullptr));
+			RespawnPlayer(TWeakObjectPtr<AController>(Controller));
 		}
 	}
 }
@@ -143,6 +149,14 @@ void ABNGameMode::HandleMatchHasEnded()
 
 	// The clock is done whichever condition fired — the score limit leaves it armed otherwise.
 	World->GetTimerManager().ClearTimer(MatchTimerHandle);
+
+	// And the STAMP is cleared, not left to rot: a stale end time reads exactly like "no clock"
+	// through GetRemainingSeconds, but any future reader distinguishing the two would conflate
+	// last round's expired deadline with a clock that was never set (critic note).
+	if (ABNGameState* MutableGS = GetGameState<ABNGameState>())
+	{
+		MutableGS->SetMatchEndServerTime(0.0);
+	}
 
 	SetAllPlayersFrozen(true);
 
@@ -189,6 +203,20 @@ void ABNGameMode::OnPostLogin(AController* NewPlayer)
 	// The arrival changed the seat math — a bot may have to yield. The START needs no call: the
 	// parent's next Tick asks ReadyToStartMatch, which now counts this human.
 	EnsureBotFill();
+}
+
+void ABNGameMode::Logout(AController* Exiting)
+{
+	Super::Logout(Exiting);
+
+	// Next tick, not now: the leaving controller is still in the world's iterators inside Logout,
+	// so a fill computed here counts a seat that is already empty. Humans only — a bot's own
+	// despawn also lands in Logout, and refilling the seat a yield just cleared would fight the
+	// yield forever.
+	if (Cast<APlayerController>(Exiting) && GetWorld())
+	{
+		GetWorld()->GetTimerManager().SetTimerForNextTick(this, &ABNGameMode::EnsureBotFill);
+	}
 }
 
 void ABNGameMode::HandlePlayerDeath(ABNPlayerState* Victim, ABNPlayerState* Killer)
@@ -353,10 +381,12 @@ void ABNGameMode::EnsureBotFill()
 		return;
 	}
 
-	// A lobby with no one in it needs no bots. The machine enters warmup at StartPlay, BEFORE the
-	// local player logs in — filling then would spawn a full bot lobby only to yield a seat one
-	// frame later. Waiting for the first human keeps the boot quiet and the log identical to R5's:
-	// one "filled 3 bots to reach 4" when the human arrives.
+	// A lobby with no one in it needs no bots. This guard is for the DEDICATED boot, where the
+	// machine enters warmup with zero humans and would otherwise spawn a full bot lobby only to
+	// yield a seat when the first human arrives. In PIE and on a listen host the order is the
+	// reverse — the local player's login runs BEFORE StartPlay (critic-verified against the
+	// engine's LoadMap/PIE flow), so the first fill here already counts one human and prints
+	// R5's own line: "filled 3 bots to reach 4".
 	if (GetNumPlayers() == 0)
 	{
 		return;
