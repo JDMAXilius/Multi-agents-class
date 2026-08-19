@@ -76,7 +76,14 @@ Single wave **LANDED** `5f0b360`, critic **PASS** with one note — the Survive 
 utility ratio that real weights could never satisfy (a bot at 5% health stood firing through its
 whole commit). Fixed in the follow-up commit as the roadmap's own sentence made data:
 `InterruptBelowHealthNorm` on the Survive row, shipped 0.35. Editor ticket
-`TASK-R6-DT-AMBITIONS` OPEN. **Not compiled** — the founder's build is the first real test.
+`TASK-R6-DT-AMBITIONS` OPEN.
+
+**Compile-risk sweep (R5+R6), 19 Aug:** clean — unlike R4's, which caught a real error. Every
+StateTree node signature was diffed against Epic's own 5.8-compiled Variant_Shooter reference
+(exact match, `bShouldCallTick` confirmed a real base member, any Tick drift would fail loudly on
+`override`); all cross-file includes present; the ambitions soft table resolves in
+`UBNGameData::Initialize` on the weapon table's exact shape; no unused variables after the
+interrupt fix. **Not compiled** — the founder's build is the first real test.
 
 ## Deferred beyond R6, deliberately
 
