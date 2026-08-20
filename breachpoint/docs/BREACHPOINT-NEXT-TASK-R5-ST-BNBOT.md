@@ -93,3 +93,51 @@ warning — placing them is part of "bots roam".
 ## Log
 
 _(terminal: the read-backs, and anything handed back)_
+
+### 20 Aug 2026 — CLOSED, by C++ rather than by hand
+
+The handback is withdrawn, and the reason it was raised is worth keeping: a StateTree's graph
+genuinely cannot be authored from Python or from any of the 23 MCP toolsets. `SubTrees` and
+`Children` are bare Instanced UPROPERTYs that `PropertyAccessUtil` denies; no toolset owns a
+StateTree factory; `UStateTreeEditingSubsystem::CompileStateTree` is a plain static function,
+and an uncompiled tree runs nothing. Every one of those doors is open to **C++**, which is
+what the handback missed.
+
+`UBNBotAuthoring` (`Source/BreachpointNext/AI/BNBotAuthoring.cpp`, editor-only) now builds the
+tree, compiles it and saves it. `Tools/bn/62_bot_assets.py` drives it over MCP: it probes the
+running editor for all nine BN node types (the stale-build stop condition), pulls the trigger,
+and reads back. The trigger is a Transient bool on `UBNAssetSettings` — no MCP tool calls a
+function, runs a console command, or evaluates Python, but setting a property is reachable and
+UE routes an editor property write through `PostEditChangeProperty`.
+
+**Read-back from the live editor** (`LogBN`, after a fresh load):
+
+```
+ST_BNBot   : FOUND at /Game/BN/AI/ST_BNBot.ST_BNBot
+  schema   : StateTreeAIComponentSchema_0
+  compiled : YES (ready to run)
+  state    : Root (0 enter conditions, 0 tasks, 0 transitions)
+    +- Engage (1 enter conditions, 0 tasks, 0 transitions)
+       +- Rearm (1 enter conditions, 2 tasks, 2 transitions)
+       +- Arm   (0 enter conditions, 1 tasks, 2 transitions)
+       +- Close (0 enter conditions, 2 tasks, 2 transitions)
+       +- Shoot (1 enter conditions, 2 tasks, 2 transitions)
+    +- Roam  (0 enter conditions, 1 tasks, 2 transitions)
+```
+
+The path matches the ini contract exactly, and the "BotStateTree is unset" warning is absent
+from the PIE log — the ticket's own proof-by-absence.
+
+**The shape differs from the one this ticket drew, and deliberately.** The ticket put Face,
+Move and Fire on ONE state; a StateTree runs all of a state's tasks simultaneously, so that
+state cannot express "get in position, THEN shoot". It is split into Close and Shoot, with
+Close handing over through `NextSelectableState`. The two transition delays this ticket exists
+for are kept, on the Failed transitions, exactly as specified.
+
+**Step 3 (four points of interest):** already on disk from the earlier session;
+`Tools/bn/61_st_bnbot.py apply` converged with zero new files (idempotent), North/South/East/West
+at (3400,2000) (600,2000) (2000,3400) (2000,600), radius 200.
+
+**Step 4 (PIE):** ran. `BNBots: filled 3 bots to reach 4`, brain lines for all three ambitions,
+and `BNGameMode: Marcus eliminated juand-A85CC01846492A` — a bot closed on the player and killed
+it. Two bugs were found and fixed in the process; both are described in commit `52e66e5`.

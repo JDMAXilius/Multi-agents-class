@@ -36,3 +36,23 @@ Reload fresh; print all three rows, every column, intent vs actual.
 ## Log
 
 _(terminal: the read-back table, and anything handed back)_
+
+### 20 Aug 2026 — CLOSED
+
+Built by `UBNBotAuthoring::BuildBotAmbitionsTable`, which MIRRORS `UBNBotBrain::DefaultRow`
+rather than restating its numbers — a hand-typed copy here would be a second source of truth
+that silently drifts from the first the day someone tunes one of them.
+
+**Read-back from a fresh load** (`LogBN`), intent vs actual — all six columns match the table
+in this ticket exactly:
+
+```
+DT_Ambitions: FOUND at /Game/BN/Data/DT_BNBotAmbitions.DT_BNBotAmbitions (row struct BNBotAmbitionRow)
+  Fight    base=1.00 health=0.00 target=1.00 dist=0.00 commit=3.0s interruptBelow=0.00
+  Survive  base=1.20 health=1.00 target=0.00 dist=0.00 commit=5.0s interruptBelow=0.35
+  Roam     base=0.20 health=0.00 target=0.00 dist=0.00 commit=2.0s interruptBelow=0.00
+```
+
+Confirmed driving in PIE: `BNBrain: Vale wants Survive (u=0.91) because health is low under
+fire`, `Marcus wants Fight (u=1.00)`, `Ossian wants Roam (u=0.20)` — all three ambitions
+selected by real events, never a tick.
