@@ -5,6 +5,8 @@
 #include "AI/BNBotBrain.h"
 #include "BreachpointNext.h"
 #include "Characters/BNCharacter.h"
+#include "Weapons/BNEquipmentComponent.h"
+#include "Weapons/BNWeapon.h"
 #include "Core/BNGameplayTags.h"
 #include "Data/BNGameData.h"
 #include "Match/BNPlayerState.h"
@@ -216,6 +218,24 @@ AActor* ABNBotController::GetThreat() const
 {
 	AActor* Target = TargetEnemy.Get();
 	return IsValidTarget(Target) ? Target : nullptr;
+}
+
+ABNWeapon* ABNBotController::GetCurrentWeapon() const
+{
+	// Through the pawn's equipment component, never a cached pointer: the bot respawns, swaps and
+	// dies, and every one of those invalidates a cache. The component IS the source of truth.
+	const ABNCharacter* BotCharacter = Cast<ABNCharacter>(GetPawn());
+	const UBNEquipmentComponent* Equipment = BotCharacter ? BotCharacter->GetEquipmentComponent() : nullptr;
+	return Equipment ? Equipment->GetCurrentWeapon() : nullptr;
+}
+
+bool ABNBotController::HasLineOfSightToTarget() const
+{
+	AActor* Target = GetCurrentTarget();
+	// AAIController::LineOfSightTo traces from the pawn's view point against the target's own
+	// sight-test points — the same geometry the sight sense used to acquire it, so a bot that
+	// lost the corner cannot keep firing through it.
+	return Target != nullptr && LineOfSightTo(Target);
 }
 
 EBNBotAmbition ABNBotController::GetAmbition() const

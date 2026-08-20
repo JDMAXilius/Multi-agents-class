@@ -5,6 +5,7 @@
 #include "GameplayTagContainer.h"
 #include "BNBotController.generated.h"
 
+class ABNWeapon;
 class UAIPerceptionComponent;
 class UAISenseConfig_Sight;
 class UBNAbilitySystemComponent;
@@ -47,6 +48,15 @@ public:
 	AActor* GetThreat() const;
 
 	EBNBotAmbition GetAmbition() const;
+
+	/** The weapon the bot is holding, through the pawn's equipment component — the same object a
+	 *  human's HUD reads. Null when unarmed, mid-swap, or the pawn is gone. */
+	ABNWeapon* GetCurrentWeapon() const;
+
+	/** True when the bot can actually SEE its current target. Firing is gated on this: perception
+	 *  REMEMBERS a target for LoseSightRadius seconds after it breaks cover, so "I have a target"
+	 *  and "I can shoot it" are different questions and a bot that confuses them shoots walls. */
+	bool HasLineOfSightToTarget() const;
 
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
