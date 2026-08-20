@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Animation/AnimInstance.h"
+#include "Animation/BNADSCameraBlend.h"
 #include "GameplayTagContainer.h"
 #include "BNLAnimInstance.generated.h"
 
@@ -91,6 +92,11 @@ protected:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UAbilitySystemComponent> AbilitySystem;
+
+	/** The ADS lens, shared with UBNAnimInstance. This instance is the one ABP_Mannequin_Base
+	 *  actually runs, so without this the zoom never happens on the pawn anyone plays. */
+	UPROPERTY(EditDefaultsOnly, Category = "BN|Tuning")
+	FBNADSCameraBlend ADSCameraBlend;
 
 	struct FTagBool
 	{

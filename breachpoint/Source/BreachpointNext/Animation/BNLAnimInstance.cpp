@@ -48,6 +48,16 @@ void UBNLAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	bCachedOnGround = OwningMovementComponent->IsMovingOnGround();
 	bCachedCrouching = GameplayTag_IsCrouching || (OwningCharacter && OwningCharacter->bIsCrouched);
 	CachedGroundDistance = bCachedOnGround ? OwningMovementComponent->CurrentFloor.FloorDist : -1.f;
+
+	// The ADS lens. Here and not in the thread-safe pass because it touches the camera component,
+	// which is game-thread only — NativeUpdateAnimation is the game thread, and RESEARCH-ADS §3
+	// names it as the lawful home for this interp precisely so no gameplay Tick has to exist.
+	// The gate is the same one UBNAnimInstance uses: owner-only, and a player, never a bot.
+	if (OwningCharacter)
+	{
+		const bool bOwnerFirstPerson = OwningCharacter->IsLocallyControlled() && OwningCharacter->IsPlayerControlled();
+		ADSCameraBlend.Update(OwningCharacter->GetFirstPersonCamera(), GameplayTag_IsADS, bOwnerFirstPerson, DeltaSeconds);
+	}
 }
 
 void UBNLAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)

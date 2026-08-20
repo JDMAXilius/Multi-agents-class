@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Animation/AnimInstance.h"
+#include "Animation/BNADSCameraBlend.h"
 #include "GameplayTagContainer.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "UObject/UnrealType.h"
@@ -206,13 +207,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "BN|Tuning")
 	double LeanInterpSpeed = 8.0;
 
-	/** The reference's measured AimFOV and blend speed. The base FOV is captured from the camera
-	 *  on first sight, never hardcoded. */
+	/** The ADS lens. Shared with UBNLAnimInstance — see FBNADSCameraBlend for why a struct and
+	 *  not a base-class method: the two anim instances are siblings, not parent and child. */
 	UPROPERTY(EditDefaultsOnly, Category = "BN|Tuning")
-	float ADSFOV = 80.f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "BN|Tuning")
-	float ADSFOVInterpSpeed = 18.f;
+	FBNADSCameraBlend ADSCameraBlend;
 
 	// ---------------------------------------------------------------- locomotion (output)
 	UPROPERTY(Transient, BlueprintReadWrite, Category = "BN|Locomotion")
@@ -447,9 +445,6 @@ private:
 	EBNCardinal LocalVelocityDirection = EBNCardinal::Forward;
 	EBNCardinal LocalVelocityDirectionNoOffset = EBNCardinal::Forward;
 	EBNCardinal CardinalFromAcceleration = EBNCardinal::Forward;
-
-	/** The camera's own FOV, captured on first sight; negative = not yet captured. */
-	float DefaultFOV = -1.f;
 
 	friend struct FBNAnimInstanceProxy;
 };

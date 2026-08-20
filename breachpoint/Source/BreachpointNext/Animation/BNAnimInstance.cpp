@@ -363,17 +363,10 @@ void UBNAnimInstance::PushAimSurfaceToLinkedLayers()
 
 void UBNAnimInstance::UpdateADSFieldOfView(float DeltaSeconds)
 {
-	if (!Camera || !Snapshot.bFPSMode)
-	{
-		return;
-	}
-
-	if (DefaultFOV <= 0.f)
-	{
-		DefaultFOV = Camera->FieldOfView;
-	}
-	const float TargetFOV = bTagADS ? ADSFOV : DefaultFOV;
-	Camera->SetFieldOfView(FMath::FInterpTo(Camera->FieldOfView, TargetFOV, DeltaSeconds, ADSFOVInterpSpeed));
+	// bFPSMode is already "locally controlled AND player controlled" — the owner-only gate the
+	// blend wants. The whole body now lives in FBNADSCameraBlend so UBNLAnimInstance runs the
+	// identical blend off the identical numbers.
+	ADSCameraBlend.Update(Camera, bTagADS, Snapshot.bFPSMode, DeltaSeconds);
 }
 
 void UBNAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
