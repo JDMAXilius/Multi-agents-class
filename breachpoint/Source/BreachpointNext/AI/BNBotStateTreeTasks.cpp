@@ -7,6 +7,7 @@
 #include "BreachpointNext.h"
 #include "Core/BNGameplayTags.h"
 #include "Match/BNPlayerState.h"
+#include "Data/BNDataRows.h"
 #include "Weapons/BNWeapon.h"
 #include "AIController.h"
 #include "EngineUtils.h"
@@ -69,9 +70,60 @@ namespace
 		}
 
 		const FRotator Desired = ToPoint.Rotation();
-		Controller.SetControlRotation(DegreesPerSecond <= 0.f
+		const FRotator Stepped = DegreesPerSecond <= 0.f
 			? Desired
-			: FMath::RInterpConstantTo(Controller.GetControlRotation(), Desired, DeltaTime, DegreesPerSecond));
+			: FMath::RInterpConstantTo(Controller.GetControlRotation(), Desired, DeltaTime, DegreesPerSecond);
+		Controller.SetControlRotation(Stepped);
+
+		// AND THE BODY. SetControlRotation moves the CONTROLLER's rotation — which is what the
+		// weapon traces along, so aiming alone is fixed by the line above. The PAWN's visible yaw
+		// is a separate step: the engine applies it in APawn::FaceRotation, called from
+		// AController::UpdateControlRotation — from the actor tick this controller does not have.
+		// Skipping it produced the second half of the sliding bug and hid inside the first: bots
+		// shot straight while their bodies walked at a fixed 120 degrees to their own velocity,
+		// which is a strafe pose played over a forward path, i.e. a slide.
+		if (APawn* MutablePawn = Controller.GetPawn())
+		{
+			MutablePawn->FaceRotation(Stepped, DeltaTime);
+		}
+	}
+
+	/** Reports what the LOCOMOTION GRAPH sees, ~1/sec while the bot is actually moving.
+	 *
+	 *  UBNAnimInstance drives the third-person locomotion from the movement component's velocity
+	 *  expressed in the ACTOR's frame (LocalVelocity2D -> LocalVelocityDirection). So "is the bot
+	 *  walking or sliding?" is not a question about the anim graph at all — it is a question
+	 *  about that angle. Near 0 is a forward walk. Near 180 is a backpedal. Near +/-90 is a
+	 *  strafe, and a strafe with no strafe set authored is exactly what reads as sliding.
+	 *
+	 *  It lives here rather than in the anim instance because the AI is what CREATES the angle:
+	 *  the control rotation these tasks steer is the pawn's facing, and the path is its velocity.
+	 */
+	void ReportLocomotion(const APawn& Pawn, const TCHAR* What, float DeltaTime, float& SecondsUntilLog)
+	{
+		SecondsUntilLog -= DeltaTime;
+		if (SecondsUntilLog > 0.f)
+		{
+			return;
+		}
+		SecondsUntilLog = 1.f;
+
+		const FVector Velocity = Pawn.GetVelocity();
+		const float Speed = Velocity.Size2D();
+		if (Speed < 10.f)
+		{
+			return;
+		}
+
+		// The anim instance's own transform: world velocity unrotated into the actor's frame.
+		const FVector Local = Pawn.GetActorRotation().UnrotateVector(FVector(Velocity.X, Velocity.Y, 0.f));
+		const float Angle = FMath::RadiansToDegrees(FMath::Atan2(Local.Y, Local.X));
+		const float Abs = FMath::Abs(Angle);
+		const TCHAR* Cardinal = Abs <= 45.f ? TEXT("FORWARD")
+			: (Abs >= 135.f ? TEXT("BACKWARD") : (Angle > 0.f ? TEXT("STRAFE-RIGHT") : TEXT("STRAFE-LEFT")));
+
+		UE_LOG(LogBN, Log, TEXT("BNLocomotion: %s %s at %.0f uu/s, local dir %+.0f deg (%s)"),
+			*GetNameSafe(&Pawn), What, Speed, Angle, Cardinal);
 	}
 
 	/** Says WHY a move request failed, and says it ONCE per task instance. A silent Failed here
@@ -250,15 +302,32 @@ EStateTreeRunStatus FBNMoveToTargetTask::EnterState(FStateTreeExecutionContext& 
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	ABNBotController* Bot = ResolveBot(Context, InstanceData.Controller);
 	AActor* Target = Bot ? Bot->GetCurrentTarget() : nullptr;
-	if (!Target)
+	if (!Target || !Bot->GetPawn())
 	{
 		return EStateTreeRunStatus::Failed;
 	}
 
+	const bool bAlreadyInRadius =
+		FVector::Dist(Bot->GetPawn()->GetActorLocation(), Target->GetActorLocation()) <= InstanceData.AcceptanceRadius;
+
 	InstanceData.SecondsUntilRepath = FMath::Max(0.1f, InstanceData.RepathIntervalSeconds);
-	if (Bot->MoveToActor(Target, InstanceData.AcceptanceRadius) == EPathFollowingRequestResult::Failed)
+	InstanceData.BestDistance = FVector::Dist(Bot->GetPawn()->GetActorLocation(), Target->GetActorLocation());
+	InstanceData.SecondsWithoutProgress = 0.f;
+
+	const EPathFollowingRequestResult::Type Result = Bot->MoveToActor(Target, InstanceData.AcceptanceRadius);
+	if (Result == EPathFollowingRequestResult::Failed)
 	{
 		ReportMoveFailure(*Bot, Target, TEXT("move to target"), InstanceData.bWarnedMoveFailed);
+		return EStateTreeRunStatus::Failed;
+	}
+
+	// AlreadyAtGoal while still OUTSIDE the firing radius is the unreachable-target signature.
+	// MoveToActor defaults to bAllowPartialPath, so an enemy on a ledge yields a partial path to
+	// the nearest reachable point — and when the bot already stands on that point, the honest
+	// answer "no path" arrives disguised as the cheerful "you have arrived".
+	if (Result == EPathFollowingRequestResult::AlreadyAtGoal && !bAlreadyInRadius)
+	{
+		Bot->NotifyTargetUnreachable(Target);
 		return EStateTreeRunStatus::Failed;
 	}
 
@@ -287,6 +356,31 @@ EStateTreeRunStatus FBNMoveToTargetTask::Tick(FStateTreeExecutionContext& Contex
 	if (bInRadius && Bot->HasLineOfSightToTarget())
 	{
 		return EStateTreeRunStatus::Succeeded;
+	}
+
+	// No-progress watchdog. AlreadyAtGoal catches the "no path exists" shape; this catches the
+	// other one — a path exists, path following reports Moving, and the bot still gets nowhere
+	// because it is wedged on geometry or circling a pillar. Both end the same way: give up on
+	// this target rather than spend the match failing to reach it.
+	const float DistanceNow = Pawn ? FVector::Dist(Pawn->GetActorLocation(), Target->GetActorLocation()) : 0.f;
+	if (DistanceNow < InstanceData.BestDistance - 50.f)
+	{
+		InstanceData.BestDistance = DistanceNow;
+		InstanceData.SecondsWithoutProgress = 0.f;
+	}
+	else
+	{
+		InstanceData.SecondsWithoutProgress += DeltaTime;
+		if (InstanceData.SecondsWithoutProgress >= InstanceData.GiveUpAfterNoProgressSeconds)
+		{
+			Bot->NotifyTargetUnreachable(const_cast<AActor*>(Target));
+			return EStateTreeRunStatus::Failed;
+		}
+	}
+
+	if (Pawn)
+	{
+		ReportLocomotion(*Pawn, TEXT("closing"), DeltaTime, InstanceData.SecondsUntilLocomotionLog);
 	}
 
 	InstanceData.SecondsUntilRepath -= DeltaTime;
@@ -323,9 +417,17 @@ EStateTreeRunStatus FBNMoveToTargetTask::Tick(FStateTreeExecutionContext& Contex
 		// unreachable, and the state's transition delay throttles the retry from there.
 		const float CloseRadius = FMath::Min(InstanceData.AcceptanceRadius * 0.5f, 200.f);
 		InstanceData.SecondsUntilRepath = FMath::Max(0.1f, InstanceData.RepathIntervalSeconds);
-		if (Bot->MoveToActor(const_cast<AActor*>(Target), CloseRadius) == EPathFollowingRequestResult::Failed)
+		const EPathFollowingRequestResult::Type Result = Bot->MoveToActor(const_cast<AActor*>(Target), CloseRadius);
+		if (Result == EPathFollowingRequestResult::Failed)
 		{
 			ReportMoveFailure(*Bot, Target, TEXT("repath to target"), InstanceData.bWarnedMoveFailed);
+			return EStateTreeRunStatus::Failed;
+		}
+		if (Result == EPathFollowingRequestResult::AlreadyAtGoal)
+		{
+			// Still outside the firing radius (checked above) yet told we have arrived: the goal
+			// is unreachable and re-asking every half second forever is the deadlock this fixes.
+			Bot->NotifyTargetUnreachable(const_cast<AActor*>(Target));
 			return EStateTreeRunStatus::Failed;
 		}
 	}
@@ -499,6 +601,28 @@ EStateTreeRunStatus FBNMoveToPointOfInterestTask::EnterState(FStateTreeExecution
 		return EStateTreeRunStatus::Failed;
 	}
 
+	// FACE THE GOAL BEFORE WALKING. Measured: 2 of 7 moving samples came back BACKWARD and one
+	// STRAFE-LEFT, all of them at the START of a roam leg. The cause is arithmetic, not animation:
+	// path following reaches 600 uu/s within a few frames, while the control rotation turns at a
+	// bounded rate, so a point chosen BEHIND the bot is walked toward backwards for most of a
+	// second — a moonwalk, which is the sliding the founder saw. Setting the heading here, before
+	// there is any velocity to disagree with, removes the mismatch at its source instead of
+	// trying to out-run it with a faster turn.
+	if (const APawn* MyPawn = Controller->GetPawn())
+	{
+		const FVector ToPick = Pick->GetActorLocation() - MyPawn->GetActorLocation();
+		if (!ToPick.IsNearlyZero())
+		{
+			FRotator Heading = Controller->GetControlRotation();
+			Heading.Yaw = ToPick.Rotation().Yaw;
+			Controller->SetControlRotation(Heading);
+			if (APawn* MutablePawn = Controller->GetPawn())
+			{
+				MutablePawn->FaceRotation(Heading, 0.f);
+			}
+		}
+	}
+
 	InstanceData.CurrentPoint = Pick;
 	InstanceData.bArrived = false;
 	InstanceData.DwellRemaining = InstanceData.DwellSeconds;
@@ -542,6 +666,7 @@ EStateTreeRunStatus FBNMoveToPointOfInterestTask::Tick(FStateTreeExecutionContex
 				Controller->SetFocalPoint(LookAt, EAIFocusPriority::Move);
 				SteerControlRotation(*Controller, LookAt, InstanceData.TurnDegreesPerSecond, DeltaTime);
 			}
+			ReportLocomotion(*Pawn, TEXT("roaming"), DeltaTime, InstanceData.SecondsUntilLocomotionLog);
 		}
 
 		const bool bInRadius = Pawn && FVector::Dist(Pawn->GetActorLocation(), Point->GetActorLocation()) <= Point->Radius;
@@ -773,5 +898,224 @@ EStateTreeRunStatus FBNSelectWeaponTask::Tick(FStateTreeExecutionContext& Contex
 FText FBNSelectWeaponTask::GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting) const
 {
 	return FText::FromString("<b>BN Select Weapon</b>");
+}
+#endif
+
+////////////////////////////////////////////////////////////////////
+
+bool FBNReactedCondition::TestCondition(FStateTreeExecutionContext& Context) const
+{
+	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	const ABNBotController* Bot = ResolveBot(Context, InstanceData.Controller);
+	return Bot && Bot->HasReactedToTarget();
+}
+
+#if WITH_EDITOR
+FText FBNReactedCondition::GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting) const
+{
+	return FText::FromString("<b>BN Reacted</b>");
+}
+#endif
+
+////////////////////////////////////////////////////////////////////
+
+bool FBNInMeleeRangeCondition::TestCondition(FStateTreeExecutionContext& Context) const
+{
+	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	const ABNBotController* Bot = ResolveBot(Context, InstanceData.Controller);
+	const AActor* Target = Bot ? Bot->GetCurrentTarget() : nullptr;
+	const APawn* Pawn = Bot ? Bot->GetPawn() : nullptr;
+	if (!Target || !Pawn)
+	{
+		return false;
+	}
+
+	// The reach comes from the HELD WEAPON's row — the same number BNGA_Melee resolves. Restating
+	// it as a tree parameter would be a second source of truth for one distance, and law 3 keeps
+	// tuning numbers in the table rather than scattered across two systems.
+	const ABNWeapon* Weapon = Bot->GetCurrentWeapon();
+	const FBNWeaponRow* Row = Weapon ? Weapon->GetRow() : nullptr;
+	if (!Row || Row->MeleeRange <= 0.f)
+	{
+		return false;
+	}
+
+	const float Commit = Row->MeleeRange * FMath::Clamp(InstanceData.RangeFraction, 0.1f, 1.f);
+	return FVector::Dist(Pawn->GetActorLocation(), Target->GetActorLocation()) <= Commit;
+}
+
+#if WITH_EDITOR
+FText FBNInMeleeRangeCondition::GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting) const
+{
+	return FText::FromString("<b>BN In Melee Range</b>");
+}
+#endif
+
+////////////////////////////////////////////////////////////////////
+
+EStateTreeRunStatus FBNMeleeTask::EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
+{
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	ABNBotController* Bot = ResolveBot(Context, InstanceData.Controller);
+	if (!Bot)
+	{
+		return EStateTreeRunStatus::Failed;
+	}
+
+	InstanceData.SecondsElapsed = 0.f;
+
+	// One tap, exactly as a human's melee key: press activates, release clears the held flag so
+	// the next swing is a fresh press rather than an input the ASC still believes is down.
+	Bot->PressInputTag(BNTags::Input_Melee);
+	Bot->ReleaseInputTag(BNTags::Input_Melee);
+	return EStateTreeRunStatus::Running;
+}
+
+EStateTreeRunStatus FBNMeleeTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
+{
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	const ABNBotController* Bot = ResolveBot(Context, InstanceData.Controller);
+	if (!Bot)
+	{
+		return EStateTreeRunStatus::Failed;
+	}
+
+	// The swing's real length is montage data, so this waits rather than assuming. Succeeded on
+	// timeout, not Failed: a refused melee (dead, frozen, no montage) is an ordinary outcome the
+	// tree should re-select from immediately, not one that earns the Engage penalty delay.
+	InstanceData.SecondsElapsed += DeltaTime;
+	return InstanceData.SecondsElapsed >= InstanceData.TimeoutSeconds
+		? EStateTreeRunStatus::Succeeded
+		: EStateTreeRunStatus::Running;
+}
+
+#if WITH_EDITOR
+FText FBNMeleeTask::GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting) const
+{
+	return FText::FromString("<b>BN Melee</b>");
+}
+#endif
+
+////////////////////////////////////////////////////////////////////
+
+bool FBNHasLastKnownCondition::TestCondition(FStateTreeExecutionContext& Context) const
+{
+	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	const ABNBotController* Bot = ResolveBot(Context, InstanceData.Controller);
+	return Bot && Bot->HasFreshLastKnownLocation();
+}
+
+#if WITH_EDITOR
+FText FBNHasLastKnownCondition::GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting) const
+{
+	return FText::FromString("<b>BN Has Last Known</b>");
+}
+#endif
+
+////////////////////////////////////////////////////////////////////
+
+EStateTreeRunStatus FBNSearchLastKnownTask::EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
+{
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	ABNBotController* Bot = ResolveBot(Context, InstanceData.Controller);
+	if (!Bot || !Bot->HasFreshLastKnownLocation())
+	{
+		return EStateTreeRunStatus::Failed;
+	}
+
+	InstanceData.bArrived = false;
+	InstanceData.LookAroundRemaining = InstanceData.LookAroundSeconds;
+	InstanceData.SweptDegrees = 0.f;
+
+	// Same reason as Roam: face the destination before the walk starts, so the first second is a
+	// forward walk rather than a backpedal.
+	if (const APawn* MyPawn = Bot->GetPawn())
+	{
+		const FVector ToSpot = Bot->GetLastKnownThreatLocation() - MyPawn->GetActorLocation();
+		if (!ToSpot.IsNearlyZero())
+		{
+			FRotator Heading = Bot->GetControlRotation();
+			Heading.Yaw = ToSpot.Rotation().Yaw;
+			Bot->SetControlRotation(Heading);
+			if (APawn* MutablePawn = Bot->GetPawn())
+			{
+				MutablePawn->FaceRotation(Heading, 0.f);
+			}
+		}
+	}
+
+	if (Bot->MoveToLocation(Bot->GetLastKnownThreatLocation(), InstanceData.AcceptanceRadius) == EPathFollowingRequestResult::Failed)
+	{
+		// The spot may be somewhere the bot cannot stand — a ledge it was shot from. Not worth a
+		// warning: failing hands straight back to Roam, which is the right answer anyway.
+		return EStateTreeRunStatus::Failed;
+	}
+
+	return EStateTreeRunStatus::Running;
+}
+
+EStateTreeRunStatus FBNSearchLastKnownTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
+{
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	ABNBotController* Bot = ResolveBot(Context, InstanceData.Controller);
+	const APawn* Pawn = Bot ? Bot->GetPawn() : nullptr;
+	if (!Pawn)
+	{
+		return EStateTreeRunStatus::Failed;
+	}
+
+	// A target appearing mid-search needs no handling here: Engage sits above this state and
+	// preempts it through BN Has Target, exactly as it preempts Roam.
+
+	if (!InstanceData.bArrived)
+	{
+		// Face the walk, for the same reason Roam does — the pawn's yaw IS the control rotation.
+		const FVector Velocity = Pawn->GetVelocity();
+		if (Velocity.SizeSquared2D() > FMath::Square(10.f))
+		{
+			const FVector Ahead = FVector(Velocity.X, Velocity.Y, 0.f).GetSafeNormal() * 500.f;
+			SteerControlRotation(*Bot, Pawn->GetPawnViewLocation() + Ahead, 180.f, DeltaTime);
+		}
+
+		const bool bInRadius = FVector::Dist2D(Pawn->GetActorLocation(), Bot->GetLastKnownThreatLocation()) <= InstanceData.AcceptanceRadius;
+		if (bInRadius || Bot->GetMoveStatus() == EPathFollowingStatus::Idle)
+		{
+			InstanceData.bArrived = true;
+			Bot->StopMovement();
+		}
+		return EStateTreeRunStatus::Running;
+	}
+
+	// Arrived: sweep the view instead of standing frozen. This is the readable beat — a player
+	// watching from cover sees the bot arrive, look around, and give up, and reads a mind.
+	const float Step = InstanceData.SweepDegreesPerSecond * DeltaTime;
+	InstanceData.SweptDegrees += Step;
+	FRotator Sweep = Bot->GetControlRotation();
+	Sweep.Yaw += Step;
+	Bot->SetControlRotation(Sweep);
+	if (APawn* MutablePawn = Bot->GetPawn())
+	{
+		MutablePawn->FaceRotation(Sweep, DeltaTime);
+	}
+
+	InstanceData.LookAroundRemaining -= DeltaTime;
+	return InstanceData.LookAroundRemaining <= 0.f
+		? EStateTreeRunStatus::Succeeded
+		: EStateTreeRunStatus::Running;
+}
+
+void FBNSearchLastKnownTask::ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
+{
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	if (ABNBotController* Bot = ResolveBot(Context, InstanceData.Controller))
+	{
+		Bot->StopMovement();
+	}
+}
+
+#if WITH_EDITOR
+FText FBNSearchLastKnownTask::GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting) const
+{
+	return FText::FromString("<b>BN Search Last Known</b>");
 }
 #endif

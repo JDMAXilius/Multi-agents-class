@@ -49,6 +49,26 @@ public:
 
 	EBNBotAmbition GetAmbition() const;
 
+	/** The move tasks call this when the target cannot be pathed to. AAIController::MoveToActor
+	 *  defaults to bAllowPartialPath=true, so an unreachable goal does NOT fail — it returns a
+	 *  partial path to the nearest reachable point, and when the bot is already standing on that
+	 *  point the answer is AlreadyAtGoal. Path following then reports Idle forever while the bot
+	 *  stares at an enemy on a ledge it cannot climb. Measured: one bot held at 1898uu, Idle,
+	 *  speed 0, for a whole match while its sibling closed normally.
+	 *  Blacklisting the actor for a few seconds is what turns that deadlock into a decision: the
+	 *  slot empties, the brain rescores, and the bot goes and does something else. */
+	void NotifyTargetUnreachable(AActor* Target);
+
+	/** Where the threat was last SEEN, and whether that memory is still worth acting on. Halo's
+	 *  lesson 3 (legibility): a bot that forgets you the instant you break line of sight reads as
+	 *  broken, while one that walks to where you WERE reads as hunting. */
+	FVector GetLastKnownThreatLocation() const;
+	bool HasFreshLastKnownLocation() const;
+
+	/** R11: a bot may not shoot the instant it perceives. False until the reaction window since
+	 *  target acquisition has passed. */
+	bool HasReactedToTarget() const;
+
 	/** The weapon the bot is holding, through the pawn's equipment component — the same object a
 	 *  human's HUD reads. Null when unarmed, mid-swap, or the pawn is gone. */
 	ABNWeapon* GetCurrentWeapon() const;
@@ -105,8 +125,45 @@ protected:
 	UPROPERTY(Config, EditDefaultsOnly, Category = "Bot|Sight")
 	float PeripheralVisionAngleDegrees = 70.f;
 
+	/** The reaction window for THIS acquisition, drawn once when the target was acquired.
+	 *  Quantized and seeded, never FMath::RandRange off the global stream — §5's determinism law
+	 *  says same seed + same event trace must give the same action trace. */
+	float DrawReactionSeconds();
+
 	/** Weak: the target's death or leave must never dangle here. */
 	TWeakObjectPtr<AActor> TargetEnemy;
+
+	/** R11's floor and ceiling. A bot that fires on the same frame it sees you is not difficult,
+	 *  it is unfair — the player never gets the "I was seen" beat that makes a firefight readable. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "Bot|Reaction")
+	float ReactionSecondsMin = 0.22f;
+
+	UPROPERTY(Config, EditDefaultsOnly, Category = "Bot|Reaction")
+	float ReactionSecondsMax = 0.45f;
+
+	/** Quantization bucket. Snapping the draw keeps the trace reproducible across float drift. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "Bot|Reaction")
+	float ReactionQuantumSeconds = 0.05f;
+
+	/** How long an unreachable target stays ignored before the bot is willing to try again. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "Bot")
+	float UnreachableForgetSeconds = 8.f;
+
+	/** How long a last-known position is worth walking to. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "Bot")
+	float LastKnownFreshSeconds = 8.f;
+
+	double TargetAcquiredSeconds = -1.0;
+	float CurrentReactionSeconds = 0.f;
+
+	/** Counter, not a clock: it is the seeded stream's sequence number for this controller. */
+	int32 ReactionDrawCount = 0;
+
+	TWeakObjectPtr<AActor> UnreachableActor;
+	double UnreachableUntilSeconds = -1.0;
+
+	FVector LastKnownThreatLocation = FVector::ZeroVector;
+	double LastKnownThreatSeconds = -1.0;
 
 	UPROPERTY()
 	TObjectPtr<UBNBotBrain> Brain;

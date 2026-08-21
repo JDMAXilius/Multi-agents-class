@@ -250,17 +250,97 @@ void ABNBotController::SetCurrentTarget(AActor* Target)
 		return;
 	}
 	TargetEnemy = Target;
+
+	// R11's clock starts HERE, on acquisition, not on entering the Shoot state — otherwise a bot
+	// that loses and re-acquires sight of a target it has been fighting for ten seconds would pay
+	// the full reaction cost again, and would read as hesitant rather than alert.
+	const UWorld* World = GetWorld();
+	TargetAcquiredSeconds = World ? World->GetTimeSeconds() : -1.0;
+	CurrentReactionSeconds = DrawReactionSeconds();
+
 	RescoreBrain();
 }
 
 void ABNBotController::ClearCurrentTarget()
 {
 	const bool bHadTarget = TargetEnemy.IsValid();
+
+	// Remember where it WAS before the pointer goes. This is the whole of the search behaviour's
+	// memory: one position and one timestamp, written at the only moment the truth is still known.
+	if (const AActor* Leaving = TargetEnemy.Get())
+	{
+		LastKnownThreatLocation = Leaving->GetActorLocation();
+		const UWorld* World = GetWorld();
+		LastKnownThreatSeconds = World ? World->GetTimeSeconds() : -1.0;
+	}
+
 	TargetEnemy.Reset();
+	TargetAcquiredSeconds = -1.0;
 	if (bHadTarget)
 	{
 		RescoreBrain();
 	}
+}
+
+float ABNBotController::DrawReactionSeconds()
+{
+	// Seeded on identity + draw index, so the trace replays: no wall clock, no global RNG (§5).
+	FRandomStream Stream(static_cast<int32>(GetTypeHash(this)) ^ (ReactionDrawCount++ * 0x9E3779B9));
+	const float Low = FMath::Max(0.f, ReactionSecondsMin);
+	const float High = FMath::Max(Low, ReactionSecondsMax);
+	const float Raw = Stream.FRandRange(Low, High);
+	return ReactionQuantumSeconds > 0.f
+		? FMath::Max(Low, FMath::GridSnap(Raw, ReactionQuantumSeconds))
+		: Raw;
+}
+
+bool ABNBotController::HasReactedToTarget() const
+{
+	if (TargetAcquiredSeconds < 0.0)
+	{
+		return false;
+	}
+	const UWorld* World = GetWorld();
+	return World && (World->GetTimeSeconds() - TargetAcquiredSeconds) >= CurrentReactionSeconds;
+}
+
+void ABNBotController::NotifyTargetUnreachable(AActor* Target)
+{
+	if (!Target)
+	{
+		return;
+	}
+
+	const UWorld* World = GetWorld();
+	UnreachableActor = Target;
+	UnreachableUntilSeconds = World ? World->GetTimeSeconds() + UnreachableForgetSeconds : -1.0;
+
+	// Legibility (§1 lesson 3): giving up is a decision the founder can read, so it says so once.
+	UE_LOG(LogBN, Log, TEXT("BNBots: %s cannot reach %s — dropping it for %.0fs and finding something else to do."),
+		*GetNameSafe(GetPawn()), *GetNameSafe(Target), UnreachableForgetSeconds);
+
+	// Clearing the slot is what actually frees the bot: the brain rescores, Fight loses its
+	// target consideration, and Roam or Search wins instead.
+	if (TargetEnemy.Get() == Target)
+	{
+		ClearCurrentTarget();
+	}
+}
+
+FVector ABNBotController::GetLastKnownThreatLocation() const
+{
+	return LastKnownThreatLocation;
+}
+
+bool ABNBotController::HasFreshLastKnownLocation() const
+{
+	// A live target outranks a memory of one — searching while looking at the enemy is nonsense.
+	if (LastKnownThreatSeconds < 0.0 || GetCurrentTarget() != nullptr)
+	{
+		return false;
+	}
+	const UWorld* World = GetWorld();
+	return World && (World->GetTimeSeconds() - LastKnownThreatSeconds) <= LastKnownFreshSeconds;
 }
 
 void ABNBotController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
@@ -303,6 +383,18 @@ bool ABNBotController::IsValidTarget(AActor* Actor) const
 	if (!TargetCharacter || TargetCharacter == GetPawn())
 	{
 		return false;
+	}
+
+	// The unreachable blacklist lives HERE and nowhere else — this is the single function that
+	// decides what counts as a target, so perception, the slot rule and the tree all inherit it
+	// for free and cannot disagree with each other.
+	if (UnreachableActor.Get() == Actor)
+	{
+		const UWorld* World = GetWorld();
+		if (World && World->GetTimeSeconds() < UnreachableUntilSeconds)
+		{
+			return false;
+		}
 	}
 
 	// Alive means the ASC says so — no ASC yet means not a target yet, never a guess.

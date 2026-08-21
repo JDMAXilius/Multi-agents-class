@@ -165,7 +165,21 @@ FString UBNBotAuthoring::BuildBotStateTree()
 	// system to fix it, so a tight retry would be a per-frame swap loop for the rest of the match.
 	AddCompletionTransition(Arm, Root, EStateTreeTransitionTrigger::OnStateFailed, 2.0f);
 
-	// 3. Get into a firing position. THIS COMES BEFORE SHOOTING, and the order is the whole
+	// 3. Knife range: stab, do not shoot. Doctrine §4 draws Engage as a priority selector
+	//    (rocket-if-held -> grenade-if-cracked -> fire -> melee) and melee is the step this game
+	//    already owns an ability for. It sits ABOVE Close and Shoot because at arm's length it is
+	//    the correct answer and the readable one — a knife bot backing up to shoot you reads as
+	//    broken. Gated on BN Reacted too: point blank is exactly where an instant response would
+	//    feel worst.
+	UStateTreeState& Knife = Engage.AddChildState(TEXT("Knife"));
+	Knife.AddEnterCondition<FBNInMeleeRangeCondition>();
+	Knife.AddEnterCondition<FBNReactedCondition>();
+	Knife.AddTask<FBNFaceTargetTask>();
+	Knife.AddTask<FBNMeleeTask>();
+	AddCompletionTransition(Knife, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
+	AddCompletionTransition(Knife, Root, EStateTreeTransitionTrigger::OnStateFailed, 1.0f);
+
+	// 4. Get into a firing position. THIS COMES BEFORE SHOOTING, and the order is the whole
 	//    lesson of the first PIE run: with Shoot ordered first, two bots stood at 2200uu and
 	//    emptied magazine after magazine into a wall. Their eye-level line of sight to the target
 	//    was genuinely clear — LineOfSightTo traces from the pawn's view point — while the
@@ -185,15 +199,29 @@ FString UBNBotAuthoring::BuildBotStateTree()
 	// Unreachable target: fail, and take the delay rather than re-pathing on the next frame.
 	AddCompletionTransition(Close, Root, EStateTreeTransitionTrigger::OnStateFailed, 1.0f);
 
-	// 4. In position: face it and fire a burst. The line-of-sight condition stays as a cheap
-	//    guard — Close only hands over when sight is true, but the target can step behind cover
-	//    in the frame between, and a burst that starts blind is exactly what step 3 is about.
+	// 4. In position: face it and fire a burst. Two enter conditions, and both earn their place.
+	//    Line of sight is a cheap guard — Close only hands over when sight is true, but the target
+	//    can step behind cover in the frame between. BN Reacted is R11: a bot may not fire on the
+	//    same frame it perceives, and the quarter second it waits is the "I have been seen" beat
+	//    that makes a firefight readable instead of instantly lethal.
 	UStateTreeState& Shoot = Engage.AddChildState(TEXT("Shoot"));
 	Shoot.AddEnterCondition<FBNHasLineOfSightCondition>();
+	Shoot.AddEnterCondition<FBNReactedCondition>();
 	Shoot.AddTask<FBNFaceTargetTask>();
 	Shoot.AddTask<FBNFireBurstTask>();
 	AddCompletionTransition(Shoot, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
 	AddCompletionTransition(Shoot, Root, EStateTreeTransitionTrigger::OnStateFailed, 1.0f);
+
+	// ---- Search: no target, but a fresh memory of one --------------------------------------
+	// Halo's legibility lesson made concrete. A bot that forgets you the instant you round a
+	// corner reads as broken; one that walks to where you WERE, looks around, and gives up reads
+	// as hunting — and the two cost the same. It sits between Engage and Roam because a live
+	// target always outranks a memory, and a memory always outranks having nothing to do.
+	UStateTreeState& Search = Root.AddChildState(TEXT("Search"));
+	Search.AddEnterCondition<FBNHasLastKnownCondition>();
+	Search.AddTask<FBNSearchLastKnownTask>();
+	AddCompletionTransition(Search, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
+	AddCompletionTransition(Search, Root, EStateTreeTransitionTrigger::OnStateFailed, 1.0f);
 
 	// ---- Roam: nothing better to want -----------------------------------------------------
 	UStateTreeState& Roam = Root.AddChildState(TEXT("Roam"));
@@ -202,7 +230,7 @@ FString UBNBotAuthoring::BuildBotStateTree()
 	// A level with no points fails this instantly; the delay is what keeps that cheap and quiet.
 	AddCompletionTransition(Roam, Root, EStateTreeTransitionTrigger::OnStateFailed, 2.0f);
 
-	Report.Add(TEXT("states     : Root > [Engage > [Rearm, Arm, Close, Shoot], Roam]"));
+	Report.Add(TEXT("states     : Root > [Engage > [Rearm, Arm, Knife, Close, Shoot], Search, Roam]"));
 
 	// An uncompiled StateTree runs NOTHING — the asset would exist, the ini would resolve, and
 	// every bot would still stand still. This is the step that turns editor data into bytecode.

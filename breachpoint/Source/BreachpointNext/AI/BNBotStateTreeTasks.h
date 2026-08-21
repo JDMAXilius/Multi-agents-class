@@ -127,6 +127,18 @@ struct FBNMoveToTargetTaskInstanceData
 
 	/** Internal: throttles the closing diagnostic to roughly one line per second. */
 	float SecondsUntilCloseLog = 0.f;
+
+	/** Give up on a target the bot has stopped getting closer to. Catches the wedged case that
+	 *  AlreadyAtGoal does not: a valid path that makes no headway. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float GiveUpAfterNoProgressSeconds = 6.f;
+
+	/** Internal: closest the bot has been on this approach, and how long since that improved. */
+	float BestDistance = 0.f;
+	float SecondsWithoutProgress = 0.f;
+
+	/** Internal: throttles the locomotion report to roughly one line per second. */
+	float SecondsUntilLocomotionLog = 0.f;
 };
 
 /** Moves toward the controller's current target; succeeds inside AcceptanceRadius. */
@@ -207,10 +219,11 @@ struct FBNMoveToPointOfInterestTaskInstanceData
 	UPROPERTY(EditAnywhere, Category = "Parameter")
 	float DwellSeconds = 2.f;
 
-	/** Turn rate while roaming. Slower than combat: a bot strolling between points that snapped
-	 *  to each path corner would read as a machine, not a person. */
+	/** Turn rate while roaming. The heading is set to face the goal when the leg BEGINS, so this
+	 *  only has to cover corners mid-path — at 180 a sharp one stayed visible as a strafe for most
+	 *  of a second, which is why it is 360: a person pivoting briskly, not a turret snapping. */
 	UPROPERTY(EditAnywhere, Category = "Parameter")
-	float TurnDegreesPerSecond = 180.f;
+	float TurnDegreesPerSecond = 360.f;
 
 	/** Internal: warned once — a level with no points must be SAID, not spun on in silence. */
 	bool bWarnedNoPointsOfInterest = false;
@@ -222,6 +235,9 @@ struct FBNMoveToPointOfInterestTaskInstanceData
 	TWeakObjectPtr<ABNPointOfInterest> CurrentPoint;
 	float DwellRemaining = 0.f;
 	bool bArrived = false;
+
+	/** Internal: throttles the locomotion report to roughly one line per second. */
+	float SecondsUntilLocomotionLog = 0.f;
 
 	/** Internal: the move-failure diagnosis is printed once, not once per frame. */
 	bool bWarnedMoveFailed = false;
@@ -406,6 +422,198 @@ struct FBNSelectWeaponTask : public FStateTreeTaskCommonBase
 
 	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
 	virtual EStateTreeRunStatus Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const override;
+
+#if WITH_EDITOR
+	virtual FText GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting = EStateTreeNodeFormatting::Text) const override;
+#endif
+};
+
+////////////////////////////////////////////////////////////////////
+
+USTRUCT()
+struct FBNReactedConditionInstanceData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Context")
+	TObjectPtr<AAIController> Controller;
+};
+
+/** Passes once the bot's reaction window since acquiring its target has elapsed (R11: >= 200ms,
+ *  quantized and seeded on the controller). The gate on shooting and on melee — never on moving,
+ *  because a bot that cannot even START WALKING for a quarter second reads as asleep, not human. */
+USTRUCT(meta = (DisplayName = "BN Reacted", Category = "BN"))
+struct FBNReactedCondition : public FStateTreeConditionCommonBase
+{
+	GENERATED_BODY()
+
+	using FInstanceDataType = FBNReactedConditionInstanceData;
+	virtual const UStruct* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
+
+	FBNReactedCondition() = default;
+
+	virtual bool TestCondition(FStateTreeExecutionContext& Context) const override;
+
+#if WITH_EDITOR
+	virtual FText GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting = EStateTreeNodeFormatting::Text) const override;
+#endif
+};
+
+////////////////////////////////////////////////////////////////////
+
+USTRUCT()
+struct FBNInMeleeRangeConditionInstanceData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Context")
+	TObjectPtr<AAIController> Controller;
+
+	/** Fraction of the weapon's OWN MeleeRange at which the bot commits to a swing. Below 1 so it
+	 *  swings inside the ability's reach rather than exactly at its edge, where a step backwards
+	 *  turns a hit into a whiff. The reach itself is never restated here — it is read from the
+	 *  held weapon's row, which is where BNGA_Melee reads it too. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float RangeFraction = 0.8f;
+};
+
+/** Passes when the target is inside the HELD WEAPON's melee reach. The top of the engage priority
+ *  selector: doctrine §4 names the shape (rocket-if-held -> grenade-if-cracked -> fire -> melee),
+ *  and melee is the one step this game already has an ability for. A knife bot that shoots you
+ *  from arm's length instead of stabbing is the readable failure this prevents. */
+USTRUCT(meta = (DisplayName = "BN In Melee Range", Category = "BN"))
+struct FBNInMeleeRangeCondition : public FStateTreeConditionCommonBase
+{
+	GENERATED_BODY()
+
+	using FInstanceDataType = FBNInMeleeRangeConditionInstanceData;
+	virtual const UStruct* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
+
+	FBNInMeleeRangeCondition() = default;
+
+	virtual bool TestCondition(FStateTreeExecutionContext& Context) const override;
+
+#if WITH_EDITOR
+	virtual FText GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting = EStateTreeNodeFormatting::Text) const override;
+#endif
+};
+
+////////////////////////////////////////////////////////////////////
+
+USTRUCT()
+struct FBNMeleeTaskInstanceData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Context")
+	TObjectPtr<AAIController> Controller;
+
+	/** Ceiling on the wait, not the swing's length — the montage owns that. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float TimeoutSeconds = 1.5f;
+
+	float SecondsElapsed = 0.f;
+};
+
+/** Presses the SAME Input.Melee a human's melee key presses, then waits out the swing. GAS-pure
+ *  by construction: the damage, the reach and the montage all belong to BNGA_Melee, and this task
+ *  knows none of them. */
+USTRUCT(meta = (DisplayName = "BN Melee", Category = "BN"))
+struct FBNMeleeTask : public FStateTreeTaskCommonBase
+{
+	GENERATED_BODY()
+
+	using FInstanceDataType = FBNMeleeTaskInstanceData;
+	virtual const UStruct* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
+
+	FBNMeleeTask()
+	{
+		bShouldCallTick = true;
+	}
+
+	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
+	virtual EStateTreeRunStatus Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const override;
+
+#if WITH_EDITOR
+	virtual FText GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting = EStateTreeNodeFormatting::Text) const override;
+#endif
+};
+
+////////////////////////////////////////////////////////////////////
+
+USTRUCT()
+struct FBNHasLastKnownConditionInstanceData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Context")
+	TObjectPtr<AAIController> Controller;
+};
+
+/** Passes when the bot has no target but DOES remember where one just was, recently enough to be
+ *  worth walking to. The gate on the Search state. */
+USTRUCT(meta = (DisplayName = "BN Has Last Known", Category = "BN"))
+struct FBNHasLastKnownCondition : public FStateTreeConditionCommonBase
+{
+	GENERATED_BODY()
+
+	using FInstanceDataType = FBNHasLastKnownConditionInstanceData;
+	virtual const UStruct* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
+
+	FBNHasLastKnownCondition() = default;
+
+	virtual bool TestCondition(FStateTreeExecutionContext& Context) const override;
+
+#if WITH_EDITOR
+	virtual FText GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting = EStateTreeNodeFormatting::Text) const override;
+#endif
+};
+
+////////////////////////////////////////////////////////////////////
+
+USTRUCT()
+struct FBNSearchLastKnownTaskInstanceData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Context")
+	TObjectPtr<AAIController> Controller;
+
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float AcceptanceRadius = 150.f;
+
+	/** How long to stand and look around on arrival. The beat that makes the hunt readable. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float LookAroundSeconds = 2.f;
+
+	/** Degrees per second the bot sweeps its view while looking around. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float SweepDegreesPerSecond = 90.f;
+
+	bool bArrived = false;
+	float LookAroundRemaining = 0.f;
+	float SweptDegrees = 0.f;
+};
+
+/** Walks to where the threat was last seen, then sweeps its view. Halo's legibility lesson made
+ *  concrete: the bot that hunts your last position reads as intelligent, while the one that
+ *  forgets you the instant you round a corner reads as broken — and the two cost the same. */
+USTRUCT(meta = (DisplayName = "BN Search Last Known", Category = "BN"))
+struct FBNSearchLastKnownTask : public FStateTreeTaskCommonBase
+{
+	GENERATED_BODY()
+
+	using FInstanceDataType = FBNSearchLastKnownTaskInstanceData;
+	virtual const UStruct* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
+
+	FBNSearchLastKnownTask()
+	{
+		bShouldCallTick = true;
+	}
+
+	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
+	virtual EStateTreeRunStatus Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const override;
+	virtual void ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
 
 #if WITH_EDITOR
 	virtual FText GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting = EStateTreeNodeFormatting::Text) const override;
