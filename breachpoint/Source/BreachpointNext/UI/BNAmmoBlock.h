@@ -5,6 +5,7 @@
 #include "BNAmmoBlock.generated.h"
 
 class UBNVM_Combat;
+class UImage;
 class UTextBlock;
 
 /**
@@ -33,6 +34,10 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
 	TObjectPtr<UTextBlock> ReserveAmmoText;
+
+	/** The design's 88×32 silhouette slot. Optional: a HUD without it still runs, minus the gun. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
+	TObjectPtr<UImage> WeaponIcon;
 
 	TArray<TPair<UE::FieldNotification::FFieldId, FDelegateHandle>> BoundFields;
 	TWeakObjectPtr<UBNVM_Combat> BoundViewModel;

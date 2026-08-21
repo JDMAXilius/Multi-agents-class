@@ -436,7 +436,10 @@ void UBNHUDDirector::HandleEquippedWeaponChanged(UBNEquipmentComponent* Equipmen
 	Combat->SetEquippedWeapon(Name,
 		bHasMagazine ? Current->GetCurrentAmmo() : static_cast<int32>(INDEX_NONE),
 		bHasMagazine ? Current->GetAmmoReserve() : static_cast<int32>(INDEX_NONE),
-		/*bKnown=*/true);
+		/*bKnown=*/true,
+		// R7.1 — the silhouette, straight off the row. Soft all the way to the widget, which
+		// loads it through Slate's own async path; an unset column simply draws nothing.
+		Row ? Row->Icon : nullptr);
 }
 
 void UBNHUDDirector::HandleAmmoChanged(ABNWeapon* Weapon)

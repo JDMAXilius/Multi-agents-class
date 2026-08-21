@@ -9,6 +9,7 @@ class UAnimMontage;
 class UBNAbilitySet;
 class USkeletalMesh;
 class USoundBase;
+class UTexture2D;
 class ABNWeapon;
 
 // Our own enum, not the template's E_FPST_FireMode asset enum. Same three modes in the same
@@ -137,6 +138,13 @@ struct FBNWeaponRow : public FTableRowBase
 
 	UPROPERTY(EditAnywhere, Category = "Assets")
 	TSoftObjectPtr<USkeletalMesh> WeaponMesh;
+
+	/** The HUD's weapon silhouette (R7.1). Soft, and read ONLY by the UI — the design's tray puts
+	 *  an 88×32 line-art gun beside the ammo, and without this the slot has nothing to draw. A row
+	 *  that leaves it unset renders no silhouette and nothing else changes: the ammo, the name and
+	 *  the reserve are their own fields. */
+	UPROPERTY(EditAnywhere, Category = "Assets")
+	TSoftObjectPtr<UTexture2D> Icon;
 
 	// The template's `LinkAnimLayerClass`, read off the weapon by reflection
 	// (MyCharacter.cpp:51, 2028-2031). G2.4 resolves it into the linked layer.

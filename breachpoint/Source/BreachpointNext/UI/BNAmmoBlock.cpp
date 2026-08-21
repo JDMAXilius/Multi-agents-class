@@ -1,5 +1,7 @@
 #include "UI/BNAmmoBlock.h"
+#include "Components/Image.h"
 #include "Components/TextBlock.h"
+#include "Engine/Texture2D.h"
 #include "Engine/LocalPlayer.h"
 #include "INotifyFieldValueChanged.h"
 #include "UI/BNUIManager.h"
@@ -31,6 +33,8 @@ void UBNAmmoBlock::NativeConstruct()
 	BindCombatField(Combat, UBNVM_Combat::FFieldNotificationClassDescriptor::MagAmmo);
 	BindCombatField(Combat, UBNVM_Combat::FFieldNotificationClassDescriptor::ReserveAmmo);
 	BindCombatField(Combat, UBNVM_Combat::FFieldNotificationClassDescriptor::EquipmentState);
+	// The icon rides a plain member; this is the notify that always fires with it.
+	BindCombatField(Combat, UBNVM_Combat::FFieldNotificationClassDescriptor::EquipSerial);
 
 	Refresh();
 }
@@ -86,5 +90,19 @@ void UBNAmmoBlock::Refresh()
 	{
 		const bool bHasReserve = bLive && Combat->GetReserveAmmo() != INDEX_NONE;
 		ReserveAmmoText->SetText(bHasReserve ? FText::AsNumber(Combat->GetReserveAmmo()) : Dash);
+	}
+
+	// R7.1 — the silhouette. SetBrushFromSoftTexture takes the SOFT pointer and does the loading
+	// itself, so no sync load lands on a weapon swap; an unset row column hides the slot rather
+	// than drawing the previous weapon's gun.
+	if (WeaponIcon)
+	{
+		const TSoftObjectPtr<UTexture2D>& Icon = Combat ? Combat->GetWeaponIcon() : nullptr;
+		const bool bHasIcon = bLive && !Icon.IsNull();
+		if (bHasIcon)
+		{
+			WeaponIcon->SetBrushFromSoftTexture(Icon, /*bMatchSize=*/false);
+		}
+		WeaponIcon->SetVisibility(bHasIcon ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
 	}
 }

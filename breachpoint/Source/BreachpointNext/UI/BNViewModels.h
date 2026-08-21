@@ -54,8 +54,12 @@ public:
 	void UnbindFromAbilitySystem();
 
 	/** Director only: the hand changed. Empty name = unarmed; ammo INDEX_NONE = no magazine
-	 *  (the knife, the empty hand) — the widget renders a dash, never a confident zero. */
-	void SetEquippedWeapon(const FText& InName, int32 InMagAmmo, int32 InReserveAmmo, bool bKnown);
+	 *  (the knife, the empty hand) — the widget renders a dash, never a confident zero.
+	 *  The icon is the design's silhouette slot and may be null; it is NOT a FieldNotify field
+	 *  (a soft-pointer notify is an unverified shape, and §API's rule is transcription over
+	 *  invention) — EquipSerial below is the notify that always fires with it. */
+	void SetEquippedWeapon(const FText& InName, int32 InMagAmmo, int32 InReserveAmmo, bool bKnown,
+		const TSoftObjectPtr<UTexture2D>& InIcon = nullptr);
 	void SetAmmo(int32 InMagAmmo, int32 InReserveAmmo);
 
 	/** Director only: the dead state and its clock. RespawnAt <= 0 clears the countdown. The VM
@@ -76,6 +80,12 @@ public:
 	int32 GetMagAmmo() const { return MagAmmo; }
 	int32 GetReserveAmmo() const { return ReserveAmmo; }
 	EBNUIDataState GetEquipmentState() const { return EquipmentState; }
+	const TSoftObjectPtr<UTexture2D>& GetWeaponIcon() const { return WeaponIcon; }
+
+	/** Bumped by EVERY SetEquippedWeapon, so a widget bound to it repaints on any hand change —
+	 *  including a swap between two weapons that happen to share a display name, which a
+	 *  name-only notify would miss. */
+	int32 GetEquipSerial() const { return EquipSerial; }
 	bool IsDead() const { return bIsDead; }
 	FText GetKilledByLine() const { return KilledByLine; }
 	int32 GetRespawnSecondsRemaining() const { return RespawnSecondsRemaining; }
@@ -116,6 +126,13 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetEquipmentState", Category = "BN|Combat", meta = (AllowPrivateAccess))
 	EBNUIDataState EquipmentState = EBNUIDataState::Unknown;
+
+	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetEquipSerial", Category = "BN|Combat", meta = (AllowPrivateAccess))
+	int32 EquipSerial = 0;
+
+	/** Plain, notified by EquipSerial — see SetEquippedWeapon's comment. */
+	UPROPERTY(Transient)
+	TSoftObjectPtr<UTexture2D> WeaponIcon;
 
 	// ---- death ----
 	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "IsDead", Category = "BN|Combat", meta = (AllowPrivateAccess))
