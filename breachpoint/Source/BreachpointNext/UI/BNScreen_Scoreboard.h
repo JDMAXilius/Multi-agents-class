@@ -20,6 +20,9 @@ class BREACHPOINTNEXT_API UBNScreen_Scoreboard : public UBNActivatableWidget
 {
 	GENERATED_BODY()
 
+public:
+	UBNScreen_Scoreboard();
+
 protected:
 	virtual void NativeOnInitialized() override;
 	virtual void BindViewModels() override;

@@ -7,6 +7,14 @@
 #include "UI/BNUITypes.h"
 #include "UI/BNViewModels.h"
 
+UBNScreen_Scoreboard::UBNScreen_Scoreboard()
+{
+	// EXPLICIT Game, not Inherit (critic): topping the Game stack deactivates the HUD beneath,
+	// and with no active widget desiring a config the router would be left holding the last one
+	// by luck. The compiled reference set this on both of its screens for exactly that reason.
+	InputMode = EBNWidgetInputMode::Game;
+}
+
 void UBNScreen_Scoreboard::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();

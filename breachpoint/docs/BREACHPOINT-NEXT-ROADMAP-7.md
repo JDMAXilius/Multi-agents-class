@@ -93,7 +93,7 @@ Nothing else — every deferred surface is in the ledger at the bottom.
 | # | Task | Class (all bind a VM, nothing else) |
 |---|---|---|
 | 3.1 | **HUD layout**: Game-layer activatable; `HitTestInvisible` root-to-leaf; never takes focus; no SafeZone wrapper on the canvas; hosts the surfaces + the static center reticle (an Image — per-weapon reticles are deferred) | `UI/BNHUDLayout.*` |
-| 3.2 | **Match band**: my kills / limit · clock (VM-owned, phase-locked) · phase text (warmup/post-match banners live here) | `UI/BNMatchBand.*` |
+| 3.2 | **Match band**: my kills / limit · clock (VM-owned, phase-locked). The warmup/post-match BANNER is NOT here — it landed on `BNHUDLayout` at the design's own upper-centre anchor, which is where the Figma puts it | `UI/BNMatchBand.*` |
 | 3.3 | **Vitals**: shield over health; health hidden until damaged; honest dashes at Unknown | `UI/BNVitalsWidget.*` |
 | 3.4 | **Ammo block**: mag / reserve / weapon name; dashes at Unknown, never `0/100` | `UI/BNAmmoBlock.*` |
 | 3.5 | **Killfeed** + **entry** (own header — the old module's two-classes-one-header wart, fixed): fixed pool claimed/released, never per-kill CreateWidget; exhaustion drops oldest AND logs; whole-row tint (white=you, red never spent here) | `UI/BNKillfeed.*`, `UI/BNKillfeedEntry.*` |

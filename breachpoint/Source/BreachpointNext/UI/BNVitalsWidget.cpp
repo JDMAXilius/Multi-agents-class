@@ -87,6 +87,8 @@ void UBNVitalsWidget::Refresh()
 	if (ShieldText)
 	{
 		ShieldText->SetText(bLive ? FText::AsNumber(Combat->GetShieldValue()) : FText::FromString(TEXT("—")));
+		// The dash dims too (critic): a confident live-cyan "—" half-honours honest-unknown.
+		ShieldText->SetColorAndOpacity(FSlateColor(bLive ? BNUIColors::Shield : BNUIColors::Dead));
 	}
 
 	// Hidden-until-damaged, on the WHOLE element: a full health bar says nothing, and the old

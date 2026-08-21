@@ -455,8 +455,12 @@ void UBNVM_Match::ClearToUnknown()
 	TimeSource.Reset();
 	LastKillfeedSequence = INDEX_NONE;
 	KillfeedEntries.Reset();
-	Roster.Reset();
-	OnRosterViewChanged.Broadcast();
+	// Only when there was something to clear — SetRoster's silence contract, kept symmetric.
+	if (Roster.Num() > 0)
+	{
+		Roster.Reset();
+		OnRosterViewChanged.Broadcast();
+	}
 
 	UE_MVVM_SET_PROPERTY_VALUE(MatchStateName, FName());
 	UE_MVVM_SET_PROPERTY_VALUE(PhaseBannerText, FText::GetEmpty());

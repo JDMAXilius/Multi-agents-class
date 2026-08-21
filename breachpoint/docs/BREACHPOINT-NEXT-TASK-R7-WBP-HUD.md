@@ -1,4 +1,4 @@
-# TICKET — the HUD's nine WBPs and the Tab key
+# TICKET — the HUD's TEN WBPs and the Tab key
 
 **Cut:** 21 August 2026 by the cloud lead · **For:** `bn-editor` / the terminal
 **Prerequisite:** a build containing R7 Waves 0–4 (the `UI/` folder — `UBNHUDLayout` must appear
@@ -7,9 +7,13 @@ in the reparent picker; if it does not, the build is stale: **stop and report**)
 
 ## THE SCOPE
 
-Create **nine** WidgetBlueprints under `/Game/BN/UI/`, add **one** input action + two rows.
+Create **TEN** WidgetBlueprints under `/Game/BN/UI/` (the nine in the table below **plus
+`WBP_BNScoreRow`**, which the scoreboard's row list needs — counting nine and stopping leaves an
+empty board), add **one** input action + two rows.
 **Layout, anchors and children ONLY — zero graph nodes, zero variables, zero bindings, zero
-colors** (every color is C++'s; a WBP that sets one is a finding). Positions are the measured
+colors** (every color is C++'s; a WBP that sets one is a finding). **The single carved-out
+exception is `ReticleDot`'s white circle brush** — C++ never touches that image, so its brush is
+layout, not styling. Positions are the measured
 1280×720 grid; anchors are given per element. The proven lane is `Tools/bn/6x`-style scripting;
 WidgetBlueprints DO have a Python factory surface. Read-backs are the deliverable.
 
@@ -18,13 +22,20 @@ WidgetBlueprints DO have a Python factory surface. Read-backs are the deliverabl
 Every WBP is REPARENTED to its named C++ class before saving. `BindWidget` names must match
 EXACTLY — a mismatch fails at asset load, not at build, and presents as an empty HUD.
 
-| Asset | Parent class | Tree (child widget class · name · slot) |
+**THE GEOMETRY IS MEASURED, NOT INVENTED.** Every number below is read from the project's own
+Figma (`yznvnVdOFDADaugZSeomfP`, node `6:47` — "HUD / Core"), whose wireframe page says it in
+plain words: *"Every value measured from 1920×1080 capture ÷ 1.5. Build to these numbers."*
+Positions are **absolute in 1280×720 canvas space** — set them on the canvas slot as Position
+with the anchor named; do not eyeball, and do not re-centre anything the design deliberately
+offset.
+
+| Asset | Parent class | Tree (child class · name · MEASURED slot) |
 |---|---|---|
 | `WBP_BNRootLayout` | `UBNRootLayout` | Overlay root → 4 × `CommonActivatableWidgetStack`, fill-all, in z-order: `GameLayerStack`, `GameMenuLayerStack`, `MenuLayerStack`, `ModalLayerStack` |
-| `WBP_BNHUD` | `UBNHUDLayout` | CanvasPanel root (NO SafeZone) → `WBP_BNVitals` anchored (0.5,0) pos (0,66) · `Image` `ReticleDot` anchored (0.5,0.5) size 6×6, white circle brush (C++ never touches it — a plain dot until per-weapon reticles) · `WBP_BNAmmoBlock` anchored (1,1) pos (−62,−36) · `WBP_BNMatchBand` anchored (0.5,1) pos (0,−76) · `WBP_BNKillfeed` anchored (0,1) pos (60,−189) · `TextBlock` `BannerText` anchored (0.5,0) pos (0,132), justified center |
-| `WBP_BNVitals` | `UBNVitalsWidget` | VerticalBox → `ProgressBar` `ShieldBar` (274×12) · `ProgressBar` `HealthBar` (274×8) · HorizontalBox → `TextBlock` `ShieldText` · spacer · `TextBlock` `HealthText` |
-| `WBP_BNAmmoBlock` | `UBNAmmoBlock` | VerticalBox right-aligned → `TextBlock` `WeaponNameText` · HorizontalBox → `TextBlock` `MagAmmoText` (34pt) · `TextBlock` `ReserveAmmoText` (20pt, " / N") |
-| `WBP_BNMatchBand` | `UBNMatchBand` | HorizontalBox → cell(`TextBlock` label "YOU" + `TextBlock` `MyKillsText`) · divider · cell(label "TIME" + `TextBlock` `ClockText`) · divider · cell(label "LEAD" + `TextBlock` `TopKillsText` + `TextBlock` `ScoreLimitText`) |
+| `WBP_BNHUD` | `UBNHUDLayout` | CanvasPanel root (NO SafeZone) → `WBP_BNVitals` @ **x503.33 y66, 273.33×34** · `Image` `ReticleDot` @ **x620 y340, 40×40** (centre lands exactly 640,360) · `WBP_BNMatchBand` @ **x474.67 y622, 302×22** · `WBP_BNKillfeed` @ **x60 y455, 340×76** · `WBP_BNAmmoBlock` @ **x940 y580, 280×110** · `TextBlock` `BannerText` @ x503 y132 w274, centre-justified |
+| `WBP_BNVitals` | `UBNVitalsWidget` | Canvas 273.33×34 → `ProgressBar` `ShieldBar` @ y0 **273.33×20** (the shield reads as an ARC, not a trapezoid — thickness 16, sag 2.7; a straight bar is acceptable for the first pass, the arc is the target) · `ProgressBar` `HealthBar` @ **y20 273.33×5** (design slot y86 abs) · `Image` centre tick @ **x135.9 y20, 1.33×10** · `TextBlock` `ShieldText` / `HealthText` beneath, small |
+| `WBP_BNAmmoBlock` | `UBNAmmoBlock` | Canvas **280×110** — the design's ONE "Loadout Tray" unit; R7 fills its ammo third and the rest is the deferral: `TextBlock` `WeaponNameText` @ **x60 y44, 87×14** right-aligned · `TextBlock` `MagAmmoText` @ **x74 y58, 36×43** (cap 30pt) · `TextBlock` divider "\|" @ **x126 y70** · `TextBlock` `ReserveAmmoText` @ **x138 y70, 28×26**. Leave the grenade (x0/x46, 40×34), equipment (x100, 40×34), silhouette (x190 y56, 88×32) and stowed rule (x190 y96) slots EMPTY — they are the named blocked elements |
+| `WBP_BNMatchBand` | `UBNMatchBand` | Canvas **302×22** → mode pip @ x0 y2 18×18 · self bar @ **x24 y7, 60×8** · `TextBlock` `MyKillsText` @ **x90 y1, 34×20** · sep "\|" @ x128 y2 · `TextBlock` `ClockText` @ **x138 y1, 43×20** · sep "\|" @ x190 y2 · `TextBlock` `TopKillsText` @ **x200 y1, 34×20** · leader bar @ **x240 y7, 44×8** · mode pip @ x284 y2 18×18 · `TextBlock` `ScoreLimitText` small, under the leader cell. **Do not centre this band** — 474.67 + 302 puts its midpoint at 625.67, deliberately 14.33px left of screen centre |
 | `WBP_BNKillfeed` | `UBNKillfeed` | VerticalBox `EntryContainer` → **5 ×** `WBP_BNKillfeedEntry` children |
 | `WBP_BNKillfeedEntry` | `UBNKillfeedEntry` | `TextBlock` `LineText` (14pt) — one line, no color set |
 | `WBP_BNScreen_Death` | `UBNScreen_Death` | Overlay → dim `Image` (fill, black 55%) · VerticalBox centered at 40% height → `TextBlock` `KilledByText` (30pt, center) · `TextBlock` `RespawnText` (17pt, center) |

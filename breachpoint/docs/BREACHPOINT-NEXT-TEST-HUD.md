@@ -56,3 +56,12 @@ PlayerState maps.
 - The leader readout can lag one kill behind on bunch ordering; it self-heals on the next kill.
 - A brief "Unarmed" during the respawn replication gap before the weapon bunch lands.
 - Holding Tab visually replaces the whole HUD (same layer) — by design at this screen size.
+- **The roster has no join/leave hook.** It rebuilds on a kill, on a match-state change, and on
+  every scoreboard OPEN — so a player who joined or left between those moments appears (or
+  clears) the instant you press Tab, not before. A row that is stale *while the board is already
+  held* is the accepted edge; a stale row on opening it is a bug.
+- **Tab in a map with no BN GameState** (a test level) shows an empty scoreboard shell — the
+  panel with every row collapsed. Harmless, and it means the UI stack itself is alive.
+- **The death screen names WHO, never WITH WHAT.** The design's "ASSAULT RIFLE" line under the
+  killer has no feed: `FBNKillfeedEntry` carries no weapon, so R7 leaves that slot empty rather
+  than guessing. Unblocking it is one `FName` on the ring, pushed where the kill is decided.

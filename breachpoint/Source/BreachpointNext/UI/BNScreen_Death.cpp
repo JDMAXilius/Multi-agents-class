@@ -6,6 +6,14 @@
 
 #define LOCTEXT_NAMESPACE "BreachpointNextUI"
 
+UBNScreen_Death::UBNScreen_Death()
+{
+	// EXPLICIT Game (critic + the compiled reference, which carries a paragraph on why Inherit
+	// is dangerous here): the dead player keeps looking around, and input must not be left to
+	// whatever config happened to be applied last.
+	InputMode = EBNWidgetInputMode::Game;
+}
+
 void UBNScreen_Death::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();

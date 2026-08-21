@@ -128,6 +128,8 @@ void UBNHUDDirector::HandleMatchStateChanged(FName NewState)
 	// stop post-match — and an un-popped death screen would occlude the winner and the standings
 	// for the whole post-match. The scoreboard is the post-match's screen; the death screen
 	// yields to it.
+	// PushMatchSnapshot above already rebuilt the roster for this transition — the pinned
+	// post-match board reads a list that includes the winner mark, leavers dropped.
 	if (bPostMatch)
 	{
 		ShowDeathScreen(false);
@@ -178,9 +180,12 @@ void UBNHUDDirector::RecomputeScores()
 	const ABNPlayerState* MyPS = BoundPlayerState.Get();
 	Match->SetScores(MyPS ? MyPS->GetKills() : 0, TopKills, GS->GetScoreLimit());
 
-	// The roster, rebuilt on the same edges (kills change it, joins/leaves change it, the
-	// winner marks it) and handed to the VM sorted — the scoreboard renders rows in order and
-	// never touches PlayerArray itself. Cheap at FFA scale; the VM stays silent on no-change.
+	// The roster, rebuilt on the edges this director actually owns — a kill, my score, a match
+	// state change, and the moment the board is OPENED — then handed to the VM sorted, so the
+	// scoreboard renders rows in order and never touches PlayerArray itself. There is NO
+	// PlayerArray add/remove hook (critic): between those edges a join or a leave is not seen,
+	// which is why opening the board recomputes. Cheap at FFA scale; the VM stays silent when
+	// nothing rendered actually changed.
 	const ABNPlayerState* Winner = GS->GetWinner();
 	TArray<FBNScoreRowView> Rows;
 	Rows.Reserve(GS->PlayerArray.Num());
@@ -521,6 +526,16 @@ void UBNHUDDirector::ShowDeathScreen(bool bShow)
 void UBNHUDDirector::SetScoreboardHeld(bool bHeld)
 {
 	bScoreboardHeld = bHeld;
+
+	// Recompute BEFORE showing (critic's blocking find): with no PlayerArray hook, a lobby that
+	// filled with bots after the GameState bind — or a leaver — is invisible to the roster until
+	// the next kill. Opening the board is the one moment its staleness is guaranteed to be seen,
+	// so it is the one moment worth paying for a rebuild.
+	if (bHeld)
+	{
+		RecomputeScores();
+	}
+
 	UpdateScoreboardVisibility();
 }
 

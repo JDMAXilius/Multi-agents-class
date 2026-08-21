@@ -19,6 +19,9 @@ class BREACHPOINTNEXT_API UBNScreen_Death : public UBNActivatableWidget
 {
 	GENERATED_BODY()
 
+public:
+	UBNScreen_Death();
+
 protected:
 	virtual void NativeOnInitialized() override;
 	virtual void BindViewModels() override;
