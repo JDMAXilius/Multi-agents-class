@@ -48,6 +48,12 @@ protected:
 	void HandleMeleePressed();
 	void HandleGrenadePressed();
 
+	/** R7 — THE UI VERB: hold-to-show scoreboard, routed to the HUD director and NEVER to the
+	 *  ASC. A UI verb is not an ability; forwarding it would log "NO granted ability carries
+	 *  it" on every press, and the ASC has no business knowing the scoreboard exists. */
+	void HandleScoreboardPressed();
+	void HandleScoreboardReleased();
+
 	UBNAbilitySystemComponent* GetBNAbilitySystemComponent() const;
 
 	/** State.Dead replicates, so the machine that reads the input is the machine that refuses it. */

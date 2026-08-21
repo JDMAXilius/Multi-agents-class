@@ -218,6 +218,17 @@ registration dedupes without complaint. BN's `UE_DEFINE_GAMEPLAY_TAG` macros pro
 `FGameplayTag` and cannot declare these. Two registrars, two jobs: `BNTags` for gameplay,
 `FBNUITags` for layers.
 
+## Status — 21 Aug 2026
+
+| Wave | State |
+|---|---|
+| 0+1 (feeds) | **LANDED**, critic-passed — 1 blocking fixed (FUITag root-prepend), ring cleared on restart, respawn stamp InProgress-gated |
+| 2 (spine) | **LANDED**, critic verdict SHIP — 0 blocking, 6 of 9 notes fixed (GameStateSet handle, standing-dead screen push, name-fallback killed-by, post-match pops the death screen, killfeed as 4th acquisition edge, no manager on dedicated) |
+| 3 (surfaces) + 4 (screens) | **WRITTEN** — critic pass pending |
+| G5 | `TASK-R7-WBP-HUD` cut — ten WBPs (the scoreboard row joined), Tab input assets |
+
+**Not compiled** — the founder's next build is the first real test; `TEST-HUD.md` is the protocol.
+
 ## Deferred, with named slots
 
 Per-weapon reticle + spread + hit markers (wants the damage cue's confirm param) · grenade pip

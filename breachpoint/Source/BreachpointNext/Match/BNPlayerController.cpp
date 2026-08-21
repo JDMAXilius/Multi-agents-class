@@ -6,6 +6,8 @@
 #include "Input/BNInputConfig.h"
 #include "Match/BNPlayerState.h"
 #include "Match/BNPlayerCameraManager.h"
+#include "UI/BNHUDDirector.h"
+#include "Engine/LocalPlayer.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "InputMappingContext.h"
@@ -91,6 +93,8 @@ void ABNPlayerController::SetupInputComponent()
 	Bind(BNTags::Input_Weapon_ADS, ETriggerEvent::Completed, &ABNPlayerController::HandleADSReleased);
 	Bind(BNTags::Input_Melee, ETriggerEvent::Started, &ABNPlayerController::HandleMeleePressed);
 	Bind(BNTags::Input_Grenade, ETriggerEvent::Started, &ABNPlayerController::HandleGrenadePressed);
+	Bind(BNTags::Input_Scoreboard, ETriggerEvent::Started, &ABNPlayerController::HandleScoreboardPressed);
+	Bind(BNTags::Input_Scoreboard, ETriggerEvent::Completed, &ABNPlayerController::HandleScoreboardReleased);
 }
 
 void ABNPlayerController::HandleMove(const FInputActionValue& Value)
@@ -268,6 +272,24 @@ void ABNPlayerController::HandleGrenadePressed()
 	if (UBNAbilitySystemComponent* ASC = GetBNAbilitySystemComponent())
 	{
 		ASC->AbilityInputTagPressed(BNTags::Input_Grenade);
+	}
+}
+
+void ABNPlayerController::HandleScoreboardPressed()
+{
+	// Deliberately NOT dead-gated and NOT frozen-gated: reading the score is always legal —
+	// warmup, mid-fight, dead, post-match. The director owns what "show" means in each.
+	if (UBNHUDDirector* Director = GetLocalPlayer() ? GetLocalPlayer()->GetSubsystem<UBNHUDDirector>() : nullptr)
+	{
+		Director->SetScoreboardHeld(true);
+	}
+}
+
+void ABNPlayerController::HandleScoreboardReleased()
+{
+	if (UBNHUDDirector* Director = GetLocalPlayer() ? GetLocalPlayer()->GetSubsystem<UBNHUDDirector>() : nullptr)
+	{
+		Director->SetScoreboardHeld(false);
 	}
 }
 

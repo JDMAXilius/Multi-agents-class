@@ -81,6 +81,30 @@ struct FBNKillfeedViewEntry
 	bool bInvolvesSelf = false;
 };
 
+/** One scoreboard row as the VIEW knows it — built by the director (the one gameplay-aware
+ *  file) so the scoreboard widget never reaches into PlayerArray itself. Sorted before it
+ *  arrives; the widget renders rows in order and decides nothing. */
+USTRUCT()
+struct FBNScoreRowView
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	FString PlayerName;
+
+	UPROPERTY()
+	int32 Kills = 0;
+
+	UPROPERTY()
+	int32 Deaths = 0;
+
+	UPROPERTY()
+	bool bIsSelf = false;
+
+	UPROPERTY()
+	bool bIsWinner = false;
+};
+
 /** The palette, as SEMANTICS — one hue, one meaning, everywhere. C++ constants because a WBP
  *  never types a hex (twelve hand-typed copies is twelve places a rebrand breaks silently and
  *  the critic can diff none of them). Inherited from the old module's VISR-derived system:

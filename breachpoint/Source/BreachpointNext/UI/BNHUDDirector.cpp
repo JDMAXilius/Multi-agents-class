@@ -177,6 +177,34 @@ void UBNHUDDirector::RecomputeScores()
 
 	const ABNPlayerState* MyPS = BoundPlayerState.Get();
 	Match->SetScores(MyPS ? MyPS->GetKills() : 0, TopKills, GS->GetScoreLimit());
+
+	// The roster, rebuilt on the same edges (kills change it, joins/leaves change it, the
+	// winner marks it) and handed to the VM sorted — the scoreboard renders rows in order and
+	// never touches PlayerArray itself. Cheap at FFA scale; the VM stays silent on no-change.
+	const ABNPlayerState* Winner = GS->GetWinner();
+	TArray<FBNScoreRowView> Rows;
+	Rows.Reserve(GS->PlayerArray.Num());
+	for (APlayerState* PS : GS->PlayerArray)
+	{
+		const ABNPlayerState* BNPS = Cast<ABNPlayerState>(PS);
+		if (!BNPS)
+		{
+			continue;
+		}
+		FBNScoreRowView& Row = Rows.AddDefaulted_GetRef();
+		Row.PlayerName = BNPS->GetPlayerName();
+		Row.Kills = BNPS->GetKills();
+		Row.Deaths = BNPS->GetDeaths();
+		Row.bIsSelf = BNPS == MyPS;
+		Row.bIsWinner = Winner && BNPS == Winner;
+	}
+	Rows.Sort([](const FBNScoreRowView& A, const FBNScoreRowView& B)
+	{
+		if (A.Kills != B.Kills) { return A.Kills > B.Kills; }
+		if (A.Deaths != B.Deaths) { return A.Deaths < B.Deaths; }
+		return A.PlayerName < B.PlayerName;
+	});
+	Match->SetRoster(MoveTemp(Rows));
 }
 
 FText UBNHUDDirector::ComposeKillfeedLine(const FBNKillfeedEntry& Entry) const

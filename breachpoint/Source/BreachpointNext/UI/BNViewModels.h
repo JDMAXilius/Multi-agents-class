@@ -15,6 +15,9 @@ struct FOnAttributeChangeData;
  *  is transcription over invention. One broadcast per change; readers walk GetKillfeedEntries. */
 DECLARE_MULTICAST_DELEGATE(FBNKillfeedViewChangedSignature);
 
+/** The roster view changed — same shape, same reasoning, for the scoreboard's rows. */
+DECLARE_MULTICAST_DELEGATE(FBNRosterViewChangedSignature);
+
 /** Which attributes feed the combat ViewModel — INJECTED by the director, never named here.
  *  This struct is the decoupling that let the old module's combat VM port with zero gameplay
  *  includes: the VM knows "a health-like number and its max", not UBNAttributeSet. */
@@ -172,6 +175,13 @@ public:
 
 	FBNKillfeedViewChangedSignature OnKillfeedViewChanged;
 
+	/** Director only: the whole sorted roster, replaced. Broadcasts only when something the
+	 *  scoreboard renders actually changed — a rebuild that produces the same rows is silent. */
+	void SetRoster(TArray<FBNScoreRowView>&& InRoster);
+	const TArray<FBNScoreRowView>& GetRoster() const { return Roster; }
+
+	FBNRosterViewChangedSignature OnRosterViewChanged;
+
 	void ClearToUnknown();
 
 	FName GetMatchStateName() const { return MatchStateName; }
@@ -215,6 +225,9 @@ private:
 	/** Plain member, notified by OnKillfeedViewChanged above — see the delegate's comment. */
 	UPROPERTY(Transient)
 	TArray<FBNKillfeedViewEntry> KillfeedEntries;
+
+	UPROPERTY(Transient)
+	TArray<FBNScoreRowView> Roster;
 
 	/** How many lines the view keeps. Presentation, not replication (the GameState ring is the
 	 *  record; this is what's on screen). Linger time is BNUITiming's — shared with the

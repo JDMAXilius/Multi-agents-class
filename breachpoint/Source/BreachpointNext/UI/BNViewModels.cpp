@@ -406,6 +406,33 @@ void UBNVM_Match::ScheduleKillfeedExpiry()
 		static_cast<float>(Delay), /*bLoop=*/false);
 }
 
+void UBNVM_Match::SetRoster(TArray<FBNScoreRowView>&& InRoster)
+{
+	// Silent when nothing the scoreboard renders changed — the director rebuilds on broad
+	// edges, and a no-op rebuild must not repaint eight rows.
+	const bool bSame = Roster.Num() == InRoster.Num() &&
+		[&]{
+			for (int32 i = 0; i < Roster.Num(); ++i)
+			{
+				const FBNScoreRowView& A = Roster[i];
+				const FBNScoreRowView& B = InRoster[i];
+				if (A.Kills != B.Kills || A.Deaths != B.Deaths || A.bIsSelf != B.bIsSelf ||
+					A.bIsWinner != B.bIsWinner || !A.PlayerName.Equals(B.PlayerName, ESearchCase::CaseSensitive))
+				{
+					return false;
+				}
+			}
+			return true;
+		}();
+	if (bSame)
+	{
+		return;
+	}
+
+	Roster = MoveTemp(InRoster);
+	OnRosterViewChanged.Broadcast();
+}
+
 UWorld* UBNVM_Match::GetTimerWorld() const
 {
 	if (const AGameStateBase* GameState = TimeSource.Get())
@@ -428,6 +455,8 @@ void UBNVM_Match::ClearToUnknown()
 	TimeSource.Reset();
 	LastKillfeedSequence = INDEX_NONE;
 	KillfeedEntries.Reset();
+	Roster.Reset();
+	OnRosterViewChanged.Broadcast();
 
 	UE_MVVM_SET_PROPERTY_VALUE(MatchStateName, FName());
 	UE_MVVM_SET_PROPERTY_VALUE(PhaseBannerText, FText::GetEmpty());
