@@ -108,6 +108,12 @@ protected:
 	TWeakObjectPtr<APlayerController> BoundController;
 	FDelegateHandle PostLoadMapHandle;
 
+	/** Stored so UnbindAll can remove it (critic, H9): PIE creates the player before
+	 *  PostLoadMapWithWorld broadcasts for the same world, and an unstored handle would stack a
+	 *  second live subscription on the double bind. */
+	TWeakObjectPtr<UWorld> BoundWorld;
+	FDelegateHandle GameStateSetHandle;
+
 	// ---- screens this director put up (weak: the stack owns them) ----
 	TWeakObjectPtr<UBNActivatableWidget> HUDWidget;
 	TWeakObjectPtr<UBNActivatableWidget> DeathScreenWidget;

@@ -10,6 +10,16 @@
 #include "UI/BNRootLayout.h"
 #include "UI/BNViewModels.h"
 
+bool UBNUIManager::ShouldCreateSubsystem(UObject* Outer) const
+{
+	if (!Super::ShouldCreateSubsystem(Outer))
+	{
+		return false;
+	}
+	const UGameInstance* GameInstance = Cast<UGameInstance>(Outer);
+	return !GameInstance || !GameInstance->IsDedicatedServerInstance();
+}
+
 void UBNUIManager::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);

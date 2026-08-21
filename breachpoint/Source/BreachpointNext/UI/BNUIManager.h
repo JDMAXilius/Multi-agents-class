@@ -47,6 +47,12 @@ class BREACHPOINTNEXT_API UBNUIManager : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
+	/** No UI machinery on a dedicated server (critic): the WBPs are stripped from a server cook,
+	 *  and the preload would log streaming errors against paths that legitimately do not exist
+	 *  there. The director needs no twin guard — a ULocalPlayerSubsystem never exists without a
+	 *  local player. */
+	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
+
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 

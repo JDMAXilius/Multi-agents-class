@@ -58,9 +58,20 @@ void UBNHUDDirector::HandlePostLoadMap(UWorld* LoadedWorld)
 
 void UBNHUDDirector::BindToWorld(UWorld* World)
 {
+	// Initialize AND PostLoadMap both land here for the same world in PIE — one subscription.
+	if (BoundWorld.Get() == World)
+	{
+		return;
+	}
+	if (UWorld* Old = BoundWorld.Get())
+	{
+		Old->GameStateSetEvent.Remove(GameStateSetHandle);
+	}
+	BoundWorld = World;
+
 	// Clients BEAT the GameState: at world arrival the GameState channel may not have opened
 	// yet, so the set-event is the reliable edge and the direct read is the fast path.
-	World->GameStateSetEvent.AddUObject(this, &UBNHUDDirector::HandleGameStateSet);
+	GameStateSetHandle = World->GameStateSetEvent.AddUObject(this, &UBNHUDDirector::HandleGameStateSet);
 	if (AGameStateBase* Existing = World->GetGameState())
 	{
 		HandleGameStateSet(Existing);
@@ -112,6 +123,15 @@ void UBNHUDDirector::HandleMatchStateChanged(FName NewState)
 	EnsurePlayerBindings();
 	EnsureHUDShown();
 	PushMatchSnapshot();
+
+	// The buzzer outranks the grave (critic): a player dead at match end stays dead — respawns
+	// stop post-match — and an un-popped death screen would occlude the winner and the standings
+	// for the whole post-match. The scoreboard is the post-match's screen; the death screen
+	// yields to it.
+	if (bPostMatch)
+	{
+		ShowDeathScreen(false);
+	}
 	UpdateScoreboardVisibility();
 }
 
@@ -167,7 +187,11 @@ FText UBNHUDDirector::ComposeKillfeedLine(const FBNKillfeedEntry& Entry) const
 	{
 		return FText::Format(LOCTEXT("KillfeedDied", "{0} died"), FText::FromString(Entry.VictimName));
 	}
-	if (Entry.KillerName == Entry.VictimName)
+	// Refs first (identity), CASE-SENSITIVE name second (critic: FString's == is
+	// case-insensitive, and "Bob" must not eliminate themselves when "bob" kills them).
+	const bool bSuicide = (Entry.Killer && Entry.Killer == Entry.Victim)
+		|| Entry.KillerName.Equals(Entry.VictimName, ESearchCase::CaseSensitive);
+	if (bSuicide)
 	{
 		return FText::Format(LOCTEXT("KillfeedSuicide", "{0} eliminated themselves"), FText::FromString(Entry.VictimName));
 	}
@@ -177,6 +201,11 @@ FText UBNHUDDirector::ComposeKillfeedLine(const FBNKillfeedEntry& Entry) const
 
 void UBNHUDDirector::HandleKillfeedChanged()
 {
+	// A fourth acquisition edge, per kill (critic): if every early edge fired before the local
+	// controller was linked, this turns the healing window from "the next match state change"
+	// into "the next kill". Idempotent, like every bind inside it.
+	EnsurePlayerBindings();
+
 	const ABNGameState* GS = BoundGameState.Get();
 	UBNVM_Match* Match = GetMatchVM();
 	if (!GS || !Match)
@@ -204,22 +233,25 @@ void UBNHUDDirector::HandleKillfeedChanged()
 
 		// Refs when mapped, NAMES as the fallback (critic): the ring can land before this
 		// client's PlayerState GUIDs resolve, and a dedupe-by-sequence reader never looks again
-		// — so the self test must not depend on pointers alone.
-		const bool bInvolvesSelf = MyPS &&
-			(Entry.Victim == MyPS || Entry.Killer == MyPS ||
-			 Entry.VictimName == MyPS->GetPlayerName() || Entry.KillerName == MyPS->GetPlayerName());
+		// — so the self test must not depend on pointers alone. Case-sensitive on the names.
+		const FString MyName = MyPS ? MyPS->GetPlayerName() : FString();
+		const bool bVictimIsMe = MyPS &&
+			(Entry.Victim == MyPS || Entry.VictimName.Equals(MyName, ESearchCase::CaseSensitive));
+		const bool bInvolvesSelf = bVictimIsMe || (MyPS &&
+			(Entry.Killer == MyPS || Entry.KillerName.Equals(MyName, ESearchCase::CaseSensitive)));
 		Match->PushKillfeedEntry(ComposeKillfeedLine(Entry), Entry.Sequence, bInvolvesSelf);
 
 		// My own newest death names my killer — the death screen's line. Written from the feed
 		// rather than a second channel: if the ring bunch lands after the dead tag, this catches
-		// up the moment it arrives.
-		if (MyPS && Entry.Victim == MyPS)
+		// up the moment it arrives. The SAME fallback test as above (critic): gating this on the
+		// ref alone loses the line forever when the ref was unmapped at the one read.
+		if (bVictimIsMe)
 		{
 			if (UBNVM_Combat* Combat = GetCombatVM())
 			{
 				FText KilledBy;
 				if (Entry.KillerName.IsEmpty()) { KilledBy = LOCTEXT("KilledByWorld", "Eliminated"); }
-				else if (Entry.Killer == MyPS) { KilledBy = LOCTEXT("KilledBySelf", "You eliminated yourself"); }
+				else if (Entry.Killer == MyPS || Entry.KillerName.Equals(MyName, ESearchCase::CaseSensitive)) { KilledBy = LOCTEXT("KilledBySelf", "You eliminated yourself"); }
 				else { KilledBy = FText::Format(LOCTEXT("KilledBy", "Eliminated by {0}"), FText::FromString(Entry.KillerName)); }
 				Combat->SetKilledByLine(KilledBy);
 			}
@@ -280,8 +312,13 @@ void UBNHUDDirector::EnsurePlayerBindings()
 				Bindings.MaxShield = UBNAttributeSet::GetMaxShieldAttribute();
 				Combat->BindToAbilitySystem(ASC, Bindings);
 
-				// Read the standing state once: a joiner can arrive already dead or mid-count.
-				Combat->SetDead(ASC->HasMatchingGameplayTag(BNTags::State_Dead));
+				// Read the standing state once: a joiner can arrive already dead or mid-count —
+				// and the SCREEN follows the read (critic): a tag event never fires for a tag
+				// that was present before the bind, so without this a late-bound death shows
+				// the VM's dead state with no death screen until the NEXT death.
+				const bool bStandingDead = ASC->HasMatchingGameplayTag(BNTags::State_Dead);
+				Combat->SetDead(bStandingDead);
+				ShowDeathScreen(bStandingDead);
 				HandleRespawnStampChanged(PS);
 			}
 		}
@@ -502,6 +539,13 @@ APlayerController* UBNHUDDirector::GetOwnPlayerController() const
 
 void UBNHUDDirector::UnbindAll()
 {
+	if (UWorld* World = BoundWorld.Get())
+	{
+		World->GameStateSetEvent.Remove(GameStateSetHandle);
+	}
+	BoundWorld.Reset();
+	GameStateSetHandle.Reset();
+
 	if (ABNGameState* GS = BoundGameState.Get())
 	{
 		GS->OnMatchStateChanged.Remove(MatchStateHandle);
