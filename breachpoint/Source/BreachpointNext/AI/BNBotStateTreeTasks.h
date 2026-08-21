@@ -619,3 +619,88 @@ struct FBNSearchLastKnownTask : public FStateTreeTaskCommonBase
 	virtual FText GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting = EStateTreeNodeFormatting::Text) const override;
 #endif
 };
+
+////////////////////////////////////////////////////////////////////
+
+USTRUCT()
+struct FBNCanThrowGrenadeConditionInstanceData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Context")
+	TObjectPtr<AAIController> Controller;
+
+	/** Too close and the bot blows itself up; too far and the throw falls short. The band is the
+	 *  whole tactical judgement, and it is a parameter because the arc belongs to BNGA_Grenade. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float MinRange = 500.f;
+
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float MaxRange = 2200.f;
+};
+
+/** Passes when a grenade is worth throwing AND would actually activate: a live target in the
+ *  throwing band, visible, and Cooldown.Grenade not held.
+ *
+ *  The cooldown check is the point. BNGA_Grenade applies a 4s cooldown tag and the ASC refuses
+ *  the activation while it is held, so a bot that did not look would press a dead button three
+ *  times a second and fill the log with REFUSED — the same futile-press shape BN Fire Burst
+ *  already refuses to make. */
+USTRUCT(meta = (DisplayName = "BN Can Throw Grenade", Category = "BN"))
+struct FBNCanThrowGrenadeCondition : public FStateTreeConditionCommonBase
+{
+	GENERATED_BODY()
+
+	using FInstanceDataType = FBNCanThrowGrenadeConditionInstanceData;
+	virtual const UStruct* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
+
+	FBNCanThrowGrenadeCondition() = default;
+
+	virtual bool TestCondition(FStateTreeExecutionContext& Context) const override;
+
+#if WITH_EDITOR
+	virtual FText GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting = EStateTreeNodeFormatting::Text) const override;
+#endif
+};
+
+////////////////////////////////////////////////////////////////////
+
+USTRUCT()
+struct FBNThrowGrenadeTaskInstanceData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Context")
+	TObjectPtr<AAIController> Controller;
+
+	/** Ceiling on the wait, not the throw's length — the montage owns that. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float TimeoutSeconds = 2.5f;
+
+	float SecondsElapsed = 0.f;
+};
+
+/** Presses the SAME Input.Grenade a human's grenade key presses, then waits for the cooldown tag
+ *  to appear — which is the honest proof the ability ACTIVATED rather than was refused. Nothing
+ *  about the arc, the fuse, the damage or the projectile lives here; all of it stays inside
+ *  BNGA_Grenade, where the purity contract keeps it. */
+USTRUCT(meta = (DisplayName = "BN Throw Grenade", Category = "BN"))
+struct FBNThrowGrenadeTask : public FStateTreeTaskCommonBase
+{
+	GENERATED_BODY()
+
+	using FInstanceDataType = FBNThrowGrenadeTaskInstanceData;
+	virtual const UStruct* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
+
+	FBNThrowGrenadeTask()
+	{
+		bShouldCallTick = true;
+	}
+
+	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
+	virtual EStateTreeRunStatus Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const override;
+
+#if WITH_EDITOR
+	virtual FText GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting = EStateTreeNodeFormatting::Text) const override;
+#endif
+};

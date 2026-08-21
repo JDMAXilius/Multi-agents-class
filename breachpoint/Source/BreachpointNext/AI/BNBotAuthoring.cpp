@@ -165,7 +165,20 @@ FString UBNBotAuthoring::BuildBotStateTree()
 	// system to fix it, so a tight retry would be a per-frame swap loop for the rest of the match.
 	AddCompletionTransition(Arm, Root, EStateTreeTransitionTrigger::OnStateFailed, 2.0f);
 
-	// 3. Knife range: stab, do not shoot. Doctrine §4 draws Engage as a priority selector
+	// 3. A grenade, when one is worth throwing. Doctrine draws Engage as a priority selector whose
+	//    middle is "grenade-if-shields-cracked"; BN's shields are not in play yet, so the honest
+	//    trigger for the game that EXISTS is the one the ability itself cares about — a visible
+	//    target in the throwing band with the cooldown up. It sits above the gun because a nade is
+	//    the opener, and below Knife because at arm's length it would kill the thrower.
+	UStateTreeState& Nade = Engage.AddChildState(TEXT("Nade"));
+	Nade.AddEnterCondition<FBNCanThrowGrenadeCondition>();
+	Nade.AddEnterCondition<FBNReactedCondition>();
+	Nade.AddTask<FBNFaceTargetTask>();
+	Nade.AddTask<FBNThrowGrenadeTask>();
+	AddCompletionTransition(Nade, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
+	AddCompletionTransition(Nade, Root, EStateTreeTransitionTrigger::OnStateFailed, 1.0f);
+
+	// 4. Knife range: stab, do not shoot. Doctrine §4 draws Engage as a priority selector
 	//    (rocket-if-held -> grenade-if-cracked -> fire -> melee) and melee is the step this game
 	//    already owns an ability for. It sits ABOVE Close and Shoot because at arm's length it is
 	//    the correct answer and the readable one — a knife bot backing up to shoot you reads as
@@ -179,7 +192,7 @@ FString UBNBotAuthoring::BuildBotStateTree()
 	AddCompletionTransition(Knife, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
 	AddCompletionTransition(Knife, Root, EStateTreeTransitionTrigger::OnStateFailed, 1.0f);
 
-	// 4. Get into a firing position. THIS COMES BEFORE SHOOTING, and the order is the whole
+	// 5. Get into a firing position. THIS COMES BEFORE SHOOTING, and the order is the whole
 	//    lesson of the first PIE run: with Shoot ordered first, two bots stood at 2200uu and
 	//    emptied magazine after magazine into a wall. Their eye-level line of sight to the target
 	//    was genuinely clear — LineOfSightTo traces from the pawn's view point — while the
@@ -199,7 +212,7 @@ FString UBNBotAuthoring::BuildBotStateTree()
 	// Unreachable target: fail, and take the delay rather than re-pathing on the next frame.
 	AddCompletionTransition(Close, Root, EStateTreeTransitionTrigger::OnStateFailed, 1.0f);
 
-	// 4. In position: face it and fire a burst. Two enter conditions, and both earn their place.
+	// 6. In position: face it and fire a burst. Two enter conditions, and both earn their place.
 	//    Line of sight is a cheap guard — Close only hands over when sight is true, but the target
 	//    can step behind cover in the frame between. BN Reacted is R11: a bot may not fire on the
 	//    same frame it perceives, and the quarter second it waits is the "I have been seen" beat
@@ -230,7 +243,7 @@ FString UBNBotAuthoring::BuildBotStateTree()
 	// A level with no points fails this instantly; the delay is what keeps that cheap and quiet.
 	AddCompletionTransition(Roam, Root, EStateTreeTransitionTrigger::OnStateFailed, 2.0f);
 
-	Report.Add(TEXT("states     : Root > [Engage > [Rearm, Arm, Knife, Close, Shoot], Search, Roam]"));
+	Report.Add(TEXT("states     : Root > [Engage > [Rearm, Arm, Nade, Knife, Close, Shoot], Search, Roam]"));
 
 	// An uncompiled StateTree runs NOTHING — the asset would exist, the ini would resolve, and
 	// every bot would still stand still. This is the step that turns editor data into bytecode.

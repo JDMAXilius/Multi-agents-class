@@ -1119,3 +1119,107 @@ FText FBNSearchLastKnownTask::GetDescription(const FGuid& ID, FStateTreeDataView
 	return FText::FromString("<b>BN Search Last Known</b>");
 }
 #endif
+
+////////////////////////////////////////////////////////////////////
+
+bool FBNCanThrowGrenadeCondition::TestCondition(FStateTreeExecutionContext& Context) const
+{
+	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	const ABNBotController* Bot = ResolveBot(Context, InstanceData.Controller);
+	const AActor* Target = Bot ? Bot->GetCurrentTarget() : nullptr;
+	const APawn* Pawn = Bot ? Bot->GetPawn() : nullptr;
+	if (!Target || !Pawn)
+	{
+		return false;
+	}
+
+	// Not through a wall, and not into one: the same sight rule the burst uses.
+	if (!Bot->HasLineOfSightToTarget())
+	{
+		return false;
+	}
+
+	const float Distance = FVector::Dist(Pawn->GetActorLocation(), Target->GetActorLocation());
+	if (Distance < InstanceData.MinRange || Distance > InstanceData.MaxRange)
+	{
+		return false;
+	}
+
+	// THE COOLDOWN. BNGA_Grenade holds Cooldown.Grenade for its whole window and the ASC refuses
+	// the activation while it is held. Asking here is what keeps the bot from pressing a dead
+	// button every frame — the ability's own refusal would be correct but silent-ish and noisy.
+	const ABNPlayerState* PS = Bot->GetPlayerState<ABNPlayerState>();
+	const UBNAbilitySystemComponent* ASC = PS ? PS->GetBNAbilitySystemComponent() : nullptr;
+	if (!ASC || ASC->HasMatchingGameplayTag(BNTags::Cooldown_Grenade))
+	{
+		return false;
+	}
+
+	// Frozen: the ASC would refuse anyway. Same reason the burst checks it.
+	return !ASC->HasMatchingGameplayTag(BNTags::State_Match_Frozen);
+}
+
+#if WITH_EDITOR
+FText FBNCanThrowGrenadeCondition::GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting) const
+{
+	return FText::FromString("<b>BN Can Throw Grenade</b>");
+}
+#endif
+
+////////////////////////////////////////////////////////////////////
+
+EStateTreeRunStatus FBNThrowGrenadeTask::EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
+{
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	ABNBotController* Bot = ResolveBot(Context, InstanceData.Controller);
+	if (!Bot)
+	{
+		return EStateTreeRunStatus::Failed;
+	}
+
+	InstanceData.SecondsElapsed = 0.f;
+
+	// One tap, exactly as a human's grenade key.
+	Bot->PressInputTag(BNTags::Input_Grenade);
+	Bot->ReleaseInputTag(BNTags::Input_Grenade);
+	return EStateTreeRunStatus::Running;
+}
+
+EStateTreeRunStatus FBNThrowGrenadeTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
+{
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	const ABNBotController* Bot = ResolveBot(Context, InstanceData.Controller);
+	if (!Bot)
+	{
+		return EStateTreeRunStatus::Failed;
+	}
+
+	// The cooldown tag APPEARING is the proof the ability actually activated — a refused press
+	// leaves it absent, and waiting on a montage this task cannot see would be a guess.
+	const ABNPlayerState* PS = Bot->GetPlayerState<ABNPlayerState>();
+	const UBNAbilitySystemComponent* ASC = PS ? PS->GetBNAbilitySystemComponent() : nullptr;
+	if (ASC && ASC->HasMatchingGameplayTag(BNTags::Cooldown_Grenade))
+	{
+		UE_LOG(LogBN, Log, TEXT("BNBots: %s threw a grenade."), *GetNameSafe(Bot->GetPawn()));
+		return EStateTreeRunStatus::Succeeded;
+	}
+
+	InstanceData.SecondsElapsed += DeltaTime;
+	if (InstanceData.SecondsElapsed >= InstanceData.TimeoutSeconds)
+	{
+		// Refused for a reason the condition could not see. Succeeded, not Failed: the tree should
+		// re-select immediately and shoot instead, not take the Engage penalty delay for it.
+		UE_LOG(LogBN, Verbose, TEXT("BNBots: %s pressed grenade but no cooldown appeared — the ability refused."),
+			*GetNameSafe(Bot->GetPawn()));
+		return EStateTreeRunStatus::Succeeded;
+	}
+
+	return EStateTreeRunStatus::Running;
+}
+
+#if WITH_EDITOR
+FText FBNThrowGrenadeTask::GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting) const
+{
+	return FText::FromString("<b>BN Throw Grenade</b>");
+}
+#endif
