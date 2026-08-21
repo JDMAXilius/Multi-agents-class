@@ -1,0 +1,170 @@
+# ROADMAP 7 — THE HUD: the match, finally visible
+
+**Cut:** 20 August 2026 by the cloud lead · founder's brief: *"advanced programming, multiplayer,
+GAS purity, CommonUI native, best practices — less is more, modular and scalable."*
+**Research:** [`RESEARCH-UI-HUD`](BREACHPOINT-NEXT-RESEARCH-UI-HUD.md) (the old module's 20.7k-line
+UI inventoried; BN's feeds audited per element).
+
+## The one sentence
+
+The HUD is a **projection of replicated state** — every value arrives by delegate or RepNotify,
+never by asking — rendered through **CommonUI's native layer stack** so every later screen
+(pause, settings, front end) slots into a machine that already exists.
+
+## Ruling changes since the research doc
+
+- **R-UI-3 is SUPERSEDED by the founder, 20 Aug:** CommonUI native from day one. The research
+  recommended deferring it; the founder ruled modular-and-scalable wins — the activatable stack,
+  the one widget base, and the layer tags land in R7, and they are exactly what makes the next
+  ten screens cheap. R-UI-1 (port patterns, never classes) and R-UI-2 (MVVM ViewModels without
+  the MVVM machinery) stand.
+- **Modularity ruling:** per-surface widget classes (the old module's shape), not the research
+  doc's single monolith — a surface is its own class the moment it has its own lifecycle or can
+  be reused in a second screen, and the match band already appears in two (HUD + scoreboard).
+  Every class stays small; the module total is ~16 C++ units against the old module's 98 files.
+
+## What R7 ships (and the player finally sees)
+
+Health and shield bars · ammo + weapon name · match band (my score / limit / clock / phase) ·
+killfeed · a static center reticle · death overlay ("eliminated by X — respawning in N") ·
+hold-Tab scoreboard · post-match winner + standings. Warmup and post-match announce themselves.
+Nothing else — every deferred surface is in the ledger at the bottom.
+
+## The laws, applied to UI
+
+1. **GAS purity, projected:** the UI READS the ASC (attribute delegates, tag events) and never
+   writes it. No widget calls a Server RPC, mutates an attribute, or activates an ability. The
+   one UI input verb (scoreboard) is the CONTROLLER's, handled before the input tag would reach
+   the ASC — a UI verb is not an ability and must not log "NO granted ability carries it".
+2. **Multiplayer three-views:** every feed is RepNotify- or delegate-driven and fires on listen
+   host AND remote client (authority broadcasts by hand where OnReps don't run — the R4
+   GameState discipline, now applied to PlayerState/Weapon/Equipment too). HUD claims name their
+   rung; the killfeed and scoreboard claims come in threes.
+3. **No Tick, anywhere:** FieldNotify subscriptions, tag events, and ONE re-armed clock timer
+   phase-locked to the server second. `DisableNativeTick` meta on every widget.
+4. **C++ first:** C++ owns every binding and every decision; WBPs hold layout, anchors and
+   animation curves ONLY (zero graph nodes — a `BlueprintImplementableEvent` is therefore
+   unimplementable; widget animations are `BindWidgetAnimOptional`, played FROM C++). Widget
+   classes resolve from ini soft paths; no hard widget-class pointer anywhere.
+5. **Honest unknown:** ViewModels initialize to explicit Unknown and render dashes — `Live`
+   requires the denominators (MaxHealth known, teams resolved), never "some value arrived".
+   Every subscriber reads state once at bind time; join-in-progress is a first-class path.
+
+## Goals
+
+- **G1 — the feeds:** every HUD value has a client-side event source. Killfeed ring and respawn
+  stamp are NEW replication; the rest is delegates on state that already replicates.
+- **G2 — the spine:** CommonUI layer stack + the two ViewModels + the ONE producer
+  (`BNHUDDirector`) that wires game → ViewModel on every machine identically.
+- **G3 — the surfaces:** the six in-match elements, each a small class bound to a ViewModel.
+- **G4 — the screens:** death overlay and scoreboard as activatables on their layers.
+- **G5 — the assets:** one terminal ticket builds every WBP from written trees, plus the
+  scoreboard input assets.
+
+## The waves, atomic
+
+### Wave 0 — foundations (no behavior change)
+| # | Task | Where |
+|---|---|---|
+| 0.1 | Build.cs: `+UMG +Slate +SlateCore +CommonUI +CommonInput +ModelViewViewModel +FieldNotification` (SlateCore missing = 13 unresolved externals at LINK — the old module paid for this lesson) | `BreachpointNext.Build.cs` |
+| 0.2 | Native tags: `UI.Layer.Game / GameMenu / Menu / Modal`, `Input.Scoreboard` — in BN's OWN registrar. NOT `Layer.*`: the old module natively registers those exact names and both modules load | `Core/BNGameplayTags.*` |
+| 0.3 | `BNUITypes.h`: `EBNUIDataState {Unknown, Live, Stale}` · `FBNKillfeedViewEntry` · the color tokens as C++ constants (cyan=you, health yellow never green, amber=a clock runs, red=threat only, white=you-in-a-list) | `UI/BNUITypes.h` |
+
+### Wave 1 — the feeds (GAMEPLAY lane: replication — critic REFUTER pass mandatory)
+| # | Task | Where |
+|---|---|---|
+| 1.1 | **Killfeed ring**: `FBNKillfeedEntry {Victim, Killer (TObjectPtr<ABNPlayerState>), Sequence, ServerTime}` fixed-size replicated array on `ABNGameState`, `ReplicatedUsing=OnRep_Killfeed` + `OnKillfeedChanged` delegate (OnRep AND authority push). Pushed from `HandlePlayerDeath` where the kill line prints. Ring, not multicast RPC: join-in-progress and GUID re-resolve come free | `Match/BNGameState.*`, `BNGameMode.cpp` |
+| 1.2 | **Score delegates**: `OnScoreChanged` on `ABNPlayerState`, broadcast from `OnRep_Kills`/`OnRep_Deaths` AND from `AddKill`/`AddDeath`/`ResetScore` (a listen host runs no OnReps) | `Match/BNPlayerState.*` |
+| 1.3 | **Respawn stamp**: `RespawnAtServerTime` (`COND_OwnerOnly`, `ReplicatedUsing` + delegate) on `ABNPlayerState`; stamped in `RequestRespawn`, cleared in `RespawnPlayer`. Client computes remaining locally — the match clock's own proven pattern | `Match/BNPlayerState.*`, `BNGameMode.cpp` |
+| 1.4 | **Ammo delegate**: `OnAmmoChanged` on `ABNWeapon`, broadcast from BOTH empty OnReps and the authority mutation points (`ConsumeAmmo`, reload transfer) | `Weapons/BNWeapon.*` |
+| 1.5 | **Equipped delegate**: `OnEquippedWeaponChanged` at the tail of `ApplyCurrentWeapon` (already runs on every machine) | `Weapons/BNEquipmentComponent.*` |
+
+### Wave 2 — the spine (UI lane — critic pass)
+| # | Task | Where |
+|---|---|---|
+| 2.1 | **ViewModels**: `UBNVM_Combat` (vitals, ammo, weapon, dead/respawn) + `UBNVM_Match` (phase, clock, scores, winner, killfeed view ring). Transcribed from the old module's compiled code: the injected-attribute-struct decoupling, the `bAnyFound && bDenominatorsKnown` Live gate, `ClearToUnknown()`, the `Delay += 1.0` clock phase-lock, expiry ON the entry. NO global MVVM collection, NO per-widget MVVM view push — C++ field subscription is the one channel | `UI/BNViewModels.*` |
+| 2.2 | **`UBNActivatableWidget`** — the ONE widget base (CommonUI): input-mode enum → `GetDesiredInputConfig()`, VM accessors, bind-on-activate/unbind-on-deactivate contract. Transcribed from the compiled reference (§API below) | `UI/BNActivatableWidget.*` |
+| 2.3 | **`UBNRootLayout`**: four `BindWidget` activatable stacks registered by `UI.Layer.*` tag | `UI/BNRootLayout.*` |
+| 2.4 | **`UBNUIManager`** (`UGameInstanceSubsystem`, `Config=Game`): per-LocalPlayer root layout + the two VMs, soft widget classes from ini, `PushToLayer/PopFromLayer`, mid-match preload of death/scoreboard classes (a soft class must never sync-load at the death moment) | `UI/BNUIManager.*` |
+| 2.5 | **`UBNHUDDirector`** (`ULocalPlayerSubsystem`) — THE producer, the only file that knows gameplay types. Wires: GameStateSet + travel reset → rebind; possession → ASC attribute delegates (via `InitAbilityActorInfo`-complete path) + equipment/ammo delegates + `State.Dead` tag event + respawn stamp; GameState → match delegate, score delegates, killfeed ring. Pushes the HUD on first possession; pushes/pops death overlay on the dead tag; auto-shows scoreboard on `WaitingPostMatch`. Symmetric on every machine | `UI/BNHUDDirector.*` |
+| 2.6 | ini: `[/Script/BreachpointNext.BNUIManager]` soft classes at final `/Game/BN/UI/…` paths (assets not built yet — designed miss answer, loud) | `Config/DefaultGame.ini` |
+
+### Wave 3 — the surfaces (UI lane — critic pass)
+| # | Task | Class (all bind a VM, nothing else) |
+|---|---|---|
+| 3.1 | **HUD layout**: Game-layer activatable; `HitTestInvisible` root-to-leaf; never takes focus; no SafeZone wrapper on the canvas; hosts the surfaces + the static center reticle (an Image — per-weapon reticles are deferred) | `UI/BNHUDLayout.*` |
+| 3.2 | **Match band**: my kills / limit · clock (VM-owned, phase-locked) · phase text (warmup/post-match banners live here) | `UI/BNMatchBand.*` |
+| 3.3 | **Vitals**: shield over health; health hidden until damaged; honest dashes at Unknown | `UI/BNVitalsWidget.*` |
+| 3.4 | **Ammo block**: mag / reserve / weapon name; dashes at Unknown, never `0/100` | `UI/BNAmmoBlock.*` |
+| 3.5 | **Killfeed** + **entry** (own header — the old module's two-classes-one-header wart, fixed): fixed pool claimed/released, never per-kill CreateWidget; exhaustion drops oldest AND logs; whole-row tint (white=you, red never spent here) | `UI/BNKillfeed.*`, `UI/BNKillfeedEntry.*` |
+
+### Wave 4 — the screens (UI lane — critic pass) + the test doc
+| # | Task | Where |
+|---|---|---|
+| 4.1 | **Death overlay**: GameMenu-layer activatable; "eliminated by X" from the killfeed ring (my own entry), respawn countdown from the stamp; pushed/popped by the director on the `State.Dead` tag event — the widget decides nothing | `UI/BNScreen_Death.*` |
+| 4.2 | **Scoreboard**: Game-layer activatable; rows over `PlayerArray` + Kills/Deaths (pooled rows, live refresh via score delegates); hold-Tab = controller-owned UI verb (`Input.Scoreboard` handled in `ABNPlayerController` BEFORE the ASC forward); auto-shown with the winner banner during `WaitingPostMatch` | `UI/BNScreen_Scoreboard.*`, `Match/BNPlayerController.*` |
+| 4.3 | **TEST-HUD.md**: the protocol — three views, join-mid-match, death/respawn cycle, post-match, restart | `docs/` |
+
+### G5 — the terminal ticket (after the founder's build)
+**`TASK-R7-WBP-HUD`**: all nine WBPs from written trees (layout/anchors only, zero graphs,
+parented to the BN classes), the scoreboard input assets (`IA_BNScoreboard`, IMC mapping,
+`DA_BNInput` row), read-backs. The bot-asset lane (`Tools/bn/6x` + C++ authoring where scripting
+has no surface) is the proven pattern; WidgetBlueprints DO have a Python factory surface, so the
+old `wbp_plan.py` shape applies.
+
+## The file structure
+
+```
+Source/BreachpointNext/
+├── BreachpointNext.Build.cs            W0.1  +7 UI modules
+├── Core/BNGameplayTags.{h,cpp}         W0.2  +UI.Layer.* +Input.Scoreboard
+├── Match/BNGameState.{h,cpp}           W1.1  +killfeed ring +OnKillfeedChanged
+├── Match/BNGameMode.cpp                W1.1  push the ring · W1.3 stamp the respawn time
+├── Match/BNPlayerState.{h,cpp}         W1.2  +OnScoreChanged · W1.3 +RespawnAtServerTime
+├── Match/BNPlayerController.{h,cpp}    W4.2  +Input.Scoreboard (UI verb, never reaches the ASC)
+├── Weapons/BNWeapon.{h,cpp}            W1.4  +OnAmmoChanged
+├── Weapons/BNEquipmentComponent.{h,cpp} W1.5 +OnEquippedWeaponChanged
+└── UI/                                       (all NEW — BN's UI folder is empty today)
+    ├── BNUITypes.h                     W0.3  data-state · killfeed view entry · color tokens
+    ├── BNViewModels.{h,cpp}            W2.1  UBNVM_Combat · UBNVM_Match
+    ├── BNActivatableWidget.{h,cpp}     W2.2  the ONE base (CommonUI)
+    ├── BNRootLayout.{h,cpp}            W2.3  four layer stacks
+    ├── BNUIManager.{h,cpp}             W2.4  layouts · soft classes · push/pop
+    ├── BNHUDDirector.{h,cpp}           W2.5  THE producer (the only gameplay-aware UI file)
+    ├── BNHUDLayout.{h,cpp}             W3.1  Game layer · static reticle
+    ├── BNMatchBand.{h,cpp}             W3.2
+    ├── BNVitalsWidget.{h,cpp}          W3.3
+    ├── BNAmmoBlock.{h,cpp}             W3.4
+    ├── BNKillfeed.{h,cpp}              W3.5  pooled
+    ├── BNKillfeedEntry.{h,cpp}         W3.5  own header
+    ├── BNScreen_Death.{h,cpp}          W4.1  GameMenu layer
+    └── BNScreen_Scoreboard.{h,cpp}     W4.2  Game layer · hold-Tab · post-match
+
+Config/DefaultGame.ini                  W2.6  [BNUIManager] soft classes — the only asset naming
+Content/BN/UI/    (terminal, G5)        WBP_BNRootLayout · WBP_BNHUD · WBP_BNMatchBand ·
+                                        WBP_BNVitals · WBP_BNAmmoBlock · WBP_BNKillfeed ·
+                                        WBP_BNKillfeedEntry · WBP_BNScreen_Death ·
+                                        WBP_BNScreen_Scoreboard
+Content/BN/Input/ (terminal, G5)        IA_BNScoreboard (+IMC row, +DA_BNInput row)
+docs/                                   ROADMAP-7 (this) · TEST-HUD · TASK-R7-WBP-HUD
+```
+
+## §API — the pinned CommonUI/MVVM surface (transcription contract)
+
+_(filled from the compiled old-module extraction — every base class, virtual, macro and include
+below compiled against THIS project's engine; Wave 2/3 transcribe these, never write from memory)_
+
+## Deferred, with named slots
+
+Per-weapon reticle + spread + hit markers (wants the damage cue's confirm param) · grenade pip
+(wants grenade-count state) · nameplates (attributes already replicate to observers) · pause
+menu & settings & front end (**the stack is now ready for them — that was the founder's point**) ·
+medals, damage direction, motion tracker · spectator HUD · MVVM editor bindings (the day a
+designer joins).
+
+## Honesty
+
+Written-not-compiled applies to every wave until the founder's build. The named compile risks:
+the FieldNotify macro surface and CommonUI's input-config types — both pinned by §API to code
+that compiled against this exact engine. The three-views rung applies to every "the HUD works"
+claim; join-in-progress claims need a client that joined mid-match.
