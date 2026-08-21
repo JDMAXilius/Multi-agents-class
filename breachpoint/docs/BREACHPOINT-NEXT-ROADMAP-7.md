@@ -67,8 +67,8 @@ Nothing else — every deferred surface is in the ledger at the bottom.
 | # | Task | Where |
 |---|---|---|
 | 0.1 | Build.cs: `+UMG +Slate +SlateCore +CommonUI +CommonInput +ModelViewViewModel +FieldNotification` (SlateCore missing = 13 unresolved externals at LINK — the old module paid for this lesson) | `BreachpointNext.Build.cs` |
-| 0.2 | Native tags: `UI.Layer.Game / GameMenu / Menu / Modal`, `Input.Scoreboard` — in BN's OWN registrar. NOT `Layer.*`: the old module natively registers those exact names and both modules load | `Core/BNGameplayTags.*` |
-| 0.3 | `BNUITypes.h`: `EBNUIDataState {Unknown, Live, Stale}` · `FBNKillfeedViewEntry` · the color tokens as C++ constants (cyan=you, health yellow never green, amber=a clock runs, red=threat only, white=you-in-a-list) | `UI/BNUITypes.h` |
+| 0.2 | `Input.Scoreboard` in `BNTags` (its existing `UE_DEFINE_GAMEPLAY_TAG` form). The LAYER tags do NOT go here: CommonUI layers key on `FUITag`, which those macros cannot produce — see 0.3 | `Core/BNGameplayTags.*` |
+| 0.3 | `BNUITypes.{h,cpp}`: `FBNUITags : FGameplayTagNativeAdder` registering `UI.Layer.Game / GameMenu / Menu / Modal` via `FUITag::AddNativeTag` (the old module's exact shape — and NOT the `Layer.*` strings it registers, since both modules load) · `EBNUIDataState {Unknown, Live, Stale}` · `FBNKillfeedViewEntry` · the color tokens as C++ constants (cyan=you, health yellow never green, amber=a clock runs, red=threat only, white=you-in-a-list) | `UI/BNUITypes.*` |
 
 ### Wave 1 — the feeds (GAMEPLAY lane: replication — critic REFUTER pass mandatory)
 | # | Task | Where |
@@ -151,8 +151,68 @@ docs/                                   ROADMAP-7 (this) · TEST-HUD · TASK-R7-
 
 ## §API — the pinned CommonUI/MVVM surface (transcription contract)
 
-_(filled from the compiled old-module extraction — every base class, virtual, macro and include
-below compiled against THIS project's engine; Wave 2/3 transcribe these, never write from memory)_
+Every signature below is extracted from old-module code that COMPILED against this project's
+engine. Waves 2–4 transcribe these; deviating from this section is a finding.
+
+**Activatable base** (`BRActivatableWidget` shape): `UCLASS(Abstract, meta=(DisableNativeTick))
+: public UCommonActivatableWidget`. Override `TOptional<FUIInputConfig> GetDesiredInputConfig()
+const override` — 3-arg ctor `FUIInputConfig(ECommonInputMode, EMouseCaptureMode, bool)`;
+Game = `(Game, CapturePermanently_IncludingInitialMouseDown, bHide)`, Menu = `(Menu, NoCapture,
+false)`, Inherit = return an UNSET `TOptional`, never a default-constructed config. Bind/unbind
+hooks ride `NativeOnActivated`/`NativeOnDeactivated` (Super FIRST on activate, LAST on
+deactivate). Includes: `CommonActivatableWidget.h`, `CommonInputModeTypes.h`.
+
+**Root layout**: `UCommonUserWidget` (NOT activatable) holding four
+`UPROPERTY(meta=(BindWidget)) TObjectPtr<UCommonActivatableWidgetStack>` stacks — declared in
+`Widgets/CommonActivatableWidgetContainer.h` — registered into a
+`TMap<FGameplayTag, TObjectPtr<UCommonActivatableWidgetStack>>` in `NativeOnInitialized`.
+Stack API: push = `Stack->AddWidget<T>(WidgetClass)` (templated, takes `TSubclassOf`), remove =
+`Stack->RemoveWidget(*Widget)` (REFERENCE), clear = `Stack->ClearWidgets()`. There is no
+separate pop call — removal + CommonUI's own back-action are the pop.
+
+**Manager** (`UGameInstanceSubsystem`): per-LocalPlayer lifetime via
+`GameInstance->OnLocalPlayerAddedEvent/RemovedEvent.AddUObject` + seeding from
+`GetLocalPlayers()`. Layout creation chain: `LocalPlayer->GetPlayerController(World)` →
+`SoftClass.LoadSynchronous()` → `CreateWidget<T>(OwningPC, Class)` → `AddToPlayerScreen(0)`;
+teardown `RemoveFromParent()`. Preload: `TArray<FSoftObjectPath>` from `ToSoftObjectPath()` →
+`UAssetManager::GetStreamableManager().RequestAsyncLoad(...)` held in a
+`TSharedPtr<FStreamableHandle>`, released with `ReleaseHandle()`. (The MVVM global-collection
+calls exist in the reference and are deliberately NOT ported — R-UI-2.)
+
+**ViewModels**: `: public UMVVMViewModelBase` (`MVVMViewModelBase.h`). Field form:
+`UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetHealth", Category = "…",
+meta = (AllowPrivateAccess))` — `FieldNotify` is a BARE specifier (not meta), `Getter` names a
+public const getter declared above it. Setter: `UE_MVVM_SET_PROPERTY_VALUE(Member, Value)` —
+the macro is the broadcast; a plain assignment updates nothing. Works on float/int32/bool/FText/
+enums/TArray alike; event pulses are `FMVVMEventField` (`Types/MVVMEventField.h`).
+
+**Widget-side field binding** (the one channel): field id =
+`UBNVM_Match::FFieldNotificationClassDescriptor::FieldName` (an `UE::FieldNotification::FFieldId`
+— `FieldNotificationId.h` in the header, `INotifyFieldValueChanged.h` in the cpp). Subscribe =
+`VM->AddFieldValueChangedDelegate(FieldId,
+INotifyFieldValueChanged::FFieldValueChangedDelegate::CreateUObject(this, &ThisClass::Handler))`
+with handler `(UObject* Source, UE::FieldNotification::FFieldId FieldId)`. Store
+`TArray<TPair<FFieldId, FDelegateHandle>> BoundFields` + `TWeakObjectPtr<VM> BoundViewModel`,
+and unbind against THE STORED OBJECT with `RemoveFieldValueChangedDelegate(Id, Handle)` —
+never a fresh subsystem lookup (H9). HUD surfaces are `UCommonUserWidget` (never activatable —
+activation scope is construct scope, and the activatable base costs a focus hazard).
+
+**Clock**: VM owns `FTimerHandle`; world access via the time source
+(`TWeakObjectPtr<AGameStateBase>` → `GetWorld()`); re-arm
+`Delay = 1.0 - frac(GetServerWorldTimeSeconds()); if (Delay < 0.01) Delay += 1.0;` — ADD, never
+replace — one-shot `SetTimer`, self re-arming.
+
+**Animations**: `UPROPERTY(Transient, meta=(BindWidgetAnimOptional))
+TObjectPtr<UWidgetAnimation>` + `PlayAnimationForward/Reverse` only. Never a BIE.
+
+**Build.cs**: Public `UMG, SlateCore, CommonUI, CommonInput, ModelViewViewModel`
+(+`FieldNotification`); Private `Slate` the moment any ListView/TileView appears (`STableViewBase`
+is Slate — LINK-time failure, both directions proven in the old module's history).
+
+**Layer tags**: CommonUI keys stacks by `FUITag` (`UITag.h`), registered via
+`FUITag::AddNativeTag(TEXT("UI.Layer.Game"))` inside a `FGameplayTagNativeAdder` singleton —
+BN's `UE_DEFINE_GAMEPLAY_TAG` macros produce plain `FGameplayTag` and CANNOT declare these.
+Two registrars, two jobs: `BNTags` for gameplay, `FBNUITags` for layers.
 
 ## Deferred, with named slots
 
