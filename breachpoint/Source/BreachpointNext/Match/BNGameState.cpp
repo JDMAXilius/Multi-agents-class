@@ -14,6 +14,7 @@ void ABNGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 	DOREPLIFETIME(ABNGameState, MatchEndServerTime);
 	DOREPLIFETIME(ABNGameState, ScoreLimit);
 	DOREPLIFETIME(ABNGameState, Winner);
+	DOREPLIFETIME(ABNGameState, Killfeed);
 }
 
 void ABNGameState::BeginPlay()
@@ -67,6 +68,48 @@ void ABNGameState::GetLeaders(TArray<ABNPlayerState*>& OutLeaders) const
 			OutLeaders.Add(BNPS);
 		}
 	}
+}
+
+void ABNGameState::PushKillfeedEntry(ABNPlayerState* Victim, ABNPlayerState* Killer)
+{
+	if (!HasAuthority() || !Victim)
+	{
+		return;
+	}
+
+	FBNKillfeedEntry& Entry = Killfeed.AddDefaulted_GetRef();
+	Entry.Victim = Victim;
+	Entry.Killer = Killer;
+	// Names captured NOW, while both PlayerStates are alive to ask — the winner-leaves lesson:
+	// a ref can null under the feed mid-window, and a line that loses its name rewrites history.
+	Entry.VictimName = Victim->GetPlayerName();
+	Entry.KillerName = Killer ? Killer->GetPlayerName() : FString();
+	Entry.Sequence = ++KillfeedSequence;
+	Entry.ServerTime = GetServerWorldTimeSeconds();
+
+	// The ring, kept by trimming the FRONT: the array replicates in order and readers dedupe by
+	// Sequence, so a shifted tail costs nothing.
+	while (Killfeed.Num() > KillfeedCapacity)
+	{
+		Killfeed.RemoveAt(0);
+	}
+
+	// The authority runs no OnRep — same discipline as the match-state announce.
+	OnKillfeedChanged.Broadcast();
+}
+
+void ABNGameState::ResetKillfeed()
+{
+	if (HasAuthority() && Killfeed.Num() > 0)
+	{
+		Killfeed.Reset();
+		OnKillfeedChanged.Broadcast();
+	}
+}
+
+void ABNGameState::OnRep_Killfeed()
+{
+	OnKillfeedChanged.Broadcast();
 }
 
 void ABNGameState::SetMatchEndServerTime(double InEndServerTime)

@@ -29,7 +29,21 @@ public class BreachpointNext : ModuleRules
 			// constructor lives here, and the editor target links modularly.
 			"PhysicsCore",
 			// UBNAssetSettings derives UDeveloperSettings, which lives in its own module.
-			"DeveloperSettings"
+			"DeveloperSettings",
+			// R7 — the HUD. This exact set is transcribed from the OLD module's Build.cs, which
+			// compiled and LINKED against this engine (ROADMAP-7 §API). SlateCore is public and
+			// non-negotiable: UMG's SObjectWidget pulls SWidget/EVisibility/SNullWidget from it,
+			// and omitting it compiles clean and fails at LINK with 13 unresolved externals.
+			// FieldNotification is NOT listed — the old module's widgets include
+			// FieldNotificationId.h without it, so it arrives transitively via ModelViewViewModel;
+			// deviating from the compiled reference is the risk, not the omission. Slate (the
+			// module) joins PRIVATE only if a ListView/TileView ever appears — R7 ships none,
+			// its killfeed and scoreboard are fixed pools by doctrine.
+			"UMG",
+			"SlateCore",
+			"CommonUI",
+			"CommonInput",
+			"ModelViewViewModel"
 		});
 
 		// PRIVATE: AbilitySystem/BNGameplayCues.cpp spawns cue FX through

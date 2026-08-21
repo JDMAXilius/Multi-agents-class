@@ -24,6 +24,15 @@ class UGameplayEffect;
 class ABNPlayerState;
 DECLARE_MULTICAST_DELEGATE_TwoParams(FBNPlayerDeathSignature, ABNPlayerState* /*Victim*/, ABNPlayerState* /*Killer*/);
 
+/** R7 — fires wherever the numbers change: the authority from AddKill/AddDeath/ResetScore (no
+ *  OnRep runs there), clients from the OnReps. The scoreboard and the match band both read
+ *  GetKills/GetDeaths back rather than taking numbers by parameter — one delegate, no payload
+ *  to keep honest. */
+DECLARE_MULTICAST_DELEGATE_OneParam(FBNScoreChangedSignature, ABNPlayerState*);
+
+/** R7 — the owner's respawn clock changed (stamped at death, cleared at the rebody). */
+DECLARE_MULTICAST_DELEGATE_OneParam(FBNRespawnStampSignature, ABNPlayerState*);
+
 UCLASS()
 class BREACHPOINTNEXT_API ABNPlayerState : public APlayerState, public IAbilitySystemInterface
 {
@@ -42,10 +51,21 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	FBNScoreChangedSignature OnScoreChanged;
+	FBNRespawnStampSignature OnRespawnStampChanged;
+
 	/** Two integers, not the engine's float Score: an FFA scoreboard reads counts, and a float
 	 *  invites rounding questions nobody wants to answer. */
 	int32 GetKills() const { return Kills; }
 	int32 GetDeaths() const { return Deaths; }
+
+	/** 0 = no respawn pending. Non-zero is an ABSOLUTE server time (the match clock's own
+	 *  pattern) — the owning client computes "respawning in N" locally against
+	 *  GetServerWorldTimeSeconds, correct on its first frame at any join moment. */
+	double GetRespawnAtServerTime() const { return RespawnAtServerTime; }
+
+	/** Authority; the GameMode's respawn path is the only caller. */
+	void SetRespawnAtServerTime(double InServerTime);
 
 	/** Authority only. The GameMode's death handler is the only caller — the credit rules live
 	 *  there, with the killer in hand, not here. */
@@ -73,11 +93,19 @@ protected:
 	UFUNCTION()
 	void OnRep_Deaths();
 
+	UFUNCTION()
+	void OnRep_RespawnAtServerTime();
+
 	UPROPERTY(ReplicatedUsing = OnRep_Kills)
 	int32 Kills = 0;
 
 	UPROPERTY(ReplicatedUsing = OnRep_Deaths)
 	int32 Deaths = 0;
+
+	/** COND_OwnerOnly: only the dead player's own screen counts down — nobody else renders it,
+	 *  so nobody else pays for it. */
+	UPROPERTY(ReplicatedUsing = OnRep_RespawnAtServerTime)
+	double RespawnAtServerTime = 0.0;
 
 	UPROPERTY()
 	TObjectPtr<UBNAbilitySystemComponent> AbilitySystemComponent;

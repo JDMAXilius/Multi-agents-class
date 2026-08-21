@@ -43,4 +43,6 @@ namespace BNTags
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_Tracer, "GameplayCue.Weapon.Tracer");
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Grenade_Explode, "GameplayCue.Grenade.Explode");
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Character_Death, "GameplayCue.Character.Death");
+
+	UE_DEFINE_GAMEPLAY_TAG(Input_Scoreboard, "Input.Scoreboard");
 }

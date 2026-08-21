@@ -66,7 +66,7 @@ Nothing else — every deferred surface is in the ledger at the bottom.
 ### Wave 0 — foundations (no behavior change)
 | # | Task | Where |
 |---|---|---|
-| 0.1 | Build.cs: `+UMG +Slate +SlateCore +CommonUI +CommonInput +ModelViewViewModel +FieldNotification` (SlateCore missing = 13 unresolved externals at LINK — the old module paid for this lesson) | `BreachpointNext.Build.cs` |
+| 0.1 | Build.cs: `+UMG +SlateCore +CommonUI +CommonInput +ModelViewViewModel`, public. NO `FieldNotification` (arrives transitively — the compiled reference omits it too) and NO `Slate` until a ListView appears (R7 ships none; both are LINK-time lessons the old module paid for, critic-reconciled) | `BreachpointNext.Build.cs` |
 | 0.2 | `Input.Scoreboard` in `BNTags` (its existing `UE_DEFINE_GAMEPLAY_TAG` form). The LAYER tags do NOT go here: CommonUI layers key on `FUITag`, which those macros cannot produce — see 0.3 | `Core/BNGameplayTags.*` |
 | 0.3 | `BNUITypes.{h,cpp}`: `FBNUITags : FGameplayTagNativeAdder` registering `UI.Layer.Game / GameMenu / Menu / Modal` via `FUITag::AddNativeTag` (the old module's exact shape — and NOT the `Layer.*` strings it registers, since both modules load) · `EBNUIDataState {Unknown, Live, Stale}` · `FBNKillfeedViewEntry` · the color tokens as C++ constants (cyan=you, health yellow never green, amber=a clock runs, red=threat only, white=you-in-a-list) | `UI/BNUITypes.*` |
 
@@ -210,9 +210,13 @@ TObjectPtr<UWidgetAnimation>` + `PlayAnimationForward/Reverse` only. Never a BIE
 is Slate — LINK-time failure, both directions proven in the old module's history).
 
 **Layer tags**: CommonUI keys stacks by `FUITag` (`UITag.h`), registered via
-`FUITag::AddNativeTag(TEXT("UI.Layer.Game"))` inside a `FGameplayTagNativeAdder` singleton —
-BN's `UE_DEFINE_GAMEPLAY_TAG` macros produce plain `FGameplayTag` and CANNOT declare these.
-Two registrars, two jobs: `BNTags` for gameplay, `FBNUITags` for layers.
+`FUITag::AddNativeTag(TEXT("Layer.Game"))` inside a `FGameplayTagNativeAdder` singleton — the
+body is ROOT-RELATIVE, `AddNativeTag` prepends its own `"UI."` (critic-corrected: an earlier
+draft passed the full string and would have registered `UI.UI.Layer.Game`). The registered tags
+are therefore `UI.Layer.*`, the SAME strings the old module lands on — safe: same-string native
+registration dedupes without complaint. BN's `UE_DEFINE_GAMEPLAY_TAG` macros produce plain
+`FGameplayTag` and cannot declare these. Two registrars, two jobs: `BNTags` for gameplay,
+`FBNUITags` for layers.
 
 ## Deferred, with named slots
 

@@ -262,6 +262,14 @@ void ABNGameMode::HandlePlayerDeath(ABNPlayerState* Victim, ABNPlayerState* Kill
 			*Killer->GetPlayerName(), *Victim->GetPlayerName(), *Killer->GetPlayerName(), Killer->GetKills());
 	}
 
+	// R7 — the same decided kill, onto the replicated ring the killfeed renders. Unconditional
+	// like the log lines above it: a post-buzzer grenade kill still prints and still shows, it
+	// just does not score — one decision, told the same way to every audience.
+	if (ABNGameState* FeedGS = GetGameState<ABNGameState>())
+	{
+		FeedGS->PushKillfeedEntry(Victim, Killer);
+	}
+
 	// 3.2 — the score limit, checked where the kill was credited. FinishMatch itself refuses
 	// unless the match is InProgress, so a second elimination inside the same frame cannot end it
 	// twice.
@@ -292,6 +300,24 @@ void ABNGameMode::RequestRespawn(AController* Controller)
 	// second or two into the NEW round and unpossesses and destroys a perfectly live pawn, which
 	// every other client sees as a player blinking out and reappearing at a start point. Comparing
 	// generations costs one int and needs no map of handles to keep in sync.
+	// R7 — the owner's death screen counts down against this stamp, computed locally the way the
+	// match clock is. Stamped from the same number the timer below is armed with, so the screen
+	// and the actual rebody cannot drift. InProgress-gated (critic): the score-limit kill ends
+	// the match BEFORE this runs, and without the gate every match-ending kill's victim counts
+	// "respawning in 3…" over the winner announcement — a countdown to a rebody the post-match
+	// refuses. The timer still arms; its refusal path is the second net.
+	const float Delay = FMath::Max(0.1f, RespawnDelay);
+	if (IsMatchInProgress())
+	{
+		if (ABNPlayerState* PS = Controller->GetPlayerState<ABNPlayerState>())
+		{
+			if (const ABNGameState* GS = GetGameState<ABNGameState>())
+			{
+				PS->SetRespawnAtServerTime(GS->GetServerWorldTimeSeconds() + Delay);
+			}
+		}
+	}
+
 	const int32 ArmedGeneration = MatchGeneration;
 	FTimerHandle Handle;
 	World->GetTimerManager().SetTimer(Handle,
@@ -302,7 +328,7 @@ void ABNGameMode::RequestRespawn(AController* Controller)
 				RespawnPlayer(WeakController);
 			}
 		}),
-		FMath::Max(0.1f, RespawnDelay), /*bLoop=*/false);
+		Delay, /*bLoop=*/false);
 }
 
 void ABNGameMode::RespawnPlayer(TWeakObjectPtr<AController> WeakController)
@@ -311,6 +337,15 @@ void ABNGameMode::RespawnPlayer(TWeakObjectPtr<AController> WeakController)
 	if (!Controller)
 	{
 		return;
+	}
+
+	// R7 — the stamp comes off FIRST, refusals included: a respawn refused by the post-match is
+	// not coming this round (the restart rebodies instead), and a death screen counting down to
+	// a moment that will not happen is the HUD lying.
+	ABNPlayerState* StampPS = Controller->GetPlayerState<ABNPlayerState>();
+	if (StampPS)
+	{
+		StampPS->SetRespawnAtServerTime(0.0);
 	}
 
 	// 3.5 — a respawn armed during play can land after the match ended. Nobody stands up outside
@@ -531,6 +566,7 @@ void ABNGameMode::RestartMatch()
 	}
 
 	GS->SetWinner(nullptr);
+	GS->ResetKillfeed();
 
 	// Every score to zero. Without this the restarted match inherits the old one's kills and the
 	// first elimination of the new round crosses the limit again immediately.

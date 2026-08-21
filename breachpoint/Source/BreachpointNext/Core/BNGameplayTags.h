@@ -62,4 +62,10 @@ namespace BNTags
 	 *  is ServerOnly and nothing in it runs on a client, so the cue is the ONLY route by which a
 	 *  corpse ragdolls on the machines watching it. */
 	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Character_Death);
+
+	/** R7 — a UI verb, NOT an ability: ABNPlayerController handles it BEFORE the ASC forward, so
+	 *  holding Tab never logs "NO granted ability carries it". The UI.Layer.* tags are NOT here —
+	 *  CommonUI keys its stacks on FUITag, which these macros cannot produce; they live in
+	 *  FBNUITags (UI/BNUITypes.h), the second registrar with the second job. */
+	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Input_Scoreboard);
 }

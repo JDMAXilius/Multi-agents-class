@@ -269,6 +269,10 @@ void UBNEquipmentComponent::ApplyCurrentWeapon()
 		}
 		Character->InitializeAnimLayer();
 	}
+
+	// R7 — the announce, LAST: subscribers who read the weapon back on this call see the hand
+	// fully applied (visibility, attachment, layer), not mid-swap.
+	OnEquippedWeaponChanged.Broadcast(this, GetCurrentWeapon());
 }
 
 void UBNEquipmentComponent::UpdateGrantedAbilitySet()

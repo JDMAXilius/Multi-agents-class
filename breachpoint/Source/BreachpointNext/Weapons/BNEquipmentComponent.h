@@ -8,6 +8,13 @@
 class ABNWeapon;
 class UBNAbilitySystemComponent;
 
+/** R7 — the hand changed. Broadcast at the tail of ApplyCurrentWeapon, which already runs on
+ *  EVERY machine (authority calls plus both OnReps) — so one delegate is multiplayer-correct by
+ *  construction, the same free ride OnEquipped/OnUnequipped take. Current may be null (the
+ *  Unarmed slot). Re-broadcasts on a re-apply are harmless: ViewModel setters no-op on equal. */
+class UBNEquipmentComponent;
+DECLARE_MULTICAST_DELEGATE_TwoParams(FBNEquippedWeaponSignature, UBNEquipmentComponent*, ABNWeapon* /*Current*/);
+
 /**
  * The carried set and the current index, on ABNCharacter. The server spawns, attaches, grants
  * and swaps; every machine derives visibility and the linked anim layer from CurrentIndex.
@@ -32,6 +39,8 @@ public:
 	void EquipIndex(int32 NewIndex);
 
 	ABNWeapon* GetCurrentWeapon() const;
+
+	FBNEquippedWeaponSignature OnEquippedWeaponChanged;
 
 	/** The current weapon's row layer, or null — which the character reads as unarmed. */
 	UClass* GetCurrentWeaponAnimLayer() const;

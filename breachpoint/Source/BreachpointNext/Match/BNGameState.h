@@ -6,6 +6,41 @@
 
 class ABNPlayerState;
 
+/** One kill, as the SERVER decided it. Names ride the entry as strings written at push time —
+ *  the PlayerState refs are for self-identification and may legitimately null (a leaver's
+ *  PlayerState dies under the ref; the OnRep_Winner lesson), but the LINE must survive the
+ *  leaver, so the render truth is the strings. Killer null = world damage; killer == victim =
+ *  their own grenade — the same three cases the kill log prints. */
+USTRUCT()
+struct FBNKillfeedEntry
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	TObjectPtr<ABNPlayerState> Victim;
+
+	UPROPERTY()
+	TObjectPtr<ABNPlayerState> Killer;
+
+	UPROPERTY()
+	FString VictimName;
+
+	UPROPERTY()
+	FString KillerName;
+
+	/** Server-assigned, monotonic, never reused — the reader's dedupe key: a ring that
+	 *  re-replicates hands the client the same entries again, and index positions shift. */
+	UPROPERTY()
+	int32 Sequence = INDEX_NONE;
+
+	UPROPERTY()
+	double ServerTime = 0.0;
+};
+
+/** No payload: the ring itself is the data and readers walk it — one broadcast per change beats
+ *  a per-entry delegate that a batched replication update would fire out of order. */
+DECLARE_MULTICAST_DELEGATE(FBNKillfeedChangedSignature);
+
 /** Fires on EVERY machine: the server from AGameState::SetMatchState (which runs the OnRep by
  *  hand on authority), remote clients from replication. The states are the ENGINE'S OWN
  *  MatchState FNames — WaitingToStart, InProgress, WaitingPostMatch — not a BN enum: the machine
@@ -32,9 +67,25 @@ public:
 
 	FBNMatchStateSignature OnMatchStateChanged;
 
+	/** R7 — fires on every machine when the killfeed ring changes: the authority by hand from
+	 *  PushKillfeedEntry (OnReps do not run there), clients from OnRep_Killfeed. Subscribers walk
+	 *  GetKillfeed() and dedupe by Sequence. */
+	FBNKillfeedChangedSignature OnKillfeedChanged;
+
 	double GetMatchEndServerTime() const { return MatchEndServerTime; }
 	int32 GetScoreLimit() const { return ScoreLimit; }
 	ABNPlayerState* GetWinner() const { return Winner; }
+	const TArray<FBNKillfeedEntry>& GetKillfeed() const { return Killfeed; }
+
+	/** Authority: append one decided kill. Names resolved HERE, while both parties are alive to
+	 *  ask; the ring holds the newest KillfeedCapacity entries and the oldest falls off — the
+	 *  drop is by design, a feed is not a match log. */
+	void PushKillfeedEntry(ABNPlayerState* Victim, ABNPlayerState* Killer);
+
+	/** Authority, the restart's: last round's kills are the previous record and must not
+	 *  replicate into the new one (critic, R7 W1). The Sequence counter is NOT reset — readers
+	 *  dedupe against it, and a counter that restarts re-shows history. */
+	void ResetKillfeed();
 
 	/** Seconds until MatchEndServerTime, computed LOCALLY against server time on whatever machine
 	 *  asks. Zero when no clock is stamped and never negative. */
@@ -49,6 +100,9 @@ public:
 	void SetWinner(ABNPlayerState* InWinner);
 
 protected:
+	UFUNCTION()
+	void OnRep_Killfeed();
+
 	/** The engine's own notify, on every machine (the server calls it by hand from SetMatchState).
 	 *  Super runs the native client handlers (NotifyMatchStarted and friends); BN adds the LogBN
 	 *  line and the delegate. ONE body for all machines, so every transition logs and broadcasts
@@ -75,4 +129,19 @@ protected:
 	 *  say so. */
 	UPROPERTY(ReplicatedUsing = OnRep_Winner)
 	TObjectPtr<ABNPlayerState> Winner;
+
+	/** The ring. A replicated array, not a multicast RPC, on purpose: a joiner mid-match gets
+	 *  the current feed in the initial bunch for free, and an actor ref that arrives as an
+	 *  unmapped GUID re-fires the notify when it resolves — an RPC gives neither. Small and
+	 *  bounded; scores are the record, this is the last few seconds of it. */
+	UPROPERTY(ReplicatedUsing = OnRep_Killfeed)
+	TArray<FBNKillfeedEntry> Killfeed;
+
+	/** Monotonic, authority-only. Starts at 0 so the first entry is Sequence 1 and INDEX_NONE
+	 *  stays the reader's "never seen anything" sentinel. */
+	int32 KillfeedSequence = 0;
+
+	/** Fixed by design, not config: the on-screen pool renders fewer than this, and a bigger
+	 *  ring is replication cost buying nothing a scoreboard doesn't already hold. */
+	static constexpr int32 KillfeedCapacity = 8;
 };

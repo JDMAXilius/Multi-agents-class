@@ -33,6 +33,7 @@ void ABNPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 
 	DOREPLIFETIME(ABNPlayerState, Kills);
 	DOREPLIFETIME(ABNPlayerState, Deaths);
+	DOREPLIFETIME_CONDITION(ABNPlayerState, RespawnAtServerTime, COND_OwnerOnly);
 }
 
 void ABNPlayerState::AddKill()
@@ -40,6 +41,9 @@ void ABNPlayerState::AddKill()
 	if (HasAuthority())
 	{
 		++Kills;
+		// The authority runs no OnRep, and a listen host's own HUD is a subscriber like any
+		// client's — the R4 GameState discipline, applied here.
+		OnScoreChanged.Broadcast(this);
 	}
 }
 
@@ -48,6 +52,7 @@ void ABNPlayerState::AddDeath()
 	if (HasAuthority())
 	{
 		++Deaths;
+		OnScoreChanged.Broadcast(this);
 	}
 }
 
@@ -57,19 +62,36 @@ void ABNPlayerState::ResetScore()
 	{
 		Kills = 0;
 		Deaths = 0;
+		OnScoreChanged.Broadcast(this);
 	}
 }
 
-// The OnReps exist so a client can SEE the number land — the scoreboard binds to them later, and
-// until it does they are how "both machines agree" is checked.
+void ABNPlayerState::SetRespawnAtServerTime(double InServerTime)
+{
+	if (HasAuthority() && RespawnAtServerTime != InServerTime)
+	{
+		RespawnAtServerTime = InServerTime;
+		OnRespawnStampChanged.Broadcast(this);
+	}
+}
+
+// The OnReps are "the scoreboard binds to them later", said 17 Aug — later arrived: they now
+// broadcast, and the Verbose lines stay as the no-HUD way to see the number land.
 void ABNPlayerState::OnRep_Kills()
 {
 	UE_LOG(LogBN, Verbose, TEXT("BNPlayerState: %s kills -> %d"), *GetPlayerName(), Kills);
+	OnScoreChanged.Broadcast(this);
 }
 
 void ABNPlayerState::OnRep_Deaths()
 {
 	UE_LOG(LogBN, Verbose, TEXT("BNPlayerState: %s deaths -> %d"), *GetPlayerName(), Deaths);
+	OnScoreChanged.Broadcast(this);
+}
+
+void ABNPlayerState::OnRep_RespawnAtServerTime()
+{
+	OnRespawnStampChanged.Broadcast(this);
 }
 
 UAbilitySystemComponent* ABNPlayerState::GetAbilitySystemComponent() const

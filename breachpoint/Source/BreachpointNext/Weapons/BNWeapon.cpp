@@ -117,6 +117,9 @@ bool ABNWeapon::ConsumeAmmo(int32 Count)
 	}
 
 	CurrentAmmo -= Count;
+	// The authority's own announce — its OnReps never run, and the listen host's HUD is a
+	// subscriber like any client's.
+	OnAmmoChanged.Broadcast(this);
 	return true;
 }
 
@@ -127,20 +130,25 @@ void ABNWeapon::Reload()
 	if (HasAuthority())
 	{
 		const int32 Moved = CalcReloadTransfer(GetMagazineSize(), CurrentAmmo, AmmoReserve);
-		CurrentAmmo += Moved;
-		AmmoReserve -= Moved;
+		if (Moved > 0)
+		{
+			CurrentAmmo += Moved;
+			AmmoReserve -= Moved;
+			OnAmmoChanged.Broadcast(this);
+		}
 	}
 }
 
+// "The HUD's readout binds here", both comments said since Wave 4 — R7 is when it can: the
+// OnReps were UFUNCTIONs, and a UFUNCTION is not bindable. Now they broadcast.
 void ABNWeapon::OnRep_AmmoReserve()
 {
-	// Behaviourless like OnRep_CurrentAmmo, for the same reason. The HUD's reserve readout binds here.
+	OnAmmoChanged.Broadcast(this);
 }
 
 void ABNWeapon::OnRep_CurrentAmmo()
 {
-	// The clients' observation point, and behaviourless on purpose this wave: nothing off the
-	// authority writes ammo, so there is no local guess to reconcile. The ammo readout binds here.
+	OnAmmoChanged.Broadcast(this);
 }
 
 FTransform ABNWeapon::GetMuzzleTransform() const

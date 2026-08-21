@@ -7,6 +7,12 @@
 class USkeletalMeshComponent;
 struct FBNWeaponRow;
 
+/** R7 — the magazine or the reserve changed. Fires on clients from the two OnReps and on the
+ *  authority from the mutation points themselves (a listen host runs no OnReps — the standing
+ *  discipline). Subscribers read GetCurrentAmmo/GetAmmoReserve back; no payload to keep honest. */
+class ABNWeapon;
+DECLARE_MULTICAST_DELEGATE_OneParam(FBNAmmoChangedSignature, ABNWeapon*);
+
 /**
  * A carried weapon. RowName is the whole of its replicated identity — mesh, sockets, anim
  * layer and ability set are looked up from the row on every machine, never sent twice.
@@ -52,6 +58,8 @@ public:
 	int32 GetCurrentAmmo() const { return CurrentAmmo; }
 	int32 GetAmmoReserve() const { return AmmoReserve; }
 	int32 GetMagazineSize() const;
+
+	FBNAmmoChangedSignature OnAmmoChanged;
 
 	/** The reference's pure transfer (UBRWeaponInstance::CalcReloadTransfer): how many rounds move
 	 *  reserve->magazine. Static and stateless because a pure function is checkable by eye. */
