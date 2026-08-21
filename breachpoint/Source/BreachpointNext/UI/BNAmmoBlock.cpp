@@ -33,8 +33,7 @@ void UBNAmmoBlock::NativeConstruct()
 	BindCombatField(Combat, UBNVM_Combat::FFieldNotificationClassDescriptor::MagAmmo);
 	BindCombatField(Combat, UBNVM_Combat::FFieldNotificationClassDescriptor::ReserveAmmo);
 	BindCombatField(Combat, UBNVM_Combat::FFieldNotificationClassDescriptor::EquipmentState);
-	// The icon rides a plain member; this is the notify that always fires with it.
-	BindCombatField(Combat, UBNVM_Combat::FFieldNotificationClassDescriptor::EquipSerial);
+	BindCombatField(Combat, UBNVM_Combat::FFieldNotificationClassDescriptor::WeaponIcon);
 
 	Refresh();
 }
@@ -92,16 +91,22 @@ void UBNAmmoBlock::Refresh()
 		ReserveAmmoText->SetText(bHasReserve ? FText::AsNumber(Combat->GetReserveAmmo()) : Dash);
 	}
 
-	// R7.1 — the silhouette. SetBrushFromSoftTexture takes the SOFT pointer and does the loading
-	// itself, so no sync load lands on a weapon swap; an unset row column hides the slot rather
-	// than drawing the previous weapon's gun.
+	// R7.1 — the silhouette. SetBrushFromSoftTexture takes the SOFT pointer and loads it itself,
+	// so no sync load lands on a weapon swap; an unset row column hides the slot rather than
+	// drawing the previous weapon's gun.
 	if (WeaponIcon)
 	{
-		const TSoftObjectPtr<UTexture2D>& Icon = Combat ? Combat->GetWeaponIcon() : nullptr;
+		const TSoftObjectPtr<UTexture2D> Icon = Combat ? Combat->GetWeaponIcon() : TSoftObjectPtr<UTexture2D>();
 		const bool bHasIcon = bLive && !Icon.IsNull();
-		if (bHasIcon)
+
+		// ONLY on a real change (critic): Refresh is the handler for every bound field, and
+		// MagAmmo fires per shot — re-issuing the brush each round cancels and restarts the
+		// streaming request, so a gun picked up and fired immediately would never finish
+		// loading its own icon.
+		if (bHasIcon && Icon != AppliedIcon)
 		{
 			WeaponIcon->SetBrushFromSoftTexture(Icon, /*bMatchSize=*/false);
+			AppliedIcon = Icon;
 		}
 		WeaponIcon->SetVisibility(bHasIcon ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
 	}

@@ -225,7 +225,7 @@ registration dedupes without complaint. BN's `UE_DEFINE_GAMEPLAY_TAG` macros pro
 | 0+1 (feeds) | **LANDED**, critic-passed — 1 blocking fixed (FUITag root-prepend), ring cleared on restart, respawn stamp InProgress-gated |
 | 2 (spine) | **LANDED**, critic verdict SHIP — 0 blocking, 6 of 9 notes fixed (GameStateSet handle, standing-dead screen push, name-fallback killed-by, post-match pops the death screen, killfeed as 4th acquisition edge, no manager on dedicated) |
 | 3 (surfaces) + 4 (screens) | **LANDED**, critic verdict HOLD→cleared — 1 blocking fixed (the roster had no join/leave hook while its comment claimed one; opening the board now recomputes), + explicit Game input config on both screens, dimmed Unknown dash, silent empty roster |
-| — | **geometry, measured** | The ticket's numbers came from the project's own Figma (node `6:47`), not from invention: vitals x503.33 y66 273.33×20 as an ARC, band x474.67 y622 302×22 with its midpoint deliberately 14.33px left of centre, feed x60 y455 340×76, tray as ONE 280×110 unit |
+| — (geometry) | **MEASURED, not invented** — the ticket's numbers come from the project's own Figma (node `6:47`): vitals x503.33 y66 273.33×20 as an ARC, band x474.67 y622 302×22 with its midpoint deliberately 14.33px left of centre, feed x60 y455 340×76, tray as ONE 280×110 unit |
 | G5 | `TASK-R7-WBP-HUD` cut — ten WBPs (the scoreboard row joined), Tab input assets |
 
 **Not compiled** — the founder's next build is the first real test; `TEST-HUD.md` is the protocol.
@@ -237,7 +237,7 @@ Landing the cheap one now; the other two are written down rather than guessed at
 
 | # | Item | State |
 |---|---|---|
-| 1.1 | **Weapon icon** — `FBNWeaponRow.Icon` (soft `UTexture2D`) → VM → the ammo block's silhouette slot. Unblocks the biggest visual gap in the tray | **THIS WAVE** |
+| 1.1 | **Weapon icon** — `FBNWeaponRow.Icon` (soft `UTexture2D`) → VM → the ammo block's silhouette slot | **CODE LANDED; the SLOT is open, the gap is not closed.** Nothing fills the column yet, so every row reads null and the Image stays hidden. `TASK-R7-WBP-HUD` Step 5 authors it — art already exists under `Content/UI/HUD/HUD_Weapon_*` |
 | 1.2 | **The killing weapon** (the feed's measured `Weapon Glyph` 22×8, and the death screen's weapon line) | **DEFERRED, sized:** the damage door takes a row, not a row NAME, and carrying an `FName` from the door to `FBNLastDamage` needs a custom `FGameplayEffectContext` (with `NetSerialize` + `TStructOpsTypeTraits` + an allocation override) or a server-side pre-stash. That is a gameplay packet with its own critic pass, not a UI rider |
 | 1.3 | **The stowed slot** | **FOUNDER DECISION.** The design carries one stowed weapon; BN carries FIVE (Unarmed/Pistol/Rifle/Shotgun/Knife), so "stowed" has no single meaning here. The useful reading is *what one swap press gives you* — the NEXT weapon in the cycle. Say the word and it is a getter on the equipment component plus two VM fields |
 

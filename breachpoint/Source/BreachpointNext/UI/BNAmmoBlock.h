@@ -7,6 +7,7 @@
 class UBNVM_Combat;
 class UImage;
 class UTextBlock;
+class UTexture2D;
 
 /**
  * Bottom-right: the weapon's name, the magazine, the reserve. INDEX_NONE from the VM means "no
@@ -41,4 +42,7 @@ protected:
 
 	TArray<TPair<UE::FieldNotification::FFieldId, FDelegateHandle>> BoundFields;
 	TWeakObjectPtr<UBNVM_Combat> BoundViewModel;
+
+	/** The icon currently on the brush, so a per-shot Refresh never re-issues the load. */
+	TSoftObjectPtr<UTexture2D> AppliedIcon;
 };

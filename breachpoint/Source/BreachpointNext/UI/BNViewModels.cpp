@@ -4,6 +4,7 @@
 #include "Engine/World.h"
 #include "GameFramework/GameStateBase.h"
 #include "GameplayEffectTypes.h"
+#include "Engine/Texture2D.h"
 #include "TimerManager.h"
 
 #define LOCTEXT_NAMESPACE "BreachpointNextUI"
@@ -99,16 +100,11 @@ void UBNVM_Combat::RefreshVitals()
 void UBNVM_Combat::SetEquippedWeapon(const FText& InName, int32 InMagAmmo, int32 InReserveAmmo, bool bKnown,
 	const TSoftObjectPtr<UTexture2D>& InIcon)
 {
-	WeaponIcon = InIcon;
-
 	UE_MVVM_SET_PROPERTY_VALUE(WeaponName, InName);
 	UE_MVVM_SET_PROPERTY_VALUE(MagAmmo, InMagAmmo);
 	UE_MVVM_SET_PROPERTY_VALUE(ReserveAmmo, InReserveAmmo);
 	UE_MVVM_SET_PROPERTY_VALUE(EquipmentState, bKnown ? EBNUIDataState::Live : EBNUIDataState::Unknown);
-
-	// LAST, and unconditional: the icon rode in as a plain member, so this is the notify that
-	// tells a bound widget the hand changed at all.
-	UE_MVVM_SET_PROPERTY_VALUE(EquipSerial, EquipSerial + 1);
+	UE_MVVM_SET_PROPERTY_VALUE(WeaponIcon, InIcon);
 }
 
 void UBNVM_Combat::SetAmmo(int32 InMagAmmo, int32 InReserveAmmo)
@@ -225,12 +221,11 @@ void UBNVM_Combat::ClearToUnknown()
 	UE_MVVM_SET_PROPERTY_VALUE(ShieldPercent, 0.f);
 	UE_MVVM_SET_PROPERTY_VALUE(HealthValue, 0);
 	UE_MVVM_SET_PROPERTY_VALUE(ShieldValue, 0);
-	WeaponIcon.Reset();
 	UE_MVVM_SET_PROPERTY_VALUE(WeaponName, FText::GetEmpty());
 	UE_MVVM_SET_PROPERTY_VALUE(MagAmmo, static_cast<int32>(INDEX_NONE));
 	UE_MVVM_SET_PROPERTY_VALUE(ReserveAmmo, static_cast<int32>(INDEX_NONE));
 	UE_MVVM_SET_PROPERTY_VALUE(EquipmentState, EBNUIDataState::Unknown);
-	UE_MVVM_SET_PROPERTY_VALUE(EquipSerial, EquipSerial + 1);
+	UE_MVVM_SET_PROPERTY_VALUE(WeaponIcon, TSoftObjectPtr<UTexture2D>());
 	UE_MVVM_SET_PROPERTY_VALUE(bIsDead, false);
 	UE_MVVM_SET_PROPERTY_VALUE(KilledByLine, FText::GetEmpty());
 	UE_MVVM_SET_PROPERTY_VALUE(RespawnSecondsRemaining, static_cast<int32>(INDEX_NONE));

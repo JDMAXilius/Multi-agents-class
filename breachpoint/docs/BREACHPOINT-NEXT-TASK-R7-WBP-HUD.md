@@ -57,7 +57,18 @@ one-time notice if it ever wants more.
 `[/Script/BreachpointNext.BNUIManager]` at exactly the paths above (`_C` suffixes). If an asset
 landed elsewhere, MOVE THE ASSET — the ini is the contract.
 
-## Step 4 — read back
+## Step 4 — fill the weapon `Icon` column (R7.1)
+
+`DT_BNWeapons` gained an **`Icon`** column (soft `UTexture2D`). Fill it per row — art already
+exists: `Content/UI/HUD/HUD_Weapon_AR`, `_BR`, `_Magnum`, `_Rocket`, `_Shotgun`, `_Sniper`.
+Map each BN row to its closest existing texture; an unset row simply draws no silhouette.
+
+**THE TRAP, paid for once already** (`TASK-DT-BNWEAPONS` Log): `set_rows` **silently drops**
+`{"refPath": …}` objects for soft-pointer columns — all four soft refs read back `None` on that
+ticket's first write. **Write plain soft-path strings.** Also: the existing `.uasset` needs a
+resave now that the row struct gained a member.
+
+## Step 5 — read back
 
 1. Each WBP: parent class + full child tree with the exact `BindWidget` names, fresh load.
 2. PIE, solo: expect `BNUI: root layout up` then `BNUI: HUD up` in `LogBN`, the vitals/ammo/
@@ -66,6 +77,9 @@ landed elsewhere, MOVE THE ASSET — the ini is the contract.
 3. Die to a bot: the death overlay with "Eliminated by <bot>" and a counting-down respawn line.
 4. Hold Tab: the scoreboard over the HUD; release: gone. Let the match end: it pins itself with
    the winner line.
+5. The weapon silhouette draws beside the ammo and CHANGES on a swap — that is Step 4's column
+   working. A blank slot with everything else alive means the column read back `None` (the
+   refPath trap), not a code fault.
 
 ## Log
 

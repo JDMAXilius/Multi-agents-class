@@ -7,6 +7,7 @@
 #include "Data/BNDataRows.h"
 #include "Engine/GameInstance.h"
 #include "Engine/LocalPlayer.h"
+#include "Engine/Texture2D.h"
 #include "Engine/World.h"
 #include "GameFramework/GameMode.h"
 #include "GameFramework/PlayerController.h"
@@ -429,6 +430,7 @@ void UBNHUDDirector::HandleEquippedWeaponChanged(UBNEquipmentComponent* Equipmen
 		return;
 	}
 
+	const TSoftObjectPtr<UTexture2D> NoIcon;
 	const FBNWeaponRow* Row = Current->GetRow();
 	const FText Name = Row ? Row->DisplayName : FText::FromName(Current->GetRowName());
 	// A magazine-less row (the knife) shows dashes, never a confident 0/0.
@@ -439,7 +441,9 @@ void UBNHUDDirector::HandleEquippedWeaponChanged(UBNEquipmentComponent* Equipmen
 		/*bKnown=*/true,
 		// R7.1 — the silhouette, straight off the row. Soft all the way to the widget, which
 		// loads it through Slate's own async path; an unset column simply draws nothing.
-		Row ? Row->Icon : nullptr);
+		// The empty soft ptr is SPELLED OUT rather than nullptr: the compiled reference records
+		// that a ternary between TSoftObjectPtr<T> and nullptr_t does not deduce a common type.
+		Row ? Row->Icon : NoIcon);
 }
 
 void UBNHUDDirector::HandleAmmoChanged(ABNWeapon* Weapon)
