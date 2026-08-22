@@ -99,11 +99,16 @@ resave now that the row struct gained a member.
    `LeaveMatch has nowhere to go` warning in `LogBN` and NO travel — the ini path ships unset on
    purpose. **The edge worth one deliberate try:** open the menu, then let a bot kill you — the
    pause menu must VANISH and the death screen take the layer; on respawn no menu returns.
-6. **R7.3:** kill a bot with the RIFLE — the feed line carries the weapon glyph and, if you die
-   to one, the death screen names the weapon under the killer. Then kill one with a **melee**:
-   the death screen reads `Melee`, not the rifle in your hands. The stowed slot shows the NEXT
-   weapon in the swap cycle and updates on every swap. A glyph missing while the death screen
-   still names the weapon means Step 4's `Icon` column, not the R7.3 chain.
+6. **R7.3 — the cause.** Kill a bot with the rifle: that feed line carries a weapon glyph.
+   Kill one with a **melee**: that line carries none (Melee has no table row, by design).
+   Then let a bot kill you and read the DEATH SCREEN — it names the weapon under the killer,
+   and a bot that beat you down must read `Melee`, never the gun it was carrying. The server's
+   own `BNGameMode: X eliminated Y with '…'` line is the arbiter: right there and wrong on
+   screen is a UI fault; `None` there means the capture never happened. A glyph missing while
+   the death screen still names the weapon is Step 4's `Icon` column, not the R7.3 chain.
+   **The stowed slot:** the tray's lower line shows the NEXT weapon in the swap cycle and moves
+   on every swap; when the next slot is the unarmed one it reads `Unarmed`, and the press after
+   really does empty your hands.
 7. The weapon silhouette draws beside the ammo and CHANGES on a swap — that is Step 4's column
    working. A blank slot with everything else alive means the column read back `None` (the
    refPath trap), not a code fault.
