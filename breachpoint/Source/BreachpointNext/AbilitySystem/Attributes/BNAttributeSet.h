@@ -33,6 +33,11 @@ struct FBNLastDamage
 	FHitResult Hit;
 
 	float Amount = 0.f;
+
+	/** WHAT did it — a weapon ROW NAME, or one of BNDamageSource's rowless causes (Melee,
+	 *  Grenade). NAME_None for damage that came through the door without a cause (the cheat
+	 *  manager, world damage), which the feed renders as no glyph rather than a guess. */
+	FName SourceName;
 };
 
 #define ATTRIBUTE_ACCESSORS(ClassName, PropertyName) \

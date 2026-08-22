@@ -34,11 +34,11 @@ offset.
 | `WBP_BNRootLayout` | `UBNRootLayout` | Overlay root → 4 × `CommonActivatableWidgetStack`, fill-all, in z-order: `GameLayerStack`, `GameMenuLayerStack`, `MenuLayerStack`, `ModalLayerStack` |
 | `WBP_BNHUD` | `UBNHUDLayout` | CanvasPanel root (NO SafeZone) → `WBP_BNVitals` @ **x503.33 y66, 273.33×34** · `Image` `ReticleDot` @ **x620 y340, 40×40** (centre lands exactly 640,360) · `WBP_BNMatchBand` @ **x474.67 y622, 302×22** · `WBP_BNKillfeed` @ **x60 y455, 340×76** · `WBP_BNAmmoBlock` @ **x940 y580, 280×110** · `TextBlock` `BannerText` @ x503 y132 w274, centre-justified |
 | `WBP_BNVitals` | `UBNVitalsWidget` | Canvas 273.33×34 → `ProgressBar` `ShieldBar` @ y0 **273.33×20** (the shield reads as an ARC, not a trapezoid — thickness 16, sag 2.7; a straight bar is acceptable for the first pass, the arc is the target) · `ProgressBar` `HealthBar` @ **y20 273.33×5** (design slot y86 abs) · `Image` centre tick @ **x135.9 y20, 1.33×10** · `TextBlock` `ShieldText` / `HealthText` beneath, small |
-| `WBP_BNAmmoBlock` | `UBNAmmoBlock` | Canvas **280×110** — the design's ONE "Loadout Tray" unit; R7 fills its ammo third and the rest is the deferral: `TextBlock` `WeaponNameText` @ **x60 y44, 87×14** right-aligned · `TextBlock` `MagAmmoText` @ **x74 y58, 36×43** (cap 30pt) · `TextBlock` divider "\|" @ **x126 y70** · `TextBlock` `ReserveAmmoText` @ **x138 y70, 28×26** · `Image` **`WeaponIcon`** @ **x190 y56, 88×32** (the silhouette — C++ sets its brush from the row's `Icon` column and hides it when unset, so leave the brush EMPTY here). Leave the grenade (x0/x46, 40×34), equipment (x100, 40×34) and stowed rule (x190 y96) slots EMPTY — they are the named blocked elements |
+| `WBP_BNAmmoBlock` | `UBNAmmoBlock` | Canvas **280×110** — the design's ONE "Loadout Tray" unit; R7 fills its ammo third and the rest is the deferral: `TextBlock` `WeaponNameText` @ **x60 y44, 87×14** right-aligned · `TextBlock` `MagAmmoText` @ **x74 y58, 36×43** (cap 30pt) · `TextBlock` divider "\|" @ **x126 y70** · `TextBlock` `ReserveAmmoText` @ **x138 y70, 28×26** · `Image` **`WeaponIcon`** @ **x190 y56, 88×32** (the silhouette — C++ sets its brush from the row's `Icon` column and hides it when unset, so leave the brush EMPTY here) · **R7.3, the stowed slot at the rule:** `TextBlock` **`StowedNameText`** @ **x190 y96, 88×12** right-aligned (10pt) and `Image` **`StowedIcon`** @ **x138 y92, 44×16**, brush EMPTY — C++ fills and hides both together. Leave the grenade (x0/x46, 40×34) and equipment (x100, 40×34) slots EMPTY — they are the named blocked elements (no count state exists) |
 | `WBP_BNMatchBand` | `UBNMatchBand` | Canvas **302×22** → mode pip @ x0 y2 18×18 · self bar @ **x24 y7, 60×8** · `TextBlock` `MyKillsText` @ **x90 y1, 34×20** · sep "\|" @ x128 y2 · `TextBlock` `ClockText` @ **x138 y1, 43×20** · sep "\|" @ x190 y2 · `TextBlock` `TopKillsText` @ **x200 y1, 34×20** · leader bar @ **x240 y7, 44×8** · mode pip @ x284 y2 18×18 · `TextBlock` `ScoreLimitText` small, under the leader cell. **Do not centre this band** — 474.67 + 302 puts its midpoint at 625.67, deliberately 14.33px left of screen centre |
 | `WBP_BNKillfeed` | `UBNKillfeed` | VerticalBox `EntryContainer` → **5 ×** `WBP_BNKillfeedEntry` children |
-| `WBP_BNKillfeedEntry` | `UBNKillfeedEntry` | `TextBlock` `LineText` (14pt) — one line, no color set |
-| `WBP_BNScreen_Death` | `UBNScreen_Death` | Overlay → dim `Image` (fill, black 55%) · VerticalBox centered at 40% height → `TextBlock` `KilledByText` (30pt, center) · `TextBlock` `RespawnText` (17pt, center) |
+| `WBP_BNKillfeedEntry` | `UBNKillfeedEntry` | HorizontalBox → `TextBlock` `LineText` (14pt) · **R7.3:** `Image` **`WeaponIcon`** @ **22×8**, brush EMPTY — the killing weapon's glyph, set and COLLAPSED by C++. One line, no color set |
+| `WBP_BNScreen_Death` | `UBNScreen_Death` | Overlay → dim `Image` (fill, black 55%) · VerticalBox centered at 40% height → `TextBlock` `KilledByText` (30pt, center) · **R7.3:** `TextBlock` **`WeaponText`** (15pt, center — the weapon under the name; C++ collapses it when the death has no named cause) · `TextBlock` `RespawnText` (17pt, center) |
 | `WBP_BNScreen_Pause` | `UBNScreen_Pause` | **ELEVENTH asset (R7.2).** Overlay → scrim `Image` (fill, black 78%) → Border **451×682** at x60 y19 → VerticalBox: `TextBlock` "PAUSED" (24pt) · 118×2 rule · `Button` **`ResumeButton`** (h22, label RESUME) · `Button` **`LeaveButton`** (h22, label LEAVE MATCH) · spacer · `TextBlock` `WarningText` · `TextBlock` `WarningBodyText`. Plain UMG `Button`s deliberately — a `CommonButtonBase` needs a style asset and R7 ships none |
 | `WBP_BNScreen_Scoreboard` | `UBNScreen_Scoreboard` | Overlay → centered Border (430 wide, dark 92%) → VerticalBox → `TextBlock` `BannerText` (26pt center) · header row (labels PLAYER · KILLS · DEATHS) · VerticalBox `RowContainer` → **8 ×** `WBP_BNScoreRow` children — **note `WBP_BNScoreRow` is a TENTH asset**, parent `UBNScoreRow`, tree: HorizontalBox → `TextBlock` `NameText` (fill) · `TextBlock` `KillsText` (right) · `TextBlock` `DeathsText` (right) |
 
@@ -73,6 +73,12 @@ landed elsewhere, MOVE THE ASSET — the ini is the contract.
 exists: `Content/UI/HUD/HUD_Weapon_AR`, `_BR`, `_Magnum`, `_Rocket`, `_Shotgun`, `_Sniper`.
 Map each BN row to its closest existing texture; an unset row simply draws no silhouette.
 
+**R7.3 makes this column do double duty:** the same `Icon` is the killfeed's weapon glyph and the
+stowed slot's silhouette, so a row filled here lights up three places at once. A **`Grenade` row**
+added to this table (name it exactly `Grenade`) would also give grenade kills a name and a glyph
+for free — the code already looks the cause up here and falls back to the raw name. Not required
+by this ticket; recorded so it is not rediscovered.
+
 **THE TRAP, paid for once already** (`TASK-DT-BNWEAPONS` Log): `set_rows` **silently drops**
 `{"refPath": …}` objects for soft-pointer columns — all four soft refs read back `None` on that
 ticket's first write. **Write plain soft-path strings.** Also: the existing `.uasset` needs a
@@ -93,7 +99,12 @@ resave now that the row struct gained a member.
    `LeaveMatch has nowhere to go` warning in `LogBN` and NO travel — the ini path ships unset on
    purpose. **The edge worth one deliberate try:** open the menu, then let a bot kill you — the
    pause menu must VANISH and the death screen take the layer; on respawn no menu returns.
-6. The weapon silhouette draws beside the ammo and CHANGES on a swap — that is Step 4's column
+6. **R7.3:** kill a bot with the RIFLE — the feed line carries the weapon glyph and, if you die
+   to one, the death screen names the weapon under the killer. Then kill one with a **melee**:
+   the death screen reads `Melee`, not the rifle in your hands. The stowed slot shows the NEXT
+   weapon in the swap cycle and updates on every swap. A glyph missing while the death screen
+   still names the weapon means Step 4's `Icon` column, not the R7.3 chain.
+7. The weapon silhouette draws beside the ammo and CHANGES on a swap — that is Step 4's column
    working. A blank slot with everything else alive means the column read back `None` (the
    refPath trap), not a code fault.
 

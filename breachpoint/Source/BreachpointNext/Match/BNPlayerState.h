@@ -22,7 +22,7 @@ class UGameplayEffect;
  *  This block sits ABOVE the UCLASS() macro on purpose: UnrealHeaderTool requires the class
  *  definition to immediately follow UCLASS(), and anything between them stops the build. */
 class ABNPlayerState;
-DECLARE_MULTICAST_DELEGATE_TwoParams(FBNPlayerDeathSignature, ABNPlayerState* /*Victim*/, ABNPlayerState* /*Killer*/);
+DECLARE_MULTICAST_DELEGATE_ThreeParams(FBNPlayerDeathSignature, ABNPlayerState* /*Victim*/, ABNPlayerState* /*Killer*/, FName /*SourceName*/);
 
 /** R7 — fires wherever the numbers change: the authority from AddKill/AddDeath/ResetScore (no
  *  OnRep runs there), clients from the OnReps. The scoreboard and the match band both read
@@ -47,7 +47,7 @@ public:
 
 	/** Called by UBNGA_Death, which is what reads the killer off the attribute set's capture.
 	 *  Nothing else should broadcast this. */
-	void BroadcastDeath(ABNPlayerState* Killer);
+	void BroadcastDeath(ABNPlayerState* Killer, FName SourceName = NAME_None);
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 

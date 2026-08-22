@@ -1,4 +1,6 @@
 #include "AbilitySystem/Attributes/BNAttributeSet.h"
+
+#include "AbilitySystem/Effects/BNDamage.h"
 #include "AbilitySystem/Effects/BNGameplayEffects.h"
 #include "Core/BNGameplayTags.h"
 #include "BreachpointNext.h"
@@ -127,6 +129,12 @@ void UBNAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallback
 	}
 	LastDamage.Hit = Context.GetHitResult() ? *Context.GetHitResult() : FHitResult();
 	LastDamage.Amount = Damage;
+
+	// R7.3 — WHAT did it, read off the door rather than out of the spec: an FName cannot ride the
+	// effect context without a custom context subclass, and this executes INSIDE the door's own
+	// ApplyGameplayEffectSpecToSelf call, on the authority. Damage applied by anything other than
+	// BNDamage reads NAME_None here, which the feed shows as no weapon rather than a wrong one.
+	LastDamage.SourceName = BNDamage::GetApplyingSourceName();
 
 	const float ShieldBefore = GetShield();
 	const float HealthBefore = GetHealth();

@@ -40,7 +40,24 @@ public:
 
 	ABNWeapon* GetCurrentWeapon() const;
 
+	/** R7.3 — WHAT ONE SWAP PRESS GIVES YOU, which is the only honest reading of "stowed" in a
+	 *  five-slot carry (the design's chassis holds two). Shares GetNextIndex with EquipNext
+	 *  deliberately: a HUD that promises a weapon the swap does not deliver is worse than no
+	 *  stowed slot at all.
+	 *
+	 *  NULL IS TWO DIFFERENT ANSWERS, which is why HasNextSlot exists beside this: the carry
+	 *  holds a real UNARMED slot as a null entry (Unarmed → Pistol → Rifle → Shotgun → Knife), so
+	 *  a null next weapon can mean "the next press empties your hands" — a fact worth printing —
+	 *  or "there is nowhere to swap to" on a single-slot carry. Ask HasNextSlot first. */
+	ABNWeapon* GetNextWeapon() const;
+
+	/** True when a DISTINCT next slot exists, weapon or the unarmed one. False on a carry of one. */
+	bool HasNextSlot() const;
+
 	FBNEquippedWeaponSignature OnEquippedWeaponChanged;
+
+	/** The index EquipNext would move to, or INDEX_NONE with nothing carried. */
+	int32 GetNextIndex() const;
 
 	/** The current weapon's row layer, or null — which the character reads as unarmed. */
 	UClass* GetCurrentWeaponAnimLayer() const;

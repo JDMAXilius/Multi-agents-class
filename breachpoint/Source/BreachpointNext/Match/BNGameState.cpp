@@ -70,7 +70,7 @@ void ABNGameState::GetLeaders(TArray<ABNPlayerState*>& OutLeaders) const
 	}
 }
 
-void ABNGameState::PushKillfeedEntry(ABNPlayerState* Victim, ABNPlayerState* Killer)
+void ABNGameState::PushKillfeedEntry(ABNPlayerState* Victim, ABNPlayerState* Killer, FName SourceName)
 {
 	if (!HasAuthority() || !Victim)
 	{
@@ -84,6 +84,7 @@ void ABNGameState::PushKillfeedEntry(ABNPlayerState* Victim, ABNPlayerState* Kil
 	// a ref can null under the feed mid-window, and a line that loses its name rewrites history.
 	Entry.VictimName = Victim->GetPlayerName();
 	Entry.KillerName = Killer ? Killer->GetPlayerName() : FString();
+	Entry.SourceName = SourceName;
 	Entry.Sequence = ++KillfeedSequence;
 	Entry.ServerTime = GetServerWorldTimeSeconds();
 

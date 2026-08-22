@@ -5,6 +5,7 @@
 #include "Characters/BNCharacter.h"
 #include "Core/BNGameplayTags.h"
 #include "Data/BNDataRows.h"
+#include "Data/BNGameData.h"
 #include "Engine/GameInstance.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/Texture2D.h"
@@ -214,6 +215,41 @@ void UBNHUDDirector::RecomputeScores()
 	Match->SetRoster(MoveTemp(Rows));
 }
 
+const FBNWeaponRow* UBNHUDDirector::FindWeaponRow(FName RowName) const
+{
+	if (RowName.IsNone())
+	{
+		return nullptr;
+	}
+	const ULocalPlayer* LocalPlayer = GetLocalPlayer();
+	const UGameInstance* GameInstance = LocalPlayer ? LocalPlayer->GetGameInstance() : nullptr;
+	const UBNGameData* GameData = GameInstance ? GameInstance->GetSubsystem<UBNGameData>() : nullptr;
+	// The SAME lookup ABNWeapon::GetRow makes — the table is the weapon's identity on every
+	// machine, so a client resolves the killer's weapon without ever seeing the weapon actor.
+	return GameData ? GameData->FindWeaponRow(RowName) : nullptr;
+}
+
+TSoftObjectPtr<UTexture2D> UBNHUDDirector::ResolveWeaponIcon(FName RowName) const
+{
+	const FBNWeaponRow* Row = FindWeaponRow(RowName);
+	// Spelled out rather than a ternary with nullptr (R7.1's fix): TSoftObjectPtr and nullptr_t
+	// deduce no common type.
+	const TSoftObjectPtr<UTexture2D> NoIcon;
+	return Row ? Row->Icon : NoIcon;
+}
+
+FText UBNHUDDirector::ComposeWeaponLabel(FName RowName) const
+{
+	if (RowName.IsNone())
+	{
+		return FText::GetEmpty();
+	}
+	const FBNWeaponRow* Row = FindWeaponRow(RowName);
+	// The row's authored name, or the source name itself — the fallback IS the design for the
+	// rowless causes (Melee, Grenade), which is why they were named as words in BNDamageSource.
+	return (Row && !Row->DisplayName.IsEmpty()) ? Row->DisplayName : FText::FromName(RowName);
+}
+
 FText UBNHUDDirector::ComposeKillfeedLine(const FBNKillfeedEntry& Entry) const
 {
 	// The kill log's three wordings, verbatim — one decision, told the same way everywhere.
@@ -274,7 +310,8 @@ void UBNHUDDirector::HandleKillfeedChanged()
 			(Entry.Victim == MyPS || Entry.VictimName.Equals(MyName, ESearchCase::CaseSensitive));
 		const bool bInvolvesSelf = bVictimIsMe || (MyPS &&
 			(Entry.Killer == MyPS || Entry.KillerName.Equals(MyName, ESearchCase::CaseSensitive)));
-		Match->PushKillfeedEntry(ComposeKillfeedLine(Entry), Entry.Sequence, bInvolvesSelf);
+		Match->PushKillfeedEntry(ComposeKillfeedLine(Entry), Entry.Sequence, bInvolvesSelf,
+			ResolveWeaponIcon(Entry.SourceName));
 
 		// My own newest death names my killer — the death screen's line. Written from the feed
 		// rather than a second channel: if the ring bunch lands after the dead tag, this catches
@@ -288,7 +325,9 @@ void UBNHUDDirector::HandleKillfeedChanged()
 				if (Entry.KillerName.IsEmpty()) { KilledBy = LOCTEXT("KilledByWorld", "Eliminated"); }
 				else if (Entry.Killer == MyPS || Entry.KillerName.Equals(MyName, ESearchCase::CaseSensitive)) { KilledBy = LOCTEXT("KilledBySelf", "You eliminated yourself"); }
 				else { KilledBy = FText::Format(LOCTEXT("KilledBy", "Eliminated by {0}"), FText::FromString(Entry.KillerName)); }
-				Combat->SetKilledByLine(KilledBy);
+				// R7.3 — and the second line, WITH WHAT. Empty stays empty: a death the door
+				// could not name shows the killer alone rather than a guessed weapon.
+				Combat->SetKilledByLine(KilledBy, ComposeWeaponLabel(Entry.SourceName));
 			}
 		}
 	}
@@ -400,8 +439,10 @@ void UBNHUDDirector::BindPawn(APawn* Pawn)
 		}
 		else if (UBNVM_Combat* Combat = GetCombatVM())
 		{
-			// No body or not ours: the hand is UNKNOWN, not "unarmed" — dashes, no lie.
+			// No body or not ours: the hand is UNKNOWN, not "unarmed" — dashes, no lie. The stowed
+			// slot goes with it: an empty slot, not last life's next weapon.
 			Combat->SetEquippedWeapon(FText::GetEmpty(), INDEX_NONE, INDEX_NONE, /*bKnown=*/false);
+			Combat->SetStowedWeapon(FText::GetEmpty());
 		}
 	}
 }
@@ -423,6 +464,26 @@ void UBNHUDDirector::HandleEquippedWeaponChanged(UBNEquipmentComponent* Equipmen
 	{
 		return;
 	}
+
+	// R7.3 — the stowed slot, pushed on EVERY hand change including the unarmed one: what one
+	// swap press gives you changes with the current index, so the two readings move together or
+	// the tray lies.
+	//
+	// THE TWO NULLS ARE DIFFERENT (and the carry really does hold a null unarmed slot): no next
+	// slot at all clears the line, while a next slot holding nothing says "Unarmed" — the same
+	// word the hand uses for the same state, because the swap will genuinely empty your hands.
+	const bool bHasStowedSlot = Equipment && Equipment->HasNextSlot();
+	const ABNWeapon* Next = bHasStowedSlot ? Equipment->GetNextWeapon() : nullptr;
+	const FBNWeaponRow* NextRow = Next ? Next->GetRow() : nullptr;
+	const TSoftObjectPtr<UTexture2D> NoStowedIcon;
+	FText StowedName = FText::GetEmpty();
+	if (bHasStowedSlot)
+	{
+		StowedName = Next
+			? (NextRow ? NextRow->DisplayName : FText::FromName(Next->GetRowName()))
+			: LOCTEXT("UnarmedName", "Unarmed");
+	}
+	Combat->SetStowedWeapon(StowedName, NextRow ? NextRow->Icon : NoStowedIcon);
 
 	if (!Current)
 	{

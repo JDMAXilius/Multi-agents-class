@@ -108,7 +108,18 @@ UBNGE_Damage::UBNGE_Damage()
 	Modifiers.Add(Modifier);
 }
 
-void BNDamage::ApplyDamage(AActor* Instigator, AActor* Target, float Amount, const FHitResult& Hit)
+namespace
+{
+	/** See GetApplyingSourceName's comment: the cause in flight, game thread + authority only. */
+	FName GBNApplyingSourceName = NAME_None;
+}
+
+FName BNDamage::GetApplyingSourceName()
+{
+	return GBNApplyingSourceName;
+}
+
+void BNDamage::ApplyDamage(AActor* Instigator, AActor* Target, float Amount, const FHitResult& Hit, FName SourceName)
 {
 	if (!IsValid(Target) || Amount <= 0.f)
 	{
@@ -151,14 +162,21 @@ void BNDamage::ApplyDamage(AActor* Instigator, AActor* Target, float Amount, con
 	}
 
 	Spec.Data->SetSetByCallerMagnitude(BNSetByCaller::Damage, Amount);
+
+	// SAVE and RESTORE, not set and clear: damage applied from inside a damage reaction — a death
+	// that detonates something the victim carried — must not leave the outer call's cause blank
+	// for the rest of its own execution.
+	const FName PreviousSource = GBNApplyingSourceName;
+	GBNApplyingSourceName = SourceName;
 	TargetASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+	GBNApplyingSourceName = PreviousSource;
 }
 
 // The weapon-shaped front of the door: WHERE the shot landed and HOW FAR it travelled are damage
 // RULES, so they live here — behind the one door — and no caller ever multiplies a damage value.
 // Both rules are inert until a row opts in, so this function's answer today is what it was before
 // them: Damage, doubled on a head hit.
-void BNDamage::ApplyWeaponDamage(AActor* Instigator, const FBNWeaponRow& Row, const FHitResult& Hit)
+void BNDamage::ApplyWeaponDamage(AActor* Instigator, FName RowName, const FBNWeaponRow& Row, const FHitResult& Hit)
 {
 	const EBNBodySection Section = BNSectionForBone(Hit.BoneName);
 	const float SectionMultiplier = BNSectionMultiplier(Row, Section);
@@ -177,5 +195,5 @@ void BNDamage::ApplyWeaponDamage(AActor* Instigator, const FBNWeaponRow& Row, co
 		Row.Damage, SectionMultiplier, BNSectionName(Section), *Hit.BoneName.ToString(),
 		FalloffMultiplier, Distance, Amount);
 
-	ApplyDamage(Instigator, Hit.GetActor(), Amount, Hit);
+	ApplyDamage(Instigator, Hit.GetActor(), Amount, Hit, RowName);
 }

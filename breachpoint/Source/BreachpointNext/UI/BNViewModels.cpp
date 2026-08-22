@@ -107,6 +107,12 @@ void UBNVM_Combat::SetEquippedWeapon(const FText& InName, int32 InMagAmmo, int32
 	UE_MVVM_SET_PROPERTY_VALUE(WeaponIcon, InIcon);
 }
 
+void UBNVM_Combat::SetStowedWeapon(const FText& InName, const TSoftObjectPtr<UTexture2D>& InIcon)
+{
+	UE_MVVM_SET_PROPERTY_VALUE(StowedWeaponName, InName);
+	UE_MVVM_SET_PROPERTY_VALUE(StowedWeaponIcon, InIcon);
+}
+
 void UBNVM_Combat::SetAmmo(int32 InMagAmmo, int32 InReserveAmmo)
 {
 	UE_MVVM_SET_PROPERTY_VALUE(MagAmmo, InMagAmmo);
@@ -122,13 +128,15 @@ void UBNVM_Combat::SetDead(bool bInDead)
 		// Alive again: the death panel's data goes with the state, so the NEXT death never
 		// flashes the last one's line for a frame.
 		UE_MVVM_SET_PROPERTY_VALUE(KilledByLine, FText::GetEmpty());
+		UE_MVVM_SET_PROPERTY_VALUE(KilledByWeapon, FText::GetEmpty());
 		SetRespawnStamp(0.0, nullptr);
 	}
 }
 
-void UBNVM_Combat::SetKilledByLine(const FText& InLine)
+void UBNVM_Combat::SetKilledByLine(const FText& InLine, const FText& InWeapon)
 {
 	UE_MVVM_SET_PROPERTY_VALUE(KilledByLine, InLine);
+	UE_MVVM_SET_PROPERTY_VALUE(KilledByWeapon, InWeapon);
 }
 
 void UBNVM_Combat::SetRespawnStamp(double InRespawnAtServerTime, AGameStateBase* InTimeSource)
@@ -226,8 +234,11 @@ void UBNVM_Combat::ClearToUnknown()
 	UE_MVVM_SET_PROPERTY_VALUE(ReserveAmmo, static_cast<int32>(INDEX_NONE));
 	UE_MVVM_SET_PROPERTY_VALUE(EquipmentState, EBNUIDataState::Unknown);
 	UE_MVVM_SET_PROPERTY_VALUE(WeaponIcon, TSoftObjectPtr<UTexture2D>());
+	UE_MVVM_SET_PROPERTY_VALUE(StowedWeaponName, FText::GetEmpty());
+	UE_MVVM_SET_PROPERTY_VALUE(StowedWeaponIcon, TSoftObjectPtr<UTexture2D>());
 	UE_MVVM_SET_PROPERTY_VALUE(bIsDead, false);
 	UE_MVVM_SET_PROPERTY_VALUE(KilledByLine, FText::GetEmpty());
+	UE_MVVM_SET_PROPERTY_VALUE(KilledByWeapon, FText::GetEmpty());
 	UE_MVVM_SET_PROPERTY_VALUE(RespawnSecondsRemaining, static_cast<int32>(INDEX_NONE));
 }
 
@@ -336,7 +347,8 @@ void UBNVM_Match::StopClockUpdates()
 	ClockTimerHandle.Invalidate();
 }
 
-void UBNVM_Match::PushKillfeedEntry(const FText& InLine, int32 InSequence, bool bInvolvesSelf)
+void UBNVM_Match::PushKillfeedEntry(const FText& InLine, int32 InSequence, bool bInvolvesSelf,
+	const TSoftObjectPtr<UTexture2D>& InWeaponIcon)
 {
 	if (InSequence <= LastKillfeedSequence)
 	{
@@ -362,6 +374,7 @@ void UBNVM_Match::PushKillfeedEntry(const FText& InLine, int32 InSequence, bool 
 	Entry.Sequence = InSequence;
 	Entry.ExpiryTime = Now + BNUITiming::KillfeedLingerSeconds;
 	Entry.bInvolvesSelf = bInvolvesSelf;
+	Entry.WeaponIcon = InWeaponIcon;
 
 	while (KillfeedEntries.Num() > KillfeedMaxVisibleEntries)
 	{

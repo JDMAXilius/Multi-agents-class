@@ -91,7 +91,7 @@ void UBNKillfeed::Refresh()
 		if (RowIndex < Shown)
 		{
 			const FBNKillfeedViewEntry& Entry = (*Entries)[FirstShownEntry + RowIndex];
-			Row->SetEntry(Entry.Line, Entry.bInvolvesSelf);
+			Row->SetEntry(Entry.Line, Entry.bInvolvesSelf, Entry.WeaponIcon);
 		}
 		else
 		{

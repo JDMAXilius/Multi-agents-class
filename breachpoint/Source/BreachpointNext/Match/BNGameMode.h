@@ -79,7 +79,7 @@ public:
 
 	/** The subscriber. Turns "this player died" into this mode's answer: THE kill line, then a
 	 *  timed respawn. The score-limit check lives here because this is where the kill credits. */
-	void HandlePlayerDeath(ABNPlayerState* Victim, ABNPlayerState* Killer);
+	void HandlePlayerDeath(ABNPlayerState* Victim, ABNPlayerState* Killer, FName SourceName);
 
 	/** Read by ABNGameState, which mirrors it so clients can render "12 / 25". */
 	int32 GetScoreLimit() const { return ScoreLimit; }

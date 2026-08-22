@@ -178,11 +178,36 @@ void UBNEquipmentComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 }
 
+int32 UBNEquipmentComponent::GetNextIndex() const
+{
+	return Weapons.IsEmpty() ? INDEX_NONE : (CurrentIndex + 1) % Weapons.Num();
+}
+
+bool UBNEquipmentComponent::HasNextSlot() const
+{
+	// A carry of one answers with the slot already current; that is "nowhere to swap", not a
+	// stowed weapon. Every machine can ask — Weapons and CurrentIndex both replicate.
+	const int32 NextIndex = GetNextIndex();
+	return NextIndex != INDEX_NONE && NextIndex != CurrentIndex;
+}
+
+ABNWeapon* UBNEquipmentComponent::GetNextWeapon() const
+{
+	if (!HasNextSlot())
+	{
+		return nullptr;
+	}
+	// Still nullable on success: the unarmed slot IS a null entry in this array.
+	const int32 NextIndex = GetNextIndex();
+	return Weapons.IsValidIndex(NextIndex) ? Weapons[NextIndex].Get() : nullptr;
+}
+
 void UBNEquipmentComponent::EquipNext()
 {
-	if (!Weapons.IsEmpty())
+	const int32 NextIndex = GetNextIndex();
+	if (NextIndex != INDEX_NONE)
 	{
-		EquipIndex((CurrentIndex + 1) % Weapons.Num());
+		EquipIndex(NextIndex);
 	}
 }
 

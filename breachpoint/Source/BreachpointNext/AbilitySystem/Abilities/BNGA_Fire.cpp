@@ -474,7 +474,7 @@ void UBNGA_Fire::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Ta
 		// ServerHit — never the client's Claim — and from the ROW, which is where the damage and
 		// the headshot multiplier live. No engine damage API is reachable from here, so there is
 		// no second path to unbuild when the real pipeline replaces BNDamage's insides.
-		BNDamage::ApplyWeaponDamage(Avatar, *Row, ServerHit);
+		BNDamage::ApplyWeaponDamage(Avatar, Weapon ? Weapon->GetRowName() : NAME_None, *Row, ServerHit);
 
 		FGameplayCueParameters ImpactParams;
 		ImpactParams.Location = ServerHit.ImpactPoint;

@@ -325,7 +325,10 @@ void UBNGA_Melee::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& T
 	// THE one damage door, the flat melee number from the ROW (or the unarmed Config fallback).
 	// No headshot rule: a rifle butt does not care where it lands, and ApplyWeaponDamage would
 	// apply the shot's multiplier.
-	BNDamage::ApplyDamage(Avatar, HitActor, Stats.Damage, ServerHit);
+	// The CAUSE is Melee, not the weapon in the hand: a rifle butt is a melee kill in every
+	// shooter that draws the distinction, and crediting it to the rifle would put a rifle glyph
+	// on a feed line the player knows was a beatdown.
+	BNDamage::ApplyDamage(Avatar, HitActor, Stats.Damage, ServerHit, BNDamageSource::Melee);
 
 	FGameplayCueParameters ImpactParams;
 	ImpactParams.Location = ServerHit.ImpactPoint;

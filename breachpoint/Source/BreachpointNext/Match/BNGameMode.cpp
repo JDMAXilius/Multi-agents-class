@@ -219,7 +219,7 @@ void ABNGameMode::Logout(AController* Exiting)
 	}
 }
 
-void ABNGameMode::HandlePlayerDeath(ABNPlayerState* Victim, ABNPlayerState* Killer)
+void ABNGameMode::HandlePlayerDeath(ABNPlayerState* Victim, ABNPlayerState* Killer, FName SourceName)
 {
 	if (!Victim)
 	{
@@ -258,8 +258,11 @@ void ABNGameMode::HandlePlayerDeath(ABNPlayerState* Victim, ABNPlayerState* Kill
 	}
 	else
 	{
-		UE_LOG(LogBN, Log, TEXT("BNGameMode: %s eliminated %s. (%s: %d kills)"),
-			*Killer->GetPlayerName(), *Victim->GetPlayerName(), *Killer->GetPlayerName(), Killer->GetKills());
+		// The cause rides the line too — the one place a wrong killfeed glyph can be told apart
+		// from a wrong CAPTURE without attaching a debugger.
+		UE_LOG(LogBN, Log, TEXT("BNGameMode: %s eliminated %s with '%s'. (%s: %d kills)"),
+			*Killer->GetPlayerName(), *Victim->GetPlayerName(), *SourceName.ToString(),
+			*Killer->GetPlayerName(), Killer->GetKills());
 	}
 
 	// R7 — the same decided kill, onto the replicated ring the killfeed renders. Unconditional
@@ -267,7 +270,7 @@ void ABNGameMode::HandlePlayerDeath(ABNPlayerState* Victim, ABNPlayerState* Kill
 	// just does not score — one decision, told the same way to every audience.
 	if (ABNGameState* FeedGS = GetGameState<ABNGameState>())
 	{
-		FeedGS->PushKillfeedEntry(Victim, Killer);
+		FeedGS->PushKillfeedEntry(Victim, Killer, SourceName);
 	}
 
 	// 3.2 — the score limit, checked where the kill was credited. FinishMatch itself refuses

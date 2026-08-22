@@ -113,14 +113,14 @@ void ABNPlayerState::ApplyInitAttributes()
 	}
 }
 
-void ABNPlayerState::BroadcastDeath(ABNPlayerState* Killer)
+void ABNPlayerState::BroadcastDeath(ABNPlayerState* Killer, FName SourceName)
 {
 	// Authority only: the GameMode is the subscriber and only exists there, and a client
 	// broadcasting a death would be a second source of truth for the one thing that is entirely
 	// the server's.
 	if (AbilitySystemComponent && AbilitySystemComponent->IsOwnerActorAuthoritative())
 	{
-		OnPlayerDeath.Broadcast(this, Killer);
+		OnPlayerDeath.Broadcast(this, Killer, SourceName);
 	}
 }
 

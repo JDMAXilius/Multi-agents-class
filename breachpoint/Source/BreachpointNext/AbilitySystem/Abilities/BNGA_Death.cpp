@@ -78,9 +78,13 @@ void UBNGA_Death::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const
 		// the log line. A weak pointer that no longer resolves (killer disconnected while their
 		// grenade flew) degrades to null, which the subscriber words as "died", never a crash.
 		ABNPlayerState* KillerPS = nullptr;
+		// R7.3 — and WITH WHAT, from the same capture. A weapon row name, one of BNDamageSource's
+		// rowless causes, or None; it travels as a name so no UI has to hold a weapon reference.
+		FName SourceName = NAME_None;
 		if (const UBNAttributeSet* Attributes = ASC->GetSet<UBNAttributeSet>())
 		{
 			const FBNLastDamage& LastDamage = Attributes->GetLastDamage();
+			SourceName = LastDamage.SourceName;
 
 			// The PLAYER STATE first: it outlives every pawn, so a grenade that kills after its
 			// thrower has died and respawned still credits the thrower. The pawn is the fallback.
@@ -93,7 +97,7 @@ void UBNGA_Death::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const
 				}
 			}
 		}
-		PS->BroadcastDeath(KillerPS);
+		PS->BroadcastDeath(KillerPS, SourceName);
 	}
 
 	// Deliberately still ACTIVE: this ability is what holds the dead tag.

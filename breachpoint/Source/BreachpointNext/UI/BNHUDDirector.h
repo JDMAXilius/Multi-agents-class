@@ -15,6 +15,7 @@ class UAbilitySystemComponent;
 class UBNActivatableWidget;
 class UBNEquipmentComponent;
 class UBNVM_Combat;
+class UTexture2D;
 class UBNVM_Match;
 class UWorld;
 
@@ -93,6 +94,15 @@ protected:
 	 *  opened it. Both callers now only set intent; this decides. Death outranks pause. */
 	void SetDeathScreenWanted(bool bWanted);
 	void UpdateGameMenuLayer();
+
+	/** R7.3 — the kill's CAUSE, resolved for the two audiences that read it differently: the feed
+	 *  wants a glyph (empty when the cause has no row or the row has no Icon), the death screen
+	 *  wants words (the row's DisplayName, else the source name itself — so "Melee" reads as
+	 *  Melee with no second mapping table, and a Grenade row added to DT_BNWeapons later starts
+	 *  drawing its own name and icon with no code change here). */
+	const struct FBNWeaponRow* FindWeaponRow(FName RowName) const;
+	TSoftObjectPtr<UTexture2D> ResolveWeaponIcon(FName RowName) const;
+	FText ComposeWeaponLabel(FName RowName) const;
 
 	/** Everything match-shaped, pushed fresh: phase + winner banner, clock, scores. */
 	void PushMatchSnapshot();

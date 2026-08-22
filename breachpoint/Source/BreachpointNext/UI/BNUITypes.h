@@ -5,6 +5,8 @@
 #include "UITag.h"
 #include "BNUITypes.generated.h"
 
+class UTexture2D;
+
 /** The CommonUI layer tags — a SECOND registrar beside BNTags, because it has to be: the stacks
  *  key on CommonUI's FUITag, and BNTags' UE_DEFINE_GAMEPLAY_TAG macros produce plain
  *  FGameplayTags.
@@ -79,6 +81,14 @@ struct FBNKillfeedViewEntry
 	/** White row: the local player is in this line (the one colour that means "you" in a list). */
 	UPROPERTY()
 	bool bInvolvesSelf = false;
+
+	/** R7.3 — the design's 22×8 weapon glyph, resolved by the director from the kill's source
+	 *  name. Unset for a cause with no weapon row (melee, a grenade, world damage) and for a row
+	 *  whose Icon column is empty: the row then draws the line alone rather than a placeholder.
+	 *  The NAME is deliberately not carried here — the feed shows a glyph, the death screen shows
+	 *  the words, and a feed line that grows a text weapon stops fitting its measured 340px. */
+	UPROPERTY()
+	TSoftObjectPtr<UTexture2D> WeaponIcon;
 };
 
 /** One scoreboard row as the VIEW knows it — built by the director (the one gameplay-aware

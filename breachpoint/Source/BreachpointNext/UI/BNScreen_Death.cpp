@@ -33,6 +33,7 @@ void UBNScreen_Death::BindViewModels()
 
 	for (const UE::FieldNotification::FFieldId FieldId : {
 		UBNVM_Combat::FFieldNotificationClassDescriptor::KilledByLine,
+		UBNVM_Combat::FFieldNotificationClassDescriptor::KilledByWeapon,
 		UBNVM_Combat::FFieldNotificationClassDescriptor::RespawnSecondsRemaining })
 	{
 		if (FieldId.IsValid())
@@ -79,6 +80,15 @@ void UBNScreen_Death::Refresh()
 		// Empty while the killfeed bunch is in flight — an honest blank the ring catch-up fills
 		// a moment later, never a guessed name.
 		KilledByText->SetText(Combat->GetKilledByLine());
+	}
+	if (WeaponText)
+	{
+		// R7.3 — the weapon under the name. COLLAPSED when unnamed rather than blanked: the two
+		// lines are a vertical box, and an empty row would push the respawn clock down a line
+		// for exactly the deaths the door could not explain.
+		const FText Weapon = Combat->GetKilledByWeapon();
+		WeaponText->SetText(Weapon);
+		WeaponText->SetVisibility(Weapon.IsEmpty() ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
 	}
 	if (RespawnText)
 	{

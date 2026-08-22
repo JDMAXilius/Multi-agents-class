@@ -40,9 +40,19 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
 	TObjectPtr<UImage> WeaponIcon;
 
+	/** R7.3 — the stowed slot under the rule: the weapon ONE swap press away. Both optional and
+	 *  both hidden together when there is nothing to swap to, so a one-weapon carry shows an
+	 *  empty rule rather than the gun already in the hand. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
+	TObjectPtr<UTextBlock> StowedNameText;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
+	TObjectPtr<UImage> StowedIcon;
+
 	TArray<TPair<UE::FieldNotification::FFieldId, FDelegateHandle>> BoundFields;
 	TWeakObjectPtr<UBNVM_Combat> BoundViewModel;
 
 	/** The icon currently on the brush, so a per-shot Refresh never re-issues the load. */
 	TSoftObjectPtr<UTexture2D> AppliedIcon;
+	TSoftObjectPtr<UTexture2D> AppliedStowedIcon;
 };

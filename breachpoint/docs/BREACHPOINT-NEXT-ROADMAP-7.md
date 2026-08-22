@@ -228,6 +228,7 @@ registration dedupes without complaint. BN's `UE_DEFINE_GAMEPLAY_TAG` macros pro
 | — (geometry) | **MEASURED, not invented** — the ticket's numbers come from the project's own Figma (node `6:47`): vitals x503.33 y66 273.33×20 as an ARC, band x474.67 y622 302×22 with its midpoint deliberately 14.33px left of centre, feed x60 y455 340×76, tray as ONE 280×110 unit |
 | R7.1 (weapon icon) | **LANDED**, critic HOLD→cleared — 3 blocking fixed (the `UTexture2D` fwd decl, the `TSoftObjectPtr`/`nullptr` ternary that does not deduce, and an invented `EquipSerial` counter justified by a false claim about the reference) |
 | R7.2 (pause menu) | **LANDED**, critic HOLD→cleared — 3 blocking fixed (incomplete type at `IsActivated()`, `bIsBackHandler` binding nothing so the menu had no keyboard exit, and `Layer.GameMenu` owned by two callers — dying while paused buried the menu and respawn re-activated it) |
+| R7.3 (cause + stowed) | **LANDED** — the killing weapon travels as one FName from the door to the feed, no custom effect context; the stowed slot is the next weapon in the cycle |
 | G5 | `TASK-R7-WBP-HUD` cut — **eleven** WBPs (the scoreboard row and the pause screen joined), Tab + Esc + `Gamepad_Special_Right` input assets, and the weapon `Icon` column |
 
 **Not compiled** — the founder's next build is the first real test; `TEST-HUD.md` is the protocol.
@@ -240,8 +241,8 @@ Landing the cheap one now; the other two are written down rather than guessed at
 | # | Item | State |
 |---|---|---|
 | 1.1 | **Weapon icon** — `FBNWeaponRow.Icon` (soft `UTexture2D`) → VM → the ammo block's silhouette slot | **CODE LANDED; the SLOT is open, the gap is not closed.** Nothing fills the column yet, so every row reads null and the Image stays hidden. `TASK-R7-WBP-HUD` Step 5 authors it — art already exists under `Content/UI/HUD/HUD_Weapon_*` |
-| 1.2 | **The killing weapon** (the feed's measured `Weapon Glyph` 22×8, and the death screen's weapon line) | **DEFERRED, sized:** the damage door takes a row, not a row NAME, and carrying an `FName` from the door to `FBNLastDamage` needs a custom `FGameplayEffectContext` (with `NetSerialize` + `TStructOpsTypeTraits` + an allocation override) or a server-side pre-stash. That is a gameplay packet with its own critic pass, not a UI rider |
-| 1.3 | **The stowed slot** | **FOUNDER DECISION.** The design carries one stowed weapon; BN carries FIVE (Unarmed/Pistol/Rifle/Shotgun/Knife), so "stowed" has no single meaning here. The useful reading is *what one swap press gives you* — the NEXT weapon in the cycle. Say the word and it is a getter on the equipment component plus two VM fields |
+| 1.2 | **The killing weapon** (the feed's measured `Weapon Glyph` 22×8, and the death screen's weapon line) | **LANDED in R7.3** — without the custom context. See §R7.3 |
+| 1.3 | **The stowed slot** | **LANDED in R7.3** — the founder's answer was "do it": the useful reading is the NEXT weapon in the swap cycle. See §R7.3 |
 
 ## R7.2 — the pause menu (the first interactive screen)
 
@@ -285,6 +286,58 @@ nothing is worse than a button that is absent.
 Also recorded from the same pass: **grenade and equipment counts do not exist as state anywhere**
 (the pips in the design have nothing to bind), and the FFA reading of the design's two team bars
 is *me vs the leader* — which needs no rework when teams land.
+
+## R7.3 — WHAT killed you, and WHAT you swap to
+
+Two slots R7.1 wrote down rather than guessed at, both now filled. Neither needed the custom
+`FGameplayEffectContext` that made 1.2 look like its own packet.
+
+**The cause travels as ONE FName**, from the door to the feed: `BNDamage::ApplyDamage` takes a
+`SourceName`, `ApplyWeaponDamage` passes the weapon's ROW NAME (a row does not know its own key,
+so the caller hands both), and the two causes with no row are named as words in
+`BNDamageSource` — `Melee` and `Grenade`. Melee is deliberately NOT the weapon in the hand: a
+rifle butt is a melee kill, and crediting the rifle would put a rifle glyph on a line the player
+knows was a beatdown.
+
+**Why a stash and not the spec** (the part R7.1 got wrong by omission): an FName cannot ride
+`FGameplayEffectContext` without a custom subclass — `NetSerialize`, `TStructOpsTypeTraits`, an
+allocation override — which is what made this look expensive. But the door is SYNCHRONOUS on the
+server: an instant GE runs `PostGameplayEffectExecute` inside `ApplyGameplayEffectSpecToSelf`, in
+the door's own call stack. So the value only has to survive four frames of stack, and a
+save/restore file-static carries it — nested damage (a death that detonates something) restores
+the outer cause instead of clearing it. Nothing new replicates on the damage path; the NAME
+replicates once, on the killfeed ring, where it was always going to.
+
+**The chain:** door → `FBNLastDamage.SourceName` (authority-only, like the rest of that capture)
+→ `UBNGA_Death` reads it → `BroadcastDeath(Killer, SourceName)` → `ABNGameMode` (which also
+prints it in the kill line — the one place a wrong GLYPH can be told apart from a wrong CAPTURE
+without a debugger) → `FBNKillfeedEntry.SourceName` → the director resolves it against the weapon
+table on whatever machine is reading.
+
+**Two audiences, resolved differently, on purpose:**
+- the FEED gets a GLYPH (`FBNKillfeedViewEntry.WeaponIcon`, the row's `Icon`), absent when the
+  cause has no row or the row has no art — a feed line that grew a text weapon would stop fitting
+  its measured 340px;
+- the DEATH SCREEN gets WORDS (`KilledByWeapon` → `WeaponText`), the row's `DisplayName` or the
+  source name itself. That fallback IS the design for the rowless causes, which is why they are
+  named as words — and the day a `Grenade` row lands in `DT_BNWeapons` it starts drawing its own
+  name and icon with no code change.
+
+**The stowed slot** is the founder's call, executed: BN carries five weapons, so "stowed" means
+*what one swap press gives you* — `UBNEquipmentComponent::GetNextWeapon()`, sharing `GetNextIndex`
+with `EquipNext` so the HUD cannot promise a weapon the swap does not deliver. It is pushed on
+EVERY hand change, unarmed included: the current weapon and the next one move together or the
+tray lies.
+
+**Two different nulls, found while writing it:** BN's carry holds a REAL unarmed slot as a null
+array entry (Unarmed → Pistol → Rifle → Shotgun → Knife), so a null "next weapon" can mean *the
+next press empties your hands* — worth printing — or *there is nowhere to swap to*. Hence
+`HasNextSlot()` beside `GetNextWeapon()`: no slot clears the line, an empty slot reads "Unarmed",
+the same word the hand already uses for the same state.
+
+Both halves are authority-fed and client-safe: the ring carries the name, `Weapons` and
+`CurrentIndex` already replicate, and the weapon TABLE is on every machine — so a client resolves
+the killer's weapon without ever seeing the killer's weapon actor.
 
 ## Deferred, with named slots
 

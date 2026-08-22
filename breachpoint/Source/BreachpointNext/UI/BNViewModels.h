@@ -61,10 +61,18 @@ public:
 		const TSoftObjectPtr<UTexture2D>& InIcon = TSoftObjectPtr<UTexture2D>());
 	void SetAmmo(int32 InMagAmmo, int32 InReserveAmmo);
 
+	/** Director only: R7.3's stowed slot — the weapon ONE swap press away, which is what "stowed"
+	 *  can honestly mean in a five-slot carry. Empty name = nothing to swap to (a single-weapon
+	 *  loadout), which the block renders as an empty slot, not a dash. */
+	void SetStowedWeapon(const FText& InName, const TSoftObjectPtr<UTexture2D>& InIcon = TSoftObjectPtr<UTexture2D>());
+
 	/** Director only: the dead state and its clock. RespawnAt <= 0 clears the countdown. The VM
 	 *  owns the per-second update — one timer, aligned to the stamp, never a tick. */
 	void SetDead(bool bInDead);
-	void SetKilledByLine(const FText& InLine);
+	/** The killer's line and, from R7.3, WHAT they used — the design's second line under the
+	 *  name. An empty weapon is the honest answer for a cause with no row and for a death the
+	 *  feed never explained; the screen then shows the name alone. */
+	void SetKilledByLine(const FText& InLine, const FText& InWeapon = FText::GetEmpty());
 	void SetRespawnStamp(double InRespawnAtServerTime, AGameStateBase* InTimeSource);
 
 	/** Travel and rebind reset: everything back to Unknown, timers down. */
@@ -81,8 +89,11 @@ public:
 	EBNUIDataState GetEquipmentState() const { return EquipmentState; }
 	/** By value, matching the compiled reference's soft-pointer getter shape. */
 	TSoftObjectPtr<UTexture2D> GetWeaponIcon() const { return WeaponIcon; }
+	FText GetStowedWeaponName() const { return StowedWeaponName; }
+	TSoftObjectPtr<UTexture2D> GetStowedWeaponIcon() const { return StowedWeaponIcon; }
 	bool IsDead() const { return bIsDead; }
 	FText GetKilledByLine() const { return KilledByLine; }
+	FText GetKilledByWeapon() const { return KilledByWeapon; }
 	int32 GetRespawnSecondsRemaining() const { return RespawnSecondsRemaining; }
 
 private:
@@ -127,12 +138,22 @@ private:
 	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetWeaponIcon", Category = "BN|Combat", meta = (AllowPrivateAccess))
 	TSoftObjectPtr<UTexture2D> WeaponIcon;
 
+	// ---- the stowed slot (R7.3): the NEXT weapon in the swap cycle, not a second inventory ----
+	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetStowedWeaponName", Category = "BN|Combat", meta = (AllowPrivateAccess))
+	FText StowedWeaponName;
+
+	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetStowedWeaponIcon", Category = "BN|Combat", meta = (AllowPrivateAccess))
+	TSoftObjectPtr<UTexture2D> StowedWeaponIcon;
+
 	// ---- death ----
 	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "IsDead", Category = "BN|Combat", meta = (AllowPrivateAccess))
 	bool bIsDead = false;
 
 	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetKilledByLine", Category = "BN|Combat", meta = (AllowPrivateAccess))
 	FText KilledByLine;
+
+	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetKilledByWeapon", Category = "BN|Combat", meta = (AllowPrivateAccess))
+	FText KilledByWeapon;
 
 	/** INDEX_NONE = no respawn pending; 0 = imminent. */
 	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetRespawnSecondsRemaining", Category = "BN|Combat", meta = (AllowPrivateAccess))
@@ -180,7 +201,8 @@ public:
 
 	/** Director only, once per NEW ring entry (dedupe by Sequence is the CALLER's job via
 	 *  GetLastKillfeedSequence). Stamps the LOCAL expiry on the entry and trims the view pool. */
-	void PushKillfeedEntry(const FText& InLine, int32 InSequence, bool bInvolvesSelf);
+	void PushKillfeedEntry(const FText& InLine, int32 InSequence, bool bInvolvesSelf,
+		const TSoftObjectPtr<UTexture2D>& InWeaponIcon = TSoftObjectPtr<UTexture2D>());
 	int32 GetLastKillfeedSequence() const { return LastKillfeedSequence; }
 
 	FBNKillfeedViewChangedSignature OnKillfeedViewChanged;

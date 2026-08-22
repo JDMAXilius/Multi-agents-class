@@ -34,6 +34,8 @@ void UBNAmmoBlock::NativeConstruct()
 	BindCombatField(Combat, UBNVM_Combat::FFieldNotificationClassDescriptor::ReserveAmmo);
 	BindCombatField(Combat, UBNVM_Combat::FFieldNotificationClassDescriptor::EquipmentState);
 	BindCombatField(Combat, UBNVM_Combat::FFieldNotificationClassDescriptor::WeaponIcon);
+	BindCombatField(Combat, UBNVM_Combat::FFieldNotificationClassDescriptor::StowedWeaponName);
+	BindCombatField(Combat, UBNVM_Combat::FFieldNotificationClassDescriptor::StowedWeaponIcon);
 
 	Refresh();
 }
@@ -109,5 +111,28 @@ void UBNAmmoBlock::Refresh()
 			AppliedIcon = Icon;
 		}
 		WeaponIcon->SetVisibility(bHasIcon ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
+	}
+
+	// R7.3 — the stowed slot. Its own emptiness test: the stowed name is empty whenever there is
+	// nothing to swap to, which is a different question from whether the HAND is known, so it is
+	// not gated on bLive.
+	const FText StowedName = Combat ? Combat->GetStowedWeaponName() : FText::GetEmpty();
+	const bool bHasStowed = !StowedName.IsEmpty();
+	if (StowedNameText)
+	{
+		StowedNameText->SetText(StowedName);
+		StowedNameText->SetVisibility(bHasStowed ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
+	}
+	if (StowedIcon)
+	{
+		const TSoftObjectPtr<UTexture2D> Icon = Combat ? Combat->GetStowedWeaponIcon() : TSoftObjectPtr<UTexture2D>();
+		const bool bHasStowedIcon = bHasStowed && !Icon.IsNull();
+		// The same load-once guard as the hand's icon, for the same reason.
+		if (bHasStowedIcon && Icon != AppliedStowedIcon)
+		{
+			StowedIcon->SetBrushFromSoftTexture(Icon, /*bMatchSize=*/false);
+			AppliedStowedIcon = Icon;
+		}
+		StowedIcon->SetVisibility(bHasStowedIcon ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
 	}
 }

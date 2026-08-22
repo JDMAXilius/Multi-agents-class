@@ -36,6 +36,11 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
 	TObjectPtr<UTextBlock> RespawnText;
 
+	/** R7.3 — the design's second line: WHAT they used. Hidden when the death has no named
+	 *  cause, so the screen never shows an empty row where a weapon should be. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
+	TObjectPtr<UTextBlock> WeaponText;
+
 	TArray<TPair<UE::FieldNotification::FFieldId, FDelegateHandle>> BoundFields;
 	TWeakObjectPtr<UBNVM_Combat> BoundViewModel;
 };

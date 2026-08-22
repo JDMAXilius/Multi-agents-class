@@ -192,7 +192,7 @@ void ABNProjectile::Explode()
 		UE_LOG(LogBN, Log, TEXT("BNProjectile: blast — %s for %.0f at %.0fuu."),
 			*GetNameSafe(Target), Amount, Distance);
 
-		BNDamage::ApplyDamage(Thrower, Target, Amount, BlastHit);
+		BNDamage::ApplyDamage(Thrower, Target, Amount, BlastHit, BNDamageSource::Grenade);
 	}
 
 	// Law 6: the bang is a cue, never a spawn from actor code. But it is multicast from the

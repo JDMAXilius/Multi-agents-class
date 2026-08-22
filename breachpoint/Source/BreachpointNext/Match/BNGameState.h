@@ -28,6 +28,12 @@ struct FBNKillfeedEntry
 	UPROPERTY()
 	FString KillerName;
 
+	/** R7.3 — WHAT did it: a weapon ROW NAME the UI resolves for a display name and a glyph, or
+	 *  one of BNDamageSource's rowless causes (Melee, Grenade), or None. A name, not a weapon
+	 *  reference: the weapon that fired is routinely destroyed before this line ages out. */
+	UPROPERTY()
+	FName SourceName;
+
 	/** Server-assigned, monotonic, never reused — the reader's dedupe key: a ring that
 	 *  re-replicates hands the client the same entries again, and index positions shift. */
 	UPROPERTY()
@@ -80,7 +86,7 @@ public:
 	/** Authority: append one decided kill. Names resolved HERE, while both parties are alive to
 	 *  ask; the ring holds the newest KillfeedCapacity entries and the oldest falls off — the
 	 *  drop is by design, a feed is not a match log. */
-	void PushKillfeedEntry(ABNPlayerState* Victim, ABNPlayerState* Killer);
+	void PushKillfeedEntry(ABNPlayerState* Victim, ABNPlayerState* Killer, FName SourceName = NAME_None);
 
 	/** Authority, the restart's: last round's kills are the previous record and must not
 	 *  replicate into the new one (critic, R7 W1). The Sequence counter is NOT reset — readers

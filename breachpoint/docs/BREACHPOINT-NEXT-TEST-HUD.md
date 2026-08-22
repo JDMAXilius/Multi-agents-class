@@ -43,6 +43,24 @@ end: pins itself with "<name> WINS" (winner's name cyan in the rows) or "DRAW"; 
 at the buzzer sees the scoreboard, NOT a stuck death screen. Restart: it unpins, scores zero,
 killfeed empty.
 
+## 4b. The cause of death (R7.3)
+
+Kill a bot with the rifle: the feed line carries a weapon glyph (only if `DT_BNWeapons.Icon` is
+filled for that row — a missing glyph with everything else alive is the column, not the chain).
+Die to a bot and read the death screen: the killer's name, and the weapon under it. Kill with a
+**melee**: the screen must read `Melee`, never the weapon in your hands. A grenade kill reads
+`Grenade` with no glyph until a `Grenade` row exists in the table.
+
+The server's own line is the arbiter: `BNGameMode: X eliminated Y with 'Rifle'`. If that line is
+right and the screen is wrong, the fault is in the UI half; if the LINE says `None`, the capture
+never happened — check that the damage went through `BNDamage`, which is the only door that
+stamps a cause.
+
+**The stowed slot:** the tray's lower line shows the NEXT weapon in the swap cycle, and swapping
+rotates both readings together — never the gun already in your hands. Swap until the NEXT slot is
+the unarmed one: the line must read "Unarmed" (an empty slot is a real state, not a blank), and
+the press after it must actually empty your hands. A one-weapon loadout shows nothing at all.
+
 ## 5. The pause menu (R7.2) — **Standalone only**
 
 **Escape is the editor's Stop-PIE shortcut**, so this section cannot be run in a PIE window: the
@@ -80,6 +98,8 @@ PlayerState maps.
   BN ships no `UCommonUIInputData`, so `bIsBackHandler` binds nothing; the flag is a hook for the
   day that asset lands. Gamepad OPEN needs the `Gamepad_Special_Right` mapping row from the WBP
   ticket — without it a pad can close the menu but never open it.
-- **The death screen names WHO, never WITH WHAT.** The design's "ASSAULT RIFLE" line under the
-  killer has no feed: `FBNKillfeedEntry` carries no weapon, so R7 leaves that slot empty rather
-  than guessing. Unblocking it is one `FName` on the ring, pushed where the kill is decided.
+- **A death the door could not name shows the killer alone.** Damage applied outside `BNDamage`
+  (there is none today) captures `None`, and both the glyph and the weapon line stay absent —
+  the honest-unknown rule, applied to the cause.
+- **The killfeed glyph is art-gated.** No `Icon` on the row, no glyph; the line still reads —
+  the death screen still names the weapon in words, which is where R7.3 put the readable half.
