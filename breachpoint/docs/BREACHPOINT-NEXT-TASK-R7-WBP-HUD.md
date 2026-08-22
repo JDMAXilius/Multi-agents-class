@@ -214,3 +214,68 @@ trap). Everything the terminal can prove without one is proven; these are handed
 the UMG toolset compiles on every `AddWidget`, so each intermediate tree is compiled before
 its children exist. A fresh recompile after the pass produces **zero** new occurrences.
 Historical noise, not a defect.
+
+### 22 August 2026 (later) — founder: make it dynamic, and build it like the Buttons
+
+Two corrections, both landed.
+
+#### 1. The HUD now covers the window that is playing
+
+The first pass placed every surface with a top-left anchor and an absolute offset on a
+1280×720 grid. That is a fixed pixel canvas, not a HUD: in a 920×340 PIE viewport the tray
+(940,580) simply fell off the bottom-right. Fixed in two halves, both needed:
+
+**Anchors.** Every surface is now pinned to the edge the design puts it on, read back live:
+
+| Surface | anchor | alignment | offset | size |
+|---|---|---|---|---|
+| `Vitals` | 0.5, 0 | 0.5, 0 | 0, 66 | 273.33 × 34 |
+| `BannerText` | 0.5, 0 | 0.5, 0 | 0, 132 | 274 × 30 |
+| `ReticleDot` | 0.5, 0.5 | 0.5, 0.5 | 0, 0 | 40 × 40 |
+| `MatchBand` | 0.5, 1 | 0.5, 1 | **−14.33**, −76 | 302 × 22 |
+| `Killfeed` | 0, 1 | 0, 1 | 60, −189 | 340 × 76 |
+| `AmmoBlock` | 1, 1 | 1, 1 | −60, −30 | 280 × 110 |
+
+Each is the SAME measured rectangle, expressed as an inset from its own edge instead of from
+0,0 — arithmetic, not new numbers. The band's deliberate 14.33px left-of-centre offset
+survives as an offset from the bottom-centre anchor, which is the only place it can survive a
+resize. The death screen's column moved onto a canvas at anchor (0.5, **0.4**) — 40% of the
+LIVE height, not a hard-coded 288px — and the pause plate now anchors (0,0)→(0,1), so it
+stretches to whatever height the window has.
+
+**DPI.** `Config/DefaultEngine.ini` gains `[/Script/Engine.UserInterfaceSettings]`:
+`UIScaleRule=ShortestSide`, curve `Scale = ShortestSide / 720` (0→0, 720→1, 1080→1.5,
+2160→3, linear). The ENGINE DEFAULT maps 1080→1.0 and 720→0.666, so anything authored on the
+720p grid *shrinks as the window grows*. This is not a guess about the design resolution:
+`UBRScrim` states it in C++ — `DesignCanvasWidth = 1280.0f, DesignCanvasHeight = 720.0f`.
+Read back off the live CDO after an editor restart, so the ini genuinely loads.
+
+**PROJECT-WIDE, and deliberately so.** The curve also rescales `/Game/UI`, whose own
+wireframe says "measured from 1920×1080 capture ÷ 1.5" — the same grid. Deleting the section
+reverts to the engine default.
+
+#### 2. Built the way `Content/UI/Components/Buttons` is built
+
+Read `WBP_ButtonDefault` / `WBP_ButtonIconOnly` and adopted their four habits, everywhere:
+
+| Habit in the reference | Applied to BN |
+|---|---|
+| Root is a `SizeBox` — the widget states its own size | `RootSizeBox` on all six composables (Vitals 273.33×34, Band 302×22, Tray 280×110, Killfeed 340×76, entry/row h20). Sizing no longer depends on the parent slot alone |
+| `CommonTextBlock`, never raw `TextBlock` | **All 23** text widgets swapped. `UCommonTextBlock` derives from `UTextBlock`, so every `BindWidget` still resolves — read back and recompiled |
+| `BRRule` for decorative lines, not an Image or a "\|" glyph | `CentreTick` (vitals) · `SepLeft`/`SepRight` (band) · `AmmoDivider` (tray) · `TitleRule` (pause) · new `HeaderRule` (scoreboard). One draw element, token colour, self-sizing, `HitTestInvisible` in its own constructor |
+| `BRHairlineBorder` over a fill for a plate (`TextFrameFill` + `Border`) | `MenuPlate` and `BoardPlate` are now `Overlay → …Fill (Border) + …Edge (BRHairlineBorder) + …Pad (Border) → content` |
+| `visibility` set on decoration so it never eats a click | Every element C++ does not drive is explicitly `HitTestInvisible` |
+
+`BRRule` / `BRHairlineBorder` live in the `Breachpoint` module. This is a CONTENT reference,
+not a compile dependency — no `Build.cs` change; both modules load in every target.
+
+**One piece of the pattern NOT adopted, and why.** `UBRScrim` is the project's scrim
+primitive and is exactly right for the death dim and the pause scrim — but its constructor
+sets `Collapsed` and it only shows when C++ calls `SetScrimActive(true)`. `BNScreen_Death`
+and `BNScreen_Pause` never call it, so swapping the `Image` for a `UBRScrim` would render
+nothing at all. That is a `Source/` line, so it is handed back, not improvised.
+
+**Verified:** all eleven recompile, PIE prints `BNUI: root layout up` → `BNUI: HUD up` with
+zero unresolved-class warnings, and the capture shows vitals top-centre, reticle dead centre,
+band bottom-centre, tray bottom-right — all inside a viewport nothing like 1280×720.
+Items 5.4–5.7 of the original read-back still need a hand on the keyboard.
