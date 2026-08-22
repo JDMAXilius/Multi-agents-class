@@ -218,7 +218,7 @@ registration dedupes without complaint. BN's `UE_DEFINE_GAMEPLAY_TAG` macros pro
 `FGameplayTag` and cannot declare these. Two registrars, two jobs: `BNTags` for gameplay,
 `FBNUITags` for layers.
 
-## Status — 21 Aug 2026
+## Status — 22 Aug 2026
 
 | Wave | State |
 |---|---|
@@ -226,7 +226,9 @@ registration dedupes without complaint. BN's `UE_DEFINE_GAMEPLAY_TAG` macros pro
 | 2 (spine) | **LANDED**, critic verdict SHIP — 0 blocking, 6 of 9 notes fixed (GameStateSet handle, standing-dead screen push, name-fallback killed-by, post-match pops the death screen, killfeed as 4th acquisition edge, no manager on dedicated) |
 | 3 (surfaces) + 4 (screens) | **LANDED**, critic verdict HOLD→cleared — 1 blocking fixed (the roster had no join/leave hook while its comment claimed one; opening the board now recomputes), + explicit Game input config on both screens, dimmed Unknown dash, silent empty roster |
 | — (geometry) | **MEASURED, not invented** — the ticket's numbers come from the project's own Figma (node `6:47`): vitals x503.33 y66 273.33×20 as an ARC, band x474.67 y622 302×22 with its midpoint deliberately 14.33px left of centre, feed x60 y455 340×76, tray as ONE 280×110 unit |
-| G5 | `TASK-R7-WBP-HUD` cut — ten WBPs (the scoreboard row joined), Tab input assets |
+| R7.1 (weapon icon) | **LANDED**, critic HOLD→cleared — 3 blocking fixed (the `UTexture2D` fwd decl, the `TSoftObjectPtr`/`nullptr` ternary that does not deduce, and an invented `EquipSerial` counter justified by a false claim about the reference) |
+| R7.2 (pause menu) | **LANDED**, critic HOLD→cleared — 3 blocking fixed (incomplete type at `IsActivated()`, `bIsBackHandler` binding nothing so the menu had no keyboard exit, and `Layer.GameMenu` owned by two callers — dying while paused buried the menu and respawn re-activated it) |
+| G5 | `TASK-R7-WBP-HUD` cut — **eleven** WBPs (the scoreboard row and the pause screen joined), Tab + Esc + `Gamepad_Special_Right` input assets, and the weapon `Icon` column |
 
 **Not compiled** — the founder's next build is the first real test; `TEST-HUD.md` is the protocol.
 
