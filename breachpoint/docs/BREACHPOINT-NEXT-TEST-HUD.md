@@ -61,6 +61,18 @@ rotates both readings together — never the gun already in your hands. Swap unt
 the unarmed one: the line must read "Unarmed" (an empty slot is a real state, not a blank), and
 the press after it must actually empty your hands. A one-weapon loadout shows nothing at all.
 
+## 4c. The grenade pouch (R7.4)
+
+The tray shows **2**. Throw one: **1**, and the count moves on the throw, not on the explosion.
+Throw the second: **0**, and the third press does NOTHING — no montage, no projectile, no
+cooldown. Die and respawn: back to **2** (the respawn's init GE, not a separate resupply).
+
+Two-window: the client's own count is the server's, and the spend shows immediately on the
+throwing client (it is predicted) without snapping back afterwards.
+
+**Bots:** a bot that has thrown twice must keep SHOOTING. A bot that goes quiet in grenade range —
+approaching, not firing, in bursts of a few seconds — is the empty-pouch condition failing.
+
 ## 5. The pause menu (R7.2) — **Standalone only**
 
 **Escape is the editor's Stop-PIE shortcut**, so this section cannot be run in a PIE window: the

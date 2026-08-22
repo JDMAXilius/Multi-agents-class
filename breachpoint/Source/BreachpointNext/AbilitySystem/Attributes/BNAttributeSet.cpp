@@ -21,6 +21,8 @@ void UBNAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 	DOREPLIFETIME_CONDITION_NOTIFY(UBNAttributeSet, MaxShield, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UBNAttributeSet, Health, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UBNAttributeSet, Shield, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UBNAttributeSet, MaxGrenades, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UBNAttributeSet, Grenades, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UBNAttributeSet, MoveSpeed, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UBNAttributeSet, SprintSpeedMultiplier, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UBNAttributeSet, ADSSpeedMultiplier, COND_None, REPNOTIFY_Always);
@@ -60,6 +62,18 @@ void UBNAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, fl
 		// State.Shields.Broken on a pool that was supposed to not exist. Floor at zero, not above it.
 		NewValue = FMath::Max(NewValue, 0.f);
 	}
+	else if (Attribute == GetGrenadesAttribute())
+	{
+		// MaxHealth's shape, not MaxShield's: an uninitialised max floors instead of clamping, so
+		// a joining client whose Grenades bunch beats MaxGrenades does not read zero grenades.
+		const float Max = GetMaxGrenades();
+		NewValue = Max > 0.f ? FMath::Clamp(NewValue, 0.f, Max) : FMath::Max(NewValue, 0.f);
+	}
+	else if (Attribute == GetMaxGrenadesAttribute())
+	{
+		// Zero is legal — see the attribute's comment. Floor at zero, never above it.
+		NewValue = FMath::Max(NewValue, 0.f);
+	}
 	else if (Attribute == GetMoveSpeedAttribute() || Attribute == GetSprintSpeedMultiplierAttribute() || Attribute == GetADSSpeedMultiplierAttribute())
 	{
 		NewValue = FMath::Max(NewValue, UE_KINDA_SMALL_NUMBER);
@@ -82,6 +96,14 @@ void UBNAttributeSet::PreAttributeBaseChange(const FGameplayAttribute& Attribute
 	else if (Attribute == GetShieldAttribute())
 	{
 		const float Max = GetMaxShield();
+		NewValue = Max > 0.f ? FMath::Clamp(NewValue, 0.f, Max) : FMath::Max(NewValue, 0.f);
+	}
+	else if (Attribute == GetGrenadesAttribute())
+	{
+		// The grenade cost is an instant Additive, which writes the BASE — the same layer the
+		// shield recharge taught this function about. Without this a mispredicted spend could
+		// leave a negative base that the current-value clamp would hide but never repair.
+		const float Max = GetMaxGrenades();
 		NewValue = Max > 0.f ? FMath::Clamp(NewValue, 0.f, Max) : FMath::Max(NewValue, 0.f);
 	}
 }
@@ -186,6 +208,16 @@ void UBNAttributeSet::OnRep_Health(const FGameplayAttributeData& OldHealth)
 void UBNAttributeSet::OnRep_Shield(const FGameplayAttributeData& OldShield)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UBNAttributeSet, Shield, OldShield);
+}
+
+void UBNAttributeSet::OnRep_Grenades(const FGameplayAttributeData& OldGrenades)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UBNAttributeSet, Grenades, OldGrenades);
+}
+
+void UBNAttributeSet::OnRep_MaxGrenades(const FGameplayAttributeData& OldMaxGrenades)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UBNAttributeSet, MaxGrenades, OldMaxGrenades);
 }
 
 void UBNAttributeSet::OnRep_MaxHealth(const FGameplayAttributeData& OldMaxHealth)

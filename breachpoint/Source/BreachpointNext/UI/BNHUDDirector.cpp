@@ -384,6 +384,8 @@ void UBNHUDDirector::EnsurePlayerBindings()
 				Bindings.MaxHealth = UBNAttributeSet::GetMaxHealthAttribute();
 				Bindings.Shield = UBNAttributeSet::GetShieldAttribute();
 				Bindings.MaxShield = UBNAttributeSet::GetMaxShieldAttribute();
+				Bindings.Grenades = UBNAttributeSet::GetGrenadesAttribute();
+				Bindings.MaxGrenades = UBNAttributeSet::GetMaxGrenadesAttribute();
 				Combat->BindToAbilitySystem(ASC, Bindings);
 
 				// Read the standing state once: a joiner can arrive already dead or mid-count —

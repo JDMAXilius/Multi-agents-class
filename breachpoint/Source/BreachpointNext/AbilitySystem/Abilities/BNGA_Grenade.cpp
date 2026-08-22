@@ -22,6 +22,12 @@ UBNGA_Grenade::UBNGA_Grenade()
 	// SpawnGrenade is authority-gated — so nothing here predicts a flight that would diverge on the
 	// first bounce, which was the real reason for the original policy.
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
+
+	// R7.4 — THE COST, and with it the first real bound on how many grenades exist. The cooldown
+	// below rate-limits throwing; it never ran out. CommitAbility now spends one from the
+	// Grenades attribute and CanActivateAbility refuses at zero, both through GAS's own cost path
+	// — no counter, no bespoke check, and the owning client predicts and rolls back the spend.
+	CostGameplayEffectClass = UBNGE_GrenadeCost::StaticClass();
 }
 
 const FGameplayTagContainer* UBNGA_Grenade::GetCooldownTags() const

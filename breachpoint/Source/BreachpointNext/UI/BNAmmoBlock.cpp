@@ -36,6 +36,8 @@ void UBNAmmoBlock::NativeConstruct()
 	BindCombatField(Combat, UBNVM_Combat::FFieldNotificationClassDescriptor::WeaponIcon);
 	BindCombatField(Combat, UBNVM_Combat::FFieldNotificationClassDescriptor::StowedWeaponName);
 	BindCombatField(Combat, UBNVM_Combat::FFieldNotificationClassDescriptor::StowedWeaponIcon);
+	BindCombatField(Combat, UBNVM_Combat::FFieldNotificationClassDescriptor::GrenadeCount);
+	BindCombatField(Combat, UBNVM_Combat::FFieldNotificationClassDescriptor::GrenadeCapacity);
 
 	Refresh();
 }
@@ -111,6 +113,15 @@ void UBNAmmoBlock::Refresh()
 			AppliedIcon = Icon;
 		}
 		WeaponIcon->SetVisibility(bHasIcon ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
+	}
+
+	// R7.4 — the pouch. Not gated on bLive either: grenades are the PLAYER's, not the weapon's,
+	// so a known count survives an unknown hand.
+	if (GrenadeCountText)
+	{
+		const int32 Grenades = Combat ? Combat->GetGrenadeCount() : static_cast<int32>(INDEX_NONE);
+		GrenadeCountText->SetText(Grenades >= 0 ? FText::AsNumber(Grenades) : FText::GetEmpty());
+		GrenadeCountText->SetVisibility(Grenades >= 0 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
 	}
 
 	// R7.3 — the stowed slot. Its own emptiness test: the stowed name is empty whenever there is

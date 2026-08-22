@@ -49,6 +49,11 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
 	TObjectPtr<UImage> StowedIcon;
 
+	/** R7.4 — the design's grenade slot, finally with something behind it. Shows the COUNT; the
+	 *  slot hides itself when no capacity is known, which is also how "grenades off" reads. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
+	TObjectPtr<UTextBlock> GrenadeCountText;
+
 	TArray<TPair<UE::FieldNotification::FFieldId, FDelegateHandle>> BoundFields;
 	TWeakObjectPtr<UBNVM_Combat> BoundViewModel;
 

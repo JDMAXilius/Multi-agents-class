@@ -45,6 +45,25 @@ UBNGE_InitAttributes::UBNGE_InitAttributes()
 		Modifier.ModifierMagnitude = FScalableFloat(0.f);
 		Modifiers.Add(Modifier);
 	}
+	// R7.4 — the pouch. TWO, the arena-shooter convention this design is built on, and the max
+	// goes first for the same order reason the health pair does. Respawn re-applies this whole GE,
+	// so a fresh life is a full pouch with no separate resupply path to keep in sync.
+	// Set MaxGrenades to 0 here and grenades are OFF: the cost refuses every throw and the HUD
+	// hides the slot — the same switch MaxShield already is for shields.
+	{
+		FGameplayModifierInfo Modifier;
+		Modifier.ModifierOp = EGameplayModOp::Override;
+		Modifier.Attribute = UBNAttributeSet::GetMaxGrenadesAttribute();
+		Modifier.ModifierMagnitude = FScalableFloat(2.f);
+		Modifiers.Add(Modifier);
+	}
+	{
+		FGameplayModifierInfo Modifier;
+		Modifier.ModifierOp = EGameplayModOp::Override;
+		Modifier.Attribute = UBNAttributeSet::GetGrenadesAttribute();
+		Modifier.ModifierMagnitude = FScalableFloat(2.f);
+		Modifiers.Add(Modifier);
+	}
 	{
 		FGameplayModifierInfo Modifier;
 		Modifier.ModifierOp = EGameplayModOp::Override;
@@ -68,6 +87,17 @@ UBNGE_InitAttributes::UBNGE_InitAttributes()
 		Modifier.ModifierMagnitude = FScalableFloat(1.5f);
 		Modifiers.Add(Modifier);
 	}
+}
+
+UBNGE_GrenadeCost::UBNGE_GrenadeCost()
+{
+	DurationPolicy = EGameplayEffectDurationType::Instant;
+
+	FGameplayModifierInfo Modifier;
+	Modifier.ModifierOp = EGameplayModOp::Additive;
+	Modifier.Attribute = UBNAttributeSet::GetGrenadesAttribute();
+	Modifier.ModifierMagnitude = FScalableFloat(-1.f);
+	Modifiers.Add(Modifier);
 }
 
 UBNGE_State::UBNGE_State()

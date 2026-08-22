@@ -229,6 +229,7 @@ registration dedupes without complaint. BN's `UE_DEFINE_GAMEPLAY_TAG` macros pro
 | R7.1 (weapon icon) | **LANDED**, critic HOLD→cleared — 3 blocking fixed (the `UTexture2D` fwd decl, the `TSoftObjectPtr`/`nullptr` ternary that does not deduce, and an invented `EquipSerial` counter justified by a false claim about the reference) |
 | R7.2 (pause menu) | **LANDED**, critic HOLD→cleared — 3 blocking fixed (incomplete type at `IsActivated()`, `bIsBackHandler` binding nothing so the menu had no keyboard exit, and `Layer.GameMenu` owned by two callers — dying while paused buried the menu and respawn re-activated it) |
 | R7.3 (cause + stowed) | **LANDED** — the killing weapon travels as one FName from the door to the feed, no custom effect context; the stowed slot is the next weapon in the cycle |
+| R7.4 (grenade count) | **LANDED** — grenades were infinite; they are now an attribute with a cost GE, two per life, refilled by the respawn's own init GE. The bot's throw condition asks the pouch |
 | G5 | `TASK-R7-WBP-HUD` cut — **eleven** WBPs (the scoreboard row and the pause screen joined), Tab + Esc + `Gamepad_Special_Right` input assets, and the weapon `Icon` column |
 
 **Not compiled** — the founder's next build is the first real test; `TEST-HUD.md` is the protocol.
@@ -284,7 +285,7 @@ nothing is worse than a button that is absent.
   CommonUI's richer routing, which is fine for two rows and is the trigger to revisit.
 
 Also recorded from the same pass: **grenade and equipment counts do not exist as state anywhere**
-(the pips in the design have nothing to bind), and the FFA reading of the design's two team bars
+(the pips in the design have nothing to bind — half of this is answered in §R7.4), and the FFA reading of the design's two team bars
 is *me vs the leader* — which needs no rework when teams land.
 
 ## R7.3 — WHAT killed you, and WHAT you swap to
@@ -339,10 +340,43 @@ Both halves are authority-fed and client-safe: the ring carries the name, `Weapo
 `CurrentIndex` already replicate, and the weapon TABLE is on every machine — so a client resolves
 the killer's weapon without ever seeing the killer's weapon actor.
 
+## R7.4 — the grenade count (the pip finally has something behind it)
+
+R7 recorded that **grenade and equipment counts do not exist as state anywhere** — the design's
+pips had nothing to bind. Half of that is now false, and the fix was a gameplay hole, not a UI one:
+`UBNGA_Grenade` had a COOLDOWN but no COST, so grenades were infinite and the only bound on them
+was how fast you could press the key.
+
+- **Grenades are an ATTRIBUTE** (`Grenades` / `MaxGrenades`), which is what lets the throw's cost
+  be a cost GE — purity law 2, costs are GEs. That buys three things with no bespoke code: GAS
+  refuses the activation at zero, the owning client predicts and rolls back the spend like every
+  other cost, and the HUD reads the count through the same attribute-change path the vitals
+  already use. No new feed, no new replication channel.
+- **`UBNGE_GrenadeCost` is a fixed −1, not a SetByCaller** — deliberately. GAS's own `CheckCost`
+  calls `CanApplyAttributeModifiers` on the CDO before any spec exists, so a magnitude filled in at
+  apply time would check nothing. One grenade per throw is a rule; the CAPACITY is the tuning
+  number, and it lives in the init GE.
+- **Two, and a full pouch on respawn** — the init GE already runs on every respawn, so there is no
+  separate resupply path to keep in sync. `MaxGrenades = 0` is legal and means grenades are OFF:
+  the cost refuses every throw and the HUD hides the slot. That is `MaxShield`'s precedent, and
+  the same one-number switch.
+- **The BASE clamp matters here** (the shield recharge's lesson, reused): an instant Additive
+  writes the base, so a mispredicted spend could leave a negative base the current-value clamp
+  would hide but never repair.
+- **The bots were about to break, quietly.** `FBNCanThrowGrenadeCondition` asks about the cooldown
+  precisely so a bot never presses a dead key; with a cost, an EMPTY bot would have entered the
+  throw state, been refused silently, and spent the task's whole timeout not shooting — every time
+  it had line of sight at the right range. The condition now asks the pouch too.
+- **The HUD:** `GrenadeCount` / `GrenadeCapacity` on the combat VM, both `INDEX_NONE` until a
+  capacity is known — zero grenades and no grenade system must not look identical on screen. The
+  tray's `GrenadeCountText` hides itself rather than drawing a zero.
+
+Still blocked and still honest: **equipment** has no state at all, so that pip stays empty.
+
 ## Deferred, with named slots
 
-Per-weapon reticle + spread + hit markers (wants the damage cue's confirm param) · grenade pip
-(wants grenade-count state) · nameplates (attributes already replicate to observers) · pause
+Per-weapon reticle + spread + hit markers (wants the damage cue's confirm param) · the equipment
+pip (no equipment system exists at all) · nameplates (attributes already replicate to observers) · pause
 menu & settings & front end (**the stack is now ready for them — that was the founder's point**) ·
 medals, damage direction, motion tracker · spectator HUD · MVVM editor bindings (the day a
 designer joins).

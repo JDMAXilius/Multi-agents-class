@@ -31,6 +31,10 @@ struct FBNCombatAttributeBindings
 	FGameplayAttribute MaxHealth;
 	FGameplayAttribute Shield;
 	FGameplayAttribute MaxShield;
+
+	/** R7.4 — the grenade pouch, injected like the rest: the VM counts, it does not know whose. */
+	FGameplayAttribute Grenades;
+	FGameplayAttribute MaxGrenades;
 };
 
 /**
@@ -87,6 +91,9 @@ public:
 	int32 GetMagAmmo() const { return MagAmmo; }
 	int32 GetReserveAmmo() const { return ReserveAmmo; }
 	EBNUIDataState GetEquipmentState() const { return EquipmentState; }
+	/** INDEX_NONE = unknown or none carried; the widget hides the slot rather than drawing 0. */
+	int32 GetGrenadeCount() const { return GrenadeCount; }
+	int32 GetGrenadeCapacity() const { return GrenadeCapacity; }
 	/** By value, matching the compiled reference's soft-pointer getter shape. */
 	TSoftObjectPtr<UTexture2D> GetWeaponIcon() const { return WeaponIcon; }
 	FText GetStowedWeaponName() const { return StowedWeaponName; }
@@ -99,6 +106,7 @@ public:
 private:
 	void HandleAttributeChanged(const FOnAttributeChangeData& Data);
 	void RefreshVitals();
+	void RefreshGrenades();
 	void UpdateRespawnClock();
 	void ScheduleNextRespawnUpdate();
 	void StopRespawnClock();
@@ -132,6 +140,14 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetEquipmentState", Category = "BN|Combat", meta = (AllowPrivateAccess))
 	EBNUIDataState EquipmentState = EBNUIDataState::Unknown;
+
+	// ---- the pouch (R7.4). Both INDEX_NONE until a capacity is known: zero grenades and no
+	// grenade system look identical on screen otherwise, and one of them is a lie.
+	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetGrenadeCount", Category = "BN|Combat", meta = (AllowPrivateAccess))
+	int32 GrenadeCount = INDEX_NONE;
+
+	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetGrenadeCapacity", Category = "BN|Combat", meta = (AllowPrivateAccess))
+	int32 GrenadeCapacity = INDEX_NONE;
 
 	/** A FieldNotify soft pointer — the compiled reference's own shape (its roster emblem is
 	 *  declared and set exactly this way), so no counter is needed to force a notify. */
@@ -169,6 +185,8 @@ private:
 	float RawMaxHealth = 0.f;
 	float RawShield = 0.f;
 	float RawMaxShield = 0.f;
+	float RawGrenades = 0.f;
+	float RawMaxGrenades = 0.f;
 	bool bAnyVitalsSeen = false;
 
 	TWeakObjectPtr<AGameStateBase> RespawnTimeSource;

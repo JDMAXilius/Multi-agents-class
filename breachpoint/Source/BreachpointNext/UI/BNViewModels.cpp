@@ -33,7 +33,8 @@ void UBNVM_Combat::BindToAbilitySystem(UAbilitySystemComponent* InASC, const FBN
 	BoundASC = InASC;
 	Bindings = InBindings;
 
-	const FGameplayAttribute Attributes[] = { Bindings.Health, Bindings.MaxHealth, Bindings.Shield, Bindings.MaxShield };
+	const FGameplayAttribute Attributes[] = { Bindings.Health, Bindings.MaxHealth, Bindings.Shield, Bindings.MaxShield,
+		Bindings.Grenades, Bindings.MaxGrenades };
 	for (const FGameplayAttribute& Attribute : Attributes)
 	{
 		if (Attribute.IsValid())
@@ -49,8 +50,11 @@ void UBNVM_Combat::BindToAbilitySystem(UAbilitySystemComponent* InASC, const FBN
 	RawMaxHealth = Bindings.MaxHealth.IsValid() ? InASC->GetNumericAttribute(Bindings.MaxHealth) : 0.f;
 	RawShield = Bindings.Shield.IsValid() ? InASC->GetNumericAttribute(Bindings.Shield) : 0.f;
 	RawMaxShield = Bindings.MaxShield.IsValid() ? InASC->GetNumericAttribute(Bindings.MaxShield) : 0.f;
+	RawGrenades = Bindings.Grenades.IsValid() ? InASC->GetNumericAttribute(Bindings.Grenades) : 0.f;
+	RawMaxGrenades = Bindings.MaxGrenades.IsValid() ? InASC->GetNumericAttribute(Bindings.MaxGrenades) : 0.f;
 	bAnyVitalsSeen = true;
 	RefreshVitals();
+	RefreshGrenades();
 }
 
 void UBNVM_Combat::UnbindFromAbilitySystem()
@@ -77,6 +81,8 @@ void UBNVM_Combat::HandleAttributeChanged(const FOnAttributeChangeData& Data)
 	else if (Data.Attribute == Bindings.MaxHealth) { RawMaxHealth = Data.NewValue; }
 	else if (Data.Attribute == Bindings.Shield) { RawShield = Data.NewValue; }
 	else if (Data.Attribute == Bindings.MaxShield) { RawMaxShield = Data.NewValue; }
+	else if (Data.Attribute == Bindings.Grenades) { RawGrenades = Data.NewValue; RefreshGrenades(); return; }
+	else if (Data.Attribute == Bindings.MaxGrenades) { RawMaxGrenades = Data.NewValue; RefreshGrenades(); return; }
 
 	bAnyVitalsSeen = true;
 	RefreshVitals();
@@ -95,6 +101,16 @@ void UBNVM_Combat::RefreshVitals()
 	UE_MVVM_SET_PROPERTY_VALUE(ShieldValue, FMath::CeilToInt32(RawShield));
 	UE_MVVM_SET_PROPERTY_VALUE(HealthPercent, RawMaxHealth > 0.f ? FMath::Clamp(RawHealth / RawMaxHealth, 0.f, 1.f) : 0.f);
 	UE_MVVM_SET_PROPERTY_VALUE(ShieldPercent, RawMaxShield > 0.f ? FMath::Clamp(RawShield / RawMaxShield, 0.f, 1.f) : 0.f);
+}
+
+void UBNVM_Combat::RefreshGrenades()
+{
+	// The pouch's honest-unknown: a CAPACITY is the denominator here, exactly as MaxHealth is for
+	// the bar. No capacity yet (or a deliberate zero, which is grenades-off) means the slot has
+	// nothing true to say, and INDEX_NONE tells the widget to hide rather than draw a zero.
+	const bool bKnown = RawMaxGrenades > 0.f;
+	UE_MVVM_SET_PROPERTY_VALUE(GrenadeCapacity, bKnown ? FMath::FloorToInt32(RawMaxGrenades) : static_cast<int32>(INDEX_NONE));
+	UE_MVVM_SET_PROPERTY_VALUE(GrenadeCount, bKnown ? FMath::Max(0, FMath::FloorToInt32(RawGrenades)) : static_cast<int32>(INDEX_NONE));
 }
 
 void UBNVM_Combat::SetEquippedWeapon(const FText& InName, int32 InMagAmmo, int32 InReserveAmmo, bool bKnown,
@@ -220,6 +236,7 @@ void UBNVM_Combat::ClearToUnknown()
 	StopRespawnClock();
 
 	RawHealth = RawMaxHealth = RawShield = RawMaxShield = 0.f;
+	RawGrenades = RawMaxGrenades = 0.f;
 	bAnyVitalsSeen = false;
 	RespawnAtServerTime = 0.0;
 	RespawnTimeSource.Reset();
@@ -233,6 +250,8 @@ void UBNVM_Combat::ClearToUnknown()
 	UE_MVVM_SET_PROPERTY_VALUE(MagAmmo, static_cast<int32>(INDEX_NONE));
 	UE_MVVM_SET_PROPERTY_VALUE(ReserveAmmo, static_cast<int32>(INDEX_NONE));
 	UE_MVVM_SET_PROPERTY_VALUE(EquipmentState, EBNUIDataState::Unknown);
+	UE_MVVM_SET_PROPERTY_VALUE(GrenadeCount, static_cast<int32>(INDEX_NONE));
+	UE_MVVM_SET_PROPERTY_VALUE(GrenadeCapacity, static_cast<int32>(INDEX_NONE));
 	UE_MVVM_SET_PROPERTY_VALUE(WeaponIcon, TSoftObjectPtr<UTexture2D>());
 	UE_MVVM_SET_PROPERTY_VALUE(StowedWeaponName, FText::GetEmpty());
 	UE_MVVM_SET_PROPERTY_VALUE(StowedWeaponIcon, TSoftObjectPtr<UTexture2D>());

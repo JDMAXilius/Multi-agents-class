@@ -99,6 +99,22 @@ public:
 	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Shield")
 	float ShieldRechargeDelay = 2.5f;
 
+	/** R7.4 — GRENADES AS AN ATTRIBUTE, which is what makes the throw's cost a cost GE instead of
+	 *  a counter some ability decrements (purity law 2: costs are GEs). It buys three things at
+	 *  once: GAS refuses the activation at zero with no code, the client predicts and rolls back
+	 *  the spend like every other cost, and the HUD reads the count down the same
+	 *  attribute-change path the vitals already use — no new feed.
+	 *
+	 *  MaxGrenades = 0 is LEGAL and means "no grenades in this mode" (MaxShield's precedent): the
+	 *  cost check then refuses every throw and the HUD hides the slot rather than drawing a zero. */
+	UPROPERTY(ReplicatedUsing = OnRep_Grenades)
+	FGameplayAttributeData Grenades;
+	ATTRIBUTE_ACCESSORS(UBNAttributeSet, Grenades)
+
+	UPROPERTY(ReplicatedUsing = OnRep_MaxGrenades)
+	FGameplayAttributeData MaxGrenades;
+	ATTRIBUTE_ACCESSORS(UBNAttributeSet, MaxGrenades)
+
 	UPROPERTY(ReplicatedUsing = OnRep_MoveSpeed)
 	FGameplayAttributeData MoveSpeed;
 	ATTRIBUTE_ACCESSORS(UBNAttributeSet, MoveSpeed)
@@ -124,6 +140,12 @@ protected:
 
 	/** See GetLastDamage(). Plain member, no UPROPERTY: never replicated, never serialized. */
 	FBNLastDamage LastDamage;
+
+	UFUNCTION()
+	void OnRep_Grenades(const FGameplayAttributeData& OldGrenades);
+
+	UFUNCTION()
+	void OnRep_MaxGrenades(const FGameplayAttributeData& OldMaxGrenades);
 
 	UFUNCTION()
 	void OnRep_MaxHealth(const FGameplayAttributeData& OldMaxHealth);

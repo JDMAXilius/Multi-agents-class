@@ -1,5 +1,7 @@
 #include "AI/BNBotStateTreeTasks.h"
 
+#include "AbilitySystem/Attributes/BNAttributeSet.h"
+
 #include "AI/BNBotBrain.h"
 #include "AI/BNBotController.h"
 #include "AI/BNPointOfInterest.h"
@@ -1151,6 +1153,16 @@ bool FBNCanThrowGrenadeCondition::TestCondition(FStateTreeExecutionContext& Cont
 	const ABNPlayerState* PS = Bot->GetPlayerState<ABNPlayerState>();
 	const UBNAbilitySystemComponent* ASC = PS ? PS->GetBNAbilitySystemComponent() : nullptr;
 	if (!ASC || ASC->HasMatchingGameplayTag(BNTags::Cooldown_Grenade))
+	{
+		return false;
+	}
+
+	// R7.4 — AND THE POUCH, for the same reason the cooldown is asked here rather than left to the
+	// ability: grenades can now run out, and an empty bot would otherwise enter this state, press a
+	// key the cost refuses, and spend the task's whole timeout NOT SHOOTING — every time it had
+	// line of sight at the right range. The refusal is silent; this check is what keeps the bot
+	// fighting instead of miming a throw.
+	if (ASC->GetNumericAttribute(UBNAttributeSet::GetGrenadesAttribute()) < 1.f)
 	{
 		return false;
 	}

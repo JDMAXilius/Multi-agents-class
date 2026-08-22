@@ -48,6 +48,22 @@ public:
 	UBNGE_ADS();
 };
 
+/**
+ * R7.4 — the grenade's COST: one grenade, additive, instant. A fixed -1 rather than a SetByCaller
+ * on purpose — GAS's own CheckCost calls CanApplyAttributeModifiers on this CDO before the spec
+ * exists, so a magnitude that is only filled in at apply time would check nothing. One grenade per
+ * throw is also the rule, not a tuning number; the CAPACITY is the number worth tuning, and that
+ * lives on MaxGrenades in the init GE.
+ */
+UCLASS()
+class BREACHPOINTNEXT_API UBNGE_GrenadeCost : public UGameplayEffect
+{
+	GENERATED_BODY()
+
+public:
+	UBNGE_GrenadeCost();
+};
+
 namespace BNSetByCaller
 {
 	/** UBNGE_FireCooldown's duration key. An FName, not a tag: this GE's magnitude is configured
