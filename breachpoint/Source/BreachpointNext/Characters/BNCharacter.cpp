@@ -432,8 +432,12 @@ void ABNCharacter::InitializeAnimLayer()
 	if (LayerClass)
 	{
 		MeshComp->LinkAnimClassLayers(LayerClass);
-		UE_LOG(LogBN, Log, TEXT("BNCharacter: linked anim layer %s (Lyra=%s)."),
-			*GetNameSafe(LayerClass), UsesLyraAnim() ? TEXT("yes") : TEXT("no"));
+		// The anim CLASS is named too, not just the layer: three ABP_Mannequin_Base assets exist
+		// in this project and every previous aim fix edited one the pawn does not run. This line
+		// is how you tell, from the log alone, which one is live.
+		const UAnimInstance* Anim = MeshComp->GetAnimInstance();
+		UE_LOG(LogBN, Log, TEXT("BNCharacter: linked anim layer %s onto %s."),
+			*GetNameSafe(LayerClass), *GetNameSafe(Anim ? Anim->GetClass() : nullptr));
 	}
 }
 
@@ -508,12 +512,6 @@ UClass* ABNCharacter::GetCurrentWeaponAnimLayer() const
 	return EquipmentComponent ? EquipmentComponent->GetCurrentWeaponAnimLayer() : nullptr;
 }
 
-bool ABNCharacter::UsesLyraAnim() const
-{
-	const UAnimInstance* Anim = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
-	return Anim && Anim->IsA(UBNLAnimInstance::StaticClass());
-}
-
 UClass* ABNCharacter::ResolveLyraLayerForRow(FName RowName) const
 {
 	const FSoftClassPath* Path = &LyraUnarmedAnimLayer;
@@ -545,21 +543,11 @@ UClass* ABNCharacter::ResolveLyraLayerForRow(FName RowName) const
 
 UClass* ABNCharacter::ResolveAnimLayerClass()
 {
-	if (UsesLyraAnim())
-	{
-		const ABNWeapon* Weapon = EquipmentComponent ? EquipmentComponent->GetCurrentWeapon() : nullptr;
-		return ResolveLyraLayerForRow(Weapon ? Weapon->GetRowName() : NAME_None);
-	}
-
-	if (UClass* WeaponLayer = GetCurrentWeaponAnimLayer())
-	{
-		return WeaponLayer;
-	}
-
-	if (!bUnarmedAnimLayerResolveAttempted)
-	{
-		bUnarmedAnimLayerResolveAttempted = true;
-		CachedUnarmedAnimLayer = UnarmedAnimLayer.IsNull() ? nullptr : UnarmedAnimLayer.TryLoadClass<UAnimInstance>();
-	}
-	return CachedUnarmedAnimLayer;
+	// FOUNDER'S RULING, 22 Aug 2026: LYRA LOCOMOTION ONLY. There is no second path any more —
+	// the layer is always the Lyra set, chosen by the weapon's row name from the ini. The
+	// FPSTemplate branch that used to live below (DT_BNWeapons' AnimLayerClass column, then the
+	// unarmed fallback) is deleted with the ruling: a dormant second path through the anim spine
+	// is precisely what let three aim fixes land on assets the game never loads.
+	const ABNWeapon* Weapon = EquipmentComponent ? EquipmentComponent->GetCurrentWeapon() : nullptr;
+	return ResolveLyraLayerForRow(Weapon ? Weapon->GetRowName() : NAME_None);
 }

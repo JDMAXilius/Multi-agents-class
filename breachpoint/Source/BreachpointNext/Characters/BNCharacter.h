@@ -51,10 +51,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Camera")
 	FName CameraAttachSocket = TEXT("head");
 
-	UPROPERTY(Config)
-	FSoftClassPath UnarmedAnimLayer;
-
-	/** Linked when the mesh AnimClass is-a `UBNLAnimInstance`. Children of
+	/** THE layer set — Lyra only, by the founder's 22 Aug ruling. Children of
 	 *  `ABP_ItemAnimLayersBase` — that base is the interface parent, not a pose to link. */
 	UPROPERTY(Config)
 	FSoftClassPath LyraItemAnimLayersBase;
@@ -72,16 +69,10 @@ protected:
 	FSoftClassPath LyraShotgunAnimLayer;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UClass> CachedUnarmedAnimLayer;
-
-	bool bUnarmedAnimLayerResolveAttempted = false;
-
-	UPROPERTY(Transient)
 	TObjectPtr<UClass> LinkedAnimLayerClass;
 
 	void InitializeAbilitySystem();
 	UClass* ResolveAnimLayerClass();
-	bool UsesLyraAnim() const;
 	UClass* ResolveLyraLayerForRow(FName RowName) const;
 	void OnMoveSpeedChanged(const FOnAttributeChangeData& Data);
 	void HandleDeath(UBNHealthComponent* Component);

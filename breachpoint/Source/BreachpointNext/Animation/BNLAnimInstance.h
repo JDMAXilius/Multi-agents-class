@@ -11,8 +11,18 @@ class UAbilitySystemComponent;
 class UCharacterMovementComponent;
 
 /**
- * Lyra / NewMoons test parent. Publishes the locomotion fields and GameplayTag_Is* bools that
- * `ABP_Mannequin_Base` (MigrateLyra) already binds. `UBNAnimInstance` stays the production spine.
+ * THE PRODUCTION ANIM SPINE, by the founder's ruling of 22 Aug 2026: Lyra locomotion only.
+ * Publishes the locomotion fields and GameplayTag_Is* bools that `ABP_Mannequin_Base`
+ * (MigrateLyra) already binds, and that ABP is what the pawn actually runs.
+ *
+ * THE SENTENCE THAT USED TO BE HERE SAID `UBNAnimInstance` WAS THE SPINE. It was wrong, and it
+ * cost three aim fixes that landed on an asset the game never loads — the audit measured it
+ * live. `UBNAnimInstance` is now dormant: nothing in the character routes to it.
+ *
+ * AIM lives on the Blueprint side here, not in C++: this ABP declares its own AimPitch/AimYaw,
+ * writes them in UpdateAimingData/SetRootYawOffset, and feeds them to RotationOffsetBlendSpace
+ * nodes in the linked layer. Do NOT publish a second aim surface from C++ without proving the
+ * layer reads it — a duplicate that nothing consumes is how this went wrong the first time.
  */
 UCLASS()
 class BREACHPOINTNEXT_API UBNLAnimInstance : public UAnimInstance

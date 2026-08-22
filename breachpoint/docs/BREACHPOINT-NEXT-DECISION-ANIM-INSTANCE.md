@@ -1,10 +1,37 @@
-# DECISION — the aim chain: which layer set carries it
+# DECISION — the aim chain: which layer set carries it — **RULED: LYRA ONLY**
 
-**Cut:** 22 August 2026 by the cloud lead · **For:** the founder, parked since 19 Aug.
-**Costs you:** one word. **Blocks:** aim tracking and the ADS pose — a live gameplay defect,
-not polish.
+**Cut:** 22 August 2026 · **RULED the same day by the founder: option B — "forget the
+FPSTemplate, we are just going to concentrate on the Lyra locomotion from now on."**
 
-## The question is NOT "which anim instance"
+## The ruling, and what it already changed
+
+Lyra locomotion is the project's animation path. There is no second one.
+
+**Landed in code immediately** (the ruling's whole point is that a dormant second path is what
+let three aim fixes land on assets the game never loads):
+
+- `ABNCharacter::UsesLyraAnim()` — **deleted**. `ResolveAnimLayerClass` no longer branches; the
+  layer is always the Lyra set, chosen by the weapon's row name from the ini.
+- The FPSTemplate fallback chain — **deleted**: the `UnarmedAnimLayer` Config property, its
+  cache, its resolve-once flag, and the ini key that fed it. `DT_BNWeapons.AnimLayerClass` no
+  longer participates in linking.
+- `UBNLAnimInstance`'s header said *"`UBNAnimInstance` stays the production spine"* — **that
+  sentence was the bug**, and it is now the opposite, with the history written beside it so
+  nobody re-derives it.
+- The link log now names the **anim class** as well as the layer, so which of the three
+  `ABP_Mannequin_Base` copies is live is readable from the log alone.
+
+`UBNAnimInstance` is left **dormant, not deleted**: the FPSTemplate ABP is still parented to it
+and deleting the class would break that asset on load. Retiring both is a clean-up ticket, not
+a rush — nothing routes to it any more.
+
+**What is NOT resolved, and is now the only aim question left:** does the Lyra path's own aim
+actually work in play? See `TASK-AIM-LYRA-VERIFY`. The rest of this document is the analysis
+the ruling came from, kept for the record.
+
+---
+
+## (record) The question is NOT "which anim instance"
 
 That was my framing and it was too shallow. `TASK-AIM-GRAPH-AUDIT` measured the real shape from
 the live editor, and the blocker is one layer down:
@@ -40,10 +67,9 @@ have to be re-measured for that rig.
 skeleton, so the link is probably legal. *Cheapest if it works.* **Cost:** unverified — one
 editor session to prove the layer interface matches before anyone commits to it.
 
-## What I need from you
+## (record) What was asked
 
-**"A", "B", or "C".** On A I write the ticket today and it is one line of ini plus a read-back.
-On B or C I write the ticket and the terminal does graph work.
+**"A", "B", or "C"** — answered B.
 
 One caution the audit paid for: `ABP_Mannequin_Base` exists **three times** in this project, and
 every previous aim attempt edited a copy the game does not load. Whichever way you rule, the
