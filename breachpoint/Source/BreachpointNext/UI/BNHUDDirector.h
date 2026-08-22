@@ -47,9 +47,14 @@ public:
 	void SetScoreboardHeld(bool bHeld);
 
 	/** R7.2 — the controller's Esc handler. OPEN only: once the menu owns Menu input, a game
-	 *  action is not a dependable way back, so the menu closes ITSELF (Resume, or CommonUI's
-	 *  back action). Re-pressing while it is up is a no-op, not a second copy. */
+	 *  action is not a dependable way back, so the menu closes ITSELF (Resume, or its own key
+	 *  handler). This only raises the REQUEST; UpdateGameMenuLayer decides what the layer shows. */
 	void OpenPauseMenu();
+
+	/** The pause screen tells its owner it is gone (its NativeOnDeactivated) — self-closed by
+	 *  Resume, by Escape, or removed from under it. Clearing the request here is what stops a
+	 *  later layer update from resurrecting a menu nobody asked for. */
+	void NotifyPauseClosed();
 
 protected:
 	void HandlePostLoadMap(UWorld* LoadedWorld);
@@ -79,7 +84,15 @@ protected:
 
 	/** One decision point for the scoreboard: post-match pins it, Tab holds it. */
 	void UpdateScoreboardVisibility();
-	void ShowDeathScreen(bool bShow);
+
+	/** ONE owner for Layer.GameMenu (critic, blocking): the death screen and the pause menu
+	 *  share that stack, and two independent owners produced a real bug — dying while paused
+	 *  BURIED the pause widget (a stack deactivates all but its top, it is not removed), so
+	 *  IsActivated() read false, a second Esc pushed a SECOND menu, and popping the death
+	 *  screen on respawn re-activated the buried one: a menu appearing on a player who never
+	 *  opened it. Both callers now only set intent; this decides. Death outranks pause. */
+	void SetDeathScreenWanted(bool bWanted);
+	void UpdateGameMenuLayer();
 
 	/** Everything match-shaped, pushed fresh: phase + winner banner, clock, scores. */
 	void PushMatchSnapshot();
@@ -127,4 +140,8 @@ protected:
 
 	bool bScoreboardHeld = false;
 	bool bPostMatch = false;
+
+	// ---- Layer.GameMenu intent (never read the widgets to decide — see UpdateGameMenuLayer) ----
+	bool bDeathScreenWanted = false;
+	bool bPauseRequested = false;
 };

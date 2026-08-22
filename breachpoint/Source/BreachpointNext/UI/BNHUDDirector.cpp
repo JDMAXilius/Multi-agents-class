@@ -13,6 +13,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Match/BNGameState.h"
 #include "Match/BNPlayerState.h"
+#include "UI/BNActivatableWidget.h"
 #include "UI/BNUIManager.h"
 #include "UI/BNViewModels.h"
 #include "Weapons/BNEquipmentComponent.h"
@@ -133,7 +134,7 @@ void UBNHUDDirector::HandleMatchStateChanged(FName NewState)
 	// post-match board reads a list that includes the winner mark, leavers dropped.
 	if (bPostMatch)
 	{
-		ShowDeathScreen(false);
+		SetDeathScreenWanted(false);
 	}
 	UpdateScoreboardVisibility();
 }
@@ -352,7 +353,7 @@ void UBNHUDDirector::EnsurePlayerBindings()
 				// the VM's dead state with no death screen until the NEXT death.
 				const bool bStandingDead = ASC->HasMatchingGameplayTag(BNTags::State_Dead);
 				Combat->SetDead(bStandingDead);
-				ShowDeathScreen(bStandingDead);
+				SetDeathScreenWanted(bStandingDead);
 				HandleRespawnStampChanged(PS);
 			}
 		}
@@ -485,7 +486,7 @@ void UBNHUDDirector::HandleDeadTagChanged(const FGameplayTag Tag, int32 NewCount
 	{
 		Combat->SetDead(bDead);
 	}
-	ShowDeathScreen(bDead);
+	SetDeathScreenWanted(bDead);
 }
 
 void UBNHUDDirector::EnsureHUDShown()
@@ -510,24 +511,10 @@ void UBNHUDDirector::EnsureHUDShown()
 	}
 }
 
-void UBNHUDDirector::ShowDeathScreen(bool bShow)
+void UBNHUDDirector::SetDeathScreenWanted(bool bWanted)
 {
-	UBNUIManager* Manager = UBNUIManager::Get(GetLocalPlayer());
-	ULocalPlayer* LocalPlayer = GetLocalPlayer();
-	if (!Manager || !LocalPlayer)
-	{
-		return;
-	}
-
-	if (bShow && !DeathScreenWidget.IsValid())
-	{
-		DeathScreenWidget = Manager->PushWidgetToLayer(LocalPlayer, FBNUITags::Get().Layer_GameMenu, Manager->GetDeathScreenClass());
-	}
-	else if (!bShow && DeathScreenWidget.IsValid())
-	{
-		Manager->RemoveWidgetFromLayer(LocalPlayer, FBNUITags::Get().Layer_GameMenu, DeathScreenWidget.Get());
-		DeathScreenWidget.Reset();
-	}
+	bDeathScreenWanted = bWanted;
+	UpdateGameMenuLayer();
 }
 
 void UBNHUDDirector::SetScoreboardHeld(bool bHeld)
@@ -548,17 +535,29 @@ void UBNHUDDirector::SetScoreboardHeld(bool bHeld)
 
 void UBNHUDDirector::OpenPauseMenu()
 {
-	// Still up? Nothing to do. IsActivated is the honest test: the menu can have closed itself
-	// (Resume, or back) without telling this director, and the stack still owns the object.
-	if (UBNActivatableWidget* Existing = PauseWidget.Get())
+	// Dead players do not get a menu, and the request is REFUSED rather than queued: latching it
+	// would pop a pause menu at the moment of respawn — the exact surprise this rework removes.
+	if (bDeathScreenWanted)
 	{
-		if (Existing->IsActivated())
-		{
-			return;
-		}
-		PauseWidget.Reset();
+		UE_LOG(LogBN, Verbose, TEXT("BNUI: pause refused — the death screen owns Layer.GameMenu."));
+		return;
 	}
 
+	bPauseRequested = true;
+	UpdateGameMenuLayer();
+}
+
+void UBNHUDDirector::NotifyPauseClosed()
+{
+	// Intent only. The layer is not re-evaluated here on purpose: this is called from INSIDE the
+	// removal path (a stack deactivates as it pops), and re-entering the decision mid-removal is
+	// how single-owner logic grows a second owner again.
+	bPauseRequested = false;
+	PauseWidget.Reset();
+}
+
+void UBNHUDDirector::UpdateGameMenuLayer()
+{
 	UBNUIManager* Manager = UBNUIManager::Get(GetLocalPlayer());
 	ULocalPlayer* LocalPlayer = GetLocalPlayer();
 	if (!Manager || !LocalPlayer)
@@ -566,7 +565,35 @@ void UBNHUDDirector::OpenPauseMenu()
 		return;
 	}
 
-	PauseWidget = Manager->PushWidgetToLayer(LocalPlayer, FBNUITags::Get().Layer_GameMenu, Manager->GetPauseScreenClass());
+	const FUITag Layer = FBNUITags::Get().Layer_GameMenu;
+
+	// PAUSE FIRST, and always: whether it should go up or come down, it is settled before the
+	// death screen touches the stack, so the two can never be resident together.
+	const bool bWantPause = bPauseRequested && !bDeathScreenWanted;
+	if (!bWantPause && PauseWidget.IsValid())
+	{
+		// Clear the pointer BEFORE removing: RemoveWidget deactivates, the screen calls
+		// NotifyPauseClosed synchronously, and it must not stomp a pointer we still need.
+		UBNActivatableWidget* Closing = PauseWidget.Get();
+		PauseWidget.Reset();
+		bPauseRequested = false;
+		Manager->RemoveWidgetFromLayer(LocalPlayer, Layer, Closing);
+	}
+
+	if (bDeathScreenWanted && !DeathScreenWidget.IsValid())
+	{
+		DeathScreenWidget = Manager->PushWidgetToLayer(LocalPlayer, Layer, Manager->GetDeathScreenClass());
+	}
+	else if (!bDeathScreenWanted && DeathScreenWidget.IsValid())
+	{
+		Manager->RemoveWidgetFromLayer(LocalPlayer, Layer, DeathScreenWidget.Get());
+		DeathScreenWidget.Reset();
+	}
+
+	if (bWantPause && !PauseWidget.IsValid())
+	{
+		PauseWidget = Manager->PushWidgetToLayer(LocalPlayer, Layer, Manager->GetPauseScreenClass());
+	}
 }
 
 void UBNHUDDirector::UpdateScoreboardVisibility()
@@ -666,6 +693,8 @@ void UBNHUDDirector::UnbindAll()
 	PauseWidget.Reset();
 	bScoreboardHeld = false;
 	bPostMatch = false;
+	bDeathScreenWanted = false;
+	bPauseRequested = false;
 }
 
 #undef LOCTEXT_NAMESPACE

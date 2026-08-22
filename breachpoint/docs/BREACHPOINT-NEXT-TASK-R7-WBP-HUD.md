@@ -50,12 +50,20 @@ one-time notice if it ever wants more.
 
 1. `Content/BN/Input/IA_BNScoreboard` — InputAction, bool.
 2. `Content/BN/Input/IA_BNMenu` — InputAction, bool.
-3. `IMC_BNNext` — add mappings: **Tab** → `IA_BNScoreboard`, **Escape** → `IA_BNMenu`.
+3. `IMC_BNNext` — add mappings: **Tab** → `IA_BNScoreboard`, **Escape** → `IA_BNMenu`, and
+   **`Gamepad_Special_Right`** (Start/Menu) → `IA_BNMenu` as well. Two keys, one action: without
+   the pad row a controller player can never OPEN the menu — the screen's own key handler closes
+   it on `Gamepad_FaceButton_Right`, but nothing opens it.
 4. `DA_BNInput` — add rows: `IA_BNScoreboard` → `Input.Scoreboard`, `IA_BNMenu` → `Input.Menu`.
+
+**THE ESCAPE TRAP — read before testing:** in the editor, Escape is *Stop PIE*. Pressing it in a
+PIE window kills the session before the mapping is ever consulted, which will read as "the pause
+menu is broken". **Test the pause menu in Standalone** (or bind a spare key temporarily). This
+costs an hour the first time it is met; it is a tooling behaviour, not a code fault.
 
 ## Step 3 — verify the ini (no edits)
 
-`DefaultGame.ini` already names all four classes under
+`DefaultGame.ini` already names all five classes under
 `[/Script/BreachpointNext.BNUIManager]` at exactly the paths above (`_C` suffixes). If an asset
 landed elsewhere, MOVE THE ASSET — the ini is the contract.
 
@@ -79,7 +87,13 @@ resave now that the row struct gained a member.
 3. Die to a bot: the death overlay with "Eliminated by <bot>" and a counting-down respawn line.
 4. Hold Tab: the scoreboard over the HUD; release: gone. Let the match end: it pins itself with
    the winner line.
-5. The weapon silhouette draws beside the ammo and CHANGES on a swap — that is Step 4's column
+5. **Standalone** (not PIE — see the Escape trap): press Escape. The pause menu comes up over
+   the HUD, focus sits on RESUME, and the "the match does not pause" warning is visible. Escape
+   again closes it. Click RESUME: closes. Click LEAVE MATCH: expect exactly one
+   `LeaveMatch has nowhere to go` warning in `LogBN` and NO travel — the ini path ships unset on
+   purpose. **The edge worth one deliberate try:** open the menu, then let a bot kill you — the
+   pause menu must VANISH and the death screen take the layer; on respawn no menu returns.
+6. The weapon silhouette draws beside the ammo and CHANGES on a swap — that is Step 4's column
    working. A blank slot with everything else alive means the column read back `None` (the
    refPath trap), not a code fault.
 

@@ -248,14 +248,30 @@ screen, and it is deliberately two rows: RESUME and LEAVE MATCH. The design's ch
 Settings, Controls and File Share — none of those screens exist, and a button that opens
 nothing is worse than a button that is absent.
 
-- `UBNScreen_Pause` — `Menu` input, `bIsBackHandler` (Esc/gamepad B closes it), focus lands on
-  RESUME so a controller never opens the menu sitting on the row that leaves the match.
+- `UBNScreen_Pause` — `Menu` input, focus lands on RESUME so a controller never opens the menu
+  sitting on the row that leaves the match. Esc / gamepad B close it through the screen's own
+  `NativeOnKeyDown`. **Correction to this section's first cut** (critic): it claimed
+  `bIsBackHandler` did the closing. It does not — CommonUI's back action is bound by a
+  `UCommonUIInputData` asset and this project ships none (`docs/ui/ue-frontend/ROADMAP.md:71`
+  says so in its own words), so `NativeOnHandleBackAction` could never fire and the menu's only
+  exit was a mouse click on a cursor nothing in BN raises. The flag stays as the hook for the
+  day that asset lands; the key handler is what actually works.
 - **It does not pause the match, and says so on its own face** — the match is server-
   authoritative and keeps running, so a player who opens this can still be killed. That is the
   design's own warning text, rendered from C++ so it cannot drift in an asset.
 - **Opening is the controller's (`Input.Menu`), closing is the WIDGET's.** Once Menu input mode
-  is desired, a game input action is not a dependable way back — so Resume and the back action
-  own the exit, and re-pressing Esc while it is up is a no-op rather than a second copy.
+  is desired, a game input action is not a dependable way back — so Resume and the key handler
+  own the exit.
+- **`Layer.GameMenu` has ONE owner: `UBNHUDDirector::UpdateGameMenuLayer`.** Both the death
+  screen and the pause menu live on that stack, and the first cut let each push itself — which
+  the critic broke in one move: dying while paused BURIED the pause widget (a stack deactivates
+  everything below its top; it does not remove it), so `IsActivated()` read false, a second Esc
+  pushed a SECOND menu, and popping the death screen on respawn re-activated the buried one —
+  a menu appearing on a player who never opened it. Callers now only set intent
+  (`bDeathScreenWanted`, `bPauseRequested`); one function decides, death outranks pause, and a
+  pause pressed while dead is REFUSED rather than queued (a queued one would pop at respawn —
+  the same surprise by another route). This is the pattern `UpdateScoreboardVisibility` already
+  used; the lesson is that it applies per LAYER, not per widget.
 - `LeaveMatch` lives on the controller (a widget never travels the player) and is a **designed
   miss**: `LeaveMatchMapPath` is commented out in the ini because no front-end map exists, so
   today it logs one loud warning and does not travel. A guessed path strands the player

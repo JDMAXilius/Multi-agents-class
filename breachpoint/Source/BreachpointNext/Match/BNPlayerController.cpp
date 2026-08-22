@@ -310,6 +310,16 @@ void ABNPlayerController::LeaveMatch()
 		return;
 	}
 
+	// THE HOST CASE (critic): ClientTravel is right for a remote client and destructive for the
+	// listen-server host — browsing the host away takes the server world with it and strands
+	// every connected client. The old module routed this through a session subsystem's
+	// ReturnToMainMenu(); BN has no session layer yet, so the honest move is to say so out loud
+	// rather than pretend the two cases are one. (Dormant today: the ini key ships unset.)
+	if (GetNetMode() == NM_ListenServer)
+	{
+		UE_LOG(LogBN, Warning, TEXT("BNPlayerController: LeaveMatch on the LISTEN HOST — this ends the match for every connected client. BN has no session layer to hand the server off."));
+	}
+
 	UE_LOG(LogBN, Log, TEXT("BNPlayerController: leaving the match -> %s"), *LeaveMatchMapPath);
 	ClientTravel(LeaveMatchMapPath, TRAVEL_Absolute);
 }

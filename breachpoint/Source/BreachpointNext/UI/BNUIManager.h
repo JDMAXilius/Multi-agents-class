@@ -37,7 +37,7 @@ struct FBNLocalPlayerUI
  * one push/pop door to the layer stacks. Feeding the ViewModels is NOT here — that is
  * UBNHUDDirector's, per local player; this subsystem owns objects, the director owns wiring.
  *
- * Config: [/Script/BreachpointNext.BNUIManager] in DefaultGame.ini names the four classes.
+ * Config: [/Script/BreachpointNext.BNUIManager] in DefaultGame.ini names the five classes.
  * An unset or unbuilt path resolves null and the push logs and refuses — the designed miss
  * answer while the terminal ticket is pending, loud, never a crash.
  */
@@ -71,7 +71,7 @@ public:
 	UBNActivatableWidget* PushWidgetToLayer(ULocalPlayer* LocalPlayer, FUITag LayerTag, const TSoftClassPtr<UBNActivatableWidget>& WidgetClass);
 	void RemoveWidgetFromLayer(ULocalPlayer* LocalPlayer, FUITag LayerTag, UBNActivatableWidget* Widget);
 
-	// The four classes, read by the director when it decides WHAT to show. Public const access
+	// The five classes, read by the director when it decides WHAT to show. Public const access
 	// beats four wrapper functions.
 	const TSoftClassPtr<UBNRootLayout>& GetRootLayoutClass() const { return RootLayoutClass; }
 	const TSoftClassPtr<UBNActivatableWidget>& GetHUDLayoutClass() const { return HUDLayoutClass; }

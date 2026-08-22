@@ -1,9 +1,12 @@
 #include "UI/BNScreen_Pause.h"
 #include "BreachpointNext.h"
 #include "Components/Button.h"
+#include "InputCoreTypes.h"
 #include "Components/TextBlock.h"
 #include "Match/BNPlayerController.h"
+#include "UI/BNHUDDirector.h"
 #include "UI/BNUITypes.h"
+#include "Engine/LocalPlayer.h"
 
 #define LOCTEXT_NAMESPACE "BreachpointNextUI"
 
@@ -11,8 +14,11 @@ UBNScreen_Pause::UBNScreen_Pause()
 {
 	// The only screen in R7 that wants the cursor and the clicks.
 	InputMode = EBNWidgetInputMode::Menu;
-	// CommonUI routes Esc / gamepad B here; without it the menu can only be closed by mouse.
+	// Kept for the day a UCommonUIInputData lands — but it binds NOTHING today (this project
+	// ships no CommonInputSettings), so NativeOnKeyDown is what actually closes this screen.
 	bIsBackHandler = true;
+	// Input routing stops here while the menu is up — the shape both proven modals use.
+	bIsModal = true;
 }
 
 void UBNScreen_Pause::NativeOnInitialized()
@@ -31,6 +37,8 @@ void UBNScreen_Pause::NativeOnInitialized()
 		LeaveButton->OnClicked.AddUniqueDynamic(this, &UBNScreen_Pause::HandleLeaveClicked);
 	}
 
+	// Hard binds now, so these cannot be null on a well-formed asset — guarded anyway because a
+	// half-built WBP during authoring should log, not crash.
 	if (WarningText)
 	{
 		WarningText->SetText(LOCTEXT("NoPauseTitle", "THE MATCH DOES NOT PAUSE"));
@@ -56,6 +64,32 @@ bool UBNScreen_Pause::NativeOnHandleBackAction()
 	return true;
 }
 
+FReply UBNScreen_Pause::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	const FKey Key = InKeyEvent.GetKey();
+	if (Key == EKeys::Escape || Key == EKeys::Gamepad_FaceButton_Right || Key == EKeys::Gamepad_Special_Right)
+	{
+		DeactivateWidget();
+		return FReply::Handled();
+	}
+	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
+}
+
+void UBNScreen_Pause::NativeOnDeactivated()
+{
+	// TELL THE DIRECTOR (critic): this screen can close itself three ways, and a director that
+	// still believes the menu is open re-opens it the next time it re-evaluates the layer.
+	if (ULocalPlayer* LocalPlayer = GetOwningLocalPlayer())
+	{
+		if (UBNHUDDirector* Director = LocalPlayer->GetSubsystem<UBNHUDDirector>())
+		{
+			Director->NotifyPauseClosed();
+		}
+	}
+
+	Super::NativeOnDeactivated();
+}
+
 void UBNScreen_Pause::HandleResumeClicked()
 {
 	DeactivateWidget();
@@ -64,6 +98,11 @@ void UBNScreen_Pause::HandleResumeClicked()
 void UBNScreen_Pause::HandleLeaveClicked()
 {
 	// The controller owns leaving — a widget must never travel the player itself.
+	//
+	// ORDER IS LOAD-BEARING (critic): LeaveMatch only SCHEDULES the travel (SetClientTravel,
+	// browsed on the next tick), so deactivating AFTER it restores the game input config before
+	// the world is browsed. Reversed, the player travels with Menu input still applied and the
+	// widget that would restore it destroyed with the old world.
 	if (ABNPlayerController* PC = GetOwningPlayer<ABNPlayerController>())
 	{
 		PC->LeaveMatch();

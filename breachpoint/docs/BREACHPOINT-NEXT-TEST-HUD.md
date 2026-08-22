@@ -43,7 +43,21 @@ end: pins itself with "<name> WINS" (winner's name cyan in the rows) or "DRAW"; 
 at the buzzer sees the scoreboard, NOT a stuck death screen. Restart: it unpins, scores zero,
 killfeed empty.
 
-## 5. Three views (the rung that counts) + join-in-progress
+## 5. The pause menu (R7.2) — **Standalone only**
+
+**Escape is the editor's Stop-PIE shortcut**, so this section cannot be run in a PIE window: the
+session dies before the mapping is read, and it looks like a broken menu. Launch Standalone.
+
+Escape: the menu is up over the HUD, focus on RESUME, the "the match does not pause" warning
+visible. Escape again, or click RESUME: gone, and shooting works immediately. LEAVE MATCH: one
+`LeaveMatch has nowhere to go` warning, no travel (the ini path ships unset).
+
+**The layer edge, worth one deliberate try:** open the menu and let a bot kill you. The pause
+menu VANISHES and the death screen takes `Layer.GameMenu`; Escape while dead does nothing (one
+Verbose line); on respawn the death screen clears and **no menu returns**. A pause menu on a
+just-respawned player is the exact bug `UpdateGameMenuLayer` exists to prevent.
+
+## 6. Three views (the rung that counts) + join-in-progress
 
 Two-window PIE: every claim above on host AND client, and the client's kill lines/scores match
 the host's. **Join a running match** (late-join PIE or a third window): correct remaining time
@@ -51,7 +65,7 @@ on the first rendered frame, current scores, NO burst of stale kill lines (the j
 and if joining during post-match — the winner banner, not a tie, even before the winner's
 PlayerState maps.
 
-## 6. Known and accepted (critic-recorded)
+## 7. Known and accepted (critic-recorded)
 
 - The leader readout can lag one kill behind on bunch ordering; it self-heals on the next kill.
 - A brief "Unarmed" during the respawn replication gap before the weapon bunch lands.
@@ -62,6 +76,10 @@ PlayerState maps.
   held* is the accepted edge; a stale row on opening it is a bug.
 - **Tab in a map with no BN GameState** (a test level) shows an empty scoreboard shell — the
   panel with every row collapsed. Harmless, and it means the UI stack itself is alive.
+- **The pause menu is closed by the screen's own key handler, not by CommonUI's back action.**
+  BN ships no `UCommonUIInputData`, so `bIsBackHandler` binds nothing; the flag is a hook for the
+  day that asset lands. Gamepad OPEN needs the `Gamepad_Special_Right` mapping row from the WBP
+  ticket — without it a pad can close the menu but never open it.
 - **The death screen names WHO, never WITH WHAT.** The design's "ASSAULT RIFLE" line under the
   killer has no feed: `FBNKillfeedEntry` carries no weapon, so R7 leaves that slot empty rather
   than guessing. Unblocking it is one `FName` on the ring, pushed where the kill is decided.
