@@ -77,6 +77,7 @@ public:
 	const TSoftClassPtr<UBNActivatableWidget>& GetHUDLayoutClass() const { return HUDLayoutClass; }
 	const TSoftClassPtr<UBNActivatableWidget>& GetDeathScreenClass() const { return DeathScreenClass; }
 	const TSoftClassPtr<UBNActivatableWidget>& GetScoreboardClass() const { return ScoreboardClass; }
+	const TSoftClassPtr<UBNActivatableWidget>& GetPauseScreenClass() const { return PauseScreenClass; }
 
 protected:
 	void HandleLocalPlayerAdded(ULocalPlayer* LocalPlayer);
@@ -98,6 +99,9 @@ protected:
 
 	UPROPERTY(Config)
 	TSoftClassPtr<UBNActivatableWidget> ScoreboardClass;
+
+	UPROPERTY(Config)
+	TSoftClassPtr<UBNActivatableWidget> PauseScreenClass;
 
 	UPROPERTY()
 	TMap<TObjectPtr<ULocalPlayer>, FBNLocalPlayerUI> PerPlayerUI;

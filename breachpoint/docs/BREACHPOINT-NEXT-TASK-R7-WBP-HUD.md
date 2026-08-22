@@ -1,4 +1,4 @@
-# TICKET — the HUD's TEN WBPs and the Tab key
+# TICKET — the HUD's ELEVEN WBPs, Tab, and Esc
 
 **Cut:** 21 August 2026 by the cloud lead · **For:** `bn-editor` / the terminal
 **Prerequisite:** a build containing R7 Waves 0–4 (the `UI/` folder — `UBNHUDLayout` must appear
@@ -7,9 +7,9 @@ in the reparent picker; if it does not, the build is stale: **stop and report**)
 
 ## THE SCOPE
 
-Create **TEN** WidgetBlueprints under `/Game/BN/UI/` (the nine in the table below **plus
-`WBP_BNScoreRow`**, which the scoreboard's row list needs — counting nine and stopping leaves an
-empty board), add **one** input action + two rows.
+Create **ELEVEN** WidgetBlueprints under `/Game/BN/UI/` — every row of the table below, and
+note two of them are easy to miss: **`WBP_BNScoreRow`** (the scoreboard's row list is empty
+without it) and **`WBP_BNScreen_Pause`**. Add **two** input actions + two mapping rows.
 **Layout, anchors and children ONLY — zero graph nodes, zero variables, zero bindings, zero
 colors** (every color is C++'s; a WBP that sets one is a finding). **The single carved-out
 exception is `ReticleDot`'s white circle brush** — C++ never touches that image, so its brush is
@@ -39,6 +39,7 @@ offset.
 | `WBP_BNKillfeed` | `UBNKillfeed` | VerticalBox `EntryContainer` → **5 ×** `WBP_BNKillfeedEntry` children |
 | `WBP_BNKillfeedEntry` | `UBNKillfeedEntry` | `TextBlock` `LineText` (14pt) — one line, no color set |
 | `WBP_BNScreen_Death` | `UBNScreen_Death` | Overlay → dim `Image` (fill, black 55%) · VerticalBox centered at 40% height → `TextBlock` `KilledByText` (30pt, center) · `TextBlock` `RespawnText` (17pt, center) |
+| `WBP_BNScreen_Pause` | `UBNScreen_Pause` | **ELEVENTH asset (R7.2).** Overlay → scrim `Image` (fill, black 78%) → Border **451×682** at x60 y19 → VerticalBox: `TextBlock` "PAUSED" (24pt) · 118×2 rule · `Button` **`ResumeButton`** (h22, label RESUME) · `Button` **`LeaveButton`** (h22, label LEAVE MATCH) · spacer · `TextBlock` `WarningText` · `TextBlock` `WarningBodyText`. Plain UMG `Button`s deliberately — a `CommonButtonBase` needs a style asset and R7 ships none |
 | `WBP_BNScreen_Scoreboard` | `UBNScreen_Scoreboard` | Overlay → centered Border (430 wide, dark 92%) → VerticalBox → `TextBlock` `BannerText` (26pt center) · header row (labels PLAYER · KILLS · DEATHS) · VerticalBox `RowContainer` → **8 ×** `WBP_BNScoreRow` children — **note `WBP_BNScoreRow` is a TENTH asset**, parent `UBNScoreRow`, tree: HorizontalBox → `TextBlock` `NameText` (fill) · `TextBlock` `KillsText` (right) · `TextBlock` `DeathsText` (right) |
 
 The killfeed and scoreboard rows are FIXED CHILDREN — the C++ collects them from the container
@@ -48,8 +49,9 @@ one-time notice if it ever wants more.
 ## Step 2 — the input
 
 1. `Content/BN/Input/IA_BNScoreboard` — InputAction, bool.
-2. `IMC_BNNext` — add mapping: **Tab** → `IA_BNScoreboard`.
-3. `DA_BNInput` — add row: `IA_BNScoreboard` → tag `Input.Scoreboard`.
+2. `Content/BN/Input/IA_BNMenu` — InputAction, bool.
+3. `IMC_BNNext` — add mappings: **Tab** → `IA_BNScoreboard`, **Escape** → `IA_BNMenu`.
+4. `DA_BNInput` — add rows: `IA_BNScoreboard` → `Input.Scoreboard`, `IA_BNMenu` → `Input.Menu`.
 
 ## Step 3 — verify the ini (no edits)
 

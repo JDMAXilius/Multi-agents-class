@@ -68,4 +68,9 @@ namespace BNTags
 	 *  CommonUI keys its stacks on FUITag, which these macros cannot produce; they live in
 	 *  FBNUITags (UI/BNUITypes.h), the second registrar with the second job. */
 	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Input_Scoreboard);
+
+	/** R7.2 — opens the pause menu. A UI verb like Scoreboard: the controller handles it and
+	 *  the ASC never sees it. CLOSING is the menu's own job (Menu input mode makes a game
+	 *  action an unreliable way back). */
+	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Input_Menu);
 }

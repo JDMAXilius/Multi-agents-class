@@ -95,6 +95,7 @@ void ABNPlayerController::SetupInputComponent()
 	Bind(BNTags::Input_Grenade, ETriggerEvent::Started, &ABNPlayerController::HandleGrenadePressed);
 	Bind(BNTags::Input_Scoreboard, ETriggerEvent::Started, &ABNPlayerController::HandleScoreboardPressed);
 	Bind(BNTags::Input_Scoreboard, ETriggerEvent::Completed, &ABNPlayerController::HandleScoreboardReleased);
+	Bind(BNTags::Input_Menu, ETriggerEvent::Started, &ABNPlayerController::HandleMenuPressed);
 }
 
 void ABNPlayerController::HandleMove(const FInputActionValue& Value)
@@ -291,6 +292,26 @@ void ABNPlayerController::HandleScoreboardReleased()
 	{
 		Director->SetScoreboardHeld(false);
 	}
+}
+
+void ABNPlayerController::HandleMenuPressed()
+{
+	if (UBNHUDDirector* Director = GetLocalPlayer() ? GetLocalPlayer()->GetSubsystem<UBNHUDDirector>() : nullptr)
+	{
+		Director->OpenPauseMenu();
+	}
+}
+
+void ABNPlayerController::LeaveMatch()
+{
+	if (LeaveMatchMapPath.IsEmpty())
+	{
+		UE_LOG(LogBN, Warning, TEXT("BNPlayerController: LeaveMatch has nowhere to go — set LeaveMatchMapPath in [/Script/BreachpointNext.BNPlayerController]. No front-end map exists yet."));
+		return;
+	}
+
+	UE_LOG(LogBN, Log, TEXT("BNPlayerController: leaving the match -> %s"), *LeaveMatchMapPath);
+	ClientTravel(LeaveMatchMapPath, TRAVEL_Absolute);
 }
 
 UBNAbilitySystemComponent* ABNPlayerController::GetBNAbilitySystemComponent() const

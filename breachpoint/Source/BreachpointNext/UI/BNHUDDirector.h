@@ -46,6 +46,11 @@ public:
 	 *  verb through the director, never a widget poking layers itself. */
 	void SetScoreboardHeld(bool bHeld);
 
+	/** R7.2 — the controller's Esc handler. OPEN only: once the menu owns Menu input, a game
+	 *  action is not a dependable way back, so the menu closes ITSELF (Resume, or CommonUI's
+	 *  back action). Re-pressing while it is up is a no-op, not a second copy. */
+	void OpenPauseMenu();
+
 protected:
 	void HandlePostLoadMap(UWorld* LoadedWorld);
 	void BindToWorld(UWorld* World);
@@ -118,6 +123,7 @@ protected:
 	TWeakObjectPtr<UBNActivatableWidget> HUDWidget;
 	TWeakObjectPtr<UBNActivatableWidget> DeathScreenWidget;
 	TWeakObjectPtr<UBNActivatableWidget> ScoreboardWidget;
+	TWeakObjectPtr<UBNActivatableWidget> PauseWidget;
 
 	bool bScoreboardHeld = false;
 	bool bPostMatch = false;

@@ -205,7 +205,7 @@ void UBNUIManager::RemoveWidgetFromLayer(ULocalPlayer* LocalPlayer, FUITag Layer
 void UBNUIManager::PreloadMidMatchClasses()
 {
 	TArray<FSoftObjectPath> MidMatchClasses;
-	for (const TSoftClassPtr<UBNActivatableWidget>& SoftClass : { DeathScreenClass, ScoreboardClass })
+	for (const TSoftClassPtr<UBNActivatableWidget>& SoftClass : { DeathScreenClass, ScoreboardClass, PauseScreenClass })
 	{
 		if (!SoftClass.IsNull())
 		{

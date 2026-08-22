@@ -45,4 +45,5 @@ namespace BNTags
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Character_Death, "GameplayCue.Character.Death");
 
 	UE_DEFINE_GAMEPLAY_TAG(Input_Scoreboard, "Input.Scoreboard");
+	UE_DEFINE_GAMEPLAY_TAG(Input_Menu, "Input.Menu");
 }

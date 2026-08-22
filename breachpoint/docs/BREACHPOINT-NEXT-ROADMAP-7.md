@@ -241,6 +241,29 @@ Landing the cheap one now; the other two are written down rather than guessed at
 | 1.2 | **The killing weapon** (the feed's measured `Weapon Glyph` 22×8, and the death screen's weapon line) | **DEFERRED, sized:** the damage door takes a row, not a row NAME, and carrying an `FName` from the door to `FBNLastDamage` needs a custom `FGameplayEffectContext` (with `NetSerialize` + `TStructOpsTypeTraits` + an allocation override) or a server-side pre-stash. That is a gameplay packet with its own critic pass, not a UI rider |
 | 1.3 | **The stowed slot** | **FOUNDER DECISION.** The design carries one stowed weapon; BN carries FIVE (Unarmed/Pistol/Rifle/Shotgun/Knife), so "stowed" has no single meaning here. The useful reading is *what one swap press gives you* — the NEXT weapon in the cycle. Say the word and it is a getter on the equipment component plus two VM fields |
 
+## R7.2 — the pause menu (the first interactive screen)
+
+The CommonUI stack existed from Wave 2 and nothing had used it as a *menu* yet. This is that
+screen, and it is deliberately two rows: RESUME and LEAVE MATCH. The design's chassis also has
+Settings, Controls and File Share — none of those screens exist, and a button that opens
+nothing is worse than a button that is absent.
+
+- `UBNScreen_Pause` — `Menu` input, `bIsBackHandler` (Esc/gamepad B closes it), focus lands on
+  RESUME so a controller never opens the menu sitting on the row that leaves the match.
+- **It does not pause the match, and says so on its own face** — the match is server-
+  authoritative and keeps running, so a player who opens this can still be killed. That is the
+  design's own warning text, rendered from C++ so it cannot drift in an asset.
+- **Opening is the controller's (`Input.Menu`), closing is the WIDGET's.** Once Menu input mode
+  is desired, a game input action is not a dependable way back — so Resume and the back action
+  own the exit, and re-pressing Esc while it is up is a no-op rather than a second copy.
+- `LeaveMatch` lives on the controller (a widget never travels the player) and is a **designed
+  miss**: `LeaveMatchMapPath` is commented out in the ini because no front-end map exists, so
+  today it logs one loud warning and does not travel. A guessed path strands the player
+  somewhere worse than the match.
+- Plain UMG `Button`s, not `CommonButtonBase`: the Common variant needs a style asset per
+  button and R7 ships none. Named cost — gamepad navigation rides Slate focus rather than
+  CommonUI's richer routing, which is fine for two rows and is the trigger to revisit.
+
 Also recorded from the same pass: **grenade and equipment counts do not exist as state anywhere**
 (the pips in the design have nothing to bind), and the FFA reading of the design's two team bars
 is *me vs the leader* — which needs no rework when teams land.

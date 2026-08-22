@@ -54,6 +54,19 @@ protected:
 	void HandleScoreboardPressed();
 	void HandleScoreboardReleased();
 
+	/** R7.2 — opens the pause menu. Opening only: the menu closes itself. */
+	void HandleMenuPressed();
+
+public:
+	/** Leave the match. The pause menu asks; the CONTROLLER travels — a widget never does.
+	 *  Unset LeaveMatchMapPath is a designed miss: a loud warning and no travel, because a
+	 *  half-guessed map path strands the player somewhere worse than the match. */
+	void LeaveMatch();
+
+protected:
+	UPROPERTY(Config)
+	FString LeaveMatchMapPath;
+
 	UBNAbilitySystemComponent* GetBNAbilitySystemComponent() const;
 
 	/** State.Dead replicates, so the machine that reads the input is the machine that refuses it. */

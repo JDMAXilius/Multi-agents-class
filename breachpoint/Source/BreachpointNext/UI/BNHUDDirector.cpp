@@ -546,6 +546,29 @@ void UBNHUDDirector::SetScoreboardHeld(bool bHeld)
 	UpdateScoreboardVisibility();
 }
 
+void UBNHUDDirector::OpenPauseMenu()
+{
+	// Still up? Nothing to do. IsActivated is the honest test: the menu can have closed itself
+	// (Resume, or back) without telling this director, and the stack still owns the object.
+	if (UBNActivatableWidget* Existing = PauseWidget.Get())
+	{
+		if (Existing->IsActivated())
+		{
+			return;
+		}
+		PauseWidget.Reset();
+	}
+
+	UBNUIManager* Manager = UBNUIManager::Get(GetLocalPlayer());
+	ULocalPlayer* LocalPlayer = GetLocalPlayer();
+	if (!Manager || !LocalPlayer)
+	{
+		return;
+	}
+
+	PauseWidget = Manager->PushWidgetToLayer(LocalPlayer, FBNUITags::Get().Layer_GameMenu, Manager->GetPauseScreenClass());
+}
+
 void UBNHUDDirector::UpdateScoreboardVisibility()
 {
 	// ONE decision: held OR pinned by the post-match. The widget never decides its own life.
@@ -640,6 +663,7 @@ void UBNHUDDirector::UnbindAll()
 	HUDWidget.Reset();
 	DeathScreenWidget.Reset();
 	ScoreboardWidget.Reset();
+	PauseWidget.Reset();
 	bScoreboardHeld = false;
 	bPostMatch = false;
 }
