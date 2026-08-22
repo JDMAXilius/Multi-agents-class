@@ -107,7 +107,7 @@ protected:
 	/** Everything match-shaped, pushed fresh: phase + winner banner, clock, scores. */
 	void PushMatchSnapshot();
 	void RecomputeScores();
-	FText ComposeKillfeedLine(const struct FBNKillfeedEntry& Entry) const;
+	FText ComposeKillfeedLine(const struct FBNKillfeedRingEntry& Entry) const;
 
 	UBNVM_Combat* GetCombatVM() const;
 	UBNVM_Match* GetMatchVM() const;

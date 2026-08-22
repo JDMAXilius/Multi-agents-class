@@ -12,7 +12,7 @@ class ABNPlayerState;
  *  leaver, so the render truth is the strings. Killer null = world damage; killer == victim =
  *  their own grenade — the same three cases the kill log prints. */
 USTRUCT()
-struct FBNKillfeedEntry
+struct FBNKillfeedRingEntry
 {
 	GENERATED_BODY()
 
@@ -81,7 +81,7 @@ public:
 	double GetMatchEndServerTime() const { return MatchEndServerTime; }
 	int32 GetScoreLimit() const { return ScoreLimit; }
 	ABNPlayerState* GetWinner() const { return Winner; }
-	const TArray<FBNKillfeedEntry>& GetKillfeed() const { return Killfeed; }
+	const TArray<FBNKillfeedRingEntry>& GetKillfeed() const { return Killfeed; }
 
 	/** Authority: append one decided kill. Names resolved HERE, while both parties are alive to
 	 *  ask; the ring holds the newest KillfeedCapacity entries and the oldest falls off — the
@@ -141,7 +141,7 @@ protected:
 	 *  unmapped GUID re-fires the notify when it resolves — an RPC gives neither. Small and
 	 *  bounded; scores are the record, this is the last few seconds of it. */
 	UPROPERTY(ReplicatedUsing = OnRep_Killfeed)
-	TArray<FBNKillfeedEntry> Killfeed;
+	TArray<FBNKillfeedRingEntry> Killfeed;
 
 	/** Monotonic, authority-only. Starts at 0 so the first entry is Sequence 1 and INDEX_NONE
 	 *  stays the reader's "never seen anything" sentinel. */

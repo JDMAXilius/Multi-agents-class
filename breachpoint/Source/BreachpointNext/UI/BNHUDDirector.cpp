@@ -250,7 +250,7 @@ FText UBNHUDDirector::ComposeWeaponLabel(FName RowName) const
 	return (Row && !Row->DisplayName.IsEmpty()) ? Row->DisplayName : FText::FromName(RowName);
 }
 
-FText UBNHUDDirector::ComposeKillfeedLine(const FBNKillfeedEntry& Entry) const
+FText UBNHUDDirector::ComposeKillfeedLine(const FBNKillfeedRingEntry& Entry) const
 {
 	// The kill log's three wordings, verbatim — one decision, told the same way everywhere.
 	// Names come from the entry's STRINGS: the refs can null under a leaver, the line survives.
@@ -286,7 +286,7 @@ void UBNHUDDirector::HandleKillfeedChanged()
 
 	const ABNPlayerState* MyPS = BoundPlayerState.Get();
 	const double ServerNow = GS->GetServerWorldTimeSeconds();
-	for (const FBNKillfeedEntry& Entry : GS->GetKillfeed())
+	for (const FBNKillfeedRingEntry& Entry : GS->GetKillfeed())
 	{
 		if (Entry.Sequence <= Match->GetLastKillfeedSequence())
 		{

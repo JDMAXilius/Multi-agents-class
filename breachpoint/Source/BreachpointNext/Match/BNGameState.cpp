@@ -77,7 +77,7 @@ void ABNGameState::PushKillfeedEntry(ABNPlayerState* Victim, ABNPlayerState* Kil
 		return;
 	}
 
-	FBNKillfeedEntry& Entry = Killfeed.AddDefaulted_GetRef();
+	FBNKillfeedRingEntry& Entry = Killfeed.AddDefaulted_GetRef();
 	Entry.Victim = Victim;
 	Entry.Killer = Killer;
 	// Names captured NOW, while both PlayerStates are alive to ask — the winner-leaves lesson:

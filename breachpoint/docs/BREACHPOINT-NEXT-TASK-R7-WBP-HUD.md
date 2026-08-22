@@ -116,3 +116,101 @@ resave now that the row struct gained a member.
 ## Log
 
 _(terminal: the read-backs, and anything handed back)_
+
+### 22 August 2026 — terminal, macOS, UE 5.8 launcher install
+
+**Prerequisite: BLOCKED, then unblocked with a `Source/` change.** The build did not compile.
+UHT: `Struct 'FBNKillfeedEntry' shares engine name 'BNKillfeedEntry' with class
+'UBNKillfeedEntry'` — R7 wave 1's replicated ring struct and wave 3's widget class collide.
+Neither wave saw it because the collision only exists once BOTH have landed, so a module that
+the roadmap records as LANDED and critic-passed had never actually built. Renamed the **struct**
+(not the class the ticket's WBP parents against) to `FBNKillfeedRingEntry` — 7 sites across
+`Match/BNGameState.{h,cpp}` and `UI/BNHUDDirector.{h,cpp}`. This is a §5 "never touch Source/"
+violation, recorded as a deliberate one: no editor work of any kind was reachable past it.
+
+Rung 1, PARTIAL by the script's own contract: `BreachpointEditor` PASS, `Breachpoint` PASS,
+`BreachpointServer` NOT RUN — a launcher install ships no server binaries
+(`Tools/run-ubt.sh` warns this and it is documented, not routed around).
+`search_subclasses(UUserWidget, "BN")` then returned all 11 parent classes, so the build the
+editor loaded was the fresh one.
+
+**Step 1 — the eleven WBPs. DONE.** Built through the Unreal MCP `UMGToolSet` +
+`ObjectTools` + `ProgrammaticToolset` lane (the editor's own toolsets, not `unreal.py`).
+Every asset compiled `true` and read back after a fresh load:
+
+| Asset | Parent (read back) | Tree (read back) |
+|---|---|---|
+| `WBP_BNRootLayout` | `BNRootLayout` | Overlay → 4 × `CommonActivatableWidgetStack`: `GameLayerStack` · `GameMenuLayerStack` · `MenuLayerStack` · `ModalLayerStack`, all fill |
+| `WBP_BNHUD` | `BNHUDLayout` | `HUDCanvas` → `Vitals` · `MatchBand` · `Killfeed` · `AmmoBlock` · `ReticleDot`(Image) · `BannerText` |
+| `WBP_BNVitals` | `BNVitalsWidget` | `VitalsCanvas` → `ShieldBar` · `HealthBar` · `CentreTick` · `ShieldText` · `HealthText` |
+| `WBP_BNAmmoBlock` | `BNAmmoBlock` | `TrayCanvas` → `GrenadeCountText` · `WeaponNameText` · `MagAmmoText` · `AmmoDivider` · `ReserveAmmoText` · `WeaponIcon` · `StowedIcon` · `StowedNameText` |
+| `WBP_BNMatchBand` | `BNMatchBand` | `BandCanvas` → `ModePipLeft` · `BarSelf` · `MyKillsText` · `SepLeft` · `ClockText` · `SepRight` · `TopKillsText` · `BarThem` · `ModePipRight` · `ScoreLimitText` |
+| `WBP_BNKillfeed` | `BNKillfeed` | `EntryContainer`(VerticalBox) → 5 × `WBP_BNKillfeedEntry` |
+| `WBP_BNKillfeedEntry` | `BNKillfeedEntry` | `EntryBox` → `LineText` · `WeaponIcon` (brush empty, 22×8) |
+| `WBP_BNScoreRow` | `BNScoreRow` | `RowBox` → `NameText`(fill) · `KillsText` · `DeathsText` |
+| `WBP_BNScreen_Death` | `BNScreen_Death` | `DeathRoot` → `DimPlate`(black 55%) · `DeathColumn` → `KilledByText` · `WeaponText` · `RespawnText` |
+| `WBP_BNScreen_Pause` | `BNScreen_Pause` | `PauseRoot` → `Scrim`(black 78%) · `PauseCanvas` → `MenuPlate`(451×682 @60,19) → `MenuColumn` → `TitleText` · `TitleRule` · `ResumeButton` · `LeaveButton` · `ColumnSpacer` · `WarningText` · `WarningBodyText` |
+| `WBP_BNScreen_Scoreboard` | `BNScreen_Scoreboard` | `BoardRoot` → `BoardWidth`(430) → `BoardPlate`(92%) → `BoardColumn` → `BannerText` · `HeaderRow`(PLAYER·KILLS·DEATHS) · `RowContainer` → 8 × `WBP_BNScoreRow` |
+
+Geometry is the ticket's measured numbers, set as CanvasPanel slot offsets with top-left
+anchors. Two positions the ticket left unstated were taken from the Figma the ticket cites
+rather than eyeballed: the grenade slot is `FRAG` at **x0 y0 40×34** (node `30:35`), and the
+killfeed rows are 20 tall on a 24 pitch (nodes `30:22/26/30`) → 4px bottom padding per entry.
+`ShieldText`/`HealthText` (y25) and `ScoreLimitText` (x240 y14) have no Figma node at all;
+they are INFERRED and are the only invented numbers in the pass.
+
+**Deviation, flagged not hidden — `ReticleDot`.** Built exactly as written: a white circle,
+via a `RoundedBox` brush with `HalfHeightRadius` (no texture, no import). At the ticket's
+measured 40×40 slot that renders as a 40px solid white disc over screen centre — visible in
+the PIE capture and almost certainly not what the design means; the Figma's own reticle dot
+is ⌀7.33 with a ⌀4 hole (node `44:5`), and `/Game/UI/HUD/HUD_Reticle_AR` already exists as
+measured art. Left as the ticket specifies. One brush property changes it.
+
+**Step 2 — the input. DONE.** `IA_BNScoreboard` and `IA_BNMenu` created in
+`/Game/BN/Input/`, both `valueType = Boolean` (matches `IA_BN_Melee`). Read-back of
+`IMC_BNNext.defaultKeyMappings`: `IA_BNScoreboard→Tab`, `IA_BNMenu→Escape`,
+`IA_BNMenu→Gamepad_Special_Right`. Read-back of `DA_BNInput.bindings`:
+`IA_BNScoreboard→Input.Scoreboard`, `IA_BNMenu→Input.Menu`. Both tags already exist in
+`BNGameplayTags.cpp:47-48`. Note for the next session: UE 5.8 keeps the live array at
+`defaultKeyMappings.mappings`, NOT the `mappings` property — that one reads back `[]` on a
+fully-wired IMC and will look like an empty context.
+
+**Step 3 — the ini. VERIFIED, no edits.** All five classes under
+`[/Script/BreachpointNext.BNUIManager]` (`DefaultGame.ini:321-326`) name
+`/Game/BN/UI/WBP_BN*_C`; every asset landed at exactly that path.
+
+**Step 4 — the `Icon` column. DONE (3 of 4 rows).** `DT_BNWeapons` has four rows.
+Written as plain soft-path strings (the `{"refPath": …}` trap avoided) and read back non-null:
+
+| Row | Icon (read back) |
+|---|---|
+| `Rifle` | `/Game/UI/HUD/HUD_Weapon_AR.HUD_Weapon_AR` |
+| `Pistol` | `/Game/UI/HUD/HUD_Weapon_Magnum.HUD_Weapon_Magnum` |
+| `Shotgun` | `/Game/UI/HUD/HUD_Weapon_Shotgun.HUD_Weapon_Shotgun` |
+| `Knife` | `None` — **left unset deliberately.** No melee silhouette exists under `Content/UI/HUD/`, and §1 forbids authoring one. An unset row draws no silhouette, which is the ticket's own designed answer. |
+
+`HUD_Weapon_BR`, `_Rocket`, `_Sniper` are unused: BN has no matching row yet.
+
+**Step 5 — read-backs.**
+1. **Trees + parents: PASS**, table above, all from a fresh `load_asset`.
+2. **PIE, solo: PASS.** `BR_Arena01` (its WorldSettings already overrides GameMode to
+   `BP_BNGameMode`). `LogBN` prints `BNUI: root layout up for LocalPlayer_0.` then
+   `BNUI: HUD up for LocalPlayer_0.` — **zero** `BNUI: … did not resolve` lines, zero
+   `placed no … rows` warnings. Vitals, reticle, tray (live `30` in the mag) and the band all
+   draw. Screenshot taken.
+3. **Killfeed: PASS.** Ran the match out; bots traded kills and the feed printed a line
+   (`… eliminated Marcus`) at the measured bottom-left anchor. The server's arbiter lines
+   carry the cause correctly — `with 'Pistol'`, `with 'Melee'`, `with 'Shotgun'`.
+4. **Death overlay / hold-Tab scoreboard / post-match pin: NOT RUN.**
+5. **Standalone + Escape (the pause menu, and the paused-then-killed edge): NOT RUN.**
+6. **R7.3 cause-of-death on the death SCREEN, and the stowed slot: NOT RUN.**
+7. **Weapon silhouette changing on swap: NOT RUN.**
+
+Items 4-7 need a hand on the keyboard (and 5 needs Standalone, per the ticket's own Escape
+trap). Everything the terminal can prove without one is proven; these are handed back.
+
+**One warning worth not rediscovering.** During construction the log fills with
+`[Compiler] A required widget binding "RowContainer" … was not found` for the scoreboard —
+the UMG toolset compiles on every `AddWidget`, so each intermediate tree is compiled before
+its children exist. A fresh recompile after the pass produces **zero** new occurrences.
+Historical noise, not a defect.
