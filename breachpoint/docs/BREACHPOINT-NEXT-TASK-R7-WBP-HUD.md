@@ -279,3 +279,61 @@ nothing at all. That is a `Source/` line, so it is handed back, not improvised.
 zero unresolved-class warnings, and the capture shows vitals top-centre, reticle dead centre,
 band bottom-centre, tray bottom-right — all inside a viewport nothing like 1280×720.
 Items 5.4–5.7 of the original read-back still need a hand on the keyboard.
+
+### 22 August 2026 (third pass) — measured against the Figma, not against the ticket
+
+Founder supplied the source pages. Ran the project's own five-phase method
+(`mcp-ui/PROCESS.md`) properly this time: **phase 0 first, written to disk**.
+
+**The referee now exists:** `Content/BN/UI/Assets/00-HUD-MEASURED.md` — every element of
+every BN widget with its Figma node id, from pages `6:47` Core · `6:48` Elements ·
+`6:49` Scoreboard · `6:50` Death · `6:51` Pause · `6:20` Colour · `6:54` Motion ·
+`6:55` UE Handoff. Anything without a node id in that file is marked INFERRED.
+
+Two confirmations worth recording. `6:55` §3 states the canvas as **1280 × 720 (×1.5 →
+1920 × 1080)**, which is the DPI curve landed in the previous pass. `6:55` also names the
+in-match HUD's **four anchors** — top-centre vitals, bottom-left feed, bottom-centre score,
+bottom-right tray, centre reticle — which is exactly the anchoring landed in that pass. Both
+were right; now they are cited rather than reasoned.
+
+#### What changed
+
+| Widget | Was | Now (node) |
+|---|---|---|
+| `ReticleDot` | 40px solid white disc (a `RoundedBox` brush) | `/Game/UI/HUD/HUD_Reticle_AR`, 40×40 at centre (`30:49`). The project's own measured reticle art — it existed the whole time |
+| `WBP_BNMatchBand` | 4 brushless `UImage`s = **four white rectangles** | mode pips (`42:7`/`42:15`, ELLIPSES) and score bars (`42:8`/`42:14`) **dropped**. See the gap list |
+| `WBP_BNScoreRow` | HBox, arbitrary widths | canvas **694 × 22** (`43:40`) — name x51 y5, KILLS x440 w90, DEATHS x606.5 w90 |
+| `WBP_BNScreen_Scoreboard` | 430-wide centred plate — **invented** | full-bleed 1:1 (`43:2`): header tick x5 y18 3×52, banner at the Mode slot x100 y34, header rule x100 y67 1059×2, column heads y157 w100, strong rule x465 y173 694×2, list top rule y191, rows from y202, bottom rule y472 |
+| `WBP_BNScreen_Death` | column at 40% height | measured (`36:2`): killer full-width y276 h59 · weapon name x636 y348 118×19 · respawn label full-width y528 h17 |
+| `WBP_BNScreen_Pause` | plate at x60 y19, buttons in a VBox | the **451 × 682 popup chassis at x48 y38** (`38:368`), border inset −4, title x50 y14 138×46, underline x50 y60 **160×2**, rows **351 × 28 at x50, pitch 40** (y92, y132), note x50 y600 351×46 |
+
+**The pause row is now the Menu Row atom.** `38:372..377` is top rule + dim bottom rule +
+1×20 side ticks + label at +10 — which is one `UBRHairlineBorder` with `edges=15`,
+`dimmedEdges=14`, `sideTickLength=20`. Exactly `WBP_ButtonDefault`'s `Border`. One widget,
+four draw elements, zero assets.
+
+#### C++ gaps — the design needs these and the bind contract cannot carry them
+
+Reported, not improvised (ASSET-RULES §5). Each is a `Source/` change.
+
+| # | Design element | Node | Blocked on |
+|---|---|---|---|
+| 1 | Match band **mode pips** and **score-fraction bars** | `42:7/8/14/15` | `UBNVM_Match` exposes no mode and no score fraction. A brushless `UImage` renders as a **solid white rectangle** (`mcp-ui/GOTCHAS.md` #2), so four static blocks were worse than four absences — dropped rather than faked |
+| 2 | Scoreboard **SCORE** and **ASSISTS** columns | `43:29`, `43:31` | `ABNPlayerState` has Kills/Deaths only. The two columns C++ can fill sit at their measured x; the other two are absent, not zero-filled |
+| 3 | Scoreboard **team blocks**, mode/map header, win-cond, clock, status dot, rank, service tag, team fills, self-highlight | `43:5..28`, `43:36..39` | no team model, no per-row identity beyond a name |
+| 4 | Death screen **weapon silhouette**, **respawn ring**, big **countdown**, status line, match-state strip | `36:9`, `36:11/12/13`, `36:6`, `36:15` | `UBNScreen_Death` binds three `UTextBlock`s and no image |
+| 5 | Pause rows as real **`UBRButton`** | `38:372..397` | `UBNScreen_Pause` binds `UButton`; `UBRButton` is a `UCommonButtonBase`. The row's measured *shape* is built with a hairline + a transparent `UButton`, so it looks right and clicks right, but it is not the atom and gets none of its hover inversion |
+| 6 | Killfeed entry **[Killer][glyph][Victim]** at x8 / x78 / x110 | `30:22` | `ComposeKillfeedLine` returns ONE composed `FText`; the WBP can only lay out `[LineText][WeaponIcon]` |
+| 7 | Design tokens as C++ constants | `6:20` | the measured palette (`hud/self #35D0F2`, `hud/health #F5C542`, `hud/clock #FFA333`, `hud/threat #FF4A3D`, `hud/team-them #FF7A45`, grounds/edges/ink) is now written down in the referee file; nothing checks `BNUITypes.h` against it |
+
+#### Verified
+
+All eleven read back and recompile with **zero** `required widget binding` warnings.
+PIE: `BNUI: root layout up` → `BNUI: HUD up`, and the capture shows the vitals arc top-centre,
+the **AR reticle** dead centre, the band bottom-centre reading `| 9:40 |`, and the tray
+bottom-right with a live grenade count — no white blocks anywhere. The pause chassis was
+captured in the designer at 1280×720 (tab verified per `GOTCHAS.md` #8) and matches `38:368`.
+
+Still needing a hand on the keyboard, per `GOTCHAS.md` #13 (PIE input cannot be driven through
+the Slate inspector — verified there by diffing frames): hold-Tab, Escape in Standalone, the
+death overlay, and the swap readings.
