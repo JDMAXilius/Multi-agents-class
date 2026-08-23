@@ -31,7 +31,6 @@ void ABNPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(ABNPlayerState, TeamId);
 	DOREPLIFETIME(ABNPlayerState, Kills);
 	DOREPLIFETIME(ABNPlayerState, Deaths);
 	DOREPLIFETIME_CONDITION(ABNPlayerState, RespawnAtServerTime, COND_OwnerOnly);
@@ -78,24 +77,6 @@ void ABNPlayerState::SetRespawnAtServerTime(double InServerTime)
 
 // The OnReps are "the scoreboard binds to them later", said 17 Aug — later arrived: they now
 // broadcast, and the Verbose lines stay as the no-HUD way to see the number land.
-void ABNPlayerState::SetTeamId(int32 NewTeamId)
-{
-	if (!HasAuthority() || TeamId == NewTeamId)
-	{
-		return;
-	}
-	TeamId = NewTeamId;
-
-	// The authority runs no OnRep — the same by-hand broadcast the score and the killfeed use, so
-	// a listen host and a remote client see one identical event stream.
-	OnTeamChanged.Broadcast(this);
-}
-
-void ABNPlayerState::OnRep_TeamId()
-{
-	OnTeamChanged.Broadcast(this);
-}
-
 void ABNPlayerState::OnRep_Kills()
 {
 	UE_LOG(LogBN, Verbose, TEXT("BNPlayerState: %s kills -> %d"), *GetPlayerName(), Kills);

@@ -3,9 +3,6 @@
 #include "AbilitySystem/Attributes/BNAttributeSet.h"
 #include "BreachpointNext.h"
 #include "Data/BNDataRows.h"
-#include "Match/BNGameMode.h"
-#include "Match/BNTeams.h"
-#include "Engine/World.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 
@@ -134,26 +131,6 @@ void BNDamage::ApplyDamage(AActor* Instigator, AActor* Target, float Amount, con
 		UE_LOG(LogBN, Error, TEXT("BNDamage: REFUSED — %s -> %s, %.1f asked for on a non-authority machine. Damage is the server's alone."),
 			*GetNameSafe(Instigator), *GetNameSafe(Target), Amount);
 		return;
-	}
-
-	// R8 — FRIENDLY FIRE, gated at the door and nowhere else. Refused BEFORE the spec is built, so
-	// an ally's shot moves no attribute, applies no RecentDamage window, and never reaches the
-	// capture that decides kill credit — the three ways a "harmless" hit would still have been felt.
-	//
-	// SELF-DAMAGE IS NEVER REFUSED: Instigator == Target is your own grenade, and AreAllies says
-	// true for it. That case is not friendly fire, it is consequence.
-	if (Instigator != Target && BNTeams::AreAllies(Instigator, Target))
-	{
-		const AGameModeBase* Mode = Target->GetWorld() ? Target->GetWorld()->GetAuthGameMode() : nullptr;
-		const ABNGameMode* BNMode = Cast<ABNGameMode>(Mode);
-		// A mode that is not BN's answers "no friendly fire" — the conservative half of an
-		// ambiguous answer, and the door is authority-only so GetAuthGameMode is always reachable.
-		if (!BNMode || !BNMode->IsFriendlyFireEnabled())
-		{
-			UE_LOG(LogBN, Verbose, TEXT("BNDamage: refused — %s and %s are allies and friendly fire is off."),
-				*GetNameSafe(Instigator), *GetNameSafe(Target));
-			return;
-		}
 	}
 
 	UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Target);
