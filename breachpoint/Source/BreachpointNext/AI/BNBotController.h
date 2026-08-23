@@ -65,6 +65,21 @@ public:
 	FVector GetLastKnownThreatLocation() const;
 	bool HasFreshLastKnownLocation() const;
 
+	/**
+	 * R9.5 — THE JUMP, as a verb the bot can spend. Presses the same `Input.Jump` a human's
+	 * spacebar presses, so it runs `UBNGA_Jump` with the same cost, the same `State.Movement.
+	 * Jumping` tag and the same landing handling. Returns true only if the press actually went out.
+	 *
+	 * Refused while already in the air (no double jump — BN has none for humans either) and until
+	 * the cooldown has passed, because the failure mode of a jumping bot is not a missed jump, it
+	 * is a bot that pogos on the spot and reads as broken. The COOLDOWN is the whole difference
+	 * between "uses jumps" and "is a rabbit".
+	 *
+	 * Callers decide WHEN — wedged on geometry, roaming into a lip, juking mid-burst. This decides
+	 * only whether a jump is allowed at all.
+	 */
+	bool TryJump();
+
 	/** R9 — the bot was SHOT, and by whom. Stamps the attacker's position as the last-known
 	 *  threat so Search sends the bot to look, exactly as losing sight of a seen enemy does.
 	 *  Deliberately NOT a target grant: being hit from behind should make a bot turn and hunt,
@@ -151,6 +166,14 @@ protected:
 	/** Quantization bucket. Snapping the draw keeps the trace reproducible across float drift. */
 	UPROPERTY(Config, EditDefaultsOnly, Category = "Bot|Reaction")
 	float ReactionQuantumSeconds = 0.05f;
+
+	/** The floor between two jumps. Not a tuning nicety: without it a wedged bot presses jump
+	 *  every frame it fails to make progress and hops in place until the watchdog fires. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "Bot|Movement")
+	float JumpCooldownSeconds = 1.5f;
+
+	/** World seconds when the next jump is allowed. Negative so the first one always passes. */
+	double NextJumpAllowedSeconds = -1.0;
 
 	/** How long an unreachable target stays ignored before the bot is willing to try again. */
 	UPROPERTY(Config, EditDefaultsOnly, Category = "Bot")

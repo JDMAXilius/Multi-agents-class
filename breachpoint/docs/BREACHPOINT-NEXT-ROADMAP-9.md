@@ -66,6 +66,35 @@ the lobby one wide for the whole match. Warmup still both fills and yields; a **
 only yield** — a bot materialising beside you mid-fight is worse than a seat over, and Lyra draws
 the same line (remove on join, backfill between matches).
 
+## 9.5 — the jump, as a verb bots can spend (founder's ask)
+
+Bots could not jump at all. `UBNGA_Jump` existed and `Input.Jump` was granted to them with every
+other default — nothing ever pressed it.
+
+`ABNBotController::TryJump()` presses that same tag, so a bot's jump IS a human's jump: the same
+ability, the same `State.Movement.Jumping` tag, the same landing handling. Not
+`ACharacter::Jump()`, which would have been a second movement path with no ability and no tag —
+the exact split this controller exists to avoid.
+
+**The cooldown is the whole difference between "uses jumps" and "is a rabbit".** Refused while
+already airborne (BN gives humans no double jump either) and until `JumpCooldownSeconds` has
+passed. The controller decides only whether a jump is ALLOWED; the tasks decide when it is worth
+one:
+
+| Where | When | What it buys |
+|---|---|---|
+| **Closing on an enemy** (`BN Move To Target`) | wedged at HALF the give-up window, one attempt | A path exists, path following says Moving, the bot gets nowhere: a lip, a crate, a step. That is the shape a jump clears, so it is spent BEFORE the target is written off, not after |
+| **Roaming** (`BN Move To Point Of Interest`) | move reports done while short of the point, one attempt per leg | The "get up there" and "get out of here" case. Before R9.5 stopping short silently counted as arriving, so the bot quietly gave up on unreachable ground forever |
+| **Firefight** (`BN Strafe`) | every Nth sidestep, and immediately when a step is refused | The juke. A bot that never leaves the ground can be led by aim alone; one that jumps every step cannot shoot. A refused step means cornered, and a jump is the one move left that changes the picture |
+
+**One attempt per wedge, per leg** — a bot that jumps repeatedly at a wall it cannot pass reads as
+stuck *and* stupid, where giving up and going elsewhere reads as a decision.
+
+**What this is NOT:** gap-jumping across a chasm on purpose. That needs NavLinkProxies placed in
+the level so the navmesh knows a jump connects two islands — level work, not code. This is the
+without-nav-data version: jumps that clear what is *in the way*, spent at the moments the bot
+already knows something has gone wrong.
+
 ## What is still weak, and still true
 
 - **No cover.** Close is a straight line at the enemy. Real cover wants EQS or tagged cover

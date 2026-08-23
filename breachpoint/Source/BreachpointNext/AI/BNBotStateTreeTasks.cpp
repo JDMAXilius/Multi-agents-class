@@ -369,10 +369,27 @@ EStateTreeRunStatus FBNMoveToTargetTask::Tick(FStateTreeExecutionContext& Contex
 	{
 		InstanceData.BestDistance = DistanceNow;
 		InstanceData.SecondsWithoutProgress = 0.f;
+		// Moving again: the next wedge gets its own jump.
+		InstanceData.bTriedWedgeJump = false;
 	}
 	else
 	{
 		InstanceData.SecondsWithoutProgress += DeltaTime;
+
+		// R9.5 — SPEND A JUMP BEFORE WRITING THE TARGET OFF. A lip, a crate, a step: a path
+		// exists, path following says Moving, and the bot gets nowhere. That is the shape a jump
+		// clears, and it costs half the give-up window to find out. One attempt per wedge.
+		if (!InstanceData.bTriedWedgeJump
+			&& InstanceData.SecondsWithoutProgress >= InstanceData.GiveUpAfterNoProgressSeconds * 0.5f)
+		{
+			InstanceData.bTriedWedgeJump = true;
+			if (Bot->TryJump())
+			{
+				UE_LOG(LogBN, Verbose, TEXT("BNBots: %s jumped to clear whatever it is wedged on."),
+					*GetNameSafe(Pawn));
+			}
+		}
+
 		if (InstanceData.SecondsWithoutProgress >= InstanceData.GiveUpAfterNoProgressSeconds)
 		{
 			Bot->NotifyTargetUnreachable(const_cast<AActor*>(Target));
@@ -562,6 +579,7 @@ EStateTreeRunStatus FBNStrafeTask::EnterState(FStateTreeExecutionContext& Contex
 	// stationary bot this task exists to remove.
 	InstanceData.SecondsUntilStep = 0.f;
 	InstanceData.bWarnedStepFailed = false;
+	InstanceData.StepCount = 0;
 	return EStateTreeRunStatus::Running;
 }
 
@@ -605,6 +623,11 @@ EStateTreeRunStatus FBNStrafeTask::Tick(FStateTreeExecutionContext& Context, con
 
 	if (Result == EPathFollowingRequestResult::Failed)
 	{
+		// R9.5 — pinned against something mid-fight: a jump is the one move left that changes the
+		// picture, and it is also what a player does when cornered. Cheap, because the cooldown
+		// on the controller is what stops it becoming a pogo.
+		Bot->TryJump();
+
 		// Back to a wall: turn around rather than keep pressing into it. Flipping here AND at the
 		// end of a good step is deliberate — a failed step costs a direction, not a beat.
 		InstanceData.bStepRight = !InstanceData.bStepRight;
@@ -615,6 +638,15 @@ EStateTreeRunStatus FBNStrafeTask::Tick(FStateTreeExecutionContext& Context, con
 				*GetNameSafe(Pawn));
 		}
 		return EStateTreeRunStatus::Running;
+	}
+
+	// R9.5 — THE JUKE. Every Nth sidestep leaves the ground: a bot that never jumps in a firefight
+	// is a bot that can be led by aim alone, and one that jumps every step cannot shoot. The
+	// counter (not a coin) keeps the rhythm legible to the player who is fighting it.
+	++InstanceData.StepCount;
+	if (InstanceData.JukeEveryNthStep > 0 && (InstanceData.StepCount % InstanceData.JukeEveryNthStep) == 0)
+	{
+		Bot->TryJump();
 	}
 
 	InstanceData.bStepRight = !InstanceData.bStepRight;
@@ -722,6 +754,7 @@ EStateTreeRunStatus FBNMoveToPointOfInterestTask::EnterState(FStateTreeExecution
 
 	InstanceData.CurrentPoint = Pick;
 	InstanceData.bArrived = false;
+	InstanceData.bTriedBlockedJump = false;
 	InstanceData.DwellRemaining = InstanceData.DwellSeconds;
 	return EStateTreeRunStatus::Running;
 }
@@ -768,6 +801,28 @@ EStateTreeRunStatus FBNMoveToPointOfInterestTask::Tick(FStateTreeExecutionContex
 
 		const bool bInRadius = Pawn && FVector::Dist(Pawn->GetActorLocation(), Point->GetActorLocation()) <= Point->Radius;
 		const bool bMoveDone = Controller->GetMoveStatus() == EPathFollowingStatus::Idle;
+
+		// R9.5 — STOPPED SHORT. Path following says done and the bot is not there: a lip, a step,
+		// the edge of a dip it walked into. Before accepting that as "arrived" (which is what
+		// silently gave up on the point), spend ONE jump and re-issue the move — this is the
+		// "get up there" and "get out of here" case, and it is the same move a player makes
+		// without thinking. If the second attempt stalls too, arrival stands and the bot picks a
+		// different point rather than fighting the geometry.
+		if (bMoveDone && !bInRadius && !InstanceData.bTriedBlockedJump)
+		{
+			InstanceData.bTriedBlockedJump = true;
+			if (ABNBotController* JumpingBot = Cast<ABNBotController>(Controller))
+			{
+				if (JumpingBot->TryJump())
+				{
+					UE_LOG(LogBN, Verbose, TEXT("BNBots: %s stopped short of its point and jumped for it."),
+						*GetNameSafe(Pawn));
+					Controller->MoveToActor(const_cast<ABNPointOfInterest*>(Point), Point->Radius);
+					return EStateTreeRunStatus::Running;
+				}
+			}
+		}
+
 		if (bInRadius || bMoveDone)
 		{
 			InstanceData.bArrived = true;

@@ -3,6 +3,8 @@
 #include "AbilitySystem/BNAbilitySystemComponent.h"
 #include "AbilitySystem/Attributes/BNAttributeSet.h"
 #include "AI/BNBotBrain.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "BreachpointNext.h"
 #include "Characters/BNCharacter.h"
 #include "Weapons/BNEquipmentComponent.h"
@@ -501,6 +503,37 @@ void ABNBotController::OnRecentDamageTagChanged(const FGameplayTag Tag, int32 Ne
 	}
 
 	RescoreBrain();
+}
+
+bool ABNBotController::TryJump()
+{
+	const UWorld* World = GetWorld();
+	const ACharacter* Character = Cast<ACharacter>(GetPawn());
+	const UCharacterMovementComponent* MoveComp = Character ? Character->GetCharacterMovement() : nullptr;
+	if (!World || !MoveComp)
+	{
+		return false;
+	}
+
+	// Already airborne: BN gives humans no double jump, and a bot that pressed again mid-flight
+	// would just spend the cooldown for nothing.
+	if (MoveComp->IsFalling())
+	{
+		return false;
+	}
+	if (World->GetTimeSeconds() < NextJumpAllowedSeconds)
+	{
+		return false;
+	}
+
+	// The SAME press a spacebar makes. Not Character->Jump(): that would be a second movement path
+	// with no ability, no State.Movement.Jumping tag and no landing handling — the exact split
+	// this controller exists to avoid.
+	PressInputTag(BNTags::Input_Jump);
+	ReleaseInputTag(BNTags::Input_Jump);
+
+	NextJumpAllowedSeconds = World->GetTimeSeconds() + FMath::Max(0.f, JumpCooldownSeconds);
+	return true;
 }
 
 void ABNBotController::RememberThreatAt(const FVector& Where)

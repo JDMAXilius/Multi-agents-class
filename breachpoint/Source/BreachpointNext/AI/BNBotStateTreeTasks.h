@@ -128,6 +128,13 @@ struct FBNMoveToTargetTaskInstanceData
 	/** Internal: throttles the closing diagnostic to roughly one line per second. */
 	float SecondsUntilCloseLog = 0.f;
 
+	/** Internal (R9.5): one jump per wedge, tried at HALF the give-up window. A lip, a crate or a
+	 *  step is the commonest reason a path exists and the bot still gets nowhere, and a jump is
+	 *  exactly the move that clears it — so it is spent before the target is written off, not
+	 *  after. One attempt: a bot that jumps repeatedly at a wall it cannot pass reads as stuck
+	 *  AND stupid, where giving up reads as a decision. */
+	bool bTriedWedgeJump = false;
+
 	/** Give up on a target the bot has stopped getting closer to. Catches the wedged case that
 	 *  AlreadyAtGoal does not: a valid path that makes no headway. */
 	UPROPERTY(EditAnywhere, Category = "Parameter")
@@ -234,6 +241,15 @@ struct FBNStrafeTaskInstanceData
 
 	/** Internal: warned once. A strafe that can never path is worth one line, not one per step. */
 	bool bWarnedStepFailed = false;
+
+	/** Every Nth sidestep becomes a JUKE — the step plus a jump. Not every step: a bot airborne
+	 *  half the fight cannot shoot straight and reads as a bug, while one that occasionally leaves
+	 *  the ground reads as a player. Zero disables the juke entirely. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	int32 JukeEveryNthStep = 3;
+
+	/** Internal: steps taken this burst, counted for the juke. */
+	int32 StepCount = 0;
 };
 
 /**
@@ -307,6 +323,11 @@ struct FBNMoveToPointOfInterestTaskInstanceData
 
 	/** Internal: the move-failure diagnosis is printed once, not once per frame. */
 	bool bWarnedMoveFailed = false;
+
+	/** Internal (R9.5): one jump per failed leg, spent BEFORE the leg is abandoned. This is the
+	 *  "get out of here" case — a bot that walked into a dip, a stairwell it cannot path out of,
+	 *  or against a lip between it and the point it wants. */
+	bool bTriedBlockedJump = false;
 };
 
 /** Roam: nearest ABNPointOfInterest that is not the last one, walk there, dwell, succeed.

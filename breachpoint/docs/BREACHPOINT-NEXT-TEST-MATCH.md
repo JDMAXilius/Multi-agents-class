@@ -159,6 +159,21 @@ without it. Everything else below works without the rebuild.
    `BNBots: 1 bot(s) yielded seats to humans` and a lobby of exactly `TargetPlayers`. No bot may
    SPAWN mid-match — if one appears from nowhere, that is the rule broken.
 
+### The jump (R9.5)
+
+5. **In a fight**, a bot leaves the ground now and then mid-burst — a hop every third sidestep,
+   not constantly. Constant hopping is a bug (the cooldown is not holding); never hopping while
+   strafing works means the juke counter is not running.
+6. **Stand on a crate or a low ledge** and let a bot try to reach you: it should JUMP at the
+   obstruction partway through closing, and only give up if the jump does not help. Before R9.5
+   it stood at the bottom until the watchdog wrote you off.
+7. **Roaming past a lip:** a bot that stops short of a point of interest jumps once and re-tries
+   before accepting it as arrived. `LogBN` Verbose: `stopped short of its point and jumped for it`.
+8. **Corner one:** a strafe that cannot path jumps instead of grinding into the wall.
+
+A bot that pogos in place is the failure mode to watch for — that is `JumpCooldownSeconds` not
+being respected, not a tuning question.
+
 ## 6. Known and accepted
 
 - ~~`MinPlayers` is only enforced on the session's FIRST match~~ — **closed 19 Aug 2026** by the
