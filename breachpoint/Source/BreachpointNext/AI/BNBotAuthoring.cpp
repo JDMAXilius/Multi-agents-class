@@ -221,6 +221,11 @@ FString UBNBotAuthoring::BuildBotStateTree()
 	Shoot.AddEnterCondition<FBNHasLineOfSightCondition>();
 	Shoot.AddEnterCondition<FBNReactedCondition>();
 	Shoot.AddTask<FBNFaceTargetTask>();
+	// R9 — footwork. A bot that stands perfectly still while firing is the single loudest tell
+	// that it is not a person; the sidestep runs BESIDE the burst (Running forever, like Face
+	// Target) so the burst still decides when the state ends. Safe only because ABNCharacter aims
+	// with the controller and does not orient to movement.
+	Shoot.AddTask<FBNStrafeTask>();
 	Shoot.AddTask<FBNFireBurstTask>();
 	AddCompletionTransition(Shoot, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
 	AddCompletionTransition(Shoot, Root, EStateTreeTransitionTrigger::OnStateFailed, 1.0f);
@@ -243,7 +248,7 @@ FString UBNBotAuthoring::BuildBotStateTree()
 	// A level with no points fails this instantly; the delay is what keeps that cheap and quiet.
 	AddCompletionTransition(Roam, Root, EStateTreeTransitionTrigger::OnStateFailed, 2.0f);
 
-	Report.Add(TEXT("states     : Root > [Engage > [Rearm, Arm, Nade, Knife, Close, Shoot], Search, Roam]"));
+	Report.Add(TEXT("states     : Root > [Engage > [Rearm, Arm, Nade, Knife, Close, Shoot(+strafe)], Search, Roam]"));
 
 	// An uncompiled StateTree runs NOTHING — the asset would exist, the ini would resolve, and
 	// every bot would still stand still. This is the step that turns editor data into bytecode.

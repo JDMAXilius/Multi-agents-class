@@ -113,13 +113,19 @@ BotControllerClass=/Script/BreachpointNext.BNBotController
 (sight radius / aim error / burst+dwell seconds ride the controller's and tasks' own Config
 defaults; numbers land in ini only when the founder tunes them.)
 
-## Known limitation, accepted with its trigger written down
+## Known limitation — CLOSED 23 Aug 2026 by R9
 
 **The fill can overshoot when `MinPlayers > 1`.** Human 1's arrival fills to TargetPlayers during
 warmup; human 2's arrival then starts the match one wide (bot removal is deferred). Unreachable on
 the shipped config (`MinPlayers=1` — the first human both fills and starts), same acceptance shape
 as R4's MinPlayers limitation. **Reopen the moment `MinPlayers` is raised above 1** — the fix is
 the deferred remove-a-bot seam (Lyra's `RemoveOneBot`), not a rework.
+
+**Closed by `ROADMAP-9`:** `EnsureBotFill` returned early on any state but warmup, which is what
+left the lobby one wide for a whole match. A live match may now YIELD a bot seat (never spawn
+one — a bot materialising beside you mid-fight is worse than a seat over), so a human joining
+after the start takes a bot's place on the next initialization. Backfill between matches is
+unchanged.
 
 ## Status — 18 Aug 2026
 

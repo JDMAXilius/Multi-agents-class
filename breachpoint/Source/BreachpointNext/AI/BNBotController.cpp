@@ -269,9 +269,7 @@ void ABNBotController::ClearCurrentTarget()
 	// memory: one position and one timestamp, written at the only moment the truth is still known.
 	if (const AActor* Leaving = TargetEnemy.Get())
 	{
-		LastKnownThreatLocation = Leaving->GetActorLocation();
-		const UWorld* World = GetWorld();
-		LastKnownThreatSeconds = World ? World->GetTimeSeconds() : -1.0;
+		RememberThreatAt(Leaving->GetActorLocation());
 	}
 
 	TargetEnemy.Reset();
@@ -334,6 +332,15 @@ FVector ABNBotController::GetLastKnownThreatLocation() const
 
 bool ABNBotController::HasFreshLastKnownLocation() const
 {
+	// FLEEING IS NOT SEARCHING (R9). Survive blanks GetCurrentTarget by design, so the test below
+	// cannot tell "no target because I lost them" from "no target because I am running" — and
+	// without this a hurt bot walked back toward the thing it was escaping. Roam already flips to
+	// the point of interest FARTHEST from the threat when Surviving; Search simply never got told.
+	if (Brain && Brain->GetAmbition() == EBNBotAmbition::Survive)
+	{
+		return false;
+	}
+
 	// A live target outranks a memory of one — searching while looking at the enemy is nonsense.
 	if (LastKnownThreatSeconds < 0.0 || GetCurrentTarget() != nullptr)
 	{
@@ -463,8 +470,42 @@ void ABNBotController::OnRecentDamageTagChanged(const FGameplayTag Tag, int32 Ne
 	// expiring, and rescoring on danger receding would flee at exactly the wrong moment.
 	const bool bDamaged = NewCount > LastRecentDamageCount;
 	LastRecentDamageCount = NewCount;
-	if (bDamaged)
+	if (!bDamaged)
 	{
-		RescoreBrain();
+		return;
 	}
+
+	// R9 — WHO HIT ME. Until now a bot shot in the back re-scored its ambition and did nothing
+	// else: you could empty a magazine into it and it would never turn around. The attacker is
+	// already recorded — FBNLastDamage is captured at the one reaction point every damage passes
+	// through, on the authority, which is where bots live.
+	//
+	// It becomes a MEMORY, not a target. Being hit should make a bot go and look; acquiring a
+	// perfect lock on someone it has never seen would be omniscience, and it would also skip the
+	// reaction window that makes a firefight readable. Perception still has to do the seeing.
+	if (const UBNAbilitySystemComponent* ASC = GetBotASC())
+	{
+		if (const UBNAttributeSet* Attributes = ASC->GetSet<UBNAttributeSet>())
+		{
+			const AActor* Attacker = Attributes->GetLastDamage().Instigator.Get();
+			// Not myself, not the thing I am already looking at, and only something that would
+			// have been a legal target anyway — IsValidTarget is the one rule for that.
+			if (Attacker && Attacker != GetPawn() && Attacker != GetThreat()
+				&& IsValidTarget(const_cast<AActor*>(Attacker)))
+			{
+				RememberThreatAt(Attacker->GetActorLocation());
+				UE_LOG(LogBN, Verbose, TEXT("BNBots: %s was hit by %s and will go looking."),
+					*GetNameSafe(GetPawn()), *GetNameSafe(Attacker));
+			}
+		}
+	}
+
+	RescoreBrain();
+}
+
+void ABNBotController::RememberThreatAt(const FVector& Where)
+{
+	const UWorld* World = GetWorld();
+	LastKnownThreatLocation = Where;
+	LastKnownThreatSeconds = World ? World->GetTimeSeconds() : -1.0;
 }

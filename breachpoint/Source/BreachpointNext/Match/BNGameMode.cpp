@@ -414,7 +414,19 @@ void ABNGameMode::RespawnPlayer(TWeakObjectPtr<AController> WeakController)
 
 void ABNGameMode::EnsureBotFill()
 {
-	if (!HasAuthority() || GetMatchState() != MatchState::WaitingToStart)
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	// TWO STATES, TWO POWERS (R9). Warmup both fills and yields. A LIVE match may only YIELD:
+	// R5's own limitation was that a human joining after the start left the lobby one wide for
+	// the whole match (the function returned before it could count), and the fix is not to also
+	// start spawning mid-fight — a bot materialising beside you is worse than a seat over. Lyra
+	// draws the same line: remove on join, backfill only between matches.
+	const bool bWarmup = GetMatchState() == MatchState::WaitingToStart;
+	const bool bLive = GetMatchState() == MatchState::InProgress;
+	if (!bWarmup && !bLive)
 	{
 		return;
 	}
@@ -453,6 +465,12 @@ void ABNGameMode::EnsureBotFill()
 	}
 
 	if (BotsNeeded == 0)
+	{
+		return;
+	}
+
+	// Short-handed mid-match: left alone deliberately. See the two-states note above.
+	if (bLive)
 	{
 		return;
 	}

@@ -137,6 +137,28 @@ BNBrain: Vale wants Survive (u=1.14) because health low.
 - Tuning is `DT_BNBotAmbitions` (terminal ticket `TASK-R6-DT-AMBITIONS`) — until it lands, the
   C++ defaults drive and one warning says so.
 
+## 5d. The R9 bot pass — four things to watch for
+
+**Rebuild the tree first.** The strafe is a NEW StateTree node and a compiled tree does not grow
+one by itself: run `Tools/bn/62_bot_assets.py` against the running editor. Its probe list now
+carries `FBNStrafeTask`, so a stale build stops the script rather than quietly authoring a tree
+without it. Everything else below works without the rebuild.
+
+1. **Footwork.** A bot in a firefight sidesteps while it shoots instead of standing still. Short
+   steps, side to side, aim staying on you — not a walk off mid-burst. A bot in a corridor with
+   its back to a wall turns around instead of grinding into it (one Verbose line, once).
+2. **It hears the shot.** Sneak up and shoot a bot in the back from outside its vision cone: it
+   must go and LOOK — walk toward where you fired from — not carry on. It should NOT snap around
+   and open fire instantly; that would be omniscience, and the reaction window is still what
+   gates the first shot once it actually sees you. `LogBN` Verbose: `was hit by X and will go
+   looking`.
+3. **A fleeing bot flees.** Hurt one below 35% health while it can see you (`Survive` in the
+   brain line). It must move AWAY. Before R9 a bot with a fresh memory of you would walk back
+   toward where you were — if you see that, 9.1 regressed.
+4. **A late joiner takes a seat.** Start a match, then join a second player mid-match: expect
+   `BNBots: 1 bot(s) yielded seats to humans` and a lobby of exactly `TargetPlayers`. No bot may
+   SPAWN mid-match — if one appears from nowhere, that is the rule broken.
+
 ## 6. Known and accepted
 
 - ~~`MinPlayers` is only enforced on the session's FIRST match~~ — **closed 19 Aug 2026** by the

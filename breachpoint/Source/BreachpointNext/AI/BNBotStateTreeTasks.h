@@ -209,6 +209,72 @@ struct FBNFireBurstTask : public FStateTreeTaskCommonBase
 ////////////////////////////////////////////////////////////////////
 
 USTRUCT()
+struct FBNStrafeTaskInstanceData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Context")
+	TObjectPtr<AAIController> Controller;
+
+	/** How far each sidestep goes. Short on purpose: this is a fighter shifting its weight, not
+	 *  a flank. Long steps read as the bot losing interest and walking off mid-burst. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float StepDistance = 300.f;
+
+	/** How often a new step is taken. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float StepIntervalSeconds = 1.2f;
+
+	/** Internal: countdown to the next step. */
+	float SecondsUntilStep = 0.f;
+
+	/** Internal: which way the next step goes. Flipped every step, and flipped AGAIN when a step
+	 *  fails — a bot with its back to a wall must not keep walking into it. */
+	bool bStepRight = false;
+
+	/** Internal: warned once. A strafe that can never path is worth one line, not one per step. */
+	bool bWarnedStepFailed = false;
+};
+
+/**
+ * Sidesteps while shooting. A companion task, never alone: it runs beside BN Fire Burst and BN
+ * Face Target in Shoot, returns Running forever like Face Target does, and lets the burst decide
+ * when the state is over.
+ *
+ * It is safe only because ABNCharacter aims with the CONTROLLER (`bUseControllerRotationYaw`
+ * true, `bOrientRotationToMovement` false) — the body moves sideways while the aim stays on the
+ * target. On a character that orients to movement this task would spin the bot away mid-burst.
+ *
+ * The direction never touches the global RNG (§5): it is seeded off the controller's identity and
+ * flipped from there, so two bots in one fight open opposite ways and nothing else in the frame
+ * is perturbed by asking. (Identity here is a pointer hash, the same basis the reaction draw
+ * uses — stable within a run, not across one, which is the honest limit of both.)
+ */
+USTRUCT(meta = (DisplayName = "BN Strafe", Category = "BN"))
+struct FBNStrafeTask : public FStateTreeTaskCommonBase
+{
+	GENERATED_BODY()
+
+	using FInstanceDataType = FBNStrafeTaskInstanceData;
+	virtual const UStruct* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
+
+	FBNStrafeTask()
+	{
+		bShouldCallTick = true;
+	}
+
+	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
+	virtual EStateTreeRunStatus Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const override;
+	virtual void ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
+
+#if WITH_EDITOR
+	virtual FText GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting = EStateTreeNodeFormatting::Text) const override;
+#endif
+};
+
+////////////////////////////////////////////////////////////////////
+
+USTRUCT()
 struct FBNMoveToPointOfInterestTaskInstanceData
 {
 	GENERATED_BODY()

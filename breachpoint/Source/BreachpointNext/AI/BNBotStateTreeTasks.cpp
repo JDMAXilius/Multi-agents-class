@@ -546,6 +546,101 @@ FText FBNFireBurstTask::GetDescription(const FGuid& ID, FStateTreeDataView Insta
 
 ////////////////////////////////////////////////////////////////////
 
+EStateTreeRunStatus FBNStrafeTask::EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
+{
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	const ABNBotController* Bot = ResolveBot(Context, InstanceData.Controller);
+	if (!Bot)
+	{
+		return EStateTreeRunStatus::Failed;
+	}
+
+	// No global RNG (§5): identity decides which way this bot opens and every step after it just
+	// flips, so two bots in one fight still open opposite ways without perturbing any stream.
+	InstanceData.bStepRight = (GetTypeHash(Bot) & 1) != 0;
+	// The first step is immediate — a burst that begins with a second of standing still is the
+	// stationary bot this task exists to remove.
+	InstanceData.SecondsUntilStep = 0.f;
+	InstanceData.bWarnedStepFailed = false;
+	return EStateTreeRunStatus::Running;
+}
+
+EStateTreeRunStatus FBNStrafeTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
+{
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	ABNBotController* Bot = ResolveBot(Context, InstanceData.Controller);
+	const APawn* Pawn = Bot ? Bot->GetPawn() : nullptr;
+	const AActor* Target = Bot ? Bot->GetCurrentTarget() : nullptr;
+	if (!Bot || !Pawn || !Target)
+	{
+		// No target is not this task's failure — Shoot's own conditions own that. Keep running so
+		// the burst beside it decides the state, and simply stop stepping.
+		return EStateTreeRunStatus::Running;
+	}
+
+	InstanceData.SecondsUntilStep -= DeltaTime;
+	if (InstanceData.SecondsUntilStep > 0.f)
+	{
+		return EStateTreeRunStatus::Running;
+	}
+	InstanceData.SecondsUntilStep = FMath::Max(0.1f, InstanceData.StepIntervalSeconds);
+
+	// Perpendicular to the line of fire, flat: stepping toward or away from the target would be
+	// closing or retreating, and those are Close's and Survive's jobs, not this one's.
+	FVector ToTarget = Target->GetActorLocation() - Pawn->GetActorLocation();
+	ToTarget.Z = 0.f;
+	if (!ToTarget.Normalize())
+	{
+		return EStateTreeRunStatus::Running;
+	}
+	const FVector Lateral = FVector::CrossProduct(FVector::UpVector, ToTarget)
+		* (InstanceData.bStepRight ? 1.f : -1.f);
+	const FVector Destination = Pawn->GetActorLocation() + Lateral * FMath::Max(0.f, InstanceData.StepDistance);
+
+	// Projected onto the navmesh by the move itself: a step into a wall or off a ledge resolves to
+	// the nearest legal point instead of failing, and a genuinely impossible one flips the side.
+	const EPathFollowingRequestResult::Type Result = Bot->MoveToLocation(
+		Destination, /*AcceptanceRadius=*/50.f, /*bStopOnOverlap=*/true, /*bUsePathfinding=*/true,
+		/*bProjectDestinationToNavigation=*/true, /*bCanStrafe=*/true);
+
+	if (Result == EPathFollowingRequestResult::Failed)
+	{
+		// Back to a wall: turn around rather than keep pressing into it. Flipping here AND at the
+		// end of a good step is deliberate — a failed step costs a direction, not a beat.
+		InstanceData.bStepRight = !InstanceData.bStepRight;
+		if (!InstanceData.bWarnedStepFailed)
+		{
+			InstanceData.bWarnedStepFailed = true;
+			UE_LOG(LogBN, Verbose, TEXT("BNBots: %s could not strafe — no navigable step either side of it."),
+				*GetNameSafe(Pawn));
+		}
+		return EStateTreeRunStatus::Running;
+	}
+
+	InstanceData.bStepRight = !InstanceData.bStepRight;
+	return EStateTreeRunStatus::Running;
+}
+
+void FBNStrafeTask::ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
+{
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	if (ABNBotController* Bot = ResolveBot(Context, InstanceData.Controller))
+	{
+		// The next state issues its own move; a half-finished sidestep must not outlive the burst
+		// that asked for it. Move priority only — BN Face Target owns the Gameplay-priority focus.
+		Bot->StopMovement();
+	}
+}
+
+#if WITH_EDITOR
+FText FBNStrafeTask::GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting) const
+{
+	return FText::FromString("<b>BN Strafe</b>");
+}
+#endif
+
+////////////////////////////////////////////////////////////////////
+
 EStateTreeRunStatus FBNMoveToPointOfInterestTask::EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
 {
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);

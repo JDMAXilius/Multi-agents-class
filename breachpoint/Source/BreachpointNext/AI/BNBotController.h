@@ -65,6 +65,13 @@ public:
 	FVector GetLastKnownThreatLocation() const;
 	bool HasFreshLastKnownLocation() const;
 
+	/** R9 — the bot was SHOT, and by whom. Stamps the attacker's position as the last-known
+	 *  threat so Search sends the bot to look, exactly as losing sight of a seen enemy does.
+	 *  Deliberately NOT a target grant: being hit from behind should make a bot turn and hunt,
+	 *  not acquire a perfect lock on someone it has never seen. Perception still has to do that,
+	 *  and the reaction window still applies when it does. */
+	void RememberThreatAt(const FVector& Where);
+
 	/** R11: a bot may not shoot the instant it perceives. False until the reaction window since
 	 *  target acquisition has passed. */
 	bool HasReactedToTarget() const;

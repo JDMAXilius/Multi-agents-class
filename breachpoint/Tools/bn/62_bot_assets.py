@@ -57,6 +57,7 @@ NODE_STRUCTS = [
     ("FBNFaceTargetTask", "/Script/BreachpointNext.BNFaceTargetTask", "task"),
     ("FBNMoveToTargetTask", "/Script/BreachpointNext.BNMoveToTargetTask", "task"),
     ("FBNFireBurstTask", "/Script/BreachpointNext.BNFireBurstTask", "task"),
+    ("FBNStrafeTask", "/Script/BreachpointNext.BNStrafeTask", "task"),
     ("FBNReloadTask", "/Script/BreachpointNext.BNReloadTask", "task"),
     ("FBNSelectWeaponTask", "/Script/BreachpointNext.BNSelectWeaponTask", "task"),
     ("FBNMoveToPointOfInterestTask", "/Script/BreachpointNext.BNMoveToPointOfInterestTask", "task"),
