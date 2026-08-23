@@ -77,7 +77,8 @@ public:
 	/** The killer's line and, from R7.3, WHAT they used — the design's second line under the
 	 *  name. An empty weapon is the honest answer for a cause with no row and for a death the
 	 *  feed never explained; the screen then shows the name alone. */
-	void SetKilledByLine(const FText& InLine, const FText& InWeapon = FText::GetEmpty());
+	void SetKilledByLine(const FText& InLine, const FText& InWeapon = FText::GetEmpty(),
+		const TSoftObjectPtr<UTexture2D>& InWeaponIcon = TSoftObjectPtr<UTexture2D>());
 	void SetRespawnStamp(double InRespawnAtServerTime, AGameStateBase* InTimeSource);
 
 	/** Travel and rebind reset: everything back to Unknown, timers down. */
@@ -110,7 +111,15 @@ public:
 	bool IsDead() const { return bIsDead; }
 	FText GetKilledByLine() const { return KilledByLine; }
 	FText GetKilledByWeapon() const { return KilledByWeapon; }
+	TSoftObjectPtr<UTexture2D> GetKilledByWeaponIcon() const { return KilledByWeaponIcon; }
 	int32 GetRespawnSecondsRemaining() const { return RespawnSecondsRemaining; }
+
+	/** 0 at the moment of death, 1 when the respawn is due — the design's ring, as a number any
+	 *  bar or radial material can read. The TOTAL is measured at the stamp rather than read from
+	 *  a config: the delay is the GameMode's and does not replicate, but the first remaining-time
+	 *  the client computes IS that delay. INDEX_NONE-shaped emptiness is a 0 here, not a lie:
+	 *  the widget hides the ring when RespawnSecondsRemaining says there is no respawn pending. */
+	float GetRespawnFraction() const { return RespawnFraction; }
 
 private:
 	void HandleAttributeChanged(const FOnAttributeChangeData& Data);
@@ -184,6 +193,12 @@ private:
 	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetKilledByWeapon", Category = "BN|Combat", meta = (AllowPrivateAccess))
 	FText KilledByWeapon;
 
+	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetKilledByWeaponIcon", Category = "BN|Combat", meta = (AllowPrivateAccess))
+	TSoftObjectPtr<UTexture2D> KilledByWeaponIcon;
+
+	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetRespawnFraction", Category = "BN|Combat", meta = (AllowPrivateAccess))
+	float RespawnFraction = 0.f;
+
 	/** INDEX_NONE = no respawn pending; 0 = imminent. */
 	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetRespawnSecondsRemaining", Category = "BN|Combat", meta = (AllowPrivateAccess))
 	int32 RespawnSecondsRemaining = INDEX_NONE;
@@ -204,6 +219,8 @@ private:
 
 	TWeakObjectPtr<AGameStateBase> RespawnTimeSource;
 	double RespawnAtServerTime = 0.0;
+	/** The window this death was given, measured at the stamp — see GetRespawnFraction. */
+	double RespawnTotalSeconds = 0.0;
 	FTimerHandle RespawnTimerHandle;
 };
 
@@ -257,6 +274,11 @@ public:
 	int32 GetMyKills() const { return MyKills; }
 	int32 GetTopKills() const { return TopKills; }
 	int32 GetScoreLimit() const { return ScoreLimit; }
+
+	/** The design's two score bars, as fractions of the limit — 0..1, clamped. Zero when there is
+	 *  no limit to be a fraction OF: an unlimited match draws no bar rather than a full one. */
+	float GetSelfScoreFraction() const { return SelfScoreFraction; }
+	float GetTopScoreFraction() const { return TopScoreFraction; }
 	EBNUIDataState GetMatchDataState() const { return MatchDataState; }
 	const TArray<FBNKillfeedViewEntry>& GetKillfeedEntries() const { return KillfeedEntries; }
 
@@ -290,6 +312,12 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetScoreLimit", Category = "BN|Match", meta = (AllowPrivateAccess))
 	int32 ScoreLimit = 0;
+
+	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetSelfScoreFraction", Category = "BN|Match", meta = (AllowPrivateAccess))
+	float SelfScoreFraction = 0.f;
+
+	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetTopScoreFraction", Category = "BN|Match", meta = (AllowPrivateAccess))
+	float TopScoreFraction = 0.f;
 
 	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetMatchDataState", Category = "BN|Match", meta = (AllowPrivateAccess))
 	EBNUIDataState MatchDataState = EBNUIDataState::Unknown;

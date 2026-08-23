@@ -395,6 +395,31 @@ Still open from that list: mode pips and score-fraction bars (no mode or fractio
 SCORE/ASSISTS columns (no assists state anywhere), scoreboard team blocks (teams are parked), the
 death screen's silhouette + respawn ring + big countdown, and pause rows as a real button atom.
 
+## R7.7 — two more of the handed-back gaps
+
+- **Gap 4, the death screen.** It bound three `UTextBlock`s and no image. It now also carries the
+  killer's weapon SILHOUETTE (the same soft `Icon` the feed glyph and the tray read — one filled
+  DT column lights three places), the bare COUNTDOWN numeral the design draws large beside the
+  sentence, and the respawn RING as `RespawnFraction` on the combat ViewModel.
+  **The ring ships as a `UProgressBar` and that is a decision, not a shortcut:** a radial sweep is
+  a material (Tier 4), and this ViewModel updates once a second because law 4 forbids the
+  per-frame push a smooth sweep needs from C++. A bar that steps once a second is honest; a ring
+  that stutters is not. The material lands with the art and reads the same fraction.
+  The fraction's DENOMINATOR is measured at the stamp rather than read from config — `RespawnDelay`
+  is the GameMode's and does not replicate, but the remaining time when the stamp lands IS that
+  delay. A client joining mid-count measures a shorter window and starts part-full, which is the
+  truth about what it knows.
+- **Gap 1, half of it.** `SelfScoreFraction` / `TopScoreFraction` on the match ViewModel, computed
+  where the scores are set — a fraction is arithmetic, and arithmetic in a widget is the decision
+  this project keeps out of assets. No score limit means no denominator: the bars read zero and
+  draw nothing rather than sitting full. **The mode PIPS from the same design node stay absent**,
+  and that is the honest half: nothing in this project models a game mode, so four static blocks
+  would be decoration pretending to be state.
+
+Left from the terminal's list: SCORE/ASSISTS (no assists exist anywhere — a real gameplay packet,
+a per-victim damage ledger), scoreboard team blocks (teams are parked), and pause rows as a real
+button atom (BN has no styled `UCommonButtonBase`).
+
 ## Deferred, with named slots
 
 Per-weapon reticle + spread + hit markers (wants the damage cue's confirm param) · the equipment

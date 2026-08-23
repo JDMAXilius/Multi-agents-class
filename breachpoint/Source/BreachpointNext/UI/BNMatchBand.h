@@ -5,6 +5,7 @@
 #include "BNMatchBand.generated.h"
 
 class UBNVM_Match;
+class UProgressBar;
 class UTextBlock;
 
 /**
@@ -43,6 +44,16 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
 	TObjectPtr<UTextBlock> ScoreLimitText;
+
+	/** R7.7, gap 1 — the design's two score bars, as fractions of the limit. Optional: the band
+	 *  reads perfectly well as numbers alone, which is what it has been doing. The mode PIPS from
+	 *  the same design node are still absent and still honest — nothing in this project models a
+	 *  game mode, so four static blocks would be decoration pretending to be state. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
+	TObjectPtr<UProgressBar> SelfScoreBar;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
+	TObjectPtr<UProgressBar> TopScoreBar;
 
 	TArray<TPair<UE::FieldNotification::FFieldId, FDelegateHandle>> BoundFields;
 	TWeakObjectPtr<UBNVM_Match> BoundViewModel;

@@ -1,4 +1,7 @@
 #include "UI/BNScreen_Death.h"
+#include "Components/Image.h"
+#include "Components/ProgressBar.h"
+#include "Engine/Texture2D.h"
 #include "Components/TextBlock.h"
 #include "INotifyFieldValueChanged.h"
 #include "UI/BNUITypes.h"
@@ -34,6 +37,8 @@ void UBNScreen_Death::BindViewModels()
 	for (const UE::FieldNotification::FFieldId FieldId : {
 		UBNVM_Combat::FFieldNotificationClassDescriptor::KilledByLine,
 		UBNVM_Combat::FFieldNotificationClassDescriptor::KilledByWeapon,
+		UBNVM_Combat::FFieldNotificationClassDescriptor::KilledByWeaponIcon,
+		UBNVM_Combat::FFieldNotificationClassDescriptor::RespawnFraction,
 		UBNVM_Combat::FFieldNotificationClassDescriptor::RespawnSecondsRemaining })
 	{
 		if (FieldId.IsValid())
@@ -90,12 +95,44 @@ void UBNScreen_Death::Refresh()
 		WeaponText->SetText(Weapon);
 		WeaponText->SetVisibility(Weapon.IsEmpty() ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
 	}
+	const int32 Seconds = Combat->GetRespawnSecondsRemaining();
+	const bool bRespawnPending = Seconds >= 0;
+
 	if (RespawnText)
 	{
-		const int32 Seconds = Combat->GetRespawnSecondsRemaining();
-		RespawnText->SetText(Seconds >= 0
+		RespawnText->SetText(bRespawnPending
 			? FText::Format(LOCTEXT("RespawnIn", "RESPAWNING IN {0}"), FText::AsNumber(Seconds))
 			: FText::GetEmpty());
+	}
+
+	// R7.7 — the bare numeral the design draws large. Same value, different weight: the sentence
+	// above it is for reading once, this is for glancing at.
+	if (CountdownText)
+	{
+		CountdownText->SetText(bRespawnPending ? FText::AsNumber(Seconds) : FText::GetEmpty());
+		CountdownText->SetVisibility(bRespawnPending ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
+	}
+
+	// The ring fills as the wait runs down. Hidden — not zeroed — when nothing is pending: an
+	// empty ring on a living player is a UI element with no subject.
+	if (RespawnRing)
+	{
+		RespawnRing->SetPercent(Combat->GetRespawnFraction());
+		RespawnRing->SetVisibility(bRespawnPending ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
+	}
+
+	// The killer's weapon, as art rather than words — the same soft icon the killfeed glyph and
+	// the tray silhouette use, so one filled DT column lights all three.
+	if (WeaponIcon)
+	{
+		const TSoftObjectPtr<UTexture2D> Icon = Combat->GetKilledByWeaponIcon();
+		const bool bHasIcon = !Icon.IsNull();
+		if (bHasIcon && Icon != AppliedWeaponIcon)
+		{
+			WeaponIcon->SetBrushFromSoftTexture(Icon, /*bMatchSize=*/false);
+			AppliedWeaponIcon = Icon;
+		}
+		WeaponIcon->SetVisibility(bHasIcon ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 	}
 }
 

@@ -1,4 +1,5 @@
 #include "UI/BNMatchBand.h"
+#include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
 #include "Engine/LocalPlayer.h"
 #include "INotifyFieldValueChanged.h"
@@ -31,6 +32,8 @@ void UBNMatchBand::NativeConstruct()
 	BindMatchField(Match, UBNVM_Match::FFieldNotificationClassDescriptor::ScoreLimit);
 	BindMatchField(Match, UBNVM_Match::FFieldNotificationClassDescriptor::MatchClockText);
 	BindMatchField(Match, UBNVM_Match::FFieldNotificationClassDescriptor::MatchDataState);
+	BindMatchField(Match, UBNVM_Match::FFieldNotificationClassDescriptor::SelfScoreFraction);
+	BindMatchField(Match, UBNVM_Match::FFieldNotificationClassDescriptor::TopScoreFraction);
 
 	// Subscribe, then read once — the state that existed before this widget did.
 	Refresh();
@@ -90,5 +93,18 @@ void UBNMatchBand::Refresh()
 	if (ClockText)
 	{
 		ClockText->SetText(Match && bLive ? Match->GetMatchClockText() : FText::FromString(TEXT("—:——")));
+	}
+
+	// R7.7 — the two bars. HIDDEN at Unknown rather than drawn empty: an empty bar is a claim
+	// that the score is zero, which is exactly the lie the dashes above exist to avoid.
+	if (SelfScoreBar)
+	{
+		SelfScoreBar->SetPercent(bLive ? Match->GetSelfScoreFraction() : 0.f);
+		SelfScoreBar->SetVisibility(bLive ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
+	}
+	if (TopScoreBar)
+	{
+		TopScoreBar->SetPercent(bLive ? Match->GetTopScoreFraction() : 0.f);
+		TopScoreBar->SetVisibility(bLive ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
 	}
 }

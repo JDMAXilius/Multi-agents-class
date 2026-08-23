@@ -146,14 +146,17 @@ void UBNVM_Combat::SetDead(bool bInDead)
 		// flashes the last one's line for a frame.
 		UE_MVVM_SET_PROPERTY_VALUE(KilledByLine, FText::GetEmpty());
 		UE_MVVM_SET_PROPERTY_VALUE(KilledByWeapon, FText::GetEmpty());
+		UE_MVVM_SET_PROPERTY_VALUE(KilledByWeaponIcon, TSoftObjectPtr<UTexture2D>());
 		SetRespawnStamp(0.0, nullptr);
 	}
 }
 
-void UBNVM_Combat::SetKilledByLine(const FText& InLine, const FText& InWeapon)
+void UBNVM_Combat::SetKilledByLine(const FText& InLine, const FText& InWeapon,
+	const TSoftObjectPtr<UTexture2D>& InWeaponIcon)
 {
 	UE_MVVM_SET_PROPERTY_VALUE(KilledByLine, InLine);
 	UE_MVVM_SET_PROPERTY_VALUE(KilledByWeapon, InWeapon);
+	UE_MVVM_SET_PROPERTY_VALUE(KilledByWeaponIcon, InWeaponIcon);
 }
 
 void UBNVM_Combat::SetRespawnStamp(double InRespawnAtServerTime, AGameStateBase* InTimeSource)
@@ -164,9 +167,18 @@ void UBNVM_Combat::SetRespawnStamp(double InRespawnAtServerTime, AGameStateBase*
 	if (RespawnAtServerTime <= 0.0 || !InTimeSource)
 	{
 		StopRespawnClock();
+		RespawnTotalSeconds = 0.0;
 		UE_MVVM_SET_PROPERTY_VALUE(RespawnSecondsRemaining, static_cast<int32>(INDEX_NONE));
+		UE_MVVM_SET_PROPERTY_VALUE(RespawnFraction, 0.f);
 		return;
 	}
+
+	// THE WINDOW, measured here and nowhere else: the GameMode's RespawnDelay does not replicate,
+	// but the remaining time at the moment the stamp lands IS that delay. A joining client that
+	// arrives mid-count measures a shorter window and its ring simply starts part-full — which is
+	// the truth about what it knows, not an error.
+	const double Now = InTimeSource->GetServerWorldTimeSeconds();
+	RespawnTotalSeconds = FMath::Max(0.0, RespawnAtServerTime - Now);
 
 	UpdateRespawnClock();
 }
@@ -178,6 +190,7 @@ void UBNVM_Combat::UpdateRespawnClock()
 	{
 		StopRespawnClock();
 		UE_MVVM_SET_PROPERTY_VALUE(RespawnSecondsRemaining, static_cast<int32>(INDEX_NONE));
+		UE_MVVM_SET_PROPERTY_VALUE(RespawnFraction, 0.f);
 		return;
 	}
 
@@ -185,6 +198,15 @@ void UBNVM_Combat::UpdateRespawnClock()
 	// Ceil, so "3" shows the moment of death and "0" never lingers: at 2.4 remaining the honest
 	// integer a player reads is 3-2-1, not 2-1-0-0.
 	UE_MVVM_SET_PROPERTY_VALUE(RespawnSecondsRemaining, FMath::Max(0, FMath::CeilToInt32(Remaining)));
+
+	// The ring, on the SAME once-per-second beat as the number — this ViewModel owns one timer and
+	// law 4 forbids a tick. A ring that sweeps smoothly is a MATERIAL reading its own time, fed
+	// this fraction as its start and end; C++ pushing a per-frame float would be the tick by
+	// another name. Stepping once a second is honest; pretending to be smooth would not be.
+	const float Fraction = RespawnTotalSeconds > 0.0
+		? static_cast<float>(1.0 - FMath::Clamp(Remaining / RespawnTotalSeconds, 0.0, 1.0))
+		: 1.f;
+	UE_MVVM_SET_PROPERTY_VALUE(RespawnFraction, Fraction);
 
 	if (Remaining > 0.0)
 	{
@@ -259,6 +281,8 @@ void UBNVM_Combat::ClearToUnknown()
 	UE_MVVM_SET_PROPERTY_VALUE(bIsDead, false);
 	UE_MVVM_SET_PROPERTY_VALUE(KilledByLine, FText::GetEmpty());
 	UE_MVVM_SET_PROPERTY_VALUE(KilledByWeapon, FText::GetEmpty());
+	UE_MVVM_SET_PROPERTY_VALUE(KilledByWeaponIcon, TSoftObjectPtr<UTexture2D>());
+	UE_MVVM_SET_PROPERTY_VALUE(RespawnFraction, 0.f);
 	UE_MVVM_SET_PROPERTY_VALUE(RespawnSecondsRemaining, static_cast<int32>(INDEX_NONE));
 }
 
@@ -303,6 +327,15 @@ void UBNVM_Match::SetScores(int32 InMyKills, int32 InTopKills, int32 InScoreLimi
 	UE_MVVM_SET_PROPERTY_VALUE(MyKills, InMyKills);
 	UE_MVVM_SET_PROPERTY_VALUE(TopKills, InTopKills);
 	UE_MVVM_SET_PROPERTY_VALUE(ScoreLimit, InScoreLimit);
+
+	// The design's two bars, computed HERE rather than in the widget: a fraction is arithmetic,
+	// and arithmetic in a widget is the decision this project keeps out of assets. No limit means
+	// no denominator — the bars read zero and draw nothing rather than sitting full.
+	const float Denominator = static_cast<float>(FMath::Max(0, InScoreLimit));
+	UE_MVVM_SET_PROPERTY_VALUE(SelfScoreFraction,
+		Denominator > 0.f ? FMath::Clamp(InMyKills / Denominator, 0.f, 1.f) : 0.f);
+	UE_MVVM_SET_PROPERTY_VALUE(TopScoreFraction,
+		Denominator > 0.f ? FMath::Clamp(InTopKills / Denominator, 0.f, 1.f) : 0.f);
 }
 
 void UBNVM_Match::SetMatchClock(double InMatchEndServerTime, AGameStateBase* InTimeSource)
@@ -496,6 +529,8 @@ void UBNVM_Match::ClearToUnknown()
 	TimeSource.Reset();
 	LastKillfeedSequence = INDEX_NONE;
 	KillfeedEntries.Reset();
+	UE_MVVM_SET_PROPERTY_VALUE(SelfScoreFraction, 0.f);
+	UE_MVVM_SET_PROPERTY_VALUE(TopScoreFraction, 0.f);
 	// Only when there was something to clear — SetRoster's silence contract, kept symmetric.
 	if (Roster.Num() > 0)
 	{

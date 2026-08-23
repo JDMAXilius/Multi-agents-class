@@ -349,7 +349,8 @@ void UBNHUDDirector::HandleKillfeedChanged()
 				else { KilledBy = FText::Format(LOCTEXT("KilledBy", "Eliminated by {0}"), FText::FromString(Entry.KillerName)); }
 				// R7.3 — and the second line, WITH WHAT. Empty stays empty: a death the door
 				// could not name shows the killer alone rather than a guessed weapon.
-				Combat->SetKilledByLine(KilledBy, ComposeWeaponLabel(Entry.SourceName));
+				Combat->SetKilledByLine(KilledBy, ComposeWeaponLabel(Entry.SourceName),
+					ResolveWeaponIcon(Entry.SourceName));
 			}
 		}
 	}
