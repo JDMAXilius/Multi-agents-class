@@ -79,13 +79,19 @@ void UBNVitalsWidget::Refresh()
 	const UBNVM_Combat* Combat = BoundViewModel.Get();
 	const bool bLive = Combat && Combat->GetVitalsState() == EBNUIDataState::Live;
 
+	// MaxShield == 0 means this mode has no shields, not that yours are down. A 273x20 bar
+	// pinned at empty for the whole match is not honest-unknown, it is furniture — and it is
+	// what makes the health bar below it look missing.
+	const bool bShields = Combat && Combat->HasShields();
 	if (ShieldBar)
 	{
+		ShieldBar->SetVisibility(bShields ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 		ShieldBar->SetPercent(bLive ? Combat->GetShieldPercent() : 0.f);
 		ShieldBar->SetFillColorAndOpacity(bLive ? BNUIColors::Shield : BNUIColors::Dead);
 	}
 	if (ShieldText)
 	{
+		ShieldText->SetVisibility(bShields ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 		ShieldText->SetText(bLive ? FText::AsNumber(Combat->GetShieldValue()) : FText::FromString(TEXT("—")));
 		// The dash dims too (critic): a confident live-cyan "—" half-honours honest-unknown.
 		ShieldText->SetColorAndOpacity(FSlateColor(bLive ? BNUIColors::Shield : BNUIColors::Dead));
@@ -94,7 +100,11 @@ void UBNVitalsWidget::Refresh()
 	// Hidden-until-damaged, on the WHOLE element: a full health bar says nothing, and the old
 	// module's version hid only the fill and left the frame drawing. Unknown also hides it —
 	// an empty frame before the ASC binds would read as "no health", which is a lie.
-	const bool bHealthVisible = bLive && Combat->GetHealthPercent() < 1.f;
+	// Hidden-until-damaged is a rule about a bar that sits UNDER a shield: a full health bar
+	// says nothing when a shield is the thing actually protecting you. With shields off, health
+	// IS the vitals, and hiding it leaves the player with no health readout at all — which is
+	// exactly what "I do not see the healthbar" was.
+	const bool bHealthVisible = bLive && (!bShields || Combat->GetHealthPercent() < 1.f);
 	if (HealthBar)
 	{
 		HealthBar->SetVisibility(bHealthVisible ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);

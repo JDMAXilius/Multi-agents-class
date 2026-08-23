@@ -87,6 +87,12 @@ public:
 	float GetShieldPercent() const { return ShieldPercent; }
 	int32 GetHealthValue() const { return HealthValue; }
 	int32 GetShieldValue() const { return ShieldValue; }
+
+	/** Does this mode HAVE shields at all? `BNGE_InitVitals` overrides MaxShield to 0 while
+	 *  shields are paused (founder, 13 Aug: "I want to see the health perfectly working first"),
+	 *  and that comment promises "everything downstream already gates itself on MaxShield > 0".
+	 *  This is the getter that lets the vitals widget keep that promise. */
+	bool HasShields() const { return RawMaxShield > 0.f; }
 	EBNUIDataState GetVitalsState() const { return VitalsState; }
 	FText GetWeaponName() const { return WeaponName; }
 	int32 GetMagAmmo() const { return MagAmmo; }

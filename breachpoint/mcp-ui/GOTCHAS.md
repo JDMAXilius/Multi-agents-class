@@ -102,6 +102,26 @@ Writing `{"text": ""}` gives you a genuinely blank widget. The settings slider s
 invisible to the plan validator, invisible to the build receipt, invisible to the structural
 audit, and obvious within two seconds of running it.
 
+## 13b. Killing the editor leaves CrashReportClient squatting on the MCP port
+
+`pkill`ing the editor does not take its crash handler with it. `CrashReportClient` inherits the
+listening socket and keeps **port 8000 bound**, so the NEXT editor starts, loads the plugin,
+logs `LogModelContextProtocol: Tool search enabled: registered 3 meta-tools (23 toolsets ...)`
+— and never binds. Every MCP call then fails with a bare connection refused while the editor
+sits there looking perfectly healthy.
+
+The tell is in `lsof`, not in the log:
+
+```
+lsof -nP -iTCP:8000 | grep LISTEN
+COMMAND     PID USER   FD   TYPE  ...  NAME
+CrashRepo 10223 juan  213u  IPv4  ...  TCP 127.0.0.1:8000 (LISTEN)
+```
+
+Cost here: seven minutes of waiting on an editor that was already up. Before deciding a boot
+is slow, check who owns the port. Kill the squatter AND restart the editor — freeing the port
+after the fact does not make the running editor retry the bind.
+
 ## 13. PIE input cannot be driven through the Slate inspector
 
 The observer sees editor chrome only. The game viewport's UMG tree does not surface, so there is
