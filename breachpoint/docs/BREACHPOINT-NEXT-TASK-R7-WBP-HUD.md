@@ -337,3 +337,86 @@ captured in the designer at 1280×720 (tab verified per `GOTCHAS.md` #8) and mat
 Still needing a hand on the keyboard, per `GOTCHAS.md` #13 (PIE input cannot be driven through
 the Slate inspector — verified there by diffing frames): hold-Tab, Escape in Standalone, the
 death overlay, and the swap readings.
+
+### 22 August 2026 (fourth pass) — the per-widget audit
+
+A DATA audit, not a visual one: every widget of every WBP read back live and diffed against
+`Content/BN/UI/Assets/00-HUD-MEASURED.md` and against what the C++ actually drives.
+
+#### Fixed in the WBP layer (read back, verified in PIE)
+
+**A1 — five rules were drawing the wrong edge.** `CentreTick`, `SepLeft`, `SepRight`,
+`AmmoDivider` and `HeaderTick` are vertical bars, but all five read back
+`hairlineStyle.edges = 1` (TOP). `UBRRule` derives `Edges` from `Orientation` inside
+`SynchronizeProperties`, which does NOT run on a bare MCP property write — so `orientation`
+read back `Vertical` while the SERIALISED edge stayed horizontal. A 1.33 × 10 tick was
+drawing a 1.33px dash across its top instead of a 10px vertical line. **This is
+`mcp-ui/GOTCHAS.md` #6 exactly** — the earlier pass set the property, never read it back, and
+the write looked successful. Both `orientation` and `hairlineStyle.edges` are now written and
+both read back (`Vertical`/`edges=4`, `Horizontal`/`edges=1`). Visible in the PIE capture: the
+band now reads `1 | 9:25 | 2` with upright separators.
+
+**A2 — three brushless `UImage`s were white rectangles on the first frame.**
+`WBP_BNAmmoBlock.WeaponIcon` (88×32), `.StowedIcon` (44×16) and
+`WBP_BNKillfeedEntry.WeaponIcon` (22×8) all read `res=None, tint=white, Visible`. C++ hides
+each one only when `Refresh` runs; before that they paint solid white (GOTCHAS #2). All three
+now ship `Collapsed` — absent is the honest default, and C++ turns them on when it has a
+texture. Confirmed in PIE: the killfeed's melee line carries no block, and the tray's
+silhouette appears on a real weapon.
+
+**A3 — read-back cleared a suspected defect.** `KilledByText` and `RespawnText` looked
+zero-width in the first dump; re-read with `anchors.maximum` they are `min(0,0) max(1,0)` —
+correctly full-bleed. No change.
+
+#### Confirmed correct
+
+Anchors, sizes and offsets on all eleven match the measured file. `ReticleDot` carries
+`HUD_Reticle_AR`. All 23 text widgets are `CommonTextBlock`. Every decoration is
+`HitTestInvisible`; the two `Button`s are the only `Visible` things on the pause screen.
+Killfeed rows are 20 tall on a 24 pitch. `SetBrushFromSoftTexture` fills the tray silhouette
+from `DT_BNWeapons.Icon` — verified live, a rifle draws its glyph.
+
+#### Findings that are `Source/` changes — reported, not improvised
+
+**B1 — the vitals bars draw a WHITE PLATE.** `ShieldBar`/`HealthBar` read
+`widgetStyle.backgroundImage = {drawAs: Box, resourceObject: None, tint: white}` — the UMG
+default. C++ sets `SetFillColorAndOpacity` only, which tints the FILL; the ground stays
+opaque white. At 0 % shield the top-centre of the screen is a solid white 273 × 20 bar. The
+design (`42:3`) is a constant-thickness arc over the HUD ground, no white plate. Needs
+`SetWidgetStyle` (or a background tint of `hud/panel #0A1018`) in `UBNVitalsWidget`.
+**Most visible defect on the HUD.**
+
+**B2 — three text widgets never get a colour.** `ClockText` should be `hud/clock #FFA333`
+("a clock is running" is the token's own description), `TopKillsText` and `ScoreLimitText`
+should be dim — `UBNMatchBand::NativeOnInitialized` colours only `MyKillsText`.
+`UBNScreen_Death::WeaponText` is likewise uncoloured. All render default white today.
+
+**B3 — `BNUIColors` drifts from the token table.** `Shield` is `{0.043, 0.663, 0.898}`, which
+converts back to `#3AD5F3`; `6:20` says `hud/self #35D0F2`, whose linear triple is
+`{0.0356, 0.6303, 0.8879}`. Small, but "one source of colour" (`6:55` law 05) means the
+constants should be the tokens, not near-misses. Re-derive all seven.
+
+**B4 — two tokens are missing entirely.** `hud/shield-low #0E7E9B` (the shield bar's gradient
+floor) and `hud/team-them #FF7A45` (the opposing team in feeds and scoreboards) have no
+`BNUIColors` entry, so the killfeed cannot colour an enemy line and the shield bar cannot
+gradient.
+
+**B5 — nothing animates.** No `BindWidgetAnim` in any BN UI header and no `PlayAnimation` in
+any BN UI `.cpp`. `6:54` specifies hover inversion 90 ms in / 140 ms out (colour only, never
+scale), panel reveal 330 ms each way, house curve `cubic-bezier(0.45,0.15,0.10,1.00)`.
+Every BN transition is currently a hard cut. Not a regression — it was never built.
+
+**B6 — the pause rows still are not the atom.** `ResumeButton`/`LeaveButton` are `UButton`s
+with `backgroundColor` alpha 0 sitting over a hairline that draws the measured shape. They
+click, but hovering does nothing at all: the engine's hover brush is tinted out and
+`UBRButton`'s inversion is not in play. Restates gap #5 with the mechanism.
+
+#### Two assets changed that this ticket did not name — NOT committed
+
+`Content/BN/Core/BP_BNGameMode.uasset` is modified and
+`Content/BN/Core/BP_BNGameState.uasset` is new and untracked. World Settings now reads
+`Game State Class = BP_BNGameState` where it previously read the C++ `BNGameState`. Either a
+manual editor action or an unscoped `save_assets` flush (`GOTCHAS.md` #7: it writes EVERY
+dirty package, not the one you asked for). **Left in the working tree, uncommitted, for the
+founder to keep or discard** — ASSET-RULES §5 says revert an accidental dirty-save, but
+deleting a Blueprint somebody may have deliberately created is not reversible from here.
