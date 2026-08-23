@@ -10,6 +10,7 @@
 #include "Core/BNGameplayTags.h"
 #include "Data/BNGameData.h"
 #include "Match/BNPlayerState.h"
+#include "Match/BNTeams.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Components/StateTreeAIComponent.h"
 #include "StateTree.h"
@@ -58,18 +59,29 @@ ABNBotController::ABNBotController(const FObjectInitializer& ObjectInitializer)
 
 FGenericTeamId ABNBotController::GetGenericTeamId() const
 {
-	// Teams-later seam: FFA is one shared "no team". A team system replaces this constant.
-	return FGenericTeamId(255);
+	// R8 — the seam this function was written as, now filled. 255 (NoTeam) survives as the honest
+	// answer for an unassigned bot: it exists for a frame before the mode sides it.
+	const int32 Team = BNTeams::GetTeamId(this);
+	return BNTeams::IsValidTeam(Team) ? FGenericTeamId(static_cast<uint8>(Team)) : FGenericTeamId(255);
 }
 
 ETeamAttitude::Type ABNBotController::GetTeamAttitudeTowards(const AActor& Other) const
 {
-	// Teams-later seam: FFA answers Hostile for any pawn that is not mine. Non-pawns are scenery.
-	if (const APawn* OtherPawn = Cast<APawn>(&Other))
+	const APawn* OtherPawn = Cast<APawn>(&Other);
+	if (!OtherPawn)
 	{
-		return OtherPawn == GetPawn() ? ETeamAttitude::Friendly : ETeamAttitude::Hostile;
+		return ETeamAttitude::Neutral;
 	}
-	return ETeamAttitude::Neutral;
+	if (OtherPawn == GetPawn())
+	{
+		return ETeamAttitude::Friendly;
+	}
+
+	// R8 — allies are Friendly, everyone else Hostile. An UNASSIGNED pair reads Hostile, which is
+	// the conservative answer here and the opposite of the door's: a bot that treats a stranger as
+	// harmless walks past a real enemy, while a wrongly-hostile read costs at most one shot at
+	// someone who was about to be sided anyway. IsValidTarget is what actually stops the shot.
+	return BNTeams::AreAllies(this, OtherPawn) ? ETeamAttitude::Friendly : ETeamAttitude::Hostile;
 }
 
 void ABNBotController::OnPossess(APawn* InPawn)
@@ -381,6 +393,14 @@ bool ABNBotController::IsValidTarget(AActor* Actor) const
 {
 	ABNCharacter* TargetCharacter = Cast<ABNCharacter>(Actor);
 	if (!TargetCharacter || TargetCharacter == GetPawn())
+	{
+		return false;
+	}
+
+	// R8 — ALLIES ARE NOT TARGETS, and this is the one place that can say so: perception still
+	// senses everything (DetectionByAffiliation is all-true on purpose), the slot rule and the tree
+	// both inherit this function, so one check covers sighting, re-targeting and every task.
+	if (BNTeams::AreAllies(this, TargetCharacter))
 	{
 		return false;
 	}

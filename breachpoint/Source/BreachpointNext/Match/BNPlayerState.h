@@ -22,6 +22,9 @@ class UGameplayEffect;
  *  This block sits ABOVE the UCLASS() macro on purpose: UnrealHeaderTool requires the class
  *  definition to immediately follow UCLASS(), and anything between them stops the build. */
 class ABNPlayerState;
+/** R8 — one param, the PlayerState whose side changed; readers ask it for the new value. */
+DECLARE_MULTICAST_DELEGATE_OneParam(FBNTeamChangedSignature, ABNPlayerState* /*Changed*/);
+
 DECLARE_MULTICAST_DELEGATE_ThreeParams(FBNPlayerDeathSignature, ABNPlayerState* /*Victim*/, ABNPlayerState* /*Killer*/, FName /*SourceName*/);
 
 /** R7 — fires wherever the numbers change: the authority from AddKill/AddDeath/ResetScore (no
@@ -53,6 +56,18 @@ public:
 
 	FBNScoreChangedSignature OnScoreChanged;
 	FBNRespawnStampSignature OnRespawnStampChanged;
+
+	/** R8 — the side changed. Fires on EVERY machine (the authority by hand, clients from the
+	 *  OnRep), the same discipline the score and killfeed feeds already use. */
+	FBNTeamChangedSignature OnTeamChanged;
+
+	/** BNTeams::Unassigned until the mode assigns one — a real state, not an error: a controller
+	 *  exists for a frame before assignment, and a joining client's TeamId bunch can trail. */
+	int32 GetTeamId() const { return TeamId; }
+
+	/** Authority only, and the GameMode is the only caller: balance is a match rule, so it lives
+	 *  where the roster does, never in the PlayerState that merely carries the answer. */
+	void SetTeamId(int32 NewTeamId);
 
 	/** Two integers, not the engine's float Score: an FFA scoreboard reads counts, and a float
 	 *  invites rounding questions nobody wants to answer. */
@@ -95,6 +110,14 @@ protected:
 
 	UFUNCTION()
 	void OnRep_RespawnAtServerTime();
+
+	UFUNCTION()
+	void OnRep_TeamId();
+
+	/** To EVERYONE, unlike the respawn stamp: every machine draws every player's side — the
+	 *  killfeed's colours, the scoreboard's grouping, a nameplate over an ally. */
+	UPROPERTY(ReplicatedUsing = OnRep_TeamId)
+	int32 TeamId = INDEX_NONE;
 
 	UPROPERTY(ReplicatedUsing = OnRep_Kills)
 	int32 Kills = 0;

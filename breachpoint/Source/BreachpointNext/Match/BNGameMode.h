@@ -84,6 +84,10 @@ public:
 	/** Read by ABNGameState, which mirrors it so clients can render "12 / 25". */
 	int32 GetScoreLimit() const { return ScoreLimit; }
 
+	/** R8 — the damage door asks this, on the authority, once per landed hit. Public because the
+	 *  door is a namespace function with no other way in; const because it never changes here. */
+	bool IsFriendlyFireEnabled() const { return bFriendlyFire; }
+
 	/** Authority: the ONE respawn path. Delay then RestartPlayer. */
 	void RequestRespawn(AController* Controller);
 
@@ -109,6 +113,11 @@ protected:
 	 *  lobby is whatever the last edge left (critic's precision, worth keeping precise). */
 	void EnsureBotFill();
 
+	/** R8 — the smaller side, ties to the lower index. Called once per controller from
+	 *  GenericPlayerInitialization, humans and bots through the same door. */
+	int32 PickTeamForNewPlayer() const;
+	void AssignTeam(ABNPlayerState* PS);
+
 	/** One bot, Lyra's way: spawn the controller (transient — never saved into a map), name its
 	 *  PlayerState, GenericPlayerInitialization, RestartPlayer. Null on failure, loudly. */
 	ABNBotController* SpawnBot(int32 Index);
@@ -131,6 +140,13 @@ protected:
 	 *  SPEC, never a CDO container — native tags are not guaranteed registered while CDOs build. */
 	void SetPlayerFrozen(ABNPlayerState* InPlayerState, bool bFrozen);
 	void SetAllPlayersFrozen(bool bFrozen);
+
+	/** R8 — OFF by default, and that is a stated assumption, not a discovery: friendly fire in an
+	 *  arena shooter is a design ruling, and this key is the whole of it. On, allies damage each
+	 *  other normally; off, the door refuses the hit before any attribute moves. Self-damage is
+	 *  never refused either way — your own grenade is your own problem. */
+	UPROPERTY(Config)
+	bool bFriendlyFire = false;
 
 	UPROPERTY(Config)
 	FSoftClassPath DefaultPawnClassPath;

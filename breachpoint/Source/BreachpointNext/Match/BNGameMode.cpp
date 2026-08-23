@@ -5,6 +5,7 @@
 #include "Match/BNGameState.h"
 #include "Match/BNPlayerController.h"
 #include "Match/BNPlayerState.h"
+#include "Match/BNTeams.h"
 #include "AbilitySystem/BNAbilitySystemComponent.h"
 #include "AbilitySystem/Attributes/BNAttributeSet.h"
 #include "AbilitySystem/Effects/BNGameplayEffects.h"
@@ -186,6 +187,12 @@ void ABNGameMode::GenericPlayerInitialization(AController* C)
 	{
 		PS->OnPlayerDeath.AddUObject(this, &ABNGameMode::HandlePlayerDeath);
 	}
+
+	// R8 — the side, decided HERE for the same reason the death subscription is: this is the one
+	// seam humans and bots both pass through (an AIController never sees OnPostLogin). Assigned
+	// once and kept; AssignTeam no-ops on a controller that already has one, so the seamless-travel
+	// re-entry that made the guard above necessary cannot reshuffle a live match's teams.
+	AssignTeam(PS);
 
 	// A player initialized outside a running match joined a warmup or a post-match and must be
 	// frozen like everyone already here — otherwise the one machine that joined late is the one
@@ -410,6 +417,51 @@ void ABNGameMode::RespawnPlayer(TWeakObjectPtr<AController> WeakController)
 	// FindPlayerStart already picks an APlayerStart, and a BN subclass would hold nothing until
 	// teams and spawn scoring exist — which is a later roadmap's, not this fence's.
 	RestartPlayer(Controller);
+}
+
+int32 ABNGameMode::PickTeamForNewPlayer() const
+{
+	// Counted from the ROSTER, not from a running tally: a tally drifts the first time someone
+	// leaves, and the roster is the same list every other match rule already reads.
+	int32 Counts[BNTeams::Count] = { 0 };
+	if (const AGameStateBase* GS = GameState)
+	{
+		for (const APlayerState* Player : GS->PlayerArray)
+		{
+			const ABNPlayerState* BNPS = Cast<ABNPlayerState>(Player);
+			const int32 Team = BNPS ? BNPS->GetTeamId() : BNTeams::Unassigned;
+			if (BNTeams::IsValidTeam(Team))
+			{
+				++Counts[Team];
+			}
+		}
+	}
+
+	int32 Smallest = 0;
+	for (int32 Team = 1; Team < BNTeams::Count; ++Team)
+	{
+		if (Counts[Team] < Counts[Smallest])
+		{
+			Smallest = Team;
+		}
+	}
+	// Ties go to the lower index — with an empty lobby that is team 0, and the first two joiners
+	// land on opposite sides rather than stacking.
+	return Smallest;
+}
+
+void ABNGameMode::AssignTeam(ABNPlayerState* PS)
+{
+	// Already sided: keep it. Re-running this seam (seamless travel does) must not shuffle a
+	// match's teams mid-round, and a player's side is theirs for the match.
+	if (!PS || BNTeams::IsValidTeam(PS->GetTeamId()))
+	{
+		return;
+	}
+
+	const int32 Team = PickTeamForNewPlayer();
+	PS->SetTeamId(Team);
+	UE_LOG(LogBN, Log, TEXT("BNGameMode: %s joined team %d."), *PS->GetPlayerName(), Team);
 }
 
 void ABNGameMode::EnsureBotFill()
