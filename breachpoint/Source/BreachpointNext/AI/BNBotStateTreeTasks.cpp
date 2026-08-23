@@ -7,6 +7,7 @@
 #include "AI/BNPointOfInterest.h"
 #include "AbilitySystem/BNAbilitySystemComponent.h"
 #include "BreachpointNext.h"
+#include "Core/BNCollision.h"
 #include "Core/BNGameplayTags.h"
 #include "Match/BNPlayerState.h"
 #include "Data/BNDataRows.h"
@@ -258,14 +259,21 @@ EStateTreeRunStatus FBNFaceTargetTask::Tick(FStateTreeExecutionContext& Context,
 		return EStateTreeRunStatus::Failed;
 	}
 
-	if (InstanceData.AimErrorDegrees > 0.f)
+	// R10 — THE TIER'S AIM, unless this state pinned its own. A negative authored value means
+	// "ask the tier"; zero still means hitscan-perfect, and a positive value is a deliberate
+	// per-state override the tree gets to keep.
+	const FBNBotTuningRow& Tuning = Bot->GetTuning();
+	const float AimError = InstanceData.AimErrorDegrees < 0.f ? Tuning.AimErrorDegrees : InstanceData.AimErrorDegrees;
+	const float Reaim = InstanceData.AimErrorDegrees < 0.f ? Tuning.ReaimSeconds : InstanceData.ReaimSeconds;
+
+	if (AimError > 0.f)
 	{
 		InstanceData.SecondsUntilReaim -= DeltaTime;
 		if (InstanceData.SecondsUntilReaim <= 0.f)
 		{
-			InstanceData.AimPoint = JitteredFocalPoint(*Bot, *Target, InstanceData.AimErrorDegrees);
+			InstanceData.AimPoint = JitteredFocalPoint(*Bot, *Target, AimError);
 			Bot->SetFocalPoint(InstanceData.AimPoint);
-			InstanceData.SecondsUntilReaim = InstanceData.ReaimSeconds;
+			InstanceData.SecondsUntilReaim = Reaim;
 		}
 	}
 	else
@@ -563,6 +571,199 @@ FText FBNFireBurstTask::GetDescription(const FGuid& ID, FStateTreeDataView Insta
 
 ////////////////////////////////////////////////////////////////////
 
+bool FBNShouldTakeCoverCondition::TestCondition(FStateTreeExecutionContext& Context) const
+{
+	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	const ABNBotController* Bot = ResolveBot(Context, InstanceData.Controller);
+	if (!Bot || !Bot->GetCurrentTarget())
+	{
+		return false;
+	}
+
+	// Still spending the last break's window. Asked FIRST because it is the cheapest of the three
+	// and because it is the one that stops a bot ping-ponging between cover and the fight.
+	if (!Bot->CanTakeCoverNow())
+	{
+		return false;
+	}
+
+	if (Bot->GetHealthNorm() >= InstanceData.HealthBelow)
+	{
+		return false;
+	}
+
+	// UNDER FIRE RIGHT NOW, not hurt at some point in the past. State.Combat.RecentDamage is the
+	// window the shield dance already applies on every landed hit, so this costs nothing new and
+	// means exactly what it says.
+	const ABNPlayerState* PS = Bot->GetPlayerState<ABNPlayerState>();
+	const UBNAbilitySystemComponent* ASC = PS ? PS->GetBNAbilitySystemComponent() : nullptr;
+	return ASC && ASC->HasMatchingGameplayTag(BNTags::State_Combat_RecentDamage);
+}
+
+#if WITH_EDITOR
+FText FBNShouldTakeCoverCondition::GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting) const
+{
+	return FText::FromString("<b>BN Should Take Cover</b>");
+}
+#endif
+
+////////////////////////////////////////////////////////////////////
+
+namespace
+{
+	/** Eye height for a line-of-sight question — the same height a shot leaves from, near enough,
+	 *  and far more honest than tracing from the navmesh at ankle level where everything is cover. */
+	constexpr float BNCoverEyeHeight = 60.f;
+
+	/**
+	 * The rosette: SampleCount directions around the bot, each projected onto the navmesh, each
+	 * traced back at the threat. The first BLOCKED one closest to the bot wins.
+	 *
+	 * Closest, not farthest: cover is wanted NOW, and a bot that crosses the arena to a better
+	 * wall spends the whole trip being shot in the back.
+	 */
+	bool BNFindCoverPoint(const ABNBotController& Bot, const APawn& Pawn, const AActor& Threat,
+		float SearchRadius, int32 SampleCount, FVector& OutPoint)
+	{
+		const UWorld* World = Bot.GetWorld();
+		UNavigationSystemV1* NavSys = World ? FNavigationSystem::GetCurrent<UNavigationSystemV1>(World) : nullptr;
+		if (!World || !NavSys)
+		{
+			return false;
+		}
+
+		const FVector Origin = Pawn.GetActorLocation();
+		const FVector ThreatEye = Threat.GetActorLocation() + FVector(0.f, 0.f, BNCoverEyeHeight);
+		const int32 Samples = FMath::Max(3, SampleCount);
+		const float Radius = FMath::Max(100.f, SearchRadius);
+
+		FCollisionQueryParams QueryParams(FName(TEXT("BNCoverTrace")), /*bTraceComplex=*/false, &Pawn);
+		QueryParams.AddIgnoredActor(&Threat);
+
+		bool bFound = false;
+		float BestDistSq = TNumericLimits<float>::Max();
+
+		for (int32 i = 0; i < Samples; ++i)
+		{
+			const float Angle = (2.f * PI * static_cast<float>(i)) / static_cast<float>(Samples);
+			const FVector Candidate = Origin + FVector(FMath::Cos(Angle), FMath::Sin(Angle), 0.f) * Radius;
+
+			FNavLocation Projected;
+			if (!NavSys->ProjectPointToNavigation(Candidate, Projected, FVector(200.f, 200.f, 300.f)))
+			{
+				continue;
+			}
+
+			// THE question, asked with the geometry the bullets use: can a shot from where the
+			// threat is standing reach a bot standing here? A blocking hit means no — that is
+			// cover, by the only definition that matters to something being shot at.
+			const FVector CandidateEye = Projected.Location + FVector(0.f, 0.f, BNCoverEyeHeight);
+			FHitResult Hit;
+			const bool bBlocked = World->LineTraceSingleByChannel(
+				Hit, CandidateEye, ThreatEye, BNCollision::WeaponTrace, QueryParams);
+			if (!bBlocked)
+			{
+				continue;
+			}
+
+			const float DistSq = FVector::DistSquared(Origin, Projected.Location);
+			if (DistSq < BestDistSq)
+			{
+				BestDistSq = DistSq;
+				OutPoint = Projected.Location;
+				bFound = true;
+			}
+		}
+
+		return bFound;
+	}
+}
+
+EStateTreeRunStatus FBNTakeCoverTask::EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
+{
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	ABNBotController* Bot = ResolveBot(Context, InstanceData.Controller);
+	const APawn* Pawn = Bot ? Bot->GetPawn() : nullptr;
+	// The THREAT, not the current target: this task must keep working if the ambition flips to
+	// Survive mid-break, and Survive blanks GetCurrentTarget by design.
+	const AActor* Threat = Bot ? Bot->GetThreat() : nullptr;
+	if (!Bot || !Pawn || !Threat)
+	{
+		return EStateTreeRunStatus::Failed;
+	}
+
+	if (!BNFindCoverPoint(*Bot, *Pawn, *Threat, InstanceData.SearchRadius, InstanceData.SampleCount, InstanceData.CoverPoint))
+	{
+		// NOWHERE TO HIDE is a real answer in an open arena, not a failure to report. Failing here
+		// drops the tree straight through to Close/Shoot, which is the right thing to do when the
+		// only option left is to fight.
+		UE_LOG(LogBN, Verbose, TEXT("BNBots: %s wanted cover and found none — fighting instead."),
+			*GetNameSafe(Pawn));
+		return EStateTreeRunStatus::Failed;
+	}
+
+	if (Bot->MoveToLocation(InstanceData.CoverPoint, /*AcceptanceRadius=*/60.f) == EPathFollowingRequestResult::Failed)
+	{
+		return EStateTreeRunStatus::Failed;
+	}
+
+	// The cooldown is spent on the ATTEMPT, not on the arrival: a bot that fails to reach cover
+	// must not immediately try again, which is the loop that would leave it walking in circles
+	// under fire.
+	Bot->NotifyTookCover();
+
+	InstanceData.bArrived = false;
+	InstanceData.HoldRemaining = InstanceData.HoldSeconds;
+	UE_LOG(LogBN, Verbose, TEXT("BNBots: %s is breaking line of sight."), *GetNameSafe(Pawn));
+	return EStateTreeRunStatus::Running;
+}
+
+EStateTreeRunStatus FBNTakeCoverTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
+{
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	ABNBotController* Bot = ResolveBot(Context, InstanceData.Controller);
+	const APawn* Pawn = Bot ? Bot->GetPawn() : nullptr;
+	if (!Bot || !Pawn)
+	{
+		return EStateTreeRunStatus::Failed;
+	}
+
+	if (!InstanceData.bArrived)
+	{
+		const bool bInRadius = FVector::Dist(Pawn->GetActorLocation(), InstanceData.CoverPoint) <= 100.f;
+		const bool bMoveDone = Bot->GetMoveStatus() == EPathFollowingStatus::Idle;
+		if (!bInRadius && !bMoveDone)
+		{
+			return EStateTreeRunStatus::Running;
+		}
+		InstanceData.bArrived = true;
+		Bot->StopMovement();
+	}
+
+	// HOLD. The beat that makes this read as cover rather than as a pathing twitch — and the
+	// window a shield would have used to recharge, the day shields come back on.
+	InstanceData.HoldRemaining -= DeltaTime;
+	return InstanceData.HoldRemaining > 0.f ? EStateTreeRunStatus::Running : EStateTreeRunStatus::Succeeded;
+}
+
+void FBNTakeCoverTask::ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
+{
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	if (ABNBotController* Bot = ResolveBot(Context, InstanceData.Controller))
+	{
+		Bot->StopMovement();
+	}
+}
+
+#if WITH_EDITOR
+FText FBNTakeCoverTask::GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting) const
+{
+	return FText::FromString("<b>BN Take Cover</b>");
+}
+#endif
+
+////////////////////////////////////////////////////////////////////
+
 EStateTreeRunStatus FBNStrafeTask::EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
 {
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
@@ -601,7 +802,11 @@ EStateTreeRunStatus FBNStrafeTask::Tick(FStateTreeExecutionContext& Context, con
 	{
 		return EStateTreeRunStatus::Running;
 	}
-	InstanceData.SecondsUntilStep = FMath::Max(0.1f, InstanceData.StepIntervalSeconds);
+	// R10 — the tier's rhythm unless the state pinned one (negative = ask the tier).
+	const FBNBotTuningRow& Tuning = Bot->GetTuning();
+	const float Interval = InstanceData.StepIntervalSeconds < 0.f ? Tuning.StrafeIntervalSeconds : InstanceData.StepIntervalSeconds;
+	const int32 JukeEvery = InstanceData.JukeEveryNthStep < 0 ? Tuning.JukeEveryNthStep : InstanceData.JukeEveryNthStep;
+	InstanceData.SecondsUntilStep = FMath::Max(0.1f, Interval);
 
 	// Perpendicular to the line of fire, flat: stepping toward or away from the target would be
 	// closing or retreating, and those are Close's and Survive's jobs, not this one's.
@@ -644,7 +849,7 @@ EStateTreeRunStatus FBNStrafeTask::Tick(FStateTreeExecutionContext& Context, con
 	// is a bot that can be led by aim alone, and one that jumps every step cannot shoot. The
 	// counter (not a coin) keeps the rhythm legible to the player who is fighting it.
 	++InstanceData.StepCount;
-	if (InstanceData.JukeEveryNthStep > 0 && (InstanceData.StepCount % InstanceData.JukeEveryNthStep) == 0)
+	if (JukeEvery > 0 && (InstanceData.StepCount % JukeEvery) == 0)
 	{
 		Bot->TryJump();
 	}

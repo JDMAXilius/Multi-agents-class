@@ -2,6 +2,7 @@
 
 #include "AbilitySystem/BNAbilitySystemComponent.h"
 #include "AbilitySystem/Attributes/BNAttributeSet.h"
+#include "Data/BNDataRows.h"
 #include "AI/BNBotBrain.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -20,6 +21,8 @@
 #include "GameFramework/PlayerState.h"
 #include "GameplayEffectTypes.h"
 #include "Perception/AIPerceptionComponent.h"
+#include "Perception/AISenseConfig_Hearing.h"
+#include "Perception/AISense_Hearing.h"
 #include "Perception/AISenseConfig_Sight.h"
 
 ABNBotController::ABNBotController(const FObjectInitializer& ObjectInitializer)
@@ -38,9 +41,12 @@ ABNBotController::ABNBotController(const FObjectInitializer& ObjectInitializer)
 	BotPerception = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("BotPerception"));
 	SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("BotSight"));
 
-	SightConfig->SightRadius = SightRadius;
-	SightConfig->LoseSightRadius = LoseSightRadius;
-	SightConfig->PeripheralVisionAngleDegrees = PeripheralVisionAngleDegrees;
+	// Seeded from the ROW's defaults (Marine), because config has not been applied yet and the
+	// tier cannot be resolved this early. OnPossess re-applies whatever the real tier says.
+	const FBNBotTuningRow Defaults;
+	SightConfig->SightRadius = Defaults.SightRadius;
+	SightConfig->LoseSightRadius = Defaults.LoseSightRadius;
+	SightConfig->PeripheralVisionAngleDegrees = Defaults.PeripheralVisionAngleDegrees;
 
 	// FFA: the sight sense detects EVERYTHING — the target rule below is what decides hostility,
 	// not the affiliation filter, so teams can land later without touching perception.
@@ -48,7 +54,16 @@ ABNBotController::ABNBotController(const FObjectInitializer& ObjectInitializer)
 	SightConfig->DetectionByAffiliation.bDetectNeutrals = true;
 	SightConfig->DetectionByAffiliation.bDetectFriendlies = true;
 
+	// R10 — EARS, configured beside the eyes. Sight stays DOMINANT: when a bot both sees and
+	// hears the same actor, the sighting is the better information and must win.
+	HearingConfig = CreateDefaultSubobject<UAISenseConfig_Hearing>(TEXT("BotHearing"));
+	HearingConfig->HearingRange = Defaults.HearingRange;
+	HearingConfig->DetectionByAffiliation.bDetectEnemies = true;
+	HearingConfig->DetectionByAffiliation.bDetectNeutrals = true;
+	HearingConfig->DetectionByAffiliation.bDetectFriendlies = true;
+
 	BotPerception->ConfigureSense(*SightConfig);
+	BotPerception->ConfigureSense(*HearingConfig);
 	BotPerception->SetDominantSense(SightConfig->GetSenseImplementation());
 	SetPerceptionComponent(*BotPerception);
 
@@ -78,16 +93,9 @@ void ABNBotController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
 
-	// Config values land AFTER the constructor, so the ctor's numbers were the C++ defaults.
-	// Re-applied here so ini tuning reaches the sense; the listener update makes it take.
-	if (SightConfig && BotPerception)
-	{
-		SightConfig->SightRadius = SightRadius;
-		SightConfig->LoseSightRadius = LoseSightRadius;
-		SightConfig->PeripheralVisionAngleDegrees = PeripheralVisionAngleDegrees;
-		BotPerception->ConfigureSense(*SightConfig);
-		BotPerception->RequestStimuliListenerUpdate();
-	}
+	// R10 — THE TIER, resolved before the sense is configured because the sense reads it. This is
+	// also where a per-bot tier assigned by the GameMode before possession takes effect.
+	ResolveTuning();
 
 	// Fresh mind per life: the brain carries only ambition + commit window, both of which a
 	// respawn should reset. Rescoring is EVENT-driven from here on — never a tick.
@@ -286,8 +294,9 @@ float ABNBotController::DrawReactionSeconds()
 {
 	// Seeded on identity + draw index, so the trace replays: no wall clock, no global RNG (§5).
 	FRandomStream Stream(static_cast<int32>(GetTypeHash(this)) ^ (ReactionDrawCount++ * 0x9E3779B9));
-	const float Low = FMath::Max(0.f, ReactionSecondsMin);
-	const float High = FMath::Max(Low, ReactionSecondsMax);
+	const FBNBotTuningRow& Row = GetTuning();
+	const float Low = FMath::Max(0.f, Row.ReactionSecondsMin);
+	const float High = FMath::Max(Low, Row.ReactionSecondsMax);
 	const float Raw = Stream.FRandRange(Low, High);
 	return ReactionQuantumSeconds > 0.f
 		? FMath::Max(Low, FMath::GridSnap(Raw, ReactionQuantumSeconds))
@@ -354,6 +363,23 @@ bool ABNBotController::HasFreshLastKnownLocation() const
 
 void ABNBotController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
+	// R10 — A NOISE IS NOT A SIGHTING. Hearing gives a bot a PLACE to look, never a target: a
+	// bot that acquired you through a wall because you fired would be omniscient, and it would
+	// also skip the reaction window that makes a firefight readable. The rest of this function
+	// is the sight path and stays exactly as it was.
+	if (Stimulus.Type == UAISense::GetSenseID<UAISense_Hearing>())
+	{
+		if (Stimulus.WasSuccessfullySensed() && IsValidTarget(Actor) && !GetThreat())
+		{
+			// StimulusLocation is where the NOISE was, which is the honest thing to walk to —
+			// not the actor's position now, which the bot has no way of knowing.
+			RememberThreatAt(Stimulus.StimulusLocation);
+			UE_LOG(LogBN, Verbose, TEXT("BNBots: %s heard something at %s and will go looking."),
+				*GetNameSafe(GetPawn()), *Stimulus.StimulusLocation.ToCompactString());
+		}
+		return;
+	}
+
 	if (!Stimulus.WasSuccessfullySensed())
 	{
 		if (TargetEnemy.Get() == Actor)
@@ -423,18 +449,17 @@ void ABNBotController::RescoreBrain()
 	AActor* Threat = GetThreat();
 	FBNBotFacts Facts;
 	Facts.bHasTarget = Threat != nullptr;
-	if (const UBNAbilitySystemComponent* ASC = GetBotASC())
-	{
-		const float MaxHealth = ASC->GetNumericAttribute(UBNAttributeSet::GetMaxHealthAttribute());
-		if (MaxHealth > 0.f)
-		{
-			Facts.HealthNorm = FMath::Clamp(ASC->GetNumericAttribute(UBNAttributeSet::GetHealthAttribute()) / MaxHealth, 0.f, 1.f);
-		}
-	}
+	// ONE health function (R10): the cover condition asks the same question, and two ways of
+	// computing "how hurt am I" would disagree on exactly the frame that decides a behaviour.
+	Facts.HealthNorm = GetHealthNorm();
+
+	// Distance is normalised against THIS BOT'S sight, which is now the tier's — a Recruit and a
+	// Spartan standing the same distance away are not equally close to their own horizon.
 	const APawn* MyPawn = GetPawn();
-	if (Threat && MyPawn && SightRadius > 0.f)
+	const float TierSight = GetTuning().SightRadius;
+	if (Threat && MyPawn && TierSight > 0.f)
 	{
-		Facts.DistToTargetNorm = FMath::Clamp(FVector::Dist(MyPawn->GetActorLocation(), Threat->GetActorLocation()) / SightRadius, 0.f, 1.f);
+		Facts.DistToTargetNorm = FMath::Clamp(FVector::Dist(MyPawn->GetActorLocation(), Threat->GetActorLocation()) / TierSight, 0.f, 1.f);
 	}
 
 	const UGameInstance* GI = GetGameInstance();
@@ -505,6 +530,159 @@ void ABNBotController::OnRecentDamageTagChanged(const FGameplayTag Tag, int32 Ne
 	RescoreBrain();
 }
 
+FBNBotTuningRow ABNBotController::DefaultTuning(FName TierName)
+{
+	// The four tiers, and what a tier actually IS: reaction, aim, awareness and movement moved
+	// TOGETHER. Halo's own lesson — a Recruit that only aims worse reads as a broken Spartan.
+	FBNBotTuningRow Row;
+
+	if (TierName == FName(TEXT("Recruit")))
+	{
+		// Sees you late, waits a long beat, sprays, and stands still to trade. This is the tier a
+		// player who has never held a controller can beat, and it must be beatable on purpose.
+		Row.ReactionSecondsMin = 0.60f;
+		Row.ReactionSecondsMax = 1.10f;
+		Row.AimErrorDegrees = 7.f;
+		Row.ReaimSeconds = 0.9f;
+		Row.SightRadius = 900.f;
+		Row.LoseSightRadius = 1200.f;
+		Row.PeripheralVisionAngleDegrees = 55.f;
+		Row.JumpCooldownSeconds = 6.f;
+		Row.StrafeIntervalSeconds = 2.2f;
+		Row.JukeEveryNthStep = 0;   // never jumps in a fight
+	}
+	else if (TierName == FName(TEXT("ODST")))
+	{
+		Row.ReactionSecondsMin = 0.14f;
+		Row.ReactionSecondsMax = 0.28f;
+		Row.AimErrorDegrees = 1.4f;
+		Row.ReaimSeconds = 0.35f;
+		Row.SightRadius = 1500.f;
+		Row.LoseSightRadius = 1900.f;
+		Row.PeripheralVisionAngleDegrees = 85.f;
+		Row.JumpCooldownSeconds = 1.2f;
+		Row.StrafeIntervalSeconds = 0.9f;
+		Row.JukeEveryNthStep = 2;
+	}
+	else if (TierName == FName(TEXT("Spartan")))
+	{
+		// The ceiling. Aim error is deliberately NOT zero: a bot that never misses is not hard,
+		// it is unfair, and the thing that makes a Spartan hard is the reaction and the footwork.
+		Row.ReactionSecondsMin = 0.08f;
+		Row.ReactionSecondsMax = 0.16f;
+		Row.AimErrorDegrees = 0.6f;
+		Row.ReaimSeconds = 0.2f;
+		Row.SightRadius = 1800.f;
+		Row.LoseSightRadius = 2200.f;
+		Row.PeripheralVisionAngleDegrees = 100.f;
+		Row.JumpCooldownSeconds = 0.9f;
+		Row.StrafeIntervalSeconds = 0.7f;
+		Row.JukeEveryNthStep = 2;
+	}
+	// Marine is the struct's own defaults — the founder's tuned arena numbers — so the default
+	// tier changes NOTHING about how today's bots behave. Every other tier is scaled around those
+	// rather than around the engine defaults they replaced: see FBNBotTuningRow's sight comment.
+
+	return Row;
+}
+
+void ABNBotController::ResolveTuning()
+{
+	FName TierName = BotTier.IsNone() ? FName(TEXT("Marine")) : BotTier;
+
+	static const FName ValidTiers[] = { FName(TEXT("Recruit")), FName(TEXT("Marine")), FName(TEXT("ODST")), FName(TEXT("Spartan")) };
+	bool bKnownTier = false;
+	for (const FName& Valid : ValidTiers)
+	{
+		bKnownTier = bKnownTier || (Valid == TierName);
+	}
+	if (!bKnownTier)
+	{
+		UE_LOG(LogBN, Warning, TEXT("BNBotController: BotTier '%s' is not one of Recruit/Marine/ODST/Spartan — falling back to Marine."),
+			*TierName.ToString());
+		TierName = FName(TEXT("Marine"));
+	}
+
+	// C++ first, table second: the row on disk OVERRIDES, it never has to exist. A project with
+	// no DT_BNBotTuning still has four working tiers, which is the same contract the ambition
+	// rows keep.
+	Tuning = MakeShared<FBNBotTuningRow>(DefaultTuning(TierName));
+
+	const UWorld* World = GetWorld();
+	const UGameInstance* GameInstance = World ? World->GetGameInstance() : nullptr;
+	if (const UBNGameData* GameData = GameInstance ? GameInstance->GetSubsystem<UBNGameData>() : nullptr)
+	{
+		if (const FBNBotTuningRow* TableRow = GameData->FindBotTuningRow(TierName))
+		{
+			*Tuning = *TableRow;
+		}
+	}
+
+	// The sense is the one thing applied rather than read: perception caches its config, so a
+	// value changed after ConfigureSense is a value nothing ever reads.
+	if (SightConfig && BotPerception)
+	{
+		SightConfig->SightRadius = Tuning->SightRadius;
+		SightConfig->LoseSightRadius = Tuning->LoseSightRadius;
+		SightConfig->PeripheralVisionAngleDegrees = Tuning->PeripheralVisionAngleDegrees;
+		BotPerception->ConfigureSense(*SightConfig);
+	}
+	if (HearingConfig && BotPerception)
+	{
+		// Zero is a REAL setting, not a missing one: a tier with no ears is a tier a player can
+		// flank, and Recruit is supposed to be flankable.
+		HearingConfig->HearingRange = Tuning->HearingRange;
+		BotPerception->ConfigureSense(*HearingConfig);
+	}
+	if (BotPerception)
+	{
+		BotPerception->RequestStimuliListenerUpdate();
+	}
+
+	UE_LOG(LogBN, Log, TEXT("BNBots: %s fights at tier %s (reaction %.2f-%.2fs, aim ±%.1f°, sight %.0fuu)."),
+		*GetNameSafe(GetPawn()), *TierName.ToString(),
+		Tuning->ReactionSecondsMin, Tuning->ReactionSecondsMax, Tuning->AimErrorDegrees, Tuning->SightRadius);
+}
+
+const FBNBotTuningRow& ABNBotController::GetTuning() const
+{
+	// Never null after OnPossess, and a static fallback rather than a crash for the window before
+	// it: a task that asks early gets Marine, which is the shipped behaviour.
+	static const FBNBotTuningRow Fallback;
+	return Tuning.IsValid() ? *Tuning : Fallback;
+}
+
+float ABNBotController::GetHealthNorm() const
+{
+	const UBNAbilitySystemComponent* ASC = GetBotASC();
+	if (!ASC)
+	{
+		return 1.f;
+	}
+	const float MaxHealth = ASC->GetNumericAttribute(UBNAttributeSet::GetMaxHealthAttribute());
+	if (MaxHealth <= 0.f)
+	{
+		// No denominator is not "nearly dead" — the honest-unknown rule the HUD keeps, applied to
+		// a bot's own body. A bot that read 0 here would dive for cover on the frame it spawned.
+		return 1.f;
+	}
+	return FMath::Clamp(ASC->GetNumericAttribute(UBNAttributeSet::GetHealthAttribute()) / MaxHealth, 0.f, 1.f);
+}
+
+bool ABNBotController::CanTakeCoverNow() const
+{
+	const UWorld* World = GetWorld();
+	return World && World->GetTimeSeconds() >= NextCoverAllowedSeconds;
+}
+
+void ABNBotController::NotifyTookCover()
+{
+	if (const UWorld* World = GetWorld())
+	{
+		NextCoverAllowedSeconds = World->GetTimeSeconds() + FMath::Max(0.f, CoverCooldownSeconds);
+	}
+}
+
 bool ABNBotController::TryJump()
 {
 	const UWorld* World = GetWorld();
@@ -532,7 +710,7 @@ bool ABNBotController::TryJump()
 	PressInputTag(BNTags::Input_Jump);
 	ReleaseInputTag(BNTags::Input_Jump);
 
-	NextJumpAllowedSeconds = World->GetTimeSeconds() + FMath::Max(0.f, JumpCooldownSeconds);
+	NextJumpAllowedSeconds = World->GetTimeSeconds() + FMath::Max(0.f, GetTuning().JumpCooldownSeconds);
 	return true;
 }
 

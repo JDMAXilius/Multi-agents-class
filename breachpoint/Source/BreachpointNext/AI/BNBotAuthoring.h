@@ -35,6 +35,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "BN|Authoring")
 	static FString BuildBotAmbitionsTable();
 
+	/** R10 — DT_BNBotTuning: the four difficulty tiers, mirrored from
+	 *  ABNBotController::DefaultTuning for the same reason the ambitions table mirrors
+	 *  UBNBotBrain::DefaultRow — one source of truth, and the table exists to be RETUNED, not to
+	 *  re-declare numbers C++ already ships. */
+	static FString BuildBotTuningTable();
+
 	/** Both of the above, then the read-back. The one call the terminal makes. */
 	UFUNCTION(BlueprintCallable, Category = "BN|Authoring")
 	static FString BuildBotAssets();

@@ -53,8 +53,11 @@ struct FBNFaceTargetTaskInstanceData
 
 	/** The ONE aim-humanization knob (G3 3.2): a random cone this wide around the true target
 	 *  point, re-drawn every ReaimSeconds. Zero means SetFocus, hitscan-perfect. */
+	/** NEGATIVE means "ask the bot's TIER" (R10), and that is the default: difficulty owns aim.
+	 *  Zero is still hitscan-perfect and any positive value is a deliberate per-state override the
+	 *  tree keeps — a state that must aim a particular way can still say so. */
 	UPROPERTY(EditAnywhere, Category = "Parameter")
-	float AimErrorDegrees = 2.5f;
+	float AimErrorDegrees = -1.f;
 
 	UPROPERTY(EditAnywhere, Category = "Parameter")
 	float ReaimSeconds = 0.5f;
@@ -216,6 +219,113 @@ struct FBNFireBurstTask : public FStateTreeTaskCommonBase
 ////////////////////////////////////////////////////////////////////
 
 USTRUCT()
+struct FBNShouldTakeCoverConditionInstanceData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Context")
+	TObjectPtr<AAIController> Controller;
+
+	/** Below this fraction of health, and only while actually under fire. NOT the Survive
+	 *  threshold (0.35): Survive is "leave the fight", this is "stop standing in it" — the
+	 *  middle ground Halo gets for free from its shield economy and BN has to say out loud. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float HealthBelow = 0.6f;
+};
+
+/**
+ * Should this bot break line of sight? Three things at once, and the AND is the whole design:
+ * hurt, under fire RIGHT NOW, and not already spending its cover cooldown.
+ *
+ * "Under fire" is `State.Combat.RecentDamage` — the tag the shield window already applies on
+ * every landed hit. Without it a bot chipped once ten seconds ago would dive for cover in the
+ * middle of a fight it is winning, which reads as cowardice rather than tactics.
+ */
+USTRUCT(meta = (DisplayName = "BN Should Take Cover", Category = "BN"))
+struct FBNShouldTakeCoverCondition : public FStateTreeConditionCommonBase
+{
+	GENERATED_BODY()
+
+	using FInstanceDataType = FBNShouldTakeCoverConditionInstanceData;
+	virtual const UStruct* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
+
+	virtual bool TestCondition(FStateTreeExecutionContext& Context) const override;
+
+#if WITH_EDITOR
+	virtual FText GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting = EStateTreeNodeFormatting::Text) const override;
+#endif
+};
+
+////////////////////////////////////////////////////////////////////
+
+USTRUCT()
+struct FBNTakeCoverTaskInstanceData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Context")
+	TObjectPtr<AAIController> Controller;
+
+	/** How far to look for a spot. Far enough to get behind something, near enough that the bot
+	 *  is not crossing the map with its back turned. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float SearchRadius = 700.f;
+
+	/** How many directions are sampled around the bot. Eight is a 45° rosette — enough to find a
+	 *  pillar, cheap enough to run on one frame with no EQS. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	int32 SampleCount = 8;
+
+	/** How long to sit behind cover before re-engaging. This is the beat that makes cover READ as
+	 *  cover; a bot that touches the spot and walks straight back out looks like a pathing bug. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float HoldSeconds = 1.5f;
+
+	/** Internal: the chosen spot, and whether the bot has reached it. */
+	FVector CoverPoint = FVector::ZeroVector;
+	bool bArrived = false;
+	float HoldRemaining = 0.f;
+};
+
+/**
+ * BREAK LINE OF SIGHT — the behaviour Halo's bots get from their shield economy and BN's have
+ * never had: hurt, under fire, so stop standing in the open.
+ *
+ * NO EQS, and that is a deliberate scope call rather than a limitation to apologise for: a
+ * rosette of navmesh-projected samples, each one traced back at the threat on the WEAPON channel,
+ * answers the only question cover asks — *can this spot be shot from where they are standing* —
+ * and it answers it with the same geometry the bullets use. An EQS query would ask it more
+ * expensively and no more truthfully. The day BN wants scored cover (flanking angles, distance
+ * bands, height) EQS earns its place; picking a wall does not need it.
+ *
+ * FAILS when nothing blocks. That is not a bug: an open arena has no cover, and the tree falling
+ * through to Close/Shoot is the correct answer to "there is nowhere to hide".
+ */
+USTRUCT(meta = (DisplayName = "BN Take Cover", Category = "BN"))
+struct FBNTakeCoverTask : public FStateTreeTaskCommonBase
+{
+	GENERATED_BODY()
+
+	using FInstanceDataType = FBNTakeCoverTaskInstanceData;
+	virtual const UStruct* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
+
+	FBNTakeCoverTask()
+	{
+		bShouldCallTick = true;
+	}
+
+	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
+	virtual EStateTreeRunStatus Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const override;
+	virtual void ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
+
+#if WITH_EDITOR
+	virtual FText GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting = EStateTreeNodeFormatting::Text) const override;
+#endif
+};
+
+////////////////////////////////////////////////////////////////////
+
+USTRUCT()
 struct FBNStrafeTaskInstanceData
 {
 	GENERATED_BODY()
@@ -229,8 +339,9 @@ struct FBNStrafeTaskInstanceData
 	float StepDistance = 300.f;
 
 	/** How often a new step is taken. */
+	/** Negative asks the TIER, like the aim cone. */
 	UPROPERTY(EditAnywhere, Category = "Parameter")
-	float StepIntervalSeconds = 1.2f;
+	float StepIntervalSeconds = -1.f;
 
 	/** Internal: countdown to the next step. */
 	float SecondsUntilStep = 0.f;
@@ -245,8 +356,9 @@ struct FBNStrafeTaskInstanceData
 	/** Every Nth sidestep becomes a JUKE — the step plus a jump. Not every step: a bot airborne
 	 *  half the fight cannot shoot straight and reads as a bug, while one that occasionally leaves
 	 *  the ground reads as a player. Zero disables the juke entirely. */
+	/** Negative asks the TIER; zero disables the juke for this state outright. */
 	UPROPERTY(EditAnywhere, Category = "Parameter")
-	int32 JukeEveryNthStep = 3;
+	int32 JukeEveryNthStep = -1;
 
 	/** Internal: steps taken this burst, counted for the juke. */
 	int32 StepCount = 0;

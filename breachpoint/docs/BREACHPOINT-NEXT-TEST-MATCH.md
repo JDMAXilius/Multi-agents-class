@@ -174,6 +174,25 @@ without it. Everything else below works without the rebuild.
 A bot that pogos in place is the failure mode to watch for — that is `JumpCooldownSeconds` not
 being respected, not a tuning question.
 
+### Tiers, ears and cover (R10)
+
+**Rebuild the bot assets first** (`Tools/bn/62_bot_assets.py`): two new StateTree nodes and a new
+table. Its probe list stops the script on a stale build rather than authoring a tree without them.
+
+9. **Tiers.** `LogBN` prints one `fights at tier <name> (reaction …, aim ±…°, sight …uu)` per bot
+   at possession. Set `BotTier=Recruit` in `DefaultGame.ini` and the difference must be obvious
+   within one fight: long reaction, wide spray, no jumping, and they stand still to trade. Set
+   `Spartan` and they should be genuinely hard. **Marine must feel exactly like yesterday's
+   bots** — it is the same numbers, moved.
+10. **Ears.** Stand where a bot cannot see you and fire a shot: it should come and LOOK, not snap
+    round and shoot. `LogBN` Verbose: `heard something at … and will go looking`. A grenade blast
+    should pull bots from further away than a rifle shot does.
+11. **Cover.** Damage a bot below 60% while it can see you and keep shooting: it should break line
+    of sight — move behind something, hold about a second and a half, then come back. In an open
+    space with nothing to hide behind it must keep fighting instead, with one Verbose line
+    (`wanted cover and found none`). A bot that shuttles in and out of cover repeatedly is the
+    cooldown not holding.
+
 ## 6. Known and accepted
 
 - ~~`MinPlayers` is only enforced on the session's FIRST match~~ — **closed 19 Aug 2026** by the

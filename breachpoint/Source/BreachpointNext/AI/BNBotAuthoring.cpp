@@ -33,6 +33,8 @@ namespace
 	const TCHAR* const BotStateTreeName    = TEXT("ST_BNBot");
 	const TCHAR* const AmbitionsPackage    = TEXT("/Game/BN/Data/DT_BNBotAmbitions");
 	const TCHAR* const AmbitionsName       = TEXT("DT_BNBotAmbitions");
+	const TCHAR* const TuningPackage       = TEXT("/Game/BN/Data/DT_BNBotTuning");
+	const TCHAR* const TuningName          = TEXT("DT_BNBotTuning");
 
 	/** Finds the asset at PackagePath, or creates it with Factory. Returning the EXISTING object
 	 *  is what makes a rebuild idempotent AND keeps every reference to it alive — deleting and
@@ -205,6 +207,18 @@ FString UBNBotAuthoring::BuildBotStateTree()
 	//    firing position rather than at a mere distance. Succeeding hands straight on to Shoot
 	//    through NextSelectableState — the walk and the burst are one sequence, and being in
 	//    position is decided in ONE place instead of being restated as a range check here.
+	// 5. COVER (R10). Ordered ABOVE Close and Shoot and BELOW the reflexes: a bot with a grenade
+	//    worth throwing or a knife in reach acts first, but a bot that is hurt and under fire
+	//    stops standing in the open before it thinks about closing or trading shots. Its own
+	//    condition carries the cooldown, so a failed break does not re-enter next frame.
+	UStateTreeState& Cover = Engage.AddChildState(TEXT("Cover"));
+	Cover.AddEnterCondition<FBNShouldTakeCoverCondition>();
+	Cover.AddTask<FBNTakeCoverTask>();
+	AddCompletionTransition(Cover, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
+	// Failing means "nowhere to hide" — no delay, because the right answer is to fight NOW and
+	// the tree's next selection is Close or Shoot.
+	AddCompletionTransition(Cover, Root, EStateTreeTransitionTrigger::OnStateFailed, 0.f);
+
 	UStateTreeState& Close = Engage.AddChildState(TEXT("Close"));
 	Close.AddTask<FBNFaceTargetTask>();
 	Close.AddTask<FBNMoveToTargetTask>();
@@ -248,7 +262,7 @@ FString UBNBotAuthoring::BuildBotStateTree()
 	// A level with no points fails this instantly; the delay is what keeps that cheap and quiet.
 	AddCompletionTransition(Roam, Root, EStateTreeTransitionTrigger::OnStateFailed, 2.0f);
 
-	Report.Add(TEXT("states     : Root > [Engage > [Rearm, Arm, Nade, Knife, Close, Shoot(+strafe)], Search, Roam]"));
+	Report.Add(TEXT("states     : Root > [Engage > [Rearm, Arm, Nade, Knife, Cover, Close, Shoot(+strafe)], Search, Roam]"));
 
 	// An uncompiled StateTree runs NOTHING — the asset would exist, the ini would resolve, and
 	// every bot would still stand still. This is the step that turns editor data into bytecode.
@@ -303,12 +317,49 @@ FString UBNBotAuthoring::BuildBotAmbitionsTable()
 	return FString::Join(Report, TEXT("\n"));
 }
 
+FString UBNBotAuthoring::BuildBotTuningTable()
+{
+	TArray<FString> Report;
+
+	UDataTableFactory* Factory = NewObject<UDataTableFactory>();
+	Factory->Struct = FBNBotTuningRow::StaticStruct();
+
+	FString How;
+	UDataTable* Table = Cast<UDataTable>(FindOrCreateAsset(TuningPackage, TuningName, UDataTable::StaticClass(), Factory, How));
+	if (!Table)
+	{
+		return FString::Printf(TEXT("FAIL: could not create %s.%s"), TuningPackage, TuningName);
+	}
+	Report.Add(FString::Printf(TEXT("asset      : %s (%s)"), *Table->GetPathName(), *How));
+
+	Table->RowStruct = const_cast<UScriptStruct*>(FBNBotTuningRow::StaticStruct());
+	Table->EmptyTable();
+
+	// MIRRORED, not restated — the ambitions table's rule, for the same reason. Retuning happens
+	// in the table; the C++ tiers are what a project with no table still gets.
+	const TCHAR* const Tiers[] = { TEXT("Recruit"), TEXT("Marine"), TEXT("ODST"), TEXT("Spartan") };
+	for (const TCHAR* Tier : Tiers)
+	{
+		const FName TierName(Tier);
+		FBNBotTuningRow Row = ABNBotController::DefaultTuning(TierName);
+		Table->AddRow(TierName, Row);
+	}
+	Report.Add(FString::Printf(TEXT("rows       : %d, mirrored from ABNBotController::DefaultTuning"), Table->GetRowMap().Num()));
+
+	FString SaveError;
+	Report.Add(FString::Printf(TEXT("save       : %s"), SaveAsset(Table, SaveError) ? TEXT("OK") : *SaveError));
+
+	return FString::Join(Report, TEXT("\n"));
+}
+
 FString UBNBotAuthoring::BuildBotAssets()
 {
 	TArray<FString> Report;
 	Report.Add(TEXT("=== BN bot assets: BUILD ==="));
 	Report.Add(TEXT("-- DT_BNBotAmbitions --"));
 	Report.Add(BuildBotAmbitionsTable());
+	Report.Add(TEXT("-- DT_BNBotTuning --"));
+	Report.Add(BuildBotTuningTable());
 	Report.Add(TEXT("-- ST_BNBot --"));
 	Report.Add(BuildBotStateTree());
 	Report.Add(TEXT("=== read-back ==="));
@@ -400,6 +451,7 @@ namespace
 
 FString UBNBotAuthoring::BuildBotStateTree()      { return EditorOnlyMessage; }
 FString UBNBotAuthoring::BuildBotAmbitionsTable() { return EditorOnlyMessage; }
+FString UBNBotAuthoring::BuildBotTuningTable()    { return EditorOnlyMessage; }
 FString UBNBotAuthoring::BuildBotAssets()         { return EditorOnlyMessage; }
 FString UBNBotAuthoring::AuditBotAssets()         { return EditorOnlyMessage; }
 

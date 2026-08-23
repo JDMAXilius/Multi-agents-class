@@ -8,6 +8,7 @@
 #include "Core/BNGameplayTags.h"
 #include "Data/BNDataRows.h"
 #include "Weapons/BNEquipmentComponent.h"
+#include "Perception/AISense_Hearing.h"
 #include "Weapons/BNWeapon.h"
 #include "AbilitySystemComponent.h"
 #include "Abilities/GameplayAbilityTargetTypes.h"
@@ -79,6 +80,22 @@ void UBNGA_Fire::ApplyCost(const FGameplayAbilitySpecHandle Handle, const FGamep
 	if (ABNWeapon* Weapon = BNFireGetWeapon(ActorInfo))
 	{
 		Weapon->ConsumeAmmo(1);
+	}
+
+	// R10 — THE SHOT IS AUDIBLE. Bots grew ears; this is what they hear, and it is reported HERE
+	// because ApplyCost runs once per trigger pull on the authority for every shooter, human and
+	// bot alike — the same reason ammo is spent here. A shotgun's pellets are one shot, not eight
+	// noises.
+	//
+	// AUTHORITY ONLY: perception is server-side, and a predicted client call would report a noise
+	// nothing listens to. Loudness 1 with the sense's own range doing the falloff — a per-weapon
+	// loudness belongs on the weapon row the day quiet weapons exist, and inventing it now would
+	// be a number with no design behind it.
+	const AActor* Avatar = ActorInfo ? ActorInfo->AvatarActor.Get() : nullptr;
+	if (Avatar && Avatar->HasAuthority())
+	{
+		UAISense_Hearing::ReportNoiseEvent(Avatar->GetWorld(), Avatar->GetActorLocation(),
+			/*Loudness=*/1.f, const_cast<AActor*>(Avatar), /*MaxRange=*/0.f, /*Tag=*/FName(TEXT("BNWeaponFire")));
 	}
 }
 

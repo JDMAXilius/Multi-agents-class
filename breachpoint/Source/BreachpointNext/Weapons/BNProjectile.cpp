@@ -1,6 +1,7 @@
 #include "Weapons/BNProjectile.h"
 
 #include "AbilitySystem/Effects/BNDamage.h"
+#include "Perception/AISense_Hearing.h"
 #include "BreachpointNext.h"
 #include "Core/BNGameplayTags.h"
 #include "AbilitySystemBlueprintLibrary.h"
@@ -195,6 +196,12 @@ void ABNProjectile::Explode()
 		BNDamage::ApplyDamage(Thrower, Target, Amount, BlastHit, BNDamageSource::Grenade);
 	}
 
+
+	// R10 — and it is HEARD. The loudest event in the game, reported at the blast's own centre on
+	// the authority: a grenade going off across the arena is exactly the noise that should pull
+	// bots toward a fight they are not yet in.
+	UAISense_Hearing::ReportNoiseEvent(World, Center, /*Loudness=*/2.f, Thrower,
+		/*MaxRange=*/0.f, /*Tag=*/FName(TEXT("BNGrenadeBlast")));
 	// Law 6: the bang is a cue, never a spawn from actor code. But it is multicast from the
 	// PROJECTILE, not routed through the thrower's ASC — that route early-returns wherever the
 	// thrower's AvatarActor is null on the receiving machine, so an observer who had culled or

@@ -7,12 +7,14 @@
 
 class ABNWeapon;
 class UAIPerceptionComponent;
+class UAISenseConfig_Hearing;
 class UAISenseConfig_Sight;
 class UBNAbilitySystemComponent;
 class UBNBotBrain;
 class UStateTree;
 class UStateTreeAIComponent;
 enum class EBNBotAmbition : uint8;
+struct FBNBotTuningRow;
 struct FAIStimulus;
 struct FOnAttributeChangeData;
 
@@ -80,6 +82,30 @@ public:
 	 */
 	bool TryJump();
 
+	/** R10 — health as the brain sees it, 0..1, or 1 when there is nothing to ask. Public because
+	 *  the cover condition needs the same number the brain scores on, and two ways of computing
+	 *  "how hurt am I" would disagree on the frame that matters. */
+	float GetHealthNorm() const;
+
+	/** R10 — cover is on a cooldown OWNED BY THE CONTROLLER, not by the state: a state cooldown
+	 *  resets every time the tree re-selects, and a bot that re-enters cover the instant it
+	 *  leaves is a bot that never shoots back. Returns false while the last break is still
+	 *  spending its window. */
+	bool CanTakeCoverNow() const;
+	void NotifyTookCover();
+
+	/** R10 — the TIER's numbers, resolved once at possession and read by the tasks that need
+	 *  them. A task keeps its own authored parameter as an OVERRIDE; where it has none, it asks
+	 *  here. That split is what lets a tier change how a bot fights without re-authoring the
+	 *  StateTree, and lets the tree still pin a value when a state genuinely needs one. */
+	const FBNBotTuningRow& GetTuning() const;
+
+	/** The four shipped tiers in C++, mirrored by DT_BNBotTuning. PUBLIC because
+	 *  UBNBotAuthoring builds that table from this function rather than re-typing the numbers —
+	 *  the TABLE overrides these, and a hand-typed copy in both places is a second source of
+	 *  truth that drifts the first time someone tunes one of them. */
+	static FBNBotTuningRow DefaultTuning(FName TierName);
+
 	/** R9 — the bot was SHOT, and by whom. Stamps the attacker's position as the last-known
 	 *  threat so Search sends the bot to look, exactly as losing sight of a seen enemy does.
 	 *  Deliberately NOT a target grant: being hit from behind should make a bot turn and hunt,
@@ -131,6 +157,13 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Bot")
 	TObjectPtr<UAISenseConfig_Sight> SightConfig;
 
+	/** R10 — EARS. Sight alone made bots deaf to a firefight ten metres away: they could be shot
+	 *  in the back (R9.2 gave them a reaction to that) but a gunfight they were not part of was
+	 *  silent. A noise becomes a LAST-KNOWN POSITION, never a target — hearing you shoot tells a
+	 *  bot where to look, and perception still has to do the seeing. */
+	UPROPERTY(VisibleAnywhere, Category = "Bot")
+	TObjectPtr<UAISenseConfig_Hearing> HearingConfig;
+
 	/** THE TREE, by soft path from ini — C++-first: without this, assigning the StateTree would
 	 *  require a Blueprint child of this controller just to hold one reference. Resolved in
 	 *  OnPossess before StartLogic; unset or unresolved is a LOUD warning, because the visible
@@ -138,14 +171,21 @@ protected:
 	UPROPERTY(Config)
 	TSoftObjectPtr<UStateTree> BotStateTree;
 
-	UPROPERTY(Config, EditDefaultsOnly, Category = "Bot|Sight")
-	float SightRadius = 2500.f;
+	/** R10 — WHICH TIER this bot fights at, by row name: Recruit, Marine, ODST, Spartan. Set in
+	 *  DefaultGame.ini; a name with no row falls back to the C++ defaults for that tier, and an
+	 *  unknown name falls back to Marine after one warning. The GameMode may later set this per
+	 *  bot for a mixed lobby — the resolve happens in OnPossess, so anything that writes it
+	 *  before possession is honoured. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "Bot|Tier")
+	FName BotTier = FName(TEXT("Marine"));
 
-	UPROPERTY(Config, EditDefaultsOnly, Category = "Bot|Sight")
-	float LoseSightRadius = 3000.f;
+	/** The resolved row: the table's if it has one, else DefaultTuning's. Never null after
+	 *  OnPossess — GetTuning returns it by reference and every caller assumes that. */
+	TSharedPtr<FBNBotTuningRow> Tuning;
 
-	UPROPERTY(Config, EditDefaultsOnly, Category = "Bot|Sight")
-	float PeripheralVisionAngleDegrees = 70.f;
+	/** Reads the tier row and applies everything that is applied ONCE: the sight sense. The rest
+	 *  is read per use through GetTuning, so a re-resolve cannot leave half a tier behind. */
+	void ResolveTuning();
 
 	/** The reaction window for THIS acquisition, drawn once when the target was acquired.
 	 *  Quantized and seeded, never FMath::RandRange off the global stream — §5's determinism law
@@ -155,22 +195,15 @@ protected:
 	/** Weak: the target's death or leave must never dangle here. */
 	TWeakObjectPtr<AActor> TargetEnemy;
 
-	/** R11's floor and ceiling. A bot that fires on the same frame it sees you is not difficult,
-	 *  it is unfair — the player never gets the "I was seen" beat that makes a firefight readable. */
-	UPROPERTY(Config, EditDefaultsOnly, Category = "Bot|Reaction")
-	float ReactionSecondsMin = 0.22f;
-
-	UPROPERTY(Config, EditDefaultsOnly, Category = "Bot|Reaction")
-	float ReactionSecondsMax = 0.45f;
+	// SIGHT, REACTION and the JUMP COOLDOWN moved to the TIER (R10). They were per-controller
+	// Config keys; a tier that could not change them would not be a difficulty setting, and
+	// keeping both would be two sources of truth for one number. DefaultGame.ini's tier row is
+	// where they live now, and FBNBotTuningRow carries the founder's arena-tuned sight values as
+	// Marine's defaults so the shipped behaviour did not move.
 
 	/** Quantization bucket. Snapping the draw keeps the trace reproducible across float drift. */
 	UPROPERTY(Config, EditDefaultsOnly, Category = "Bot|Reaction")
 	float ReactionQuantumSeconds = 0.05f;
-
-	/** The floor between two jumps. Not a tuning nicety: without it a wedged bot presses jump
-	 *  every frame it fails to make progress and hops in place until the watchdog fires. */
-	UPROPERTY(Config, EditDefaultsOnly, Category = "Bot|Movement")
-	float JumpCooldownSeconds = 1.5f;
 
 	/** World seconds when the next jump is allowed. Negative so the first one always passes. */
 	double NextJumpAllowedSeconds = -1.0;
@@ -188,6 +221,12 @@ protected:
 
 	/** Counter, not a clock: it is the seeded stream's sequence number for this controller. */
 	int32 ReactionDrawCount = 0;
+
+	/** How long after breaking line of sight before this bot is willing to do it again. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "Bot|Cover")
+	float CoverCooldownSeconds = 8.f;
+
+	double NextCoverAllowedSeconds = -1.0;
 
 	TWeakObjectPtr<AActor> UnreachableActor;
 	double UnreachableUntilSeconds = -1.0;

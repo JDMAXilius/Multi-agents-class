@@ -125,3 +125,94 @@ a filter typo, a stale build, or specs compiled out all report "0 failures" and 
   handler, and it reuses 9.2's memory.
 - **No squad sense.** Nothing coordinates two bots; each fights alone. Teams (R8, reverted) is
   the prerequisite for any of that.
+
+---
+
+# R10 — WHAT HALO'S BOTS HAVE THAT OURS DID NOT
+
+**Cut:** 23 August 2026 · **Status:** LANDED (written, not compiled)
+
+Three gaps, picked off the Halo Infinite feature audit by value per line: difficulty tiers,
+hearing, and cover. What Infinite still has and BN does not is at the bottom.
+
+## 10.1 — four tiers, because a tier is not a skill slider
+
+Every bot in BN fought identically. Infinite's Recruit / Marine / ODST / Spartan move reaction,
+aim, awareness and movement **together** — a Recruit that only aims worse reads as a broken
+Spartan rather than a rookie, which is the whole reason the row has nine numbers instead of one.
+
+`FBNBotTuningRow` keyed by tier name, `BotTier` on the controller, resolved once in `OnPossess`
+(so a GameMode may later hand different tiers to different bots for a mixed lobby).
+
+**The numbers already existed** — scattered as per-controller Config keys. They moved onto the row
+and the keys are gone, because a difficulty setting that cannot change them is not one, and
+keeping both would be two sources of truth for one number.
+
+**MARINE IS THE FOUNDER'S ARENA TUNING, kept exactly.** Sight 1200/1500 was lowered from the
+engine defaults for a measured reason: at 2500/3000 a bot could see most of `BR_Arena01` from
+where it stood, so every bot always had a target, the tree never left Engage, Search was
+unreachable and nobody roamed. **Every tier is scaled around those numbers, not around the
+defaults they replaced** — my first draft had Spartan at 4000, which would have recreated that
+exact bug and called it difficulty.
+
+Aim and footwork reach the tasks through an OVERRIDE rule: a negative authored parameter means
+"ask the tier", zero still means hitscan-perfect, and a positive value is a deliberate per-state
+pin the tree keeps. That is what lets a tier change how a bot fights without re-authoring the
+StateTree.
+
+Spartan's aim error is deliberately **not zero**. A bot that never misses is not hard, it is
+unfair; what makes a Spartan hard is the reaction window and the footwork.
+
+## 10.2 — ears
+
+Bots were deaf. R9.2 gave them a reaction to being *hit*; a firefight ten metres away was silent,
+and you could clear a room next door without anyone looking up.
+
+A hearing sense beside the sight one, with **sight kept dominant** (seeing beats hearing when both
+report the same actor), and the two things worth hearing now report themselves: **every shot**
+(from `ApplyCost`, which runs once per trigger pull on the authority for humans and bots alike —
+the same place ammo is spent, so a shotgun's pellets are one noise) and **every grenade blast**.
+
+**A noise is a PLACE, never a target.** It stamps the last-known position and Search walks the bot
+over to look. A bot that acquired you through a wall because you fired would be omniscient, and it
+would skip the reaction window that makes a firefight readable.
+
+`HearingRange` is a tier number and is deliberately **longer than sight** — you hear a fight
+through a wall you cannot see through, and that asymmetry is most of what makes a level feel
+occupied. Zero deafens a tier, which is part of what makes Recruit flankable.
+
+## 10.3 — cover
+
+The behaviour Infinite gets free from its shield economy: hurt, under fire, so stop standing in
+the open. BN's shields are off by ruling, so the trigger is said out loud instead — **health below
+60% AND `State.Combat.RecentDamage` AND off cooldown.** All three, because a bot chipped once ten
+seconds ago diving for cover mid-fight reads as cowardice, not tactics.
+
+**No EQS, deliberately.** A rosette of eight navmesh-projected samples, each traced back at the
+threat on the **weapon channel**, answers the only question cover asks — *can this spot be shot
+from where they are standing* — using the same geometry the bullets use. EQS would ask it more
+expensively and no more truthfully. The day BN wants *scored* cover (flanking angles, distance
+bands, height) EQS earns its place; picking a wall does not need it.
+
+- **Closest blocking spot wins**, not the best one: a bot that crosses the arena to a better wall
+  spends the trip being shot in the back.
+- **Failing is a real answer.** An open arena has no cover, and dropping through to Close/Shoot is
+  correct when the only option left is to fight.
+- The cooldown lives on the CONTROLLER and is spent on the **attempt**, not the arrival — a state
+  cooldown resets every time the tree re-selects, and a bot that re-enters cover the instant it
+  leaves never shoots back.
+- The hold at the end is what makes it read as cover rather than a pathing twitch — and it is the
+  window a shield would use, the day shields come back on.
+
+## Still missing, against Infinite
+
+Weapon pickups and power weapons (no pickups exist in BN at all) · per-weapon range preference ·
+target leading for projectiles · shield-break → headshot discipline (no shields yet) · crouch
+(`UBNGA_Crouch` exists; nothing presses it) · clamber and nav-link gap jumps (level work —
+NavLinkProxies) · vehicles · objective play (BN has one mode) · voice callouts · a bot taking over
+an abandoned slot mid-match (R9.4 only yields seats, it does not fill them).
+
+**NEEDS THE EDITOR:** two new StateTree nodes and a new table. `Tools/bn/62_bot_assets.py` must be
+re-run — it now probes for `FBNStrafeTask`, `FBNShouldTakeCoverCondition` and `FBNTakeCoverTask`,
+so a stale build stops the script instead of authoring a tree without them, and it builds
+`DT_BNBotTuning` alongside the tree and the ambitions.

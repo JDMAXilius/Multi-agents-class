@@ -24,6 +24,80 @@ enum class EBNFireMode : uint8
 
 // EditAnywhere, not EditDefaultsOnly: a DataTable row on disk IS an instance, and
 // EditDefaultsOnly greys the field out in the table editor and blocks scripted writes.
+/**
+ * HOW GOOD IS THIS BOT — the tier, and the only thing a tier is: a row of numbers that already
+ * existed as scattered config on the controller. Halo Infinite's four tiers are not one skill
+ * slider; they move reaction, aim, awareness and movement independently, and a Recruit that
+ * simply "aims worse" reads as a broken Spartan rather than a rookie.
+ *
+ * Keyed by the tier's own name (Recruit / Marine / ODST / Spartan) so the table needs no enum,
+ * and UBNBotController::DefaultTuning mirrors these rows in C++ — the table OVERRIDES, never
+ * duplicates, exactly as the ambition rows do.
+ */
+USTRUCT(BlueprintType)
+struct FBNBotTuningRow : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	/** The window between seeing a target and being ALLOWED to shoot it. The single most
+	 *  felt number in the whole table: it is the beat a player gets to react first. */
+	UPROPERTY(EditAnywhere, Category = "Reaction")
+	float ReactionSecondsMin = 0.22f;
+
+	UPROPERTY(EditAnywhere, Category = "Reaction")
+	float ReactionSecondsMax = 0.45f;
+
+	/** Half-angle of the cone the aim is jittered inside, re-drawn every ReaimSeconds. Zero is
+	 *  hitscan-perfect and is deliberately reachable — that is what the top tier is for. */
+	UPROPERTY(EditAnywhere, Category = "Aim")
+	float AimErrorDegrees = 2.5f;
+
+	/** How often the jitter is re-drawn. A LONGER redraw is easier to fight, not harder: the
+	 *  error holds still long enough to strafe out of, where a fast redraw averages onto you. */
+	UPROPERTY(EditAnywhere, Category = "Aim")
+	float ReaimSeconds = 0.5f;
+
+	// ---- awareness: how far and how wide this bot notices anything ----
+	//
+	// THE FOUNDER'S NUMBERS, not the engine's defaults, and they are a MAP fact before they are a
+	// difficulty one: at 2500/3000 a bot could see most of BR_Arena01 from where it stood, so
+	// every bot always had a target, the tree never left Engage, Search was unreachable and
+	// nobody ever roamed. 1200/1500 is roughly one arena segment — bots lose each other around
+	// corners, which is what makes hunting a behaviour instead of a dead branch.
+	//
+	// Every tier is scaled around THIS, not around the old defaults. A tier that sees the whole
+	// map is not a harder bot, it is the bug that was already fixed once.
+	UPROPERTY(EditAnywhere, Category = "Sight")
+	float SightRadius = 1200.f;
+
+	UPROPERTY(EditAnywhere, Category = "Sight")
+	float LoseSightRadius = 1500.f;
+
+	UPROPERTY(EditAnywhere, Category = "Sight")
+	float PeripheralVisionAngleDegrees = 70.f;
+
+	/** How far a NOISE reaches this bot (R10). Deliberately longer than sight: you hear a
+	 *  firefight through a wall you cannot see through, and that asymmetry is most of what makes
+	 *  a level feel occupied. Zero deafens the tier — which is what makes Recruit a tier a
+	 *  player can flank. */
+	UPROPERTY(EditAnywhere, Category = "Sight")
+	float HearingRange = 2200.f;
+
+	/** How often this bot may leave the ground. A Recruit that never jumps is readable; a
+	 *  Spartan that jukes every second duel is not. */
+	UPROPERTY(EditAnywhere, Category = "Movement")
+	float JumpCooldownSeconds = 1.5f;
+
+	/** Seconds between sidesteps while shooting, and how often a sidestep becomes a jump.
+	 *  Zero juke disables it — the lowest tier stands and trades, which is what makes it the
+	 *  tier a new player can beat. */
+	UPROPERTY(EditAnywhere, Category = "Movement")
+	float StrafeIntervalSeconds = 1.2f;
+
+	UPROPERTY(EditAnywhere, Category = "Movement")
+	int32 JukeEveryNthStep = 3;
+};
+
 USTRUCT(BlueprintType)
 struct FBNWeaponRow : public FTableRowBase
 {
