@@ -137,6 +137,24 @@ BNBrain: Vale wants Survive (u=1.14) because health low.
 - Tuning is `DT_BNBotAmbitions` (terminal ticket `TASK-R6-DT-AMBITIONS`) — until it lands, the
   C++ defaults drive and one warning says so.
 
+## 5d. Teams (R8) — and what solo PIE looks like now
+
+`LogBN` prints one `BNGameMode: <name> joined team N` per player and per bot, at initialization.
+With `TargetPlayers=4` and one human, expect **you and one bot on team 0, two bots on team 1** —
+the smaller side wins each assignment, ties to the lower index.
+
+**This changes solo testing, on purpose.** One of those bots is now your ally: it will not shoot
+you, you cannot shoot it (`bFriendlyFire=False`), and it hunts the other two. A bot that ignores
+you is not broken — check its team in the join lines before you debug it.
+
+- Shoot an ally: nothing. No damage number in `LogBN`, no hit reaction, no shield window — the
+  door refuses before the effect exists. One Verbose line says why.
+- Your own grenade still hurts YOU: self-damage is never refused.
+- Flip `bFriendlyFire=True` in `DefaultGame.ini` and every one of those shots lands normally, with
+  no other change. That key is the whole ruling.
+- Two windows: the client's own team and every other player's read the same as the host's — TeamId
+  replicates to everyone, not just its owner.
+
 ## 6. Known and accepted
 
 - ~~`MinPlayers` is only enforced on the session's FIRST match~~ — **closed 19 Aug 2026** by the
