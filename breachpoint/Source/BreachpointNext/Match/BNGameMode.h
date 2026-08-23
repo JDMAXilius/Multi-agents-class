@@ -138,8 +138,12 @@ protected:
 	UPROPERTY(Config)
 	float RespawnDelay = 3.f;
 
-	UPROPERTY(Config)
-	int32 ScoreLimit = 25;
+	/** EditDefaultsOnly so BP_BNGameMode's details panel can dial this per-Blueprint (R26: a BP
+	 *  child holding default values only). TESTING DEFAULT — 3, not a tuning decision, so a
+	 *  round ends after one or two kills and both the win and lose screens are actually reachable
+	 *  without sitting through a real match. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "Match")
+	int32 ScoreLimit = 3;
 
 	UPROPERTY(Config)
 	float TimeLimit = 600.f;

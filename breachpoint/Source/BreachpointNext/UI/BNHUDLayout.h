@@ -4,7 +4,9 @@
 #include "UI/BNActivatableWidget.h"
 #include "BNHUDLayout.generated.h"
 
+class UBNVM_Combat;
 class UBNVM_Match;
+class UImage;
 class UTextBlock;
 
 /**
@@ -40,6 +42,32 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
 	TObjectPtr<UTextBlock> BannerText;
 
+	/**
+	 * The centre reticle. It lives here for the SAME reason the banner does — its anchor
+	 * (dead centre) belongs to no surface — and it is the one thing on this layout fed by the
+	 * COMBAT view model rather than the match one, because a reticle changes with the weapon
+	 * in your hands, not with the scoreline.
+	 *
+	 * DefaultReticle is the fallback for a row whose Reticle column is unset, and for the
+	 * unarmed hand. An FPS whose aiming mark disappears when you pick up an unconfigured gun
+	 * is a bug; honest-unknown does not apply to a crosshair.
+	 */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
+	TObjectPtr<UImage> ReticleDot;
+
+	UPROPERTY(EditDefaultsOnly, Category = "BN|HUD")
+	TSoftObjectPtr<UTexture2D> DefaultReticle;
+
+	void BindCombatField(UBNVM_Combat* Combat, UE::FieldNotification::FFieldId FieldId);
+	void HandleCombatFieldChanged(UObject* Source, UE::FieldNotification::FFieldId FieldId);
+	void RefreshReticle();
+
 	TArray<TPair<UE::FieldNotification::FFieldId, FDelegateHandle>> BoundFields;
 	TWeakObjectPtr<UBNVM_Match> BoundViewModel;
+
+	TArray<TPair<UE::FieldNotification::FFieldId, FDelegateHandle>> BoundCombatFields;
+	TWeakObjectPtr<UBNVM_Combat> BoundCombatViewModel;
+
+	/** 5c: announce a missing reticle ONCE, on the edge. A per-swap warning would spam. */
+	bool bWarnedNoReticle = false;
 };

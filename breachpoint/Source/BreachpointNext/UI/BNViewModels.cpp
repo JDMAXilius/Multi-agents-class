@@ -114,13 +114,14 @@ void UBNVM_Combat::RefreshGrenades()
 }
 
 void UBNVM_Combat::SetEquippedWeapon(const FText& InName, int32 InMagAmmo, int32 InReserveAmmo, bool bKnown,
-	const TSoftObjectPtr<UTexture2D>& InIcon)
+	const TSoftObjectPtr<UTexture2D>& InIcon, const TSoftObjectPtr<UTexture2D>& InReticle)
 {
 	UE_MVVM_SET_PROPERTY_VALUE(WeaponName, InName);
 	UE_MVVM_SET_PROPERTY_VALUE(MagAmmo, InMagAmmo);
 	UE_MVVM_SET_PROPERTY_VALUE(ReserveAmmo, InReserveAmmo);
 	UE_MVVM_SET_PROPERTY_VALUE(EquipmentState, bKnown ? EBNUIDataState::Live : EBNUIDataState::Unknown);
 	UE_MVVM_SET_PROPERTY_VALUE(WeaponIcon, InIcon);
+	UE_MVVM_SET_PROPERTY_VALUE(WeaponReticle, InReticle);
 }
 
 void UBNVM_Combat::SetStowedWeapon(const FText& InName, const TSoftObjectPtr<UTexture2D>& InIcon)
@@ -275,7 +276,8 @@ void UBNVM_Match::BeginDestroy()
 	Super::BeginDestroy();
 }
 
-void UBNVM_Match::SetMatchPhase(FName InMatchState, const FText& InWinnerLine)
+void UBNVM_Match::SetMatchPhase(FName InMatchState, const FText& InWinnerLine,
+	EBNMatchOutcome InOutcome)
 {
 	UE_MVVM_SET_PROPERTY_VALUE(MatchStateName, InMatchState);
 	UE_MVVM_SET_PROPERTY_VALUE(MatchDataState, EBNUIDataState::Live);
@@ -293,6 +295,7 @@ void UBNVM_Match::SetMatchPhase(FName InMatchState, const FText& InWinnerLine)
 		Banner = InWinnerLine;
 	}
 	UE_MVVM_SET_PROPERTY_VALUE(PhaseBannerText, Banner);
+	UE_MVVM_SET_PROPERTY_VALUE(Outcome, InOutcome);
 }
 
 void UBNVM_Match::SetScores(int32 InMyKills, int32 InTopKills, int32 InScoreLimit)

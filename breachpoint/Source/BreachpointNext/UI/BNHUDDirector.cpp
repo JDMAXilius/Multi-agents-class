@@ -152,15 +152,23 @@ void UBNHUDDirector::PushMatchSnapshot()
 	// The winner line is composed HERE, with the reference in hand. A null winner during
 	// post-match is a draw — a legal outcome, worded, never blank.
 	FText WinnerLine;
+	EBNMatchOutcome Outcome = EBNMatchOutcome::Undecided;
 	if (GS->HasMatchEnded())
 	{
 		const ABNPlayerState* Winner = GS->GetWinner();
 		WinnerLine = Winner
 			? FText::Format(LOCTEXT("WinnerBanner", "{0} WINS"), FText::FromString(Winner->GetPlayerName()))
 			: LOCTEXT("DrawBanner", "DRAW");
+
+		// The SAME null-winner case the line above words as "DRAW" — read once, branched once.
+		// Victory vs Defeat can only be decided here: the widget has no idea which PlayerState
+		// is mine, and giving it one would put a gameplay branch in a WBP.
+		const ABNPlayerState* MyPS = BoundPlayerState.Get();
+		Outcome = !Winner ? EBNMatchOutcome::Draw
+			: (MyPS && Winner == MyPS ? EBNMatchOutcome::Victory : EBNMatchOutcome::Defeat);
 	}
 
-	Match->SetMatchPhase(GS->GetMatchState(), WinnerLine);
+	Match->SetMatchPhase(GS->GetMatchState(), WinnerLine, Outcome);
 	Match->SetMatchClock(GS->GetMatchEndServerTime(), BoundGameState.Get());
 	RecomputeScores();
 }
@@ -507,7 +515,10 @@ void UBNHUDDirector::HandleEquippedWeaponChanged(UBNEquipmentComponent* Equipmen
 		// loads it through Slate's own async path; an unset column simply draws nothing.
 		// The empty soft ptr is SPELLED OUT rather than nullptr: the compiled reference records
 		// that a ternary between TSoftObjectPtr<T> and nullptr_t does not deduce a common type.
-		Row ? Row->Icon : NoIcon);
+		Row ? Row->Icon : NoIcon,
+		// The per-weapon reticle rides the same edge: one row read, both slots fed, and a swap
+		// moves them together because they are one notify.
+		Row ? Row->Reticle : NoIcon);
 }
 
 void UBNHUDDirector::HandleAmmoChanged(ABNWeapon* Weapon)

@@ -62,7 +62,8 @@ public:
 	 *  (the knife, the empty hand) — the widget renders a dash, never a confident zero. The icon
 	 *  is the design's silhouette slot and may be null; it notifies like every other field. */
 	void SetEquippedWeapon(const FText& InName, int32 InMagAmmo, int32 InReserveAmmo, bool bKnown,
-		const TSoftObjectPtr<UTexture2D>& InIcon = TSoftObjectPtr<UTexture2D>());
+		const TSoftObjectPtr<UTexture2D>& InIcon = TSoftObjectPtr<UTexture2D>(),
+		const TSoftObjectPtr<UTexture2D>& InReticle = TSoftObjectPtr<UTexture2D>());
 	void SetAmmo(int32 InMagAmmo, int32 InReserveAmmo);
 
 	/** Director only: R7.3's stowed slot — the weapon ONE swap press away, which is what "stowed"
@@ -96,6 +97,8 @@ public:
 	int32 GetGrenadeCapacity() const { return GrenadeCapacity; }
 	/** By value, matching the compiled reference's soft-pointer getter shape. */
 	TSoftObjectPtr<UTexture2D> GetWeaponIcon() const { return WeaponIcon; }
+
+	TSoftObjectPtr<UTexture2D> GetWeaponReticle() const { return WeaponReticle; }
 	FText GetStowedWeaponName() const { return StowedWeaponName; }
 	TSoftObjectPtr<UTexture2D> GetStowedWeaponIcon() const { return StowedWeaponIcon; }
 	bool IsDead() const { return bIsDead; }
@@ -154,6 +157,10 @@ private:
 	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetWeaponIcon", Category = "BN|Combat", meta = (AllowPrivateAccess))
 	TSoftObjectPtr<UTexture2D> WeaponIcon;
 
+	/** The equipped weapon's reticle. Same shape and same reason as WeaponIcon. */
+	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetWeaponReticle", Category = "BN|Combat", meta = (AllowPrivateAccess))
+	TSoftObjectPtr<UTexture2D> WeaponReticle;
+
 	// ---- the stowed slot (R7.3): the NEXT weapon in the swap cycle, not a second inventory ----
 	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetStowedWeaponName", Category = "BN|Combat", meta = (AllowPrivateAccess))
 	FText StowedWeaponName;
@@ -209,7 +216,8 @@ public:
 
 	/** Director only: the phase FName (the engine's own MatchState names) and, when ended, the
 	 *  winner line. Composes the banner here so the widget renders text and decides nothing. */
-	void SetMatchPhase(FName InMatchState, const FText& InWinnerLine);
+	void SetMatchPhase(FName InMatchState, const FText& InWinnerLine,
+		EBNMatchOutcome InOutcome = EBNMatchOutcome::Undecided);
 
 	/** Director only: my kills, the current leader's, and the limit — read back by widgets. */
 	void SetScores(int32 InMyKills, int32 InTopKills, int32 InScoreLimit);
@@ -236,6 +244,8 @@ public:
 
 	FName GetMatchStateName() const { return MatchStateName; }
 	FText GetPhaseBannerText() const { return PhaseBannerText; }
+
+	EBNMatchOutcome GetOutcome() const { return Outcome; }
 	FText GetMatchClockText() const { return MatchClockText; }
 	int32 GetMyKills() const { return MyKills; }
 	int32 GetTopKills() const { return TopKills; }
@@ -256,6 +266,11 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetPhaseBannerText", Category = "BN|Match", meta = (AllowPrivateAccess))
 	FText PhaseBannerText;
+
+	/** Victory / Defeat / Draw, from the reader's own point of view. Composed by the director;
+	 *  the screen renders a word and a tint and decides nothing. */
+	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetOutcome", Category = "BN|Match", meta = (AllowPrivateAccess))
+	EBNMatchOutcome Outcome = EBNMatchOutcome::Undecided;
 
 	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetMatchClockText", Category = "BN|Match", meta = (AllowPrivateAccess))
 	FText MatchClockText;

@@ -146,6 +146,13 @@ struct FBNWeaponRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, Category = "Assets")
 	TSoftObjectPtr<UTexture2D> Icon;
 
+	/** The centre reticle for THIS weapon. Soft, UI-only, and separate from `Icon` on purpose:
+	 *  the silhouette is a side-on line-art gun and the reticle is a sight, so one column cannot
+	 *  serve both. A row that leaves it unset falls back to the HUD's default reticle rather
+	 *  than drawing nothing — an FPS with no aiming mark is a bug, never a designed miss. */
+	UPROPERTY(EditAnywhere, Category = "Assets")
+	TSoftObjectPtr<UTexture2D> Reticle;
+
 	// The template's `LinkAnimLayerClass`, read off the weapon by reflection
 	// (MyCharacter.cpp:51, 2028-2031). G2.4 resolves it into the linked layer.
 	UPROPERTY(EditAnywhere, Category = "Assets")

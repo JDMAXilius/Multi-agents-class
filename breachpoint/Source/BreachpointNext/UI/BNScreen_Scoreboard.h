@@ -31,6 +31,7 @@ protected:
 	void HandleRosterChanged();
 	void HandleMatchFieldChanged(UObject* Source, UE::FieldNotification::FFieldId FieldId);
 	void Refresh();
+	void RefreshOutcome(const class UBNVM_Match* Match);
 
 	/** The WBP parents UBNScoreRow children under this — 8 covers FFA with headroom. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "BN|HUD")
@@ -39,6 +40,20 @@ protected:
 	/** Winner / warmup line during post-match; empty and hidden while the match runs. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
 	TObjectPtr<UTextBlock> BannerText;
+
+	/**
+	 * The outcome band (Figma `35:2` "Outcome Bar", 1280x96 with a 6px accent stripe).
+	 *
+	 * Separate from BannerText on purpose: the banner says WHO won ("Ossian WINS"), which is
+	 * the same sentence for everyone in the match. This says what happened to YOU, and two
+	 * players reading the same scoreboard must see different words. Both are Optional — a
+	 * board without either still lists the scores.
+	 */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
+	TObjectPtr<UTextBlock> OutcomeText;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
+	TObjectPtr<class UImage> OutcomeAccent;
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UBNScoreRow>> Rows;

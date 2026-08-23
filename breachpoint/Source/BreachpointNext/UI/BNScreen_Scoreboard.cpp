@@ -1,4 +1,5 @@
 #include "UI/BNScreen_Scoreboard.h"
+#include "Components/Image.h"
 #include "BreachpointNext.h"
 #include "Components/PanelWidget.h"
 #include "Components/TextBlock.h"
@@ -6,6 +7,8 @@
 #include "UI/BNScoreRow.h"
 #include "UI/BNUITypes.h"
 #include "UI/BNViewModels.h"
+
+#define LOCTEXT_NAMESPACE "BreachpointNextUI"
 
 UBNScreen_Scoreboard::UBNScreen_Scoreboard()
 {
@@ -48,11 +51,18 @@ void UBNScreen_Scoreboard::BindViewModels()
 
 	RosterHandle = Match->OnRosterViewChanged.AddUObject(this, &UBNScreen_Scoreboard::HandleRosterChanged);
 
-	const UE::FieldNotification::FFieldId BannerId = UBNVM_Match::FFieldNotificationClassDescriptor::PhaseBannerText;
-	if (BannerId.IsValid())
+	// Banner AND outcome. They are set in the same SetMatchPhase call, so subscribing to the
+	// banner alone would USUALLY work — but "usually" is how a screen ends up showing DEFEAT to
+	// the winner when a future edit moves one of them. Bind what you read.
+	for (const UE::FieldNotification::FFieldId FieldId : {
+		UBNVM_Match::FFieldNotificationClassDescriptor::PhaseBannerText,
+		UBNVM_Match::FFieldNotificationClassDescriptor::Outcome })
 	{
-		BoundFields.Emplace(BannerId, Match->AddFieldValueChangedDelegate(BannerId,
-			INotifyFieldValueChanged::FFieldValueChangedDelegate::CreateUObject(this, &UBNScreen_Scoreboard::HandleMatchFieldChanged)));
+		if (FieldId.IsValid())
+		{
+			BoundFields.Emplace(FieldId, Match->AddFieldValueChangedDelegate(FieldId,
+				INotifyFieldValueChanged::FFieldValueChangedDelegate::CreateUObject(this, &UBNScreen_Scoreboard::HandleMatchFieldChanged)));
+		}
 	}
 
 	Refresh();
@@ -124,4 +134,54 @@ void UBNScreen_Scoreboard::Refresh()
 		BannerText->SetVisibility(Banner.IsEmpty() ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
 		BannerText->SetColorAndOpacity(FSlateColor(BNUIColors::Self));
 	}
+
+	RefreshOutcome(Match);
 }
+
+void UBNScreen_Scoreboard::RefreshOutcome(const UBNVM_Match* Match)
+{
+	if (!OutcomeText && !OutcomeAccent)
+	{
+		return;
+	}
+
+	const EBNMatchOutcome Outcome = Match ? Match->GetOutcome() : EBNMatchOutcome::Undecided;
+
+	FText Word;
+	FLinearColor Tint = BNUIColors::InkDim;
+	switch (Outcome)
+	{
+	case EBNMatchOutcome::Victory:
+		Word = LOCTEXT("OutcomeVictory", "VICTORY");
+		Tint = BNUIColors::Shield;   // hud/self — the same cyan that means YOU everywhere else
+		break;
+	case EBNMatchOutcome::Defeat:
+		Word = LOCTEXT("OutcomeDefeat", "DEFEAT");
+		Tint = BNUIColors::Threat;   // hud/threat — red is only ever a threat, and losing is one
+		break;
+	case EBNMatchOutcome::Draw:
+		Word = LOCTEXT("OutcomeDraw", "DRAW");
+		break;
+	default:
+		break;                        // Undecided: the band is absent, not blank
+	}
+
+	// Collapsed, not Hidden: mid-match the band must take NO layout, or the table sits 96px
+	// down all game waiting for a word that has not happened yet.
+	const ESlateVisibility Vis = Word.IsEmpty()
+		? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible;
+
+	if (OutcomeText)
+	{
+		OutcomeText->SetText(Word);
+		OutcomeText->SetColorAndOpacity(FSlateColor(Tint));
+		OutcomeText->SetVisibility(Vis);
+	}
+	if (OutcomeAccent)
+	{
+		OutcomeAccent->SetColorAndOpacity(Tint);
+		OutcomeAccent->SetVisibility(Vis);
+	}
+}
+
+#undef LOCTEXT_NAMESPACE

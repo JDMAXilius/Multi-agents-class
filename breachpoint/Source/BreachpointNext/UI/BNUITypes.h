@@ -59,6 +59,19 @@ enum class EBNUIDataState : uint8
 	Stale
 };
 
+/** How the match ended FOR THE PLAYER READING THIS SCREEN. Not "who won" — the scoreboard
+ *  already carries that. A win screen has to say VICTORY or DEFEAT, and only the director
+ *  knows which, because only it knows which PlayerState is mine. Undecided is the live match:
+ *  the outcome band is absent, not blank. */
+UENUM()
+enum class EBNMatchOutcome : uint8
+{
+	Undecided,
+	Victory,
+	Defeat,
+	Draw
+};
+
 /** One killfeed line as the VIEW knows it. The wording is composed ONCE, where the relationship
  *  facts are in hand — the widget renders text and a tint and decides nothing. ExpiryTime is
  *  LOCAL world seconds, stamped on the entry itself (a parallel array desyncs — the old module

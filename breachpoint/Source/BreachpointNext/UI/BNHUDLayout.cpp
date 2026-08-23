@@ -1,4 +1,6 @@
 #include "UI/BNHUDLayout.h"
+#include "BreachpointNext.h"
+#include "Components/Image.h"
 #include "Components/TextBlock.h"
 #include "INotifyFieldValueChanged.h"
 #include "UI/BNViewModels.h"
@@ -34,7 +36,62 @@ void UBNHUDLayout::BindViewModels()
 			INotifyFieldValueChanged::FFieldValueChangedDelegate::CreateUObject(this, &UBNHUDLayout::HandleMatchFieldChanged)));
 	}
 
+	// The reticle is the one thing on this layout the COMBAT model feeds — see the header for
+	// why it lives here at all. A HUD whose match model is up but whose combat model is not
+	// still gets a reticle, because RefreshReticle falls back.
+	if (UBNVM_Combat* Combat = GetCombatViewModel())
+	{
+		BoundCombatViewModel = Combat;
+		BindCombatField(Combat, UBNVM_Combat::FFieldNotificationClassDescriptor::WeaponReticle);
+	}
+
 	Refresh();
+	RefreshReticle();
+}
+
+void UBNHUDLayout::BindCombatField(UBNVM_Combat* Combat, UE::FieldNotification::FFieldId FieldId)
+{
+	if (!Combat || !FieldId.IsValid())
+	{
+		return;
+	}
+	BoundCombatFields.Emplace(FieldId, Combat->AddFieldValueChangedDelegate(FieldId,
+		INotifyFieldValueChanged::FFieldValueChangedDelegate::CreateUObject(this, &UBNHUDLayout::HandleCombatFieldChanged)));
+}
+
+void UBNHUDLayout::HandleCombatFieldChanged(UObject* Source, UE::FieldNotification::FFieldId FieldId)
+{
+	RefreshReticle();
+}
+
+void UBNHUDLayout::RefreshReticle()
+{
+	if (!ReticleDot)
+	{
+		return;
+	}
+
+	const UBNVM_Combat* Combat = BoundCombatViewModel.Get();
+	const TSoftObjectPtr<UTexture2D> FromWeapon = Combat ? Combat->GetWeaponReticle() : TSoftObjectPtr<UTexture2D>();
+	// The weapon's mark wins; the default catches an unset column and the unarmed hand. Only a
+	// project with NEITHER draws nothing, and that is announced once rather than silently.
+	const TSoftObjectPtr<UTexture2D> Chosen = FromWeapon.IsNull() ? DefaultReticle : FromWeapon;
+
+	if (Chosen.IsNull())
+	{
+		if (!bWarnedNoReticle)
+		{
+			bWarnedNoReticle = true;
+			UE_LOG(LogBN, Warning, TEXT("BNUI: no reticle — the row's Reticle column is unset and "
+				"DefaultReticle is unset on %s. The centre of the screen will be empty."),
+				*GetClass()->GetName());
+		}
+		ReticleDot->SetVisibility(ESlateVisibility::Collapsed);
+		return;
+	}
+
+	ReticleDot->SetBrushFromSoftTexture(Chosen, /*bMatchSize=*/false);
+	ReticleDot->SetVisibility(ESlateVisibility::HitTestInvisible);
 }
 
 void UBNHUDLayout::UnbindViewModels()
@@ -50,6 +107,19 @@ void UBNHUDLayout::UnbindViewModels()
 			}
 		}
 	}
+	if (UBNVM_Combat* Combat = BoundCombatViewModel.Get())
+	{
+		for (const TPair<UE::FieldNotification::FFieldId, FDelegateHandle>& Bound : BoundCombatFields)
+		{
+			if (Bound.Value.IsValid())
+			{
+				Combat->RemoveFieldValueChangedDelegate(Bound.Key, Bound.Value);
+			}
+		}
+	}
+	BoundCombatFields.Reset();
+	BoundCombatViewModel.Reset();
+
 	BoundFields.Reset();
 	BoundViewModel.Reset();
 }
