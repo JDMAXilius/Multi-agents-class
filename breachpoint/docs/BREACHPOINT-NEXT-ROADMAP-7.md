@@ -373,6 +373,28 @@ was how fast you could press the key.
 
 Still blocked and still honest: **equipment** has no state at all, so that pip stays empty.
 
+## R7.6 — two of the terminal's handed-back C++ gaps
+
+The G5 pass reported seven things the design needs that the bind contract cannot carry. Two are
+answered; the rest are named in the ticket and wait on state that does not exist (assists, a mode
+model) or on a packet that is parked (teams).
+
+- **Gap 6, the feed's three parts.** `ComposeKillfeedLine` returns ONE composed `FText`, so a WBP
+  could only ever centre it — the design places `[Killer]` at x8, the glyph at x78 and `[Victim]`
+  at x110. `FBNKillfeedViewEntry` now carries `KillerText`/`VictimText` beside the line, and the
+  row picks its layout: both part widgets bound AND both names present draws the parts, anything
+  else falls back to the line. **The fallback is not a degradation** — it is the only correct
+  render for the wordings that have no killer ("X died", "X eliminated themselves"), which is why
+  the composed line stays the record rather than being replaced.
+- **Gap 7, one colour that lied.** `BNUIColors::Shield`'s red channel read 0.043 where its own
+  `#35D0F2` comment says 0.208. Every other entry in that block is the raw 0-1 fraction of the hex
+  beside it (0x4A → 0.290, 0xC5 → 0.773, 0x83 → 0.514); this one was a transcription slip,
+  invisible so far only because shields are off. The hex comment is the authority.
+
+Still open from that list: mode pips and score-fraction bars (no mode or fraction on the match VM),
+SCORE/ASSISTS columns (no assists state anywhere), scoreboard team blocks (teams are parked), the
+death screen's silhouette + respawn ring + big countdown, and pause rows as a real button atom.
+
 ## Deferred, with named slots
 
 Per-weapon reticle + spread + hit markers (wants the damage cue's confirm param) · the equipment

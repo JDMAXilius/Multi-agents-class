@@ -51,6 +51,17 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	/** SEAMLESS TRAVEL builds a NEW PlayerState and copies the old one into it. The engine's own
+	 *  override carries the name, the id and its float Score — and knows nothing about BN's two
+	 *  integers, so without this a travel silently zeroed everyone's kills and deaths.
+	 *
+	 *  Dormant today by design: BN restarts a match IN PLACE (SetMatchState back to
+	 *  WaitingToStart) precisely so listen-server connections survive, and that path never builds
+	 *  a new PlayerState. This is here for the day a map rotation lands, because the failure it
+	 *  prevents is silent — a scoreboard that reads zero after a travel looks like a scoreboard
+	 *  bug, not like a lifecycle one. */
+	virtual void CopyProperties(APlayerState* PlayerState) override;
+
 	FBNScoreChangedSignature OnScoreChanged;
 	FBNRespawnStampSignature OnRespawnStampChanged;
 

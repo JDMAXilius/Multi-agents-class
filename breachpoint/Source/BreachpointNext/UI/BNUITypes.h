@@ -95,6 +95,16 @@ struct FBNKillfeedViewEntry
 	UPROPERTY()
 	bool bInvolvesSelf = false;
 
+	/** R7.6, gap 6 — the line's PARTS, so a WBP can lay out [Killer][glyph][Victim] at the
+	 *  measured x positions instead of centring one composed string. Both empty for the wordings
+	 *  that have no killer ("X died", "X eliminated themselves"); the row falls back to Line,
+	 *  which stays the single source for those and for any WBP that binds no part widgets. */
+	UPROPERTY()
+	FText KillerText;
+
+	UPROPERTY()
+	FText VictimText;
+
 	/** R7.3 — the design's 22×8 weapon glyph, resolved by the director from the kill's source
 	 *  name. Unset for a cause with no weapon row (melee, a grenade, world damage) and for a row
 	 *  whose Icon column is empty: the row then draws the line alone rather than a placeholder.
@@ -136,7 +146,10 @@ struct FBNScoreRowView
 namespace BNUIColors
 {
 	/** You: your shields, your bars, your reticle at rest. */
-	inline const FLinearColor Shield  { 0.043f, 0.663f, 0.898f };  // #35D0F2
+	// 0.208, not 0.043 — every other colour in this block is the raw 0-1 fraction of the hex
+	// beside it (0x4A -> 0.290, 0xC5 -> 0.773, 0x83 -> 0.514) and this red channel was the one
+	// that did not match its own comment. Invisible so far only because shields are off.
+	inline const FLinearColor Shield  { 0.208f, 0.816f, 0.949f };  // #35D0F2
 	/** Health beneath shields. Yellow, never green. */
 	inline const FLinearColor Health  { 0.961f, 0.773f, 0.259f };  // #F5C542
 	/** A clock is running: respawn countdown, match clock in its last stretch. */
@@ -145,6 +158,7 @@ namespace BNUIColors
 	inline const FLinearColor Threat  { 1.000f, 0.290f, 0.239f };  // #FF4A3D
 	/** You, in a list of people: your killfeed lines, your scoreboard row. */
 	inline const FLinearColor Self    { 1.000f, 1.000f, 1.000f };  // #FFFFFF
+
 	/** Everyone else's history: killfeed lines you are not in, other rows. */
 	inline const FLinearColor InkDim  { 0.514f, 0.592f, 0.663f };  // #8397A9
 	/** Dead/dimmed: the Unknown state's dashes, a departed player's row. */

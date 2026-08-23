@@ -66,6 +66,20 @@ void ABNPlayerState::ResetScore()
 	}
 }
 
+void ABNPlayerState::CopyProperties(APlayerState* PlayerState)
+{
+	Super::CopyProperties(PlayerState);
+
+	// The score, and ONLY the score. Not the respawn stamp (a stamp from the previous map's clock
+	// is worse than none), not the ASC or its attributes — those are rebuilt by GrantDefaults and
+	// the init GE on the new PlayerState, which is the one path allowed to set them.
+	if (ABNPlayerState* Copy = Cast<ABNPlayerState>(PlayerState))
+	{
+		Copy->Kills = Kills;
+		Copy->Deaths = Deaths;
+	}
+}
+
 void ABNPlayerState::SetRespawnAtServerTime(double InServerTime)
 {
 	if (HasAuthority() && RespawnAtServerTime != InServerTime)

@@ -234,7 +234,8 @@ public:
 	/** Director only, once per NEW ring entry (dedupe by Sequence is the CALLER's job via
 	 *  GetLastKillfeedSequence). Stamps the LOCAL expiry on the entry and trims the view pool. */
 	void PushKillfeedEntry(const FText& InLine, int32 InSequence, bool bInvolvesSelf,
-		const TSoftObjectPtr<UTexture2D>& InWeaponIcon = TSoftObjectPtr<UTexture2D>());
+		const TSoftObjectPtr<UTexture2D>& InWeaponIcon = TSoftObjectPtr<UTexture2D>(),
+		const FText& InKillerText = FText::GetEmpty(), const FText& InVictimText = FText::GetEmpty());
 	int32 GetLastKillfeedSequence() const { return LastKillfeedSequence; }
 
 	FBNKillfeedViewChangedSignature OnKillfeedViewChanged;

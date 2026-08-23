@@ -318,8 +318,22 @@ void UBNHUDDirector::HandleKillfeedChanged()
 			(Entry.Victim == MyPS || Entry.VictimName.Equals(MyName, ESearchCase::CaseSensitive));
 		const bool bInvolvesSelf = bVictimIsMe || (MyPS &&
 			(Entry.Killer == MyPS || Entry.KillerName.Equals(MyName, ESearchCase::CaseSensitive)));
+		// R7.6, gap 6 — the line AND its parts. The composed line stays the record (it is the
+		// only correct render for the wordings that have no killer); the parts are what let a WBP
+		// place [Killer][glyph][Victim] at the design's measured x. Empty for a suicide or a
+		// world death, which is exactly when the row must fall back to the line.
+		FText KillerPart;
+		FText VictimPart;
+		if (!Entry.KillerName.IsEmpty()
+			&& !(Entry.Killer && Entry.Killer == Entry.Victim)
+			&& !Entry.KillerName.Equals(Entry.VictimName, ESearchCase::CaseSensitive))
+		{
+			KillerPart = FText::FromString(Entry.KillerName);
+			VictimPart = FText::FromString(Entry.VictimName);
+		}
+
 		Match->PushKillfeedEntry(ComposeKillfeedLine(Entry), Entry.Sequence, bInvolvesSelf,
-			ResolveWeaponIcon(Entry.SourceName));
+			ResolveWeaponIcon(Entry.SourceName), KillerPart, VictimPart);
 
 		// My own newest death names my killer — the death screen's line. Written from the feed
 		// rather than a second channel: if the ring bunch lands after the dead tag, this catches

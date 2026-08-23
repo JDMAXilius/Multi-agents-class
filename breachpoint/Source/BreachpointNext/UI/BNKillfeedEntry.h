@@ -17,10 +17,17 @@ class BREACHPOINTNEXT_API UBNKillfeedEntry : public UCommonUserWidget
 	GENERATED_BODY()
 
 public:
-	/** Claim: fill and show. White = the local player is in this line; dim = history. The glyph
-	 *  (R7.3) is the killing weapon's icon and is simply absent when the cause has no row or the
-	 *  row has no art — the line never grows a text weapon, which would break its measured width. */
-	void SetEntry(const FText& Line, bool bInvolvesSelf, const TSoftObjectPtr<UTexture2D>& WeaponIconAsset = TSoftObjectPtr<UTexture2D>());
+	/** Claim: fill and show. White = the local player is in this line; dim = history.
+	 *
+	 *  ONE ARGUMENT, the view entry (R7.6): this row grew from a line to a line-plus-glyph to a
+	 *  three-part layout, and each step added a parameter to every caller. The view struct is
+	 *  already the thing the feed hands out.
+	 *
+	 *  TWO LAYOUTS, decided HERE and not by the caller: with `KillerText`/`VictimText` bound AND
+	 *  the entry carrying both names, the row draws [Killer][glyph][Victim] at the design's
+	 *  measured x. Otherwise it draws the composed `Line` — which is also the only correct render
+	 *  for the wordings that have no killer at all. */
+	void SetEntry(const struct FBNKillfeedViewEntry& Entry);
 
 	/** Release: collapse. The pool never destroys a row. */
 	void ClearEntry();
@@ -30,6 +37,14 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "BN|HUD")
 	TObjectPtr<UTextBlock> LineText;
+
+	/** R7.6 — the parts layout. Optional AND paired: one without the other is not a layout, so
+	 *  the row falls back rather than drawing half a line. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
+	TObjectPtr<UTextBlock> KillerText;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
+	TObjectPtr<UTextBlock> VictimText;
 
 	/** The design's 22×8 weapon glyph. Optional: a feed without it still reads. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")

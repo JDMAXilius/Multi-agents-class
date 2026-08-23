@@ -370,7 +370,7 @@ void UBNVM_Match::StopClockUpdates()
 }
 
 void UBNVM_Match::PushKillfeedEntry(const FText& InLine, int32 InSequence, bool bInvolvesSelf,
-	const TSoftObjectPtr<UTexture2D>& InWeaponIcon)
+	const TSoftObjectPtr<UTexture2D>& InWeaponIcon, const FText& InKillerText, const FText& InVictimText)
 {
 	if (InSequence <= LastKillfeedSequence)
 	{
@@ -397,6 +397,8 @@ void UBNVM_Match::PushKillfeedEntry(const FText& InLine, int32 InSequence, bool 
 	Entry.ExpiryTime = Now + BNUITiming::KillfeedLingerSeconds;
 	Entry.bInvolvesSelf = bInvolvesSelf;
 	Entry.WeaponIcon = InWeaponIcon;
+	Entry.KillerText = InKillerText;
+	Entry.VictimText = InVictimText;
 
 	while (KillfeedEntries.Num() > KillfeedMaxVisibleEntries)
 	{
