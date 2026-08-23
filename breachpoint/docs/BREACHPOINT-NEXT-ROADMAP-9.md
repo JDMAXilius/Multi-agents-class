@@ -95,6 +95,27 @@ the level so the navmesh knows a jump connects two islands — level work, not c
 without-nav-data version: jumps that clear what is *in the way*, spent at the moments the bot
 already knows something has gone wrong.
 
+## 9.6 — `Tests/` stops being empty
+
+Every claim in this project was verified by a person looking at a screen. Three specs now assert
+in code, and each one locks a bug that actually happened or a rule that is invisible until it
+breaks in front of a player.
+
+| Suite | What it holds down |
+|---|---|
+| `BreachpointNext.Sim.BotBrain` | The utility table, the commit window, and **the interrupt regression**: Survive's break-out was written as a utility RATIO the shipped weights could never satisfy, which left a bot at 5% health firing through its whole commit. Nothing caught it but a human reading arithmetic. The rows come from `UBNBotBrain::DefaultRow`, not from literals, so the spec cannot pass while the shipped decision drifts |
+| `BreachpointNext.Sim.Damage` | The door, entered **through the door**: init numbers, the drain, the floor at zero, the head-hit multiplier, R7.3's cause-of-death `SourceName`, and R7.4's grenade cost including GAS's own refusal at zero and the BASE clamp. A spec that poked attributes directly would prove the attribute set works and nothing about whether the game can reach it |
+| `BreachpointNext.Sim.KillfeedView` | Dedupe by sequence (the ring replicates WHOLE — a joiner receives every entry again), the empty-line "seen but not shown" path the join-age filter depends on, and the 5-row cap that must match the pool the WBP builds |
+
+`UBNBotBrain` is testable at all only because it is headless by contract — no world, no clock, no
+actors. That contract was written for R8's determinism harness; this is the first thing to cash it.
+
+**The world scaffolding is transcribed, not invented**: `BuildWorld` / `SpawnFighter` come from the
+old module's `BRShieldSpec`, which compiled and ran against this engine.
+
+`Tools/run-specs.sh` is the macOS runner, and it treats **zero tests as INCONCLUSIVE, never PASS** —
+a filter typo, a stale build, or specs compiled out all report "0 failures" and look like success.
+
 ## What is still weak, and still true
 
 - **No cover.** Close is a straight line at the enemy. Real cover wants EQS or tagged cover
