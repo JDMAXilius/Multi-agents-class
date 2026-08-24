@@ -140,3 +140,59 @@ route, which makes the remaining half founder-side, not MCP-side), re-read `aimP
 pitches, and recover the `PropertyAccess` path — the ABP asset itself, opened in the editor,
 will show it where the DSL will not.
 
+### 24 Aug 2026 (cont.) — the PropertyAccess path RECOVERED; Step 2 still NOT obtained.
+
+**The writer is now fully named — this is the half the ticket kept losing.** Recovered
+WITHOUT the editor, by `strings` on `Content/MigrateLyra/.../ABP_Mannequin_Base.uasset`
+(deliberately off-disk: the graph tools are what recompiled the asset earlier). The binding is:
+
+```
+TryGetPawnOwner.GetBaseAimRotation.Pitch
+```
+
+so in full: `AimPitch = NormalizeAxis(TryGetPawnOwner()->GetBaseAimRotation().Pitch)`.
+
+Why this matters for the verdict. `APawn::GetBaseAimRotation()` returns
+`Controller->GetControlRotation()` when a Controller exists, and otherwise falls back to
+`FRotator(RemoteViewPitch * 360/255, ActorRotation.Yaw, 0)`. So:
+- on the **locally-controlled player** it is the control rotation — it MUST track mouse pitch;
+- on a **bot** it is `BNBotController`'s control rotation, and an AIController that only yaws
+  toward its focus legitimately reports pitch 0.
+
+**A bot reading `aimPitch == 0` is therefore NOT evidence of a break.** Every sample this
+session was a bot or an idle pawn. The ticket's question is still open.
+
+**Step 2 remains NOT OBTAINED, and the reason is a tooling finding worth more than the
+measurement.** Two windows were sampled (45s, then 60s) with `ObjectTools.get_properties` on
+the five live anim instances. Every value was byte-identical between the two windows —
+`aimYaw` frozen at 25.71 / -37.87 / -18.03, `aimPitch` 0.00 throughout. `LogBN`'s newest entry
+never advanced past `[19.06.10:984][571]` across ten minutes of wallclock.
+
+**The PIE world was not ticking.** MCP tool calls execute on the game thread and kept
+returning — and got FASTER between windows (17 → 94 samples), so the thread was alive and the
+editor was not merely throttled. The world tick specifically was dead, wedged roughly one
+second after `BNGameState: match state -> InProgress` (frames 565 → 571), immediately following
+two `BNInput: Input.Jump -> Default__BNGA_Jump : ACTIVATED` lines.
+
+**Consequence for the method, not just this ticket: a PIE session started through
+`EditorAppToolset.StartPIE` while the editor is a background window produces a world that
+reports `IsPIERunning: true` and does not tick.** Any measurement taken that way reads as a
+clean row of zeros and is indistinguishable from a dead mechanism. This is very probably why
+three previous attempts "never got to" the aim numbers. **Numbers sampled from an
+MCP-started, unfocused PIE must not be trusted, and must never be written down as a verdict.**
+`EditorPerformanceSettings.bThrottleCPUWhenNotForeground` was flipped to `false` to test the
+throttle hypothesis; it sped MCP servicing up 5.5x but did NOT restart the world tick, so the
+throttle is not the cause. That flag is left `false` (in-memory only, never `SaveConfig`'d — it
+reverts on editor restart) because the founder-driven retry below needs it off.
+
+**State left clean:** PIE stopped, `ABP_Mannequin_Base` `is_dirty: false` (the founder reverted
+the earlier accidental recompile; T-pose confirmed gone), no asset saved, no C++ touched.
+
+**The remaining work is ~60 seconds and cannot be done from this side.** The founder presses
+Play IN the editor (not via MCP), keeps the editor foreground, and aims full up / level / full
+down while the terminal samples `aimPitch` on
+`<playerPawn>.CharacterMesh0.ABP_Mannequin_Base_C_0`. Then:
+- pitch swings ±~90 → **verdict 1**, chain alive, look at ADS pose / camera / third-person proxy;
+- pitch stays 0 with a moving control rotation → **verdict 3**, and the thing to name is now
+  known: `GetBaseAimRotation()` on the player pawn, i.e. is the Controller null at that moment,
+  or is control rotation pitch itself zero.
