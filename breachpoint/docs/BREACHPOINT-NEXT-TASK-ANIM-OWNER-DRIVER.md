@@ -1,6 +1,7 @@
 # TASK — the anim spine learns who is driving: player, bot, or nobody
 
-> STATUS: done — mac terminal 24 Aug 2026. Rung 1 PARTIAL + rung 2 PASS (30/30). Not yet PIE'd.
+> STATUS: in-progress — mac terminal 24 Aug 2026. FIRST FIX WAS WRONG AND IS SUPERSEDED; see
+> the 'correction' section at the bottom, which is the one that matters.
 
 **Cut:** 24 August 2026, from the founder's observation: *"player uses inputs for moving
 animation calls but AI has no input actions therefore they do not call moving animations."*
@@ -93,3 +94,83 @@ cosmetic there. **Needs a one-line fix in a packet that owns `Tools/`:** match
   bite whoever revives it.
 - The stale comment at `BNBotStateTreeTasks.cpp:~95` still says *"UBNAnimInstance drives the
   third-person locomotion"*. It is `UBNLAnimInstance` now. Outside this packet's owner_path.
+
+
+---
+
+## CORRECTION, same session — the first fix was wrong, and the founder caught it twice
+
+**What I shipped first did nothing, and I reported it as done.** The founder said *"ai is just
+sliding while moving"* and then *"no walking anim activated"*, and the telemetry agreed: sampling
+the live instances gave `HasAcceleration true 0/4` on a bot whose `DisplacementSpeed` was over 10.
+Two things were wrong with the original diagnosis.
+
+**Wrong thing 1 — `LastUpdateRequestedVelocity` is also zero.** It is consumed and cleared inside
+`PerformMovement` (`LastUpdateRequestedVelocity = bHasRequestedVelocity ? RequestedVelocity : Zero;
+bHasRequestedVelocity = false;`), so by the time the anim update samples it, nothing is left. The
+AI source I picked was as dead as the one I replaced.
+
+**Wrong thing 2, and the real one — nothing downstream reads the C++ field.** The founder pointed
+at the two AnimBPs directly. `ABP_ItemAnimLayersBase` keeps its OWN `HasAcceleration` /
+`HasVelocity` / `DisplacementSpeed` and fills them from 53 PropertyAccess nodes, and the relevant
+bindings, read straight out of the `.uasset`, are:
+
+```
+GetMovementComponent.GetCurrentAcceleration
+GetMovementComponent.GetLastUpdateVelocity
+```
+
+It binds **the movement component**, not `UBNLAnimInstance`. So the linked layer — which is what
+gates the walk cycle — could never have seen any value the C++ spine published. Fixing
+`UBNLAnimInstance::HasAcceleration` was fixing a field the walk animation does not consult.
+
+## The actual fix: repair the SOURCE, edit no asset
+
+`ABNCharacter`'s constructor now sets, on the character movement component:
+
+```cpp
+if (FNavMovementProperties* NavProps = MoveComp->GetNavMovementProperties())
+{
+    NavProps->bUseAccelerationForPaths = true;
+}
+```
+
+`UPathFollowingComponent::FollowPathSegment` branches on exactly this
+(`NavMovementInterface->UseAccelerationForPathFollowing()`):
+
+| flag | path following calls | populates |
+|---|---|---|
+| false (engine default) | `RequestDirectMove()` | `RequestedVelocity` only — `Acceleration` stays **zero** |
+| **true** | `RequestPathMove()` → `AddInputVector()` | `Acceleration`, the same road a player's input takes |
+
+So a bot now drives the CMC through the **same pipeline a player does**, and every consumer agrees
+at once: `UBNLAnimInstance`, `ABP_Mannequin_Base`, and `ABP_ItemAnimLayersBase`'s own PropertyAccess
+— **without touching either AnimBP**. That is why the fix belongs here and not in the graphs the
+founder pointed at: those were the right place to LOOK, and the source was the right place to fix.
+
+It is inert for players — a player-controlled pawn never runs path following.
+
+**The velocity fallback added mid-session was REMOVED.** It worked, but with the source correct it
+only bought an artifact: a bot carried by grenade knockback or a lift would have played a walk
+cycle. `ComputeHasAcceleration` is back to the two-source OR, kept solely so that turning
+`bUseAccelerationForPaths` off degrades to a stale pose rather than silently restoring the slide.
+
+## Measured, before and after
+
+Sampled off the live anim instances in solo PIE (`<actor>.CharacterMesh0.ABP_Mannequin_Base_C_0`),
+counting only frames where `DisplacementSpeed > 10`:
+
+| | HasAcceleration true while moving |
+|---|---|
+| before | **0 / 4** (one bot; every other pawn idle) |
+| after | **12 / 13**, across four different bots (4/4, 3/3, 3/3, 2/3) |
+
+The single `false` was a bot at 227 uu/s that was decelerating — zero acceleration there is
+correct, not a miss.
+
+- Rung 1: **PARTIAL** (`BreachpointEditor` clean relink; launcher install cannot link the server).
+- Rung 2: **PASS, `BreachpointNext.Sim` 30/30.**
+- **Honesty rung: the DATA is fixed and measured on the authority in solo PIE. The VISIBLE claim —
+  that a walk cycle now plays — is NOT yet confirmed by anyone's eyes, including mine.** A focused
+  viewport capture was attempted and missed the movement window. The founder reported the slide
+  twice; the founder's screen is the test that closes this.

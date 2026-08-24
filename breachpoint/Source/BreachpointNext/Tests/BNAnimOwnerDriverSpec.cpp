@@ -15,7 +15,7 @@
  * LOCAL RequestedAcceleration without ever assigning the member. So a pathing bot's
  * GetCurrentAcceleration() is exactly zero, and every bot ran at full speed in an Idle pose.
  *
- * This spec is that bug in the form it would have failed in — the second case below fails
+ * The ROOT fix lives in ABNCharacter (bUseAccelerationForPaths); what is proved here is the
  * against the old one-source read and passes against the owner-aware one.
  *
  * It can exist at all because the decision was lifted out of NativeThreadSafeUpdateAnimation
@@ -62,12 +62,15 @@ void FBNAnimOwnerDriverSpec::Define()
 
 	Describe("a bot", [this]
 	{
-		It("MOVES ON PATH FOLLOWING ALONE — the slide bug", [this]
+		It("still reports movement if bUseAccelerationForPaths is ever turned back off", [this]
 		{
-			// The whole point. Input acceleration is zero for a pathing bot; if this reads
-			// false the bot travels at full speed in an Idle pose.
+			// The SECONDARY net, not the fix. With ABNCharacter's bUseAccelerationForPaths set,
+			// a pathing bot's input acceleration is populated and this case never arises. It is
+			// kept so that flipping that flag off degrades to a stale pose rather than silently
+			// restoring the slide.
 			TestTrue(TEXT("requested velocity with zero input"), Moves(AI, Still, Pathing));
 		});
+
 
 		It("is idle when path following has stopped asking", [this]
 		{
@@ -88,6 +91,7 @@ void FBNAnimOwnerDriverSpec::Define()
 			// strictness. A corpse must not walk.
 			TestFalse(TEXT("no controller"), Moves(/*bAIControlled=*/false, Still, Pathing));
 		});
+
 	});
 }
 

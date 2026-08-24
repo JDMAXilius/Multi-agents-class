@@ -10,8 +10,17 @@
 bool UBNLAnimInstance::ComputeHasAcceleration(bool bAIControlled, const FVector& InputAcceleration,
 	const FVector& RequestedVelocity)
 {
-	// OR, not a branch: a bot that both paths AND adds input (a strafe task) must still read
-	// true, and an OR can never be less true than the single read this replaced.
+	// The ROOT fix for bot locomotion is not here — it is ABNCharacter setting
+	// bUseAccelerationForPaths, which makes path following drive AddInputVector so a bot's
+	// InputAcceleration is populated exactly like a player's. Read that comment first.
+	//
+	// This OR stays as a cheap secondary: if that flag is ever turned back off, a pathing bot
+	// still reports movement here rather than silently returning to sliding. It can never be
+	// less true than the single read it replaced.
+	//
+	// A velocity fallback was tried and REMOVED on purpose. It worked, but it made any bot that
+	// was merely being carried — grenade knockback, a lift — play a walk cycle, and once the
+	// source is correct it buys nothing but that artifact.
 	return !InputAcceleration.IsNearlyZero()
 		|| (bAIControlled && !RequestedVelocity.IsNearlyZero());
 }

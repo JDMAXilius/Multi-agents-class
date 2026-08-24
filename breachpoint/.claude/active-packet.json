@@ -4,6 +4,7 @@
     "Source/BreachpointNext/Animation/",
     "docs/BREACHPOINT-NEXT-TASK-ANIM-OWNER-DRIVER.md",
     "docs/BREACHPOINT-NEXT-TASK-AIM-LYRA-VERIFY.md",
-    "Source/BreachpointNext/Tests/"
+    "Source/BreachpointNext/Tests/",
+    "Source/BreachpointNext/Characters/"
   ]
 }

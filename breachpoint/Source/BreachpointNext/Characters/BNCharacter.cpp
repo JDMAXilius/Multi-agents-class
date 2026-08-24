@@ -169,6 +169,32 @@ ABNCharacter::ABNCharacter()
 	MoveComp->bCanWalkOffLedgesWhenCrouching = true;
 	MoveComp->AirControl = 0.5f;
 	MoveComp->BrakingDecelerationFalling = 1500.f;
+
+	// BOTS MOVE THE WAY PLAYERS DO. This one flag is why bots slid instead of walking.
+	//
+	// Path following has two modes (UPathFollowingComponent::FollowPathSegment):
+	//   false (the engine default) -> RequestDirectMove(), which sets CMC::RequestedVelocity and
+	//                                 NEVER assigns CMC::Acceleration;
+	//   true                       -> RequestPathMove() -> AddInputVector(), the exact same road
+	//                                 a player's input takes to ConsumeInputVector.
+	//
+	// Everything downstream asks GetCurrentAcceleration(): UBNLAnimInstance, and — the part that
+	// actually gates the walk cycle — ABP_ItemAnimLayersBase, which binds
+	// `GetMovementComponent.GetCurrentAcceleration` DIRECTLY through its own PropertyAccess and
+	// never reads our C++ field at all. So with the default, a pathing bot reported zero
+	// acceleration to every consumer at once and Lyra's locomotion machine held it in Idle while
+	// it travelled at 600 uu/s.
+	//
+	// Fixing it HERE rather than in either AnimBP is deliberate: it repairs the source, so the
+	// two ABPs, the linked layers and the C++ spine all agree without any of them being edited,
+	// and it needs no asset change (law 7 — C++ wherever C++ can express it).
+	//
+	// Inert for players: a player-controlled pawn never runs path following, so this flag is only
+	// ever read on a pawn an AIController is moving.
+	if (FNavMovementProperties* NavProps = MoveComp->GetNavMovementProperties())
+	{
+		NavProps->bUseAccelerationForPaths = true;
+	}
 }
 
 FRotator ABNCharacter::GetAimRotation() const
