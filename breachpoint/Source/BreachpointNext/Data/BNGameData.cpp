@@ -17,7 +17,7 @@ void UBNGameData::Initialize(FSubsystemCollectionBase& Collection)
 
 	// Same load shape as the weapon table; the soft path is ini-set on THIS class (R6 G3 3.2).
 	BotAmbitionTable = BotAmbitionsTable.LoadSynchronous();
-	BotTuningTable = BotTuningTable_Soft.LoadSynchronous();
+	BotTuningTable = BotTuningTablePath.LoadSynchronous();
 }
 
 const FBNWeaponRow* UBNGameData::FindWeaponRow(FName RowName) const

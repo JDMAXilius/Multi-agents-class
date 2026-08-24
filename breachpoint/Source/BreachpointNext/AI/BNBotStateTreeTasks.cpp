@@ -625,7 +625,9 @@ namespace
 	bool BNFindCoverPoint(const ABNBotController& Bot, const APawn& Pawn, const AActor& Threat,
 		float SearchRadius, int32 SampleCount, FVector& OutPoint)
 	{
-		const UWorld* World = Bot.GetWorld();
+		// NON-const UWorld*: FNavigationSystem::GetCurrent takes one, and the proven call in
+		// ReportMoveFailure above is the shape to copy rather than re-derive.
+		UWorld* World = Bot.GetWorld();
 		UNavigationSystemV1* NavSys = World ? FNavigationSystem::GetCurrent<UNavigationSystemV1>(World) : nullptr;
 		if (!World || !NavSys)
 		{

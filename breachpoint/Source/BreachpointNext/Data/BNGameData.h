@@ -50,7 +50,7 @@ private:
 	/** Soft, same as the ambitions table and just as optional: four tiers exist in C++ whether
 	 *  or not this asset does. */
 	UPROPERTY(Config)
-	TSoftObjectPtr<UDataTable> BotTuningTable_Soft;
+	TSoftObjectPtr<UDataTable> BotTuningTablePath;
 
 	/** Once, not per lookup: bots run on C++ default rows until the table lands. */
 	mutable bool bWarnedNoAmbitionTable = false;

@@ -216,3 +216,40 @@ an abandoned slot mid-match (R9.4 only yields seats, it does not fill them).
 re-run — it now probes for `FBNStrafeTask`, `FBNShouldTakeCoverCondition` and `FBNTakeCoverTask`,
 so a stale build stops the script instead of authoring a tree without them, and it builds
 `DT_BNBotTuning` alongside the tree and the ambitions.
+
+---
+
+## Pre-build audit — 23 August 2026
+
+Six packets stacked up unbuilt (R7.6, R7.7, R9, R9.5, R9.6, R10) while the founder was away from
+their machine. R5/R6 ran a sweep like this and it caught a real error; R7's did NOT catch the
+`FBNKillfeedEntry` / `UBNKillfeedEntry` engine-name collision, which then blocked the terminal for
+a whole session. This is that sweep, run mechanically rather than by reading.
+
+| Check | Result |
+|---|---|
+| UHT engine-name collisions (the R7 bug's exact class) across 142 module types | **0** |
+| Declarations without definitions / definitions without declarations | **0** (4 hits were namespace calls and a UHT `_Implementation`) |
+| Symbols used without their include, across every new API | **0** |
+| `FFieldNotificationClassDescriptor::X` ids referenced by widgets vs `FieldNotify` properties | **29 referenced, 29 resolve** |
+| Members the new specs touch — all must be public, a spec is nobody's friend | **all public** |
+| StateTree `FInstanceDataType`s that are real USTRUCTs; the three new nodes registered | **19/19, all three present** |
+| `DefaultGame.ini` keys with no matching UPROPERTY | **0** |
+| **HARD `BindWidget`s vs the terminal's read-back of the built WBPs** | **9/9 classes satisfied** |
+
+**ONE REAL BUG, found and fixed.** `BNFindCoverPoint` passed a `const UWorld*` to
+`FNavigationSystem::GetCurrent<>`, which takes a non-const `UWorld*` — it would not have compiled.
+The proven call four hundred lines above it in the same file (`ReportMoveFailure`) had the right
+shape and I re-derived instead of copying. That is the second time in this project that
+transcribing beat inventing, and the first time a sweep caught it before the founder did.
+
+Also renamed `BotTuningTable_Soft` → `BotTuningTablePath` before it reached an ini a designer reads.
+
+**What this sweep CANNOT tell you:** whether the engine's API surface matches what I transcribed
+(template resolution, overload sets, UHT's opinion of a specifier). It checks the module against
+ITSELF. `run-ubt.sh` is still the only thing that can say "compiles", and the specs are the highest
+risk in the stack — a spec that fails to build takes the whole editor target with it.
+
+**The BindWidget row is the most useful line in this table.** A name mismatch there fails at ASSET
+LOAD, not at build: the HUD comes up empty and nothing in the compiler log says why. All nine
+widget classes' required binds exist in the assets the terminal actually built.
