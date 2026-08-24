@@ -1,6 +1,7 @@
 # TICKET — does the Lyra aim path actually aim? (measure, change nothing)
 
-> STATUS: in-progress — mac terminal 24 Aug 2026 (9945b16). Editor live pid 2127, MCP on :8000.
+> STATUS: done — mac terminal 24 Aug 2026. VERDICT 1: the aim chain is ALIVE. Numbers in the
+> final Log entry. One sub-question left open and named there (upward pitch).
 
 **Cut:** 22 August 2026 by the cloud lead · **For:** `bn-editor` / the terminal (Unreal MCP)
 **Follows:** the founder's ruling — **Lyra locomotion only**. There is now ONE animation path,
@@ -196,3 +197,52 @@ down while the terminal samples `aimPitch` on
 - pitch stays 0 with a moving control rotation → **verdict 3**, and the thing to name is now
   known: `GetBaseAimRotation()` on the player pawn, i.e. is the Controller null at that moment,
   or is control rotation pitch itself zero.
+
+
+### 24 Aug 2026 (final) — MEASURED. Verdict shape 1.
+
+Step 2 obtained at last, on the founder's mouse, in solo PIE with the world genuinely ticking.
+Sampled off the live instance at ~4 Hz for 45s while the founder swept the view and strafed.
+
+**Finding the player pawn stopped being the hard part.** `bIsPlayerControlled`, published by the
+ANIM-OWNER-DRIVER packet earlier the same session, makes it a single field read — no controller
+walk, no guessing which of five `BP_BNCharacter_C_*` is the human. Three previous attempts lost
+time here; it is now one property.
+
+| property | min | max | swing |
+|---|---|---|---|
+| `aimPitch` | **-70.00** | +0.70 | **70.70** |
+| `aimYaw` | -99.20 | +61.60 | 160.80 |
+| `additiveLeanAngle` | -15.92 | +5.76 | 21.68 |
+
+**`aimPitch` MOVES. `aimYaw` MOVES. `additiveLeanAngle` MOVES while strafing.** That is
+**verdict shape 1**: the writer is alive and doing exactly what
+`AimPitch = NormalizeAxis(TryGetPawnOwner.GetBaseAimRotation.Pitch)` promises. The old
+"aim is broken" report is therefore NOT about a dead aim chain, and the three previous fixes that
+went hunting for one were chasing a bug that is not there.
+
+`-70.00` is not a coincidence: it is exactly `ABNPlayerCameraManager::ViewPitchMin`
+(`BNPlayerCameraManager.cpp:7`), so the downward sweep reached the clamp and the value tracked it
+all the way.
+
+**OPEN SUB-QUESTION, deliberately not closed: upward pitch is unverified.** `ViewPitchMax` is
+`+80`, but the measured maximum was `+0.70`. The most likely explanation is simply that the
+founder's sweep went down and back to level and never up — a second window asking specifically for
+an up-sweep captured only 1.92 degrees of movement, i.e. nobody was driving it, so it settles
+nothing either way. **Do not record this as a bug and do not record it as fine.** The one-line
+test: aim straight up, read `aimPitch`; it should approach `+80`. If it sticks near zero while
+`ViewPitchMin` is reachable, the clamp is asymmetric and that IS a real bug.
+
+**What is still NOT claimed.** This proves the VALUE moves. It does not prove the POSE changes —
+nobody has watched the character's aim visibly pitch. Step 3's "read the consumer" was answered
+only structurally: `ABP_Mannequin_Base` carries a `FullBody_Aiming` graph, and it is one of the
+graphs implementing the `ALI_ItemAnimLayers` interface, which is consistent with the 19 Aug audit's
+finding that the ABP feeds `RotationOffsetBlendSpace` nodes in the linked layer. The blendspace
+pins themselves were not read at runtime. If the aim ever LOOKS wrong again, start at the
+blendspace, not at the writer — the writer is now measured and exonerated.
+
+**Method note worth keeping.** Every earlier attempt failed for the same two reasons, both fixed
+here: a PIE session started through `EditorAppToolset.StartPIE` with the editor backgrounded
+reports `IsPIERunning: true` and does not tick (a flat row of zeros indistinguishable from a dead
+mechanism), and a BN match is only ~60 seconds, so any sampling window longer than that silently
+spans a match end, a post-match and a restart. Measure inside one match, with the editor focused.
