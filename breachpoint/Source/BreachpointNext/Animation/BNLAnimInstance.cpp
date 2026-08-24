@@ -5,6 +5,16 @@
 #include "Characters/BNCharacter.h"
 #include "Core/BNGameplayTags.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/Controller.h"
+
+bool UBNLAnimInstance::ComputeHasAcceleration(bool bAIControlled, const FVector& InputAcceleration,
+	const FVector& RequestedVelocity)
+{
+	// OR, not a branch: a bot that both paths AND adds input (a strafe task) must still read
+	// true, and an OR can never be less true than the single read this replaced.
+	return !InputAcceleration.IsNearlyZero()
+		|| (bAIControlled && !RequestedVelocity.IsNearlyZero());
+}
 
 void UBNLAnimInstance::ResolveOwner()
 {
@@ -19,10 +29,32 @@ void UBNLAnimInstance::ResolveOwner()
 	}
 }
 
+/** THE DYNAMIC HALF. A player and a bot reach the same CMC by different roads, and the anim
+ *  graph has to know which road to read. Cheap enough to run every frame, and it MUST run every
+ *  frame — see the header for why a cached answer is a respawn bug.
+ *
+ *  Note it deliberately asks the CONTROLLER, not the pawn's class or a spawn-time flag: a pawn
+ *  is a body, and who is holding it is a runtime fact.
+ */
+void UBNLAnimInstance::ResolveOwnerDriver()
+{
+	const AController* Controller = OwningCharacter ? OwningCharacter->GetController() : nullptr;
+
+	// Unpossessed (a corpse, or a pawn between Possess calls) is neither, and must not fall
+	// through to the player branch — an unpossessed pawn has no input and no path request.
+	bIsPlayerControlled = Controller && Controller->IsPlayerController();
+	bIsAIControlled = Controller && !Controller->IsPlayerController();
+	bLocallyControlled = OwningCharacter && OwningCharacter->IsLocallyControlled();
+	bFPSMode = bLocallyControlled && bIsPlayerControlled;
+
+	bCachedAIControlled = bIsAIControlled;
+}
+
 void UBNLAnimInstance::NativeInitializeAnimation()
 {
 	Super::NativeInitializeAnimation();
 	ResolveOwner();
+	ResolveOwnerDriver();
 	BindAbilitySystem();
 }
 
@@ -41,8 +73,11 @@ void UBNLAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		return;
 	}
 
+	ResolveOwnerDriver();
+
 	CachedVelocity = OwningMovementComponent->Velocity;
 	CachedAcceleration = OwningMovementComponent->GetCurrentAcceleration();
+	CachedRequestedVelocity = OwningMovementComponent->GetLastUpdateRequestedVelocity();
 	CachedActorRotation = OwningCharacter ? OwningCharacter->GetActorRotation() : FRotator::ZeroRotator;
 	bCachedFalling = OwningMovementComponent->IsFalling();
 	bCachedOnGround = OwningMovementComponent->IsMovingOnGround();
@@ -55,8 +90,7 @@ void UBNLAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	// The gate is the same one UBNAnimInstance uses: owner-only, and a player, never a bot.
 	if (OwningCharacter)
 	{
-		const bool bOwnerFirstPerson = OwningCharacter->IsLocallyControlled() && OwningCharacter->IsPlayerControlled();
-		ADSCameraBlend.Update(OwningCharacter->GetFirstPersonCamera(), GameplayTag_IsADS, bOwnerFirstPerson, DeltaSeconds);
+		ADSCameraBlend.Update(OwningCharacter->GetFirstPersonCamera(), GameplayTag_IsADS, bFPSMode, DeltaSeconds);
 	}
 }
 
@@ -69,7 +103,24 @@ void UBNLAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 	LocalVelocity2D = CachedActorRotation.UnrotateVector(Velocity2D);
 	DisplacementSpeed = Velocity2D.Size();
 	HasVelocity = !Velocity2D.IsNearlyZero();
-	HasAcceleration = !CachedAcceleration.IsNearlyZero();
+
+	// HasAcceleration IS NOT ONE QUESTION. Lyra's locomotion state machine leaves Idle on it, so
+	// whatever answers it has to mean "this pawn is being told to move" for every kind of owner:
+	//
+	//   player  — AddMovementInput -> ConsumeInputVector -> CMC::Acceleration. Reads correctly.
+	//   bot     — MoveTo* -> PathFollowing -> RequestDirectMove -> CMC::RequestedVelocity.
+	//             CalcVelocity applies that through a LOCAL RequestedAcceleration and never
+	//             assigns the member Acceleration, so GetCurrentAcceleration() is EXACTLY ZERO
+	//             for a pathing bot. That is why bots slid: full velocity, Idle pose, forever.
+	//   proxy   — a client's copy of anyone else. The engine already covers this in
+	//             UpdateProxyAcceleration(): unreplicated acceleration is synthesised as
+	//             Velocity.GetSafeNormal(), so the acceleration read is right there too.
+	//
+	// Which makes this an AUTHORITY-ONLY bug — it shows on the listen server and in standalone
+	// PIE, and does NOT reproduce on a remote client watching the same bot. Do not "verify" the
+	// fix from a client window and conclude anything.
+	//
+	HasAcceleration = ComputeHasAcceleration(bCachedAIControlled, CachedAcceleration, CachedRequestedVelocity);
 	IsFalling = bCachedFalling;
 	IsOnGround = bCachedOnGround;
 	isCrouching = bCachedCrouching;
