@@ -1,5 +1,7 @@
 # TICKET — does the Lyra aim path actually aim? (measure, change nothing)
 
+> STATUS: in-progress — mac terminal 24 Aug 2026 (9945b16). Editor live pid 2127, MCP on :8000.
+
 **Cut:** 22 August 2026 by the cloud lead · **For:** `bn-editor` / the terminal (Unreal MCP)
 **Follows:** the founder's ruling — **Lyra locomotion only**. There is now ONE animation path,
 which is what makes this measurable at last.
