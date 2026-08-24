@@ -104,7 +104,7 @@ breaks in front of a player.
 | Suite | What it holds down |
 |---|---|
 | `BreachpointNext.Sim.BotBrain` | The utility table, the commit window, and **the interrupt regression**: Survive's break-out was written as a utility RATIO the shipped weights could never satisfy, which left a bot at 5% health firing through its whole commit. Nothing caught it but a human reading arithmetic. The rows come from `UBNBotBrain::DefaultRow`, not from literals, so the spec cannot pass while the shipped decision drifts |
-| `BreachpointNext.Sim.Damage` | The door, entered **through the door**: init numbers, the drain, the floor at zero, the head-hit multiplier, R7.3's cause-of-death `SourceName`, and R7.4's grenade cost including GAS's own refusal at zero and the BASE clamp. A spec that poked attributes directly would prove the attribute set works and nothing about whether the game can reach it |
+| `BreachpointNext.Sim.Damage` | The door, entered **through the door**: init numbers, the drain, the floor at zero, R7.3's cause-of-death `SourceName` *and its blanking*, and R7.4's grenade cost with the BASE clamp. A spec that poked attributes directly would prove the attribute set works and nothing about whether the game can reach it. **Rewritten once** — see the note below |
 | `BreachpointNext.Sim.KillfeedView` | Dedupe by sequence (the ring replicates WHOLE — a joiner receives every entry again), the empty-line "seen but not shown" path the join-age filter depends on, and the 5-row cap that must match the pool the WBP builds |
 
 `UBNBotBrain` is testable at all only because it is headless by contract — no world, no clock, no
@@ -112,6 +112,25 @@ actors. That contract was written for R8's determinism harness; this is the firs
 
 **The world scaffolding is transcribed, not invented**: `BuildWorld` / `SpawnFighter` come from the
 old module's `BRShieldSpec`, which compiled and ran against this engine.
+
+**THE DAMAGE SPEC WAS REWRITTEN, and the reason is the point of the file.** Its first draft used
+three things this project has never compiled: `UAbilitySystemComponent::CanApplyAttributeModifiers`
+(which appeared nowhere in the repo except a comment *I* had written about it), the four-argument
+`FHitResult` constructor (BN has only ever default-constructed one), and an assertion on
+`UGameplayEffect::Modifiers` from outside the class — a member this project writes only from
+inside its own constructors, which proves it exists and proves nothing about its access.
+
+All three were written from memory. **A spec is the worst place in the codebase to guess at an
+API**: it compiles into the editor target, so a spec that does not build takes the game down with
+it — while claiming to be the thing that protects the game. The rewrite uses only what the old
+module's compiled spec used, plus what BreachpointNext itself used in the founder's last
+successful build. A mechanical sweep over all three spec files now reports **zero engine symbols
+that nothing in this repo has compiled**.
+
+The coverage that went with those APIs is NAMED IN THE FILE rather than quietly dropped: GAS's
+refusal at zero grenades, the cost GE's shape, and the head-hit multiplier are all listed as gaps
+at the bottom of `BNDamageSpec.cpp`, each with what it would have taken to keep them. The refusal
+and the multiplier are PIE read-backs in `TEST-MATCH` instead.
 
 `Tools/run-specs.sh` is the macOS runner, and it treats **zero tests as INCONCLUSIVE, never PASS** —
 a filter typo, a stale build, or specs compiled out all report "0 failures" and look like success.
