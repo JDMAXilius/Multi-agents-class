@@ -219,6 +219,90 @@ struct FBNFireBurstTask : public FStateTreeTaskCommonBase
 ////////////////////////////////////////////////////////////////////
 
 USTRUCT()
+struct FBNIncomingBlastConditionInstanceData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Context")
+	TObjectPtr<AAIController> Controller;
+};
+
+/** A grenade is about to go off inside its own blast radius of this bot. Nothing else — no
+ *  health test, no target test: a grenade at your feet outranks whatever you were doing, which
+ *  is exactly why the state that uses this sits above Engage rather than inside it. */
+USTRUCT(meta = (DisplayName = "BN Incoming Blast", Category = "BN"))
+struct FBNIncomingBlastCondition : public FStateTreeConditionCommonBase
+{
+	GENERATED_BODY()
+
+	using FInstanceDataType = FBNIncomingBlastConditionInstanceData;
+	virtual const UStruct* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
+
+	virtual bool TestCondition(FStateTreeExecutionContext& Context) const override;
+
+#if WITH_EDITOR
+	virtual FText GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting = EStateTreeNodeFormatting::Text) const override;
+#endif
+};
+
+////////////////////////////////////////////////////////////////////
+
+USTRUCT()
+struct FBNEvadeBlastTaskInstanceData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Context")
+	TObjectPtr<AAIController> Controller;
+
+	/** How far PAST the blast edge to run. Standing exactly on the radius is standing in the
+	 *  blast: the falloff is linear to zero AT the radius, so the edge still hurts. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float ClearMargin = 250.f;
+
+	/** Internal: where the bot decided to go, and whether it has left the circle. */
+	FVector EvadePoint = FVector::ZeroVector;
+	bool bMoving = false;
+};
+
+/**
+ * GET OUT OF THE WAY. The most-missed behaviour in every review of Halo: Campaign Evolved was
+ * Elites no longer dodging grenades — and BN had none of it at all.
+ *
+ * Straight AWAY from the blast, which is the move a player makes without thinking, and a JUMP on
+ * the way out for the extra distance the cooldown allows. Not toward cover: cover is a place to
+ * fight from and takes a search; this is a place to not die in and takes a direction.
+ *
+ * SUCCEEDS the moment the bot is clear, so a bot that only had to take two steps returns to the
+ * fight immediately rather than running the whole leg. FAILS when there is nowhere to run, and
+ * the tree drops back to whatever it was doing — which is the right answer to being cornered by
+ * a grenade, because there is nothing better to do about it.
+ */
+USTRUCT(meta = (DisplayName = "BN Evade Blast", Category = "BN"))
+struct FBNEvadeBlastTask : public FStateTreeTaskCommonBase
+{
+	GENERATED_BODY()
+
+	using FInstanceDataType = FBNEvadeBlastTaskInstanceData;
+	virtual const UStruct* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
+
+	FBNEvadeBlastTask()
+	{
+		bShouldCallTick = true;
+	}
+
+	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
+	virtual EStateTreeRunStatus Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const override;
+	virtual void ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
+
+#if WITH_EDITOR
+	virtual FText GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting = EStateTreeNodeFormatting::Text) const override;
+#endif
+};
+
+////////////////////////////////////////////////////////////////////
+
+USTRUCT()
 struct FBNShouldTakeCoverConditionInstanceData
 {
 	GENERATED_BODY()

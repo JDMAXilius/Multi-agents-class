@@ -571,6 +571,159 @@ FText FBNFireBurstTask::GetDescription(const FGuid& ID, FStateTreeDataView Insta
 
 ////////////////////////////////////////////////////////////////////
 
+bool FBNIncomingBlastCondition::TestCondition(FStateTreeExecutionContext& Context) const
+{
+	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	const ABNBotController* Bot = ResolveBot(Context, InstanceData.Controller);
+	const APawn* Pawn = Bot ? Bot->GetPawn() : nullptr;
+	if (!Bot || !Pawn)
+	{
+		return false;
+	}
+
+	FVector Center;
+	float Radius = 0.f;
+	if (!Bot->HasIncomingBlast(Center, Radius))
+	{
+		return false;
+	}
+
+	// Already clear of it: a bot that walked out on its own must not re-enter this state and run
+	// further for no reason. The warning stays live for anyone still inside.
+	return FVector::Dist(Pawn->GetActorLocation(), Center) <= Radius;
+}
+
+#if WITH_EDITOR
+FText FBNIncomingBlastCondition::GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting) const
+{
+	return FText::FromString("<b>BN Incoming Blast</b>");
+}
+#endif
+
+////////////////////////////////////////////////////////////////////
+
+EStateTreeRunStatus FBNEvadeBlastTask::EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
+{
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	ABNBotController* Bot = ResolveBot(Context, InstanceData.Controller);
+	const APawn* Pawn = Bot ? Bot->GetPawn() : nullptr;
+	UWorld* World = Bot ? Bot->GetWorld() : nullptr;
+	if (!Bot || !Pawn || !World)
+	{
+		return EStateTreeRunStatus::Failed;
+	}
+
+	FVector Center;
+	float Radius = 0.f;
+	if (!Bot->HasIncomingBlast(Center, Radius))
+	{
+		return EStateTreeRunStatus::Failed;
+	}
+
+	// STRAIGHT AWAY, flat. The direction a player picks without thinking, and the only one that is
+	// right regardless of geometry: every other bearing out of a circle is longer.
+	FVector Away = Pawn->GetActorLocation() - Center;
+	Away.Z = 0.f;
+	if (!Away.Normalize())
+	{
+		// Standing exactly on it. Any direction is equally good and none is better, so take the
+		// bot's own facing rather than a random draw the determinism law would object to.
+		Away = Pawn->GetActorForwardVector().GetSafeNormal2D();
+		if (Away.IsNearlyZero())
+		{
+			return EStateTreeRunStatus::Failed;
+		}
+	}
+
+	const float RunDistance = Radius + FMath::Max(0.f, InstanceData.ClearMargin);
+	const FVector Wanted = Center + Away * RunDistance;
+
+	UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(World);
+	if (!NavSys)
+	{
+		return EStateTreeRunStatus::Failed;
+	}
+
+	FNavLocation Projected;
+	if (!NavSys->ProjectPointToNavigation(Wanted, Projected, FVector(300.f, 300.f, 400.f)))
+	{
+		// Nowhere to run — cornered by a grenade, which happens and has no better answer than
+		// carrying on with whatever the bot was doing.
+		UE_LOG(LogBN, Verbose, TEXT("BNBots: %s is cornered by a grenade and cannot get clear."),
+			*GetNameSafe(Pawn));
+		return EStateTreeRunStatus::Failed;
+	}
+
+	InstanceData.EvadePoint = Projected.Location;
+	if (Bot->MoveToLocation(InstanceData.EvadePoint, /*AcceptanceRadius=*/50.f) == EPathFollowingRequestResult::Failed)
+	{
+		return EStateTreeRunStatus::Failed;
+	}
+	InstanceData.bMoving = true;
+
+	// A jump on the way out: it is what the cooldown is for, it covers ground the walk does not,
+	// and it is the read a player recognises instantly as "it saw that coming".
+	Bot->TryJump();
+
+	UE_LOG(LogBN, Verbose, TEXT("BNBots: %s is diving away from a grenade."), *GetNameSafe(Pawn));
+	return EStateTreeRunStatus::Running;
+}
+
+EStateTreeRunStatus FBNEvadeBlastTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
+{
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	const ABNBotController* Bot = ResolveBot(Context, InstanceData.Controller);
+	const APawn* Pawn = Bot ? Bot->GetPawn() : nullptr;
+	if (!Bot || !Pawn)
+	{
+		return EStateTreeRunStatus::Failed;
+	}
+
+	FVector Center;
+	float Radius = 0.f;
+	if (!Bot->HasIncomingBlast(Center, Radius))
+	{
+		// It went off, or the window passed. Either way there is nothing left to run from, and
+		// succeeding sends the bot straight back to the fight.
+		return EStateTreeRunStatus::Succeeded;
+	}
+
+	// CLEAR IS ENOUGH. A bot that only had to take two steps goes back to fighting rather than
+	// running the whole leg — the difference between reacting and fleeing.
+	if (FVector::Dist(Pawn->GetActorLocation(), Center) > Radius)
+	{
+		return EStateTreeRunStatus::Succeeded;
+	}
+
+	// Still inside and the path has given up: nothing more this task can do, and holding the
+	// state would only keep the bot standing in the blast looking busy.
+	if (Bot->GetMoveStatus() == EPathFollowingStatus::Idle && InstanceData.bMoving)
+	{
+		return EStateTreeRunStatus::Failed;
+	}
+
+	return EStateTreeRunStatus::Running;
+}
+
+void FBNEvadeBlastTask::ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
+{
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	InstanceData.bMoving = false;
+	if (ABNBotController* Bot = ResolveBot(Context, InstanceData.Controller))
+	{
+		Bot->StopMovement();
+	}
+}
+
+#if WITH_EDITOR
+FText FBNEvadeBlastTask::GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting) const
+{
+	return FText::FromString("<b>BN Evade Blast</b>");
+}
+#endif
+
+////////////////////////////////////////////////////////////////////
+
 bool FBNShouldTakeCoverCondition::TestCondition(FStateTreeExecutionContext& Context) const
 {
 	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);

@@ -57,6 +57,21 @@ protected:
 	/** Authority only. Overlap, dedupe, line-of-sight, falloff, one GE per survivor. */
 	void Explode();
 
+	/**
+	 * R10.4 — TELL THE BOTS, a beat before the bang. The single most-missed behaviour in every
+	 * review of Halo: Campaign Evolved was Elites no longer dodging grenades, and BN had none of
+	 * it: we threw grenades and nothing reacted to one landing at its feet.
+	 *
+	 * PUSHED from the grenade, not polled by the bots (law 4). One overlap on one timer, and only
+	 * the bots actually inside the blast radius ever hear about it — a poll would have every bot
+	 * in the level asking every evaluation whether anything is about to explode.
+	 *
+	 * The warning is sent from the grenade's CURRENT position, which is where it will detonate
+	 * unless it is still rolling. A grenade still in the air warns about where it is, and the bot
+	 * that moves out of that circle has done the right thing either way.
+	 */
+	void WarnNearbyBots();
+
 	/** The bang, sent from the PROJECTILE rather than routed through the thrower's ASC — that route
 	 *  early-returns wherever the thrower's AvatarActor is null on the receiving machine, so an
 	 *  observer who had culled the thrower would take the blast in silence. This actor is relevant
@@ -96,6 +111,12 @@ protected:
 	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Projectile")
 	float Radius = 500.f;
 
+	/** How long before the bang the bots are told. Long enough to cross the radius at walking
+	 *  speed, short enough that a bot does not abandon a fight over a grenade thrown elsewhere:
+	 *  at 600uu/s, 1.2s covers 720uu against a 500uu radius. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Projectile")
+	float BotWarnLeadSeconds = 1.2f;
+
 	/** A wall stops a blast. Server-side, same discipline as the fire confirm trace — without it
 	 *  a grenade on the far side of cover kills through it. */
 	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Projectile")
@@ -112,4 +133,7 @@ protected:
 	TSoftObjectPtr<UFXSystemAsset> TrailEffect;
 
 	FTimerHandle FuseTimer;
+
+	/** The bot warning's own timer — see WarnNearbyBots. */
+	FTimerHandle WarnTimer;
 };

@@ -82,6 +82,18 @@ public:
 	 */
 	bool TryJump();
 
+	/**
+	 * R10.4 — A GRENADE IS ABOUT TO GO OFF HERE. Pushed by ABNProjectile a beat before its fuse,
+	 * to the bots inside the blast radius and nobody else.
+	 *
+	 * The bot does NOT learn who threw it and does not acquire a target from it: this is a place
+	 * to not be standing, and nothing more. Everything about how to leave is the tree's.
+	 */
+	void NotifyIncomingBlast(const FVector& Center, double DetonateAtSeconds, float BlastRadius);
+
+	/** True while a warned blast has not yet gone off. Out params are the circle to leave. */
+	bool HasIncomingBlast(FVector& OutCenter, float& OutRadius) const;
+
 	/** R10 — health as the brain sees it, 0..1, or 1 when there is nothing to ask. Public because
 	 *  the cover condition needs the same number the brain scores on, and two ways of computing
 	 *  "how hurt am I" would disagree on the frame that matters. */
@@ -221,6 +233,12 @@ protected:
 
 	/** Counter, not a clock: it is the seeded stream's sequence number for this controller. */
 	int32 ReactionDrawCount = 0;
+
+	// R10.4 — the warned blast. Cleared by time alone: the projectile that warned us may be
+	// destroyed before we act, so nothing here may hold a pointer to it.
+	FVector IncomingBlastCenter = FVector::ZeroVector;
+	double IncomingBlastAtSeconds = -1.0;
+	float IncomingBlastRadius = 0.f;
 
 	/** How long after breaking line of sight before this bot is willing to do it again. */
 	UPROPERTY(Config, EditDefaultsOnly, Category = "Bot|Cover")

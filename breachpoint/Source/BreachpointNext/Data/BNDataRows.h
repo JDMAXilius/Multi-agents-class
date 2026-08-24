@@ -96,6 +96,11 @@ struct FBNBotTuningRow : public FTableRowBase
 
 	UPROPERTY(EditAnywhere, Category = "Movement")
 	int32 JukeEveryNthStep = 3;
+
+	/** Does this tier get out of the way of a grenade (R10.4)? Halo's shape: the low tiers are
+	 *  the ones you can catch with one, and a Recruit that dodges is not a Recruit. */
+	UPROPERTY(EditAnywhere, Category = "Movement")
+	bool bEvadesBlasts = true;
 };
 
 USTRUCT(BlueprintType)

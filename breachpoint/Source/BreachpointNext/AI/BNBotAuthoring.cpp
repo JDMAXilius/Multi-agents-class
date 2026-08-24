@@ -139,6 +139,17 @@ FString UBNBotAuthoring::BuildBotStateTree()
 
 	UStateTreeState& Root = EditorData->AddRootState();
 
+	// ---- Evade: something is about to explode where I am standing --------------------------
+	// ABOVE Engage, and that ordering is the whole design: a grenade at your feet outranks having
+	// a target, being hurt, and everything else, because none of those matter in a second. It
+	// needs no health or target condition for the same reason.
+	UStateTreeState& Evade = Root.AddChildState(TEXT("Evade"));
+	Evade.AddEnterCondition<FBNIncomingBlastCondition>();
+	Evade.AddTask<FBNEvadeBlastTask>();
+	AddCompletionTransition(Evade, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
+	// No delay on failure either — cornered by a grenade means get back to fighting NOW.
+	AddCompletionTransition(Evade, Root, EStateTreeTransitionTrigger::OnStateFailed, 0.f);
+
 	// ---- Engage: there is someone to kill -------------------------------------------------
 	UStateTreeState& Engage = Root.AddChildState(TEXT("Engage"));
 	Engage.AddEnterCondition<FBNHasTargetCondition>();
@@ -262,7 +273,7 @@ FString UBNBotAuthoring::BuildBotStateTree()
 	// A level with no points fails this instantly; the delay is what keeps that cheap and quiet.
 	AddCompletionTransition(Roam, Root, EStateTreeTransitionTrigger::OnStateFailed, 2.0f);
 
-	Report.Add(TEXT("states     : Root > [Engage > [Rearm, Arm, Nade, Knife, Cover, Close, Shoot(+strafe)], Search, Roam]"));
+	Report.Add(TEXT("states     : Root > [Evade, Engage > [Rearm, Arm, Nade, Knife, Cover, Close, Shoot(+strafe)], Search, Roam]"));
 
 	// An uncompiled StateTree runs NOTHING — the asset would exist, the ini would resolve, and
 	// every bot would still stand still. This is the step that turns editor data into bytecode.

@@ -204,6 +204,37 @@ bands, height) EQS earns its place; picking a wall does not need it.
 - The hold at the end is what makes it read as cover rather than a pathing twitch — and it is the
   window a shield would use, the day shields come back on.
 
+## 10.4 — get out of the way of a grenade
+
+The single most-cited missing behaviour in every review of Halo: Campaign Evolved was **Elites no
+longer dodging grenades**. BN had none of it at all: we threw grenades and nothing reacted to one
+landing at its feet — including the bot that threw it.
+
+**PUSHED, not polled** (law 4). `ABNProjectile` arms a second timer `BotWarnLeadSeconds` before its
+fuse, does ONE overlap at the blast's own radius, and tells only the bots actually inside it. A
+poll would have had every bot in the level asking every evaluation whether anything was about to
+explode. The warning carries a place and a deadline and nothing else — **no thrower, no target**:
+this is a place to not be standing, and the bot learns nothing about who put it there.
+
+**`Evade` sits ABOVE `Engage` in the tree**, and that ordering is the whole design. It needs no
+health condition and no target condition, because a grenade at your feet outranks having a target,
+being hurt, and everything else — none of them matter in a second.
+
+- **Straight away, flat.** The move a player makes without thinking, and the only bearing that is
+  right regardless of geometry: every other way out of a circle is longer.
+- **Past the edge, not to it** — the falloff is linear to zero AT the radius, so standing exactly
+  on the line still hurts.
+- **A jump on the way out.** What the cooldown is for, ground the walk does not cover, and the
+  read a player recognises instantly as *it saw that coming*.
+- **Clear is enough.** A bot that only had to take two steps returns to the fight immediately
+  rather than running the whole leg — the difference between reacting and fleeing.
+- **Cornered fails**, and the tree goes back to what it was doing. There is no better answer to
+  being cornered by a grenade than carrying on.
+- **The soonest warning wins**: a second grenade must not push the deadline out from under a bot
+  already running from the first.
+- **Recruit does not dodge** (`bEvadesBlasts`). Halo's own shape — the low tiers are the ones you
+  can catch with a grenade, and taking that away takes away the tier.
+
 ## Still missing, against Infinite
 
 Weapon pickups and power weapons (no pickups exist in BN at all) · per-weapon range preference ·
@@ -212,8 +243,9 @@ target leading for projectiles · shield-break → headshot discipline (no shiel
 NavLinkProxies) · vehicles · objective play (BN has one mode) · voice callouts · a bot taking over
 an abandoned slot mid-match (R9.4 only yields seats, it does not fill them).
 
-**NEEDS THE EDITOR:** two new StateTree nodes and a new table. `Tools/bn/62_bot_assets.py` must be
-re-run — it now probes for `FBNStrafeTask`, `FBNShouldTakeCoverCondition` and `FBNTakeCoverTask`,
+**NEEDS THE EDITOR:** FOUR new StateTree nodes and a new table. `Tools/bn/62_bot_assets.py` must be
+re-run — it now probes for `FBNStrafeTask`, `FBNShouldTakeCoverCondition`, `FBNTakeCoverTask`,
+`FBNIncomingBlastCondition` and `FBNEvadeBlastTask`,
 so a stale build stops the script instead of authoring a tree without them, and it builds
 `DT_BNBotTuning` alongside the tree and the ambitions.
 

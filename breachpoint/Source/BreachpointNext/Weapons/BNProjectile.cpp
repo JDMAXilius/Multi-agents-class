@@ -1,5 +1,6 @@
 #include "Weapons/BNProjectile.h"
 
+#include "AI/BNBotController.h"
 #include "AbilitySystem/Effects/BNDamage.h"
 #include "Perception/AISense_Hearing.h"
 #include "BreachpointNext.h"
@@ -99,7 +100,61 @@ void ABNProjectile::BeginPlay()
 	// different instant and the two would disagree about who was inside the radius.
 	if (HasAuthority())
 	{
-		GetWorldTimerManager().SetTimer(FuseTimer, this, &ABNProjectile::Explode, FMath::Max(FuseTime, 0.05f), /*bLoop=*/false);
+		const float Fuse = FMath::Max(FuseTime, 0.05f);
+		GetWorldTimerManager().SetTimer(FuseTimer, this, &ABNProjectile::Explode, Fuse, /*bLoop=*/false);
+
+		// R10.4 — the bots get told a beat before the bang. Armed on the SAME clock as the fuse
+		// and never after it: a warning that arrives with the explosion is not a warning.
+		const float WarnAt = Fuse - FMath::Max(0.f, BotWarnLeadSeconds);
+		if (WarnAt > 0.05f)
+		{
+			GetWorldTimerManager().SetTimer(WarnTimer, this, &ABNProjectile::WarnNearbyBots, WarnAt, /*bLoop=*/false);
+		}
+		else
+		{
+			// A fuse shorter than the lead time: warn immediately rather than not at all. Nobody
+			// dodges it, but the bots at least react like something is happening.
+			WarnNearbyBots();
+		}
+	}
+}
+
+void ABNProjectile::WarnNearbyBots()
+{
+	UWorld* World = GetWorld();
+	if (!HasAuthority() || !World)
+	{
+		return;
+	}
+
+	const FVector Center = GetActorLocation();
+	const double DetonateAt = World->GetTimeSeconds() + GetWorldTimerManager().GetTimerRemaining(FuseTimer);
+
+	// THE BLAST'S OWN RADIUS is the danger zone — the same number the damage uses, so a bot is
+	// warned exactly when it would have been hurt. Same overlap shape as Explode below it; no
+	// line-of-sight test, deliberately: a bot on the far side of a wall is not in danger, but
+	// stepping away from a wall a grenade is about to go off behind is not wrong either, and
+	// paying for a trace per bot to prevent a harmless move is a poor trade.
+	TArray<FOverlapResult> Overlaps;
+	World->OverlapMultiByChannel(
+		Overlaps, Center, FQuat::Identity, ECC_Pawn, FCollisionShape::MakeSphere(Radius));
+
+	TSet<AActor*> Warned;
+	for (const FOverlapResult& Overlap : Overlaps)
+	{
+		AActor* Target = Overlap.GetActor();
+		if (!IsValid(Target) || Warned.Contains(Target))
+		{
+			continue;
+		}
+		Warned.Add(Target);
+
+		const APawn* Pawn = Cast<APawn>(Target);
+		ABNBotController* Bot = Pawn ? Cast<ABNBotController>(Pawn->GetController()) : nullptr;
+		if (Bot)
+		{
+			Bot->NotifyIncomingBlast(Center, DetonateAt, Radius);
+		}
 	}
 }
 
@@ -240,5 +295,6 @@ void ABNProjectile::MulticastExplosion_Implementation(const FVector Center)
 void ABNProjectile::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	GetWorldTimerManager().ClearTimer(FuseTimer);
+	GetWorldTimerManager().ClearTimer(WarnTimer);
 	Super::EndPlay(EndPlayReason);
 }

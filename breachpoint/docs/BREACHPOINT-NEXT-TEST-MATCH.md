@@ -193,6 +193,14 @@ table. Its probe list stops the script on a stale build rather than authoring a 
     (`wanted cover and found none`). A bot that shuttles in and out of cover repeatedly is the
     cooldown not holding.
 
+12. **Grenades (R10.4).** Throw one at a bot's feet: it must MOVE — away from the grenade, with
+    a jump, about a second before the bang. `LogBN` Verbose: `sees a grenade about to go off` then
+    `is diving away from a grenade`. A bot that only had to take two steps should come straight
+    back at you rather than running off. A bot boxed into a corner keeps fighting instead
+    (`is cornered by a grenade`). **`BotTier=Recruit` must NOT dodge** — that is the tier working,
+    not a bug. And a bot that dodges a grenade thrown at someone else across the room means the
+    warn radius is reading wider than the blast.
+
 ## 6. Known and accepted
 
 - ~~`MinPlayers` is only enforced on the session's FIRST match~~ — **closed 19 Aug 2026** by the

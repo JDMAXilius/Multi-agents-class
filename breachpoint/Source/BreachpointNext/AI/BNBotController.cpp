@@ -550,6 +550,7 @@ FBNBotTuningRow ABNBotController::DefaultTuning(FName TierName)
 		Row.JumpCooldownSeconds = 6.f;
 		Row.StrafeIntervalSeconds = 2.2f;
 		Row.JukeEveryNthStep = 0;   // never jumps in a fight
+		Row.bEvadesBlasts = false;  // and you can catch it with a grenade
 	}
 	else if (TierName == FName(TEXT("ODST")))
 	{
@@ -650,6 +651,48 @@ const FBNBotTuningRow& ABNBotController::GetTuning() const
 	// it: a task that asks early gets Marine, which is the shipped behaviour.
 	static const FBNBotTuningRow Fallback;
 	return Tuning.IsValid() ? *Tuning : Fallback;
+}
+
+void ABNBotController::NotifyIncomingBlast(const FVector& Center, double DetonateAtSeconds, float BlastRadius)
+{
+	// TIERED: a Recruit does not dodge grenades, and that is the tier doing its job rather than a
+	// bot failing at one. It is also Halo's own shape — the low tiers are the ones you can catch
+	// with a grenade, and taking that away is taking away the tier.
+	if (!GetTuning().bEvadesBlasts)
+	{
+		return;
+	}
+
+	// The SOONEST warning wins. Two grenades means the one about to go off is the emergency, and
+	// a later one must not push the deadline out from under a bot already running.
+	if (IncomingBlastAtSeconds > 0.0 && DetonateAtSeconds > IncomingBlastAtSeconds)
+	{
+		const UWorld* World = GetWorld();
+		if (World && World->GetTimeSeconds() < IncomingBlastAtSeconds)
+		{
+			return;
+		}
+	}
+
+	IncomingBlastCenter = Center;
+	IncomingBlastAtSeconds = DetonateAtSeconds;
+	IncomingBlastRadius = FMath::Max(0.f, BlastRadius);
+
+	UE_LOG(LogBN, Verbose, TEXT("BNBots: %s sees a grenade about to go off %.0fuu away."),
+		*GetNameSafe(GetPawn()),
+		GetPawn() ? FVector::Dist(GetPawn()->GetActorLocation(), Center) : 0.f);
+}
+
+bool ABNBotController::HasIncomingBlast(FVector& OutCenter, float& OutRadius) const
+{
+	const UWorld* World = GetWorld();
+	if (!World || IncomingBlastAtSeconds <= 0.0 || World->GetTimeSeconds() >= IncomingBlastAtSeconds)
+	{
+		return false;
+	}
+	OutCenter = IncomingBlastCenter;
+	OutRadius = IncomingBlastRadius;
+	return true;
 }
 
 float ABNBotController::GetHealthNorm() const
