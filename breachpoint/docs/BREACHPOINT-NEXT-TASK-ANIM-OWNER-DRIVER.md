@@ -1,7 +1,8 @@
 # TASK — the anim spine learns who is driving: player, bot, or nobody
 
-> STATUS: in-progress — mac terminal 24 Aug 2026. FIRST FIX WAS WRONG AND IS SUPERSEDED; see
-> the 'correction' section at the bottom, which is the one that matters.
+> STATUS: done — mac terminal 24 Aug 2026. Rung 1 PARTIAL, rung 2 PASS 30/30, and CONFIRMED
+> ON SCREEN by the founder ("it work!"). The first fix in this ticket was wrong and is
+> superseded — read the 'correction' section at the bottom, not the top.
 
 **Cut:** 24 August 2026, from the founder's observation: *"player uses inputs for moving
 animation calls but AI has no input actions therefore they do not call moving animations."*
@@ -174,3 +175,21 @@ correct, not a miss.
   that a walk cycle now plays — is NOT yet confirmed by anyone's eyes, including mine.** A focused
   viewport capture was attempted and missed the movement window. The founder reported the slide
   twice; the founder's screen is the test that closes this.
+
+
+### 24 Aug 2026 — CLOSED. Confirmed on screen.
+
+The founder watched bots in solo PIE after the `bUseAccelerationForPaths` fix and confirmed the
+walk cycle plays. **Honesty rung reached: PIE, solo, observed by a human.** Still NOT claimed:
+listen-server with a second client, dedicated, or packaged.
+
+Reminder for whoever verifies this next, because it is counter-intuitive: this fault was
+**authority-only**. `UpdateProxyAcceleration()` synthesises acceleration from velocity for
+simulated proxies, so a client watching a bot never saw the slide. A "it looks fine on the
+client" report would have been true and useless.
+
+**What this session cost, recorded so the next one is cheaper:** two wrong fixes shipped before
+the right one, both because I reasoned about which value *should* feed the animation instead of
+reading what the consumer actually binds. The `.uasset` said
+`GetMovementComponent.GetCurrentAcceleration` in plain text and `strings` found it in seconds.
+**Read the binding before fixing the producer.**
