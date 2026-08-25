@@ -156,6 +156,7 @@ void ABNBotController::OnUnPossess()
 	// the speed GE and the Sprinting tag on the PERSISTENT PlayerState ASC, which outlives the
 	// body — the same shape as the jump-tag leak UBNGA_Jump guards against.
 	SetSprinting(false);
+	SetCrouching(false);
 
 	APawn* PreviousPawn = GetPawn();
 
@@ -281,6 +282,34 @@ bool ABNBotController::HasLineOfSightToTarget() const
 	LosCachedAtSeconds = Now;
 	bLosCachedResult = bResult;
 	return bResult;
+}
+
+void ABNBotController::SetCrouching(bool bWantCrouch)
+{
+	const ACharacter* Character = Cast<ACharacter>(GetPawn());
+	if (!Character)
+	{
+		return;
+	}
+
+	// Mid-air the toggle only ever UNcrouches (UBNGA_Crouch's own guard), so asking for a crouch
+	// while falling would silently do the opposite of what the caller wanted.
+	const UCharacterMovementComponent* Move = Character->GetCharacterMovement();
+	if (bWantCrouch && Move && Move->IsFalling())
+	{
+		return;
+	}
+
+	// Compare against the ENGINE's replicated crouch state rather than a bool of our own: the
+	// ability, a landing, or an uncrouch forced by a low ceiling can all change it behind us, and
+	// a private mirror would drift out of step and then press at exactly the wrong moment.
+	if (Character->bIsCrouched == bWantCrouch)
+	{
+		return;
+	}
+
+	PressInputTag(BNTags::Input_Crouch);
+	ReleaseInputTag(BNTags::Input_Crouch);
 }
 
 void ABNBotController::SetSprinting(bool bWantSprint)

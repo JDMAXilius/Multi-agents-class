@@ -700,6 +700,14 @@ struct FBNSelectWeaponTaskInstanceData
 
 	int32 SwapsMade = 0;
 	float SecondsUntilNextSwap = 0.f;
+	/** Set on entry: was there a target to measure a range against? A warmup rearm has none. */
+	UPROPERTY()
+	bool bHasRangeToScore = false;
+
+	/** The distance every carried weapon is scored at, sampled once on entry so a bot does not
+	 *  change its mind about which gun it wants while it is mid-swap. */
+	UPROPERTY()
+	float ScoreDistance = 0.f;
 };
 
 /** Change weapon: press Input.Weapon.Next until the held weapon can actually shoot — rounds in

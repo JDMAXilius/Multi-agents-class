@@ -45,6 +45,12 @@ public:
 	 *  mid-thought. Idempotent: repeat calls with the same value do nothing. */
 	void SetSprinting(bool bWantSprint);
 
+	/** Crouch is a TOGGLE, not a hold: UBNGA_Crouch flips (!bIsCrouched && !IsFalling). So this
+	 *  reads the character's REAL crouch state and presses only when it disagrees — a task that
+	 *  "pressed crouch" every tick would flap the bot up and down once a frame. Refuses while
+	 *  falling, because mid-air the toggle only ever UNcrouches. */
+	void SetCrouching(bool bWantCrouch);
+
 	/** Null when the target is gone or dead — callers never see a corpse as a target. Null ALSO
 	 *  while the ambition is Survive: the tree's Engage exits by its own HasTarget condition,
 	 *  which is how the brain steers the tree without editing it. */

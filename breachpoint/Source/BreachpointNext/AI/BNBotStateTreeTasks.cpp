@@ -1,4 +1,6 @@
 #include "AI/BNBotStateTreeTasks.h"
+#include "Characters/BNCharacter.h"
+#include "Weapons/BNEquipmentComponent.h"
 
 #include "AbilitySystem/Attributes/BNAttributeSet.h"
 
@@ -922,6 +924,11 @@ EStateTreeRunStatus FBNTakeCoverTask::Tick(FStateTreeExecutionContext& Context, 
 		}
 		InstanceData.bArrived = true;
 		Bot->StopMovement();
+		// AND GET SMALL. Cover was a bot standing still behind a wall at full height; crouching is
+		// what makes the wall actually cover it, and it is the read a player recognises instantly
+		// as "it is hiding" rather than "it is stuck". Toggle-safe: SetCrouching compares against
+		// the engine's crouch state, so calling it every tick presses nothing after the first.
+		Bot->SetCrouching(true);
 	}
 
 	// HOLD. The beat that makes this read as cover rather than as a pathing twitch — and the
@@ -935,6 +942,9 @@ void FBNTakeCoverTask::ExitState(FStateTreeExecutionContext& Context, const FSta
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	if (ABNBotController* Bot = ResolveBot(Context, InstanceData.Controller))
 	{
+		// Stand before leaving. A bot that walks out of cover still crouched is a slow bot in the
+		// open, which is the worst of both.
+		Bot->SetCrouching(false);
 		Bot->StopMovement();
 	}
 }
@@ -1333,6 +1343,12 @@ EStateTreeRunStatus FBNReloadTask::EnterState(FStateTreeExecutionContext& Contex
 	InstanceData.AmmoAtStart = Weapon->GetCurrentAmmo();
 	InstanceData.SecondsElapsed = 0.f;
 
+	// RELOAD SMALL. The most dangerous seconds a bot has are the ones where it cannot shoot back,
+	// and a reload is the only moment it chooses to spend them. Crouching for the duration is
+	// what a player does, and it is legible: a crouched bot with its hands busy reads as
+	// "reloading" from across the arena.
+	Bot->SetCrouching(true);
+
 	// The human's R key is one tap: press activates, release clears the held flag so the next
 	// reload is a fresh press rather than an input the ASC still believes is down.
 	Bot->PressInputTag(BNTags::Input_Weapon_Reload);
@@ -1388,6 +1404,107 @@ namespace
 	{
 		return Weapon && (Weapon->HasAmmo() || Weapon->GetAmmoReserve() > 0);
 	}
+
+	/** What this weapon is WORTH at this distance, in expected damage per second.
+	 *
+	 *  Every term is read from the weapon's own shipped row — the same numbers BNDamage uses to
+	 *  resolve a hit — so the bot's opinion of a gun can never disagree with what the gun
+	 *  actually does. Retuning a shotgun's falloff in the table retunes when bots choose it, with
+	 *  no AI change and nothing to keep in sync. That is the whole point of scoring rather than
+	 *  hardcoding "shotgun is the close-range one".
+	 *
+	 *  Zero means "do not bring this to this fight": out of ammo, or beyond its hard Range.
+	 */
+	float ScoreWeaponAtRange(const ABNWeapon* Weapon, float Distance)
+	{
+		if (!WeaponCanFight(Weapon))
+		{
+			return 0.f;
+		}
+
+		const FBNWeaponRow* Row = Weapon->GetRow();
+		if (!Row)
+		{
+			return 0.f;
+		}
+
+		// A row with no AbilitySet cannot fire at all (the Knife). It is never the answer to a
+		// ranged question, and Knife's own melee state owns the case where it is.
+		if (Row->Range > 0.f && Distance > Row->Range)
+		{
+			return 0.f;
+		}
+
+		// The shipped falloff curve, evaluated exactly as the damage pipeline evaluates it:
+		// full damage inside FalloffStart, lerping to FalloffMinMultiplier at FalloffEnd, and
+		// flat at the minimum beyond. A shotgun's curve is what makes it score badly at 2000uu
+		// without anyone writing the word "shotgun" here.
+		float Falloff = 1.f;
+		if (Row->FalloffEndDistance > Row->FalloffStartDistance && Distance > Row->FalloffStartDistance)
+		{
+			const float Alpha = FMath::Clamp(
+				(Distance - Row->FalloffStartDistance) / (Row->FalloffEndDistance - Row->FalloffStartDistance),
+				0.f, 1.f);
+			Falloff = FMath::Lerp(1.f, FMath::Clamp(Row->FalloffMinMultiplier, 0.f, 1.f), Alpha);
+		}
+
+		const float PerPull = FMath::Max(0.f, Row->Damage) * FMath::Max(1, Row->ShotCount) * Falloff;
+		const float Interval = FMath::Max(0.05f, Row->FireDelay);
+		float Score = PerPull / Interval;
+
+		// A magazine already in the gun beats a magazine in a pouch: swapping to something that
+		// must be reloaded before it can shoot is a worse answer than it looks on damage alone.
+		if (!Weapon->HasAmmo())
+		{
+			Score *= 0.5f;
+		}
+
+		return Score;
+	}
+
+	/** The carried weapon with the best score at this distance, or null if nothing can fight.
+	 *  Read-only: the swap itself still happens by pressing Input.Weapon.Next, exactly as a
+	 *  human's does. Nothing here writes CurrentIndex. */
+	const ABNWeapon* BestWeaponForRange(const ABNBotController* Bot, float Distance)
+	{
+		const APawn* Pawn = Bot ? Bot->GetPawn() : nullptr;
+		const ABNCharacter* Character = Cast<ABNCharacter>(Pawn);
+		const UBNEquipmentComponent* Equipment = Character ? Character->GetEquipmentComponent() : nullptr;
+		if (!Equipment)
+		{
+			return nullptr;
+		}
+
+		const ABNWeapon* Best = nullptr;
+		float BestScore = 0.f;
+		for (const TObjectPtr<ABNWeapon>& Candidate : Equipment->GetWeapons())
+		{
+			const float Score = ScoreWeaponAtRange(Candidate, Distance);
+			if (Score > BestScore)
+			{
+				BestScore = Score;
+				Best = Candidate;
+			}
+		}
+		return Best;
+	}
+
+	/** Are we holding what we should be holding? With a target that means "the best-scoring
+	 *  carried weapon at this range"; without one it falls back to "anything that can fight". */
+	bool WeaponSelectionSatisfied(const ABNBotController* Bot, const FBNSelectWeaponTaskInstanceData& Data)
+	{
+		const ABNWeapon* Current = Bot ? Bot->GetCurrentWeapon() : nullptr;
+		if (!Data.bHasRangeToScore)
+		{
+			return WeaponCanFight(Current);
+		}
+
+		const ABNWeapon* Best = BestWeaponForRange(Bot, Data.ScoreDistance);
+		// Nothing carried can fight at all: settle for whatever is in hand rather than pressing
+		// Next forever. The task's own swap cap would stop it, but failing loudly is not the
+		// answer to "you have no good option".
+		return Best == nullptr ? WeaponCanFight(Current) : (Current == Best);
+	}
 }
 
 EStateTreeRunStatus FBNSelectWeaponTask::EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
@@ -1403,7 +1520,19 @@ EStateTreeRunStatus FBNSelectWeaponTask::EnterState(FStateTreeExecutionContext& 
 	InstanceData.SecondsUntilNextSwap = 0.f;
 
 	// Already holding something that can fight: nothing to change. The common case costs no swap.
-	if (WeaponCanFight(Bot->GetCurrentWeapon()))
+	// THE RIGHT GUN, not merely a loaded one. Selection used to ask WeaponCanFight — "does this
+	// have bullets" — so a bot that happened to be holding a shotgun fought at 2000uu with it and
+	// never reconsidered. Now it asks which carried weapon scores highest AT THE CURRENT RANGE,
+	// and swaps toward that. With no target (a warmup rearm) there is no range to score against,
+	// so the old question is still the right one.
+	const AActor* Target = Bot->GetCurrentTarget();
+	const APawn* SelfPawn = Bot->GetPawn();
+	InstanceData.bHasRangeToScore = (Target != nullptr && SelfPawn != nullptr);
+	InstanceData.ScoreDistance = InstanceData.bHasRangeToScore
+		? FVector::Dist(SelfPawn->GetActorLocation(), Target->GetActorLocation())
+		: 0.f;
+
+	if (WeaponSelectionSatisfied(Bot, InstanceData))
 	{
 		return EStateTreeRunStatus::Succeeded;
 	}
@@ -1420,10 +1549,15 @@ EStateTreeRunStatus FBNSelectWeaponTask::Tick(FStateTreeExecutionContext& Contex
 		return EStateTreeRunStatus::Failed;
 	}
 
-	if (WeaponCanFight(Bot->GetCurrentWeapon()))
+	if (WeaponSelectionSatisfied(Bot, InstanceData))
 	{
-		UE_LOG(LogBN, Verbose, TEXT("BNBots: swapped to %s after %d press(es)."),
-			*GetNameSafe(Bot->GetCurrentWeapon()), InstanceData.SwapsMade);
+		const ABNWeapon* Held = Bot->GetCurrentWeapon();
+		const FBNWeaponRow* HeldRow = Held ? Held->GetRow() : nullptr;
+		UE_LOG(LogBN, Verbose, TEXT("BNBots: %s settled on '%s' (score %.0f) after %d press(es) at %.0fuu."),
+			*GetNameSafe(Bot->GetPawn()),
+			Held ? *Held->GetRowName().ToString() : TEXT("none"),
+			ScoreWeaponAtRange(Held, InstanceData.ScoreDistance),
+			InstanceData.SwapsMade, InstanceData.ScoreDistance);
 		return EStateTreeRunStatus::Succeeded;
 	}
 

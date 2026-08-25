@@ -40,6 +40,12 @@ public:
 
 	ABNWeapon* GetCurrentWeapon() const;
 
+	/** Read-only view of what is carried, so a chooser can compare weapons instead of cycling
+	 *  blind. Added for the bot weapon scorer; const on purpose — selection happens through
+	 *  Input.Weapon.Next like a human's, never by writing CurrentIndex. */
+	const TArray<TObjectPtr<ABNWeapon>>& GetWeapons() const { return Weapons; }
+	int32 GetCurrentIndex() const { return CurrentIndex; }
+
 	/** R7.3 — WHAT ONE SWAP PRESS GIVES YOU, which is the only honest reading of "stowed" in a
 	 *  five-slot carry (the design's chassis holds two). Shares GetNextIndex with EquipNext
 	 *  deliberately: a HUD that promises a weapon the swap does not deliver is worse than no
