@@ -151,160 +151,23 @@ a filter typo, a stale build, or specs compiled out all report "0 failures" and 
 
 ---
 
-# R10 — WHAT HALO'S BOTS HAVE THAT OURS DID NOT
+# R10 — MOVED
 
-**Cut:** 23 August 2026 · **Status:** LANDED (written, not compiled)
+R10 (tiers, ears, cover) and R10.4 (grenade evasion) were written into THIS file because they
+began as an extension of R9's reaction work. That was wrong: a reader looking for R10 looks for
+`ROADMAP-10`, and the terminal had to reconstruct the design from commit bodies on 24 Aug to
+write one.
 
-Three gaps, picked off the Halo Infinite feature audit by value per line: difficulty tiers,
-hearing, and cover. What Infinite still has and BN does not is at the bottom.
+**The page is `docs/BREACHPOINT-NEXT-ROADMAP-10.md`.** It is the single source for R10, it
+carries the ladder state, and it carries the blocker: the C++ compiles and the behaviour is
+SWITCHED OFF until `ST_BNBot` is rebuilt (`TICKET_BN10_BOT_ASSETS`). The duplicate that stood
+here has been removed rather than left to drift out of step with it.
 
-## 10.1 — four tiers, because a tier is not a skill slider
+## Pre-build audit — 23 August 2026 (kept in ROADMAP-10)
 
-Every bot in BN fought identically. Infinite's Recruit / Marine / ODST / Spartan move reaction,
-aim, awareness and movement **together** — a Recruit that only aims worse reads as a broken
-Spartan rather than a rookie, which is the whole reason the row has nine numbers instead of one.
+Six packets stacked up unbuilt while the founder was away, and a mechanical sweep over all of
+them caught one real compile error — a `const UWorld*` passed to `FNavigationSystem::GetCurrent<>`
+in the cover search, re-derived instead of copied from the proven call in the same file.
 
-`FBNBotTuningRow` keyed by tier name, `BotTier` on the controller, resolved once in `OnPossess`
-(so a GameMode may later hand different tiers to different bots for a mixed lobby).
-
-**The numbers already existed** — scattered as per-controller Config keys. They moved onto the row
-and the keys are gone, because a difficulty setting that cannot change them is not one, and
-keeping both would be two sources of truth for one number.
-
-**MARINE IS THE FOUNDER'S ARENA TUNING, kept exactly.** Sight 1200/1500 was lowered from the
-engine defaults for a measured reason: at 2500/3000 a bot could see most of `BR_Arena01` from
-where it stood, so every bot always had a target, the tree never left Engage, Search was
-unreachable and nobody roamed. **Every tier is scaled around those numbers, not around the
-defaults they replaced** — my first draft had Spartan at 4000, which would have recreated that
-exact bug and called it difficulty.
-
-Aim and footwork reach the tasks through an OVERRIDE rule: a negative authored parameter means
-"ask the tier", zero still means hitscan-perfect, and a positive value is a deliberate per-state
-pin the tree keeps. That is what lets a tier change how a bot fights without re-authoring the
-StateTree.
-
-Spartan's aim error is deliberately **not zero**. A bot that never misses is not hard, it is
-unfair; what makes a Spartan hard is the reaction window and the footwork.
-
-## 10.2 — ears
-
-Bots were deaf. R9.2 gave them a reaction to being *hit*; a firefight ten metres away was silent,
-and you could clear a room next door without anyone looking up.
-
-A hearing sense beside the sight one, with **sight kept dominant** (seeing beats hearing when both
-report the same actor), and the two things worth hearing now report themselves: **every shot**
-(from `ApplyCost`, which runs once per trigger pull on the authority for humans and bots alike —
-the same place ammo is spent, so a shotgun's pellets are one noise) and **every grenade blast**.
-
-**A noise is a PLACE, never a target.** It stamps the last-known position and Search walks the bot
-over to look. A bot that acquired you through a wall because you fired would be omniscient, and it
-would skip the reaction window that makes a firefight readable.
-
-`HearingRange` is a tier number and is deliberately **longer than sight** — you hear a fight
-through a wall you cannot see through, and that asymmetry is most of what makes a level feel
-occupied. Zero deafens a tier, which is part of what makes Recruit flankable.
-
-## 10.3 — cover
-
-The behaviour Infinite gets free from its shield economy: hurt, under fire, so stop standing in
-the open. BN's shields are off by ruling, so the trigger is said out loud instead — **health below
-60% AND `State.Combat.RecentDamage` AND off cooldown.** All three, because a bot chipped once ten
-seconds ago diving for cover mid-fight reads as cowardice, not tactics.
-
-**No EQS, deliberately.** A rosette of eight navmesh-projected samples, each traced back at the
-threat on the **weapon channel**, answers the only question cover asks — *can this spot be shot
-from where they are standing* — using the same geometry the bullets use. EQS would ask it more
-expensively and no more truthfully. The day BN wants *scored* cover (flanking angles, distance
-bands, height) EQS earns its place; picking a wall does not need it.
-
-- **Closest blocking spot wins**, not the best one: a bot that crosses the arena to a better wall
-  spends the trip being shot in the back.
-- **Failing is a real answer.** An open arena has no cover, and dropping through to Close/Shoot is
-  correct when the only option left is to fight.
-- The cooldown lives on the CONTROLLER and is spent on the **attempt**, not the arrival — a state
-  cooldown resets every time the tree re-selects, and a bot that re-enters cover the instant it
-  leaves never shoots back.
-- The hold at the end is what makes it read as cover rather than a pathing twitch — and it is the
-  window a shield would use, the day shields come back on.
-
-## 10.4 — get out of the way of a grenade
-
-The single most-cited missing behaviour in every review of Halo: Campaign Evolved was **Elites no
-longer dodging grenades**. BN had none of it at all: we threw grenades and nothing reacted to one
-landing at its feet — including the bot that threw it.
-
-**PUSHED, not polled** (law 4). `ABNProjectile` arms a second timer `BotWarnLeadSeconds` before its
-fuse, does ONE overlap at the blast's own radius, and tells only the bots actually inside it. A
-poll would have had every bot in the level asking every evaluation whether anything was about to
-explode. The warning carries a place and a deadline and nothing else — **no thrower, no target**:
-this is a place to not be standing, and the bot learns nothing about who put it there.
-
-**`Evade` sits ABOVE `Engage` in the tree**, and that ordering is the whole design. It needs no
-health condition and no target condition, because a grenade at your feet outranks having a target,
-being hurt, and everything else — none of them matter in a second.
-
-- **Straight away, flat.** The move a player makes without thinking, and the only bearing that is
-  right regardless of geometry: every other way out of a circle is longer.
-- **Past the edge, not to it** — the falloff is linear to zero AT the radius, so standing exactly
-  on the line still hurts.
-- **A jump on the way out.** What the cooldown is for, ground the walk does not cover, and the
-  read a player recognises instantly as *it saw that coming*.
-- **Clear is enough.** A bot that only had to take two steps returns to the fight immediately
-  rather than running the whole leg — the difference between reacting and fleeing.
-- **Cornered fails**, and the tree goes back to what it was doing. There is no better answer to
-  being cornered by a grenade than carrying on.
-- **The soonest warning wins**: a second grenade must not push the deadline out from under a bot
-  already running from the first.
-- **Recruit does not dodge** (`bEvadesBlasts`). Halo's own shape — the low tiers are the ones you
-  can catch with a grenade, and taking that away takes away the tier.
-
-## Still missing, against Infinite
-
-Weapon pickups and power weapons (no pickups exist in BN at all) · per-weapon range preference ·
-target leading for projectiles · shield-break → headshot discipline (no shields yet) · crouch
-(`UBNGA_Crouch` exists; nothing presses it) · clamber and nav-link gap jumps (level work —
-NavLinkProxies) · vehicles · objective play (BN has one mode) · voice callouts · a bot taking over
-an abandoned slot mid-match (R9.4 only yields seats, it does not fill them).
-
-**NEEDS THE EDITOR:** FOUR new StateTree nodes and a new table. `Tools/bn/62_bot_assets.py` must be
-re-run — it now probes for `FBNStrafeTask`, `FBNShouldTakeCoverCondition`, `FBNTakeCoverTask`,
-`FBNIncomingBlastCondition` and `FBNEvadeBlastTask`,
-so a stale build stops the script instead of authoring a tree without them, and it builds
-`DT_BNBotTuning` alongside the tree and the ambitions.
-
----
-
-## Pre-build audit — 23 August 2026
-
-Six packets stacked up unbuilt (R7.6, R7.7, R9, R9.5, R9.6, R10) while the founder was away from
-their machine. R5/R6 ran a sweep like this and it caught a real error; R7's did NOT catch the
-`FBNKillfeedEntry` / `UBNKillfeedEntry` engine-name collision, which then blocked the terminal for
-a whole session. This is that sweep, run mechanically rather than by reading.
-
-| Check | Result |
-|---|---|
-| UHT engine-name collisions (the R7 bug's exact class) across 142 module types | **0** |
-| Declarations without definitions / definitions without declarations | **0** (4 hits were namespace calls and a UHT `_Implementation`) |
-| Symbols used without their include, across every new API | **0** |
-| `FFieldNotificationClassDescriptor::X` ids referenced by widgets vs `FieldNotify` properties | **29 referenced, 29 resolve** |
-| Members the new specs touch — all must be public, a spec is nobody's friend | **all public** |
-| StateTree `FInstanceDataType`s that are real USTRUCTs; the three new nodes registered | **19/19, all three present** |
-| `DefaultGame.ini` keys with no matching UPROPERTY | **0** |
-| **HARD `BindWidget`s vs the terminal's read-back of the built WBPs** | **9/9 classes satisfied** |
-
-**ONE REAL BUG, found and fixed.** `BNFindCoverPoint` passed a `const UWorld*` to
-`FNavigationSystem::GetCurrent<>`, which takes a non-const `UWorld*` — it would not have compiled.
-The proven call four hundred lines above it in the same file (`ReportMoveFailure`) had the right
-shape and I re-derived instead of copying. That is the second time in this project that
-transcribing beat inventing, and the first time a sweep caught it before the founder did.
-
-Also renamed `BotTuningTable_Soft` → `BotTuningTablePath` before it reached an ini a designer reads.
-
-**What this sweep CANNOT tell you:** whether the engine's API surface matches what I transcribed
-(template resolution, overload sets, UHT's opinion of a specifier). It checks the module against
-ITSELF. `run-ubt.sh` is still the only thing that can say "compiles", and the specs are the highest
-risk in the stack — a spec that fails to build takes the whole editor target with it.
-
-**The BindWidget row is the most useful line in this table.** A name mismatch there fails at ASSET
-LOAD, not at build: the HUD comes up empty and nothing in the compiler log says why. All nine
-widget classes' required binds exist in the assets the terminal actually built.
+**The full table lives in `docs/BREACHPOINT-NEXT-ROADMAP-10.md`**, under "The pre-build audit —
+worth keeping as a method". One copy, and it is the one the terminal maintains.

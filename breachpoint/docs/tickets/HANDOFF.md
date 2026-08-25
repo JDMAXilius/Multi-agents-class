@@ -27,6 +27,34 @@
 
 ---
 
+> ## UPDATE — 24 August 2026: BN work is ON THIS BOARD now
+>
+> **The defect this fixes:** `/tickets list` globs `docs/tickets/*.md` and nothing else, while
+> every BreachpointNext ticket has lived at `docs/BREACHPOINT-NEXT-TASK-*.md` since R2. So BN
+> work has never appeared on the board at all. Two consequences, both real and both recent:
+>
+> 1. The terminal has been claiming BN work under invented names — `active-packet.json` on
+>    24 Aug read `BREACHPOINT-NEXT-TASK-TOOLING-AND-R10-DOCS`, a ticket that does not exist as a
+>    file. A claim that names no file cannot be listed, handed over, or closed.
+> 2. **R10's blocker went undetected for two days.** Four packets of bot behaviour were
+>    compiled and switched off (a stale `ST_BNBot`), and the only place that said so was a
+>    roadmap page nobody was told to read. It was found by the terminal reading `docs/` on its
+>    own initiative, which is not a process.
+>
+> **From now on: BN tickets are cut into `docs/tickets/` as `TICKET_BN<n>_<NAME>.md`**, in the
+> template every other ticket uses, with a `requires:` line so the board says up front whether a
+> session can even take it (`files-only` / `engine-installed` / `editor-live`).
+>
+> The older `docs/BREACHPOINT-NEXT-TASK-*.md` files are NOT being moved — their Logs are the
+> record of what was measured and when, and rewriting that history to tidy a folder would be a
+> worse trade than the untidiness. Treat them as **closed or historical**; anything still live
+> from one of them gets a new ticket here that names it.
+>
+> **Open BN tickets as of 24 Aug:** `TICKET_BN10_BOT_ASSETS` (editor-live — the R10 blocker, and
+> the highest-value action outstanding) and `TICKET_BN11_HUD_SLOTS` (editor-live, additive).
+
+---
+
 > **NAMES CHANGED 4 Aug 2026, after this document was written.** `UBRMenuRow` is now
 > `UBRButton`, `EBRMenuRowType` is `EBRButtonType`, and `BRMenuRow.h` / `BRSettingsRow.h` /
 > `BRButtonStyles.h` / `BRHighlightButton.h` are one file: `Components/BRButton.h`. The old

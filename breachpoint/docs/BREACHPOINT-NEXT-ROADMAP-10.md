@@ -39,6 +39,10 @@ python Tools/bn/62_bot_assets.py build    # author + compile + read back
 the new nodes. Requires `editor-live`. **This is the highest-value single action outstanding in
 the BN track** — four packets' worth of behaviour is written, compiled, and switched off.
 
+**It is now a ticket on the board: `docs/tickets/TICKET_BN10_BOT_ASSETS.md`.** It was found by
+reading `docs/`, which is not a process — see the 24 Aug entry in `docs/tickets/HANDOFF.md`
+for why BN tickets now live where `/tickets list` can actually see them.
+
 ## 10.1 — four tiers
 
 Every bot fought identically. **Recruit / Marine / ODST / Spartan** move reaction, aim, awareness
