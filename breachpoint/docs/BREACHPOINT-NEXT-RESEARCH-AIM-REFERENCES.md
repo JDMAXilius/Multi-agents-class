@@ -105,7 +105,7 @@ Benefit: the entire class of bug we have been hunting stops existing.
 ## Ruling
 
 **14 Aug 2026, founder: "Do all."** The default-owner recommendation is executed:
-[TASK-AIM-NATIVE-OWNER](BREACHPOINT-NEXT-TASK-AIM-NATIVE-OWNER.md) flips the ABP default
+[TASK-AIM-NATIVE-OWNER](archive/BREACHPOINT-NEXT-TASK-AIM-NATIVE-OWNER.md) flips the ABP default
 back to native (one checkbox, terminal) and executes the shotgun/knife DT rows in the same
 pass. The Mesh1P escape hatch stays PARKED — it was recorded as last resort and abandons the
 full-body first person; it activates only on an explicit founder call after the native path

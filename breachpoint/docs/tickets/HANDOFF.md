@@ -45,10 +45,12 @@
 > template every other ticket uses, with a `requires:` line so the board says up front whether a
 > session can even take it (`files-only` / `engine-installed` / `editor-live`).
 >
-> The older `docs/BREACHPOINT-NEXT-TASK-*.md` files are NOT being moved — their Logs are the
-> record of what was measured and when, and rewriting that history to tidy a folder would be a
-> worse trade than the untidiness. Treat them as **closed or historical**; anything still live
-> from one of them gets a new ticket here that names it.
+> **CORRECTED 25 Aug 2026.** This block originally said the older
+> `docs/BREACHPOINT-NEXT-TASK-*.md` files were NOT being moved. They have since been moved, at
+> the founder's request, to **`docs/archive/`** — all seventeen, by `git mv`, so every Log and
+> every line of history is intact and `git log --follow` still reaches it. Nothing was rewritten;
+> only the folder changed. Treat them as **closed or historical**; anything still live from one
+> of them gets a new ticket here that names it.
 >
 > **Open BN tickets as of 24 Aug:** `TICKET_BN10_BOT_ASSETS` (editor-live — the R10 blocker, and
 > the highest-value action outstanding) and `TICKET_BN11_HUD_SLOTS` (editor-live, additive).

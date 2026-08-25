@@ -1,5 +1,9 @@
 # TICKET — Equipment: slots, the weapon instance, and pickups
 
+> **ARCHIVED 25 Aug 2026** — moved off the live board, contents untouched below.
+> SUPERSEDED by BreachpointNext R1-R10. This ticket describes in `Source/Breachpoint/` what `Source/BreachpointNext/` has since built and shipped.
+> Reversible: `git mv` kept the history, `git log --follow` still reaches it.
+>
 > STATUS: open — cut 7 Aug 2026. Blocked on BP96 DONE. Gates BP98.
 > **Folder name depends on D-2** (`Weapons/` vs `Equipment/`) — settled in BP90.
 

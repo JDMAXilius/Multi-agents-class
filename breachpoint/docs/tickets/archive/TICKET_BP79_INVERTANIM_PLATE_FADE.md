@@ -1,5 +1,9 @@
 # TICKET — Author `InvertAnim` so the Menu Row plate fades instead of popping
 
+> **ARCHIVED 25 Aug 2026** — moved off the live board, contents untouched below.
+> SUPERSEDED — old-module (`Source/Breachpoint/`) UI polish. BreachpointNext owns the HUD; the live UI ticket is `TICKET_BN11_HUD_SLOTS`.
+> Reversible: `git mv` kept the history, `git log --follow` still reaches it.
+>
 > STATUS: open — cut by lead, 4 Aug 2026. Needs a live editor and a human; no MCP toolset can
 > author a widget animation. Everything else is already landed and waiting on this one asset edit.
 

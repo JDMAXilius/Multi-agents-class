@@ -1,5 +1,9 @@
 # TICKET — BP81: back-fill the 43 missing UI glyphs from Figma
 
+> **ARCHIVED 25 Aug 2026** — moved off the live board, contents untouched below.
+> SUPERSEDED — old-module glyph backfill. BN's icon path is the `Icon` column of `DT_BNWeapons`, read by tray, feed and death screen alike.
+> Reversible: `git mv` kept the history, `git log --follow` still reaches it.
+>
 > STATUS: blocked — windows terminal 5 Aug 2026 (cead6d9). **41 exported, 96 imported, 55 → 96
 > assets.** Done via the Figma MCP; the token never landed and was not needed. Claim RELEASED so
 > BP82 can take the rung-1 unblock recorded in this ticket's contract_gap. Outstanding: the two

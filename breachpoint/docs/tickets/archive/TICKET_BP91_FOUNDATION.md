@@ -1,5 +1,9 @@
 # TICKET — Core vocabulary and the data layer: tags, logs, teams, row structs, BRGameData
 
+> **ARCHIVED 25 Aug 2026** — moved off the live board, contents untouched below.
+> SUPERSEDED by BreachpointNext R1-R10. This ticket describes in `Source/Breachpoint/` what `Source/BreachpointNext/` has since built and shipped.
+> Reversible: `git mv` kept the history, `git log --follow` still reaches it.
+>
 > STATUS: open — PAUSED 14 Aug 2026 mid-step-5, steps 1-4 landed; resume at the reimport (see Log)
 > STATUS: open — cut 7 Aug 2026. Blocked on BP90 DONE. Runs in parallel with BP92.
 

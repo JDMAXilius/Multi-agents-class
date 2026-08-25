@@ -3,7 +3,7 @@
     python Tools/bn/60_dt_bot_ambitions.py apply    # create + converge + save
     python Tools/bn/60_dt_bot_ambitions.py audit    # read-back diff, intent vs actual
 
-Ticket: docs/BREACHPOINT-NEXT-TASK-R6-DT-AMBITIONS.md
+Ticket: docs/archive/BREACHPOINT-NEXT-TASK-R6-DT-AMBITIONS.md
 
 Unlike the other Tools/bn scripts this one does NOT import `unreal` and is not run with
 the editor's `py` command. It drives a RUNNING editor over the Unreal MCP server's raw

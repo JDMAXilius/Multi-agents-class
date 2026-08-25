@@ -1,5 +1,9 @@
 # TICKET — The pawn is a body: BRCharacter and the CMC subclass
 
+> **ARCHIVED 25 Aug 2026** — moved off the live board, contents untouched below.
+> SUPERSEDED by BreachpointNext R1-R10. This ticket describes in `Source/Breachpoint/` what `Source/BreachpointNext/` has since built and shipped.
+> Reversible: `git mv` kept the history, `git log --follow` still reaches it.
+>
 > STATUS: open — cut 7 Aug 2026. Blocked on BP95 DONE. First rung-4b packet.
 
 Founder directive: the pawn is a body, not a brain. It owns meshes, the GAS init dance, and

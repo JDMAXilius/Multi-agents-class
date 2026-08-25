@@ -1,5 +1,9 @@
 # TICKET — Sprint, jump, and melee: the movement-state pattern and the notify-window trace
 
+> **ARCHIVED 25 Aug 2026** — moved off the live board, contents untouched below.
+> SUPERSEDED by BreachpointNext R1-R10. This ticket describes in `Source/Breachpoint/` what `Source/BreachpointNext/` has since built and shipped.
+> Reversible: `git mv` kept the history, `git log --follow` still reaches it.
+>
 > STATUS: open — cut 7 Aug 2026. Blocked on BP99 DONE (the game is playable first).
 
 Founder directive: sprint is the pattern-prover. It shows that a movement *state* is a GAS

@@ -3,7 +3,7 @@
     python Tools/bn/61_st_bnbot.py apply    # place/converge the 4 POIs, save, probe the tree
     python Tools/bn/61_st_bnbot.py audit    # read-back diff, intent vs actual
 
-Ticket: docs/BREACHPOINT-NEXT-TASK-R5-ST-BNBOT.md (Step 2 verify, Step 3 POIs, Step 4 read-back)
+Ticket: docs/archive/BREACHPOINT-NEXT-TASK-R5-ST-BNBOT.md (Step 2 verify, Step 3 POIs, Step 4 read-back)
 
 Like Tools/bn/60_dt_bot_ambitions.py and UNLIKE the older Tools/bn scripts, this one does NOT
 import `unreal`. It drives a RUNNING editor over the Unreal MCP server's raw HTTP JSON-RPC

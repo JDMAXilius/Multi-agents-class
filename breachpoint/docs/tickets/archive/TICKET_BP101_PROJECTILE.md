@@ -1,5 +1,9 @@
 # TICKET — The projectile: time-parameterized flight, owner-local prediction, and the grenade
 
+> **ARCHIVED 25 Aug 2026** — moved off the live board, contents untouched below.
+> SUPERSEDED by BreachpointNext R1-R10. This ticket describes in `Source/Breachpoint/` what `Source/BreachpointNext/` has since built and shipped.
+> Reversible: `git mv` kept the history, `git log --follow` still reaches it.
+>
 > STATUS: open — cut 7 Aug 2026. Blocked on BP100 DONE. **D-1 (the Tick exception) applies.**
 
 Founder directive: a networked projectile that replicates its transform is a laggy projectile.

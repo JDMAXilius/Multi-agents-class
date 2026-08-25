@@ -1,5 +1,9 @@
 # TICKET — BP80: Archive 27, delete 5, build 9 — the button module's editor half
 
+> **ARCHIVED 25 Aug 2026** — moved off the live board, contents untouched below.
+> PARTIALLY LANDED, then blocked. Steps 1-6 shipped `Source/Breachpoint/UI/Components/BRButton.{h,cpp}` and `Content/UI/Widgets/Buttons/WBP_Button_Default.uasset` — **both still exist and are exactly the button atom BN11's pause-row gap wants**. The four unticked boxes need a SOURCE-BUILT engine, which this machine does not have and will not get.
+> Reversible: `git mv` kept the history, `git log --follow` still reaches it.
+>
 > STATUS: in-progress — mac terminal 5 Aug 2026 (0102b79). **Steps 1–6 DONE** (compile, archive 27,
 > delete 5, rebuild 9, art delete re-cut against the registry). **5 of 9 boxes ticked.** The four
 > open ones are each blocked on something this machine cannot supply: all-three-targets needs a

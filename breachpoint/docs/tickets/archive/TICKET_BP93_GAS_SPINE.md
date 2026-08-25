@@ -1,5 +1,9 @@
 # TICKET — The GAS spine: ASC, AttributeSet, AbilitySet, ability base, the eight generic effects
 
+> **ARCHIVED 25 Aug 2026** — moved off the live board, contents untouched below.
+> SUPERSEDED by BreachpointNext R1-R10. This ticket describes in `Source/Breachpoint/` what `Source/BreachpointNext/` has since built and shipped.
+> Reversible: `git mv` kept the history, `git log --follow` still reaches it.
+>
 > STATUS: open — cut 7 Aug 2026. Blocked on BP91 + BP92 DONE. Gates BP94 and everything above.
 
 Founder directive: this is the trust line. Every purity law in `contracts/gas-purity.md`

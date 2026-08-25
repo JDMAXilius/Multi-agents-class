@@ -1,5 +1,9 @@
 # TICKET — BP82: Read the FPS template's character + AnimInstance, and land the C++ spine
 
+> **ARCHIVED 25 Aug 2026** — moved off the live board, contents untouched below.
+> SUPERSEDED — old-module anim spine. BN's animation seam is `UBNAnimInstance` (dormant) plus the FPSTemplate ABP, and retiring that pair is its own open question, not this ticket.
+> Reversible: `git mv` kept the history, `git log --follow` still reaches it.
+>
 > STATUS: in-progress — mac terminal 8 Aug 2026 (772dade). Editor live, MCP reachable on :8000.
 
 > **AMENDMENT — founder call, 8 Aug 2026: the spine lands in a NEW `Source/Breachpoint/FPS/`,

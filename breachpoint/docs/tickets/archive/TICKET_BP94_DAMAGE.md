@@ -1,5 +1,9 @@
 # TICKET — The one damage door: BRDamage, the exec calc, and the cue handlers
 
+> **ARCHIVED 25 Aug 2026** — moved off the live board, contents untouched below.
+> SUPERSEDED by BreachpointNext R1-R10. This ticket describes in `Source/Breachpoint/` what `Source/BreachpointNext/` has since built and shipped.
+> Reversible: `git mv` kept the history, `git log --follow` still reaches it.
+>
 > STATUS: open — cut 7 Aug 2026. Blocked on BP93 DONE. Gates every packet that deals damage.
 
 Founder directive: purity law 3 says one damage pipeline. The reference audit showed what a

@@ -1,5 +1,9 @@
 # TICKET — The fire path: predicted hitscan, server validation, reload and swap
 
+> **ARCHIVED 25 Aug 2026** — moved off the live board, contents untouched below.
+> SUPERSEDED by BreachpointNext R1-R10. This ticket describes in `Source/Breachpoint/` what `Source/BreachpointNext/` has since built and shipped.
+> Reversible: `git mv` kept the history, `git log --follow` still reaches it.
+>
 > STATUS: open — cut 7 Aug 2026. Blocked on BP97 DONE. **The golden-triangle packet.**
 
 Founder directive: this is the shot heard on three machines. It must be predicted (it has to
