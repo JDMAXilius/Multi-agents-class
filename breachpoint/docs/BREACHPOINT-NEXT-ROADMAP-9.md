@@ -1,6 +1,10 @@
 # ROADMAP 9 — THE BOTS FEEL LIKE PEOPLE
 
-**Cut:** 23 August 2026 by the cloud lead · **Status:** LANDED (written, not compiled)
+**Cut:** 23 August 2026 by the cloud lead · **Status:** LANDED and **COMPILED** (24 Aug 2026,
+mac terminal — rung 1 PASS for `BreachpointEditor`, rung 2 PASS 30/30). The header said
+"written, not compiled" until 24 Aug; it was true when written and is not any more.
+**Caveat:** R9's `FBNStrafeTask` is NOT in the compiled `ST_BNBot` — see
+`BREACHPOINT-NEXT-ROADMAP-10.md`, "THE BLOCKER".
 **Numbering:** R8 was TEAMS, landed and then **reverted** at the founder's call — it changed
 what solo PIE looks like while the HUD was being verified. Its history is intact at `a284ef5`;
 reverting the revert restores it. R9 is the next thing, not a renumber.

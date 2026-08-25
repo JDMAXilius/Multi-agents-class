@@ -83,7 +83,12 @@ if [[ ! -f "$ENGINE_ROOT/Engine/Build/SourceDistribution.txt" ]]; then
   echo "!! WARNING: LAUNCHER INSTALL (no SourceDistribution.txt). It ships no server"
   echo "!! binaries - BreachpointServer is EXPECTED to fail. See Tools/env.local.example."
 fi
-if pgrep -f "UnrealEditor" >/dev/null 2>&1; then
+# An editor holding THIS project, not the substring "UnrealEditor". macOS auto-launches
+# ~/Library/Services/UnrealEditorServices.app, whose process name contains "UnrealEditor" and
+# which is not an editor at all — so the bare pattern reported "an editor is already running"
+# on a machine with NO editor open, and this gate could never pass. Matching the .uproject on
+# the command line is what separates a real editor session from the Finder helper.
+if pgrep -f "UnrealEditor(-Cmd)?.*$(basename "$UPROJECT")" >/dev/null 2>&1; then
   echo "!! WARNING: an Unreal editor is running. It holds"
   echo "!! libUnrealEditor-Breachpoint.dylib open; the editor target link may fail."
 fi

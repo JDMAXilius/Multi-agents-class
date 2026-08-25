@@ -38,7 +38,12 @@ UPROJECT="$REPO_ROOT/Breachpoint.uproject"
 [[ -f "$UPROJECT" ]] || blocked "Breachpoint.uproject not found at $UPROJECT"
 
 # --- R21's rule, for the same reason: editor state is global -------------------------
-if pgrep -f "UnrealEditor" >/dev/null 2>&1; then
+# An editor holding THIS project, not the substring "UnrealEditor". macOS auto-launches
+# ~/Library/Services/UnrealEditorServices.app, whose process name contains "UnrealEditor" and
+# which is not an editor at all — so the bare pattern reported "an editor is already running"
+# on a machine with NO editor open, and this gate could never pass. Matching the .uproject on
+# the command line is what separates a real editor session from the Finder helper.
+if pgrep -f "UnrealEditor(-Cmd)?.*$(basename "$UPROJECT")" >/dev/null 2>&1; then
   blocked "An UnrealEditor process is already running." \
           "Automation runs headless against the same project state; close the editor first."
 fi
