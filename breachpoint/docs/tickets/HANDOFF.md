@@ -55,6 +55,13 @@
 > **Open BN tickets as of 24 Aug:** `TICKET_BN10_BOT_ASSETS` (editor-live — the R10 blocker, and
 > the highest-value action outstanding) and `TICKET_BN11_HUD_SLOTS` (editor-live, additive).
 >
+> **Added 25 Aug:** `TICKET_BN12_NAVLINK_PROBE` (**engine-installed, no editor**) — two engine
+> questions that gate all bot traversal work: the fields of `FNavLinkGenerationJumpDownConfig`,
+> and whether `ARecastNavMesh::GetDebugGeometry` is callable from a non-editor target. Founder
+> ruling 25 Aug: bots derive traversal **from the navmesh**, and **nothing is placed in the level**
+> beyond the nav bounds volume. BN12 writes no code — it answers and stops, and BN13 cannot be
+> written honestly until its Log exists.
+>
 > **All seventeen old BN task docs were audited the same day and every one is CLOSED.** Five had
 > no status line at all — `AIM-GRAPH-AUDIT`, `CUE-BLUEPRINTS`, `HIT-REACTIONS`,
 > `R3-W3-MELEE-GRENADE`, `R7-WBP-HUD` — so their state was unknowable at a glance even though
