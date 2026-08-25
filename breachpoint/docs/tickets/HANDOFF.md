@@ -76,6 +76,23 @@
 
 ---
 
+> ## UPDATE — 25 Aug 2026: the AIBOT track exists, with its own crew
+>
+> Founder directive: rework the bot AI **from scratch** as a self-contained module
+> `Source/AIBot/` (prefix `AIB`, log `LogAIBot`) — Halo Infinite's bot architecture 1:1,
+> plugin-shaped, with BreachpointNext as test harness only. The roadmap, prime decisions,
+> phases, five proofs and file tree are `docs/AIBOT-ROADMAP.md` — read that before touching
+> anything AIB. The BN bot track (`Source/BreachpointNext/AI/`) stays live behind the
+> coming `BotSystem=AIB|BN` switch until AIB beats it in an A/B match.
+>
+> **New crew, one owner per artifact:** `aib-builder` (Source/AIBot/ only, boundary grep is
+> law), `aib-critic` (containment · fairness · utility pathologies · server-only; opus),
+> `aib-editor` (Content/AIBot/ + Tools/aib/, probe gates build), `aib-verifier` (specs, PIE
+> counting protocols, the A/B match). The adapter folder
+> `Source/BreachpointNext/AIBotAdapter/` is **bn-builder's**, not aib-builder's.
+
+---
+
 > **NAMES CHANGED 4 Aug 2026, after this document was written.** `UBRMenuRow` is now
 > `UBRButton`, `EBRMenuRowType` is `EBRButtonType`, and `BRMenuRow.h` / `BRSettingsRow.h` /
 > `BRButtonStyles.h` / `BRHighlightButton.h` are one file: `Components/BRButton.h`. The old
