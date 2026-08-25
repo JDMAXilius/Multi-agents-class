@@ -90,6 +90,11 @@
 > `aib-editor` (Content/AIBot/ + Tools/aib/, probe gates build), `aib-verifier` (specs, PIE
 > counting protocols, the A/B match). The adapter folder
 > `Source/BreachpointNext/AIBotAdapter/` is **bn-builder's**, not aib-builder's.
+>
+> **Wave dispatch is standing doctrine** (`docs/AIBOT-WAVES.md`, 25 Aug): reads parallelize,
+> writes serialize unless the packet names disjoint file lists; aib-editor is wave-exempt
+> (editor state is global); every wave ends at a barrier with a real merge step. The wave
+> map is phase-by-phase in that doc — Phase 4's four skill policies are the W-BUILD showcase.
 
 ---
 

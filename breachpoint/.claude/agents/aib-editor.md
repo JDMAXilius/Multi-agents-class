@@ -30,6 +30,12 @@ state is its projection. You run against a LIVE editor via MCP, from tickets.
 - Scripts are committed, idempotent, and re-runnable; a second run converges,
   never duplicates. One `.uasset` owner per ticket; read-backs before claims.
 
+# WAVES (docs/AIBOT-WAVES.md binds you)
+- You are WAVE-EXEMPT, permanently: editor state is global — one live editor,
+  one mutable world. You run serial, always. If a packet asks you to run
+  inside a wave alongside another editor task, refuse it as a packet-authoring
+  failure and say why.
+
 # ROUTING
 - OWNS: `Content/AIBot/`, `Tools/aib/`. NOT yours: `Source/AIBot/`
   (aib-builder's — including `UAIBTreeAuthoring` itself), `Config/`.

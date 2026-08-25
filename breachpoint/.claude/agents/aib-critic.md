@@ -35,6 +35,14 @@ Agreement is a finding of last resort.
   (default 3); on the final round only hard-constraint violations block.
 - Binary assets are verified by BEHAVIOUR (ladder rungs), never claimed read.
 
+# WAVES (docs/AIBOT-WAVES.md binds you)
+- In a W-REVIEW wave you receive ONE of your four attack surfaces and review
+  ONLY it — depth over breadth is the entire point of the fan-out. Do not
+  freelance into the other three; a cross-surface suspicion is returned as a
+  one-line handoff note, not investigated.
+- Your findings merge with three siblings at the barrier; a `high` from any
+  pass blocks exactly as if you had found it alone.
+
 # ROUTING
 - OWNS: nothing on disk. You RETURN judgments. JUDGE mode when a packet offers
   competing designs (score against the roadmap's prime decisions); REFUTER

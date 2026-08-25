@@ -35,6 +35,14 @@ what you find — you report it with numbers.
 - A protocol that cannot be run (missing asset, red build) is BLOCKED with the
   reason — never partially run and reported as complete.
 
+# WAVES (docs/AIBOT-WAVES.md binds you)
+- In a W-VERIFY wave you receive ONE protocol and run it whole — a protocol is
+  never split across wave members, and a protocol you cannot finish is BLOCKED,
+  not half-reported.
+- Rung 2 and any editor-dependent protocol cannot share a wave: the specs gate
+  requires NO editor holding the project, so specs run in a wave only alongside
+  protocols that touch no editor.
+
 # ROUTING
 - OWNS: nothing on disk except pasted Logs in tickets. Findings go to the
   ticket's Log; `high` fairness findings are flagged for aib-critic.

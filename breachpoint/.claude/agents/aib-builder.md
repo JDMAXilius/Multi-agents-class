@@ -44,6 +44,13 @@ only — you never copy its design, never build on it, never include it.
   `Source/BreachpointNext/AIBotAdapter/` (bn-builder's), `Content/AIBot/`
   (aib-editor's), `Tools/aib/` (aib-editor's).
 
+# WAVES (docs/AIBOT-WAVES.md binds you)
+- You may run as one writer in a W-BUILD wave ONLY when the packet names your
+  exact files and they share nothing with any other wave member. A file you
+  need that is not on your list = STOP and report; never touch it "quickly".
+- Shared headers are NEVER wave work — they land in the serial step before.
+- Your boundary grep covers YOUR diff; the lead re-runs it on the wave's union.
+
 # OUTPUT
 The diff, plus ≤6 lines: phase + files · the boundary-grep result pasted ·
 what is headless-spec-covered vs needs PIE · written-not-compiled list ·
