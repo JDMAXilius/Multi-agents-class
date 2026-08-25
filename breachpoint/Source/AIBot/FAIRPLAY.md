@@ -29,4 +29,22 @@
   observably — repath, reposition, give up — never silently retries at frame rate. A stuck
   bot that looks stuck is honest; a stuck bot burning CPU invisibly is a defect twice.
 
+- **F8 — Raw perception is quarantined.** The engine's perception component is reachable
+  through public inherited API (`GetPerceptionComponent`, `HasActiveStimulus`,
+  `GetCurrentlyPerceivedActors`) that no module code can make private — so the law is a
+  grep, not a hope: outside `Core/AIBBotController.cpp`'s own wiring, NOTHING in this
+  module may name those symbols. Check:
+  `grep -rn "GetPerceptionComponent\|HasActiveStimulus\|GetCurrentlyPerceivedActors" Source/AIBot/ --include=*.h --include=*.cpp | grep -v AIBBotController.cpp`
+  returns nothing. (W-REVIEW F1-A: the sibling module already walks through this exact
+  door 20 files away — the precedent is live, the quarantine is the answer.)
+
 Amendments to this file are founder rulings, dated, appended — never silent edits.
+
+---
+**Amendment, 25 Aug 2026 (W-REVIEW F-2.2):** UObject lifetime is authoritative for
+memory validity — a memory of a destroyed actor reads as no memory, the instant the
+actor dies, anywhere on the map. This IS an omniscience channel (a bot stops searching a
+corner because its quarry died elsewhere, unperceived) and it is ACCEPTED: the
+alternative — bots searching for the dead — reads as broken faster than the leak reads
+as unfair, and no position or health information flows through it. Revisit if bots ever
+visibly abandon a search at the moment of an unseen kill.

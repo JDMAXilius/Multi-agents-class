@@ -23,10 +23,11 @@ void FAIBScaffoldSpec::Define()
 		TestEqual(TEXT("MinReactionSeconds"), AIB::MinReactionSeconds, 0.20f);
 	});
 
-	It("registered the eight verbs the seam audit proved the game accepts", [this]()
+	It("registered the eight verbs", [this]()
 	{
-		// A tag that failed native registration is invalid at runtime — this is the
-		// earliest point a typo'd UE_DEFINE_GAMEPLAY_TAG string can be caught headless.
+		// HONEST SCOPE (W-REVIEW F-5.4): this proves registration ran, not that the
+		// strings are right — UE_DEFINE_GAMEPLAY_TAG registers a typo'd literal just as
+		// happily. The verb->host-input map is the adapter's to test, at Phase 3.
 		TestTrue(TEXT("Fire"), AIBTags::Verb_Fire.IsValid());
 		TestTrue(TEXT("Jump"), AIBTags::Verb_Jump.IsValid());
 		TestTrue(TEXT("Crouch"), AIBTags::Verb_Crouch.IsValid());
@@ -47,13 +48,23 @@ void FAIBScaffoldSpec::Define()
 		TestTrue(TEXT("Mode root"), AIBTags::Ambition_Mode.IsValid());
 	});
 
-	It("starts facts at honest defaults — full health, no target, no memory", [this]()
+	It("starts facts at honest UNKNOWNS — never a confident default", [this]()
 	{
+		// The W-REVIEW ruling (F-6.10): an unknowable health must not read as full
+		// health and make a broken adapter fight to the death. Unknown is a state.
 		const FAIBFacts Facts;
-		TestEqual(TEXT("HealthNorm"), Facts.HealthNorm, 1.f);
+		TestFalse(TEXT("vitals unknown"), Facts.bVitalsKnown);
 		TestFalse(TEXT("no target"), Facts.bHasTarget);
-		TestTrue(TEXT("no memory (negative age)"), Facts.LastKnownAgeSeconds < 0.f);
-		TestEqual(TEXT("no allies counted"), Facts.NearbyAllies, 0);
+		TestFalse(TEXT("no memory"), Facts.bHasMemory);
+		TestFalse(TEXT("no blast"), Facts.bIncomingBlast);
+		TestTrue(TEXT("distance unknown (negative)"), Facts.DistToTargetUU < 0.f);
+		TestEqual(TEXT("no objectives"), Facts.Objectives.Num(), 0);
+	});
+
+	It("holds the F5 ceiling and the queue cap as module constants", [this]()
+	{
+		TestEqual(TEXT("MaxMemorySeconds"), AIB::MaxMemorySeconds, 20.f);
+		TestEqual(TEXT("MaxPendingStimuli"), AIB::MaxPendingStimuli, 64);
 	});
 }
 

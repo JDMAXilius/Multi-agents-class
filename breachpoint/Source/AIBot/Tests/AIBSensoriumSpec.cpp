@@ -4,23 +4,66 @@
 #if WITH_DEV_AUTOMATION_TESTS
 
 #include "Core/AIBTypes.h"
+#include "Engine/Engine.h"
+#include "Engine/EngineBaseTypes.h"
+#include "Engine/World.h"
+#include "GameFramework/Actor.h"
 #include "Perception/AIBReactionClock.h"
 #include "Perception/AIBSensorium.h"
 #include "Perception/AIBTargetMemory.h"
 
 /**
- * The fair envelope, proven worldless — no UWorld, no actors, no perception component.
- * Time is a number we pass; "actors" are null weak pointers where identity is irrelevant.
- * Every assertion cites the FAIRPLAY law it pins. Latency draws are made deterministic by
- * configuring Min == Max — the draw itself is then the assertion's known quantity.
+ * The fair envelope, proven at two altitudes. Pure clock math runs worldless (time is a
+ * parameter). Identity-bearing behaviour — visibility, memory freshness, the stale-loss
+ * guard — runs against REAL spawned actors, because the first draft of this suite passed
+ * null actors everywhere and its visibility assertions passed vacuously: "blind at
+ * 0.25s" held with the reaction clock deleted (W-REVIEW F-5.1). The world fixture is the
+ * host damage spec's proven shape. Latency draws are deterministic via Min == Max.
  */
 BEGIN_DEFINE_SPEC(FAIBSensoriumSpec, "AIBot.Sim.Sensorium",
 	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
 
-	FAIBStimulus Sight(const FVector& Where) const
+	UWorld* World = nullptr;
+
+	bool BuildWorld()
+	{
+		World = UWorld::CreateWorld(EWorldType::Game, false);
+		if (!World)
+		{
+			AddError(TEXT("UWorld::CreateWorld returned null."));
+			return false;
+		}
+		FWorldContext& Context = GEngine->CreateNewWorldContext(EWorldType::Game);
+		Context.SetCurrentWorld(World);
+		World->InitializeActorsForPlay(FURL());
+		return true;
+	}
+
+	AActor* SpawnBody()
+	{
+		AActor* Actor = World ? World->SpawnActor<AActor>() : nullptr;
+		if (!Actor)
+		{
+			AddError(TEXT("SpawnActor failed."));
+		}
+		return Actor;
+	}
+
+	void DestroyWorld()
+	{
+		if (World)
+		{
+			GEngine->DestroyWorldContext(World);
+			World->DestroyWorld(false);
+			World = nullptr;
+		}
+	}
+
+	FAIBStimulus Sight(AActor* Who, const FVector& Where) const
 	{
 		FAIBStimulus S;
 		S.Kind = EAIBStimulusKind::SightGained;
+		S.Source = Who;
 		S.Location = Where;
 		return S;
 	}
@@ -29,15 +72,17 @@ END_DEFINE_SPEC(FAIBSensoriumSpec)
 
 void FAIBSensoriumSpec::Define()
 {
+	BeforeEach([this]() { BuildWorld(); });
+	AfterEach([this]() { DestroyWorld(); });
+
 	Describe("the reaction clock (F1/F2)", [this]()
 	{
 		It("clamps a sub-floor draw UP to the 200ms floor — the one clamp site", [this]()
 		{
 			FAIBReactionClock Clock;
-			Clock.Push(Sight(FVector::ZeroVector), /*Now=*/10.0, /*Drawn=*/0.05f);
+			Clock.Push(Sight(nullptr, FVector::ZeroVector), 10.0, 0.05f);
 
 			TArray<FAIBStimulus> Matured;
-			// One frame before the floor: the law says the brain must not know yet.
 			Clock.PopMatured(10.0 + AIB::MinReactionSeconds - 0.001, Matured);
 			TestEqual(TEXT("nothing before the floor"), Matured.Num(), 0);
 
@@ -48,98 +93,230 @@ void FAIBSensoriumSpec::Define()
 		It("holds a stimulus exactly its drawn latency, no shortcut", [this]()
 		{
 			FAIBReactionClock Clock;
-			Clock.Push(Sight(FVector::ZeroVector), 5.0, 0.45f);
+			Clock.Push(Sight(nullptr, FVector::ZeroVector), 5.0, 0.45f);
 
 			TArray<FAIBStimulus> Matured;
 			Clock.PopMatured(5.44, Matured);
 			TestEqual(TEXT("still pending at 0.44"), Matured.Num(), 0);
-			TestEqual(TEXT("queue holds it"), Clock.NumPending(), 1);
-
 			Clock.PopMatured(5.46, Matured);
 			TestEqual(TEXT("matured at 0.46"), Matured.Num(), 1);
-			TestEqual(TEXT("queue drained"), Clock.NumPending(), 0);
 		});
 
 		It("pops in maturity order even when pushed out of order", [this]()
 		{
 			FAIBReactionClock Clock;
-			FAIBStimulus Slow = Sight(FVector(1, 0, 0));
-			FAIBStimulus Fast = Sight(FVector(2, 0, 0));
-			Clock.Push(Slow, 0.0, 1.0f);   // matures at 1.0
-			Clock.Push(Fast, 0.0, 0.3f);   // pushed later, matures FIRST at 0.3
+			Clock.Push(Sight(nullptr, FVector(1, 0, 0)), 0.0, 1.0f);
+			Clock.Push(Sight(nullptr, FVector(2, 0, 0)), 0.0, 0.3f);
 
 			TArray<FAIBStimulus> Matured;
 			Clock.PopMatured(2.0, Matured);
 			TestEqual(TEXT("both matured"), Matured.Num(), 2);
 			TestEqual(TEXT("the fast one leads"), Matured[0].Location.X, 2.0);
-			TestEqual(TEXT("the slow one follows"), Matured[1].Location.X, 1.0);
 		});
 
-		It("records the fairness anchor: event time and maturity both ride the stimulus", [this]()
+		It("keeps equal maturities FIFO — the tie rule the sort must not break", [this]()
 		{
 			FAIBReactionClock Clock;
-			Clock.Push(Sight(FVector::ZeroVector), 7.0, 0.30f);
+			Clock.Push(Sight(nullptr, FVector(1, 0, 0)), 0.0, 0.3f);
+			Clock.Push(Sight(nullptr, FVector(2, 0, 0)), 0.0, 0.3f);
+
+			TArray<FAIBStimulus> Matured;
+			Clock.PopMatured(1.0, Matured);
+			TestEqual(TEXT("both out"), Matured.Num(), 2);
+			TestEqual(TEXT("first pushed, first out"), Matured[0].Location.X, 1.0);
+		});
+
+		It("stamps push time as the event, and honours a caller's earlier truth", [this]()
+		{
+			FAIBReactionClock Clock;
+			Clock.Push(Sight(nullptr, FVector::ZeroVector), 7.0, 0.30f);
+
+			FAIBStimulus Backdated = Sight(nullptr, FVector::ZeroVector);
+			Backdated.EventSeconds = 6.5; // happened half a second before it was noted
+			Clock.Push(Backdated, 7.0, 0.30f);
 
 			TArray<FAIBStimulus> Matured;
 			Clock.PopMatured(8.0, Matured);
-			TestEqual(TEXT("one out"), Matured.Num(), 1);
-			TestEqual(TEXT("event stamped at push"), Matured[0].EventSeconds, 7.0);
-			TestEqual(TEXT("maturity = event + latency"), Matured[0].MatureAtSeconds, 7.3);
+			TestEqual(TEXT("two out"), Matured.Num(), 2);
+			TestEqual(TEXT("unset event stamped at push"), Matured[0].EventSeconds, 7.0);
+			TestEqual(TEXT("backdated event preserved"), Matured[1].EventSeconds, 6.5);
+			// Both matured from PUSH time: backdating labels, it never accelerates.
+			TestEqual(TEXT("maturity from push, not the backdate"),
+				Matured[1].MatureAtSeconds, Matured[0].MatureAtSeconds);
+		});
+
+		It("drops the oldest at the cap instead of growing without bound", [this]()
+		{
+			FAIBReactionClock Clock;
+			for (int32 i = 0; i < AIB::MaxPendingStimuli + 10; ++i)
+			{
+				Clock.Push(Sight(nullptr, FVector(i, 0, 0)), static_cast<double>(i) * 0.001, 5.f);
+			}
+			TestEqual(TEXT("capped"), Clock.NumPending(), AIB::MaxPendingStimuli);
+
+			TArray<FAIBStimulus> Matured;
+			Clock.PopMatured(100.0, Matured);
+			TestEqual(TEXT("the survivors are the NEWEST"),
+				Matured[0].Location.X, 10.0); // 0..9 were dropped
 		});
 	});
 
 	Describe("target memory (F5)", [this]()
 	{
-		It("has no memory until told, and reports a negative age", [this]()
+		It("remembers a real actor and reports it fresh inside the window", [this]()
 		{
+			AActor* Enemy = SpawnBody();
 			FAIBTargetMemory Memory;
+			Memory.Remember(Enemy, FVector(100, 0, 0), 50.0);
+
 			FVector Where;
-			TestFalse(TEXT("empty is never fresh"), Memory.GetFresh(100.0, 16.f, Where));
-			TestTrue(TEXT("age is negative"), Memory.AgeSeconds(100.0) < 0.f);
+			TestTrue(TEXT("fresh at +10 of a 16s window"), Memory.GetFresh(60.0, 16.f, Where));
+			TestEqual(TEXT("the remembered spot"), Where.X, 100.0);
+			TestEqual(TEXT("age"), Memory.AgeSeconds(60.0), 10.f);
 		});
 
-		It("goes stale at the window edge — infinite memory is banned", [this]()
+		It("goes stale at the window edge exactly — >= is the law's edge", [this]()
 		{
-			// A null actor cannot satisfy GetFresh (a despawned enemy is not worth
-			// searching for), so the position-freshness rule is pinned through age.
+			AActor* Enemy = SpawnBody();
 			FAIBTargetMemory Memory;
-			Memory.Remember(nullptr, FVector(100, 0, 0), 50.0);
-			TestEqual(TEXT("age at +10"), Memory.AgeSeconds(60.0), 10.f);
-			TestEqual(TEXT("age at +20"), Memory.AgeSeconds(70.0), 20.f);
+			Memory.Remember(Enemy, FVector(100, 0, 0), 50.0);
 
 			FVector Where;
-			TestFalse(TEXT("dead/despawned source is never fresh"), Memory.GetFresh(51.0, 16.f, Where));
+			TestTrue(TEXT("fresh just inside"), Memory.GetFresh(65.99, 16.f, Where));
+			TestFalse(TEXT("stale AT the edge"), Memory.GetFresh(66.0, 16.f, Where));
+		});
 
-			Memory.Forget();
-			TestTrue(TEXT("forget clears the age"), Memory.AgeSeconds(70.0) < 0.f);
+		It("clamps any caller window to the module ceiling — FLT_MAX buys nothing", [this]()
+		{
+			AActor* Enemy = SpawnBody();
+			FAIBTargetMemory Memory;
+			Memory.Remember(Enemy, FVector(100, 0, 0), 50.0);
+
+			FVector Where;
+			TestTrue(TEXT("fresh inside the ceiling"),
+				Memory.GetFresh(50.0 + AIB::MaxMemorySeconds - 0.5, FLT_MAX, Where));
+			TestFalse(TEXT("infinite window still dies at the ceiling"),
+				Memory.GetFresh(50.0 + AIB::MaxMemorySeconds + 0.5, FLT_MAX, Where));
+		});
+
+		It("refuses a null source — no memory of nobody", [this]()
+		{
+			FAIBTargetMemory Memory;
+			Memory.Remember(nullptr, FVector(100, 0, 0), 50.0);
+			TestTrue(TEXT("age says empty"), Memory.AgeSeconds(51.0) < 0.f);
+		});
+
+		It("reads as NO memory the moment the remembered actor is destroyed", [this]()
+		{
+			AActor* Enemy = SpawnBody();
+			FAIBTargetMemory Memory;
+			Memory.Remember(Enemy, FVector(100, 0, 0), 50.0);
+
+			Enemy->Destroy();
+			// Both readers agree — the age is not allowed to say "fresh" while GetFresh
+			// says "nothing" (the split state W-REVIEW F-2.1 constructed).
+			FVector Where;
+			TestFalse(TEXT("not fresh"), Memory.GetFresh(51.0, 16.f, Where));
+			TestTrue(TEXT("age agrees: no memory"), Memory.AgeSeconds(51.0) < 0.f);
 		});
 	});
 
-	Describe("the sensorium (F2 end to end)", [this]()
+	Describe("the sensorium (F2 end to end, real actors)", [this]()
 	{
-		It("does not let the brain see a sighting before it matures", [this]()
+		It("matures a sighting into a visible target — and not before the clock says", [this]()
 		{
+			AActor* Enemy = SpawnBody();
 			FAIBSensorium Sensorium;
-			Sensorium.Configure(0.30f, 0.30f); // deterministic draw
-			Sensorium.NoteSighting(nullptr, FVector(5, 5, 0), 1.0);
+			Sensorium.Configure(0.30f, 0.30f);
+			Sensorium.NoteSighting(Enemy, FVector(5, 5, 0), 1.0);
 
 			Sensorium.Pump(1.25);
 			TestFalse(TEXT("blind at 0.25"), Sensorium.HasVisibleTarget());
-			TestEqual(TEXT("still queued"), Sensorium.NumPendingStimuli(), 1);
 
 			Sensorium.Pump(1.35);
-			// Null source stays null, but the queue drained and memory was written —
-			// the mechanics matured on schedule.
-			TestEqual(TEXT("queue drained at 0.35"), Sensorium.NumPendingStimuli(), 0);
-			TestEqual(TEXT("latency recorded for the fairness line"),
-				Sensorium.LastMaturedLatencySeconds(), 0.30f);
+			TestTrue(TEXT("seeing at 0.35"), Sensorium.HasVisibleTarget());
+			TestEqual(TEXT("and it is the enemy"), Sensorium.GetVisibleTarget(), Enemy);
+			TestTrue(TEXT("sight is current"), Sensorium.IsSightCurrent());
+			TestEqual(TEXT("last seen where the stimulus said"),
+				Sensorium.GetLastSeenLocation().X, 5.0);
+		});
+
+		It("ignores a stale loss that matured after a newer re-acquire (the corner peek)", [this]()
+		{
+			AActor* Enemy = SpawnBody();
+			FAIBSensorium Sensorium;
+			Sensorium.Configure(0.25f, 0.25f);
+
+			// Acquire, then the peek: loss noted at 2.00 (slow draw would matter here,
+			// but determinism gives both 0.25 — so re-order by NOTE time instead).
+			Sensorium.NoteSighting(Enemy, FVector(5, 0, 0), 1.0);
+			Sensorium.Pump(1.30);
+			TestTrue(TEXT("acquired"), Sensorium.HasVisibleTarget());
+
+			// Loss happens at 2.00; enemy steps back out and is re-sighted at 2.10.
+			// With equal draws the gain matures at 2.35, the loss at 2.25 — benign
+			// order. Force the malign order: backdate is not possible through Note*,
+			// so emulate the engine's actual sequence — loss event, gain event, then
+			// one pump after both matured. The gain's LATER event time must win.
+			Sensorium.NoteSightingLost(Enemy, FVector(6, 0, 0), 2.00);
+			Sensorium.NoteSighting(Enemy, FVector(7, 0, 0), 2.10);
+			Sensorium.Pump(2.40);
+
+			TestTrue(TEXT("still seeing — the older loss did not blind us"),
+				Sensorium.HasVisibleTarget());
+			TestTrue(TEXT("sight current again"), Sensorium.IsSightCurrent());
+		});
+
+		It("freezes tracking the moment a loss is NOTED — the juke honesty rule", [this]()
+		{
+			AActor* Enemy = SpawnBody();
+			FAIBSensorium Sensorium;
+			Sensorium.Configure(0.25f, 0.25f);
+			Sensorium.NoteSighting(Enemy, FVector(5, 0, 0), 1.0);
+			Sensorium.Pump(1.30);
+
+			Sensorium.NoteSightingLost(Enemy, FVector(9, 0, 0), 2.0);
+			// Loss not yet matured: the bot still believes — but belief is a SPOT now,
+			// not a live track through the pillar.
+			TestTrue(TEXT("still believes (visible)"), Sensorium.HasVisibleTarget());
+			TestFalse(TEXT("but sight is no longer current"), Sensorium.IsSightCurrent());
+			TestEqual(TEXT("held at the last seen spot"), Sensorium.GetLastSeenLocation().X, 9.0);
+
+			Sensorium.Pump(2.30);
+			TestFalse(TEXT("matured loss blanks visibility"), Sensorium.HasVisibleTarget());
+			TestTrue(TEXT("and becomes memory"), Sensorium.MemoryAgeSeconds(2.35) >= 0.f);
+		});
+
+		It("lets ears place but not see, and never evict the watched enemy's memory", [this]()
+		{
+			AActor* Enemy = SpawnBody();
+			AActor* Noisemaker = SpawnBody();
+			FAIBSensorium Sensorium;
+			Sensorium.Configure(0.25f, 0.25f);
+
+			Sensorium.NoteSighting(Enemy, FVector(5, 0, 0), 1.0);
+			Sensorium.Pump(1.30);
+
+			Sensorium.NoteSound(Noisemaker, FVector(500, 0, 0), 2.0);
+			Sensorium.Pump(2.30);
+
+			TestEqual(TEXT("still watching the enemy"), Sensorium.GetVisibleTarget(), Enemy);
+			TestTrue(TEXT("memory still the ENEMY's, not the noise"),
+				Sensorium.Memory().Remembers(Enemy));
+
+			// No focus -> a sound IS the new lead.
+			Sensorium.Reset();
+			Sensorium.Configure(0.25f, 0.25f);
+			Sensorium.NoteSound(Noisemaker, FVector(500, 0, 0), 3.0);
+			Sensorium.Pump(3.30);
+			TestFalse(TEXT("hearing is not seeing"), Sensorium.HasVisibleTarget());
+			TestTrue(TEXT("but it places"), Sensorium.Memory().Remembers(Noisemaker));
 		});
 
 		It("keeps a grenade invisible until the SAME clock matures it — no side channel", [this]()
 		{
 			FAIBSensorium Sensorium;
 			Sensorium.Configure(0.25f, 0.25f);
-			// Thrown at t=2.0, detonating at t=3.2.
 			Sensorium.NoteIncomingBlast(FVector(10, 0, 0), 300.f, 3.2, 2.0);
 
 			FVector Center;
@@ -151,44 +328,58 @@ void FAIBSensoriumSpec::Define()
 			Sensorium.Pump(2.3);
 			TestTrue(TEXT("known after maturity"), Sensorium.GetIncomingBlast(2.3, Center, Radius));
 			TestEqual(TEXT("where"), Center.X, 10.0);
-			TestEqual(TEXT("how big"), Radius, 300.f);
 		});
 
-		It("stops reporting a blast the moment it has detonated", [this]()
+		It("keeps BOTH grenades: the imminent one wins, the survivor outlives its boom", [this]()
 		{
-			FAIBSensorium Sensorium;
-			Sensorium.Configure(0.25f, 0.25f);
-			Sensorium.NoteIncomingBlast(FVector(10, 0, 0), 300.f, 3.2, 2.0);
-			Sensorium.Pump(2.3);
-
-			FVector Center;
-			float Radius = 0.f;
-			TestTrue(TEXT("live before boom"), Sensorium.GetIncomingBlast(3.1, Center, Radius));
-			TestFalse(TEXT("gone at boom — dodging afterwards reads as broken"),
-				Sensorium.GetIncomingBlast(3.2, Center, Radius));
-		});
-
-		It("keeps the second grenade's own detonation time — no overwrite", [this]()
-		{
+			// THE ordering the first spec dodged (W-REVIEW B-2/F-5.3): near grenade A
+			// detonates FIRST; far grenade B noted later. A single slot either dodged
+			// toward B while A killed the bot, or forgot A once B detonated.
 			FAIBSensorium Sensorium;
 			Sensorium.Configure(0.25f, 0.25f);
 			Sensorium.NoteIncomingBlast(FVector(10, 0, 0), 300.f, /*boom=*/3.0, /*now=*/2.0);
-			Sensorium.NoteIncomingBlast(FVector(90, 0, 0), 300.f, /*boom=*/9.0, /*now=*/2.1);
+			Sensorium.NoteIncomingBlast(FVector(900, 0, 0), 300.f, /*boom=*/9.0, /*now=*/2.1);
+			Sensorium.Pump(2.4);
 
-			Sensorium.Pump(2.4); // both matured
 			FVector Center;
 			float Radius = 0.f;
-			// After the FIRST detonates, the SECOND must still threaten with ITS location.
-			TestTrue(TEXT("second blast alive after first boom"),
-				Sensorium.GetIncomingBlast(3.5, Center, Radius));
-			TestEqual(TEXT("and it is the second one"), Center.X, 90.0);
+			TestTrue(TEXT("a threat is known"), Sensorium.GetIncomingBlast(2.5, Center, Radius));
+			TestEqual(TEXT("the IMMINENT one wins, not the last-matured"), Center.X, 10.0);
+
+			// After A detonates, B must still threaten — the erasure bug.
+			Sensorium.Pump(3.1);
+			TestTrue(TEXT("the far grenade survives the near one's boom"),
+				Sensorium.GetIncomingBlast(3.1, Center, Radius));
+			TestEqual(TEXT("and it is the far one"), Center.X, 900.0);
+
+			TestFalse(TEXT("all quiet after both"), Sensorium.GetIncomingBlast(9.5, Center, Radius));
+		});
+
+		It("measures the HONEST acquisition latency — pump delay in, no overwrite by noise", [this]()
+		{
+			AActor* Enemy = SpawnBody();
+			AActor* Noisemaker = SpawnBody();
+			FAIBSensorium Sensorium;
+			Sensorium.Configure(0.25f, 0.25f);
+
+			// Sight at 1.0 (matures 1.25) and a sound at 1.02 (matures 1.27), harvested
+			// together by a LATE pump at 1.50. The instrument must report the sighting's
+			// happened->surfaced gap (0.50), not the clamp (0.25), and not the sound's.
+			Sensorium.NoteSighting(Enemy, FVector(5, 0, 0), 1.0);
+			Sensorium.NoteSound(Noisemaker, FVector(500, 0, 0), 1.02);
+			Sensorium.Pump(1.50);
+
+			TestTrue(TEXT("acquired"), Sensorium.HasVisibleTarget());
+			TestEqual(TEXT("latency = happened->surfaced, 0.50"),
+				Sensorium.LastAcquisitionLatencySeconds(), 0.50f, 0.001f);
 		});
 
 		It("resets to blind and empty", [this]()
 		{
+			AActor* Enemy = SpawnBody();
 			FAIBSensorium Sensorium;
 			Sensorium.Configure(0.25f, 0.25f);
-			Sensorium.NoteSighting(nullptr, FVector(5, 5, 0), 1.0);
+			Sensorium.NoteSighting(Enemy, FVector(5, 5, 0), 1.0);
 			Sensorium.NoteIncomingBlast(FVector(10, 0, 0), 300.f, 9.0, 1.0);
 			Sensorium.Reset();
 

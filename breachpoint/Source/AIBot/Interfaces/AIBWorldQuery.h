@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "UObject/Interface.h"
 #include "AIBWorldQuery.generated.h"
 
@@ -11,7 +12,9 @@ struct AIBOT_API FAIBPointOfInterest
 	GENERATED_BODY()
 
 	FVector Location = FVector::ZeroVector;
-	FName Kind;                    // "Weapon", "Objective", "Roam" — provider vocabulary
+	FGameplayTag Kind;             // TYPED join key — an untyped FName compare across two
+	                               // separately implemented adapters fails silently on
+	                               // "objective" vs "Objective" (W-REVIEW L3)
 	float Worth = 1.f;             // provider-scaled 0..1
 	TWeakObjectPtr<AActor> Actor;  // optional backing actor (a pickup, a flag)
 };
@@ -48,4 +51,9 @@ public:
 
 	/** Allies of Asker within Radius (HUD-grade: outlines/radar show teammates). */
 	virtual int32 CountNearbyAllies(const AActor* Asker, float Radius) const = 0;
+
+	/** THE hostility authority (W-REVIEW M5): the game answers friend-or-foe, so teams
+	 *  land without an edit inside this module. The controller's FFA attitude override
+	 *  is the fallback for a host that provides no world query. */
+	virtual bool AreEnemies(const AActor* A, const AActor* B) const = 0;
 };

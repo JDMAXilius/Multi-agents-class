@@ -1,5 +1,7 @@
 #include "Perception/AIBSensorium.h"
 
+#include "Core/AIBTypes.h"
+
 namespace
 {
 	FAIBStimulus MakeStimulus(EAIBStimulusKind Kind, AActor* Who, const FVector& Where, float Radius = 0.f)
@@ -13,6 +15,17 @@ namespace
 	}
 }
 
+void FAIBSensorium::Configure(float InReactionSecondsMin, float InReactionSecondsMax)
+{
+	float Min = InReactionSecondsMin;
+	float Max = InReactionSecondsMax;
+	if (FMath::IsNaN(Min) || Min < 0.f) { Min = 0.22f; }
+	if (FMath::IsNaN(Max) || Max < 0.f) { Max = 0.45f; }
+	if (Min > Max) { Swap(Min, Max); }
+	ReactionSecondsMin = Min;
+	ReactionSecondsMax = Max;
+}
+
 void FAIBSensorium::NoteSighting(AActor* Who, const FVector& Where, double NowSeconds)
 {
 	Clock.Push(MakeStimulus(EAIBStimulusKind::SightGained, Who, Where), NowSeconds, DrawLatency());
@@ -20,6 +33,15 @@ void FAIBSensorium::NoteSighting(AActor* Who, const FVector& Where, double NowSe
 
 void FAIBSensorium::NoteSightingLost(AActor* Who, const FVector& LastSeenAt, double NowSeconds)
 {
+	// The CURRENT target going occluded stops being trackable the moment the loss is
+	// NOTED, not when it matures: freezing early only reduces information (lawful), and
+	// it is what turns the juke window from a wallhack into a belief (F2-B). Visibility
+	// itself still waits for maturity — the bot believes for one reaction longer.
+	if (Who && VisibleTarget == Who)
+	{
+		bSightCurrent = false;
+		VisibleTargetLastSeen = LastSeenAt;
+	}
 	Clock.Push(MakeStimulus(EAIBStimulusKind::SightLost, Who, LastSeenAt), NowSeconds, DrawLatency());
 }
 
@@ -35,12 +57,18 @@ void FAIBSensorium::NoteDamageFrom(AActor* Who, const FVector& Where, double Now
 
 void FAIBSensorium::NoteIncomingBlast(const FVector& Center, float Radius, double DetonateAtSeconds, double NowSeconds)
 {
-	// The blast rides the SAME clock as every sense (F2 — the wall-dodge lesson: BN shipped
-	// a bot that dodged, through a wall, a grenade it never saw, because explosives had a
-	// side channel). Detonation time travels on the stimulus so maturity can't extend it.
+	// The blast rides the SAME clock as every sense (F2 — the wall-dodge ban).
 	FAIBStimulus Stimulus = MakeStimulus(EAIBStimulusKind::IncomingBlast, nullptr, Center, Radius);
 	Stimulus.PayloadSeconds = DetonateAtSeconds;
 	Clock.Push(Stimulus, NowSeconds, DrawLatency());
+}
+
+void FAIBSensorium::NoteForgotten(AActor* Who, double NowSeconds)
+{
+	// Engine perception aged the actor out with no loss event: mature a loss at the
+	// last seen spot so visibility cannot outlive perception (the infinite-sight hole
+	// three review passes flagged on the old no-op).
+	Clock.Push(MakeStimulus(EAIBStimulusKind::SightLost, Who, VisibleTargetLastSeen), NowSeconds, DrawLatency());
 }
 
 void FAIBSensorium::Pump(double NowSeconds)
@@ -50,48 +78,95 @@ void FAIBSensorium::Pump(double NowSeconds)
 
 	for (const FAIBStimulus& Stimulus : Matured)
 	{
-		LastMaturedLatency = static_cast<float>(Stimulus.MatureAtSeconds - Stimulus.EventSeconds);
-
 		switch (Stimulus.Kind)
 		{
 		case EAIBStimulusKind::SightGained:
 			VisibleTarget = Stimulus.Source;
-			TargetMemory.Remember(Stimulus.Source.Get(), Stimulus.Location, NowSeconds);
+			VisibleTargetLastSeen = Stimulus.Location;
+			bSightCurrent = true;
+			LastAppliedGainEventSeconds = Stimulus.EventSeconds;
+			// The honest instrument: happened -> surfaced, pump quantisation included,
+			// recorded HERE so no unrelated stimulus can overwrite it (F1-B/F1-C).
+			LastAcquisitionLatency = static_cast<float>(NowSeconds - Stimulus.EventSeconds);
+			TargetMemory.Remember(Stimulus.Source.Get(), Stimulus.Location, Stimulus.EventSeconds);
 			break;
 
 		case EAIBStimulusKind::SightLost:
-			// Only the CURRENT target's loss blanks visibility — a stale loss for an enemy
-			// we re-acquired since must not blind us to the reacquisition.
-			if (VisibleTarget == Stimulus.Source)
+			// A loss OLDER than the last applied gain is stale — the enemy re-peeked and
+			// we re-acquired since. Applying it would blind the bot to someone standing
+			// in the open, permanently, on ~half of corner peeks (F-3.1).
+			if (VisibleTarget == Stimulus.Source
+				&& Stimulus.EventSeconds >= LastAppliedGainEventSeconds)
 			{
 				VisibleTarget = nullptr;
+				bSightCurrent = false;
+				VisibleTargetLastSeen = Stimulus.Location;
+				TargetMemory.Remember(Stimulus.Source.Get(), Stimulus.Location, Stimulus.EventSeconds);
 			}
-			TargetMemory.Remember(Stimulus.Source.Get(), Stimulus.Location, NowSeconds);
 			break;
 
 		case EAIBStimulusKind::Sound:
 		case EAIBStimulusKind::Damage:
-			// Ears and pain place, they do not SEE: memory updates, visibility does not.
-			TargetMemory.Remember(Stimulus.Source.Get(), Stimulus.Location, NowSeconds);
+			// Ears and pain place, they do not SEE — and they must not EVICT: while a
+			// visible target holds focus, an unrelated noise may not overwrite the
+			// memory of the enemy with a footstep (F-2.3). No focus -> a sound is the
+			// new lead, which is what searching by ear IS.
+			if (!VisibleTarget.IsValid() || VisibleTarget == Stimulus.Source)
+			{
+				TargetMemory.Remember(Stimulus.Source.Get(), Stimulus.Location, Stimulus.EventSeconds);
+			}
 			break;
 
 		case EAIBStimulusKind::IncomingBlast:
-			BlastCenter = Stimulus.Location;
-			BlastRadius = Stimulus.Radius;
-			BlastDetonateAtSeconds = Stimulus.PayloadSeconds;
+		{
+			FAIBLiveBlast Blast;
+			Blast.Center = Stimulus.Location;
+			Blast.Radius = Stimulus.Radius;
+			Blast.DetonateAtSeconds = Stimulus.PayloadSeconds;
+			LiveBlasts.Add(Blast);
 			break;
 		}
+		}
 	}
+
+	// Prune detonated blasts once per pump; the list stays tiny (grenades in flight).
+	LiveBlasts.RemoveAll([NowSeconds](const FAIBLiveBlast& Blast)
+	{
+		return NowSeconds >= Blast.DetonateAtSeconds;
+	});
+}
+
+bool FAIBSensorium::GetIncomingBlast(double NowSeconds, FAIBLiveBlast& OutBlast) const
+{
+	// Most imminent STILL-LIVE blast wins: the grenade about to go off at your feet
+	// outranks the one across the map, whatever order they matured in (F-3.2/B-1).
+	const FAIBLiveBlast* Best = nullptr;
+	for (const FAIBLiveBlast& Blast : LiveBlasts)
+	{
+		if (NowSeconds < Blast.DetonateAtSeconds
+			&& (!Best || Blast.DetonateAtSeconds < Best->DetonateAtSeconds))
+		{
+			Best = &Blast;
+		}
+	}
+
+	if (!Best)
+	{
+		return false;
+	}
+	OutBlast = *Best;
+	return true;
 }
 
 bool FAIBSensorium::GetIncomingBlast(double NowSeconds, FVector& OutCenter, float& OutRadius) const
 {
-	if (BlastDetonateAtSeconds < 0.0 || NowSeconds >= BlastDetonateAtSeconds)
+	FAIBLiveBlast Blast;
+	if (!GetIncomingBlast(NowSeconds, Blast))
 	{
-		return false; // no threat, or it already went off — dodging afterwards reads as broken
+		return false;
 	}
-	OutCenter = BlastCenter;
-	OutRadius = BlastRadius;
+	OutCenter = Blast.Center;
+	OutRadius = Blast.Radius;
 	return true;
 }
 
@@ -100,8 +175,9 @@ void FAIBSensorium::Reset()
 	Clock.Reset();
 	TargetMemory.Forget();
 	VisibleTarget = nullptr;
-	BlastCenter = FVector::ZeroVector;
-	BlastRadius = 0.f;
-	BlastDetonateAtSeconds = -1.0;
-	LastMaturedLatency = -1.f;
+	VisibleTargetLastSeen = FVector::ZeroVector;
+	bSightCurrent = false;
+	LastAppliedGainEventSeconds = -1.0;
+	LiveBlasts.Reset();
+	LastAcquisitionLatency = -1.f;
 }

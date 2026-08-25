@@ -16,20 +16,19 @@ class UAIBAvatarInterface : public UInterface
  * its adapter folder — on a component class named in ini, which AAIBBotController resolves
  * on its pawn at possession. The module never learns what is behind it.
  *
- * Shaped by the 25 Aug seam audit of the host game, not by memory:
- *  - Verbs land as ASC input-tag presses (PlayerState ASC -> AbilityInputTagPressed ->
- *    TryActivateAbility). The adapter owns the verb->input-tag map (there is no
- *    a generic "Fire" tag in the host — its real names differ, which is why the map exists) and the
- *    server-only gate, which the audit showed lives per-controller, not in the ASC.
- *  - Movement/aim stay ENGINE surface on the controller (MoveTo* rides the player's
- *    ConsumeInputVector road via bUseAccelerationForPaths; aim is SetControlRotation) —
- *    so they are not part of this interface.
- *  - Reads mirror what the host's proven bot consumers call: attribute getters for vitals,
- *    weapon getters for ammo, CMC IsFalling for grounded (the audit's caveat: the InAir
- *    TAG misses a walk-off, so the interface asks the avatar, which asks its CMC).
- *  - "Can the held weapon fight RIGHT NOW" is deliberately one question here, because in
- *    BN it is four reads (ammo + no fire cooldown + no reloading/melee tag + not
- *    dead/frozen) — the adapter assembles them; the brain must not know the recipe.
+ * Shaped by the 25 Aug seam audit of a real host, not by memory. What generalises:
+ *  - The adapter owns the verb->action map (hosts name their actions differently — a
+ *    generic "Fire" rarely exists verbatim) and the server-only gate on presses.
+ *  - Movement and aim are DELIBERATELY not here: they stay engine surface on the
+ *    controller (path-following and control rotation), a documented narrowing of the
+ *    roadmap's first interface sketch (AIBOT-ROADMAP is amended; W-REVIEW M3). A host
+ *    whose avatar is not an ACharacter supplies its own locomotion adapter at the
+ *    controller seam, not here.
+ *  - "Can the held weapon fight RIGHT NOW" is ONE question on purpose: in the audited
+ *    host it is four separate reads. The adapter assembles the recipe; the brain gets
+ *    only the answer.
+ *  - Grounded means the avatar's movement truth (a physics/CMC read), never an
+ *    animation tag — the audited host's tag provably misses a walk-off.
  */
 class IAIBAvatarInterface
 {

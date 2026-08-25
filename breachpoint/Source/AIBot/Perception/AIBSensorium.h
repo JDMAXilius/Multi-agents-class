@@ -5,58 +5,90 @@
 #include "Perception/AIBReactionClock.h"
 #include "Perception/AIBTargetMemory.h"
 
+/** One matured, not-yet-detonated blast. A LIST, because two live grenades are two
+ *  problems: the single-slot design let a distant second grenade erase a live first one
+ *  and the bot walked back into it blind (W-REVIEW F-3.2/B-1). */
+struct AIBOT_API FAIBLiveBlast
+{
+	FVector Center = FVector::ZeroVector;
+	float Radius = 0.f;
+	double DetonateAtSeconds = 0.0;
+};
+
 /**
- * The fair envelope's brain-facing half (FAIRPLAY F2/F3/F5), worldless. The controller
- * owns the engine's UAIPerceptionComponent and forwards its events here as Note*() calls;
- * this class runs the clock, matures stimuli on Pump(), and holds the ONLY awareness the
- * brain may read. Nothing else in the module touches raw perception.
+ * The fair envelope's brain-facing half (FAIRPLAY F2/F3/F5), worldless in the headless
+ * sense: time is a parameter, actors are opaque weak handles. The controller owns the
+ * engine's perception and forwards events as Note*() calls; this class runs the clock,
+ * matures on Pump(), and holds the ONLY awareness downstream code may read.
  *
- * Latency: one draw per stimulus at Note-time, uniform in the tier's [Min,Max], from an
- * owned FRandomStream (seedable, so specs are deterministic). The clock clamps the draw
- * to AIB::MinReactionSeconds — the sensorium never does its own clamping, one law one site.
+ * (That exclusivity is a LAW WITH A GREP, not a property this class can enforce: the
+ * controller's inherited raw-perception accessors are public engine API — FAIRPLAY F8
+ * is the quarantine and carries the check. W-REVIEW F1-A.)
  *
- * SightLost matures like everything else: a bot keeps "seeing" a vanished enemy for one
- * reaction's length — which is exactly how humans get juked around corners — and the
- * matured loss converts visibility into a memory, not into instant map knowledge.
+ * Latency: one draw per stimulus at Note-time, uniform in the tier's [Min,Max], from a
+ * seedable stream — seeded PER BOT by the controller, because four bots sharing one
+ * default sequence acquire in lockstep and read as coordinated omniscience (F-3.7).
+ * The clock clamps every draw to AIB::MinReactionSeconds; one law, one site.
+ *
+ * SightLost matures like everything else — the juke window — but with two honest edges:
+ * a matured loss OLDER than the last applied gain for the same actor is stale and
+ * ignored (a re-peek must not blind the bot to an enemy in the open, F-3.1), and the
+ * moment a loss is NOTED the sight stops being "current", so consumers stop reading the
+ * live actor and hold the last seen spot — a human juked around a corner aims at where
+ * they THINK you are, not at your true position through the wall (F2-B).
  */
 class AIBOT_API FAIBSensorium
 {
 public:
-	void Configure(float InReactionSecondsMin, float InReactionSecondsMax)
-	{
-		ReactionSecondsMin = InReactionSecondsMin;
-		ReactionSecondsMax = InReactionSecondsMax;
-	}
+	/** Sanitised: inverted ranges swap, NaN/negatives fall back to defaults. The floor
+	 *  is not applied here — the clock owns that law. */
+	void Configure(float InReactionSecondsMin, float InReactionSecondsMax);
 
-	/** Specs pin behaviour with a fixed seed; runtime keeps the default stream. */
+	/** Controller seeds per bot at possession; specs seed for determinism. */
 	void SetRandomSeed(int32 Seed) { Random.Initialize(Seed); }
 
-	// -- events in (the controller's perception delegates call these) -------------
+	// -- events in (the controller's perception delegates call these) --------------
 	void NoteSighting(AActor* Who, const FVector& Where, double NowSeconds);
 	void NoteSightingLost(AActor* Who, const FVector& LastSeenAt, double NowSeconds);
 	void NoteSound(AActor* Who, const FVector& Where, double NowSeconds);
 	void NoteDamageFrom(AActor* Who, const FVector& Where, double NowSeconds);
 	void NoteIncomingBlast(const FVector& Center, float Radius, double DetonateAtSeconds, double NowSeconds);
+	/** Engine perception aged the actor out entirely: a loss at the last seen spot. */
+	void NoteForgotten(AActor* Who, double NowSeconds);
 
 	/** Mature the queue. Called from the controller's think timer — never a tick. */
 	void Pump(double NowSeconds);
 
-	// -- matured awareness out (the whole of what the brain may know) --------------
+	// -- matured awareness out (the whole of what downstream may know) --------------
 	AActor* GetVisibleTarget() const { return VisibleTarget.Get(); }
 	bool HasVisibleTarget() const { return VisibleTarget.IsValid(); }
 
-	/** True while a matured, not-yet-detonated blast threatens; false after boom. */
+	/** False while a loss is pending or matured for the visible target: consumers must
+	 *  then use GetLastSeenLocation, never the live actor position (F2-B). */
+	bool IsSightCurrent() const { return VisibleTarget.IsValid() && bSightCurrent; }
+
+	/** The matured last-seen spot for the visible target — the juke window's honest
+	 *  aim point. Valid only while HasVisibleTarget(). */
+	FVector GetLastSeenLocation() const { return VisibleTargetLastSeen; }
+
+	/** The most imminent still-live blast, if any; detonated ones are pruned. */
 	bool GetIncomingBlast(double NowSeconds, FVector& OutCenter, float& OutRadius) const;
+	bool GetIncomingBlast(double NowSeconds, FAIBLiveBlast& OutBlast) const;
 
 	const FAIBTargetMemory& Memory() const { return TargetMemory; }
 	float MemoryAgeSeconds(double NowSeconds) const { return TargetMemory.AgeSeconds(NowSeconds); }
 
+	/** DIAGNOSTIC ONLY (specs, debugger). Gating behaviour on the pre-maturation queue
+	 *  is an F2 breach by definition — aib-critic attacks any gameplay read of this. */
 	int32 NumPendingStimuli() const { return Clock.NumPending(); }
+
 	void Reset();
 
-	/** Seconds between a stimulus happening and the brain learning of it, for the last
-	 *  matured stimulus — aib-verifier's fairness sample reads this via the log line. */
-	float LastMaturedLatencySeconds() const { return LastMaturedLatency; }
+	/** The HONEST instrument: seconds from the acquiring stimulus HAPPENING to the pump
+	 *  that surfaced it — includes think quantisation, measured for the acquisition
+	 *  specifically, never overwritten by an unrelated later stimulus (F1-B/F1-C).
+	 *  Negative until the first acquisition. */
+	float LastAcquisitionLatencySeconds() const { return LastAcquisitionLatency; }
 
 private:
 	float DrawLatency() { return Random.FRandRange(ReactionSecondsMin, ReactionSecondsMax); }
@@ -69,8 +101,10 @@ private:
 	FAIBTargetMemory TargetMemory;
 
 	TWeakObjectPtr<AActor> VisibleTarget;
-	FVector BlastCenter = FVector::ZeroVector;
-	float BlastRadius = 0.f;
-	double BlastDetonateAtSeconds = -1.0;
-	float LastMaturedLatency = -1.f;
+	FVector VisibleTargetLastSeen = FVector::ZeroVector;
+	bool bSightCurrent = false;
+	double LastAppliedGainEventSeconds = -1.0;
+
+	TArray<FAIBLiveBlast> LiveBlasts;
+	float LastAcquisitionLatency = -1.f;
 };

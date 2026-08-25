@@ -1,14 +1,25 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "AIBTypes.generated.h"
 
-/** FAIRPLAY F1: the floor under every reaction, a constant no tier can undercut.
- *  Tiers draw their latencies ABOVE this; the sensorium clamps here, once, at the
- *  single point stimuli mature — never trust N call sites to remember a law. */
+/** Module constants — each a law with ONE enforcement site, named in FAIRPLAY.md. */
 namespace AIB
 {
+	/** F1: the floor under every reaction. Tiers draw ABOVE it; the reaction clock is
+	 *  the single clamp site. Note 0.20f is not exactly representable — the clamp's
+	 *  correctness rests on PopMatured's <= being lawful at the boundary, not on float
+	 *  luck (W-REVIEW 25 Aug). */
 	inline constexpr float MinReactionSeconds = 0.20f;
+
+	/** F5: the ceiling over every memory. GetFresh clamps caller windows here — the
+	 *  single site — so FLT_MAX cannot lawfully compile into infinite memory. */
+	inline constexpr float MaxMemorySeconds = 20.f;
+
+	/** The reaction clock's queue cap (drop-oldest). An unpossessed bot must not grow
+	 *  an unbounded stimulus backlog for the rest of a match (W-REVIEW F-1.2). */
+	inline constexpr int32 MaxPendingStimuli = 64;
 }
 
 /** The combat dance: Halo Infinite's five bot skills (Stern, GDC 2022). A tier is a
@@ -24,9 +35,7 @@ enum class EAIBSkill : uint8
 	Teamwork
 };
 
-/** Competence rungs, novice -> expert. Levels gate CAPABILITIES, not just numbers:
- *  a Novice grenade skill cannot evade a blast at any tuning value — that is the
- *  design ("you can catch it with one"), not a limitation. */
+/** Competence rungs, novice -> expert. Levels gate CAPABILITIES, not just numbers. */
 UENUM()
 enum class EAIBCompetence : uint8
 {
@@ -36,39 +45,77 @@ enum class EAIBCompetence : uint8
 	Expert
 };
 
+/** One mode objective as the brain may know it (HUD-grade). Keyed by tag so N mode
+ *  ambitions get N distinct consideration inputs — a single flattened triple made
+ *  CTF's capture/return/defend inseparable (W-REVIEW F-6.6). */
+USTRUCT()
+struct AIBOT_API FAIBObjectiveFact
+{
+	GENERATED_BODY()
+
+	FGameplayTag AmbitionTag;
+	float DistanceUU = -1.f;       // raw uu; <0 = unknown
+	float Urgency = 0.f;           // CLAMPED 0..1 by the facts builder — the one site.
+	                               // 0 = the mode does not care, 1 = drop everything.
+};
+
 /**
- * Everything the brain is allowed to know, in one worldless struct — the considerations
- * of the utility layer (Halo's published five, plus what confidence needs). Built once
- * per think by the facts builder (world side); consumed by Brain/ and Skills/, which by
- * module law never see a UWorld. Every field is either sensorium-matured or HUD-grade
- * (FAIRPLAY F3) — a fact that could not have reached a human has no business here.
+ * Everything the brain is allowed to know, in one worldless struct. Built once per think
+ * by the facts builder (Core/ — the world-touching side); consumed by Brain/ and Skills/,
+ * which by module law never see a UWorld. Every field is sensorium-matured or HUD-grade
+ * (FAIRPLAY F3).
+ *
+ * SCALE LAW (W-REVIEW F-6.1/6.2): distances and heights are RAW uu; ages are RAW seconds;
+ * counts are RAW ints. Normalisation is the response curve's job, against constants the
+ * curve names — never a tier-varying divisor baked invisibly into a fact ("0..1 over the
+ * perception envelope" made the same 900uu mean different metres per tier, and made
+ * absolute weapon falloff inexpressible: the shotgun-at-every-range bug, re-armed).
+ * Unknowns are explicit flags, never confident defaults (F-6.10): an unknowable health
+ * must not read as full health and make a broken adapter fight to the death.
  */
 USTRUCT()
 struct AIBOT_API FAIBFacts
 {
 	GENERATED_BODY()
 
-	// -- self --------------------------------------------------------------------
-	float HealthNorm = 1.f;            // 0..1 of max
-	float AmmoNorm = 1.f;              // magazine fraction of the HELD weapon
-	bool bHasReserveAmmo = true;
+	// -- self ----------------------------------------------------------------------
+	bool bVitalsKnown = false;         // false => HealthNorm is meaningless, score "unknown"
+	float HealthNorm = 0.f;            // 0..1 of max, valid only when bVitalsKnown
+	float AmmoNorm = 0.f;              // magazine fraction of the held weapon
+	bool bHasReserveAmmo = false;
+	bool bWeaponCanFight = false;      // the avatar door's assembled answer (F-6.4)
+	int32 GrenadeCount = 0;
 	bool bGrounded = true;
 
-	// -- the target, as perceived (not as it is) ---------------------------------
+	// -- the target, as perceived (not as it is) -----------------------------------
 	bool bHasTarget = false;
-	bool bTargetVisible = false;       // matured line of sight, not a raw trace
-	float TargetHealthNorm = 1.f;      // consideration: is the trade winnable?
-	float DistToTargetNorm = 1.f;      // 0..1 over the perception envelope
-	float HeightAdvantage = 0.f;       // +up in uu; Halo's vertical consideration
-	float LastKnownAgeSeconds = -1.f;  // <0 = no memory (F5: memory decays)
+	bool bTargetVisible = false;       // matured sight, current (no pending loss)
+	bool bTargetAlive = true;
+	bool bTargetFactsFromMemory = false; // true => the three below are last-KNOWN values,
+	                                     // not live reads (the F3 audit marker, F-6.5)
+	float TargetHealthNorm = 1.f;
+	float DistToTargetUU = -1.f;       // raw uu; <0 = unknown
+	float HeightAdvantageUU = 0.f;     // raw signed uu, +up (Halo's vertical consideration)
 
-	// -- the fight so far (confidence inputs; our design, flagged as ours) -------
-	float RecentDamageTakenNorm = 0.f; // decayed window, fraction of max health
+	// -- memory (F5) ----------------------------------------------------------------
+	bool bHasMemory = false;           // the -1 sentinel is OUT of band now (F-6.9)
+	float LastKnownAgeSeconds = 0.f;   // valid only when bHasMemory
+	float MemoryFreshWindowSeconds = 0.f; // the tier's window, so a worldless
+	                                      // consideration can normalise age against it
+
+	// -- the incoming blast (the hard interrupt's facts — F-6.3) ---------------------
+	bool bIncomingBlast = false;
+	float BlastSecondsToDetonation = 0.f;
+	FVector BlastCenterRelative = FVector::ZeroVector; // center minus self, so the dodge
+	                                                   // consideration needs no world
+	float BlastRadius = 0.f;
+
+	// -- the fight so far (confidence inputs; our design, flagged as ours) -----------
+	float RecentDamageTakenNorm = 0.f; // decayed window, fraction of max health, MAY exceed 1
 	float RecentDamageDealtNorm = 0.f;
 	int32 NearbyAllies = 0;
+	int32 NearbyEnemies = 0;           // "am I outnumbered" — the textbook confidence input
 
-	// -- the mode (HUD-grade knowledge) ------------------------------------------
-	bool bObjectiveActive = false;
-	float ObjectiveDistNorm = 1.f;
-	float ObjectiveUrgency = 0.f;      // 0..1, the provider's own scaling
+	// -- the mode (HUD-grade; one entry per mode ambition) ---------------------------
+	TArray<FAIBObjectiveFact> Objectives;
 };

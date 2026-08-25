@@ -8,12 +8,15 @@
 #include "Perception/AISenseConfig_Hearing.h"
 #include "Perception/AISense_Hearing.h"
 #include "Perception/AISenseConfig_Sight.h"
+#include "Perception/AISense_Sight.h"
 #include "TimerManager.h"
 
 AAIBBotController::AAIBBotController(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
-	// A real PlayerState: the bot joins the same match machinery a human does.
+	// A real PlayerState: the bot joins the same match machinery a human does. (This is
+	// the module's one deliberate cause of replication — a bot IS a player at the
+	// netcode layer. ARCHITECTURE law 3 names the exception.)
 	bWantsPlayerState = true;
 
 	// Law 4: no gameplay Tick. Thinking is the timer's; reacting is the clock's.
@@ -28,15 +31,19 @@ AAIBBotController::AAIBBotController(const FObjectInitializer& ObjectInitializer
 	SightConfig->SightRadius = Defaults.SightRadius;
 	SightConfig->LoseSightRadius = Defaults.LoseSightRadius;
 	SightConfig->PeripheralVisionAngleDegrees = Defaults.PeripheralVisionAngleDegrees;
+	// Without a max age the engine never forgets, OnPerceptionForgotten never fires,
+	// and sight of an unseen enemy lives forever — the infinite-sight hole.
+	SightConfig->SetMaxAge(Defaults.SightMaxAgeSeconds);
 
 	// FFA-open senses: detection is not hostility. Hostility lives in the attitude
-	// override, so teams later change ONE function and never touch perception.
+	// override plus the Note-boundary filter below, never in the senses.
 	SightConfig->DetectionByAffiliation.bDetectEnemies = true;
 	SightConfig->DetectionByAffiliation.bDetectNeutrals = true;
 	SightConfig->DetectionByAffiliation.bDetectFriendlies = true;
 
 	HearingConfig = CreateDefaultSubobject<UAISenseConfig_Hearing>(TEXT("BotHearing"));
 	HearingConfig->HearingRange = Defaults.HearingRange;
+	HearingConfig->SetMaxAge(Defaults.SightMaxAgeSeconds);
 	HearingConfig->DetectionByAffiliation.bDetectEnemies = true;
 	HearingConfig->DetectionByAffiliation.bDetectNeutrals = true;
 	HearingConfig->DetectionByAffiliation.bDetectFriendlies = true;
@@ -47,15 +54,16 @@ AAIBBotController::AAIBBotController(const FObjectInitializer& ObjectInitializer
 	BotPerception->SetDominantSense(SightConfig->GetSenseImplementation());
 	SetPerceptionComponent(*BotPerception);
 
-	BotPerception->OnTargetPerceptionUpdated.AddDynamic(this, &AAIBBotController::OnPerceptionUpdated);
-	BotPerception->OnTargetPerceptionForgotten.AddDynamic(this, &AAIBBotController::OnPerceptionForgotten);
+	// Delegate binding is NOT here: the shipping host binds at possession, gated and
+	// deduped, precisely to keep bindings out of serialized CDO state (W-REVIEW F-4.1).
 
 	SetGenericTeamId(FGenericTeamId(255));
 }
 
 ETeamAttitude::Type AAIBBotController::GetTeamAttitudeTowards(const AActor& Other) const
 {
-	// FFA: every pawn that is not mine is hostile; scenery is neutral. Teams replace this.
+	// FFA: every pawn that is not mine is hostile; scenery is neutral. A team system
+	// answers through IAIBWorldQuery::AreEnemies and replaces this constant.
 	if (const APawn* OtherPawn = Cast<APawn>(&Other))
 	{
 		return OtherPawn == GetPawn() ? ETeamAttitude::Friendly : ETeamAttitude::Hostile;
@@ -67,6 +75,14 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
 
+	// ARCHITECTURE law 3, enforced rather than asserted: on a client this controller
+	// does nothing at all — no timer, no perception state, no verbs ever (W-REVIEW 1c).
+	if (!HasAuthority())
+	{
+		UE_LOG(LogAIBot, Warning, TEXT("AIBot: %s possessed on a non-authority — refusing to run."), *GetName());
+		return;
+	}
+
 	Avatar = nullptr;
 	AvatarObject = nullptr;
 	LastLoggedTarget = nullptr;
@@ -74,6 +90,16 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	if (!InPawn)
 	{
 		return;
+	}
+
+	// Bind at possession, deduped — the shipping host's pattern, not CDO state.
+	if (!BotPerception->OnTargetPerceptionUpdated.IsAlreadyBound(this, &AAIBBotController::OnPerceptionUpdated))
+	{
+		BotPerception->OnTargetPerceptionUpdated.AddDynamic(this, &AAIBBotController::OnPerceptionUpdated);
+	}
+	if (!BotPerception->OnTargetPerceptionForgotten.IsAlreadyBound(this, &AAIBBotController::OnPerceptionForgotten))
+	{
+		BotPerception->OnTargetPerceptionForgotten.AddDynamic(this, &AAIBBotController::OnPerceptionForgotten);
 	}
 
 	// The one lookup that joins bot to body: any component on the pawn implementing the
@@ -106,6 +132,9 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	const FAIBTierRow Defaults;
 	Sensorium.Reset();
 	Sensorium.Configure(Defaults.ReactionSecondsMin, Defaults.ReactionSecondsMax);
+	// Per-bot latency sequence: shared draws make four bots acquire in lockstep, which
+	// reads as coordinated omniscience (W-REVIEW F-3.7).
+	Sensorium.SetRandomSeed(static_cast<int32>(GetUniqueID()));
 
 	GetWorldTimerManager().SetTimer(ThinkTimer, this, &AAIBBotController::Think,
 		FMath::Max(ThinkIntervalSeconds, 0.02f), /*bLoop=*/true);
@@ -113,7 +142,11 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 
 void AAIBBotController::OnUnPossess()
 {
-	GetWorldTimerManager().ClearTimer(ThinkTimer);
+	// The host's proven guard: unpossession during world teardown has no timer manager.
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(ThinkTimer);
+	}
 	Sensorium.Reset();
 	Avatar = nullptr;
 	AvatarObject = nullptr;
@@ -123,17 +156,33 @@ void AAIBBotController::OnUnPossess()
 
 void AAIBBotController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
-	if (!Actor || Actor == GetPawn())
+	UWorld* World = GetWorld();
+	if (!World || !Actor || Actor == GetPawn() || !GetPawn())
+	{
+		return; // !GetPawn(): unpossessed bots must not accumulate a backlog (F-4.3)
+	}
+
+	// The hostility filter at the Note boundary: senses are FFA-open by design, but a
+	// friendly must never become a stimulus — or a teammate's footstep evicts the
+	// enemy from memory and the bot "acquires" its own side (F5-C and two handoffs).
+	if (GetTeamAttitudeTowards(*Actor) != ETeamAttitude::Hostile)
 	{
 		return;
 	}
 
-	const double Now = GetWorld()->GetTimeSeconds();
+	const double Now = World->GetTimeSeconds();
 
 	if (Stimulus.Type == UAISense::GetSenseID<UAISense_Hearing>())
 	{
-		// Ears place, they do not see (F2): a sound becomes memory when it matures.
 		Sensorium.NoteSound(Actor, Stimulus.StimulusLocation, Now);
+		return;
+	}
+
+	// POSITIVE sense test: only sight feeds the visual channel. A sense added later
+	// (damage, team comms) must not silently become vision (W-REVIEW F-4.5).
+	if (Stimulus.Type != UAISense::GetSenseID<UAISense_Sight>())
+	{
+		UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s dropped a stimulus from an unmapped sense."), *GetName());
 		return;
 	}
 
@@ -149,9 +198,14 @@ void AAIBBotController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 
 void AAIBBotController::OnPerceptionForgotten(AActor* Actor)
 {
-	// Perception giving up entirely mirrors a matured loss at the actor's last stimulus
-	// location being unavailable — the sensorium already holds the last known spot, so
-	// nothing to note; the memory decays on its own clock (F5).
+	// Engine perception aged the actor out with no loss event. Route it through the
+	// clock as a loss so visibility cannot outlive perception — the no-op here was the
+	// infinite-sight hole all three sibling review passes flagged.
+	UWorld* World = GetWorld();
+	if (World && Actor && Actor == Sensorium.GetVisibleTarget())
+	{
+		Sensorium.NoteForgotten(Actor, World->GetTimeSeconds());
+	}
 }
 
 void AAIBBotController::NoteIncomingBlast(const FVector& Center, float Radius, double DetonateAtSeconds)
@@ -160,21 +214,33 @@ void AAIBBotController::NoteIncomingBlast(const FVector& Center, float Radius, d
 	{
 		Sensorium.NoteIncomingBlast(Center, Radius, DetonateAtSeconds, World->GetTimeSeconds());
 	}
+	else
+	{
+		// F7: a dropped warning is a bot that doesn't dodge — never silently (F-4.2).
+		UE_LOG(LogAIBot, Warning, TEXT("AIBot: %s dropped a blast warning (no world)."), *GetName());
+	}
 }
 
 void AAIBBotController::Think()
 {
-	const double Now = GetWorld()->GetTimeSeconds();
+	UWorld* World = GetWorld();
+	if (!World || !HasAuthority())
+	{
+		return;
+	}
+
+	const double Now = World->GetTimeSeconds();
 	Sensorium.Pump(Now);
 
 	// The fairness instrument (aib-verifier samples this line): one log per acquisition,
-	// carrying the exact stimulus-to-knowledge latency the F1 floor bounds.
+	// carrying the HONEST happened->surfaced latency — pump quantisation included,
+	// recorded for the acquisition itself, never an unrelated stimulus.
 	AActor* Visible = Sensorium.GetVisibleTarget();
 	if (Visible && LastLoggedTarget != Visible)
 	{
 		LastLoggedTarget = Visible;
 		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s acquired %s after %.3fs reaction."),
-			*GetName(), *Visible->GetName(), Sensorium.LastMaturedLatencySeconds());
+			*GetName(), *Visible->GetName(), Sensorium.LastAcquisitionLatencySeconds());
 	}
 	else if (!Visible)
 	{

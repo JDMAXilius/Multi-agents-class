@@ -51,11 +51,23 @@ struct AIBOT_API FAIBTierRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, Category = "Perception")
 	float HearingRange = 2200.f;
 
-	// -- the reaction draw; the sensorium clamps at AIB::MinReactionSeconds (F1),
-	//    so these can only slow a tier down, never speed it past the floor ---------
+	// -- the reaction draw; the CLOCK clamps at AIB::MinReactionSeconds (F1), so
+	//    these can only slow a tier down — an authored sub-floor number silently
+	//    does nothing, which Phase 8's row validator will warn on ----------------
 	UPROPERTY(EditAnywhere, Category = "Perception")
 	float ReactionSecondsMin = 0.22f;
 
 	UPROPERTY(EditAnywhere, Category = "Perception")
 	float ReactionSecondsMax = 0.45f;
+
+	/** F5: how long a last-known position stays worth searching. Clamped at read to
+	 *  AIB::MaxMemorySeconds — the ceiling is the module's, the window is the tier's. */
+	UPROPERTY(EditAnywhere, Category = "Perception")
+	float MemoryFreshSeconds = 16.f;
+
+	/** Engine perception forgets an unseen actor after this age, which is what makes
+	 *  the forgotten->loss path fire at all (a MaxAge of 0 = never forget = the
+	 *  infinite-sight hole three review passes flagged). */
+	UPROPERTY(EditAnywhere, Category = "Perception")
+	float SightMaxAgeSeconds = 5.f;
 };

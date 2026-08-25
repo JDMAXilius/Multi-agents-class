@@ -14,7 +14,8 @@ struct AIBOT_API FAIBModeAmbition
 
 	FGameplayTag AmbitionTag;      // under AIBot.Ambition.Mode
 	float BaseUtility = 0.5f;
-	FName ObjectiveKind;           // matches FAIBPointOfInterest::Kind for targeting
+	FGameplayTag ObjectiveKind;    // joins FAIBPointOfInterest::Kind — typed, same
+	                               // adapter owns both ends (W-REVIEW L3)
 };
 
 UINTERFACE(MinimalAPI, NotBlueprintable, meta = (CannotImplementInterfaceInBlueprint))
@@ -36,6 +37,9 @@ class IAIBAmbitionProvider
 public:
 	virtual void GetModeAmbitions(TArray<FAIBModeAmbition>& OutAmbitions) const = 0;
 
-	/** 0..1 how loudly the mode wants Bot on the objective RIGHT NOW. */
-	virtual float GetObjectiveUrgency(const AActor* Bot) const = 0;
+	/** How loudly the mode wants Bot on this ambition's objective RIGHT NOW.
+	 *  CONTRACT: 0 = the mode does not care, 1 = drop everything. The facts builder
+	 *  clamps to 0..1 at its one site (W-REVIEW F-6.7) — a provider returning 5.0
+	 *  does not get to pin the bot on the objective forever. */
+	virtual float GetObjectiveUrgency(const AActor* Bot, FGameplayTag AmbitionTag) const = 0;
 };

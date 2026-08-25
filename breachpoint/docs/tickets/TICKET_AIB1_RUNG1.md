@@ -23,11 +23,14 @@ target memory) is worldless C++ with a spec suite.
 1. **Rung 1** — `Tools/run-ubt.ps1` (or the mac equivalent): all three targets. The
    editor target additionally proves the `Target.bBuildEditor` block resolves.
 2. **Rung 2** — `Tools/run-specs.sh AIBot` . Expected: suites `AIBot.Sim.Scaffold`
-   (4 tests) and `AIBot.Sim.Sensorium` (11 tests) — **15 started, 0 failures**. Zero ran
-   = INCONCLUSIVE, never pass. Paste the counts.
-3. **Boundary check, mechanically:**
-   `grep -rn "Breachpoint" Source/AIBot/ --include=*.h --include=*.cpp --include=*.cs`
-   must return NOTHING. Paste the empty result.
+   (5 tests) and `AIBot.Sim.Sensorium` (19 tests) — **24 started, 0 failures**. Zero ran
+   = INCONCLUSIVE, never pass. Paste the counts. (Note the project's default rung-2
+   filter does NOT include `AIBot.Sim.*` — the explicit filter argument is mandatory.)
+3. **The four mechanical checks** (post-W-REVIEW forms; paste all four empty):
+   - boundary (CASE-INSENSITIVE): `grep -rniE "breachpoint|\bBN[A-Z]" Source/AIBot/ --include=*.h --include=*.cpp --include=*.cs`
+   - replication: `grep -rn "Replicated\|DOREPLIFETIME\|NetSerialize" Source/AIBot/ --include=*.h --include=*.cpp`
+   - worldless brain: `grep -rn "UWorld\|AActor\|GetWorld" Source/AIBot/Brain/ Source/AIBot/Skills/`
+   - F8 quarantine: `grep -rn "GetPerceptionComponent\|HasActiveStimulus\|GetCurrentlyPerceivedActors" Source/AIBot/ --include=*.h --include=*.cpp | grep -v AIBBotController.cpp`
 
 ## Watch-list — written-not-compiled spots the cloud flags for honest scrutiny
 
@@ -41,12 +44,17 @@ target memory) is worldless C++ with a spec suite.
   would be `[/Script/AIBot.AIBBotController]`; nothing writes it yet, existence is enough.
 - `AIBOT_API` on a namespace'd `inline constexpr` (`AIB::MinReactionSeconds`) is NOT used —
   the constant is header-inline on purpose; flagging so nobody "fixes" it into an export.
+- `EAllowShrinking::No` in `AIBReactionClock.cpp` — the 5.5+ enum form of RemoveAt.
+- `SightConfig->SetMaxAge(...)` — proven in the old module's controller, first use here.
+- The sensorium spec now builds a real `UWorld` + spawned actors (the host damage spec's
+  proven fixture) — first use of that fixture in THIS module.
+- `Sensorium.SetRandomSeed(static_cast<int32>(GetUniqueID()))` — per-bot seeding.
 
 ## Done when
 
 - [ ] Rung 1 PASS, all three targets, output tail in the Log
-- [ ] Rung 2: 15 started / 0 failed, counts pasted
-- [ ] Boundary grep pasted, empty
+- [ ] Rung 2: 24 started / 0 failed, counts pasted
+- [ ] All four mechanical checks pasted, empty
 - [ ] Any deviation (a fixed typo, a real error handed back) recorded in the Log
 
 ## Log
