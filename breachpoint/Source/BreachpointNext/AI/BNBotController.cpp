@@ -18,6 +18,8 @@
 #include "StateTree.h"
 #include "Engine/GameInstance.h"
 #include "GameFramework/Pawn.h"
+#include "EngineUtils.h"
+#include "TimerManager.h"
 #include "GameFramework/PlayerState.h"
 #include "GameplayEffectTypes.h"
 #include "Perception/AIPerceptionComponent.h"
@@ -96,6 +98,10 @@ void ABNBotController::OnPossess(APawn* InPawn)
 	// R10 — THE TIER, resolved before the sense is configured because the sense reads it. This is
 	// also where a per-bot tier assigned by the GameMode before possession takes effect.
 	ResolveTuning();
+
+	// A bot spawns knowing nobody. Without this the fallback would only ever arm on LOSING a
+	// target, so a bot that never saw one in the first place would roam for the whole match.
+	ArmNoTargetFallback();
 
 	// Fresh mind per life: the brain carries only ambition + commit window, both of which a
 	// respawn should reset. Rescoring is EVENT-driven from here on — never a tick.
@@ -261,6 +267,12 @@ void ABNBotController::SetCurrentTarget(AActor* Target)
 	}
 	TargetEnemy = Target;
 
+	// It has something to fight: stand the fallback down until it loses this one.
+	if (UWorld* TimerWorld = GetWorld())
+	{
+		TimerWorld->GetTimerManager().ClearTimer(NoTargetTimerHandle);
+	}
+
 	// R11's clock starts HERE, on acquisition, not on entering the Shoot state — otherwise a bot
 	// that loses and re-acquires sight of a target it has been fighting for ten seconds would pay
 	// the full reaction cost again, and would read as hesitant rather than alert.
@@ -284,10 +296,90 @@ void ABNBotController::ClearCurrentTarget()
 
 	TargetEnemy.Reset();
 	TargetAcquiredSeconds = -1.0;
+	ArmNoTargetFallback();
 	if (bHadTarget)
 	{
 		RescoreBrain();
 	}
+}
+
+void ABNBotController::ArmNoTargetFallback()
+{
+	UWorld* World = GetWorld();
+	if (!World || NoTargetGraceSeconds <= 0.f)
+	{
+		return;
+	}
+
+	// One-shot, and re-armed only from ClearCurrentTarget/OnPossess. A LOOPING timer here would
+	// re-acquire every tick of it and make the grace period meaningless.
+	World->GetTimerManager().SetTimer(NoTargetTimerHandle, this,
+		&ABNBotController::OnNoTargetGraceElapsed, NoTargetGraceSeconds, /*bLoop=*/false);
+}
+
+void ABNBotController::OnNoTargetGraceElapsed()
+{
+	// Perception may have found someone while the timer ran; that answer always wins because it
+	// is the honest one.
+	if (GetThreat())
+	{
+		return;
+	}
+
+	AActor* Nearest = FindNearestValidEnemy();
+	if (!Nearest)
+	{
+		// Nobody alive to fight (between rounds, or last one standing). Try again rather than
+		// going quiet forever.
+		ArmNoTargetFallback();
+		return;
+	}
+
+	// Remember WHERE before setting the target: if the tree elects to Search rather than Engage,
+	// the memory is what carries the bot across the arena to it.
+	RememberThreatAt(Nearest->GetActorLocation());
+	SetCurrentTarget(Nearest);
+
+	UE_LOG(LogBN, Verbose, TEXT("BNBots: %s found nothing for %.1fs and is going after the nearest, %s."),
+		*GetNameSafe(GetPawn()), NoTargetGraceSeconds, *GetNameSafe(Nearest));
+}
+
+AActor* ABNBotController::FindNearestValidEnemy() const
+{
+	const APawn* MyPawn = GetPawn();
+	UWorld* World = GetWorld();
+	if (!MyPawn || !World)
+	{
+		return nullptr;
+	}
+
+	const FVector From = MyPawn->GetActorLocation();
+	AActor* Best = nullptr;
+	double BestDistSq = TNumericLimits<double>::Max();
+
+	// IsValidTarget is the SAME gate perception uses, deliberately: two different notions of
+	// "enemy" would let this fallback pick something the tree then refuses to fight.
+	for (TActorIterator<APawn> It(World); It; ++It)
+	{
+		APawn* Candidate = *It;
+		if (!Candidate || Candidate == MyPawn)
+		{
+			continue;
+		}
+		if (!IsValidTarget(Candidate))
+		{
+			continue;
+		}
+
+		const double DistSq = FVector::DistSquared(From, Candidate->GetActorLocation());
+		if (DistSq < BestDistSq)
+		{
+			BestDistSq = DistSq;
+			Best = Candidate;
+		}
+	}
+
+	return Best;
 }
 
 float ABNBotController::DrawReactionSeconds()
@@ -551,6 +643,7 @@ FBNBotTuningRow ABNBotController::DefaultTuning(FName TierName)
 		Row.StrafeIntervalSeconds = 2.2f;
 		Row.JukeEveryNthStep = 0;   // never jumps in a fight
 		Row.bEvadesBlasts = false;  // and you can catch it with a grenade
+		Row.HearingRange = 1600.f;  // still hears further than it sees (900), per R10.2
 	}
 	else if (TierName == FName(TEXT("ODST")))
 	{
@@ -564,6 +657,7 @@ FBNBotTuningRow ABNBotController::DefaultTuning(FName TierName)
 		Row.JumpCooldownSeconds = 1.2f;
 		Row.StrafeIntervalSeconds = 0.9f;
 		Row.JukeEveryNthStep = 2;
+		Row.HearingRange = 2700.f;
 	}
 	else if (TierName == FName(TEXT("Spartan")))
 	{
@@ -579,6 +673,11 @@ FBNBotTuningRow ABNBotController::DefaultTuning(FName TierName)
 		Row.JumpCooldownSeconds = 0.9f;
 		Row.StrafeIntervalSeconds = 0.7f;
 		Row.JukeEveryNthStep = 2;
+		// R10.2 SAYS HEARING IS LONGER THAN SIGHT, and until now it was only true by accident:
+		// HearingRange was never set per tier, so every tier inherited the struct's 2200. That
+		// left Recruit hearing 1300 further than it sees and a Spartan only 400 - the top tier
+		// was the DEAFEST relative to its own eyes, which is backwards. Now scaled with sight.
+		Row.HearingRange = 3200.f;
 	}
 	// Marine is the struct's own defaults — the founder's tuned arena numbers — so the default
 	// tier changes NOTHING about how today's bots behave. Every other tier is scaled around those

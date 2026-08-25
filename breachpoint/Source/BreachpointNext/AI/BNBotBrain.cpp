@@ -11,7 +11,9 @@ FBNBotAmbitionRow UBNBotBrain::DefaultRow(EBNBotAmbition Ambition)
 		Row.HealthWeight = 0.f;
 		Row.TargetWeight = 1.f;
 		Row.DistanceWeight = 0.f;
-		Row.CommitSeconds = 3.f;
+		// Founder, 25 Aug: bots must be far more persistent. 3s let a bot re-think itself out of
+		// a fight it was winning; 8s means once it commits to you, it stays committed.
+		Row.CommitSeconds = 8.f;
 		break;
 	case EBNBotAmbition::Survive:
 		Row.BaseUtility = 1.2f;
@@ -19,10 +21,16 @@ FBNBotAmbitionRow UBNBotBrain::DefaultRow(EBNBotAmbition Ambition)
 		Row.TargetWeight = 0.f;
 		Row.DistanceWeight = 0.f;
 		Row.CommitSeconds = 5.f;
-		Row.InterruptBelowHealthNorm = 0.35f;
+		// Was 0.35 - a bot broke off at a third health, which reads as timid. 0.15 means it
+		// fights until it is nearly dead, and Survive becomes a last resort rather than a habit.
+		Row.InterruptBelowHealthNorm = 0.15f;
 		break;
 	case EBNBotAmbition::Roam:
 	default:
+		// LEFT AT 0.2 ON PURPOSE. Lowering it to 0.15 was tried on 25 Aug and REVERTED the same
+		// session: Roam is what carries a bot off the top platform to the ground-level points of
+		// interest, so suppressing it reads to the founder as "they stopped falling". Aggression
+		// belongs in Fight's commit and the tier, never in starving Roam.
 		Row.BaseUtility = 0.2f;
 		Row.HealthWeight = 0.f;
 		Row.TargetWeight = 0.f;

@@ -112,7 +112,22 @@ struct FBNMoveToTargetTaskInstanceData
 
 	/** A mid-range firing distance: close enough to hit, not a melee shove. */
 	UPROPERTY(EditAnywhere, Category = "Parameter")
-	float AcceptanceRadius = 800.f;
+	/* 800 -> 450, founder 25 Aug: "they are not falling the top platform anymore".
+	 *
+	 * This was never a navlink problem. BR_Arena01's top platform sits at z=898 and the floor at
+	 * z=98 - EXACTLY 800 apart. At 800 a bot standing on the top platform with clear line of
+	 * sight straight down was already "in a firing position", so Close succeeded without the bot
+	 * taking a single step and it sniped from the roof for the whole match. The radius was the
+	 * same size as the level.
+	 *
+	 * 600 is chosen against the level's OWN geometry, not by feel:
+	 *   roof 898 -> floor 98 = 800  : ABOVE 600, so the roof bot must come down. Fixed.
+	 *   mid  498 -> floor 98 = 400  : BELOW 600, so a mid-platform bot can still fight downward.
+	 * 450 was tried first and was too tight: with horizontal spread added, mid-platform bots
+	 * could not reach firing range either, and a whole match produced 7 damage events against
+	 * 181 before. Bots stalled trying to close instead of fighting. 600 keeps the roof honest
+	 * without switching the arena's other tiers off. */
+	float AcceptanceRadius = 600.f;
 
 	/** Floor on how often a new path may be requested while hunting for a sightline. Without it,
 	 *  a bot standing inside AcceptanceRadius behind a wall re-requests a path EVERY FRAME:
@@ -141,7 +156,7 @@ struct FBNMoveToTargetTaskInstanceData
 	/** Give up on a target the bot has stopped getting closer to. Catches the wedged case that
 	 *  AlreadyAtGoal does not: a valid path that makes no headway. */
 	UPROPERTY(EditAnywhere, Category = "Parameter")
-	float GiveUpAfterNoProgressSeconds = 6.f;
+	float GiveUpAfterNoProgressSeconds = 12.f;  // was 6 - keep closing, do not shrug off
 
 	/** Internal: closest the bot has been on this approach, and how long since that improved. */
 	float BestDistance = 0.f;
@@ -185,7 +200,7 @@ struct FBNFireBurstTaskInstanceData
 	TObjectPtr<AAIController> Controller;
 
 	UPROPERTY(EditAnywhere, Category = "Parameter")
-	float BurstSeconds = 0.6f;
+	float BurstSeconds = 0.9f;   // was 0.6 - longer trigger pulls, more pressure
 
 	/** Internal: time left on the current burst. */
 	float SecondsRemaining = 0.f;

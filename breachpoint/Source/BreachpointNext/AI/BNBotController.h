@@ -148,6 +148,22 @@ protected:
 	UFUNCTION()
 	void OnPerceptionForgotten(AActor* Actor);
 
+	/* --- NEVER IDLE (founder, 25 Aug) --------------------------------------------------------
+	 * "make sure the ai always have a target, the closest one, if he is still looking for a new
+	 * one for a period of time."
+	 *
+	 * Perception alone leaves a bot with NOTHING to want whenever the arena happens to put every
+	 * enemy behind a wall — it roams, and roaming reads as disinterest. After the grace period
+	 * this hands it the nearest valid enemy so the tree always has a Fight to select.
+	 *
+	 * THE GRACE PERIOD IS THE WHOLE DESIGN. Acquiring instantly would be omniscience and would
+	 * delete Search, which is the behaviour that makes a bot look like it is hunting. Waiting
+	 * first means the bot genuinely tried to find you, and only then stops pretending it cannot.
+	 */
+	void ArmNoTargetFallback();
+	void OnNoTargetGraceElapsed();
+	AActor* FindNearestValidEnemy() const;
+
 	UBNAbilitySystemComponent* GetBotASC() const;
 
 	/** The FFA target rule, one function: a live ABNCharacter that is not my pawn. */
@@ -220,13 +236,23 @@ protected:
 	/** World seconds when the next jump is allowed. Negative so the first one always passes. */
 	double NextJumpAllowedSeconds = -1.0;
 
-	/** How long an unreachable target stays ignored before the bot is willing to try again. */
+	/** How long an unreachable target stays ignored before the bot is willing to try again.
+	 *  8 -> 3 was tried on 25 Aug and was too eager: the bot re-acquired an unreachable target
+	 *  every 3s and never got a window to do anything else. 6 keeps it persistent without
+	 *  starving Roam, which is what carries a bot down off the top platform. */
 	UPROPERTY(Config, EditDefaultsOnly, Category = "Bot")
-	float UnreachableForgetSeconds = 8.f;
+	float UnreachableForgetSeconds = 6.f;
+
+	/** How long a bot may have NO target before it is handed the nearest enemy. Zero disables the
+	 *  fallback entirely and returns the bot to pure perception. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "Bot|Aggression")
+	float NoTargetGraceSeconds = 5.f;
+
+	FTimerHandle NoTargetTimerHandle;
 
 	/** How long a last-known position is worth walking to. */
 	UPROPERTY(Config, EditDefaultsOnly, Category = "Bot")
-	float LastKnownFreshSeconds = 8.f;
+	float LastKnownFreshSeconds = 16.f;     // was 8 - hunt a memory twice as long
 
 	double TargetAcquiredSeconds = -1.0;
 	float CurrentReactionSeconds = 0.f;
