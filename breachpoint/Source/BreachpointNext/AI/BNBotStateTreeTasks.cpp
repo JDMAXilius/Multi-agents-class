@@ -410,6 +410,18 @@ EStateTreeRunStatus FBNMoveToTargetTask::Tick(FStateTreeExecutionContext& Contex
 		ReportLocomotion(*Pawn, TEXT("closing"), DeltaTime, InstanceData.SecondsUntilLocomotionLog);
 	}
 
+	// SPRINT TO CLOSE. Until now bots never pressed Sprint at all, which is a competitive fact
+	// rather than a polish item: sprint is a MULTIPLY on MoveSpeed, so a sprinting human simply
+	// outran every bot in the game, always, and could never be caught.
+	//
+	// The rule is "far OR blind": beyond 1.5x the firing radius there is ground to cover, and
+	// with no line of sight there is nothing to shoot at anyway. Inside both, drop back to a walk
+	// — a bot that sprints into its own firing position arrives unable to shoot, because
+	// UBNGA_Sprint holds State.Movement.Sprinting for as long as the key is down.
+	const bool bBlind = !Bot->HasLineOfSightToTarget();
+	const bool bFar = DistanceNow > InstanceData.AcceptanceRadius * 1.5f;
+	Bot->SetSprinting(bBlind || bFar);
+
 	InstanceData.SecondsUntilRepath -= DeltaTime;
 
 	// Diagnostic, ~1/sec while closing. A bot that neither arrives nor moves is the hardest
@@ -467,6 +479,8 @@ void FBNMoveToTargetTask::ExitState(FStateTreeExecutionContext& Context, const F
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	if (ABNBotController* Bot = ResolveBot(Context, InstanceData.Controller))
 	{
+		// Let go of sprint on the way out, or the bot carries the speed GE into Shoot.
+		Bot->SetSprinting(false);
 		Bot->StopMovement();
 	}
 }
@@ -1155,6 +1169,11 @@ EStateTreeRunStatus FBNMoveToPointOfInterestTask::Tick(FStateTreeExecutionContex
 		return EStateTreeRunStatus::Succeeded;
 	}
 
+	// Crossing the arena with nothing to fight is the one time speed costs a bot nothing: no
+	// target to lose sight of, no burst to interrupt. It is also what stops a roaming bot reading
+	// as a patrolling tourist, and what gets it down off a platform and into the fight sooner.
+	Controller->SetSprinting(true);
+
 	if (!InstanceData.bArrived)
 	{
 		const APawn* Pawn = Controller->GetPawn();
@@ -1230,6 +1249,8 @@ void FBNMoveToPointOfInterestTask::ExitState(FStateTreeExecutionContext& Context
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	if (ABNBotController* Bot = ResolveBot(Context, InstanceData.Controller))
 	{
+		// Down to a walk before anything else selects: Engage must not inherit a held sprint.
+		Bot->SetSprinting(false);
 		Bot->StopMovement();
 		// Move priority only — clearing it must never disturb the Gameplay-priority focus that
 		// BN Face Target owns while engaging.

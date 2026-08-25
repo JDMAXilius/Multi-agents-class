@@ -39,6 +39,12 @@ public:
 	void PressInputTag(FGameplayTag InputTag);
 	void ReleaseInputTag(FGameplayTag InputTag);
 
+	/** Sprint is a HELD input: the press applies the speed GE and the tag, the release takes both
+	 *  away. A task that pressed and forgot would leave a bot sprinting for the rest of its life,
+	 *  so the hold state lives HERE — one owner, released on unpossess no matter which task was
+	 *  mid-thought. Idempotent: repeat calls with the same value do nothing. */
+	void SetSprinting(bool bWantSprint);
+
 	/** Null when the target is gone or dead — callers never see a corpse as a target. Null ALSO
 	 *  while the ambition is Survive: the tree's Engage exits by its own HasTarget condition,
 	 *  which is how the brain steers the tree without editing it. */
@@ -267,6 +273,24 @@ protected:
 	// R10.4 — the warned blast. Cleared by time alone: the projectile that warned us may be
 	// destroyed before we act, so nothing here may hold a pointer to it.
 	FVector IncomingBlastCenter = FVector::ZeroVector;
+	/** True while the sprint input is held. See SetSprinting. */
+	bool bSprintHeld = false;
+
+	/* --- line-of-sight cache -----------------------------------------------------------------
+	 * AAIController::LineOfSightTo is a real trace (up to 7 of them against the target's sight
+	 * points). Shoot runs three ticking tasks and TWO of them asked every frame, so eight
+	 * fighting bots spent 16+ traces per frame re-answering a question that changes on a ~100 ms
+	 * timescale. The quality bar is 30 Hz with 8 fighters and nobody had measured it.
+	 *
+	 * Cached per TARGET, not just per time: switching target must invalidate immediately or a bot
+	 * inherits the last one's visibility for up to the cache window and fires at a wall. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "Bot")
+	float LineOfSightCacheSeconds = 0.1f;
+
+	mutable TWeakObjectPtr<const AActor> LosCachedTarget;
+	mutable double LosCachedAtSeconds = -1.0;
+	mutable bool bLosCachedResult = false;
+
 	double IncomingBlastAtSeconds = -1.0;
 
 	/** When this bot was TOLD about the blast. R11's clock for explosives starts here. */

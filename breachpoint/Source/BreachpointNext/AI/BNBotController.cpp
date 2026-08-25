@@ -152,6 +152,11 @@ void ABNBotController::OnPossess(APawn* InPawn)
 
 void ABNBotController::OnUnPossess()
 {
+	// Let go of the key before the pawn goes. A held sprint whose release never arrives leaves
+	// the speed GE and the Sprinting tag on the PERSISTENT PlayerState ASC, which outlives the
+	// body — the same shape as the jump-tag leak UBNGA_Jump guards against.
+	SetSprinting(false);
+
 	APawn* PreviousPawn = GetPawn();
 
 	if (StateTreeAI)
@@ -248,10 +253,52 @@ ABNWeapon* ABNBotController::GetCurrentWeapon() const
 bool ABNBotController::HasLineOfSightToTarget() const
 {
 	AActor* Target = GetCurrentTarget();
+	if (!Target)
+	{
+		return false;
+	}
+
+	const UWorld* World = GetWorld();
+	const double Now = World ? World->GetTimeSeconds() : -1.0;
+
+	// Serve from cache only for the SAME target and inside the window. A target switch drops the
+	// cache on the spot: inheriting the previous target's visibility is how a bot ends up firing
+	// at a wall for a tenth of a second.
+	if (Now >= 0.0
+		&& LosCachedTarget.Get() == Target
+		&& LosCachedAtSeconds >= 0.0
+		&& (Now - LosCachedAtSeconds) < LineOfSightCacheSeconds)
+	{
+		return bLosCachedResult;
+	}
+
 	// AAIController::LineOfSightTo traces from the pawn's view point against the target's own
 	// sight-test points — the same geometry the sight sense used to acquire it, so a bot that
 	// lost the corner cannot keep firing through it.
-	return Target != nullptr && LineOfSightTo(Target);
+	const bool bResult = LineOfSightTo(Target);
+
+	LosCachedTarget = Target;
+	LosCachedAtSeconds = Now;
+	bLosCachedResult = bResult;
+	return bResult;
+}
+
+void ABNBotController::SetSprinting(bool bWantSprint)
+{
+	if (bWantSprint == bSprintHeld)
+	{
+		return;
+	}
+
+	bSprintHeld = bWantSprint;
+	if (bWantSprint)
+	{
+		PressInputTag(BNTags::Input_Sprint);
+	}
+	else
+	{
+		ReleaseInputTag(BNTags::Input_Sprint);
+	}
 }
 
 EBNBotAmbition ABNBotController::GetAmbition() const
