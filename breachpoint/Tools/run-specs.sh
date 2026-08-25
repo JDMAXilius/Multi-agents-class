@@ -38,12 +38,16 @@ UPROJECT="$REPO_ROOT/Breachpoint.uproject"
 [[ -f "$UPROJECT" ]] || blocked "Breachpoint.uproject not found at $UPROJECT"
 
 # --- R21's rule, for the same reason: editor state is global -------------------------
-# An editor holding THIS project, not the substring "UnrealEditor". macOS auto-launches
-# ~/Library/Services/UnrealEditorServices.app, whose process name contains "UnrealEditor" and
-# which is not an editor at all — so the bare pattern reported "an editor is already running"
-# on a machine with NO editor open, and this gate could never pass. Matching the .uproject on
-# the command line is what separates a real editor session from the Finder helper.
-if pgrep -f "UnrealEditor(-Cmd)?.*$(basename "$UPROJECT")" >/dev/null 2>&1; then
+# -x matches the process NAME exactly, and that is the whole point:
+#   * "UnrealEditorServices" (a Finder helper macOS auto-launches, not an editor) is a
+#     DIFFERENT name, so it no longer trips this gate. With the old `pgrep -f "UnrealEditor"`
+#     it did, and rung 2 could never pass on a Mac with no editor open at all.
+#   * -f searches the whole COMMAND LINE, so it also matched any shell whose arguments merely
+#     CONTAINED the pattern — including the one invoking this check. Measured: a -f pattern
+#     matched /bin/zsh. A gate that fires on the process asking the question is worthless.
+# Not project-scoped on purpose: UE editor and build state is global (R21's own rationale),
+# so any running editor is a reason to stop, whichever project it has open.
+if pgrep -x "UnrealEditor(-Cmd)?" >/dev/null 2>&1; then
   blocked "An UnrealEditor process is already running." \
           "Automation runs headless against the same project state; close the editor first."
 fi
