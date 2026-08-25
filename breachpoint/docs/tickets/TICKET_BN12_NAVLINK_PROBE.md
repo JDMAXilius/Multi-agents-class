@@ -10,7 +10,9 @@ it already has. That approach is sound and it is how UE's own generator works. B
 two engine facts that this repo cannot see: the cloud session has no engine, and
 `dev.epicgames.com`, `docs.unrealengine.com` and `forums.unrealengine.com` are all blocked by its
 egress proxy. Every API name below came from a **search summary**, which is exactly the source
-that put three APIs into `BNDamageSpec` that had to be torn out again.
+that put three APIs into `BNDamageSpec` that had to be torn out again. The full research —
+the mechanism, what Halo does, the plan these answers feed, and the complete unverified
+inventory — is `docs/BREACHPOINT-NEXT-RESEARCH-TRAVERSAL.md`; read it first.
 
 **So nothing gets written until these are transcribed from the headers on the machine that will
 compile them.** Question 2 in particular can kill an entire approach, and it fails at PACKAGE

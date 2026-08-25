@@ -24,9 +24,14 @@ reports a missing node type is a STOP, not a warning to push past.
 - requires: editor-live
 - Rung 1 PASS for `BreachpointEditor` on the current tree (it was, 24 Aug — re-run only if
   `Source/BreachpointNext/AI/` changed since)
-- `Tools/bn/62_bot_assets.py` probes all **14** node types, five of them new:
-  `FBNStrafeTask`, `FBNShouldTakeCoverCondition`, `FBNTakeCoverTask`,
-  `FBNIncomingBlastCondition`, `FBNEvadeBlastTask`
+- `Tools/bn/62_bot_assets.py` probes all **21** node types — every struct in
+  `BNBotStateTreeTasks.h`, checked mechanically both directions. Five are the R10 additions
+  this ticket exists for: `FBNStrafeTask`, `FBNShouldTakeCoverCondition`, `FBNTakeCoverTask`,
+  `FBNIncomingBlastCondition`, `FBNEvadeBlastTask`.
+  <!-- 25 Aug: the list held 14. The seven it was missing — Reacted, CanThrowGrenade,
+       ThrowGrenade, InMeleeRange, Melee, HasLastKnown, SearchLastKnown — are all nodes the
+       tree places, so a stale editor that had lost the grenade, the knife and the hunt would
+       have passed the gate that exists to catch exactly that. -->
 - owner_path: `Content/BN/AI/`, `Content/BN/Data/`
   <!-- ASSETS ONLY. This ticket writes NO C++. If something here cannot be done without a
        Source/ edit, that is a contract_gap: write it in the Log and STOP. The last time a
@@ -56,7 +61,7 @@ reports a missing node type is a STOP, not a warning to push past.
 
 ## Done when
 
-- [ ] `probe` reported all 14 node types present, output in the Log
+- [ ] `probe` reported all 21 node types present, output in the Log
 - [ ] `ST_BNBot` read back from a fresh load contains `Evade` and `Cover` states and a `Shoot`
       state with a strafe task, `compiled: YES`
 - [ ] `DT_BNBotTuning` read back with four tier rows; Marine's sight is 1200/1500/70

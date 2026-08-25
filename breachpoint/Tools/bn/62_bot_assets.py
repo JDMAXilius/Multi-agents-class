@@ -65,6 +65,18 @@ NODE_STRUCTS = [
     ("FBNReloadTask", "/Script/BreachpointNext.BNReloadTask", "task"),
     ("FBNSelectWeaponTask", "/Script/BreachpointNext.BNSelectWeaponTask", "task"),
     ("FBNMoveToPointOfInterestTask", "/Script/BreachpointNext.BNMoveToPointOfInterestTask", "task"),
+    # 25 Aug 2026 — the seven this list was missing. Every one is a node the tree genuinely
+    # places, so their absence was not a scoping choice: the probe existed to stop a stale
+    # editor authoring a tree WITHOUT the nodes it needs, and it would have waved through a
+    # build that had lost the grenade, the knife, the hunt and the reaction gate. Found by
+    # counting the structs in BNBotStateTreeTasks.h (21) against this list (14).
+    ("FBNReactedCondition", "/Script/BreachpointNext.BNReactedCondition", "condition"),
+    ("FBNCanThrowGrenadeCondition", "/Script/BreachpointNext.BNCanThrowGrenadeCondition", "condition"),
+    ("FBNThrowGrenadeTask", "/Script/BreachpointNext.BNThrowGrenadeTask", "task"),
+    ("FBNInMeleeRangeCondition", "/Script/BreachpointNext.BNInMeleeRangeCondition", "condition"),
+    ("FBNMeleeTask", "/Script/BreachpointNext.BNMeleeTask", "task"),
+    ("FBNHasLastKnownCondition", "/Script/BreachpointNext.BNHasLastKnownCondition", "condition"),
+    ("FBNSearchLastKnownTask", "/Script/BreachpointNext.BNSearchLastKnownTask", "task"),
 ]
 SCRIPT_STRUCT = "/Script/CoreUObject.ScriptStruct"
 
