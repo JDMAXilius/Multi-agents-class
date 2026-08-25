@@ -1448,7 +1448,30 @@ namespace
 			Falloff = FMath::Lerp(1.f, FMath::Clamp(Row->FalloffMinMultiplier, 0.f, 1.f), Alpha);
 		}
 
-		const float PerPull = FMath::Max(0.f, Row->Damage) * FMath::Max(1, Row->ShotCount) * Falloff;
+		// SPREAD IS THE REAL RANGE TERM IN THIS BUILD, and that was found by measuring rather
+		// than assuming. Every shipped row has FalloffStartDistance = FalloffEndDistance = 0, so
+		// the curve above is currently dead code and scoring on damage alone made every bot pick
+		// the Shotgun at EVERY range — measured, 12 of 12 settles, score 720 at 99uu and at
+		// 1759uu alike. The curve stays because the moment a designer fills those columns in it
+		// starts working, with no code change.
+		//
+		// What DOES differ today is SpreadAngle: Rifle and Pistol 0.1 degrees, Shotgun 5. Six
+		// pellets thrown into a 5-degree cone nearly all land at knife range and nearly all miss
+		// across the arena, which is the honest reason a shotgun is a close-range weapon — not a
+		// name this code checks for.
+		//
+		// The cone's radius at the target is d*tan(theta). Once that exceeds the target's own
+		// radius, the fraction of shots landing falls off as the ratio of AREAS, hence squared.
+		// Clamped to 1: inside the cone's own radius every shot is on the body.
+		const float ConeRadius = Distance * FMath::Tan(FMath::DegreesToRadians(FMath::Max(0.f, Row->SpreadAngle)));
+		constexpr float TargetRadius = 35.f;   // the nav agent radius — a torso's worth of width
+		float HitFraction = 1.f;
+		if (ConeRadius > TargetRadius)
+		{
+			HitFraction = FMath::Square(TargetRadius / ConeRadius);
+		}
+
+		const float PerPull = FMath::Max(0.f, Row->Damage) * FMath::Max(1, Row->ShotCount) * Falloff * HitFraction;
 		const float Interval = FMath::Max(0.05f, Row->FireDelay);
 		float Score = PerPull / Interval;
 
