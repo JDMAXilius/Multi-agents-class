@@ -357,6 +357,18 @@ AActor* ABNBotController::FindNearestValidEnemy() const
 	AActor* Best = nullptr;
 	double BestDistSq = TNumericLimits<double>::Max();
 
+	// BOUNDED BY THE BOT'S OWN EYES. The first version of this iterated every pawn in the world
+	// with no range and no line-of-sight test, which made SightRadius decorative: it decided only
+	// whether a bot found you in under 5 seconds or in exactly 5. Every match converged on global
+	// omniscience, and GDD §2.8 promises the opposite ("no privileged state").
+	//
+	// LoseSightRadius rather than SightRadius on purpose: this is the generous edge of what the
+	// bot could plausibly still know about, and it is the same number that governs letting a real
+	// target go. A bot with nobody inside it genuinely has nothing to chase and should keep
+	// roaming, which is also what carries it off the top platform.
+	const float Reach = FMath::Max(GetTuning().LoseSightRadius, GetTuning().SightRadius);
+	const double ReachSq = static_cast<double>(Reach) * static_cast<double>(Reach);
+
 	// IsValidTarget is the SAME gate perception uses, deliberately: two different notions of
 	// "enemy" would let this fallback pick something the tree then refuses to fight.
 	for (TActorIterator<APawn> It(World); It; ++It)
@@ -372,11 +384,20 @@ AActor* ABNBotController::FindNearestValidEnemy() const
 		}
 
 		const double DistSq = FVector::DistSquared(From, Candidate->GetActorLocation());
-		if (DistSq < BestDistSq)
+		if (DistSq > ReachSq || DistSq >= BestDistSq)
 		{
-			BestDistSq = DistSq;
-			Best = Candidate;
+			continue;
 		}
+
+		// And it must be SEEABLE. Without this a bot walks through two walls to a player who has
+		// never been perceived, which is the wallhack this whole guard exists to remove.
+		if (!LineOfSightTo(Candidate))
+		{
+			continue;
+		}
+
+		BestDistSq = DistSq;
+		Best = Candidate;
 	}
 
 	return Best;
@@ -387,12 +408,33 @@ float ABNBotController::DrawReactionSeconds()
 	// Seeded on identity + draw index, so the trace replays: no wall clock, no global RNG (§5).
 	FRandomStream Stream(static_cast<int32>(GetTypeHash(this)) ^ (ReactionDrawCount++ * 0x9E3779B9));
 	const FBNBotTuningRow& Row = GetTuning();
-	const float Low = FMath::Max(0.f, Row.ReactionSecondsMin);
+
+	// R11 IS A LAW, NOT A DIFFICULTY KNOB: "No tier, scalar, or ambition weight may produce
+	// sub-human reaction." It is enforced HERE, at the single point every reaction is drawn,
+	// rather than trusted to four tier tables plus a DataTable a designer can edit — because
+	// that trust already failed. The shipped config ran BotTier=Spartan at 0.08-0.16s and
+	// ODST at 0.14-0.28s: a closed ruling breached in data, silently, with no compile error.
+	// A clamp at the draw cannot be edited around from a table or an ini.
+	static constexpr float R11ReactionFloorSeconds = 0.20f;
+
+	const float Low = FMath::Max(R11ReactionFloorSeconds, Row.ReactionSecondsMin);
 	const float High = FMath::Max(Low, Row.ReactionSecondsMax);
 	const float Raw = Stream.FRandRange(Low, High);
 	return ReactionQuantumSeconds > 0.f
 		? FMath::Max(Low, FMath::GridSnap(Raw, ReactionQuantumSeconds))
 		: Raw;
+}
+
+bool ABNBotController::HasReactedToBlast() const
+{
+	// The warning stamps IncomingBlastNoticedSeconds; the bot may not act until its own drawn
+	// reaction has elapsed, exactly as for a sighting. Same clock, same law, one fewer exception.
+	if (IncomingBlastNoticedSeconds < 0.0)
+	{
+		return false;
+	}
+	const UWorld* World = GetWorld();
+	return World && (World->GetTimeSeconds() - IncomingBlastNoticedSeconds) >= CurrentReactionSeconds;
 }
 
 bool ABNBotController::HasReactedToTarget() const
@@ -439,7 +481,13 @@ bool ABNBotController::HasFreshLastKnownLocation() const
 	// cannot tell "no target because I lost them" from "no target because I am running" — and
 	// without this a hurt bot walked back toward the thing it was escaping. Roam already flips to
 	// the point of interest FARTHEST from the threat when Surviving; Search simply never got told.
-	if (Brain && Brain->GetAmbition() == EBNBotAmbition::Survive)
+	// FLEEING REQUIRES SOMETHING TO FLEE FROM. The Survive check above is right when a bot is
+	// running from a live threat; it was wrong for the far more common case. Survive also wins on
+	// UTILITY below ~33% health with NO target at all, and BN has no health regeneration — so a
+	// bot that dropped under a third health had Search switched off for THE REST OF ITS LIFE and
+	// could never hunt a last-known again. Requiring a raw threat scopes the R9 fix to the case
+	// it was written for.
+	if (Brain && Brain->GetAmbition() == EBNBotAmbition::Survive && GetThreat() != nullptr)
 	{
 		return false;
 	}
@@ -776,6 +824,14 @@ void ABNBotController::NotifyIncomingBlast(const FVector& Center, double Detonat
 	IncomingBlastCenter = Center;
 	IncomingBlastAtSeconds = DetonateAtSeconds;
 	IncomingBlastRadius = FMath::Max(0.f, BlastRadius);
+
+	// Start R11's clock, and DRAW a fresh reaction for it. Without the draw a bot would inherit
+	// whatever reaction its last sighting happened to roll, which is not this event's.
+	if (const UWorld* NoticeWorld = GetWorld())
+	{
+		IncomingBlastNoticedSeconds = NoticeWorld->GetTimeSeconds();
+		CurrentReactionSeconds = DrawReactionSeconds();
+	}
 
 	UE_LOG(LogBN, Verbose, TEXT("BNBots: %s sees a grenade about to go off %.0fuu away."),
 		*GetNameSafe(GetPawn()),

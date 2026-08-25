@@ -20,6 +20,13 @@ ABNGameMode::ABNGameMode()
 	// A constructor value is only a default a Blueprint child can out-serialise; InitGame below is
 	// what makes it stick. Kept anyway so the bare C++ class is correct with no BP in play.
 	GameStateClass = ABNGameState::StaticClass();
+
+	// THE LINE THAT MAKES A LEVEL RESTART SURVIVABLE. HandleMatchHasEnded now calls RestartGame(),
+	// which ServerTravels back to the same map so the round starts from the level's authored
+	// state. Without seamless travel that would tear down and reconnect every client on a listen
+	// server between rounds; with it, connections and PlayerStates are carried across and the
+	// reload is invisible to anyone playing.
+	bUseSeamlessTravel = true;
 }
 
 void ABNGameMode::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage)
@@ -599,10 +606,39 @@ void ABNGameMode::RestartMatch()
 		}
 	}
 
-	// Back to warmup, THROUGH the machine: HandleMatchIsWaitingToStart re-runs the fill (which is
-	// also what replaces a bot that fell out last round), the parent's poll asks ReadyToStartMatch
-	// on the next tick, and HandleMatchHasStarted rebodies everyone because the generation says
-	// restart. Everyone is already frozen from the post-match, and stays frozen until that start.
+	// FOUNDER, 25 Aug: "when match ends restart level to start a new match."
+	//
+	// This used to be SetMatchState(WaitingToStart) — a reset IN PLACE, chosen so the listen
+	// server's connections survived the round. That concern is real and is NOT abandoned here:
+	// bUseSeamlessTravel is enabled in the constructor, which is what lets the map actually
+	// reload without dropping a single client. A bare RestartGame() with seamless travel off
+	// would ServerTravel every connection through a full reconnect, which is exactly the cost
+	// the old comment was avoiding.
+	//
+	// A real reload is what an in-place reset cannot give: the level's own actors go back to
+	// their authored state — dropped weapons, spent pickups, projectiles in flight, corpses and
+	// any navmesh dirtied during the round. The score wipe above still matters because seamless
+	// travel CARRIES PlayerStates across, so kills would otherwise survive the reload and the
+	// first elimination of the new round would cross the limit again immediately.
+	//
+	// BUT NOT IN PIE, AND THIS IS MEASURED, NOT ASSUMED. RestartGame() -> ServerTravel ENDS a
+	// Play-In-Editor session rather than reloading it: tested 25 Aug, the match reached
+	// WaitingPostMatch, the timer fired, and PIE simply stopped. Shipping the travel unguarded
+	// would kill the founder's test session at the end of every single round.
+	//
+	// So the path is chosen by whether travel can actually work here, and it SAYS WHICH ONE IT
+	// TOOK — a silent difference between what PIE exercises and what a packaged build does is
+	// exactly the class of bug the honesty ladder exists to stop.
+	const UWorld* MatchWorld = GetWorld();
+	const bool bCanTravel = MatchWorld && !MatchWorld->IsPlayInEditor();
+	if (bCanTravel)
+	{
+		UE_LOG(LogBN, Log, TEXT("BNGameMode: match over — reloading the level (seamless travel)."));
+		RestartGame();
+		return;
+	}
+
+	UE_LOG(LogBN, Log, TEXT("BNGameMode: match over — resetting IN PLACE (PIE: ServerTravel would end the session)."));
 	SetMatchState(MatchState::WaitingToStart);
 }
 

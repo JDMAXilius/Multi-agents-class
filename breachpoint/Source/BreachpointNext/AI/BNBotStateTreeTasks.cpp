@@ -620,6 +620,21 @@ EStateTreeRunStatus FBNEvadeBlastTask::EnterState(FStateTreeExecutionContext& Co
 		return EStateTreeRunStatus::Failed;
 	}
 
+	// R11 APPLIES TO GRENADES TOO, and this state was the one place it was skipped. Nade, Knife
+	// and Shoot all carry FBNReactedCondition; Evade carried none, so a bot began sprinting out
+	// of a blast circle 0ms after the warning — a warning ABNProjectile pushes with no
+	// line-of-sight test at all. The result was a bot dodging, through a wall, a grenade it had
+	// never seen, 1.2s before it went off. "No tier, scalar, or ambition weight may produce
+	// sub-human reaction" does not carve out explosives.
+	//
+	// Failing (not waiting) is deliberate: the tree re-selects every frame from Root, so the bot
+	// simply keeps not-reacting until the window has passed, exactly as it does for a target it
+	// has seen but not yet earned the right to shoot.
+	if (!Bot->HasReactedToBlast())
+	{
+		return EStateTreeRunStatus::Failed;
+	}
+
 	// STRAIGHT AWAY, flat. The direction a player picks without thinking, and the only one that is
 	// right regardless of geometry: every other bearing out of a circle is longer.
 	FVector Away = Pawn->GetActorLocation() - Center;
@@ -1121,14 +1136,23 @@ EStateTreeRunStatus FBNMoveToPointOfInterestTask::EnterState(FStateTreeExecution
 
 EStateTreeRunStatus FBNMoveToPointOfInterestTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
 {
-	// A target appearing mid-walk is deliberately NOT handled here: the tree's Engage state
-	// preempts this one through FBNHasTargetCondition.
+	// THIS COMMENT USED TO SAY the tree's Engage state preempts Roam through
+	// FBNHasTargetCondition, and that was wrong in a way nobody had measured: an ENTER condition
+	// is tested at SELECTION, and BNBotAuthoring authors no OnTick and no event transitions. So a
+	// roaming bot kept walking its leg — and then its dwell — while an enemy stood in front of it,
+	// and Roam is the state bots spend the most time in. Succeeding here hands control back to
+	// Root, which re-selects and lands on Engage immediately.
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
-	AAIController* Controller = ResolveBot(Context, InstanceData.Controller);
+	ABNBotController* Controller = ResolveBot(Context, InstanceData.Controller);
 	const ABNPointOfInterest* Point = InstanceData.CurrentPoint.Get();
 	if (!Controller || !Point)
 	{
 		return EStateTreeRunStatus::Failed;
+	}
+
+	if (Controller->GetCurrentTarget() != nullptr)
+	{
+		return EStateTreeRunStatus::Succeeded;
 	}
 
 	if (!InstanceData.bArrived)

@@ -129,6 +129,10 @@ public:
 	 *  target acquisition has passed. */
 	bool HasReactedToTarget() const;
 
+	/** R11 for explosives: has enough time passed since this blast was announced for a human to
+	 *  have plausibly noticed it? Uses the same drawn reaction as a target sighting. */
+	bool HasReactedToBlast() const;
+
 	/** The weapon the bot is holding, through the pawn's equipment component — the same object a
 	 *  human's HUD reads. Null when unarmed, mid-swap, or the pawn is gone. */
 	ABNWeapon* GetCurrentWeapon() const;
@@ -264,6 +268,9 @@ protected:
 	// destroyed before we act, so nothing here may hold a pointer to it.
 	FVector IncomingBlastCenter = FVector::ZeroVector;
 	double IncomingBlastAtSeconds = -1.0;
+
+	/** When this bot was TOLD about the blast. R11's clock for explosives starts here. */
+	double IncomingBlastNoticedSeconds = -1.0;
 	float IncomingBlastRadius = 0.f;
 
 	/** How long after breaking line of sight before this bot is willing to do it again. */
