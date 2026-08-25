@@ -1,5 +1,9 @@
 # TICKET — the cue Blueprints: C++ keeps the logic, the editor keeps the references
 
+> STATUS: done — mac terminal 14 Aug 2026. Four BP children created, defaults only, fresh
+> read-backs exact, and the PIE log shows all four tags registering to their `_C` classes. Assets
+> present at `Content/BN/AbilitySystem/Cues/`.
+
 **Cut:** 13 August 2026 by the cloud lead, from the founder's standing ruling ·
 **For:** the terminal session (editor + Unreal MCP)
 **Read [`ASSET-RULES`](BREACHPOINT-NEXT-ASSET-RULES.md) §7 first** — it is the rule this executes,

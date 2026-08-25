@@ -52,6 +52,18 @@
 >
 > **Open BN tickets as of 24 Aug:** `TICKET_BN10_BOT_ASSETS` (editor-live — the R10 blocker, and
 > the highest-value action outstanding) and `TICKET_BN11_HUD_SLOTS` (editor-live, additive).
+>
+> **All seventeen old BN task docs were audited the same day and every one is CLOSED.** Five had
+> no status line at all — `AIM-GRAPH-AUDIT`, `CUE-BLUEPRINTS`, `HIT-REACTIONS`,
+> `R3-W3-MELEE-GRENADE`, `R7-WBP-HUD` — so their state was unknowable at a glance even though
+> each Log said plainly it was finished. They now carry one, stamped from the evidence already in
+> their own Logs plus a check that the assets exist at the ini paths. Nothing was marked done on
+> a guess: where a Log recorded no read-back, the status line says which check stood in for it.
+>
+> **So the audit found nothing still live** beyond what BN10 and BN11 already cover — with one
+> exception that is the FOUNDER's, not a ticket's: four `R7-WBP-HUD` read-backs need a hand on a
+> keyboard (death overlay, hold-Tab scoreboard, post-match pin, and the pause menu, which can only
+> be tested in STANDALONE because Escape is Stop-PIE in the editor).
 
 ---
 

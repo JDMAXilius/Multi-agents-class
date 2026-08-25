@@ -1,5 +1,9 @@
 # TICKET — which writer wins the aim surface: an AUDIT, not a fix
 
+> STATUS: done — windows terminal 19 Aug 2026. AUDIT COMPLETE, nothing changed (`is_dirty:
+> false` on every asset opened). It found the premise of every aim ticket before it was WRONG;
+> `TASK-AIM-LYRA-VERIFY` then closed the question on 24 Aug with verdict 1, the aim chain is alive.
+
 **Cut:** 17 August 2026 by the cloud lead · **For:** `bn-editor` / the terminal session (Unreal MCP)
 **Read [`ASSET-RULES`](BREACHPOINT-NEXT-ASSET-RULES.md) §5 first.**
 

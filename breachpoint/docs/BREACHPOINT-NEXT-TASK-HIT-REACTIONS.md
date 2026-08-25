@@ -1,5 +1,8 @@
 # TICKET — hit reactions: ONE DataAsset, thirteen rows, nothing else
 
+> STATUS: done — mac terminal 14 Aug 2026. `DA_BNHitReactions` on `UBNHitReactionSet` at the
+> exact ini path, nine rows read back; `DefaultGame.ini:411` names it.
+
 **Cut:** 13 August 2026 by the cloud lead · **For:** the terminal session (editor + Unreal MCP)
 **Read [`ASSET-RULES`](BREACHPOINT-NEXT-ASSET-RULES.md) §5 and §7 first.**
 

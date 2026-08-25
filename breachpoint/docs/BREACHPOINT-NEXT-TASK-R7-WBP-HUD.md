@@ -1,5 +1,11 @@
 # TICKET — the HUD's ELEVEN WBPs, Tab, and Esc
 
+> STATUS: done for the EDITOR half — eleven WBPs, the input assets and the `Icon` column (3 of 4
+> rows), across four terminal passes 22 Aug. Four read-backs were handed back to the FOUNDER and
+> are still unrun: death overlay, hold-Tab scoreboard, post-match pin, and the pause menu in
+> STANDALONE (Escape is Stop-PIE in the editor). The optional slots R7.6/R7.7 added afterwards are
+> a NEW ticket: `docs/tickets/TICKET_BN11_HUD_SLOTS.md`.
+
 **Cut:** 21 August 2026 by the cloud lead · **For:** `bn-editor` / the terminal
 **Prerequisite:** a build containing R7 Waves 0–4 (the `UI/` folder — `UBNHUDLayout` must appear
 in the reparent picker; if it does not, the build is stale: **stop and report**).

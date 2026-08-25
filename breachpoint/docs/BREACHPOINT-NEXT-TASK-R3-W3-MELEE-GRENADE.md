@@ -1,5 +1,9 @@
 # HANDOFF — melee + grenade: the six editor edits
 
+> STATUS: done — mac terminal 14 Aug 2026. §1 SUPERSEDED by `TASK-INPUT-WIRING` (done); §2's
+> two `DT_BNWeapons` cells filled and read back exact. Melee's root cause was §2 never having been
+> executed — the ability refuses to swing without the row's montage.
+
 **Cut:** 13 August 2026 by the cloud lead · **For:** the founder (or the terminal, if asked)
 **Read [`BREACHPOINT-NEXT-ASSET-RULES.md`](BREACHPOINT-NEXT-ASSET-RULES.md) first** — §1 (reuse,
 never author) and §5 (do only what is listed) govern this.
