@@ -2,23 +2,28 @@
 
 #include "CoreMinimal.h"
 #include "AIController.h"
+#include "Perception/AIBSensorium.h"
 #include "AIBBotController.generated.h"
 
 class IAIBAvatarInterface;
+class UAIPerceptionComponent;
+class UAISenseConfig_Hearing;
+class UAISenseConfig_Sight;
+struct FAIStimulus;
 
 /**
- * The HAND. Owns the sensorium, hosts the brain, runs the executor, presses verbs —
- * and decides nothing itself: deciding is the brain's, acting is the avatar's.
+ * The HAND. Owns the engine perception (eyes/ears), feeds the sensorium, hosts the brain
+ * (Phase 2), runs the executor (Phase 3), presses verbs — and decides nothing itself.
  *
- * Server-only by construction (bots are spawned only by the authority's game mode) and
- * tickless by law: thinking runs on a timer, reactions run on matured stimuli. The seam
- * audit's lesson is baked in: because there is no tick, the engine's focus-based
- * UpdateControlRotation never runs — aim is stepped explicitly by the executor's tasks.
+ * Server-only by construction, tickless by law: a think timer pumps the sensorium and,
+ * later, the brain. Because there is no tick, the engine's focus-based aim never runs —
+ * aim will be stepped explicitly by executor tasks (the seam audit's lesson).
  *
- * Phase 0: possession finds the avatar door and proves the wiring with one log line.
- * Phase 1 adds the sensorium; Phase 2 the brain; Phase 3 the executor.
+ * Perception is FFA-open (detect everyone; hostility is decided above perception, so
+ * teams can land later without touching the senses) — the pattern transcribed from the
+ * host's compiled controller, not designed fresh.
  */
-UCLASS()
+UCLASS(Config=Game)
 class AIBOT_API AAIBBotController : public AAIController
 {
 	GENERATED_BODY()
@@ -27,16 +32,54 @@ public:
 	AAIBBotController(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	/** The avatar door, resolved at possession. Null when the pawn carries no adapter —
-	 *  which is loud (one Error) and leaves the bot standing, never crashing. */
+	 *  loud (one Error) and the bot stands, never crashes. */
 	IAIBAvatarInterface* GetAvatar() const { return Avatar; }
+
+	/** The matured world — the ONLY awareness anything downstream may read. */
+	const FAIBSensorium& GetSensorium() const { return Sensorium; }
+
+	/** The game's projectile warning seam calls this (via the adapter wiring). It NOTES —
+	 *  the dodge happens only after the stimulus matures (FAIRPLAY F2). */
+	void NoteIncomingBlast(const FVector& Center, float Radius, double DetonateAtSeconds);
+
+	// FFA seam, verbatim from the host's proven pattern: one shared "no team",
+	// hostility decided per-pawn. A team system replaces these two overrides.
+	virtual FGenericTeamId GetGenericTeamId() const override { return FGenericTeamId(255); }
+	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;
 
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void OnUnPossess() override;
 
+	UFUNCTION()
+	void OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
+
+	UFUNCTION()
+	void OnPerceptionForgotten(AActor* Actor);
+
 private:
-	/** Raw interface pointer, valid only while the possessed pawn lives; cleared on
-	 *  unpossess. Backed by AvatarObject so GC keeps the component alive. */
+	void Think();
+
+	UPROPERTY(VisibleAnywhere, Category = "AIBot")
+	TObjectPtr<UAIPerceptionComponent> BotPerception;
+
+	UPROPERTY(VisibleAnywhere, Category = "AIBot")
+	TObjectPtr<UAISenseConfig_Sight> SightConfig;
+
+	UPROPERTY(VisibleAnywhere, Category = "AIBot")
+	TObjectPtr<UAISenseConfig_Hearing> HearingConfig;
+
+	/** Seconds between thinks. Config so the terminal can tune cadence without a
+	 *  recompile; the floor law does not live here (the clock owns it). */
+	UPROPERTY(Config)
+	float ThinkIntervalSeconds = 0.1f;
+
+	FAIBSensorium Sensorium;
+	FTimerHandle ThinkTimer;
+
+	/** For the one fairness log line per acquisition (aib-verifier's sample). */
+	TWeakObjectPtr<AActor> LastLoggedTarget;
+
 	IAIBAvatarInterface* Avatar = nullptr;
 
 	UPROPERTY()
