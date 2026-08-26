@@ -95,15 +95,37 @@ namespace
 		FVector Ignored;
 		const bool bSelfOnNav = Pawn && ProjectToNav(Bot.GetWorld(), Self, Ignored);
 		const bool bGoalOnNav = ProjectToNav(Bot.GetWorld(), Goal, Ignored);
+
+		// AIB9 step 2/3, the WHERE and the MOMENT — appended only for self=NO, because
+		// that is the case whose causes the ticket must separate (fresh spawn, mid-fall,
+		// post-knockback, steady state) and the only one where the bot's own position is
+		// the evidence. Exact format is load-bearing: the metrics harness transcribes it.
+		FString OffMeshMoment;
+		if (Pawn && !bSelfOnNav)
+		{
+			const UWorld* World = Bot.GetWorld();
+			const double Now = World ? World->GetTimeSeconds() : 0.0;
+			const UPawnMovementComponent* MoveComp = Pawn->GetMovementComponent();
+			const double LastHitAt = Bot.GetLastDamageTakenAtSeconds();
+			OffMeshMoment = FString::Printf(
+				TEXT(" | off-mesh self at (%.0f, %.0f, %.0f) age=%.1fs falling=%s velZ=%.0f lastHit=%s"),
+				Self.X, Self.Y, Self.Z,
+				Now - Bot.GetPossessedAtSeconds(),
+				(MoveComp && MoveComp->IsFalling()) ? TEXT("yes") : TEXT("no"),
+				Pawn->GetVelocity().Z,
+				LastHitAt > 0.0 ? *FString::Printf(TEXT("%.1fs"), Now - LastHitAt) : TEXT("never"));
+		}
+
 		// HEIGHTS, not just distance. "Both on the mesh and still refused" has two very
 		// different shapes: two points on ONE floor with a wall between them, and two
 		// points on DIFFERENT floors with no way up. Distance alone cannot tell them
 		// apart, and the fix for each is nothing like the fix for the other.
-		return FString::Printf(TEXT("self=%s goal=%s dist=%.0fuu selfZ=%.0f goalZ=%.0f dz=%.0f"),
+		return FString::Printf(TEXT("self=%s goal=%s dist=%.0fuu selfZ=%.0f goalZ=%.0f dz=%.0f%s"),
 			bSelfOnNav ? TEXT("yes") : TEXT("NO"),
 			bGoalOnNav ? TEXT("yes") : TEXT("NO"),
 			Pawn ? FVector::Dist(Self, Goal) : -1.f,
-			Self.Z, Goal.Z, Goal.Z - Self.Z);
+			Self.Z, Goal.Z, Goal.Z - Self.Z,
+			*OffMeshMoment);
 	}
 
 	/** EVERY goal this file hands the mover is a REMEMBERED or DERIVED world point — a

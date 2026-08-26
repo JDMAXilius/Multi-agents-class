@@ -35,6 +35,11 @@ struct AIBOT_API FAIBDamageLedger
 	float TakenNorm(double NowSeconds) const;
 	float DealtNorm(double NowSeconds) const;
 
+	/** World seconds of the last taken note; 0.0 = never this life. AIB9's moment
+	 *  instrument reads it to correlate an off-mesh bot with a recent knockback —
+	 *  a stamp, not a norm, because "how long ago" is the question, not "how hard". */
+	double LastTakenAtSeconds() const { return TakenStamp; }
+
 	void Reset();
 
 	/** Half-life of the momentum window. One number, one site; specs pin the decay. */

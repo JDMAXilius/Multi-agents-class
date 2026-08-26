@@ -60,6 +60,14 @@ RX = {
     "strafe_leg":  re.compile(r"AIBot: (?P<bot>\S+) strafe leg — (?P<arc>[0-9.]+)uu of arc at range (?P<range>[0-9.]+)uu"),
     "strafe_hold": re.compile(r"AIBot: (?P<bot>\S+) strafe held — outside the engaged radius"),
     "strafe_back": re.compile(r"AIBot: (?P<bot>\S+) strafe opportunity back — (?P<seconds>[0-9.]+)s outside \((?P<reason>[^)]+)\)\."),
+    # AIB9 step 2/3 (rides every self=NO refusal): WHERE the off-mesh bot is and WHAT
+    # MOMENT it is in. age < 2s reads as a spawn problem, falling=yes as mid-air (the
+    # projector cannot land a body in flight), a fresh lastHit as knockback, and none
+    # of the above as geometry the nav bounds miss.
+    "offmesh_self": re.compile(
+        r"off-mesh self at \((?P<x>-?[0-9.]+), (?P<y>-?[0-9.]+), (?P<z>-?[0-9.]+)\) "
+        r"age=(?P<age>[0-9.]+)s falling=(?P<falling>yes|no) velZ=(?P<velz>-?[0-9.]+) "
+        r"lastHit=(?P<lasthit>[0-9.]+s|never)"),
     # BN15 teams (LogBN, not the module's log): the three countable events the roadmap's
     # proofs rest on. Formats transcribed from BNGameMode.cpp (assignment, team-kill
     # denial) and BNDamage.cpp (the FF gate's Verbose refusal — add -LogCmds="LogBN
@@ -144,6 +152,16 @@ def per_match_summary(counts):
         "strafe_spell_ends": ({reason: sum(1 for hit in counts["strafe_back"] if hit["reason"] == reason)
             for reason in sorted({hit["reason"] for hit in counts["strafe_back"]})}
             if counts["strafe_back"] else None),
+        # AIB9: off-mesh moments, pre-bucketed by the candidate causes the ticket names.
+        # The buckets overlap on purpose (a falling fresh spawn is both) — they are
+        # correlates to weigh, not a partition to sum.
+        "offmesh_self": len(counts["offmesh_self"]) or None,
+        "offmesh_moments": ({
+            "fresh_spawn_lt2s": sum(1 for hit in counts["offmesh_self"] if float(hit["age"]) < 2.0),
+            "falling": sum(1 for hit in counts["offmesh_self"] if hit["falling"] == "yes"),
+            "hit_within_1s": sum(1 for hit in counts["offmesh_self"]
+                if hit["lasthit"] != "never" and float(hit["lasthit"].rstrip("s")) < 1.0),
+        } if counts["offmesh_self"] else None),
         # BN15 teams. team_populations proves the 4/4 balance claim from the assignment
         # lines alone; all three stay None in an FFA log (the OFF gate reads that as PASS).
         "team_assignments": len(counts["team_assign"]) or None,
@@ -225,7 +243,8 @@ def main():
                 value = ("not captured (Verbose off?)"
                     if key in ("swings", "throws", "throttled_throws", "denial_throws",
                         "strafe_legs", "strafe_holds", "strafe_mean_arc_uu",
-                        "strafe_denied_seconds", "strafe_spell_ends", "ff_refused")
+                        "strafe_denied_seconds", "strafe_spell_ends", "ff_refused",
+                        "offmesh_self", "offmesh_moments")
                     else "none (FFA?)" if key in ("team_assignments", "team_populations",
                         "team_kills_denied")
                     else "n/a")

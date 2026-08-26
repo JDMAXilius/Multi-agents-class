@@ -242,6 +242,7 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	// samples. Still fully deterministic given (bot, life): specs and replays keep what
 	// they actually need.
 	++LifeIndex;
+	PossessedAtSeconds = GetWorld()->GetTimeSeconds();
 	const uint32 LifeSeed = HashCombine(GetTypeHash(GetUniqueID()), GetTypeHash(LifeIndex));
 	Sensorium.SetRandomSeed(static_cast<int32>(LifeSeed));
 

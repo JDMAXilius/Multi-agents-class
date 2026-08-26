@@ -89,6 +89,14 @@ public:
 	FAIBMeleeState& GetMeleeState() { return MeleeState; }
 	FAIBGrenadeState& GetGrenadeState() { return GrenadeState; }
 	FAIBMovementState& GetMovementState() { return MovementState; }
+
+	/** AIB9's moment instrument (both const — the failure describer holds a const ref):
+	 *  when this life began, and when it last took damage (0 = never this life). Together
+	 *  with the pawn's falling state they separate the off-mesh candidate causes the
+	 *  ticket names — fresh spawn, mid-fall, post-knockback, steady-state — at the one
+	 *  site that already reports self=NO. */
+	double GetPossessedAtSeconds() const { return PossessedAtSeconds; }
+	double GetLastDamageTakenAtSeconds() const { return DamageLedger.LastTakenAtSeconds(); }
 	FRandomStream& GetPolicyRandom() { return PolicyRandom; }
 
 	// -- Phase 6: the provider doors (pulled from UAIBBotManager at possession) --------
@@ -234,6 +242,10 @@ private:
 
 	/** World seconds before which no grenade may be thrown; see CanThrowGrenade. */
 	float NextGrenadeThrowTimeSeconds = 0.f;
+
+	/** World seconds at OnPossess — the current life's birth stamp (AIB9: an off-mesh
+	 *  report inside the first breaths of a life points at the SPAWN, not at play). */
+	double PossessedAtSeconds = 0.0;
 
 	/** Counts possessions, and exists ONLY to vary the per-life seeds: re-seeding a
 	 *  respawn from the bare controller id replayed a byte-identical draw sequence every

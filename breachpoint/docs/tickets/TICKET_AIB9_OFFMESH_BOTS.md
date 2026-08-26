@@ -83,3 +83,28 @@ A five-match sweep was launched and only run 1 of 5 completed — the background
 after the first match. Run 1: 620 refusals / 507 switches = 1.22 per switch, of which 75
 (12.1%) were `self=NO`. The sweep needs re-running before anything here is called a
 baseline.
+
+### 2026-08-26 — steps 2+3's instrument WRITTEN (cloud lead; "continue with the
+roadmap" — this ticket blocks AIB11's hill proof and BN17, so its instrument is the
+critical path). WRITTEN, NOT COMPILED; the harness half proven on a synthetic log.
+
+- Every `self=NO` refusal line now carries the WHERE and the MOMENT, appended by
+  `DescribeMoveFailure` only on that branch (the off-mesh bot's own position is the
+  evidence; the other cases already say what they need):
+  `| off-mesh self at (X, Y, Z) age=<s>s falling=yes|no velZ=<n> lastHit=<s>s|never`
+  — age from a new `PossessedAtSeconds` stamp on the controller (set beside the
+  per-life seed), falling/velZ from the pawn's movement component (the idiom already
+  compiled at BNAnimInstance.cpp:237 and twice in this same TU), lastHit from a new
+  const accessor on the damage ledger's existing TakenStamp (a stamp, not a norm —
+  "how long ago" is the question).
+- The harness (`80_aib_metrics.py`) counts `offmesh_self` and pre-buckets
+  `offmesh_moments`: fresh_spawn_lt2s / falling / hit_within_1s — the ticket's own
+  candidate causes as countable correlates (overlapping on purpose; they are weights,
+  not a partition). Proven: 2 events, all three buckets, on synthetic lines in the
+  exact C++ format.
+- What this buys step 4: after the five-match re-run, the mean/spread question AND
+  the cause question come out of the same logs — `age<2s` dominating says spawns,
+  `falling` says the projector is being asked mid-air, `hit_within_1s` says
+  knockback, and none-of-the-above says nav-bounds geometry, with (X,Y) clustering
+  to point at WHERE. The fix packet then names its cause with evidence, per the
+  ticket's own bar.
