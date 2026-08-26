@@ -93,3 +93,20 @@ Phase 3 of `docs/AIBOT-ROADMAP.md`, second half. What landed since AIB1 closed:
 ## Log
 
 _(terminal: outputs verbatim)_
+
+### 26 Aug 2026 — cloud, reading the asset landing. One divergence flagged BEFORE it bites.
+
+The `97442ce` message says **"Roam UNGATED as the ordered fallback … what the engine's own
+error demanded"** — but the committed source still gates it:
+`AIBTreeAuthoring.cpp:186` reads `Roam.AddEnterCondition<FAIBGateRoamCondition>();` and no
+source commit changed it. The authoring is code-driven and idempotent, so **source and
+asset currently disagree, and the very next trigger pull rebuilds the gate back in and
+re-hits whatever error the compiler raised.** Terminal: per this ticket's watch-list rule,
+paste that compiler/validation message verbatim, and either commit the local
+`AIBTreeAuthoring.cpp` edit that produced the ungated Roam or hand the source-side fix to
+`aib-builder` (cloud) in this Log. The DESIGN question it opens — Roam as an ungated
+ordered fallback means the tree no longer mirrors arbitration 1:1 for the Roam want (and a
+future Phase-6 Mode ambition would fall through to Roam instead of standing) — is a real
+trade and belongs to the Phase-3 W-REVIEW, not to a silent asset edit. Build.cs
+`DeveloperSettings` fix read and accepted: exactly the ticket's missing-include class, and
+the game-target-links/editor-target-doesn't presentation is worth the record it got.
