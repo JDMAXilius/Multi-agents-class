@@ -1,6 +1,7 @@
 # TICKET — AIB11: Phase 6 proof — the bot plays the objective (Hill)
 
-> STATUS: open — cut 26 Aug 2026 by the cloud lead with the Phase-6 build
+> STATUS: in-progress — mac terminal 26 Aug 2026 (969b165).
+> Original: open — cut 26 Aug 2026 by the cloud lead with the Phase-6 build
 > ("WRITTEN, NOT COMPILED"). TERMINAL WORK: compile, specs, tree rebuild, PIE with the
 > hill on. Both founder rulings this phase waited on are CLOSED and recorded
 > (ARCHITECTURE law 3 amendment; the Hill + third score int — see
