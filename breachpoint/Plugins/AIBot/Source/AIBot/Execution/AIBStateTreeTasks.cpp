@@ -312,8 +312,22 @@ namespace
 			State.bTriedWedgeJump = true;
 			Avatar->PressVerb(AIBTags::Verb_Jump);
 			Avatar->ReleaseVerb(AIBTags::Verb_Jump);
-			UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s jumped to clear whatever it is wedged on."),
-				*Bot.GetName());
+
+			// AND RE-ISSUE THE MOVE. The jump alone was half the manoeuvre and the half that
+			// does nothing on its own: path following has already gone Idle at the lip the bot
+			// stalled on, so the leap lands on the step and the bot then STANDS there against a
+			// dead request until the no-progress timer calls it "cannot reach". A body that
+			// jumped onto a stair and did not ask for a path again has not climbed anything.
+			//
+			// The sibling framework has done exactly this since R9.5 ("stopped short": jump,
+			// then MoveToActor again) and its bots cross tiers; this one jumped, landed, and
+			// gave up. Measured before this line existed: across 90 PIE samples not one pawn
+			// was ever seen at an intermediate height on either new stair flight — zero
+			// climbs, while pawns sat happily on the decks above and below.
+			const EPathFollowingRequestResult::Type Again = MoveToNavPoint(Bot, Goal, ArriveRadiusUU);
+			UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s jumped to clear whatever it is wedged on — move re-issued (%s)."),
+				*Bot.GetName(),
+				Again == EPathFollowingRequestResult::Failed ? TEXT("REFUSED") : TEXT("accepted"));
 		}
 	}
 
