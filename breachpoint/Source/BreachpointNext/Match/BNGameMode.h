@@ -79,6 +79,11 @@ public:
 	 *  itself is the parent's poll asking ReadyToStartMatch — nothing to call by hand. */
 	virtual void OnPostLogin(AController* NewPlayer) override;
 
+	/** TEAMS (BN15): tagged starts when teams are on — a start whose PlayerStartTag is
+	 *  "Team0"/"Team1" serves only that side; untagged starts serve anyone; NoTeam and
+	 *  teams-off fall through to Super. Never fails a spawn over a missing tag. */
+	virtual AActor* ChoosePlayerStart_Implementation(AController* Player) override;
+
 	/** The other edge of the seat math: a human leaving warmup opens a seat a bot should take.
 	 *  Deferred one tick because inside Logout the leaver is still iterable and every count is
 	 *  off by one. Mid-match leaves change nothing — the fill's own guard refuses outside
@@ -153,8 +158,21 @@ protected:
 	/** THE HILL's one second (law 4: a timer, and the mode's ONLY recurring one besides the
 	 *  clock). Overlaps the hill sphere, counts distinct living players, scores the sole
 	 *  occupant, caches holder/contested for GetObjectiveUrgency, ends the match on the
-	 *  second that crosses the limit. */
+	 *  second that crosses the limit. TEAMS (BN15): occupants dedupe per TEAM — same-team
+	 *  bodies do not contest each other; contested = more than one distinct team present. */
 	void HillTick();
+
+	/** TEAMS (BN15): idempotent (a NoTeam check makes re-inits free), authority-only,
+	 *  fewest-members-wins over GameState->PlayerArray, ties to the lower id. Called
+	 *  from GenericPlayerInitialization — the ONE seam both humans and the bot fill
+	 *  pass through, before each entity's first spawn choice. No-op when teams are off. */
+	void AssignTeamIfNeeded(AController* C);
+	uint8 GetLowestPopulationTeam() const;
+
+	/** The team win: writes WinningTeamId FIRST, then EndMatch — FinishMatch's own
+	 *  ordering, sibling'd for a team (the PlayerState winner stays null; the HUD renders
+	 *  whichever record is set). */
+	void FinishTeamMatch(uint8 WinningTeam);
 
 	/** Spawn-or-adopt at match start (idempotent — a restart reuses the live hill), push it
 	 *  into the world query, arm the timer. No-op when bHillEnabled is false. */
@@ -219,6 +237,16 @@ protected:
 	 *  armed in an older generation is dropped when it fires rather than destroying a pawn that
 	 *  belongs to the round after it. */
 	int32 MatchGeneration = 0;
+
+	/** TEAMS (BN15). Off = today's FFA byte-for-byte: no assignment, every TeamId stays
+	 *  NoTeam, and every team code path is inert behind the NoTeam guard. */
+	UPROPERTY(Config)
+	bool bTeamsEnabled = false;
+
+	/** Only read when teams are on; the damage door consults it. Self-damage is always
+	 *  allowed — the kill-credit rules already word that case. */
+	UPROPERTY(Config)
+	bool bFriendlyFire = false;
 
 	/** THE HILL (founder ruling, 26 Aug 2026). Off by default so Slayer stays Slayer;
 	 *  one ini flip runs the objective mode with zero level edits (C++-first). */

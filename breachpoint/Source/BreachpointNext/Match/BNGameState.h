@@ -105,7 +105,37 @@ public:
 	void SetMatchEndServerTime(double InEndServerTime);
 	void SetWinner(ABNPlayerState* InWinner);
 
+	// -- TEAMS (BN15): the replicated record. Summing PlayerArray client-side is
+	// tempting-but-wrong — a leaver's PlayerState takes its points out of the sum;
+	// these ints are the honest book. ------------------------------------------------
+	/** 0 for an out-of-range team — honest-unknown, never a crash. */
+	int32 GetTeamScore(uint8 Team) const;
+	/** FGenericTeamId::NoTeam::GetId() (255) = no team has won / not a team match. */
+	uint8 GetWinningTeamId() const { return WinningTeamId; }
+
+	/** Authority only; fires the OnRep by hand (the SetWinner idiom). AddTeamScore
+	 *  broadcasts OnTeamScoreChanged with the team that moved. */
+	void AddTeamScore(uint8 Team, int32 Points);
+	void SetWinningTeamId(uint8 Team);
+	void ResetTeamScores();
+
+	/** Fires on every machine where a team's score changes (authority by hand, clients
+	 *  from the OnRep) — the HUD's one subscription; it reads GetTeamScore back. */
+	DECLARE_MULTICAST_DELEGATE_OneParam(FBNTeamScoreChangedSignature, uint8 /*Team*/);
+	FBNTeamScoreChangedSignature OnTeamScoreChanged;
+
 protected:
+	UFUNCTION()
+	void OnRep_TeamScores();
+
+	/** Sized NumTeams on the authority's first write; empty in FFA so the surface
+	 *  costs nothing while bTeamsEnabled is false. */
+	UPROPERTY(ReplicatedUsing = OnRep_TeamScores)
+	TArray<int32> TeamScores;
+
+	/** 255 (NoTeam) = undecided / not a team match. */
+	UPROPERTY(Replicated)
+	uint8 WinningTeamId = 255;
 	UFUNCTION()
 	void OnRep_Killfeed();
 

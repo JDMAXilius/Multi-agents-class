@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerState.h"
 #include "AbilitySystemInterface.h"
+#include "GenericTeamAgentInterface.h"
 #include "Templates/SubclassOf.h"
 #include "BNPlayerState.generated.h"
 
@@ -33,8 +34,14 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FBNScoreChangedSignature, ABNPlayerState*);
 /** R7 — the owner's respawn clock changed (stamped at death, cleared at the rebody). */
 DECLARE_MULTICAST_DELEGATE_OneParam(FBNRespawnStampSignature, ABNPlayerState*);
 
+/** TEAMS (BN15): fires wherever the id changes — authority from the setter, clients
+ *  from the OnRep. UI derives friendly/enemy RELATIVE to the local player off this;
+ *  no absolute team color is ever replicated. */
+DECLARE_MULTICAST_DELEGATE_OneParam(FBNTeamChangedSignature, ABNPlayerState*);
+
 UCLASS()
-class BREACHPOINTNEXT_API ABNPlayerState : public APlayerState, public IAbilitySystemInterface
+class BREACHPOINTNEXT_API ABNPlayerState : public APlayerState, public IAbilitySystemInterface,
+	public IGenericTeamAgentInterface
 {
 	GENERATED_BODY()
 
@@ -64,6 +71,14 @@ public:
 
 	FBNScoreChangedSignature OnScoreChanged;
 	FBNRespawnStampSignature OnRespawnStampChanged;
+	FBNTeamChangedSignature OnTeamChanged;
+
+	// -- IGenericTeamAgentInterface (BN15: the ONE team datum, PlayerState-owned) -------
+	/** Authority-gated; fires the OnRep by hand so server-side listeners hear it too
+	 *  (no OnRep runs on the authority — the Kills idiom, third application). The
+	 *  GameMode's assignment seam is the only intended caller. */
+	virtual void SetGenericTeamId(const FGenericTeamId& NewTeamId) override;
+	virtual FGenericTeamId GetGenericTeamId() const override { return TeamId; }
 
 	/** Two integers, not the engine's float Score: an FFA scoreboard reads counts, and a float
 	 *  invites rounding questions nobody wants to answer. */
@@ -128,6 +143,17 @@ protected:
 
 	UPROPERTY(ReplicatedUsing = OnRep_ObjectivePoints)
 	int32 ObjectivePoints = 0;
+
+	/** TEAMS (BN15). One replicated byte; NoTeam (255) = FFA/unassigned, and every
+	 *  reader treats it as honest-unknown (a late joiner reads it for a frame).
+	 *  COND_None is lawful — team membership is HUD-grade, the scoreboard shows it
+	 *  to everyone. Carried across seamless travel in CopyProperties, or the
+	 *  between-rounds path silently resets every team. */
+	UFUNCTION()
+	void OnRep_TeamId();
+
+	UPROPERTY(ReplicatedUsing = OnRep_TeamId)
+	FGenericTeamId TeamId = FGenericTeamId::NoTeam;
 
 	/** COND_OwnerOnly: only the dead player's own screen counts down — nobody else renders it,
 	 *  so nobody else pays for it. */
