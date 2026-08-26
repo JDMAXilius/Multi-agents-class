@@ -521,6 +521,11 @@ struct FAIBMoveToObjectiveTaskInstanceData
 	bool bHasGoal = false;
 	float ClosestSoFarUU = 0.f;
 	float SecondsWithoutProgress = 0.f;
+
+	/** Arrival distance for the goal actually chosen: the objective's own ReachRadiusUU
+	 *  when it declares one, else AcceptanceRadiusUU. Captured at EnterState so Tick
+	 *  cannot drift from the test EnterState used. */
+	float GoalReachUU = 200.f;
 	FAIBLocomotionState Locomotion;
 };
 

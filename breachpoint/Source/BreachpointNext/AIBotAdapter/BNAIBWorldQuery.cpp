@@ -34,6 +34,10 @@ void UBNAIBWorldQuery::QueryPointsOfInterest(const AActor* Asker, float MaxDista
 		Point.Location = Hill->GetActorLocation();
 		Point.Kind = BNAIBTags::POI_Hill;
 		Point.Worth = 1.f;
+		// The hill's OWN radius is what "on the hill" means — the same number HillTick
+		// scores with. Without it the mover invents its own, smaller, arrival test and
+		// a bot banking points is told it has not arrived.
+		Point.ReachRadiusUU = Hill->Radius;
 		Point.Actor = const_cast<ABNHillPoint*>(Hill);
 	}
 }

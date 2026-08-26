@@ -25,6 +25,20 @@ struct AIBOT_API FAIBPointOfInterest
 	 *  mode gets a one-defender hill. The PROVIDER declares capacity — a zone that
 	 *  wants N bodies exposes N slot-POIs, never one claimable blob. */
 	bool bClaimableSlot = false;
+
+	/** HOW BIG "BEING THERE" IS, in uu, as the OBJECTIVE defines it — a hill's own
+	 *  radius, a capture zone's extent. 0 means "a point": the mover keeps its own
+	 *  acceptance and nothing changes.
+	 *
+	 *  Exists because the alternative is a generic task default deciding arrival for
+	 *  every objective in every mode, and that default was measurably wrong: a 600uu
+	 *  hill against a 200uu acceptance meant a bot standing squarely ON the hill,
+	 *  313uu from its centre and scoring, was still told to close — then gave up on
+	 *  no-progress and reported it could not REACH an objective it was already
+	 *  occupying. 63 failures, minimum distance 201uu, one metre outside acceptance.
+	 *
+	 *  The provider knows the shape of its own objective; the mover cannot guess it. */
+	float ReachRadiusUU = 0.f;
 };
 
 UINTERFACE(MinimalAPI, NotBlueprintable, meta = (CannotImplementInterfaceInBlueprint))

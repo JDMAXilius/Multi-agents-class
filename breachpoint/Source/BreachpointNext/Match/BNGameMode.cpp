@@ -853,6 +853,16 @@ void ABNGameMode::HillTick()
 	ABNPlayerState* Holder = Occupants.Num() == 1 ? *Occupants.CreateIterator() : nullptr;
 	HillHolder = Holder;
 
+	// THE OBJECTIVE'S OWN OBSERVABLE. Without this the only evidence a hill exists is the
+	// absence of complaints: occupancy, contest and banked points left no trace at all, so
+	// "the bots reach it but never score" and "the bots never get there" read identically
+	// in a log. Verbose — one line a second is fine to ask for and wrong to always pay.
+	UE_LOG(LogBN, Verbose, TEXT("BNGameMode: hill tick — %d occupant(s), %s%s."),
+		Occupants.Num(),
+		bHillContested ? TEXT("CONTESTED, nobody scores")
+			: (Holder ? TEXT("held by ") : TEXT("empty")),
+		(!bHillContested && Holder) ? *Holder->GetPlayerName() : TEXT(""));
+
 	if (Holder)
 	{
 		Holder->AddObjectivePoints(FMath::Max(0, HillPointsPerSecond));

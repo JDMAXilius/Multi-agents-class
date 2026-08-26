@@ -1207,6 +1207,9 @@ EStateTreeRunStatus FAIBMoveToObjectiveTask::EnterState(FStateTreeExecutionConte
 				BestWorth = Point.Worth;
 				InstanceData.Goal = Point.Location;
 				InstanceData.bHasGoal = true;
+				// Never SHRINK the arrival test below the mover's own floor — a provider
+				// publishing 0 (a point objective) must not make arrival impossible.
+				InstanceData.GoalReachUU = FMath::Max(InstanceData.AcceptanceRadiusUU, Point.ReachRadiusUU);
 			}
 		}
 	}
@@ -1226,11 +1229,12 @@ EStateTreeRunStatus FAIBMoveToObjectiveTask::EnterState(FStateTreeExecutionConte
 
 	InstanceData.ClosestSoFarUU = FVector::Dist(Pawn->GetActorLocation(), InstanceData.Goal);
 	InstanceData.SecondsWithoutProgress = 0.f;
-	if (!IsWithin(*Bot, InstanceData.Goal, InstanceData.AcceptanceRadiusUU)
-		&& MoveToNavPoint(*Bot, InstanceData.Goal, InstanceData.AcceptanceRadiusUU)
+	if (!IsWithin(*Bot, InstanceData.Goal, InstanceData.GoalReachUU)
+		&& MoveToNavPoint(*Bot, InstanceData.Goal, InstanceData.GoalReachUU)
 			== EPathFollowingRequestResult::Failed)
 	{
-		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s cannot path to the objective — failing loudly (F7)."), *Bot->GetName());
+		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s cannot path to the objective — failing loudly (F7). %s"),
+			*Bot->GetName(), *DescribeMoveFailure(*Bot, InstanceData.Goal));
 		Bot->NoteCurrentAmbitionFailed();
 		return EStateTreeRunStatus::Failed;
 	}
@@ -1249,14 +1253,14 @@ EStateTreeRunStatus FAIBMoveToObjectiveTask::Tick(FStateTreeExecutionContext& Co
 
 	// ON the objective: STAND — a hill is held by being there. SweepLook rides beside;
 	// the sentinel or the want's own decay ends the branch, never arrival.
-	if (IsWithin(*Bot, InstanceData.Goal, InstanceData.AcceptanceRadiusUU))
+	if (IsWithin(*Bot, InstanceData.Goal, InstanceData.GoalReachUU))
 	{
 		return EStateTreeRunStatus::Running;
 	}
 
 	// Short of it: sprint the crossing, wedge-jump if stuck, give up LOUDLY if the
 	// post is unreachable (the movers' shared no-progress law).
-	TickLocomotion(*Bot, InstanceData.Locomotion, InstanceData.Goal, InstanceData.AcceptanceRadiusUU, DeltaTime);
+	TickLocomotion(*Bot, InstanceData.Locomotion, InstanceData.Goal, InstanceData.GoalReachUU, DeltaTime);
 	const float DistNow = FVector::Dist(Pawn->GetActorLocation(), InstanceData.Goal);
 	if (DistNow < InstanceData.ClosestSoFarUU - 1.f)
 	{
@@ -1265,7 +1269,8 @@ EStateTreeRunStatus FAIBMoveToObjectiveTask::Tick(FStateTreeExecutionContext& Co
 	}
 	else if ((InstanceData.SecondsWithoutProgress += DeltaTime) >= InstanceData.GiveUpAfterNoProgressSeconds)
 	{
-		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s cannot reach the objective — giving up loudly (F7)."), *Bot->GetName());
+		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s cannot reach the objective — giving up loudly (F7). %s"),
+			*Bot->GetName(), *DescribeMoveFailure(*Bot, InstanceData.Goal));
 		Bot->NoteCurrentAmbitionFailed();
 		return EStateTreeRunStatus::Failed;
 	}
