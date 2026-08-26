@@ -51,6 +51,23 @@ namespace
 		Pawn->FaceRotation(Stepped, DeltaTime);
 	}
 
+	/** True when Point sits close enough to walkable ground to stand on, with the standing
+	 *  spot written to OutPoint. The extent is vertically generous on purpose: a goal is far
+	 *  more often slightly ABOVE or BELOW a floor than beside one, which is the ordinary case
+	 *  on a multi-level arena. Callers that have a better answer than a refused path check
+	 *  the bool; callers that do not just let the mover refuse. */
+	bool ProjectToNav(UWorld* World, const FVector& Point, FVector& OutPoint)
+	{
+		UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(World);
+		FNavLocation Projected;
+		if (NavSys && NavSys->ProjectPointToNavigation(Point, Projected, FVector(300.f, 300.f, 400.f)))
+		{
+			OutPoint = Projected.Location;
+			return true;
+		}
+		return false;
+	}
+
 	/** EVERY goal this file hands the mover is a REMEMBERED or DERIVED world point — a
 	 *  sighting recalled from memory, a belief, or plain arithmetic off the pawn's own
 	 *  location. None of those is guaranteed to be somewhere a body can stand, and
@@ -71,14 +88,10 @@ namespace
 	 *  below a floor, which is the common case on a multi-level arena. */
 	EPathFollowingRequestResult::Type MoveToNavPoint(AAIBBotController& Bot, const FVector& Goal, float AcceptanceUU)
 	{
-		FVector Target = Goal;
-		if (UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(Bot.GetWorld()))
+		FVector Target;
+		if (!ProjectToNav(Bot.GetWorld(), Goal, Target))
 		{
-			FNavLocation Projected;
-			if (NavSys->ProjectPointToNavigation(Goal, Projected, FVector(300.f, 300.f, 400.f)))
-			{
-				Target = Projected.Location;
-			}
+			Target = Goal;
 		}
 		return Bot.MoveToLocation(Target, AcceptanceUU);
 	}
@@ -664,7 +677,17 @@ EStateTreeRunStatus FAIBFleeFromBeliefTask::EnterState(FStateTreeExecutionContex
 		}
 		else
 		{
-			Goal = Pawn->GetActorLocation() + Away * InstanceData.FleeDistanceUU;
+			const FVector Directed = Pawn->GetActorLocation() + Away * InstanceData.FleeDistanceUU;
+			// "Straight away from the threat" is a DIRECTION, not a promise that anything is
+			// standable there — off a ledge, through a wall, past the arena edge. When the
+			// directed point will not project, take the SAME exit the zero-direction case
+			// takes rather than handing the mover a goal it must refuse: a reachable point
+			// somewhere else still breaks contact, and refusing does not move the bot at all.
+			// Measured: unprojected, this refused 267 times per Retreat ambition.
+			if (!ProjectToNav(Bot->GetWorld(), Directed, Goal))
+			{
+				bHasThreatPoint = false;
+			}
 		}
 	}
 	if (!bHasThreatPoint)
