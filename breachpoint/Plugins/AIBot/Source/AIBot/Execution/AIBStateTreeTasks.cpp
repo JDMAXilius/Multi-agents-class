@@ -993,6 +993,51 @@ EStateTreeRunStatus FAIBSweepLookTask::Tick(FStateTreeExecutionContext& Context,
 	{
 		return EStateTreeRunStatus::Failed;
 	}
+
+	// AREA DENIAL'S CALLER (the P4+5 review's dormant-Expert finding, closed): the
+	// searching look is exactly where denial lives — target NOT visible, memory fresh —
+	// and this task already owns the control rotation here, which is why the consult
+	// is folded in rather than shipped as a new node (FireWhenAble's own pinned-node
+	// rationale). The policy decides on its cadence through the one info door; this
+	// only faces the remembered spot and presses. The throw must not ride the sweep's
+	// arbitrary heading — the reviewers' explicit condition — so the press waits for
+	// alignment, at the burst gate's own threshold.
+	if (IAIBAvatarInterface* Avatar = Bot->GetAvatar())
+	{
+		const double Now = Bot->GetWorld()->GetTimeSeconds();
+		const EAIBGrenadeCall DenialCall = FAIBGrenadePolicy::Consider(
+			Bot->GetGrenadeState(), Bot->GetLastFacts(),
+			Bot->GetSkillProfile().Level(EAIBSkill::Grenade),
+			Bot->GetPolicyRandom(), Now);
+		if (DenialCall == EAIBGrenadeCall::AreaDenial && Bot->CanThrowGrenade())
+		{
+			const float Window = Bot->GetLastFacts().MemoryFreshWindowSeconds;
+			FVector Remembered;
+			if (Bot->GetSensorium().Memory().GetFresh(Now,
+				Window > 0.f ? Window : AIB::MaxMemorySeconds, Remembered))
+			{
+				SteerControlRotation(*Bot, Remembered, 360.f, DeltaTime);
+				const FVector ToSpot = Remembered - Pawn->GetPawnViewLocation();
+				if (ToSpot.SizeSquared() > KINDA_SMALL_NUMBER)
+				{
+					const float OffDot = FMath::Clamp(FVector::DotProduct(
+						Bot->GetControlRotation().Vector(), ToSpot.GetSafeNormal()), -1.f, 1.f);
+					if (FMath::RadiansToDegrees(FMath::Acos(OffDot)) <= BurstStartAlignDegrees)
+					{
+						Avatar->PressVerb(AIBTags::Verb_Grenade);
+						Avatar->ReleaseVerb(AIBTags::Verb_Grenade);
+						Bot->NoteGrenadeThrown(GrenadeCooldownSeconds);
+						UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s denied the remembered spot with a grenade."),
+							*Bot->GetName());
+					}
+				}
+				// Denial owns the look until it resolves — the sweep resumes next
+				// tick the call goes quiet (thrown, throttled, or memory faded).
+				return EStateTreeRunStatus::Running;
+			}
+		}
+	}
+
 	FRotator Swept = Bot->GetControlRotation();
 	Swept.Yaw += InstanceData.SweepDegreesPerSecond * DeltaTime;
 	Swept.Normalize();

@@ -29,11 +29,13 @@
    searches that WAY, not THERE. Code now matches the written amendment — no new ruling
    needed.
 4. **Expert Area Denial was provably inert** (its only caller sits in Engage, which
-   needs a visible target; denial needs the opposite — mutually exclusive). → WITHDRAWN
-   as a claim, not as code: the branch is marked DORMANT in the file, the specs stay
-   (they prove the ladder's shape), and the Search-side caller is a REGISTERED DEBT —
-   it must face the memory point before pressing, which is why it is not a two-line fix.
-   No packet may claim the Expert grenade rung landed until the caller exists.
+   needs a visible target; denial needs the opposite — mutually exclusive). → first
+   WITHDRAWN as a claim, then the DEBT PAID (26 Aug, post-Phase-10 pass): the Search
+   branch's sweeping look consults the policy, faces the remembered spot, and presses
+   only inside the burst gate's alignment threshold — folded into the existing task
+   (the pinned-node rationale), so no probe or tree-shape change. The Expert rung is
+   live in the field; the observable rides AIB13's Spartan matches (Verbose:
+   "denied the remembered spot with a grenade").
 5. **The strafe leg-stamp was instance data** — reset on every Engage re-entry, so one
    authored 220uu step became up to ~1100uu per blink chain. → moved to
    `FAIBMovementState::LastActuatedLegStamp`, beside the leg clock it compares to.

@@ -54,11 +54,16 @@ hunts for a missing deliverable.
    - Spartan matches show `claim GRANTED` ZERO times still (FFA — nothing claimable),
      but Teamwork now reads Skilled in the tier line (the gate is live, the world
      offers nothing to claim — AIB12's inertness result must NOT change).
-4. Overlay eyeball: `bDebugOverlay=True`, one PIE minute — scoreboard, confidence and
+4. In the Spartan matches (Verbose run): grep for `denied the remembered spot` — the
+   Expert area-denial rung went LIVE post-cut (the P4+5 dormant-Expert debt, paid:
+   the Search sweep now faces the memory and throws). Zero across five Spartan
+   matches would be worth a line — the band + freshness + cooldown make it rare,
+   not absent.
+5. Overlay eyeball: `bDebugOverlay=True`, one PIE minute — scoreboard, confidence and
    tier line render over heads and update at think cadence. WATCH-LIST API:
    `DrawDebugString` (transcribed shape, unproven in this repo — DrawDebugHelpers.h
    include is proven, this exact function is not; if it fails, paste the error).
-5. Optional mixed lobby: call `SetTierName` from a scratch branch or set two ini
+6. Optional mixed lobby: call `SetTierName` from a scratch branch or set two ini
    sections via child classes — DEFERRED unless cheap; the door exists, no caller yet.
 
 ## Done when
