@@ -81,7 +81,9 @@ Two MEDIUMs, one root, fixed at the barrier; LOWs to the register below.**
   - `bCrowdKnown` contract ("true only when BOTH counts are honest") must be
     spec-pinned before any enemy count lands; `NearbyAllies` is real but consumerless
     — the `TActorIterator` cost buys nothing until then (aib-critic 3). Candidate
-    simplification for BN17, not now.
+    simplification for BN17, not now. → PINNED 26 Aug (AIBConfidenceSpec "the crowd
+    contract", 3 Its; expected spec count now 121 — see BN17). The iterator-cost half
+    stays open.
   - Dated acceptances: FF-on teammate damage informs the ledger but never turns the
     bot (less information is always fair); teammate grenades still dodged (attitude
     filter would ADD information); a dead killer's bearing memory persists until the

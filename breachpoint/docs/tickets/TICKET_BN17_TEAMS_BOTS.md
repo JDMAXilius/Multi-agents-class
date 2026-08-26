@@ -15,15 +15,17 @@ spread).
 
 ### Protocol A — specs (aib-verifier)
 
-- Module suite green at its expected count (reconcile note: 118 = terminal's 117 + the
-  fuse pin; re-count after AIB9's own specs land and pin the new number here).
+- Module suite green at its expected count (reconcile note: 121 = terminal's 117 + the
+  fuse pin + the 3 crowd-contract pins landed 26 Aug; re-count after AIB9's own specs
+  land and pin the new number here).
 - `AIBot.Sim.Claims` all green POST-AreAllies-flip (the predicate helpers inverted at
   the BN15 review barrier — a stale binary would pass the old polarity silently, so
   build fresh, then run).
-- NEW spec to write in this wave (the one code artifact allowed): pin the
-  `bCrowdKnown` contract — `NearbyAllies` real + `bCrowdKnown=false` must leave
-  Outnumbered and `AlliesMinusEnemies` unfed (aib-critic 26 Aug, LOW 3: the latent
-  "confidently alone" trap needs a spec before any enemy count ever lands).
+- ~~NEW spec to write~~ DONE EARLY (26 Aug, lead — headless work, never blocked by
+  AIB9): the `bCrowdKnown` contract is pinned in `AIBConfidenceSpec.cpp`'s "the crowd
+  contract" Describe — a real `NearbyAllies` with the flag down changes nothing, the
+  selector reads ValueWhenUnknown, and the flag coming up moves exactly the -0.10
+  outnumbered term (aib-critic LOW 3 closed).
 
 ### Protocol B — live log counts (aib-verifier + the harness)
 

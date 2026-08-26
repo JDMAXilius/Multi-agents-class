@@ -5,6 +5,7 @@
 
 #include "Brain/AIBAmbitionEngine.h"
 #include "Brain/AIBConfidenceModel.h"
+#include "Brain/AIBConsideration.h"
 #include "Core/AIBTags.h"
 #include "Core/AIBTypes.h"
 #include "Math/RandomStream.h"
@@ -281,6 +282,55 @@ void FAIBConfidenceSpec::Define()
 			Facts.DistToTargetUU = 800.f;
 			TestTag(TEXT("healthy armed and seeing still engages"),
 				Engine->Rescore(Facts, 1.0), AIBTags::Ambition_Engage);
+		});
+	});
+
+	Describe("the crowd contract (bCrowdKnown gates BOTH halves — teams W-REVIEW 26 Aug)", [this]()
+	{
+		// The adapter now writes a REAL NearbyAllies while no enemy count exists, and the
+		// one flag is what stops the half-known pair from reading as "confidently alone"
+		// (F-6.10's exact shape). These pins are the contract: whoever flips the flag with
+		// only one honest half breaks a spec, not a live match.
+		It("ignores a real ally count while the flag is down — half-known is unknown", [this]()
+		{
+			FAIBFacts HalfKnown = BaselineFacts();
+			HalfKnown.NearbyAllies = 3;   // the adapter's real count, landed
+			HalfKnown.NearbyEnemies = 5;  // an unwritten lie the gate must never read
+			HalfKnown.bCrowdKnown = false;
+			TestEqual(TEXT("assessment identical to a bare baseline"),
+				FAIBConfidenceModel::Assess(HalfKnown), FAIBConfidenceModel::Assess(BaselineFacts()), 0.0001f);
+		});
+
+		It("scores an unknowable crowd at ValueWhenUnknown, and the real read when known", [this]()
+		{
+			FAIBConsideration Outnumbered; // unauthored curve = identity (the pinned pass-through)
+			Outnumbered.Selector = EAIBFactSelector::Outnumbered;
+			Outnumbered.InputMin = -4.f;
+			Outnumbered.InputMax = 4.f;
+			Outnumbered.ValueWhenUnknown = 0.77f; // a sentinel no real read lands on here
+
+			FAIBFacts Facts = BaselineFacts();
+			Facts.NearbyAllies = 3;
+			Facts.NearbyEnemies = 5;
+
+			Facts.bCrowdKnown = false;
+			TestEqual(TEXT("flag down reads the authored unknown, never the counts"),
+				Outnumbered.Evaluate(Facts, nullptr), 0.77f, 0.001f);
+
+			Facts.bCrowdKnown = true;
+			// (5 - 3 = +2) mapped over [-4, 4] is 0.75 through the identity curve.
+			TestEqual(TEXT("flag up reads the real balance"),
+				Outnumbered.Evaluate(Facts, nullptr), 0.75f, 0.001f);
+		});
+
+		It("dips exactly the outnumbered term when the flag comes up — no hidden coupling", [this]()
+		{
+			FAIBFacts Outnumbered2 = BaselineFacts();
+			Outnumbered2.NearbyEnemies = 2;
+			const float FlagDown = FAIBConfidenceModel::Assess(Outnumbered2);
+			Outnumbered2.bCrowdKnown = true;
+			TestEqual(TEXT("the -0.10 dip and nothing else"),
+				FAIBConfidenceModel::Assess(Outnumbered2), FlagDown - 0.10f, 0.0001f);
 		});
 	});
 }
