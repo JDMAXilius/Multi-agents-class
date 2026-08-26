@@ -27,6 +27,17 @@ namespace AIB
 	 *  provider has a bound to honour. */
 	inline constexpr float ObjectiveQueryRadiusUU = 10000.f;
 
+	/** THE FUSE-NOISE ENVELOPE (FAIRPLAY amendment, 26 Aug 2026 — closing the open
+	 *  blast-fuse ruling): a bot's belief of WHEN a blast detonates is the true fuse
+	 *  plus ONE draw from [-Early, +Late], made when the warning enters the reaction
+	 *  clock and stored — never recomputed, so two asks about one blast always agree
+	 *  (the aim policy's anti-dice-roll law, applied to the ear). Asymmetric on
+	 *  purpose: erring EARLY (dodging sooner than needed) is the panicky-human shape
+	 *  and free; erring LATE occasionally eats the blast, which is what makes the
+	 *  fuse-perfect T-2.5s dodge stop being a tell. */
+	inline constexpr float BlastFuseNoiseEarlySeconds = 0.35f;
+	inline constexpr float BlastFuseNoiseLateSeconds = 0.15f;
+
 	/** Phase 7: a claim's lease. Renewed each think while the claimant still pursues;
 	 *  drift releases by NON-renewal at this horizon — the minimum hold, sized at the
 	 *  longest pickup commit window so board transitions never outpace the engine's

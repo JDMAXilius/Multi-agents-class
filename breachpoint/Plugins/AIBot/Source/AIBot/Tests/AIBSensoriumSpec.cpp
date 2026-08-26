@@ -421,13 +421,41 @@ void FAIBSensoriumSpec::Define()
 			TestTrue(TEXT("a threat is known"), Sensorium.GetIncomingBlast(2.5, Center, Radius));
 			TestEqual(TEXT("the IMMINENT one wins, not the last-matured"), Center.X, 10.0);
 
-			// After A detonates, B must still threaten — the erasure bug.
-			Sensorium.Pump(3.1);
+			// After A detonates, B must still threaten — the erasure bug. Asked at 3.2,
+			// OUTSIDE the fuse-noise envelope (A's PERCEIVED boom can run to 3.15 —
+			// the ask must not depend on which noise this seed drew).
+			Sensorium.Pump(3.2);
 			TestTrue(TEXT("the far grenade survives the near one's boom"),
-				Sensorium.GetIncomingBlast(3.1, Center, Radius));
+				Sensorium.GetIncomingBlast(3.2, Center, Radius));
 			TestEqual(TEXT("and it is the far one"), Center.X, 900.0);
 
 			TestFalse(TEXT("all quiet after both"), Sensorium.GetIncomingBlast(9.5, Center, Radius));
+		});
+
+		It("hears the fuse WRONG, once — the estimate is drawn per blast and never rerolled", [this]()
+		{
+			// The closed fuse ruling's two pins. Ground truth was recomputed each think
+			// and every bot dodged at the same remaining-seconds mark — a tell. Now:
+			// (a) the perceived fuse differs from truth inside the authored envelope,
+			// (b) two asks about one blast agree EXACTLY (one draw, stored — the
+			// anti-dice-roll law applied to the ear).
+			FAIBSensorium Sensorium;
+			Sensorium.Configure(0.25f, 0.25f);
+			Sensorium.SetRandomSeed(4711);
+			const double TrueBoom = 5.0;
+			Sensorium.NoteIncomingBlast(FVector(10, 0, 0), 300.f, TrueBoom, 2.0);
+			Sensorium.Pump(2.4);
+
+			FAIBLiveBlast Blast;
+			TestTrue(TEXT("the threat matured"), Sensorium.GetIncomingBlast(2.5, Blast));
+			TestTrue(TEXT("the estimate sits inside the envelope"),
+				Blast.DetonateAtSeconds >= TrueBoom - AIB::BlastFuseNoiseEarlySeconds - 0.0001
+					&& Blast.DetonateAtSeconds <= TrueBoom + AIB::BlastFuseNoiseLateSeconds + 0.0001);
+
+			FAIBLiveBlast Again;
+			TestTrue(TEXT("still known a think later"), Sensorium.GetIncomingBlast(2.6, Again));
+			TestEqual(TEXT("same blast, same wrong answer — no reroll"),
+				static_cast<float>(Again.DetonateAtSeconds), static_cast<float>(Blast.DetonateAtSeconds), 0.0001f);
 		});
 
 		It("measures the HONEST acquisition latency — pump delay in, no overwrite by noise", [this]()

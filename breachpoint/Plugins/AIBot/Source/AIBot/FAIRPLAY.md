@@ -75,6 +75,18 @@ recomputed each think — inhumanly consistent dodges at exactly T-2.5s. OPEN: n
 founder ruling between one fuse-noise draw at maturation (stored, not recomputed) or a
 dated acceptance. Until ruled, tuning must not rely on fuse-perfect timing.
 
+**Amendment, 26 Aug 2026 (later the same day — the ruling above, CLOSED):** option ONE —
+one fuse-noise draw per blast, taken where the warning enters the reaction clock and
+STORED in the stimulus payload; every later ask reads the same estimate (F4's
+anti-dice-roll law, applied to the ear). The envelope is asymmetric by design
+(`AIB::BlastFuseNoiseEarlySeconds` 0.35 / `LateSeconds` 0.15): erring early reads as a
+panicky human and costs nothing; erring late occasionally eats the blast, which is what
+retires the tell. Two spec pins (envelope + no-reroll). Closed under the founder's
+roadmap-completion directive on the cloud lead's recommendation; reopenable by ruling.
+ALSO wired the same day: `CanEvadeBlast` gained its promised caller — a Novice grenade
+competence never receives the matured blast warning at all (the capability gate the
+policy documented but nothing consulted; giving LESS information is always fair).
+
 **Amendment, 25 Aug 2026 (W-REVIEW F-2.2):** UObject lifetime is authoritative for
 memory validity — a memory of a destroyed actor reads as no memory, the instant the
 actor dies, anywhere on the map. This IS an omniscience channel (a bot stops searching a

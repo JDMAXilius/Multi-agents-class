@@ -33,7 +33,7 @@
 - `Tests/AIBTiersSpec.cpp` — NEW, 6 specs: resolution + unknown-name refusal; ladder
   monotone AND distinct per rung; the Teamwork gate split; shipped rows validate
   clean; the validator fires on a doctored row (5 named defects); envelope anchors.
-  **Module spec total: 114.**
+  **Module spec total: 114** (115 after the fuse-ruling pin landed post-cut — see the AIB15 note).
 
 HUMANISATION NOTE (the phase's third word): the humanisation half landed EARLY,
 through the P4+5 review barrier — residual aim floor, per-life hashed seeds, the
@@ -43,7 +43,7 @@ hunts for a missing deliverable.
 
 ## Steps (terminal)
 
-1. Rung 1; specs — expect **114/114** (Tiers 6 new; history: 108 at AIB12).
+1. Rung 1; specs — expect **115/115** (Tiers 6 new + the fuse pin; history: 108 at AIB12).
 2. Asset rebuild (the settings button): DT_AIBTiers report shows **5 rows** and zero
    row warnings; ST_AIBBot rebuild is ALREADY owed by AIB11/AIB12 (rename!).
 3. Tier A/B: two PIE matches, ini `[/Script/AIBot.AIBBotController] BotTier=Recruit`
@@ -63,7 +63,7 @@ hunts for a missing deliverable.
 
 ## Done when
 
-- [ ] Rung 1 + 114/114
+- [ ] Rung 1 + 115/115
 - [ ] DT_AIBTiers 5 rows, zero warnings
 - [ ] Recruit-vs-Spartan latency delta pasted (the countable distinctness)
 - [ ] Overlay screenshot or "renders and breathes" line

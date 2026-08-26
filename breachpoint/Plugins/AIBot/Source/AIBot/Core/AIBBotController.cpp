@@ -568,6 +568,17 @@ void AAIBBotController::NoteIncomingBlast(const FVector& Center, float Radius, d
 		return;
 	}
 
+	// THE CAPABILITY GATE'S promised caller (P4+5 review L4 — authored, spec'd, wired
+	// nowhere): a Novice grenade competence does not READ the grenade at its feet, so
+	// the warning never enters its clock and no fact combination makes it dodge — the
+	// design's sentence, finally true in the field. Giving less information is always
+	// fair; the level is the answer, not a number.
+	if (!FAIBGrenadePolicy::CanEvadeBlast(SkillProfile.Level(EAIBSkill::Grenade)))
+	{
+		UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s does not read the incoming blast — below the evade capability."), *GetName());
+		return;
+	}
+
 	Sensorium.NoteIncomingBlast(Center, Radius, DetonateAtSeconds, World->GetTimeSeconds());
 }
 

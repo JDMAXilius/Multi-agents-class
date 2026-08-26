@@ -231,25 +231,31 @@ void FAIBConfidenceSpec::Define()
 				Engine->RegisterAmbition(Spec);
 			}
 
-			// The knife's-edge row: wounded (above the 0.35 cliff), under fire, target
-			// visible but FAR — the fight a human decides by nerve, which is the point.
+			// The knife's-edge row — RE-PINNED (W-REVIEW P4+5 M1): the old row
+			// (H=0.4, d=1400) asserted a disengage at ConfidenceNorm 0.05, a value the
+			// model's own misjudge floor (0.125 at those facts) can NEVER produce —
+			// green spec, unreachable feature. This row is the reviewer's worked
+			// reachable example: Assess = 0.375, a Trained misjudge spans C in
+			// [0.195, 0.555], and BOTH injected values below sit inside that span —
+			// the axis is injected (this spec pins the ENGINE's response, the model
+			// spec pins the producer), but every number is one the producer can make.
 			FAIBFacts Facts;
 			Facts.bVitalsKnown = true;
-			Facts.HealthNorm = 0.4f;
+			Facts.HealthNorm = 0.30f;
 			Facts.bWeaponCanFight = true;
 			Facts.bHasTarget = true;
 			Facts.bTargetVisible = true;
-			Facts.DistToTargetUU = 1400.f;
+			Facts.DistToTargetUU = 1200.f;
 			Facts.bDamageHistoryKnown = true;
 			Facts.RecentDamageTakenNorm = 0.5f;
 			Facts.bConfidenceKnown = true;
 
-			Facts.ConfidenceNorm = 0.95f;
+			Facts.ConfidenceNorm = 0.55f; // top of the reachable span — above the band
 			TestTag(TEXT("a confident bot PRESSES the same fight"),
 				Engine->Rescore(Facts, 1.0), AIBTags::Ambition_Engage);
 
 			Engine->ResetArbitration();
-			Facts.ConfidenceNorm = 0.05f;
+			Facts.ConfidenceNorm = 0.20f; // bottom of the span — below the band
 			TestTag(TEXT("a shaken bot DISENGAGES from it"),
 				Engine->Rescore(Facts, 2.0), AIBTags::Ambition_Retreat);
 		});

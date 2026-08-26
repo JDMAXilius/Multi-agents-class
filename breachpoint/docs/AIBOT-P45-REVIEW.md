@@ -70,14 +70,17 @@ Also closed with the highs (mediums taken because the fix was one screen):
   (reach ~150uu, blast/arc assumptions in the 450 floor and band ceilings). Real fix is
   Phase 8's tier table carrying host-tuned rows; until then a host that retunes reach
   or arc past the comments' stated assumptions inverts parts of the ladder.
-- The confidence spec's knife-edge row (H=0.4/Taken=0.5/d=1400) injects a
-  `ConfidenceNorm` no competence level can produce at those facts (model floor 0.125 vs
-  injected 0.05). The AXIS is real and spec'd; the reachability claim is not — re-pin on
-  H=0.30/Taken=0.50/d=1200 (flips at Trained, P≈0.29/redraw) when the confidence specs
-  are next open. The oscillation question itself PASSED: Retreat's 3s commit is a hard
+- ~~The confidence spec's knife-edge row injects an unreachable `ConfidenceNorm`~~ —
+  CLOSED 26 Aug (post-Phase-10 pass): re-pinned on the reviewer's reachable row
+  (H=0.30/Taken=0.50/d=1200; both injected values inside the Trained span [0.195,
+  0.555]). The oscillation question itself PASSED: Retreat's 3s commit is a hard
   floor under any flip cycle.
-- `CanEvadeBlast` has no caller (the promised blast-dodge consult does not exist yet) —
-  every level's blast response is identical today. Same class as the denial debt.
+- ~~`CanEvadeBlast` has no caller~~ — CLOSED 26 Aug (same pass): the controller's
+  blast-note path now refuses the warning below the evade capability, so a Novice
+  grenade competence never reads the grenade at its feet. The blast-FUSE ruling closed
+  in the same commit (one stored noise draw per blast — FAIRPLAY carries the dated
+  amendment); the two-grenade sensorium pin moved outside the noise envelope and a
+  new fuse pin landed (module specs 115).
 - Novice `StrafeChance` 0.05 ≈ one step per 32s of engagement — effectively inert,
   documented as "never-ever reads as a statue" but buying nothing observable.
 - `StepAimPoint` takes absolute world positions — lawful per the conventions block, but

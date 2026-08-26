@@ -70,7 +70,16 @@ void FAIBSensorium::NoteIncomingBlast(const FVector& Center, float Radius, doubl
 {
 	// The blast rides the SAME clock as every sense (F2 — the wall-dodge ban).
 	FAIBStimulus Stimulus = MakeStimulus(EAIBStimulusKind::IncomingBlast, nullptr, Center, Radius);
-	Stimulus.PayloadSeconds = DetonateAtSeconds;
+
+	// THE FUSE NOISE (FAIRPLAY, 26 Aug — the open ruling, closed): the stored fuse was
+	// ground truth, recomputed each think, and every bot dodged at exactly the same
+	// remaining-seconds mark — inhumanly consistent. ONE draw per blast, here, stored
+	// in the payload: what matures is the bot's estimate, and every later ask reads
+	// the same estimate (no per-think reroll — F4's law, applied to the ear). Negative
+	// = "it blows sooner than it does" (dodges early, panicky and free); positive =
+	// late realization, occasionally fatal — which is the whole point.
+	const double FuseNoise = Random.FRandRange(-AIB::BlastFuseNoiseEarlySeconds, AIB::BlastFuseNoiseLateSeconds);
+	Stimulus.PayloadSeconds = DetonateAtSeconds + FuseNoise;
 	Clock.Push(Stimulus, NowSeconds, DrawLatency());
 }
 
