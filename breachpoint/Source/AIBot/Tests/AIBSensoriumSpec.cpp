@@ -1,5 +1,6 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
+#include "Components/SceneComponent.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -45,6 +46,29 @@ BEGIN_DEFINE_SPEC(FAIBSensoriumSpec, "AIBot.Sim.Sensorium",
 		if (!Actor)
 		{
 			AddError(TEXT("SpawnActor failed."));
+			return nullptr;
+		}
+
+		// A BARE AActor HAS NO ROOT COMPONENT, AND WITHOUT ONE IT CANNOT HOLD A POSITION.
+		// AActor::GetActorLocation() is TemplateGetActorLocation(RootComponent), which returns
+		// FVector::ZeroVector when that pointer is null — so the spawn transform above is
+		// discarded and every later SetActorLocation is a silent no-op. That is why this
+		// fixture read 0.0 for both 'belief at the enemy's position' (expected 5) and 'belief
+		// tracks at pump cadence' (expected 50): not a sensorium bug, a body with nowhere to be.
+		//
+		// Giving it a real scene root is the whole fix. Same idiom the host module's damage spec
+		// already uses for its runtime-constructed actors.
+		USceneComponent* Root = NewObject<USceneComponent>(Actor, TEXT("Root"));
+		Actor->SetRootComponent(Root);
+		Root->RegisterComponent();
+		Actor->SetActorLocation(Where);
+
+		// Prove it took. A fixture that silently cannot move is indistinguishable from a
+		// behaviour change, and that ambiguity already cost two sessions.
+		if (!Actor->GetActorLocation().Equals(Where, 0.01f))
+		{
+			AddError(FString::Printf(TEXT("SpawnBody could not place the actor at %s (it reports %s)."),
+				*Where.ToString(), *Actor->GetActorLocation().ToString()));
 		}
 		return Actor;
 	}

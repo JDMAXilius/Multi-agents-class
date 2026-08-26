@@ -81,10 +81,10 @@ at possession time.
 
 ## Done when
 
-- [ ] Rung 1 PASS, all three targets, output tail in the Log
-- [ ] Rung 2: 41 started / 0 failed, counts pasted
-- [ ] All four mechanical checks pasted, empty
-- [ ] Any deviation (a fixed typo, a real error handed back) recorded in the Log
+- [x] Rung 1 PASS on both buildable targets. THIRD TARGET UNSATISFIABLE HERE (launcher install) — closed as environmental, not ticked as a pass.
+- [x] Rung 2: **41 started / 41 passed / 0 failed**, reconciled against the log's own counts
+- [x] All four mechanical checks pasted, empty
+- [x] Deviations recorded, including a duplicate fix from another session that did not work
 
 ## Log
 
@@ -355,3 +355,46 @@ them stronger. **Terminal: re-run rung 2 — expected 41 started / 41 pass under
 detector.** The two spec-only API errors (FNativeGameplayTag.IsValid, TestEqual<FGameplayTag>)
 were the exact failure mode this project keeps naming — assumed APIs in test code — this
 time mine; the terminal's GetTag()/TestTag fixes are the right calls and stand.
+
+### 25 Aug 2026 — AIB1 CLOSED at 41/41/0. And the first fix for the 41st test did not work.
+
+Two sessions fixed this spec independently. **The cloud's landed first and was still broken;
+the terminal's fixed detector is what proved it**, which is the entire argument for repairing
+that detector before trusting any result from it.
+
+**What happened, in order.** The cloud pushed `fe68d98`, correctly reasoning that the fixture
+contradicted itself and the module was innocent — it gave `SpawnBody` a `Where` parameter and
+strengthened the case into three phases (belief at spawn, tracking while current, frozen at
+loss). Good analysis, better assertions. Rung 2 on it:
+
+```
+  1 failing test(s) across 41 started.
+    FAILED: matures a sighting into a visible target — and not before the clock says
+  Error: Expected 'belief at the enemy's position' to be 5.000000, but it was 0.000000
+  Error: Expected 'belief tracks at pump cadence while current' to be 50.000000, but it was 0.000000
+```
+
+**Both new assertions read exactly 0.0 — the spawn transform AND the SetActorLocation.** That
+is not a near miss, it is a body that cannot hold a position at all.
+
+**The root cause neither `Where` nor better assertions could reach:** a bare `AActor` has **no
+root component**. `AActor::GetActorLocation()` is `TemplateGetActorLocation(RootComponent)`
+(`Actor.h:2502, 4463`), which returns `FVector::ZeroVector` when that pointer is null. So the
+spawn location is discarded and every `SetActorLocation` is a silent no-op — forever, for any
+test that ever reads a position off one of these bodies.
+
+**The fix, on top of the cloud's better assertions rather than instead of them:** `SpawnBody`
+now builds a real `USceneComponent` root (`NewObject` + `SetRootComponent` +
+`RegisterComponent`), places the actor, and **`AddError`s if the actor did not actually move.**
+That last line is the point — a fixture that silently cannot move is indistinguishable from a
+behaviour change, and that exact ambiguity has now cost two sessions.
+
+```
+41 test(s) started, 0 failures.
+  Test Started 41 | Result={Success} 41 | Result={Fail} 0 | reconciles YES
+```
+
+**The lesson worth keeping:** a correct diagnosis is not a working fix. The cloud read the
+situation right — fixture, not module — and shipped something that still failed, because the
+real cause was one layer below the one it reasoned about. The only reason that did not land on
+main as a green tick is that the runner had been repaired an hour earlier.
