@@ -39,9 +39,9 @@ BEGIN_DEFINE_SPEC(FAIBSensoriumSpec, "AIBot.Sim.Sensorium",
 		return true;
 	}
 
-	AActor* SpawnBody()
+	AActor* SpawnBody(const FVector& Where = FVector::ZeroVector)
 	{
-		AActor* Actor = World ? World->SpawnActor<AActor>() : nullptr;
+		AActor* Actor = World ? World->SpawnActor<AActor>(Where, FRotator::ZeroRotator) : nullptr;
 		if (!Actor)
 		{
 			AddError(TEXT("SpawnActor failed."));
@@ -225,7 +225,7 @@ void FAIBSensoriumSpec::Define()
 	{
 		It("matures a sighting into a visible target — and not before the clock says", [this]()
 		{
-			AActor* Enemy = SpawnBody();
+			AActor* Enemy = SpawnBody(FVector(5, 5, 0));
 			FAIBSensorium Sensorium;
 			Sensorium.Configure(0.30f, 0.30f);
 			Sensorium.NoteSighting(Enemy, FVector(5, 5, 0), 1.0);
@@ -237,8 +237,23 @@ void FAIBSensoriumSpec::Define()
 			TestTrue(TEXT("seeing at 0.35"), Sensorium.HasVisibleTarget());
 			TestEqual(TEXT("and it is the enemy"), Sensorium.GetVisibleTarget(), Enemy);
 			TestTrue(TEXT("sight is current"), Sensorium.IsSightCurrent());
-			TestEqual(TEXT("last seen where the stimulus said"),
+			TestEqual(TEXT("belief at the enemy's position"),
 				Sensorium.GetLastSeenLocation().X, 5.0);
+
+			// THE BELIEF RULE, asserted head-on (the rung-2 failure was this re-sample
+			// working against a fixture whose actor sat at the origin while the stimulus
+			// claimed 5): while sight is CURRENT the belief follows the live actor at
+			// pump cadence; the moment a loss is NOTED it freezes at the last spot.
+			Enemy->SetActorLocation(FVector(50, 5, 0));
+			Sensorium.Pump(1.45);
+			TestEqual(TEXT("belief tracks at pump cadence while current"),
+				Sensorium.GetLastSeenLocation().X, 50.0);
+
+			Sensorium.NoteSightingLost(Enemy, FVector(60, 5, 0), 1.5);
+			Enemy->SetActorLocation(FVector(900, 5, 0));
+			Sensorium.Pump(1.55);
+			TestEqual(TEXT("frozen at the loss spot, not the true position"),
+				Sensorium.GetLastSeenLocation().X, 60.0);
 		});
 
 		It("ignores a stale loss that matured after a newer re-acquire (the corner peek)", [this]()

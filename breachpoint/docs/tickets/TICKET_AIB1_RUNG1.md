@@ -342,3 +342,16 @@ evidence is a log that already contains a known failure:**
 
 Both directions matter: it catches the failure the old one waved through, and it does not
 invent one on a clean log.
+
+---
+**Cloud, 26 Aug — the 41st test: MY bug, fixed.** The failing sensorium spec was a
+self-contradicting FIXTURE, not a module defect: it spawned the enemy at the origin while
+the stimulus claimed (5,5,0), and the belief rule then honestly re-sampled the live actor —
+zero. The module did exactly what the P2 barrier ruled. Fixed by spawning the actor AT the
+stimulus location, and the belief rule is now asserted head-on in the same test (belief
+tracks at pump cadence while sight is current; freezes at the loss spot the moment a loss
+is noted — the wall-track ban, pinned). Sensorium suite is now 19 tests as before, one of
+them stronger. **Terminal: re-run rung 2 — expected 41 started / 41 pass under the fixed
+detector.** The two spec-only API errors (FNativeGameplayTag.IsValid, TestEqual<FGameplayTag>)
+were the exact failure mode this project keeps naming — assumed APIs in test code — this
+time mine; the terminal's GetTag()/TestTag fixes are the right calls and stand.
