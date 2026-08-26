@@ -84,7 +84,7 @@ match is still visible. No re-proposal.
 
 #### Two findings from the Verbose run
 
-**1. The strafe is gated out 99.5% of the time.**
+**1. ~~The strafe is gated out 99.5% of the time.~~ — RETRACTED, see below.**
 
 ```
 strafe_legs        : 60
@@ -93,8 +93,21 @@ strafe_mean_arc_uu : 209.6
 ```
 
 AIB10's arc geometry works — a mean arc of 209uu is real lateral movement, and no leg
-walks the bot out of its own gate any more. But `EngagedRadiusUU = 350` means the task is
-held 182 times for every leg it takes. The founder's original report ("the strafe is way
+walks the bot out of its own gate any more.
+
+**RETRACTION (26 Aug, after the cloud's AIB10 instrument commit f36d4a27).** The "182
+holds per leg" ratio is INVALID and I should not have reported it as a finding. I wrote
+the gate-hold log myself and made it fire EVERY TICK, while the leg line fires ONCE PER
+LEG. 10,930:60 therefore divides frames by legs — two different units. It cannot
+distinguish a bot denied 95% of its fight from one denied 50% at a higher frame rate, and
+the "99.5% gated out" headline does not follow from it at all.
+
+What survives: the arc geometry works (209uu mean arc, no leg leaves the gate), and 60
+legs across a five-match sample is genuinely few. Whether that is the gate's fault remains
+UNMEASURED. The cloud's replacement instrument treats the hold as a SPELL with edge state
+— one line when a visible-target bot leaves the gate, one with the DURATION when it ends,
+with a reason — which counts seconds denied instead of frames. That is the right unit, and
+pre-instrument logs (this one included) are explicitly not comparable to it. The founder's original report ("the strafe is way
 too short") is only half addressed: the STEP is fixed, the OPPORTUNITY is not. AIB10 stays
 open with this as its measurement.
 
