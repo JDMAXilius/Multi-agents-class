@@ -50,3 +50,61 @@
 ## Log
 
 _(terminal: outputs verbatim)_
+
+### 2026-08-26 — config (a) Marine FFA, five matches: ALL BARS PASS
+
+`Tools/aib/80_aib_metrics.py` over 5 logs, run 1 with `-LogCmds="LogAIBot Verbose"`.
+
+```
+=== lobby spread (across logs) ===
+   latency_mean          : mean 0.382  min 0.380  max 0.386  n=5
+   refusals_per_switch   : mean 0.415  min 0.010  max 1.348  n=5
+   ambition_switches     : mean 2591.400  min 2213.000  max 2979.000  n=5
+
+=== bars ===
+   [PASS] F1 reaction floor: fastest acquisition 0.221s vs floor 0.20s (HARD bar)
+   [PASS] unserved wants: worst match 0 vs bar 0 (per match)
+   [PASS] wiring warnings: worst match 0 vs bar 0 (per match)
+   [PASS] FFA claim grants: worst match 0 vs bar 0 (per match)
+   [PASS] move refusals per switch: mean 0.42 (spread 0.01..1.35, n=5) vs PROVISIONAL bar 1.0
+```
+
+**The refusals number is the headline, and it validates AIB9 on five matches.** The
+pre-fix five-match baseline was mean **9.54**, range 1.06–35.60 — failing the provisional
+bar of 1.0 by nine times. After the drop-cap fix: mean **0.42**, range 0.01–1.35. A 23x
+improvement, and the bar it used to fail it now clears with room. That is much stronger
+evidence for the stranded-on-the-roof diagnosis than the three runs AIB9 shipped on.
+
+Latency is tight to a degree worth noting: 0.380–0.386 across five independent matches.
+
+**Provisional bar verdict — move refusals ≤1.0/switch: CONFIRMED, keep the number.** The
+mean (0.42) sits comfortably under it while the spread's top (1.35) still crosses it, so
+the bar is doing its job: loose enough to pass a healthy build, tight enough that a bad
+match is still visible. No re-proposal.
+
+#### Two findings from the Verbose run
+
+**1. The strafe is gated out 99.5% of the time.**
+
+```
+strafe_legs        : 60
+strafe_holds       : 10,930
+strafe_mean_arc_uu : 209.6
+```
+
+AIB10's arc geometry works — a mean arc of 209uu is real lateral movement, and no leg
+walks the bot out of its own gate any more. But `EngagedRadiusUU = 350` means the task is
+held 182 times for every leg it takes. The founder's original report ("the strafe is way
+too short") is only half addressed: the STEP is fixed, the OPPORTUNITY is not. AIB10 stays
+open with this as its measurement.
+
+**2. `BotTier=Spartan` has never applied to an AIB bot.** That key lives under
+`[/Script/BreachpointNext.BNBotController]` — BN's controller, inert while `BotSystem=AIB`.
+`[/Script/AIBot.AIBBotController]` had **no tier key at all**, so every AIB bot has run the
+C++ default (Marine) since the switch. Nothing was broken — Marine is the shipped default
+and config (a) wanted exactly that — but the founder's 25-Aug aggression tuning never
+reached these bots, and the two keys are indistinguishable in a diff. Added the key to
+AIB's section with the trap written down.
+
+Other counters, run 1: 635 acquisitions, 2314 switches, 58 interrupts, 9 melee swings,
+30 grenade throws (6 throttled), 0 claim grants/denies/releases, 14 bots all Marine.
