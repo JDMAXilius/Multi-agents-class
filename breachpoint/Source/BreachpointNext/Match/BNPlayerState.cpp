@@ -34,7 +34,24 @@ void ABNPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(ABNPlayerState, Kills);
 	DOREPLIFETIME(ABNPlayerState, Deaths);
 	DOREPLIFETIME(ABNPlayerState, ObjectivePoints);
+	// COND_None on purpose: team membership is HUD-grade — the scoreboard shows it to
+	// everyone — and nothing positional rides this byte (the packet's security audit).
+	DOREPLIFETIME(ABNPlayerState, TeamId);
 	DOREPLIFETIME_CONDITION(ABNPlayerState, RespawnAtServerTime, COND_OwnerOnly);
+}
+
+void ABNPlayerState::SetGenericTeamId(const FGenericTeamId& NewTeamId)
+{
+	// Authority only, and there is NO Server RPC behind this — the GameMode's assignment seam
+	// is the only intended caller, so a client calling it writes a local byte the server never
+	// hears (the degenerate cheat case the spec plan pins).
+	if (HasAuthority() && TeamId != NewTeamId)
+	{
+		TeamId = NewTeamId;
+		// The authority runs no OnRep, and a listen host's own HUD is a subscriber like any
+		// client's — the Kills idiom, third application; the OnRep body is the one broadcaster.
+		OnRep_TeamId();
+	}
 }
 
 void ABNPlayerState::AddKill()
@@ -73,6 +90,8 @@ void ABNPlayerState::ResetScore()
 		Kills = 0;
 		Deaths = 0;
 		ObjectivePoints = 0;
+		// TeamId survives on purpose: a restart resets the NUMBERS, not the sides — clearing
+		// it here would send everyone back through assignment mid-lobby for no reason.
 		OnScoreChanged.Broadcast(this);
 	}
 }
@@ -81,13 +100,16 @@ void ABNPlayerState::CopyProperties(APlayerState* PlayerState)
 {
 	Super::CopyProperties(PlayerState);
 
-	// The score, and ONLY the score. Not the respawn stamp (a stamp from the previous map's clock
-	// is worse than none), not the ASC or its attributes — those are rebuilt by GrantDefaults and
-	// the init GE on the new PlayerState, which is the one path allowed to set them.
+	// The score and the side, and ONLY those. Not the respawn stamp (a stamp from the previous
+	// map's clock is worse than none), not the ASC or its attributes — those are rebuilt by
+	// GrantDefaults and the init GE on the new PlayerState, which is the one path allowed to set
+	// them. TeamId rides along because seamless travel builds a NEW PlayerState: uncarried, a
+	// map rotation would silently reset every team to NoTeam — a scoreboard bug in disguise.
 	if (ABNPlayerState* Copy = Cast<ABNPlayerState>(PlayerState))
 	{
 		Copy->Kills = Kills;
 		Copy->Deaths = Deaths;
+		Copy->TeamId = TeamId;
 	}
 }
 
@@ -123,6 +145,16 @@ void ABNPlayerState::OnRep_Deaths()
 void ABNPlayerState::OnRep_RespawnAtServerTime()
 {
 	OnRespawnStampChanged.Broadcast(this);
+}
+
+// Cosmetic only (law 3): deleting this body changes no gameplay outcome — combat asks
+// GetGenericTeamId through BNTeams, never this notify. The broadcast is for the HUD, which
+// derives friendly/enemy RELATIVE to the local player; the Verbose line is the no-HUD way
+// to watch an id land.
+void ABNPlayerState::OnRep_TeamId()
+{
+	UE_LOG(LogBN, Verbose, TEXT("BNPlayerState: %s team -> %d"), *GetPlayerName(), TeamId.GetId());
+	OnTeamChanged.Broadcast(this);
 }
 
 UAbilitySystemComponent* ABNPlayerState::GetAbilitySystemComponent() const

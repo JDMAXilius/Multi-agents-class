@@ -1,6 +1,7 @@
 #include "Match/BNGameState.h"
 #include "Match/BNGameMode.h"
 #include "Match/BNPlayerState.h"
+#include "Match/BNTeams.h"
 #include "BreachpointNext.h"
 #include "Engine/World.h"
 #include "Net/UnrealNetwork.h"
@@ -8,13 +9,18 @@
 void ABNGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	// MatchState itself is the PARENT's property now — AGameState replicates it. Only BN's own
-	// three ride here.
+	// ride here.
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ABNGameState, MatchEndServerTime);
 	DOREPLIFETIME(ABNGameState, ScoreLimit);
 	DOREPLIFETIME(ABNGameState, Winner);
 	DOREPLIFETIME(ABNGameState, Killfeed);
+	// COND_None on both is lawful: team totals and the decided team are scoreboard-grade,
+	// shown to everyone (the packet's security audit). Empty in FFA, so the array costs
+	// nothing until the first authoritative write sizes it.
+	DOREPLIFETIME(ABNGameState, TeamScores);
+	DOREPLIFETIME(ABNGameState, WinningTeamId);
 }
 
 void ABNGameState::BeginPlay()
@@ -128,6 +134,87 @@ void ABNGameState::SetWinner(ABNPlayerState* InWinner)
 	if (HasAuthority())
 	{
 		Winner = InWinner;
+	}
+}
+
+int32 ABNGameState::GetTeamScore(uint8 Team) const
+{
+	// 0 for out-of-range OR before the first write sizes the array — honest-unknown, never a
+	// crash: an FFA HUD or a late joiner asking early reads "no points yet", which is true.
+	return TeamScores.IsValidIndex(Team) ? TeamScores[Team] : 0;
+}
+
+void ABNGameState::AddTeamScore(uint8 Team, int32 Points)
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	if (Team >= BNTeams::NumTeams)
+	{
+		// Loud, not silent: the only callers are server-side scoring paths, so an out-of-range
+		// team here is a bug upstream (a NoTeam player scoring for "team 255"), not input.
+		UE_LOG(LogBN, Warning, TEXT("BNGameState: AddTeamScore refused — team %d is outside the %d-team record."),
+			Team, BNTeams::NumTeams);
+		return;
+	}
+
+	// Sized on the FIRST authoritative write, never in FFA: an empty array replicates nothing,
+	// so the surface is free while bTeamsEnabled is false.
+	if (TeamScores.Num() < BNTeams::NumTeams)
+	{
+		TeamScores.SetNumZeroed(BNTeams::NumTeams);
+	}
+
+	TeamScores[Team] += Points;
+
+	// The authority runs no OnRep — same discipline as the killfeed push. Readers take the
+	// team index and read GetTeamScore back; the delegate carries no number to keep honest.
+	OnTeamScoreChanged.Broadcast(Team);
+}
+
+void ABNGameState::SetWinningTeamId(uint8 Team)
+{
+	// The SetWinner idiom: a gated write, no announce of its own — the match state machine's
+	// broadcast is the one readers subscribe to, and they read GetWinningTeamId back there.
+	if (HasAuthority())
+	{
+		WinningTeamId = Team;
+	}
+}
+
+void ABNGameState::ResetTeamScores()
+{
+	// Never-sized stays never-sized: an FFA restart must not conjure a team record.
+	if (!HasAuthority() || TeamScores.Num() == 0)
+	{
+		return;
+	}
+
+	for (int32& Score : TeamScores)
+	{
+		Score = 0;
+	}
+
+	// One broadcast PER TEAM, not per write and not zero: the delegate's payload is a team
+	// index, so a single "everything changed" signal does not exist in its vocabulary, and at
+	// NumTeams == 2 two calls is the whole storm. Zeroed first, THEN announced, so a subscriber
+	// reading GetTeamScore back mid-loop never sees a half-reset record.
+	for (int32 Team = 0; Team < TeamScores.Num(); ++Team)
+	{
+		OnTeamScoreChanged.Broadcast(static_cast<uint8>(Team));
+	}
+}
+
+void ABNGameState::OnRep_TeamScores()
+{
+	// The array replicates WHOLE, so a client cannot know which entry moved — announce every
+	// index and let readers read values back. Cheap at two; the killfeed ring's lesson about
+	// batched updates, applied to the smaller array.
+	for (int32 Team = 0; Team < TeamScores.Num(); ++Team)
+	{
+		OnTeamScoreChanged.Broadcast(static_cast<uint8>(Team));
 	}
 }
 
