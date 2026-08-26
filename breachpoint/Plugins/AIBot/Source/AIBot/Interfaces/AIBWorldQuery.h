@@ -76,6 +76,17 @@ public:
 
 	/** THE hostility authority (W-REVIEW M5): the game answers friend-or-foe, so teams
 	 *  land without an edit inside this module. The controller's FFA attitude override
-	 *  is the fallback for a host that provides no world query. */
+	 *  is the fallback for a host that provides no world query.
+	 *
+	 *  AreEnemies answers "is B a valid live target of A" — liveness is PART of the
+	 *  answer (a corpse is nobody's enemy), so its NEGATION is not "ally". */
 	virtual bool AreEnemies(const AActor* A, const AActor* B) const = 0;
+
+	/** Alliance WITHOUT liveness: true iff the game says A and B stand on the same side
+	 *  — a dead teammate is still a teammate, a dead enemy is still an enemy. Exists
+	 *  because two consumers (the attitude consult, the claims board's binding
+	 *  predicate) were caught reading !AreEnemies as "ally", which made every corpse
+	 *  everybody's friend for the respawn window (teams W-REVIEW 26 Aug, both critics).
+	 *  Defaulted, not pure: a host that wires nothing is FFA, where nobody has allies. */
+	virtual bool AreAllies(const AActor* A, const AActor* B) const { return false; }
 };

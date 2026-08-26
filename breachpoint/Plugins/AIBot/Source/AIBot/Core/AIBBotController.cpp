@@ -79,11 +79,17 @@ AAIBBotController::AAIBBotController(const FObjectInitializer& ObjectInitializer
 ETeamAttitude::Type AAIBBotController::GetTeamAttitudeTowards(const AActor& Other) const
 {
 	// THE hostility authority is the game's (AIBWorldQuery.h): with a world query
-	// registered, IAIBWorldQuery::AreEnemies answers friend-or-foe — this consult is
+	// registered, IAIBWorldQuery::AreAllies answers friend-or-foe — this consult is
 	// what the old constant's comment promised, and it is the whole of teams inside
-	// this module. No query registered, or no pawn on either side, keeps the documented
-	// fallback for an all-hostile (FFA) host: every pawn that is not mine is hostile.
-	// Scenery is neutral either way; self is always friendly.
+	// this module. AreAllies, NOT !AreEnemies: AreEnemies folds liveness into its
+	// answer, and its negation read every corpse and every ASC-less spawn-window pawn
+	// as Friendly — eating their perception LOSS events downstream, so a dead target
+	// stayed "visible" until its actor was destroyed (teams W-REVIEW 26 Aug, both critics).
+	// Alliance has no liveness: a dead enemy is still Hostile, and FFA (AreAllies
+	// always false) is byte-identical to the old all-hostile constant. No query
+	// registered, or no pawn on either side, keeps the same fallback: every pawn
+	// that is not mine is hostile. Scenery is neutral either way; self is always
+	// friendly.
 	if (const APawn* OtherPawn = Cast<APawn>(&Other))
 	{
 		APawn* MyPawn = GetPawn();
@@ -93,9 +99,9 @@ ETeamAttitude::Type AAIBBotController::GetTeamAttitudeTowards(const AActor& Othe
 		}
 		if (IAIBWorldQuery* Query = GetWorldQuery())
 		{
-			if (MyPawn)
+			if (MyPawn && Query->AreAllies(MyPawn, &Other))
 			{
-				return Query->AreEnemies(MyPawn, &Other) ? ETeamAttitude::Hostile : ETeamAttitude::Friendly;
+				return ETeamAttitude::Friendly;
 			}
 		}
 		return ETeamAttitude::Hostile;

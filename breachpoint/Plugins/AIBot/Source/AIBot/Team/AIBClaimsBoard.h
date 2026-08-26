@@ -22,10 +22,14 @@
  * Zones are refused here, structurally. Agents are never claimable — the shell refuses
  * pawn-backed targets before the board sees them, and no provider marks a pawn a slot.
  *
- * SCOPE IS ALLIANCE: a claim binds only pairs the injected predicate calls NOT enemies.
- * Between enemies the board must not exist — suppression across teams would be
- * collusion, worse than unfair. In an all-hostile (FFA) host every pair is enemies, so
- * the board is provably inert by construction, not by a flag.
+ * SCOPE IS ALLIANCE: a claim binds only pairs the injected predicate calls ALLIES —
+ * stated positively on purpose. The predicate was originally AreEnemies with binding on
+ * its negation, and that negation conflated "ally" with "dead": AreEnemies folds
+ * liveness into hostility, so a dead ENEMY's live claim bound across teams for the
+ * corpse window (teams W-REVIEW 26 Aug). Between enemies the board must not exist —
+ * suppression across teams would be collusion, worse than unfair. In an all-hostile
+ * (FFA) host nobody is allies, so the board is provably inert by construction, not by
+ * a flag.
  *
  * LIFECYCLE (the four belts): TTL expiry (renewed by the claimant's think while its
  * ambition still routes at the target — drift releases by NON-renewal, never instantly,
@@ -73,20 +77,20 @@ struct AIBOT_API FAIBClaim
 struct AIBOT_API FAIBClaimsBoard
 {
 	/** Grant, renew (same claimant), or deny. Refuses non-slot targets outright.
-	 *  A live claim by a NON-enemy other denies; an enemy's claim does not bind —
+	 *  A live claim by an ALLIED other denies; a non-ally's claim does not bind —
 	 *  each alliance runs its own book on the same slot, and none of them leak.
 	 *  Returns true when the claimant holds the slot after the call. */
 	bool TryClaim(FObjectKey Claimant, const AActor* ClaimantPawn,
 		const FAIBPointOfInterest& Target, double Now, float TtlSeconds,
-		TFunctionRef<bool(const AActor*, const AActor*)> AreEnemies);
+		TFunctionRef<bool(const AActor*, const AActor*)> AreAllies);
 
-	/** The one read: is this slot held by a living, unexpired, NON-enemy other?
+	/** The one read: is this slot held by an unexpired ALLIED other?
 	 *  Self-claims answer false — a bot must never veto its own route (the engine
 	 *  releases a commit whose raw score hits zero; a self-suppressing claim would
 	 *  make every claimant veto itself one think after claiming). */
 	bool IsClaimedByOther(FObjectKey Asker, const AActor* AskerPawn,
 		const FAIBPointOfInterest& Target, double Now,
-		TFunctionRef<bool(const AActor*, const AActor*)> AreEnemies) const;
+		TFunctionRef<bool(const AActor*, const AActor*)> AreAllies) const;
 
 	/** The unpossess/EndPlay belt. */
 	void ReleaseAll(FObjectKey Claimant);

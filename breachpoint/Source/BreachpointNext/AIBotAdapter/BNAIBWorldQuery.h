@@ -53,6 +53,13 @@ public:
 	 *  function and nothing inside the AIBot module — the hostility door doing its job. */
 	virtual bool AreEnemies(const AActor* A, const AActor* B) const override;
 
+	/** Allies = same-team, PERIOD — no alive door on purpose: alliance outlives the
+	 *  body (a dead teammate is still a teammate, a dead enemy still an enemy), which
+	 *  is what keeps corpses Hostile in the module's attitude and keeps a dead enemy's
+	 *  claim from binding across teams (BN15 W-REVIEW). FFA (everyone NoTeam) answers
+	 *  false for every pair — nobody has allies, the pre-teams truth. */
+	virtual bool AreAllies(const AActor* A, const AActor* B) const override;
+
 private:
 	TArray<TWeakObjectPtr<ABNHillPoint>> Hills;
 };

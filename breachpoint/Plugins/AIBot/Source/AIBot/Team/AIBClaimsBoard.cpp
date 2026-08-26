@@ -37,7 +37,7 @@ bool FAIBClaimKey::SameSlotAs(const FAIBClaimKey& Other) const
 
 bool FAIBClaimsBoard::TryClaim(FObjectKey Claimant, const AActor* ClaimantPawn,
 	const FAIBPointOfInterest& Target, double Now, float TtlSeconds,
-	TFunctionRef<bool(const AActor*, const AActor*)> AreEnemies)
+	TFunctionRef<bool(const AActor*, const AActor*)> AreAllies)
 {
 	// ZONES ARE REFUSED HERE, not at a call site someone can forget: the board's whole
 	// authority is over things one agent can take, and the provider says which those are.
@@ -61,10 +61,11 @@ bool FAIBClaimsBoard::TryClaim(FObjectKey Claimant, const AActor* ClaimantPawn,
 			Claim.ExpiresAtSeconds = Now + TtlSeconds;
 			return true;
 		}
-		// A NON-enemy other holds it: denied. An enemy's claim does not bind — their
+		// An ALLIED other holds it: denied. A non-ally's claim does not bind — their
 		// book is not ours, and honouring it would be reading enemy intent (F3) and
-		// conceding contested resources across teams (collusion).
-		if (!AreEnemies(ClaimantPawn, Claim.ClaimantPawn.Get()))
+		// conceding contested resources across teams (collusion). Alliance, NOT
+		// !AreEnemies: the negation read a dead enemy as binding (teams W-REVIEW 26 Aug).
+		if (AreAllies(ClaimantPawn, Claim.ClaimantPawn.Get()))
 		{
 			return false;
 		}
@@ -81,7 +82,7 @@ bool FAIBClaimsBoard::TryClaim(FObjectKey Claimant, const AActor* ClaimantPawn,
 
 bool FAIBClaimsBoard::IsClaimedByOther(FObjectKey Asker, const AActor* AskerPawn,
 	const FAIBPointOfInterest& Target, double Now,
-	TFunctionRef<bool(const AActor*, const AActor*)> AreEnemies) const
+	TFunctionRef<bool(const AActor*, const AActor*)> AreAllies) const
 {
 	if (!Target.bClaimableSlot)
 	{
@@ -91,7 +92,7 @@ bool FAIBClaimsBoard::IsClaimedByOther(FObjectKey Asker, const AActor* AskerPawn
 	for (const FAIBClaim& Claim : Claims)
 	{
 		if (Claim.IsLive(Now) && Claim.Key.SameSlotAs(Key) && Claim.Claimant != Asker
-			&& !AreEnemies(AskerPawn, Claim.ClaimantPawn.Get()))
+			&& AreAllies(AskerPawn, Claim.ClaimantPawn.Get()))
 		{
 			return true;
 		}

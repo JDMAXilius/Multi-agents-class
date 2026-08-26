@@ -9,19 +9,22 @@
 
 namespace
 {
-	/** The hostility predicate the board runs under: the game's one authority when a
-	 *  world query is registered; ALL-ENEMIES when none is. The fallback direction
-	 *  matters — "everyone is an enemy" makes every claim non-binding on everyone,
-	 *  so a host that wired nothing gets an inert board, never a colluding one. */
-	bool ResolveAreEnemies(const UWorld* World, const AActor* A, const AActor* B)
+	/** The alliance predicate the board binds under: the game's one authority when a
+	 *  world query is registered; NOBODY-ALLIED when none is. AreAllies, not
+	 *  !AreEnemies — AreEnemies folds liveness into hostility, and the negation bound
+	 *  a dead enemy's claim across teams for the corpse window (teams W-REVIEW 26 Aug). The
+	 *  fallback direction matters — "nobody is allied" makes every claim non-binding
+	 *  on everyone, so a host that wired nothing gets an inert board, never a
+	 *  colluding one. */
+	bool ResolveAreAllies(const UWorld* World, const AActor* A, const AActor* B)
 	{
 		const UAIBBotManager* Manager = World ? World->GetSubsystem<UAIBBotManager>() : nullptr;
 		const IAIBWorldQuery* Query = Manager ? Manager->GetWorldQuery() : nullptr;
 		if (!Query || !A || !B)
 		{
-			return true;
+			return false;
 		}
-		return Query->AreEnemies(A, B);
+		return Query->AreAllies(A, B);
 	}
 }
 
@@ -54,7 +57,7 @@ bool UAIBTeamCoordinator::TryClaim(const AAIBBotController& Claimant,
 	const int32 LiveBefore = Board.NumLive(Now);
 	const bool bHeld = Board.TryClaim(FObjectKey(&Claimant), Claimant.GetPawn(), Target,
 		Now, TtlSeconds,
-		[World](const AActor* A, const AActor* B) { return ResolveAreEnemies(World, A, B); });
+		[World](const AActor* A, const AActor* B) { return ResolveAreAllies(World, A, B); });
 
 	// Proof 3's countable lines: GRANTS and DENIALS, never renewals (a renewal per
 	// think would drown the instrument in cadence noise).
@@ -81,7 +84,7 @@ bool UAIBTeamCoordinator::IsClaimedByOtherTeammate(const AAIBBotController& Aske
 	}
 	return Board.IsClaimedByOther(FObjectKey(&Asker), Asker.GetPawn(), Target,
 		World->GetTimeSeconds(),
-		[World](const AActor* A, const AActor* B) { return ResolveAreEnemies(World, A, B); });
+		[World](const AActor* A, const AActor* B) { return ResolveAreAllies(World, A, B); });
 }
 
 void UAIBTeamCoordinator::ReleaseAll(const AAIBBotController& Claimant)

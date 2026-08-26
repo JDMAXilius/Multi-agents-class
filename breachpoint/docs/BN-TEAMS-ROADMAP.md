@@ -42,18 +42,37 @@ Dependency notes: T1 needs T0. T2/T3 need only T0. T4 needs T2 and is BLOCKED on
 hill reachability (AIB9 — bots currently bank 0 points for traversal reasons, not team
 reasons). T5 needs T2. T6 runs once T0–T3 are green and is the framework's DONE bar.
 
-## Tickets
+## Tickets — RECONCILED 26 Aug after the BN15 wave landed
 
-- **BN15 — T0+T1 in one packet** (the packet's own recommendation: identity without
-  combat honesty is untestable, and the 8-edit list is one feature). Carries the
-  netcode obligations: new replicated property = netcode packet + critic REFUTER.
-- **BN16 — T2+T3** (the mode + its spawns; both read only `TeamId`).
-- **BN17 — T4** (team hill + the row-7 claims measurement; opens when AIB9 closes).
-- **BN18 — T5** (UI transcription from BR prior art).
-- **BN19 — T6** (the rung-5 threes protocol; the framework's acceptance ticket).
+The 8-file packet was ONE feature, and building it as one wave meant BN15 absorbed the
+game-side code of T0 THROUGH T4: identity+assignment, the FF door, bot doors, team
+scores + kill scoring + team win + buzzer (T2), team spawns + tagging script (T3), and
+the team hill stanza (T4's game half). What remains is proof work, UI, and the bot
+measurement:
 
-Tickets are cut when their phase starts, not before — the packet holds the design so
-nothing is lost in the meantime.
+- **BN15 — T0–T4 game code, LANDED (in review)** — crew wave: serial headers →
+  W-BUILD ×3 (netcode / mode / bots, disjoint) → barrier → W-REVIEW ×2 (bn-critic
+  netcode dimension ∥ aib-critic fairness) → terminal proof list.
+- **BN16 — T5 team UI** — wave: serial ViewModel-header step (lead) → W-BUILD ×2
+  (ui-builder: scoreboard+match band ∥ ui-builder: killfeed+nameplate tints; disjoint
+  widget files; BR prior art transcribed) → barrier → bn-critic on the
+  replication-race dimension (deferred OnTeamChanged subscription is THE attack).
+- **BN17 — T4 bot half** — the AIBot row-7 claims measurement (two allied bots, one
+  claimable slot, contested count 0) + team-hill bot observables. OPENS when AIB9's
+  reachability closes; runs as W-VERIFY (spec ∥ log-count protocols).
+- **BN18 — T6 rung-5 threes** — listen + 2 clients over the whole stack; the
+  framework's acceptance ticket. Serial protocol (one live session), not a wave —
+  the editor/live-session rule (aib-editor exemption's reasoning applies).
+
+## The wave map, phase by phase (the AIBOT-WAVES shape, applied to teams)
+
+| Phase | Wave | Composition | Barrier output |
+|---|---|---|---|
+| T0–T4 game | W-BUILD ×3 | netcode ∥ mode ∥ bots, disjoint file lists, headers serial-first | one commit; gates on the union; GetAttitude single-caller grep |
+| T0–T4 review | W-REVIEW ×2 | bn-critic (netcode/GAS) ∥ aib-critic (fairness) | merged findings; highs fixed before the terminal proof run |
+| T5 UI | W-BUILD ×2 | two ui-builders on disjoint widget sets | one commit; OFF-case renders today's HUD untouched |
+| T4 bots | W-VERIFY ×2 | spec protocol ∥ live log-count protocol | one verdict per protocol, no protocol half-run |
+| T6 threes | SERIAL | one live listen+2-client session, scripted asserts | the DONE bar: every claim in threes |
 
 ## The metrics harness rides along
 

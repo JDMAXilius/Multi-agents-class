@@ -130,3 +130,21 @@ bool UBNAIBWorldQuery::AreEnemies(const AActor* A, const AActor* B) const
 	const FGenericTeamId TeamB = PSB ? PSB->GetGenericTeamId() : FGenericTeamId::NoTeam;
 	return !BNTeams::AreFriendly(TeamA, TeamB);
 }
+
+bool UBNAIBWorldQuery::AreAllies(const AActor* A, const AActor* B) const
+{
+	// The header says why there is no alive door here. Team resolution is the same
+	// ladder AreEnemies uses: pawn → PlayerState → TeamId, null reads NoTeam, and
+	// AreFriendly's NoTeam guard makes FFA answer false for every pair.
+	if (!A || !B || !A->IsA<APawn>() || !B->IsA<APawn>())
+	{
+		return false;
+	}
+	const APawn* PawnA = Cast<APawn>(A);
+	const APawn* PawnB = Cast<APawn>(B);
+	const ABNPlayerState* PSA = PawnA ? PawnA->GetPlayerState<ABNPlayerState>() : nullptr;
+	const ABNPlayerState* PSB = PawnB ? PawnB->GetPlayerState<ABNPlayerState>() : nullptr;
+	const FGenericTeamId TeamA = PSA ? PSA->GetGenericTeamId() : FGenericTeamId::NoTeam;
+	const FGenericTeamId TeamB = PSB ? PSB->GetGenericTeamId() : FGenericTeamId::NoTeam;
+	return BNTeams::AreFriendly(TeamA, TeamB);
+}

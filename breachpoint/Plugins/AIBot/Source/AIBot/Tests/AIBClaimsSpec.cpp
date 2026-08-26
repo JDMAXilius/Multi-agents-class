@@ -32,8 +32,10 @@ BEGIN_DEFINE_SPEC(FAIBClaimsSpec, "AIBot.Sim.Claims",
 	UObject* BotA = nullptr;
 	UObject* BotB = nullptr;
 
-	static bool Allies(const AActor*, const AActor*) { return false; }
-	static bool Enemies(const AActor*, const AActor*) { return true; }
+	// The board's predicate is AreAllies (teams W-REVIEW 26 Aug: binding on !AreEnemies
+	// conflated "ally" with "dead"), so the helpers now answer their own names.
+	static bool Allies(const AActor*, const AActor*) { return true; }
+	static bool Enemies(const AActor*, const AActor*) { return false; }
 
 	FAIBPointOfInterest Slot(const FVector& Location) const
 	{
