@@ -84,7 +84,7 @@ Phase 5 of `docs/AIBOT-ROADMAP.md`: the fifth skill of the combat dance. What la
 
 - [x] Rung 1 PASS (Editor + Game; Server recorded environmental)
 - [x] Rung 2: 91/91/0, reconciled, per-suite split pasted
-- [ ] Both live switch directions pasted with scores
+- [x] Both live switch directions pasted with scores (with reconstructed cause)
 - [x] Four mechanical checks pasted, empty
 - [x] Deviations recorded (watch-list resolved 4/4 in the good direction)
 
@@ -140,3 +140,110 @@ files the claim as live-proof class. It stays UNPROVEN here.
 **Honesty ladder rung: COMPILES + HEADLESS SPECS.** Phase 5's behaviour — that
 confidence actually moves ambitions in a live match — is asserted only in arithmetic
 (the Confidence suite's flip proof), never yet observed in a running game.
+
+### 2026-08-26 — STEP 3, THE LIVE PROOF: both directions observed (mac terminal, f277b53)
+
+`BotSystem=AIB`, standalone `-game` on `/Game/Maps/BR_Arena01`, `-LogCmds="LogAIBot
+Verbose"`, ~4 minutes. **7 AIB bots**, all possessed with `avatar door open`, no adapter
+error, no crash. Three matches ran end to end (two won outright — "Winner: Halcyon",
+"Winner: Juno" — with a seamless-travel level reload between, so the restart path works
+under AIB too). 79 eliminations, 440 damage events, 92,762 log lines, **2,452 ambition
+switches** across 14 controllers.
+
+**Full-match transition matrix** (from → to, with a predecessor):
+
+```
+Engage  -> Roam     856     Engage  -> Retreat   71
+Roam    -> Engage   830     Engage  -> Search    67
+Roam    -> Search   202     Search  -> Retreat   46
+Search  -> Engage   157     Retreat -> Search    37
+Search  -> Roam      96     Retreat -> Engage     7
+Retreat -> Roam      76     Roam    -> Retreat    7
+```
+
+The ambition log line carries no health or confidence, so a raw transition proves
+nothing about CAUSE. I reconstructed cause by correlating three other log streams —
+`possessed` (controller→pawn, re-established on every respawn), `BNDamage:` (attacker →
+victim with both pool transitions), and the switch itself — into a per-bot health and
+6-second damage window. Both of the ticket's named directions then fall out:
+
+**1. A bot PRESSING — Retreat → Engage while hurt, after landing hits. 4 of 7 qualify.**
+
+```
+AIBBotController_4  hp=40  dealt6s=104%  taken6s=60%  |  Engage 0.52 over Retreat 0.22
+AIBBotController_6  hp=40  dealt6s= 60%  taken6s=60%  |  Engage 0.75 over Retreat 0.24
+AIBBotController_5  hp=35  dealt6s=100%  taken6s=65%  |  Engage 0.47 over Retreat 0.34
+```
+
+Bot 4 is the cleanest: 40 hp left, has taken 60% of a health bar in six seconds and dealt
+104% back — and Engage beats Retreat 0.52 to 0.22. Hurt, winning, presses. That is the
+roadmap's claim, observed.
+
+**2. A bot BREAKING OFF — Engage → Retreat under un-answered fire. 11 of 71 qualify**
+(strict: damage taken > 0, damage dealt exactly 0, still alive).
+
+```
+AIBBotController_0  hp= 4  taken6s=96%  dealt6s=0%  |  Retreat 0.95 over Engage 0.67 [interrupt]
+AIBBotController_6  hp=16  taken6s=84%  dealt6s=0%  |  Retreat 0.82 over Engage 0.56 [interrupt]
+AIBBotController_0  hp=31  taken6s=69%  dealt6s=0%  |  Retreat 0.51 over Roam    0.20
+```
+
+The first two are the strong form: Retreat beats **Engage specifically** — a visible
+enemy it declines — and both carry `[interrupt]`, so the ambition engine cut the current
+plan rather than waiting for it to end. Confidence scaled the appetite without vetoing,
+exactly as the Engage 0→0.55 / Retreat 0→1.0 curves describe.
+
+Counting note, stated so the numbers are not read as stronger than they are: the strict
+filters (4 of 7, 11 of 71) EXCLUDE every transition at hp=0 and every one whose 6s window
+crossed a respawn (those show >100% taken, an artefact of the window, not a fact about the
+bot). The excluded rows are not counter-examples; they are rows the instrument cannot
+speak to.
+
+**The double-fire check: PASSES, but VACUOUSLY — and that is the finding.** All **440**
+damage events in the match read `shield 0 -> 0`. Shields are disabled project-wide (see
+`41fea6d`), so `HandleShieldChanged` never sees a decrease and never notifies. Exactly
+one pool moves per hit, so exactly one ledger note per hit — no shield echo, confirmed on
+440 samples. But the SUMMING path the ticket describes (a shield+health hit firing both
+handlers and summing) was **never exercised**, because no such hit can occur while
+shields are off. That claim remains unproven and cannot be proven on this configuration.
+
+**Honesty ladder: LISTEN SERVER / STANDALONE `-game`, one process.** Not dedicated, not
+packaged, and NOT the three-way multiplayer claim (server + acting client + observing
+client) — a standalone match is the server and its own client. Phase 5's behaviour is now
+observed, not merely arithmetic; its behaviour under a real client's eyes is not.
+
+#### Finding out of scope for this ticket — RELOAD IS BROKEN FOR AIB BOTS
+
+Not Phase 5's, not AIBot's, and not fixed here (this ticket's owner_path is Log only), but
+it surfaced in this match and would be dishonest to leave in a scratch file:
+
+```
+308 x  LogBN: Warning: BNASC: input tag Input.Weapon.Reload reached the ASC but NO
+               granted ability carries it — the grant is missing (or defaults are not
+               granted yet).
+ 11 x  LogBN: BNInput: Input.Weapon.Reload -> Default__BNGA_Reload : ACTIVATED
+```
+
+The bots press reload constantly and it lands 11 times in ~4 minutes; 308 presses hit an
+ASC with no ability carrying the tag. The warning's own second clause is the likely
+cause — defaults not granted yet on a freshly possessed respawn pawn — which would make
+it a grant-timing bug on the BN side, not an AI bug. Worth its own ticket.
+
+**The honest verb table** for the same match, from ability outcomes rather than intent
+lines (I first counted `grep -i melee` at 527 and it was almost entirely `BNLoadout`
+table spam printing each weapon's melee damage — the same over-claim-from-log-counts trap
+this crew has hit before, caught here by checking line shapes before believing a number):
+
+```
+Input.Sprint        1635 ACTIVATED /  292 REFUSED
+Input.Weapon.Fire    858 ACTIVATED /    7 REFUSED
+Input.Weapon.Next    308 ACTIVATED /   69 REFUSED
+Input.Crouch         162 ACTIVATED /   37 REFUSED
+Input.Grenade         68 ACTIVATED /    1 REFUSED
+Input.Jump            27 ACTIVATED /  137 REFUSED   <- refuses 5x more than it fires
+Input.Melee           16 ACTIVATED (real: 'BNGA_Melee: swing — montage AM_MM_Shotgun_Melee')
+Input.Weapon.Reload   11 ACTIVATED /  308 no-grant warnings (above)
+```
+
+All eight verbs fire under AIB, melee and grenade included — the three that were deferred
+back in AIB2 are live. Jump's 137:27 refusal ratio is the other thing worth a look.
