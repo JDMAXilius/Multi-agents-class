@@ -264,10 +264,17 @@ void UAIBAmbitionEngine::BuildDefaultCoreAmbitions(TArray<FAIBAmbitionSpec>& Out
 	// SATISFIABLE BY CONSTRUCTION, which is the property that matters: its branch always
 	// has somewhere to walk (belief -> POI -> a random reachable point), so selecting it
 	// can never mean standing still. Urgency is the mode's dial (Phase 6, via
-	// IAIBAmbitionProvider, matched on this tag). With no mode registered the objective
-	// fact is UNKNOWN and the honest unknown is "worth moving, nothing urgent" — 0.6,
-	// which puts Seek (0.30) above the Roam floor (0.20) and well below Search (0.80).
-	// A mode that says urgency 0 hands the bot straight back to Roam.
+	// IAIBAmbitionProvider, matched on this tag): urgency 1 scores 0.50 — above the Roam
+	// floor, below Search (0.80) — and urgency 0 scores nothing.
+	//
+	// THE UNKNOWN IS 0.3, i.e. 0.15, DELIBERATELY BELOW THE 0.20 FLOOR. First draft used
+	// 0.6 and two existing specs caught it inside a minute: a want that outranks Roam
+	// whenever no mode is registered has not joined the ladder, it has REPLACED the floor
+	// — and with a 3s commit it re-armed W-REVIEW P2 H-1's commit-starvation walk, a
+	// fresh spawn ignoring the first enemy it sees. Nothing in this game names a
+	// destination yet, so with no mode Seek stays dormant and the bot Roams. Dormant is
+	// not the trap SeekWeapon was: this want is satisfiable the instant something names a
+	// place, and even when it wins its branch MOVES.
 	{
 		FAIBAmbitionSpec& Seek = OutSpecs.AddDefaulted_GetRef();
 		Seek.Tag = AIBTags::Ambition_Seek;
@@ -277,7 +284,7 @@ void UAIBAmbitionEngine::BuildDefaultCoreAmbitions(TArray<FAIBAmbitionSpec>& Out
 		FAIBConsideration& Urgency = Seek.Considerations.AddDefaulted_GetRef();
 		Urgency.Selector = EAIBFactSelector::ObjectiveUrgency;
 		Urgency.SetLinearCurve(true); // the mode says "nothing here" -> 0 want
-		Urgency.ValueWhenUnknown = 0.6f;
+		Urgency.ValueWhenUnknown = 0.3f; // 0.15: under the floor, never a tie with it
 	}
 
 	// ROAM — the floor under everything, and it NEVER COMMITS: a fresh bot's Roam win

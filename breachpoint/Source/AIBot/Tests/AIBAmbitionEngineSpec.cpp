@@ -207,32 +207,49 @@ void FAIBAmbitionEngineSpec::Define()
 			Engine->Rescore(Facts, 1.0), AIBTags::Ambition_Roam);
 	});
 
-	It("never wants a weapon this world does not contain — the 25 Aug deadlock, pinned", [this]()
+	It("wants nothing this world cannot satisfy — SeekWeapon is retired, Seek moves", [this]()
 	{
-		// THE BUG: an empty-handed bot scored SeekWeapon 1.40 on every think, its branch
-		// had no POI to path to, and seven bots stood still for a whole match. An ambition
-		// nothing can satisfy must not be able to win — the tag stays for Phase 6 pickups,
-		// but with bWeaponPickupKnown false it scores zero and the bot keeps moving.
+		// THE BUG (25 Aug): an empty-handed bot scored SeekWeapon 1.40 on every think, its
+		// branch had no weapon POI to path to, and seven bots stood still for a match.
+		// Founder ruling: the concept is REMOVED, not scored down — an unsatisfiable want
+		// is a trap at any utility. What is left in its place always has somewhere to go.
 		TArray<FAIBAmbitionSpec> Defaults;
 		UAIBAmbitionEngine::BuildDefaultCoreAmbitions(Defaults);
 		for (const FAIBAmbitionSpec& Spec : Defaults)
 		{
+			TestFalse(TEXT("no ambition is named SeekWeapon any more"),
+				Spec.Tag.ToString().Contains(TEXT("SeekWeapon")));
 			Engine->RegisterAmbition(Spec);
 		}
+		TestEqual(TEXT("still five core wants"), Engine->NumAmbitions(), 5);
 
-		FAIBFacts Facts;                     // the worst case: cannot fight, nothing visible
+		// The exact old trap state — cannot fight, nothing visible, no mode naming a
+		// destination. The old brain froze here at SeekWeapon 1.40; the floor now takes
+		// it and the bot wanders, which is movement rather than a fetch quest.
+		FAIBFacts Facts;
 		Facts.bVitalsKnown = true;
 		Facts.HealthNorm = 1.f;
 		Facts.bWeaponCanFight = false;
-		Facts.bWeaponPickupKnown = false;    // this game has no pickups
-		TestTag(TEXT("dry with nowhere to go: ROAM, never SeekWeapon"),
+		TestTag(TEXT("dry and blind: the floor, and the floor MOVES"),
 			Engine->Rescore(Facts, 1.0), AIBTags::Ambition_Roam);
 
-		// And the ambition is not dead, only inert: name a pickup and it wakes up.
+		// And Seek is dormant, not dead: name a destination and it outranks the floor at
+		// once. That is the difference from SeekWeapon, which nothing could ever name.
 		Engine->ResetArbitration();
-		Facts.bWeaponPickupKnown = true;
-		TestTag(TEXT("with a pickup to seek it wins again"),
-			Engine->Rescore(Facts, 2.0), AIBTags::Ambition_SeekWeapon);
+		FAIBObjectiveFact& Somewhere = Facts.Objectives.AddDefaulted_GetRef();
+		Somewhere.AmbitionTag = AIBTags::Ambition_Seek;
+		Somewhere.Urgency = 1.f;
+		TestTag(TEXT("a mode names a place: SEEK, above the floor"),
+			Engine->Rescore(Facts, 2.0), AIBTags::Ambition_Seek);
+
+		// ...and it never outranks a fight: the same urgency loses to a visible enemy.
+		Engine->ResetArbitration();
+		Facts.bWeaponCanFight = true;
+		Facts.bHasTarget = true;
+		Facts.bTargetVisible = true;
+		Facts.DistToTargetUU = 800.f;
+		TestTag(TEXT("an enemy outranks an errand"),
+			Engine->Rescore(Facts, 3.0), AIBTags::Ambition_Engage);
 	});
 
 	It("releases a commit whose incumbent VETOED itself — no chasing corpses", [this]()

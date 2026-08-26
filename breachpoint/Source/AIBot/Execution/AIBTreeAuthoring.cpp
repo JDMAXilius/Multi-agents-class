@@ -171,14 +171,18 @@ FString UAIBTreeAuthoring::BuildBotStateTree()
 	AddCompletionTransition(Search, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
 	AddCompletionTransition(Search, Root, EStateTreeTransitionTrigger::OnStateFailed, 0.5f);
 
-	// ---- Seek: the loadout can't fight — go find a weapon ------------------------------
+	// ---- Seek: I have somewhere to be — go there ---------------------------------------
+	// The node SET is unchanged from the SeekWeapon authoring on purpose: both structs
+	// keep their names (the probe list pins them), and what a branch MEANS lives in C++
+	// virtuals, never in serialized node parameters. So this replacement needs no new
+	// node and, strictly, no asset rebuild — see the ticket Log.
 	UStateTreeState& Seek = Root.AddChildState(TEXT("Seek"));
-	Seek.AddEnterCondition<FAIBGateSeekWeaponCondition>();
+	Seek.AddEnterCondition<FAIBGateSeekWeaponCondition>(); // gates AIBot.Ambition.Seek
 	Seek.AddTask<FAIBAmbitionSentinelTask>();
-	Seek.AddTask<FAIBMoveToWeaponPOITask>();
+	Seek.AddTask<FAIBMoveToWeaponPOITask>();               // belief -> POI -> reachable point
 	AddCompletionTransition(Seek, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
-	// No POI provider until Phase 6: the mover fails loudly (F7), and this delay is what
-	// keeps an honestly-failing branch cheap while its gate still holds.
+	// The mover cannot fail for want of a destination now; this covers the only case left
+	// (no navmesh at all), and the delay keeps that quiet while the gate still holds.
 	AddCompletionTransition(Seek, Root, EStateTreeTransitionTrigger::OnStateFailed, 2.0f);
 
 	// ---- Roam: nothing better to want --------------------------------------------------
@@ -198,6 +202,7 @@ FString UAIBTreeAuthoring::BuildBotStateTree()
 	AddCompletionTransition(Roam, Root, EStateTreeTransitionTrigger::OnStateFailed, 2.0f);
 
 	Report.Add(TEXT("states     : Root > [Engage, Retreat, Search, Seek, Roam] (flat, gated per ambition, Roam UNGATED as the ordered fallback, sentinel in each)"));
+	Report.Add(TEXT("seek       : AIBot.Ambition.Seek — deliberate movement (belief -> POI -> reachable point). SeekWeapon is RETIRED: no pickups in this game."));
 
 	// An uncompiled StateTree runs NOTHING — the asset would exist, the ini would resolve,
 	// and every bot would still stand still. This turns editor data into bytecode.

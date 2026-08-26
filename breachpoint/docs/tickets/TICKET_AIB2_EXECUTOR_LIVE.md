@@ -314,3 +314,92 @@ new fact rather than by disabling the ambition.
 **Honesty ladder:** compiled (Editor target only). Rung 2 not run (editor held). Rung 3
 unproven — the founder's PIE is the only thing that can show a bot walking, and it needs an
 editor restart first.
+
+---
+
+### 25 Aug 2026 — aib-builder: FOUNDER RULING APPLIED — SeekWeapon is retired, Seek is deliberate movement
+
+*Supersedes the (B) half of the entry above. The `bWeaponPickupKnown` fact, its selector and
+its builder line are **reverted in full** — that was the "score around it" fix the ruling
+withdrew. The (A) empty-hand diagnosis and the adapter's arm press stand unchanged.*
+
+**What the ambition is now.** `AIBot.Ambition.Seek` — "I have somewhere to be": the matured
+target belief when there is one, else any POI a provider offers, else a random reachable
+point. `Ambition_SeekWeapon` is gone from the tag list, and `AIBot.POI.Weapon` is deleted
+with the concept it named.
+
+**Renames done, and the two that could NOT be.** The probe (`Tools/aib/70_aib_assets.py`,
+not this module's file) pins 16 node paths by name, two of them
+`/Script/AIBot.AIBGateSeekWeaponCondition` and `/Script/AIBot.AIBMoveToWeaponPOITask`.
+Renaming either would fail the probe and block the build step, so both structs are
+**repurposed in place** — new `DisplayName` metadata ("AIB Gate: Seek", "AIB Seek
+Destination"), new behaviour, old C++ identifiers, each carrying a comment that says why the
+name is frozen. **A serial rename of those two identifiers plus the probe list is OWED** —
+it is a one-line-each edit in two files that must land in the same commit, and it is not
+wave work. The tag itself was free to rename (the probe names no tags).
+
+**The branch.** Unchanged node SET — gate + sentinel + mover — because every per-branch
+difference in this tree is a C++ virtual, never a serialized node parameter (the compiled
+authoring surface sets nothing on a node it adds). The mover
+(`FAIBMoveToPOITask`) gained one virtual, `ShouldMoveToBeliefFirst()`, and Seek's override
+turns on belief-first plus the wander fallback. **Its EnterState can no longer fail for want
+of a destination** — that is the structural half of "must never strand a bot", independent
+of any score.
+
+**TREE REBUILD: NOT REQUIRED BY THIS DIFF, and I want that read carefully rather than
+trusted.** No `AddChildState` / `AddEnterCondition` / `AddTask` / `AddTransition` call
+changed, and no state name changed, so the bytecode the asset holds is identical; what
+changed is code the nodes execute. You are rebuilding anyway for the Roam disagreement
+(0787e54) — after it, the read-back should show **Seek (1 enter condition, 2 tasks, 2
+transitions)**, i.e. the same shape as before, and the report gains one new line:
+`seek       : AIBot.Ambition.Seek — deliberate movement ...`. If Seek's shape comes back
+different, something else moved and I want to hear about it.
+
+**Scoring, and the mistake two old specs caught in under a minute.** Seek is
+`BaseUtility 0.5 × ObjectiveUrgency` (the mode's dial, matched on this tag, Phase 6), commit
+3s. `ValueWhenUnknown` is **0.3 ⇒ 0.15, deliberately UNDER the 0.20 Roam floor**. My first
+draft used 0.6 ⇒ 0.30, above the floor, and rung 2 failed exactly twice:
+`does not flee on unknown vitals` and `never lets the floor ambition starve a real want`.
+Both were right: a want that outranks Roam whenever no mode is registered has not joined the
+ladder, it has REPLACED the floor — and with a 3s commit it re-armed W-REVIEW P2 H-1's
+commit-starvation walk (a fresh spawn ignoring the first enemy it sees for three seconds).
+I moved the number, not the specs.
+
+**So what do the bots do in PIE today?** They **Roam** — wander to reachable points — because
+nothing in this game names a destination yet. Seek is DORMANT, which is a different thing
+from the trap SeekWeapon was: SeekWeapon could win and then had nowhere to go; Seek cannot
+win until something names a place, and if it wins its branch always moves. The day
+`IAIBAmbitionProvider` publishes an objective under `AIBot.Ambition.Seek`, it outranks the
+floor with no code change. **If you want Seek visibly exercised in PIE before Phase 6, the
+knob is one line** — `Urgency.ValueWhenUnknown` 0.3f → 0.5f in `BuildDefaultCoreAmbitions`
+— but it costs the two invariants above, so I am not taking that decision here.
+
+Ambition ladder as shipped: Engage (visible + can fight, ≤1.0) · Retreat (1.2 × hurt) ·
+Search (0.8 × memory freshness) · **Seek (0.5 × mode urgency, 0.15 dormant)** · Roam (0.20
+floor, no commit). BN's Fight / Survive / Roam, with Search and Seek as the two movement
+wants between them.
+
+**Rung tails (final, after four builds):**
+- Rung 1 — `./Tools/run-ubt.sh BreachpointEditor`: `Result: Succeeded` / `PASS
+  BreachpointEditor (touched libUnrealEditor-AIBot.dylib)`. Script exit 1 is the
+  `PARTIAL - fewer than three targets` banner for the single-target invocation.
+- Rung 2 — `./Tools/run-specs.sh AIBot`: **42 started, 0 failures**, reconciled against
+  `Tools/Logs/specs-20260825-223746.log`: 42 `Test Started`, 42 `Result={Success}`,
+  0 `Result={Fail}` ⇒ 42 = 42 + 0. 41 pre-existing plus one added,
+  *"wants nothing this world cannot satisfy — SeekWeapon is retired, Seek moves"*, which
+  pins three things: no registered ambition's tag contains "SeekWeapon"; the old trap state
+  (dry, blind, mode-less) now elects the moving floor; a named destination wakes Seek, and a
+  visible enemy still outranks it.
+- **PROCESS CATCH worth keeping:** an earlier spec run reported 42/0 while the editor was
+  open, and it was **lying** — with the editor holding `libUnrealEditor-AIBot.dylib`, UBT
+  links to `-0001`/`-0002` hot-reload copies, and the headless `-Cmd` loads the stale base
+  dylib. The tell was the log printing the PREVIOUS revision's spec name. Once the editor
+  closed and the link was clean, the same suite showed the two real failures above. **A
+  green rung 2 taken while an editor is open proves nothing** — the runner's own gate exists
+  for this, and I only saw it because the spec names changed.
+- Boundary grep — `grep -rn "Breachpoint\|BNCharacter\|\"BN" Source/AIBot/ --include='*.h'
+  --include='*.cpp'` → no output, exit 1. (It caught one real hit mid-work: a comment in
+  `AIBTags.h` naming the host game. Reworded, not excused.)
+
+**Honesty ladder:** compiled (Editor target) + rung 2 green and reconciled against a clean
+link. Rung 3 unproven — no PIE was run and no editor was opened or closed by me.

@@ -39,8 +39,8 @@ namespace AIBTags
 	AIBOT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ambition_Mode);
 
 	// -- point-of-interest kinds (the typed join to FAIBPointOfInterest::Kind) ----
-	// Deliberately EMPTY. AIBot.POI.Weapon lived here until 25 Aug and named a thing
-	// BreachpointNext does not have; a provider or a mode names its own kinds under
+	// Deliberately EMPTY. AIBot.POI.Weapon lived here until 25 Aug and named a pickup
+	// the host game has no mechanism for; a provider or a mode names its own kinds under
 	// AIBot.POI.* in its own module (the same open namespace as the verbs), and a mover
 	// with no kind takes any POI offered.
 }

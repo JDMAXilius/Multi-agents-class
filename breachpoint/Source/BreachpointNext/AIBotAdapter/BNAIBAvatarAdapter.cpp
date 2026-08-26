@@ -186,9 +186,10 @@ bool UBNAIBAvatarAdapter::CanWeaponFight() const
 	const ABNWeapon* Weapon = GetHeldWeapon();
 	if (!Weapon)
 	{
-		// The 25 Aug deadlock's exact line: empty hands read as "cannot fight", the brain
-		// wants SeekWeapon forever, and a game with no pickups has nothing to seek. Named
-		// here so the next reader does not have to re-derive it from the ini.
+		// The 25 Aug deadlock's exact line: empty hands read as "cannot fight", so the bot
+		// could never want to Engage — and the brain's old SeekWeapon want (since retired)
+		// sent it hunting a pickup this game does not contain. Named here so the next
+		// reader does not have to re-derive the empty hand from the ini.
 		UE_LOG(LogBN, Verbose, TEXT("BNAIB: %s holds no weapon (the Unarmed slot) — cannot fight."),
 			*GetNameSafe(GetOwner()));
 		return false;

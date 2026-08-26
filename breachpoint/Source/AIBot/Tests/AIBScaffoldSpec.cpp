@@ -42,7 +42,7 @@ void FAIBScaffoldSpec::Define()
 	{
 		TestTrue(TEXT("Engage"), AIBTags::Ambition_Engage.GetTag().IsValid());
 		TestTrue(TEXT("Retreat"), AIBTags::Ambition_Retreat.GetTag().IsValid());
-		TestTrue(TEXT("SeekWeapon"), AIBTags::Ambition_SeekWeapon.GetTag().IsValid());
+		TestTrue(TEXT("Seek"), AIBTags::Ambition_Seek.GetTag().IsValid());
 		TestTrue(TEXT("Search"), AIBTags::Ambition_Search.GetTag().IsValid());
 		TestTrue(TEXT("Roam"), AIBTags::Ambition_Roam.GetTag().IsValid());
 		TestTrue(TEXT("Mode root"), AIBTags::Ambition_Mode.GetTag().IsValid());
