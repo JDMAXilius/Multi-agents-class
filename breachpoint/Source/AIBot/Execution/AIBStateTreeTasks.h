@@ -482,6 +482,54 @@ struct FAIBMoveToWeaponPOITask : public FAIBMoveToPOITask
 	virtual bool ShouldMoveToBeliefFirst() const override { return true; }
 };
 
+////////////////////////////////////////////////////////////////////
+
+USTRUCT()
+struct FAIBStrafeTaskInstanceData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Context")
+	TObjectPtr<AAIController> Controller;
+
+	/** One lateral step's length. Short enough to read as footwork, long enough that
+	 *  the pathfollower actually moves before the next leg. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float StepDistanceUU = 220.f;
+
+	/** Strafe only while STATION-KEEPING — inside this radius of the belief. Mirrors
+	 *  FAIBMoveNearBeliefTask's acceptance radius on purpose: outside it the mover owns
+	 *  the legs, and two tasks issuing moves at once cancel each other per tick. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float EngagedRadiusUU = 350.f;
+
+	/** The policy leg this task last actuated (its NextDecisionAt stamp) — one lateral
+	 *  move per LEG, never per tick: per-tick MoveToLocation is a pathfind per frame. */
+	double LastActuatedLegStamp = 0.0;
+};
+
+/** PHASE 4's footwork (the host's R9 lesson: a bot that stands perfectly still while
+ *  firing is the loudest tell that it is not a person). FAIBMovementPolicy decides the
+ *  RHYTHM — whether this level strafes at all, the leg cadence, the juke — from the
+ *  controller's per-life state; this task only actuates: one lateral navmesh-projected
+ *  step per leg, perpendicular to the belief line. Runs beside the burst and NEVER
+ *  completes or fails — the fight's other tasks own the state's fate. */
+USTRUCT(meta = (DisplayName = "AIB Strafe", Category = "AIBot"))
+struct FAIBStrafeTask : public FStateTreeTaskCommonBase
+{
+	GENERATED_BODY()
+
+	using FInstanceDataType = FAIBStrafeTaskInstanceData;
+	virtual const UStruct* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
+
+	FAIBStrafeTask() { bShouldCallTick = true; }
+
+	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
+	virtual EStateTreeRunStatus Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const override;
+};
+
+////////////////////////////////////////////////////////////////////
+
 /** The Fallback branch's stand-and-report task (the Phase-3 W-REVIEW ruling): selected
  *  only when the brain's current want maps to NO branch — a Phase-6 mode ambition before
  *  its branch exists — it stands still and says WHY, once, at Warning (F7). The sentinel

@@ -6,6 +6,10 @@
 #include "Core/AIBTypes.h"
 #include "GameplayTagContainer.h"
 #include "Perception/AIBSensorium.h"
+#include "Skills/AIBAimPolicy.h"
+#include "Skills/AIBGrenadePolicy.h"
+#include "Skills/AIBMeleePolicy.h"
+#include "Skills/AIBMovementPolicy.h"
 #include "Skills/AIBSkillProfile.h"
 #include "AIBBotController.generated.h"
 
@@ -62,6 +66,18 @@ public:
 	 *  built ONCE per Think (F3: one belief sample per pump); tasks reading this cache
 	 *  cannot accidentally re-sample the live world between pumps. */
 	const FAIBFacts& GetLastFacts() const { return LastFacts; }
+
+	// -- Phase 4 integration: the skill surface executor tasks consume ---------------
+	// The PROFILE answers "how good is this bot at X"; the STATES are per-life policy
+	// scratch that must survive branch re-entry (StateTree re-initialises instance data
+	// on every state ENTRY — the grenade-cooldown lesson, applied to every policy);
+	// the STREAM is per-bot so no two bots dance in lockstep (F-3.7).
+	const FAIBSkillProfile& GetSkillProfile() const { return SkillProfile; }
+	FAIBAimState& GetAimState() { return AimState; }
+	FAIBMeleeState& GetMeleeState() { return MeleeState; }
+	FAIBGrenadeState& GetGrenadeState() { return GrenadeState; }
+	FAIBMovementState& GetMovementState() { return MovementState; }
+	FRandomStream& GetPolicyRandom() { return PolicyRandom; }
 
 	/** THE ONE THROTTLE THAT MUST OUTLIVE A BRANCH, and it lives here for a mechanical
 	 *  reason worth naming: a StateTree re-initialises a state's instance data from the
@@ -172,6 +188,16 @@ private:
 	FAIBDamageLedger DamageLedger;
 	FAIBConfidenceState ConfidenceState;
 	FAIBSkillProfile SkillProfile;
+
+	// Phase 4 integration: per-life policy scratch (see the accessors' comment) and the
+	// execution-side draw stream. One stream for all four skills is deliberate — the
+	// F-3.7 hazard is cross-BOT lockstep, not cross-skill; per-skill streams would buy
+	// replay granularity nothing downstream reads yet.
+	FAIBAimState AimState;
+	FAIBMeleeState MeleeState;
+	FAIBGrenadeState GrenadeState;
+	FAIBMovementState MovementState;
+	FRandomStream PolicyRandom;
 
 	/** The misjudge draws. Its OWN stream, seeded per bot beside the sensorium's:
 	 *  sharing would let a confidence redraw shift every later reaction latency, and

@@ -43,7 +43,7 @@ TREE_OBJECT = "/Game/AIBot/AI/ST_AIBBot.ST_AIBBot"
 TIERS_OBJECT = "/Game/AIBot/Data/DT_AIBTiers.DT_AIBTiers"
 
 # Every node struct in AIBStateTreeTasks.h -- 6 conditions (one hidden base + five
-# per-ambition gates) and 11 tasks (two hidden bases + the placed nine). The bases are
+# per-ambition gates) and 12 tasks (two hidden bases + the placed ten). The bases are
 # probed too: the tree serializes derived types whose layout includes them, and a build
 # missing a base is exactly as stale as one missing a leaf.
 NODE_STRUCTS = [
@@ -65,6 +65,8 @@ NODE_STRUCTS = [
     ("FAIBWanderTask", "/Script/AIBot.AIBWanderTask", "task"),
     # The ungated floor branch's stand-and-report task (the Phase-3 W-REVIEW ruling).
     ("FAIBUnservedWantTask", "/Script/AIBot.AIBUnservedWantTask", "task"),
+    # Phase 4 integration: the movement policy's actuator, beside the burst in Engage.
+    ("FAIBStrafeTask", "/Script/AIBot.AIBStrafeTask", "task"),
 ]
 SCRIPT_STRUCT = "/Script/CoreUObject.ScriptStruct"
 

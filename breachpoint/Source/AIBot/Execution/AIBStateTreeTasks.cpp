@@ -8,6 +8,10 @@
 #include "Interfaces/AIBAvatarInterface.h"
 #include "NavigationSystem.h"
 #include "Perception/AIBSensorium.h"
+#include "Skills/AIBAimPolicy.h"
+#include "Skills/AIBGrenadePolicy.h"
+#include "Skills/AIBMeleePolicy.h"
+#include "Skills/AIBMovementPolicy.h"
 #include "StateTreeExecutionContext.h"
 
 namespace
@@ -148,11 +152,9 @@ namespace
 	constexpr float MeleeCommitFraction = 0.8f;
 	constexpr float MeleeRetrySeconds = 1.5f;
 
-	/** GRENADE band. Below the minimum a bot blows itself up; past the maximum the throw
-	 *  falls short. The band is the whole tactical judgement — there is no "grenade skill"
-	 *  wired yet (Phase 4 owns that), so these are the honest defaults. */
-	constexpr float GrenadeMinRangeUU = 500.f;
-	constexpr float GrenadeMaxRangeUU = 2200.f;
+	// The GRENADE band lived here as honest defaults until Phase 4's integration: the
+	// judgement is now FAIBGrenadePolicy's per-level recognition ladder (its own bands,
+	// anchored inside the sight envelope). Only the throttle below stays task-side.
 
 	/** THE COOLDOWN IS NOT OPTIONAL, and it is per BOT for a reason the host learned in
 	 *  the world rather than on paper: eight bots that each throw the instant a band opens
@@ -325,14 +327,26 @@ EStateTreeRunStatus FAIBFaceBeliefTask::Tick(FStateTreeExecutionContext& Context
 {
 	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller);
-	if (!Bot || !Bot->GetSensorium().HasVisibleTarget())
+	APawn* Pawn = Bot ? Bot->GetPawn() : nullptr;
+	if (!Pawn || !Bot->GetSensorium().HasVisibleTarget())
 	{
 		return EStateTreeRunStatus::Failed;
 	}
 	// THE BELIEF, never the live actor: during the juke window this is the frozen
 	// last-seen spot — a bot aiming through the pillar is the bug this line bans.
-	SteerControlRotation(*Bot, Bot->GetSensorium().GetLastSeenLocation(),
-		InstanceData.TurnDegreesPerSecond, DeltaTime);
+	//
+	// PHASE 4 INTEGRATION — F4 finally executes: the aim point is the belief displaced
+	// by the level's HELD, DECAYING angular error (drawn in the cone, settled over the
+	// correct time, redrawn on cadence, fully reset on a target switch). The bot aims
+	// where it believes MINUS how good its hands are — never a perfect solution.
+	const AActor* Target = Bot->GetSensorium().GetVisibleTarget();
+	const FVector AimPoint = FAIBAimPolicy::StepAimPoint(
+		Bot->GetAimState(), Pawn->GetPawnViewLocation(),
+		Bot->GetSensorium().GetLastSeenLocation(),
+		Target ? Target->GetUniqueID() : 0,
+		Bot->GetSkillProfile().Level(EAIBSkill::Aim),
+		Bot->GetPolicyRandom(), Bot->GetWorld()->GetTimeSeconds());
+	SteerControlRotation(*Bot, AimPoint, InstanceData.TurnDegreesPerSecond, DeltaTime);
 	return EStateTreeRunStatus::Running;
 }
 
@@ -484,17 +498,26 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 
 	// THIS FRAME'S distance to the belief — the reason the three checks below can exist at
 	// all. Everything past here that names a range uses it; nothing past here reads the
-	// think-rate DistToTargetUU, which is a want's number, not a swing's.
+	// think-rate DistToTargetUU, which is a want's number, not a swing's. (One deliberate
+	// exception below: the grenade CALL reads the fact snapshot, because a throw is a
+	// decision, not a swing — the policy's one-info-door law.)
 	float DistanceUU = 0.f;
 	const bool bHasDistance = LiveDistanceToBelief(*Bot, DistanceUU);
+	const double Now = Bot->GetWorld()->GetTimeSeconds();
 
-	// -- MELEE: they are close enough to touch ---------------------------------------
-	// Inside a fraction of the HELD weapon's own reach, which the door supplies — so a
-	// bot with a knife commits from further out than one holding a rifle, without this
-	// code ever learning what either is. A bot that shoots you from arm's length instead
-	// of hitting you is the readable failure this prevents.
+	// -- MELEE: they are close enough to touch, AND the bot has READ that ---------------
+	// Two gates, two owners. The REACH is the held weapon's, through the door — a knife
+	// commits from further than a rifle butt, and this code never learns which is which.
+	// The RECOGNITION is the level's (Phase 4): the policy's clock starts when the range
+	// picture becomes continuously true and answers after the level's delay — an Expert
+	// reads the closing fight early and is already swinging on arrival, a Novice only
+	// realises at point-blank and takes a beat more (the R11 reasoning, applied to the
+	// knife). Stepped EVERY tick so the continuous-range reset law holds.
+	const bool bMeleeRecognised = FAIBMeleePolicy::ShouldMelee(
+		Bot->GetMeleeState(), bHasDistance ? DistanceUU : -1.f, Facts.bTargetVisible,
+		Bot->GetSkillProfile().Level(EAIBSkill::Melee), Now);
 	const float MeleeRangeUU = Avatar->GetMeleeRangeUU();
-	if (bHasDistance && MeleeRangeUU > 0.f && InstanceData.MeleeCooldownLeft <= 0.f
+	if (bMeleeRecognised && bHasDistance && MeleeRangeUU > 0.f && InstanceData.MeleeCooldownLeft <= 0.f
 		&& DistanceUU <= MeleeRangeUU * MeleeCommitFraction)
 	{
 		if (InstanceData.bHolding)
@@ -543,18 +566,20 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 		InstanceData.SwapPresses = 0; // settled: the next range change gets a full budget
 	}
 
-	// -- GRENADE: the band, the pouch, the cooldown -----------------------------------
-	// Thrown at the BELIEF and only while the target is perceived, so this can never
-	// become a bot reacting to something it never saw. GrenadeCount is the pouch (an
-	// empty bot miming a throw is a bot not shooting), the band is the judgement, and the
-	// cooldown is the thing that keeps a team of bots from carpeting the arena.
-	// The cooldown is asked of the CONTROLLER, not of this task's scratch, because
-	// StateTree re-initialises instance data on every state ENTRY and Engage re-enters
-	// whenever a belief blinks — a per-task countdown would reset roughly once a second
-	// and throttle nothing at all. See AAIBBotController::CanThrowGrenade.
-	if (bHasDistance && Facts.bTargetVisible && Facts.GrenadeCount > 0
-		&& Bot->CanThrowGrenade()
-		&& DistanceUU >= GrenadeMinRangeUU && DistanceUU <= GrenadeMaxRangeUU)
+	// -- GRENADE: the level's RECOGNITION, the pouch, the cooldown ---------------------
+	// PHASE 4 INTEGRATION: the fixed band became the policy's per-level recognition
+	// ladder — a Novice never throws deliberately, Trained sees the opener, Skilled the
+	// finisher (on damage-DEALT history, never enemy vitals — F3), Expert the area
+	// denial. The CALL reads the fact snapshot (a throw is a decision; one info door)
+	// on the level's consider cadence; the throw still rides the CONTROLLER's cooldown,
+	// because StateTree re-initialises instance data on every state ENTRY and Engage
+	// re-enters whenever a belief blinks — a per-task countdown would reset roughly
+	// once a second and throttle nothing at all (see AAIBBotController::CanThrowGrenade).
+	const EAIBGrenadeCall GrenadeCall = FAIBGrenadePolicy::Consider(
+		Bot->GetGrenadeState(), Facts,
+		Bot->GetSkillProfile().Level(EAIBSkill::Grenade),
+		Bot->GetPolicyRandom(), Now);
+	if (GrenadeCall != EAIBGrenadeCall::None && Bot->CanThrowGrenade())
 	{
 		if (InstanceData.bHolding)
 		{
@@ -565,8 +590,8 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 		Avatar->PressVerb(AIBTags::Verb_Grenade);
 		Avatar->ReleaseVerb(AIBTags::Verb_Grenade);
 		Bot->NoteGrenadeThrown(GrenadeCooldownSeconds);
-		UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s threw at %.0fuu (%d left in the pouch)."),
-			*Bot->GetName(), DistanceUU, Facts.GrenadeCount);
+		UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s threw (call %d) at %.0fuu of belief (%d left in the pouch)."),
+			*Bot->GetName(), static_cast<int32>(GrenadeCall), Facts.DistToTargetUU, Facts.GrenadeCount);
 		return EStateTreeRunStatus::Running;
 	}
 
@@ -977,6 +1002,70 @@ void FAIBMoveToPOITask::ExitState(FStateTreeExecutionContext& Context, const FSt
 
 FGameplayTag FAIBMoveToPOITask::GetPOIKind() const           { return FGameplayTag(); }
 bool FAIBMoveToPOITask::ShouldWanderWithoutProvider() const  { return false; }
+
+////////////////////////////////////////////////////////////////////
+
+EStateTreeRunStatus FAIBStrafeTask::EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
+{
+	return EStateTreeRunStatus::Running;
+}
+
+EStateTreeRunStatus FAIBStrafeTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
+{
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller);
+	const APawn* Pawn = Bot ? Bot->GetPawn() : nullptr;
+	if (!Pawn || !Bot->GetSensorium().HasVisibleTarget())
+	{
+		// Not this task's failure — the belief tasks beside it own the state's fate.
+		// Keep running and simply stop stepping (the host's own strafe rule).
+		return EStateTreeRunStatus::Running;
+	}
+
+	// Only while station-keeping: outside the engaged radius the mover owns the legs.
+	const FVector Belief = Bot->GetSensorium().GetLastSeenLocation();
+	if (!IsWithin(*Bot, Belief, InstanceData.EngagedRadiusUU))
+	{
+		return EStateTreeRunStatus::Running;
+	}
+
+	// The policy decides the rhythm (per-life state on the controller — a branch blink
+	// must not reset the dance); this task actuates ONE step per leg.
+	const double Now = Bot->GetWorld()->GetTimeSeconds();
+	const EAIBStrafeIntent Intent = FAIBMovementPolicy::StepStrafe(
+		Bot->GetMovementState(), Bot->GetSkillProfile().Level(EAIBSkill::Movement),
+		Bot->GetPolicyRandom(), Now);
+	FAIBMovementState& MovementState = Bot->GetMovementState();
+	if (Intent == EAIBStrafeIntent::Hold
+		|| MovementState.NextDecisionAtSeconds == InstanceData.LastActuatedLegStamp)
+	{
+		return EStateTreeRunStatus::Running;
+	}
+	InstanceData.LastActuatedLegStamp = MovementState.NextDecisionAtSeconds;
+
+	// Perpendicular to the belief line, flat — stepping toward or away would be closing
+	// or retreating, which are other tasks' jobs (the host's strafe geometry, verbatim,
+	// aimed at the BELIEF rather than a live actor).
+	FVector ToBelief = Belief - Pawn->GetActorLocation();
+	ToBelief.Z = 0.f;
+	if (!ToBelief.Normalize())
+	{
+		return EStateTreeRunStatus::Running;
+	}
+	const FVector Lateral = FVector::CrossProduct(FVector::UpVector, ToBelief)
+		* (Intent == EAIBStrafeIntent::Right ? 1.f : -1.f);
+	const FVector Destination = Pawn->GetActorLocation() + Lateral * FMath::Max(0.f, InstanceData.StepDistanceUU);
+
+	// Projected onto the navmesh by the move itself: a step into a wall or off a ledge
+	// resolves to the nearest legal point instead of failing (the host's proven call).
+	if (Bot->MoveToLocation(Destination, /*AcceptanceRadius=*/50.f, /*bStopOnOverlap=*/true,
+			/*bUsePathfinding=*/true, /*bProjectDestinationToNavigation=*/true, /*bCanStrafe=*/true)
+		== EPathFollowingRequestResult::Failed)
+	{
+		UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s strafe step refused — holding this leg."), *Bot->GetName());
+	}
+	return EStateTreeRunStatus::Running;
+}
 
 ////////////////////////////////////////////////////////////////////
 

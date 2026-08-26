@@ -170,6 +170,14 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	ConfidenceState = FAIBConfidenceState();
 	ConfidenceRandom.Initialize(static_cast<int32>(GetUniqueID()) + 7919);
 
+	// Phase 4 integration: fresh policy scratch per life — a new body must not inherit
+	// the old one's aim error, melee clock, grenade cadence, or strafe leg.
+	AimState = FAIBAimState();
+	MeleeState = FAIBMeleeState();
+	GrenadeState = FAIBGrenadeState();
+	MovementState = FAIBMovementState();
+	PolicyRandom.Initialize(static_cast<int32>(GetUniqueID()) + 131);
+
 	GetWorldTimerManager().SetTimer(ThinkTimer, this, &AAIBBotController::Think,
 		FMath::Max(ThinkIntervalSeconds, 0.02f), /*bLoop=*/true);
 
@@ -236,6 +244,10 @@ void AAIBBotController::OnUnPossess()
 	// its last death's beating would flee its first fight (absolute-time stamps included).
 	DamageLedger.Reset();
 	ConfidenceState = FAIBConfidenceState();
+	AimState = FAIBAimState();
+	MeleeState = FAIBMeleeState();
+	GrenadeState = FAIBGrenadeState();
+	MovementState = FAIBMovementState();
 	Super::OnUnPossess();
 }
 

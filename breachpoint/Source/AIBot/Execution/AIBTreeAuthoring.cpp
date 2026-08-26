@@ -145,6 +145,10 @@ FString UAIBTreeAuthoring::BuildBotStateTree()
 	Engage.AddTask<FAIBFaceBeliefTask>();
 	Engage.AddTask<FAIBMoveNearBeliefTask>();
 	Engage.AddTask<FAIBFireWhenAbleTask>();
+	// Phase 4's footwork rides BESIDE the burst (the host's R9 shape): the movement
+	// policy decides the rhythm, the task steps laterally only while station-keeping,
+	// and it never completes — the fight's other tasks own the state's fate.
+	Engage.AddTask<FAIBStrafeTask>();
 	AddCompletionTransition(Engage, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
 	// Failure here is a lost belief (both belief tasks fail on visibility loss). The beat
 	// before re-selecting is the human "wait — where'd he go", not a tuning accident.
