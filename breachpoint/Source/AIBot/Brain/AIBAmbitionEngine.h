@@ -43,6 +43,20 @@ public:
 	void ClearAmbitions();
 	int32 NumAmbitions() const { return Ambitions.Num(); }
 
+	/** Registry introspection (Phase 6): "no mode leftovers after a swap" was
+	 *  UNASSERTABLE while the only accessor was a count — the recorded CTF-in-Slayer
+	 *  defect could not even be tested for (W-AUDIT P6). */
+	bool HasAmbition(FGameplayTag Tag) const;
+
+	/** THE TRANSLATION (Phase 6): a mode ambition is NEVER registered raw. Raw, it is a
+	 *  constant — at any base above the Roam floor it wins whenever combat is quiet,
+	 *  then hysteresis holds it, and the bot camps an objective the mode scores at zero
+	 *  urgency (W-AUDIT P6 finding 2). This attaches the ObjectiveUrgency consideration
+	 *  (linear, ValueWhenUnknown = 0: SILENT until the facts carry a matching objective)
+	 *  and a commit window, so "a dropped flag can outshout a fistfight" is finally a
+	 *  property of the data, not a comment. */
+	static void BuildModeAmbitionSpec(const struct FAIBModeAmbition& Mode, FAIBAmbitionSpec& OutSpec);
+
 	/** Score everything, honour commit/hysteresis/interrupts, return the winner.
 	 *  An empty registry returns the empty tag — a bot with no wants stands still,
 	 *  loudly the executor's problem, never a crash. */

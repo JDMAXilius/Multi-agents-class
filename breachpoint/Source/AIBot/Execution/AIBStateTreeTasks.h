@@ -63,6 +63,12 @@ struct FAIBAmbitionGateCondition : public FStateTreeConditionCommonBase
 
 	/** The base gates nothing (invalid tag never matches) — author with a derived gate. */
 	virtual FGameplayTag GetBranchTag() const;
+
+	/** How the branch claims a current want. Default: EXACT equality — the 1:1 mirror.
+	 *  The Mode gate widens it to a hierarchy match, because a host's want is a CHILD
+	 *  tag (AIBot.Ambition.Mode.Hold) that exact == can never equal (W-AUDIT P6
+	 *  finding 5 — the statue beside the objective). */
+	virtual bool Matches(const FGameplayTag& Current) const;
 };
 
 USTRUCT(meta = (DisplayName = "AIB Gate: Engage", Category = "AIBot"))
@@ -110,6 +116,17 @@ struct FAIBGateRoamCondition : public FAIBAmbitionGateCondition
 {
 	GENERATED_BODY()
 	virtual FGameplayTag GetBranchTag() const override;
+};
+
+/** Gates the MODE branch: claims any want UNDER AIBot.Ambition.Mode (the parent itself
+ *  included — the tags header serves both readings on purpose). One branch serves every
+ *  mode ambition; which objective it walks to is the kind join, resolved per entry. */
+USTRUCT(meta = (DisplayName = "AIB Gate: Mode", Category = "AIBot"))
+struct FAIBGateModeCondition : public FAIBAmbitionGateCondition
+{
+	GENERATED_BODY()
+	virtual FGameplayTag GetBranchTag() const override;
+	virtual bool Matches(const FGameplayTag& Current) const override;
 };
 
 ////////////////////////////////////////////////////////////////////
@@ -480,6 +497,50 @@ struct FAIBMoveToWeaponPOITask : public FAIBMoveToPOITask
 	GENERATED_BODY()
 	virtual bool ShouldWanderWithoutProvider() const override { return true; }
 	virtual bool ShouldMoveToBeliefFirst() const override { return true; }
+};
+
+////////////////////////////////////////////////////////////////////
+
+USTRUCT()
+struct FAIBMoveToObjectiveTaskInstanceData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Context")
+	TObjectPtr<AAIController> Controller;
+
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float AcceptanceRadiusUU = 200.f;
+
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float GiveUpAfterNoProgressSeconds = 8.f;
+
+	FVector Goal = FVector::ZeroVector;
+	bool bHasGoal = false;
+	float ClosestSoFarUU = 0.f;
+	float SecondsWithoutProgress = 0.f;
+	FAIBLocomotionState Locomotion;
+};
+
+/** The MODE branch's mover (Phase 6): walks to the best world-query POI whose Kind is
+ *  the CURRENT ambition's ObjectiveKind (the controller's cached mode set — data, not a
+ *  serialized node parameter), then STANDS ON IT — a hill is held by being there, so
+ *  arrival never completes; SweepLook rides beside, and the sentinel ends the branch
+ *  when the want moves on. No POI for a servable want = the provider under-delivered:
+ *  fail LOUDLY (F7). */
+USTRUCT(meta = (DisplayName = "AIB Move To Objective", Category = "AIBot"))
+struct FAIBMoveToObjectiveTask : public FStateTreeTaskCommonBase
+{
+	GENERATED_BODY()
+
+	using FInstanceDataType = FAIBMoveToObjectiveTaskInstanceData;
+	virtual const UStruct* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
+
+	FAIBMoveToObjectiveTask() { bShouldCallTick = true; }
+
+	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
+	virtual EStateTreeRunStatus Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const override;
+	virtual void ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
 };
 
 ////////////////////////////////////////////////////////////////////

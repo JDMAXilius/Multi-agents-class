@@ -22,8 +22,14 @@ Phase 10 and must stay a folder move.
    `grep -rn "Replicated\|DOREPLIFETIME\|NetSerialize" Source/AIBot/ --include=*.h --include=*.cpp` returns nothing.
    The one deliberate replication CAUSE is `bWantsPlayerState` (a bot IS a player, so its
    engine-replicated PlayerState carries name/score exactly as a human's does). The brain
-   runs only on the authority: the controller refuses to operate without `HasAuthority()`,
-   and `AIBBotManager` is the only sanctioned spawner.
+   runs only on the authority: the controller refuses to operate without `HasAuthority()`.
+   **Amended 26 Aug 2026 (founder ruling over the Phase-6 W-AUDIT, both auditors
+   recommending):** `AIBBotManager` owns PROVIDER RESOLUTION — the host pushes its
+   ambition/world-query providers into the authority-only subsystem once, controllers
+   pull at possession, and the module never searches the world. SPAWNING stays the
+   host game mode's (the `BotSystem` switch is the recorded seam). The original
+   "manager is the only sanctioned spawner" claim was an assertion no code ever
+   backed; this amendment replaces it with the checkable half.
 4. **The brain is worldless.** `Brain/` and `Skills/` take `FAIBFacts` in, return decisions
    out. Check: `grep -rn "UWorld\|AActor\|GetWorld" Source/AIBot/Brain/ Source/AIBot/Skills/`
    returns nothing. World-touching code lives only in `Core/` (the facts BUILDER included —

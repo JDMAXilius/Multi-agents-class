@@ -4,6 +4,7 @@
 #include "Brain/AIBAmbitionEngine.h"
 #include "Components/ActorComponent.h"
 #include "Components/StateTreeAIComponent.h"
+#include "Core/AIBBotManager.h"
 #include "Core/AIBFactsBuilder.h"
 #include "Core/AIBTags.h"
 #include "Data/AIBDataRows.h"
@@ -139,17 +140,27 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 			*GetName(), *InPawn->GetName());
 	}
 
-	// The brain: core wants registered from C++ defaults; a mode adds its own at
-	// Phase 6 through IAIBAmbitionProvider, into this same engine.
+	// Phase 6: pull the providers from the manager — the host pushed them once; a bot
+	// pulls per possession so a respawn re-resolves for free and a dead provider yields
+	// null (loud below), never a dangling call.
+	AmbitionProvider = nullptr;
+	AmbitionProviderObject = nullptr;
+	WorldQuery = nullptr;
+	WorldQueryObject = nullptr;
+	if (UAIBBotManager* Manager = GetWorld() ? GetWorld()->GetSubsystem<UAIBBotManager>() : nullptr)
+	{
+		AmbitionProvider = Manager->GetAmbitionProvider();
+		AmbitionProviderObject = Manager->GetAmbitionProviderObject();
+		WorldQuery = Manager->GetWorldQuery();
+		WorldQueryObject = Manager->GetWorldQueryObject();
+	}
+
+	// The brain. The ENGINE object survives across lives; its REGISTRY no longer does —
+	// RefreshAmbitions below pays ARCHITECTURE's recorded possession obligation (clear +
+	// core + current mode), which is what keeps a CTF want from scoring inside Slayer.
 	if (!AmbitionEngine)
 	{
 		AmbitionEngine = NewObject<UAIBAmbitionEngine>(this);
-		TArray<FAIBAmbitionSpec> CoreAmbitions;
-		UAIBAmbitionEngine::BuildDefaultCoreAmbitions(CoreAmbitions);
-		for (const FAIBAmbitionSpec& Spec : CoreAmbitions)
-		{
-			AmbitionEngine->RegisterAmbition(Spec);
-		}
 	}
 	LastLoggedAmbition = FGameplayTag();
 	LastFacts = FAIBFacts(); // a fresh life reads no stale world
@@ -181,14 +192,14 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	GetWorldTimerManager().SetTimer(ThinkTimer, this, &AAIBBotController::Think,
 		FMath::Max(ThinkIntervalSeconds, 0.02f), /*bLoop=*/true);
 
-	// ONE THINK BEFORE THE TREE STARTS. The timer's first fire is a whole interval away,
-	// but StartLogic selects a state IMMEDIATELY — with no current ambition every gate is
-	// false, selection fails, and StateTree marks the whole run Failed and never ticks
-	// again (StateTreeExecutionContext::Start, "Failed to select initial state"). Seeding
-	// the brain here means the first selection already mirrors arbitration instead of
-	// falling through to Roam for one think interval. (The terminal's live diagnosis and
-	// the W-REVIEW P3 barrier landed this same fix independently, same day — kept once.)
-	Think();
+	// Registry + ONE THINK BEFORE THE TREE STARTS. RefreshAmbitions clears, registers
+	// core + the current mode's translated set, and Thinks once — the timer's first
+	// fire is a whole interval away, but StartLogic selects a state IMMEDIATELY, and a
+	// failed initial selection is TERMINAL (TreeRunStatus=Failed, Tick early-outs
+	// forever — the engine's own error, hit live). Seeding here means the first
+	// selection already mirrors arbitration. (The terminal's live diagnosis and the
+	// W-REVIEW P3 barrier landed the Think-first fix independently, same day.)
+	RefreshAmbitions();
 
 	// The executor last: by the time the tree evaluates its first gate, the brain and
 	// sensorium above are already live. Swapping StateTree for Behavior Tree is this one
@@ -236,6 +247,11 @@ void AAIBBotController::OnUnPossess()
 	}
 	Avatar = nullptr;
 	AvatarObject = nullptr;
+	AmbitionProvider = nullptr;
+	AmbitionProviderObject = nullptr;
+	WorldQuery = nullptr;
+	WorldQueryObject = nullptr;
+	CachedModeAmbitions.Reset();
 	LastLoggedTarget = nullptr;
 	// Same reasoning as the arbitration reset above: an absolute-time gate must not carry
 	// into a new world, where GetTimeSeconds starts over.
@@ -285,6 +301,60 @@ void AAIBBotController::NoteGrenadeThrown(float CooldownSeconds)
 	{
 		NextGrenadeThrowTimeSeconds = World->GetTimeSeconds() + FMath::Max(0.f, CooldownSeconds);
 	}
+}
+
+FGameplayTag AAIBBotController::GetObjectiveKindForCurrentAmbition() const
+{
+	const FGameplayTag Current = AmbitionEngine ? AmbitionEngine->GetCurrent() : FGameplayTag();
+	if (Current.IsValid())
+	{
+		for (const FAIBModeAmbition& Mode : CachedModeAmbitions)
+		{
+			if (Mode.AmbitionTag == Current)
+			{
+				return Mode.ObjectiveKind;
+			}
+		}
+	}
+	return FGameplayTag();
+}
+
+void AAIBBotController::RefreshAmbitions()
+{
+	if (!AmbitionEngine || !HasAuthority())
+	{
+		return;
+	}
+
+	// Clear + core + mode, then ONE Think — the empty-tag window closes before any tree
+	// selection can see it, so a mid-match mode swap never sprays the Fallback Warning
+	// the verifier counts (W-AUDIT P6 finding 10).
+	AmbitionEngine->ClearAmbitions();
+
+	TArray<FAIBAmbitionSpec> CoreAmbitions;
+	UAIBAmbitionEngine::BuildDefaultCoreAmbitions(CoreAmbitions);
+	for (const FAIBAmbitionSpec& Spec : CoreAmbitions)
+	{
+		AmbitionEngine->RegisterAmbition(Spec);
+	}
+
+	CachedModeAmbitions.Reset();
+	if (IAIBAmbitionProvider* Provider = GetAmbitionProvider())
+	{
+		Provider->GetModeAmbitions(CachedModeAmbitions);
+		for (const FAIBModeAmbition& Mode : CachedModeAmbitions)
+		{
+			// NEVER raw: the translation attaches the urgency consideration that makes
+			// a fact-less mode want silent (the constant-that-camps defect).
+			FAIBAmbitionSpec ModeSpec;
+			UAIBAmbitionEngine::BuildModeAmbitionSpec(Mode, ModeSpec);
+			AmbitionEngine->RegisterAmbition(ModeSpec);
+		}
+		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s registered %d mode ambition(s) from the provider."),
+			*GetName(), CachedModeAmbitions.Num());
+	}
+
+	Think();
 }
 
 void AAIBBotController::NoteDamageTaken(AActor* Attacker, const FVector& AttackerLocation, float FractionOfMaxHealth)

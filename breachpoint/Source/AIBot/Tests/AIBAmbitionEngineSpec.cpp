@@ -4,8 +4,18 @@
 #if WITH_DEV_AUTOMATION_TESTS
 
 #include "Brain/AIBAmbitionEngine.h"
+#include "Core/AIBFactsBuilder.h"
 #include "Core/AIBTags.h"
 #include "Core/AIBTypes.h"
+#include "Execution/AIBStateTreeTasks.h"
+#include "Interfaces/AIBAmbitionProvider.h"
+#include "NativeGameplayTags.h"
+#include <limits>
+
+/** A HOST-SHAPED child tag, registered by the spec itself: the whole point of the Mode
+ *  gate is that a game's own `AIBot.Ambition.Mode.<X>` — a tag this module never names —
+ *  matches the hierarchy gate. Proving it with the parent tag would prove nothing. */
+UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_AIBSpec_Mode_Child, "AIBot.Ambition.Mode.SpecHold");
 
 /**
  * The arbitration layer, proven headless — no world, no actors: an engine object, facts
@@ -443,6 +453,72 @@ void FAIBAmbitionEngineSpec::Define()
 		TestEqual(TEXT("exactly one incumbent"), IncumbentRows, 1);
 		TestTag(TEXT("runner-up identified for the instrument"),
 			Engine->GetLastRunnerUp().Tag, AIBTags::Ambition_Search);
+	});
+
+	// ---- Phase 6: the translated mode want, end to end and headless -------------------
+
+	It("translates a mode ambition that stays SILENT without its fact and WINS with it", [this]()
+	{
+		FAIBModeAmbition Mode;
+		Mode.AmbitionTag = TAG_AIBSpec_Mode_Child;
+		Mode.BaseUtility = 1.2f;
+
+		FAIBAmbitionSpec Translated;
+		UAIBAmbitionEngine::BuildModeAmbitionSpec(Mode, Translated);
+		Engine->RegisterAmbition(Translated);
+		Engine->RegisterAmbition(Constant(AIBTags::Ambition_Roam, 0.3f));
+
+		// No objective fact: the translation's ValueWhenUnknown=0 consideration must
+		// silence it — a raw registration would score 1.2 forever, which is the
+		// CTF-flag-in-Slayer trap the translator exists to close.
+		FAIBFacts Facts;
+		TestTag(TEXT("factless mode want is silent"),
+			Engine->Rescore(Facts, 1.0), AIBTags::Ambition_Roam);
+
+		FAIBObjectiveFact& Objective = Facts.Objectives.AddDefaulted_GetRef();
+		Objective.AmbitionTag = TAG_AIBSpec_Mode_Child;
+		Objective.Urgency = 0.9f;
+		// 1.2 x 0.9 = 1.08 over Roam's 0.3 — and past the incumbent's x1.15 hysteresis.
+		TestTag(TEXT("urgent objective wins"), Engine->Rescore(Facts, 10.0), TAG_AIBSpec_Mode_Child);
+	});
+
+	It("matches the HOST'S child tag on the Mode gate — and on no exact-match gate", [this]()
+	{
+		// Headless on purpose: Matches() is plain tag logic, and proving it here is what
+		// lets the tree-shape proof in PIE stay a shape proof.
+		const FAIBGateModeCondition ModeGate;
+		TestTrue(TEXT("Mode gate takes the child"), ModeGate.Matches(TAG_AIBSpec_Mode_Child));
+		TestFalse(TEXT("Mode gate refuses Engage"), ModeGate.Matches(AIBTags::Ambition_Engage));
+
+		const FAIBGateEngageCondition EngageGate;
+		TestFalse(TEXT("exact gate refuses the child — Mode branches are the ONLY door"),
+			EngageGate.Matches(TAG_AIBSpec_Mode_Child));
+	});
+
+	It("clears cleanly for re-registration — HasAmbition tells the truth both sides", [this]()
+	{
+		Engine->RegisterAmbition(Constant(TAG_AIBSpec_Mode_Child, 1.2f));
+		Engine->RegisterAmbition(Constant(AIBTags::Ambition_Roam, 0.3f));
+		TestTrue(TEXT("registered mode want is reported"), Engine->HasAmbition(TAG_AIBSpec_Mode_Child));
+
+		// The RefreshAmbitions contract: a mode leaving must leave NOTHING — a leftover
+		// mode want after travel to Slayer is the mirror of the silent-registration trap.
+		Engine->ClearAmbitions();
+		TestEqual(TEXT("no leftovers after clear"), Engine->NumAmbitions(), 0);
+		TestFalse(TEXT("cleared want is gone"), Engine->HasAmbition(TAG_AIBSpec_Mode_Child));
+	});
+
+	It("clamps provider urgency at the one door — including the NaN that poisons Rescore", [this]()
+	{
+		TestEqual(TEXT("in-range passes"), AIBFactsBuilder::ClampUrgency(0.6f), 0.6f, 0.0001f);
+		TestEqual(TEXT("overloud provider capped"), AIBFactsBuilder::ClampUrgency(5.f), 1.f, 0.0001f);
+		TestEqual(TEXT("negative floored"), AIBFactsBuilder::ClampUrgency(-2.f), 0.f, 0.0001f);
+		// Non-finite must SCRUB, not clamp: FMath::Clamp on NaN returns NaN, and a NaN
+		// utility wins/loses arbitration by comparison chance — silence is the honest read.
+		TestEqual(TEXT("NaN scrubs to silent"),
+			AIBFactsBuilder::ClampUrgency(std::numeric_limits<float>::quiet_NaN()), 0.f, 0.0001f);
+		TestEqual(TEXT("infinity scrubs to silent"),
+			AIBFactsBuilder::ClampUrgency(std::numeric_limits<float>::infinity()), 0.f, 0.0001f);
 	});
 }
 

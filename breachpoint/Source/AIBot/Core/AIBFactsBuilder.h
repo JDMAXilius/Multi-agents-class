@@ -26,4 +26,9 @@ class AAIBBotController;
 namespace AIBFactsBuilder
 {
 	AIBOT_API FAIBFacts Build(const AAIBBotController& Bot, double NowSeconds);
+
+	/** THE urgency clamp (F-6.7's one site), pure so it is provable headless: 0..1,
+	 *  and non-finite scrubs to 0 — a NaN urgency would poison every Rescore
+	 *  comparison and silently crown the first-registered ambition (W-AUDIT P6). */
+	AIBOT_API float ClampUrgency(float RawUrgency);
 }

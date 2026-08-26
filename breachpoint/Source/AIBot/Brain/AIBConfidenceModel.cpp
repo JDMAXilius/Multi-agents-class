@@ -102,8 +102,9 @@ float FAIBConfidenceModel::Assess(const FAIBFacts& Facts)
 	// lifts it — being armed is expected, being helpless is alarming.
 	Assess += Facts.bWeaponCanFight ? 0.10f : -0.20f;
 
-	// Being visibly outnumbered: what the eyes already earned, nothing more (F3).
-	if (Facts.NearbyEnemies > 1)
+	// Being visibly outnumbered — only when a bounded crowd read EXISTS (W-AUDIT P6:
+	// without the flag this term read a dead zero as "confidently alone").
+	if (Facts.bCrowdKnown && Facts.NearbyEnemies > 1)
 	{
 		Assess -= 0.10f;
 	}

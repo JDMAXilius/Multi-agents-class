@@ -85,17 +85,13 @@ interaction; the hill needs a volume, a timer, and an int — and its bot behavi
    only with stand-in tags — green while the feature cannot work); no `Mode.*` left
    after a swap (needs HasAmbition); the clamp; the NaN scrub.
 
-## Founder rulings needed (Phase 6 blocks on the first)
+## Founder rulings — CLOSED 26 Aug 2026 ("do all that", over these written recommendations)
 
-1. **The manager contradiction**: ARCHITECTURE law 3 says "AIBBotManager is the only
-   sanctioned spawner"; the roadmap blesses the BNGameMode BotSystem switch; the game
-   mode does the spawning; the manager is eleven lines of comment stamped "Phase 3".
-   Options: (a) manager becomes the spawn API BNGameMode calls (rewrites the fill and
-   convergence logic), or (b) — RECOMMENDED by both audits — law 3 is amended: "the
-   manager owns provider resolution; spawning stays the mode's."
-2. **The Hill mode + the honest third score int** as described above (touches
-   PlayerState/GameState/VM scoreboard meaning — a design call, not a builder's).
-3. (Standing, unrelated) the blast-fuse noise ruling in FAIRPLAY remains OPEN.
+1. **RULED (b)**: law 3 amended — the manager owns provider resolution; spawning stays
+   the mode's. ARCHITECTURE.md carries the dated amendment.
+2. **RULED**: the Hill mode with the honest third score int, as specified above.
+3. (Standing, unrelated) the blast-fuse noise ruling in FAIRPLAY remains OPEN — no
+   recommendation was attached, so "do all that" does not close it.
 
 ## Contradictions the barrier names (per doctrine — two auditors disagreeing is a finding)
 

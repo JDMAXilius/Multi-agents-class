@@ -1,8 +1,12 @@
 #include "Match/BNGameMode.h"
 #include "AI/BNBotController.h"
+#include "AIBotAdapter/BNAIBModeTags.h"
+#include "AIBotAdapter/BNAIBWorldQuery.h"
 #include "Characters/BNCharacter.h"
+#include "Core/AIBBotManager.h"
 #include "Core/BNGameplayTags.h"
 #include "Match/BNGameState.h"
+#include "Match/BNHillPoint.h"
 #include "Match/BNPlayerController.h"
 #include "Match/BNPlayerState.h"
 #include "AbilitySystem/BNAbilitySystemComponent.h"
@@ -11,6 +15,7 @@
 #include "BreachpointNext.h"
 #include "AbilitySystemComponent.h"
 #include "Engine/World.h"
+#include "EngineUtils.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/Pawn.h"
 #include "TimerManager.h"
@@ -78,6 +83,19 @@ void ABNGameMode::HandleMatchIsWaitingToStart()
 	// Super may fire world BeginPlay (first boot); it must run before anything here spawns.
 	Super::HandleMatchIsWaitingToStart();
 
+	// PROVIDERS BEFORE BODIES (law 3, as amended 26 Aug: the host PUSHES providers into
+	// the manager once; controllers PULL at possession; the module never searches). This
+	// must precede EnsureBotFill because a gen-1 bot possessed in THIS warmup keeps its
+	// pawn through the first match start — its possession is the only pull it ever makes.
+	// Idempotent store, so the restart path re-running it is free.
+	if (UWorld* ManagerWorld = GetWorld())
+	{
+		if (UAIBBotManager* Manager = ManagerWorld->GetSubsystem<UAIBBotManager>())
+		{
+			Manager->RegisterProviders(this, ManagerWorld->GetSubsystem<UBNAIBWorldQuery>());
+		}
+	}
+
 	EnsureBotFill();
 
 	UWorld* World = GetWorld();
@@ -123,6 +141,11 @@ void ABNGameMode::HandleMatchHasStarted()
 	World->GetTimerManager().SetTimer(MatchTimerHandle, this, &ABNGameMode::OnTimeLimitReached,
 		FMath::Max(1.f, TimeLimit), /*bLoop=*/false);
 
+	// The hill goes live with the match — scoring outside InProgress would let a warmup
+	// squatter bank points. Before the rebody loop so the first post-thaw think already
+	// has the POI to walk to.
+	StartHill();
+
 	// A RESTART rebodies everyone: fresh attributes at fresh start points is what "new round"
 	// means, and the last round's survivors must not carry 10 health into this one. The first
 	// match rebodies only the PAWNLESS — its live players were born seconds ago in this very
@@ -156,6 +179,12 @@ void ABNGameMode::HandleMatchHasEnded()
 
 	// The clock is done whichever condition fired — the score limit leaves it armed otherwise.
 	World->GetTimerManager().ClearTimer(MatchTimerHandle);
+
+	// The hill stops with the match, and the urgency cache is cleared rather than left to
+	// rot: a stale "held by X" would color the first thinks of the next round.
+	World->GetTimerManager().ClearTimer(HillTimerHandle);
+	HillHolder = nullptr;
+	bHillContested = false;
 
 	// And the STAMP is cleared, not left to rot: a stale end time reads exactly like "no clock"
 	// through GetRemainingSeconds, but any future reader distinguishing the two would conflate
@@ -283,7 +312,7 @@ void ABNGameMode::HandlePlayerDeath(ABNPlayerState* Victim, ABNPlayerState* Kill
 	// 3.2 — the score limit, checked where the kill was credited. FinishMatch itself refuses
 	// unless the match is InProgress, so a second elimination inside the same frame cannot end it
 	// twice.
-	if (bMatchLive && Killer && Killer != Victim && Killer->GetKills() >= ScoreLimit)
+	if (bMatchLive && Killer && Killer != Victim && Killer->GetScore() >= ScoreLimit)
 	{
 		FinishMatch(Killer);
 	}
@@ -716,4 +745,150 @@ void ABNGameMode::SetAllPlayersFrozen(bool bFrozen)
 	{
 		FrozenHandles.Reset();
 	}
+}
+
+void ABNGameMode::StartHill()
+{
+	UWorld* World = GetWorld();
+	if (!bHillEnabled || !World)
+	{
+		return;
+	}
+
+	// Spawn-or-adopt, idempotent: the first match spawns; an in-place restart finds the
+	// hill still standing and reuses it. A hand-placed hill would be adopted the same way
+	// the moment placement exists — for now the ini location is the C++-first path.
+	if (!Hill.IsValid())
+	{
+		ABNHillPoint* Placed = nullptr;
+		for (TActorIterator<ABNHillPoint> It(World); It; ++It)
+		{
+			Placed = *It;
+			break;
+		}
+		if (!Placed)
+		{
+			FActorSpawnParameters Params;
+			Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			Placed = World->SpawnActor<ABNHillPoint>(HillLocation, FRotator::ZeroRotator, Params);
+			if (Placed)
+			{
+				Placed->Radius = HillRadius;
+			}
+		}
+		if (!Placed)
+		{
+			UE_LOG(LogBN, Warning, TEXT("BNGameMode: hill enabled but the hill failed to spawn at %s — the mode runs as Slayer."),
+				*HillLocation.ToCompactString());
+			return;
+		}
+		Hill = Placed;
+
+		// Pushed, never hunted — the same handedness law the provider registration follows.
+		if (UBNAIBWorldQuery* Query = World->GetSubsystem<UBNAIBWorldQuery>())
+		{
+			Query->RegisterHill(Placed);
+		}
+	}
+
+	HillHolder = nullptr;
+	bHillContested = false;
+	World->GetTimerManager().SetTimer(HillTimerHandle, this, &ABNGameMode::HillTick,
+		1.f, /*bLoop=*/true);
+	UE_LOG(LogBN, Log, TEXT("BNGameMode: hill live at %s, radius %.0f, %d point(s)/s."),
+		*Hill->GetActorLocation().ToCompactString(), HillRadius, HillPointsPerSecond);
+}
+
+void ABNGameMode::HillTick()
+{
+	UWorld* World = GetWorld();
+	const ABNHillPoint* HillActor = Hill.Get();
+	if (!World || !HillActor || !IsMatchInProgress())
+	{
+		return;
+	}
+
+	// The projectile's proven shape: one channel overlap, then dedup per ACTOR — a
+	// character answers with capsule and mesh both, and a double-counted body would read
+	// one occupant as a contest.
+	TArray<FOverlapResult> Overlaps;
+	World->OverlapMultiByChannel(Overlaps, HillActor->GetActorLocation(), FQuat::Identity,
+		ECC_Pawn, FCollisionShape::MakeSphere(FMath::Max(1.f, HillActor->Radius)));
+
+	// Distinct LIVING players on the hill. PlayerState-keyed, not pawn-keyed, because the
+	// score books live there; corpses do not hold hills (the same one tag that means dead
+	// everywhere else in BN).
+	TSet<ABNPlayerState*> Occupants;
+	for (const FOverlapResult& Overlap : Overlaps)
+	{
+		const APawn* PawnOnHill = Cast<APawn>(Overlap.GetActor());
+		ABNPlayerState* PS = PawnOnHill ? PawnOnHill->GetPlayerState<ABNPlayerState>() : nullptr;
+		const UAbilitySystemComponent* ASC = PS ? PS->GetAbilitySystemComponent() : nullptr;
+		if (ASC && !ASC->HasMatchingGameplayTag(BNTags::State_Dead))
+		{
+			Occupants.Add(PS);
+		}
+	}
+
+	// THE RULE, whole: sole occupant scores; contested means NOBODY scores. The cache is
+	// what GetObjectiveUrgency answers from — written every second, whether or not points
+	// moved, so "the hill emptied" is as current as "the hill scored".
+	bHillContested = Occupants.Num() > 1;
+	ABNPlayerState* Holder = Occupants.Num() == 1 ? *Occupants.CreateIterator() : nullptr;
+	HillHolder = Holder;
+
+	if (Holder)
+	{
+		Holder->AddObjectivePoints(FMath::Max(0, HillPointsPerSecond));
+		if (Holder->GetScore() >= ScoreLimit)
+		{
+			// The same seam the crossing kill uses: winner written first, then the flip.
+			FinishMatch(Holder);
+		}
+	}
+}
+
+void ABNGameMode::GetModeAmbitions(TArray<FAIBModeAmbition>& OutAmbitions) const
+{
+	if (!bHillEnabled)
+	{
+		return; // Slayer: no mode ambitions, and the bots just fight — the interface's zero case.
+	}
+
+	// BaseUtility 1.2 reads as "the objective can outrank a fight it is losing anyway":
+	// Engage peaks at 1.0×considerations, so the hill wins only when engagement's own
+	// facts sag — visible target and healthy nerve still take the fight.
+	FAIBModeAmbition& Hold = OutAmbitions.AddDefaulted_GetRef();
+	Hold.AmbitionTag = BNAIBTags::Ambition_Mode_Hold;
+	Hold.BaseUtility = 1.2f;
+	Hold.ObjectiveKind = BNAIBTags::POI_Hill;
+}
+
+float ABNGameMode::GetObjectiveUrgency(const AActor* Bot, FGameplayTag AmbitionTag) const
+{
+	if (!bHillEnabled || AmbitionTag != BNAIBTags::Ambition_Mode_Hold)
+	{
+		return 0.f; // "the mode does not care" — the contract's own zero.
+	}
+
+	// HUD-grade only: held/contested/empty is what the objective marker on every human's
+	// screen says. The one per-bot term is "is the holder me", which the bot knows by
+	// standing there. No position, no identity of the OTHER holder leaks through a float.
+	const APawn* BotPawn = Cast<APawn>(Bot);
+	const ABNPlayerState* BotPS = BotPawn ? BotPawn->GetPlayerState<ABNPlayerState>() : nullptr;
+	const ABNPlayerState* Holder = HillHolder.Get();
+
+	if (Holder && BotPS && Holder == BotPS)
+	{
+		return 0.35f; // Keep holding, but a fight for your life may outrank standing still.
+	}
+	if (bHillContested)
+	{
+		return 0.75f; // You are probably in that contest — win it.
+	}
+	if (Holder)
+	{
+		return 0.9f;  // Someone else is banking seconds RIGHT NOW — loudest state.
+	}
+	return 0.6f;      // Empty hill: free points, worth a walk, not worth fleeing a duel.
 }

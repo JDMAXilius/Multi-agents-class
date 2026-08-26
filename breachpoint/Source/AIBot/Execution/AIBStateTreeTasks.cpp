@@ -7,6 +7,7 @@
 #include "Core/AIBBotController.h"
 #include "Core/AIBTags.h"
 #include "Interfaces/AIBAvatarInterface.h"
+#include "Interfaces/AIBWorldQuery.h"
 #include "NavigationSystem.h"
 #include "Perception/AIBSensorium.h"
 #include "Skills/AIBAimPolicy.h"
@@ -297,8 +298,22 @@ bool FAIBAmbitionGateCondition::TestCondition(FStateTreeExecutionContext& Contex
 	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	const AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller);
 	const UAIBAmbitionEngine* Engine = Bot ? Bot->GetAmbitionEngine() : nullptr;
+	if (!Engine)
+	{
+		return false;
+	}
+	// The IsValid guard stays OUTSIDE Matches: an invalid current want must never match
+	// any branch (invalid == invalid is true, and MatchesTag on invalid is undefined
+	// comfort) — the Fallback branch is where "no want" lands, by design.
+	const FGameplayTag Current = Engine->GetCurrent();
+	return Current.IsValid() && Matches(Current);
+}
+
+bool FAIBAmbitionGateCondition::Matches(const FGameplayTag& Current) const
+{
+	// EXACT equality is the default — the 1:1 arbitration mirror.
 	const FGameplayTag BranchTag = GetBranchTag();
-	return Engine && BranchTag.IsValid() && Engine->GetCurrent() == BranchTag;
+	return BranchTag.IsValid() && Current == BranchTag;
 }
 
 // Each branch's identity is a virtual, not a node parameter — the compiled authoring
@@ -309,6 +324,14 @@ FGameplayTag FAIBGateRetreatCondition::GetBranchTag() const      { return AIBTag
 FGameplayTag FAIBGateSearchCondition::GetBranchTag() const       { return AIBTags::Ambition_Search; }
 FGameplayTag FAIBGateSeekWeaponCondition::GetBranchTag() const   { return AIBTags::Ambition_Seek; }
 FGameplayTag FAIBGateRoamCondition::GetBranchTag() const         { return AIBTags::Ambition_Roam; }
+FGameplayTag FAIBGateModeCondition::GetBranchTag() const         { return AIBTags::Ambition_Mode; }
+
+bool FAIBGateModeCondition::Matches(const FGameplayTag& Current) const
+{
+	// A host's mode want is a CHILD tag (AIBot.Ambition.Mode.Hold); exact == can never
+	// equal it, which was the statue-beside-the-objective defect (W-AUDIT P6 f.5).
+	return Current.MatchesTag(AIBTags::Ambition_Mode);
+}
 
 ////////////////////////////////////////////////////////////////////
 
@@ -1029,6 +1052,106 @@ void FAIBMoveToPOITask::ExitState(FStateTreeExecutionContext& Context, const FSt
 
 FGameplayTag FAIBMoveToPOITask::GetPOIKind() const           { return FGameplayTag(); }
 bool FAIBMoveToPOITask::ShouldWanderWithoutProvider() const  { return false; }
+
+////////////////////////////////////////////////////////////////////
+
+EStateTreeRunStatus FAIBMoveToObjectiveTask::EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
+{
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller);
+	const APawn* Pawn = Bot ? Bot->GetPawn() : nullptr;
+	if (!Pawn)
+	{
+		return EStateTreeRunStatus::Failed;
+	}
+
+	InstanceData.bHasGoal = false;
+
+	// The kind join: the CURRENT ambition's ObjectiveKind from the controller's cached
+	// mode set (data, never a serialized node parameter), then the best matching POI
+	// the world query offers. A servable want with no POI is the provider
+	// under-delivering — loud (F7), and the 1s failed-delay keeps it cheap.
+	const FGameplayTag Kind = Bot->GetObjectiveKindForCurrentAmbition();
+	IAIBWorldQuery* Query = Bot->GetWorldQuery();
+	if (Query)
+	{
+		TArray<FAIBPointOfInterest> Points;
+		Query->QueryPointsOfInterest(Pawn, AIB::ObjectiveQueryRadiusUU, Points);
+		float BestWorth = -1.f;
+		for (const FAIBPointOfInterest& Point : Points)
+		{
+			if ((!Kind.IsValid() || Point.Kind == Kind) && Point.Worth > BestWorth)
+			{
+				BestWorth = Point.Worth;
+				InstanceData.Goal = Point.Location;
+				InstanceData.bHasGoal = true;
+			}
+		}
+	}
+
+	if (!InstanceData.bHasGoal)
+	{
+		UE_LOG(LogAIBot, Warning, TEXT("AIBot: %s won a mode want but %s offered no POI of kind %s — branch fails (F7)."),
+			*Bot->GetName(), Query ? TEXT("the world query") : TEXT("NO world query is registered and it"),
+			Kind.IsValid() ? *Kind.ToString() : TEXT("<any>"));
+		return EStateTreeRunStatus::Failed;
+	}
+
+	InstanceData.ClosestSoFarUU = FVector::Dist(Pawn->GetActorLocation(), InstanceData.Goal);
+	InstanceData.SecondsWithoutProgress = 0.f;
+	if (!IsWithin(*Bot, InstanceData.Goal, InstanceData.AcceptanceRadiusUU)
+		&& MoveToNavPoint(*Bot, InstanceData.Goal, InstanceData.AcceptanceRadiusUU)
+			== EPathFollowingRequestResult::Failed)
+	{
+		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s cannot path to the objective — failing loudly (F7)."), *Bot->GetName());
+		return EStateTreeRunStatus::Failed;
+	}
+	return EStateTreeRunStatus::Running;
+}
+
+EStateTreeRunStatus FAIBMoveToObjectiveTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
+{
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller);
+	const APawn* Pawn = Bot ? Bot->GetPawn() : nullptr;
+	if (!Pawn || !InstanceData.bHasGoal)
+	{
+		return EStateTreeRunStatus::Failed;
+	}
+
+	// ON the objective: STAND — a hill is held by being there. SweepLook rides beside;
+	// the sentinel or the want's own decay ends the branch, never arrival.
+	if (IsWithin(*Bot, InstanceData.Goal, InstanceData.AcceptanceRadiusUU))
+	{
+		return EStateTreeRunStatus::Running;
+	}
+
+	// Short of it: sprint the crossing, wedge-jump if stuck, give up LOUDLY if the
+	// post is unreachable (the movers' shared no-progress law).
+	TickLocomotion(*Bot, InstanceData.Locomotion, InstanceData.Goal, InstanceData.AcceptanceRadiusUU, DeltaTime);
+	const float DistNow = FVector::Dist(Pawn->GetActorLocation(), InstanceData.Goal);
+	if (DistNow < InstanceData.ClosestSoFarUU - 1.f)
+	{
+		InstanceData.ClosestSoFarUU = DistNow;
+		InstanceData.SecondsWithoutProgress = 0.f;
+	}
+	else if ((InstanceData.SecondsWithoutProgress += DeltaTime) >= InstanceData.GiveUpAfterNoProgressSeconds)
+	{
+		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s cannot reach the objective — giving up loudly (F7)."), *Bot->GetName());
+		return EStateTreeRunStatus::Failed;
+	}
+	return EStateTreeRunStatus::Running;
+}
+
+void FAIBMoveToObjectiveTask::ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
+{
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	if (AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller))
+	{
+		ReleaseLocomotion(*Bot, InstanceData.Locomotion);
+		Bot->StopMovement();
+	}
+}
 
 ////////////////////////////////////////////////////////////////////
 

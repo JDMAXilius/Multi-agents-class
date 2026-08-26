@@ -210,6 +210,20 @@ FString UAIBTreeAuthoring::BuildBotStateTree()
 	AddCompletionTransition(Roam, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.25f);
 	AddCompletionTransition(Roam, Root, EStateTreeTransitionTrigger::OnStateFailed, 2.0f);
 
+	// ---- Mode: the game mode's want (Phase 6) ------------------------------------------
+	// ONE branch serves every AIBot.Ambition.Mode.* want (the gate widens matching to
+	// the hierarchy — the one place exact-mirror equality is deliberately relaxed,
+	// because a host's want is a child tag exact == can never equal). The mover resolves
+	// WHICH objective from the current ambition's kind join; SweepLook keeps the hold
+	// readable as guarding, not standing.
+	UStateTreeState& Mode = Root.AddChildState(TEXT("Mode"));
+	Mode.AddEnterCondition<FAIBGateModeCondition>();
+	Mode.AddTask<FAIBAmbitionSentinelTask>();
+	Mode.AddTask<FAIBMoveToObjectiveTask>();
+	Mode.AddTask<FAIBSweepLookTask>();
+	AddCompletionTransition(Mode, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
+	AddCompletionTransition(Mode, Root, EStateTreeTransitionTrigger::OnStateFailed, 1.0f);
+
 	// ---- Fallback: the want maps to NO branch (the Phase-3 W-REVIEW ruling) ------------
 	// UNGATED and LAST — the always-selectable state the compiler demands, which is what
 	// lets every REAL ambition above keep its gate. Selected only when nothing above is:
@@ -222,7 +236,7 @@ FString UAIBTreeAuthoring::BuildBotStateTree()
 	AddCompletionTransition(Fallback, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
 	AddCompletionTransition(Fallback, Root, EStateTreeTransitionTrigger::OnStateFailed, 1.0f);
 
-	Report.Add(TEXT("states     : Root > [Engage, Retreat, Search, Seek, Roam, Fallback] (every ambition gated, the ungated Fallback floor last, sentinel in each)"));
+	Report.Add(TEXT("states     : Root > [Engage, Retreat, Search, Seek, Roam, Mode, Fallback] (every ambition gated — Mode by hierarchy — the ungated Fallback floor last, sentinel in each)"));
 	Report.Add(TEXT("seek       : AIBot.Ambition.Seek — deliberate movement (belief -> POI -> reachable point). SeekWeapon is RETIRED: no pickups in this game."));
 
 	// An uncompiled StateTree runs NOTHING — the asset would exist, the ini would resolve,

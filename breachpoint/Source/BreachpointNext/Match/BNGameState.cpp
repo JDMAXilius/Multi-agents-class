@@ -48,7 +48,9 @@ void ABNGameState::GetLeaders(TArray<ABNPlayerState*>& OutLeaders) const
 
 	// One pass, no sort: the deliverable is the tie SET, not an ordering, and a tie at the top is
 	// a real FFA outcome the caller has to be able to see.
-	int32 TopKills = TNumericLimits<int32>::Lowest();
+	// SCORE, not kills, since the Hill landed: kills + objective points. Identical in
+	// Slayer, where objective points are structurally zero.
+	int32 TopScore = TNumericLimits<int32>::Lowest();
 	for (APlayerState* PS : PlayerArray)
 	{
 		ABNPlayerState* BNPS = Cast<ABNPlayerState>(PS);
@@ -57,13 +59,13 @@ void ABNGameState::GetLeaders(TArray<ABNPlayerState*>& OutLeaders) const
 			continue;
 		}
 
-		const int32 Kills = BNPS->GetKills();
-		if (Kills > TopKills)
+		const int32 Score = BNPS->GetScore();
+		if (Score > TopScore)
 		{
-			TopKills = Kills;
+			TopScore = Score;
 			OutLeaders.Reset();
 		}
-		if (Kills == TopKills)
+		if (Score == TopScore)
 		{
 			OutLeaders.Add(BNPS);
 		}

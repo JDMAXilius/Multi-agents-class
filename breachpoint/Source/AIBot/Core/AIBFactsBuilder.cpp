@@ -3,7 +3,9 @@
 #include "Core/AIBBotController.h"
 #include "Data/AIBDataRows.h"
 #include "GameFramework/Pawn.h"
+#include "Interfaces/AIBAmbitionProvider.h"
 #include "Interfaces/AIBAvatarInterface.h"
+#include "Interfaces/AIBWorldQuery.h"
 #include "Perception/AIBSensorium.h"
 
 FAIBFacts AIBFactsBuilder::Build(const AAIBBotController& Bot, double NowSeconds)
@@ -70,9 +72,60 @@ FAIBFacts AIBFactsBuilder::Build(const AAIBBotController& Bot, double NowSeconds
 		Facts.BlastRadius = Blast.Radius;
 	}
 
-	// Phase 3: allies/enemies via IAIBWorldQuery; objectives via IAIBAmbitionProvider,
-	// with Urgency clamped 0..1 HERE, the one site. Until then those stay at their
-	// honest zeros.
+	// -- Phase 6: the mode's objectives, urgency clamped at THE one site ---------------
+	// One fact per mode ambition, joined by tag in the engine. DistanceUU comes from the
+	// nearest matching POI when the world query can name one; the position itself stays
+	// out of facts on purpose (the mover asks the world query — Brain/ stays worldless).
+	if (IAIBAmbitionProvider* Provider = Bot.GetAmbitionProvider())
+	{
+		TArray<FAIBModeAmbition> ModeAmbitions;
+		Provider->GetModeAmbitions(ModeAmbitions);
+		IAIBWorldQuery* Query = Bot.GetWorldQuery();
+		TArray<FAIBPointOfInterest> Points;
+		if (Query && ModeAmbitions.Num() > 0)
+		{
+			Query->QueryPointsOfInterest(Pawn, AIB::ObjectiveQueryRadiusUU, Points);
+		}
+		for (const FAIBModeAmbition& Mode : ModeAmbitions)
+		{
+			FAIBObjectiveFact& Fact = Facts.Objectives.AddDefaulted_GetRef();
+			Fact.AmbitionTag = Mode.AmbitionTag;
+			Fact.Urgency = ClampUrgency(Provider->GetObjectiveUrgency(Pawn, Mode.AmbitionTag));
+			for (const FAIBPointOfInterest& Point : Points)
+			{
+				if (Point.Kind == Mode.ObjectiveKind)
+				{
+					const float Dist = FVector::Dist(SelfLocation, Point.Location);
+					if (Fact.DistanceUU < 0.f || Dist < Fact.DistanceUU)
+					{
+						Fact.DistanceUU = Dist;
+					}
+				}
+			}
+		}
+
+		// Crowd counts: allies are HUD-grade through the query; a bounded ENEMY count
+		// does not exist yet (an unmatured feed was refused by the Phase-6 audit), so
+		// bCrowdKnown stays FALSE and the outnumbered read stays an honest unknown —
+		// never "confidently alone" (F-6.10's shape).
+		if (Query)
+		{
+			Facts.NearbyAllies = Query->CountNearbyAllies(Pawn, AIB::ObjectiveQueryRadiusUU);
+		}
+	}
 
 	return Facts;
+}
+
+float AIBFactsBuilder::ClampUrgency(float RawUrgency)
+{
+	// THE clamp site the contracts promise (three of them stated it in the present
+	// tense before this code existed — W-AUDIT P6). Non-finite is scrubbed to 0, not
+	// clamped: FMath::Clamp(NaN) yields NaN, NaN poisons every Rescore comparison, and
+	// the first-registered spec silently wins the whole match (finding 4).
+	if (!FMath::IsFinite(RawUrgency))
+	{
+		return 0.f;
+	}
+	return FMath::Clamp(RawUrgency, 0.f, 1.f);
 }

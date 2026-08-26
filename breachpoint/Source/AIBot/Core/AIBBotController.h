@@ -5,6 +5,7 @@
 #include "Brain/AIBConfidenceModel.h"
 #include "Core/AIBTypes.h"
 #include "GameplayTagContainer.h"
+#include "Interfaces/AIBAmbitionProvider.h"
 #include "Perception/AIBSensorium.h"
 #include "Skills/AIBAimPolicy.h"
 #include "Skills/AIBGrenadePolicy.h"
@@ -15,6 +16,7 @@
 
 class IAIBAvatarInterface;
 class IAIBExecutor;
+class IAIBWorldQuery;
 class UAIBAmbitionEngine;
 class UAIPerceptionComponent;
 class UAISenseConfig_Hearing;
@@ -78,6 +80,23 @@ public:
 	FAIBGrenadeState& GetGrenadeState() { return GrenadeState; }
 	FAIBMovementState& GetMovementState() { return MovementState; }
 	FRandomStream& GetPolicyRandom() { return PolicyRandom; }
+
+	// -- Phase 6: the provider doors (pulled from UAIBBotManager at possession) --------
+	// Same twin-pointer validity rule as the avatar door: the interface half runs, the
+	// GC-tracked half decides whether it still may.
+	IAIBAmbitionProvider* GetAmbitionProvider() const { return IsValid(AmbitionProviderObject) ? AmbitionProvider : nullptr; }
+	IAIBWorldQuery* GetWorldQuery() const { return IsValid(WorldQueryObject) ? WorldQuery : nullptr; }
+
+	/** The typed join a mode branch's mover needs: the ObjectiveKind of the CURRENT
+	 *  ambition, from the mode set cached at the last refresh. Invalid when the current
+	 *  want is not a mode want or names no kind. */
+	FGameplayTag GetObjectiveKindForCurrentAmbition() const;
+
+	/** THE POSSESSION OBLIGATION, finally payable (ARCHITECTURE's recorded CTF-in-Slayer
+	 *  debt): clear + core + the CURRENT mode's translated ambitions + one immediate
+	 *  Think, so the empty-tag window never reaches a tree selection. Also the mid-life
+	 *  mode-swap API — the host calls it on a round transition. */
+	void RefreshAmbitions();
 
 	/** THE ONE THROTTLE THAT MUST OUTLIVE A BRANCH, and it lives here for a mechanical
 	 *  reason worth naming: a StateTree re-initialises a state's instance data from the
@@ -213,6 +232,21 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UObject> AvatarObject;
+
+	// Phase 6: the provider doors + the mode set the last refresh translated (cached so
+	// the executor's kind join reads a list this controller owns, never a live provider
+	// walk per tick).
+	IAIBAmbitionProvider* AmbitionProvider = nullptr;
+
+	UPROPERTY()
+	TObjectPtr<UObject> AmbitionProviderObject;
+
+	IAIBWorldQuery* WorldQuery = nullptr;
+
+	UPROPERTY()
+	TObjectPtr<UObject> WorldQueryObject;
+
+	TArray<FAIBModeAmbition> CachedModeAmbitions;
 
 	// The executor door, the avatar door's twin: the interface pointer is what runs, the
 	// UObject pointer is what keeps it alive. Today the concrete type is the StateTree

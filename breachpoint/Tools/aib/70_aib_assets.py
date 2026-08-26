@@ -42,8 +42,8 @@ SETTINGS_CDO = "/Script/AIBot.Default__AIBAssetSettings"
 TREE_OBJECT = "/Game/AIBot/AI/ST_AIBBot.ST_AIBBot"
 TIERS_OBJECT = "/Game/AIBot/Data/DT_AIBTiers.DT_AIBTiers"
 
-# Every node struct in AIBStateTreeTasks.h -- 6 conditions (one hidden base + five
-# per-ambition gates) and 12 tasks (two hidden bases + the placed ten). The bases are
+# Every node struct in AIBStateTreeTasks.h -- 7 conditions (one hidden base + six
+# gates) and 13 tasks (two hidden bases + the placed eleven). The bases are
 # probed too: the tree serializes derived types whose layout includes them, and a build
 # missing a base is exactly as stale as one missing a leaf.
 NODE_STRUCTS = [
@@ -67,6 +67,9 @@ NODE_STRUCTS = [
     ("FAIBUnservedWantTask", "/Script/AIBot.AIBUnservedWantTask", "task"),
     # Phase 4 integration: the movement policy's actuator, beside the burst in Engage.
     ("FAIBStrafeTask", "/Script/AIBot.AIBStrafeTask", "task"),
+    # Phase 6: the mode branch — hierarchy gate + the objective mover.
+    ("FAIBGateModeCondition", "/Script/AIBot.AIBGateModeCondition", "condition"),
+    ("FAIBMoveToObjectiveTask", "/Script/AIBot.AIBMoveToObjectiveTask", "task"),
 ]
 SCRIPT_STRUCT = "/Script/CoreUObject.ScriptStruct"
 

@@ -1,6 +1,7 @@
 #include "Brain/AIBAmbitionEngine.h"
 
 #include "Core/AIBTags.h"
+#include "Interfaces/AIBAmbitionProvider.h"
 
 void UAIBAmbitionEngine::RegisterAmbition(const FAIBAmbitionSpec& Spec)
 {
@@ -26,6 +27,34 @@ void UAIBAmbitionEngine::ClearAmbitions()
 {
 	Ambitions.Reset();
 	ResetArbitration();
+}
+
+bool UAIBAmbitionEngine::HasAmbition(FGameplayTag Tag) const
+{
+	for (const FAIBAmbitionSpec& Spec : Ambitions)
+	{
+		if (Spec.Tag == Tag)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+void UAIBAmbitionEngine::BuildModeAmbitionSpec(const FAIBModeAmbition& Mode, FAIBAmbitionSpec& OutSpec)
+{
+	OutSpec = FAIBAmbitionSpec();
+	OutSpec.Tag = Mode.AmbitionTag;
+	OutSpec.BaseUtility = Mode.BaseUtility;
+	OutSpec.CommitSeconds = 3.f;
+
+	// The urgency IS the want: linear, and SILENT (0) when the facts carry no matching
+	// objective — a mode ambition with no fact behind it must lose to everything,
+	// Roam included, or the constant-that-camps defect returns.
+	FAIBConsideration& Urgency = OutSpec.Considerations.AddDefaulted_GetRef();
+	Urgency.Selector = EAIBFactSelector::ObjectiveUrgency;
+	Urgency.SetLinearCurve(true);
+	Urgency.ValueWhenUnknown = 0.f;
 }
 
 void UAIBAmbitionEngine::ResetArbitration()

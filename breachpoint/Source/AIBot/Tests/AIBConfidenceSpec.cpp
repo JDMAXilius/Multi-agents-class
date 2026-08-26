@@ -95,6 +95,7 @@ void FAIBConfidenceSpec::Define()
 			Losing.bDamageHistoryKnown = true;
 			Losing.RecentDamageDealtNorm = 0.f;
 			Losing.RecentDamageTakenNorm = 0.9f;
+			Losing.bCrowdKnown = true; // the outnumbered term needs an honest crowd read
 			Losing.NearbyEnemies = 2;
 
 			const float High = FAIBConfidenceModel::Assess(Winning);

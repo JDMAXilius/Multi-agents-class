@@ -22,6 +22,11 @@ namespace AIB
 	 *  in two folders is how a Phase-8 Novice tier silently keeps a Marine memory. */
 	inline constexpr float DefaultMemoryFreshSeconds = 16.f;
 
+	/** Radius for the builder's world-query asks (POIs, ally count). Objectives are
+	 *  HUD-grade so a fair provider may ignore it; it exists so an envelope-bounded
+	 *  provider has a bound to honour. */
+	inline constexpr float ObjectiveQueryRadiusUU = 10000.f;
+
 	/** The reaction clock's queue cap (drop-oldest). An unpossessed bot must not grow
 	 *  an unbounded stimulus backlog for the rest of a match (W-REVIEW F-1.2). */
 	inline constexpr int32 MaxPendingStimuli = 64;
@@ -140,6 +145,11 @@ struct AIBOT_API FAIBFacts
 	                                   // ValueWhenUnknown governs — never a dead 0
 	float RecentDamageTakenNorm = 0.f; // decayed window, fraction of max health, MAY exceed 1
 	float RecentDamageDealtNorm = 0.f;
+	/** Phase 6: true only when a bounded, honest crowd read EXISTS. Enemies have no
+	 *  fair source yet (an unmatured feed was refused — W-AUDIT P6), so this stays
+	 *  false and every outnumbered consumer scores unknown, never "confidently alone"
+	 *  (the F-6.10 shape the audit caught these two fields in). */
+	bool bCrowdKnown = false;
 	int32 NearbyAllies = 0;
 	int32 NearbyEnemies = 0;           // "am I outnumbered" — the textbook confidence input
 

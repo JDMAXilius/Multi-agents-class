@@ -3,11 +3,13 @@
 #include "CoreMinimal.h"
 #include "GameFramework/GameMode.h"
 #include "GameplayEffectTypes.h"
+#include "Interfaces/AIBAmbitionProvider.h"
 #include "UObject/SoftObjectPath.h"
 #include "UObject/SoftObjectPtr.h"
 #include "BNGameMode.generated.h"
 
 class ABNBotController;
+class ABNHillPoint;
 class ABNPlayerState;
 
 /** AGameMode, not GameModeBase: the match machine is the ENGINE'S — the replicated MatchState
@@ -21,7 +23,7 @@ class ABNPlayerState;
  *  warmup and ReadyToEndMatch during play. That tick is the parent's and exists either way; the
  *  queries it polls are trivial. Match END stays event-driven regardless (see ReadyToEndMatch). */
 UCLASS(Config=Game)
-class BREACHPOINTNEXT_API ABNGameMode : public AGameMode
+class BREACHPOINTNEXT_API ABNGameMode : public AGameMode, public IAIBAmbitionProvider
 {
 	GENERATED_BODY()
 
@@ -84,6 +86,16 @@ public:
 	/** Read by ABNGameState, which mirrors it so clients can render "12 / 25". */
 	int32 GetScoreLimit() const { return ScoreLimit; }
 
+	// -- IAIBAmbitionProvider (Phase 6: the mode tells bots what it wants) --------------
+	/** One ambition when the hill is on, none in plain Slayer — "a mode adds ambitions,
+	 *  never a system" is the interface's own sentence, and Slayer proves the zero case. */
+	virtual void GetModeAmbitions(TArray<FAIBModeAmbition>& OutAmbitions) const override;
+
+	/** HUD-grade urgency from the hill state the scoring timer already computes: a human
+	 *  reads held/contested/empty off the objective marker, so a bot may too. Per-bot
+	 *  ONLY through "is the holder me" — no enemy positions leak through this number. */
+	virtual float GetObjectiveUrgency(const AActor* Bot, FGameplayTag AmbitionTag) const override;
+
 	/** Authority: the ONE respawn path. Delay then RestartPlayer. */
 	void RequestRespawn(AController* Controller);
 
@@ -131,6 +143,16 @@ protected:
 	 *  SPEC, never a CDO container — native tags are not guaranteed registered while CDOs build. */
 	void SetPlayerFrozen(ABNPlayerState* InPlayerState, bool bFrozen);
 	void SetAllPlayersFrozen(bool bFrozen);
+
+	/** THE HILL's one second (law 4: a timer, and the mode's ONLY recurring one besides the
+	 *  clock). Overlaps the hill sphere, counts distinct living players, scores the sole
+	 *  occupant, caches holder/contested for GetObjectiveUrgency, ends the match on the
+	 *  second that crosses the limit. */
+	void HillTick();
+
+	/** Spawn-or-adopt at match start (idempotent — a restart reuses the live hill), push it
+	 *  into the world query, arm the timer. No-op when bHillEnabled is false. */
+	void StartHill();
 
 	UPROPERTY(Config)
 	FSoftClassPath DefaultPawnClassPath;
@@ -192,9 +214,32 @@ protected:
 	 *  belongs to the round after it. */
 	int32 MatchGeneration = 0;
 
+	/** THE HILL (founder ruling, 26 Aug 2026). Off by default so Slayer stays Slayer;
+	 *  one ini flip runs the objective mode with zero level edits (C++-first). */
+	UPROPERTY(Config)
+	bool bHillEnabled = false;
+
+	UPROPERTY(Config)
+	FVector HillLocation = FVector::ZeroVector;
+
+	UPROPERTY(Config)
+	float HillRadius = 600.f;
+
+	UPROPERTY(Config)
+	int32 HillPointsPerSecond = 1;
+
+	/** Weak: the hill is a world actor and a level unload must not be fought over it. */
+	TWeakObjectPtr<ABNHillPoint> Hill;
+
+	/** The urgency cache, written ONLY by HillTick, read by GetObjectiveUrgency — the
+	 *  provider answers from last second's ruling instead of re-overlapping per think. */
+	TWeakObjectPtr<ABNPlayerState> HillHolder;
+	bool bHillContested = false;
+
 	/** ONE timer for the whole match clock (law 4: no Tick, no per-frame poll). */
 	FTimerHandle MatchTimerHandle;
 	FTimerHandle PostMatchTimerHandle;
+	FTimerHandle HillTimerHandle;
 
 	/** The active freeze GE per player, so it is removed by handle rather than by sweeping tags off
 	 *  an ASC that holds other State.* effects. Weak keys: a player can leave while frozen. */

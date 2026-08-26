@@ -70,6 +70,14 @@ public:
 	int32 GetKills() const { return Kills; }
 	int32 GetDeaths() const { return Deaths; }
 
+	/** THE THIRD INT (founder ruling, 26 Aug 2026 — the Hill): objective seconds, kept
+	 *  SEPARATE from Kills on purpose — scoring hill time through AddKill would silently
+	 *  poison the killfeed's and the scoreboard's meaning ("14 kills" for a player who
+	 *  killed nobody). The match's win condition reads GetScore(); the columns stay
+	 *  honest. Zero in Slayer, so nothing changes where no objective exists. */
+	int32 GetObjectivePoints() const { return ObjectivePoints; }
+	int32 GetScore() const { return Kills + ObjectivePoints; }
+
 	/** 0 = no respawn pending. Non-zero is an ABSOLUTE server time (the match clock's own
 	 *  pattern) — the owning client computes "respawning in N" locally against
 	 *  GetServerWorldTimeSeconds, correct on its first frame at any join moment. */
@@ -82,6 +90,8 @@ public:
 	 *  there, with the killer in hand, not here. */
 	void AddKill();
 	void AddDeath();
+	/** Authority only. The GameMode's hill tick is the only caller. */
+	void AddObjectivePoints(int32 Points);
 
 	/** Authority only. The match restart is the only caller: without it a restarted match keeps
 	 *  every score, and the first elimination of the new round instantly re-ends it. */
@@ -112,6 +122,12 @@ protected:
 
 	UPROPERTY(ReplicatedUsing = OnRep_Deaths)
 	int32 Deaths = 0;
+
+	UFUNCTION()
+	void OnRep_ObjectivePoints();
+
+	UPROPERTY(ReplicatedUsing = OnRep_ObjectivePoints)
+	int32 ObjectivePoints = 0;
 
 	/** COND_OwnerOnly: only the dead player's own screen counts down — nobody else renders it,
 	 *  so nobody else pays for it. */

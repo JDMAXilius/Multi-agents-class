@@ -33,6 +33,7 @@ void ABNPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 
 	DOREPLIFETIME(ABNPlayerState, Kills);
 	DOREPLIFETIME(ABNPlayerState, Deaths);
+	DOREPLIFETIME(ABNPlayerState, ObjectivePoints);
 	DOREPLIFETIME_CONDITION(ABNPlayerState, RespawnAtServerTime, COND_OwnerOnly);
 }
 
@@ -56,12 +57,22 @@ void ABNPlayerState::AddDeath()
 	}
 }
 
+void ABNPlayerState::AddObjectivePoints(int32 Points)
+{
+	if (HasAuthority() && Points > 0)
+	{
+		ObjectivePoints += Points;
+		OnScoreChanged.Broadcast(this);
+	}
+}
+
 void ABNPlayerState::ResetScore()
 {
 	if (HasAuthority())
 	{
 		Kills = 0;
 		Deaths = 0;
+		ObjectivePoints = 0;
 		OnScoreChanged.Broadcast(this);
 	}
 }
@@ -94,6 +105,12 @@ void ABNPlayerState::SetRespawnAtServerTime(double InServerTime)
 void ABNPlayerState::OnRep_Kills()
 {
 	UE_LOG(LogBN, Verbose, TEXT("BNPlayerState: %s kills -> %d"), *GetPlayerName(), Kills);
+	OnScoreChanged.Broadcast(this);
+}
+
+void ABNPlayerState::OnRep_ObjectivePoints()
+{
+	UE_LOG(LogBN, Verbose, TEXT("BNPlayerState: %s objective -> %d"), *GetPlayerName(), ObjectivePoints);
 	OnScoreChanged.Broadcast(this);
 }
 
