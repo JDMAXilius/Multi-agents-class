@@ -10,7 +10,10 @@ class UTexture2D;
 /** ONE killfeed row — its own header, deliberately (the old module fused two classes into one
  *  file and its whole asset pipeline grew a special case to cope). A row renders a line and a
  *  tint and decides nothing: whole-row tint via SetColorAndOpacity, which multiplies down the
- *  tree — which is why the WBP sets no leaf color at all. */
+ *  tree — which is why the WBP sets no leaf color at all. Teams (BN16) tint the killer/victim
+ *  PARTS by relation, still code-driven and still no WBP color: the row goes neutral and the
+ *  leaves carry the hue (multiplying Ally through InkDim would be neither), with the
+ *  bInvolvesSelf white row keeping full priority — see SetEntry. */
 UCLASS(Abstract, meta = (DisableNativeTick))
 class BREACHPOINTNEXT_API UBNKillfeedEntry : public UCommonUserWidget
 {

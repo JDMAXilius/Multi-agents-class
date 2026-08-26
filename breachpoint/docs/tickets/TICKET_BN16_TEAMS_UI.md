@@ -57,4 +57,39 @@ from the setter) — law 3's deletion test must be re-run against this wave.
 
 ## Log
 
-_(outputs verbatim)_
+**26 Aug — W-BUILD ×2 complete, barrier run, one wave commit per writer (stop-hook
+split: writer 1 landed alone mid-wave). WRITTEN, NOT COMPILED.**
+
+- Producer (director+VM): team ledger subscribed both-sides; deferred OnTeamChanged
+  sweep runs from the roster walk (one handle per PlayerState, stale keys swept,
+  H9 removal); RelationTo ladder (identity → NoTeam guard → AreFriendly — the ladder
+  needs THREE answers, which is why the NoTeam test is explicit above the guard);
+  teams mode = own TeamId != NoTeam (the one datum a client honestly has); relative
+  ledger + relative team banner (WinningTeamId outranks the individual winner in a
+  team match); killfeed pushes carry both relations via a RATIFIED defaulted-tail
+  extension of PushKillfeedEntry (the ticket's escape hatch — FFA call sites
+  unchanged). Writer's addition accepted: SetRoster's silence gate also compares
+  Relation, or a late TeamId that moves no number never repaints.
+- Widgets: relation→tint through each file's existing color channel; two-block
+  scoreboard as ORDER (stable partition, non-Enemy first — identity permutation in
+  FFA), team header on BindWidgetOptional members (the file's own pattern), collapsed
+  when not teams; match band readouts/bars ternary on teams mode with tint writes only
+  on the mode FLIP (FFA refresh is today's instruction stream); killfeed leaf tints
+  with bInvolvesSelf keeping FULL priority (a line involving you is wholly white —
+  ratified as designed); BNKillfeed.cpp untouched on purpose (R7.6's one-argument
+  SetEntry already carries the new fields — zero-diff is the right diff).
+- Decisions dated at the barrier: feed lines are immutable once pushed — one pushed
+  during the reader's unknown frame keeps None relations for its ~6s linger (roster
+  re-tints, feed lines do not; accepted, the roadmap's re-tint claim names rows);
+  ScoreLimit is ONE number for both ladders (BNGameMode.cpp:474 confirms) so the
+  band's limit text is correct in teams mode; scoreboard block seam is order+color
+  only (no divider member exists — a WBP decision for a later pass if wanted).
+- WATCH-LIST for the terminal (transcription over invention — first compile tells):
+  weak-keyed TMap surface (Contains/Add via implicit TWeakObjectPtr ctor,
+  CreateIterator().RemoveCurrent()); FieldNotify descriptor name for a bool property
+  (bTeamsMode verbatim); UTextBlock::GetColorAndOpacity() getter (setter proven,
+  getter not); UTextBlock default ColorAndOpacity == White assumption in the killfeed
+  leaf reset.
+- Barrier gates: no gameplay includes in widget files; no absolute team id reaches a
+  widget (one comment hit only); GetAttitude grep law still one caller (BNTeams.h);
+  LOCTEXT namespace present for the new banner strings.

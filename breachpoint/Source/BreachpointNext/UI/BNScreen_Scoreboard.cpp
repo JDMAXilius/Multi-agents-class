@@ -53,10 +53,14 @@ void UBNScreen_Scoreboard::BindViewModels()
 
 	// Banner AND outcome. They are set in the same SetMatchPhase call, so subscribing to the
 	// banner alone would USUALLY work — but "usually" is how a screen ends up showing DEFEAT to
-	// the winner when a future edit moves one of them. Bind what you read.
+	// the winner when a future edit moves one of them. Bind what you read — which now includes
+	// the team ledger (BN16): mode and both relative scores, same reasoning, same one handler.
 	for (const UE::FieldNotification::FFieldId FieldId : {
 		UBNVM_Match::FFieldNotificationClassDescriptor::PhaseBannerText,
-		UBNVM_Match::FFieldNotificationClassDescriptor::Outcome })
+		UBNVM_Match::FFieldNotificationClassDescriptor::Outcome,
+		UBNVM_Match::FFieldNotificationClassDescriptor::bTeamsMode,
+		UBNVM_Match::FFieldNotificationClassDescriptor::MyTeamScore,
+		UBNVM_Match::FFieldNotificationClassDescriptor::EnemyTeamScore })
 	{
 		if (FieldId.IsValid())
 		{
@@ -110,6 +114,30 @@ void UBNScreen_Scoreboard::Refresh()
 			EntryCount, Rows.Num());
 	}
 
+	// TEAMS (BN16): the two blocks, as claim ORDER over the same pooled rows — no second
+	// container, no divider the WBP never placed. Stable partition: everything that is not
+	// Enemy first (Self, Ally, AND the joining client's honest-unknown None rows — they sit in
+	// my block with today's colors until their TeamId lands and the roster rebuilds), the enemy
+	// block after. The teams-OFF proof is structural: in FFA every relation is None, the second
+	// pass adds nothing, and Order is the identity — the claim loop below indexes the roster
+	// exactly as it did before this array existed.
+	TArray<int32, TInlineAllocator<8>> Order;
+	Order.Reserve(EntryCount);
+	for (int32 Index = 0; Index < EntryCount; ++Index)
+	{
+		if ((*Roster)[Index].Relation != EBNUITeamRelation::Enemy)
+		{
+			Order.Add(Index);
+		}
+	}
+	for (int32 Index = 0; Index < EntryCount; ++Index)
+	{
+		if ((*Roster)[Index].Relation == EBNUITeamRelation::Enemy)
+		{
+			Order.Add(Index);
+		}
+	}
+
 	for (int32 RowIndex = 0; RowIndex < Rows.Num(); ++RowIndex)
 	{
 		UBNScoreRow* Row = Rows[RowIndex];
@@ -119,7 +147,7 @@ void UBNScreen_Scoreboard::Refresh()
 		}
 		if (RowIndex < Shown)
 		{
-			Row->SetRow((*Roster)[RowIndex]);
+			Row->SetRow((*Roster)[Order[RowIndex]]);
 		}
 		else
 		{
@@ -135,7 +163,37 @@ void UBNScreen_Scoreboard::Refresh()
 		BannerText->SetColorAndOpacity(FSlateColor(BNUIColors::Self));
 	}
 
+	RefreshTeamScores(Match);
 	RefreshOutcome(Match);
+}
+
+void UBNScreen_Scoreboard::RefreshTeamScores(const UBNVM_Match* Match)
+{
+	if (!MyTeamScoreText && !EnemyTeamScoreText)
+	{
+		return;
+	}
+
+	// bTeamsMode false IS the FFA/honest-unknown state (SetTeamScores' contract) — the header
+	// collapses and the board is today's, byte for byte. No MatchDataState gate on top: the VM
+	// never raises the flag before the director has a ledger to report.
+	const bool bTeams = Match && Match->IsTeamsMode();
+	const ESlateVisibility Vis = bTeams ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed;
+
+	// My side FIRST and blue, theirs red — relation tints, never a team's own color (the same
+	// two hues both clients see, each meaning "mine"/"theirs" to its own reader).
+	if (MyTeamScoreText)
+	{
+		MyTeamScoreText->SetText(bTeams ? FText::AsNumber(Match->GetMyTeamScore()) : FText::GetEmpty());
+		MyTeamScoreText->SetColorAndOpacity(FSlateColor(BNUIColors::Ally));
+		MyTeamScoreText->SetVisibility(Vis);
+	}
+	if (EnemyTeamScoreText)
+	{
+		EnemyTeamScoreText->SetText(bTeams ? FText::AsNumber(Match->GetEnemyTeamScore()) : FText::GetEmpty());
+		EnemyTeamScoreText->SetColorAndOpacity(FSlateColor(BNUIColors::Threat));
+		EnemyTeamScoreText->SetVisibility(Vis);
+	}
 }
 
 void UBNScreen_Scoreboard::RefreshOutcome(const UBNVM_Match* Match)

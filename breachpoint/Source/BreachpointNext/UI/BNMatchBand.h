@@ -2,6 +2,7 @@
 
 #include "CommonUserWidget.h"
 #include "FieldNotificationId.h"
+#include "Styling/SlateColor.h"
 #include "BNMatchBand.generated.h"
 
 class UBNVM_Match;
@@ -9,7 +10,9 @@ class UProgressBar;
 class UTextBlock;
 
 /**
- * Bottom-centre: my score · the clock · the leader and the limit. UCommonUserWidget, NOT the
+ * Bottom-centre: my score · the clock · the leader and the limit — or, in teams mode, my
+ * side's score and theirs through the SAME readouts, relative and relation-tinted (BN16).
+ * UCommonUserWidget, NOT the
  * activatable base — HUD surfaces are never pushed to a layer, so activation scope is construct
  * scope, and the activatable base costs bSupportsActivationFocus (the old module's paid lesson).
  * Push-only: every value arrives by FieldNotify; the clock digit flips because the VM's
@@ -57,4 +60,14 @@ protected:
 
 	TArray<TPair<UE::FieldNotification::FFieldId, FDelegateHandle>> BoundFields;
 	TWeakObjectPtr<UBNVM_Match> BoundViewModel;
+
+	/** TEAMS (BN16): whether the relative-team tints are currently on the two readouts. The
+	 *  tint is applied ONLY on a mode flip — the FFA refresh path stays today's instruction
+	 *  stream, which is the teams-OFF proof this widget owes. */
+	bool bTeamTintApplied = false;
+
+	/** TopKillsText's tint as the WBP left it, captured at initialize — the band never set that
+	 *  leaf's color before teams did, so restoring anything ELSE on a flip back to FFA would
+	 *  invent a color today's band never showed. */
+	FSlateColor DefaultTopKillsTint;
 };

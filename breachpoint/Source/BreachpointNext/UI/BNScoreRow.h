@@ -8,7 +8,8 @@ struct FBNScoreRowView;
 
 /** One scoreboard row: name · kills · deaths. The killfeed entry's twin — claimed and released
  *  by the scoreboard over rows the WBP placed, tinted whole (white = you, cyan name = the
- *  winner, dim = everyone else), deciding nothing. */
+ *  winner, dim = everyone else; teams add ally blue / enemy red BY RELATION, never by team id),
+ *  deciding nothing. */
 UCLASS(Abstract, meta = (DisableNativeTick))
 class BREACHPOINTNEXT_API UBNScoreRow : public UCommonUserWidget
 {
