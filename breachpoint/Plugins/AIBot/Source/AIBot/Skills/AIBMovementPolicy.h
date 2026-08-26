@@ -35,6 +35,15 @@ struct AIBOT_API FAIBMovementState
 	 *  re-entry and a reset stamp re-actuated the SAME leg once per belief blink, walking
 	 *  the bot further per leg than any rung authorises (W-REVIEW P4+5 H1). */
 	double LastActuatedLegStamp = 0.0;
+
+	/** AIB10's opportunity instrument: the out-of-gate HOLD as a SPELL, not a tick. The
+	 *  first measurement logged the hold every Tick and the leg once per leg, and dividing
+	 *  the two produced 182:1 — frames over legs, a number with no meaning. Edge state
+	 *  here (per-life, survives Engage re-entry like the stamp above) lets the task log
+	 *  one line when the spell starts and one with the DURATION when it ends, so the
+	 *  re-measure can state the true split: seconds denied vs seconds stepping. */
+	bool bStrafeOutsideGate = false;
+	double StrafeOutsideSinceSeconds = 0.0;
 };
 
 struct AIBOT_API FAIBMovementPolicy

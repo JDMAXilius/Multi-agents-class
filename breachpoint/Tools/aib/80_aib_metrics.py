@@ -53,8 +53,13 @@ RX = {
     "denial_throw":    re.compile(r"AIBot: (?P<bot>\S+) denied the remembered spot"),
     # The terminal's AIB10 strafe instrument (Verbose): executed legs with arc length,
     # and the silent gate holds that were the old "too short" report's whole story.
+    # RE-INSTRUMENTED 26 Aug: the held line now fires once per SPELL (edge), not per
+    # tick — hold counts from logs before that date are frame counts and must never be
+    # compared against these. The opportunity-back line closes each spell with its
+    # duration, so denied time is summable.
     "strafe_leg":  re.compile(r"AIBot: (?P<bot>\S+) strafe leg — (?P<arc>[0-9.]+)uu of arc at range (?P<range>[0-9.]+)uu"),
     "strafe_hold": re.compile(r"AIBot: (?P<bot>\S+) strafe held — outside the engaged radius"),
+    "strafe_back": re.compile(r"AIBot: (?P<bot>\S+) strafe opportunity back — (?P<seconds>[0-9.]+)s outside \((?P<reason>[^)]+)\)\."),
     # BN15 teams (LogBN, not the module's log): the three countable events the roadmap's
     # proofs rest on. Formats transcribed from BNGameMode.cpp (assignment, team-kill
     # denial) and BNDamage.cpp (the FF gate's Verbose refusal — add -LogCmds="LogBN
@@ -128,9 +133,17 @@ def per_match_summary(counts):
         "throttled_throws": len(counts["throttled_throw"]) or None,
         "denial_throws": len(counts["denial_throw"]) or None,
         "strafe_legs": len(counts["strafe_leg"]) or None,
-        "strafe_holds": len(counts["strafe_hold"]) or None,
+        "strafe_holds": len(counts["strafe_hold"]) or None,   # SPELLS post-26-Aug, frames before
         "strafe_mean_arc_uu": (statistics.mean(float(hit["arc"]) for hit in counts["strafe_leg"])
             if counts["strafe_leg"] else None),
+        # AIB10 opportunity, honestly: total seconds a strafe-capable bot stood denied by
+        # the gate, and how each spell ended. The decision number is denied seconds vs
+        # stepped legs — not the old frames-over-legs ratio.
+        "strafe_denied_seconds": (round(sum(float(hit["seconds"]) for hit in counts["strafe_back"]), 1)
+            if counts["strafe_back"] else None),
+        "strafe_spell_ends": ({reason: sum(1 for hit in counts["strafe_back"] if hit["reason"] == reason)
+            for reason in sorted({hit["reason"] for hit in counts["strafe_back"]})}
+            if counts["strafe_back"] else None),
         # BN15 teams. team_populations proves the 4/4 balance claim from the assignment
         # lines alone; all three stay None in an FFA log (the OFF gate reads that as PASS).
         "team_assignments": len(counts["team_assign"]) or None,
@@ -211,7 +224,8 @@ def main():
             if value is None:
                 value = ("not captured (Verbose off?)"
                     if key in ("swings", "throws", "throttled_throws", "denial_throws",
-                        "strafe_legs", "strafe_holds", "strafe_mean_arc_uu", "ff_refused")
+                        "strafe_legs", "strafe_holds", "strafe_mean_arc_uu",
+                        "strafe_denied_seconds", "strafe_spell_ends", "ff_refused")
                     else "none (FFA?)" if key in ("team_assignments", "team_populations",
                         "team_kills_denied")
                     else "n/a")

@@ -62,4 +62,39 @@ floor so a nearly-expired leg still reads as a step.
 
 ## Log
 
-_(terminal: outputs verbatim)_
+**26 Aug (cloud lead, on the founder's "continue with AIB10 strafe opportunity") —
+the 182:1 number is not an opportunity measurement, and the instrument is now fixed
+so the next run produces one. WRITTEN, NOT COMPILED (the harness half is proven —
+synthetic-log asserts green).**
+
+- **Why 182:1 meant nothing:** the "strafe held — outside the engaged radius" line
+  fired EVERY TICK while outside the gate; the "strafe leg" line fires once per
+  ~0.35–2s leg. Dividing the two divides frames by legs — at 60fps, 182 holds per leg
+  is ~3 seconds outside per executed leg, which could be a bot denied 95% of its fight
+  or one at 50% under high fps. The ratio cannot distinguish them. (The AIB8 lesson
+  again, one layer up: a measurement whose units don't match is an impression with
+  digits.)
+- **The re-instrument (this change):** the gate hold is now a SPELL with edges, state
+  on `FAIBMovementState` (per-life, survives Engage re-entry like the leg stamp):
+  one "strafe held" line when a visible-target bot first leaves the gate, one
+  "strafe opportunity back — X.Xs outside (reentered|target lost)" line when the
+  spell ends. Holds and legs are now commensurate (spells vs legs), and denied time
+  is summable. Harness: `strafe_holds` counts spells (NOT comparable with pre-26-Aug
+  logs — those were frame counts; the regex comment says so), new
+  `strafe_denied_seconds` and `strafe_spell_ends` by reason. Proven:
+  2 spells / 2 legs / 10.5s / {reentered:1, target lost:1} on a synthetic log.
+- **Re-measure protocol (terminal):** five Marine-FFA logs with LogAIBot Verbose.
+  The decision number is `strafe_denied_seconds` vs (legs × mean leg seconds) —
+  the true denied:stepping split per fight — plus the spell-end reasons (a fight
+  ending by "target lost" while outside means the whole fight happened beyond 350uu).
+- **The decision those numbers feed (NOT taken now — measure first):** if denied time
+  dominates, the opportunity fix is an architecture question with two honest options:
+  (a) widen the strafe gate beyond `EngagedRadiusUU` and arbitrate the two movers
+  (MoveNearBelief owns closing, strafe owns lateral once the mover stations — needs
+  an explicit hand-off, today's radii ARE the arbitration); or (b) accept that AIB
+  strafes only at station range and let the fade/stand-off band pull fights inward.
+  Option (a) is the Halo-fidelity answer (Infinite bots strafe at mid-range) but
+  touches the mover contract; it gets its own packet if the numbers demand it.
+- Collision note: this ticket is terminal-owned; the cloud took the instrument half
+  on the founder's word with no terminal pushes in flight (fetch clean at 5af5041).
+  The behavior half stays the terminal's after the re-measure.

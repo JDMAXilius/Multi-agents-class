@@ -1294,6 +1294,26 @@ void FAIBMoveToObjectiveTask::ExitState(FStateTreeExecutionContext& Context, con
 
 ////////////////////////////////////////////////////////////////////
 
+namespace
+{
+	/** AIB10's spell instrument, closing half: one line with the DURATION when a gate-hold
+	 *  spell ends, whatever ends it — re-entering the circle or losing the target. The
+	 *  harness sums the seconds; the reason says which door closed the spell. */
+	void EndStrafeGateSpell(AAIBBotController& Bot, const TCHAR* Reason)
+	{
+		FAIBMovementState& MovementState = Bot.GetMovementState();
+		if (!MovementState.bStrafeOutsideGate)
+		{
+			return;
+		}
+		MovementState.bStrafeOutsideGate = false;
+		const double OutsideSeconds =
+			Bot.GetWorld()->GetTimeSeconds() - MovementState.StrafeOutsideSinceSeconds;
+		UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s strafe opportunity back — %.1fs outside (%s)."),
+			*Bot.GetName(), OutsideSeconds, Reason);
+	}
+}
+
 EStateTreeRunStatus FAIBStrafeTask::EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
 {
 	return EStateTreeRunStatus::Running;
@@ -1307,7 +1327,13 @@ EStateTreeRunStatus FAIBStrafeTask::Tick(FStateTreeExecutionContext& Context, co
 	if (!Pawn || !Bot->GetSensorium().HasVisibleTarget())
 	{
 		// Not this task's failure — the belief tasks beside it own the state's fate.
-		// Keep running and simply stop stepping (the host's own strafe rule).
+		// Keep running and simply stop stepping (the host's own strafe rule). A gate-hold
+		// spell in flight ends here: "denied opportunity" only means anything while there
+		// is a visible target to strafe against.
+		if (Bot)
+		{
+			EndStrafeGateSpell(*Bot, TEXT("target lost"));
+		}
 		return EStateTreeRunStatus::Running;
 	}
 
@@ -1315,14 +1341,24 @@ EStateTreeRunStatus FAIBStrafeTask::Tick(FStateTreeExecutionContext& Context, co
 	const FVector Belief = Bot->GetSensorium().GetLastSeenLocation();
 	if (!IsWithin(*Bot, Belief, InstanceData.EngagedRadiusUU))
 	{
-		// Logged because this is the SILENT case: the old perpendicular step walked the
-		// bot out of this very gate, and holding here left no trace at all — the strafe
-		// simply stopped and nothing said so. A hold is not a failure, but it must be
-		// countable, or "the strafe is too short" has no measurement behind it.
-		UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s strafe held — outside the engaged radius (range %.0fuu > %.0fuu)."),
-			*Bot->GetName(), FVector::Dist(Pawn->GetActorLocation(), Belief), InstanceData.EngagedRadiusUU);
+		// THE SPELL EDGE (AIB10 re-instrument): the first cut logged this hold EVERY TICK
+		// while the leg line fired once per leg, and the "182:1 gated out" measurement was
+		// those two rates divided — frames over legs, meaningless. One line per SPELL at
+		// the edge (the closing line below carries the duration) makes holds and legs
+		// commensurate: hold spells vs stepped legs, plus denied-seconds the harness sums.
+		// A hold is not a failure, but it must be countable, or "the strafe is too short"
+		// has no measurement behind it.
+		FAIBMovementState& MovementState = Bot->GetMovementState();
+		if (!MovementState.bStrafeOutsideGate)
+		{
+			MovementState.bStrafeOutsideGate = true;
+			MovementState.StrafeOutsideSinceSeconds = Bot->GetWorld()->GetTimeSeconds();
+			UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s strafe held — outside the engaged radius (range %.0fuu > %.0fuu)."),
+				*Bot->GetName(), FVector::Dist(Pawn->GetActorLocation(), Belief), InstanceData.EngagedRadiusUU);
+		}
 		return EStateTreeRunStatus::Running;
 	}
+	EndStrafeGateSpell(*Bot, TEXT("reentered"));
 
 	// The policy decides the rhythm (per-life state on the controller — a branch blink
 	// must not reset the dance); this task actuates ONE step per leg.
