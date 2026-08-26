@@ -59,6 +59,9 @@ namespace
 				? TOptional<float>(MatchedObjective->DistanceUU) : TOptional<float>();
 		case EAIBFactSelector::ConfidenceNorm:
 			return Facts.bConfidenceKnown ? TOptional<float>(Facts.ConfidenceNorm) : TOptional<float>();
+		case EAIBFactSelector::ObjectiveClaimedElsewhere:
+			return MatchedObjective
+				? TOptional<float>(MatchedObjective->bClaimedElsewhere ? 1.f : 0.f) : TOptional<float>();
 		}
 		return TOptional<float>();
 	}

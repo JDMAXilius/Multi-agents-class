@@ -55,6 +55,18 @@ void UAIBAmbitionEngine::BuildModeAmbitionSpec(const FAIBModeAmbition& Mode, FAI
 	Urgency.Selector = EAIBFactSelector::ObjectiveUrgency;
 	Urgency.SetLinearCurve(true);
 	Urgency.ValueWhenUnknown = 0.f;
+
+	// Phase 7: the claim veto, at the SAME translation site that keeps mode wants
+	// honest — falling, so claimed (1) scores EXACTLY 0 and the multiplicative product
+	// dies. Exactly 0 is what releases a committed loser in one rescore (the engine's
+	// zero-score veto); an epsilon would hold it on a dead route for the whole window.
+	// ValueWhenUnknown = 1: an unknown claim state waves through — the urgency
+	// consideration above already silences the no-fact case, and a double veto would
+	// hide which law fired.
+	FAIBConsideration& Claimed = OutSpec.Considerations.AddDefaulted_GetRef();
+	Claimed.Selector = EAIBFactSelector::ObjectiveClaimedElsewhere;
+	Claimed.SetLinearCurve(false);
+	Claimed.ValueWhenUnknown = 1.f;
 }
 
 void UAIBAmbitionEngine::ResetArbitration()

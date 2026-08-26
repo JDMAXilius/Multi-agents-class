@@ -7,6 +7,7 @@
 #include "Interfaces/AIBAvatarInterface.h"
 #include "Interfaces/AIBWorldQuery.h"
 #include "Perception/AIBSensorium.h"
+#include "Team/AIBTeamCoordinator.h"
 
 FAIBFacts AIBFactsBuilder::Build(const AAIBBotController& Bot, double NowSeconds)
 {
@@ -86,22 +87,46 @@ FAIBFacts AIBFactsBuilder::Build(const AAIBBotController& Bot, double NowSeconds
 		{
 			Query->QueryPointsOfInterest(Pawn, AIB::ObjectiveQueryRadiusUU, Points);
 		}
+		// Phase 7: the claims board is honoured HERE — the one info door — and only by
+		// a Teamwork-competent bot (the gate is SYMMETRIC: a Novice neither files nor
+		// honours, so it packs onto the rocket exactly as a novice human does).
+		const UAIBTeamCoordinator* Coordinator =
+			Bot.GetSkillProfile().Level(EAIBSkill::Teamwork) >= EAIBCompetence::Trained
+				? (Bot.GetWorld() ? Bot.GetWorld()->GetSubsystem<UAIBTeamCoordinator>() : nullptr)
+				: nullptr;
+
 		for (const FAIBModeAmbition& Mode : ModeAmbitions)
 		{
 			FAIBObjectiveFact& Fact = Facts.Objectives.AddDefaulted_GetRef();
 			Fact.AmbitionTag = Mode.AmbitionTag;
 			Fact.Urgency = ClampUrgency(Provider->GetObjectiveUrgency(Pawn, Mode.AmbitionTag));
+
+			// Distance from the nearest matching POI this bot may still PURSUE:
+			// other-claimed slots are skipped, zones always count. The claim flag goes
+			// PRESENT-zero only when slots existed and every one is spoken for — a zone
+			// in the set keeps the want alive whatever the slot book says.
+			int32 MatchingPOIs = 0;
+			int32 SuppressedSlots = 0;
 			for (const FAIBPointOfInterest& Point : Points)
 			{
-				if (Point.Kind == Mode.ObjectiveKind)
+				if (Point.Kind != Mode.ObjectiveKind)
 				{
-					const float Dist = FVector::Dist(SelfLocation, Point.Location);
-					if (Fact.DistanceUU < 0.f || Dist < Fact.DistanceUU)
-					{
-						Fact.DistanceUU = Dist;
-					}
+					continue;
+				}
+				++MatchingPOIs;
+				if (Coordinator && Point.bClaimableSlot
+					&& Coordinator->IsClaimedByOtherTeammate(Bot, Point))
+				{
+					++SuppressedSlots;
+					continue;
+				}
+				const float Dist = FVector::Dist(SelfLocation, Point.Location);
+				if (Fact.DistanceUU < 0.f || Dist < Fact.DistanceUU)
+				{
+					Fact.DistanceUU = Dist;
 				}
 			}
+			Fact.bClaimedElsewhere = MatchingPOIs > 0 && SuppressedSlots == MatchingPOIs;
 		}
 
 		// Crowd counts: allies are HUD-grade through the query; a bounded ENEMY count

@@ -52,7 +52,7 @@ project/engine-level; the module paths and presses `AIBot.Verb.Jump`.
 | 4 | Skills 1–4 + competence ladders | per-level specs + measured PIE samples |
 | 5 | Confidence model wired into ambitions | specs + observed disengage/press |
 | 6 | Game Mode Ambitions + one objective mode | bot plays the objective |
-| 7 | Team coordinator (claims) | two bots never contest one pickup — measured |
+| 7 | Team coordinator (claims) | `AIBot.Sim.Claims` headless + FFA-inert live check; the two-allied-bots-one-pickup measurement is DEFERRED until a host mode has teams and ≥2 claimable slots (P7 packet, 26 Aug) — the promise is scoped to Teamwork-competent bots |
 | 8 | Tiers data, humanisation, gameplay debugger | four tiers observably distinct |
 | 9 | 4v4 matches, metrics harness, tuning | telemetry vs quality bars |
 | 10 | extract to `Plugins/AIBot/` | plugin compiles in a blank project |

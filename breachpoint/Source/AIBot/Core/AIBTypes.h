@@ -27,6 +27,13 @@ namespace AIB
 	 *  provider has a bound to honour. */
 	inline constexpr float ObjectiveQueryRadiusUU = 10000.f;
 
+	/** Phase 7: a claim's lease. Renewed each think while the claimant still pursues;
+	 *  drift releases by NON-renewal at this horizon — the minimum hold, sized at the
+	 *  longest pickup commit window so board transitions never outpace the engine's
+	 *  anti-dither machinery. Short enough that a missed release path shadows a slot
+	 *  for seconds, not a fight (W-AUDIT P7 ruling, 26 Aug 2026). */
+	inline constexpr float ClaimTtlSeconds = 5.f;
+
 	/** The reaction clock's queue cap (drop-oldest). An unpossessed bot must not grow
 	 *  an unbounded stimulus backlog for the rest of a match (W-REVIEW F-1.2). */
 	inline constexpr int32 MaxPendingStimuli = 64;
@@ -75,6 +82,13 @@ struct AIBOT_API FAIBObjectiveFact
 	float DistanceUU = -1.f;       // raw uu; <0 = unknown
 	float Urgency = 0.f;           // CLAMPED 0..1 by the facts builder — the one site.
 	                               // 0 = the mode does not care, 1 = drop everything.
+
+	/** Phase 7: every claimable SLOT serving this want is spoken for by a non-enemy
+	 *  other. PRESENT-zero, never absence — a removed fact gets resurrected by
+	 *  ValueWhenUnknown, and an epsilon survives the engine's zero-score veto; both
+	 *  leave the race loser walking a dead route for its whole commit (W-AUDIT P7).
+	 *  Stays false whenever any matching ZONE POI exists: zones are not arbitrated. */
+	bool bClaimedElsewhere = false;
 };
 
 /**

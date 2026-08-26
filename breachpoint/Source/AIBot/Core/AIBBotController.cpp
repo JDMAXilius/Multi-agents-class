@@ -15,6 +15,7 @@
 #include "Perception/AISense_Hearing.h"
 #include "Perception/AISenseConfig_Sight.h"
 #include "Perception/AISense_Sight.h"
+#include "Team/AIBTeamCoordinator.h"
 #include "TimerManager.h"
 
 AAIBBotController::AAIBBotController(const FObjectInitializer& ObjectInitializer)
@@ -243,6 +244,13 @@ void AAIBBotController::OnUnPossess()
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(ThinkTimer);
+		// Phase 7: claims die with the body, immediately — a dead bot's claim would
+		// shadow a slot from its teammates for the TTL's remainder (the stale-pawn
+		// belt would catch it; this is the ordered path that does not wait).
+		if (UAIBTeamCoordinator* Coordinator = World->GetSubsystem<UAIBTeamCoordinator>())
+		{
+			Coordinator->ReleaseAll(*this);
+		}
 	}
 	Sensorium.Reset();
 	LastFacts = FAIBFacts();
@@ -292,6 +300,10 @@ void AAIBBotController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(ThinkTimer);
+		if (UAIBTeamCoordinator* Coordinator = World->GetSubsystem<UAIBTeamCoordinator>())
+		{
+			Coordinator->ReleaseAll(*this);
+		}
 	}
 	Avatar = nullptr;
 	AvatarObject = nullptr;
@@ -587,6 +599,44 @@ void AAIBBotController::Think()
 				RunnerUp.Tag.IsValid() ? *RunnerUp.Tag.ToString() : TEXT("none"),
 				RunnerUp.Score,
 				AmbitionEngine->WasLastRescoreInterrupted() ? TEXT(" [interrupt]") : TEXT(""));
+		}
+
+		// Phase 7: FILE THE CLAIM AT THINK-COMMIT, synchronously — think timers run
+		// serialized on the game thread, so within one same-frame cluster the second
+		// thinker's facts already see the first thinker's claim; claiming later, at
+		// task enter, opens a multi-frame window in which the whole lobby commits to
+		// one slot and then holds it on commit+hysteresis (W-AUDIT P7). The claim
+		// renews while this want keeps winning; when it drifts away the claim lapses
+		// by NON-renewal at TTL — a flapping claimant must not flap its teammates'
+		// arbitration, so the board's transitions stay slower than the engine's
+		// commit windows. Death releases immediately (the belts below).
+		if (GetSkillProfile().Level(EAIBSkill::Teamwork) >= EAIBCompetence::Trained)
+		{
+			const FGameplayTag PursuedKind = GetObjectiveKindForCurrentAmbition();
+			UAIBTeamCoordinator* Coordinator = World->GetSubsystem<UAIBTeamCoordinator>();
+			IAIBWorldQuery* Query = GetWorldQuery();
+			APawn* SelfPawn = GetPawn();
+			if (PursuedKind.IsValid() && Coordinator && Query && SelfPawn)
+			{
+				TArray<FAIBPointOfInterest> Points;
+				Query->QueryPointsOfInterest(SelfPawn, AIB::ObjectiveQueryRadiusUU, Points);
+				// The task's own pick rule (best Worth among free slots), so the claim
+				// and the walk always name the same slot.
+				const FAIBPointOfInterest* Best = nullptr;
+				for (const FAIBPointOfInterest& Point : Points)
+				{
+					if (Point.Kind == PursuedKind && Point.bClaimableSlot
+						&& !Coordinator->IsClaimedByOtherTeammate(*this, Point)
+						&& (!Best || Point.Worth > Best->Worth))
+					{
+						Best = &Point;
+					}
+				}
+				if (Best)
+				{
+					Coordinator->TryClaim(*this, *Best, AIB::ClaimTtlSeconds);
+				}
+			}
 		}
 	}
 }

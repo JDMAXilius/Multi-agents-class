@@ -34,8 +34,12 @@ enum class EAIBFactSelector : uint8
 	Outnumbered,            // enemies minus allies, signed
 	ObjectiveUrgency,       // read from the objective fact MATCHED to this ambition's tag
 	ObjectiveDistanceUU,    // same; unset when the mode supplied no matching entry
-	ConfidenceNorm          // Phase 5: the model's judgment; unset until the controller
+	ConfidenceNorm,         // Phase 5: the model's judgment; unset until the controller
 	                        // computes it (a spec-built bare facts row stays unknown)
+	ObjectiveClaimedElsewhere // Phase 7: bool as 0/1 from the matched objective fact —
+	                        // 1 = every slot serving this want is spoken for. Unset
+	                        // without a matched fact (the urgency consideration already
+	                        // silences that case; this one must not double-veto it).
 };
 
 /**

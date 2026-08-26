@@ -17,6 +17,14 @@ struct AIBOT_API FAIBPointOfInterest
 	                               // "objective" vs "Objective" (W-REVIEW L3)
 	float Worth = 1.f;             // provider-scaled 0..1
 	TWeakObjectPtr<AActor> Actor;  // optional backing actor (a pickup, a flag)
+
+	/** SLOT vs ZONE (W-AUDIT P7): true = one agent can usefully take or occupy this —
+	 *  a pickup, a flag-carry, one provider-enumerated defensive position — and the
+	 *  claims board may arbitrate it. False (the default) = a zone objective (a hill):
+	 *  the board refuses it, because zeroing a zone's want for teammates is how a team
+	 *  mode gets a one-defender hill. The PROVIDER declares capacity — a zone that
+	 *  wants N bodies exposes N slot-POIs, never one claimable blob. */
+	bool bClaimableSlot = false;
 };
 
 UINTERFACE(MinimalAPI, NotBlueprintable, meta = (CannotImplementInterfaceInBlueprint))

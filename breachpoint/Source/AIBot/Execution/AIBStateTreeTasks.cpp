@@ -15,6 +15,7 @@
 #include "Skills/AIBMeleePolicy.h"
 #include "Skills/AIBMovementPolicy.h"
 #include "StateTreeExecutionContext.h"
+#include "Team/AIBTeamCoordinator.h"
 
 namespace
 {
@@ -1130,12 +1131,33 @@ EStateTreeRunStatus FAIBMoveToObjectiveTask::EnterState(FStateTreeExecutionConte
 	IAIBWorldQuery* Query = Bot->GetWorldQuery();
 	if (Query)
 	{
+		// Phase 7: the scoring seam has a task-side mirror — a claim honoured at the
+		// want but not at the pick is a bot that walks to a claimed slot anyway
+		// (multi-slot kinds keep the want alive while one slot is spoken for). Self
+		// passes through IsClaimedByOtherTeammate by definition; the gate matches the
+		// builder's (a Novice's board is nobody's business here either — the
+		// coordinator read below is what the builder's Teamwork gate already allowed
+		// or refused at scoring time, mirrored on the same profile read).
+		const UAIBTeamCoordinator* Coordinator =
+			Bot->GetSkillProfile().Level(EAIBSkill::Teamwork) >= EAIBCompetence::Trained
+				? (Bot->GetWorld() ? Bot->GetWorld()->GetSubsystem<UAIBTeamCoordinator>() : nullptr)
+				: nullptr;
+
 		TArray<FAIBPointOfInterest> Points;
 		Query->QueryPointsOfInterest(Pawn, AIB::ObjectiveQueryRadiusUU, Points);
 		float BestWorth = -1.f;
 		for (const FAIBPointOfInterest& Point : Points)
 		{
-			if ((!Kind.IsValid() || Point.Kind == Kind) && Point.Worth > BestWorth)
+			if (Kind.IsValid() && Point.Kind != Kind)
+			{
+				continue;
+			}
+			if (Coordinator && Point.bClaimableSlot
+				&& Coordinator->IsClaimedByOtherTeammate(*Bot, Point))
+			{
+				continue;
+			}
+			if (Point.Worth > BestWorth)
 			{
 				BestWorth = Point.Worth;
 				InstanceData.Goal = Point.Location;
