@@ -1324,12 +1324,24 @@ EStateTreeRunStatus FAIBStrafeTask::Tick(FStateTreeExecutionContext& Context, co
 	// data resets on every Engage re-entry, and a reset stamp re-actuated the same leg
 	// once per belief blink — up to five 220uu steps in a leg authored as one.
 	FAIBMovementState& MovementState = Bot->GetMovementState();
-	if (Intent == EAIBStrafeIntent::Hold
-		|| MovementState.NextDecisionAtSeconds == MovementState.LastActuatedLegStamp)
+	if (MovementState.NextDecisionAtSeconds == MovementState.LastActuatedLegStamp)
 	{
-		return EStateTreeRunStatus::Running;
+		return EStateTreeRunStatus::Running; // this leg is already actuated, hold or move
 	}
 	MovementState.LastActuatedLegStamp = MovementState.NextDecisionAtSeconds;
+
+	// A HOLD IS AN ACTUATION TOO (founder's strafe review, 26 Aug). The policy's hold
+	// windows only ever suppressed NEW steps — the previous leg's move request kept
+	// walking right through them, so the "plant" the ladder authors (a Novice stands
+	// 19 windows in 20) never actually read on a body mid-chord. One StopMovement per
+	// hold leg makes the stand real; safe, because inside the engaged circle this task
+	// is the only mover (MoveNearBelief stations, it does not move).
+	if (Intent == EAIBStrafeIntent::Hold)
+	{
+		Bot->StopMovement();
+		UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s strafe hold — planted for this leg."), *Bot->GetName());
+		return EStateTreeRunStatus::Running;
+	}
 
 	// ON AN ARC AROUND THE BELIEF, not perpendicular to it. A perpendicular step always
 	// LENGTHENS range — from distance d a lateral L lands at sqrt(d^2 + L^2) — so it
@@ -1371,7 +1383,18 @@ EStateTreeRunStatus FAIBStrafeTask::Tick(FStateTreeExecutionContext& Context, co
 	const float ArcRadians = FMath::Min(FMath::DegreesToRadians(InstanceData.MaxArcDegrees), StepUU / RangeUU);
 	const float Signed = ArcRadians * (Intent == EAIBStrafeIntent::Right ? 1.f : -1.f);
 	const FVector Rotated = FromBelief.GetSafeNormal().RotateAngleAxisRad(Signed, FVector::UpVector);
-	const FVector Destination = Belief + Rotated * RangeUU;
+
+	// THE SPIRAL FIX (founder's strafe review, 26 Aug). Only the ENDPOINTS of an arc
+	// step sit on the range circle — the walk between them is the CHORD, dipping inward
+	// by R(1-cos(arc/2)) at midpoint. Legs are TIME-driven and routinely expire
+	// mid-chord, so the next leg re-measured range from the dip and KEPT it; nothing in
+	// Engage ever backs away, so repeated moving legs compounded 350 -> ~300 -> ~255...
+	// and strafing bots crept into their target's face. Re-normalizing each leg's
+	// DESTINATION radius into the stand-off band makes every captured dip self-correct
+	// on the next leg instead of compounding — one clamp, no second mover, no new task.
+	const float DesiredRangeUU = FMath::Clamp(RangeUU,
+		FMath::Min(InstanceData.StandOffMinUU, InstanceData.EngagedRadiusUU), InstanceData.EngagedRadiusUU);
+	const FVector Destination = Belief + Rotated * DesiredRangeUU;
 
 	// Projected onto the navmesh by the move itself: a step into a wall or off a ledge
 	// resolves to the nearest legal point instead of failing (the host's proven call).

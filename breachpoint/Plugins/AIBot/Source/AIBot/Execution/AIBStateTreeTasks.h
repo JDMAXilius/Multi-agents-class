@@ -562,9 +562,23 @@ struct FAIBStrafeTaskInstanceData
 	float StepDistanceUU = 220.f;
 
 	/** Cap on how far around the belief ONE leg may carry the bot. Footwork, not
-	 *  orbiting: without it a long leg at close range swings most of a circle. */
+	 *  orbiting: without it a long leg at close range swings most of a circle.
+	 *  55, DERIVED (founder's strafe review, 26 Aug): the walk is the CHORD, whose
+	 *  midpoint dips inward by R(1-cos(arc/2)) — at 70 deg that was 18% of range
+	 *  (63uu at the 350 gate), which is what fed the inward spiral; at 55 deg the dip
+	 *  is 11% (40uu), inside the mover's own 50uu acceptance noise, and the 323uu
+	 *  chord still fills an Expert's average leg (375uu wanted) while a Trained leg
+	 *  goes bursty — step, plant, step — which is footwork, not a rush. */
 	UPROPERTY(EditAnywhere, Category = "Parameter")
-	float MaxArcDegrees = 70.f;
+	float MaxArcDegrees = 55.f;
+
+	/** The FLOOR of the stand-off band. Chord dips captured by mid-walk leg decisions
+	 *  re-normalize OUT to at least this radius on the next leg (the spiral fix), so
+	 *  a fight never creeps from station-keeping into melee-accident range. Above the
+	 *  audited weapon reach (120uu x 0.8 commit) with margin; below EngagedRadiusUU
+	 *  so the band is real. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float StandOffMinUU = 280.f;
 
 	/** Strafe only while STATION-KEEPING — inside this radius of the belief. Mirrors
 	 *  FAIBMoveNearBeliefTask's acceptance radius on purpose: outside it the mover owns
