@@ -48,9 +48,17 @@ CUBE_BASE_UU = 100.0          # the engine cube is 100 uu on a side
 LEVEL = "/Game/Maps/BR_Arena01.BR_Arena01"
 
 # The two stair volumes as the manifest states them, and the actors that carry them today.
+# EXTENDED RUNS. The manifest's 3 m footprints cannot host a walkable flight at all:
+# 400 uu of rise over 300 uu of run is 53 deg as a ramp (max 44) and, as steps, 9 treads of
+# 33 uu against a 34 uu agent radius. Both lose. Each stair is therefore lengthened AWAY
+# from the Core drum it abuts — west stair grows west from x=16, east stair grows east from
+# x=24 — into space the manifest leaves empty (nearest solids are West Stack x[3,5] and
+# East Stack x[35,37]; the Gantry segments overhead sit at z[7.6,8] and never touch z[0,4]).
+# 5.5 m of run yields 13 treads at 30.8 uu rise and 42.3 uu depth: inside AgentMaxStepHeight
+# 35 and clear of AgentRadius 34.
 STAIRS = [
-    {"actor": "BR_LM_Mezzanine_Catwalks_03", "box": {"x": [13, 16], "y": [19, 21], "z": [0, 4]}},
-    {"actor": "BR_LM_Mezzanine_Catwalks_04", "box": {"x": [24, 27], "y": [19, 21], "z": [0, 4]}},
+    {"actor": "BR_LM_Mezzanine_Catwalks_03", "box": {"x": [10.5, 16], "y": [19, 21], "z": [0, 4]}},
+    {"actor": "BR_LM_Mezzanine_Catwalks_04", "box": {"x": [24, 29.5], "y": [19, 21], "z": [0, 4]}},
 ]
 
 
@@ -61,6 +69,13 @@ def treads():
         steps = arena_plan.stair_steps(st["box"])
         if not steps:
             raise SystemExit("refusing: %s produced no steps — check STAIR_MAX_RISE_M" % st["actor"])
+        # Ascend TOWARD the Core drum: the west flight climbs with +x, the east with -x.
+        # stair_steps always builds low-to-high along +axis, so the east flight is mirrored
+        # in place — otherwise it would climb away from the deck it is meant to reach.
+        if st["box"]["x"][0] >= 20.0:
+            zs = [b["z"] for b in steps]
+            for b, z in zip(steps, reversed(zs)):
+                b["z"] = z
         for i, b in enumerate(steps, start=1):
             cx = (b["x"][0] + b["x"][1]) / 2.0
             cy = (b["y"][0] + b["y"][1]) / 2.0

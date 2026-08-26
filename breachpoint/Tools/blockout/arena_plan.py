@@ -552,7 +552,14 @@ def _box_element(kind, label, source, derivation, tags, box, asset, inferred=Fal
 # Steps are generated, never hand-placed (law 7). Each riser stays at or under
 # STAIR_MAX_RISE_M so the character WALKS up with no jump at all and the navmesh covers the
 # flight natively - no navlink, no promise the body cannot keep.
-STAIR_MAX_RISE_M = 0.45          # UCharacterMovementComponent::MaxStepHeight = 45 uu
+# THE NAVMESH'S limits, not the character's — this is the distinction that made the first
+# attempt fail. UCharacterMovementComponent::MaxStepHeight is 45 uu, but the RecastNavMesh
+# agent is built with AgentMaxStepHeight=35 and AgentRadius=34 (BaseEngine.ini:3058-3061).
+# Treads were cut at 33 uu deep and 44.5 uu high: below the agent radius, so the navmesh
+# eroded them to nothing, AND above the agent step, so it would not have linked the spans
+# either. Zero bots ever stood mid-flight. Build to the agent, not to the body.
+STAIR_MAX_RISE_M = 0.33          # < AgentMaxStepHeight 35 uu
+STAIR_MIN_TREAD_M = 0.40         # > AgentRadius 34 uu, so a polygon survives erosion
 STAIR_CLIMB_AXIS_MIN_RUN_M = 0.20  # refuse to emit treads thinner than a boot
 
 
@@ -574,7 +581,9 @@ def stair_steps(box):
     yr = float(box["y"][1]) - float(box["y"][0])
     run_axis = "x" if xr >= yr else "y"
     run = xr if run_axis == "x" else yr
-    if run / n < STAIR_CLIMB_AXIS_MIN_RUN_M:
+    # A flight the agent cannot walk is worse than no flight: it looks built and does
+    # nothing. Refuse rather than emit geometry the navmesh will erode away.
+    if run / n < STAIR_MIN_TREAD_M:
         return []
 
     a0 = float(box[run_axis][0])
