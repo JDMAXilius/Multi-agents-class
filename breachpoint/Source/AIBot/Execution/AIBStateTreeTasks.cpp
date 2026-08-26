@@ -1,5 +1,6 @@
 #include "Execution/AIBStateTreeTasks.h"
 #include "Navigation/PathFollowingComponent.h"
+#include "GameFramework/PawnMovementComponent.h"
 
 #include "AIBotModule.h"
 #include "Brain/AIBAmbitionEngine.h"
@@ -1069,18 +1070,45 @@ EStateTreeRunStatus FAIBStrafeTask::Tick(FStateTreeExecutionContext& Context, co
 	}
 	InstanceData.LastActuatedLegStamp = MovementState.NextDecisionAtSeconds;
 
-	// Perpendicular to the belief line, flat — stepping toward or away would be closing
-	// or retreating, which are other tasks' jobs (the host's strafe geometry, verbatim,
-	// aimed at the BELIEF rather than a live actor).
-	FVector ToBelief = Belief - Pawn->GetActorLocation();
-	ToBelief.Z = 0.f;
-	if (!ToBelief.Normalize())
+	// ON AN ARC AROUND THE BELIEF, not perpendicular to it. A perpendicular step always
+	// LENGTHENS range — from distance d a lateral L lands at sqrt(d^2 + L^2) — so it
+	// walks itself out of this task's own EngagedRadius gate and MoveNearBelief drags it
+	// back. That thrash was the "strafe is far too short" report: at d=340 inside a 350
+	// gate there are only 83uu of room, and at d=350 there are none at all.
+	//
+	// Rotating the bot's own bearing about the belief keeps range CONSTANT by
+	// construction, so the step can never leave the gate however long it is — and it is
+	// what strafing physically is, circling an opponent rather than backing away sideways.
+	FVector FromBelief = Pawn->GetActorLocation() - Belief;
+	FromBelief.Z = 0.f;
+	const float RangeUU = FromBelief.Size();
+	if (RangeUU <= KINDA_SMALL_NUMBER)
 	{
-		return EStateTreeRunStatus::Running;
+		return EStateTreeRunStatus::Running; // standing on the belief: no bearing to rotate
 	}
-	const FVector Lateral = FVector::CrossProduct(FVector::UpVector, ToBelief)
-		* (Intent == EAIBStrafeIntent::Right ? 1.f : -1.f);
-	const FVector Destination = Pawn->GetActorLocation() + Lateral * FMath::Max(0.f, InstanceData.StepDistanceUU);
+
+	// FILL THE LEG. One step is issued per leg, so a constant distance can only ever suit
+	// one rung: at 600uu/s a leg covers 210..1200uu across the ladder, against the old
+	// fixed 220 — tuned for Expert's SHORTEST leg, leaving every other rung standing for
+	// 60-80% of its own leg. Derive it from the leg actually in flight instead.
+	const float LegRemainingSeconds = FMath::Max(0.f,
+		static_cast<float>(MovementState.NextDecisionAtSeconds - Bot->GetWorld()->GetTimeSeconds()));
+	float StepUU = InstanceData.StepDistanceUU;
+	if (const UPawnMovementComponent* MoveComp = Pawn->GetMovementComponent())
+	{
+		const float Speed = MoveComp->GetMaxSpeed();
+		if (Speed > 0.f && LegRemainingSeconds > 0.f)
+		{
+			StepUU = FMath::Max(InstanceData.StepDistanceUU, Speed * LegRemainingSeconds);
+		}
+	}
+
+	// Cap the ARC, not the distance: a long leg at close range would otherwise swing the
+	// bot most of the way around the target, which reads as orbiting, not footwork.
+	const float ArcRadians = FMath::Min(FMath::DegreesToRadians(InstanceData.MaxArcDegrees), StepUU / RangeUU);
+	const float Signed = ArcRadians * (Intent == EAIBStrafeIntent::Right ? 1.f : -1.f);
+	const FVector Rotated = FromBelief.GetSafeNormal().RotateAngleAxisRad(Signed, FVector::UpVector);
+	const FVector Destination = Belief + Rotated * RangeUU;
 
 	// Projected onto the navmesh by the move itself: a step into a wall or off a ledge
 	// resolves to the nearest legal point instead of failing (the host's proven call).

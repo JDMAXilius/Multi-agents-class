@@ -492,10 +492,16 @@ struct FAIBStrafeTaskInstanceData
 	UPROPERTY(EditAnywhere, Category = "Context")
 	TObjectPtr<AAIController> Controller;
 
-	/** One lateral step's length. Short enough to read as footwork, long enough that
-	 *  the pathfollower actually moves before the next leg. */
+	/** FLOOR on one step's arc length. The real distance is derived from the leg in
+	 *  flight (remaining seconds * max speed) so footwork fills its leg at every rung;
+	 *  this is only the minimum, so a nearly-expired leg still reads as a step. */
 	UPROPERTY(EditAnywhere, Category = "Parameter")
 	float StepDistanceUU = 220.f;
+
+	/** Cap on how far around the belief ONE leg may carry the bot. Footwork, not
+	 *  orbiting: without it a long leg at close range swings most of a circle. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float MaxArcDegrees = 70.f;
 
 	/** Strafe only while STATION-KEEPING — inside this radius of the belief. Mirrors
 	 *  FAIBMoveNearBeliefTask's acceptance radius on purpose: outside it the mover owns
