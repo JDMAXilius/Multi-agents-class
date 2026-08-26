@@ -211,3 +211,35 @@ bunch (assignment at `GenericPlayerInitialization` precedes `RestartPlayer`); th
 cheat-write is dead on `HasAuthority()` with no local residue; `CopyProperties` does carry
 TeamId; `GetAuthGameMode` is read only behind `BNDamage`'s authority refusal; and all four
 `!AreEnemies` sites are now `AreAllies`.
+
+### 2026-08-26 — cloud lead: all four REFUTER findings FIXED (WRITTEN, NOT COMPILED)
+
+- **B1** — the yield is team-aware: when teams are on, `EnsureBotFill`'s shrink pass pops
+  the NEWEST bot on the MOST-populated team (populations counted the
+  `GetLowestPopulationTeam` way, inverted; tie keeps the lower id; newest preserves the
+  named veterans, the tail-pop's own reasoning). FFA keeps the plain tail pop. The
+  deterministic 5v3 dies: the joiner crowds a side, the yield uncrowds the same side.
+- **B2** — the teams spawn branch runs the engine partition it skipped: candidates a
+  default pawn does NOT encroach at are preferred, all-blocked falls back to the full
+  pool (spawning clumped beats not spawning). WATCH-LIST for the terminal's compile:
+  `UWorld::EncroachingBlockingGeometry(APawn* CDO, Location, Rotation)` — the REFUTER
+  named the pass from engine source; my call-shape transcription (arg constness, CDO as
+  TestActor) is unverified from this repo.
+- **N1** — closed at BOTH ends: `ABNProjectile` captures the thrower's PlayerState at
+  BeginPlay (the one moment the pawn link is guaranteed alive; weak, so a leaver
+  degrades to the old world-damage answer) and passes it as the damage instigator when
+  the pawn route reads null at detonation; the FF gate's resolution is now a LADDER
+  that accepts a PlayerState directly, then falls to the pawn. Bonus the fix buys: BN's
+  ASC lives on the PlayerState, so spec attribution and the killfeed also survive the
+  thrower's death — the "killed by a dead man's grenade" line now names the dead man.
+- **N2** — `CopyProperties` carries `ObjectivePoints` beside Kills/Deaths/TeamId
+  (GetScore() = Kills + ObjectivePoints; the diff had edited exactly this function and
+  left the sibling int out).
+- **N3 — ACCEPTED, dated, no code change**: killfeed relations bake at push and the
+  sequence dedupe means a pre-join ring line keeps None tints. Aligned with BN16's
+  barrier ruling ("feed lines are immutable once pushed; the roadmap's re-tint claim
+  names rows"). Cosmetic by the REFUTER's own rating; re-open only if a founder eyes-on
+  reads grey pre-join lines as a bug worth a recolour path.
+- The two REJECTED verifier passes stand rejected — the re-run protocol is the
+  terminal's own (acquisition lines as the instrument, `LogBN Verbose` on so the FF
+  refusal line CAN appear; the harness's `ff_refused` counter is already waiting).

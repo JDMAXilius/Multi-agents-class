@@ -150,10 +150,23 @@ void BNDamage::ApplyDamage(AActor* Instigator, AActor* Target, float Amount, con
 	const ABNGameMode* Mode = World ? World->GetAuthGameMode<ABNGameMode>() : nullptr;
 	if (Mode && Mode->AreTeamsEnabled() && !Mode->IsFriendlyFireEnabled())
 	{
-		const APawn* InstigatorPawn = Cast<APawn>(Instigator);
-		const APawn* TargetPawn = Cast<APawn>(Target);
-		const ABNPlayerState* InstigatorPS = InstigatorPawn ? InstigatorPawn->GetPlayerState<ABNPlayerState>() : nullptr;
-		const ABNPlayerState* TargetPS = TargetPawn ? TargetPawn->GetPlayerState<ABNPlayerState>() : nullptr;
+		// The resolution LADDER accepts a PlayerState directly, then falls to the pawn
+		// (BN15 REFUTER N1): a pawn unpossessed between cause and effect — killed the
+		// frame it threw, RespawnDelay racing the fuse — reads a null PlayerState off
+		// the pawn route, resolved NoTeam, and a dead teammate's grenade shredded the
+		// team with FF off. The projectile now passes the captured PlayerState when its
+		// pawn link is dead, and this rung is what receives it.
+		auto ResolvePS = [](AActor* Actor) -> const ABNPlayerState*
+		{
+			if (const ABNPlayerState* Direct = Cast<ABNPlayerState>(Actor))
+			{
+				return Direct;
+			}
+			const APawn* AsPawn = Cast<APawn>(Actor);
+			return AsPawn ? AsPawn->GetPlayerState<ABNPlayerState>() : nullptr;
+		};
+		const ABNPlayerState* InstigatorPS = ResolvePS(Instigator);
+		const ABNPlayerState* TargetPS = ResolvePS(Target);
 		if (BNTeams::AreActorsFriendly(InstigatorPS, TargetPS))
 		{
 			UE_LOG(LogBN, Verbose, TEXT("BNDamage: friendly fire refused — %s -> %s (%.1f)."),

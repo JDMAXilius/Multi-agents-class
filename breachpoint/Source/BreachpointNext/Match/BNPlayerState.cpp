@@ -109,6 +109,11 @@ void ABNPlayerState::CopyProperties(APlayerState* PlayerState)
 	{
 		Copy->Kills = Kills;
 		Copy->Deaths = Deaths;
+		// ALL THREE score ints, not two: GetScore() = Kills + ObjectivePoints, and the
+		// REFUTER (BN15 N2) caught this function carrying the side but dropping the hill
+		// seconds — a travel with the hill on would zero every objective point while
+		// kills survived, which reads as a scoreboard bug and is a lifecycle one.
+		Copy->ObjectivePoints = ObjectivePoints;
 		Copy->TeamId = TeamId;
 	}
 }

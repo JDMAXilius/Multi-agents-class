@@ -136,4 +136,12 @@ protected:
 
 	/** The bot warning's own timer — see WarnNearbyBots. */
 	FTimerHandle WarnTimer;
+
+	/** WHO threw this, captured at BeginPlay while the pawn link is alive (BN15 REFUTER
+	 *  N1): a thrower killed mid-flight is unpossessed — pawn PlayerState nulled — before
+	 *  the fuse runs, and RespawnDelay equals the fuse today, so the race is a knife-edge
+	 *  every match. The blast passes THIS to the damage door when the pawn route reads
+	 *  null, and the FF gate's ladder accepts a PlayerState directly. Weak: a leaver's
+	 *  PlayerState dying mid-flight honestly degrades to the old (world-damage) answer. */
+	TWeakObjectPtr<class APlayerState> ThrowerPlayerState;
 };

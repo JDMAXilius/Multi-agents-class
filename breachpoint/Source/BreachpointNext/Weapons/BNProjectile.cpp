@@ -3,6 +3,7 @@
 #include "AI/BNBotController.h"
 #include "Core/AIBBotController.h"
 #include "AbilitySystem/Effects/BNDamage.h"
+#include "GameFramework/PlayerState.h"
 #include "Perception/AISense_Hearing.h"
 #include "BreachpointNext.h"
 #include "Core/BNGameplayTags.h"
@@ -79,9 +80,12 @@ void ABNProjectile::BeginPlay()
 	// The grenade leaves the hand INSIDE the thrower's capsule (forward 50, up 50 against a ~34uu
 	// radius), so without this it bounces straight off them and back into their face on the first
 	// frame. Ignoring the thrower for movement is what lets it get clear.
-	if (AActor* Thrower = GetInstigator())
+	if (APawn* Thrower = GetInstigator())
 	{
 		CollisionComponent->IgnoreActorWhenMoving(Thrower, true);
+		// N1: the attribution capture, taken NOW because this is the one moment the
+		// pawn link is guaranteed alive — see the member's comment.
+		ThrowerPlayerState = Thrower->GetPlayerState();
 	}
 
 	// Cosmetics on every machine — the grenade must look like a grenade on the client watching it
@@ -194,6 +198,20 @@ void ABNProjectile::Explode()
 
 	const FVector Center = GetActorLocation();
 	AActor* Thrower = GetInstigator() ? Cast<AActor>(GetInstigator()) : GetOwner();
+
+	// N1 (BN15 REFUTER): a thrower killed while this was in flight has been unpossessed —
+	// its pawn resolves NO PlayerState, the FF gate reads NoTeam, and the blast would
+	// shred teammates with friendly fire off. The captured PlayerState IS the thrower for
+	// every purpose downstream (BN's ASC lives on the PlayerState, so spec attribution
+	// and the killfeed survive the pawn's death too). Live pawn: nothing changes.
+	{
+		const APawn* ThrowerPawn = Cast<APawn>(Thrower);
+		const bool bPawnRouteDead = !Thrower || (ThrowerPawn && !ThrowerPawn->GetPlayerState());
+		if (bPawnRouteDead && ThrowerPlayerState.IsValid())
+		{
+			Thrower = ThrowerPlayerState.Get();
+		}
+	}
 
 	// THE radial rule, purity law 3: our own overlap query, then one GE per target through the one
 	// door. No AActor::TakeDamage, no ApplyRadialDamage, no FDamageEvent anywhere in this path.

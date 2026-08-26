@@ -380,10 +380,32 @@ AActor* ABNGameMode::ChoosePlayerStart_Implementation(AController* Player)
 		return Super::ChoosePlayerStart_Implementation(Player);
 	}
 
-	// Random among matches (the HitReact montage-pick pattern), not first-match: first-match
-	// would funnel a whole side through one start every respawn, and this path deliberately
-	// skips Super's occupancy walk, so spreading the picks is what keeps spawns unclumped.
-	return Matches[FMath::RandRange(0, Matches.Num() - 1)];
+	// THE ENGINE'S OWN PARTITION, restored (BN15 REFUTER B2): this branch skipped the
+	// encroachment pass Super runs, and SpawnDefaultPawnAtTransform spawns AlwaysSpawn —
+	// so a round restart rebodying a whole side from one tagged pool drew WITH
+	// replacement and interpenetrated teammates, and a live respawn could land inside a
+	// standing ally. Prefer starts a default pawn fits at; every candidate blocked keeps
+	// the full pool (spawning clumped beats not spawning — Super's own fallback shape).
+	TArray<APlayerStart*> Unblocked;
+	if (UClass* PawnClass = GetDefaultPawnClassForController(Player))
+	{
+		if (APawn* PawnToFit = PawnClass->GetDefaultObject<APawn>())
+		{
+			for (APlayerStart* Start : Matches)
+			{
+				if (!World->EncroachingBlockingGeometry(PawnToFit, Start->GetActorLocation(), Start->GetActorRotation()))
+				{
+					Unblocked.Add(Start);
+				}
+			}
+		}
+	}
+	TArray<APlayerStart*>& Pool = Unblocked.Num() > 0 ? Unblocked : Matches;
+
+	// Random among the pool (the HitReact montage-pick pattern), not first-match: first-match
+	// would funnel a whole side through one start every respawn, and spreading the picks is
+	// what keeps spawns unclumped.
+	return Pool[FMath::RandRange(0, Pool.Num() - 1)];
 }
 
 void ABNGameMode::Logout(AController* Exiting)
@@ -671,7 +693,49 @@ void ABNGameMode::EnsureBotFill()
 		int32 Yielded = 0;
 		for (int32 i = BotsNeeded; i < 0 && SpawnedBots.Num() > 0; ++i)
 		{
-			DespawnBot(SpawnedBots.Pop());
+			// TEAMS (BN15 REFUTER B1): the seat yielded must come from the side the human
+			// just crowded, or every second human makes a deterministic 5v3 — the joiner
+			// ties {4,4} to Team 0 while the tail bot popped here is always Team 1's. Pick
+			// the NEWEST bot on the most-populated team (newest keeps the named veterans,
+			// the tail-pop's own reasoning); FFA and a no-match oddity keep the plain tail.
+			int32 YieldIndex = SpawnedBots.Num() - 1;
+			if (bTeamsEnabled)
+			{
+				int32 Counts[BNTeams::NumTeams] = { 0 };
+				if (const ABNGameState* GS = GetGameState<ABNGameState>())
+				{
+					for (const APlayerState* PS : GS->PlayerArray)
+					{
+						const ABNPlayerState* BNPS = Cast<ABNPlayerState>(PS);
+						const uint8 Id = BNPS ? BNPS->GetGenericTeamId().GetId() : FGenericTeamId::NoTeam.GetId();
+						if (Id < BNTeams::NumTeams)
+						{
+							++Counts[Id];
+						}
+					}
+				}
+				uint8 Crowded = 0;
+				for (uint8 Team = 1; Team < BNTeams::NumTeams; ++Team)
+				{
+					if (Counts[Team] > Counts[Crowded]) // strict >, so a tie keeps the lower id
+					{
+						Crowded = Team;
+					}
+				}
+				for (int32 BotIdx = SpawnedBots.Num() - 1; BotIdx >= 0; --BotIdx)
+				{
+					const AAIController* Bot = SpawnedBots[BotIdx];
+					const ABNPlayerState* BotPS = Bot ? Bot->GetPlayerState<ABNPlayerState>() : nullptr;
+					if (BotPS && BotPS->GetGenericTeamId().GetId() == Crowded)
+					{
+						YieldIndex = BotIdx;
+						break;
+					}
+				}
+			}
+			AAIController* Yielding = SpawnedBots[YieldIndex];
+			SpawnedBots.RemoveAt(YieldIndex);
+			DespawnBot(Yielding);
 			++Yielded;
 		}
 		UE_LOG(LogBN, Log, TEXT("BNBots: %d bot(s) yielded seats to humans (%d humans, %d bots, target %d)"),
