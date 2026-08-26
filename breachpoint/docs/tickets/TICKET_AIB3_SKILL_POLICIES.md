@@ -1,5 +1,8 @@
 # TICKET — AIB3: the four skill policies compile and their ladders prove out
 
+> STATUS: in-progress — mac terminal 26 Aug 2026 (f277b53). Rung 1 PASS, rung 2 91/91/0,
+> four checks empty. All four Done-when boxes met; headless only, as this ticket asks.
+
 > STATUS: open — cut 26 Aug 2026 by the cloud lead. Phase 4's POLICY half is landed
 > **WRITTEN, NOT COMPILED** (built by a W-BUILD ×4 wave; the barrier's union gates ran
 > empty). Needs the ENGINE ON DISK; no live editor required — everything here is
@@ -70,11 +73,85 @@ What landed (one serial foundation commit + four wave commits):
 
 ## Done when
 
-- [ ] Rung 1 PASS (Editor + Game; Server recorded environmental)
-- [ ] Rung 2: 77/77/0, reconciled, per-suite split pasted
-- [ ] Four mechanical checks pasted, empty
-- [ ] Deviations recorded
+- [x] Rung 1 PASS (Editor + Game; Server recorded environmental)
+- [x] Rung 2: 91/91/0 (77 superseded by AIB4's landing), reconciled, split pasted
+- [x] Four mechanical checks pasted, empty
+- [x] Deviations recorded (one, a non-finding: no freshness drift)
 
 ## Log
 
 _(terminal: outputs verbatim)_
+
+### 2026-08-26 — headless proof, mac terminal (f277b53)
+
+**Step 1 — Rung 1: PASS.** First compile of the five headers, four bodies, four spec
+files. Clean tree fast-forwarded from `0a4a329`; no conflicts, nothing to resolve.
+
+```
+PASS    BreachpointEditor (exit 0, touched libUnrealEditor-AIBot.dylib)
+PASS    Breachpoint       (exit 0, touched CodeResources)
+FAIL    BreachpointServer (exit 6) - ENVIRONMENTAL, not code:
+        "Server targets are not currently supported from this engine distribution."
+        Launcher install at /Users/Shared/Epic Games/UE_5.8. No error: line in the log;
+        UBT refuses the target before compiling anything. Pre-existing, not this landing.
+```
+
+Zero compile errors across the whole wave. **Every watch-list item survived first
+contact** — `FRandomStream::GetCurrentSeed()` (the one assumed-API risk in the wave, the
+no-draw-consumed assertion) compiles and its spec passes, so the identically-seeded-
+streams fallback is NOT needed; `UE_ARRAY_COUNT` and `KINDA_SMALL_NUMBER` both fine on
+first use in this module.
+
+**Step 2 — Rung 2: 91/91/0, reconciled.** The ticket predicts 77; the actual is 91
+because AIB4 (Phase 5) landed in the same pull, exactly as AIB4 says it supersedes this
+number. Not a discrepancy — AIB3's own four suites are all present and green:
+
+| suite | expected | measured |
+|---|---|---|
+| Scaffold | 5 | 5 |
+| Sensorium | 20 | 20 |
+| AmbitionEngine | 18 | 18 |
+| **MovementPolicy** | **8** | **8** |
+| **AimPolicy** | **7** | **7** |
+| **GrenadePolicy** | **11** | **11** |
+| **MeleePolicy** | **8** | **8** |
+| Confidence (AIB4) | 14 | 14 |
+| **total** | 77 + 14 | **91** |
+
+Reconciled three ways: `Test Started`=91, `Result={Success}`=91, `Result={Fail}`=0.
+(Raw `Path={` counts are exactly double, because each test logs both Started and
+Completed — halved above. Log: `Tools/Logs/specs-20260826-001522.log`.)
+
+The movement bands did NOT need the LCG-fidelity investigation the watch-list stages:
+all 8 MovementPolicy specs pass, so the standalone re-implementation
+(`Seed*196314165 + 907633515`) is faithful to the engine stream.
+
+**Step 3 — the four mechanical checks: ALL FOUR EMPTY, ALL PASS.** Quoted `--include`
+globs (the zsh trap AIB1 records).
+
+| # | check | result |
+|---|---|---|
+| 1 | boundary (case-insensitive, word-alone) | EMPTY |
+| 2 | replication | EMPTY |
+| 3 | worldless brain (`Brain/` + `Skills/`) | EMPTY |
+| 4 | F8 quarantine | EMPTY |
+
+Check 3 now covers `Skills/` as well as `Brain/` — the four new policy bodies are
+worldless as designed: no `UWorld`, no `AActor`, no `GetWorld`.
+
+**Step 4 — deviations: ONE, and it is a non-finding.** The watch-list stages a possible
+drift between the grenade denial bar and the `MemoryFreshness` selector, and says a drift
+"is a finding, not a fix". There is **no drift** — the two are character-identical,
+including the guard:
+
+```cpp
+// Brain/AIBConsideration.cpp:34-38  (selector)      Skills/AIBGrenadePolicy.cpp:78-82
+if (!Facts.bHasMemory || Facts.MemoryFreshWindowSeconds <= 0.f) ...
+return FMath::Clamp(1.f - Facts.LastKnownAgeSeconds / Facts.MemoryFreshWindowSeconds, 0.f, 1.f);
+```
+
+They differ only in how they say "unknown" — the selector an empty `TOptional`, the
+policy `-1.f` — and the policy names that equivalence in its own comment. Nothing to fix.
+
+**Not claimed:** nothing here is a live claim. Honesty ladder rung: COMPILES + HEADLESS
+SPECS. No PIE, no multiplayer, no packaged build. This ticket asks for nothing more.

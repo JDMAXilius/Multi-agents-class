@@ -1,5 +1,8 @@
 # TICKET — AIB4: confidence wired into ambitions, and the damage seam goes live
 
+> STATUS: in-progress — mac terminal 26 Aug 2026 (f277b53). Steps 1/2/4 DONE. Step 3 (live
+> BotSystem=AIB PIE) OUTSTANDING — the switch is a founder call, still BotSystem=BN.
+
 > STATUS: open — cut 26 Aug 2026 by the cloud lead. Phase 5 is landed **WRITTEN, NOT
 > COMPILED** (serial build, one writer, per the wave map). Needs the ENGINE ON DISK for
 > steps 1–2; step 3 wants a PIE match with `BotSystem=AIB` (can ride along any AIB2
@@ -79,12 +82,61 @@ Phase 5 of `docs/AIBOT-ROADMAP.md`: the fifth skill of the combat dance. What la
 
 ## Done when
 
-- [ ] Rung 1 PASS (Editor + Game; Server recorded environmental)
-- [ ] Rung 2: 91/91/0, reconciled, per-suite split pasted
+- [x] Rung 1 PASS (Editor + Game; Server recorded environmental)
+- [x] Rung 2: 91/91/0, reconciled, per-suite split pasted
 - [ ] Both live switch directions pasted with scores
-- [ ] Four mechanical checks pasted, empty
-- [ ] Deviations recorded
+- [x] Four mechanical checks pasted, empty
+- [x] Deviations recorded (watch-list resolved 4/4 in the good direction)
 
 ## Log
 
 _(terminal: outputs verbatim)_
+
+### 2026-08-26 — headless proof, mac terminal (f277b53)
+
+Steps 1, 2 and 4 are DONE; step 3 (the live `BotSystem=AIB` PIE) is the only thing
+outstanding and is deliberately left for a session that flips the switch.
+
+**Step 1 — Rung 1: PASS** (Editor + Game; Server environmental — full quote in AIB3's
+Log, same run). Phase 5 compiled clean on first contact, and with it **every watch-list
+item resolved in the good direction**:
+
+- `FRandomStream::GetCurrentSeed()` — compiles; the no-draw pin holds. One ruling for
+  both AIB3 and AIB4, as the ticket asks: the fallback is not needed.
+- `FMath::Sqrt(-1.f)` as the NaN source — NOT folded by the compiler; the ledger's
+  garbage-rejection spec passes on it. No swap to a quiet-NaN constant needed.
+- `static constexpr float HalfLifeSeconds` with `AIBOT_API` — the linker did NOT
+  disagree. No out-of-line definition needed (C++17 in-class constexpr, as predicted).
+- The health-component seam's re-typed calls — `GetMaxHealth()` (ATTRIBUTE_ACCESSORS-
+  generated) and `IsOwnerActorAuthoritative()` — both compile.
+
+**Step 2 — Rung 2: 91/91/0, reconciled, split pasted.** The prediction was exact: all
+eight suites hit their predicted count, Confidence included at 14. Table and three-way
+reconciliation in AIB3's Log (one run covers both tickets).
+
+**Step 4 — the four mechanical checks: ALL FOUR EMPTY, ALL PASS.** Table in AIB3's Log.
+Worth stating for THIS ticket specifically: check 1 (boundary) is empty **even though
+Phase 5 opened a BN→AIB call path**. That is the intended direction. `BreachpointNext.
+Build.cs` declares `"AIBot"` as a public dependency with the comment "the game depends
+on the module, never the reverse", and `BNHealthComponent.cpp` is now the fifth BN file
+to include an AIB header (after the adapter, `BNGameMode`, `BNProjectile`,
+`BNCharacter`). The module stays ignorant of the game; the game knows the module.
+
+**Step 3 — NOT DONE, and not silently skipped.** It needs a PIE match with
+`BotSystem=AIB`. `Config/DefaultGame.ini:282` still reads `BotSystem=BN`, restored
+deliberately at the end of AIB2's verb work. Flipping it is a founder call that has been
+open since then, so this step waits rather than my taking it. What it must produce when
+run, verbatim from this ticket:
+
+1. A bot pressing: Retreat → Engage while hurt, after landing hits.
+2. A bot breaking off: Engage → Retreat under un-answered fire.
+3. The double-fire check: ONE plain hit produces ONE ledger note, not a shield echo.
+
+On (3), the static reading is that the two handlers cannot double-count — they are keyed
+to different pools and each notifies only its own drop, so a shield+health hit SUMS to
+the hit rather than duplicating it. But that is a code-read, and the ticket correctly
+files the claim as live-proof class. It stays UNPROVEN here.
+
+**Honesty ladder rung: COMPILES + HEADLESS SPECS.** Phase 5's behaviour — that
+confidence actually moves ambitions in a live match — is asserted only in arithmetic
+(the Confidence suite's flip proof), never yet observed in a running game.
