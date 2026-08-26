@@ -9,6 +9,7 @@
 #include "Match/BNHillPoint.h"
 #include "Match/BNPlayerController.h"
 #include "Match/BNPlayerState.h"
+#include "Match/BNTeams.h"
 #include "AbilitySystem/BNAbilitySystemComponent.h"
 #include "AbilitySystem/Attributes/BNAttributeSet.h"
 #include "AbilitySystem/Effects/BNGameplayEffects.h"
@@ -22,6 +23,8 @@
 #include "EngineUtils.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerStart.h"
+#include "GameFramework/PlayerStartPIE.h"
 #include "TimerManager.h"
 
 ABNGameMode::ABNGameMode()
@@ -213,12 +216,22 @@ void ABNGameMode::HandleMatchHasEnded()
 
 	SetAllPlayersFrozen(true);
 
-	// The winner was written BEFORE the state flipped (FinishMatch's ordering), so reading it
-	// here is reading a decision, not a race.
+	// The winner was written BEFORE the state flipped (FinishMatch's ordering, and its team
+	// sibling's), so reading it here is reading a decision, not a race. TEAMS (BN15): a team
+	// win leaves the PlayerState Winner null on purpose — announcing THAT line would read
+	// "none (tie)" over a decided match, so the team record speaks first when it is set.
 	const ABNGameState* GS = GetGameState<ABNGameState>();
-	const ABNPlayerState* Winner = GS ? GS->GetWinner() : nullptr;
-	UE_LOG(LogBN, Log, TEXT("BNGameMode: match over. Winner: %s"),
-		Winner ? *Winner->GetPlayerName() : TEXT("none (tie)"));
+	const uint8 WinningTeam = GS ? GS->GetWinningTeamId() : FGenericTeamId::NoTeam.GetId();
+	if (WinningTeam != FGenericTeamId::NoTeam.GetId())
+	{
+		UE_LOG(LogBN, Log, TEXT("BNGameMode: match over. Winning team: %d"), WinningTeam);
+	}
+	else
+	{
+		const ABNPlayerState* Winner = GS ? GS->GetWinner() : nullptr;
+		UE_LOG(LogBN, Log, TEXT("BNGameMode: match over. Winner: %s"),
+			Winner ? *Winner->GetPlayerName() : TEXT("none (tie)"));
+	}
 
 	World->GetTimerManager().SetTimer(PostMatchTimerHandle, this, &ABNGameMode::RestartMatch,
 		FMath::Max(1.f, PostMatchDuration), /*bLoop=*/false);
@@ -240,6 +253,11 @@ void ABNGameMode::GenericPlayerInitialization(AController* C)
 		PS->OnPlayerDeath.AddUObject(this, &ABNGameMode::HandlePlayerDeath);
 	}
 
+	// TEAMS (BN15): the side is picked HERE, before this entity's first RestartPlayer — both
+	// humans and the bot fill pass through this seam, so the first spawn choice already knows
+	// which tagged start serves it. Idempotent, so the re-runs noted above are free.
+	AssignTeamIfNeeded(C);
+
 	// A player initialized outside a running match joined a warmup or a post-match and must be
 	// frozen like everyone already here — otherwise the one machine that joined late is the one
 	// machine that can shoot. Thawing is HandleMatchHasStarted's, the moment the machine starts.
@@ -256,6 +274,113 @@ void ABNGameMode::OnPostLogin(AController* NewPlayer)
 	// The arrival changed the seat math — a bot may have to yield. The START needs no call: the
 	// parent's next Tick asks ReadyToStartMatch, which now counts this human.
 	EnsureBotFill();
+}
+
+void ABNGameMode::AssignTeamIfNeeded(AController* C)
+{
+	// Teams off = today's FFA byte-for-byte: nobody is ever assigned and every TeamId stays
+	// NoTeam, which the guard in BNTeams keeps hostile-or-neutral everywhere.
+	if (!bTeamsEnabled || !HasAuthority())
+	{
+		return;
+	}
+
+	ABNPlayerState* PS = C ? C->GetPlayerState<ABNPlayerState>() : nullptr;
+	if (!PS)
+	{
+		return;
+	}
+
+	// Idempotent: GenericPlayerInitialization can run more than once per controller (seamless
+	// travel does), and a side once picked is kept — re-balancing a live player is a different
+	// feature, deliberately not this one.
+	if (PS->GetGenericTeamId() != FGenericTeamId::NoTeam)
+	{
+		return;
+	}
+
+	const uint8 Team = GetLowestPopulationTeam();
+	PS->SetGenericTeamId(FGenericTeamId(Team));
+	UE_LOG(LogBN, Log, TEXT("BNGameMode: %s assigned to team %d."), *PS->GetPlayerName(), Team);
+}
+
+uint8 ABNGameMode::GetLowestPopulationTeam() const
+{
+	// Fewest members wins, ties to the lower id (the OnSight shape, BN-idiomatic). NoTeam
+	// members — the caller is mid-assigning them — count for nobody.
+	int32 Counts[BNTeams::NumTeams] = { 0 };
+	if (const ABNGameState* GS = GetGameState<ABNGameState>())
+	{
+		for (const APlayerState* PS : GS->PlayerArray)
+		{
+			const ABNPlayerState* BNPS = Cast<ABNPlayerState>(PS);
+			const uint8 Id = BNPS ? BNPS->GetGenericTeamId().GetId() : FGenericTeamId::NoTeam.GetId();
+			if (Id < BNTeams::NumTeams)
+			{
+				++Counts[Id];
+			}
+		}
+	}
+
+	uint8 Best = 0;
+	for (uint8 Team = 1; Team < BNTeams::NumTeams; ++Team)
+	{
+		if (Counts[Team] < Counts[Best]) // strict <, so a tie keeps the lower id
+		{
+			Best = Team;
+		}
+	}
+	return Best;
+}
+
+AActor* ABNGameMode::ChoosePlayerStart_Implementation(AController* Player)
+{
+	// Teams off, or a player honestly reading NoTeam (nothing past the assignment seam should,
+	// but a spawn must never fail over it): the engine's own choice stands.
+	const ABNPlayerState* PS = Player ? Player->GetPlayerState<ABNPlayerState>() : nullptr;
+	const FGenericTeamId Team = PS ? PS->GetGenericTeamId() : FGenericTeamId::NoTeam;
+	UWorld* World = GetWorld();
+	if (!bTeamsEnabled || Team == FGenericTeamId::NoTeam || !World)
+	{
+		return Super::ChoosePlayerStart_Implementation(Player);
+	}
+
+	// A start whose PlayerStartTag is None serves anyone; "Team0"/"Team1" serves that side
+	// only (the tags Tools/bn/tag_team_starts.py writes). The iterator is the StartHill
+	// precedent — and the body conditionally COLLECTS, never unconditionally breaks, so the
+	// increment is reachable (the AIB11 -Wunreachable-code-loop-increment lesson).
+	const FName TeamTag(*FString::Printf(TEXT("Team%d"), Team.GetId()));
+	TArray<APlayerStart*> Matches;
+	for (TActorIterator<APlayerStart> It(World); It; ++It)
+	{
+		APlayerStart* Start = *It;
+		if (!Start)
+		{
+			continue;
+		}
+		// The engine's own override honors "Play from Here" before anything else; taking over
+		// the choice must not take that away from a PIE session.
+		if (Start->IsA<APlayerStartPIE>())
+		{
+			return Start;
+		}
+		if (Start->PlayerStartTag.IsNone() || Start->PlayerStartTag == TeamTag)
+		{
+			Matches.Add(Start);
+		}
+	}
+
+	// No tagged or untagged start matched — a mis-tagged level is Super's problem, never a
+	// failed spawn.
+	if (Matches.Num() == 0)
+	{
+		return Super::ChoosePlayerStart_Implementation(Player);
+	}
+
+	// Random among matches (the HitReact montage-pick pattern), not first-match: first-match
+	// would funnel a whole side through one start every respawn, and this path deliberately
+	// skips Super's occupancy walk, so spreading the picks is what keeps spawns unclumped.
+	return Matches[FMath::RandRange(0, Matches.Num() - 1)];
 }
 
 void ABNGameMode::Logout(AController* Exiting)
@@ -285,12 +410,19 @@ void ABNGameMode::HandlePlayerDeath(ABNPlayerState* Victim, ABNPlayerState* Kill
 	// Only a kill DURING the match scores. A grenade that lands after the buzzer still kills, still
 	// ragdolls and still prints — but the scoreboard is final the moment the winner is announced,
 	// or the post-match shows a top scorer who is not the winner, wrongly and on every machine.
+	// TEAMS (BN15): a same-team kill credits NOTHING — no kill, no team point; the death still
+	// counts and the feed still shows it. Compared directly on the two PlayerStates (they carry
+	// the interface); the bTeamsEnabled gate keeps even the comparison off the FFA path, and the
+	// NoTeam guard would answer false there anyway — belt and braces, both stated.
+	const bool bTeamKill = bTeamsEnabled && Killer && Killer != Victim
+		&& BNTeams::AreFriendly(Killer->GetGenericTeamId(), Victim->GetGenericTeamId());
+
 	const bool bMatchLive = IsMatchInProgress();
 	if (bMatchLive)
 	{
 		Victim->AddDeath();
 
-		if (Killer && Killer != Victim)
+		if (Killer && Killer != Victim && !bTeamKill)
 		{
 			Killer->AddKill();
 		}
@@ -328,10 +460,27 @@ void ABNGameMode::HandlePlayerDeath(ABNPlayerState* Victim, ABNPlayerState* Kill
 
 	// 3.2 — the score limit, checked where the kill was credited. FinishMatch itself refuses
 	// unless the match is InProgress, so a second elimination inside the same frame cannot end it
-	// twice.
-	if (bMatchLive && Killer && Killer != Victim && Killer->GetScore() >= ScoreLimit)
+	// twice. TEAMS (BN15): a credited kill is also a TEAM point, and the crossing check reads
+	// the team's score — the per-player GetScore check stays FFA's own.
+	if (bMatchLive && Killer && Killer != Victim && !bTeamKill)
 	{
-		FinishMatch(Killer);
+		if (bTeamsEnabled)
+		{
+			const uint8 KillerTeam = Killer->GetGenericTeamId().GetId();
+			ABNGameState* TeamGS = GetGameState<ABNGameState>();
+			if (TeamGS && KillerTeam < BNTeams::NumTeams)
+			{
+				TeamGS->AddTeamScore(KillerTeam, 1);
+				if (TeamGS->GetTeamScore(KillerTeam) >= ScoreLimit)
+				{
+					FinishTeamMatch(KillerTeam);
+				}
+			}
+		}
+		else if (Killer->GetScore() >= ScoreLimit)
+		{
+			FinishMatch(Killer);
+		}
 	}
 
 	// This mode's answer to a death is a timed respawn. Another mode's could be a spectator
@@ -620,6 +769,35 @@ void ABNGameMode::OnTimeLimitReached()
 		return;
 	}
 
+	// TEAMS (BN15): the leading team at the buzzer wins. A TIE deliberately does NOT call
+	// FinishTeamMatch(NoTeam) — WinningTeamId stays 255 ("undecided") and the existing
+	// FinishMatch(nullptr) path runs, which is already the renderable tie outcome.
+	if (bTeamsEnabled)
+	{
+		uint8 Best = 0;
+		bool bTie = false;
+		for (uint8 Team = 1; Team < BNTeams::NumTeams; ++Team)
+		{
+			const int32 Score = GS->GetTeamScore(Team);
+			if (Score > GS->GetTeamScore(Best))
+			{
+				Best = Team;
+				bTie = false;
+			}
+			else if (Score == GS->GetTeamScore(Best))
+			{
+				bTie = true;
+			}
+		}
+		if (!bTie)
+		{
+			FinishTeamMatch(Best);
+			return;
+		}
+		FinishMatch(nullptr);
+		return;
+	}
+
 	// The sole leader wins. GetLeaders returns the whole tie set precisely so this can tell a
 	// decided match from a tied one, and a tie is a null winner rather than an arbitrary pick.
 	TArray<ABNPlayerState*> Leaders;
@@ -642,6 +820,21 @@ void ABNGameMode::FinishMatch(ABNPlayerState* InWinner)
 	EndMatch();
 }
 
+void ABNGameMode::FinishTeamMatch(uint8 WinningTeam)
+{
+	ABNGameState* GS = GetGameState<ABNGameState>();
+	if (!GS || !IsMatchInProgress())
+	{
+		return;
+	}
+
+	// FinishMatch's own ordering, sibling'd for a team: the winning id FIRST, then the flip,
+	// so both land in the same bunch. The PlayerState Winner stays null — the HUD renders
+	// whichever record is set.
+	GS->SetWinningTeamId(WinningTeam);
+	EndMatch();
+}
+
 void ABNGameMode::RestartMatch()
 {
 	ABNGameState* GS = GetGameState<ABNGameState>();
@@ -651,6 +844,11 @@ void ABNGameMode::RestartMatch()
 	}
 
 	GS->SetWinner(nullptr);
+	// TEAMS (BN15): the winning-team record and the team scores clear the same way the
+	// PlayerState winner and the per-player scores do — but the SIDES survive: TeamId is
+	// deliberately untouched, a restart keeps every player on the team they had.
+	GS->SetWinningTeamId(FGenericTeamId::NoTeam.GetId());
+	GS->ResetTeamScores();
 	GS->ResetKillfeed();
 
 	// Every score to zero. Without this the restarted match inherits the old one's kills and the
@@ -846,6 +1044,54 @@ void ABNGameMode::HillTick()
 		}
 	}
 
+	// TEAMS (BN15): occupants dedupe per TEAM — same-team bodies do not contest each other,
+	// and contested means MORE THAN ONE distinct side present. A NoTeam occupant (nothing
+	// past the assignment seam should produce one) counts as its own side, so it contests
+	// rather than scoring — unknown is nobody's ally, the BNTeams default. The urgency cache
+	// keeps the same shape as FFA's: any ONE member of the sole holding team is HillHolder,
+	// so GetObjectiveUrgency's held-by-me check still works and its teams-on branch widens
+	// "me" to "my team".
+	if (bTeamsEnabled)
+	{
+		TSet<uint8> TeamsPresent;
+		for (const ABNPlayerState* Occupant : Occupants)
+		{
+			TeamsPresent.Add(Occupant->GetGenericTeamId().GetId());
+		}
+
+		bHillContested = TeamsPresent.Num() > 1;
+		const uint8 SoleTeam = TeamsPresent.Num() == 1
+			? *TeamsPresent.CreateConstIterator() : FGenericTeamId::NoTeam.GetId();
+		const bool bHeld = SoleTeam < BNTeams::NumTeams;
+		HillHolder = bHeld ? *Occupants.CreateIterator() : nullptr;
+
+		FString HillState = TEXT("empty");
+		if (bHillContested)
+		{
+			HillState = TEXT("CONTESTED between teams, nobody scores");
+		}
+		else if (bHeld)
+		{
+			HillState = FString::Printf(TEXT("held by team %d"), SoleTeam);
+		}
+		UE_LOG(LogBN, Verbose, TEXT("BNGameMode: hill tick — %d occupant(s), %s."),
+			Occupants.Num(), *HillState);
+
+		if (bHeld)
+		{
+			if (ABNGameState* TeamGS = GetGameState<ABNGameState>())
+			{
+				TeamGS->AddTeamScore(SoleTeam, FMath::Max(0, HillPointsPerSecond));
+				if (TeamGS->GetTeamScore(SoleTeam) >= ScoreLimit)
+				{
+					// The same seam the crossing kill uses: winner written first, then the flip.
+					FinishTeamMatch(SoleTeam);
+				}
+			}
+		}
+		return;
+	}
+
 	// THE RULE, whole: sole occupant scores; contested means NOBODY scores. The cache is
 	// what GetObjectiveUrgency answers from — written every second, whether or not points
 	// moved, so "the hill emptied" is as current as "the hill scored".
@@ -907,6 +1153,14 @@ float ABNGameMode::GetObjectiveUrgency(const AActor* Bot, FGameplayTag AmbitionT
 	if (Holder && BotPS && Holder == BotPS)
 	{
 		return 0.35f; // Keep holding, but a fight for your life may outrank standing still.
+	}
+	// TEAMS (BN15): the cached holder is one member of the sole holding TEAM, and "held by
+	// my team" is "held by me" for urgency — a teammate banking seconds is not the loudest
+	// state. Same NoTeam guard as everywhere: unassigned never reads as an ally.
+	if (bTeamsEnabled && Holder && BotPS
+		&& BNTeams::AreFriendly(Holder->GetGenericTeamId(), BotPS->GetGenericTeamId()))
+	{
+		return 0.35f;
 	}
 	if (bHillContested)
 	{

@@ -3,8 +3,13 @@
 #include "AbilitySystem/Attributes/BNAttributeSet.h"
 #include "BreachpointNext.h"
 #include "Data/BNDataRows.h"
+#include "Match/BNGameMode.h"
+#include "Match/BNPlayerState.h"
+#include "Match/BNTeams.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
+#include "Engine/World.h"
+#include "GameFramework/Pawn.h"
 
 namespace
 {
@@ -131,6 +136,30 @@ void BNDamage::ApplyDamage(AActor* Instigator, AActor* Target, float Amount, con
 		UE_LOG(LogBN, Error, TEXT("BNDamage: REFUSED — %s -> %s, %.1f asked for on a non-authority machine. Damage is the server's alone."),
 			*GetNameSafe(Instigator), *GetNameSafe(Target), Amount);
 		return;
+	}
+
+	// TEAMS (BN15): THE friendly-fire gate, and it sits BEFORE any spec exists on purpose —
+	// cues and dummy modifiers fire even on a filtered spec (gas-purity's footgun), so a
+	// refused hit must never build one. Authority is guaranteed by the check above, so the
+	// server-only GameMode is always reachable here. The teams are read off the two
+	// PLAYERSTATES — pawns do not carry the team interface — and AreActorsFriendly's own
+	// A==B ladder is what keeps SELF-damage flowing: your own grenade resolves both sides to
+	// the same PlayerState, which answers not-friendly, never refused. Either side without a
+	// PlayerState (world hazards, test actors) answers not-friendly too — FFA behavior, kept.
+	UWorld* World = Target->GetWorld();
+	const ABNGameMode* Mode = World ? World->GetAuthGameMode<ABNGameMode>() : nullptr;
+	if (Mode && Mode->AreTeamsEnabled() && !Mode->IsFriendlyFireEnabled())
+	{
+		const APawn* InstigatorPawn = Cast<APawn>(Instigator);
+		const APawn* TargetPawn = Cast<APawn>(Target);
+		const ABNPlayerState* InstigatorPS = InstigatorPawn ? InstigatorPawn->GetPlayerState<ABNPlayerState>() : nullptr;
+		const ABNPlayerState* TargetPS = TargetPawn ? TargetPawn->GetPlayerState<ABNPlayerState>() : nullptr;
+		if (BNTeams::AreActorsFriendly(InstigatorPS, TargetPS))
+		{
+			UE_LOG(LogBN, Verbose, TEXT("BNDamage: friendly fire refused — %s -> %s (%.1f)."),
+				*GetNameSafe(Instigator), *GetNameSafe(Target), Amount);
+			return;
+		}
 	}
 
 	UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Target);
