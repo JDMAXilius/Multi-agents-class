@@ -1,5 +1,7 @@
 # TICKET — AIB1: first compile of the AIBot module, and its first spec counts
 
+> STATUS: in-progress — mac terminal 25 Aug 2026 (041fb2d). Engine on disk, no editor open.
+
 > STATUS: open — cut 25 Aug 2026 by the cloud lead. Needs the ENGINE ON DISK; **no live
 > editor** (rung 2's gate requires none holding the project). Phases 0 and 1 of
 > `docs/AIBOT-ROADMAP.md` are landed WRITTEN, NOT COMPILED — this ticket is the proof.
