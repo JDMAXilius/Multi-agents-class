@@ -8,16 +8,14 @@
 class ABNHillPoint;
 
 /**
- * BN's answers to the AIBot module's world questions (Phase 6, deliberately narrow):
- * QueryPointsOfInterest and AreEnemies are implemented; the other two REFUSE rather
- * than half-answer.
+ * BN's answers to the AIBot module's world questions (Phase 6, teams landed BN15):
+ * QueryPointsOfInterest, AreEnemies and CountNearbyAllies are implemented;
+ * QueryVisibleEnemies REFUSES rather than half-answer.
  *
  * - QueryVisibleEnemies returns EMPTY on purpose. A useful implementation must run the
  *   sensorium's own maturation rules (200ms floor, occlusion, the belief ladder) or it
  *   is the 25 Aug wallhack with a subsystem's name on it. Until a matured feed exists,
  *   an honest empty keeps the controller's own perception the only acquisition path.
- * - CountNearbyAllies returns 0: BN is FFA today, and inventing teammates would feed
- *   the confidence model fiction. The facts builder keeps bCrowdKnown=false to match.
  *
  * A WorldSubsystem, not the GameState: the queries are server-brain plumbing, and
  * nothing about them should ride an actor that replicates.
@@ -45,11 +43,14 @@ public:
 	virtual void QueryVisibleEnemies(const AActor* Asker, float Radius,
 		TArray<AActor*>& OutEnemies) const override;
 
-	/** FFA: nobody has allies. */
+	/** Living same-team pawns within Radius of Asker, Asker excluded (HUD-grade: radar
+	 *  shows teammates). A NoTeam asker counts ZERO — in FFA nobody has allies, which
+	 *  was the honest pre-teams answer and still is. */
 	virtual int32 CountNearbyAllies(const AActor* Asker, float Radius) const override;
 
-	/** FFA: two different living pawns are enemies. Teams change THIS function and
-	 *  nothing inside the AIBot module — which is the point of the hostility door. */
+	/** Enemies = both alive AND not same-team, teams read off the PlayerStates with the
+	 *  NoTeam guard (NoTeam is nobody's friend — FFA byte-identical). Teams changed THIS
+	 *  function and nothing inside the AIBot module — the hostility door doing its job. */
 	virtual bool AreEnemies(const AActor* A, const AActor* B) const override;
 
 private:

@@ -12,6 +12,7 @@
 #include "Debug/AIBGameplayDebugger.h"
 #include "Execution/AIBStateTreeExecutor.h"
 #include "Interfaces/AIBAvatarInterface.h"
+#include "Interfaces/AIBWorldQuery.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Hearing.h"
 #include "Perception/AISense_Hearing.h"
@@ -77,11 +78,27 @@ AAIBBotController::AAIBBotController(const FObjectInitializer& ObjectInitializer
 
 ETeamAttitude::Type AAIBBotController::GetTeamAttitudeTowards(const AActor& Other) const
 {
-	// FFA: every pawn that is not mine is hostile; scenery is neutral. A team system
-	// answers through IAIBWorldQuery::AreEnemies and replaces this constant.
+	// THE hostility authority is the game's (AIBWorldQuery.h): with a world query
+	// registered, IAIBWorldQuery::AreEnemies answers friend-or-foe — this consult is
+	// what the old constant's comment promised, and it is the whole of teams inside
+	// this module. No query registered, or no pawn on either side, keeps the documented
+	// fallback for an all-hostile (FFA) host: every pawn that is not mine is hostile.
+	// Scenery is neutral either way; self is always friendly.
 	if (const APawn* OtherPawn = Cast<APawn>(&Other))
 	{
-		return OtherPawn == GetPawn() ? ETeamAttitude::Friendly : ETeamAttitude::Hostile;
+		APawn* MyPawn = GetPawn();
+		if (OtherPawn == MyPawn)
+		{
+			return ETeamAttitude::Friendly;
+		}
+		if (IAIBWorldQuery* Query = GetWorldQuery())
+		{
+			if (MyPawn)
+			{
+				return Query->AreEnemies(MyPawn, &Other) ? ETeamAttitude::Hostile : ETeamAttitude::Friendly;
+			}
+		}
+		return ETeamAttitude::Hostile;
 	}
 	return ETeamAttitude::Neutral;
 }

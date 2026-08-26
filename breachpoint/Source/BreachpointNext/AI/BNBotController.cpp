@@ -13,6 +13,7 @@
 #include "Core/BNGameplayTags.h"
 #include "Data/BNGameData.h"
 #include "Match/BNPlayerState.h"
+#include "Match/BNTeams.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Components/StateTreeAIComponent.h"
 #include "StateTree.h"
@@ -77,18 +78,32 @@ ABNBotController::ABNBotController(const FObjectInitializer& ObjectInitializer)
 
 FGenericTeamId ABNBotController::GetGenericTeamId() const
 {
-	// Teams-later seam: FFA is one shared "no team". A team system replaces this constant.
-	return FGenericTeamId(255);
+	// TEAMS (BN15): the PlayerState is the one team datum; the controller only reads it —
+	// the same door GetBotASC uses. No PlayerState yet reads NoTeam: honest-unknown, and
+	// through the guard below, nobody's friend.
+	const ABNPlayerState* PS = GetPlayerState<ABNPlayerState>();
+	return PS ? PS->GetGenericTeamId() : FGenericTeamId::NoTeam;
 }
 
 ETeamAttitude::Type ABNBotController::GetTeamAttitudeTowards(const AActor& Other) const
 {
-	// Teams-later seam: FFA answers Hostile for any pawn that is not mine. Non-pawns are scenery.
-	if (const APawn* OtherPawn = Cast<APawn>(&Other))
+	// TEAMS (BN15): both sides answer through the PlayerState door and compare via the
+	// one guarded helper. Either side at NoTeam falls through AreFriendly's guard to
+	// Hostile — the FFA answer this seam always gave, so a teamless match is unchanged:
+	// any other pawn is hostile. Non-pawns are scenery.
+	const APawn* OtherPawn = Cast<APawn>(&Other);
+	if (!OtherPawn)
 	{
-		return OtherPawn == GetPawn() ? ETeamAttitude::Friendly : ETeamAttitude::Hostile;
+		return ETeamAttitude::Neutral;
 	}
-	return ETeamAttitude::Neutral;
+	if (OtherPawn == GetPawn())
+	{
+		return ETeamAttitude::Friendly;
+	}
+	const ABNPlayerState* OtherPS = OtherPawn->GetPlayerState<ABNPlayerState>();
+	const FGenericTeamId OtherTeam = OtherPS ? OtherPS->GetGenericTeamId() : FGenericTeamId::NoTeam;
+	return BNTeams::AreFriendly(GetGenericTeamId(), OtherTeam)
+		? ETeamAttitude::Friendly : ETeamAttitude::Hostile;
 }
 
 void ABNBotController::OnPossess(APawn* InPawn)
@@ -632,6 +647,15 @@ bool ABNBotController::IsValidTarget(AActor* Actor) const
 {
 	ABNCharacter* TargetCharacter = Cast<ABNCharacter>(Actor);
 	if (!TargetCharacter || TargetCharacter == GetPawn())
+	{
+		return false;
+	}
+
+	// TEAMS (BN15): a teammate is never a target, decided HERE because this is the single
+	// function that says what a target is — perception, the slot rule, the fallback sweep
+	// and the revenge memory all inherit it and cannot disagree. In FFA every other pawn
+	// still answers Hostile (the NoTeam guard), so a teamless match is unchanged.
+	if (GetTeamAttitudeTowards(*TargetCharacter) != ETeamAttitude::Hostile)
 	{
 		return false;
 	}
