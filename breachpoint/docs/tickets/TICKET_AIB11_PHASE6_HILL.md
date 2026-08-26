@@ -1,10 +1,18 @@
-# TICKET — AIB9: Phase 6 proof — the bot plays the objective (Hill)
+# TICKET — AIB11: Phase 6 proof — the bot plays the objective (Hill)
 
 > STATUS: open — cut 26 Aug 2026 by the cloud lead with the Phase-6 build
 > ("WRITTEN, NOT COMPILED"). TERMINAL WORK: compile, specs, tree rebuild, PIE with the
 > hill on. Both founder rulings this phase waited on are CLOSED and recorded
 > (ARCHITECTURE law 3 amendment; the Hill + third score int — see
 > docs/AIBOT-PHASE6-PACKET.md).
+>
+> NUMBERING: cut as AIB9 (the Phase-6 commit message says so); renumbered to AIB11 at
+> the merge — the terminal's off-mesh (AIB9) and strafe-arc (AIB10) tickets took the
+> numbers in flight. Open ticket yields, closed commits keep their citations — the
+> AIB5/AIB6/AIB7 rule, third application. My NAVLINK_GAP ticket (briefly AIB8) is
+> RETIRED unnumbered: the terminal's archived AIB8 ran that exact experiment
+> (JumpLength 600 REFUTED, the baseline a mirage) and their AIB9 carries the real
+> defect (bots leave the mesh) — nothing of mine remained to do.
 
 ## What landed (cloud, this ticket's subject)
 

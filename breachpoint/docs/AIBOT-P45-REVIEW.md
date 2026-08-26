@@ -87,7 +87,7 @@ Also closed with the highs (mediums taken because the fix was one screen):
   radius, 6.6× sight) — acceptable ONLY while `bCrowdKnown` stays false in BN (it does:
   the query returns 0 and the flag is never raised); revisit when a real ally feed lands.
 - Nested-Think ordering assumption (possess-inside-PostGameplayEffectExecute) — one PIE
-  breakpoint's worth of live proof, listed on AIB9's watch list.
+  breakpoint's worth of live proof, listed on AIB11's (the hill proof's) watch list.
 - `EndPlay` cleans less than `OnUnPossess` (ledger/policy states not reset) — benign
   while controllers die with their match; a pooled-controller future inherits it.
 
