@@ -7,6 +7,7 @@
 #include "Core/AIBBotController.h"
 #include "Core/AIBTags.h"
 #include "Core/BNGameplayTags.h"
+#include "Data/BNDataRows.h"
 #include "BreachpointNext.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Match/BNPlayerState.h"
@@ -21,6 +22,77 @@ namespace
 	 *  armed within a swap of the freeze lifting. */
 	constexpr float ArmRetrySeconds = 0.5f;
 	constexpr int32 ArmComplainAfterPresses = 30;
+
+	/** Can this weapon put rounds downrange, now or after a reload? The swap's whole
+	 *  question, and the reason a null Unarmed slot answers "no" without anyone naming it. */
+	bool WeaponCanFight(const ABNWeapon* Weapon)
+	{
+		return Weapon && (Weapon->HasAmmo() || Weapon->GetAmmoReserve() > 0);
+	}
+
+	/** What this weapon is WORTH at this distance, in expected damage per second.
+	 *
+	 *  TRANSCRIBED from BN's own bot scoring (BNBotStateTreeTasks.cpp, ScoreWeaponAtRange)
+	 *  because that function is a file-local in a gameplay TU this adapter may read but
+	 *  never edit or export. Every term is read from the weapon's own shipped row — the
+	 *  same numbers the damage pipeline resolves a hit with — so the bot's opinion of a gun
+	 *  can never disagree with what the gun does, and retuning the table retunes when bots
+	 *  choose it. That is the whole point of scoring instead of hardcoding "shotgun is the
+	 *  close-range one": the word shotgun appears nowhere.
+	 *
+	 *  Zero means "do not bring this to this fight": nothing to fire, or beyond hard Range.
+	 */
+	float ScoreWeaponAtRange(const ABNWeapon* Weapon, float Distance)
+	{
+		if (!WeaponCanFight(Weapon))
+		{
+			return 0.f;
+		}
+		const FBNWeaponRow* Row = Weapon->GetRow();
+		if (!Row)
+		{
+			return 0.f;
+		}
+		if (Row->Range > 0.f && Distance > Row->Range)
+		{
+			return 0.f;
+		}
+
+		// The shipped falloff curve, evaluated as the damage pipeline evaluates it. Every
+		// shipped row currently has FalloffStart == FalloffEnd == 0, so this is dormant —
+		// it stays because the moment a designer fills those columns it starts working.
+		float Falloff = 1.f;
+		if (Row->FalloffEndDistance > Row->FalloffStartDistance && Distance > Row->FalloffStartDistance)
+		{
+			const float Alpha = FMath::Clamp(
+				(Distance - Row->FalloffStartDistance) / (Row->FalloffEndDistance - Row->FalloffStartDistance),
+				0.f, 1.f);
+			Falloff = FMath::Lerp(1.f, FMath::Clamp(Row->FalloffMinMultiplier, 0.f, 1.f), Alpha);
+		}
+
+		// SPREAD is the real range term in this build, and BN found that by measuring: with
+		// the falloff columns empty, scoring on damage alone made every bot pick the Shotgun
+		// at every range. The cone's radius at the target is d*tan(theta); once it exceeds a
+		// torso's width the fraction landing falls off as the ratio of AREAS, hence squared.
+		const float ConeRadius = Distance * FMath::Tan(FMath::DegreesToRadians(FMath::Max(0.f, Row->SpreadAngle)));
+		constexpr float TargetRadius = 35.f;   // the nav agent radius — a torso's worth of width
+		float HitFraction = 1.f;
+		if (ConeRadius > TargetRadius)
+		{
+			HitFraction = FMath::Square(TargetRadius / ConeRadius);
+		}
+
+		const float PerPull = FMath::Max(0.f, Row->Damage) * FMath::Max(1, Row->ShotCount) * Falloff * HitFraction;
+		const float Interval = FMath::Max(0.05f, Row->FireDelay);
+		float Score = PerPull / Interval;
+
+		// A magazine already in the gun beats a magazine in a pouch.
+		if (!Weapon->HasAmmo())
+		{
+			Score *= 0.5f;
+		}
+		return Score;
+	}
 }
 
 void UBNAIBAvatarAdapter::EnsureOn(ABNCharacter* Character, AController* Possessor)
@@ -237,6 +309,49 @@ bool UBNAIBAvatarAdapter::IsAlive() const
 {
 	const UBNAbilitySystemComponent* ASC = GetASC();
 	return ASC && !ASC->HasMatchingGameplayTag(BNTags::State_Dead);
+}
+
+float UBNAIBAvatarAdapter::GetMeleeRangeUU() const
+{
+	// The reach comes from the HELD weapon's row — the same number BNGA_Melee resolves.
+	// Restating it on the AI side would be a second source of truth for one distance.
+	const ABNWeapon* Weapon = GetHeldWeapon();
+	const FBNWeaponRow* Row = Weapon ? Weapon->GetRow() : nullptr;
+	return Row ? FMath::Max(0.f, Row->MeleeRange) : 0.f;
+}
+
+bool UBNAIBAvatarAdapter::IsBestWeaponForRange(float DistanceUU) const
+{
+	// READ-ONLY, AND THAT IS THE DESIGN. Nothing here writes CurrentIndex or touches
+	// UBNEquipmentComponent's cycling: the bot swaps by pressing Input.Weapon.Next, exactly
+	// as a human's mouse wheel does, and this answers only "press it again?". That is what
+	// lets the carry keep its deliberate null Unarmed slot — a holster state a player can
+	// select — with no change to gameplay code shared with humans and BN's own bots. The
+	// slot scores 0 (WeaponCanFight is false for null), so it is never the answer, and the
+	// caller cycles straight past it.
+	const ABNCharacter* Character = Cast<ABNCharacter>(GetOwner());
+	const UBNEquipmentComponent* Equipment = Character ? Character->GetEquipmentComponent() : nullptr;
+	if (!Equipment)
+	{
+		return true; // nothing to choose between: never spin the wheel
+	}
+
+	const ABNWeapon* Best = nullptr;
+	float BestScore = 0.f;
+	for (const TObjectPtr<ABNWeapon>& Candidate : Equipment->GetWeapons())
+	{
+		const float Score = ScoreWeaponAtRange(Candidate, DistanceUU);
+		if (Score > BestScore)
+		{
+			BestScore = Score;
+			Best = Candidate;
+		}
+	}
+
+	const ABNWeapon* Current = GetHeldWeapon();
+	// Nothing carried can fight at this range at all: settle for whatever is in hand rather
+	// than cycling forever. "You have no good option" is not a reason to keep pressing.
+	return Best == nullptr ? WeaponCanFight(Current) : (Current == Best);
 }
 
 float UBNAIBAvatarAdapter::GetHealthNormOf(const AActor* Other) const

@@ -221,6 +221,9 @@ void AAIBBotController::OnUnPossess()
 	Avatar = nullptr;
 	AvatarObject = nullptr;
 	LastLoggedTarget = nullptr;
+	// Same reasoning as the arbitration reset above: an absolute-time gate must not carry
+	// into a new world, where GetTimeSeconds starts over.
+	NextGrenadeThrowTimeSeconds = 0.f;
 	Super::OnUnPossess();
 }
 
@@ -244,6 +247,19 @@ void AAIBBotController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Avatar = nullptr;
 	AvatarObject = nullptr;
 	Super::EndPlay(EndPlayReason);
+
+bool AAIBBotController::CanThrowGrenade() const
+{
+	const UWorld* World = GetWorld();
+	return World && World->GetTimeSeconds() >= NextGrenadeThrowTimeSeconds;
+}
+
+void AAIBBotController::NoteGrenadeThrown(float CooldownSeconds)
+{
+	if (const UWorld* World = GetWorld())
+	{
+		NextGrenadeThrowTimeSeconds = World->GetTimeSeconds() + FMath::Max(0.f, CooldownSeconds);
+	}
 }
 
 void AAIBBotController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)

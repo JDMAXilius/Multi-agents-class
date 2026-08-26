@@ -47,6 +47,8 @@ public:
 	virtual bool IsGrounded() const override;
 	virtual bool IsCrouched() const override;
 	virtual bool IsAlive() const override;
+	virtual float GetMeleeRangeUU() const override;
+	virtual bool IsBestWeaponForRange(float DistanceUU) const override;
 
 	// -- IAIBAvatarInterface: reads about another avatar ---------------------------
 	virtual float GetHealthNormOf(const AActor* Other) const override;

@@ -61,6 +61,22 @@ public:
 	 *  cannot accidentally re-sample the live world between pumps. */
 	const FAIBFacts& GetLastFacts() const { return LastFacts; }
 
+	/** THE ONE THROTTLE THAT MUST OUTLIVE A BRANCH, and it lives here for a mechanical
+	 *  reason worth naming: a StateTree re-initialises a state's instance data from the
+	 *  compiled defaults every time that state is ENTERED, so a cooldown kept in a task's
+	 *  scratch is silently reset by an Engage branch that flaps — and Engage flaps by
+	 *  design (its belief tasks fail on a visibility loss, re-selecting 0.2s later). A
+	 *  grenade cooldown reset every second is no cooldown at all, which is exactly the
+	 *  "seven grenades in one second" failure. The CONTROLLER outlives every state, so the
+	 *  gate is a wall-clock stamp on it. The duration stays with the behaviour that spends
+	 *  it — the task passes it in.
+	 *
+	 *  Fire, reload, melee and swap deliberately do NOT come here: each is refused
+	 *  harmlessly by the host's own ability state, and a re-entry costing one extra tap is
+	 *  not a fairness problem. A grenade is. */
+	bool CanThrowGrenade() const;
+	void NoteGrenadeThrown(float CooldownSeconds);
+
 	/** The game's projectile warning seam calls this (via the adapter wiring). It NOTES —
 	 *  the dodge happens only after the stimulus matures (FAIRPLAY F2). */
 	void NoteIncomingBlast(const FVector& Center, float Radius, double DetonateAtSeconds);
@@ -133,6 +149,9 @@ private:
 
 	/** One fact snapshot per Think; see GetLastFacts. */
 	FAIBFacts LastFacts;
+
+	/** World seconds before which no grenade may be thrown; see CanThrowGrenade. */
+	float NextGrenadeThrowTimeSeconds = 0.f;
 
 	IAIBAvatarInterface* Avatar = nullptr;
 

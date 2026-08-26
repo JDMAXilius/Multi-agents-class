@@ -56,6 +56,26 @@ namespace
 		return Pawn && FVector::Dist(Pawn->GetActorLocation(), Point) <= RadiusUU;
 	}
 
+	/** THE DISTANCE A TASK MAY ACT ON — this frame's, not the think's.
+	 *
+	 *  FAIBFacts::DistToTargetUU is rebuilt every 0.1s, which is right for WANTING (a want
+	 *  that flickers at frame rate is not a want) and wrong for a LUNGE: at sprint speed a
+	 *  bot covers ~90uu inside one stale think, and a melee reach is ~120. So the executor
+	 *  side — which is allowed a world, unlike Brain/ — measures it now.
+	 *
+	 *  It is still the BELIEF, never the live actor: same F2-B rule the aim obeys, so a bot
+	 *  cannot stab or grenade a position it has not honestly seen. */
+	bool LiveDistanceToBelief(const AAIBBotController& Bot, float& OutDistanceUU)
+	{
+		const APawn* Pawn = Bot.GetPawn();
+		if (!Pawn || !Bot.GetSensorium().HasVisibleTarget())
+		{
+			return false;
+		}
+		OutDistanceUU = FVector::Dist(Pawn->GetActorLocation(), Bot.GetSensorium().GetLastSeenLocation());
+		return true;
+	}
+
 	/** SPRINT is released inside this multiple of a mover's arrival radius. The host's own
 	 *  rule, transcribed with its reasoning: a bot that sprints into its firing position
 	 *  arrives unable to shoot, because the sprint state holds for as long as the key is
@@ -74,6 +94,36 @@ namespace
 	 *  would otherwise be re-pressed at tick rate forever. */
 	constexpr float ReloadAtMagazineFraction = 0.25f;
 	constexpr float ReloadRetrySeconds = 1.0f;
+
+	/** MELEE commits inside this fraction of the HELD WEAPON's own reach — the host's rule,
+	 *  and below 1 for the host's reason: a swing at the exact edge of the reach turns one
+	 *  backward step into a whiff. The reach is never restated here; it comes through the
+	 *  door, so retuning the weapon retunes the bot. */
+	constexpr float MeleeCommitFraction = 0.8f;
+	constexpr float MeleeRetrySeconds = 1.5f;
+
+	/** GRENADE band. Below the minimum a bot blows itself up; past the maximum the throw
+	 *  falls short. The band is the whole tactical judgement — there is no "grenade skill"
+	 *  wired yet (Phase 4 owns that), so these are the honest defaults. */
+	constexpr float GrenadeMinRangeUU = 500.f;
+	constexpr float GrenadeMaxRangeUU = 2200.f;
+
+	/** THE COOLDOWN IS NOT OPTIONAL, and it is per BOT for a reason the host learned in
+	 *  the world rather than on paper: eight bots that each throw the instant a band opens
+	 *  throw eight grenades in one second, and the arena stops being a fight. Longer than
+	 *  any host ability cooldown we could ask about, so the press is never a dead one — the
+	 *  module must not know the host's cooldown tag, and this makes not knowing it safe. */
+	constexpr float GrenadeCooldownSeconds = 8.f;
+
+	/** WEAPON SWAP. The verb is a CYCLE, not a selection: press until the avatar says the
+	 *  hand is right, exactly as a human rolls the mouse wheel past a slot they do not want
+	 *  — which is also how a bot walks past an empty holster slot without anything in the
+	 *  host's equipment needing to change for it. The pause is what lets the equip actually
+	 *  take (pressing again next frame cancels it), and the cap is what stops a bot whose
+	 *  whole loadout is dry from cycling for the rest of the match. Five presses is one full
+	 *  lap of the audited host's five-slot carry: enough to reach any slot, once. */
+	constexpr float SwapSeconds = 0.6f;
+	constexpr int32 MaxSwapPresses = 5;
 
 	/** Sprint is a HOLD: press the rising edge, release the falling one, re-press nothing.
 	 *  A leaked hold rides the persistent ASC into the next life (the host's own leak). */
@@ -318,6 +368,10 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::EnterState(FStateTreeExecutionContext&
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	InstanceData.bHolding = false;
 	InstanceData.PhaseSecondsLeft = 0.f;
+	// A fresh engagement gets a fresh swap budget: the cap exists to stop an endless spin
+	// inside ONE fight, not to make a bot that gave up once give up for the match.
+	InstanceData.SwapPresses = 0;
+	InstanceData.SwapCooldownLeft = 0.f;
 	return EStateTreeRunStatus::Running;
 }
 
@@ -350,7 +404,11 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 	// spend them — so it spends them small, and legibly: a crouched bot with its hands
 	// busy reads as "reloading" from across the arena. No reserve is a different problem
 	// (the weapon swap), and it is NOT handled here — see the ticket Log for why.
+	// Every throttle decays here, ABOVE the reload's early return: a melee cooldown that
+	// froze while the bot reloaded would fire the instant the magazine landed.
 	InstanceData.ReloadCooldownLeft = FMath::Max(0.f, InstanceData.ReloadCooldownLeft - DeltaTime);
+	InstanceData.MeleeCooldownLeft = FMath::Max(0.f, InstanceData.MeleeCooldownLeft - DeltaTime);
+	InstanceData.SwapCooldownLeft = FMath::Max(0.f, InstanceData.SwapCooldownLeft - DeltaTime);
 	if (Facts.bHasReserveAmmo && Facts.AmmoNorm <= ReloadAtMagazineFraction)
 	{
 		if (InstanceData.bHolding)
@@ -376,6 +434,94 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 	{
 		SetCrouch(*Avatar, false);
 		InstanceData.bCrouchedToReload = false;
+	}
+
+	// THIS FRAME'S distance to the belief — the reason the three checks below can exist at
+	// all. Everything past here that names a range uses it; nothing past here reads the
+	// think-rate DistToTargetUU, which is a want's number, not a swing's.
+	float DistanceUU = 0.f;
+	const bool bHasDistance = LiveDistanceToBelief(*Bot, DistanceUU);
+
+	// -- MELEE: they are close enough to touch ---------------------------------------
+	// Inside a fraction of the HELD weapon's own reach, which the door supplies — so a
+	// bot with a knife commits from further out than one holding a rifle, without this
+	// code ever learning what either is. A bot that shoots you from arm's length instead
+	// of hitting you is the readable failure this prevents.
+	const float MeleeRangeUU = Avatar->GetMeleeRangeUU();
+	if (bHasDistance && MeleeRangeUU > 0.f && InstanceData.MeleeCooldownLeft <= 0.f
+		&& DistanceUU <= MeleeRangeUU * MeleeCommitFraction)
+	{
+		if (InstanceData.bHolding)
+		{
+			Avatar->ReleaseVerb(AIBTags::Verb_Fire);
+			InstanceData.bHolding = false;
+			InstanceData.PhaseSecondsLeft = 0.f;
+		}
+		Avatar->PressVerb(AIBTags::Verb_Melee);
+		Avatar->ReleaseVerb(AIBTags::Verb_Melee);
+		InstanceData.MeleeCooldownLeft = MeleeRetrySeconds;
+		UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s swung at %.0fuu (reach %.0f)."),
+			*Bot->GetName(), DistanceUU, MeleeRangeUU);
+		return EStateTreeRunStatus::Running;
+	}
+
+	// -- SWAP: hold the right thing for this range ------------------------------------
+	// The avatar answers; this presses. Nothing here knows what a weapon is, what one is
+	// worth, or that the host's carry contains a slot holding nothing — pressing until
+	// the answer is yes walks past that slot the same way a mouse wheel does, which is
+	// why the host's equipment code needed no change to make this work.
+	if (bHasDistance && !Avatar->IsBestWeaponForRange(DistanceUU)
+		&& InstanceData.SwapPresses < MaxSwapPresses)
+	{
+		if (InstanceData.SwapCooldownLeft <= 0.f)
+		{
+			if (InstanceData.bHolding)
+			{
+				Avatar->ReleaseVerb(AIBTags::Verb_Fire);
+				InstanceData.bHolding = false;
+				InstanceData.PhaseSecondsLeft = 0.f;
+			}
+			Avatar->PressVerb(AIBTags::Verb_WeaponNext);
+			Avatar->ReleaseVerb(AIBTags::Verb_WeaponNext);
+			++InstanceData.SwapPresses;
+			InstanceData.SwapCooldownLeft = SwapSeconds;
+			UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s cycling weapons for %.0fuu (press %d/%d)."),
+				*Bot->GetName(), DistanceUU, InstanceData.SwapPresses, MaxSwapPresses);
+		}
+		// Do NOT fire mid-cycle: the hand may be empty or holding the wrong answer, and a
+		// burst pressed into an equip montage is a burst that never leaves the barrel.
+		return EStateTreeRunStatus::Running;
+	}
+	if (bHasDistance && InstanceData.SwapPresses > 0 && Avatar->IsBestWeaponForRange(DistanceUU))
+	{
+		InstanceData.SwapPresses = 0; // settled: the next range change gets a full budget
+	}
+
+	// -- GRENADE: the band, the pouch, the cooldown -----------------------------------
+	// Thrown at the BELIEF and only while the target is perceived, so this can never
+	// become a bot reacting to something it never saw. GrenadeCount is the pouch (an
+	// empty bot miming a throw is a bot not shooting), the band is the judgement, and the
+	// cooldown is the thing that keeps a team of bots from carpeting the arena.
+	// The cooldown is asked of the CONTROLLER, not of this task's scratch, because
+	// StateTree re-initialises instance data on every state ENTRY and Engage re-enters
+	// whenever a belief blinks — a per-task countdown would reset roughly once a second
+	// and throttle nothing at all. See AAIBBotController::CanThrowGrenade.
+	if (bHasDistance && Facts.bTargetVisible && Facts.GrenadeCount > 0
+		&& Bot->CanThrowGrenade()
+		&& DistanceUU >= GrenadeMinRangeUU && DistanceUU <= GrenadeMaxRangeUU)
+	{
+		if (InstanceData.bHolding)
+		{
+			Avatar->ReleaseVerb(AIBTags::Verb_Fire);
+			InstanceData.bHolding = false;
+			InstanceData.PhaseSecondsLeft = 0.f;
+		}
+		Avatar->PressVerb(AIBTags::Verb_Grenade);
+		Avatar->ReleaseVerb(AIBTags::Verb_Grenade);
+		Bot->NoteGrenadeThrown(GrenadeCooldownSeconds);
+		UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s threw at %.0fuu (%d left in the pouch)."),
+			*Bot->GetName(), DistanceUU, Facts.GrenadeCount);
+		return EStateTreeRunStatus::Running;
 	}
 
 	// The live sensorium check closes the destroyed-target frame: a corpse whose weak

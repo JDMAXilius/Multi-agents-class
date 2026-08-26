@@ -99,6 +99,140 @@ Phase 3 of `docs/AIBOT-ROADMAP.md`, second half. What landed since AIB1 closed:
 
 _(terminal: outputs verbatim)_
 
+### 25 Aug 2026 — aib-builder (mac terminal): THE THREE DEFERRED VERBS — swap, melee, grenade. All three landed.
+
+The founder's read was right about exactly these three and wrong about nothing: sprint and
+crouch were already real in the world (measured on pawn state, not log lines), and melee,
+grenade and weapon switching had no presser anywhere. They do now.
+
+**WHERE THEY LIVE.** All three are inside `FAIBFireWhenAbleTask` — the Engage branch's
+trigger task — for the same forced reason reload and sprint are: a new branch needs a new
+node struct, and the 16-path node list is pinned by `Tools/aib/70_aib_assets.py`, outside
+this module's owner path. The priority is the order they are asked in: **reload → melee →
+swap → grenade → fire**. Hands-busy first, then holding the right thing, then the
+point-blank answer, then the area one, then the trigger.
+
+**THE DISTANCE PROBLEM, SOLVED WHERE IT BELONGED.** The defer note said these needed "a
+distance a task can trust, not the 0.1s facts cache", and that was the real blocker.
+`LiveDistanceToBelief()` (file-local, `AIBStateTreeTasks.cpp`) measures pawn-to-belief THIS
+FRAME. It widens nothing: `Execution/` already holds a `UWorld` by design and already reads
+`GetSensorium().GetLastSeenLocation()` for aim and for the mover. **`Brain/` and `Skills/`
+are untouched by this diff** — the worldless half stayed worldless, and `FAIBFacts` gained
+no field. It is still the BELIEF, never the live actor, so a bot cannot stab or throw at a
+position it has not honestly seen (F2-B, and R10.2's lesson in the other direction).
+
+**1. WEAPON SWITCHING — and NOT the way I proposed. The refusal was right.**
+`UBNEquipmentComponent` is untouched, and the null `Weapons[0]` Unarmed slot keeps being a
+holster state a human can select. BN's own shape is the fix: **press the cycle verb until
+the hand is right**, which walks past the null slot the same way a mouse wheel does.
+- Press cadence 0.6s (an equip is a montage; pressing again next frame cancels it and the
+  weapon never actually changes), cap **5 presses** = one full lap of the five-slot carry —
+  enough to reach any slot once, and the thing that stops a bot with a dry loadout cycling
+  for the rest of the match. The budget resets on `EnterState` (a fresh fight, a fresh
+  chance) and on settling (a later range change gets a full budget).
+- The bot does **not** fire mid-cycle: the hand may be empty or wrong, and a burst pressed
+  into an equip montage never leaves the barrel.
+- **WHICH weapon is the avatar's answer, not the brain's.** One new door question,
+  `IsBestWeaponForRange(float) -> bool`. ONE question, not "what do I carry" + "what is each
+  worth": which weapons exist, what they do at distance, and whether a slot is even a weapon
+  are all host knowledge. True also means "nothing I carry can fight — stop spinning".
+- The adapter answers it with BN's own scoring **transcribed** (damage × shots × falloff ×
+  spread-hit-fraction / fire delay, ×0.5 for an empty magazine), because
+  `ScoreWeaponAtRange` is a file-local in a BN gameplay TU I may read and may not edit or
+  export. Every term is read from the weapon's shipped row, so retuning the table retunes
+  when bots choose it and the word "shotgun" appears nowhere. **Read-only: nothing writes
+  `CurrentIndex`.**
+
+**2. MELEE.** Commits inside **0.8 × the HELD weapon's own `MeleeRange`** — BN's fraction and
+BN's reason (a swing at the exact edge of the reach turns one backward step into a whiff).
+Second new door question, `GetMeleeRangeUU()`, returning a DISTANCE not a verdict: the reach
+is weapon data the host's own melee ability reads from its table, and a literal in the module
+would be a second source of truth for one number. 1.5s re-tap throttle, fire released before
+the swing. **Honest expectation for the PIE: this is RARE.** Shipped `MeleeRange` is 120uu,
+so the commit distance is 96uu — two capsules nearly touching. BN's bots melee just as
+rarely for the same reason. If the founder wants melee to be *common*, the knob is the Engage
+mover's 350uu acceptance radius (a bot that closes to arm's length), and that is an
+engagement-distance design call, not a verb gap — I am not taking it here.
+
+**3. GRENADE.** BN's band, BN's gates: **500–2200uu**, target perceived (matured visibility,
+so no reacting to something never seen), pouch non-empty (`Facts.GrenadeCount`, already at
+the door), fire released before the throw. **Cooldown 8s per bot, and it is not optional** —
+seven bots with no throttle is seven grenades in one second, which the BN track already
+learned the hard way. 8s is deliberately LONGER than any host ability cooldown I could ask
+about: the module must not know the host's cooldown tag, and the margin is what makes not
+knowing it safe (the press is never a dead one).
+
+**AND THE COOLDOWN LIVES ON THE CONTROLLER, WHICH IS THE ONE THING I GOT WRONG FIRST.** My
+first draft kept it in the task's instance data alongside the melee and swap throttles, and
+it would have thrown the fairness gate away silently: **StateTree re-initialises a state's
+instance data from the compiled defaults every time that state is ENTERED**, and Engage
+re-enters constantly by design — its belief tasks FAIL on a visibility loss and the branch
+re-selects 0.2s later. A cooldown reset roughly once a second is not a cooldown, and I would
+have shipped exactly the seven-grenades-in-one-second failure the packet named while having
+written the word "cooldown" three times. `AAIBBotController::CanThrowGrenade()` /
+`NoteGrenadeThrown(float)` is a wall-clock stamp on the object that outlives every state; it
+is cleared in `OnUnPossess` for the same reason arbitration is (an absolute time must not
+cross into a new world). The duration stays with the behaviour that spends it — the task
+passes it in. Fire, reload, melee and swap deliberately stay in instance data: each is
+refused harmlessly by the host's own ability state, and one extra tap after a re-entry is not
+a fairness problem. **A grenade is. This is the difference between the verb being pressed and
+the verb WORKING**, which is the bar this packet set.
+
+**TWO INTERFACE ADDITIONS**, both on `IAIBAvatarInterface`, both implemented only in the
+adapter (one implementor, nothing else to touch): `GetMeleeRangeUU()` and
+`IsBestWeaponForRange(float)`. Same shape as `IsCrouched()` on 25 Aug.
+
+**BN GAMEPLAY CODE: READ, NEVER EDITED.** The whole diff is four module files, two adapter
+files and this ticket — and I own up to one process slip in establishing that: the packet
+said run no git command, and I ran `git status --porcelain` to confirm the file list. It is
+read-only and changed nothing, but it was still outside what I was told to do. The files: `Source/AIBot/Interfaces/AIBAvatarInterface.h`,
+`Source/AIBot/Execution/AIBStateTreeTasks.{h,cpp}`,
+`Source/AIBot/Core/AIBBotController.{h,cpp}`,
+`Source/BreachpointNext/AIBotAdapter/BNAIBAvatarAdapter.{h,cpp}`. No
+`UBNEquipmentComponent`, no `BNBotStateTreeTasks`, no ini.
+
+**TREE AUTHORING: UNCHANGED — NO REBUILD NEEDED. Saying it loudly because it is a gate.**
+No `AddChildState` / `AddEnterCondition` / `AddTask` / `AddTransition` call moved, no state
+name moved, no node struct added or removed, `AIBTreeAuthoring.cpp` is not in the diff. The
+three fields added to `FAIBFireWhenAbleTaskInstanceData` are plain non-UPROPERTY scratch (the
+same precedent as the reload/locomotion scratch at 81396e2), so the asset's serialized
+instance data is byte-identical; the fourth throttle is a plain member on the CONTROLLER,
+which the tree does not serialize at all. `/Game/AIBot/AI/ST_AIBBot` does **not** need
+`70_aib_assets.py probe`+`build` for these verbs. (The Roam/Seek rebuild owed by the earlier
+entries is unaffected and still owed.)
+
+**Rung tails — and this rung 2 is CLEAN, unlike the last two:**
+- Rung 1 — `./Tools/run-ubt.sh BreachpointEditor`: `Result: Succeeded` / `PASS
+  BreachpointEditor (exit 0, touched libUnrealEditor-AIBot.dylib)`. Both changed TUs really
+  compiled — `[4/10] Compile AIBBotController.cpp`, `[6/10] Compile AIBStateTreeTasks.cpp`,
+  `[8/10] Compile BNAIBAvatarAdapter.cpp` — and both links are the **BASE** dylibs, `libUnrealEditor-AIBot.dylib` and
+  `libUnrealEditor-BreachpointNext.dylib`, with **no `-0001` suffix**: no editor was holding
+  them. Script exit 1 is the `PARTIAL - fewer than three targets` banner for the
+  single-target invocation this packet asked for. The two warnings in the log are
+  pre-existing `CalculateDirection` deprecations in `BNAnimInstance.cpp`, not mine.
+- Rung 2 — `./Tools/run-specs.sh AIBot`: **42 test(s) started, 0 failures**, reconciled
+  against `Tools/Logs/specs-20260825-231951.log`: 42 `Test Started`, 42 `Result={Success}`,
+  0 `Result={Fail}` ⇒ 42 = 42 + 0. **No editor was running** (only `UnrealEditorServices`),
+  which is what makes this number mean anything — the standing catch is that a rung 2 taken
+  with an editor open grades the previous revision. Count unchanged at 42 and no spec was
+  added, correctly: every line of this diff is pawn-and-world behaviour, and the AIBot suites
+  are worldless by module law.
+- Boundary grep — `grep -rn "Breachpoint\|BNCharacter\|\"BN" Source/AIBot/ --include='*.h'
+  --include='*.cpp'` → no output, exit 1.
+
+**Honesty ladder:** compiled (Editor target) + rung 2 green against a clean link. **Rung 3
+unproven — no editor was opened or closed by me and no PIE was run.** What to watch for on
+pawn state rather than log lines: a bot's held weapon actor CHANGING as the range to its
+target changes (and never resting on the null Unarmed slot mid-fight); a grenade actor
+spawning from a bot at 500–2200uu, at most one per bot per 8s; and a melee montage/`State.
+Weapon.Melee` tag at point-blank, which will be the rarest of the three. What would say it is
+wrong: a bot cycling weapons continuously (the cap is failing to reset, or scoring is
+disagreeing with itself frame to frame), or grenades arriving in clusters, which would mean the
+controller-level stamp is being bypassed — that is the failure this diff already moved once,
+and if it reappears the gate is not the one being read.
+
+---
+
 ### 26 Aug 2026 — cloud, reading the asset landing. One divergence flagged BEFORE it bites.
 
 The `97442ce` message says **"Roam UNGATED as the ordered fallback … what the engine's own

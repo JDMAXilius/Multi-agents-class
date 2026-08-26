@@ -55,6 +55,27 @@ public:
 	                                                  // presses at exactly the wrong moment.
 	virtual bool IsAlive() const = 0;                 // alive by the host's own definition
 
+	/** Reach of the held weapon's melee, in uu; 0 when this avatar cannot melee at all.
+	 *  A DISTANCE, not a verdict, because the brain owns how far inside a reach it commits
+	 *  (a fraction below 1: swinging at the exact edge turns one backward step into a
+	 *  whiff). The number itself is the host's — a melee reach is weapon data, and a
+	 *  literal here would be a second source of truth for a distance the host's own melee
+	 *  ability already reads from its table. */
+	virtual float GetMeleeRangeUU() const = 0;
+
+	/** Is the hand holding the best thing this avatar carries FOR THIS RANGE?
+	 *
+	 *  ONE question, not "what do I carry" plus "what is each worth" — the same narrowing
+	 *  as CanWeaponFight. Which weapons exist, what they do at distance, and whether a
+	 *  slot is even a weapon are all host knowledge (the audited host's carry contains a
+	 *  deliberate EMPTY slot a human can select), so the brain must never enumerate them.
+	 *  It asks whether to keep pressing the swap verb, and that is all it needs.
+	 *
+	 *  True when nothing better exists — including "nothing I carry can fight, so stop
+	 *  spinning". False is a standing instruction to press AIBot.Verb.WeaponNext again,
+	 *  which is exactly how a human cycles past a slot they do not want. */
+	virtual bool IsBestWeaponForRange(float DistanceUU) const = 0;
+
 	// -- reads about ANOTHER avatar. FAIRPLAY ruling (26 Aug): enemy vitals are NOT a
 	//    perceivable fact — the facts builder must NOT call these for live targets.
 	//    They exist for the adapter's own uses and a future damage-derived estimate. --

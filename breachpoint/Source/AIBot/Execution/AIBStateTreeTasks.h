@@ -251,6 +251,15 @@ struct FAIBFireWhenAbleTaskInstanceData
 	 *  crouch (so the task uncrouches only what it crouched). */
 	float ReloadCooldownLeft = 0.f;
 	bool bCrouchedToReload = false;
+
+	/** Close-quarters, blast and swap scratch. Every one of these is a THROTTLE, and each
+	 *  exists because the verb behind it is a tap on an ability that can silently refuse:
+	 *  an untimed re-tap is a button pressed at tick rate forever. The GRENADE's throttle
+	 *  is deliberately NOT here — it lives on the controller, because instance data is
+	 *  re-initialised on every state entry and Engage re-enters whenever a belief blinks. */
+	float MeleeCooldownLeft = 0.f;
+	float SwapCooldownLeft = 0.f;
+	int32 SwapPresses = 0;
 };
 
 /** Presses Verb_Fire in bursts while the cached FACTS say the weapon can fight and the
@@ -263,7 +272,13 @@ struct FAIBFireWhenAbleTaskInstanceData
  *  own rule and its reasoning (a reload is the only moment a bot chooses to spend seconds
  *  it cannot shoot back in, so it spends them small). Reload lives HERE rather than in a
  *  branch of its own because a new branch means a new node struct, and the node list is
- *  pinned outside this module. */
+ *  pinned outside this module.
+ *
+ *  AND THE REST OF THE FIGHT'S VOCABULARY, for the same pinned-node reason: the SWAP to
+ *  whatever the avatar says is right for this range, the MELEE inside the held weapon's
+ *  own reach, and the GRENADE inside a band, on a cooldown. Priority is the order they
+ *  are asked in and it is deliberate — hands-busy first (reload), then holding the right
+ *  thing, then the point-blank answer, then the area one, then the trigger. */
 USTRUCT(meta = (DisplayName = "AIB Fire When Able", Category = "AIBot"))
 struct FAIBFireWhenAbleTask : public FStateTreeTaskCommonBase
 {
