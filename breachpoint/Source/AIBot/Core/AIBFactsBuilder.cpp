@@ -27,28 +27,23 @@ FAIBFacts AIBFactsBuilder::Build(const AAIBBotController& Bot, double NowSeconds
 
 	// -- the target, as perceived ---------------------------------------------------
 	const FAIBSensorium& Sensorium = Bot.GetSensorium();
-	AActor* Visible = Sensorium.GetVisibleTarget();
-	if (Visible)
+	if (Sensorium.HasVisibleTarget())
 	{
 		Facts.bHasTarget = true;
 		Facts.bTargetVisible = true;
 
-		// The juke honesty rule (F2-B): live reads only while sight is CURRENT.
-		FVector TargetLocation;
-		if (Sensorium.IsSightCurrent())
-		{
-			TargetLocation = Visible->GetActorLocation();
-			if (const IAIBAvatarInterface* Avatar = Bot.GetAvatar())
-			{
-				Facts.TargetHealthNorm = Avatar->GetHealthNormOf(Visible);
-				Facts.bTargetAlive = Avatar->IsAliveTarget(Visible);
-			}
-		}
-		else
-		{
-			TargetLocation = Sensorium.GetLastSeenLocation();
-			Facts.bTargetFactsFromMemory = true;
-		}
+		// THE BELIEF RULE (W-REVIEW P2 H1): position comes from the sensorium's
+		// once-per-pump belief, NEVER a live actor read at think rate. The builder no
+		// longer touches the target actor at all — F3's "the brain sees only what the
+		// sensorium admits" is literally true again.
+		const FVector TargetLocation = Sensorium.GetLastSeenLocation();
+		Facts.bTargetFactsFromMemory = !Sensorium.IsSightCurrent();
+
+		// Enemy vitals are NOT a perceivable live float (W-REVIEW P2 H2): no human
+		// reads an exact health fraction off a silhouette at 1400uu. Until the
+		// damage-I-dealt estimate lands (the FAIRPLAY ruling), target vitals stay
+		// UNKNOWN and the selectors score ValueWhenUnknown.
+		// bTargetVitalsKnown stays false; TargetHealthNorm/bTargetAlive stay unread.
 
 		Facts.DistToTargetUU = static_cast<float>(FVector::Dist(SelfLocation, TargetLocation));
 		Facts.HeightAdvantageUU = static_cast<float>(SelfLocation.Z - TargetLocation.Z);
@@ -61,7 +56,7 @@ FAIBFacts AIBFactsBuilder::Build(const AAIBBotController& Bot, double NowSeconds
 	{
 		Facts.bHasMemory = true;
 		Facts.LastKnownAgeSeconds = MemoryAge;
-		const FAIBTierRow Defaults; // Phase 8 resolves the real tier
+		static const FAIBTierRow Defaults; // Phase 8 resolves the real tier
 		Facts.MemoryFreshWindowSeconds = FMath::Min(Defaults.MemoryFreshSeconds, AIB::MaxMemorySeconds);
 	}
 

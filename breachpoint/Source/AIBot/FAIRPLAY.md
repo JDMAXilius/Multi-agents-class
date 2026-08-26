@@ -41,6 +41,31 @@
 Amendments to this file are founder rulings, dated, appended — never silent edits.
 
 ---
+**Amendment, 26 Aug 2026 (W-REVIEW P2 H1):** the visible target's position is a TRACKED
+BELIEF — re-sampled once per sensorium pump while sight is current, frozen the moment a
+loss is noted, and read by everything downstream from that one site. Live actor reads at
+think rate are banned. The residual pre-report window (the engine's sight sense not yet
+reporting an occlusion) is bounded by engine internals this module cannot see; ACCEPTED,
+revisit if bots visibly track through walls.
+
+**Amendment, 26 Aug 2026 (W-REVIEW P2 H2):** enemy vitals are NOT a perceivable fact.
+No live health float crosses the envelope at any range or occlusion — a human reads a
+silhouette, not a number. Target vitals stay UNKNOWN until an estimate derived from
+damage the bot itself dealt (matured) lands; `GetHealthNormOf` on the avatar door is an
+adapter utility the facts builder must not call for live targets.
+
+**Amendment, 26 Aug 2026 (W-REVIEW P2 M6):** `RecentDamageTakenNorm`/`DealtNorm` are
+SELF facts, sourced through the avatar door only, UN-MATURED BY DESIGN — feeling your
+own health drop is instant for a human. What must still mature is WHO and WHERE: the
+direction and identity of damage remain sensorium-only, on the clock. Banned shapes:
+"I'm being hit" becoming "he's over there" faster than the clock; per-hit magnitudes
+read from game damage events bypassing the door; any read of the shooter's weapon.
+
+**Amendment, 26 Aug 2026 (W-REVIEW P2 M4):** the blast fuse is currently ground truth,
+recomputed each think — inhumanly consistent dodges at exactly T-2.5s. OPEN: needs a
+founder ruling between one fuse-noise draw at maturation (stored, not recomputed) or a
+dated acceptance. Until ruled, tuning must not rely on fuse-perfect timing.
+
 **Amendment, 25 Aug 2026 (W-REVIEW F-2.2):** UObject lifetime is authoritative for
 memory validity — a memory of a destroyed actor reads as no memory, the instant the
 actor dies, anywhere on the map. This IS an omniscience channel (a bot stops searching a

@@ -129,6 +129,15 @@ void FAIBSensorium::Pump(double NowSeconds)
 		}
 	}
 
+	// THE BELIEF RULE (W-REVIEW P2 H1, ruling 2): the visible target's position is a
+	// tracked belief re-sampled ONCE per pump, at sensorium cadence, at this one site —
+	// never a live read at think rate by downstream code. While a loss is pending the
+	// belief FREEZES at the last seen spot: no tracking through the pillar.
+	if (VisibleTarget.IsValid() && bSightCurrent)
+	{
+		VisibleTargetLastSeen = VisibleTarget->GetActorLocation();
+	}
+
 	// Prune detonated blasts once per pump; the list stays tiny (grenades in flight).
 	LiveBlasts.RemoveAll([NowSeconds](const FAIBLiveBlast& Blast)
 	{

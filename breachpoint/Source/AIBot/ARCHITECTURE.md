@@ -12,8 +12,9 @@ Phase 10 and must stay a folder move.
    comments and abbreviations included. Check (CASE-INSENSITIVE — the first W-REVIEW
    caught `BREACHPOINT` in caps and the host's `BN` abbreviation sailing through a
    case-sensitive gate that then reported a false PASS):
-   `grep -rniE "breachpoint|\bBN[A-Z]" Source/AIBot/ --include=*.h --include=*.cpp --include=*.cs`
-   returns nothing.
+   `grep -rniE "breachpoint|\bBN([A-Z_[:space:]-]|$)" Source/AIBot/ --include=*.h --include=*.cpp --include=*.cs`
+   returns nothing. (Widened twice now: caps and `BNFoo` first, then word-alone `BN ` and
+   `BN_Drop` shapes — W-REVIEW P2 C1 caught the second gap the first fix left.)
 2. **Interfaces are the only door.** `Interfaces/` owns the contracts; the game implements
    them in its own adapter folder. The bot presses verbs and asks questions — it never
    activates, applies, or writes anything on the avatar.
@@ -62,4 +63,10 @@ Moving to `Plugins/AIBot/` is a folder move PLUS exactly this, no archaeology:
    by the host project's own plugin list.
 4. `Config=Game` on config classes becomes the plugin's own hierarchy if per-plugin ini
    shipping is wanted.
-`PublicIncludePaths.Add(ModuleDirectory)` in Build.cs is move-invariant on purpose.
+`PublicIncludePaths.Add(ModuleDirectory)` in Build.cs is move-invariant on purpose —
+and as of 26 Aug the code actually says that (P2 C5 caught this line certifying a form
+the Build.cs did not yet use).
+
+Phase 6 obligation, recorded (P2 finding B): possession must `ClearAmbitions()` and
+re-register core + current mode, or a mode change leaves the previous mode's ambitions
+registered forever — a CTF want scoring inside Slayer.

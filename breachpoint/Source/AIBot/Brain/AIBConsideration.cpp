@@ -20,12 +20,16 @@ namespace
 			return Facts.bHasReserveAmmo ? 1.f : 0.f;
 		case EAIBFactSelector::TargetVisible:
 			return Facts.bTargetVisible ? 1.f : 0.f;
+		case EAIBFactSelector::TargetFactsFromMemory:
+			return Facts.bTargetFactsFromMemory ? 1.f : 0.f;
 		case EAIBFactSelector::TargetHealthNorm:
-			return Facts.bHasTarget ? TOptional<float>(Facts.TargetHealthNorm) : TOptional<float>();
+			return Facts.bTargetVitalsKnown ? TOptional<float>(Facts.TargetHealthNorm) : TOptional<float>();
 		case EAIBFactSelector::DistToTargetUU:
 			return Facts.DistToTargetUU >= 0.f ? TOptional<float>(Facts.DistToTargetUU) : TOptional<float>();
 		case EAIBFactSelector::HeightAdvantageUU:
-			return Facts.HeightAdvantageUU;
+			// 0 is a legal value ("exactly level"), so absence needs the target gate,
+			// not a sentinel (W-REVIEW P2 M4/L1).
+			return Facts.bHasTarget ? TOptional<float>(Facts.HeightAdvantageUU) : TOptional<float>();
 		case EAIBFactSelector::MemoryFreshness:
 			if (!Facts.bHasMemory || Facts.MemoryFreshWindowSeconds <= 0.f)
 			{
@@ -35,9 +39,9 @@ namespace
 		case EAIBFactSelector::BlastSecondsToDetonation:
 			return Facts.bIncomingBlast ? TOptional<float>(Facts.BlastSecondsToDetonation) : TOptional<float>();
 		case EAIBFactSelector::RecentDamageTakenNorm:
-			return Facts.RecentDamageTakenNorm;
+			return Facts.bDamageHistoryKnown ? TOptional<float>(Facts.RecentDamageTakenNorm) : TOptional<float>();
 		case EAIBFactSelector::RecentDamageDealtNorm:
-			return Facts.RecentDamageDealtNorm;
+			return Facts.bDamageHistoryKnown ? TOptional<float>(Facts.RecentDamageDealtNorm) : TOptional<float>();
 		case EAIBFactSelector::NearbyAllies:
 			return static_cast<float>(Facts.NearbyAllies);
 		case EAIBFactSelector::NearbyEnemies:

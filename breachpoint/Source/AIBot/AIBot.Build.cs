@@ -24,7 +24,7 @@ public class AIBot : ModuleRules
 			// enforced by the linker, not by discipline.
 			"GameplayTags",
 			"GameplayTasks",
-			// Pathing diagnostics against the navmesh (the BN move tasks proved
+			// Pathing diagnostics against the navmesh (the host's move tasks proved
 			// this dependency shape).
 			"NavigationSystem",
 			// The executor. StateTree first; a Behavior Tree executor may join
@@ -36,7 +36,7 @@ public class AIBot : ModuleRules
 
 		// Every .cpp includes its own header module-root-relative — the same
 		// rule (and the same missing-line lesson) the host game learned the hard way.
-		PublicIncludePaths.Add("AIBot");
+		PublicIncludePaths.Add(ModuleDirectory);
 
 		// EDITOR ONLY — Execution/AIBTreeAuthoring builds ST_AIBBot from C++,
 		// because a StateTree graph has no scripting surface at all. Same

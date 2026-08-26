@@ -8,7 +8,9 @@ void UAIBAmbitionEngine::RegisterAmbition(const FAIBAmbitionSpec& Spec)
 	{
 		return; // an unnameable want cannot win, be logged, or be debugged — refuse it
 	}
-	// Re-registration replaces: a mode re-contributing its ambitions converges.
+	// Re-registration replaces IN PLACE: a mode re-contributing converges, tie-break
+	// order stays stable, and the commit clock is deliberately untouched (the recipe
+	// swaps, the window does not — W-REVIEW P2 L-2, documented behaviour).
 	for (FAIBAmbitionSpec& Existing : Ambitions)
 	{
 		if (Existing.Tag == Spec.Tag)
@@ -23,22 +25,34 @@ void UAIBAmbitionEngine::RegisterAmbition(const FAIBAmbitionSpec& Spec)
 void UAIBAmbitionEngine::ClearAmbitions()
 {
 	Ambitions.Reset();
+	ResetArbitration();
+}
+
+void UAIBAmbitionEngine::ResetArbitration()
+{
 	CurrentTag = FGameplayTag();
 	CurrentScore = 0.f;
 	CommitEndSeconds = -1.0;
 	LastRescoreHealthNorm = -1.f;
+	bBlastWasImminent = false;
+	bLastRescoreInterrupted = false;
 	LastScores.Reset();
+	LastRunnerUp = FAIBScoredAmbition();
 }
 
 bool UAIBAmbitionEngine::IsHardInterrupt(const FAIBFacts& Facts) const
 {
-	if (Facts.bIncomingBlast && Facts.BlastSecondsToDetonation <= BlastInterruptSeconds)
+	// BOTH interrupts are EDGES. The blast: only the think where it BECOMES imminent
+	// fires — a state-shaped blast disabled the commit for its whole 2.5s window and
+	// the bot re-picked at think rate under a grenade (W-REVIEW P2 M5).
+	const bool bBlastImminent = Facts.bIncomingBlast
+		&& Facts.BlastSecondsToDetonation <= BlastInterruptSeconds;
+	if (bBlastImminent && !bBlastWasImminent)
 	{
 		return true;
 	}
-	// The cliff is an EDGE, not a state: crossing below since the last rescore breaks a
-	// commit once; sitting hurt does not re-break every think (that would erase commit
-	// windows for any wounded bot — interrupt starvation's mirror image).
+	// The cliff: crossing below since the last rescore breaks a commit once; sitting
+	// hurt does not re-break every think.
 	if (Facts.bVitalsKnown && LastRescoreHealthNorm >= 0.f
 		&& Facts.HealthNorm < HealthCliffNorm && LastRescoreHealthNorm >= HealthCliffNorm)
 	{
@@ -62,6 +76,7 @@ const FAIBObjectiveFact* UAIBAmbitionEngine::MatchObjective(const FAIBFacts& Fac
 FGameplayTag UAIBAmbitionEngine::Rescore(const FAIBFacts& Facts, double NowSeconds)
 {
 	LastScores.Reset();
+	LastRunnerUp = FAIBScoredAmbition();
 
 	if (Ambitions.Num() == 0)
 	{
@@ -71,56 +86,83 @@ FGameplayTag UAIBAmbitionEngine::Rescore(const FAIBFacts& Facts, double NowSecon
 	}
 
 	const bool bInterrupted = IsHardInterrupt(Facts);
+	bLastRescoreInterrupted = bInterrupted;
+
+	// Edge baselines update AFTER the edge test, so each edge fires exactly once.
+	bBlastWasImminent = Facts.bIncomingBlast
+		&& Facts.BlastSecondsToDetonation <= BlastInterruptSeconds;
 	if (Facts.bVitalsKnown)
 	{
 		LastRescoreHealthNorm = Facts.HealthNorm;
 	}
 
-	// Score everything — introspection stays live even inside a commit window.
+	// Score everything — introspection stays live even inside a commit window. The
+	// scoreboard records RAW utility; hysteresis is applied only to the selection
+	// comparison, so the debugger never reads an inflated number (W-REVIEW P2 L-3).
 	const FAIBAmbitionSpec* Best = nullptr;
-	float BestScore = -1.f;
+	float BestSelectionScore = 0.f;
+	float BestRawScore = 0.f;
+	float IncumbentRawScore = -1.f;
 	for (const FAIBAmbitionSpec& Spec : Ambitions)
 	{
 		const FAIBObjectiveFact* Matched = MatchObjective(Facts, Spec.Tag);
 
-		float Score = FMath::Max(Spec.BaseUtility, 0.f);
+		float Raw = FMath::Max(Spec.BaseUtility, 0.f);
 		for (const FAIBConsideration& Consideration : Spec.Considerations)
 		{
-			Score *= Consideration.Evaluate(Facts, Matched);
+			Raw *= Consideration.Evaluate(Facts, Matched);
 		}
 
 		const bool bIncumbent = (Spec.Tag == CurrentTag);
 		if (bIncumbent)
 		{
-			Score *= SwitchCostFactor; // hysteresis: a marginal challenger does not flicker
+			IncumbentRawScore = Raw;
 		}
 
 		FAIBScoredAmbition& Row = LastScores.AddDefaulted_GetRef();
 		Row.Tag = Spec.Tag;
-		Row.Score = Score;
+		Row.Score = Raw;
 		Row.bWasIncumbent = bIncumbent;
 
-		if (Score > BestScore)
+		const float SelectionScore = bIncumbent ? Raw * SwitchCostFactor : Raw;
+		if (!Best || SelectionScore > BestSelectionScore)
 		{
-			BestScore = Score;
+			BestSelectionScore = SelectionScore;
+			BestRawScore = Raw;
 			Best = &Spec;
 		}
 	}
 
-	// The commit: inside the window, the incumbent holds — unless a hard interrupt
-	// voided it. The interrupt does not PICK; scoring above already did.
-	const bool bCommitted = (CommitEndSeconds > NowSeconds) && CurrentTag.IsValid() && !bInterrupted;
+	// Runner-up (by raw score, excluding the winner) — the instrument's context row.
+	for (const FAIBScoredAmbition& Row : LastScores)
+	{
+		if (Best && Row.Tag != Best->Tag && Row.Score >= LastRunnerUp.Score)
+		{
+			LastRunnerUp = Row;
+		}
+	}
+
+	// The commit holds only while ALL THREE are true: window live, no interrupt, and
+	// the incumbent has not VETOED ITSELF — a fresh score of zero is the ambition
+	// declaring itself impossible, and a commit must not hold a bot to chasing a
+	// corpse (W-REVIEW P2 H-2).
+	const bool bCommitted = (CommitEndSeconds > NowSeconds) && CurrentTag.IsValid()
+		&& !bInterrupted && IncumbentRawScore > 0.f;
 	if (bCommitted)
 	{
+		CurrentScore = IncumbentRawScore; // fresh, raw — never stale across a hold
 		return CurrentTag;
 	}
 
 	if (Best && Best->Tag != CurrentTag)
 	{
 		CurrentTag = Best->Tag;
+		// One-shot commit ON ENTRY — and only for an ambition that asked for one. The
+		// floor ambition (no considerations, nothing to dither against) carries zero
+		// commit precisely so it can never starve a real want (W-REVIEW P2 H-1).
 		CommitEndSeconds = NowSeconds + FMath::Max(Best->CommitSeconds, 0.f);
 	}
-	CurrentScore = BestScore;
+	CurrentScore = BestRawScore;
 	return CurrentTag;
 }
 
@@ -128,9 +170,10 @@ void UAIBAmbitionEngine::BuildDefaultCoreAmbitions(TArray<FAIBAmbitionSpec>& Out
 {
 	OutSpecs.Reset();
 
-	// ENGAGE — someone visible, a working gun, health worth spending. The distance
-	// consideration reads RAW uu against a stated band (the scale law): full appetite
-	// inside 1500uu, fading to 0.3 by 3000 — never zero, a visible enemy always matters.
+	// ENGAGE — someone visible, a working gun. The range band is NAMED module
+	// constants sourced to the default sight envelope (AIB::EngageFullAppetiteUU /
+	// EngageFadeEndUU) — the first draft's band sat entirely OUTSIDE the envelope and
+	// evaluated to 1.0 forever (W-REVIEW P2 C3: an inert, authored, documented input).
 	{
 		FAIBAmbitionSpec& Engage = OutSpecs.AddDefaulted_GetRef();
 		Engage.Tag = AIBTags::Ambition_Engage;
@@ -149,19 +192,20 @@ void UAIBAmbitionEngine::BuildDefaultCoreAmbitions(TArray<FAIBAmbitionSpec>& Out
 
 		FAIBConsideration& Range = Engage.Considerations.AddDefaulted_GetRef();
 		Range.Selector = EAIBFactSelector::DistToTargetUU;
-		Range.InputMin = 1500.f;
-		Range.InputMax = 3000.f;
+		Range.InputMin = AIB::EngageFullAppetiteUU;
+		Range.InputMax = AIB::EngageFadeEndUU;
 		{
 			FRichCurve* C = Range.Curve.GetRichCurve();
 			C->Reset();
 			C->AddKey(0.f, 1.f);
-			C->AddKey(1.f, 0.3f);
+			C->AddKey(1.f, 0.5f); // never zero: a visible enemy always matters
 		}
 		Range.ValueWhenUnknown = 0.5f;
 	}
 
-	// RETREAT — hurt and being hurt. Health falling below ~40% ramps it; taking recent
-	// damage doubles the pressure. Confidence (Phase 5) scales this further.
+	// RETREAT — hurt and being hurt. Damage history has no source until Phase 3, so
+	// its consideration runs on ValueWhenUnknown — an honest unknown, not a dead zero
+	// hiding behind a numeric coincidence (W-REVIEW P2 M6).
 	{
 		FAIBAmbitionSpec& Retreat = OutSpecs.AddDefaulted_GetRef();
 		Retreat.Tag = AIBTags::Ambition_Retreat;
@@ -182,10 +226,10 @@ void UAIBAmbitionEngine::BuildDefaultCoreAmbitions(TArray<FAIBAmbitionSpec>& Out
 		{
 			FRichCurve* C = UnderFire.Curve.GetRichCurve();
 			C->Reset();
-			C->AddKey(0.f, 0.25f); // merely being hurt is not yet a rout
+			C->AddKey(0.f, 0.35f); // merely being hurt is not yet a rout
 			C->AddKey(1.f, 1.f);
 		}
-		UnderFire.ValueWhenUnknown = 0.25f;
+		UnderFire.ValueWhenUnknown = 0.35f;
 	}
 
 	// SEARCH — a fresh memory and nothing visible. Freshness IS the curve.
@@ -220,12 +264,14 @@ void UAIBAmbitionEngine::BuildDefaultCoreAmbitions(TArray<FAIBAmbitionSpec>& Out
 		Dry.ValueWhenUnknown = 0.f;
 	}
 
-	// ROAM — the floor under everything: a bot with no other want walks the map.
-	// No considerations: a constant, beatable by any real want.
+	// ROAM — the floor under everything, and it NEVER COMMITS: a fresh bot's Roam win
+	// must not make it deaf to the first enemy it sees. The first draft gave the floor
+	// the LONGEST window of the five, and every spawn began with up to six seconds of
+	// walking past visible enemies (W-REVIEW P2 H-1, the commit-starvation walk).
 	{
 		FAIBAmbitionSpec& Roam = OutSpecs.AddDefaulted_GetRef();
 		Roam.Tag = AIBTags::Ambition_Roam;
 		Roam.BaseUtility = 0.2f;
-		Roam.CommitSeconds = 6.f;
+		Roam.CommitSeconds = 0.f;
 	}
 }

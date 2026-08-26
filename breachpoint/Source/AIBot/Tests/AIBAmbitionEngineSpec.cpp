@@ -196,6 +196,169 @@ void FAIBAmbitionEngineSpec::Define()
 			Engine->Rescore(Facts, 1.0), AIBTags::Ambition_Roam);
 	});
 
+	It("releases a commit whose incumbent VETOED itself — no chasing corpses", [this]()
+	{
+		// W-REVIEW P2 H-2: Engage committed, target dies one think later. The old gate
+		// held the zero-scored incumbent for the whole window.
+		Engine->RegisterAmbition(VisibleGated(AIBTags::Ambition_Engage, 2.0f, /*Commit=*/5.f));
+		Engine->RegisterAmbition(Constant(AIBTags::Ambition_Roam, 0.2f));
+
+		FAIBFacts Facts;
+		Facts.bTargetVisible = true;
+		Engine->Rescore(Facts, 10.0); // Engage, committed to 15.0
+
+		Facts.bTargetVisible = false; // the veto: Engage's fresh score is 0
+		TestEqual(TEXT("the vetoed commit releases immediately"),
+			Engine->Rescore(Facts, 11.0), AIBTags::Ambition_Roam);
+	});
+
+	It("never lets the floor ambition starve a real want — Roam carries no commit", [this]()
+	{
+		// W-REVIEW P2 H-1: the first draft's Roam commit made every fresh spawn deaf
+		// to a visible enemy for up to six seconds.
+		TArray<FAIBAmbitionSpec> Defaults;
+		UAIBAmbitionEngine::BuildDefaultCoreAmbitions(Defaults);
+		for (const FAIBAmbitionSpec& Spec : Defaults)
+		{
+			if (Spec.Tag == AIBTags::Ambition_Roam)
+			{
+				TestEqual(TEXT("the floor never commits"), Spec.CommitSeconds, 0.f);
+			}
+			Engine->RegisterAmbition(Spec);
+		}
+
+		// The walked scenario: spawn (Roam wins), enemy appears half a second later.
+		FAIBFacts Facts;
+		Facts.bVitalsKnown = true;
+		Facts.HealthNorm = 1.f;
+		Facts.bWeaponCanFight = true;
+		Engine->Rescore(Facts, 0.1);
+		TestEqual(TEXT("fresh spawn roams"), Engine->GetCurrent(), AIBTags::Ambition_Roam);
+
+		Facts.bHasTarget = true;
+		Facts.bTargetVisible = true;
+		Facts.DistToTargetUU = 800.f;
+		TestEqual(TEXT("the first visible enemy is engaged AT ONCE"),
+			Engine->Rescore(Facts, 0.5), AIBTags::Ambition_Engage);
+	});
+
+	It("dies with the body: ResetArbitration clears the commit, keeps the registry", [this]()
+	{
+		// W-REVIEW P2 M-1 (two passes independently): the respawned bot must not
+		// resume the dead life's want, and an absolute-time CommitEnd must not
+		// survive into a new clock.
+		Engine->RegisterAmbition(Constant(AIBTags::Ambition_Roam, 1.0f, /*Commit=*/50.f));
+		const FAIBFacts Facts;
+		Engine->Rescore(Facts, 10.0);
+		TestTrue(TEXT("committed"), Engine->GetCommitEndSeconds() > 10.0);
+
+		Engine->ResetArbitration();
+		TestFalse(TEXT("no winner"), Engine->GetCurrent().IsValid());
+		TestTrue(TEXT("no commit"), Engine->GetCommitEndSeconds() < 0.0);
+		TestEqual(TEXT("registry SURVIVES"), Engine->NumAmbitions(), 1);
+
+		// A new life at a new clock arbitrates fresh.
+		TestEqual(TEXT("fresh arbitration"), Engine->Rescore(Facts, 1.0), AIBTags::Ambition_Roam);
+	});
+
+	It("fires the blast interrupt on its RISING EDGE only — no dither window", [this]()
+	{
+		// W-REVIEW P2 M5: a state-shaped blast disabled the commit for its whole 2.5s.
+		Engine->RegisterAmbition(Constant(AIBTags::Ambition_Roam, 1.0f, /*Commit=*/20.f));
+		FAIBFacts Facts;
+		Engine->Rescore(Facts, 10.0); // committed to 30.0
+		Engine->RegisterAmbition(Constant(AIBTags::Ambition_Retreat, 5.0f, /*Commit=*/20.f));
+
+		Facts.bIncomingBlast = true;
+		Facts.BlastSecondsToDetonation = 1.0f;
+		// The edge: void + switch to the stronger want, which arms ITS commit.
+		TestEqual(TEXT("edge voids and switches"), Engine->Rescore(Facts, 11.0), AIBTags::Ambition_Retreat);
+
+		// Still imminent next think: NOT a new edge — Retreat's commit must hold even
+		// against a stronger newcomer, or the bot re-picks under the grenade.
+		Engine->RegisterAmbition(Constant(AIBTags::Ambition_Engage, 9.0f));
+		Facts.BlastSecondsToDetonation = 0.8f;
+		TestEqual(TEXT("the state does not re-fire"), Engine->Rescore(Facts, 11.2), AIBTags::Ambition_Retreat);
+	});
+
+	It("varies Engage with distance — the range consideration is NOT inert", [this]()
+	{
+		// W-REVIEW P2 C3: the first band sat outside the sight envelope and evaluated
+		// to 1.0 forever. This pins that distance now changes the score.
+		TArray<FAIBAmbitionSpec> Defaults;
+		UAIBAmbitionEngine::BuildDefaultCoreAmbitions(Defaults);
+		for (const FAIBAmbitionSpec& Spec : Defaults)
+		{
+			Engine->RegisterAmbition(Spec);
+		}
+
+		FAIBFacts Facts;
+		Facts.bVitalsKnown = true;
+		Facts.HealthNorm = 1.f;
+		Facts.bWeaponCanFight = true;
+		Facts.bHasTarget = true;
+		Facts.bTargetVisible = true;
+
+		Facts.DistToTargetUU = AIB::EngageFullAppetiteUU - 100.f;
+		Engine->Rescore(Facts, 1.0);
+		const float NearScore = Engine->GetCurrentScore();
+
+		Engine->ResetArbitration();
+		Facts.DistToTargetUU = AIB::EngageFadeEndUU - 1.f; // inside the envelope's edge
+		Engine->Rescore(Facts, 100.0);
+		const float FarScore = Engine->GetCurrentScore();
+
+		TestTrue(TEXT("near beats far — the band lives INSIDE the envelope"), NearScore > FarScore);
+	});
+
+	It("treats an unauthored curve as identity — the pass-through contract, pinned", [this]()
+	{
+		// AIB1 watch-list item converted to a fact: no keys => Eval returns the
+		// normalized input, so a default-constructed consideration is a linear ramp.
+		FAIBConsideration Bare;
+		Bare.Selector = EAIBFactSelector::AmmoNorm;
+		FAIBFacts Facts;
+		Facts.AmmoNorm = 0.75f;
+		TestEqual(TEXT("identity pass-through"), Bare.Evaluate(Facts, nullptr), 0.75f, 0.001f);
+	});
+
+	It("separates TWO mode ambitions by their own urgencies — actual separability", [this]()
+	{
+		// W-REVIEW P2 M-5: the old test's title claimed this and never exercised it.
+		const FGameplayTag Capture = AIBTags::Ambition_Mode;
+		const FGameplayTag Defend = AIBTags::Ambition_Search; // any second distinct tag
+
+		auto MakeMode = [this](FGameplayTag Tag)
+		{
+			FAIBAmbitionSpec Spec = Constant(Tag, 1.0f);
+			FAIBConsideration& Urgency = Spec.Considerations.AddDefaulted_GetRef();
+			Urgency.Selector = EAIBFactSelector::ObjectiveUrgency;
+			Urgency.SetLinearCurve(true);
+			Urgency.ValueWhenUnknown = 0.f;
+			return Spec;
+		};
+		Engine->RegisterAmbition(MakeMode(Capture));
+		Engine->RegisterAmbition(MakeMode(Defend));
+
+		FAIBFacts Facts;
+		FAIBObjectiveFact& CaptureFact = Facts.Objectives.AddDefaulted_GetRef();
+		CaptureFact.AmbitionTag = Capture;
+		CaptureFact.Urgency = 0.9f;
+		FAIBObjectiveFact& DefendFact = Facts.Objectives.AddDefaulted_GetRef();
+		DefendFact.AmbitionTag = Defend;
+		DefendFact.Urgency = 0.1f;
+
+		TestEqual(TEXT("the urgent one wins"), Engine->Rescore(Facts, 1.0), Capture);
+		// And a flattened builder could not produce this: the quiet one scored low.
+		for (const FAIBScoredAmbition& Row : Engine->GetLastScores())
+		{
+			if (Row.Tag == Defend)
+			{
+				TestTrue(TEXT("the quiet one stayed quiet"), Row.Score < 0.2f);
+			}
+		}
+	});
+
 	It("keeps the full scoreboard readable — arbitration is never a black box", [this]()
 	{
 		Engine->RegisterAmbition(Constant(AIBTags::Ambition_Roam, 1.0f));
@@ -210,8 +373,16 @@ void FAIBAmbitionEngineSpec::Define()
 		for (const FAIBScoredAmbition& Row : Scores)
 		{
 			IncumbentRows += Row.bWasIncumbent ? 1 : 0;
+			if (Row.bWasIncumbent)
+			{
+				// RAW utility on the board — hysteresis lives only in the selection
+				// comparison, so the debugger never reads an inflated number (P2 L-3).
+				TestEqual(TEXT("incumbent row is raw, not x1.15"), Row.Score, 1.0f, 0.001f);
+			}
 		}
 		TestEqual(TEXT("exactly one incumbent"), IncumbentRows, 1);
+		TestEqual(TEXT("runner-up identified for the instrument"),
+			Engine->GetLastRunnerUp().Tag, AIBTags::Ambition_Search);
 	});
 }
 

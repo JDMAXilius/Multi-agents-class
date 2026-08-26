@@ -21,13 +21,14 @@ enum class EAIBFactSelector : uint8
 	WeaponCanFight,         // bool as 0/1
 	HasReserveAmmo,         // bool as 0/1
 	TargetVisible,          // bool as 0/1
-	TargetHealthNorm,       // unset unless bHasTarget
+	TargetFactsFromMemory,  // bool as 0/1 — the staleness marker, curve-readable
+	TargetHealthNorm,       // unset unless bTargetVitalsKnown
 	DistToTargetUU,         // unset when negative (unknown)
-	HeightAdvantageUU,      // raw signed uu
+	HeightAdvantageUU,      // unset without a target (0 would mean "exactly level")
 	MemoryFreshness,        // 1 at just-seen -> 0 at the tier window's edge; unset without memory
 	BlastSecondsToDetonation, // unset unless bIncomingBlast
-	RecentDamageTakenNorm,
-	RecentDamageDealtNorm,
+	RecentDamageTakenNorm,  // unset until bDamageHistoryKnown
+	RecentDamageDealtNorm,  // unset until bDamageHistoryKnown
 	NearbyAllies,
 	NearbyEnemies,
 	Outnumbered,            // enemies minus allies, signed

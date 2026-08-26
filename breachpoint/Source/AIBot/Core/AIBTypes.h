@@ -20,6 +20,14 @@ namespace AIB
 	/** The reaction clock's queue cap (drop-oldest). An unpossessed bot must not grow
 	 *  an unbounded stimulus backlog for the rest of a match (W-REVIEW F-1.2). */
 	inline constexpr int32 MaxPendingStimuli = 64;
+
+	/** The default Engage appetite band, NAMED and sourced: full appetite inside
+	 *  EngageFullAppetiteUU, fading toward EngageFadeEndUU == the default tier's
+	 *  LoseSightRadius — the band must live INSIDE the sight envelope or the
+	 *  consideration is provably inert (W-REVIEW P2 C3: the first band started AT the
+	 *  envelope's edge and evaluated to 1.0 on every think, forever). */
+	inline constexpr float EngageFullAppetiteUU = 400.f;
+	inline constexpr float EngageFadeEndUU = 1500.f;
 }
 
 /** The combat dance: Halo Infinite's five bot skills (Stern, GDC 2022). A tier is a
@@ -89,10 +97,16 @@ struct AIBOT_API FAIBFacts
 
 	// -- the target, as perceived (not as it is) -----------------------------------
 	bool bHasTarget = false;
-	bool bTargetVisible = false;       // matured sight, current (no pending loss)
+	bool bTargetVisible = false;       // matured sight — a HELD BELIEF during a pending
+	                                   // loss (the juke window); pair with
+	                                   // bTargetFactsFromMemory to tell live from stale
 	bool bTargetAlive = true;
-	bool bTargetFactsFromMemory = false; // true => the three below are last-KNOWN values,
-	                                     // not live reads (the F3 audit marker, F-6.5)
+	bool bTargetFactsFromMemory = false; // true => position facts are last-SEEN beliefs,
+	                                     // not live reads (the F3 audit marker) — and it
+	                                     // is a SELECTOR, so curves can read it too
+	bool bTargetVitalsKnown = false;     // TargetHealthNorm/bTargetAlive were actually
+	                                     // read this think; false => they are unknowable,
+	                                     // never confident defaults (W-REVIEW P2 M3)
 	float TargetHealthNorm = 1.f;
 	float DistToTargetUU = -1.f;       // raw uu; <0 = unknown
 	float HeightAdvantageUU = 0.f;     // raw signed uu, +up (Halo's vertical consideration)
@@ -111,6 +125,9 @@ struct AIBOT_API FAIBFacts
 	float BlastRadius = 0.f;
 
 	// -- the fight so far (confidence inputs; our design, flagged as ours) -----------
+	bool bDamageHistoryKnown = false;  // no source yet (Phase 3, avatar door) — until one
+	                                   // exists the selectors return UNSET, so the curves'
+	                                   // ValueWhenUnknown governs instead of a dead 0
 	float RecentDamageTakenNorm = 0.f; // decayed window, fraction of max health, MAY exceed 1
 	float RecentDamageDealtNorm = 0.f;
 	int32 NearbyAllies = 0;

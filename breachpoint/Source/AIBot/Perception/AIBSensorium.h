@@ -67,8 +67,12 @@ public:
 	 *  then use GetLastSeenLocation, never the live actor position (F2-B). */
 	bool IsSightCurrent() const { return VisibleTarget.IsValid() && bSightCurrent; }
 
-	/** The matured last-seen spot for the visible target — the juke window's honest
-	 *  aim point. Valid only while HasVisibleTarget(). */
+	/** THE position fact for the visible target: a belief re-sampled once per Pump
+	 *  while sight is current, frozen the moment a loss is noted. Downstream code reads
+	 *  THIS, never the live actor — position flows through one site at sensorium
+	 *  cadence (W-REVIEW P2 H1). The residual pre-report window (the engine's sight
+	 *  sense not yet reporting an occlusion) is bounded by engine internals and is a
+	 *  dated FAIRPLAY acceptance. Valid only while HasVisibleTarget(). */
 	FVector GetLastSeenLocation() const { return VisibleTargetLastSeen; }
 
 	/** The most imminent still-live blast, if any; detonated ones are pruned. */

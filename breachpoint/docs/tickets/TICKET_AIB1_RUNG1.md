@@ -23,11 +23,11 @@ target memory) is worldless C++ with a spec suite.
 1. **Rung 1** — `Tools/run-ubt.ps1` (or the mac equivalent): all three targets. The
    editor target additionally proves the `Target.bBuildEditor` block resolves.
 2. **Rung 2** — `Tools/run-specs.sh AIBot` . Expected: suites `AIBot.Sim.Scaffold`
-   (5 tests), `AIBot.Sim.Sensorium` (19) and `AIBot.Sim.AmbitionEngine` (10) —
-   **34 started, 0 failures**. Zero ran = INCONCLUSIVE, never pass. Paste the counts. (Note the project's default rung-2
+   (5 tests), `AIBot.Sim.Sensorium` (19) and `AIBot.Sim.AmbitionEngine` (17) —
+   **41 started, 0 failures**. Zero ran = INCONCLUSIVE, never pass. Paste the counts. (Note the project's default rung-2
    filter does NOT include `AIBot.Sim.*` — the explicit filter argument is mandatory.)
 3. **The four mechanical checks** (post-W-REVIEW forms; paste all four empty):
-   - boundary (CASE-INSENSITIVE): `grep -rniE "breachpoint|\bBN[A-Z]" Source/AIBot/ --include=*.h --include=*.cpp --include=*.cs`
+   - boundary (CASE-INSENSITIVE, word-alone shapes included): `grep -rniE "breachpoint|\bBN([A-Z_[:space:]-]|$)" Source/AIBot/ --include=*.h --include=*.cpp --include=*.cs`
    - replication: `grep -rn "Replicated\|DOREPLIFETIME\|NetSerialize" Source/AIBot/ --include=*.h --include=*.cpp`
    - worldless brain: `grep -rn "UWorld\|AActor\|GetWorld" Source/AIBot/Brain/ Source/AIBot/Skills/`
    - F8 quarantine: `grep -rn "GetPerceptionComponent\|HasActiveStimulus\|GetCurrentlyPerceivedActors" Source/AIBot/ --include=*.h --include=*.cpp | grep -v AIBBotController.cpp`
@@ -53,11 +53,18 @@ target memory) is worldless C++ with a spec suite.
   inline-curve type, first use in this module; and `TOptional<float>` selector returns.
 - `NewObject<UAIBAmbitionEngine>(this)` in OnPossess + the engine spec's
   `GetTransientPackage()` construction (the host killfeed spec's proven pattern).
+- The blast perceivability gate's engine calls: `GetActorEyesViewPoint`,
+  `LineTraceSingleByChannel(ECC_Visibility)`, `FCollisionQueryParams` with
+  `SCENE_QUERY_STAT` — standard engine API, first use in THIS module.
+- `FRichCurve::Eval`'s no-keys default-return contract is now PINNED by a spec
+  ("treats an unauthored curve as identity") — if that test fails, the engine
+  contract differs from the module's reading and the consideration default needs
+  rethinking, not just the test.
 
 ## Done when
 
 - [ ] Rung 1 PASS, all three targets, output tail in the Log
-- [ ] Rung 2: 34 started / 0 failed, counts pasted
+- [ ] Rung 2: 41 started / 0 failed, counts pasted
 - [ ] All four mechanical checks pasted, empty
 - [ ] Any deviation (a fixed typo, a real error handed back) recorded in the Log
 

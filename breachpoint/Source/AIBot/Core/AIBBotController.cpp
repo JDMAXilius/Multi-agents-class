@@ -164,6 +164,14 @@ void AAIBBotController::OnUnPossess()
 		World->GetTimerManager().ClearTimer(ThinkTimer);
 	}
 	Sensorium.Reset();
+	// THE BRAIN DIES WITH THE BODY (W-REVIEW P2 M-1, two passes independently): the
+	// registry survives (re-registering the same wants would be waste), but the
+	// arbitration state — winner, commit clock, cliff baseline — must not carry a dead
+	// life's commit into a fresh spawn, or an absolute-time CommitEnd into a new world.
+	if (AmbitionEngine)
+	{
+		AmbitionEngine->ResetArbitration();
+	}
 	Avatar = nullptr;
 	AvatarObject = nullptr;
 	LastLoggedTarget = nullptr;
@@ -226,15 +234,43 @@ void AAIBBotController::OnPerceptionForgotten(AActor* Actor)
 
 void AAIBBotController::NoteIncomingBlast(const FVector& Center, float Radius, double DetonateAtSeconds)
 {
-	if (UWorld* World = GetWorld())
-	{
-		Sensorium.NoteIncomingBlast(Center, Radius, DetonateAtSeconds, World->GetTimeSeconds());
-	}
-	else
+	UWorld* World = GetWorld();
+	APawn* MyPawn = GetPawn();
+	if (!World || !MyPawn || !HasAuthority())
 	{
 		// F7: a dropped warning is a bot that doesn't dodge — never silently (F-4.2).
-		UE_LOG(LogAIBot, Warning, TEXT("AIBot: %s dropped a blast warning (no world)."), *GetName());
+		UE_LOG(LogAIBot, Warning, TEXT("AIBot: %s dropped a blast warning (no world/pawn/authority)."), *GetName());
+		return;
 	}
+
+	// THE PERCEIVABILITY GATE (W-REVIEW P2 H3): a maturation delay makes an omniscient
+	// fact LATE, not EARNED. The warning enters the clock only if the bot could have
+	// perceived the grenade — line of sight from its eyes to the blast point, or the
+	// point inside hearing range. A grenade thrown from behind an unseen corner is a
+	// grenade this bot cannot dodge, which is F2 working, not failing.
+	FVector EyesLocation;
+	FRotator EyesRotation;
+	MyPawn->GetActorEyesViewPoint(EyesLocation, EyesRotation);
+
+	static const FAIBTierRow Defaults; // Phase 8 resolves the real tier
+	const bool bInHearingRange = FVector::Dist(EyesLocation, Center) <= Defaults.HearingRange;
+
+	bool bHasLineOfSight = false;
+	if (!bInHearingRange)
+	{
+		FCollisionQueryParams TraceParams(SCENE_QUERY_STAT(AIBBlastPerceivability), /*bTraceComplex=*/false, MyPawn);
+		FHitResult Hit;
+		bHasLineOfSight = !World->LineTraceSingleByChannel(
+			Hit, EyesLocation, Center, ECC_Visibility, TraceParams);
+	}
+
+	if (!bInHearingRange && !bHasLineOfSight)
+	{
+		UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s could not perceive a blast warning — dropped (F2)."), *GetName());
+		return;
+	}
+
+	Sensorium.NoteIncomingBlast(Center, Radius, DetonateAtSeconds, World->GetTimeSeconds());
 }
 
 void AAIBBotController::Think()
@@ -273,8 +309,15 @@ void AAIBBotController::Think()
 		if (Ambition.IsValid() && Ambition != LastLoggedAmbition)
 		{
 			LastLoggedAmbition = Ambition;
-			UE_LOG(LogAIBot, Log, TEXT("AIBot: %s ambition -> %s (%.2f)"),
-				*GetName(), *Ambition.ToString(), AmbitionEngine->GetCurrentScore());
+			// Winner, score, runner-up, and the cause class — enough for a log reader
+			// to see hysteresis and interrupts working without a playtest (the
+			// fairness pass's instrument-quality note).
+			const FAIBScoredAmbition& RunnerUp = AmbitionEngine->GetLastRunnerUp();
+			UE_LOG(LogAIBot, Log, TEXT("AIBot: %s ambition -> %s (%.2f) over %s (%.2f)%s"),
+				*GetName(), *Ambition.ToString(), AmbitionEngine->GetCurrentScore(),
+				RunnerUp.Tag.IsValid() ? *RunnerUp.Tag.ToString() : TEXT("none"),
+				RunnerUp.Score,
+				AmbitionEngine->WasLastRescoreInterrupted() ? TEXT(" [interrupt]") : TEXT(""));
 		}
 	}
 }

@@ -46,10 +46,11 @@ public:
 	virtual bool CanWeaponFight() const = 0;          // the assembled four-read answer
 	virtual int32 GetGrenadeCount() const = 0;
 	virtual bool IsGrounded() const = 0;              // movement truth, not a tag
-	virtual bool IsAlive() const = 0;                 // !State.Dead equivalent
+	virtual bool IsAlive() const = 0;                 // alive by the host's own definition
 
-	// -- reads about ANOTHER avatar (FAIRPLAY F3: caller must hold a matured
-	//    perception of Other before asking; the sensorium enforces that, not this) --
+	// -- reads about ANOTHER avatar. FAIRPLAY ruling (26 Aug): enemy vitals are NOT a
+	//    perceivable fact — the facts builder must NOT call these for live targets.
+	//    They exist for the adapter's own uses and a future damage-derived estimate. --
 	virtual float GetHealthNormOf(const AActor* Other) const = 0;
 	virtual bool IsAliveTarget(const AActor* Other) const = 0;
 };
