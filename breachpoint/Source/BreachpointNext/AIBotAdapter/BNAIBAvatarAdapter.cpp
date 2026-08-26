@@ -25,7 +25,7 @@ namespace
 
 	/** Can this weapon put rounds downrange, now or after a reload? The swap's whole
 	 *  question, and the reason a null Unarmed slot answers "no" without anyone naming it. */
-	bool WeaponCanFight(const ABNWeapon* Weapon)
+	bool AIBWeaponCanFight(const ABNWeapon* Weapon)   // AIB-prefixed: BN's bot tasks define WeaponCanFight too, and a unity build merges both TUs
 	{
 		return Weapon && (Weapon->HasAmmo() || Weapon->GetAmmoReserve() > 0);
 	}
@@ -42,9 +42,9 @@ namespace
 	 *
 	 *  Zero means "do not bring this to this fight": nothing to fire, or beyond hard Range.
 	 */
-	float ScoreWeaponAtRange(const ABNWeapon* Weapon, float Distance)
+	float AIBScoreWeaponAtRange(const ABNWeapon* Weapon, float Distance)  // AIB-prefixed for the same unity-build reason
 	{
-		if (!WeaponCanFight(Weapon))
+		if (!AIBWeaponCanFight(Weapon))
 		{
 			return 0.f;
 		}
@@ -327,7 +327,7 @@ bool UBNAIBAvatarAdapter::IsBestWeaponForRange(float DistanceUU) const
 	// as a human's mouse wheel does, and this answers only "press it again?". That is what
 	// lets the carry keep its deliberate null Unarmed slot — a holster state a player can
 	// select — with no change to gameplay code shared with humans and BN's own bots. The
-	// slot scores 0 (WeaponCanFight is false for null), so it is never the answer, and the
+	// slot scores 0 (AIBWeaponCanFight is false for null), so it is never the answer, and the
 	// caller cycles straight past it.
 	const ABNCharacter* Character = Cast<ABNCharacter>(GetOwner());
 	const UBNEquipmentComponent* Equipment = Character ? Character->GetEquipmentComponent() : nullptr;
@@ -340,7 +340,7 @@ bool UBNAIBAvatarAdapter::IsBestWeaponForRange(float DistanceUU) const
 	float BestScore = 0.f;
 	for (const TObjectPtr<ABNWeapon>& Candidate : Equipment->GetWeapons())
 	{
-		const float Score = ScoreWeaponAtRange(Candidate, DistanceUU);
+		const float Score = AIBScoreWeaponAtRange(Candidate, DistanceUU);
 		if (Score > BestScore)
 		{
 			BestScore = Score;
@@ -351,7 +351,7 @@ bool UBNAIBAvatarAdapter::IsBestWeaponForRange(float DistanceUU) const
 	const ABNWeapon* Current = GetHeldWeapon();
 	// Nothing carried can fight at this range at all: settle for whatever is in hand rather
 	// than cycling forever. "You have no good option" is not a reason to keep pressing.
-	return Best == nullptr ? WeaponCanFight(Current) : (Current == Best);
+	return Best == nullptr ? AIBWeaponCanFight(Current) : (Current == Best);
 }
 
 float UBNAIBAvatarAdapter::GetHealthNormOf(const AActor* Other) const

@@ -247,6 +247,7 @@ void AAIBBotController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Avatar = nullptr;
 	AvatarObject = nullptr;
 	Super::EndPlay(EndPlayReason);
+}
 
 bool AAIBBotController::CanThrowGrenade() const
 {

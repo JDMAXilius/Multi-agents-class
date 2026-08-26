@@ -259,7 +259,7 @@ void UAIBAmbitionEngine::BuildDefaultCoreAmbitions(TArray<FAIBAmbitionSpec>& Out
 	// name. Roaming keeps it moving — which is also how it stumbles onto pickups.
 	{
 		FAIBAmbitionSpec& Seek = OutSpecs.AddDefaulted_GetRef();
-		Seek.Tag = AIBTags::Ambition_SeekWeapon;
+		Seek.Tag = AIBTags::Ambition_Seek;
 		Seek.BaseUtility = 1.4f;
 		Seek.CommitSeconds = 4.f;
 

@@ -1,4 +1,5 @@
 #include "Execution/AIBStateTreeTasks.h"
+#include "Navigation/PathFollowingComponent.h"
 
 #include "AIBotModule.h"
 #include "Brain/AIBAmbitionEngine.h"
