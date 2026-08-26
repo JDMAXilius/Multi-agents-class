@@ -51,6 +51,38 @@ namespace
 		Pawn->FaceRotation(Stepped, DeltaTime);
 	}
 
+	/** EVERY goal this file hands the mover is a REMEMBERED or DERIVED world point — a
+	 *  sighting recalled from memory, a belief, or plain arithmetic off the pawn's own
+	 *  location. None of those is guaranteed to be somewhere a body can stand, and
+	 *  MoveToLocation REFUSES an off-navmesh goal outright. Unprojected, the flee goal
+	 *  (pawn + away * distance) refused 33,095 times in one four-minute match against 124
+	 *  Retreat ambitions: the brain decided correctly and the body never moved.
+	 *
+	 *  So projection happens HERE, at the single door to the mover, rather than at each
+	 *  call site — four of the five sites pass a remembered point, and fixing only the two
+	 *  that log loudly would leave the other two refusing in silence.
+	 *
+	 *  A FAILED projection is deliberately NOT swallowed: the original point goes through
+	 *  and the mover refuses it, so a genuinely unreachable goal still fails loudly (F7)
+	 *  instead of being quietly redirected somewhere the caller never asked for.
+	 *
+	 *  The extent is the vertical-generous box the sibling framework settled on: wide
+	 *  enough to catch a goal beside a walkable surface, tall enough to catch one above or
+	 *  below a floor, which is the common case on a multi-level arena. */
+	EPathFollowingRequestResult::Type MoveToNavPoint(AAIBBotController& Bot, const FVector& Goal, float AcceptanceUU)
+	{
+		FVector Target = Goal;
+		if (UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(Bot.GetWorld()))
+		{
+			FNavLocation Projected;
+			if (NavSys->ProjectPointToNavigation(Goal, Projected, FVector(300.f, 300.f, 400.f)))
+			{
+				Target = Projected.Location;
+			}
+		}
+		return Bot.MoveToLocation(Target, AcceptanceUU);
+	}
+
 	bool IsWithin(const AAIController& Controller, const FVector& Point, float RadiusUU)
 	{
 		const APawn* Pawn = Controller.GetPawn();
@@ -307,7 +339,7 @@ EStateTreeRunStatus FAIBMoveNearBeliefTask::EnterState(FStateTreeExecutionContex
 	// would complete instantly and thrash the branch — the never-succeed contract).
 	if (!IsWithin(*Bot, InstanceData.LastGoal, InstanceData.AcceptanceRadiusUU))
 	{
-		if (Bot->MoveToLocation(InstanceData.LastGoal, InstanceData.AcceptanceRadiusUU)
+		if (MoveToNavPoint(*Bot, InstanceData.LastGoal, InstanceData.AcceptanceRadiusUU)
 			== EPathFollowingRequestResult::Failed)
 		{
 			UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s could not path to the belief — closing refused (F7)."), *Bot->GetName());
@@ -338,7 +370,7 @@ EStateTreeRunStatus FAIBMoveNearBeliefTask::Tick(FStateTreeExecutionContext& Con
 	{
 		InstanceData.LastGoal = Belief;
 		InstanceData.RepathCooldown = InstanceData.RepathIntervalSeconds;
-		if (Bot->MoveToLocation(Belief, InstanceData.AcceptanceRadiusUU)
+		if (MoveToNavPoint(*Bot, Belief, InstanceData.AcceptanceRadiusUU)
 			== EPathFollowingRequestResult::Failed)
 		{
 			UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s could not path to the belief — closing refused (F7)."), *Bot->GetName());
@@ -651,7 +683,7 @@ EStateTreeRunStatus FAIBFleeFromBeliefTask::EnterState(FStateTreeExecutionContex
 	InstanceData.FleeGoal = Goal;
 	InstanceData.ClosestSoFarUU = FVector::Dist(Pawn->GetActorLocation(), Goal);
 	InstanceData.SecondsWithoutProgress = 0.f;
-	if (Bot->MoveToLocation(InstanceData.FleeGoal, 150.f) == EPathFollowingRequestResult::Failed)
+	if (MoveToNavPoint(*Bot, InstanceData.FleeGoal, 150.f) == EPathFollowingRequestResult::Failed)
 	{
 		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s flee path REFUSED — failing loudly, not standing (F7)."), *Bot->GetName());
 		return EStateTreeRunStatus::Failed;
@@ -724,7 +756,7 @@ EStateTreeRunStatus FAIBMoveToLastKnownTask::EnterState(FStateTreeExecutionConte
 	}
 	InstanceData.ClosestSoFarUU = FVector::Dist(Pawn->GetActorLocation(), LastKnown);
 	InstanceData.SecondsWithoutProgress = 0.f;
-	if (Bot->MoveToLocation(LastKnown, InstanceData.AcceptanceRadiusUU)
+	if (MoveToNavPoint(*Bot, LastKnown, InstanceData.AcceptanceRadiusUU)
 		== EPathFollowingRequestResult::Failed)
 	{
 		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s cannot path to the last-known spot — search fails loudly (F7)."), *Bot->GetName());
@@ -868,7 +900,7 @@ EStateTreeRunStatus FAIBMoveToPOITask::EnterState(FStateTreeExecutionContext& Co
 
 	InstanceData.ClosestSoFarUU = FVector::Dist(Pawn->GetActorLocation(), InstanceData.Goal);
 	InstanceData.SecondsWithoutProgress = 0.f;
-	if (Bot->MoveToLocation(InstanceData.Goal, InstanceData.AcceptanceRadiusUU)
+	if (MoveToNavPoint(*Bot, InstanceData.Goal, InstanceData.AcceptanceRadiusUU)
 		== EPathFollowingRequestResult::Failed)
 	{
 		UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s POI path refused — branch fails (F7)."), *Bot->GetName());
