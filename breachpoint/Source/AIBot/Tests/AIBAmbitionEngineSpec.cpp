@@ -40,6 +40,17 @@ BEGIN_DEFINE_SPEC(FAIBAmbitionEngineSpec, "AIBot.Sim.AmbitionEngine",
 		return Spec;
 	}
 
+
+	/**
+	 * TestEqual has no FGameplayTag overload. Comparing GetTagName() takes the FName one,
+	 * which PRINTS both tags on failure — a spec that fails without naming the ambition
+	 * that won costs the next session more than it saves this one.
+	 */
+	bool TestTag(const TCHAR* What, FGameplayTag Actual, FGameplayTag Expected)
+	{
+		return TestEqual(What, Actual.GetTagName(), Expected.GetTagName());
+	}
+
 END_DEFINE_SPEC(FAIBAmbitionEngineSpec)
 
 void FAIBAmbitionEngineSpec::Define()
@@ -82,10 +93,10 @@ void FAIBAmbitionEngineSpec::Define()
 		Engine->RegisterAmbition(Constant(AIBTags::Ambition_Roam, 0.2f));
 
 		FAIBFacts Facts; // nothing visible: the 100 collapses to 0
-		TestEqual(TEXT("the giant is vetoed"), Engine->Rescore(Facts, 1.0), AIBTags::Ambition_Roam);
+		TestTag(TEXT("the giant is vetoed"), Engine->Rescore(Facts, 1.0), AIBTags::Ambition_Roam);
 
 		Facts.bTargetVisible = true;
-		TestEqual(TEXT("visible flips it"), Engine->Rescore(Facts, 10.0), AIBTags::Ambition_Engage);
+		TestTag(TEXT("visible flips it"), Engine->Rescore(Facts, 10.0), AIBTags::Ambition_Engage);
 	});
 
 	It("holds the incumbent against a marginal challenger — the anti-dither hysteresis", [this]()
@@ -93,15 +104,15 @@ void FAIBAmbitionEngineSpec::Define()
 		Engine->RegisterAmbition(Constant(AIBTags::Ambition_Roam, 1.0f));
 		const FAIBFacts Facts;
 		Engine->Rescore(Facts, 1.0);
-		TestEqual(TEXT("Roam holds"), Engine->GetCurrent(), AIBTags::Ambition_Roam);
+		TestTag(TEXT("Roam holds"), Engine->GetCurrent(), AIBTags::Ambition_Roam);
 
 		// 1.1 < 1.0 * SwitchCostFactor(1.15): a marginal better does not flicker.
 		Engine->RegisterAmbition(Constant(AIBTags::Ambition_Search, 1.1f));
-		TestEqual(TEXT("marginal challenger refused"), Engine->Rescore(Facts, 2.0), AIBTags::Ambition_Roam);
+		TestTag(TEXT("marginal challenger refused"), Engine->Rescore(Facts, 2.0), AIBTags::Ambition_Roam);
 
 		// 1.3 > 1.15: a real difference switches.
 		Engine->RegisterAmbition(Constant(AIBTags::Ambition_Engage, 1.3f));
-		TestEqual(TEXT("clear challenger accepted"), Engine->Rescore(Facts, 3.0), AIBTags::Ambition_Engage);
+		TestTag(TEXT("clear challenger accepted"), Engine->Rescore(Facts, 3.0), AIBTags::Ambition_Engage);
 	});
 
 	It("honours the commit window, then releases at its edge", [this]()
@@ -111,8 +122,8 @@ void FAIBAmbitionEngineSpec::Define()
 		Engine->Rescore(Facts, 10.0); // Roam wins, committed to 13.0
 
 		Engine->RegisterAmbition(Constant(AIBTags::Ambition_Engage, 5.0f));
-		TestEqual(TEXT("held inside the window"), Engine->Rescore(Facts, 12.0), AIBTags::Ambition_Roam);
-		TestEqual(TEXT("released after it"), Engine->Rescore(Facts, 13.1), AIBTags::Ambition_Engage);
+		TestTag(TEXT("held inside the window"), Engine->Rescore(Facts, 12.0), AIBTags::Ambition_Roam);
+		TestTag(TEXT("released after it"), Engine->Rescore(Facts, 13.1), AIBTags::Ambition_Engage);
 	});
 
 	It("voids a commit for an imminent blast — but distance in TIME matters", [this]()
@@ -125,11 +136,11 @@ void FAIBAmbitionEngineSpec::Define()
 		// A blast 4s out is beyond BlastInterruptSeconds (2.5): the commit holds.
 		Facts.bIncomingBlast = true;
 		Facts.BlastSecondsToDetonation = 4.0f;
-		TestEqual(TEXT("far blast does not void"), Engine->Rescore(Facts, 11.0), AIBTags::Ambition_Roam);
+		TestTag(TEXT("far blast does not void"), Engine->Rescore(Facts, 11.0), AIBTags::Ambition_Roam);
 
 		// 1s out: void, and the stronger want takes over NOW.
 		Facts.BlastSecondsToDetonation = 1.0f;
-		TestEqual(TEXT("imminent blast voids the commit"), Engine->Rescore(Facts, 11.5), AIBTags::Ambition_Retreat);
+		TestTag(TEXT("imminent blast voids the commit"), Engine->Rescore(Facts, 11.5), AIBTags::Ambition_Retreat);
 	});
 
 	It("breaks a commit on the health CLIFF's edge — once, not every think thereafter", [this]()
@@ -147,13 +158,13 @@ void FAIBAmbitionEngineSpec::Define()
 		// so Roam wins on score.
 		Facts.HealthNorm = 0.2f;
 		Facts.bTargetVisible = false;
-		TestEqual(TEXT("the crossing breaks the commit"), Engine->Rescore(Facts, 11.0), AIBTags::Ambition_Roam);
+		TestTag(TEXT("the crossing breaks the commit"), Engine->Rescore(Facts, 11.0), AIBTags::Ambition_Roam);
 
 		// STAYING hurt is not a new crossing: Roam's fresh 10s commit must survive a
 		// stronger challenger while health sits below the cliff — the state-shaped
 		// cliff would erase every wounded bot's commits forever.
 		Facts.bTargetVisible = true; // Engage would score 2.0 > Roam's 1.15
-		TestEqual(TEXT("sitting hurt does not re-break"), Engine->Rescore(Facts, 12.0), AIBTags::Ambition_Roam);
+		TestTag(TEXT("sitting hurt does not re-break"), Engine->Rescore(Facts, 12.0), AIBTags::Ambition_Roam);
 	});
 
 	It("joins each mode ambition to ITS objective fact by tag — CTF stays separable", [this]()
@@ -169,13 +180,13 @@ void FAIBAmbitionEngineSpec::Define()
 		Engine->RegisterAmbition(Constant(AIBTags::Ambition_Roam, 0.3f));
 
 		FAIBFacts Facts;
-		TestEqual(TEXT("no objective fact: mode ambition silent"),
+		TestTag(TEXT("no objective fact: mode ambition silent"),
 			Engine->Rescore(Facts, 1.0), AIBTags::Ambition_Roam);
 
 		FAIBObjectiveFact& Objective = Facts.Objectives.AddDefaulted_GetRef();
 		Objective.AmbitionTag = Mode;
 		Objective.Urgency = 1.0f; // the dropped flag outshouts
-		TestEqual(TEXT("urgency 1.0 wins"), Engine->Rescore(Facts, 10.0), Mode);
+		TestTag(TEXT("urgency 1.0 wins"), Engine->Rescore(Facts, 10.0), Mode);
 	});
 
 	It("does not flee on unknown vitals — the default set's honest-unknown ruling", [this]()
@@ -192,7 +203,7 @@ void FAIBAmbitionEngineSpec::Define()
 		// as a dying bot. Roam is the honest answer, not Retreat.
 		FAIBFacts Facts;
 		Facts.bWeaponCanFight = true;
-		TestEqual(TEXT("unknown vitals roam, not rout"),
+		TestTag(TEXT("unknown vitals roam, not rout"),
 			Engine->Rescore(Facts, 1.0), AIBTags::Ambition_Roam);
 	});
 
@@ -208,7 +219,7 @@ void FAIBAmbitionEngineSpec::Define()
 		Engine->Rescore(Facts, 10.0); // Engage, committed to 15.0
 
 		Facts.bTargetVisible = false; // the veto: Engage's fresh score is 0
-		TestEqual(TEXT("the vetoed commit releases immediately"),
+		TestTag(TEXT("the vetoed commit releases immediately"),
 			Engine->Rescore(Facts, 11.0), AIBTags::Ambition_Roam);
 	});
 
@@ -233,12 +244,12 @@ void FAIBAmbitionEngineSpec::Define()
 		Facts.HealthNorm = 1.f;
 		Facts.bWeaponCanFight = true;
 		Engine->Rescore(Facts, 0.1);
-		TestEqual(TEXT("fresh spawn roams"), Engine->GetCurrent(), AIBTags::Ambition_Roam);
+		TestTag(TEXT("fresh spawn roams"), Engine->GetCurrent(), AIBTags::Ambition_Roam);
 
 		Facts.bHasTarget = true;
 		Facts.bTargetVisible = true;
 		Facts.DistToTargetUU = 800.f;
-		TestEqual(TEXT("the first visible enemy is engaged AT ONCE"),
+		TestTag(TEXT("the first visible enemy is engaged AT ONCE"),
 			Engine->Rescore(Facts, 0.5), AIBTags::Ambition_Engage);
 	});
 
@@ -258,7 +269,7 @@ void FAIBAmbitionEngineSpec::Define()
 		TestEqual(TEXT("registry SURVIVES"), Engine->NumAmbitions(), 1);
 
 		// A new life at a new clock arbitrates fresh.
-		TestEqual(TEXT("fresh arbitration"), Engine->Rescore(Facts, 1.0), AIBTags::Ambition_Roam);
+		TestTag(TEXT("fresh arbitration"), Engine->Rescore(Facts, 1.0), AIBTags::Ambition_Roam);
 	});
 
 	It("fires the blast interrupt on its RISING EDGE only — no dither window", [this]()
@@ -272,13 +283,13 @@ void FAIBAmbitionEngineSpec::Define()
 		Facts.bIncomingBlast = true;
 		Facts.BlastSecondsToDetonation = 1.0f;
 		// The edge: void + switch to the stronger want, which arms ITS commit.
-		TestEqual(TEXT("edge voids and switches"), Engine->Rescore(Facts, 11.0), AIBTags::Ambition_Retreat);
+		TestTag(TEXT("edge voids and switches"), Engine->Rescore(Facts, 11.0), AIBTags::Ambition_Retreat);
 
 		// Still imminent next think: NOT a new edge — Retreat's commit must hold even
 		// against a stronger newcomer, or the bot re-picks under the grenade.
 		Engine->RegisterAmbition(Constant(AIBTags::Ambition_Engage, 9.0f));
 		Facts.BlastSecondsToDetonation = 0.8f;
-		TestEqual(TEXT("the state does not re-fire"), Engine->Rescore(Facts, 11.2), AIBTags::Ambition_Retreat);
+		TestTag(TEXT("the state does not re-fire"), Engine->Rescore(Facts, 11.2), AIBTags::Ambition_Retreat);
 	});
 
 	It("varies Engage with distance — the range consideration is NOT inert", [this]()
@@ -348,7 +359,7 @@ void FAIBAmbitionEngineSpec::Define()
 		DefendFact.AmbitionTag = Defend;
 		DefendFact.Urgency = 0.1f;
 
-		TestEqual(TEXT("the urgent one wins"), Engine->Rescore(Facts, 1.0), Capture);
+		TestTag(TEXT("the urgent one wins"), Engine->Rescore(Facts, 1.0), Capture);
 		// And a flattened builder could not produce this: the quiet one scored low.
 		for (const FAIBScoredAmbition& Row : Engine->GetLastScores())
 		{
@@ -381,7 +392,7 @@ void FAIBAmbitionEngineSpec::Define()
 			}
 		}
 		TestEqual(TEXT("exactly one incumbent"), IncumbentRows, 1);
-		TestEqual(TEXT("runner-up identified for the instrument"),
+		TestTag(TEXT("runner-up identified for the instrument"),
 			Engine->GetLastRunnerUp().Tag, AIBTags::Ambition_Search);
 	});
 }

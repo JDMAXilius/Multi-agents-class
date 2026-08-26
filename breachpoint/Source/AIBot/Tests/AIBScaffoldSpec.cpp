@@ -28,24 +28,24 @@ void FAIBScaffoldSpec::Define()
 		// HONEST SCOPE (W-REVIEW F-5.4): this proves registration ran, not that the
 		// strings are right — UE_DEFINE_GAMEPLAY_TAG registers a typo'd literal just as
 		// happily. The verb->host-input map is the adapter's to test, at Phase 3.
-		TestTrue(TEXT("Fire"), AIBTags::Verb_Fire.IsValid());
-		TestTrue(TEXT("Jump"), AIBTags::Verb_Jump.IsValid());
-		TestTrue(TEXT("Crouch"), AIBTags::Verb_Crouch.IsValid());
-		TestTrue(TEXT("Sprint"), AIBTags::Verb_Sprint.IsValid());
-		TestTrue(TEXT("Melee"), AIBTags::Verb_Melee.IsValid());
-		TestTrue(TEXT("Grenade"), AIBTags::Verb_Grenade.IsValid());
-		TestTrue(TEXT("Reload"), AIBTags::Verb_Reload.IsValid());
-		TestTrue(TEXT("WeaponNext"), AIBTags::Verb_WeaponNext.IsValid());
+		TestTrue(TEXT("Fire"), AIBTags::Verb_Fire.GetTag().IsValid());
+		TestTrue(TEXT("Jump"), AIBTags::Verb_Jump.GetTag().IsValid());
+		TestTrue(TEXT("Crouch"), AIBTags::Verb_Crouch.GetTag().IsValid());
+		TestTrue(TEXT("Sprint"), AIBTags::Verb_Sprint.GetTag().IsValid());
+		TestTrue(TEXT("Melee"), AIBTags::Verb_Melee.GetTag().IsValid());
+		TestTrue(TEXT("Grenade"), AIBTags::Verb_Grenade.GetTag().IsValid());
+		TestTrue(TEXT("Reload"), AIBTags::Verb_Reload.GetTag().IsValid());
+		TestTrue(TEXT("WeaponNext"), AIBTags::Verb_WeaponNext.GetTag().IsValid());
 	});
 
 	It("registered the core ambitions and the mode root", [this]()
 	{
-		TestTrue(TEXT("Engage"), AIBTags::Ambition_Engage.IsValid());
-		TestTrue(TEXT("Retreat"), AIBTags::Ambition_Retreat.IsValid());
-		TestTrue(TEXT("SeekWeapon"), AIBTags::Ambition_SeekWeapon.IsValid());
-		TestTrue(TEXT("Search"), AIBTags::Ambition_Search.IsValid());
-		TestTrue(TEXT("Roam"), AIBTags::Ambition_Roam.IsValid());
-		TestTrue(TEXT("Mode root"), AIBTags::Ambition_Mode.IsValid());
+		TestTrue(TEXT("Engage"), AIBTags::Ambition_Engage.GetTag().IsValid());
+		TestTrue(TEXT("Retreat"), AIBTags::Ambition_Retreat.GetTag().IsValid());
+		TestTrue(TEXT("SeekWeapon"), AIBTags::Ambition_SeekWeapon.GetTag().IsValid());
+		TestTrue(TEXT("Search"), AIBTags::Ambition_Search.GetTag().IsValid());
+		TestTrue(TEXT("Roam"), AIBTags::Ambition_Roam.GetTag().IsValid());
+		TestTrue(TEXT("Mode root"), AIBTags::Ambition_Mode.GetTag().IsValid());
 	});
 
 	It("starts facts at honest UNKNOWNS — never a confident default", [this]()

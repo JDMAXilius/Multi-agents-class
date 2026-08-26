@@ -1,6 +1,9 @@
 # TICKET — AIB1: first compile of the AIBot module, and its first spec counts
 
-> STATUS: open — RUNG 1 FAILED, handed back to `aib-builder`. mac terminal 25 Aug 2026
+> STATUS: open — RUNG 1 now COMPILES (Editor+Game; Server is environmental). RUNG 2 is
+> **40/41 — ONE REAL FAILURE**, and the runner reported it as a pass. Handed back to
+> `aib-builder`. Superseded status line below kept for the record:
+> ~~RUNG 1 FAILED, handed back to `aib-builder`.~~ mac terminal 25 Aug 2026
 > (2b59469). Two real compile errors, BOTH confined to `Source/AIBot/Tests/`; the module's
 > own code compiled clean. Mechanical checks 1-4 all pass. Rung 2 is BLOCKED, not failed.
 
@@ -173,3 +176,143 @@ pre-existing warning seen in passing and NOT caused by AIBot:
 project *"will no longer compile"* on the next engine upgrade.
 
 **Next:** `aib-builder` fixes the 29 sites; this ticket re-runs from step 1 unchanged.
+
+### 25 Aug 2026 — `aib-builder`. The 34 test-only sites fixed. Editor target PASSES.
+
+Both errors were mine and both were in `Source/AIBot/Tests/` only. Nothing outside `Tests/`
+was touched; no module code needed a change, which is the right outcome — the assertions
+were wrong, not the contracts they assert.
+
+**Error 1 — `FNativeGameplayTag::IsValid()` → `.GetTag().IsValid()`. 14 sites,
+`AIBScaffoldSpec.cpp`.** Read from `Engine/Source/Runtime/GameplayTags/Public/NativeGameplayTags.h`:
+`FNativeGameplayTag` exposes exactly `GetTag()` and an implicit `operator FGameplayTag()`,
+and nothing else tag-shaped. `IsValid()` is `FGameplayTag`'s
+(`GameplayTags/Classes/GameplayTagContainer.h:138`).
+
+**Error 2 — no `FGameplayTag` overload of `TestEqual`. 22 sites, `AIBAmbitionEngineSpec.cpp`**
+(the lead's count of 15 was the `-ferror-limit` truncation; two of the 22 are multi-line
+calls that a first pass missed and the compiler caught on the next run).
+
+One file-local helper in the spec's DEFINE block, no module change:
+
+```cpp
+bool TestTag(const TCHAR* What, FGameplayTag Actual, FGameplayTag Expected)
+{
+    return TestEqual(What, Actual.GetTagName(), Expected.GetTagName());
+}
+```
+
+**The design call, in one line: compare `GetTagName()` and take the `FName` overload
+(`AutomationTest.h:2003`), because its failure path is
+`AddError("Expected '%s' to be %s, but it was %s")` — a failing arbitration test NAMES the
+ambition that won, which `TestTrue(A == B)` cannot, and it costs no `FString` temporary the
+way `.ToString()` would.** The implicit `operator FGameplayTag()` means `TestTag` takes the
+raw `AIBTags::` natives and the `FGameplayTag` returns of `Rescore`/`GetCurrent` without a
+cast at any of the 22 sites.
+
+**Rung 1 — `./Tools/run-ubt.sh BreachpointEditor` (single target on purpose; Server cannot
+link on this launcher install and would mask the result):**
+
+```
+--- BreachpointEditor : started 2026-08-25 20:53:02 ---
+Deploying now!
+
+Result: Succeeded
+Total execution time: 5.80 seconds
+
+== RUNG 1 SUMMARY ==
+  PASS    BreachpointEditor (exit 0, touched libUnrealEditor-AIBot.dylib)
+  PARTIAL - fewer than three targets. Report as PARTIAL, not rung 1.
+```
+
+`PARTIAL`/`exit 1` is the script refusing to call one target a rung — correct, and the
+reason the Done-when boxes stay unticked here. **The full three-target re-run and rung 2 are
+the lead's**, not run by me, and no editor was opened.
+
+Boundary grep re-run on this diff, both forms, both empty:
+`grep -rn "Breachpoint\|BNCharacter\|\"BN" Source/AIBot/ --include="*.h" --include="*.cpp"` → empty.
+`grep -rniE "breachpoint|\bBN([A-Z_[:space:]-]|$)" Source/AIBot/ --include="*.h" --include="*.cpp" --include="*.cs"` → empty.
+(The previous Log's zsh warning is real and bit me once: unquoted `--include=*.h` dies with
+*"no matches found"* before grep runs. Quoted above.)
+
+**Expected rung-2 counts are unchanged at 41** — no test was added, removed, or merged; 34
+assertion *expressions* changed, zero `It(...)` blocks.
+
+### 25 Aug 2026 (re-run) — compiles now. Rung 2 is 40/41, and the runner lied about it.
+
+**Step 1 — Rung 1 after `aib-builder`'s test fix:**
+
+```
+== RUNG 1 SUMMARY ==
+  INCONC  BreachpointEditor (exit 0, already up to date - no binary relinked)
+  PASS    Breachpoint (exit 0, touched CodeResources)
+  FAIL    BreachpointServer (exit 6)
+```
+
+`BreachpointEditor` is INCONCLUSIVE only because `aib-builder` had just relinked it in its
+own verification — the code compiles. `Breachpoint` is a clean PASS. `BreachpointServer`
+remains the environmental failure: *"Server targets are not currently supported from this
+engine distribution."* **This ticket's "all three targets PASS" box is unsatisfiable on an
+Epic Launcher install and always was** — recorded here rather than quietly ticked.
+
+**Step 2 — Rung 2: 41 started, ONE FAILED. `run-specs.sh` printed `0 failures`.**
+
+```
+AIBot.Sim.Sensorium.the sensorium (F2 end to end, real actors).
+  matures a sighting into a visible target — and not before the clock says
+Error: Expected 'last seen where the stimulus said' to be 5.000000,
+       but it was 0.000000 and outside tolerance 0.000100.
+```
+
+Counted straight out of the log: `Test Started` 41, `Result={Success}` **40**,
+`Result={Fail}` **1**. The suite total of 41 matches this ticket's expectation exactly, so
+the *count* gate passed while the *content* did not.
+
+## contract_gap — RUNG 2 CANNOT SEE A FAILING TEST. `Tools/` is outside this packet.
+
+`Tools/run-specs.sh:73`:
+
+```bash
+FAILED="$(grep -cE "Automation Test Failed|Error: Test Failed" "$LOG" || true)"
+```
+
+UE 5.8's automation controller does not emit either string. It emits:
+
+```
+LogAutomationController: Error: Test Completed. Result={Fail} Name={...}
+```
+
+So `FAILED` is always 0 and **every rung-2 run in this project reports PASS regardless of
+whether tests failed.** This is precisely the failure the script's own header warns about —
+*"a spec run that finds NO tests is INCONCLUSIVE, never PASS … reports 0 tests, 0 failures
+and looks exactly like success"* — the author guarded the zero-tests trap and missed the
+failing-test one directly beside it.
+
+**Suggested fix (one line, for whoever owns `Tools/`):**
+```bash
+FAILED="$(grep -cE "Result=\{Fail\}" "$LOG" || true)"
+```
+
+**Blast radius, checked rather than assumed.** Every spec log from today was audited:
+
+| log | started | success | fail |
+|---|---|---|---|
+| specs-…205447 (AIBot) | 41 | 40 | **1** |
+| the other 11 runs today (BN) | 30 | 30 | 0 |
+
+So no BN result reported this session was wrong — all eleven were genuinely 30/30. That is
+luck, not the tool: the detector has been blind the whole time and the first genuinely
+failing spec in this project is the one that exposed it.
+
+**Step 3 — the four mechanical checks: re-run after the fix, ALL FOUR EMPTY, ALL PASS.**
+(Quoted `--include` globs; see the earlier zsh note. `aib-builder` independently hit the
+same trap.)
+
+**Step 4 — deviations.** `aib-builder` corrected the earlier site count: 22 `TestEqual`
+sites, not 15 — two were multi-line calls whose tag argument sits on the continuation line,
+which a line-oriented grep undercounts. It chose `TestEqual(What, Actual.GetTagName(),
+Expected.GetTagName())` so a failing arbitration test prints WHICH ambition won; `TestTrue`
+would have printed nothing and `.ToString()` allocates two temporaries per assert.
+
+**Still open:** the one failing sensorium spec, and the `Tools/run-specs.sh` gap above.
+Neither is fixable inside this packet's owner_path.
