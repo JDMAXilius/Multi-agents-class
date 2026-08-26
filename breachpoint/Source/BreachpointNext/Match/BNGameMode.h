@@ -97,6 +97,11 @@ public:
 	/** Read by ABNGameState, which mirrors it so clients can render "12 / 25". */
 	int32 GetScoreLimit() const { return ScoreLimit; }
 
+	/** TEAMS (BN15): read by the damage door (authority-side, so the server-only mode
+	 *  is always reachable there) and the bot adapter. */
+	bool AreTeamsEnabled() const { return bTeamsEnabled; }
+	bool IsFriendlyFireEnabled() const { return bFriendlyFire; }
+
 	// -- IAIBAmbitionProvider (Phase 6: the mode tells bots what it wants) --------------
 	/** One ambition when the hill is on, none in plain Slayer — "a mode adds ambitions,
 	 *  never a system" is the interface's own sentence, and Slayer proves the zero case. */
