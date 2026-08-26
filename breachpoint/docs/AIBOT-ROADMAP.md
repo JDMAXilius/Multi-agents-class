@@ -76,12 +76,27 @@ in real implementations. Phases 1–2 and 5 are pure headless C++ (worldless by 
    Cloud writes and audits; it cannot compile (no engine in the container). The terminal
    proves every rung.
 
-## BreachpointNext footprint (the whole of it)
+## BreachpointNext footprint — THE SEAM LEDGER (amended 26 Aug 2026)
 
-~3 adapter files in `Source/BreachpointNext/AIBotAdapter/` (owned by bn-builder), `"AIBot"`
-in the .uproject + Build.cs dependency, the `BotSystem` switch in `BNGameMode`, one ini
-section. Damage door, attributes, HUD, netcode: untouched, guaranteed. If the footprint
-ever grows past that folder, self-containment is broken and that is a finding.
+The original claim ("~3 adapter files; growth past that folder is a finding") went false
+the day the game had to TELL the module things — a warning seam is game code by nature.
+Kept honest the way the GAS contract keeps its exceptions: a NAMED ledger. Every game
+file that names an AIBot type is listed here with its one purpose; a seam not on this
+ledger is the finding — nothing joins inline.
+
+1. `AIBotAdapter/` (bn-builder's folder) — the avatar door and, at Phase 6, the world
+   query subsystem. The bulk of the footprint lives here, still.
+2. `Characters/BNCharacter.cpp` — one `EnsureOn` line at possession (the adapter attach).
+3. `Weapons/BNProjectile.cpp` — the blast warning seam (`NoteIncomingBlast`).
+4. `Characters/BNHealthComponent.cpp` — the damage seam (`NoteDamageTaken/Dealt`,
+   Phase 5): one per-hit site for every victim, which no adapter component can see.
+5. `Match/BNGameMode` — the `BotSystem` A/B switch + `AIBBotControllerClass`, and (Phase
+   6, planned) the provider handoff line in `SpawnBot`.
+6. `Breachpoint.uproject` + Build.cs dependency + the two ini sections.
+
+Damage pipeline, attributes, HUD, netcode: still untouched. The test is no longer "one
+folder" — it is "every seam is on this list, each is a NOTE into the module (information
+flows in, verbs flow out through the adapter), and none replicates anything."
 
 ## Prerequisites before Phase 0
 

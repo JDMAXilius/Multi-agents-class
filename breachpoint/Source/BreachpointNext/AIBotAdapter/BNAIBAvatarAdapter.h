@@ -12,8 +12,10 @@ class UBNAbilitySystemComponent;
 
 /**
  * THE ADAPTER — BreachpointNext's implementation of the AIBot module's one avatar door.
- * The whole game-side footprint of the bot framework lives in this folder; if it ever
- * grows past it, self-containment is broken and that is a finding (AIBOT-ROADMAP).
+ * The BULK of the game-side footprint lives in this folder; the rest is the NAMED SEAM
+ * LEDGER in AIBOT-ROADMAP (amended 26 Aug 2026) — warning/damage seams are game code by
+ * nature and each is listed there with its one purpose. A seam not on that ledger is
+ * the finding.
  *
  * Presses land on the SAME path a human's keyboard reaches: the PlayerState's ASC via
  * AbilityInputTagPressed — the 25 Aug seam audit's proven chain. The verb->input-tag map
