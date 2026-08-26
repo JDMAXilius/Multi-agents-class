@@ -428,6 +428,16 @@ void ABNGameMode::HandlePlayerDeath(ABNPlayerState* Victim, ABNPlayerState* Kill
 		}
 	}
 
+	// The denial is COUNTABLE (BN16 harness law: no proof rests on an impression) — the
+	// kill line below still prints the elimination, and without this line a team kill and
+	// a credited kill read identically in a log. Exact format is load-bearing: the metrics
+	// harness regex transcribes it.
+	if (bTeamKill)
+	{
+		UE_LOG(LogBN, Log, TEXT("BNGameMode: team kill — %s -> %s, no credit."),
+			*Killer->GetPlayerName(), *Victim->GetPlayerName());
+	}
+
 	// THE KILL LINE — the pipeline's deliverable, and the founder's test. Three wordings for three
 	// real cases, decided in the research doc so nobody rediscovers them: a null killer is world
 	// damage or a killer who disconnected mid-flight; killer == victim is their own grenade.

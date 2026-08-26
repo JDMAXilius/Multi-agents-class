@@ -55,6 +55,13 @@ RX = {
     # and the silent gate holds that were the old "too short" report's whole story.
     "strafe_leg":  re.compile(r"AIBot: (?P<bot>\S+) strafe leg — (?P<arc>[0-9.]+)uu of arc at range (?P<range>[0-9.]+)uu"),
     "strafe_hold": re.compile(r"AIBot: (?P<bot>\S+) strafe held — outside the engaged radius"),
+    # BN15 teams (LogBN, not the module's log): the three countable events the roadmap's
+    # proofs rest on. Formats transcribed from BNGameMode.cpp (assignment, team-kill
+    # denial) and BNDamage.cpp (the FF gate's Verbose refusal — add -LogCmds="LogBN
+    # Verbose" to capture it). All zero in an FFA log, which IS the OFF-regression check.
+    "team_assign":      re.compile(r"BNGameMode: (?P<player>.+) assigned to team (?P<team>\d+)\."),
+    "ff_refused":       re.compile(r"BNDamage: friendly fire refused — (?P<attacker>.+) -> (?P<victim>.+) \((?P<damage>[0-9.]+)\)\."),
+    "team_kill_denied": re.compile(r"BNGameMode: team kill — (?P<killer>.+) -> (?P<victim>.+), no credit\."),
 }
 
 # F1's floor is a module constant (AIB::MinReactionSeconds). Restated here as a
@@ -124,6 +131,14 @@ def per_match_summary(counts):
         "strafe_holds": len(counts["strafe_hold"]) or None,
         "strafe_mean_arc_uu": (statistics.mean(float(hit["arc"]) for hit in counts["strafe_leg"])
             if counts["strafe_leg"] else None),
+        # BN15 teams. team_populations proves the 4/4 balance claim from the assignment
+        # lines alone; all three stay None in an FFA log (the OFF gate reads that as PASS).
+        "team_assignments": len(counts["team_assign"]) or None,
+        "team_populations": ({team: sum(1 for hit in counts["team_assign"] if hit["team"] == team)
+            for team in sorted({hit["team"] for hit in counts["team_assign"]})}
+            if counts["team_assign"] else None),
+        "ff_refused": len(counts["ff_refused"]) or None,     # Verbose-only
+        "team_kills_denied": len(counts["team_kill_denied"]) or None,
     }
 
 
@@ -196,7 +211,10 @@ def main():
             if value is None:
                 value = ("not captured (Verbose off?)"
                     if key in ("swings", "throws", "throttled_throws", "denial_throws",
-                        "strafe_legs", "strafe_holds", "strafe_mean_arc_uu") else "n/a")
+                        "strafe_legs", "strafe_holds", "strafe_mean_arc_uu", "ff_refused")
+                    else "none (FFA?)" if key in ("team_assignments", "team_populations",
+                        "team_kills_denied")
+                    else "n/a")
             print(f"   {key:22}: {value}")
 
     print("\n=== lobby spread (across logs) ===")

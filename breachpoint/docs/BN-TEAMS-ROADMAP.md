@@ -58,12 +58,13 @@ measurement:
   ui-builder: widgets — scoreboard/band/killfeed; disjoint) → barrier → bn-critic on
   the replication-race dimension (deferred OnTeamChanged subscription is THE attack).
   Nameplate tints dropped: BN has no nameplate widget to tint (ticket §Reconciliations).
-- **BN17 — T4 bot half** — the AIBot row-7 claims measurement (two allied bots, one
-  claimable slot, contested count 0) + team-hill bot observables. OPENS when AIB9's
-  reachability closes; runs as W-VERIFY (spec ∥ log-count protocols).
-- **BN18 — T6 rung-5 threes** — listen + 2 clients over the whole stack; the
-  framework's acceptance ticket. Serial protocol (one live session), not a wave —
-  the editor/live-session rule (aib-editor exemption's reasoning applies).
+- **BN17 — T4 bot half, TICKETED (blocked on AIB9)** — protocols authored in full:
+  spec protocol (suite + fresh-build claims polarity + the bCrowdKnown pin) ∥ live
+  log-count protocol (row-7 claims, cross-team inertness, the corpse window, team
+  hill, teammate targeting, OFF rerun). `docs/tickets/TICKET_BN17_TEAMS_BOTS.md`.
+- **BN18 — T6 rung-5 threes, TICKETED (queued behind BN15+BN16 proofs)** — the eight
+  scripted assert rows in threes, serial live session.
+  `docs/tickets/TICKET_BN18_TEAMS_THREES.md`.
 
 ## The wave map, phase by phase (the AIBOT-WAVES shape, applied to teams)
 
@@ -75,13 +76,16 @@ measurement:
 | T4 bots | W-VERIFY ×2 | spec protocol ∥ live log-count protocol | one verdict per protocol, no protocol half-run |
 | T6 threes | SERIAL | one live listen+2-client session, scripted asserts | the DONE bar: every claim in threes |
 
-## The metrics harness rides along
+## The metrics harness rides along — LANDED 26 Aug
 
-`Tools/aib/80_aib_metrics.py` gains, with BN15: an assignment-line counter (per-team
-population), an FF-refused counter, and a team-kill-credit-denied counter — countable
-events for every proof above, so no phase's claim rests on an impression. The bars land
-in `BREACHPOINT-QUALITY-BARS.md` §7's table when the first five-match team baseline
-exists, not before (the AIB14 discipline: no bar without a spread).
+`Tools/aib/80_aib_metrics.py` now counts: team assignments with per-team populations
+(the 4/4 balance proof from the lines alone), FF refusals (Verbose), and team-kill
+credit denials — the last off a new countable instrument line in the mode (a team kill
+and a credited kill read identically in a log without it). Regexes transcribed from
+the C++ formats and PROVEN against a synthetic log (asserts green — the one rung the
+cloud can run). All three read `none (FFA?)` in an FFA log, which IS the OFF gate.
+Bars still land in `BREACHPOINT-QUALITY-BARS.md` §7 only when the first five-match
+team baseline exists (the AIB14 discipline: no bar without a spread).
 
 ## Founder items already open (packet §Open, unchanged)
 
