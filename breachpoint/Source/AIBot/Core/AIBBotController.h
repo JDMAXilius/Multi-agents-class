@@ -2,10 +2,12 @@
 
 #include "CoreMinimal.h"
 #include "AIController.h"
+#include "GameplayTagContainer.h"
 #include "Perception/AIBSensorium.h"
 #include "AIBBotController.generated.h"
 
 class IAIBAvatarInterface;
+class UAIBAmbitionEngine;
 class UAIPerceptionComponent;
 class UAISenseConfig_Hearing;
 class UAISenseConfig_Sight;
@@ -37,6 +39,9 @@ public:
 
 	/** The matured world — the ONLY awareness anything downstream may read. */
 	const FAIBSensorium& GetSensorium() const { return Sensorium; }
+
+	/** The arbitration layer; valid while possessing on the authority. */
+	UAIBAmbitionEngine* GetAmbitionEngine() const { return AmbitionEngine; }
 
 	/** The game's projectile warning seam calls this (via the adapter wiring). It NOTES —
 	 *  the dodge happens only after the stimulus matures (FAIRPLAY F2). */
@@ -76,6 +81,12 @@ private:
 
 	FAIBSensorium Sensorium;
 	FTimerHandle ThinkTimer;
+
+	UPROPERTY()
+	TObjectPtr<UAIBAmbitionEngine> AmbitionEngine;
+
+	/** For the one ambition-switch log line per change (the verifier's instrument). */
+	FGameplayTag LastLoggedAmbition;
 
 	/** For the one fairness log line per acquisition (aib-verifier's sample). */
 	TWeakObjectPtr<AActor> LastLoggedTarget;

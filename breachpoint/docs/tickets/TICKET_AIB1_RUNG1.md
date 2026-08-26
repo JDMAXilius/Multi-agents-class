@@ -23,8 +23,8 @@ target memory) is worldless C++ with a spec suite.
 1. **Rung 1** — `Tools/run-ubt.ps1` (or the mac equivalent): all three targets. The
    editor target additionally proves the `Target.bBuildEditor` block resolves.
 2. **Rung 2** — `Tools/run-specs.sh AIBot` . Expected: suites `AIBot.Sim.Scaffold`
-   (5 tests) and `AIBot.Sim.Sensorium` (19 tests) — **24 started, 0 failures**. Zero ran
-   = INCONCLUSIVE, never pass. Paste the counts. (Note the project's default rung-2
+   (5 tests), `AIBot.Sim.Sensorium` (19) and `AIBot.Sim.AmbitionEngine` (10) —
+   **34 started, 0 failures**. Zero ran = INCONCLUSIVE, never pass. Paste the counts. (Note the project's default rung-2
    filter does NOT include `AIBot.Sim.*` — the explicit filter argument is mandatory.)
 3. **The four mechanical checks** (post-W-REVIEW forms; paste all four empty):
    - boundary (CASE-INSENSITIVE): `grep -rniE "breachpoint|\bBN[A-Z]" Source/AIBot/ --include=*.h --include=*.cpp --include=*.cs`
@@ -49,11 +49,15 @@ target memory) is worldless C++ with a spec suite.
 - The sensorium spec now builds a real `UWorld` + spawned actors (the host damage spec's
   proven fixture) — first use of that fixture in THIS module.
 - `Sensorium.SetRandomSeed(static_cast<int32>(GetUniqueID()))` — per-bot seeding.
+- `FRuntimeFloatCurve` + `GetRichCurve()/GetRichCurveConst()->Eval` in Brain/ — the
+  inline-curve type, first use in this module; and `TOptional<float>` selector returns.
+- `NewObject<UAIBAmbitionEngine>(this)` in OnPossess + the engine spec's
+  `GetTransientPackage()` construction (the host killfeed spec's proven pattern).
 
 ## Done when
 
 - [ ] Rung 1 PASS, all three targets, output tail in the Log
-- [ ] Rung 2: 24 started / 0 failed, counts pasted
+- [ ] Rung 2: 34 started / 0 failed, counts pasted
 - [ ] All four mechanical checks pasted, empty
 - [ ] Any deviation (a fixed typo, a real error handed back) recorded in the Log
 

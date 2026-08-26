@@ -44,7 +44,8 @@ public:
 	virtual float GetAmmoNorm() const = 0;            // magazine fraction of held weapon
 	virtual bool HasReserveAmmo() const = 0;
 	virtual bool CanWeaponFight() const = 0;          // the assembled four-read answer
-	virtual bool IsGrounded() const = 0;              // CMC truth, not the tag
+	virtual int32 GetGrenadeCount() const = 0;
+	virtual bool IsGrounded() const = 0;              // movement truth, not a tag
 	virtual bool IsAlive() const = 0;                 // !State.Dead equivalent
 
 	// -- reads about ANOTHER avatar (FAIRPLAY F3: caller must hold a matured

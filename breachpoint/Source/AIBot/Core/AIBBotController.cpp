@@ -1,7 +1,9 @@
 #include "Core/AIBBotController.h"
 
 #include "AIBotModule.h"
+#include "Brain/AIBAmbitionEngine.h"
 #include "Components/ActorComponent.h"
+#include "Core/AIBFactsBuilder.h"
 #include "Data/AIBDataRows.h"
 #include "Interfaces/AIBAvatarInterface.h"
 #include "Perception/AIPerceptionComponent.h"
@@ -128,6 +130,20 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 			*GetName(), *InPawn->GetName());
 	}
 
+	// The brain: core wants registered from C++ defaults; a mode adds its own at
+	// Phase 6 through IAIBAmbitionProvider, into this same engine.
+	if (!AmbitionEngine)
+	{
+		AmbitionEngine = NewObject<UAIBAmbitionEngine>(this);
+		TArray<FAIBAmbitionSpec> CoreAmbitions;
+		UAIBAmbitionEngine::BuildDefaultCoreAmbitions(CoreAmbitions);
+		for (const FAIBAmbitionSpec& Spec : CoreAmbitions)
+		{
+			AmbitionEngine->RegisterAmbition(Spec);
+		}
+	}
+	LastLoggedAmbition = FGameplayTag();
+
 	// Phase 8 resolves the real tier; until then the row's defaults are the envelope.
 	const FAIBTierRow Defaults;
 	Sensorium.Reset();
@@ -247,5 +263,18 @@ void AAIBBotController::Think()
 		LastLoggedTarget = nullptr;
 	}
 
-	// Phase 2 adds: facts build -> brain rescore -> executor gate.
+	// Facts -> arbitration. The winner is the executor's gate at Phase 3; today the
+	// switch LOG is the deliverable — the countable instrument for the verifier's
+	// rung-3 protocol ("ambition switches with scores", proof 3).
+	if (AmbitionEngine)
+	{
+		const FAIBFacts Facts = AIBFactsBuilder::Build(*this, Now);
+		const FGameplayTag Ambition = AmbitionEngine->Rescore(Facts, Now);
+		if (Ambition.IsValid() && Ambition != LastLoggedAmbition)
+		{
+			LastLoggedAmbition = Ambition;
+			UE_LOG(LogAIBot, Log, TEXT("AIBot: %s ambition -> %s (%.2f)"),
+				*GetName(), *Ambition.ToString(), AmbitionEngine->GetCurrentScore());
+		}
+	}
 }
