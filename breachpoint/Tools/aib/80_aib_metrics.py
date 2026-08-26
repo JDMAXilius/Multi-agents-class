@@ -46,6 +46,11 @@ RX = {
     "swing":     re.compile(r"AIBot: (?P<bot>\S+) swung at (?P<dist>[0-9.]+)uu"),
     "throw":     re.compile(r"AIBot: (?P<bot>\S+) threw \(call (?P<call>\d)\)"),
     "throttled_throw": re.compile(r"AIBot: (?P<bot>\S+) recognised a grenade moment"),
+    "denial_throw":    re.compile(r"AIBot: (?P<bot>\S+) denied the remembered spot"),
+    # The terminal's AIB10 strafe instrument (Verbose): executed legs with arc length,
+    # and the silent gate holds that were the old "too short" report's whole story.
+    "strafe_leg":  re.compile(r"AIBot: (?P<bot>\S+) strafe leg — (?P<arc>[0-9.]+)uu of arc at range (?P<range>[0-9.]+)uu"),
+    "strafe_hold": re.compile(r"AIBot: (?P<bot>\S+) strafe held — outside the engaged radius"),
 }
 
 # F1's floor is a module constant (AIB::MinReactionSeconds). Restated here as a
@@ -109,6 +114,11 @@ def per_match_summary(counts):
         "swings": len(counts["swing"]) or None,          # None = likely not captured
         "throws": len(counts["throw"]) or None,
         "throttled_throws": len(counts["throttled_throw"]) or None,
+        "denial_throws": len(counts["denial_throw"]) or None,
+        "strafe_legs": len(counts["strafe_leg"]) or None,
+        "strafe_holds": len(counts["strafe_hold"]) or None,
+        "strafe_mean_arc_uu": (statistics.mean(float(hit["arc"]) for hit in counts["strafe_leg"])
+            if counts["strafe_leg"] else None),
     }
 
 
@@ -179,7 +189,9 @@ def main():
         print(f"\n-- {path}")
         for key, value in match.items():
             if value is None:
-                value = "not captured (Verbose off?)" if key in ("swings", "throws", "throttled_throws") else "n/a"
+                value = ("not captured (Verbose off?)"
+                    if key in ("swings", "throws", "throttled_throws", "denial_throws",
+                        "strafe_legs", "strafe_holds", "strafe_mean_arc_uu") else "n/a")
             print(f"   {key:22}: {value}")
 
     print("\n=== lobby spread (across logs) ===")
