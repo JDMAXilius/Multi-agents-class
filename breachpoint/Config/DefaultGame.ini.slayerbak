@@ -255,28 +255,9 @@ MaxIntegrationStep=0.05
 ; actually reachable. Ship value was 25; this is the line to put back, not the C++ default.
 ; 3 -> 7 (founder, 25 Aug). With 8 players and Spartan bots a round of 3 ended almost
 ; immediately - 10 eliminations were logged in a single 55s sample.
-; AIB11 (Phase 6 Hill proof, 26 Aug 2026). ScoreLimit was raised 7 -> 25 for the hill runs
-; and RESTORED to 7 here; bHillEnabled is back to False (slayer is the shipped default).
-; Flip bHillEnabled=True and raise ScoreLimit to re-run the objective proof.
 ScoreLimit=7
 TimeLimit=600
 MinPlayers=1
-
-; THE HILL, placed ON a PlayerStart — (2000,1300,405), the mid-platform spawn.
-;
-; First attempt put it 300uu away at (2000,1600,430), reasoning that a spawn nearby proved
-; navmesh coverage. It does not, and the match said so: zero no-POI failures (the POI was
-; there) but 31 "cannot reach the objective" per bot. The move already projects onto the
-; navmesh (AIB5's helper covers this task), so that was genuine UNREACHABILITY — the AIB9
-; defect, on an arena whose islands the bots cannot cross.
-;
-; ON the spawn is the only placement that PROVES reachability instead of inferring it: a
-; body stands there every respawn. Bots start inside the radius, which is fine for a proof
-; of "does the objective loop work at all" and wrong for a balance read — noted, not hidden.
-bHillEnabled=False
-HillLocation=(X=2000.0,Y=1300.0,Z=405.0)
-HillRadius=600.0
-HillPointsPerSecond=1
 ; TESTING, 22 Aug 2026 — 45 so the win/lose screen is watchable instead of a 10s blink.
 ; Ship value was 10; put it back with ScoreLimit.
 PostMatchDuration=45

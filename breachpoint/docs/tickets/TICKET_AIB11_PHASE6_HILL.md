@@ -1,6 +1,8 @@
 # TICKET — AIB11: Phase 6 proof — the bot plays the objective (Hill)
 
-> STATUS: in-progress — mac terminal 26 Aug 2026 (969b165).
+> STATUS: blocked — mac terminal 26 Aug 2026. Steps 1-4 and 6 PASS. Step 5 BLOCKED by a
+> HIGH module defect: a mode ambition that fails its branch never yields, starving every
+> other behaviour (76 kills with the hill off vs 0 with it on). bHillEnabled restored False.
 > Original: open — cut 26 Aug 2026 by the cloud lead with the Phase-6 build
 > ("WRITTEN, NOT COMPILED"). TERMINAL WORK: compile, specs, tree rebuild, PIE with the
 > hill on. Both founder rulings this phase waited on are CLOSED and recorded
@@ -92,11 +94,144 @@
 
 ## Done when
 
-- [ ] Rung 1 + 95/95 + probe 20/20 + tree shows the Mode branch
-- [ ] The five hill observables above seen in one PIE match (say which rung: PIE ≠ MP)
-- [ ] Slayer regression clean
-- [ ] Numbers and log lines pasted in the Log
+- [x] Rung 1 + 114/114 (supersedes 95) + probe 20/20 + tree shows the Mode branch
+- [ ] BLOCKED — observables 1-2 seen, 3-5 unreachable behind a HIGH defect (see Log)
+- [x] Slayer regression clean — and it refuted my first diagnosis
+- [x] Numbers and log lines pasted in the Log
 
 ## Log
 
 _(terminal: outputs verbatim)_
+
+### 2026-08-26 — steps 1-4 PASS; the hill loop is BLOCKED by traversal, not by Phase 6
+
+**Step 1 — Rung 1 PASS** (Editor + Game; Server environmental). Three compile breaks had
+to be fixed first, all in BN game code from this phase, none in the module — see commit
+`969b165`: `FOverlapResult` missing include; `AAIController` unknown in `BNGameMode.h`
+(a latent transitive-include bug that only surfaced once the first fix pushed the .cpp
+out of the unity blob); and a `for` loop whose unconditional `break` made `++It`
+unreachable under `-Werror,-Wunreachable-code-loop-increment`.
+
+**Step 2 — Specs 114/114/0** reconciled. This SUPERSEDES the ticket's 95/97: Phases 7-10
+landed on top before this ran, and 114 is the count for the merged tree.
+
+**Step 3 — Probe PASS, 20/20** (7 conditions + 13 tasks), checked both directions. The
+owed SeekWeapon→Seek rename is visible in the vocabulary (`FAIBGateSeekCondition`,
+`FAIBSeekDestinationTask`, `FAIBMoveToPOITask`).
+
+**Step 4 — Tree rebuilt.** The report reads EXACTLY the required string:
+
+```
+states : Root > [Engage, Retreat, Search, Seek, Roam, Mode, Fallback]
+compile: OK          save: OK
+```
+
+The rebuild was genuinely mandatory and the log proves it: immediately before it the
+editor threw `LogCore: Warning: Unable to find serialized UScriptStruct -> ... reset to
+empty FInstancedStruct. LinkerRoot:/Game/AIBot/AI/ST_AIBBot` — stale node references the
+rename had orphaned. The asset was silently losing nodes.
+
+**Tooling defect found:** `Tools/aib/70_aib_assets.py` reported BOTH assets `MISSING` in
+its MCP read-back while the editor's own C++ read-back, written the same second, reported
+`FOUND ... compiled: YES (ready to run)` with 5 tier rows. The C++ path is the one of
+record (the script's own header says so), so nothing is wrong with the assets — but the
+script's MCP lookup misreports and would mislead anyone reading only its output.
+
+#### Step 5 — three matches, each fixing a real defect and exposing the next
+
+| run | hill vs possession | no-POI fails | cannot-reach | kills |
+|---|---|---|---|---|
+| 1 — hill at (2000,1600,430) | **2ms LATE** | 7 | — | 0 |
+| 2 — after the ordering fix | 644ms early | **0** | 31/bot | 0 |
+| 3 — hill moved onto a spawn | early | 0 | **226** | 0 |
+
+**Run 1 exposed a deadlock, and it is the most important finding here.** Chronology:
+
+```
+13.46.35:678-691  all 7 bots possess, win Mode.Hold (0.72 over Roam 0.20), and fail:
+                  "won a mode want but the world query offered no POI of kind
+                   AIBot.POI.Hill — branch fails (F7)"
+13.46.35:693      hill registers — two milliseconds too late
+```
+
+Then ZERO AIBot decision lines for the remaining four minutes. Not one bot re-evaluated.
+`Mode.Hold` kept winning at 0.72, the branch kept failing, and because the WINNER NEVER
+CHANGED nothing logged it — the only AIBot output left was `jumped to clear whatever it is
+wedged on`, ~30x per bot. Seven bots deadlocked, silently, for the whole match.
+
+Cause: `HandleMatchIsWaitingToStart` registers providers then calls `EnsureBotFill`, and
+**a gen-1 bot's possession is the only pull it ever makes**. `StartHill()` ran later, at
+match start. The comment at that call site states the assumption that breaks it — "before
+the rebody loop so the first post-thaw think already has the POI" — true for later
+generations, false for the bots born in warmup.
+
+FIX (one line): `StartHill()` moved ahead of `EnsureBotFill()`. Safe to run early because
+`HillTick` already guards on `IsMatchInProgress()`, so the warmup-squatter concern that
+motivated the late call is handled elsewhere; the later call stays as the restart path's,
+idempotent on `!Hill.IsValid()`. Verified: run 2 has the hill live 644ms BEFORE possession
+and **zero** no-POI failures.
+
+**Runs 2 and 3 hit a different wall: the bots cannot REACH the hill.** I first assumed bad
+placement — 300uu from a spawn is not proof of navmesh coverage — and moved the hill ONTO
+the PlayerStart at (2000,1300,405), where a body stands every respawn. Failures got WORSE
+(31/bot → 226 total), which rules placement out.
+
+The task is behaving correctly. `FAIBMoveToObjectiveTask::Tick` stands when inside the
+acceptance radius and only fails on NO PROGRESS, and it routes through AIB5's projection
+helper (`MoveToNavPoint`, line 1225) so the goal is navmesh-projected. And the bodies are
+alive and trying: **200 `Input.Sprint` activations and 232 wedge-clear jumps** in run 3,
+with zero forward progress.
+
+I first concluded that this was the AIB9 traversal defect — bots pinned, goals
+unreachable across this arena's navmesh — and wrote that into this Log. **Step 6 refuted
+it**, which is the entire reason the control run exists.
+
+#### Step 6 — the slayer regression, and what it overturns
+
+Same arena, same bots, same build, `bHillEnabled=False`:
+
+```
+mode ambitions registered : 102 x "registered 0 mode ambition"   (correct: no provider want)
+hill actor                : 0
+eliminations              : 76        <- hill runs: 0
+matches completed         : 4
+ambition switches         : Roam 932, Engage 847, Search 375, Retreat 123  (2277 total)
+```
+
+The regression itself is CLEAN on every count the ticket asks for: zero mode ambitions,
+no hill actor, kill-limit path untouched, four matches finished.
+
+But read it against the hill runs and it says something much larger. With the hill OFF
+these bots fight, roam, search, retreat and kill **76** times across 2,277 ambition
+switches. With the hill ON: **0 kills, 7 switches, ever**. Same navmesh, same traversal,
+same everything else.
+
+**So traversal is not the blocker, and my earlier read was wrong.** The blocker is that
+`Mode.Hold` wins at 0.72, beats Roam (0.20) and Engage alike, fails its branch, and then
+KEEPS WINNING — forever. Every other behaviour starves. The bots sprint and wedge-jump
+(200 and 232 times in run 3) because the objective task keeps re-issuing a move it cannot
+complete, and nothing ever lets a different ambition have a turn.
+
+#### The real defect, and it IS Phase 6's
+
+A mode ambition that fails its branch does not yield. There is no failure suppression, no
+decay on repeated F7, no cooldown — so a single unreachable POI converts a working bot
+into a permanently stuck one, and the utility contest can never correct it because the
+score does not depend on whether the branch has ever succeeded.
+
+Run 1 is the pure form (deadlock with no POI at all, zero decisions in four minutes) and
+runs 2-3 are the same shape with a POI present but unreachable. The ordering fix removed
+one trigger; it did not touch the mechanism.
+
+This is a HIGH finding against Phase 6, not a traversal complaint, and it belongs to the
+module (ambition scoring / branch-failure feedback), not to the arena. Until it is fixed,
+`bHillEnabled=True` should be treated as a bot-disabling setting.
+
+Whether the hill at (2000,1300,405) is ALSO unreachable is now a separate, open question
+that this evidence cannot answer — the starvation would look identical either way.
+
+#### Scope note
+
+`Source/BreachpointNext/Match/` was outside this ticket's declared owner_path; I extended
+the claim to make the one-line ordering fix, because no observable past #3 is reachable
+while every bot is deadlocked. Recording it rather than widening scope quietly.

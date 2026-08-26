@@ -100,6 +100,19 @@ void ABNGameMode::HandleMatchIsWaitingToStart()
 		}
 	}
 
+	// THE HILL BEFORE THE BODIES. Gen-1 bots possess inside EnsureBotFill below, and that
+	// possession is the ONLY pull they ever make — so a POI registered after it does not
+	// exist as far as they are concerned, forever. Measured before this line existed: all
+	// seven bots won Mode.Hold at 13.46.35:678-691 and failed the branch ("no POI of kind
+	// AIBot.POI.Hill"); the hill registered at :693, two milliseconds late, and NOT ONE
+	// bot re-evaluated for the remaining four minutes. Mode.Hold kept winning at 0.72, the
+	// branch kept failing, and because the winner never CHANGED nothing even logged it.
+	//
+	// Safe to run this early: HillTick guards on IsMatchInProgress(), so no warmup squatter
+	// can bank a point no matter when the timer starts. The later StartHill() call at match
+	// start stays as the restart path's own — it is idempotent on !Hill.IsValid().
+	StartHill();
+
 	EnsureBotFill();
 
 	UWorld* World = GetWorld();
