@@ -8,6 +8,12 @@
 #include "UObject/SoftObjectPtr.h"
 #include "BNGameMode.generated.h"
 
+// Only ever used as a POINTER here (SpawnBot returns one, DespawnBot takes one), so a
+// forward declaration is the right dependency -- and the header needs its OWN, because it
+// was reaching AAIController transitively through the unity blob. Any edit that pushes a
+// consumer out of unity (an adaptive non-unity build does exactly that) breaks the header
+// with no source change of its own.
+class AAIController;
 class ABNBotController;
 class ABNHillPoint;
 class ABNPlayerState;

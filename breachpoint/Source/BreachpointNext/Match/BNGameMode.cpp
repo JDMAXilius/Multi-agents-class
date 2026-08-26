@@ -14,6 +14,10 @@
 #include "AbilitySystem/Effects/BNGameplayEffects.h"
 #include "BreachpointNext.h"
 #include "AbilitySystemComponent.h"
+// FOverlapResult is FORWARD-DECLARED by Engine/World.h, not defined there. The hill's
+// OverlapMultiByChannel stores them in a TArray, which needs the complete type for
+// sizeof/destruct -- so the definition has to come in explicitly.
+#include "Engine/OverlapResult.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "GameFramework/Controller.h"
@@ -760,12 +764,11 @@ void ABNGameMode::StartHill()
 	// the moment placement exists — for now the ini location is the C++-first path.
 	if (!Hill.IsValid())
 	{
-		ABNHillPoint* Placed = nullptr;
-		for (TActorIterator<ABNHillPoint> It(World); It; ++It)
-		{
-			Placed = *It;
-			break;
-		}
+		// "First hill in the level, or none" -- stated as a single query rather than a loop
+		// that breaks on its first pass, which the compiler rejects outright under
+		// -Werror,-Wunreachable-code-loop-increment because ++It can never run.
+		TActorIterator<ABNHillPoint> HillIt(World);
+		ABNHillPoint* Placed = HillIt ? *HillIt : nullptr;
 		if (!Placed)
 		{
 			FActorSpawnParameters Params;
