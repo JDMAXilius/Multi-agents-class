@@ -200,6 +200,12 @@ private:
 	/** World seconds before which no grenade may be thrown; see CanThrowGrenade. */
 	float NextGrenadeThrowTimeSeconds = 0.f;
 
+	/** Counts possessions, and exists ONLY to vary the per-life seeds: re-seeding a
+	 *  respawn from the bare controller id replayed a byte-identical draw sequence every
+	 *  life — the same first jink, the same reaction latency, a learnable tell that
+	 *  reset on death (W-REVIEW P4+5 H5). Deterministic given (bot, life). */
+	int32 LifeIndex = 0;
+
 	// Phase 5: momentum + judgment. The ledger is the damage-history facts' source; the
 	// model turns facts into ConfidenceNorm at think cadence. Phase 4's profile gets its
 	// first consumer here (Confidence level = judgment quality); Phase 8 re-resolves it

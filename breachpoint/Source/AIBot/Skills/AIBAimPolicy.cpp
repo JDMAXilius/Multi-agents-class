@@ -2,7 +2,8 @@
 
 /**
  * F4 made concrete. The bot's aim carries ONE error — a direction and a magnitude drawn
- * at a moment, decaying linearly to zero over the level's correction time. Between draws
+ * at a moment, decaying linearly to the level's RESIDUAL floor (never zero) over the
+ * level's correction time. Between draws
  * nothing is rolled: two asks at the same instant get the same answer, so a shot is never
  * a dice roll on a perfect solution. The only events that draw are (a) a target switch,
  * which costs a big settle by construction, and (b) the wander cadence expiring.
@@ -63,6 +64,25 @@ float FAIBAimPolicy::RedrawSeconds(EAIBCompetence Level)
 	}
 }
 
+float FAIBAimPolicy::ResidualErrorDegrees(EAIBCompetence Level)
+{
+	// THE FLOOR (W-REVIEW P4+5 F-H1). The settle used to decay to exactly zero, and the
+	// three ladder knobs compounded: an Expert held a 0.0-degree solution 79.5% of every
+	// engagement — the perfect tracker F4 exists to ban, arrived at slowly. The residual
+	// is the jitter a settled human hand still has. Each rung sits BELOW its own cone's
+	// outer half (cone x 0.5), so a switch draw always starts above where it will end,
+	// and the settle is still a visible journey. At 1500uu an Expert's floor is ~10uu of
+	// wobble — head-shots stay earned, never standing.
+	switch (Level)
+	{
+	case EAIBCompetence::Novice:  return 2.0f;
+	case EAIBCompetence::Skilled: return 0.65f;
+	case EAIBCompetence::Expert:  return 0.40f;
+	case EAIBCompetence::Trained:
+	default:                      return 1.1f;
+	}
+}
+
 namespace
 {
 	/**
@@ -113,8 +133,16 @@ FVector FAIBAimPolicy::StepAimPoint(FAIBAimState& State, const FVector& EyeLocat
 	// A never-drawn state has no direction; that is the first call, and it settles exactly
 	// like a switch (the bot has just acquired someone).
 	const bool bFirstDraw = State.ErrorDir.IsNearlyZero();
-	const bool bTargetSwitch = bFirstDraw || TargetId != State.TargetId;
+	// THE GAP RULE (W-REVIEW P4+5 F-H2/H3): this policy steps every engaged tick, so a
+	// gap in the step clock IS a tracking loss — the branch failed, sight broke, the
+	// target died. Whatever comes back after a gap is a RE-ACQUISITION and pays the full
+	// switch draw, which closes three exploits the id compare alone cannot see: the
+	// corner re-peek (same id, error already settled), the settle paid down in dead time,
+	// and a recycled UObject index handing a fresh pawn the old target's solution.
+	const bool bReacquire = (NowSeconds - State.LastStepSeconds) > static_cast<double>(ReacquireGapSeconds);
+	const bool bTargetSwitch = bFirstDraw || bReacquire || TargetId != State.TargetId;
 	const bool bWanderDue = NowSeconds >= State.NextRedrawAtSeconds;
+	State.LastStepSeconds = NowSeconds;
 
 	if (bTargetSwitch || bWanderDue)
 	{
@@ -130,19 +158,17 @@ FVector FAIBAimPolicy::StepAimPoint(FAIBAimState& State, const FVector& EyeLocat
 		State.TargetId = TargetId;
 	}
 
-	// The settle: linear decay of the DRAWN magnitude to zero across the correction time.
-	// Between draws this is a pure function of elapsed time — no per-tick randomness, no
-	// per-shot roll (F4).
+	// The settle: linear decay of the DRAWN magnitude across the correction time — down
+	// to the level's RESIDUAL floor, never to zero (F-H1: zero made a settled bot a
+	// perfect tracker for most of every fight). Between draws this is a pure function of
+	// elapsed time — no per-tick randomness, no per-shot roll (F4).
 	const float Correct = CorrectSeconds(Level);
 	const float Elapsed = static_cast<float>(NowSeconds - State.DrawnAtSeconds);
 	const float SettledFraction = Correct > SMALL_NUMBER
 		? FMath::Clamp(Elapsed / Correct, 0.f, 1.f)
 		: 1.f;
-	const float CurrentErrorDegrees = State.DrawnErrorDegrees * (1.f - SettledFraction);
-	if (CurrentErrorDegrees <= SMALL_NUMBER)
-	{
-		return BeliefPoint;
-	}
+	const float CurrentErrorDegrees = FMath::Max(ResidualErrorDegrees(Level),
+		State.DrawnErrorDegrees * (1.f - SettledFraction));
 
 	// The aim line moves between ticks (both parties move), so the stored direction is
 	// re-orthonormalised against the CURRENT axis before it is used, and stored back —

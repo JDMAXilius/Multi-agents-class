@@ -169,9 +169,18 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	const FAIBTierRow Defaults;
 	Sensorium.Reset();
 	Sensorium.Configure(Defaults.ReactionSecondsMin, Defaults.ReactionSecondsMax);
-	// Per-bot latency sequence: shared draws make four bots acquire in lockstep, which
-	// reads as coordinated omniscience (W-REVIEW F-3.7).
-	Sensorium.SetRandomSeed(static_cast<int32>(GetUniqueID()));
+
+	// PER-BOT and PER-LIFE seeding, hashed (W-REVIEW P4+5 H5/M4). Per-bot because shared
+	// draws make four bots acquire in lockstep (F-3.7); per-LIFE because re-seeding the
+	// same value every possession replayed a byte-identical sequence each respawn — the
+	// same first jink, the same reaction latency, the loudest "not a person" tell there
+	// is, reset by every death. Hashed because raw consecutive object indices feed an
+	// LCG an evenly-spaced first-draw progression across the lobby, not independent
+	// samples. Still fully deterministic given (bot, life): specs and replays keep what
+	// they actually need.
+	++LifeIndex;
+	const uint32 LifeSeed = HashCombine(GetTypeHash(GetUniqueID()), GetTypeHash(LifeIndex));
+	Sensorium.SetRandomSeed(static_cast<int32>(LifeSeed));
 
 	// Phase 5: a fresh life judges the fight from nothing. The profile is the same
 	// defaults row until Phase 8 resolves the real tier; the misjudge stream is per-bot
@@ -179,7 +188,7 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	SkillProfile.ResolveFrom(Defaults);
 	DamageLedger.Reset();
 	ConfidenceState = FAIBConfidenceState();
-	ConfidenceRandom.Initialize(static_cast<int32>(GetUniqueID()) + 7919);
+	ConfidenceRandom.Initialize(static_cast<int32>(HashCombine(LifeSeed, 7919u)));
 
 	// Phase 4 integration: fresh policy scratch per life — a new body must not inherit
 	// the old one's aim error, melee clock, grenade cadence, or strafe leg.
@@ -187,7 +196,7 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	MeleeState = FAIBMeleeState();
 	GrenadeState = FAIBGrenadeState();
 	MovementState = FAIBMovementState();
-	PolicyRandom.Initialize(static_cast<int32>(GetUniqueID()) + 131);
+	PolicyRandom.Initialize(static_cast<int32>(HashCombine(LifeSeed, 131u)));
 
 	GetWorldTimerManager().SetTimer(ThinkTimer, this, &AAIBBotController::Think,
 		FMath::Max(ThinkIntervalSeconds, 0.02f), /*bLoop=*/true);
@@ -362,6 +371,9 @@ void AAIBBotController::NoteDamageTaken(AActor* Attacker, const FVector& Attacke
 	UWorld* World = GetWorld();
 	if (!World || !HasAuthority())
 	{
+		// A dropped note is a bot with no momentum and no confidence — never silently
+		// (F-4.2, the blast seam's own rule, applied to its sibling — W-REVIEW P4+5 M5).
+		UE_LOG(LogAIBot, Warning, TEXT("AIBot: %s dropped a damage-taken note (no world or no authority)."), *GetName());
 		return;
 	}
 	const double Now = World->GetTimeSeconds();
@@ -372,10 +384,28 @@ void AAIBBotController::NoteDamageTaken(AActor* Attacker, const FVector& Attacke
 	// every sense and lands as MEMORY after maturing — being shot makes a bot go and
 	// look, never lock on (the host's own ruling on this exact seam, kept 1:1). The
 	// hostility filter matches the perception boundary's.
-	if (Attacker && Attacker != GetPawn()
+	//
+	// AND IT IS A BEARING, NOT A POSITION (W-REVIEW P4+5 F-H3, closing the seam to the
+	// FAIRPLAY amendment's own word: "the DIRECTION and identity of damage remain
+	// sensorium-only"). The raw seam delivers the attacker's exact coordinates at any
+	// range — a sniper at 3000uu behind cover would hand the bot a point it could not
+	// have known, and Search would path to the perch. What a human reads off a hit is a
+	// direction arc, so the remembered point is the attacker's BEARING from the bot,
+	// capped at the sight envelope's own fade: inside it the point is real, beyond it
+	// the bot goes and looks THAT WAY, not THERE.
+	APawn* SelfPawn = GetPawn();
+	if (Attacker && SelfPawn && Attacker != SelfPawn
 		&& GetTeamAttitudeTowards(*Attacker) == ETeamAttitude::Hostile)
 	{
-		Sensorium.NoteDamageFrom(Attacker, AttackerLocation, Now);
+		const FVector SelfLocation = SelfPawn->GetActorLocation();
+		FVector ToAttacker = AttackerLocation - SelfLocation;
+		const float DistanceUU = ToAttacker.Size();
+		FVector RememberedPoint = AttackerLocation;
+		if (DistanceUU > AIB::EngageFadeEndUU && DistanceUU > KINDA_SMALL_NUMBER)
+		{
+			RememberedPoint = SelfLocation + ToAttacker * (AIB::EngageFadeEndUU / DistanceUU);
+		}
+		Sensorium.NoteDamageFrom(Attacker, RememberedPoint, Now);
 	}
 }
 
@@ -384,6 +414,7 @@ void AAIBBotController::NoteDamageDealt(float FractionOfVictimMaxHealth)
 	UWorld* World = GetWorld();
 	if (!World || !HasAuthority())
 	{
+		UE_LOG(LogAIBot, Warning, TEXT("AIBot: %s dropped a damage-dealt note (no world or no authority)."), *GetName());
 		return;
 	}
 	bDamageSeamSeen = true;
@@ -537,7 +568,11 @@ void AAIBBotController::Think()
 		}
 		LastFacts.ConfidenceNorm = FAIBConfidenceModel::Step(ConfidenceState, LastFacts,
 			SkillProfile.Level(EAIBSkill::Confidence), ConfidenceRandom, Now);
-		LastFacts.bConfidenceKnown = true;
+		// KNOWN only when the judgment had at least one real input: a broken avatar door
+		// left every term unknown, and publishing that assembly as a confident judgment
+		// is the mirror of the unknowable-health-reads-as-full ban (W-REVIEW P4+5 M4).
+		// The Nerve considerations' ValueWhenUnknown=1 then correctly mutes confidence.
+		LastFacts.bConfidenceKnown = LastFacts.bVitalsKnown || LastFacts.bDamageHistoryKnown;
 
 		const FGameplayTag Ambition = AmbitionEngine->Rescore(LastFacts, Now);
 		if (Ambition.IsValid() && Ambition != LastLoggedAmbition)

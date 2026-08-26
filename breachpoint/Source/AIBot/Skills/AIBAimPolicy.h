@@ -35,6 +35,13 @@ struct AIBOT_API FAIBAimState
 	float DrawnErrorDegrees = 0.f;
 	double DrawnAtSeconds = 0.0;
 	double NextRedrawAtSeconds = 0.0;
+
+	/** When the policy last stepped. A GAP here longer than ReacquireGapSeconds means
+	 *  the bot was not tracking (branch left, sight lost) — the next step is a
+	 *  RE-ACQUISITION and costs a full switch draw, whatever the id says. This is what
+	 *  closes both halves of the W-REVIEW P4+5 anti-flick finding: the corner re-peek
+	 *  (same id, settled error) and the recycled UObject index (new pawn, old id). */
+	double LastStepSeconds = -1.0e9;
 };
 
 struct AIBOT_API FAIBAimPolicy
@@ -46,6 +53,11 @@ struct AIBOT_API FAIBAimPolicy
 	static float CorrectSeconds(EAIBCompetence Level);
 	/** Seconds between re-draws while ON one target (aim wander cadence). */
 	static float RedrawSeconds(EAIBCompetence Level);
+	/** The FLOOR the settle decays TO — never zero (W-REVIEW P4+5 F-H1: a floor of
+	 *  zero made a settled Expert a perfect tracker for 80% of every fight). */
+	static float ResidualErrorDegrees(EAIBCompetence Level);
+	/** A step gap longer than this is a re-acquisition, not a continuation. */
+	static constexpr float ReacquireGapSeconds = 0.30f;
 
 	/**
 	 * The one step, called at task tick rate: returns the aim POINT — the belief point

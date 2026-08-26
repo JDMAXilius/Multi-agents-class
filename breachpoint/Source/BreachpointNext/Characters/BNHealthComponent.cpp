@@ -43,7 +43,11 @@ namespace
 		{
 			VictimBot->NoteDamageTaken(Attacker, Attacker ? Attacker->GetActorLocation() : FVector::ZeroVector, Fraction);
 		}
-		const APawn* AttackerPawn = Cast<APawn>(Attacker);
+		// Self-damage never credits the DEALT book (W-REVIEW P4+5 M3): a bot grenading its
+		// own feet otherwise records Taken and Dealt in equal measure, its momentum term
+		// reads exactly zero, and it feels neutral about blowing itself up. The Taken note
+		// above stands — taking your own blast IS damage taken.
+		const APawn* AttackerPawn = Attacker != VictimOwner ? Cast<APawn>(Attacker) : nullptr;
 		if (AAIBBotController* AttackerBot = AttackerPawn ? Cast<AAIBBotController>(AttackerPawn->GetController()) : nullptr)
 		{
 			AttackerBot->NoteDamageDealt(Fraction);

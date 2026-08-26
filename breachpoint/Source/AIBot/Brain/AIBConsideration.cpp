@@ -42,12 +42,16 @@ namespace
 			return Facts.bDamageHistoryKnown ? TOptional<float>(Facts.RecentDamageTakenNorm) : TOptional<float>();
 		case EAIBFactSelector::RecentDamageDealtNorm:
 			return Facts.bDamageHistoryKnown ? TOptional<float>(Facts.RecentDamageDealtNorm) : TOptional<float>();
+		// Crowd facts are honest only when the builder MARKED them known: the flag fix
+		// that closed the confident-zero hole in the confidence model left these three
+		// selectors reading an unwritten 0 as "I am certainly alone" (W-REVIEW P4+5 C5).
 		case EAIBFactSelector::NearbyAllies:
-			return static_cast<float>(Facts.NearbyAllies);
+			return Facts.bCrowdKnown ? TOptional<float>(static_cast<float>(Facts.NearbyAllies)) : TOptional<float>();
 		case EAIBFactSelector::NearbyEnemies:
-			return static_cast<float>(Facts.NearbyEnemies);
+			return Facts.bCrowdKnown ? TOptional<float>(static_cast<float>(Facts.NearbyEnemies)) : TOptional<float>();
 		case EAIBFactSelector::Outnumbered:
-			return static_cast<float>(Facts.NearbyEnemies - Facts.NearbyAllies);
+			return Facts.bCrowdKnown
+				? TOptional<float>(static_cast<float>(Facts.NearbyEnemies - Facts.NearbyAllies)) : TOptional<float>();
 		case EAIBFactSelector::ObjectiveUrgency:
 			return MatchedObjective ? TOptional<float>(MatchedObjective->Urgency) : TOptional<float>();
 		case EAIBFactSelector::ObjectiveDistanceUU:

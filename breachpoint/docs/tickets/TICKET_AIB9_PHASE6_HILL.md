@@ -47,7 +47,9 @@
 ## Steps (terminal)
 
 1. Rung 1: all targets compile. Everything above is WRITTEN, NOT COMPILED.
-2. Specs: `AIBot.Sim.*` — expect **95/95** (new total; AmbitionEngine went 18 → 22).
+2. Specs: `AIBot.Sim.*` — expect **97/97** (AmbitionEngine 18 → 22 with Phase 6;
+   AimPolicy 7 → 9 with the P4+5 review barrier — see docs/AIBOT-P45-REVIEW.md,
+   which also landed module fixes riding this same proof run).
 3. Probe: `Tools/aib/70_aib_assets.py` — the list is **20** node structs now
    (7 conditions + 13 tasks). NOTE: AIB7's step said "18/18" — this ticket SUPERSEDES
    that number; run AIB7's remaining steps against 20.

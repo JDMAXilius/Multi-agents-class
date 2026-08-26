@@ -180,6 +180,15 @@ namespace
 	constexpr float MeleeCommitFraction = 0.8f;
 	constexpr float MeleeRetrySeconds = 1.5f;
 
+	/** THE MUZZLE GATE (W-REVIEW P4+5 H4). A burst may only BEGIN with the control
+	 *  rotation already near the aim line — a fresh acquisition behind the bot otherwise
+	 *  held the trigger through a 175-degree swing, hosing the arena for the half second
+	 *  the turn takes. A burst already running BREAKS on a large swing (a mid-burst
+	 *  target switch), on the same reasoning. Start tight, break loose: the gap between
+	 *  the two is what keeps ordinary tracking from stuttering the trigger. */
+	constexpr float BurstStartAlignDegrees = 10.f;
+	constexpr float BurstBreakAlignDegrees = 30.f;
+
 	// The GRENADE band lived here as honest defaults until Phase 4's integration: the
 	// judgement is now FAIBGrenadePolicy's per-level recognition ladder (its own bands,
 	// anchored inside the sight envelope). Only the throttle below stays task-side.
@@ -514,10 +523,10 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 	// spend them — so it spends them small, and legibly: a crouched bot with its hands
 	// busy reads as "reloading" from across the arena. No reserve is a different problem
 	// (the weapon swap), and it is NOT handled here — see the ticket Log for why.
-	// Every throttle decays here, ABOVE the reload's early return: a melee cooldown that
-	// froze while the bot reloaded would fire the instant the magazine landed.
+	// Every countdown throttle decays here, ABOVE the reload's early return: a cooldown
+	// that froze while the bot reloaded would fire the instant the magazine landed. (The
+	// melee throttle is an ABSOLUTE deadline on controller state now — nothing to decay.)
 	InstanceData.ReloadCooldownLeft = FMath::Max(0.f, InstanceData.ReloadCooldownLeft - DeltaTime);
-	InstanceData.MeleeCooldownLeft = FMath::Max(0.f, InstanceData.MeleeCooldownLeft - DeltaTime);
 	InstanceData.SwapCooldownLeft = FMath::Max(0.f, InstanceData.SwapCooldownLeft - DeltaTime);
 	if (Facts.bHasReserveAmmo && Facts.AmmoNorm <= ReloadAtMagazineFraction)
 	{
@@ -567,7 +576,8 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 		Bot->GetMeleeState(), bHasDistance ? DistanceUU : -1.f, Facts.bTargetVisible,
 		Bot->GetSkillProfile().Level(EAIBSkill::Melee), Now);
 	const float MeleeRangeUU = Avatar->GetMeleeRangeUU();
-	if (bMeleeRecognised && bHasDistance && MeleeRangeUU > 0.f && InstanceData.MeleeCooldownLeft <= 0.f
+	if (bMeleeRecognised && bHasDistance && MeleeRangeUU > 0.f
+		&& Now >= Bot->GetMeleeState().NextSwingAtSeconds
 		&& DistanceUU <= MeleeRangeUU * MeleeCommitFraction)
 	{
 		if (InstanceData.bHolding)
@@ -578,7 +588,9 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 		}
 		Avatar->PressVerb(AIBTags::Verb_Melee);
 		Avatar->ReleaseVerb(AIBTags::Verb_Melee);
-		InstanceData.MeleeCooldownLeft = MeleeRetrySeconds;
+		// Controller-owned absolute deadline — a belief blink re-entering this state must
+		// find the throttle still standing (W-REVIEW P4+5 H2).
+		Bot->GetMeleeState().NextSwingAtSeconds = Now + MeleeRetrySeconds;
 		UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s swung at %.0fuu (reach %.0f)."),
 			*Bot->GetName(), DistanceUU, MeleeRangeUU);
 		return EStateTreeRunStatus::Running;
@@ -629,6 +641,14 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 		Bot->GetGrenadeState(), Facts,
 		Bot->GetSkillProfile().Level(EAIBSkill::Grenade),
 		Bot->GetPolicyRandom(), Now);
+	if (GrenadeCall != EAIBGrenadeCall::None && !Bot->CanThrowGrenade())
+	{
+		// The recognition fired and the throttle ate it — across one 8s cooldown an
+		// Expert burns several of these, and a silent burn is undiagnosable (F7,
+		// W-REVIEW P4+5 M5). Verbose: it is cadence, not an error.
+		UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s recognised a grenade moment (call %d) inside the throw cooldown."),
+			*Bot->GetName(), static_cast<int32>(GrenadeCall));
+	}
 	if (GrenadeCall != EAIBGrenadeCall::None && Bot->CanThrowGrenade())
 	{
 		if (InstanceData.bHolding)
@@ -662,6 +682,29 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 		return EStateTreeRunStatus::Running; // stay: visibility may return next pump
 	}
 
+	// The muzzle gate's measured quantity: degrees between where the control rotation
+	// points NOW and the line to the belief. FaceBelief is turning the rotation at its
+	// rate limit; this only asks whether it has arrived.
+	const APawn* FiringPawn = Bot->GetPawn();
+	const FVector ToAimLine = Bot->GetSensorium().GetLastSeenLocation()
+		- (FiringPawn ? FiringPawn->GetPawnViewLocation() : FVector::ZeroVector);
+	float MuzzleOffDegrees = 0.f;
+	if (ToAimLine.SizeSquared() > KINDA_SMALL_NUMBER)
+	{
+		const float AlignDot = FMath::Clamp(FVector::DotProduct(
+			Bot->GetControlRotation().Vector(), ToAimLine.GetSafeNormal()), -1.f, 1.f);
+		MuzzleOffDegrees = FMath::RadiansToDegrees(FMath::Acos(AlignDot));
+	}
+
+	// A burst in progress breaks on a large swing — the trigger must not ride a turn.
+	if (InstanceData.bHolding && MuzzleOffDegrees > BurstBreakAlignDegrees)
+	{
+		Avatar->ReleaseVerb(AIBTags::Verb_Fire);
+		InstanceData.bHolding = false;
+		InstanceData.PhaseSecondsLeft = InstanceData.BetweenBurstsSeconds;
+		return EStateTreeRunStatus::Running;
+	}
+
 	InstanceData.PhaseSecondsLeft -= DeltaTime;
 	if (InstanceData.PhaseSecondsLeft <= 0.f)
 	{
@@ -671,12 +714,15 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 			InstanceData.bHolding = false;
 			InstanceData.PhaseSecondsLeft = InstanceData.BetweenBurstsSeconds;
 		}
-		else
+		else if (MuzzleOffDegrees <= BurstStartAlignDegrees)
 		{
+			// The muzzle has arrived: this burst starts on the aim line, never across it.
 			Avatar->PressVerb(AIBTags::Verb_Fire);
 			InstanceData.bHolding = true;
 			InstanceData.PhaseSecondsLeft = InstanceData.BurstSeconds;
 		}
+		// else: hold the trigger up this tick — the turn is still in flight, and the
+		// phase clock stays expired so the burst begins the tick alignment lands.
 	}
 	return EStateTreeRunStatus::Running;
 }
@@ -708,6 +754,15 @@ void FAIBFireWhenAbleTask::ExitState(FStateTreeExecutionContext& Context, const 
 	}
 	InstanceData.bHolding = false;
 	InstanceData.bCrouchedToReload = false;
+
+	// Leaving the fight breaks the melee CONTINUITY clock: ShouldMelee's "range stayed
+	// true" reset only runs on ticks that happen, so a branch gap would otherwise splice
+	// two separate approaches into one paid delay (W-REVIEW P4+5 H2's second half). The
+	// swing deadline above deliberately survives — that one is the throttle.
+	if (Bot)
+	{
+		Bot->GetMeleeState().InRangeSinceSeconds = -1.0;
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1185,13 +1240,16 @@ EStateTreeRunStatus FAIBStrafeTask::Tick(FStateTreeExecutionContext& Context, co
 	const EAIBStrafeIntent Intent = FAIBMovementPolicy::StepStrafe(
 		Bot->GetMovementState(), Bot->GetSkillProfile().Level(EAIBSkill::Movement),
 		Bot->GetPolicyRandom(), Now);
+	// The stamp lives on the CONTROLLER's movement state (W-REVIEW P4+5 H1): instance
+	// data resets on every Engage re-entry, and a reset stamp re-actuated the same leg
+	// once per belief blink — up to five 220uu steps in a leg authored as one.
 	FAIBMovementState& MovementState = Bot->GetMovementState();
 	if (Intent == EAIBStrafeIntent::Hold
-		|| MovementState.NextDecisionAtSeconds == InstanceData.LastActuatedLegStamp)
+		|| MovementState.NextDecisionAtSeconds == MovementState.LastActuatedLegStamp)
 	{
 		return EStateTreeRunStatus::Running;
 	}
-	InstanceData.LastActuatedLegStamp = MovementState.NextDecisionAtSeconds;
+	MovementState.LastActuatedLegStamp = MovementState.NextDecisionAtSeconds;
 
 	// ON AN ARC AROUND THE BELIEF, not perpendicular to it. A perpendicular step always
 	// LENGTHENS range — from distance d a lateral L lands at sqrt(d^2 + L^2) — so it
@@ -1228,6 +1286,8 @@ EStateTreeRunStatus FAIBStrafeTask::Tick(FStateTreeExecutionContext& Context, co
 
 	// Cap the ARC, not the distance: a long leg at close range would otherwise swing the
 	// bot most of the way around the target, which reads as orbiting, not footwork.
+	// (The arc also retires the review's M2 clamp: range is invariant under an arc step
+	// by construction, so the step can never escape the engaged circle at all.)
 	const float ArcRadians = FMath::Min(FMath::DegreesToRadians(InstanceData.MaxArcDegrees), StepUU / RangeUU);
 	const float Signed = ArcRadians * (Intent == EAIBStrafeIntent::Right ? 1.f : -1.f);
 	const FVector Rotated = FromBelief.GetSafeNormal().RotateAngleAxisRad(Signed, FVector::UpVector);

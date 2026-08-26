@@ -29,6 +29,12 @@ struct AIBOT_API FAIBMovementState
 {
 	EAIBStrafeIntent Current = EAIBStrafeIntent::Hold;
 	double NextDecisionAtSeconds = 0.0;
+
+	/** The leg the strafe task last ACTUATED (its NextDecisionAtSeconds stamp) — here and
+	 *  not in task instance data, because instance data re-initialises on every Engage
+	 *  re-entry and a reset stamp re-actuated the SAME leg once per belief blink, walking
+	 *  the bot further per leg than any rung authorises (W-REVIEW P4+5 H1). */
+	double LastActuatedLegStamp = 0.0;
 };
 
 struct AIBOT_API FAIBMovementPolicy

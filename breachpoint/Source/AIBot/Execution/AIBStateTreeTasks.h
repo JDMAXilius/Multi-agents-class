@@ -269,12 +269,13 @@ struct FAIBFireWhenAbleTaskInstanceData
 	float ReloadCooldownLeft = 0.f;
 	bool bCrouchedToReload = false;
 
-	/** Close-quarters, blast and swap scratch. Every one of these is a THROTTLE, and each
-	 *  exists because the verb behind it is a tap on an ability that can silently refuse:
-	 *  an untimed re-tap is a button pressed at tick rate forever. The GRENADE's throttle
-	 *  is deliberately NOT here — it lives on the controller, because instance data is
-	 *  re-initialised on every state entry and Engage re-enters whenever a belief blinks. */
-	float MeleeCooldownLeft = 0.f;
+	/** Swap scratch. A THROTTLE: the verb behind it is a tap on an ability that can
+	 *  silently refuse, and an untimed re-tap is a button pressed at tick rate forever.
+	 *  The GRENADE's and the MELEE's throttles are deliberately NOT here — they live on
+	 *  controller-owned policy state, because instance data is re-initialised on every
+	 *  state entry and Engage re-enters whenever a belief blinks (W-REVIEW P4+5 H2: a
+	 *  per-task melee countdown gave a free swing per blink). The swap pair stays: its
+	 *  worst blink cost is one extra wheel press, which the equipment cycle absorbs. */
 	float SwapCooldownLeft = 0.f;
 	int32 SwapPresses = 0;
 };
@@ -570,9 +571,9 @@ struct FAIBStrafeTaskInstanceData
 	UPROPERTY(EditAnywhere, Category = "Parameter")
 	float EngagedRadiusUU = 350.f;
 
-	/** The policy leg this task last actuated (its NextDecisionAt stamp) — one lateral
-	 *  move per LEG, never per tick: per-tick MoveToLocation is a pathfind per frame. */
-	double LastActuatedLegStamp = 0.0;
+	/* The last-actuated-leg stamp used to live here — and re-initialised on every Engage
+	 * re-entry, so one leg re-fired per belief blink (W-REVIEW P4+5 H1). It is
+	 * FAIBMovementState::LastActuatedLegStamp now, beside the leg clock it compares to. */
 };
 
 /** PHASE 4's footwork (the host's R9 lesson: a bot that stands perfectly still while

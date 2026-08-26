@@ -16,7 +16,9 @@
  * What each pin defends: the settle is a decay and not a snap (1); a target switch buys
  * no free re-acquire (2); nothing is re-rolled per tick, so a shot is never a dice roll
  * (3); competence is a real ladder and not a label (4); the error is angular, so distance
- * matters (5); the wander cadence exists (6); and the degenerate line does not explode (7).
+ * matters (5); the wander cadence exists (6); the degenerate line does not explode (7);
+ * a tracking gap pays the full re-acquire (8); and the residual floor holds on every
+ * rung (9) — (8) and (9) are the W-REVIEW P4+5 F-H1/F-H2 fixes, pinned.
  */
 BEGIN_DEFINE_SPEC(FAIBAimPolicySpec, "AIBot.Sim.AimPolicy",
 	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
@@ -42,6 +44,25 @@ BEGIN_DEFINE_SPEC(FAIBAimPolicySpec, "AIBot.Sim.AimPolicy",
 		return Stream;
 	}
 
+	/**
+	 * Steps the policy at field cadence (0.1s — one think) from just after From up to
+	 * exactly To, returning the LAST aim point. The policy now treats a step gap over
+	 * ReacquireGapSeconds as a tracking loss (the corner-peek fix), so a spec that
+	 * samples sparsely is describing a bot that stopped tracking — these pins mean
+	 * CONTINUOUS tracking, and now they say so. Callers keep the window inside one
+	 * wander cadence themselves, as before.
+	 */
+	FVector PumpTo(FAIBAimState& State, uint32 Id, EAIBCompetence Level,
+		FRandomStream& Rng, double From, double To) const
+	{
+		FVector Last = FVector::ZeroVector;
+		for (double T = From + 0.1; T < To; T += 0.1)
+		{
+			Last = FAIBAimPolicy::StepAimPoint(State, Eye, Belief, Id, Level, Rng, T);
+		}
+		return FAIBAimPolicy::StepAimPoint(State, Eye, Belief, Id, Level, Rng, To);
+	}
+
 END_DEFINE_SPEC(FAIBAimPolicySpec)
 
 void FAIBAimPolicySpec::Define()
@@ -65,20 +86,20 @@ void FAIBAimPolicySpec::Define()
 			ErrorAtDraw >= HalfCone * 0.5f - 0.001f);
 		TestTrue(TEXT("...and never outside it"), ErrorAtDraw <= HalfCone + 0.001f);
 
-		// Three samples inside the settle: strictly decreasing, never a step.
-		const float ErrorEarly = ErrorAngleDegrees(Eye, Belief,
-			FAIBAimPolicy::StepAimPoint(State, Eye, Belief, 7u, Level, Rng, 0.4));
-		const float ErrorLate = ErrorAngleDegrees(Eye, Belief,
-			FAIBAimPolicy::StepAimPoint(State, Eye, Belief, 7u, Level, Rng, 0.8));
+		// Three samples inside the settle, tracked continuously: strictly decreasing,
+		// never a step.
+		const float ErrorEarly = ErrorAngleDegrees(Eye, Belief, PumpTo(State, 7u, Level, Rng, 0.0, 0.4));
+		const float ErrorLate = ErrorAngleDegrees(Eye, Belief, PumpTo(State, 7u, Level, Rng, 0.4, 0.8));
 		TestTrue(TEXT("mid-settle is strictly below the draw"), ErrorEarly < ErrorAtDraw);
 		TestTrue(TEXT("mid-settle is strictly above zero"), ErrorEarly > 0.f);
 		TestTrue(TEXT("and it keeps falling"), ErrorLate < ErrorEarly);
 
-		// At the correction time the bot is ON the belief point.
-		const FVector Settled = FAIBAimPolicy::StepAimPoint(State, Eye, Belief, 7u, Level, Rng,
-			static_cast<double>(Correct));
-		TestEqual(TEXT("settled: no angular error left"),
-			ErrorAngleDegrees(Eye, Belief, Settled), 0.f, 0.001f);
+		// At the correction time the settle has arrived — at the RESIDUAL, not at zero:
+		// the floor is the F-H1 fix, and this pin is what stops it regressing to perfect.
+		const FVector Settled = PumpTo(State, 7u, Level, Rng, 0.8, static_cast<double>(Correct));
+		TestEqual(TEXT("settled: the residual jitter, exactly — never zero"),
+			ErrorAngleDegrees(Eye, Belief, Settled),
+			FAIBAimPolicy::ResidualErrorDegrees(Level), 0.01f);
 	});
 
 	It("restarts the settle on a target switch — switching costs the whole re-acquire", [this]()
@@ -91,10 +112,10 @@ void FAIBAimPolicySpec::Define()
 		FRandomStream Rng = Seeded(4242);
 
 		FAIBAimPolicy::StepAimPoint(State, Eye, Belief, 1u, Level, Rng, 0.0);
-		const FVector OnTarget = FAIBAimPolicy::StepAimPoint(State, Eye, Belief, 1u, Level, Rng,
-			static_cast<double>(Correct));
-		TestEqual(TEXT("target A is settled"),
-			ErrorAngleDegrees(Eye, Belief, OnTarget), 0.f, 0.001f);
+		const FVector OnTarget = PumpTo(State, 1u, Level, Rng, 0.0, static_cast<double>(Correct));
+		TestEqual(TEXT("target A is settled to the residual"),
+			ErrorAngleDegrees(Eye, Belief, OnTarget),
+			FAIBAimPolicy::ResidualErrorDegrees(Level), 0.01f);
 
 		// A new id one tick later — still inside the wander window, so the SWITCH is what
 		// fires. No flick: the error jumps back to a full outer-half draw.
@@ -203,9 +224,10 @@ void FAIBAimPolicySpec::Define()
 			static_cast<float>(State.NextRedrawAtSeconds), static_cast<float>(Redraw), 0.001f);
 
 		// Settled and quiet just before the cadence expires.
-		const FVector Quiet = FAIBAimPolicy::StepAimPoint(State, Eye, Belief, 9u, Level, Rng, Redraw - 0.01);
-		TestEqual(TEXT("settled before the wander"),
-			ErrorAngleDegrees(Eye, Belief, Quiet), 0.f, 0.001f);
+		const FVector Quiet = PumpTo(State, 9u, Level, Rng, 0.0, Redraw - 0.01);
+		TestEqual(TEXT("settled at the residual before the wander"),
+			ErrorAngleDegrees(Eye, Belief, Quiet),
+			FAIBAimPolicy::ResidualErrorDegrees(Level), 0.01f);
 
 		// Crossing the boundary draws again — same target, so the draw may be anywhere in
 		// the cone (that is the wander, not a re-acquire).
@@ -216,6 +238,48 @@ void FAIBAimPolicySpec::Define()
 			static_cast<float>(State.NextRedrawAtSeconds), static_cast<float>(Redraw * 2.0), 0.001f);
 		TestTrue(TEXT("the wander draw stays inside the cone"),
 			State.DrawnErrorDegrees >= 0.f && State.DrawnErrorDegrees <= HalfCone + 0.001f);
+	});
+
+	It("pays the full re-acquire after a tracking GAP — the corner re-peek is not free", [this]()
+	{
+		// THE F-H2 PIN. Old behaviour: same id + inside the wander window = no draw at
+		// all, so a target ducking behind a pillar and re-peeking was answered with the
+		// already-settled (floor) error — a flick with a delay in front of it. The gap
+		// rule makes any step pause beyond ReacquireGapSeconds a re-acquisition.
+		const EAIBCompetence Level = EAIBCompetence::Trained;
+		const float HalfCone = FAIBAimPolicy::ErrorConeDegrees(Level);
+		const double Correct = static_cast<double>(FAIBAimPolicy::CorrectSeconds(Level));
+
+		FAIBAimState State;
+		FRandomStream Rng = Seeded(2468);
+		FAIBAimPolicy::StepAimPoint(State, Eye, Belief, 4u, Level, Rng, 0.0);
+		PumpTo(State, 4u, Level, Rng, 0.0, Correct); // settled on target 4
+
+		// The pillar: no steps for 0.6s (twice the gap threshold), SAME id re-appears.
+		const FVector RePeek = FAIBAimPolicy::StepAimPoint(State, Eye, Belief, 4u, Level, Rng,
+			Correct + 0.6);
+		TestTrue(TEXT("the re-peek is answered with a fresh OUTER-HALF draw"),
+			ErrorAngleDegrees(Eye, Belief, RePeek) >= HalfCone * 0.5f - 0.001f);
+		TestEqual(TEXT("and the settle clock restarted at the re-peek"),
+			static_cast<float>(State.DrawnAtSeconds), static_cast<float>(Correct) + 0.6f, 0.001f);
+	});
+
+	It("keeps a residual on every rung — below its own outer half, above zero", [this]()
+	{
+		// The floor's two structural guarantees: a switch draw always starts ABOVE where
+		// it will settle (the journey stays visible), and no rung ever reaches perfect.
+		const EAIBCompetence Levels[] = { EAIBCompetence::Novice, EAIBCompetence::Trained,
+			EAIBCompetence::Skilled, EAIBCompetence::Expert };
+		for (EAIBCompetence Level : Levels)
+		{
+			const float Residual = FAIBAimPolicy::ResidualErrorDegrees(Level);
+			TestTrue(TEXT("residual is above zero"), Residual > 0.f);
+			TestTrue(TEXT("residual sits below the outer-half draw floor"),
+				Residual < FAIBAimPolicy::ErrorConeDegrees(Level) * 0.5f);
+		}
+		TestTrue(TEXT("and the floor still tightens with competence"),
+			FAIBAimPolicy::ResidualErrorDegrees(EAIBCompetence::Expert)
+				< FAIBAimPolicy::ResidualErrorDegrees(EAIBCompetence::Novice));
 	});
 
 	It("answers the belief point when there is no aim line to be wrong about", [this]()

@@ -22,6 +22,13 @@ struct AIBOT_API FAIBMeleeState
 {
 	/** <0 = not currently in recognised range; else the time the condition started. */
 	double InRangeSinceSeconds = -1.0;
+
+	/** Absolute time before which no swing lands — CONTROLLER-owned, like every policy
+	 *  throttle, because StateTree instance data re-initialises on branch re-entry and a
+	 *  per-task countdown reset on every belief blink throttled nothing (W-REVIEW P4+5
+	 *  H2 — the grenade-cooldown lesson, applied to the swing). Absolute, not a
+	 *  countdown, so nothing has to remember to decay it. */
+	double NextSwingAtSeconds = 0.0;
 };
 
 struct AIBOT_API FAIBMeleePolicy

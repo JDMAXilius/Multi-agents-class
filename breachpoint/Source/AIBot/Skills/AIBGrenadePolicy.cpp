@@ -222,6 +222,16 @@ EAIBGrenadeCall FAIBGrenadePolicy::Consider(FAIBGrenadeState& State, const FAIBF
 	// they WENT. bHasMemory is the honest flag, NOT bTargetFactsFromMemory: the latter is a
 	// held-belief marker that the builder only sets while a target is still held, so it is
 	// false in every situation denial exists for (requiring it would make this branch inert).
+	// DORMANT, AND SAID SO (W-REVIEW P4+5 F-H4): this branch currently has NO reachable
+	// caller. Consider() is invoked only from the Engage branch's fire task, whose gate
+	// needs a VISIBLE target to hold the state, while denial requires !bTargetVisible —
+	// the precondition and the only call site are mutually exclusive. Until a Search-side
+	// caller lands (registered debt: it must also FACE the memory point before pressing,
+	// or the throw goes wherever the sweep happens to look), the Expert grenade rung is
+	// Skilled-plus-nothing IN THE FIELD, and claiming otherwise is the inert-band defect
+	// this file twice cites as blocking. The logic stays, spec'd, because the specs prove
+	// the ladder's shape — but no packet may claim the capability landed until the
+	// caller exists.
 	if (AtLeast(Level, EAIBCompetence::Expert) && !Facts.bTargetVisible)
 	{
 		const float Freshness = MemoryFreshnessOrUnknown(Facts);
