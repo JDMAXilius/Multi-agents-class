@@ -40,6 +40,10 @@ RX = {
     # F7 failure voices — every category the module can speak.
     "f7":        re.compile(r"AIBot: (?P<bot>\S+) (?P<what>cannot path to the last-known spot|cannot path to the objective|cannot reach the last-known spot|cannot reach the objective|flee path REFUSED|flee stalled|wants Retreat with no threat point|won a mode want but)"),
     "unserved":  re.compile(r"AIBot: (?P<bot>\S+) wants '(?P<want>[^']+)' and NO branch serves it"),
+    # AIB16's suppression (Verbose): each line is one branch-failure report reaching
+    # arbitration. A handful per match = a world problem being coped with; hundreds
+    # against few F7s = the holdoff is not holding. 1:1 with failures when healthy.
+    "suppressed": re.compile(r"AIBot: (?P<bot>\S+) branch for (?P<want>\S+) failed — suppressing"),
     # Wiring-class warnings: any hit is a finding, whatever the count.
     "wiring":    re.compile(r"AIBot: (?:\S+ )?(dropped a damage-(?:taken|dealt) note|dropped a blast warning|possessed on a non-authority|lost its avatar door|exited a fire state holding|tried to claim a PAWN-backed|asked for unknown tier|BotStateTree '.*' failed to load|RegisterProviders refused|claim refused on a client)"),
     # Verbose-only (counted when captured; reported as absent otherwise).
@@ -106,6 +110,7 @@ def per_match_summary(counts):
         "f7_failures": len(counts["f7"]),
         "refusals_per_switch": (len(counts["f7"]) / switches) if switches else None,
         "unserved_wants": len(counts["unserved"]),
+        "suppressed_wants": len(counts["suppressed"]) or None,  # Verbose-only
         "wiring_warnings": len(counts["wiring"]),
         "claim_grants": len(counts["claim_grant"]),
         "claim_denies": len(counts["claim_deny"]),

@@ -43,7 +43,7 @@ hunts for a missing deliverable.
 
 ## Steps (terminal)
 
-1. Rung 1; specs — expect **115/115** (Tiers 6 new + the fuse pin; history: 108 at AIB12).
+1. Rung 1; specs — expect **118/118** by addition (AIB16 measured 117; the cloud's fuse-noise pin should make 118 — if the runner still says 117, one pin is not running: reconcile before trusting either number).
 2. Asset rebuild (the settings button): DT_AIBTiers report shows **5 rows** and zero
    row warnings; ST_AIBBot rebuild is ALREADY owed by AIB11/AIB12 (rename!).
 3. Tier A/B: two PIE matches, ini `[/Script/AIBot.AIBBotController] BotTier=Recruit`
@@ -68,7 +68,7 @@ hunts for a missing deliverable.
 
 ## Done when
 
-- [ ] Rung 1 + 115/115
+- [ ] Rung 1 + 118/118
 - [ ] DT_AIBTiers 5 rows, zero warnings
 - [ ] Recruit-vs-Spartan latency delta pasted (the countable distinctness)
 - [ ] Overlay screenshot or "renders and breathes" line

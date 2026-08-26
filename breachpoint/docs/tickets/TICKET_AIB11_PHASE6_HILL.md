@@ -3,6 +3,15 @@
 > STATUS: blocked — mac terminal 26 Aug 2026. Steps 1-4 and 6 PASS. Step 5 BLOCKED by a
 > HIGH module defect: a mode ambition that fails its branch never yields, starving every
 > other behaviour (76 kills with the hill off vs 0 with it on). bHillEnabled restored False.
+>
+> THE HIGH IS FIXED — by the TERMINAL (AIB16, archived; compiled, spec'd 117/117, and
+> live-proven: switches 7 → 589, kills 0 → 32, suppressions 1:1 with failures). The
+> cloud wrote the same fix concurrently and DROPPED it at the merge — the terminal's
+> escalating-strikes version (3s → 6s → … 20s cap, forget-after-clean-spell) is
+> strictly better and proven. Remaining for this ticket: the hill REACHABILITY (bots
+> now cycle instead of freezing but still bank 0 points — 42 cannot-reach per match),
+> which AIB16 hands to AIB9's traversal work (DescribeMoveFailure into the objective
+> task). bHillEnabled stays False until then.
 > Original: open — cut 26 Aug 2026 by the cloud lead with the Phase-6 build
 > ("WRITTEN, NOT COMPILED"). TERMINAL WORK: compile, specs, tree rebuild, PIE with the
 > hill on. Both founder rulings this phase waited on are CLOSED and recorded

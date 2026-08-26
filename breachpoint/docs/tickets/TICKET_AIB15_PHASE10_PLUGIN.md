@@ -26,7 +26,7 @@
 1. Regenerate project files (the move invalidates the old solution), then rung 1:
    ALL THREE targets (`./Tools/run-ubt.sh` game + editor + server) — the editor-only
    authoring block and the DeveloperSettings link are the two likely break points.
-2. Specs: **115/115** — the move must not cost one spec (the +1 over AIB13's cut is the fuse-ruling pin: sensorium 20 → 21, landed with the ruling-closure commit).
+2. Specs: **118/118** (the terminal measured 117 = 114 + AIB16's three suppression pins; the cloud's fuse-noise pin adds one more once its commit compiles — a 117 here means the fuse pin did not run, reconcile).
 3. PIE sanity (5 min): bots possess, resolve tiers, fight — and the tree soft path
    still loads (`/Game/AIBot/AI/ST_AIBBot` — content stayed, so it must). If AIB11's
    rebuild has not run yet, do that FIRST (the rename!) — this ticket does not add a
@@ -44,7 +44,7 @@
 ## Done when
 
 - [ ] All three targets compile after regen
-- [ ] 115/115
+- [ ] 118/118
 - [ ] PIE sanity: tier lines + a fight + the tree loads from /Game/AIBot
 - [ ] Blank-project compile pasted (the roadmap's Phase-10 proof, verbatim)
 - [ ] Watch-list confirmed or errors pasted

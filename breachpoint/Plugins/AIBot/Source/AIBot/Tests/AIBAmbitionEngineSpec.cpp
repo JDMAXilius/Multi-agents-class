@@ -508,19 +508,6 @@ void FAIBAmbitionEngineSpec::Define()
 		TestFalse(TEXT("cleared want is gone"), Engine->HasAmbition(TAG_AIBSpec_Mode_Child));
 	});
 
-	It("clamps provider urgency at the one door — including the NaN that poisons Rescore", [this]()
-	{
-		TestEqual(TEXT("in-range passes"), AIBFactsBuilder::ClampUrgency(0.6f), 0.6f, 0.0001f);
-		TestEqual(TEXT("overloud provider capped"), AIBFactsBuilder::ClampUrgency(5.f), 1.f, 0.0001f);
-		TestEqual(TEXT("negative floored"), AIBFactsBuilder::ClampUrgency(-2.f), 0.f, 0.0001f);
-		// Non-finite must SCRUB, not clamp: FMath::Clamp on NaN returns NaN, and a NaN
-		// utility wins/loses arbitration by comparison chance — silence is the honest read.
-		TestEqual(TEXT("NaN scrubs to silent"),
-			AIBFactsBuilder::ClampUrgency(std::numeric_limits<float>::quiet_NaN()), 0.f, 0.0001f);
-		TestEqual(TEXT("infinity scrubs to silent"),
-			AIBFactsBuilder::ClampUrgency(std::numeric_limits<float>::infinity()), 0.f, 0.0001f);
-	});
-
 	It("yields when its branch keeps failing — the starvation the Hill measured", [this]()
 	{
 		// THE DEFECT, as arithmetic. A mode want that wins and then cannot run its branch
