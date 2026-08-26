@@ -1,6 +1,8 @@
 # TICKET — AIB1: first compile of the AIBot module, and its first spec counts
 
-> STATUS: in-progress — mac terminal 25 Aug 2026 (041fb2d). Engine on disk, no editor open.
+> STATUS: open — RUNG 1 FAILED, handed back to `aib-builder`. mac terminal 25 Aug 2026
+> (2b59469). Two real compile errors, BOTH confined to `Source/AIBot/Tests/`; the module's
+> own code compiled clean. Mechanical checks 1-4 all pass. Rung 2 is BLOCKED, not failed.
 
 > STATUS: open — cut 25 Aug 2026 by the cloud lead. Needs the ENGINE ON DISK; **no live
 > editor** (rung 2's gate requires none holding the project). Phases 0 and 1 of
@@ -84,3 +86,90 @@ at possession time.
 ## Log
 
 _(terminal: outputs verbatim)_
+
+### 25 Aug 2026 — mac terminal. RUNG 1 FAILED. Handed back per this ticket's own rule.
+
+**Step 1 — Rung 1, all three targets: FAIL.**
+
+```
+== RUNG 1 SUMMARY ==
+  FAIL    BreachpointEditor (exit 6) - Tools/Logs/ubt-BreachpointEditor.log
+  FAIL    Breachpoint (exit 6)       - Tools/Logs/ubt-Breachpoint.log
+  FAIL    BreachpointServer (exit 6) - Tools/Logs/ubt-BreachpointServer.log
+exit 1
+```
+
+`BreachpointServer` is the KNOWN environment failure, not a code one — this is an Epic
+Launcher install and UBT says so in as many words: *"Server targets are not currently
+supported from this engine distribution."* Editor and Game are real, and they fail
+identically.
+
+**THE GOOD NEWS FIRST, because it is the load-bearing part: the AIBot module's own code
+compiled clean.** Every error is in `Source/AIBot/Tests/`. Nothing in `Core/`, `Brain/`,
+`Perception/`, `Skills/`, `Execution/`, `Team/`, `Data/`, `Debug/` or `Interfaces/` failed,
+and neither did the game-side `AIBotAdapter/`, the widened `BNGameMode`, the projectile's
+AIB branch or the cross-module includes. Every item on this ticket's watch-list — the
+`Cast<IAIBAvatarInterface>`, the `UINTERFACE(MinimalAPI…)` blocks, `EAllowShrinking::No`,
+`SetMaxAge`, `FRuntimeFloatCurve`/`GetRichCurve`, `UCLASS(Config=Game)`, the
+`GetActorEyesViewPoint`/`LineTraceSingleByChannel` gate — **survived the compiler.** The
+two failures are both in test code and both are the same shape: an assumed API that does
+not exist.
+
+**Error 1 — `FNativeGameplayTag` has no `IsValid()`. 14 sites,
+`Source/AIBot/Tests/AIBScaffoldSpec.cpp`.**
+
+```
+Source/AIBot/Tests/AIBScaffoldSpec.cpp:31:45: error: no member named 'IsValid' in 'FNativeGameplayTag'
+   31 |      TestTrue(TEXT("Fire"), AIBTags::Verb_Fire.IsValid());
+      |                             ~~~~~~~~~~~~~~~~~~ ^
+```
+
+`FNativeGameplayTag` is the *declaration* wrapper, not the tag. It converts to `FGameplayTag`
+via `GetTag()`; `IsValid()` lives there. Likely fix: `AIBTags::Verb_Fire.GetTag().IsValid()`.
+
+**Error 2 — `TestEqual` has no `FGameplayTag` overload. 15 sites,
+`Source/AIBot/Tests/AIBAmbitionEngineSpec.cpp`.**
+
+```
+Source/AIBot/Tests/AIBAmbitionEngineSpec.cpp:85:3: error: no matching member function for call to 'TestEqual'
+   85 |      TestEqual(TEXT("the giant is vetoed"), Engine->Rescore(Facts, 1.0), AIBTags::Ambition_Roam);
+      |      ^~~~~~~~~
+AutomationTest.h:1985: note: candidate not viable: no known conversion from 'FGameplayTag' to 'const int32'
+AutomationTest.h:1988: note: candidate not viable: no known conversion from 'FGameplayTag' to 'const float'
+```
+
+`FAutomationTestBase::TestEqual` overloads cover int32/int64/SIZE_T/float/double/FString and
+a few math types — there is no `FGameplayTag` one, and no implicit conversion to any of them.
+Both targets stopped at `-ferror-limit`, so 20 reported lines are the cascade of these 15.
+
+**NOT FIXED, deliberately.** This ticket says to fix only *"a missing include or an obvious
+typo"* and otherwise paste and STOP. Neither of these is that: they are the same wrong
+assumption about two engine APIs, repeated across 29 call sites in two files, and choosing
+the replacement is a design call (compare `.ToString()`, or assert with
+`TestTrue(A == B)` and lose the printed diff on failure). That belongs to `aib-builder`.
+
+**Step 2 — Rung 2: BLOCKED, not failed, and not run.** The module does not link, so the
+suites cannot exist. Recording zero here would be indistinguishable from a filter typo,
+which is exactly the trap this ticket warns about. Expected when it does run:
+`AIBot.Sim.Scaffold` 5 + `AIBot.Sim.Sensorium` 19 + `AIBot.Sim.AmbitionEngine` 17 = 41.
+
+**Step 3 — the four mechanical checks: ALL FOUR EMPTY, ALL PASS.** These are static greps
+and are valid independent of the compile.
+
+| # | check | result |
+|---|---|---|
+| 1 | boundary — `breachpoint`/`BN` leakage into `Source/AIBot/` | EMPTY — PASS |
+| 2 | replication — `Replicated`/`DOREPLIFETIME`/`NetSerialize` | EMPTY — PASS |
+| 3 | worldless — `UWorld`/`AActor`/`GetWorld` in `Brain/` + `Skills/` | EMPTY — PASS |
+| 4 | F8 quarantine — perception outside `AIBBotController.cpp` | EMPTY — PASS |
+
+A method note for whoever repeats these on macOS: unquoted `--include=*.h` is expanded by
+zsh before grep sees it and the command dies with *"no matches found"* while LOOKING like a
+clean pass. Quote them. Three of the four silently did not run on the first attempt.
+
+**Step 4 — deviations: none.** Nothing was fixed, nothing edited outside this Log. One
+pre-existing warning seen in passing and NOT caused by AIBot:
+`BNAnimInstance.cpp:401,416` — `CalculateDirection` is deprecated and its message says the
+project *"will no longer compile"* on the next engine upgrade.
+
+**Next:** `aib-builder` fixes the 29 sites; this ticket re-runs from step 1 unchanged.
