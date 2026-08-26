@@ -316,3 +316,29 @@ would have printed nothing and `.ToString()` allocates two temporaries per asser
 
 **Still open:** the one failing sensorium spec, and the `Tools/run-specs.sh` gap above.
 Neither is fixable inside this packet's owner_path.
+
+### 25 Aug 2026 — the contract_gap is CLOSED. `Tools/run-specs.sh` can see a failure now.
+
+Claimed `Tools/` and fixed it rather than leaving the gap open, because every rung-2 result
+in this project — including the one that would have ticked this ticket's own box — is
+worthless until the detector works.
+
+`FAILED` now greps `Result={Fail}`, the marker UE 5.8 actually emits. Two additions beyond
+the one-line fix:
+
+- **the failing test NAMES are printed** on a FAIL, so the next reader does not have to open
+  the log to learn which spec broke;
+- **a reconciliation guard**: `started != passed + failed` now exits INCONCLUSIVE. A silent
+  log-format drift is exactly how this script went blind in the first place, and the same
+  drift would otherwise make the new counter quietly wrong too.
+
+**Proved by replay against two real logs already on disk — no new run needed, and the
+evidence is a log that already contains a known failure:**
+
+| log | ground truth | OLD detector | NEW detector |
+|---|---|---|---|
+| `specs-…205447` (AIBot) | 41 started, 40 pass, **1 fail** | FAILED=0 → **would report PASS** | FAILED=1 → **reports FAIL** |
+| `specs-…191435` (BN) | 30 started, 30 pass, 0 fail | FAILED=0 → PASS | FAILED=0 → **PASS** |
+
+Both directions matter: it catches the failure the old one waved through, and it does not
+invent one on a clean log.

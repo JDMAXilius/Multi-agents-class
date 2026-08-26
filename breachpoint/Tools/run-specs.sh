@@ -70,7 +70,19 @@ echo
 # the process ended. The automation controller's own summary line is the truth.
 RESULT_LINE="$(grep -E "Automation Test (Succeeded|Failed)|Total Tests|Test Completed" "$LOG" | tail -20)"
 RAN="$(grep -cE "Test Started" "$LOG" || true)"
-FAILED="$(grep -cE "Automation Test Failed|Error: Test Failed" "$LOG" || true)"
+# THE MARKER UE ACTUALLY EMITS. This line used to grep for "Automation Test Failed" and
+# "Error: Test Failed" — neither of which UE 5.8's automation controller ever writes. It
+# writes, per test:
+#     LogAutomationController: Error: Test Completed. Result={Fail} Name={...}
+# So FAILED was ALWAYS 0 and this script reported PASS through any number of failing specs.
+# Found 25 Aug 2026 by AIB1: AIBot.Sim ran 41 tests, 40 passed, 1 failed, and the summary
+# said "41 test(s) started, 0 failures". The header above already warns that a run finding
+# no tests must never read as success; the failing-test case sat unguarded right beside it.
+#
+# Counting Result={Success} too, so the three numbers must reconcile — a log where
+# success + fail != started means the format moved again and the count is not trustworthy.
+FAILED="$(grep -cE "Result=\{Fail\}" "$LOG" || true)"
+PASSED="$(grep -cE "Result=\{Success\}" "$LOG" || true)"
 
 echo
 echo "== RUNG 2 RESULT =="
@@ -85,7 +97,16 @@ fi
 
 if [[ "${FAILED:-0}" -gt 0 ]]; then
   echo "  $FAILED failing test(s) across $RAN started. See $LOG"
+  grep -E "Result=\{Fail\}" "$LOG" | sed 's/.*Name={/    FAILED: /; s/} Path.*//'
   exit $EXIT_FAIL
+fi
+
+# started != passed + failed means the log format changed under us. Refusing to call that a
+# pass is the whole point: a silent format drift is how this script went blind for a month.
+if [[ $(( ${PASSED:-0} + ${FAILED:-0} )) -ne "${RAN:-0}" ]]; then
+  echo "  UNRECONCILED: $RAN started but $PASSED succeeded + $FAILED failed."
+  echo "  The automation log format may have changed. Treating as INCONCLUSIVE, not a pass."
+  exit $EXIT_INCONCLUSIVE
 fi
 
 echo "  $RAN test(s) started, 0 failures. Log: $LOG"
