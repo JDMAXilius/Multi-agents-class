@@ -1,0 +1,85 @@
+# TICKET — AIB9: bots go off the navmesh, and the tile-config lead is dead
+
+> STATUS: open — cut 26 Aug 2026 by mac terminal. Two results, one closing a lead and one
+> opening a real defect.
+
+## 1. The tile-config lead is CLOSED — it was an engine bug, not our config
+
+AIB8 named the recast tile configuration as the next suspect, on the strength of this
+warning scaling with `JumpLength` (23 vx at 400, 34 vx at 600):
+
+```
+LogNavigationDataBuild: Warning: ComputeConfigBorderSizes: BorderForLinks (N vx)
+exceeds tileSize (0 vx). This will increase memory usage during nav build.
+```
+
+**That lead is wrong and is now closed.** `FRecastNavMeshGenerator::SetupTileConfig`
+(`RecastNavMeshGenerator.cpp`) does this:
+
+```cpp
+5263:  UE::NavMesh::Private::ComputeConfigBorderSizes(IsGeneratingLinks(), OutConfig);  // warns
+...
+5270:  OutConfig.tileSize = FMath::Max(FMath::TruncToInt(DestNavMesh->TileSizeUU / CellSize), 1);
+```
+
+The warning compares against `tileSize` **seven lines before that field is assigned**. It
+is 0 at every call, so the warning fires unconditionally whenever link generation is on
+and carries no information about any project's settings. Engine ordering bug.
+
+Our real values are healthy: `TileSizeUU=1000`, `CellSize=19` (engine defaults,
+`BaseEngine.ini:3052-3053`) give a true tileSize of **52 vx**, comfortably above the 23 vx
+border. Unset was never a problem, and writing a tile config would have been a fix for a
+non-problem.
+
+**Do not chase this warning again.** It is noise by construction.
+
+## 2. The real defect: bots leave the navmesh
+
+AIB7's instrument reports `self=NO` when the BOT's own location will not project. Nothing
+it asks for can path in that state — the goal is innocent. Across every measured match:
+
+```
+match                       refusals   self=NO   share
+diag  (JumpLength 400)            30         0    0.0%
+jump  (JumpLength 600)          8515         0    0.0%
+revert(JumpLength 400)          1385        15    1.1%
+rep-1 (JumpLength 400)           620        75   12.1%
+```
+
+75 in one match is not noise. This is a distinct defect from unreachability and has its
+own likely causes: spawning off the mesh, a fall that ends outside nav bounds, a
+knockback, or geometry the nav bounds volume does not cover.
+
+## Kickoff (machine-checkable)
+
+- requires: engine-installed
+- owner_path: `docs/tickets/TICKET_AIB9_OFFMESH_BOTS.md` (investigation; any fix is a
+  later packet with its own owner path)
+
+## Steps (in order)
+
+1. **Repeated baseline first.** Five matches minimum at one config. AIB8 proved a single
+   match cannot tell 0.04 from 1.67 refusals per switch — two runs at IDENTICAL settings
+   came out 39x apart. Report mean AND spread, never one run.
+2. Log WHERE a `self=NO` bot is: location, and whether it is inside `BR_NavBounds`.
+3. Correlate with the moment: fresh spawn, post-fall, post-knockback, or steady state.
+4. Only then propose a fix.
+
+## Done when
+
+- [ ] Five-match baseline with mean and spread, per config
+- [ ] `self=NO` incidence measured across those five, not one
+- [ ] Location and timing of off-mesh bots characterised
+- [ ] Cause named with evidence, or explicitly left open
+
+## Log
+
+### 2026-08-26 — cut
+
+Runs so far at `JumpLength 400`, refusals per ambition switch: **0.04, 1.67, 1.22**. The
+0.04 run is the outlier that misled AIB7 into a "six specific positions" reading.
+
+A five-match sweep was launched and only run 1 of 5 completed — the background job died
+after the first match. Run 1: 620 refusals / 507 switches = 1.22 per switch, of which 75
+(12.1%) were `self=NO`. The sweep needs re-running before anything here is called a
+baseline.
