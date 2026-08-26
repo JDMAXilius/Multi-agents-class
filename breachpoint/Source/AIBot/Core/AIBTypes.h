@@ -91,7 +91,10 @@ struct AIBOT_API FAIBFacts
 	float HealthNorm = 0.f;            // 0..1 of max, valid only when bVitalsKnown
 	float AmmoNorm = 0.f;              // magazine fraction of the held weapon
 	bool bHasReserveAmmo = false;
-	bool bWeaponCanFight = false;      // the avatar door's assembled answer (F-6.4)
+	bool bWeaponCanFight = false;      // the avatar door's assembled answer (F-6.4) —
+	                                   // the honest gate on whether this bot can FIGHT,
+	                                   // which is a different question from where it
+	                                   // should GO (the 25 Aug conflation)
 	int32 GrenadeCount = 0;
 	bool bGrounded = true;
 

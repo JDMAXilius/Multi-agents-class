@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Engine/TimerHandle.h"
 #include "Interfaces/AIBAvatarInterface.h"
 #include "BNAIBAvatarAdapter.generated.h"
 
@@ -56,4 +57,22 @@ private:
 
 	UBNAbilitySystemComponent* GetASC() const;
 	ABNWeapon* GetHeldWeapon() const;
+
+	/** THE HAND IS EMPTY ON SPAWN — the fact that stranded every AIB bot on 25 Aug.
+	 *  The carry's index 0 is the null Unarmed slot (DefaultGame.ini: "list order is
+	 *  switch order and index 0 is equipped on spawn"), so a pawn owns four weapons and
+	 *  HOLDS none until something presses Input.Weapon.Next: a human's mouse wheel, or
+	 *  BN's own bots' Arm state (BNBotAuthoring.cpp). The AIB brain has no weapon
+	 *  vocabulary before Phase 6, and "this game spawns you unarmed" is game knowledge
+	 *  the module must never carry — so the door presses the same button for it, which
+	 *  is the door's job: present an avatar that CAN fight.
+	 *
+	 *  A TIMER, not one press: BNGA_Equip does not set bIgnoreMatchFreeze, so every
+	 *  press during warmup is refused by UBNGameplayAbility::CanActivateAbility. It
+	 *  clears itself the first tick the hand is full. */
+	void BeginArming();
+	void ArmIfEmptyHanded();
+
+	FTimerHandle ArmTimer;
+	int32 ArmPresses = 0;
 };

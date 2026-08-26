@@ -70,7 +70,7 @@ public:
 	/** Last rescore's full scoreboard, winner included — for the debugger and specs. */
 	const TArray<FAIBScoredAmbition>& GetLastScores() const { return LastScores; }
 
-	/** The default core set — Engage / Retreat / Search / SeekWeapon / Roam — with
+	/** The default core set — Engage / Retreat / Search / Seek / Roam — with
 	 *  C++-authored curves. Phase 8's tables retune these; they never redefine them. */
 	static void BuildDefaultCoreAmbitions(TArray<FAIBAmbitionSpec>& OutSpecs);
 

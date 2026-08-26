@@ -10,8 +10,18 @@
 #include "BreachpointNext.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Match/BNPlayerState.h"
+#include "TimerManager.h"
 #include "Weapons/BNEquipmentComponent.h"
 #include "Weapons/BNWeapon.h"
+
+namespace
+{
+	/** Re-try cadence for the spawn arm press, and when it starts complaining out loud.
+	 *  0.5s is long enough that BNGA_Equip's montage takes, short enough that the bot is
+	 *  armed within a swap of the freeze lifting. */
+	constexpr float ArmRetrySeconds = 0.5f;
+	constexpr int32 ArmComplainAfterPresses = 30;
+}
 
 void UBNAIBAvatarAdapter::EnsureOn(ABNCharacter* Character, AController* Possessor)
 {
@@ -25,6 +35,44 @@ void UBNAIBAvatarAdapter::EnsureOn(ABNCharacter* Character, AController* Possess
 	}
 	UBNAIBAvatarAdapter* Adapter = NewObject<UBNAIBAvatarAdapter>(Character, TEXT("AIBAvatarAdapter"));
 	Adapter->RegisterComponent();
+	Adapter->BeginArming();
+}
+
+void UBNAIBAvatarAdapter::BeginArming()
+{
+	// First fire one retry-interval out: PossessedBy calls EnsureOn BEFORE
+	// InitializeCarriedWeapons, so there is nothing to hold yet at this instant.
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimer(ArmTimer, this, &UBNAIBAvatarAdapter::ArmIfEmptyHanded,
+			ArmRetrySeconds, /*bLoop=*/true, /*FirstDelay=*/ArmRetrySeconds);
+	}
+}
+
+void UBNAIBAvatarAdapter::ArmIfEmptyHanded()
+{
+	const AActor* Owner = GetOwner();
+	const bool bDone = !Owner || !Owner->HasAuthority() || GetHeldWeapon() != nullptr;
+	if (bDone)
+	{
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().ClearTimer(ArmTimer);
+		}
+		return;
+	}
+
+	// The same button a human's mouse wheel presses, through the same verb map.
+	PressVerb(AIBTags::Verb_WeaponNext);
+	ReleaseVerb(AIBTags::Verb_WeaponNext);
+
+	if (++ArmPresses == ArmComplainAfterPresses)
+	{
+		UE_LOG(LogBN, Warning, TEXT("BNAIB: %s still holds nothing after %d Input.Weapon.Next "
+			"presses. Either the match freeze has not lifted, or the carry has no weapon to "
+			"equip — the bot cannot fight and will never want to Engage."),
+			*GetNameSafe(Owner), ArmPresses);
+	}
 }
 
 FGameplayTag UBNAIBAvatarAdapter::MapVerb(FGameplayTag VerbTag)
@@ -136,7 +184,16 @@ bool UBNAIBAvatarAdapter::CanWeaponFight() const
 	// The assembled four-read answer, transcribed from the fire ability's own gates —
 	// the recipe the brain must not know, in the one place allowed to know it.
 	const ABNWeapon* Weapon = GetHeldWeapon();
-	if (!Weapon || (!Weapon->HasAmmo() && Weapon->GetAmmoReserve() <= 0))
+	if (!Weapon)
+	{
+		// The 25 Aug deadlock's exact line: empty hands read as "cannot fight", the brain
+		// wants SeekWeapon forever, and a game with no pickups has nothing to seek. Named
+		// here so the next reader does not have to re-derive it from the ini.
+		UE_LOG(LogBN, Verbose, TEXT("BNAIB: %s holds no weapon (the Unarmed slot) — cannot fight."),
+			*GetNameSafe(GetOwner()));
+		return false;
+	}
+	if (!Weapon->HasAmmo() && Weapon->GetAmmoReserve() <= 0)
 	{
 		return false;
 	}

@@ -71,13 +71,23 @@ struct FAIBGateSearchCondition : public FAIBAmbitionGateCondition
 	virtual FGameplayTag GetBranchTag() const override;
 };
 
-USTRUCT(meta = (DisplayName = "AIB Gate: Seek Weapon", Category = "AIBot"))
+/** Gates the SEEK branch — "I have somewhere to be" (AIBot.Ambition.Seek). The STRUCT
+ *  NAME still says SeekWeapon and that is deliberate, not neglect: Tools/aib/70_aib_assets.py
+ *  probes a fixed list of 16 node paths (/Script/AIBot.AIBGateSeekWeaponCondition among
+ *  them) and that file is not this module's to edit. Renaming here would fail the probe
+ *  and block the lead's tree build. The name is owed a serial rename in the same step
+ *  that edits the probe list. */
+USTRUCT(meta = (DisplayName = "AIB Gate: Seek", Category = "AIBot"))
 struct FAIBGateSeekWeaponCondition : public FAIBAmbitionGateCondition
 {
 	GENERATED_BODY()
 	virtual FGameplayTag GetBranchTag() const override;
 };
 
+/** Vocabulary only — the built tree does NOT use it. Roam is the LAST child and carries
+ *  no enter condition, so it is the fallback selection can never miss; a gate there would
+ *  hand the tree back the failure mode it just cost seven bots (see AIBTreeAuthoring.cpp).
+ *  Kept because a tree that gates Roam explicitly is a legitimate future authoring. */
 USTRUCT(meta = (DisplayName = "AIB Gate: Roam", Category = "AIBot"))
 struct FAIBGateRoamCondition : public FAIBAmbitionGateCondition
 {
@@ -369,18 +379,29 @@ struct FAIBMoveToPOITask : public FStateTreeTaskCommonBase
 	/** Matches FAIBPointOfInterest::Kind — the typed join. Invalid = no kind sought. */
 	virtual FGameplayTag GetPOIKind() const;
 
-	/** With no world-query provider: true = wander to a random reachable point (Roam's
-	 *  honest fallback); false = FAIL loudly (Seek has nothing to seek). */
+	/** With no world-query provider: true = wander to a random reachable point (the
+	 *  honest fallback); false = FAIL loudly. A mover that can fail is a branch that can
+	 *  strand its bot, so only a mover nothing else falls back to may answer false. */
 	virtual bool ShouldWanderWithoutProvider() const;
+
+	/** True = the matured target belief outranks any POI as the place to be. Seek's
+	 *  answer; Roam's wander must NOT chase people it cannot fight. */
+	virtual bool ShouldMoveToBeliefFirst() const { return false; }
 };
 
-/** Seek's mover: weapon pickups only, never wanders — a bot seeking a weapon nobody can
- *  name stands still where the log says why (F7). */
-USTRUCT(meta = (DisplayName = "AIB Move To Weapon", Category = "AIBot"))
+/** SEEK's mover: somewhere to be, in order — the matured target belief, else any POI a
+ *  provider offers, else a random reachable point. It CANNOT fail for want of a
+ *  destination, which is the whole point of the 25 Aug replacement: the ambition it
+ *  serves must never be able to strand a bot.
+ *
+ *  The struct name is frozen by the probe list (see FAIBGateSeekWeaponCondition); it no
+ *  longer hunts weapons, and AIBot.POI.Weapon is gone with the concept. */
+USTRUCT(meta = (DisplayName = "AIB Seek Destination", Category = "AIBot"))
 struct FAIBMoveToWeaponPOITask : public FAIBMoveToPOITask
 {
 	GENERATED_BODY()
-	virtual FGameplayTag GetPOIKind() const override;
+	virtual bool ShouldWanderWithoutProvider() const override { return true; }
+	virtual bool ShouldMoveToBeliefFirst() const override { return true; }
 };
 
 /** Roam's mover: any POI a provider offers, else a random reachable point. */

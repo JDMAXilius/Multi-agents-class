@@ -164,6 +164,14 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	GetWorldTimerManager().SetTimer(ThinkTimer, this, &AAIBBotController::Think,
 		FMath::Max(ThinkIntervalSeconds, 0.02f), /*bLoop=*/true);
 
+	// ONE THINK BEFORE THE TREE STARTS. The timer's first fire is a whole interval away,
+	// but StartLogic selects a state IMMEDIATELY — with no current ambition every gate is
+	// false, selection fails, and StateTree marks the whole run Failed and never ticks
+	// again (StateTreeExecutionContext::Start, "Failed to select initial state"). Seeding
+	// the brain here means the first selection already mirrors arbitration instead of
+	// falling through to Roam for one think interval.
+	Think();
+
 	// The executor last: by the time the tree evaluates its first gate, the brain and
 	// sensorium above are already live. Swapping StateTree for Behavior Tree is this one
 	// NewObject line — the rest of possession never changes (the IAIBExecutor seam).

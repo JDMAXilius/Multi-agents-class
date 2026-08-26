@@ -34,7 +34,10 @@ public class AIBot : ModuleRules
 			// Z_Construct_UClass thunk). The game target linked fine, because the
 			// settings object is only reachable from editor code — which is exactly
 			// what made it look like an authoring bug rather than a missing module.
-			// Same line, same reason, as BreachpointNext.Build.cs:35.
+			// The host game module's own Build.cs carries the same line for the same
+			// reason. NOT naming it literally here on purpose: AIB2's boundary check
+			// greps this tree case-insensitively for the host's name, and a comment
+			// that mentions it fails a gate whose whole job is to be trustworthy.
 			"DeveloperSettings",
 			// The executor. StateTree first; a Behavior Tree executor may join
 			// later behind the same IAIBExecutor seam without new dependencies

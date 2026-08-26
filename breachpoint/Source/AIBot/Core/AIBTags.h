@@ -33,12 +33,14 @@ namespace AIBTags
 	// -- ambitions (the core set; modes add their own) ----------------------------
 	AIBOT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ambition_Engage);
 	AIBOT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ambition_Retreat);
-	AIBOT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ambition_SeekWeapon);
+	AIBOT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ambition_Seek);
 	AIBOT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ambition_Search);
 	AIBOT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ambition_Roam);
 	AIBOT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ambition_Mode);
 
 	// -- point-of-interest kinds (the typed join to FAIBPointOfInterest::Kind) ----
-	// Same open namespace as the verbs: a host or mode names its own under AIBot.POI.*.
-	AIBOT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(POI_Weapon);
+	// Deliberately EMPTY. AIBot.POI.Weapon lived here until 25 Aug and named a thing
+	// BreachpointNext does not have; a provider or a mode names its own kinds under
+	// AIBot.POI.* in its own module (the same open namespace as the verbs), and a mover
+	// with no kind takes any POI offered.
 }

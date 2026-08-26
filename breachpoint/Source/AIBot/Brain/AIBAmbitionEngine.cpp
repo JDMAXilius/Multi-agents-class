@@ -250,18 +250,34 @@ void UAIBAmbitionEngine::BuildDefaultCoreAmbitions(TArray<FAIBAmbitionSpec>& Out
 		Fresh.ValueWhenUnknown = 0.f; // no memory, no search — Roam owns wandering
 	}
 
-	// SEEKWEAPON — the gun cannot fight. Near-veto shape: with a working gun this
-	// ambition is ~0; dry, it beats everything except a visible-enemy Engage.
+	// SEEK — "I have somewhere to be." The deliberate-movement want: toward the target
+	// belief when there is one, otherwise toward a point worth being at.
+	//
+	// IT REPLACES SEEKWEAPON (founder ruling, 25 Aug). This game has no weapon pickups
+	// and no plan for them, so an ambition about fetching a gun could never be satisfied
+	// — and an unsatisfiable want is a trap at ANY utility, not just at 1.40: the day a
+	// consideration nudges it back to the top, the bot strands again exactly as seven of
+	// them did. Scoring around it was the wrong fix; removing the concept is the right
+	// one. The host's own working brain models Fight / Survive / Roam and never modelled
+	// seeking a weapon, which is that game being correct about its own world.
+	//
+	// SATISFIABLE BY CONSTRUCTION, which is the property that matters: its branch always
+	// has somewhere to walk (belief -> POI -> a random reachable point), so selecting it
+	// can never mean standing still. Urgency is the mode's dial (Phase 6, via
+	// IAIBAmbitionProvider, matched on this tag). With no mode registered the objective
+	// fact is UNKNOWN and the honest unknown is "worth moving, nothing urgent" — 0.6,
+	// which puts Seek (0.30) above the Roam floor (0.20) and well below Search (0.80).
+	// A mode that says urgency 0 hands the bot straight back to Roam.
 	{
 		FAIBAmbitionSpec& Seek = OutSpecs.AddDefaulted_GetRef();
-		Seek.Tag = AIBTags::Ambition_SeekWeapon;
-		Seek.BaseUtility = 1.4f;
-		Seek.CommitSeconds = 4.f;
+		Seek.Tag = AIBTags::Ambition_Seek;
+		Seek.BaseUtility = 0.5f;
+		Seek.CommitSeconds = 3.f;
 
-		FAIBConsideration& Dry = Seek.Considerations.AddDefaulted_GetRef();
-		Dry.Selector = EAIBFactSelector::WeaponCanFight;
-		Dry.SetLinearCurve(false); // can fight -> 0 want
-		Dry.ValueWhenUnknown = 0.f;
+		FAIBConsideration& Urgency = Seek.Considerations.AddDefaulted_GetRef();
+		Urgency.Selector = EAIBFactSelector::ObjectiveUrgency;
+		Urgency.SetLinearCurve(true); // the mode says "nothing here" -> 0 want
+		Urgency.ValueWhenUnknown = 0.6f;
 	}
 
 	// ROAM — the floor under everything, and it NEVER COMMITS: a fresh bot's Roam win

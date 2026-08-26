@@ -72,7 +72,7 @@ FGameplayTag FAIBAmbitionGateCondition::GetBranchTag() const     { return FGamep
 FGameplayTag FAIBGateEngageCondition::GetBranchTag() const       { return AIBTags::Ambition_Engage; }
 FGameplayTag FAIBGateRetreatCondition::GetBranchTag() const      { return AIBTags::Ambition_Retreat; }
 FGameplayTag FAIBGateSearchCondition::GetBranchTag() const       { return AIBTags::Ambition_Search; }
-FGameplayTag FAIBGateSeekWeaponCondition::GetBranchTag() const   { return AIBTags::Ambition_SeekWeapon; }
+FGameplayTag FAIBGateSeekWeaponCondition::GetBranchTag() const   { return AIBTags::Ambition_Seek; }
 FGameplayTag FAIBGateRoamCondition::GetBranchTag() const         { return AIBTags::Ambition_Roam; }
 
 ////////////////////////////////////////////////////////////////////
@@ -401,10 +401,25 @@ EStateTreeRunStatus FAIBMoveToPOITask::EnterState(FStateTreeExecutionContext& Co
 
 	InstanceData.bHasGoal = false;
 
-	// A world-query provider is Phase 6's registration; until one exists the wandering
-	// variant roams honestly and every other kind FAILS loudly (F7) — a bot seeking a
-	// weapon nobody can name should stand still where the log says why, not improvise.
-	if (ShouldWanderWithoutProvider())
+	// SOMEWHERE TO BE, in preference order. The belief comes from the memory's fresh
+	// window — F5-lawful, never a live actor read — so "move toward the current target"
+	// means the last place this bot honestly knew of, not where the target is now.
+	if (ShouldMoveToBeliefFirst())
+	{
+		const float Window = Bot->GetLastFacts().MemoryFreshWindowSeconds;
+		FVector Believed;
+		if (Bot->GetSensorium().Memory().GetFresh(Bot->GetWorld()->GetTimeSeconds(),
+			Window > 0.f ? Window : AIB::MaxMemorySeconds, Believed))
+		{
+			InstanceData.Goal = Believed;
+			InstanceData.bHasGoal = true;
+		}
+	}
+
+	// A world-query provider is Phase 6's registration, and its POIs land here between
+	// the belief and the wander. Until one exists, a mover that may wander does so and
+	// every other FAILS loudly (F7) rather than improvising.
+	if (!InstanceData.bHasGoal && ShouldWanderWithoutProvider())
 	{
 		UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(Bot->GetWorld());
 		FNavLocation Wander;
@@ -450,4 +465,3 @@ void FAIBMoveToPOITask::ExitState(FStateTreeExecutionContext& Context, const FSt
 
 FGameplayTag FAIBMoveToPOITask::GetPOIKind() const           { return FGameplayTag(); }
 bool FAIBMoveToPOITask::ShouldWanderWithoutProvider() const  { return false; }
-FGameplayTag FAIBMoveToWeaponPOITask::GetPOIKind() const     { return AIBTags::POI_Weapon; }

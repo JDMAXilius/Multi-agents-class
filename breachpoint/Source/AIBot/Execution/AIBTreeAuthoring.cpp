@@ -182,8 +182,14 @@ FString UAIBTreeAuthoring::BuildBotStateTree()
 	AddCompletionTransition(Seek, Root, EStateTreeTransitionTrigger::OnStateFailed, 2.0f);
 
 	// ---- Roam: nothing better to want --------------------------------------------------
+	// LAST CHILD, NO ENTER CONDITION, ON PURPOSE. Root selects children in order, so an
+	// ungated final branch is the tree's guaranteed answer to "can always select a state"
+	// — the exact thing the engine errors about, and a failure that is TERMINAL: a failed
+	// selection sets TreeRunStatus=Failed and Tick early-outs forever after (the AIB2 live
+	// PIE: seven bots, seven errors, nothing moved). Roam IS the fallback want, so the
+	// gate said nothing the ordering doesn't; this also covers any future ambition (a
+	// mode's, Phase 6) that no branch matches — that bot roams instead of dying silently.
 	UStateTreeState& Roam = Root.AddChildState(TEXT("Roam"));
-	Roam.AddEnterCondition<FAIBGateRoamCondition>();
 	Roam.AddTask<FAIBAmbitionSentinelTask>();
 	Roam.AddTask<FAIBWanderTask>();
 	// Arrived: re-select, draw a new reachable point. A world with no navmesh fails the
@@ -191,7 +197,7 @@ FString UAIBTreeAuthoring::BuildBotStateTree()
 	AddCompletionTransition(Roam, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
 	AddCompletionTransition(Roam, Root, EStateTreeTransitionTrigger::OnStateFailed, 2.0f);
 
-	Report.Add(TEXT("states     : Root > [Engage, Retreat, Search, Seek, Roam] (flat, one gated branch per ambition, sentinel in each)"));
+	Report.Add(TEXT("states     : Root > [Engage, Retreat, Search, Seek, Roam] (flat, gated per ambition, Roam UNGATED as the ordered fallback, sentinel in each)"));
 
 	// An uncompiled StateTree runs NOTHING — the asset would exist, the ini would resolve,
 	// and every bot would still stand still. This turns editor data into bytecode.

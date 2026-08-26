@@ -207,6 +207,34 @@ void FAIBAmbitionEngineSpec::Define()
 			Engine->Rescore(Facts, 1.0), AIBTags::Ambition_Roam);
 	});
 
+	It("never wants a weapon this world does not contain — the 25 Aug deadlock, pinned", [this]()
+	{
+		// THE BUG: an empty-handed bot scored SeekWeapon 1.40 on every think, its branch
+		// had no POI to path to, and seven bots stood still for a whole match. An ambition
+		// nothing can satisfy must not be able to win — the tag stays for Phase 6 pickups,
+		// but with bWeaponPickupKnown false it scores zero and the bot keeps moving.
+		TArray<FAIBAmbitionSpec> Defaults;
+		UAIBAmbitionEngine::BuildDefaultCoreAmbitions(Defaults);
+		for (const FAIBAmbitionSpec& Spec : Defaults)
+		{
+			Engine->RegisterAmbition(Spec);
+		}
+
+		FAIBFacts Facts;                     // the worst case: cannot fight, nothing visible
+		Facts.bVitalsKnown = true;
+		Facts.HealthNorm = 1.f;
+		Facts.bWeaponCanFight = false;
+		Facts.bWeaponPickupKnown = false;    // this game has no pickups
+		TestTag(TEXT("dry with nowhere to go: ROAM, never SeekWeapon"),
+			Engine->Rescore(Facts, 1.0), AIBTags::Ambition_Roam);
+
+		// And the ambition is not dead, only inert: name a pickup and it wakes up.
+		Engine->ResetArbitration();
+		Facts.bWeaponPickupKnown = true;
+		TestTag(TEXT("with a pickup to seek it wins again"),
+			Engine->Rescore(Facts, 2.0), AIBTags::Ambition_SeekWeapon);
+	});
+
 	It("releases a commit whose incumbent VETOED itself — no chasing corpses", [this]()
 	{
 		// W-REVIEW P2 H-2: Engage committed, target dies one think later. The old gate

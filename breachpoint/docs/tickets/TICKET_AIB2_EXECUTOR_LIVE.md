@@ -110,3 +110,207 @@ future Phase-6 Mode ambition would fall through to Roam instead of standing) —
 trade and belongs to the Phase-3 W-REVIEW, not to a silent asset edit. Build.cs
 `DeveloperSettings` fix read and accepted: exactly the ticket's missing-include class, and
 the game-target-links/editor-target-doesn't presentation is worth the record it got.
+---
+
+### 25 Aug 2026 — aib-builder (mac terminal): "possess clean, then stand still forever" — CONFIRMED and fixed
+
+**Diagnosis: CONFIRMED, with engine-source evidence.** Not a variant, not partial — the
+handed-down reading is exactly right, and the engine makes it *terminal*, which is why the
+single `SeekWeapon` line never became movement:
+
+`Engine/Plugins/Runtime/StateTree/Source/StateTreeModule/Private/StateTreeExecutionContext.cpp:1629`
+is the very error the PIE printed seven times, and the branch it sits in does this:
+
+```
+GlobalTasksRunStatus = EStateTreeRunStatus::Failed;
+Exec.TreeRunStatus   = EStateTreeRunStatus::Failed;
+STATETREE_LOG(Error, TEXT("%hs: Failed to select initial state on '%s' ... "));
+...
+Exec.ActiveFrames.Reset();
+```
+
+and `TickPrelude` (`:1773`) early-returns on `Exec.TreeRunStatus != Running`. So a failed
+*initial selection* is not a missed frame the next Think repairs — the run status is Failed,
+the frames are reset, and Tick never runs again for the life of that possession. Nothing
+re-selects, because selection only happens at Start or at a transition, and a tree with no
+active frames has no transitions to trigger.
+
+The trigger is the ordering the diagnosis named, verified in the sources:
+- `AIBBotController.cpp` OnPossess set the Think timer with `bLoop=true` and no first-delay
+  override, so the first `Think()` is `ThinkIntervalSeconds` in the future.
+- `Executor->Start(*this)` ran at the end of the same OnPossess, and
+  `AIBStateTreeExecutor.cpp:32` calls `TreeComponent->StartLogic()` **immediately**.
+- At that instant `AmbitionEngine->GetCurrent()` is the empty tag (fresh engine, or
+  `ResetArbitration()` from the previous unpossess).
+- `FAIBAmbitionGateCondition::TestCondition` ends in `Engine && BranchTag.IsValid() &&
+  Engine->GetCurrent() == BranchTag`. Empty current tag matches none of the five branch tags,
+  so all five enter conditions are false.
+- Root's selection behaviour is the default `TrySelectChildrenInOrder`
+  (`StateTreeState.h:424`), Root itself has 0 enter conditions and 0 tasks, and every child
+  is gated ⇒ nothing selectable ⇒ the error above ⇒ dead tree.
+
+The `ambition -> AIBot.Ambition.SeekWeapon (1.40) over Roam (0.20)` line is the first Think
+arriving one interval AFTER the tree already gave up — exactly as read. Fairness samples and
+possession were never implicated; both were healthy and stay untouched.
+
+**Fix chosen: (c) BOTH** — because they answer two different failures: (a) makes the *first*
+selection correct instead of merely survivable, and (b) is the only thing that makes "no
+gate matches" non-fatal on every future frame, including a Phase-6 mode ambition no branch
+knows about.
+
+1. `Source/AIBot/Core/AIBBotController.cpp` — one `Think()` call in OnPossess immediately
+   before `Executor->Start(*this)`. The brain is already fully built at that point (engine
+   registered, sensorium configured, avatar resolved), so the seeded facts are real, and the
+   tree's first selection mirrors arbitration rather than falling through to Roam for one
+   think interval.
+2. `Source/AIBot/Execution/AIBTreeAuthoring.cpp` — **Roam's branch no longer carries an enter
+   condition.** It is the last child, and `TrySelectChildrenInOrder` therefore makes it the
+   guaranteed selection when the four gated branches decline. Roam is the fallback *want* by
+   design ("nothing better to want"), so the gate was restating the ordering; removing it is
+   what the engine's own error message asks for. The report line now reads `... Roam UNGATED
+   as the ordered fallback ...` so the build output states it.
+3. `Source/AIBot/Execution/AIBStateTreeTasks.h` — `FAIBGateRoamCondition` is KEPT (the probe's
+   16-struct vocabulary is `Tools/aib/70_aib_assets.py`, not mine to change, and an explicitly
+   gated Roam is a legitimate future authoring) with a comment saying it is vocabulary the
+   built tree deliberately does not use.
+
+Nothing else moved. No new node struct, no signature change, no spec touched.
+
+**Rung tails:**
+- Rung 1 — `./Tools/run-ubt.sh BreachpointEditor`: `PASS BreachpointEditor (exit 0, touched
+  libUnrealEditor-AIBot.dylib)`. The script's own exit was 1 for `PARTIAL - fewer than three
+  targets`, which is the single-target invocation this packet asked for, not a compile
+  failure; `BreachpointServer` remains environmental on this launcher install (AIB1).
+- Rung 2 — `./Tools/run-specs.sh AIBot`: `41 test(s) started, 0 failures`, and the counts
+  **reconcile** against the raw log `Tools/Logs/specs-20260825-221055.log`: 41 `Test Started`,
+  41 `Result={Success}`, 0 `Result={Fail}` ⇒ 41 = 41 + 0. Unchanged from AIB1.
+- Boundary grep — `grep -rn "Breachpoint\|BNCharacter\|\"BN" Source/AIBot/ --include='*.h'
+  --include='*.cpp'` → no output, exit 1.
+
+**NOT DONE, and it is the gate on this fix mattering: the tree was NOT rebuilt.** The Roam
+change is *authoring*, and StateTree bakes node and instance data into the asset at compile —
+`/Game/AIBot/AI/ST_AIBBot` on disk still has Roam gated, so a PIE run right now would still
+die at selection unless the seeded Think happens to produce a matching ambition (it will, so
+bots WILL move — but the (b) half is inert until the asset is rebuilt). No editor was running
+(only `UnrealEditorServices`), and this packet forbids opening or closing one, so
+`python3 Tools/aib/70_aib_assets.py probe` then `build` is owed to a driver holding the R29
+editor. Expect the read-back to show `Roam (0 enter conditions, 2 tasks, 2 transitions)`.
+
+**Honesty ladder:** compiled (Editor target) + rung 2 green. Rung 3 unproven — the live PIE
+that produced this bug has not been re-run, and cannot be until the tree is rebuilt.
+
+---
+
+### 25 Aug 2026 — aib-builder (mac terminal): "armed bots still stand still" — the hand was EMPTY
+
+The Roam fix landed and worked (`Failed to select initial state` 0/7, tree compiled, Roam
+ungated). What remained was a second, independent deadlock, and it is now diagnosed to a
+line of ini.
+
+**(A) ROOT CAUSE — the bots hold nothing. `Weapons[0]` is the null Unarmed slot.**
+
+Evidence, in the order it forces the conclusion:
+
+1. `Config/DefaultGame.ini:378-388`, comment verbatim: *"list order is switch order and
+   index 0 is equipped on spawn … Unarmed is a null slot (no actor)"*, and the list is
+   `Unarmed, Pistol, Rifle, Shotgun, Knife`.
+2. `BNEquipmentComponent.cpp:47-52` — the row named `Unarmed` adds **`nullptr`** to
+   `Weapons`. So the carry is `[null, Pistol, Rifle, Shotgun, Knife]`.
+3. `BNEquipmentComponent.cpp:155` — `EquipIndex(0)`. This is the line the lead read as
+   proof the bot is armed; it is the opposite. It equips **index 0, which is the null
+   slot**. `CurrentIndex` is 0, not `INDEX_NONE` — and `GetCurrentWeapon()`
+   (`:245`, `Weapons.IsValidIndex(0) ? Weapons[0].Get() : nullptr`) returns **null**.
+4. So `UBNAIBAvatarAdapter::GetHeldWeapon()` is null and `CanWeaponFight()` returns false
+   at its **first** branch — before the ASC is ever fetched. **`State.Match.Frozen` is
+   never even reached, on the seeded first Think or on any later one.** The freeze
+   candidate is ruled out by control flow, not by inference.
+5. Corroboration from the working brain, which the founder told us to read: BN's own bots
+   carry an **`Arm` state** (`BNBotAuthoring.cpp:174-176`) whose single task
+   (`FBNSelectWeaponTask`, `BNBotStateTreeTasks.cpp:1602`) presses `Input.Weapon.Next`
+   "until the held weapon can actually shoot". That state exists **because** a fresh spawn
+   holds nothing. A human's mouse wheel does the same job. The AIB tree has no equivalent
+   and no weapon vocabulary before Phase 6 — so an AIB bot is the only actor in the game
+   that never arms itself.
+
+"AI already have the weapons" is true at the INVENTORY level — the `BNLoadout:` lines are
+four real weapon actors, spawned, attached, hidden. The **hand** is empty.
+
+**Why it never recovers — and what that rules out.** The lead asked whether a stale cached
+consideration or an over-sticky commit was holding the 1.40. Neither, and the code says so:
+
+- `AAIBBotController::Think` rebuilds `LastFacts` from scratch **every 0.1s**
+  (`AIBFactsBuilder::Build`, then `Rescore`). `FAIBConsideration::Evaluate` reads the facts
+  struct directly — there is no cached score anywhere in the path.
+- The commit cannot hold a self-vetoed incumbent: `bCommitted` requires
+  `IncumbentRawScore > 0.f` (`AIBAmbitionEngine.cpp:150`), and the existing spec *"releases
+  a commit whose incumbent VETOED itself"* pins it. `SwitchCostFactor` 1.15 multiplies a
+  **freshly recomputed** raw score, and 1.15 × 0 = 0.
+- Therefore, had `CanWeaponFight()` ever flipped true, SeekWeapon would have collapsed to 0
+  and the winner would have changed **within 100ms**, printing a second line. Across a whole
+  match not one bot printed a second line. **That silence is itself the proof that the gate
+  never flipped** — i.e. a permanent condition (empty hand), not a transient one (warmup
+  freeze). The 10Hz rescore is what turns the missing log line into evidence.
+- Consequence: AIB does **not** need BN's event-driven `RescoreBrain()` to recover. Its
+  worst-case reaction to a world change is 100ms, under R11's own 200ms fairness floor.
+  Event rescoring is a nice-to-have for a tickless design, not this bug; not adding it.
+
+**(A) FIX — the adapter arms the pawn, in the adapter folder, with the existing verb.**
+`Source/BreachpointNext/AIBotAdapter/BNAIBAvatarAdapter.{h,cpp}`:
+- `BeginArming()` (called from `EnsureOn` after `RegisterComponent`) starts a 0.5s looping
+  timer; `ArmIfEmptyHanded()` presses and releases `AIBTags::Verb_WeaponNext` — which the
+  verb map already routes to `Input.Weapon.Next`, the same button the human and the BN bot
+  press — and **clears its own timer the first tick the hand is full**.
+- A TIMER, not one press, because `BNGA_Equip` does not set `bIgnoreMatchFreeze`
+  (`BNGameplayAbility.cpp:37` refuses every activation while `State.Match.Frozen`), so a
+  single press at possession would be swallowed by warmup and lost forever. One `Warning`
+  at 30 presses names the two remaining causes rather than staying silent.
+- One `Verbose` line added to `CanWeaponFight()` for the empty-hand case, so the next
+  reader gets the reason instead of re-deriving it from the ini.
+- Nothing in BN gameplay changed: the adapter exists only on AIB-possessed pawns
+  (`EnsureOn` requires an `AAIBBotController`), and it uses only BN's existing input path.
+
+*Deliberate layering call:* arming is game knowledge ("this game spawns you unarmed"), so
+it belongs on the game side of the seam, not in the module. When Phase 6 gives the module a
+weapon-selection vocabulary this becomes an AIB task pressing the same verb, and this timer
+deletes itself. Flagged for the founder to rule on if he wants agency in the brain sooner.
+
+**(B) CHOICE — SeekWeapon is now inert-by-fact, not deleted.** Chosen: **score ~0**, via a
+new fact rather than by disabling the ambition.
+- `FAIBFacts::bWeaponPickupKnown` (Core/AIBTypes.h) + selector `WeaponPickupKnown` + a
+  second near-veto consideration on the SeekWeapon spec. `AIBFactsBuilder` sets it **false
+  explicitly** (greppable), with the Phase-6 line named: a `POI.Weapon` world query.
+- Rationale over the alternative (make Seek's branch fail through to Roam): the branch
+  **already** fails fast — `FAIBMoveToPOITask::EnterState` returns `Failed` with no
+  provider — and it still deadlocked, because the gate is the AMBITION and arbitration kept
+  re-electing it, so Root re-selected the identical branch every 2s forever. Fixing it in
+  the tree would also mean an authoring change and a mandatory asset rebuild. Fixing it in
+  scoring is worldless, spec-testable, needs **no tree rebuild**, and is where the founder's
+  steer points: BN's working brain models three ambitions (Fight/Survive/Roam) and never
+  modelled seeking a weapon, because this world has no pickups. The tag survives for Phase 6.
+- Second-order effect worth stating: a bot that runs genuinely dry now Roams instead of
+  freezing. It does not yet reload — `Verb_Reload` is mapped but no AIB task presses it.
+  That is a real Phase-4 gap, named here, not fixed here.
+
+**Rung tails:**
+- Rung 1 — `./Tools/run-ubt.sh BreachpointEditor`: `Result: Succeeded` /
+  `PASS BreachpointEditor`. Script exit 1 is its `PARTIAL - fewer than three targets`
+  banner for the single-target invocation this packet asked for, not a compile failure.
+  **Both modules relinked as hot-reload dylibs** (`libUnrealEditor-AIBot-0002.dylib`,
+  `libUnrealEditor-BreachpointNext-0002.dylib`) because the lead's editor holds the base
+  ones open — **the running editor is on the OLD code and must be restarted (or Live-Coding
+  compiled) before PIE, or none of this is in the session.**
+- Rung 2 — **BLOCKED, owed.** `./Tools/run-specs.sh AIBot` refuses while any editor runs
+  ("An UnrealEditor process is already running… close the editor first", exit 3) and this
+  packet forbids closing it. The suite is now **42** tests: one added,
+  `AIBot.Sim.AmbitionEngine` → *"never wants a weapon this world does not contain — the
+  25 Aug deadlock, pinned"* (dry + no pickup ⇒ Roam; flip the fact ⇒ SeekWeapon wins again,
+  proving inert ≠ dead). It COMPILED (rung 1 built the Tests TU) but has not RUN. Expect
+  **42/42/0** and reconcile against `Test Started` / `Result={Success}` / `Result={Fail}`.
+- Boundary grep — `grep -rn "Breachpoint\|BNCharacter\|\"BN" Source/AIBot/ --include='*.h'
+  --include='*.cpp'` → no output, exit 1.
+- **No tree authoring changed.** Node sets, gates and branch order are untouched;
+  `/Game/AIBot/AI/ST_AIBBot` does not need rebuilding for this fix.
+
+**Honesty ladder:** compiled (Editor target only). Rung 2 not run (editor held). Rung 3
+unproven — the founder's PIE is the only thing that can show a bot walking, and it needs an
+editor restart first.
