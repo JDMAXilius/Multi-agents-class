@@ -108,3 +108,44 @@ AIB's section with the trap written down.
 
 Other counters, run 1: 635 acquisitions, 2314 switches, 58 interrupts, 9 melee swings,
 30 grenade throws (6 throttled), 0 claim grants/denies/releases, 14 bots all Marine.
+
+### 2026-08-26 — config (b) Recruit x8 and Spartan x8: the ladder is real
+
+Five matches each, `BotTier` set in `[/Script/AIBot.AIBBotController]` (the key this
+ticket had to add — see config (a)'s second finding).
+
+```
+RECRUIT x8   latency_mean : mean 0.515  min 0.508  max 0.526  n=5   fastest 0.342s
+MARINE       latency_mean : mean 0.382  min 0.380  max 0.386  n=5   fastest 0.221s
+SPARTAN x8   latency_mean : mean 0.291  min 0.289  max 0.293  n=5   fastest 0.201s
+```
+
+**Distinctness bar: PASS, with better than 2x margin.** Recruit − Spartan =
+**0.224s** against a bar of ≥0.10s. Three tiers, monotone, tight within each — Phase 8's
+tiers are genuinely wired and genuinely different. The provisional bar needs no
+re-proposal; if anything it is generous, and I am NOT proposing to tighten it on one
+config's evidence.
+
+All four HARD bars PASS on both tiers. Refusals stay far under the provisional bar
+(Recruit 0.04, Spartan 0.12) — a harder bot moves more and refuses more, and both are an
+order of magnitude inside 1.0.
+
+#### THE FLOOR IS LOAD-BEARING, and that is the finding
+
+Spartan's fastest acquisition across five matches is **0.201s** against R11's **0.200s**
+floor. One millisecond. The floor is not a formality for this tier — it is actively
+clamping every fast draw, and it is the only thing keeping Spartan legal.
+
+That matters because this project has already shipped that exact breach once: setting
+`BotTier=Spartan` on the BN side put reactions at 0.08–0.16s, under the floor, and it was
+caught after landing. The clamp added then is what this measurement now shows holding on
+the AIB side, on the first run where an AIB bot has ever actually BEEN Spartan.
+
+Read it as a standing risk, not a solved problem: any change that bypasses the draw-point
+clamp, or any tier row authored faster than Spartan, breaches R11 silently. The bar
+catches it only because the harness reports the FASTEST acquisition rather than the mean —
+Spartan's mean (0.291s) is comfortably legal and would hide it.
+
+**Recruit outlier, noted:** one of the five Recruit matches logged only 300 ambition
+switches against a 1628 mean (min 300, max 2348). Not investigated. The other four sit
+between ~1900 and 2348, so the mean is dragged by a single short match.
