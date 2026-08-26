@@ -27,6 +27,15 @@ public class AIBot : ModuleRules
 			// Pathing diagnostics against the navmesh (the host's move tasks proved
 			// this dependency shape).
 			"NavigationSystem",
+			// UAIBAssetSettings derives UDeveloperSettings, which lives in its own
+			// module. Added 26 Aug 2026 by AIB2's rung 1: without it EVERYTHING
+			// compiled and the EDITOR TARGET FAILED AT LINK with ~10 undefined
+			// UDeveloperSettings symbols (ctor, dtor, GetSectionName, the
+			// Z_Construct_UClass thunk). The game target linked fine, because the
+			// settings object is only reachable from editor code — which is exactly
+			// what made it look like an authoring bug rather than a missing module.
+			// Same line, same reason, as BreachpointNext.Build.cs:35.
+			"DeveloperSettings",
 			// The executor. StateTree first; a Behavior Tree executor may join
 			// later behind the same IAIBExecutor seam without new dependencies
 			// (BT lives in AIModule).
