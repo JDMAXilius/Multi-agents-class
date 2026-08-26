@@ -17,6 +17,21 @@ class AAIController;
  * Server-side only by construction: the controller exists nowhere else.
  */
 
+/**
+ * Every mover's locomotion scratch: the sprint HOLD's edge state and the wedge-jump
+ * watchdog. Deliberately NOT a UPROPERTY and not a USTRUCT — it is per-run state, never
+ * authored and never serialized, so adding it changes nothing the StateTree compiler
+ * bakes into /Game/AIBot/AI/ST_AIBBot (no node, no gate, no branch order moved).
+ */
+struct FAIBLocomotionState
+{
+	bool bSprintHeld = false;
+	bool bTriedWedgeJump = false;
+	bool bHasBestPoint = false;
+	float StallSeconds = 0.f;
+	FVector BestPoint = FVector::ZeroVector;
+};
+
 ////////////////////////////////////////////////////////////////////
 
 USTRUCT()
@@ -180,9 +195,13 @@ struct FAIBMoveNearBeliefTaskInstanceData
 	float RepathAtDriftUU = 200.f;
 
 	FVector LastGoal = FVector::ZeroVector;
+	FAIBLocomotionState Locomotion;
 };
 
-/** Closes toward the belief and then KEEPS STATION there — it never succeeds, because
+/** Closes toward the belief and then KEEPS STATION there — sprinting while there is
+ *  ground to cover and walking the last stretch, because a bot that sprints into its own
+ *  firing position arrives unable to shoot (the sprint state holds while the key is down).
+ *  It — it never succeeds, because
  *  the branch runs all its tasks at once (move + face + fire together is the whole
  *  Halo read) and a mover that completed on arrival would complete the state per frame
  *  while standing in range. It fails on visibility loss; the sentinel ends the branch
@@ -220,12 +239,24 @@ struct FAIBFireWhenAbleTaskInstanceData
 
 	float PhaseSecondsLeft = 0.f;
 	bool bHolding = false;
+
+	/** Reload scratch: the re-tap throttle, and whether WE are the ones holding the
+	 *  crouch (so the task uncrouches only what it crouched). */
+	float ReloadCooldownLeft = 0.f;
+	bool bCrouchedToReload = false;
 };
 
 /** Presses Verb_Fire in bursts while the cached FACTS say the weapon can fight and the
  *  target is visible — one info door, never the avatar's raw reads. Releases on exit
  *  ALWAYS: a held verb on the persistent ASC outlives the body (the host's sprint-leak
- *  lesson). */
+ *  lesson).
+ *
+ *  It also owns RELOAD and the crouch that goes with it: below a magazine fraction with
+ *  reserve left, the burst stops, the bot crouches, and it taps Verb_Reload — the host's
+ *  own rule and its reasoning (a reload is the only moment a bot chooses to spend seconds
+ *  it cannot shoot back in, so it spends them small). Reload lives HERE rather than in a
+ *  branch of its own because a new branch means a new node struct, and the node list is
+ *  pinned outside this module. */
 USTRUCT(meta = (DisplayName = "AIB Fire When Able", Category = "AIBot"))
 struct FAIBFireWhenAbleTask : public FStateTreeTaskCommonBase
 {
@@ -255,9 +286,10 @@ struct FAIBFleeFromBeliefTaskInstanceData
 	float FleeDistanceUU = 900.f;
 
 	FVector FleeGoal = FVector::ZeroVector;
+	FAIBLocomotionState Locomotion;
 };
 
-/** Runs directly away from the threat belief. Succeeds at the flee goal; the brain's
+/** RUNS — sprinting — directly away from the threat belief. Succeeds at the flee goal; the brain's
  *  Retreat score deciding when to STOP fleeing is arbitration's job, not this task's. */
 USTRUCT(meta = (DisplayName = "AIB Flee From Belief", Category = "AIBot"))
 struct FAIBFleeFromBeliefTask : public FStateTreeTaskCommonBase
@@ -286,6 +318,8 @@ struct FAIBMoveToLastKnownTaskInstanceData
 
 	UPROPERTY(EditAnywhere, Category = "Parameter")
 	float AcceptanceRadiusUU = 150.f;
+
+	FAIBLocomotionState Locomotion;
 };
 
 /** Walks to the memory's fresh last-known spot, then STANDS there (SweepLook rides
@@ -356,6 +390,7 @@ struct FAIBMoveToPOITaskInstanceData
 
 	FVector Goal = FVector::ZeroVector;
 	bool bHasGoal = false;
+	FAIBLocomotionState Locomotion;
 };
 
 /** Walks to a point worth being at — a provider's POI when one exists, else (for the

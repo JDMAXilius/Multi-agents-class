@@ -224,6 +224,15 @@ bool UBNAIBAvatarAdapter::IsGrounded() const
 	return Move ? !Move->IsFalling() : true;
 }
 
+bool UBNAIBAvatarAdapter::IsCrouched() const
+{
+	// The ENGINE's replicated crouch state, not a tag and not a mirror of our own: the
+	// crouch ability, a landing, or an uncrouch forced by a low ceiling all change it
+	// without asking us.
+	const ACharacter* Character = Cast<ACharacter>(GetOwner());
+	return Character && Character->bIsCrouched;
+}
+
 bool UBNAIBAvatarAdapter::IsAlive() const
 {
 	const UBNAbilitySystemComponent* ASC = GetASC();

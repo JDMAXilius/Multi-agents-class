@@ -45,6 +45,7 @@ public:
 	virtual bool CanWeaponFight() const override;
 	virtual int32 GetGrenadeCount() const override;
 	virtual bool IsGrounded() const override;
+	virtual bool IsCrouched() const override;
 	virtual bool IsAlive() const override;
 
 	// -- IAIBAvatarInterface: reads about another avatar ---------------------------

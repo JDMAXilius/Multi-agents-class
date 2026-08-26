@@ -53,6 +53,114 @@ namespace
 		const APawn* Pawn = Controller.GetPawn();
 		return Pawn && FVector::Dist(Pawn->GetActorLocation(), Point) <= RadiusUU;
 	}
+
+	/** SPRINT is released inside this multiple of a mover's arrival radius. The host's own
+	 *  rule, transcribed with its reasoning: a bot that sprints into its firing position
+	 *  arrives unable to shoot, because the sprint state holds for as long as the key is
+	 *  down. Un-sprinted bots are also a competitive fact, not polish — sprint multiplies
+	 *  move speed, so a sprinting human simply outran every bot, always. */
+	constexpr float SprintBeyondRadiusFactor = 1.5f;
+
+	/** The wedge watchdog: less ground than this gained for this long, with a goal still
+	 *  ahead, and the bot spends ONE jump — a lip, a crate, a step is exactly the shape a
+	 *  jump clears, and it costs nothing to find out. */
+	constexpr float WedgeProgressUU = 50.f;
+	constexpr float WedgeStallSeconds = 1.5f;
+
+	/** RELOAD below a quarter magazine, re-tapped no faster than this. The magazine only
+	 *  refills on the weapon's own notify, so a refused reload (frozen, dead, no montage)
+	 *  would otherwise be re-pressed at tick rate forever. */
+	constexpr float ReloadAtMagazineFraction = 0.25f;
+	constexpr float ReloadRetrySeconds = 1.0f;
+
+	/** Sprint is a HOLD: press the rising edge, release the falling one, re-press nothing.
+	 *  A leaked hold rides the persistent ASC into the next life (the host's own leak). */
+	void SetSprint(IAIBAvatarInterface& Avatar, bool& bHeld, bool bWant)
+	{
+		if (bWant == bHeld)
+		{
+			return;
+		}
+		bHeld = bWant;
+		if (bWant)
+		{
+			Avatar.PressVerb(AIBTags::Verb_Sprint);
+		}
+		else
+		{
+			Avatar.ReleaseVerb(AIBTags::Verb_Sprint);
+		}
+	}
+
+	/** Crouch is a TOGGLE — one tap flips it — so this compares against the avatar's REAL
+	 *  state through the door, never a private mirror, and never asks for a crouch while
+	 *  falling: mid-air the toggle only ever UNcrouches, so the press would do the exact
+	 *  opposite of what the caller wanted. Both rules are the host's, both were bugs first. */
+	void SetCrouch(IAIBAvatarInterface& Avatar, bool bWant)
+	{
+		if (bWant && !Avatar.IsGrounded())
+		{
+			return;
+		}
+		if (Avatar.IsCrouched() == bWant)
+		{
+			return;
+		}
+		Avatar.PressVerb(AIBTags::Verb_Crouch);
+		Avatar.ReleaseVerb(AIBTags::Verb_Crouch);
+	}
+
+	/** One call per mover tick: hold sprint while there is ground to cover, and spend one
+	 *  jump when a path that reports Moving stops producing any. NAVLINKS ARE NOT THIS
+	 *  FUNCTION'S JOB and need no AI work at all — drop and climb traversal is a property
+	 *  of the pawn and the navmesh (the host character's bUseAccelerationForPaths plus the
+	 *  project's generated nav links), inherited the moment a bot paths. This is only the
+	 *  wedge case, which no link covers. */
+	void TickLocomotion(AAIBBotController& Bot, FAIBLocomotionState& State,
+		const FVector& Goal, float ArriveRadiusUU, float DeltaTime)
+	{
+		IAIBAvatarInterface* Avatar = Bot.GetAvatar();
+		const APawn* Pawn = Bot.GetPawn();
+		if (!Avatar || !Pawn)
+		{
+			return;
+		}
+		const FVector Here = Pawn->GetActorLocation();
+		const float ToGoal = FVector::Dist(Here, Goal);
+		SetSprint(*Avatar, State.bSprintHeld, ToGoal > ArriveRadiusUU * SprintBeyondRadiusFactor);
+
+		if (!State.bHasBestPoint || FVector::Dist(Here, State.BestPoint) > WedgeProgressUU)
+		{
+			State.BestPoint = Here;
+			State.bHasBestPoint = true;
+			State.StallSeconds = 0.f;
+			State.bTriedWedgeJump = false; // moving again: the next wedge gets its own jump
+			return;
+		}
+		if (ToGoal <= ArriveRadiusUU)
+		{
+			return; // standing AT the goal is station-keeping, not being stuck
+		}
+		State.StallSeconds += DeltaTime;
+		if (!State.bTriedWedgeJump && State.StallSeconds >= WedgeStallSeconds && Avatar->IsGrounded())
+		{
+			State.bTriedWedgeJump = true;
+			Avatar->PressVerb(AIBTags::Verb_Jump);
+			Avatar->ReleaseVerb(AIBTags::Verb_Jump);
+			UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s jumped to clear whatever it is wedged on."),
+				*Bot.GetName());
+		}
+	}
+
+	/** Every mover's ExitState. A sprint carried out of a branch is the host's own leak:
+	 *  the bot arrives in its firing position still holding the speed state. */
+	void ReleaseLocomotion(AAIBBotController& Bot, FAIBLocomotionState& State)
+	{
+		if (IAIBAvatarInterface* Avatar = Bot.GetAvatar())
+		{
+			SetSprint(*Avatar, State.bSprintHeld, false);
+		}
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -168,14 +276,19 @@ EStateTreeRunStatus FAIBMoveNearBeliefTask::Tick(FStateTreeExecutionContext& Con
 		InstanceData.LastGoal = Belief;
 		Bot->MoveToLocation(Belief, InstanceData.AcceptanceRadiusUU);
 	}
+
+	// Close FAST, arrive WALKING. There is no blind case to test here — this task fails
+	// without a held belief — so distance is the whole rule.
+	TickLocomotion(*Bot, InstanceData.Locomotion, Belief, InstanceData.AcceptanceRadiusUU, DeltaTime);
 	return EStateTreeRunStatus::Running;
 }
 
 void FAIBMoveNearBeliefTask::ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
 {
-	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	if (AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller))
 	{
+		ReleaseLocomotion(*Bot, InstanceData.Locomotion);
 		Bot->StopMovement();
 	}
 }
@@ -203,6 +316,40 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 	// The cached facts are the one info door: matured visibility + the assembled
 	// can-fight answer, never raw avatar reads scattered through tasks.
 	const FAIBFacts& Facts = Bot->GetLastFacts();
+
+	// RELOAD, AND CROUCH WHILE THE HANDS ARE BUSY. The most dangerous seconds a bot has
+	// are the ones it cannot shoot back in, and a reload is the only moment it chooses to
+	// spend them — so it spends them small, and legibly: a crouched bot with its hands
+	// busy reads as "reloading" from across the arena. No reserve is a different problem
+	// (the weapon swap), and it is NOT handled here — see the ticket Log for why.
+	InstanceData.ReloadCooldownLeft = FMath::Max(0.f, InstanceData.ReloadCooldownLeft - DeltaTime);
+	if (Facts.bHasReserveAmmo && Facts.AmmoNorm <= ReloadAtMagazineFraction)
+	{
+		if (InstanceData.bHolding)
+		{
+			Avatar->ReleaseVerb(AIBTags::Verb_Fire);
+			InstanceData.bHolding = false;
+			InstanceData.PhaseSecondsLeft = 0.f;
+		}
+		SetCrouch(*Avatar, true);
+		InstanceData.bCrouchedToReload = true;
+		if (InstanceData.ReloadCooldownLeft <= 0.f)
+		{
+			// One tap, like the human's R: the press activates, the release clears the
+			// held flag so the next reload is a fresh press rather than an input the
+			// ability system still believes is down.
+			Avatar->PressVerb(AIBTags::Verb_Reload);
+			Avatar->ReleaseVerb(AIBTags::Verb_Reload);
+			InstanceData.ReloadCooldownLeft = ReloadRetrySeconds;
+		}
+		return EStateTreeRunStatus::Running;
+	}
+	if (InstanceData.bCrouchedToReload)
+	{
+		SetCrouch(*Avatar, false);
+		InstanceData.bCrouchedToReload = false;
+	}
+
 	const bool bMayFire = Facts.bTargetVisible && Facts.bWeaponCanFight;
 
 	if (!bMayFire)
@@ -240,11 +387,21 @@ void FAIBFireWhenAbleTask::ExitState(FStateTreeExecutionContext& Context, const 
 	// ALWAYS release: a held verb on the persistent ASC outlives the body.
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller);
-	if (InstanceData.bHolding && Bot && Bot->GetAvatar())
+	if (IAIBAvatarInterface* Avatar = Bot ? Bot->GetAvatar() : nullptr)
 	{
-		Bot->GetAvatar()->ReleaseVerb(AIBTags::Verb_Fire);
+		if (InstanceData.bHolding)
+		{
+			Avatar->ReleaseVerb(AIBTags::Verb_Fire);
+		}
+		if (InstanceData.bCrouchedToReload)
+		{
+			// Stand back up on the way out, or the bot carries the reload's crouch — and
+			// its speed penalty — into whatever it wanted instead.
+			SetCrouch(*Avatar, false);
+		}
 	}
 	InstanceData.bHolding = false;
+	InstanceData.bCrouchedToReload = false;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -287,21 +444,28 @@ EStateTreeRunStatus FAIBFleeFromBeliefTask::EnterState(FStateTreeExecutionContex
 
 EStateTreeRunStatus FAIBFleeFromBeliefTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
 {
-	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller);
 	if (!Bot)
 	{
 		return EStateTreeRunStatus::Failed;
 	}
-	return IsWithin(*Bot, InstanceData.FleeGoal, 200.f)
-		? EStateTreeRunStatus::Succeeded : EStateTreeRunStatus::Running;
+	if (IsWithin(*Bot, InstanceData.FleeGoal, 200.f))
+	{
+		return EStateTreeRunStatus::Succeeded;
+	}
+	// A bot that WALKS away is not fleeing. Same helper as every other mover, so the
+	// hold is released on the way out and a wedge still costs one jump, not the match.
+	TickLocomotion(*Bot, InstanceData.Locomotion, InstanceData.FleeGoal, 200.f, DeltaTime);
+	return EStateTreeRunStatus::Running;
 }
 
 void FAIBFleeFromBeliefTask::ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
 {
-	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	if (AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller))
 	{
+		ReleaseLocomotion(*Bot, InstanceData.Locomotion);
 		Bot->StopMovement();
 	}
 }
@@ -330,7 +494,7 @@ EStateTreeRunStatus FAIBMoveToLastKnownTask::EnterState(FStateTreeExecutionConte
 
 EStateTreeRunStatus FAIBMoveToLastKnownTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
 {
-	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller);
 	if (!Bot)
 	{
@@ -349,6 +513,11 @@ EStateTreeRunStatus FAIBMoveToLastKnownTask::Tick(FStateTreeExecutionContext& Co
 	{
 		return EStateTreeRunStatus::Failed;
 	}
+	// Crossing ground toward a place someone WAS is the cheapest sprint a bot ever
+	// takes: nothing to lose sight of and no burst to interrupt. It drops to a walk on
+	// arrival, which is also when SweepLook's hunt starts mattering.
+	TickLocomotion(*Bot, InstanceData.Locomotion, LastKnown, InstanceData.AcceptanceRadiusUU, DeltaTime);
+
 	// Arrived: STAND at the post and let SweepLook hunt. The branch ends when the
 	// memory stales (above), someone appears (Succeeded), or the want moves on.
 	return EStateTreeRunStatus::Running;
@@ -356,9 +525,10 @@ EStateTreeRunStatus FAIBMoveToLastKnownTask::Tick(FStateTreeExecutionContext& Co
 
 void FAIBMoveToLastKnownTask::ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
 {
-	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	if (AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller))
 	{
+		ReleaseLocomotion(*Bot, InstanceData.Locomotion);
 		Bot->StopMovement();
 	}
 }
@@ -444,21 +614,32 @@ EStateTreeRunStatus FAIBMoveToPOITask::EnterState(FStateTreeExecutionContext& Co
 
 EStateTreeRunStatus FAIBMoveToPOITask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
 {
-	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller);
 	if (!Bot)
 	{
 		return EStateTreeRunStatus::Failed;
 	}
-	return (InstanceData.bHasGoal && IsWithin(*Bot, InstanceData.Goal, InstanceData.AcceptanceRadiusUU))
-		? EStateTreeRunStatus::Succeeded : EStateTreeRunStatus::Running;
+	if (InstanceData.bHasGoal && IsWithin(*Bot, InstanceData.Goal, InstanceData.AcceptanceRadiusUU))
+	{
+		return EStateTreeRunStatus::Succeeded;
+	}
+	if (InstanceData.bHasGoal)
+	{
+		// Crossing the arena with nothing to fight is the one time speed costs a bot
+		// nothing — and it is what stops a roaming bot reading as a patrolling tourist.
+		TickLocomotion(*Bot, InstanceData.Locomotion, InstanceData.Goal,
+			InstanceData.AcceptanceRadiusUU, DeltaTime);
+	}
+	return EStateTreeRunStatus::Running;
 }
 
 void FAIBMoveToPOITask::ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
 {
-	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	if (AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller))
 	{
+		ReleaseLocomotion(*Bot, InstanceData.Locomotion);
 		Bot->StopMovement();
 	}
 }

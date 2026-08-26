@@ -46,6 +46,13 @@ public:
 	virtual bool CanWeaponFight() const = 0;          // the assembled four-read answer
 	virtual int32 GetGrenadeCount() const = 0;
 	virtual bool IsGrounded() const = 0;              // movement truth, not a tag
+	virtual bool IsCrouched() const = 0;              // the avatar's REAL crouch state.
+	                                                  // Crouch is a TOGGLE: one press flips
+	                                                  // it, so a presser that keeps a private
+	                                                  // mirror drifts the first time a
+	                                                  // landing or a low ceiling changes it
+	                                                  // behind the bot's back, and then
+	                                                  // presses at exactly the wrong moment.
 	virtual bool IsAlive() const = 0;                 // alive by the host's own definition
 
 	// -- reads about ANOTHER avatar. FAIRPLAY ruling (26 Aug): enemy vitals are NOT a

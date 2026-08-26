@@ -403,3 +403,117 @@ wants between them.
 
 **Honesty ladder:** compiled (Editor target) + rung 2 green and reconciled against a clean
 link. Rung 3 unproven — no PIE was run and no editor was opened or closed by me.
+
+---
+
+### 25 Aug 2026 — aib-builder: THE VERB VOCABULARY — sprint, crouch, reload, wedge-jump. Navlinks need nothing.
+
+Founder ask: "make sure they are able to use navmesh navlinks, jumps, change weapons, melee,
+grenades, crouch, sprints, jump up jump down, reload — use breachpointnext as reference."
+`Source/BreachpointNext/AI/BNBotStateTreeTasks.cpp` was read as the reference and **not
+edited**; no BN gameplay code changed. The adapter's verb map was already complete (all
+eight), so nothing was plumbed — what was missing is the tree ever PRESSING them. Before
+this diff an AIB bot could fire, and arm. That was the whole vocabulary.
+
+**NAVLINKS: NO AI WORK NEEDED, CONFIRMED BY READING, AND NONE WAS BUILT.** Traversal is a
+property of the PAWN and the NAVMESH, never of the brain:
+- `Source/BreachpointNext/Characters/BNCharacter.cpp:196-198` — `GetNavMovementProperties()`
+  then `bUseAccelerationForPaths = true`, with its own comment noting the flag "is only ever
+  read on a pawn an AIController is moving".
+- `Config/DefaultEngine.ini:286` `bGenerateNavLinks=True`, plus two `+NavLinkJumpConfigs`
+  rows — `BN_Drop` (down-only, `UpDirectionAreaClass=None`, JumpLength 400 under a measured
+  514) and `BN_Climb` (up-only, JumpHeight 90).
+- AIB bots possess the **same `ABNCharacter`** (the adapter's `EnsureOn` is called from its
+  `PossessedBy`), so both properties are inherited the instant a bot paths. Jump-up and
+  jump-down are already theirs. Nothing in `Source/AIBot/` knows or should know this.
+
+**LANDED — four verbs, all through the existing door, no new node struct:**
+
+1. **Sprint** (`Verb_Sprint`) — the rule transcribed from BN's `FBNMoveToTargetTask`
+   (`:415-425`) *with* its reasoning: hold while beyond `1.5 x` the mover's arrival radius,
+   release inside it, because a bot that sprints into its own firing position arrives unable
+   to shoot (the sprint state holds while the key is down). Applied to **every** mover —
+   MoveNearBelief (Engage), MoveToLastKnown (Search), MoveToPOI (Seek/Roam), FleeFromBelief
+   (Retreat). Sprint is a HOLD, so it is edge-tracked and **always released in ExitState**
+   (BN's own leak lesson). BN's second clause, "or no line of sight", is deliberately absent
+   from MoveNearBelief: that task *fails* without a held belief, so the blind case cannot
+   occur there and testing for it would be dead code.
+2. **Crouch** (`Verb_Crouch`) — while reloading, per BN's `FBNReloadTask` (`:1347-1350`).
+   Crouch is a **TOGGLE**, so it is pressed through a helper that copies both of BN's hard-won
+   guards: never ask for a crouch while falling (mid-air the toggle only ever UNcrouches, so
+   the press does the opposite of the ask), and compare against the avatar's **real** state,
+   never a private mirror that a landing or a low ceiling silently invalidates. That needed
+   one new question at the door — see below. The task uncrouches only what it crouched, on
+   ammo recovery and on exit.
+3. **Reload** (`Verb_Reload`) — below **0.25** magazine with reserve left; BN's threshold shape
+   (`FBNNeedsReloadCondition`), read off `FAIBFacts::AmmoNorm` / `bHasReserveAmmo` rather than
+   a weapon. One tap, re-tapped no faster than 1s, because a refused ability (frozen, dead, no
+   montage) never notifies and would otherwise be pressed at tick rate forever. This closes the
+   gap the 25 Aug entry named ("it does not yet reload — a real Phase-4 gap").
+4. **Jump** (`Verb_Jump`) — BN's **wedge jump** (`:388-400`), not the strafe juke: less than
+   50uu of ground gained for 1.5s with a goal still ahead ⇒ ONE jump, re-armed the moment the
+   bot moves again, and never pressed while airborne. This is the only jump the brain needs;
+   drops and climbs are the navlinks above.
+
+**WHERE THEY LIVE, AND WHY NOT IN NEW BRANCHES.** Reload sits inside `FAIBFireWhenAbleTask`
+and locomotion inside the movers, exactly as BN puts `SetSprinting` inside its move task
+rather than in a Sprint state. Here it is also forced: a new branch means a new node struct,
+and the node list is pinned by `Tools/aib/70_aib_assets.py`, outside this module's owner path.
+The shared scratch (`FAIBLocomotionState`) is a plain struct with **no UPROPERTY**, so it is
+per-run state the StateTree compiler bakes nothing of.
+
+**TREE AUTHORING: UNCHANGED — NO REBUILD NEEDED.** Say this loudly, it is a gate: no
+`AddChildState` / `AddEnterCondition` / `AddTask` / `AddTransition` call moved, no state name
+moved, no node struct added or removed, and every field added to instance data is
+non-UPROPERTY runtime scratch. `AIBTreeAuthoring.cpp` is untouched by this diff.
+`/Game/AIBot/AI/ST_AIBBot` does **not** need `70_aib_assets.py probe`+`build` for these verbs.
+(The Roam/Seek rebuild owed by the two entries above is unaffected and still owed.)
+
+**ONE INTERFACE ADDITION** — `IAIBAvatarInterface::IsCrouched()`, implemented in the adapter as
+`ACharacter::bIsCrouched`. It is the toggle's correctness condition and it cannot come from the
+0.1s facts cache: the press must compare against the state as it is at press time. One
+implementor exists (the adapter), so nothing else needed touching.
+
+**DEFERRED, each for a reason, not for time:**
+- **Weapon switching by range** — deferred, and the dry-gun swap with it, on EVIDENCE:
+  `UBNEquipmentComponent::GetNextIndex()` is `(CurrentIndex + 1) % Weapons.Num()` and
+  **does not skip the null Unarmed slot** (`GetNextWeapon`'s own comment: "Still nullable on
+  success: the unarmed slot IS a null entry in this array"). So one in five `Input.Weapon.Next`
+  presses puts a bot into empty hands mid-fight. BN's range scoring also reads each weapon's
+  own damage row — game knowledge that would need a new question at the door. Both belong in
+  one packet with a slot-aware verb, not bolted on here.
+- **Melee** and **Grenade** — both are Engage-branch range bands and both are cheap, but they
+  need a distance the *task* trusts (`FAIBFacts::DistToTargetUU` is 0.1s stale, which is fine
+  for wanting and wrong for a lunge) plus a grenade cooldown. Named, not started.
+- **Crouch in cover** — AIB has no cover concept at all. It is not a verb gap, it is a missing
+  perception feature.
+- **The strafe juke** (BN's every-Nth-strafe-step jump) — needs a strafe pattern AIB does not
+  have. Deferred with it.
+
+**Rung tails — READ THE RUNG 2 LINE, IT IS NOT GREEN:**
+- Rung 1 — `./Tools/run-ubt.sh BreachpointEditor`: `Result: Succeeded` /
+  `PASS BreachpointEditor (exit 0)`. Both modules compiled and linked; `AIBot` shows
+  `[5/11] Compile Module.AIBot.gen.cpp` / `[6/11] Link libUnrealEditor-AIBot-0001.dylib`, and
+  `AIBStateTreeTasks.cpp` was compiled outside the unity blob (adaptive build), so it really
+  was compiled. Script exit 1 is the `PARTIAL - fewer than three targets` banner for the
+  single-target invocation this packet asked for. **The `-0001` suffix is the editor holding
+  the base dylib open: the running editor is on OLD code until it is restarted or Live-Coding
+  compiled.**
+- Rung 2 — **BLOCKED, OWED.** `./Tools/run-specs.sh AIBot` printed `BLOCKED - RUNG 2: An
+  UnrealEditor process is already running` and did not run. This packet forbids closing it.
+  The other agent's process catch applies and is worth repeating: **a rung 2 taken with an
+  editor open LIES** — UBT links `-0001`/`-0002` while the headless `-Cmd` loads the stale
+  base dylib, so it grades the previous revision. Expect **42/42/0 unchanged**: this diff
+  touches only `Execution/` and the adapter, and no spec covers either (the suites are
+  worldless by module law, and every task here needs a pawn). Reconcile against
+  `Test Started` / `Result={Success}` / `Result={Fail}` when the editor is free.
+- Boundary grep — `grep -rn "Breachpoint\|BNCharacter\|\"BN" Source/AIBot/ --include='*.h'
+  --include='*.cpp'` → no output, exit 1.
+
+**Honesty ladder:** compiled (Editor target). Rung 2 NOT RUN (editor held) — nothing here is
+spec-covered and nothing could be: sprint edges, the crouch toggle, the reload tap and the
+wedge jump are all pawn-and-world behaviour, so **PIE is the only rung that can prove any of
+it**. What to watch for in a `BotSystem=AIB` PIE: bots that keep up with a sprinting human,
+crouch when they reload, and jump once instead of grinding into a crate. What would say it is
+wrong: a bot standing crouched after a fight (a leaked toggle), or one walking its whole
+approach (sprint never pressed — check the adapter's server gate first).
