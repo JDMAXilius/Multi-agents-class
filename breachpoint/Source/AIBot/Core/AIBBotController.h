@@ -38,8 +38,10 @@ public:
 	AAIBBotController(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	/** The avatar door, resolved at possession. Null when the pawn carries no adapter —
-	 *  loud (one Error) and the bot stands, never crashes. */
-	IAIBAvatarInterface* GetAvatar() const { return Avatar; }
+	 *  loud (one Error) and the bot stands, never crashes. Validity rides the GC-tracked
+	 *  UPROPERTY half of the pair: a host destroying its adapter component mid-life must
+	 *  yield null here, never a dangling raw pointer (W-REVIEW P3, two passes). */
+	IAIBAvatarInterface* GetAvatar() const { return IsValid(AvatarObject) ? Avatar : nullptr; }
 
 	/** The matured world — the ONLY awareness anything downstream may read. */
 	const FAIBSensorium& GetSensorium() const { return Sensorium; }
@@ -71,6 +73,9 @@ public:
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void OnUnPossess() override;
+	/** Teardown (PIE end, travel) does not promise UnPossess — this is the ordered path
+	 *  that stops the executor while the avatar door is still valid (W-REVIEW P3). */
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	UFUNCTION()
 	void OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
@@ -96,7 +101,7 @@ private:
 	TObjectPtr<UStateTreeAIComponent> StateTreeComponent;
 
 	/** Soft path to the compiled tree, from [/Script/AIBot.AIBBotController] in ini.
-	 *  TICKET_AIB2's authoring commandlet builds the asset it names. */
+	 *  UAIBTreeAuthoring builds the asset it names, from the editor. */
 	UPROPERTY(Config)
 	TSoftObjectPtr<UStateTree> BotStateTree;
 
@@ -104,6 +109,15 @@ private:
 	 *  recompile; the floor law does not live here (the clock owns it). */
 	UPROPERTY(Config)
 	float ThinkIntervalSeconds = 0.1f;
+
+	/** The trace channel the blast perceivability gate tests (an ECollisionChannel
+	 *  value; int because the ini writes a number). Default ECC_Visibility — but a
+	 *  channel's MEANING is entirely the host project's collision config (a project
+	 *  whose cover blocks weapons yet ignores Visibility turns this gate into a no-op
+	 *  through a wall). The HOST decides via ini what channel honestly answers "could
+	 *  eyes reach the blast point" (W-REVIEW P3); this module only defaults it. */
+	UPROPERTY(Config)
+	int32 BlastPerceivabilityChannel = ECC_Visibility;
 
 	FAIBSensorium Sensorium;
 	FTimerHandle ThinkTimer;

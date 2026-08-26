@@ -48,6 +48,15 @@ think rate are banned. The residual pre-report window (the engine's sight sense 
 reporting an occlusion) is bounded by engine internals this module cannot see; ACCEPTED,
 revisit if bots visibly track through walls.
 
+**Amendment, 26 Aug 2026 (W-REVIEW P3, fairness HIGH):** a sight GAIN whose actor has a
+NOTED loss at-or-after the gain's event time is SUPERSEDED — it lands as memory at the
+gained spot, never as current sight. The loss ledger is written at note time, per actor,
+so it survives both a loss that matures before its own gain (latency draws invert on
+~1 in 6 short peeks) and a loss the clock's pending cap dropped. Without this, a 100ms
+peek could mature into live wall-tracking for the whole engine-perception max age, and
+the forgotten-path loss then laundered the tracked position into search memory. Pinned
+by the "supersedes a gain whose loss drew the faster reaction" sensorium spec.
+
 **Amendment, 26 Aug 2026 (W-REVIEW P2 H2):** enemy vitals are NOT a perceivable fact.
 No live health float crosses the envelope at any range or occlusion — a human reads a
 silhouette, not a number. Target vitals stay UNKNOWN until an estimate derived from

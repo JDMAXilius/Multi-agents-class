@@ -38,14 +38,18 @@ Phase 3 of `docs/AIBOT-ROADMAP.md`, second half. What landed since AIB1 closed:
 
 1. **Rung 1** — `./Tools/run-ubt.sh BreachpointEditor Breachpoint` (Server stays
    environmental per AIB1). This is the first compile of everything listed above.
-2. **Open the editor**, then `python3 Tools/aib/70_aib_assets.py probe` — all 16 node
-   structs + the trigger CDO must resolve. STALE editor = STOP, rebuild, restart.
-3. `python3 Tools/aib/70_aib_assets.py build` — pulls the trigger; paste the LogAIBot
-   authoring report (asset / schema / states / compile / save lines) and the read-back.
-   `compile : OK` and `IsReadyToRun YES` are the gates — a saved-but-uncompiled tree runs
-   NOTHING and every bot stands still.
-4. **Rung 2 regression** — `./Tools/run-specs.sh AIBot`: still **41/41/0** (no spec
-   changed; this catches an executor include breaking a worldless suite).
+2. **Open the editor**, then `python3 Tools/aib/70_aib_assets.py probe` — all **17** node
+   structs + the trigger CDO must resolve (the barrier added `FAIBUnservedWantTask`).
+   STALE editor = STOP, rebuild, restart.
+3. `python3 Tools/aib/70_aib_assets.py build` — **REQUIRED again even though assets
+   exist: the W-REVIEW barrier changed the tree shape** (Roam RE-GATED, a sixth ungated
+   `Fallback` state, a 0.25s Roam success delay — the 26 Aug barrier Log entry has the
+   ruling). Paste the LogAIBot authoring report and the read-back. `compile : OK` and
+   `IsReadyToRun YES` are the gates; the states line must list
+   Engage/Retreat/Search/Seek/Roam/Fallback.
+4. **Rung 2 regression** — `./Tools/run-specs.sh AIBot`: now **43 expected**
+   (Scaffold 5 + Sensorium 20 + AmbitionEngine 18 — the barrier added the
+   superseded-gain spec; the Seek retirement reworked the ambition suite).
 5. **Flip LOCALLY, do not commit the flip:** `BotSystem=AIB` in DefaultGame.ini, PIE with
    bots. Run `docs/AIBOT-PROTOCOLS.md` **P-1** (first possession — the five log lines),
    **P-2** (fairness latency sample), **P-3** (arbitration walk). Paste the log excerpts
@@ -82,11 +86,12 @@ Phase 3 of `docs/AIBOT-ROADMAP.md`, second half. What landed since AIB1 closed:
 ## Done when
 
 - [ ] Rung 1 PASS (Editor + Game; Server recorded environmental)
-- [ ] probe: 16/16 node structs + trigger OK against the RUNNING editor
-- [ ] build: authoring report pasted; `compile : OK`, read-back `IsReadyToRun YES`,
-      states listed = Engage/Retreat/Search/Seek/Roam under Root
-- [ ] Rung 2 still 41/41/0, reconciled
+- [ ] probe: 17/17 node structs + trigger OK against the RUNNING editor
+- [ ] build (RE-RUN post-barrier): authoring report pasted; `compile : OK`, read-back
+      `IsReadyToRun YES`, states listed = Engage/Retreat/Search/Seek/Roam/Fallback
+- [ ] Rung 2: 43/43/0, reconciled
 - [ ] P-1, P-2, P-3 excerpts pasted from a `BotSystem=AIB` PIE (flip local-only, reverted)
+- [ ] The barrier's NEEDS-LIVE-PROOF list (26 Aug Log entry) answered with evidence
 - [ ] Four mechanical checks pasted, empty
 - [ ] Deviations recorded
 
@@ -517,3 +522,92 @@ it**. What to watch for in a `BotSystem=AIB` PIE: bots that keep up with a sprin
 crouch when they reload, and jump once instead of grinding into a crate. What would say it is
 wrong: a bot standing crouched after a fight (a leaked toggle), or one walking its whole
 approach (sprint never pressed — check the adapter's server gate first).
+
+### 26 Aug 2026 — cloud. THE PHASE-3 W-REVIEW BARRIER: 4 passes, all FAIL, merged onto the terminal's live-PIE work. WRITTEN, NOT COMPILED.
+
+Four aib-critic passes (containment · fairness · utility pathologies · server-only), one
+attack surface each, run against the Phase-3 landing while the terminal drove AIB2 live.
+Verdicts: FAIL ×4; nine high entries de-duplicated to five. This entry records what the
+barrier found, what the terminal had ALREADY fixed independently by the time the barrier
+merged, and what this commit adds on top. The two histories converged on the same day's
+truths from opposite directions — the review from code, the terminal from a live match —
+and where they collided, the live evidence and founder rulings won.
+
+**Highs already closed by the terminal before the merge (recorded, no code change):**
+- Cold start against an invalid ambition — the terminal's live diagnosis (engine source:
+  a failed initial selection is TERMINAL) and the barrier's server-only pass demanded the
+  identical fix: `Think()` before `Executor->Start`. Same line, both sides. Kept once.
+- The boundary-gate comment hit in AIBot.Build.cs — reworded on main before the barrier's
+  fix landed; theirs kept.
+- The dry-weapon absorbing want — the barrier's fix (gate SeekWeapon on a known source)
+  was SUPERSEDED by the founder's retirement of SeekWeapon entirely: `Ambition_Seek` is
+  deliberate movement, satisfiable by construction, 0.15 unknown-urgency under the Roam
+  floor. The barrier's spec for it was dropped; the terminal's "wants nothing this world
+  cannot satisfy" spec pins the same property against the ambitions that exist.
+
+**Barrier fixes landing IN THIS COMMIT:**
+1. **The sensorium ordering hole (fairness HIGH)** — a loss maturing BEFORE its own gain
+   was dropped (both guards keyed on the actor already being visible): a ~100ms peek
+   could mature into live wall-tracking for SightMaxAge (~1 in 6 short peeks with our
+   latency band), then launder the tracked position into 16s of search memory. Fixed
+   with a note-time per-actor loss ledger + the superseded-gain rule (survives both the
+   draw inversion and a clock-cap drop); FAIRPLAY amendment appended; pinned by the new
+   "supersedes a gain whose loss drew the faster reaction" sensorium spec.
+2. **THE ROAM RULING (utility pass)** — neither the gated source nor the interim ungated
+   asset: Roam is RE-GATED (the executor mirrors arbitration 1:1 for every real
+   ambition) and a sixth, ungated, LAST `Fallback` state (sentinel + new
+   `FAIBUnservedWantTask`, one Warning naming the unserved want) satisfies the engine's
+   always-selectable demand. The ungated Roam's hidden cost was Phase-6: a mode-ambition
+   bot would roam past the flag forever while the ambition log printed the correct want —
+   silent wrong behaviour, invisible in exactly the line P-3 samples. The terminal's
+   terminal-failure evidence is what makes the Fallback mandatory rather than paranoid.
+3. **Mover blindness (H3, two passes)** — every MoveToLocation result was discarded; a
+   refused or partial path was a permanent silent stand (a cornered Retreat = shot while
+   "fleeing"; a stalled Roam = a healthy-looking statue). All movers now check
+   `EPathFollowingRequestResult::Failed` and carry a no-progress give-up that fails
+   LOUDLY (F7) — layered UNDER the terminal's wedge-jump, which gets its 1.5s chance
+   first.
+4. **Retreat's absorbing freeze (H1)** — hurt with no threat knowledge selected a flee
+   task with nothing to flee from, forever, while hysteresis defended the frozen want.
+   FleeFromBelief now REPOSITIONS to a random reachable point when it holds no threat
+   fix; still fails loudly when even that is impossible.
+5. **Mediums:** avatar-door validity rides the GC-tracked pair half (`IsValid`), so a
+   destroyed adapter yields null, never a dangling pointer (two passes independently);
+   OnUnPossess AND a new EndPlay override release Verb_Fire through the still-valid door
+   as the belt under the tree's ExitState brace; FireWhenAble gates on the LIVE
+   `HasVisibleTarget()` too (no bursting at a just-destroyed corpse for a stale fact
+   window) and its skipped releases are Warning-loud; MoveNearBelief re-closes on a 0.5s
+   repath cadence after the BOT is displaced (knockback/pad — drift-only never re-closed);
+   the F4 snap path is gone (rate ≤ 0 falls back to 360°/s); the blast perceivability
+   trace channel is `UPROPERTY(Config) BlastPerceivabilityChannel` — the HOST decides
+   what "blocks eyes" means, per its own collision ledger; Roam success carries 0.25s
+   (nav-island per-frame pathfind); the task-side `16.f` memory fallbacks are
+   `AIB::DefaultMemoryFreshSeconds` (one definition); ARCHITECTURE gained the
+   component-tick dated exception and extraction-delta item 5 (the content mount);
+   runtime warning strings no longer name repo tickets.
+
+**NEEDS LIVE PROOF (server-only pass — answer during step 5):**
+1. Does `StopLogic` exit states synchronously in 5.8? UE_LOG ordering across an
+   unpossess mid-burst decides whether the ExitState release ever needed the belt.
+2. The Fallback branch: force an unmapped want (any Mode-tagged ambition) and paste the
+   one Warning; confirm the sentinel exits it when the want changes.
+3. `GetIsReplicated()` on the StateTree component in a listen-server PIE (law 3
+   end-to-end).
+4. PIE end / seamless travel with a bot mid-burst — clean shutdown through EndPlay.
+5. Does `SetStartLogicAutomatically(false)` survive CDO serialization into instances?
+6. UNVERIFIABLE-FROM-CLOUD: `AAIController::bStartAILogicOnPossess`/`bStopAILogicOnUnposses`
+   were NOT pinned (no compiled in-repo precedent). If possession logs show the brain
+   component starting before the executor sets the tree, pin both false and record the
+   engine header lines here.
+
+**Registered, not fixed (risk register):** fire cadence is bounded by tree re-entry rate,
+not a human trigger rate (Phase 4's policy owns it); `bTargetFactsFromMemory` still has
+no consumer; per-attempt mover logs are Verbose (raise verbosity to diagnose); the
+function-local `static FAIBTierRow Defaults` in NoteIncomingBlast is process-wide (must
+become per-bot at Phase 8); a same-tick sibling failure can demote the sentinel's clean
+exit to the 0.2–0.5s failed delay; `GetVisibleTarget()` hands out a live `AActor*` with
+no Execution-side consumer — Phase-4 builders must not walk through that open door; the
+SeekWeapon→Seek struct renames (`FAIBGateSeekWeaponCondition`, `FAIBMoveToWeaponPOITask`)
+remain OWED — this commit edits the probe list (adds `FAIBUnservedWantTask`, 17 entries)
+but defers the rename to its own serial step so the asset rebuild carries one shape
+change at a time.

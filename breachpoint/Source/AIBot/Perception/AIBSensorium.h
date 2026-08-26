@@ -4,6 +4,7 @@
 #include "Math/RandomStream.h"
 #include "Perception/AIBReactionClock.h"
 #include "Perception/AIBTargetMemory.h"
+#include "UObject/ObjectKey.h"
 
 /** One matured, not-yet-detonated blast. A LIST, because two live grenades are two
  *  problems: the single-slot design let a distant second grenade erase a live first one
@@ -30,12 +31,15 @@ struct AIBOT_API FAIBLiveBlast
  * default sequence acquire in lockstep and read as coordinated omniscience (F-3.7).
  * The clock clamps every draw to AIB::MinReactionSeconds; one law, one site.
  *
- * SightLost matures like everything else — the juke window — but with two honest edges:
- * a matured loss OLDER than the last applied gain for the same actor is stale and
- * ignored (a re-peek must not blind the bot to an enemy in the open, F-3.1), and the
+ * SightLost matures like everything else — the juke window — but with three honest
+ * edges: a matured loss OLDER than the last applied gain for the same actor is stale and
+ * ignored (a re-peek must not blind the bot to an enemy in the open, F-3.1); the
  * moment a loss is NOTED the sight stops being "current", so consumers stop reading the
  * live actor and hold the last seen spot — a human juked around a corner aims at where
- * they THINK you are, not at your true position through the wall (F2-B).
+ * they THINK you are, not at your true position through the wall (F2-B); and a gain
+ * whose actor already has a NOTED loss at-or-after the gain's event is SUPERSEDED — it
+ * lands as memory, never as current sight (a short peek whose loss drew the faster
+ * reaction must not mature into live tracking of an occluded enemy — W-REVIEW P3).
  */
 class AIBOT_API FAIBSensorium
 {
@@ -108,6 +112,11 @@ private:
 	FVector VisibleTargetLastSeen = FVector::ZeroVector;
 	bool bSightCurrent = false;
 	double LastAppliedGainEventSeconds = -1.0;
+
+	/** Per-actor event time of the latest NOTED sight loss — written at Note time, so it
+	 *  survives both a loss that matures before its own gain and a loss the clock's
+	 *  pending cap dropped. A maturing gain checks it; pruned once per pump. */
+	TMap<FObjectKey, double> NotedLossEvents;
 
 	TArray<FAIBLiveBlast> LiveBlasts;
 	float LastAcquisitionLatency = -1.f;

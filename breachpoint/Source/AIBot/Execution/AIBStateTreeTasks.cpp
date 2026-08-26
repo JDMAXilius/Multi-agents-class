@@ -41,9 +41,11 @@ namespace
 			return;
 		}
 		const FRotator Desired = ToPoint.Rotation();
-		const FRotator Stepped = DegreesPerSecond <= 0.f
-			? Desired
-			: FMath::RInterpConstantTo(Controller.GetControlRotation(), Desired, DeltaTime, DegreesPerSecond);
+		// NO SNAP PATH (F4): zero-or-negative is an authoring accident, not a request
+		// for instant aim — it falls back to the default rate. F1 has one clamp site
+		// for time; this is the one bound site for turn.
+		const float Rate = DegreesPerSecond > 0.f ? DegreesPerSecond : 360.f;
+		const FRotator Stepped = FMath::RInterpConstantTo(Controller.GetControlRotation(), Desired, DeltaTime, Rate);
 		Controller.SetControlRotation(Stepped);
 		Pawn->FaceRotation(Stepped, DeltaTime);
 	}
@@ -249,11 +251,18 @@ EStateTreeRunStatus FAIBMoveNearBeliefTask::EnterState(FStateTreeExecutionContex
 		return EStateTreeRunStatus::Failed;
 	}
 	InstanceData.LastGoal = Bot->GetSensorium().GetLastSeenLocation();
+	InstanceData.RepathCooldown = 0.f;
 	// Already in position: station-keep from here (issuing a move to where we stand
 	// would complete instantly and thrash the branch — the never-succeed contract).
 	if (!IsWithin(*Bot, InstanceData.LastGoal, InstanceData.AcceptanceRadiusUU))
 	{
-		Bot->MoveToLocation(InstanceData.LastGoal, InstanceData.AcceptanceRadiusUU);
+		if (Bot->MoveToLocation(InstanceData.LastGoal, InstanceData.AcceptanceRadiusUU)
+			== EPathFollowingRequestResult::Failed)
+		{
+			UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s could not path to the belief — closing refused (F7)."), *Bot->GetName());
+			return EStateTreeRunStatus::Failed;
+		}
+		InstanceData.RepathCooldown = InstanceData.RepathIntervalSeconds;
 	}
 	return EStateTreeRunStatus::Running;
 }
@@ -268,13 +277,22 @@ EStateTreeRunStatus FAIBMoveNearBeliefTask::Tick(FStateTreeExecutionContext& Con
 	}
 
 	// Station-keeping: chase the belief's drift, never complete. Firing runs beside
-	// this task; the sentinel or a visibility loss is what ends the branch.
+	// this task; the sentinel or a visibility loss is what ends the branch. Out of
+	// position for ANY reason — belief drift or the BOT displaced (knockback, a pad) —
+	// re-closes on the repath cadence (W-REVIEW P3 M3).
+	InstanceData.RepathCooldown -= DeltaTime;
 	const FVector Belief = Bot->GetSensorium().GetLastSeenLocation();
 	if (!IsWithin(*Bot, Belief, InstanceData.AcceptanceRadiusUU)
-		&& FVector::Dist(Belief, InstanceData.LastGoal) > InstanceData.RepathAtDriftUU)
+		&& InstanceData.RepathCooldown <= 0.f)
 	{
 		InstanceData.LastGoal = Belief;
-		Bot->MoveToLocation(Belief, InstanceData.AcceptanceRadiusUU);
+		InstanceData.RepathCooldown = InstanceData.RepathIntervalSeconds;
+		if (Bot->MoveToLocation(Belief, InstanceData.AcceptanceRadiusUU)
+			== EPathFollowingRequestResult::Failed)
+		{
+			UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s could not path to the belief — closing refused (F7)."), *Bot->GetName());
+			return EStateTreeRunStatus::Failed;
+		}
 	}
 
 	// Close FAST, arrive WALKING. There is no blind case to test here — this task fails
@@ -310,6 +328,16 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 	IAIBAvatarInterface* Avatar = Bot ? Bot->GetAvatar() : nullptr;
 	if (!Bot || !Avatar)
 	{
+		// The avatar door closed mid-hold (the adapter died): the trigger cannot be
+		// released through a door that no longer exists — say so at Warning, because a
+		// silently stranded held verb is undiagnosable (W-REVIEW P3). The controller's
+		// unpossess/EndPlay release is the belt on the host side.
+		if (InstanceData.bHolding)
+		{
+			UE_LOG(LogAIBot, Warning, TEXT("AIBot: %s lost its avatar door while holding fire — release could not be delivered."),
+				Bot ? *Bot->GetName() : TEXT("<no controller>"));
+			InstanceData.bHolding = false;
+		}
 		return EStateTreeRunStatus::Failed;
 	}
 
@@ -350,7 +378,11 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 		InstanceData.bCrouchedToReload = false;
 	}
 
-	const bool bMayFire = Facts.bTargetVisible && Facts.bWeaponCanFight;
+	// The live sensorium check closes the destroyed-target frame: a corpse whose weak
+	// handle just went null must not be burst at for the rest of the fact snapshot's
+	// life (W-REVIEW P3 M1 — the facts refresh at think cadence, this task at tick).
+	const bool bMayFire = Facts.bTargetVisible && Facts.bWeaponCanFight
+		&& Bot->GetSensorium().HasVisibleTarget();
 
 	if (!bMayFire)
 	{
@@ -384,7 +416,9 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 
 void FAIBFireWhenAbleTask::ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
 {
-	// ALWAYS release: a held verb on the persistent ASC outlives the body.
+	// ALWAYS release: a held verb on the host's persistent verb sink outlives the body.
+	// A skipped release is LOUD (W-REVIEW P3) — clearing bHolding must never silently
+	// erase the record that the trigger is still down somewhere.
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller);
 	if (IAIBAvatarInterface* Avatar = Bot ? Bot->GetAvatar() : nullptr)
@@ -399,6 +433,11 @@ void FAIBFireWhenAbleTask::ExitState(FStateTreeExecutionContext& Context, const 
 			// its speed penalty — into whatever it wanted instead.
 			SetCrouch(*Avatar, false);
 		}
+	}
+	else if (InstanceData.bHolding || InstanceData.bCrouchedToReload)
+	{
+		UE_LOG(LogAIBot, Warning, TEXT("AIBot: %s exited a fire state holding a verb with no avatar door — release not delivered."),
+			Bot ? *Bot->GetName() : TEXT("<no controller>"));
 	}
 	InstanceData.bHolding = false;
 	InstanceData.bCrouchedToReload = false;
@@ -417,28 +456,59 @@ EStateTreeRunStatus FAIBFleeFromBeliefTask::EnterState(FStateTreeExecutionContex
 	}
 
 	// Away from the freshest threat knowledge we hold: the visible belief, else memory.
+	// With NOTHING held — hurt, threat unknown — Retreat still needs an executable exit
+	// (W-REVIEW P3 H1): reposition to a random reachable point. A hurt bot that
+	// relocates reads as falling back; a hurt bot frozen mid-arena reads as broken, and
+	// the hysteresis defends the freeze.
 	FVector ThreatPoint;
-	if (Bot->GetSensorium().HasVisibleTarget())
+	bool bHasThreatPoint = Bot->GetSensorium().HasVisibleTarget();
+	if (bHasThreatPoint)
 	{
 		ThreatPoint = Bot->GetSensorium().GetLastSeenLocation();
 	}
 	else
 	{
 		const float Window = Bot->GetLastFacts().MemoryFreshWindowSeconds;
-		if (!Bot->GetSensorium().Memory().GetFresh(
-			Bot->GetWorld()->GetTimeSeconds(), Window > 0.f ? Window : 16.f, ThreatPoint))
-		{
-			return EStateTreeRunStatus::Failed; // nothing to flee from
-		}
+		bHasThreatPoint = Bot->GetSensorium().Memory().GetFresh(
+			Bot->GetWorld()->GetTimeSeconds(), Window > 0.f ? Window : AIB::DefaultMemoryFreshSeconds, ThreatPoint);
 	}
 
-	const FVector Away = (Pawn->GetActorLocation() - ThreatPoint).GetSafeNormal2D();
-	if (Away.IsNearlyZero())
+	FVector Goal;
+	if (bHasThreatPoint)
 	{
+		const FVector Away = (Pawn->GetActorLocation() - ThreatPoint).GetSafeNormal2D();
+		if (Away.IsNearlyZero())
+		{
+			// Standing exactly ON the threat point: direction is meaningless — fall
+			// through to the reposition draw rather than failing silently forever.
+			bHasThreatPoint = false;
+		}
+		else
+		{
+			Goal = Pawn->GetActorLocation() + Away * InstanceData.FleeDistanceUU;
+		}
+	}
+	if (!bHasThreatPoint)
+	{
+		UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(Bot->GetWorld());
+		FNavLocation Reposition;
+		if (!NavSys || !NavSys->GetRandomReachablePointInRadius(
+			Pawn->GetActorLocation(), InstanceData.FleeDistanceUU, Reposition))
+		{
+			UE_LOG(LogAIBot, Log, TEXT("AIBot: %s wants Retreat with no threat point and no reachable reposition — standing (F7)."), *Bot->GetName());
+			return EStateTreeRunStatus::Failed;
+		}
+		Goal = Reposition.Location;
+	}
+
+	InstanceData.FleeGoal = Goal;
+	InstanceData.ClosestSoFarUU = FVector::Dist(Pawn->GetActorLocation(), Goal);
+	InstanceData.SecondsWithoutProgress = 0.f;
+	if (Bot->MoveToLocation(InstanceData.FleeGoal, 150.f) == EPathFollowingRequestResult::Failed)
+	{
+		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s flee path REFUSED — failing loudly, not standing (F7)."), *Bot->GetName());
 		return EStateTreeRunStatus::Failed;
 	}
-	InstanceData.FleeGoal = Pawn->GetActorLocation() + Away * InstanceData.FleeDistanceUU;
-	Bot->MoveToLocation(InstanceData.FleeGoal, 150.f);
 	return EStateTreeRunStatus::Running;
 }
 
@@ -446,13 +516,29 @@ EStateTreeRunStatus FAIBFleeFromBeliefTask::Tick(FStateTreeExecutionContext& Con
 {
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller);
-	if (!Bot)
+	const APawn* Pawn = Bot ? Bot->GetPawn() : nullptr;
+	if (!Pawn)
 	{
 		return EStateTreeRunStatus::Failed;
 	}
 	if (IsWithin(*Bot, InstanceData.FleeGoal, 200.f))
 	{
 		return EStateTreeRunStatus::Succeeded;
+	}
+
+	// A partial path that stalled short of the goal must not read as "fleeing" forever
+	// (W-REVIEW P3 H3): no closer approach for the window = the path is dead, say so.
+	const float DistNow = FVector::Dist(Pawn->GetActorLocation(), InstanceData.FleeGoal);
+	if (DistNow < InstanceData.ClosestSoFarUU - 1.f)
+	{
+		InstanceData.ClosestSoFarUU = DistNow;
+		InstanceData.SecondsWithoutProgress = 0.f;
+	}
+	else if ((InstanceData.SecondsWithoutProgress += DeltaTime) >= InstanceData.GiveUpAfterNoProgressSeconds)
+	{
+		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s flee stalled %.1fs short of its goal — giving up loudly (F7)."),
+			*Bot->GetName(), InstanceData.GiveUpAfterNoProgressSeconds);
+		return EStateTreeRunStatus::Failed;
 	}
 	// A bot that WALKS away is not fleeing. Same helper as every other mover, so the
 	// hold is released on the way out and a wedge still costs one jump, not the match.
@@ -474,9 +560,10 @@ void FAIBFleeFromBeliefTask::ExitState(FStateTreeExecutionContext& Context, cons
 
 EStateTreeRunStatus FAIBMoveToLastKnownTask::EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
 {
-	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller);
-	if (!Bot)
+	const APawn* Pawn = Bot ? Bot->GetPawn() : nullptr;
+	if (!Pawn)
 	{
 		return EStateTreeRunStatus::Failed;
 	}
@@ -484,11 +571,18 @@ EStateTreeRunStatus FAIBMoveToLastKnownTask::EnterState(FStateTreeExecutionConte
 	const float Window = Bot->GetLastFacts().MemoryFreshWindowSeconds;
 	FVector LastKnown;
 	if (!Bot->GetSensorium().Memory().GetFresh(
-		Bot->GetWorld()->GetTimeSeconds(), Window > 0.f ? Window : 16.f, LastKnown))
+		Bot->GetWorld()->GetTimeSeconds(), Window > 0.f ? Window : AIB::DefaultMemoryFreshSeconds, LastKnown))
 	{
 		return EStateTreeRunStatus::Failed; // stale: Root re-selects
 	}
-	Bot->MoveToLocation(LastKnown, InstanceData.AcceptanceRadiusUU);
+	InstanceData.ClosestSoFarUU = FVector::Dist(Pawn->GetActorLocation(), LastKnown);
+	InstanceData.SecondsWithoutProgress = 0.f;
+	if (Bot->MoveToLocation(LastKnown, InstanceData.AcceptanceRadiusUU)
+		== EPathFollowingRequestResult::Failed)
+	{
+		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s cannot path to the last-known spot — search fails loudly (F7)."), *Bot->GetName());
+		return EStateTreeRunStatus::Failed;
+	}
 	return EStateTreeRunStatus::Running;
 }
 
@@ -509,7 +603,7 @@ EStateTreeRunStatus FAIBMoveToLastKnownTask::Tick(FStateTreeExecutionContext& Co
 	const float Window = Bot->GetLastFacts().MemoryFreshWindowSeconds;
 	FVector LastKnown;
 	if (!Bot->GetSensorium().Memory().GetFresh(
-		Bot->GetWorld()->GetTimeSeconds(), Window > 0.f ? Window : 16.f, LastKnown))
+		Bot->GetWorld()->GetTimeSeconds(), Window > 0.f ? Window : AIB::DefaultMemoryFreshSeconds, LastKnown))
 	{
 		return EStateTreeRunStatus::Failed;
 	}
@@ -519,7 +613,24 @@ EStateTreeRunStatus FAIBMoveToLastKnownTask::Tick(FStateTreeExecutionContext& Co
 	TickLocomotion(*Bot, InstanceData.Locomotion, LastKnown, InstanceData.AcceptanceRadiusUU, DeltaTime);
 
 	// Arrived: STAND at the post and let SweepLook hunt. The branch ends when the
-	// memory stales (above), someone appears (Succeeded), or the want moves on.
+	// memory stales (above), someone appears (Succeeded), or the want moves on. Short
+	// of the post, no-progress means the spot is unreachable (a catwalk memory, a nav
+	// hole): fail LOUDLY instead of "searching" motionless for the memory window (H3).
+	const APawn* Pawn = Bot->GetPawn();
+	if (Pawn && !IsWithin(*Bot, LastKnown, InstanceData.AcceptanceRadiusUU))
+	{
+		const float DistNow = FVector::Dist(Pawn->GetActorLocation(), LastKnown);
+		if (DistNow < InstanceData.ClosestSoFarUU - 1.f)
+		{
+			InstanceData.ClosestSoFarUU = DistNow;
+			InstanceData.SecondsWithoutProgress = 0.f;
+		}
+		else if ((InstanceData.SecondsWithoutProgress += DeltaTime) >= InstanceData.GiveUpAfterNoProgressSeconds)
+		{
+			UE_LOG(LogAIBot, Log, TEXT("AIBot: %s cannot reach the last-known spot — giving up the search loudly (F7)."), *Bot->GetName());
+			return EStateTreeRunStatus::Failed;
+		}
+	}
 	return EStateTreeRunStatus::Running;
 }
 
@@ -608,7 +719,14 @@ EStateTreeRunStatus FAIBMoveToPOITask::EnterState(FStateTreeExecutionContext& Co
 		return EStateTreeRunStatus::Failed;
 	}
 
-	Bot->MoveToLocation(InstanceData.Goal, InstanceData.AcceptanceRadiusUU);
+	InstanceData.ClosestSoFarUU = FVector::Dist(Pawn->GetActorLocation(), InstanceData.Goal);
+	InstanceData.SecondsWithoutProgress = 0.f;
+	if (Bot->MoveToLocation(InstanceData.Goal, InstanceData.AcceptanceRadiusUU)
+		== EPathFollowingRequestResult::Failed)
+	{
+		UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s POI path refused — branch fails (F7)."), *Bot->GetName());
+		return EStateTreeRunStatus::Failed;
+	}
 	return EStateTreeRunStatus::Running;
 }
 
@@ -616,21 +734,32 @@ EStateTreeRunStatus FAIBMoveToPOITask::Tick(FStateTreeExecutionContext& Context,
 {
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller);
-	if (!Bot)
+	const APawn* Pawn = Bot ? Bot->GetPawn() : nullptr;
+	if (!Pawn || !InstanceData.bHasGoal)
 	{
 		return EStateTreeRunStatus::Failed;
 	}
-	if (InstanceData.bHasGoal && IsWithin(*Bot, InstanceData.Goal, InstanceData.AcceptanceRadiusUU))
+	if (IsWithin(*Bot, InstanceData.Goal, InstanceData.AcceptanceRadiusUU))
 	{
 		return EStateTreeRunStatus::Succeeded;
 	}
-	if (InstanceData.bHasGoal)
+	// An aborted or stalled walk must not read as a healthy roam forever (W-REVIEW P3
+	// H3) — the wedge jump above gets its chance first (1.5s) and this is the give-up.
+	const float DistNow = FVector::Dist(Pawn->GetActorLocation(), InstanceData.Goal);
+	if (DistNow < InstanceData.ClosestSoFarUU - 1.f)
 	{
-		// Crossing the arena with nothing to fight is the one time speed costs a bot
-		// nothing — and it is what stops a roaming bot reading as a patrolling tourist.
-		TickLocomotion(*Bot, InstanceData.Locomotion, InstanceData.Goal,
-			InstanceData.AcceptanceRadiusUU, DeltaTime);
+		InstanceData.ClosestSoFarUU = DistNow;
+		InstanceData.SecondsWithoutProgress = 0.f;
 	}
+	else if ((InstanceData.SecondsWithoutProgress += DeltaTime) >= InstanceData.GiveUpAfterNoProgressSeconds)
+	{
+		UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s POI walk stalled — giving up (F7)."), *Bot->GetName());
+		return EStateTreeRunStatus::Failed;
+	}
+	// Crossing the arena with nothing to fight is the one time speed costs a bot
+	// nothing — and it is what stops a roaming bot reading as a patrolling tourist.
+	TickLocomotion(*Bot, InstanceData.Locomotion, InstanceData.Goal,
+		InstanceData.AcceptanceRadiusUU, DeltaTime);
 	return EStateTreeRunStatus::Running;
 }
 
@@ -646,3 +775,18 @@ void FAIBMoveToPOITask::ExitState(FStateTreeExecutionContext& Context, const FSt
 
 FGameplayTag FAIBMoveToPOITask::GetPOIKind() const           { return FGameplayTag(); }
 bool FAIBMoveToPOITask::ShouldWanderWithoutProvider() const  { return false; }
+
+////////////////////////////////////////////////////////////////////
+
+EStateTreeRunStatus FAIBUnservedWantTask::EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
+{
+	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	const AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller);
+	const UAIBAmbitionEngine* Engine = Bot ? Bot->GetAmbitionEngine() : nullptr;
+	// F7 at default verbosity: the one line that turns "mystery statue" into a named
+	// gap. The sentinel beside this task ends the branch when the want changes.
+	UE_LOG(LogAIBot, Warning, TEXT("AIBot: %s wants '%s' and NO branch serves it — standing until the want changes (F7)."),
+		Bot ? *Bot->GetName() : TEXT("<no controller>"),
+		Engine && Engine->GetCurrent().IsValid() ? *Engine->GetCurrent().ToString() : TEXT("<none>"));
+	return EStateTreeRunStatus::Running;
+}

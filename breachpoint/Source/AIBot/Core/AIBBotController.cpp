@@ -5,6 +5,7 @@
 #include "Components/ActorComponent.h"
 #include "Components/StateTreeAIComponent.h"
 #include "Core/AIBFactsBuilder.h"
+#include "Core/AIBTags.h"
 #include "Data/AIBDataRows.h"
 #include "Execution/AIBStateTreeExecutor.h"
 #include "Interfaces/AIBAvatarInterface.h"
@@ -169,7 +170,8 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	// false, selection fails, and StateTree marks the whole run Failed and never ticks
 	// again (StateTreeExecutionContext::Start, "Failed to select initial state"). Seeding
 	// the brain here means the first selection already mirrors arbitration instead of
-	// falling through to Roam for one think interval.
+	// falling through to Roam for one think interval. (The terminal's live diagnosis and
+	// the W-REVIEW P3 barrier landed this same fix independently, same day — kept once.)
 	Think();
 
 	// The executor last: by the time the tree evaluates its first gate, the brain and
@@ -191,6 +193,16 @@ void AAIBBotController::OnUnPossess()
 	{
 		Executor->Stop();
 	}
+	// THE BELT under the tree's brace (W-REVIEW P3): FireWhenAble's ExitState releases
+	// on every exit the engine runs synchronously — but whether StopLogic exits states
+	// synchronously is an engine fact this module must not bet a held trigger on. The
+	// release is idempotent at the adapter, the avatar door is still valid HERE, and a
+	// verb held on the persistent PlayerState outliving the body is the one leak F6
+	// names by shape. Fire is the only HELD verb Phase 3 authors.
+	if (IAIBAvatarInterface* AvatarDoor = GetAvatar())
+	{
+		AvatarDoor->ReleaseVerb(AIBTags::Verb_Fire);
+	}
 	// The host's proven guard: unpossession during world teardown has no timer manager.
 	if (UWorld* World = GetWorld())
 	{
@@ -210,6 +222,28 @@ void AAIBBotController::OnUnPossess()
 	AvatarObject = nullptr;
 	LastLoggedTarget = nullptr;
 	Super::OnUnPossess();
+}
+
+void AAIBBotController::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	// World teardown does not promise OnUnPossess, and the component-shutdown order it
+	// falls back to runs task ExitStates against half-destroyed objects. This is the
+	// ordered path: stop the tree and release the held verb while the doors still stand.
+	if (Executor)
+	{
+		Executor->Stop();
+	}
+	if (IAIBAvatarInterface* AvatarDoor = GetAvatar())
+	{
+		AvatarDoor->ReleaseVerb(AIBTags::Verb_Fire);
+	}
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(ThinkTimer);
+	}
+	Avatar = nullptr;
+	AvatarObject = nullptr;
+	Super::EndPlay(EndPlayReason);
 }
 
 void AAIBBotController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
@@ -294,8 +328,12 @@ void AAIBBotController::NoteIncomingBlast(const FVector& Center, float Radius, d
 	{
 		FCollisionQueryParams TraceParams(SCENE_QUERY_STAT(AIBBlastPerceivability), /*bTraceComplex=*/false, MyPawn);
 		FHitResult Hit;
+		// The channel is the HOST's call (Config, see the header): what "blocks eyes"
+		// means is collision-profile config this module cannot know. Default Visibility.
 		bHasLineOfSight = !World->LineTraceSingleByChannel(
-			Hit, EyesLocation, Center, ECC_Visibility, TraceParams);
+			Hit, EyesLocation, Center,
+			static_cast<ECollisionChannel>(FMath::Clamp<int32>(BlastPerceivabilityChannel, 0, ECC_MAX - 1)),
+			TraceParams);
 	}
 
 	if (!bInHearingRange && !bHasLineOfSight)

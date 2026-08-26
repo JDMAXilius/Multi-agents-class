@@ -367,6 +367,10 @@ void FAIBAmbitionEngineSpec::Define()
 		TestTrue(TEXT("near beats far — the band lives INSIDE the envelope"), NearScore > FarScore);
 	});
 
+	// (The barrier's "dry gun must not absorb the match" spec was superseded during the
+	//  rebase by the founder's SeekWeapon retirement: the "wants nothing this world
+	//  cannot satisfy" spec above pins the same property against the Seek that exists.)
+
 	It("treats an unauthored curve as identity — the pass-through contract, pinned", [this]()
 	{
 		// AIB1 watch-list item converted to a fact: no keys => Eval returns the

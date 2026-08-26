@@ -42,6 +42,17 @@ void FAIBSensorium::NoteSightingLost(AActor* Who, const FVector& LastSeenAt, dou
 		bSightCurrent = false;
 		VisibleTargetLastSeen = LastSeenAt;
 	}
+	// Recorded at NOTE time, per actor, unconditionally — the ledger a maturing gain
+	// checks against. Two orderings need it (W-REVIEW P3, fairness HIGH): a loss whose
+	// latency draw beats its own gain's matures into an empty VisibleTarget and would
+	// vanish, and a loss dropped by the clock's pending cap never matures at all. In
+	// both, the surviving gain would turn on live tracking of an occluded enemy —
+	// the wall-track, reopened through ordering. The ledger closes both.
+	if (Who)
+	{
+		double& Recorded = NotedLossEvents.FindOrAdd(FObjectKey(Who));
+		Recorded = FMath::Max(Recorded, NowSeconds);
+	}
 	Clock.Push(MakeStimulus(EAIBStimulusKind::SightLost, Who, LastSeenAt), NowSeconds, DrawLatency());
 }
 
@@ -67,7 +78,12 @@ void FAIBSensorium::NoteForgotten(AActor* Who, double NowSeconds)
 {
 	// Engine perception aged the actor out with no loss event: mature a loss at the
 	// last seen spot so visibility cannot outlive perception (the infinite-sight hole
-	// three review passes flagged on the old no-op).
+	// three review passes flagged on the old no-op). Same ledger entry as a real loss.
+	if (Who)
+	{
+		double& Recorded = NotedLossEvents.FindOrAdd(FObjectKey(Who));
+		Recorded = FMath::Max(Recorded, NowSeconds);
+	}
 	Clock.Push(MakeStimulus(EAIBStimulusKind::SightLost, Who, VisibleTargetLastSeen), NowSeconds, DrawLatency());
 }
 
@@ -81,6 +97,22 @@ void FAIBSensorium::Pump(double NowSeconds)
 		switch (Stimulus.Kind)
 		{
 		case EAIBStimulusKind::SightGained:
+		{
+			// THE SUPERSEDED-GAIN CHECK (W-REVIEW P3, fairness HIGH): a loss NOTED at or
+			// after this gain's event means the world already took the sight back before
+			// the reaction finished maturing — a 100ms peek whose loss drew the shorter
+			// latency. Accepting the gain as current would live-track through the wall
+			// for up to SightMaxAge. Net honest outcome of gain-then-loss: a memory at
+			// the gained spot, no visible target, no acquisition recorded.
+			if (const double* NotedLoss = Stimulus.Source.IsValid()
+				? NotedLossEvents.Find(FObjectKey(Stimulus.Source.Get())) : nullptr)
+			{
+				if (*NotedLoss >= Stimulus.EventSeconds)
+				{
+					TargetMemory.Remember(Stimulus.Source.Get(), Stimulus.Location, Stimulus.EventSeconds);
+					break;
+				}
+			}
 			VisibleTarget = Stimulus.Source;
 			VisibleTargetLastSeen = Stimulus.Location;
 			bSightCurrent = true;
@@ -90,6 +122,7 @@ void FAIBSensorium::Pump(double NowSeconds)
 			LastAcquisitionLatency = static_cast<float>(NowSeconds - Stimulus.EventSeconds);
 			TargetMemory.Remember(Stimulus.Source.Get(), Stimulus.Location, Stimulus.EventSeconds);
 			break;
+		}
 
 		case EAIBStimulusKind::SightLost:
 			// A loss OLDER than the last applied gain is stale — the enemy re-peeked and
@@ -143,6 +176,17 @@ void FAIBSensorium::Pump(double NowSeconds)
 	{
 		return NowSeconds >= Blast.DetonateAtSeconds;
 	});
+
+	// Prune the loss ledger: a pending gain's event can be at most one max-latency old
+	// when it matures, so an older loss entry can never supersede anything again.
+	const double LedgerHorizon = NowSeconds - (static_cast<double>(ReactionSecondsMax) + 1.0);
+	for (auto It = NotedLossEvents.CreateIterator(); It; ++It)
+	{
+		if (It->Value < LedgerHorizon)
+		{
+			It.RemoveCurrent();
+		}
+	}
 }
 
 bool FAIBSensorium::GetIncomingBlast(double NowSeconds, FAIBLiveBlast& OutBlast) const
@@ -187,6 +231,7 @@ void FAIBSensorium::Reset()
 	VisibleTargetLastSeen = FVector::ZeroVector;
 	bSightCurrent = false;
 	LastAppliedGainEventSeconds = -1.0;
+	NotedLossEvents.Reset();
 	LiveBlasts.Reset();
 	LastAcquisitionLatency = -1.f;
 }

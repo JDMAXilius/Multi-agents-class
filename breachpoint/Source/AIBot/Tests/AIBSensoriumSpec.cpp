@@ -326,6 +326,42 @@ void FAIBSensoriumSpec::Define()
 			TestTrue(TEXT("and becomes memory"), Sensorium.MemoryAgeSeconds(2.35) >= 0.f);
 		});
 
+		It("supersedes a gain whose loss drew the faster reaction — the 100ms peek", [this]()
+		{
+			// THE ORDERING HOLE (W-REVIEW P3, fairness HIGH): peek at 1.00, re-hide at
+			// 1.10. The gain draws 0.45s (matures 1.45); the loss draws 0.25s (matures
+			// 1.35) — the loss matures FIRST, into an empty VisibleTarget, and the old
+			// code dropped it on the floor. The surviving gain then live-tracked the
+			// hidden enemy for SightMaxAge. Configure between notes makes the draw
+			// inversion deterministic; the engine produces it on ~1 in 6 short peeks.
+			AActor* Enemy = SpawnBody(FVector(5, 0, 0));
+			FAIBSensorium Sensorium;
+			Sensorium.Configure(0.45f, 0.45f);
+			Sensorium.NoteSighting(Enemy, FVector(5, 0, 0), 1.00);
+			Sensorium.Configure(0.25f, 0.25f);
+			Sensorium.NoteSightingLost(Enemy, FVector(6, 0, 0), 1.10);
+
+			Sensorium.Pump(1.40); // loss matured; gain still pending
+			TestFalse(TEXT("nothing visible before the gain matures"), Sensorium.HasVisibleTarget());
+
+			Sensorium.Pump(1.50); // gain matured — and must arrive already superseded
+			TestFalse(TEXT("the superseded gain must not become current sight"),
+				Sensorium.HasVisibleTarget());
+			TestTrue(TEXT("no acquisition was recorded for it"),
+				Sensorium.LastAcquisitionLatencySeconds() < 0.f);
+
+			// What the peek honestly earned: a memory at the gained spot, not a track.
+			FVector Remembered;
+			TestTrue(TEXT("the peek lands as fresh memory"),
+				Sensorium.Memory().GetFresh(1.55, 16.f, Remembered));
+			TestEqual(TEXT("memory at the seen spot"), Remembered.X, 5.0);
+
+			// And the enemy moving behind the wall leaks nothing.
+			Enemy->SetActorLocation(FVector(50, 0, 0));
+			Sensorium.Pump(1.60);
+			TestFalse(TEXT("still blind after the enemy moves unseen"), Sensorium.HasVisibleTarget());
+		});
+
 		It("lets ears place but not see, and never evict the watched enemy's memory", [this]()
 		{
 			AActor* Enemy = SpawnBody();

@@ -250,41 +250,28 @@ void UAIBAmbitionEngine::BuildDefaultCoreAmbitions(TArray<FAIBAmbitionSpec>& Out
 		Fresh.ValueWhenUnknown = 0.f; // no memory, no search — Roam owns wandering
 	}
 
-	// SEEK — "I have somewhere to be." The deliberate-movement want: toward the target
-	// belief when there is one, otherwise toward a point worth being at.
-	//
-	// IT REPLACES SEEKWEAPON (founder ruling, 25 Aug). This game has no weapon pickups
-	// and no plan for them, so an ambition about fetching a gun could never be satisfied
-	// — and an unsatisfiable want is a trap at ANY utility, not just at 1.40: the day a
-	// consideration nudges it back to the top, the bot strands again exactly as seven of
-	// them did. Scoring around it was the wrong fix; removing the concept is the right
-	// one. The host's own working brain models Fight / Survive / Roam and never modelled
-	// seeking a weapon, which is that game being correct about its own world.
-	//
-	// SATISFIABLE BY CONSTRUCTION, which is the property that matters: its branch always
-	// has somewhere to walk (belief -> POI -> a random reachable point), so selecting it
-	// can never mean standing still. Urgency is the mode's dial (Phase 6, via
-	// IAIBAmbitionProvider, matched on this tag): urgency 1 scores 0.50 — above the Roam
-	// floor, below Search (0.80) — and urgency 0 scores nothing.
-	//
-	// THE UNKNOWN IS 0.3, i.e. 0.15, DELIBERATELY BELOW THE 0.20 FLOOR. First draft used
-	// 0.6 and two existing specs caught it inside a minute: a want that outranks Roam
-	// whenever no mode is registered has not joined the ladder, it has REPLACED the floor
-	// — and with a 3s commit it re-armed W-REVIEW P2 H-1's commit-starvation walk, a
-	// fresh spawn ignoring the first enemy it sees. Nothing in this game names a
-	// destination yet, so with no mode Seek stays dormant and the bot Roams. Dormant is
-	// not the trap SeekWeapon was: this want is satisfiable the instant something names a
-	// place, and even when it wins its branch MOVES.
+	// SEEKWEAPON — the gun cannot fight AND somewhere to fix that is KNOWN. Near-veto
+	// shape: with a working gun this ambition is ~0; dry with a known weapon source it
+	// beats everything except a visible-enemy Engage. Dry with NO known source it scores
+	// BELOW Roam — deliberately (W-REVIEW P3 H2): until a provider supplies a weapon
+	// objective (Phase 6), a want the executor cannot serve must not win arbitration, or
+	// every bot that empties its loadout becomes a statue seeking a weapon nobody can
+	// name. Roaming keeps it moving — which is also how it stumbles onto pickups.
 	{
 		FAIBAmbitionSpec& Seek = OutSpecs.AddDefaulted_GetRef();
-		Seek.Tag = AIBTags::Ambition_Seek;
-		Seek.BaseUtility = 0.5f;
-		Seek.CommitSeconds = 3.f;
+		Seek.Tag = AIBTags::Ambition_SeekWeapon;
+		Seek.BaseUtility = 1.4f;
+		Seek.CommitSeconds = 4.f;
 
-		FAIBConsideration& Urgency = Seek.Considerations.AddDefaulted_GetRef();
-		Urgency.Selector = EAIBFactSelector::ObjectiveUrgency;
-		Urgency.SetLinearCurve(true); // the mode says "nothing here" -> 0 want
-		Urgency.ValueWhenUnknown = 0.3f; // 0.15: under the floor, never a tie with it
+		FAIBConsideration& Dry = Seek.Considerations.AddDefaulted_GetRef();
+		Dry.Selector = EAIBFactSelector::WeaponCanFight;
+		Dry.SetLinearCurve(false); // can fight -> 0 want
+		Dry.ValueWhenUnknown = 0.f;
+
+		FAIBConsideration& KnownSource = Seek.Considerations.AddDefaulted_GetRef();
+		KnownSource.Selector = EAIBFactSelector::ObjectiveUrgency;
+		KnownSource.SetLinearCurve(true);
+		KnownSource.ValueWhenUnknown = 0.1f; // 1.4 x 0.1 = 0.14 < Roam's 0.2 floor
 	}
 
 	// ROAM — the floor under everything, and it NEVER COMMITS: a fresh bot's Roam win

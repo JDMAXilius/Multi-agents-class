@@ -34,6 +34,16 @@ Phase 10 and must stay a folder move.
    is why its specs run without an engine world. One word per meaning, on purpose.
 5. **FAIRPLAY.md binds every file.** F1–F8, testable, cited by name in findings.
 
+**The one per-frame surface (dated exception, 26 Aug 2026 — W-REVIEW P3).** The
+CONTROLLER is tickless: thinking is the timer's, reacting is the clock's, and no phase
+may enable its actor tick. But the executor's `UStateTreeAIComponent` ticks — that is
+the only way a StateTree runs tasks, and steering, burst timing, and arrival checks
+consume its DeltaTime. This is the module's single sanctioned per-frame surface: any
+SECOND ticking component, or gameplay decision-making moved into that tick (deciding is
+the brain's, at think cadence), is a finding. Recorded because "tickless by law" was
+being cited while every task ticked — a true claim about the actor, a false one about
+the module.
+
 ## Layout (phases fill it in; headers carry real contracts from day one)
 
     Core/        types, tags, AAIBBotController (the hand), AIBBotManager (lifecycle),
@@ -63,6 +73,15 @@ Moving to `Plugins/AIBot/` is a folder move PLUS exactly this, no archaeology:
    by the host project's own plugin list.
 4. `Config=Game` on config classes becomes the plugin's own hierarchy if per-plugin ini
    shipping is wanted.
+5. **The content mount (added 26 Aug 2026 — W-REVIEW P3 found the delta short by one
+   whole category).** `/Game/AIBot/…` is the HOST project's Content mount; a plugin's
+   own content mounts at `/AIBot/…`. Moving `Content/AIBot/` into the plugin means
+   updating the two asset-path literals in `Execution/AIBTreeAuthoring.cpp`, their
+   echoes in that file's header comment, and the consumer's
+   `[/Script/AIBot.AIBBotController] BotStateTree=` ini value — or every bot stands
+   still on a null soft path while the authoring happily rebuilds a second, unloaded
+   tree at the old mount. `Tools/aib/70_aib_assets.py` carries the same paths plus
+   host-project tooling names and must move or be rewritten with the plugin.
 `PublicIncludePaths.Add(ModuleDirectory)` in Build.cs is move-invariant on purpose —
 and as of 26 Aug the code actually says that (P2 C5 caught this line certifying a form
 the Build.cs did not yet use).

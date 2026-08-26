@@ -17,6 +17,11 @@ namespace AIB
 	 *  single site — so FLT_MAX cannot lawfully compile into infinite memory. */
 	inline constexpr float MaxMemorySeconds = 20.f;
 
+	/** The default tier's memory-fresh window. ONE definition (W-REVIEW P3): the tier
+	 *  row's C++ default and every task-side fallback reference this — a hand-typed 16
+	 *  in two folders is how a Phase-8 Novice tier silently keeps a Marine memory. */
+	inline constexpr float DefaultMemoryFreshSeconds = 16.f;
+
 	/** The reaction clock's queue cap (drop-oldest). An unpossessed bot must not grow
 	 *  an unbounded stimulus backlog for the rest of a match (W-REVIEW F-1.2). */
 	inline constexpr int32 MaxPendingStimuli = 64;

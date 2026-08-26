@@ -63,7 +63,7 @@ struct AIBOT_API FAIBTierRow : public FTableRowBase
 	/** F5: how long a last-known position stays worth searching. Clamped at read to
 	 *  AIB::MaxMemorySeconds — the ceiling is the module's, the window is the tier's. */
 	UPROPERTY(EditAnywhere, Category = "Perception")
-	float MemoryFreshSeconds = 16.f;
+	float MemoryFreshSeconds = AIB::DefaultMemoryFreshSeconds;
 
 	/** Engine perception forgets an unseen actor after this age, which is what makes
 	 *  the forgotten->loss path fire at all (a MaxAge of 0 = never forget = the

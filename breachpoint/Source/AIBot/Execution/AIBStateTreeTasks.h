@@ -99,10 +99,12 @@ struct FAIBGateSeekWeaponCondition : public FAIBAmbitionGateCondition
 	virtual FGameplayTag GetBranchTag() const override;
 };
 
-/** Vocabulary only — the built tree does NOT use it. Roam is the LAST child and carries
- *  no enter condition, so it is the fallback selection can never miss; a gate there would
- *  hand the tree back the failure mode it just cost seven bots (see AIBTreeAuthoring.cpp).
- *  Kept because a tree that gates Roam explicitly is a legitimate future authoring. */
+/** Gates Roam — IN USE again since the Phase-3 W-REVIEW barrier: the always-selectable
+ *  state the compiler demands is now the dedicated ungated Fallback branch (sentinel +
+ *  FAIBUnservedWantTask), so every REAL ambition, Roam included, keeps its gate and the
+ *  tree mirrors arbitration 1:1. The seven-statue failure this gate once caused was the
+ *  t=0 invalid-ambition cold start, closed at its root by the controller's
+ *  Think-before-StartLogic — not by ungating the floor. */
 USTRUCT(meta = (DisplayName = "AIB Gate: Roam", Category = "AIBot"))
 struct FAIBGateRoamCondition : public FAIBAmbitionGateCondition
 {
@@ -190,11 +192,16 @@ struct FAIBMoveNearBeliefTaskInstanceData
 	UPROPERTY(EditAnywhere, Category = "Parameter")
 	float AcceptanceRadiusUU = 350.f;
 
-	/** Re-issue the move when the belief has drifted this far from the last goal. */
+	/** Floor between move requests. Out of position for ANY reason — the belief drifted
+	 *  or the BOT was displaced (knockback, a pad) — re-closes on this cadence, which is
+	 *  also what keeps pathfinds off per-frame cost (W-REVIEW P3 M3: the old drift-only
+	 *  trigger left a knocked-back bot standing at the wrong post while the belief held
+	 *  still). */
 	UPROPERTY(EditAnywhere, Category = "Parameter")
-	float RepathAtDriftUU = 200.f;
+	float RepathIntervalSeconds = 0.5f;
 
 	FVector LastGoal = FVector::ZeroVector;
+	float RepathCooldown = 0.f;
 	FAIBLocomotionState Locomotion;
 };
 
@@ -285,12 +292,23 @@ struct FAIBFleeFromBeliefTaskInstanceData
 	UPROPERTY(EditAnywhere, Category = "Parameter")
 	float FleeDistanceUU = 900.f;
 
+	/** No closer approach to the goal for this long = the path is dead: fail LOUDLY
+	 *  instead of standing in the open "fleeing" forever (W-REVIEW P3 H3). */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float GiveUpAfterNoProgressSeconds = 6.f;
+
 	FVector FleeGoal = FVector::ZeroVector;
+	float ClosestSoFarUU = 0.f;
+	float SecondsWithoutProgress = 0.f;
 	FAIBLocomotionState Locomotion;
 };
 
-/** RUNS — sprinting — directly away from the threat belief. Succeeds at the flee goal; the brain's
- *  Retreat score deciding when to STOP fleeing is arbitration's job, not this task's. */
+/** RUNS — sprinting — directly away from the threat belief; with NO threat point held at
+ *  all (hurt with nothing seen, heard, or remembered) it REPOSITIONS to a random
+ *  reachable point, because Retreat must always have an executable exit — a hurt bot
+ *  frozen mid-arena while hysteresis defends the frozen want was W-REVIEW P3 H1.
+ *  Succeeds at the goal; the brain's Retreat score deciding when to STOP fleeing is
+ *  arbitration's job, not this task's. */
 USTRUCT(meta = (DisplayName = "AIB Flee From Belief", Category = "AIBot"))
 struct FAIBFleeFromBeliefTask : public FStateTreeTaskCommonBase
 {
@@ -319,6 +337,11 @@ struct FAIBMoveToLastKnownTaskInstanceData
 	UPROPERTY(EditAnywhere, Category = "Parameter")
 	float AcceptanceRadiusUU = 150.f;
 
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float GiveUpAfterNoProgressSeconds = 8.f;
+
+	float ClosestSoFarUU = 0.f;
+	float SecondsWithoutProgress = 0.f;
 	FAIBLocomotionState Locomotion;
 };
 
@@ -388,8 +411,13 @@ struct FAIBMoveToPOITaskInstanceData
 	UPROPERTY(EditAnywhere, Category = "Parameter")
 	float AcceptanceRadiusUU = 150.f;
 
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float GiveUpAfterNoProgressSeconds = 8.f;
+
 	FVector Goal = FVector::ZeroVector;
 	bool bHasGoal = false;
+	float ClosestSoFarUU = 0.f;
+	float SecondsWithoutProgress = 0.f;
 	FAIBLocomotionState Locomotion;
 };
 
@@ -437,6 +465,23 @@ struct FAIBMoveToWeaponPOITask : public FAIBMoveToPOITask
 	GENERATED_BODY()
 	virtual bool ShouldWanderWithoutProvider() const override { return true; }
 	virtual bool ShouldMoveToBeliefFirst() const override { return true; }
+};
+
+/** The Fallback branch's stand-and-report task (the Phase-3 W-REVIEW ruling): selected
+ *  only when the brain's current want maps to NO branch — a Phase-6 mode ambition before
+ *  its branch exists — it stands still and says WHY, once, at Warning (F7). The sentinel
+ *  beside it ends the branch the moment the want becomes servable. This is what lets
+ *  every real ambition, Roam included, keep its gate while the compiler still gets its
+ *  always-selectable state. */
+USTRUCT(meta = (DisplayName = "AIB Unserved Want", Category = "AIBot"))
+struct FAIBUnservedWantTask : public FStateTreeTaskCommonBase
+{
+	GENERATED_BODY()
+
+	using FInstanceDataType = FAIBAmbitionSentinelTaskInstanceData;
+	virtual const UStruct* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
+
+	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
 };
 
 /** Roam's mover: any POI a provider offers, else a random reachable point. */

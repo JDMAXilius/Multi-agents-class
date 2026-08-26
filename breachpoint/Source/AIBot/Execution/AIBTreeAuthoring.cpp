@@ -186,22 +186,39 @@ FString UAIBTreeAuthoring::BuildBotStateTree()
 	AddCompletionTransition(Seek, Root, EStateTreeTransitionTrigger::OnStateFailed, 2.0f);
 
 	// ---- Roam: nothing better to want --------------------------------------------------
-	// LAST CHILD, NO ENTER CONDITION, ON PURPOSE. Root selects children in order, so an
-	// ungated final branch is the tree's guaranteed answer to "can always select a state"
-	// — the exact thing the engine errors about, and a failure that is TERMINAL: a failed
-	// selection sets TreeRunStatus=Failed and Tick early-outs forever after (the AIB2 live
-	// PIE: seven bots, seven errors, nothing moved). Roam IS the fallback want, so the
-	// gate said nothing the ordering doesn't; this also covers any future ambition (a
-	// mode's, Phase 6) that no branch matches — that bot roams instead of dying silently.
+	// GATED AGAIN (the Phase-3 W-REVIEW ruling; supersedes the interim ungated Roam that
+	// unblocked the first live PIE). The engine's "must always be able to select a state"
+	// demand is real and TERMINAL when violated — a failed selection sets
+	// TreeRunStatus=Failed and Tick early-outs forever (seven bots, seven errors, nothing
+	// moved) — but the answer to it is the dedicated Fallback below, not ungating a real
+	// want: an ungated Roam silently swallows every unmapped ambition, so a Phase-6 mode
+	// bot would roam past the flag forever while the ambition log printed the correct
+	// want. With the gate, the executor mirrors arbitration 1:1 for every real ambition.
+	// The t=0 cold-start miss is closed at its root by Think-before-StartLogic.
 	UStateTreeState& Roam = Root.AddChildState(TEXT("Roam"));
+	Roam.AddEnterCondition<FAIBGateRoamCondition>();
 	Roam.AddTask<FAIBAmbitionSentinelTask>();
 	Roam.AddTask<FAIBWanderTask>();
-	// Arrived: re-select, draw a new reachable point. A world with no navmesh fails the
-	// wander instantly — the delay keeps that quiet, the Verbose log says why.
-	AddCompletionTransition(Roam, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
+	// Arrived: re-select, draw a new reachable point. The small success delay exists for
+	// the degenerate nav island whose every draw lands inside acceptance — instant
+	// succeed would be a pathfind per bot per FRAME (W-REVIEW P3 M4). A world with no
+	// navmesh fails instead — that delay keeps it quiet, the log says why.
+	AddCompletionTransition(Roam, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.25f);
 	AddCompletionTransition(Roam, Root, EStateTreeTransitionTrigger::OnStateFailed, 2.0f);
 
-	Report.Add(TEXT("states     : Root > [Engage, Retreat, Search, Seek, Roam] (flat, gated per ambition, Roam UNGATED as the ordered fallback, sentinel in each)"));
+	// ---- Fallback: the want maps to NO branch (the Phase-3 W-REVIEW ruling) ------------
+	// UNGATED and LAST — the always-selectable state the compiler demands, which is what
+	// lets every REAL ambition above keep its gate. Selected only when nothing above is:
+	// an unserved want stands still and SAYS SO at Warning (F7); the sentinel ends it the
+	// moment the want becomes servable. A healthy spawn never walks through here (the
+	// controller scores once before the tree starts).
+	UStateTreeState& Fallback = Root.AddChildState(TEXT("Fallback"));
+	Fallback.AddTask<FAIBAmbitionSentinelTask>();
+	Fallback.AddTask<FAIBUnservedWantTask>();
+	AddCompletionTransition(Fallback, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
+	AddCompletionTransition(Fallback, Root, EStateTreeTransitionTrigger::OnStateFailed, 1.0f);
+
+	Report.Add(TEXT("states     : Root > [Engage, Retreat, Search, Seek, Roam, Fallback] (every ambition gated, the ungated Fallback floor last, sentinel in each)"));
 	Report.Add(TEXT("seek       : AIBot.Ambition.Seek — deliberate movement (belief -> POI -> reachable point). SeekWeapon is RETIRED: no pickups in this game."));
 
 	// An uncompiled StateTree runs NOTHING — the asset would exist, the ini would resolve,

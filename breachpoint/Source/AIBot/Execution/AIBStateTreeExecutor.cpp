@@ -23,7 +23,8 @@ void UAIBStateTreeExecutor::Start(AAIBBotController& Bot)
 	else
 	{
 		UE_LOG(LogAIBot, Warning, TEXT("AIBot: BotStateTree '%s' failed to load — %s will stand "
-			"still. Check [/Script/AIBot.AIBBotController] against the asset (TICKET_AIB2 builds it)."),
+			"still. Check [/Script/AIBot.AIBBotController] against the asset "
+			"(UAIBTreeAuthoring::BuildBotAssets builds it, from the editor)."),
 			*Bot.GetBotStateTreePath().ToString(), *Bot.GetName());
 		return;
 	}
