@@ -1,6 +1,7 @@
 #include "Weapons/BNProjectile.h"
 
 #include "AI/BNBotController.h"
+#include "Core/AIBBotController.h"
 #include "AbilitySystem/Effects/BNDamage.h"
 #include "Perception/AISense_Hearing.h"
 #include "BreachpointNext.h"
@@ -150,10 +151,17 @@ void ABNProjectile::WarnNearbyBots()
 		Warned.Add(Target);
 
 		const APawn* Pawn = Cast<APawn>(Target);
-		ABNBotController* Bot = Pawn ? Cast<ABNBotController>(Pawn->GetController()) : nullptr;
-		if (Bot)
+		AController* Controller = Pawn ? Pawn->GetController() : nullptr;
+		if (ABNBotController* Bot = Cast<ABNBotController>(Controller))
 		{
 			Bot->NotifyIncomingBlast(Center, DetonateAt, Radius);
+		}
+		// The seam audit's HIGH hazard, closed: without this branch AIB bots shipped
+		// with grenade evasion silently dead. The AIB side runs its own perceivability
+		// gate and reaction clock — this call is a note, never a dodge.
+		else if (AAIBBotController* AIBBot = Cast<AAIBBotController>(Controller))
+		{
+			AIBBot->NoteIncomingBlast(Center, Radius, DetonateAt);
 		}
 	}
 }

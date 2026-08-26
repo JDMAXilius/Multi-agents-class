@@ -23,6 +23,9 @@ public class BreachpointNext : ModuleRules
 			// The bot move tasks diagnose their own failures against the navmesh
 			// (UNavigationSystemV1::ProjectPointToNavigation), which lives in its own module.
 			"NavigationSystem",
+			// The AIBot track: the game depends on the module, never the reverse —
+			// the adapter folder implements its interfaces.
+			"AIBot",
 			"StateTreeModule",
 			"GameplayStateTreeModule",
 			// FBNImpactEffectRow carries a TEnumAsByte<EPhysicalSurface>; the enum's reflection

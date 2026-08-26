@@ -1,4 +1,6 @@
 #include "Characters/BNCharacter.h"
+
+#include "AIBotAdapter/BNAIBAvatarAdapter.h"
 #include "AbilitySystem/BNAbilitySystemComponent.h"
 #include "AbilitySystem/Abilities/BNGA_Death.h"
 #include "AbilitySystem/Attributes/BNAttributeSet.h"
@@ -412,6 +414,11 @@ UAbilitySystemComponent* ABNCharacter::GetAbilitySystemComponent() const
 void ABNCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
+
+	// AIBot track: an AIB-possessed body grows its avatar adapter — the module's one
+	// door — before the controller's OnPossess goes looking for it. Humans and BN bots
+	// never carry it; the call is a no-op for them.
+	UBNAIBAvatarAdapter::EnsureOn(this, NewController);
 
 	InitializeAbilitySystem();
 	InitializeAnimLayer();

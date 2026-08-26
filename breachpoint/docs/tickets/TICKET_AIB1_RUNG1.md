@@ -61,6 +61,17 @@ target memory) is worldless C++ with a spec suite.
   contract differs from the module's reading and the consideration default needs
   rethinking, not just the test.
 
+## Game-side additions (Phase 3's adapter half, same rung-1 run)
+
+The compile now also covers `Source/BreachpointNext/AIBotAdapter/` (the avatar adapter),
+the `BotSystem` A/B switch in `BNGameMode` (widened to `AAIController` in four audited
+places), the projectile's AIB blast branch, and the `"AIBot"` dependency in
+BreachpointNext.Build.cs. **Default is `BotSystem=BN` — behaviour must be UNCHANGED until
+the ini flips.** Watch: the cross-module includes (`Core/AIBTags.h` etc. resolve against
+AIBot's exposed root while BN has its own `Core/` — filenames disambiguate, first use of
+that shape), `IsA<AAIBBotController>`, and `FindComponentByClass` + `RegisterComponent`
+at possession time.
+
 ## Done when
 
 - [ ] Rung 1 PASS, all three targets, output tail in the Log

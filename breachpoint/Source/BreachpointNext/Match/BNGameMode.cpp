@@ -451,7 +451,7 @@ void ABNGameMode::EnsureBotFill()
 
 	// GetNumPlayers counts humans only (PlayerControllers), which is exactly right — the bots
 	// already here are counted from our own book, pruned of anything destroyed.
-	SpawnedBots.RemoveAll([](const TObjectPtr<ABNBotController>& Bot) { return !IsValid(Bot); });
+	SpawnedBots.RemoveAll([](const TObjectPtr<AAIController>& Bot) { return !IsValid(Bot); });
 
 	const int32 BotsNeeded = TargetPlayers - GetNumPlayers() - SpawnedBots.Num();
 
@@ -494,7 +494,7 @@ void ABNGameMode::EnsureBotFill()
 	UE_LOG(LogBN, Log, TEXT("BNBots: filled %d bots to reach %d"), Filled, TargetPlayers);
 }
 
-ABNBotController* ABNGameMode::SpawnBot(int32 Index)
+AAIController* ABNGameMode::SpawnBot(int32 Index)
 {
 	UWorld* World = GetWorld();
 	if (!World)
@@ -502,11 +502,22 @@ ABNBotController* ABNGameMode::SpawnBot(int32 Index)
 		return nullptr;
 	}
 
-	UClass* ControllerClass = BotControllerClass.LoadSynchronous();
+	// The A/B switch, at the ONE place a bot controller class is ever named (the seam
+	// audit's insertion point). Unknown value: warn once, fall back to BN.
+	FName System = BotSystem;
+	if (System != TEXT("BN") && System != TEXT("AIB"))
+	{
+		UE_LOG(LogBN, Warning, TEXT("BNBots: unknown BotSystem '%s' — falling back to BN."), *System.ToString());
+		System = TEXT("BN");
+	}
+
+	UClass* ControllerClass = (System == TEXT("AIB"))
+		? AIBBotControllerClass.LoadSynchronous()
+		: BotControllerClass.LoadSynchronous();
 	if (!ControllerClass)
 	{
-		UE_LOG(LogBN, Error, TEXT("BNBots: BotControllerClass '%s' did not resolve — no bot spawned."),
-			*BotControllerClass.ToString());
+		UE_LOG(LogBN, Error, TEXT("BNBots: %s bot controller class did not resolve — no bot spawned."),
+			*System.ToString());
 		return nullptr;
 	}
 
@@ -515,7 +526,7 @@ ABNBotController* ABNGameMode::SpawnBot(int32 Index)
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	SpawnParams.ObjectFlags |= RF_Transient;
 
-	ABNBotController* NewBot = World->SpawnActor<ABNBotController>(ControllerClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+	AAIController* NewBot = World->SpawnActor<AAIController>(ControllerClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
 	if (!NewBot)
 	{
 		UE_LOG(LogBN, Error, TEXT("BNBots: SpawnActor failed for %s — no bot spawned."), *GetNameSafe(ControllerClass));
@@ -537,7 +548,7 @@ ABNBotController* ABNGameMode::SpawnBot(int32 Index)
 	return NewBot;
 }
 
-void ABNGameMode::DespawnBot(ABNBotController* Bot)
+void ABNGameMode::DespawnBot(AAIController* Bot)
 {
 	if (!Bot)
 	{

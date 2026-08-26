@@ -111,11 +111,11 @@ protected:
 
 	/** One bot, Lyra's way: spawn the controller (transient — never saved into a map), name its
 	 *  PlayerState, GenericPlayerInitialization, RestartPlayer. Null on failure, loudly. */
-	ABNBotController* SpawnBot(int32 Index);
+	AAIController* SpawnBot(int32 Index);
 
 	/** The reverse, for seat-yield: pawn first, then controller — destroying the controller is
 	 *  what retires its PlayerState from every roster. */
-	void DespawnBot(ABNBotController* Bot);
+	void DespawnBot(AAIController* Bot);
 
 	/** The time limit's timer fires here. Sole leader wins; a tie leaves Winner null. */
 	void OnTimeLimitReached();
@@ -164,9 +164,21 @@ protected:
 	UPROPERTY(Config)
 	TSoftClassPtr<ABNBotController> BotControllerClass;
 
-	/** Server-only bookkeeping — bots exist nowhere else, so nothing here replicates. */
+	/** THE A/B SWITCH: "BN" (default) spawns BotControllerClass, "AIB" spawns
+	 *  AIBBotControllerClass. Both systems live in one build; one ini line flips them,
+	 *  so any AIB regression is a one-line revert to a known-good baseline. An unknown
+	 *  value warns once and falls back to BN — ResolveTuning's discipline. */
+	UPROPERTY(Config)
+	FName BotSystem = TEXT("BN");
+
+	UPROPERTY(Config)
+	TSoftClassPtr<AAIController> AIBBotControllerClass;
+
+	/** Server-only bookkeeping — bots exist nowhere else, so nothing here replicates.
+	 *  Widened to AAIController for the switch: everything downstream (init, respawn,
+	 *  despawn, prune) was already controller-class-agnostic — the seam audit's finding. */
 	UPROPERTY()
-	TArray<TObjectPtr<ABNBotController>> SpawnedBots;
+	TArray<TObjectPtr<AAIController>> SpawnedBots;
 
 	/** Monotonic, never reused: naming from the live book's COUNT hands a warmup refill the same
 	 *  name twice, and two Ossians make every kill line and the winner announce ambiguous. */
