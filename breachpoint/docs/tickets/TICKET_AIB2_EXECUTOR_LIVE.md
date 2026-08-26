@@ -745,3 +745,40 @@ SeekWeapon→Seek struct renames (`FAIBGateSeekWeaponCondition`, `FAIBMoveToWeap
 remain OWED — this commit edits the probe list (adds `FAIBUnservedWantTask`, 17 entries)
 but defers the rename to its own serial step so the asset rebuild carries one shape
 change at a time.
+
+### 2026-08-25 — the merge that did not compile (2f8b51a)
+
+Rebased the three verbs (weapon switch, melee, grenade — 756eea3, verified live before
+the rebase) onto the Phase-3 W-REVIEW barrier `6e059cc`, whose own commit subject reads
+**WRITTEN, NOT COMPILED**. The merged tree failed rung 1 on four causes. Separated by
+owner, because "it broke" is not a finding:
+
+MINE — my conflict resolution dropped `EndPlay`'s closing brace in `AIBBotController.cpp`,
+cascading into 5× *function definition is not allowed here*. Both conflicts were
+additive and I kept BOTH sides (their `EndPlay` + my grenade-cooldown pair; their
+refined `bMayFire` + my three verb blocks) — but I had to **drop my now-stale
+`bMayFire`**, because theirs adds a live sensorium check that closes the destroyed-target
+frame. A naive keep-both would have compiled and silently lost that fix.
+
+THEIRS — three of the kind a compiler finds in seconds and a cloud container cannot:
+- `AIBAmbitionEngine.cpp:262` still named `AIBTags::Ambition_SeekWeapon`, retired in
+  544baa6 → `Ambition_Seek`.
+- `AIBStateTreeTasks.cpp` used `EPathFollowingRequestResult::Failed` with no include
+  (5×); BN's equivalent file carries `Navigation/PathFollowingComponent.h` at line 21.
+- **Unity-build collision.** The adapter defined `WeaponCanFight` / `ScoreWeaponAtRange`
+  and BN's `BNBotStateTreeTasks.cpp` defines both names. Separate `.cpp` files — but a
+  unity build merges them into one TU and the second definition is an error. Renamed the
+  adapter's to `AIBWeaponCanFight` / `AIBScoreWeaponAtRange`. **This is why a module that
+  compiles alone can still break the target it links into**, and why "AIBot builds" is not
+  the same claim as "Breachpoint builds with AIBot in it".
+
+Rung 1 PASS on a **clean relink**. The first PASS was a `-0004` hot-reload dylib because
+my editor was still open — the same trap this ticket already records; it is recorded twice
+now because I walked into it twice. Rung 2 **43/43/0** reconciled with no editor running
+(43, not 42 — the barrier added a sensorium spec). Boundary grep empty. `BotSystem=BN`
+restored; BN gameplay untouched, the rename living on AIB's side of the bridge.
+
+**Not re-measured after the merge:** the three verbs were proven live in 756eea3 (pawn
+state, not log counts — see the entry above). The merge changed only the fire gate, in
+the strictly-more-careful direction, plus mechanical renames. A fresh live pass needs
+`BotSystem=AIB`, which is still a founder decision and not mine to flip.
