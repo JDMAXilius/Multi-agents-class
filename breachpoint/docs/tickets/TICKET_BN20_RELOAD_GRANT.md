@@ -55,3 +55,25 @@ that tag's grant, not at the presser.
 - [ ] Five-match re-measure with the warning at ~0
 
 ## Log
+
+### 2026-08-26 — cloud lead: step 1's instrument WRITTEN, and one gate that is
+correct regardless of the verdict. WRITTEN, NOT COMPILED; harness half proven.
+
+- The warning now carries its separating facts: `dead=yes|no avatar=<name>` — dead=yes
+  classifies a corpse-window press, dead=no with a fresh avatar a grant race; the log's
+  own timestamps against the equip line give step 1 its correlation without a second
+  instrument. Harness counts `no_grant_presses` and splits dead/alive/by-tag (proven on
+  synthetic lines, asserts green) — the done-when bar reads straight off it.
+- STRUCTURAL SUSPECT, named but NOT concluded (the ticket's own rule): the module's
+  fire task pressed reload on ammo facts alone — `bHasReserveAmmo && AmmoNorm <= frac`,
+  retried every ReloadRetrySeconds — with no alive gate anywhere in the branch, while
+  the controller possesses the corpse for the whole RespawnDelay and the ASC outlives
+  the body on the PlayerState. A bot that died mid-fight (low magazine, the common
+  case) kept pressing from the corpse. Whether that is all 308 is what the dead=yes
+  split now answers.
+- THE GATE (module, `FAIBFireWhenAbleTask::Tick`): a corpse presses nothing — dead
+  avatar releases a held trigger and stops pressing fire/reload/swap. Correct on its
+  own terms whatever the split says (the host's fire gate already refuses dead verbs;
+  this stops asking). If the split comes back dead-dominated, this gate IS the fix and
+  the re-measure closes the ticket; if alive-dominated, the grant race is real and the
+  BN-side fix (defer the press or grant before the avatar door opens) is still owed.

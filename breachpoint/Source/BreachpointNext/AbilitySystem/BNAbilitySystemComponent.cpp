@@ -2,6 +2,7 @@
 #include "BreachpointNext.h"
 #include "AbilitySystem/BNGameplayAbility.h"
 #include "Abilities/GameplayAbility.h"
+#include "Core/BNGameplayTags.h"
 
 void UBNAbilitySystemComponent::AbilityInputTagPressed(FGameplayTag InputTag)
 {
@@ -44,8 +45,15 @@ void UBNAbilitySystemComponent::AbilityInputTagPressed(FGameplayTag InputTag)
 	// reads exactly like a dead key — with it, the log names which half of the chain to fix.
 	if (!bAnySpecListens)
 	{
-		UE_LOG(LogBN, Warning, TEXT("BNASC: input tag %s reached the ASC but NO granted ability carries it — the grant is missing (or defaults are not granted yet)."),
-			*InputTag.ToString());
+		// BN20's separating facts ride the line (its step 1: name the cause with
+		// timestamps, never infer it): dead=yes classifies a press from the corpse
+		// window, dead=no with a fresh avatar classifies a spawn-grant race, and the
+		// avatar name plus the log's own timestamp is what correlates either against
+		// the grant moment. 308-to-11 stays anonymous without this.
+		UE_LOG(LogBN, Warning, TEXT("BNASC: input tag %s reached the ASC but NO granted ability carries it — the grant is missing (or defaults are not granted yet). dead=%s avatar=%s"),
+			*InputTag.ToString(),
+			HasMatchingGameplayTag(BNTags::State_Dead) ? TEXT("yes") : TEXT("no"),
+			*GetNameSafe(GetAvatarActor()));
 	}
 }
 

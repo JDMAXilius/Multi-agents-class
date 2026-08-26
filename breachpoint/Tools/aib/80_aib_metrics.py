@@ -75,6 +75,10 @@ RX = {
     "team_assign":      re.compile(r"BNGameMode: (?P<player>.+) assigned to team (?P<team>\d+)\."),
     "ff_refused":       re.compile(r"BNDamage: friendly fire refused — (?P<attacker>.+) -> (?P<victim>.+) \((?P<damage>[0-9.]+)\)\."),
     "team_kill_denied": re.compile(r"BNGameMode: team kill — (?P<killer>.+) -> (?P<victim>.+), no credit\."),
+    # BN20: a press that reached the ASC and found no spec, now carrying its separating
+    # facts (dead = the corpse window, alive = a grant race). The done-when bar is this
+    # count at ~0 across five matches.
+    "no_grant": re.compile(r"BNASC: input tag (?P<tag>\S+) reached the ASC but NO granted ability carries it[^.]*\. dead=(?P<dead>yes|no) avatar=(?P<avatar>\S+)"),
 }
 
 # F1's floor is a module constant (AIB::MinReactionSeconds). Restated here as a
@@ -170,6 +174,15 @@ def per_match_summary(counts):
             if counts["team_assign"] else None),
         "ff_refused": len(counts["ff_refused"]) or None,     # Verbose-only
         "team_kills_denied": len(counts["team_kill_denied"]) or None,
+        # BN20: no-grant presses split by the dead flag (corpse window vs grant race)
+        # and by tag, so the 308 stops being one anonymous number.
+        "no_grant_presses": len(counts["no_grant"]) or None,
+        "no_grant_split": ({
+            "dead": sum(1 for hit in counts["no_grant"] if hit["dead"] == "yes"),
+            "alive": sum(1 for hit in counts["no_grant"] if hit["dead"] == "no"),
+            "by_tag": {tag: sum(1 for hit in counts["no_grant"] if hit["tag"] == tag)
+                for tag in sorted({hit["tag"] for hit in counts["no_grant"]})},
+        } if counts["no_grant"] else None),
     }
 
 

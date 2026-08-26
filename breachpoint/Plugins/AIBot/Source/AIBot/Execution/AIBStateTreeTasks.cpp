@@ -556,6 +556,25 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 		return EStateTreeRunStatus::Failed;
 	}
 
+	// A CORPSE PRESSES NOTHING. The controller holds the body until respawn (the host's
+	// own lifecycle), and every press below this line was gated on facts — ammo, range,
+	// visibility — none of which say "alive". A dead bot with a low magazine re-pressed
+	// reload every retry window into an ASC whose weapon grants die with the body: the
+	// leading suspect for BN20's 308 no-grant warnings, and wrong on its own terms
+	// regardless (the fire gate's own State_Dead read shows the host already refuses
+	// dead verbs — this stops asking). Held trigger released first, or the corpse keeps
+	// firing until the actor is destroyed.
+	if (!Avatar->IsAlive())
+	{
+		if (InstanceData.bHolding)
+		{
+			Avatar->ReleaseVerb(AIBTags::Verb_Fire);
+			InstanceData.bHolding = false;
+			InstanceData.PhaseSecondsLeft = 0.f;
+		}
+		return EStateTreeRunStatus::Running;
+	}
+
 	// The cached facts are the one info door: matured visibility + the assembled
 	// can-fight answer, never raw avatar reads scattered through tasks.
 	const FAIBFacts& Facts = Bot->GetLastFacts();
