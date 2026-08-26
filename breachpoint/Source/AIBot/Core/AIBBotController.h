@@ -2,15 +2,19 @@
 
 #include "CoreMinimal.h"
 #include "AIController.h"
+#include "Core/AIBTypes.h"
 #include "GameplayTagContainer.h"
 #include "Perception/AIBSensorium.h"
 #include "AIBBotController.generated.h"
 
 class IAIBAvatarInterface;
+class IAIBExecutor;
 class UAIBAmbitionEngine;
 class UAIPerceptionComponent;
 class UAISenseConfig_Hearing;
 class UAISenseConfig_Sight;
+class UStateTree;
+class UStateTreeAIComponent;
 struct FAIStimulus;
 
 /**
@@ -43,6 +47,18 @@ public:
 	/** The arbitration layer; valid while possessing on the authority. */
 	UAIBAmbitionEngine* GetAmbitionEngine() const { return AmbitionEngine; }
 
+	/** The execution surface (Phase 3). The executor drives it; nothing else touches it. */
+	UStateTreeAIComponent* GetStateTreeComponent() const { return StateTreeComponent; }
+
+	/** Where the compiled behaviour asset lives — ini-set, resolved by the executor at
+	 *  possession. Soft by law 3's sibling rule: the module hard-references no asset. */
+	const TSoftObjectPtr<UStateTree>& GetBotStateTreePath() const { return BotStateTree; }
+
+	/** The last matured, arbitrated world — what executor tasks read mid-frame. Facts are
+	 *  built ONCE per Think (F3: one belief sample per pump); tasks reading this cache
+	 *  cannot accidentally re-sample the live world between pumps. */
+	const FAIBFacts& GetLastFacts() const { return LastFacts; }
+
 	/** The game's projectile warning seam calls this (via the adapter wiring). It NOTES —
 	 *  the dodge happens only after the stimulus matures (FAIRPLAY F2). */
 	void NoteIncomingBlast(const FVector& Center, float Radius, double DetonateAtSeconds);
@@ -74,6 +90,16 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "AIBot")
 	TObjectPtr<UAISenseConfig_Hearing> HearingConfig;
 
+	/** Born in the constructor (components must be); logic start is the executor's call,
+	 *  never automatic — the host controller's proven, respawn-idempotent shape. */
+	UPROPERTY(VisibleAnywhere, Category = "AIBot")
+	TObjectPtr<UStateTreeAIComponent> StateTreeComponent;
+
+	/** Soft path to the compiled tree, from [/Script/AIBot.AIBBotController] in ini.
+	 *  TICKET_AIB2's authoring commandlet builds the asset it names. */
+	UPROPERTY(Config)
+	TSoftObjectPtr<UStateTree> BotStateTree;
+
 	/** Seconds between thinks. Config so the terminal can tune cadence without a
 	 *  recompile; the floor law does not live here (the clock owns it). */
 	UPROPERTY(Config)
@@ -91,8 +117,19 @@ private:
 	/** For the one fairness log line per acquisition (aib-verifier's sample). */
 	TWeakObjectPtr<AActor> LastLoggedTarget;
 
+	/** One fact snapshot per Think; see GetLastFacts. */
+	FAIBFacts LastFacts;
+
 	IAIBAvatarInterface* Avatar = nullptr;
 
 	UPROPERTY()
 	TObjectPtr<UObject> AvatarObject;
+
+	// The executor door, the avatar door's twin: the interface pointer is what runs, the
+	// UObject pointer is what keeps it alive. Today the concrete type is the StateTree
+	// executor; a Behavior Tree impl replaces one NewObject line, nothing else.
+	IAIBExecutor* Executor = nullptr;
+
+	UPROPERTY()
+	TObjectPtr<UObject> ExecutorObject;
 };

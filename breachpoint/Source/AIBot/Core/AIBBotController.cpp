@@ -3,8 +3,10 @@
 #include "AIBotModule.h"
 #include "Brain/AIBAmbitionEngine.h"
 #include "Components/ActorComponent.h"
+#include "Components/StateTreeAIComponent.h"
 #include "Core/AIBFactsBuilder.h"
 #include "Data/AIBDataRows.h"
+#include "Execution/AIBStateTreeExecutor.h"
 #include "Interfaces/AIBAvatarInterface.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Hearing.h"
@@ -55,6 +57,12 @@ AAIBBotController::AAIBBotController(const FObjectInitializer& ObjectInitializer
 	BotPerception->ConfigureSense(*HearingConfig);
 	BotPerception->SetDominantSense(SightConfig->GetSenseImplementation());
 	SetPerceptionComponent(*BotPerception);
+
+	// The execution surface. Auto-start is off (transcribed from the host controller):
+	// the tree must not run before the executor has resolved and set the asset, and a
+	// respawn must not double-start logic.
+	StateTreeComponent = CreateDefaultSubobject<UStateTreeAIComponent>(TEXT("BotStateTree"));
+	StateTreeComponent->SetStartLogicAutomatically(false);
 
 	// Delegate binding is NOT here: the shipping host binds at possession, gated and
 	// deduped, precisely to keep bindings out of serialized CDO state (W-REVIEW F-4.1).
@@ -143,6 +151,7 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 		}
 	}
 	LastLoggedAmbition = FGameplayTag();
+	LastFacts = FAIBFacts(); // a fresh life reads no stale world
 
 	// Phase 8 resolves the real tier; until then the row's defaults are the envelope.
 	const FAIBTierRow Defaults;
@@ -154,16 +163,33 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 
 	GetWorldTimerManager().SetTimer(ThinkTimer, this, &AAIBBotController::Think,
 		FMath::Max(ThinkIntervalSeconds, 0.02f), /*bLoop=*/true);
+
+	// The executor last: by the time the tree evaluates its first gate, the brain and
+	// sensorium above are already live. Swapping StateTree for Behavior Tree is this one
+	// NewObject line — the rest of possession never changes (the IAIBExecutor seam).
+	if (!Executor)
+	{
+		UAIBStateTreeExecutor* NewExecutor = NewObject<UAIBStateTreeExecutor>(this);
+		Executor = NewExecutor;
+		ExecutorObject = NewExecutor;
+	}
+	Executor->Start(*this);
 }
 
 void AAIBBotController::OnUnPossess()
 {
+	// The executor first: no task may run one more evaluation against a dead body.
+	if (Executor)
+	{
+		Executor->Stop();
+	}
 	// The host's proven guard: unpossession during world teardown has no timer manager.
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(ThinkTimer);
 	}
 	Sensorium.Reset();
+	LastFacts = FAIBFacts();
 	// THE BRAIN DIES WITH THE BODY (W-REVIEW P2 M-1, two passes independently): the
 	// registry survives (re-registering the same wants would be waste), but the
 	// arbitration state — winner, commit clock, cliff baseline — must not carry a dead
@@ -304,8 +330,10 @@ void AAIBBotController::Think()
 	// rung-3 protocol ("ambition switches with scores", proof 3).
 	if (AmbitionEngine)
 	{
-		const FAIBFacts Facts = AIBFactsBuilder::Build(*this, Now);
-		const FGameplayTag Ambition = AmbitionEngine->Rescore(Facts, Now);
+		// Cached, not local: executor tasks read GetLastFacts() between pumps, so the
+		// whole frame's execution sees the same matured snapshot (F3, one sample site).
+		LastFacts = AIBFactsBuilder::Build(*this, Now);
+		const FGameplayTag Ambition = AmbitionEngine->Rescore(LastFacts, Now);
 		if (Ambition.IsValid() && Ambition != LastLoggedAmbition)
 		{
 			LastLoggedAmbition = Ambition;

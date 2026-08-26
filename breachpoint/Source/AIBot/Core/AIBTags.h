@@ -37,4 +37,8 @@ namespace AIBTags
 	AIBOT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ambition_Search);
 	AIBOT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ambition_Roam);
 	AIBOT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ambition_Mode);
+
+	// -- point-of-interest kinds (the typed join to FAIBPointOfInterest::Kind) ----
+	// Same open namespace as the verbs: a host or mode names its own under AIBot.POI.*.
+	AIBOT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(POI_Weapon);
 }

@@ -1,12 +1,23 @@
 #pragma once
-// PHASE 3 — not yet implemented (gated on AIB1 rung-1 green). FULL DESIGN, decided at the
-// barrier so implementation is transcription, not invention:
-//
-// The seam that keeps StateTree and Behavior Tree interchangeable. Pure C++ interface:
-//   Start(AAIBBotController&)  — begin running; loads whatever asset the impl needs.
-//   Stop()                     — possession ended; leave nothing running.
-//   (No SetActiveAmbition call: the executor READS the ambition from the controller each
-//    relevant tick via GetAmbitionEngine()->GetCurrent() — pushing it in would create a
-//    second copy of arbitration state, and the P2 respawn bug showed what copies cost.)
-//
-// UAIBStateTreeExecutor first; a BT executor may join later with zero brain changes.
+
+#include "CoreMinimal.h"
+
+class AAIBBotController;
+
+/**
+ * The seam that keeps StateTree and Behavior Tree interchangeable. The executor READS the
+ * active ambition from the controller's engine each evaluation — nothing pushes a copy in,
+ * because the P2 respawn bug is what a second copy of arbitration state costs.
+ */
+class AIBOT_API IAIBExecutor
+{
+public:
+	virtual ~IAIBExecutor() = default;
+
+	/** Begin running against this controller. Loads whatever asset the impl needs; a miss
+	 *  is ONE loud line and a standing bot, never a crash. */
+	virtual void Start(AAIBBotController& Bot) = 0;
+
+	/** Possession ended: leave nothing running, nothing held. */
+	virtual void Stop() = 0;
+};

@@ -17,4 +17,6 @@ namespace AIBTags
 	UE_DEFINE_GAMEPLAY_TAG(Ambition_Search, "AIBot.Ambition.Search");
 	UE_DEFINE_GAMEPLAY_TAG(Ambition_Roam, "AIBot.Ambition.Roam");
 	UE_DEFINE_GAMEPLAY_TAG(Ambition_Mode, "AIBot.Ambition.Mode");
+
+	UE_DEFINE_GAMEPLAY_TAG(POI_Weapon, "AIBot.POI.Weapon");
 }
