@@ -16,6 +16,7 @@
 #include "Match/BNGameState.h"
 #include "Match/BNPlayerState.h"
 #include "Match/BNTeams.h"
+#include "TimerManager.h"
 #include "UI/BNActivatableWidget.h"
 #include "UI/BNUIManager.h"
 #include "UI/BNViewModels.h"
@@ -483,6 +484,11 @@ void UBNHUDDirector::EnsurePlayerBindings()
 	APlayerController* PC = GetOwnPlayerController();
 	if (!PC)
 	{
+		// No controller yet on any of the edges we own — and post-match has no further
+		// edge at all (no kills, no possession, no state change), so a joiner could
+		// strand unbound forever (bn-critic BN16 F1, scenario ii). The retry is the
+		// missing acquisition edge; it disarms itself by not re-arming once bound.
+		ArmPlayerAcquisitionRetry();
 		return;
 	}
 
@@ -495,6 +501,11 @@ void UBNHUDDirector::EnsurePlayerBindings()
 
 	// PlayerState-scoped bindings, once per PlayerState (it survives every pawn).
 	ABNPlayerState* PS = PC->GetPlayerState<ABNPlayerState>();
+	if (!PS)
+	{
+		// Controller found, PlayerState still in flight — same vacuum, same retry.
+		ArmPlayerAcquisitionRetry();
+	}
 	if (PS && BoundPlayerState.Get() != PS)
 	{
 		if (ABNPlayerState* OldPS = BoundPlayerState.Get())
@@ -539,6 +550,14 @@ void UBNHUDDirector::EnsurePlayerBindings()
 				HandleRespawnStampChanged(PS);
 			}
 		}
+
+		// The own PlayerState just changed hands, and the snapshot's whole teams signal
+		// derives from it (bn-critic BN16 F1): every push before this bind read FFA, and
+		// no later edge is guaranteed — a post-match team joiner otherwise renders a
+		// decided match as DRAW for the entire post-match. The VM set-guards keep this
+		// silent when nothing actually moved; RecomputeScores runs inside, which also
+		// hands the new PS to the deferred team subscriptions.
+		PushMatchSnapshot();
 	}
 
 	if (APawn* Pawn = PC->GetPawn())
@@ -547,6 +566,27 @@ void UBNHUDDirector::EnsurePlayerBindings()
 	}
 
 	EnsureHUDShown();
+}
+
+void UBNHUDDirector::ArmPlayerAcquisitionRetry()
+{
+	// Only in a world that has a match to render, and one shot at a time. The callback is
+	// EnsurePlayerBindings itself: still unbound, it re-arms; bound, it stops asking — the
+	// retry lives exactly as long as the vacuum it fills. Law 4 note: a bounded self-
+	// disarming timer is the clock's job, not a tick (the respawn clock's own precedent).
+	UWorld* World = BoundWorld.Get();
+	if (!World || !BoundGameState.IsValid())
+	{
+		return;
+	}
+	FTimerManager& TimerManager = World->GetTimerManager();
+	if (TimerManager.IsTimerActive(PlayerAcquisitionRetryHandle))
+	{
+		return;
+	}
+	TimerManager.SetTimer(PlayerAcquisitionRetryHandle,
+		FTimerDelegate::CreateUObject(this, &UBNHUDDirector::EnsurePlayerBindings),
+		PlayerAcquisitionRetrySeconds, false);
 }
 
 void UBNHUDDirector::HandlePossessedPawnChanged(APawn* OldPawn, APawn* NewPawn)
@@ -680,6 +720,19 @@ void UBNHUDDirector::HandleScoreChanged(ABNPlayerState* ChangedPlayerState)
 
 void UBNHUDDirector::HandleTeamScoreChanged(uint8 Team)
 {
+	// POST-MATCH IS FROZEN (bn-critic BN16 F2): the restart clears Winner and WinningTeamId
+	// silently and THEN ResetTeamScores broadcasts — without this gate that broadcast
+	// recomposes the decided banner as DRAW on every machine during the travel window (the
+	// OnRep_Winner null-guard's bug class, reopened through this subscription). The final
+	// kill still renders on every machine: the server broadcasts AddTeamScore BEFORE
+	// FinishTeamMatch flips the state (this gate reads not-ended, pushes), and on a client
+	// the flip and the increment share a bunch — this OnRep may see ended and yield, but
+	// the same bunch's OnRep_MatchState push carries the final ledger with it.
+	const ABNGameState* GS = BoundGameState.Get();
+	if (GS && GS->HasMatchEnded())
+	{
+		return;
+	}
 	// The parameter is deliberately unread: the ledger is pushed RELATIVE, so which team moved
 	// is a fact the snapshot recomposes anyway — one recompute path, no second composition
 	// here to drift from it.
@@ -866,6 +919,9 @@ void UBNHUDDirector::UnbindAll()
 	if (UWorld* World = BoundWorld.Get())
 	{
 		World->GameStateSetEvent.Remove(GameStateSetHandle);
+		// The acquisition retry must not outlive the binding set it exists to complete —
+		// a rebind arms its own against the new world.
+		World->GetTimerManager().ClearTimer(PlayerAcquisitionRetryHandle);
 	}
 	BoundWorld.Reset();
 	GameStateSetHandle.Reset();

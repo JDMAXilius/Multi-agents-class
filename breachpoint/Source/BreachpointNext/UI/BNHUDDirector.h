@@ -87,6 +87,13 @@ protected:
 	/** Finds the controller and binds everything player-scoped that is not yet bound. Safe to
 	 *  call from every edge — every bind inside is guarded or idempotent. */
 	void EnsurePlayerBindings();
+
+	/** The MISSING acquisition edge (bn-critic BN16 F1): a joiner during post-match gets no
+	 *  kill, no possession and no state change after the initial bunch, so a controller or
+	 *  PlayerState that trails those edges would strand the HUD unbound forever. A bounded
+	 *  one-shot retry re-runs EnsurePlayerBindings until it binds; it re-arms only while
+	 *  the vacuum persists and only in a world with a match to render. */
+	void ArmPlayerAcquisitionRetry();
 	void BindPawn(APawn* Pawn);
 	void UnbindWeapon();
 
@@ -179,6 +186,11 @@ protected:
 
 	bool bScoreboardHeld = false;
 	bool bPostMatch = false;
+
+	/** See ArmPlayerAcquisitionRetry. Cleared with the world's own teardown (the timer
+	 *  manager dies with the world; UnbindAll also clears it by hand for the rebind path). */
+	FTimerHandle PlayerAcquisitionRetryHandle;
+	static constexpr float PlayerAcquisitionRetrySeconds = 0.5f;
 
 	// ---- Layer.GameMenu intent (never read the widgets to decide — see UpdateGameMenuLayer) ----
 	bool bDeathScreenWanted = false;

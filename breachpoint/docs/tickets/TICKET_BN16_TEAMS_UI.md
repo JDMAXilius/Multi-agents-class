@@ -93,3 +93,36 @@ split: writer 1 landed alone mid-wave). WRITTEN, NOT COMPILED.**
 - Barrier gates: no gameplay includes in widget files; no absolute team id reaches a
   widget (one comment hit only); GetAttitude grep law still one caller (BNTeams.h);
   LOCTEXT namespace present for the new banner strings.
+
+**26 Aug — W-REVIEW (bn-critic, replication-race dimension): BLOCK — 1 HIGH, 1 MEDIUM,
+both fixed at the barrier. Everything else attacked held.**
+
+- **F1 HIGH — no edge re-pushed the snapshot when the OWN PlayerState bound.** The
+  teams signal derives from the own PS; every push before its bind read FFA, the
+  deferred subscription structurally cannot hear the own PS's initial TeamId (its
+  OnRep fires inside the same bunch that adds it to PlayerArray — the broadcast is
+  spent before any subscribe), and post-match supplies NO healing edge at all: a
+  post-match joiner to a decided team match rendered "DRAW" for the entire
+  post-match (Winner is deliberately null on a team win). FIXED: (a)
+  EnsurePlayerBindings pushes the snapshot when BoundPlayerState changes hands;
+  (b) ArmPlayerAcquisitionRetry — a bounded one-shot 0.5s retry that re-runs
+  EnsurePlayerBindings while a match world lacks a controller/PS, re-arming only
+  while the vacuum persists (law-4 note in code: the respawn clock's precedent;
+  the critic flagged the acquisition-edge vacuum as pre-existing — it could also
+  strand the HUD-show — so the retry closes both).
+- **F2 MEDIUM — the restart rewrote the decided team banner to "DRAW" during the
+  travel window**: RestartMatch clears Winner/WinningTeamId silently, then
+  ResetTeamScores broadcasts → the new subscription recomposed the banner over the
+  decided result (the OnRep_Winner null-guard's bug class, reopened). FIXED:
+  HandleTeamScoreChanged early-outs when HasMatchEnded() — post-match ledger is
+  frozen; the final kill still renders everywhere (server broadcasts the increment
+  before the state flips; a client's same-bunch OnRep_MatchState push carries the
+  final ledger).
+- Passes worth keeping: authority-side deletion test holds (every rendered team datum
+  rides an authority-fired delegate; WinningTeamId written before EndMatch); deferred
+  subscription idempotent/H9-clean across rebinds, PIE and seamless travel; the
+  no-PlayerArray-hook gap NARROWED for other players' rows; confident-0:0 unreachable;
+  WinningTeamId same-bunch ruling holds at every read edge; all five VM fields go
+  through UE_MVVM_SET_PROPERTY_VALUE; pooled rows rewrite every tint on claim; a Self
+  part-relation with bInvolvesSelf false is unreachable. FieldNotify bool descriptor
+  stays a watch-list compile question (bIsDead precedent noted by the critic).
