@@ -1,4 +1,4 @@
-# TICKET — AIB6: a refused move must say WHICH failure it is
+# TICKET — AIB7: a refused move must say WHICH failure it is
 
 > STATUS: done — mac terminal 26 Aug 2026. Hypothesis CONFIRMED, unanimously:
 > 30 of 30 refusals are self=yes goal=yes — genuine unreachability, not off-mesh goals.
@@ -44,7 +44,7 @@ point at different geometry.
 ## Kickoff (machine-checkable)
 
 - requires: engine-installed (editor only for the live read)
-- owner_path: `Source/AIBot/Execution/`, `docs/tickets/TICKET_AIB6_MOVE_FAILURE_DIAGNOSIS.md`
+- owner_path: `Source/AIBot/Execution/`, `docs/tickets/TICKET_AIB7_MOVE_FAILURE_DIAGNOSIS.md`
 
 ## Steps (in order)
 
