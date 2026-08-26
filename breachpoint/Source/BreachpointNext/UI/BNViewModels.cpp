@@ -336,6 +336,31 @@ void UBNVM_Match::SetScores(int32 InMyKills, int32 InTopKills, int32 InScoreLimi
 		Denominator > 0.f ? FMath::Clamp(InMyKills / Denominator, 0.f, 1.f) : 0.f);
 	UE_MVVM_SET_PROPERTY_VALUE(TopScoreFraction,
 		Denominator > 0.f ? FMath::Clamp(InTopKills / Denominator, 0.f, 1.f) : 0.f);
+
+	// TEAMS (BN16): the team bars share the denominator, so they recompute wherever it can
+	// move — here AND in SetTeamScores. Whichever of limit and ledger lands second, the bars
+	// agree; without this line a limit arriving after the ledger left them at zero forever.
+	UE_MVVM_SET_PROPERTY_VALUE(MyTeamScoreFraction,
+		Denominator > 0.f ? FMath::Clamp(MyTeamScore / Denominator, 0.f, 1.f) : 0.f);
+	UE_MVVM_SET_PROPERTY_VALUE(EnemyTeamScoreFraction,
+		Denominator > 0.f ? FMath::Clamp(EnemyTeamScore / Denominator, 0.f, 1.f) : 0.f);
+}
+
+void UBNVM_Match::SetTeamScores(bool bInTeamsMode, int32 InMyTeamScore, int32 InEnemyTeamScore)
+{
+	// FFA/unknown forces the whole ledger to zero: a stale team number surviving a mode flip
+	// (or the honest-unknown join frame ending in FFA) must not leave a phantom strip behind.
+	UE_MVVM_SET_PROPERTY_VALUE(bTeamsMode, bInTeamsMode);
+	UE_MVVM_SET_PROPERTY_VALUE(MyTeamScore, bInTeamsMode ? InMyTeamScore : 0);
+	UE_MVVM_SET_PROPERTY_VALUE(EnemyTeamScore, bInTeamsMode ? InEnemyTeamScore : 0);
+
+	// SelfScoreFraction's rule, applied to the team bars: 0..1 clamped, zero when there is no
+	// limit to be a fraction OF. Reads the members just set, so the FFA zeroing flows through.
+	const float Denominator = static_cast<float>(FMath::Max(0, ScoreLimit));
+	UE_MVVM_SET_PROPERTY_VALUE(MyTeamScoreFraction,
+		Denominator > 0.f ? FMath::Clamp(MyTeamScore / Denominator, 0.f, 1.f) : 0.f);
+	UE_MVVM_SET_PROPERTY_VALUE(EnemyTeamScoreFraction,
+		Denominator > 0.f ? FMath::Clamp(EnemyTeamScore / Denominator, 0.f, 1.f) : 0.f);
 }
 
 void UBNVM_Match::SetMatchClock(double InMatchEndServerTime, AGameStateBase* InTimeSource)
@@ -403,7 +428,8 @@ void UBNVM_Match::StopClockUpdates()
 }
 
 void UBNVM_Match::PushKillfeedEntry(const FText& InLine, int32 InSequence, bool bInvolvesSelf,
-	const TSoftObjectPtr<UTexture2D>& InWeaponIcon, const FText& InKillerText, const FText& InVictimText)
+	const TSoftObjectPtr<UTexture2D>& InWeaponIcon, const FText& InKillerText, const FText& InVictimText,
+	EBNUITeamRelation InKillerRelation, EBNUITeamRelation InVictimRelation)
 {
 	if (InSequence <= LastKillfeedSequence)
 	{
@@ -432,6 +458,10 @@ void UBNVM_Match::PushKillfeedEntry(const FText& InLine, int32 InSequence, bool 
 	Entry.WeaponIcon = InWeaponIcon;
 	Entry.KillerText = InKillerText;
 	Entry.VictimText = InVictimText;
+	// TEAMS (BN16): stored as pushed, decided by the director — None/None is FFA and renders
+	// today's palette by construction. bInvolvesSelf stays the white-row authority.
+	Entry.KillerRelation = InKillerRelation;
+	Entry.VictimRelation = InVictimRelation;
 
 	while (KillfeedEntries.Num() > KillfeedMaxVisibleEntries)
 	{
@@ -490,8 +520,12 @@ void UBNVM_Match::SetRoster(TArray<FBNScoreRowView>&& InRoster)
 			{
 				const FBNScoreRowView& A = Roster[i];
 				const FBNScoreRowView& B = InRoster[i];
+				// Relation counts as rendered (BN16): a late TeamId re-tints rows whose numbers
+				// did not move, and a silence gate that ignored it would swallow exactly the
+				// rebuild the deferred subscription exists to force.
 				if (A.Kills != B.Kills || A.Deaths != B.Deaths || A.bIsSelf != B.bIsSelf ||
-					A.bIsWinner != B.bIsWinner || !A.PlayerName.Equals(B.PlayerName, ESearchCase::CaseSensitive))
+					A.bIsWinner != B.bIsWinner || A.Relation != B.Relation ||
+					!A.PlayerName.Equals(B.PlayerName, ESearchCase::CaseSensitive))
 				{
 					return false;
 				}
@@ -531,6 +565,13 @@ void UBNVM_Match::ClearToUnknown()
 	KillfeedEntries.Reset();
 	UE_MVVM_SET_PROPERTY_VALUE(SelfScoreFraction, 0.f);
 	UE_MVVM_SET_PROPERTY_VALUE(TopScoreFraction, 0.f);
+	// TEAMS (BN16): the ledger goes with the match — the next world starts FFA-honest until
+	// its own TeamIds say otherwise.
+	UE_MVVM_SET_PROPERTY_VALUE(bTeamsMode, false);
+	UE_MVVM_SET_PROPERTY_VALUE(MyTeamScore, 0);
+	UE_MVVM_SET_PROPERTY_VALUE(EnemyTeamScore, 0);
+	UE_MVVM_SET_PROPERTY_VALUE(MyTeamScoreFraction, 0.f);
+	UE_MVVM_SET_PROPERTY_VALUE(EnemyTeamScoreFraction, 0.f);
 	// Only when there was something to clear — SetRoster's silence contract, kept symmetric.
 	if (Roster.Num() > 0)
 	{

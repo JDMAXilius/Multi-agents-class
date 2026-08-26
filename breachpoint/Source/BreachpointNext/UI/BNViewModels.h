@@ -257,10 +257,15 @@ public:
 	void SetMatchClock(double InMatchEndServerTime, AGameStateBase* InTimeSource);
 
 	/** Director only, once per NEW ring entry (dedupe by Sequence is the CALLER's job via
-	 *  GetLastKillfeedSequence). Stamps the LOCAL expiry on the entry and trims the view pool. */
+	 *  GetLastKillfeedSequence). Stamps the LOCAL expiry on the entry and trims the view pool.
+	 *  TEAMS (BN16): the two parties' relations ride the same push — the director computes
+	 *  them (only it knows whose screen this is), defaulted to None so every FFA call site
+	 *  reads unchanged. */
 	void PushKillfeedEntry(const FText& InLine, int32 InSequence, bool bInvolvesSelf,
 		const TSoftObjectPtr<UTexture2D>& InWeaponIcon = TSoftObjectPtr<UTexture2D>(),
-		const FText& InKillerText = FText::GetEmpty(), const FText& InVictimText = FText::GetEmpty());
+		const FText& InKillerText = FText::GetEmpty(), const FText& InVictimText = FText::GetEmpty(),
+		EBNUITeamRelation InKillerRelation = EBNUITeamRelation::None,
+		EBNUITeamRelation InVictimRelation = EBNUITeamRelation::None);
 	int32 GetLastKillfeedSequence() const { return LastKillfeedSequence; }
 
 	FBNKillfeedViewChangedSignature OnKillfeedViewChanged;

@@ -12,8 +12,10 @@
 #include "Engine/World.h"
 #include "GameFramework/GameMode.h"
 #include "GameFramework/PlayerController.h"
+#include "GenericTeamAgentInterface.h"
 #include "Match/BNGameState.h"
 #include "Match/BNPlayerState.h"
+#include "Match/BNTeams.h"
 #include "UI/BNActivatableWidget.h"
 #include "UI/BNUIManager.h"
 #include "UI/BNViewModels.h"
@@ -103,11 +105,13 @@ void UBNHUDDirector::BindGameState(ABNGameState* InGameState)
 	{
 		Old->OnMatchStateChanged.Remove(MatchStateHandle);
 		Old->OnKillfeedChanged.Remove(KillfeedHandle);
+		Old->OnTeamScoreChanged.Remove(TeamScoreHandle);
 	}
 
 	BoundGameState = InGameState;
 	MatchStateHandle = InGameState->OnMatchStateChanged.AddUObject(this, &UBNHUDDirector::HandleMatchStateChanged);
 	KillfeedHandle = InGameState->OnKillfeedChanged.AddUObject(this, &UBNHUDDirector::HandleKillfeedChanged);
+	TeamScoreHandle = InGameState->OnTeamScoreChanged.AddUObject(this, &UBNHUDDirector::HandleTeamScoreChanged);
 
 	// Subscribe, then read ONCE — the contract every feed documents. A joiner mid-match reads
 	// the running match here, before any delegate has fired for them.
@@ -149,6 +153,14 @@ void UBNHUDDirector::PushMatchSnapshot()
 		return;
 	}
 
+	// TEAMS (BN16): the client-side teams signal is MY OWN TeamId. A client cannot read the
+	// GameMode's config — but the mode's one per-player datum replicates, and NoTeam is its
+	// sole sentinel, so "my id is real" IS "this is a team match". For the honest-unknown
+	// frame after join this reads FFA; the deferred subscription re-pushes when the id lands.
+	const ABNPlayerState* MyPS = BoundPlayerState.Get();
+	const FGenericTeamId MyTeam = MyPS ? MyPS->GetGenericTeamId() : FGenericTeamId::NoTeam;
+	const bool bTeams = MyTeam != FGenericTeamId::NoTeam;
+
 	// The winner line is composed HERE, with the reference in hand. A null winner during
 	// post-match is a draw — a legal outcome, worded, never blank.
 	FText WinnerLine;
@@ -163,13 +175,40 @@ void UBNHUDDirector::PushMatchSnapshot()
 		// The SAME null-winner case the line above words as "DRAW" — read once, branched once.
 		// Victory vs Defeat can only be decided here: the widget has no idea which PlayerState
 		// is mine, and giving it one would put a gameplay branch in a WBP.
-		const ABNPlayerState* MyPS = BoundPlayerState.Get();
 		Outcome = !Winner ? EBNMatchOutcome::Draw
 			: (MyPS && Winner == MyPS ? EBNMatchOutcome::Victory : EBNMatchOutcome::Defeat);
+
+		// TEAMS (BN16), the sibling decision: a decided WinningTeamId outranks the individual
+		// winner (in a team match the TEAM is the verdict), and the banner is worded RELATIVE
+		// — never a raw team id in player-facing text. An undecided 255 in a team match falls
+		// through to the individual path above, Draw included.
+		if (bTeams && GS->GetWinningTeamId() != FGenericTeamId::NoTeam.GetId())
+		{
+			const bool bMyTeamWon = GS->GetWinningTeamId() == MyTeam.GetId();
+			Outcome = bMyTeamWon ? EBNMatchOutcome::Victory : EBNMatchOutcome::Defeat;
+			WinnerLine = bMyTeamWon
+				? LOCTEXT("TeamVictoryBanner", "YOUR TEAM WINS")
+				: LOCTEXT("TeamDefeatBanner", "ENEMY TEAM WINS");
+		}
 	}
 
 	Match->SetMatchPhase(GS->GetMatchState(), WinnerLine, Outcome);
 	Match->SetMatchClock(GS->GetMatchEndServerTime(), BoundGameState.Get());
+
+	// TEAMS (BN16): the ledger, pushed RELATIVE — my points and theirs, never an id. Two teams
+	// by construction (BNTeams::NumTeams == 2), so "the enemy team" is the other of the two;
+	// GetTeamScore answers 0 for anything out of range, honestly. FFA/unknown clears the strip.
+	if (bTeams)
+	{
+		const uint8 MyTeamId = MyTeam.GetId();
+		const uint8 EnemyTeamId = static_cast<uint8>(1 - MyTeamId);
+		Match->SetTeamScores(true, GS->GetTeamScore(MyTeamId), GS->GetTeamScore(EnemyTeamId));
+	}
+	else
+	{
+		Match->SetTeamScores(false, 0, 0);
+	}
+
 	RecomputeScores();
 }
 
@@ -197,6 +236,11 @@ void UBNHUDDirector::RecomputeScores()
 	// PlayerArray add/remove hook (critic): between those edges a join or a leave is not seen,
 	// which is why opening the board recomputes. Cheap at FFA scale; the VM stays silent when
 	// nothing rendered actually changed.
+	// TEAMS (BN16): the deferred-subscription sweep rides the same walk — every PlayerState
+	// the roster is about to read gets its OnTeamChanged held, once, before its relation is
+	// composed, so an id that lands later re-tints through HandleAnyTeamChanged.
+	EnsureTeamSubscriptions();
+
 	const ABNPlayerState* Winner = GS->GetWinner();
 	TArray<FBNScoreRowView> Rows;
 	Rows.Reserve(GS->PlayerArray.Num());
@@ -213,6 +257,9 @@ void UBNHUDDirector::RecomputeScores()
 		Row.Deaths = BNPS->GetDeaths();
 		Row.bIsSelf = BNPS == MyPS;
 		Row.bIsWinner = Winner && BNPS == Winner;
+		// The row's one team fact, RELATIVE — None in FFA and on the honest-unknown frames,
+		// which is what keeps the teams-OFF board untouched by construction.
+		Row.Relation = RelationTo(BNPS);
 	}
 	Rows.Sort([](const FBNScoreRowView& A, const FBNScoreRowView& B)
 	{
@@ -221,6 +268,72 @@ void UBNHUDDirector::RecomputeScores()
 		return A.PlayerName < B.PlayerName;
 	});
 	Match->SetRoster(MoveTemp(Rows));
+}
+
+EBNUITeamRelation UBNHUDDirector::RelationTo(const ABNPlayerState* Other) const
+{
+	// The ONE composer (header contract): every relation any widget renders comes out of this
+	// ladder, in this order — identity first (Self beats team facts), then the NoTeam guard.
+	if (!Other)
+	{
+		return EBNUITeamRelation::None;
+	}
+	const ABNPlayerState* MyPS = BoundPlayerState.Get();
+	if (Other == MyPS)
+	{
+		return EBNUITeamRelation::Self;
+	}
+	if (!MyPS)
+	{
+		return EBNUITeamRelation::None;
+	}
+
+	// Either side at NoTeam answers None: FFA, and the joining client's honest-unknown frame
+	// — never guessed at. Stated here even though AreFriendly guards the same sentinel,
+	// because this ladder needs THREE answers (None/Ally/Enemy) and the guard only has two:
+	// without this test an unassigned player would read Enemy, not unknown.
+	const FGenericTeamId MyTeam = MyPS->GetGenericTeamId();
+	const FGenericTeamId OtherTeam = Other->GetGenericTeamId();
+	if (MyTeam == FGenericTeamId::NoTeam || OtherTeam == FGenericTeamId::NoTeam)
+	{
+		return EBNUITeamRelation::None;
+	}
+
+	// The compare itself goes through the one sanctioned attitude caller — nothing in game
+	// code asks GetAttitude raw, this file included.
+	return BNTeams::AreFriendly(MyTeam, OtherTeam) ? EBNUITeamRelation::Ally : EBNUITeamRelation::Enemy;
+}
+
+void UBNHUDDirector::EnsureTeamSubscriptions()
+{
+	const ABNGameState* GS = BoundGameState.Get();
+	if (!GS)
+	{
+		return;
+	}
+
+	// Stale weak keys swept in passing: a leaver's PlayerState died under its entry, and the
+	// delegate died with it — there is nothing left to Remove against, only a slot to drop.
+	for (auto It = TeamChangedHandles.CreateIterator(); It; ++It)
+	{
+		if (!It.Key().IsValid())
+		{
+			It.RemoveCurrent();
+		}
+	}
+
+	// One subscription per PlayerState, idempotent — Contains is the guard, so re-running on
+	// every roster rebuild costs a lookup, never a stacked delegate.
+	for (APlayerState* PS : GS->PlayerArray)
+	{
+		ABNPlayerState* BNPS = Cast<ABNPlayerState>(PS);
+		if (!BNPS || TeamChangedHandles.Contains(BNPS))
+		{
+			continue;
+		}
+		TeamChangedHandles.Add(BNPS,
+			BNPS->OnTeamChanged.AddUObject(this, &UBNHUDDirector::HandleAnyTeamChanged));
+	}
 }
 
 const FBNWeaponRow* UBNHUDDirector::FindWeaponRow(FName RowName) const
@@ -332,8 +445,13 @@ void UBNHUDDirector::HandleKillfeedChanged()
 			VictimPart = FText::FromString(Entry.VictimName);
 		}
 
+		// TEAMS (BN16): the parts' relations, composed at push time — the one moment the
+		// relationship facts are in hand (the same reasoning as the line itself). A leaver's
+		// null ref reads None through RelationTo's own ladder; in FFA both read None and the
+		// feed renders today's palette untouched.
 		Match->PushKillfeedEntry(ComposeKillfeedLine(Entry), Entry.Sequence, bInvolvesSelf,
-			ResolveWeaponIcon(Entry.SourceName), KillerPart, VictimPart);
+			ResolveWeaponIcon(Entry.SourceName), KillerPart, VictimPart,
+			RelationTo(Entry.Killer), RelationTo(Entry.Victim));
 
 		// My own newest death names my killer — the death screen's line. Written from the feed
 		// rather than a second channel: if the ring bunch lands after the dead tag, this catches
@@ -560,6 +678,23 @@ void UBNHUDDirector::HandleScoreChanged(ABNPlayerState* ChangedPlayerState)
 	RecomputeScores();
 }
 
+void UBNHUDDirector::HandleTeamScoreChanged(uint8 Team)
+{
+	// The parameter is deliberately unread: the ledger is pushed RELATIVE, so which team moved
+	// is a fact the snapshot recomposes anyway — one recompute path, no second composition
+	// here to drift from it.
+	PushMatchSnapshot();
+}
+
+void UBNHUDDirector::HandleAnyTeamChanged(ABNPlayerState* ChangedPlayerState)
+{
+	// A late TeamId re-tints the roster AND can flip the whole relative ledger — when the id
+	// that landed is the READER's own, "my team" and "enemy team" both just changed meaning.
+	// PushMatchSnapshot ends in RecomputeScores, so one call rebuilds both; the VMs stay
+	// silent where nothing rendered actually moved.
+	PushMatchSnapshot();
+}
+
 void UBNHUDDirector::HandleRespawnStampChanged(ABNPlayerState* OwnPlayerState)
 {
 	if (UBNVM_Combat* Combat = GetCombatVM())
@@ -739,10 +874,24 @@ void UBNHUDDirector::UnbindAll()
 	{
 		GS->OnMatchStateChanged.Remove(MatchStateHandle);
 		GS->OnKillfeedChanged.Remove(KillfeedHandle);
+		GS->OnTeamScoreChanged.Remove(TeamScoreHandle);
 	}
 	BoundGameState.Reset();
 	MatchStateHandle.Reset();
 	KillfeedHandle.Reset();
+	TeamScoreHandle.Reset();
+
+	// Every deferred team subscription, removed against ITS stored PlayerState (H9) — the map
+	// key is the stored object, one per subscriber. Stale weak keys have nothing to remove
+	// against; the Empty drops their slots with the rest.
+	for (TPair<TWeakObjectPtr<ABNPlayerState>, FDelegateHandle>& Pair : TeamChangedHandles)
+	{
+		if (ABNPlayerState* TeamPS = Pair.Key.Get())
+		{
+			TeamPS->OnTeamChanged.Remove(Pair.Value);
+		}
+	}
+	TeamChangedHandles.Empty();
 
 	if (ABNPlayerState* PS = BoundPlayerState.Get())
 	{
