@@ -59,8 +59,8 @@ FAIBFacts AIBFactsBuilder::Build(const AAIBBotController& Bot, double NowSeconds
 	{
 		Facts.bHasMemory = true;
 		Facts.LastKnownAgeSeconds = MemoryAge;
-		static const FAIBTierRow Defaults; // Phase 8 resolves the real tier
-		Facts.MemoryFreshWindowSeconds = FMath::Min(Defaults.MemoryFreshSeconds, AIB::MaxMemorySeconds);
+		// The BOT's resolved tier window (Phase 8) — clamped at the module ceiling (F5).
+		Facts.MemoryFreshWindowSeconds = FMath::Min(Bot.GetTierRow().MemoryFreshSeconds, AIB::MaxMemorySeconds);
 	}
 
 	// -- the incoming blast, relative — the dodge needs no world ---------------------

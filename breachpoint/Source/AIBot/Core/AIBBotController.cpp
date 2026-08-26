@@ -8,6 +8,8 @@
 #include "Core/AIBFactsBuilder.h"
 #include "Core/AIBTags.h"
 #include "Data/AIBDataRows.h"
+#include "Data/AIBTiers.h"
+#include "Debug/AIBGameplayDebugger.h"
 #include "Execution/AIBStateTreeExecutor.h"
 #include "Interfaces/AIBAvatarInterface.h"
 #include "Perception/AIPerceptionComponent.h"
@@ -166,8 +168,45 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	LastLoggedAmbition = FGameplayTag();
 	LastFacts = FAIBFacts(); // a fresh life reads no stale world
 
-	// Phase 8 resolves the real tier; until then the row's defaults are the envelope.
-	const FAIBTierRow Defaults;
+	// PHASE 8 — the real tier, resolved per possession from the C++ registry (the ONE
+	// source of truth; DT_AIBTiers only mirrors it). An unknown name is a config typo
+	// worth a loud line and a Marine-shaped fallback, never a crash or a superhuman.
+	const FAIBTierRow* FoundRow = AIBTiers::Find(BotTier);
+	if (!FoundRow)
+	{
+		UE_LOG(LogAIBot, Warning, TEXT("AIBot: %s asked for unknown tier '%s' — the defaults row drives (F7)."),
+			*GetName(), *BotTier.ToString());
+	}
+	ResolvedTier = FoundRow ? *FoundRow : FAIBTierRow();
+	for (const FString& Warning : AIBTiers::ValidateRow(BotTier, ResolvedTier))
+	{
+		UE_LOG(LogAIBot, Warning, TEXT("AIBot: tier row — %s"), *Warning);
+	}
+
+	// The envelope re-applied per life — the constructor seeded the defaults; the tier
+	// is what a POSSESSION knows. ConfigureSense is the engine's own re-apply door
+	// (the same call the constructor makes).
+	if (SightConfig && HearingConfig && BotPerception)
+	{
+		SightConfig->SightRadius = ResolvedTier.SightRadius;
+		SightConfig->LoseSightRadius = ResolvedTier.LoseSightRadius;
+		SightConfig->PeripheralVisionAngleDegrees = ResolvedTier.PeripheralVisionAngleDegrees;
+		SightConfig->SetMaxAge(ResolvedTier.SightMaxAgeSeconds);
+		HearingConfig->HearingRange = ResolvedTier.HearingRange;
+		HearingConfig->SetMaxAge(ResolvedTier.SightMaxAgeSeconds);
+		BotPerception->ConfigureSense(*SightConfig);
+		BotPerception->ConfigureSense(*HearingConfig);
+	}
+
+	// The grep-able tier line (proof 3): which vector this life runs.
+	UE_LOG(LogAIBot, Log, TEXT("AIBot: %s resolved tier %s (Mv %d Aim %d Gr %d Me %d Cf %d Tw %d, react %.2f-%.2f)."),
+		*GetName(), *BotTier.ToString(),
+		static_cast<int32>(ResolvedTier.Movement), static_cast<int32>(ResolvedTier.Aim),
+		static_cast<int32>(ResolvedTier.Grenade), static_cast<int32>(ResolvedTier.Melee),
+		static_cast<int32>(ResolvedTier.Confidence), static_cast<int32>(ResolvedTier.Teamwork),
+		ResolvedTier.ReactionSecondsMin, ResolvedTier.ReactionSecondsMax);
+
+	const FAIBTierRow& Defaults = ResolvedTier;
 	Sensorium.Reset();
 	Sensorium.Configure(Defaults.ReactionSecondsMin, Defaults.ReactionSecondsMax);
 
@@ -507,8 +546,8 @@ void AAIBBotController::NoteIncomingBlast(const FVector& Center, float Radius, d
 	FRotator EyesRotation;
 	MyPawn->GetActorEyesViewPoint(EyesLocation, EyesRotation);
 
-	static const FAIBTierRow Defaults; // Phase 8 resolves the real tier
-	const bool bInHearingRange = FVector::Dist(EyesLocation, Center) <= Defaults.HearingRange;
+	// The RESOLVED tier's ears, not a defaults row — the Phase-8 marker this replaced.
+	const bool bInHearingRange = FVector::Dist(EyesLocation, Center) <= ResolvedTier.HearingRange;
 
 	bool bHasLineOfSight = false;
 	if (!bInHearingRange)
@@ -638,5 +677,12 @@ void AAIBBotController::Think()
 				}
 			}
 		}
+	}
+
+	// Phase 8: the eyes-on instrument, drawn at think cadence so it breathes with the
+	// brain. Config-gated; a shipping build strips the draw either way.
+	if (bDebugOverlay)
+	{
+		AIBDebug::DrawBotOverlay(*this);
 	}
 }

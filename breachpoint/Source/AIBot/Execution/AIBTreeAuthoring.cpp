@@ -4,6 +4,7 @@
 
 #include "AIBotModule.h"
 #include "Data/AIBDataRows.h"
+#include "Data/AIBTiers.h"
 #include "Execution/AIBStateTreeTasks.h"
 
 #include "AssetRegistry/AssetRegistryModule.h"
@@ -275,11 +276,27 @@ FString UAIBTreeAuthoring::BuildTierTable()
 	Table->RowStruct = const_cast<UScriptStruct*>(FAIBTierRow::StaticStruct());
 	Table->EmptyTable();
 
-	// ONE row today, MIRRORING the C++ defaults rather than restating numbers — the
-	// defaults are the fallback when this table is missing, and a hand-typed copy would be
-	// a second source of truth that silently drifts. Phase 8 authors the four real tiers.
+	// PHASE 8: the four tiers, MIRRORED from the C++ registry rather than restated —
+	// AIBTiers:: is the one source of truth (the controller resolves from it at
+	// runtime; a missing table changes nothing), so this table is inspection surface,
+	// never authority. Plus the Default row, which is the unknown-name fallback.
 	Table->AddRow(FName(TEXT("Default")), FAIBTierRow());
-	Report.Add(FString::Printf(TEXT("rows       : %d, mirrored from FAIBTierRow C++ defaults"), Table->GetRowMap().Num()));
+	TArray<FName> TierNames;
+	AIBTiers::GetTierNames(TierNames);
+	TArray<FString> RowWarnings;
+	for (const FName& TierName : TierNames)
+	{
+		if (const FAIBTierRow* Row = AIBTiers::Find(TierName))
+		{
+			Table->AddRow(TierName, *Row);
+			RowWarnings.Append(AIBTiers::ValidateRow(TierName, *Row));
+		}
+	}
+	Report.Add(FString::Printf(TEXT("rows       : %d, mirrored from the AIBTiers C++ registry"), Table->GetRowMap().Num()));
+	for (const FString& Warning : RowWarnings)
+	{
+		Report.Add(FString::Printf(TEXT("row warning: %s"), *Warning));
+	}
 
 	FString SaveError;
 	Report.Add(FString::Printf(TEXT("save       : %s"), SaveAsset(Table, SaveError) ? TEXT("OK") : *SaveError));

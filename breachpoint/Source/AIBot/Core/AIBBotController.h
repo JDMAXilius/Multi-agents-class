@@ -75,6 +75,16 @@ public:
 	// on every state ENTRY — the grenade-cooldown lesson, applied to every policy);
 	// the STREAM is per-bot so no two bots dance in lockstep (F-3.7).
 	const FAIBSkillProfile& GetSkillProfile() const { return SkillProfile; }
+
+	/** Phase 8: the RESOLVED tier row — every consumer of a tier number reads this,
+	 *  never a function-local default (the two "Phase 8 resolves the real tier"
+	 *  markers this replaced). Valid from OnPossess; the defaults row before that. */
+	const FAIBTierRow& GetTierRow() const { return ResolvedTier; }
+
+	/** Host-callable (the game mode assigning mixed lobbies): takes effect at the NEXT
+	 *  possession — a tier is a per-life resolution, same as every policy state. */
+	void SetTierName(FName InTierName) { BotTier = InTierName; }
+	FName GetTierName() const { return BotTier; }
 	FAIBAimState& GetAimState() { return AimState; }
 	FAIBMeleeState& GetMeleeState() { return MeleeState; }
 	FAIBGrenadeState& GetGrenadeState() { return GrenadeState; }
@@ -181,6 +191,22 @@ private:
 	 *  eyes reach the blast point" (W-REVIEW P3); this module only defaults it. */
 	UPROPERTY(Config)
 	int32 BlastPerceivabilityChannel = ECC_Visibility;
+
+	/** Phase 8: which tier this bot resolves at possession. Config so one ini line
+	 *  runs a whole lobby at a tier; the host's mode can override per-bot through
+	 *  SetTierName for mixed lobbies. An unknown name falls back to the defaults row,
+	 *  loudly (F7). */
+	UPROPERTY(Config)
+	FName BotTier = TEXT("Marine");
+
+	/** Phase 8: draw the per-bot overlay (ambition scores, confidence, skill vector,
+	 *  stimulus queue) over each bot's head every think. Config: flip in the ini, or
+	 *  at runtime from the editor's settings — the eyes-on half of proof 3. */
+	UPROPERTY(Config)
+	bool bDebugOverlay = false;
+
+	/** The resolved row (see GetTierRow). */
+	FAIBTierRow ResolvedTier;
 
 	FAIBSensorium Sensorium;
 	FTimerHandle ThinkTimer;
