@@ -24,7 +24,10 @@
 #include "GameFramework/Controller.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerStart.h"
-#include "GameFramework/PlayerStartPIE.h"
+// Engine/, not GameFramework/ -- APlayerStartPIE sits beside the PIE machinery, while
+// its APlayerStart base is the one under GameFramework/. Easy to transpose, and the
+// compiler only ever says "file not found".
+#include "Engine/PlayerStartPIE.h"
 #include "TimerManager.h"
 
 ABNGameMode::ABNGameMode()

@@ -95,3 +95,38 @@ Two MEDIUMs, one root, fixed at the barrier; LOWs to the register below.**
   MatchState, applied before RepNotifies — the Winner pointer's GUID-resolution bug
   class cannot apply); seamless travel carries TeamId and honestly resets the ledger;
   `CountNearbyAllies` at 10000uu is HUD-grade under the interface ruling.
+
+### 2026-08-26 — rung 1 and specs, mac terminal
+
+**Rung 1 PASS both targets** after one fix. `BNGameMode.cpp` included
+`GameFramework/PlayerStartPIE.h`; `APlayerStartPIE` lives in `Engine/PlayerStartPIE.h`.
+Its `APlayerStart` BASE is the one under `GameFramework/`, which is exactly why the
+transposition is easy to make and hard to spot — the compiler only says "file not found".
+
+```
+BreachpointEditor   Result: Succeeded
+Breachpoint         Result: Succeeded
+```
+
+**Specs:**
+
+```
+AIBot                        119/119/0  reconciled
+BreachpointNext.Sim.Teams      5/5      PASS
+Breachpoint.Sim.*              3 FAILURES — see below
+```
+
+The three failures are **pre-existing and out of this wave's scope**, in the legacy
+`Breachpoint` (BR-prefix) module:
+
+- `Breachpoint.Sim.Combat.UBRAttributeSet clamps` — clamps against an uninitialised capacity
+- `Breachpoint.Sim.Combat.UBRDamageExecCalc` — R22 Damage.* flatness
+- `Breachpoint.Sim.Shields` — refuses to mark an uninitialised fighter as broken
+
+`git diff --stat` over the whole 15-commit teams wave shows **zero changes** under
+`Source/Breachpoint/`; those files last moved in the BP91-era commits. Recorded rather than
+folded into this ticket's count: BN15 must not be judged on them, and they must not be
+allowed to disappear either.
+
+Remaining Done-when boxes are all live-proof and unstarted: OFF-regression, 4v4 assignment,
+friendly-fire refusal, no-teammate-targeting, live claims, and the degenerate cheat test.
