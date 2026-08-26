@@ -1,7 +1,8 @@
 # TICKET — AIB3: the four skill policies compile and their ladders prove out
 
-> STATUS: in-progress — mac terminal 26 Aug 2026 (f277b53). Rung 1 PASS, rung 2 91/91/0,
-> four checks empty. All four Done-when boxes met; headless only, as this ticket asks.
+> STATUS: done — mac terminal 26 Aug 2026 (0be974a).
+
+
 
 > STATUS: open — cut 26 Aug 2026 by the cloud lead. Phase 4's POLICY half is landed
 > **WRITTEN, NOT COMPILED** (built by a W-BUILD ×4 wave; the barrier's union gates ran
@@ -155,3 +156,9 @@ policy `-1.f` — and the policy names that equivalence in its own comment. Noth
 
 **Not claimed:** nothing here is a live claim. Honesty ladder rung: COMPILES + HEADLESS
 SPECS. No PIE, no multiplayer, no packaged build. This ticket asks for nothing more.
+
+### CLOSED — 2026-08-26
+
+All four boxes met. The wave compiled on first contact with zero errors and every
+watch-list fallback went unused. Rung reached: COMPILES + HEADLESS SPECS, which is
+exactly what this ticket asks for and nothing more.

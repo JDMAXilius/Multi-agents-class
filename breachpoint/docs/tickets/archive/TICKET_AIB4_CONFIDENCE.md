@@ -1,7 +1,8 @@
 # TICKET — AIB4: confidence wired into ambitions, and the damage seam goes live
 
-> STATUS: in-progress — mac terminal 26 Aug 2026 (f277b53). Steps 1/2/4 DONE. Step 3 (live
-> BotSystem=AIB PIE) OUTSTANDING — the switch is a founder call, still BotSystem=BN.
+> STATUS: done — mac terminal 26 Aug 2026 (0be974a).
+
+
 
 > STATUS: open — cut 26 Aug 2026 by the cloud lead. Phase 5 is landed **WRITTEN, NOT
 > COMPILED** (serial build, one writer, per the wave map). Needs the ENGINE ON DISK for
@@ -247,3 +248,14 @@ Input.Weapon.Reload   11 ACTIVATED /  308 no-grant warnings (above)
 
 All eight verbs fire under AIB, melee and grenade included — the three that were deferred
 back in AIB2 are live. Jump's 137:27 refusal ratio is the other thing worth a look.
+
+### CLOSED — 2026-08-26
+
+All five boxes met, step 3 included: both ambition directions observed live with cause
+reconstructed from the damage log, not asserted from the switch alone.
+
+Carried OUT of this ticket, unfixed and owed a home:
+  - RELOAD grant failure for bots (308 no-grant warnings vs 11 activations) — BN-side.
+  - Input.Jump refuses 137 vs 27 activations.
+  - The ledger's shield+health SUMMING path is unprovable while shields are off; it
+    needs re-proving if shields are ever turned back on.
