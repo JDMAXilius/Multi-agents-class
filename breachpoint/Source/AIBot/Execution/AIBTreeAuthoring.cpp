@@ -181,9 +181,9 @@ FString UAIBTreeAuthoring::BuildBotStateTree()
 	// virtuals, never in serialized node parameters. So this replacement needs no new
 	// node and, strictly, no asset rebuild — see the ticket Log.
 	UStateTreeState& Seek = Root.AddChildState(TEXT("Seek"));
-	Seek.AddEnterCondition<FAIBGateSeekWeaponCondition>(); // gates AIBot.Ambition.Seek
+	Seek.AddEnterCondition<FAIBGateSeekCondition>(); // gates AIBot.Ambition.Seek
 	Seek.AddTask<FAIBAmbitionSentinelTask>();
-	Seek.AddTask<FAIBMoveToWeaponPOITask>();               // belief -> POI -> reachable point
+	Seek.AddTask<FAIBSeekDestinationTask>();               // belief -> POI -> reachable point
 	AddCompletionTransition(Seek, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
 	// The mover cannot fail for want of a destination now; this covers the only case left
 	// (no navmesh at all), and the delay keeps that quiet while the gate still holds.

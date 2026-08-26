@@ -51,7 +51,7 @@ NODE_STRUCTS = [
     ("FAIBGateEngageCondition", "/Script/AIBot.AIBGateEngageCondition", "condition"),
     ("FAIBGateRetreatCondition", "/Script/AIBot.AIBGateRetreatCondition", "condition"),
     ("FAIBGateSearchCondition", "/Script/AIBot.AIBGateSearchCondition", "condition"),
-    ("FAIBGateSeekWeaponCondition", "/Script/AIBot.AIBGateSeekWeaponCondition", "condition"),
+    ("FAIBGateSeekCondition", "/Script/AIBot.AIBGateSeekCondition", "condition"),
     ("FAIBGateRoamCondition", "/Script/AIBot.AIBGateRoamCondition", "condition"),
     ("FAIBAmbitionSentinelTask", "/Script/AIBot.AIBAmbitionSentinelTask", "task"),
     ("FAIBFaceBeliefTask", "/Script/AIBot.AIBFaceBeliefTask", "task"),
@@ -61,7 +61,7 @@ NODE_STRUCTS = [
     ("FAIBMoveToLastKnownTask", "/Script/AIBot.AIBMoveToLastKnownTask", "task"),
     ("FAIBSweepLookTask", "/Script/AIBot.AIBSweepLookTask", "task"),
     ("FAIBMoveToPOITask", "/Script/AIBot.AIBMoveToPOITask", "task"),
-    ("FAIBMoveToWeaponPOITask", "/Script/AIBot.AIBMoveToWeaponPOITask", "task"),
+    ("FAIBSeekDestinationTask", "/Script/AIBot.AIBSeekDestinationTask", "task"),
     ("FAIBWanderTask", "/Script/AIBot.AIBWanderTask", "task"),
     # The ungated floor branch's stand-and-report task (the Phase-3 W-REVIEW ruling).
     ("FAIBUnservedWantTask", "/Script/AIBot.AIBUnservedWantTask", "task"),

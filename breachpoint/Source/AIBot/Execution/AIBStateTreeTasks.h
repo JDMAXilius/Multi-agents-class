@@ -92,14 +92,12 @@ struct FAIBGateSearchCondition : public FAIBAmbitionGateCondition
 	virtual FGameplayTag GetBranchTag() const override;
 };
 
-/** Gates the SEEK branch — "I have somewhere to be" (AIBot.Ambition.Seek). The STRUCT
- *  NAME still says SeekWeapon and that is deliberate, not neglect: Tools/aib/70_aib_assets.py
- *  probes a fixed list of 16 node paths (/Script/AIBot.AIBGateSeekWeaponCondition among
- *  them) and that file is not this module's to edit. Renaming here would fail the probe
- *  and block the lead's tree build. The name is owed a serial rename in the same step
- *  that edits the probe list. */
+/** Gates the SEEK branch — "I have somewhere to be" (AIBot.Ambition.Seek). The owed
+ *  serial rename LANDED 26 Aug (old name: SeekWeapon), in the same commit that edits
+ *  the probe list — a tree REBUILD is required before the next PIE run, and AIB11
+ *  already owes one, which is why the rename rode this moment and no earlier one. */
 USTRUCT(meta = (DisplayName = "AIB Gate: Seek", Category = "AIBot"))
-struct FAIBGateSeekWeaponCondition : public FAIBAmbitionGateCondition
+struct FAIBGateSeekCondition : public FAIBAmbitionGateCondition
 {
 	GENERATED_BODY()
 	virtual FGameplayTag GetBranchTag() const override;
@@ -490,10 +488,13 @@ struct FAIBMoveToPOITask : public FStateTreeTaskCommonBase
  *  destination, which is the whole point of the 25 Aug replacement: the ambition it
  *  serves must never be able to strand a bot.
  *
- *  The struct name is frozen by the probe list (see FAIBGateSeekWeaponCondition); it no
- *  longer hunts weapons, and AIBot.POI.Weapon is gone with the concept. */
+ *  Renamed with the probe list 26 Aug (old name: MoveToWeaponPOI — it no longer hunts
+ *  weapons, and AIBot.POI.Weapon is gone with the concept). NOTE the recorded
+ *  divergence (W-AUDIT P7): this comment's "else any POI a provider offers" overstates
+ *  the code — EnterState goes belief -> wander and consults no POI yet. Whoever wires
+ *  Seek POIs inherits the claims filter obligation (P7 packet, ruling 7). */
 USTRUCT(meta = (DisplayName = "AIB Seek Destination", Category = "AIBot"))
-struct FAIBMoveToWeaponPOITask : public FAIBMoveToPOITask
+struct FAIBSeekDestinationTask : public FAIBMoveToPOITask
 {
 	GENERATED_BODY()
 	virtual bool ShouldWanderWithoutProvider() const override { return true; }

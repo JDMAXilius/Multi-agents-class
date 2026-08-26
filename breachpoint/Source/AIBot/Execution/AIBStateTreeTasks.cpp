@@ -332,7 +332,7 @@ FGameplayTag FAIBAmbitionGateCondition::GetBranchTag() const     { return FGamep
 FGameplayTag FAIBGateEngageCondition::GetBranchTag() const       { return AIBTags::Ambition_Engage; }
 FGameplayTag FAIBGateRetreatCondition::GetBranchTag() const      { return AIBTags::Ambition_Retreat; }
 FGameplayTag FAIBGateSearchCondition::GetBranchTag() const       { return AIBTags::Ambition_Search; }
-FGameplayTag FAIBGateSeekWeaponCondition::GetBranchTag() const   { return AIBTags::Ambition_Seek; }
+FGameplayTag FAIBGateSeekCondition::GetBranchTag() const   { return AIBTags::Ambition_Seek; }
 FGameplayTag FAIBGateRoamCondition::GetBranchTag() const         { return AIBTags::Ambition_Roam; }
 FGameplayTag FAIBGateModeCondition::GetBranchTag() const         { return AIBTags::Ambition_Mode; }
 

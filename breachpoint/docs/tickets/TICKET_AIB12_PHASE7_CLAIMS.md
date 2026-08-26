@@ -25,8 +25,11 @@
   (same-frame cluster resolves in strict order); ReleaseAll on OnUnPossess + EndPlay.
 - `Tests/AIBClaimsSpec.cpp` — NEW, 11 specs. **Module spec total: 108.**
 
-No game-side files changed. No new tree nodes: probe list stays 20, and NO tree
-rebuild is owed beyond what AIB11 already owes.
+No game-side files changed. No new tree nodes: the probe list stays 20 — but the owed
+SeekWeapon→Seek RENAME landed in the same push (FAIBGateSeekCondition,
+FAIBSeekDestinationTask; probe list updated to the new /Script paths), so the tree
+rebuild AIB11 already owes is now MANDATORY before any PIE run: a stale ST_AIBBot
+still names the old structs and will not load against this code.
 
 ## Steps (terminal)
 
