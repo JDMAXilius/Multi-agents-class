@@ -66,6 +66,16 @@ protected:
 	void HandleMatchStateChanged(FName NewState);
 	void HandleKillfeedChanged();
 	void HandleScoreChanged(ABNPlayerState* ChangedPlayerState);
+
+	/** TEAMS (BN16): the GameState team ledger moved (either team — the VM gets both
+	 *  numbers fresh, relative to the reader). */
+	void HandleTeamScoreChanged(uint8 Team);
+
+	/** TEAMS (BN16): ANY subscribed PlayerState's TeamId changed. This is the deferred
+	 *  subscription that closes the replication race (BR prior art): on a joining client a
+	 *  PlayerState can arrive frames before its TeamId, so relations composed at roster
+	 *  build are honestly None until this fires and rebuilds them. */
+	void HandleAnyTeamChanged(ABNPlayerState* ChangedPlayerState);
 	void HandleRespawnStampChanged(ABNPlayerState* OwnPlayerState);
 	void HandleDeadTagChanged(const FGameplayTag Tag, int32 NewCount);
 	void HandleEquippedWeaponChanged(UBNEquipmentComponent* Equipment, ABNWeapon* Current);
@@ -107,6 +117,19 @@ protected:
 	/** Everything match-shaped, pushed fresh: phase + winner banner, clock, scores. */
 	void PushMatchSnapshot();
 	void RecomputeScores();
+
+	/** TEAMS (BN16): who Other is to the local player, from the two PlayerStates' TeamIds.
+	 *  Self beats team facts; either side NoTeam answers None (FFA, or the joining
+	 *  client's honest-unknown frame — never guessed at). The ONE composer: killfeed
+	 *  parts, roster rows and the team ledger all relate through here. */
+	EBNUITeamRelation RelationTo(const ABNPlayerState* Other) const;
+
+	/** TEAMS (BN16): the deferred-subscription sweep — called from RecomputeScores' roster
+	 *  walk, subscribing OnTeamChanged on every ABNPlayerState not yet held (idempotent;
+	 *  stale weak keys dropped in passing; UnbindAll clears the lot). The roster walk is
+	 *  the one place every PlayerState already passes through, so late joiners are picked
+	 *  up on the same edges the roster itself is. */
+	void EnsureTeamSubscriptions();
 	FText ComposeKillfeedLine(const struct FBNKillfeedRingEntry& Entry) const;
 
 	UBNVM_Combat* GetCombatVM() const;
@@ -119,6 +142,12 @@ protected:
 	TWeakObjectPtr<ABNGameState> BoundGameState;
 	FDelegateHandle MatchStateHandle;
 	FDelegateHandle KillfeedHandle;
+	FDelegateHandle TeamScoreHandle;
+
+	/** TEAMS (BN16): one OnTeamChanged handle per PlayerState the roster has seen — the
+	 *  deferred subscriptions. Weak keys: a leaver's entry goes stale and is swept by
+	 *  EnsureTeamSubscriptions; UnbindAll removes against the stored objects (H9). */
+	TMap<TWeakObjectPtr<ABNPlayerState>, FDelegateHandle> TeamChangedHandles;
 
 	TWeakObjectPtr<ABNPlayerState> BoundPlayerState;
 	FDelegateHandle ScoreHandle;

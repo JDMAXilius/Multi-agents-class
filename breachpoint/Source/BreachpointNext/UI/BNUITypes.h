@@ -59,6 +59,22 @@ enum class EBNUIDataState : uint8
 	Stale
 };
 
+/** TEAMS (BN16): who someone is TO THE PLAYER READING THIS SCREEN — the one team fact any
+ *  widget ever renders. No absolute team id or team color reaches a widget: the packet's
+ *  law is relative presentation (my side blue, their side red, whichever side I am on), so
+ *  the director composes this from the two TeamIds and the widget maps relation → tint.
+ *  None is FFA AND the honest-unknown window (either TeamId still NoTeam on a joining
+ *  client) — a widget renders None exactly as today's FFA colors, which is what makes the
+ *  teams-OFF HUD untouched by construction. */
+UENUM()
+enum class EBNUITeamRelation : uint8
+{
+	None,
+	Self,
+	Ally,
+	Enemy
+};
+
 /** How the match ended FOR THE PLAYER READING THIS SCREEN. Not "who won" — the scoreboard
  *  already carries that. A win screen has to say VICTORY or DEFEAT, and only the director
  *  knows which, because only it knows which PlayerState is mine. Undecided is the live match:
@@ -112,6 +128,16 @@ struct FBNKillfeedViewEntry
 	 *  the words, and a feed line that grows a text weapon stops fitting its measured 340px. */
 	UPROPERTY()
 	TSoftObjectPtr<UTexture2D> WeaponIcon;
+
+	/** TEAMS (BN16): the two parties' relations to the reader, composed by the director at
+	 *  push time (the relationship facts are in hand exactly once — the same reasoning as
+	 *  Line). None on both in FFA, which renders today's palette untouched. bInvolvesSelf
+	 *  stays the white-row authority; these tint the PARTS. */
+	UPROPERTY()
+	EBNUITeamRelation KillerRelation = EBNUITeamRelation::None;
+
+	UPROPERTY()
+	EBNUITeamRelation VictimRelation = EBNUITeamRelation::None;
 };
 
 /** One scoreboard row as the VIEW knows it — built by the director (the one gameplay-aware
@@ -136,6 +162,13 @@ struct FBNScoreRowView
 
 	UPROPERTY()
 	bool bIsWinner = false;
+
+	/** TEAMS (BN16): this row's relation to the reader — the scoreboard's two blocks group
+	 *  on it (Self+Ally above, Enemy below) and its name tints from it. None = FFA or the
+	 *  joining client's honest-unknown frame: the row sits in today's single block with
+	 *  today's colors until the TeamId lands and the deferred subscription rebuilds. */
+	UPROPERTY()
+	EBNUITeamRelation Relation = EBNUITeamRelation::None;
 };
 
 /** The palette, as SEMANTICS — one hue, one meaning, everywhere. C++ constants because a WBP
@@ -158,6 +191,12 @@ namespace BNUIColors
 	inline const FLinearColor Threat  { 1.000f, 0.290f, 0.239f };  // #FF4A3D
 	/** You, in a list of people: your killfeed lines, your scoreboard row. */
 	inline const FLinearColor Self    { 1.000f, 1.000f, 1.000f };  // #FFFFFF
+
+	/** Your SIDE, in a list of people (BN16): ally rows and ally names in the feed. A blue
+	 *  deliberately apart from Shield's cyan — Shield means YOUR bars, Ally means people.
+	 *  The enemy side has no new hue: red already means THREAT, and the enemy is the one
+	 *  thing Threat was always allowed to name (one hue, one meaning — held, not bent). */
+	inline const FLinearColor Ally    { 0.290f, 0.608f, 1.000f };  // #4A9BFF
 
 	/** Everyone else's history: killfeed lines you are not in, other rows. */
 	inline const FLinearColor InkDim  { 0.514f, 0.592f, 0.663f };  // #8397A9

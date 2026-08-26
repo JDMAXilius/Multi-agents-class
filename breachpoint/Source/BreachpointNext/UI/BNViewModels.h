@@ -245,6 +245,14 @@ public:
 	/** Director only: my kills, the current leader's, and the limit — read back by widgets. */
 	void SetScores(int32 InMyKills, int32 InTopKills, int32 InScoreLimit);
 
+	/** TEAMS (BN16), director only: the team ledger, RELATIVE — my team's points and the
+	 *  enemy team's, never a team id (the relative-presentation law; two teams are hard,
+	 *  so "the enemy team" is one number). bInTeamsMode false clears both to zero and is
+	 *  the FFA/unknown state: the match band renders today's kills bars and no team strip.
+	 *  Fractions recompute here AND in SetScores — whichever of limit and ledger lands
+	 *  second, the bars agree. */
+	void SetTeamScores(bool bInTeamsMode, int32 InMyTeamScore, int32 InEnemyTeamScore);
+
 	/** Director only: the end stamp and the time authority. Restarts the clock updates. */
 	void SetMatchClock(double InMatchEndServerTime, AGameStateBase* InTimeSource);
 
@@ -279,6 +287,11 @@ public:
 	 *  no limit to be a fraction OF: an unlimited match draws no bar rather than a full one. */
 	float GetSelfScoreFraction() const { return SelfScoreFraction; }
 	float GetTopScoreFraction() const { return TopScoreFraction; }
+	bool IsTeamsMode() const { return bTeamsMode; }
+	int32 GetMyTeamScore() const { return MyTeamScore; }
+	int32 GetEnemyTeamScore() const { return EnemyTeamScore; }
+	float GetMyTeamScoreFraction() const { return MyTeamScoreFraction; }
+	float GetEnemyTeamScoreFraction() const { return EnemyTeamScoreFraction; }
 	EBNUIDataState GetMatchDataState() const { return MatchDataState; }
 	const TArray<FBNKillfeedViewEntry>& GetKillfeedEntries() const { return KillfeedEntries; }
 
@@ -318,6 +331,22 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetTopScoreFraction", Category = "BN|Match", meta = (AllowPrivateAccess))
 	float TopScoreFraction = 0.f;
+
+	// ---- TEAMS (BN16): the relative team ledger — see SetTeamScores ----
+	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "IsTeamsMode", Category = "BN|Match", meta = (AllowPrivateAccess))
+	bool bTeamsMode = false;
+
+	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetMyTeamScore", Category = "BN|Match", meta = (AllowPrivateAccess))
+	int32 MyTeamScore = 0;
+
+	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetEnemyTeamScore", Category = "BN|Match", meta = (AllowPrivateAccess))
+	int32 EnemyTeamScore = 0;
+
+	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetMyTeamScoreFraction", Category = "BN|Match", meta = (AllowPrivateAccess))
+	float MyTeamScoreFraction = 0.f;
+
+	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetEnemyTeamScoreFraction", Category = "BN|Match", meta = (AllowPrivateAccess))
+	float EnemyTeamScoreFraction = 0.f;
 
 	UPROPERTY(BlueprintReadOnly, Transient, FieldNotify, Getter = "GetMatchDataState", Category = "BN|Match", meta = (AllowPrivateAccess))
 	EBNUIDataState MatchDataState = EBNUIDataState::Unknown;

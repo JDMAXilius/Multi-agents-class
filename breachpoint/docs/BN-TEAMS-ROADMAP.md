@@ -53,10 +53,11 @@ measurement:
 - **BN15 — T0–T4 game code, LANDED (in review)** — crew wave: serial headers →
   W-BUILD ×3 (netcode / mode / bots, disjoint) → barrier → W-REVIEW ×2 (bn-critic
   netcode dimension ∥ aib-critic fairness) → terminal proof list.
-- **BN16 — T5 team UI** — wave: serial ViewModel-header step (lead) → W-BUILD ×2
-  (ui-builder: scoreboard+match band ∥ ui-builder: killfeed+nameplate tints; disjoint
-  widget files; BR prior art transcribed) → barrier → bn-critic on the
-  replication-race dimension (deferred OnTeamChanged subscription is THE attack).
+- **BN16 — T5 team UI, IN WAVE** — serial header step landed (relation enum, VM team
+  ledger, director seams) → W-BUILD ×2 (ui-builder: producer — director+VM cpp ∥
+  ui-builder: widgets — scoreboard/band/killfeed; disjoint) → barrier → bn-critic on
+  the replication-race dimension (deferred OnTeamChanged subscription is THE attack).
+  Nameplate tints dropped: BN has no nameplate widget to tint (ticket §Reconciliations).
 - **BN17 — T4 bot half** — the AIBot row-7 claims measurement (two allied bots, one
   claimable slot, contested count 0) + team-hill bot observables. OPENS when AIB9's
   reachability closes; runs as W-VERIFY (spec ∥ log-count protocols).
