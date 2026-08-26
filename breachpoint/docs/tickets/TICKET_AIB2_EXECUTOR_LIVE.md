@@ -1,5 +1,7 @@
 # TICKET — AIB2: the executor goes live (tree built, bots move, BotSystem=AIB in PIE)
 
+> STATUS: in-progress — mac terminal 26 Aug 2026 (6806a5f).
+
 > STATUS: open — cut 26 Aug 2026 by the cloud lead. Phase 3's module half is landed
 > **WRITTEN, NOT COMPILED** (the cloud container has no engine). Needs the ENGINE ON DISK
 > for step 1 and a **LIVE EDITOR** from step 2 on (the MCP trigger lives inside it).
