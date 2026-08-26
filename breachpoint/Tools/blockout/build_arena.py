@@ -89,7 +89,25 @@ def parse_args():
 
 
 def repo_root():
-    return os.path.normpath(unreal.Paths.convert_relative_path_to_full(unreal.Paths.project_dir()))
+    """The GIT root, which is not always the UE project dir.
+
+    BN21: this returned the project dir, and the lfs-lock check builds its path relative
+    to it. Here the project lives one level down inside the git repo, so the check looked
+    for "Content/Maps/BR_Arena01.umap" while lfs records
+    "breachpoint/Content/Maps/BR_Arena01.umap" -- the two could never match and the guard
+    refused every build no matter who held the lock. Ask git where the root is instead of
+    assuming it.
+    """
+    proj = os.path.normpath(unreal.Paths.convert_relative_path_to_full(unreal.Paths.project_dir()))
+    try:
+        out = subprocess.check_output(["git", "rev-parse", "--show-toplevel"],
+                                      cwd=proj, stderr=subprocess.STDOUT)
+        top = out.decode("utf-8").strip()
+        if top:
+            return os.path.normpath(top)
+    except (OSError, subprocess.CalledProcessError):
+        pass
+    return proj
 
 
 # =====================================================================================

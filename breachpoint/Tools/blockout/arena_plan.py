@@ -540,6 +540,56 @@ def _box_element(kind, label, source, derivation, tags, box, asset, inferred=Fal
                     rotation=[0.0, 0.0, 0.0])
 
 
+
+# ---- BN21: a stair volume is a FLIGHT OF STEPS, not a block --------------------------
+# The manifest calls stair_west/stair_east "ground-to-mid stair volume", but a volume
+# emitted as one AABB is a solid 4 m wall. MaxStepHeight is 45 uu and the character's jump
+# apex is 90 uu, so a 400 uu face is unclimbable by a factor of 4.4 - and with the Gantry
+# grapple-only by design and no grappleshot implemented, that made the whole arena one-way
+# downward for players as much as bots. The manifest's own `doubts` list already suspected
+# it ("real ramp geometry may occlude them").
+#
+# Steps are generated, never hand-placed (law 7). Each riser stays at or under
+# STAIR_MAX_RISE_M so the character WALKS up with no jump at all and the navmesh covers the
+# flight natively - no navlink, no promise the body cannot keep.
+STAIR_MAX_RISE_M = 0.45          # UCharacterMovementComponent::MaxStepHeight = 45 uu
+STAIR_CLIMB_AXIS_MIN_RUN_M = 0.20  # refuse to emit treads thinner than a boot
+
+
+def stair_steps(box):
+    """One stair AABB -> a list of tread AABBs climbing its LONGER horizontal axis.
+
+    Ascends along whichever of x/y is longer (the run), each tread spanning the full
+    shorter axis (the width) and rising from z-floor to its own top, so consecutive treads
+    present a <=STAIR_MAX_RISE_M face and every tread is solid to the ground beneath it.
+    Returns [] when the rise already walks in one step - the caller then keeps the volume.
+    """
+    z0, z1 = float(box["z"][0]), float(box["z"][1])
+    rise = z1 - z0
+    if rise <= STAIR_MAX_RISE_M:
+        return []
+
+    n = int(math.ceil(rise / STAIR_MAX_RISE_M))
+    xr = float(box["x"][1]) - float(box["x"][0])
+    yr = float(box["y"][1]) - float(box["y"][0])
+    run_axis = "x" if xr >= yr else "y"
+    run = xr if run_axis == "x" else yr
+    if run / n < STAIR_CLIMB_AXIS_MIN_RUN_M:
+        return []
+
+    a0 = float(box[run_axis][0])
+    tread = run / n
+    other = "y" if run_axis == "x" else "x"
+    steps = []
+    for i in range(n):
+        top = z0 + rise * (i + 1) / n
+        b = {other: [float(box[other][0]), float(box[other][1])],
+             "z": [z0, _r(top)]}
+        b[run_axis] = [_r(a0 + tread * i), _r(a0 + tread * (i + 1))]
+        steps.append(b)
+    return steps
+
+
 def collect_solids(manifest, profile):
     """Every occluding volume the manifest names, as AABBs (metres).
 
@@ -655,6 +705,17 @@ def build_plan(manifest, profile, strict=False):
         segs = per_landmark[source]
         name = segs[0]["name"]
         for n, s in enumerate(segs, start=1):
+            # BN21: a stair volume becomes a walkable flight; everything else stays a solid.
+            steps = stair_steps(s["box"]) if s["kind"] == "landmark_stair" else []
+            if steps:
+                for si, sbox in enumerate(steps, start=1):
+                    elements.append(_box_element(
+                        s["kind"], "BR_LM_%s_%02d_step%02d" % (slug(name), n, si), source,
+                        "%s; BN21 tread %d/%d, rise <=%.2f m so the character WALKS it"
+                        % (s["derivation"], si, len(steps), STAIR_MAX_RISE_M),
+                        [tag, "BRBlockout", "BRLandmark", "BRStair", "Landmark=%s" % name],
+                        sbox, cube, inferred=s["inferred"]))
+                continue
             elements.append(_box_element(
                 s["kind"], "BR_LM_%s_%02d" % (slug(name), n), source, s["derivation"],
                 [tag, "BRBlockout", "BRLandmark", "Landmark=%s" % name], s["box"], cube,
