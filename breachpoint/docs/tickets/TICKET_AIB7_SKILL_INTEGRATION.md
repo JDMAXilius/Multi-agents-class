@@ -1,4 +1,4 @@
-# TICKET — AIB6: the skill ladders reach the body (Phase 4 integration)
+# TICKET — AIB7: the skill ladders reach the body (Phase 4 integration)
 
 > STATUS: open — cut 26 Aug 2026 by the cloud lead. The integration is landed **WRITTEN,
 > NOT COMPILED** (serial, one writer, on top of AIB3/AIB4's green). Needs the ENGINE ON
@@ -38,7 +38,7 @@ the COMPETENCE dimension on top.
 ## Kickoff (machine-checkable)
 
 - requires: engine-installed; editor-open from step 3
-- owner_path: `docs/tickets/TICKET_AIB6_SKILL_INTEGRATION.md`
+- owner_path: `docs/tickets/TICKET_AIB7_SKILL_INTEGRATION.md`
   <!-- Log only; compile-error protocol as AIB1–AIB5. -->
 
 ## Steps (in order)
