@@ -1,6 +1,7 @@
 # TICKET — AIB14: Phase 9 — 4v4 matches, telemetry vs the bars, tuning
 
-> STATUS: open — cut 26 Aug 2026 by the cloud lead. TERMINAL WORK: this is the
+> STATUS: in-progress — mac terminal 26 Aug 2026 (b2d315f).
+> Original: open — cut 26 Aug 2026 by the cloud lead. TERMINAL WORK: this is the
 > measurement phase — the module code is written; what Phase 9 produces is NUMBERS
 > against docs/BREACHPOINT-QUALITY-BARS.md §7, and tuning tickets for whatever misses.
 
