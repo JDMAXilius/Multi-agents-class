@@ -101,3 +101,20 @@ it shows: the live demo (with the fallback capture ready), the six-pod structure
 real ticket Log end-to-end (claim → packets → REFUTER finding → fix → green ladder), the
 caught-defects list (every critic finding that never reached a player), and the honest
 ledger — what was cut, what the cut order saved, what Phase 2 restores.
+
+## 7. AIBot quality bars (Phase 9 — PROVISIONAL until tuned on five-match baselines)
+
+Measured by `Tools/aib/80_aib_metrics.py` over LogAIBot's instrument lines — countable
+events, never impressions. The harness refuses to call anything a baseline under five
+logs per config (the AIB8 lesson: two identical-config matches measured 39x apart).
+
+| Bar | Number | Kind |
+|---|---|---|
+| F1 reaction floor | no acquisition under 0.20s, ever | HARD (fairness law) |
+| Unserved wants | 0 per match | HARD (authoring bug) |
+| Wiring warnings (dropped notes, no-authority, PAWN claims, unknown tier) | 0 per match | HARD |
+| FFA claim grants | 0 per match while the host is all-hostile | HARD (P7 inertness) |
+| Move refusals per ambition switch | mean ≤ 1.0 over ≥5 matches | PROVISIONAL — tune vs terminal AIB9's baseline |
+| Tier distinctness | Recruit vs Spartan mean acquisition latency delta ≥ 0.10s | PROVISIONAL |
+
+A bar change is a founder ruling; the script's defaults must move WITH the doc.
