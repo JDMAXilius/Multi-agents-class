@@ -1,5 +1,38 @@
 """BN11 — additive HUD slots. Idempotent helpers over the in-editor MCP."""
-import mcp, json
+import json, sys, types
+from pathlib import Path
+
+# TRANSPORT BINDING (BN16). These four BN11 drivers were written against an `mcp` module that
+# lived in the BN11 session scratchpad, and it did NOT survive the git mv into Tools/bn — see
+# TICKET_BN11's contract_gap: `Tools/` was outside that packet's owner_path, so the drivers were
+# moved without it. As committed, `import mcp` raised ModuleNotFoundError and bn11_lib,
+# bn11_killfeed, bn11_death and bn11_matchband were ALL unrunnable. Bound here to the project's
+# one committed transport rather than restoring a second copy of it.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'mcp-ui' / 'gen_ui'))
+from mcp import MCP as _MCP
+
+_M = None
+
+
+def _call(toolset, tool, **kwargs):
+    """kwargs -> the transport's arguments dict; returns the parsed returnValue.
+
+    A dict for the tree reads, a JSON *string* for ObjectTools property reads — which is why
+    every caller json.loads() what get()/props() hand back. Raises on failure: the transport
+    reports a refusal as a None returnValue with the text in `raw`, and a driver that treats
+    that as data writes nonsense into a live asset.
+    """
+    global _M
+    if _M is None:                      # lazy: importing this file must not need an editor
+        _M = _MCP()
+        _M.init()
+    v, raw = _M.call(toolset, tool, kwargs)
+    if v is None:
+        raise RuntimeError('%s.%s failed: %s' % (toolset, tool, raw))
+    return v
+
+
+mcp = types.SimpleNamespace(call=_call)   # keeps every `mcp.call(...)` below unchanged
 
 UMG = 'UMGToolSet.UMGToolSet'
 OBJ = 'editor_toolset.toolsets.object.ObjectTools'

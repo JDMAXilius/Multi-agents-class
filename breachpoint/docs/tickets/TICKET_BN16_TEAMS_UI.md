@@ -126,3 +126,128 @@ both fixed at the barrier. Everything else attacked held.**
   through UE_MVVM_SET_PROPERTY_VALUE; pooled rows rewrite every tint on claim; a Self
   part-relation with bInvolvesSelf false is unreachable. FieldNotify bool descriptor
   stays a watch-list compile question (bIsDead precedent noted by the critic).
+
+**26 Aug — EDITOR-SIDE AUDIT (asset-builder). One HIGH found and scripted; the editor died
+mid-session, so the fix is COMMITTED-AND-READY, NOT RUN. Nothing was saved.**
+
+Method: committed script → execute → read-back audit, driven through `mcp-ui/gen_ui/mcp.py`
+against the live editor's MCP server. Scripts: `Tools/bn/bn16_audit_team_ui.py` (read-only)
+and `Tools/bn/bn16_scoreboard_team_header.py` (the fix). Two probe bugs of my own, fixed
+before the run quoted below: `call_tool` wants the SHORT tool name (`GetWidgetDescription`,
+not the fully-qualified one `describe_toolset` prints), and `list_properties` reads property
+names back camelCase — mcp.py's own rule 3, which produced four false MISSING findings on
+the first pass.
+
+- **Rung 1 is further along than this Log said.** `list_properties` on
+  `/Script/BreachpointNext.Default__BNVM_Match` returns all five BN16 FieldNotify fields on
+  the loaded CDO — `bTeamsMode` (carrying its `---- TEAMS (BN16) ----` comment verbatim),
+  `myTeamScore`, `enemyTeamScore`, `myTeamScoreFraction`, `enemyTeamScoreFraction`. The
+  editor target compiled and loaded. "WRITTEN, NOT COMPILED" above is superseded FOR THE
+  EDITOR TARGET ONLY — Server and Client are unprobed and remain a `run-ubt.ps1` question.
+
+- **F3 HIGH — `MyTeamScoreText` and `EnemyTeamScoreText` were never placed in
+  `WBP_BNScreen_Scoreboard`.** The C++ members were declared at the barrier; the widgets do
+  not exist in the tree. Live read, BoardCanvas children: `BannerText`, `BoardScrim`,
+  `ColDeaths`, `ColKills`, `HeaderRule`, `HeaderRuleStrong`, `HeaderTick`, `ListTopRule`,
+  `OutcomeAccent`, `OutcomeText`, `RowContainer`, `Row_0`..`Row_7`, `TableBottomRule` —
+  and neither team readout. Because both binds are `BindWidgetOptional` the WBP compiles
+  clean, no warning fires, and `RefreshTeamScores` takes its opening
+  `if (!MyTeamScoreText && !EnemyTeamScoreText) { return; }` forever: BN16's team-score
+  header cannot render in any match, silently, and an eyes-on founder would report it as
+  "the team header is broken" with nothing in any log to explain why. This was the ONLY new
+  asset obligation in the whole packet — everything else BN16 needs was already placed
+  (below). FIX SCRIPTED, NOT RUN: `Tools/bn/bn16_scoreboard_team_header.py`, add-only via
+  `bn11_lib.ensure`, two CommonTextBlocks on BoardCanvas at x465/x553 y141 80x32, font 26
+  (BannerText's size), **no stored colour** — the C++ owns both tints — and both stored
+  Collapsed so the FFA board's "no team strip" is structural rather than refresh-timed.
+
+- **Every OTHER BN16 asset dependency is satisfied — audited, not assumed.**
+  `WBP_BNScoreRow` has all three required binds and stores no leaf colour, which is what
+  makes `BNScoreRow.cpp:38`'s whole-row `SetColorAndOpacity` the only tint authority.
+  `WBP_BNKillfeedEntry` places BOTH `KillerText` and `VictimText` — the `bParts` gate at
+  `BNKillfeedEntry.cpp:29` needs both or the row falls back to the composed `LineText` and
+  no relation tint could ever render — plus `WeaponIcon`, none of them storing a colour.
+  `WBP_BNMatchBand` has all four optional binds (`TopKillsText`, `ScoreLimitText`,
+  `SelfScoreBar`, `TopScoreBar`); `TopKillsText` carries no stored `ColorAndOpacity`, so the
+  watch-list assumption that `DefaultTopKillsTint` captures White HOLDS for this asset.
+
+- **MEDIUM (recorded, NOT fixed — not this ticket's to take) — the enemy score BAR stays
+  blue while its number goes Threat red.** Live read of WBP_BNMatchBand: both bars are
+  `FillColorAndOpacity:(R=0.000000,G=0.500000,B=1.000000,A=1.000000)`. `BNMatchBand::Refresh`
+  tints only the two TEXTS on a mode flip; `grep -rn "FillColorAndOpacity\|SetFillColor"
+  Source/BreachpointNext/UI/` returns hits ONLY in `BNVitalsWidget.cpp` — nothing anywhere
+  writes these two bar fills. So in teams mode the band reads as two blue bars with one red
+  and one blue number over them, and MY bar is not Ally `#4A9BFF` either: `(0, 0.5, 1)` is
+  the engine default matching no palette entry. This is the SAME gap TICKET_BN11 already
+  recorded ("the ENGINE default blue, not `--shield #35D0F2` … a C++ gap in the same family
+  as gap 7, visibly wrong the first time a human sees a score bar") — BN16 does not create
+  it, it raises its stakes, because relative team colour is now the thing the bar is failing
+  to carry. Not a Done-when blocker: that box says "shows the two team scores relative",
+  which the NUMBERS satisfy. Wants a C++ owner.
+
+- **LOW (recorded) — `RowContainer` holds exactly `Row_0`..`Row_7`.** The header comment
+  says "8 covers FFA with headroom"; in 4v4 that is 8 players into 8 rows with zero headroom,
+  so a 9th connection trips `bWarnedRowShortage` and drops the tail. Pre-existing, but BN16
+  is what makes 8 the exact number rather than a comfortable one.
+
+- **OFF-case verdict: NOT verifiable through MCP. It needs the founder's eyes.** MCP's reach
+  ends at the asset — `GetWidgetDescription` takes a WidgetBlueprint and `list_properties`
+  takes a CDO or archetype. Every value BN16 could disturb in the FFA HUD is written at
+  runtime by `SetText`/`SetColorAndOpacity`/`SetVisibility` onto a `UUserWidget` INSTANCE
+  that exists only inside a running world; there is no MCP handle on that instance, and
+  `CaptureViewport` returns the EDITOR viewport (gizmo and PlayerStart icons, no HUD), so it
+  cannot be cited as HUD evidence. What CAN be shown, and must be labelled for what it is:
+  a static "no instruction differs" argument — `BNScoreRow.cpp:28-38`'s switch has no `None`
+  case so `RowTint` falls through to today's `bIsSelf ? Self : InkDim`; `Refresh`'s partition
+  puts every non-Enemy index in pass one and adds nothing in pass two, an identity
+  permutation; `BNMatchBand::Refresh` writes colour only when `bTeams != bTeamTintApplied`
+  and both start false, so the first FFA refresh performs ZERO colour writes;
+  `BNKillfeedEntry`'s `bRelationTinted` requires a non-None relation so the row takes the old
+  white/dim branch. **That is not frame proof and must not be written up as if it were.** It
+  proves no instruction stream changed, not that the frame is unchanged. Separately: "no team
+  strip" passes today only BY ABSENCE (the two widgets do not exist) — once F3's fix lands,
+  the Collapsed path becomes load-bearing and this box needs re-checking.
+
+- **Done-when mapping — ZERO boxes close from the editor.** What the editor closed is a
+  prerequisite none of them names.
+  - *Rung 1 all targets* — CANNOT CLOSE, partial only. CDO probe proves the Editor target;
+    Server and Client unprobed.
+  - *OFF-case* — FOUNDER'S EYES. Frame claim, outside MCP entirely (above). Cheapest path is
+    one glance at the top of the same eyes-on session, before teams are enabled.
+  - *ON (eyes-on protocol)* — FOUNDER'S EYES, and BLOCKED until F3's script runs. Row tints,
+    killfeed part tints, two-block order and the band's relative numbers all have their asset
+    dependencies satisfied; the scoreboard team header cannot render. Running the protocol
+    before the fix fails that clause for a reason a founder will misread as a code bug.
+  - *Winner banner Victory/Defeat* — FOUNDER'S EYES. `BannerText` and `OutcomeText` are both
+    present, so the asset side is clear; the words are composed at runtime by the director.
+
+- **contract_gap FILED AND GRANTED mid-session:** `Tools/` and `Content/BN/UI/` were outside
+  the packet claim, so the audit ran from scratchpad rather than the claim being widened
+  unilaterally (law 5). Coordinator granted; `.claude/active-packet.json` is now
+  `BN15+BN16` with both paths. Both scripts are in `Tools/bn/` as a result.
+
+- **Collateral fix — `Tools/bn/bn11_lib.py` was UNRUNNABLE as committed.** `import mcp`
+  raised `ModuleNotFoundError`: the `mcp` module those drivers were written against lived in
+  the BN11 session scratchpad and did not survive the `git mv` into `Tools/bn` — exactly the
+  consequence of BN11's own contract_gap (`Tools/` outside that packet's owner_path, so the
+  files were moved without it). bn11_lib, bn11_killfeed, bn11_death and bn11_matchband were
+  ALL dead. Bound to the project's ONE committed transport (`mcp-ui/gen_ui/mcp.py`) rather
+  than restoring a second copy; lazy init so importing the module does not require an editor;
+  raises on a None returnValue, because the transport reports a refusal as data and a driver
+  that trusts it writes nonsense into a live asset. Four callers fixed by one diff.
+
+- **BLOCKED, and this is the honest rung: the fix was NOT run and the after-tree does NOT
+  exist.** Between the audit run and the fix run, the editor hosting MCP exited — port 8000
+  went from serving to zero listeners (`lsof -nP -iTCP:8000 -sTCP:LISTEN` empty, `curl` exit
+  7 on three attempts 2s apart). What was briefly alive in its place was a `-game -unattended`
+  headless match on `/Game/Maps/BR_Arena01` (another agent's teams-ON run), which hosts no
+  MCP server, and it has since exited too. No replacement editor was launched: R29 is one
+  editor, one driver, and another agent owns the headless lane. `WBP_BNScreen_Scoreboard` is
+  UNMODIFIED on disk — nothing was saved this session.
+  **RUN ORDER when an editor is next up:**
+  1. `python3 Tools/bn/bn16_scoreboard_team_header.py` — asserts its geometry before it
+     touches the asset, then adds/compiles/saves. Idempotent; re-running is a no-op.
+  2. `python3 Tools/bn/bn16_audit_team_ui.py` — must print `- none` under Findings. Exit 0
+     is the gate. Anything else means step 1 did not land and the ON protocol is not ready.
+  3. Rung 1, all three targets.
+  4. Then the eyes-on protocol, OFF-case glance FIRST.

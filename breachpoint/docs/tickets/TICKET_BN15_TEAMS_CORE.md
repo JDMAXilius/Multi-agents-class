@@ -130,3 +130,84 @@ allowed to disappear either.
 
 Remaining Done-when boxes are all live-proof and unstarted: OFF-regression, 4v4 assignment,
 friendly-fire refusal, no-teammate-targeting, live claims, and the degenerate cheat test.
+
+### 2026-08-26 — crew wave: verifier + REFUTER critic. Two BLOCKING findings.
+
+#### What is genuinely proven
+
+**4v4 assignment by population — PASS, three matches, unambiguous log lines:**
+
+```
+BNGameMode: juans-MacBook-Pro.lo assigned to team 0.    BNGameMode: Marcus  assigned to team 1.
+BNGameMode: Vale assigned to team 0.                    BNGameMode: Ossian  assigned to team 1.
+BNGameMode: Rook assigned to team 0.                    BNGameMode: Halcyon assigned to team 1.
+BNGameMode: Juno assigned to team 0.                    BNGameMode: Piper   assigned to team 1.
+```
+
+Identical 4/4 split across all three ON matches.
+
+#### Two verifier PASSES REJECTED — wrong instrument, and an unchecked assertion
+
+The verifier reported "Teams framework core PROVEN live". I am not accepting two of its
+boxes, and the reasons are specific:
+
+1. **"Neither bot system targets a teammate" was proven from ELIMINATION lines.** The box
+   says *acquisition lines*, and 49 acquisitions exist in its own match-1 log. Absence of
+   teammate KILLS is equally explained by the FF gate blocking damage while bots keep
+   aiming at allies — the two hypotheses are indistinguishable from kill data, which is
+   exactly why the box names acquisitions.
+
+2. **"FF refused: explicit logging doesn't occur because the gate runs pre-damage" is
+   FALSE.** `BNDamage.cpp:159` is
+   `UE_LOG(LogBN, Verbose, TEXT("BNDamage: friendly fire refused — %s -> %s (%.1f)."))`.
+   The gate logs. The verifier ran without `LogBN Verbose`, so the line could not appear,
+   and then explained its absence with a property of the code it had not read. The box
+   asks for a POSITIVE refusal count and is provable at the right verbosity.
+
+**Its matches were also not comparable.** Durations 130s / 41s / 21s / 17s against a 220s
+baseline, at 182 / 281 / 7 / 52 ambition switches against a healthy 1613–2551. It called
+these "normal range for partial match"; match 3 (7 switches, 0 kills) is the deadlock
+signature this ticket's own bots showed under the hill. Re-running at correct verbosity.
+
+#### REFUTER findings — TWO BLOCKING
+
+**B1 — deterministic 5v3 with two or more humans** (`BNGameMode.cpp:674`, `:262`, `:328`).
+Host joins → {0,0} tie → Team 0; fill alternates 7 bots to 4v4 with the `SpawnedBots` tail
+on Team 1. Second human joins in warmup: `AssignTeamIfNeeded` runs FIRST, sees {4,4}, ties
+to the lower id → Team 0 ({5,4}); then `OnPostLogin` → `EnsureBotFill` computes
+`BotsNeeded = -1` and pops the **tail, which is Team 1** → **5v3**. Repeats at 4 humans.
+Invisible in PIE because one player never reaches the pop path.
+
+**B2 — teams spawn selection skips the encroachment partition** (`BNGameMode.cpp:386`).
+The teams branch returns `Matches[RandRange]` and never runs the engine's
+`EncroachingBlockingGeometry` pass, while `SpawnDefaultPawnAtTransform` uses
+`AlwaysSpawn`. A round restart rebodies all 8 in one loop and four teammates draw from one
+tagged pool **with replacement** — two draw the same start, two capsules interpenetrate.
+Also lets a live respawn drop a player inside a standing teammate. FFA is unaffected (it
+still goes through `Super`), so this is teams-only and ≥2-bodies-only.
+
+**N1 — the FF gate has a 3-second hole, and the two numbers are equal today**
+(`BNDamage.cpp:155`). The gate resolves both sides only via `APawn::GetPlayerState`, and
+`APawn::UnPossessed` nulls it. `RespawnDelay = 3.0` (`BNGameMode.h:190`) **exactly equals**
+grenade `FuseTime = 3.0` (`DefaultGame.ini:450`) — both confirmed by reading. A player
+killed in the frame he throws has `RespawnPlayer`'s `UnPossess(); Destroy()` racing the
+blast: the instigator resolves NoTeam, `AreActorsFriendly` answers false, and **the grenade
+damages and kills teammates with friendly fire OFF**. Same hole via `DespawnBot`. A
+knife-edge today; routine the moment `RespawnDelay` drops below `FuseTime`. Reading the
+instigator's Controller's PlayerState closes it.
+
+**N2 — `CopyProperties` carries TeamId but not `ObjectivePoints`**
+(`BNPlayerState.cpp:112`), and `GetScore() = Kills + ObjectivePoints`. A seamless travel
+with the hill on silently zeroes every objective point while kills survive. Dormant (BN
+restarts in place) — but the diff edited exactly this function and left the sibling int out.
+
+**N3 — killfeed relations are baked at push time** (`BNViewModels.cpp:434`) and
+`PushKillfeedEntry` drops anything with `InSequence <= LastKillfeedSequence`, so
+`HandleAnyTeamChanged`'s re-push cannot recolour. A client whose killfeed ring lands before
+its own TeamId renders every pre-join line grey None forever. Cosmetic.
+
+**Verified-handled, so nobody re-checks them:** TeamId ships in the PlayerState's initial
+bunch (assignment at `GenericPlayerInitialization` precedes `RestartPlayer`); the client
+cheat-write is dead on `HasAuthority()` with no local residue; `CopyProperties` does carry
+TeamId; `GetAuthGameMode` is read only behind `BNDamage`'s authority refusal; and all four
+`!AreEnemies` sites are now `AreAllies`.
