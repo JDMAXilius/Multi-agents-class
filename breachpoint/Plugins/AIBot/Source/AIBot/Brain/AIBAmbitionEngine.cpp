@@ -71,6 +71,7 @@ void UAIBAmbitionEngine::BuildModeAmbitionSpec(const FAIBModeAmbition& Mode, FAI
 
 void UAIBAmbitionEngine::ResetArbitration()
 {
+	Failures.Reset(); // strikes die with the body, like the commit clock
 	CurrentTag = FGameplayTag();
 	CurrentScore = 0.f;
 	CommitEndSeconds = -1.0;
@@ -114,6 +115,37 @@ const FAIBObjectiveFact* UAIBAmbitionEngine::MatchObjective(const FAIBFacts& Fac
 	return nullptr;
 }
 
+void UAIBAmbitionEngine::NoteAmbitionFailed(FGameplayTag Tag, double NowSeconds)
+{
+	if (!Tag.IsValid())
+	{
+		return;
+	}
+	FAIBFailureRecord& Record = Failures.FindOrAdd(Tag);
+
+	// FORGET FIRST. A want that failed once a minute ago and once now is not a want that
+	// failed twice in a row — without this, strikes only ever accumulate and a bot that
+	// hits one bad doorway an hour eventually silences the ambition permanently.
+	if (Record.LastFailureSeconds >= 0.0
+		&& (NowSeconds - Record.LastFailureSeconds) > FailureForgetSeconds)
+	{
+		Record.Strikes = 0;
+	}
+	Record.LastFailureSeconds = NowSeconds;
+	Record.Strikes = FMath::Min(Record.Strikes + 1, 1000);
+
+	const float Window = FMath::Min(FailureSuppressSeconds * Record.Strikes, FailureSuppressMaxSeconds);
+	// EXTEND, never shorten: two failures inside one window must not let the second
+	// reset the clock to a shorter silence than the first already earned.
+	Record.SuppressedUntilSeconds = FMath::Max(Record.SuppressedUntilSeconds, NowSeconds + Window);
+}
+
+bool UAIBAmbitionEngine::IsAmbitionSuppressed(FGameplayTag Tag, double NowSeconds) const
+{
+	const FAIBFailureRecord* Record = Failures.Find(Tag);
+	return Record && NowSeconds < Record->SuppressedUntilSeconds;
+}
+
 FGameplayTag UAIBAmbitionEngine::Rescore(const FAIBFacts& Facts, double NowSeconds)
 {
 	LastScores.Reset();
@@ -152,6 +184,16 @@ FGameplayTag UAIBAmbitionEngine::Rescore(const FAIBFacts& Facts, double NowSecon
 		for (const FAIBConsideration& Consideration : Spec.Considerations)
 		{
 			Raw *= Consideration.Evaluate(Facts, Matched);
+		}
+
+		// A want whose branch just failed scores ZERO for its window — see
+		// NoteAmbitionFailed. Applied HERE, to the raw score, so the scoreboard the
+		// debugger reads shows the zero too: a suppressed want that silently scored
+		// full utility in the instrument while losing in the selection would be the
+		// same class of invisible bug this whole mechanism exists to kill.
+		if (IsAmbitionSuppressed(Spec.Tag, NowSeconds))
+		{
+			Raw = 0.f;
 		}
 
 		const bool bIncumbent = (Spec.Tag == CurrentTag);

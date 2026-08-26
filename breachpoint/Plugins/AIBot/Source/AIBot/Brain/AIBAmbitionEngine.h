@@ -62,6 +62,33 @@ public:
 	 *  loudly the executor's problem, never a crash. */
 	FGameplayTag Rescore(const FAIBFacts& Facts, double NowSeconds);
 
+	/** BRANCH-FAILURE SUPPRESSION (AIB16). Scoring alone cannot tell a want that is
+	 *  merely LOSING from one that is IMPOSSIBLE: an ambition whose branch fails every
+	 *  time still scores exactly what it scored before, so it keeps winning and starves
+	 *  everything else. Measured on the Hill: Mode.Hold won at 0.72, failed for want of
+	 *  a reachable POI, and seven bots made ZERO further decisions in four minutes —
+	 *  0 kills against 76 in the same build with the objective off.
+	 *
+	 *  Hysteresis and commit both make an incumbent STICKIER, so neither can be the
+	 *  answer; this is the one mechanism that pushes the other way. The executor reports
+	 *  a branch it could not run, and that want scores ZERO for a while.
+	 *
+	 *  Zero, deliberately, rather than a smaller number: the engine already rules that
+	 *  "an incumbent whose fresh score is zero has declared itself impossible" and
+	 *  releases its commit on the spot (THE VETO). Suppression reuses that ruling
+	 *  instead of inventing a second way out.
+	 *
+	 *  Strikes ESCALATE, because one failure may be a blocked doorway and ten is a want
+	 *  that cannot be served at all — and they are forgotten after a quiet spell, so a
+	 *  bot that fails once a minute never accumulates its way into permanent silence. */
+	void NoteAmbitionFailed(FGameplayTag Tag, double NowSeconds);
+
+	/** True while Tag is serving a suppression window — for specs and the debugger. */
+	bool IsAmbitionSuppressed(FGameplayTag Tag, double NowSeconds) const;
+
+	/** Suppression is a property of THIS life, like the commit clock: cleared with the
+	 *  rest of arbitration so a respawn never inherits a dead life's strikes. */
+
 	FGameplayTag GetCurrent() const { return CurrentTag; }
 
 	/** The incumbent's FRESH pre-hysteresis score from the last rescore — never stale
@@ -100,6 +127,20 @@ public:
 	UPROPERTY()
 	float HealthCliffNorm = 0.35f;
 
+	/** First strike's silence. Long enough for another want to actually run a branch,
+	 *  short enough that a transient block is not a lasting personality change. */
+	UPROPERTY()
+	float FailureSuppressSeconds = 3.f;
+
+	/** Ceiling on the escalation, so a permanently impossible want goes quiet without
+	 *  ever becoming unrecoverable if the world changes. */
+	UPROPERTY()
+	float FailureSuppressMaxSeconds = 20.f;
+
+	/** A clean spell this long forgets the strike count entirely. */
+	UPROPERTY()
+	float FailureForgetSeconds = 10.f;
+
 private:
 	bool IsHardInterrupt(const FAIBFacts& Facts) const;
 	const FAIBObjectiveFact* MatchObjective(const FAIBFacts& Facts, const FGameplayTag& Tag) const;
@@ -116,4 +157,15 @@ private:
 
 	TArray<FAIBScoredAmbition> LastScores;
 	FAIBScoredAmbition LastRunnerUp;
+
+	/** Per-tag suppression: when the silence ends, how many strikes stand, and when the
+	 *  last one landed (for the forget rule). Not a UPROPERTY — plain runtime state,
+	 *  like CommitEndSeconds beside it. */
+	struct FAIBFailureRecord
+	{
+		double SuppressedUntilSeconds = -1.0;
+		double LastFailureSeconds = -1.0;
+		int32 Strikes = 0;
+	};
+	TMap<FGameplayTag, FAIBFailureRecord> Failures;
 };

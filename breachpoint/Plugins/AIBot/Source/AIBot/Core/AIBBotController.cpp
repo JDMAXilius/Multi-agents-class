@@ -363,6 +363,23 @@ void AAIBBotController::NoteGrenadeThrown(float CooldownSeconds)
 	}
 }
 
+void AAIBBotController::NoteCurrentAmbitionFailed()
+{
+	const UWorld* World = GetWorld();
+	if (!World || !AmbitionEngine)
+	{
+		return;
+	}
+	const FGameplayTag Failed = AmbitionEngine->GetCurrent();
+	if (!Failed.IsValid())
+	{
+		return;
+	}
+	AmbitionEngine->NoteAmbitionFailed(Failed, World->GetTimeSeconds());
+	UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s branch for %s failed — suppressing that want so another can run."),
+		*GetName(), *Failed.ToString());
+}
+
 FGameplayTag AAIBBotController::GetObjectiveKindForCurrentAmbition() const
 {
 	const FGameplayTag Current = AmbitionEngine ? AmbitionEngine->GetCurrent() : FGameplayTag();

@@ -1216,6 +1216,11 @@ EStateTreeRunStatus FAIBMoveToObjectiveTask::EnterState(FStateTreeExecutionConte
 		UE_LOG(LogAIBot, Warning, TEXT("AIBot: %s won a mode want but %s offered no POI of kind %s — branch fails (F7)."),
 			*Bot->GetName(), Query ? TEXT("the world query") : TEXT("NO world query is registered and it"),
 			Kind.IsValid() ? *Kind.ToString() : TEXT("<any>"));
+		// The deadlock of record: with the hill registered 2ms after possession, seven
+		// bots won this want, landed here, and never made another decision for four
+		// minutes. Reporting it is what lets the want go quiet and the bot get on with
+		// the match.
+		Bot->NoteCurrentAmbitionFailed();
 		return EStateTreeRunStatus::Failed;
 	}
 
@@ -1226,6 +1231,7 @@ EStateTreeRunStatus FAIBMoveToObjectiveTask::EnterState(FStateTreeExecutionConte
 			== EPathFollowingRequestResult::Failed)
 	{
 		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s cannot path to the objective — failing loudly (F7)."), *Bot->GetName());
+		Bot->NoteCurrentAmbitionFailed();
 		return EStateTreeRunStatus::Failed;
 	}
 	return EStateTreeRunStatus::Running;
@@ -1260,6 +1266,7 @@ EStateTreeRunStatus FAIBMoveToObjectiveTask::Tick(FStateTreeExecutionContext& Co
 	else if ((InstanceData.SecondsWithoutProgress += DeltaTime) >= InstanceData.GiveUpAfterNoProgressSeconds)
 	{
 		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s cannot reach the objective — giving up loudly (F7)."), *Bot->GetName());
+		Bot->NoteCurrentAmbitionFailed();
 		return EStateTreeRunStatus::Failed;
 	}
 	return EStateTreeRunStatus::Running;

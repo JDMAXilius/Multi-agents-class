@@ -520,6 +520,81 @@ void FAIBAmbitionEngineSpec::Define()
 		TestEqual(TEXT("infinity scrubs to silent"),
 			AIBFactsBuilder::ClampUrgency(std::numeric_limits<float>::infinity()), 0.f, 0.0001f);
 	});
+
+	It("yields when its branch keeps failing — the starvation the Hill measured", [this]()
+	{
+		// THE DEFECT, as arithmetic. A mode want that wins and then cannot run its branch
+		// scores exactly what it scored before, so it wins again, forever. Measured in
+		// PIE: seven bots, four minutes, ZERO decisions after the first — 0 kills against
+		// 76 in the same build with the objective disabled.
+		FAIBModeAmbition Mode;
+		Mode.AmbitionTag = TAG_AIBSpec_Mode_Child;
+		Mode.BaseUtility = 1.2f;
+		FAIBAmbitionSpec Translated;
+		UAIBAmbitionEngine::BuildModeAmbitionSpec(Mode, Translated);
+		Engine->RegisterAmbition(Translated);
+		Engine->RegisterAmbition(Constant(AIBTags::Ambition_Roam, 0.3f));
+
+		FAIBFacts Facts;
+		FAIBObjectiveFact& Objective = Facts.Objectives.AddDefaulted_GetRef();
+		Objective.AmbitionTag = TAG_AIBSpec_Mode_Child;
+		Objective.Urgency = 0.9f;
+
+		TestTag(TEXT("the want wins on merit first"),
+			Engine->Rescore(Facts, 10.0), TAG_AIBSpec_Mode_Child);
+
+		// The executor reports a branch it could not run.
+		Engine->NoteAmbitionFailed(TAG_AIBSpec_Mode_Child, 10.0);
+		TestTrue(TEXT("suppressed after the report"),
+			Engine->IsAmbitionSuppressed(TAG_AIBSpec_Mode_Child, 10.0));
+
+		// Roam now runs — which is the whole point. Note this also proves THE VETO
+		// releases the commit: the mode want was the committed incumbent, and a zero
+		// score is the engine's own existing ruling for "declared itself impossible".
+		TestTag(TEXT("another want gets a turn"),
+			Engine->Rescore(Facts, 11.0), AIBTags::Ambition_Roam);
+		for (const FAIBScoredAmbition& Row : Engine->GetLastScores())
+		{
+			if (Row.Tag == TAG_AIBSpec_Mode_Child)
+			{
+				// The SCOREBOARD must show the zero too. A suppressed want that still
+				// read full utility in the instrument would hide exactly the bug this
+				// mechanism exists to kill.
+				TestEqual(TEXT("scoreboard shows the suppression"), Row.Score, 0.f, 0.0001f);
+			}
+		}
+
+		// And it comes BACK — suppression is a silence, never a deletion.
+		TestFalse(TEXT("window expires"),
+			Engine->IsAmbitionSuppressed(TAG_AIBSpec_Mode_Child, 10.0 + 3.5));
+		TestTag(TEXT("recovered want wins again"),
+			Engine->Rescore(Facts, 20.0), TAG_AIBSpec_Mode_Child);
+	});
+
+	It("escalates repeat failures and forgets old ones", [this]()
+	{
+		Engine->RegisterAmbition(Constant(TAG_AIBSpec_Mode_Child, 1.2f));
+
+		// Strike 1 -> 3s.  Strike 2 inside the window -> 6s from the SECOND failure.
+		Engine->NoteAmbitionFailed(TAG_AIBSpec_Mode_Child, 100.0);
+		TestFalse(TEXT("one strike is 3s"),
+			Engine->IsAmbitionSuppressed(TAG_AIBSpec_Mode_Child, 103.5));
+		Engine->NoteAmbitionFailed(TAG_AIBSpec_Mode_Child, 100.0);
+		TestTrue(TEXT("two strikes reach further"),
+			Engine->IsAmbitionSuppressed(TAG_AIBSpec_Mode_Child, 105.0));
+
+		// A long clean spell forgets the count, so an occasional failure never
+		// accumulates its way into permanent silence.
+		Engine->NoteAmbitionFailed(TAG_AIBSpec_Mode_Child, 500.0);
+		TestFalse(TEXT("forgotten strikes start over at 3s"),
+			Engine->IsAmbitionSuppressed(TAG_AIBSpec_Mode_Child, 503.5));
+
+		// Death clears everything: a respawn must not inherit a dead life's strikes.
+		Engine->NoteAmbitionFailed(TAG_AIBSpec_Mode_Child, 600.0);
+		Engine->ResetArbitration();
+		TestFalse(TEXT("respawn starts clean"),
+			Engine->IsAmbitionSuppressed(TAG_AIBSpec_Mode_Child, 600.5));
+	});
 }
 
 #endif // WITH_DEV_AUTOMATION_TESTS

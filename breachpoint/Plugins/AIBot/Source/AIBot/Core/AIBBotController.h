@@ -102,6 +102,15 @@ public:
 	 *  want is not a mode want or names no kind. */
 	FGameplayTag GetObjectiveKindForCurrentAmbition() const;
 
+	/** THE EXECUTOR'S ONE REPORT BACK (AIB16). A branch that could not run tells the
+	 *  brain so, and the engine silences that want long enough for another to have a
+	 *  turn. Without it a failing branch keeps its score, keeps winning, and the bot
+	 *  stops making decisions entirely — measured: 0 kills against 76.
+	 *
+	 *  Deliberately the ONLY direction the executor speaks: it reports what happened,
+	 *  never what to want next. Choosing stays with the engine. */
+	void NoteCurrentAmbitionFailed();
+
 	/** THE POSSESSION OBLIGATION, finally payable (ARCHITECTURE's recorded CTF-in-Slayer
 	 *  debt): clear + core + the CURRENT mode's translated ambitions + one immediate
 	 *  Think, so the empty-tag window never reaches a tree selection. Also the mid-life
