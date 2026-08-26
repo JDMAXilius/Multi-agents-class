@@ -95,10 +95,15 @@ namespace
 		FVector Ignored;
 		const bool bSelfOnNav = Pawn && ProjectToNav(Bot.GetWorld(), Self, Ignored);
 		const bool bGoalOnNav = ProjectToNav(Bot.GetWorld(), Goal, Ignored);
-		return FString::Printf(TEXT("self=%s goal=%s dist=%.0fuu"),
+		// HEIGHTS, not just distance. "Both on the mesh and still refused" has two very
+		// different shapes: two points on ONE floor with a wall between them, and two
+		// points on DIFFERENT floors with no way up. Distance alone cannot tell them
+		// apart, and the fix for each is nothing like the fix for the other.
+		return FString::Printf(TEXT("self=%s goal=%s dist=%.0fuu selfZ=%.0f goalZ=%.0f dz=%.0f"),
 			bSelfOnNav ? TEXT("yes") : TEXT("NO"),
 			bGoalOnNav ? TEXT("yes") : TEXT("NO"),
-			Pawn ? FVector::Dist(Self, Goal) : -1.f);
+			Pawn ? FVector::Dist(Self, Goal) : -1.f,
+			Self.Z, Goal.Z, Goal.Z - Self.Z);
 	}
 
 	/** EVERY goal this file hands the mover is a REMEMBERED or DERIVED world point — a
