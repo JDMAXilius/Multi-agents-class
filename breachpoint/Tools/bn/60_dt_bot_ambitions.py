@@ -41,26 +41,40 @@ DT_TOOLSET = "editor_toolset.toolsets.data_table.DataTableTools"
 ASSET_TOOLSET = "editor_toolset.toolsets.asset.AssetTools"
 
 # row name -> camelCase property -> value.  Mirrors BNBotBrain.cpp DefaultRow exactly.
+#
+# DRIFT WARNING (BN14 audit, fixed 26 Aug): this mirror HAD drifted — Fight commitSeconds
+# still read the pre-25-Aug 3.0 and Survive interruptBelowHealthNorm the pre-25-Aug 0.35,
+# so the documented `apply` path silently reverted two explicit founder tuning decisions.
+# Until BN14's one-direction-of-flow fix lands, ANY edit to BNBotBrain.cpp's DefaultRow
+# MUST be mirrored here in the same commit, and running `apply` starts with a diff of
+# this table against that function. The comments quote the founder's reasons on purpose:
+# a number with its reason attached is harder to revert by accident.
 INTENT = {
-    # BNBotBrain.cpp:10-14
+    # BNBotBrain.cpp DefaultRow, Fight
     "Fight": {
         "baseUtility": 1.0,
         "healthWeight": 0.0,
         "targetWeight": 1.0,
         "distanceWeight": 0.0,
-        "commitSeconds": 3.0,
+        # Founder, 25 Aug: 3s let a bot re-think itself out of a fight it was winning;
+        # 8s means once it commits to you, it stays committed.
+        "commitSeconds": 8.0,
         "interruptBelowHealthNorm": 0.0,  # struct default, BNDataRows.h
     },
-    # BNBotBrain.cpp:17-22
+    # BNBotBrain.cpp DefaultRow, Survive
     "Survive": {
         "baseUtility": 1.2,
         "healthWeight": 1.0,
         "targetWeight": 0.0,
         "distanceWeight": 0.0,
         "commitSeconds": 5.0,
-        "interruptBelowHealthNorm": 0.35,
+        # Founder, 25 Aug: 0.35 broke off at a third health and read as timid; 0.15
+        # fights until nearly dead — Survive is a last resort, not a habit.
+        "interruptBelowHealthNorm": 0.15,
     },
-    # BNBotBrain.cpp:26-30
+    # BNBotBrain.cpp DefaultRow, Roam — BaseUtility 0.2 ON PURPOSE (0.15 was tried
+    # 25 Aug and reverted the same session: starving Roam reads as "they stopped
+    # falling"; aggression belongs in Fight's commit and the tier).
     "Roam": {
         "baseUtility": 0.2,
         "healthWeight": 0.0,

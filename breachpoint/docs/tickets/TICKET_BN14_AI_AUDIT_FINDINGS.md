@@ -46,6 +46,14 @@ table win at runtime. There is no BN CSV. `Tools/bn/60_dt_bot_ambitions.py` is a
 `apply` path silently reverts two explicit tuning decisions with no diff and no compile error.
 Fix is one direction of flow, not a patch.
 
+> 26 Aug (cloud lead): the DRIFT ITSELF is fixed — the mirror now carries 8.0 / 0.15
+> with the founder's dated reasons attached as comments (a number with its reason is
+> harder to revert by accident), plus a drift warning requiring same-commit mirroring
+> and a diff-before-apply until the flow fix lands. The one-direction-of-flow question
+> stays OPEN and is founder-ruling-shaped: law 3 says tuning lives in CSV, but the
+> AIBot module's Phase-8 precedent made a C++ registry the one source with the table a
+> mirror — BN needs the same call made explicitly, one way or the other.
+
 ## MEDIUM — owners named, all outside AI/
 
 - **Ammo replicates to everyone** (`Weapons/BNWeapon.cpp:44-46`, unconditional `DOREPLIFETIME`).
