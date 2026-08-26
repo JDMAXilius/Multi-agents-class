@@ -9,7 +9,8 @@
 
 ## Prime decisions (everything follows from these five)
 
-1. **Module boundary is law.** `Source/AIBot/` — runtime module `AIBot`, prefix `AIB`, log
+1. **Module boundary is law.** `Plugins/AIBot/Source/AIBot/` (extracted Phase 10, 26 Aug
+   2026 — was `Source/AIBot/`) — runtime module `AIBot`, prefix `AIB`, log
    `LogAIBot`, macro `AIBOT_API`. Zero includes of BreachpointNext or any game module, ever.
    Dependency arrow: game → AIBot, never back. Mechanically checkable with one grep.
 2. **The bot speaks only through interfaces it owns.** `IAIBAvatarInterface` (verbs:
@@ -92,7 +93,9 @@ ledger is the finding — nothing joins inline.
    Phase 5): one per-hit site for every victim, which no adapter component can see.
 5. `Match/BNGameMode` — the `BotSystem` A/B switch + `AIBBotControllerClass`, and (Phase
    6, planned) the provider handoff line in `SpawnBot`.
-6. `Breachpoint.uproject` + Build.cs dependency + the two ini sections.
+6. `Breachpoint.uproject` (the `AIBot` PLUGIN entry since the Phase-10 extraction — the
+   module left `Modules[]` and all three Target.cs) + BreachpointNext's Build.cs
+   dependency + the two ini sections.
 
 Damage pipeline, attributes, HUD, netcode: still untouched. The test is no longer "one
 folder" — it is "every seam is on this list, each is a NOTE into the module (information

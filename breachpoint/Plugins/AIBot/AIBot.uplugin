@@ -1,0 +1,34 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "AIBot",
+	"Description": "Self-contained bot framework — Halo Infinite's architecture, 1:1. Sensorium with a reaction floor, utility ambitions, StateTree execution, competence-ladder skills, confidence, claims, tiers. Engine dependencies only; the host game adapts through three interfaces and presses nothing itself.",
+	"Category": "AI",
+	"CreatedBy": "BREACHPOINT",
+	"CanContainContent": false,
+	"IsBetaVersion": false,
+	"Installed": false,
+	"EnabledByDefault": true,
+	"Modules": [
+		{
+			"Name": "AIBot",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine",
+				"AIModule"
+			]
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "StateTree",
+			"Enabled": true
+		},
+		{
+			"Name": "GameplayStateTree",
+			"Enabled": true
+		}
+	]
+}

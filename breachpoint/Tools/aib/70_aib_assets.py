@@ -8,7 +8,7 @@ The AIBot twin of Tools/bn/62_bot_assets.py, on the same proven mechanics and th
 R5 finding: a StateTree's GRAPH cannot be authored from Python or any MCP toolset (the
 states are bare Instanced UPROPERTYs PropertyAccessUtil refuses; no toolset has a
 StateTree factory; CompileStateTree is not a UFUNCTION). The graph is built by
-UAIBTreeAuthoring (Source/AIBot/Execution/AIBTreeAuthoring.cpp) compiled into the
+UAIBTreeAuthoring (Plugins/AIBot/Source/AIBot/Execution/AIBTreeAuthoring.cpp) compiled into the
 editor; this script proves the running build is current, pulls the trigger, and reads
 the result back out of the live editor.
 
@@ -16,7 +16,7 @@ THE TRIGGER: no MCP tool calls a function -- setting a property IS reachable, an
 routes an editor property write through PostEditChangeProperty, so UAIBAssetSettings
 carries a Transient bool that behaves as a button.
 
-THE PROBE LIST is derived from Source/AIBot/Execution/AIBStateTreeTasks.h and must be
+THE PROBE LIST is derived from Plugins/AIBot/Source/AIBot/Execution/AIBStateTreeTasks.h and must be
 checked BOTH directions on any vocabulary change (the 14-of-21 lesson from bn/62): every
 node struct in the header appears here, and nothing here has left the header. Instance
 data structs are deliberately excluded, as in bn/62 -- the stop condition is about node

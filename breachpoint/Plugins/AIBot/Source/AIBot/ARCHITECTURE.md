@@ -70,6 +70,14 @@ Crew: aib-builder writes here (only here); aib-critic attacks; aib-editor owns
 
 ## The Phase-10 extraction delta (recorded so the "folder move" stays honest — W-REVIEW M6)
 
+> EXECUTED 26 Aug 2026 (WRITTEN, NOT COMPILED — rung 1 is AIB15's): items 1–3 landed
+> exactly as written below; item 4 deliberately NOT taken (Config=Game stands — the
+> `[/Script/AIBot.*]` ini sections are class-path-keyed and move-invariant; per-plugin
+> ini shipping is a packaging decision for a real consumer); item 5's ALTERNATIVE
+> taken — `Content/AIBot/` STAYS in the host project (`CanContainContent: false`), so
+> every `/Game/AIBot/…` literal remains true and no second unloaded tree can exist.
+> A blank-project consumer gets its own `/Game/AIBot/…` from the authoring button.
+
 Moving to `Plugins/AIBot/` is a folder move PLUS exactly this, no archaeology:
 1. Delete the `AIBot` entry from `Breachpoint.uproject` `Modules[]` (plugins declare
    modules in the `.uplugin`).

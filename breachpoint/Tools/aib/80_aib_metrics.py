@@ -27,7 +27,7 @@ import sys
 
 # ---------------------------------------------------------------- the vocabulary
 # One regex per instrument line, matching the exact formats compiled into the module
-# (Source/AIBot). A format change there MUST break here loudly — that is a feature.
+# (Plugins/AIBot/Source/AIBot). A format change there MUST break here loudly — that is a feature.
 RX = {
     "acquire":   re.compile(r"AIBot: (?P<bot>\S+) acquired (?P<target>\S+) after (?P<latency>[0-9.]+)s reaction\."),
     "ambition":  re.compile(r"AIBot: (?P<bot>\S+) ambition -> (?P<want>\S+) \((?P<score>[0-9.-]+)\) over (?P<runner>\S+) \((?P<rscore>[0-9.-]+)\)(?P<interrupt> \[interrupt\])?"),

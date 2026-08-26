@@ -49,7 +49,7 @@ public:
 	virtual int32 CountNearbyAllies(const AActor* Asker, float Radius) const override;
 
 	/** FFA: two different living pawns are enemies. Teams change THIS function and
-	 *  nothing inside Source/AIBot/ — which is the point of the hostility door. */
+	 *  nothing inside the AIBot module — which is the point of the hostility door. */
 	virtual bool AreEnemies(const AActor* A, const AActor* B) const override;
 
 private:

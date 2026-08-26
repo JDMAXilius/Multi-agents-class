@@ -5,7 +5,7 @@
 /**
  * The HOST's contributions to the AIBot open namespaces (the module's extension door:
  * tag registration is global, never linker-scoped, so a game names its own wants and
- * POI kinds without an edit inside Source/AIBot/). Phase 6's Hill lives here.
+ * POI kinds without an edit inside the AIBot module). Phase 6's Hill lives here.
  */
 namespace BNAIBTags
 {
