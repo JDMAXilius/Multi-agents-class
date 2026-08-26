@@ -2,9 +2,11 @@
 
 #include "CoreMinimal.h"
 #include "AIController.h"
+#include "Brain/AIBConfidenceModel.h"
 #include "Core/AIBTypes.h"
 #include "GameplayTagContainer.h"
 #include "Perception/AIBSensorium.h"
+#include "Skills/AIBSkillProfile.h"
 #include "AIBBotController.generated.h"
 
 class IAIBAvatarInterface;
@@ -81,6 +83,16 @@ public:
 	 *  the dodge happens only after the stimulus matures (FAIRPLAY F2). */
 	void NoteIncomingBlast(const FVector& Center, float Radius, double DetonateAtSeconds);
 
+	/** THE DAMAGE SEAM (Phase 5). The host's one-per-hit damage site calls these on the
+	 *  authority. Taken: the hit's fraction of THIS bot's max health, plus the attacker
+	 *  and its location AT THE HIT — which becomes a matured MEMORY through the same
+	 *  reaction clock as every sense (being shot makes a bot go and LOOK; a perfect lock
+	 *  on someone never seen would be omniscience — the host's own ruling, kept). Dealt:
+	 *  the fraction of the VICTIM's max health a hit this bot landed removed. Both feed
+	 *  the momentum ledger the confidence model and the damage-history facts read. */
+	void NoteDamageTaken(AActor* Attacker, const FVector& AttackerLocation, float FractionOfMaxHealth);
+	void NoteDamageDealt(float FractionOfVictimMaxHealth);
+
 	// FFA seam, verbatim from the host's proven pattern: one shared "no team",
 	// hostility decided per-pawn. A team system replaces these two overrides.
 	virtual FGenericTeamId GetGenericTeamId() const override { return FGenericTeamId(255); }
@@ -152,6 +164,24 @@ private:
 
 	/** World seconds before which no grenade may be thrown; see CanThrowGrenade. */
 	float NextGrenadeThrowTimeSeconds = 0.f;
+
+	// Phase 5: momentum + judgment. The ledger is the damage-history facts' source; the
+	// model turns facts into ConfidenceNorm at think cadence. Phase 4's profile gets its
+	// first consumer here (Confidence level = judgment quality); Phase 8 re-resolves it
+	// from the real tier row.
+	FAIBDamageLedger DamageLedger;
+	FAIBConfidenceState ConfidenceState;
+	FAIBSkillProfile SkillProfile;
+
+	/** The misjudge draws. Its OWN stream, seeded per bot beside the sensorium's:
+	 *  sharing would let a confidence redraw shift every later reaction latency, and
+	 *  determinism per subsystem is what keeps specs and replays honest. */
+	FRandomStream ConfidenceRandom;
+
+	/** True once the host's damage seam has EVER called in — per controller, never reset
+	 *  per life: seam wiring is a host property. Until then damage history stays an
+	 *  honest UNKNOWN rather than a confident zero. */
+	bool bDamageSeamSeen = false;
 
 	IAIBAvatarInterface* Avatar = nullptr;
 

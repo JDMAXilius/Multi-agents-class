@@ -201,6 +201,21 @@ void UAIBAmbitionEngine::BuildDefaultCoreAmbitions(TArray<FAIBAmbitionSpec>& Out
 			C->AddKey(1.f, 0.5f); // never zero: a visible enemy always matters
 		}
 		Range.ValueWhenUnknown = 0.5f;
+
+		// PHASE 5 — confidence scales the appetite for the fight, never vetoes it: a
+		// lost-feeling bot with a visible enemy still wants the fight a LITTLE (0.55),
+		// which is what lets Retreat outbid it rather than Engage zeroing itself out.
+		// Unknown = 1.0: a host without the damage seam keeps Phase-2 behaviour intact
+		// (every pre-Phase-5 spec pin still holds).
+		FAIBConsideration& Nerve = Engage.Considerations.AddDefaulted_GetRef();
+		Nerve.Selector = EAIBFactSelector::ConfidenceNorm;
+		{
+			FRichCurve* C = Nerve.Curve.GetRichCurve();
+			C->Reset();
+			C->AddKey(0.f, 0.55f);
+			C->AddKey(1.f, 1.f);
+		}
+		Nerve.ValueWhenUnknown = 1.f;
 	}
 
 	// RETREAT — hurt and being hurt. Damage history has no source until Phase 3, so
@@ -230,6 +245,20 @@ void UAIBAmbitionEngine::BuildDefaultCoreAmbitions(TArray<FAIBAmbitionSpec>& Out
 			C->AddKey(1.f, 1.f);
 		}
 		UnderFire.ValueWhenUnknown = 0.35f;
+
+		// PHASE 5 — the mirror of Engage's nerve: high confidence SUPPRESSES the urge
+		// to leave (a winning bot presses through the same wounds a losing one flees),
+		// low confidence leaves Retreat's full score standing. Unknown = 1.0 keeps
+		// every pre-Phase-5 pin intact on hosts without the damage seam.
+		FAIBConsideration& Nerve = Retreat.Considerations.AddDefaulted_GetRef();
+		Nerve.Selector = EAIBFactSelector::ConfidenceNorm;
+		{
+			FRichCurve* C = Nerve.Curve.GetRichCurve();
+			C->Reset();
+			C->AddKey(0.f, 1.f);
+			C->AddKey(1.f, 0.45f);
+		}
+		Nerve.ValueWhenUnknown = 1.f;
 	}
 
 	// SEARCH — a fresh memory and nothing visible. Freshness IS the curve.

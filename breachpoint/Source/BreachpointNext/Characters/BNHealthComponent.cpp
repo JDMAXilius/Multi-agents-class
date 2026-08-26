@@ -3,8 +3,53 @@
 #include "AbilitySystem/Attributes/BNAttributeSet.h"
 #include "AbilitySystem/Abilities/BNGA_HitReact.h"
 #include "AbilitySystem/Effects/BNGameplayEffects.h"
+#include "Core/AIBBotController.h"
 #include "Core/BNGameplayTags.h"
 #include "AbilitySystemComponent.h"
+#include "GameFramework/Pawn.h"
+
+namespace
+{
+	/** THE AIB DAMAGE SEAM (Phase 5) — the projectile's blast-warning branch's sibling:
+	 *  one small AIB notify inside a shared BN file, feeding the bot framework's damage
+	 *  ledger for EVERY victim (bot or human), which the adapter alone cannot see. Both
+	 *  directions ride one pool-decrease: the victim's own controller learns TAKEN (with
+	 *  the attacker, who becomes a matured memory, never a lock), and the attacker's
+	 *  controller — when it is an AIB bot — learns DEALT. Fractions are of the victim's
+	 *  MaxHealth for both pools: one scale, "damage pressure", exactly how the momentum
+	 *  ledger reads it. Authority-only; BN behaviour untouched.
+	 */
+	void NotifyAIBDamage(UAbilitySystemComponent* ASC, AActor* VictimOwner, float PoolDrop)
+	{
+		if (!ASC || !VictimOwner || PoolDrop <= 0.f || !ASC->IsOwnerActorAuthoritative())
+		{
+			return;
+		}
+		const UBNAttributeSet* Attributes = ASC->GetSet<UBNAttributeSet>();
+		if (!Attributes)
+		{
+			return;
+		}
+		const float MaxHealth = Attributes->GetMaxHealth();
+		if (MaxHealth <= 0.f)
+		{
+			return;
+		}
+		const float Fraction = PoolDrop / MaxHealth;
+		AActor* Attacker = Attributes->GetLastDamage().Instigator.Get();
+
+		const APawn* VictimPawn = Cast<APawn>(VictimOwner);
+		if (AAIBBotController* VictimBot = VictimPawn ? Cast<AAIBBotController>(VictimPawn->GetController()) : nullptr)
+		{
+			VictimBot->NoteDamageTaken(Attacker, Attacker ? Attacker->GetActorLocation() : FVector::ZeroVector, Fraction);
+		}
+		const APawn* AttackerPawn = Cast<APawn>(Attacker);
+		if (AAIBBotController* AttackerBot = AttackerPawn ? Cast<AAIBBotController>(AttackerPawn->GetController()) : nullptr)
+		{
+			AttackerBot->NoteDamageDealt(Fraction);
+		}
+	}
+}
 
 UBNHealthComponent::UBNHealthComponent()
 {
@@ -49,6 +94,13 @@ void UBNHealthComponent::HandleRecentDamageChanged(const FGameplayTag Tag, int32
 
 void UBNHealthComponent::HandleShieldChanged(const FOnAttributeChangeData& Data)
 {
+	// Shield-absorbed damage never touches Health, so the AIB ledger hears it here; a
+	// recharge is an increase and passes through untouched.
+	if (Data.NewValue < Data.OldValue)
+	{
+		NotifyAIBDamage(CachedAbilitySystem.Get(), GetOwner(), Data.OldValue - Data.NewValue);
+	}
+
 	// Zero is broken, anything above it is not. Deliberately a THRESHOLD and not an edge: the
 	// recharge walks the shield up 10 at a time, so "crossed upward" would need history this does
 	// not keep, while a threshold is correct on every write including the first.
@@ -151,6 +203,14 @@ void UBNHealthComponent::SetShieldRechargeActive(bool bActive)
 
 void UBNHealthComponent::HandleHealthChanged(const FOnAttributeChangeData& Data)
 {
+	// The AIB ledger hears every health drop — the lethal one included, which is why
+	// this sits above the survivable/death split. One hit that drains shield AND health
+	// fires both handlers with its own pool's drop, so the two notifies SUM to the hit.
+	if (Data.NewValue < Data.OldValue)
+	{
+		NotifyAIBDamage(CachedAbilitySystem.Get(), GetOwner(), Data.OldValue - Data.NewValue);
+	}
+
 	if (Data.NewValue > 0.f)
 	{
 		bDeathReported = false;

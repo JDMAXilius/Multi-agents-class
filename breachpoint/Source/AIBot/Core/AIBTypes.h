@@ -133,13 +133,21 @@ struct AIBOT_API FAIBFacts
 	float BlastRadius = 0.f;
 
 	// -- the fight so far (confidence inputs; our design, flagged as ours) -----------
-	bool bDamageHistoryKnown = false;  // no source yet (Phase 3, avatar door) — until one
-	                                   // exists the selectors return UNSET, so the curves'
-	                                   // ValueWhenUnknown governs instead of a dead 0
+	bool bDamageHistoryKnown = false;  // SOURCE (Phase 5): the controller's damage ledger,
+	                                   // fed by the host's one-per-hit damage seam through
+	                                   // NoteDamageTaken/NoteDamageDealt. A host that never
+	                                   // calls them leaves this false and the curves'
+	                                   // ValueWhenUnknown governs — never a dead 0
 	float RecentDamageTakenNorm = 0.f; // decayed window, fraction of max health, MAY exceed 1
 	float RecentDamageDealtNorm = 0.f;
 	int32 NearbyAllies = 0;
 	int32 NearbyEnemies = 0;           // "am I outnumbered" — the textbook confidence input
+
+	// -- the judgment (Phase 5): the confidence model's output, written by the
+	//    controller AFTER the builder runs and BEFORE the brain scores — the one fact
+	//    that is computed, not perceived, and it is flagged like every other unknowable
+	bool bConfidenceKnown = false;
+	float ConfidenceNorm = 0.5f;       // 0 = this fight is lost, 1 = press it
 
 	// -- the mode (HUD-grade; one entry per mode ambition) ---------------------------
 	TArray<FAIBObjectiveFact> Objectives;

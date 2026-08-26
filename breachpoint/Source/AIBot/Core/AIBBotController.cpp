@@ -162,6 +162,14 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	// reads as coordinated omniscience (W-REVIEW F-3.7).
 	Sensorium.SetRandomSeed(static_cast<int32>(GetUniqueID()));
 
+	// Phase 5: a fresh life judges the fight from nothing. The profile is the same
+	// defaults row until Phase 8 resolves the real tier; the misjudge stream is per-bot
+	// and DISTINCT from the sensorium's (a redraw must not shift reaction latencies).
+	SkillProfile.ResolveFrom(Defaults);
+	DamageLedger.Reset();
+	ConfidenceState = FAIBConfidenceState();
+	ConfidenceRandom.Initialize(static_cast<int32>(GetUniqueID()) + 7919);
+
 	GetWorldTimerManager().SetTimer(ThinkTimer, this, &AAIBBotController::Think,
 		FMath::Max(ThinkIntervalSeconds, 0.02f), /*bLoop=*/true);
 
@@ -224,6 +232,10 @@ void AAIBBotController::OnUnPossess()
 	// Same reasoning as the arbitration reset above: an absolute-time gate must not carry
 	// into a new world, where GetTimeSeconds starts over.
 	NextGrenadeThrowTimeSeconds = 0.f;
+	// Momentum and judgment die with the body too — a fresh spawn that still "feels"
+	// its last death's beating would flee its first fight (absolute-time stamps included).
+	DamageLedger.Reset();
+	ConfidenceState = FAIBConfidenceState();
 	Super::OnUnPossess();
 }
 
@@ -261,6 +273,39 @@ void AAIBBotController::NoteGrenadeThrown(float CooldownSeconds)
 	{
 		NextGrenadeThrowTimeSeconds = World->GetTimeSeconds() + FMath::Max(0.f, CooldownSeconds);
 	}
+}
+
+void AAIBBotController::NoteDamageTaken(AActor* Attacker, const FVector& AttackerLocation, float FractionOfMaxHealth)
+{
+	UWorld* World = GetWorld();
+	if (!World || !HasAuthority())
+	{
+		return;
+	}
+	const double Now = World->GetTimeSeconds();
+	bDamageSeamSeen = true; // the host's seam exists: history is a real fact from here on
+	DamageLedger.NoteTaken(FractionOfMaxHealth, Now);
+
+	// WHO HIT ME becomes a stimulus, not a target: it rides the same reaction clock as
+	// every sense and lands as MEMORY after maturing — being shot makes a bot go and
+	// look, never lock on (the host's own ruling on this exact seam, kept 1:1). The
+	// hostility filter matches the perception boundary's.
+	if (Attacker && Attacker != GetPawn()
+		&& GetTeamAttitudeTowards(*Attacker) == ETeamAttitude::Hostile)
+	{
+		Sensorium.NoteDamageFrom(Attacker, AttackerLocation, Now);
+	}
+}
+
+void AAIBBotController::NoteDamageDealt(float FractionOfVictimMaxHealth)
+{
+	UWorld* World = GetWorld();
+	if (!World || !HasAuthority())
+	{
+		return;
+	}
+	bDamageSeamSeen = true;
+	DamageLedger.NoteDealt(FractionOfVictimMaxHealth, World->GetTimeSeconds());
 }
 
 void AAIBBotController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
@@ -396,6 +441,22 @@ void AAIBBotController::Think()
 		// Cached, not local: executor tasks read GetLastFacts() between pumps, so the
 		// whole frame's execution sees the same matured snapshot (F3, one sample site).
 		LastFacts = AIBFactsBuilder::Build(*this, Now);
+
+		// Phase 5, in order: the ledger sources the damage-history facts, then the
+		// model judges the fight FROM the finished facts, then the brain scores.
+		// History is KNOWN only once the host's seam has ever spoken — a host that
+		// never wires it must stay UNKNOWN, not "confidently untouched" while being
+		// shot (unknown-is-a-state, applied to our own ledger).
+		if (bDamageSeamSeen)
+		{
+			LastFacts.bDamageHistoryKnown = true;
+			LastFacts.RecentDamageTakenNorm = DamageLedger.TakenNorm(Now);
+			LastFacts.RecentDamageDealtNorm = DamageLedger.DealtNorm(Now);
+		}
+		LastFacts.ConfidenceNorm = FAIBConfidenceModel::Step(ConfidenceState, LastFacts,
+			SkillProfile.Level(EAIBSkill::Confidence), ConfidenceRandom, Now);
+		LastFacts.bConfidenceKnown = true;
+
 		const FGameplayTag Ambition = AmbitionEngine->Rescore(LastFacts, Now);
 		if (Ambition.IsValid() && Ambition != LastLoggedAmbition)
 		{

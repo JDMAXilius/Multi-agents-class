@@ -33,7 +33,9 @@ enum class EAIBFactSelector : uint8
 	NearbyEnemies,
 	Outnumbered,            // enemies minus allies, signed
 	ObjectiveUrgency,       // read from the objective fact MATCHED to this ambition's tag
-	ObjectiveDistanceUU     // same; unset when the mode supplied no matching entry
+	ObjectiveDistanceUU,    // same; unset when the mode supplied no matching entry
+	ConfidenceNorm          // Phase 5: the model's judgment; unset until the controller
+	                        // computes it (a spec-built bare facts row stays unknown)
 };
 
 /**

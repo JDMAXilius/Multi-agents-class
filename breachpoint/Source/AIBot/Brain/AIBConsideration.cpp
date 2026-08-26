@@ -53,6 +53,8 @@ namespace
 		case EAIBFactSelector::ObjectiveDistanceUU:
 			return (MatchedObjective && MatchedObjective->DistanceUU >= 0.f)
 				? TOptional<float>(MatchedObjective->DistanceUU) : TOptional<float>();
+		case EAIBFactSelector::ConfidenceNorm:
+			return Facts.bConfidenceKnown ? TOptional<float>(Facts.ConfidenceNorm) : TOptional<float>();
 		}
 		return TOptional<float>();
 	}
