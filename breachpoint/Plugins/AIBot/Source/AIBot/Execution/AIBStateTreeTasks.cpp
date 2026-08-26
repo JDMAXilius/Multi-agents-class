@@ -1298,6 +1298,12 @@ EStateTreeRunStatus FAIBStrafeTask::Tick(FStateTreeExecutionContext& Context, co
 	const FVector Belief = Bot->GetSensorium().GetLastSeenLocation();
 	if (!IsWithin(*Bot, Belief, InstanceData.EngagedRadiusUU))
 	{
+		// Logged because this is the SILENT case: the old perpendicular step walked the
+		// bot out of this very gate, and holding here left no trace at all — the strafe
+		// simply stopped and nothing said so. A hold is not a failure, but it must be
+		// countable, or "the strafe is too short" has no measurement behind it.
+		UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s strafe held — outside the engaged radius (range %.0fuu > %.0fuu)."),
+			*Bot->GetName(), FVector::Dist(Pawn->GetActorLocation(), Belief), InstanceData.EngagedRadiusUU);
 		return EStateTreeRunStatus::Running;
 	}
 
@@ -1367,6 +1373,15 @@ EStateTreeRunStatus FAIBStrafeTask::Tick(FStateTreeExecutionContext& Context, co
 		== EPathFollowingRequestResult::Failed)
 	{
 		UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s strafe step refused — holding this leg."), *Bot->GetName());
+	}
+	else
+	{
+		// The measurement the founder's report needed and nobody had: how far one leg
+		// actually carries the bot, and at what range. Range is printed because the arc
+		// is supposed to hold it constant — a drifting range means the geometry is wrong.
+		UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s strafe leg — %.0fuu of arc at range %.0fuu (%.0f deg, %.2fs left)."),
+			*Bot->GetName(), ArcRadians * RangeUU, RangeUU,
+			FMath::RadiansToDegrees(ArcRadians), LegRemainingSeconds);
 	}
 	return EStateTreeRunStatus::Running;
 }
