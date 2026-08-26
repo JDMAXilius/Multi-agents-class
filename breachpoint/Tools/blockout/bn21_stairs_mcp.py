@@ -167,6 +167,10 @@ def main():
             print("  FAILED %s: %s" % (label, str(raw)[:100]))
         else:
             placed += 1
+            # NOTE: do NOT try SceneTools.save_actor here — an external actor package
+            # does not exist on disk until the LEVEL is saved, so save_actor answers
+            # "Asset does not exist". Saving the level is what writes the new
+            # __ExternalActors__ packages; verify the file count afterwards.
     print("placed %d/%d treads" % (placed, len(plan)))
     if placed != len(plan):
         print("REFUSING to save: not every tread landed. The level is dirty but unsaved;")
@@ -174,7 +178,7 @@ def main():
         return 1
 
     # asset_paths, plural, plain strings — same lesson as asset_path above.
-    v, raw = m.call(ASSET, "save_assets", {"asset_paths": [LEVEL], "only_if_dirty": False})
+    v, raw = m.call(ASSET, "save_assets", {"asset_paths": [LEVEL]})
     print("save: %s" % str(raw)[:120])
     return 0
 
