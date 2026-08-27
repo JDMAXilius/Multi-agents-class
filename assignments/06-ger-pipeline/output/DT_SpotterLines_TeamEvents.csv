@@ -1,0 +1,14 @@
+RowName,TriggerId,Text,Audience,Weight,RepeatCooldown_s
+S26a,Team.Mate.Down,Teammate down.,Team,1.0,20
+S26b,Team.Mate.Down,Ally down.,Team,1.0,20
+S26c,Team.Mate.Down,Friendly down.,Team,1.0,20
+S27a,Team.Mate.Avenged,Avenged.,Team,1.0,20
+S27b,Team.Mate.Avenged,Payback.,Team,1.0,20
+S27c,Team.Mate.Avenged,Revenge kill.,Team,1.0,20
+S28a,Team.LastAlive,You're all that's left.,Team,1.0,20
+S28b,Team.LastAlive,Alone out there.,Team,1.0,20
+S29a,Team.Wipe.Enemy,Team wipe.,Team,1.0,20
+S29b,Team.Wipe.Enemy,Squad wiped.,Team,1.0,20
+S30a,Team.Regroup,Regroup.,Team,1.0,20
+S30b,Team.Regroup,Team is scattered.,Team,1.0,20
+S30c,Team.Regroup,Fall back together.,Team,1.0,20

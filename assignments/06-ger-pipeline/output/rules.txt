@@ -1,0 +1,17 @@
+EVALUATOR RULES — every one traceable to the GDD or the shipped table
+
+1. STANDS_ALONE   (GDD §3.3)  ** the rule this pipeline exists for **
+   The canned table is "shipped in the build" and "No connectivity => the game
+   is identical minus flavor". A line needing live data cannot satisfy that.
+   Rejected: {placeholders}, digits, spelled-out counts, and proper nouns that
+   read as player names.
+
+2. LENGTH         (GDD §3.3)
+   "per event {spotter_line (<= 18 words) | null}"
+
+3. CANON          (GDD §6 cut list, §5.1 shipped scope)
+   No radar, motion tracker, plasma, vehicles or flag modes — the slice cuts
+   all of them, so an announcer cannot mention them.
+
+4. VOICE          (measured from DT_SpotterLines.csv)
+   No exclamation marks: zero of the 63 shipped lines carry one.

@@ -1,0 +1,274 @@
+{
+  "accepted": 13,
+  "escalated": 2,
+  "rejections": 6,
+  "refined_to_pass": 0,
+  "max_attempts": 3,
+  "slots": [
+    {
+      "trigger": "Team.Mate.Down",
+      "brief": "a teammate was killed",
+      "tempts": "safe",
+      "accepted": [
+        "Teammate down.",
+        "Ally down.",
+        "Friendly down."
+      ],
+      "history": [
+        {
+          "n": 1,
+          "stage": "generate",
+          "line": "Teammate down.",
+          "violations": []
+        },
+        {
+          "n": 1,
+          "stage": "generate",
+          "line": "Ally down.",
+          "violations": []
+        },
+        {
+          "n": 1,
+          "stage": "generate",
+          "line": "Friendly down.",
+          "violations": []
+        }
+      ],
+      "escalated": []
+    },
+    {
+      "trigger": "Team.Mate.Avenged",
+      "brief": "a teammate killed the enemy who just killed you",
+      "tempts": "TEMPTS a player name",
+      "accepted": [
+        "Avenged.",
+        "Payback.",
+        "Revenge kill."
+      ],
+      "history": [
+        {
+          "n": 1,
+          "stage": "generate",
+          "line": "Avenged.",
+          "violations": []
+        },
+        {
+          "n": 1,
+          "stage": "generate",
+          "line": "Payback.",
+          "violations": []
+        },
+        {
+          "n": 1,
+          "stage": "generate",
+          "line": "Revenge kill.",
+          "violations": []
+        }
+      ],
+      "escalated": []
+    },
+    {
+      "trigger": "Team.LastAlive",
+      "brief": "you are the last living member of your team",
+      "tempts": "TEMPTS a count of the living",
+      "accepted": [
+        "You're all that's left.",
+        "Alone out there."
+      ],
+      "history": [
+        {
+          "n": 1,
+          "stage": "generate",
+          "line": "Last one standing.",
+          "violations": [
+            "[STANDS_ALONE] spelled-out count 'one' \u2014 the canned path cannot know how many (GDD \u00a73.3)"
+          ]
+        },
+        {
+          "n": 2,
+          "stage": "refine",
+          "line": "Last one alive.",
+          "violations": [
+            "[STANDS_ALONE] spelled-out count 'one' \u2014 the canned path cannot know how many (GDD \u00a73.3)"
+          ]
+        },
+        {
+          "n": 3,
+          "stage": "refine",
+          "line": "Last one standing.",
+          "violations": [
+            "[STANDS_ALONE] spelled-out count 'one' \u2014 the canned path cannot know how many (GDD \u00a73.3)"
+          ]
+        },
+        {
+          "n": 1,
+          "stage": "generate",
+          "line": "You're all that's left.",
+          "violations": []
+        },
+        {
+          "n": 1,
+          "stage": "generate",
+          "line": "Alone out there.",
+          "violations": []
+        }
+      ],
+      "escalated": [
+        {
+          "final_line": "Last one standing.",
+          "attempts": 3,
+          "unresolved": [
+            "[STANDS_ALONE] spelled-out count 'one' \u2014 the canned path cannot know how many (GDD \u00a73.3)"
+          ],
+          "history": [
+            {
+              "n": 1,
+              "stage": "generate",
+              "line": "Last one standing.",
+              "violations": [
+                "[STANDS_ALONE] spelled-out count 'one' \u2014 the canned path cannot know how many (GDD \u00a73.3)"
+              ]
+            },
+            {
+              "n": 2,
+              "stage": "refine",
+              "line": "Last one alive.",
+              "violations": [
+                "[STANDS_ALONE] spelled-out count 'one' \u2014 the canned path cannot know how many (GDD \u00a73.3)"
+              ]
+            },
+            {
+              "n": 3,
+              "stage": "refine",
+              "line": "Last one standing.",
+              "violations": [
+                "[STANDS_ALONE] spelled-out count 'one' \u2014 the canned path cannot know how many (GDD \u00a73.3)"
+              ]
+            }
+          ],
+          "why": "the refiner could not satisfy the rule without losing the event; a human decides whether the event needs a line at all"
+        }
+      ]
+    },
+    {
+      "trigger": "Team.Wipe.Enemy",
+      "brief": "your team killed all four enemies at once",
+      "tempts": "safe",
+      "accepted": [
+        "Team wipe.",
+        "Squad wiped."
+      ],
+      "history": [
+        {
+          "n": 1,
+          "stage": "generate",
+          "line": "Team wipe.",
+          "violations": []
+        },
+        {
+          "n": 1,
+          "stage": "generate",
+          "line": "All four down.",
+          "violations": [
+            "[STANDS_ALONE] spelled-out count 'four' \u2014 the canned path cannot know how many (GDD \u00a73.3)"
+          ]
+        },
+        {
+          "n": 2,
+          "stage": "refine",
+          "line": "Team wipe.",
+          "violations": [
+            "[DISTINCT] 'Team wipe.' duplicates a variant already accepted for this trigger (DT_SpotterLines.csv \u2014 3 variants/trigger)"
+          ]
+        },
+        {
+          "n": 3,
+          "stage": "refine",
+          "line": "All four down.",
+          "violations": [
+            "[STANDS_ALONE] spelled-out count 'four' \u2014 the canned path cannot know how many (GDD \u00a73.3)"
+          ]
+        },
+        {
+          "n": 1,
+          "stage": "generate",
+          "line": "Squad wiped.",
+          "violations": []
+        }
+      ],
+      "escalated": [
+        {
+          "final_line": "All four down.",
+          "attempts": 3,
+          "unresolved": [
+            "[STANDS_ALONE] spelled-out count 'four' \u2014 the canned path cannot know how many (GDD \u00a73.3)"
+          ],
+          "history": [
+            {
+              "n": 1,
+              "stage": "generate",
+              "line": "Team wipe.",
+              "violations": []
+            },
+            {
+              "n": 1,
+              "stage": "generate",
+              "line": "All four down.",
+              "violations": [
+                "[STANDS_ALONE] spelled-out count 'four' \u2014 the canned path cannot know how many (GDD \u00a73.3)"
+              ]
+            },
+            {
+              "n": 2,
+              "stage": "refine",
+              "line": "Team wipe.",
+              "violations": [
+                "[DISTINCT] 'Team wipe.' duplicates a variant already accepted for this trigger (DT_SpotterLines.csv \u2014 3 variants/trigger)"
+              ]
+            },
+            {
+              "n": 3,
+              "stage": "refine",
+              "line": "All four down.",
+              "violations": [
+                "[STANDS_ALONE] spelled-out count 'four' \u2014 the canned path cannot know how many (GDD \u00a73.3)"
+              ]
+            }
+          ],
+          "why": "the refiner could not satisfy the rule without losing the event; a human decides whether the event needs a line at all"
+        }
+      ]
+    },
+    {
+      "trigger": "Team.Regroup",
+      "brief": "your team is scattered and should regroup",
+      "tempts": "safe",
+      "accepted": [
+        "Regroup.",
+        "Team is scattered.",
+        "Fall back together."
+      ],
+      "history": [
+        {
+          "n": 1,
+          "stage": "generate",
+          "line": "Regroup.",
+          "violations": []
+        },
+        {
+          "n": 1,
+          "stage": "generate",
+          "line": "Team is scattered.",
+          "violations": []
+        },
+        {
+          "n": 1,
+          "stage": "generate",
+          "line": "Fall back together.",
+          "violations": []
+        }
+      ],
+      "escalated": []
+    }
+  ]
+}

@@ -1,0 +1,160 @@
+{
+  "model": "claude-sonnet-5",
+  "exchanges": [
+    {
+      "agent": "generator",
+      "slot": "Team.Mate.Down",
+      "attempt": 0,
+      "prompt": "You write announcer lines for BREACHPOINT, a 4v4 team arena FPS.\n\n## THE HOUSE VOICE \u2014 these are real rows from the shipped table\n  Kill.Confirmed             'Kill confirmed.'\n  Kill.Confirmed             'Target down.'\n  Kill.Confirmed             'Hostile down.'\n  Rocket.Spawned             'Rocket up at the Core.'\n  Rocket.Spawned             'Rocket is live at the Core.'\n  Rocket.Spawned             'The Core is contested.'\n  Score.Blowout.Lead         'Lead is holding.'\n  Score.Blowout.Deficit      'Down heavy.'\n\nMeasured across all 63 shipped lines: 1 to 6 words, median 2, zero exclamation\nmarks. Match that.\n\n## THE EVENT\n`Team.Mate.Down` \u2014 a teammate was killed\n\n## THE CONSTRAINT THAT MATTERS\nThese lines ship inside the build and play when the game has no connectivity.\nThe build does not know who is playing or what the score is, so a line cannot\nrefer to anything only a live match would know.\n\nWrite 3 short variants. Return JSON only:\n{\"lines\": [\"...\", \"...\", \"...\"]}\n",
+      "response": {
+        "lines": [
+          "Teammate down.",
+          "Ally down.",
+          "Friendly down."
+        ]
+      },
+      "usage": {
+        "input_tokens": 2,
+        "output_tokens": 37,
+        "cost_usd": 0.0104084
+      },
+      "parse_retries": 0
+    },
+    {
+      "agent": "generator",
+      "slot": "Team.Mate.Avenged",
+      "attempt": 0,
+      "prompt": "You write announcer lines for BREACHPOINT, a 4v4 team arena FPS.\n\n## THE HOUSE VOICE \u2014 these are real rows from the shipped table\n  Kill.Confirmed             'Kill confirmed.'\n  Kill.Confirmed             'Target down.'\n  Kill.Confirmed             'Hostile down.'\n  Rocket.Spawned             'Rocket up at the Core.'\n  Rocket.Spawned             'Rocket is live at the Core.'\n  Rocket.Spawned             'The Core is contested.'\n  Score.Blowout.Lead         'Lead is holding.'\n  Score.Blowout.Deficit      'Down heavy.'\n\nMeasured across all 63 shipped lines: 1 to 6 words, median 2, zero exclamation\nmarks. Match that.\n\n## THE EVENT\n`Team.Mate.Avenged` \u2014 a teammate killed the enemy who just killed you\n\n## THE CONSTRAINT THAT MATTERS\nThese lines ship inside the build and play when the game has no connectivity.\nThe build does not know who is playing or what the score is, so a line cannot\nrefer to anything only a live match would know.\n\nWrite 3 short variants. Return JSON only:\n{\"lines\": [\"...\", \"...\", \"...\"]}\n\n\n## YOUR PREVIOUS REPLY WAS NOT VALID JSON\nno parseable JSON in reply (first 200: '{\"lines\": [\"Revenge kill.\", \"Payback.\", \"Avenged.\"}')\nReturn ONLY the JSON object, nothing else.",
+      "response": {
+        "lines": [
+          "Avenged.",
+          "Payback.",
+          "Revenge kill."
+        ]
+      },
+      "usage": {
+        "input_tokens": 2,
+        "output_tokens": 31,
+        "cost_usd": 0.010435000000000002
+      },
+      "parse_retries": 1
+    },
+    {
+      "agent": "generator",
+      "slot": "Team.LastAlive",
+      "attempt": 0,
+      "prompt": "You write announcer lines for BREACHPOINT, a 4v4 team arena FPS.\n\n## THE HOUSE VOICE \u2014 these are real rows from the shipped table\n  Kill.Confirmed             'Kill confirmed.'\n  Kill.Confirmed             'Target down.'\n  Kill.Confirmed             'Hostile down.'\n  Rocket.Spawned             'Rocket up at the Core.'\n  Rocket.Spawned             'Rocket is live at the Core.'\n  Rocket.Spawned             'The Core is contested.'\n  Score.Blowout.Lead         'Lead is holding.'\n  Score.Blowout.Deficit      'Down heavy.'\n\nMeasured across all 63 shipped lines: 1 to 6 words, median 2, zero exclamation\nmarks. Match that.\n\n## THE EVENT\n`Team.LastAlive` \u2014 you are the last living member of your team\n\n## THE CONSTRAINT THAT MATTERS\nThese lines ship inside the build and play when the game has no connectivity.\nThe build does not know who is playing or what the score is, so a line cannot\nrefer to anything only a live match would know.\n\nWrite 3 short variants. Return JSON only:\n{\"lines\": [\"...\", \"...\", \"...\"]}\n",
+      "response": {
+        "lines": [
+          "Last one standing.",
+          "You're all that's left.",
+          "Alone out there."
+        ]
+      },
+      "usage": {
+        "input_tokens": 2,
+        "output_tokens": 154,
+        "cost_usd": 0.0115826
+      },
+      "parse_retries": 0
+    },
+    {
+      "agent": "refiner",
+      "slot": "Team.LastAlive",
+      "attempt": 2,
+      "prompt": "You write announcer lines for BREACHPOINT, a 4v4 team arena FPS.\n\n## THE HOUSE VOICE \u2014 these are real rows from the shipped table\n  Kill.Confirmed             'Kill confirmed.'\n  Kill.Confirmed             'Target down.'\n  Kill.Confirmed             'Hostile down.'\n  Rocket.Spawned             'Rocket up at the Core.'\n  Rocket.Spawned             'Rocket is live at the Core.'\n  Rocket.Spawned             'The Core is contested.'\n  Score.Blowout.Lead         'Lead is holding.'\n  Score.Blowout.Deficit      'Down heavy.'\n\nMeasured across all 63 shipped lines: 1 to 6 words, median 2, zero exclamation\nmarks. Match that.\n\n## THE EVENT\n`Team.LastAlive` \u2014 you are the last living member of your team\n\n## A LINE YOU WROTE FAILED REVIEW\nLine: 'Last one standing.'\n\nViolations:\n  - [STANDS_ALONE] spelled-out count 'one' \u2014 the canned path cannot know how many (GDD \u00a73.3)\n\nRewrite ONLY this line so it passes, keeping the same event and the same\nregister. Do not solve the problem by writing something vague \u2014 \"something\nhappened\" passes the rules and says nothing.\n\nReturn JSON only: {\"line\": \"...\"}\n",
+      "response": {
+        "line": "Last one alive."
+      },
+      "usage": {
+        "input_tokens": 2,
+        "output_tokens": 14,
+        "cost_usd": 0.0102374
+      },
+      "parse_retries": 0
+    },
+    {
+      "agent": "refiner",
+      "slot": "Team.LastAlive",
+      "attempt": 3,
+      "prompt": "You write announcer lines for BREACHPOINT, a 4v4 team arena FPS.\n\n## THE HOUSE VOICE \u2014 these are real rows from the shipped table\n  Kill.Confirmed             'Kill confirmed.'\n  Kill.Confirmed             'Target down.'\n  Kill.Confirmed             'Hostile down.'\n  Rocket.Spawned             'Rocket up at the Core.'\n  Rocket.Spawned             'Rocket is live at the Core.'\n  Rocket.Spawned             'The Core is contested.'\n  Score.Blowout.Lead         'Lead is holding.'\n  Score.Blowout.Deficit      'Down heavy.'\n\nMeasured across all 63 shipped lines: 1 to 6 words, median 2, zero exclamation\nmarks. Match that.\n\n## THE EVENT\n`Team.LastAlive` \u2014 you are the last living member of your team\n\n## A LINE YOU WROTE FAILED REVIEW\nLine: 'Last one alive.'\n\nViolations:\n  - [STANDS_ALONE] spelled-out count 'one' \u2014 the canned path cannot know how many (GDD \u00a73.3)\n\nRewrite ONLY this line so it passes, keeping the same event and the same\nregister. Do not solve the problem by writing something vague \u2014 \"something\nhappened\" passes the rules and says nothing.\n\nReturn JSON only: {\"line\": \"...\"}\n",
+      "response": {
+        "line": "Last one standing."
+      },
+      "usage": {
+        "input_tokens": 2,
+        "output_tokens": 14,
+        "cost_usd": 0.0102374
+      },
+      "parse_retries": 0
+    },
+    {
+      "agent": "generator",
+      "slot": "Team.Wipe.Enemy",
+      "attempt": 0,
+      "prompt": "You write announcer lines for BREACHPOINT, a 4v4 team arena FPS.\n\n## THE HOUSE VOICE \u2014 these are real rows from the shipped table\n  Kill.Confirmed             'Kill confirmed.'\n  Kill.Confirmed             'Target down.'\n  Kill.Confirmed             'Hostile down.'\n  Rocket.Spawned             'Rocket up at the Core.'\n  Rocket.Spawned             'Rocket is live at the Core.'\n  Rocket.Spawned             'The Core is contested.'\n  Score.Blowout.Lead         'Lead is holding.'\n  Score.Blowout.Deficit      'Down heavy.'\n\nMeasured across all 63 shipped lines: 1 to 6 words, median 2, zero exclamation\nmarks. Match that.\n\n## THE EVENT\n`Team.Wipe.Enemy` \u2014 your team killed all four enemies at once\n\n## THE CONSTRAINT THAT MATTERS\nThese lines ship inside the build and play when the game has no connectivity.\nThe build does not know who is playing or what the score is, so a line cannot\nrefer to anything only a live match would know.\n\nWrite 3 short variants. Return JSON only:\n{\"lines\": [\"...\", \"...\", \"...\"]}\n",
+      "response": {
+        "lines": [
+          "Team wipe.",
+          "All four down.",
+          "Squad wiped."
+        ]
+      },
+      "usage": {
+        "input_tokens": 2,
+        "output_tokens": 32,
+        "cost_usd": 0.0103848
+      },
+      "parse_retries": 0
+    },
+    {
+      "agent": "refiner",
+      "slot": "Team.Wipe.Enemy",
+      "attempt": 2,
+      "prompt": "You write announcer lines for BREACHPOINT, a 4v4 team arena FPS.\n\n## THE HOUSE VOICE \u2014 these are real rows from the shipped table\n  Kill.Confirmed             'Kill confirmed.'\n  Kill.Confirmed             'Target down.'\n  Kill.Confirmed             'Hostile down.'\n  Rocket.Spawned             'Rocket up at the Core.'\n  Rocket.Spawned             'Rocket is live at the Core.'\n  Rocket.Spawned             'The Core is contested.'\n  Score.Blowout.Lead         'Lead is holding.'\n  Score.Blowout.Deficit      'Down heavy.'\n\nMeasured across all 63 shipped lines: 1 to 6 words, median 2, zero exclamation\nmarks. Match that.\n\n## THE EVENT\n`Team.Wipe.Enemy` \u2014 your team killed all four enemies at once\n\n## A LINE YOU WROTE FAILED REVIEW\nLine: 'All four down.'\n\nViolations:\n  - [STANDS_ALONE] spelled-out count 'four' \u2014 the canned path cannot know how many (GDD \u00a73.3)\n\nRewrite ONLY this line so it passes, keeping the same event and the same\nregister. Do not solve the problem by writing something vague \u2014 \"something\nhappened\" passes the rules and says nothing.\n\nReturn JSON only: {\"line\": \"...\"}\n",
+      "response": {
+        "line": "Team wipe."
+      },
+      "usage": {
+        "input_tokens": 2,
+        "output_tokens": 14,
+        "cost_usd": 0.0102392
+      },
+      "parse_retries": 0
+    },
+    {
+      "agent": "refiner",
+      "slot": "Team.Wipe.Enemy",
+      "attempt": 3,
+      "prompt": "You write announcer lines for BREACHPOINT, a 4v4 team arena FPS.\n\n## THE HOUSE VOICE \u2014 these are real rows from the shipped table\n  Kill.Confirmed             'Kill confirmed.'\n  Kill.Confirmed             'Target down.'\n  Kill.Confirmed             'Hostile down.'\n  Rocket.Spawned             'Rocket up at the Core.'\n  Rocket.Spawned             'Rocket is live at the Core.'\n  Rocket.Spawned             'The Core is contested.'\n  Score.Blowout.Lead         'Lead is holding.'\n  Score.Blowout.Deficit      'Down heavy.'\n\nMeasured across all 63 shipped lines: 1 to 6 words, median 2, zero exclamation\nmarks. Match that.\n\n## THE EVENT\n`Team.Wipe.Enemy` \u2014 your team killed all four enemies at once\n\n## A LINE YOU WROTE FAILED REVIEW\nLine: 'Team wipe.'\n\nViolations:\n  - [DISTINCT] 'Team wipe.' duplicates a variant already accepted for this trigger (DT_SpotterLines.csv \u2014 3 variants/trigger)\n\nRewrite ONLY this line so it passes, keeping the same event and the same\nregister. Do not solve the problem by writing something vague \u2014 \"something\nhappened\" passes the rules and says nothing.\n\nReturn JSON only: {\"line\": \"...\"}\n",
+      "response": {
+        "line": "All four down."
+      },
+      "usage": {
+        "input_tokens": 2,
+        "output_tokens": 12,
+        "cost_usd": 0.035948799999999996
+      },
+      "parse_retries": 0
+    },
+    {
+      "agent": "generator",
+      "slot": "Team.Regroup",
+      "attempt": 0,
+      "prompt": "You write announcer lines for BREACHPOINT, a 4v4 team arena FPS.\n\n## THE HOUSE VOICE \u2014 these are real rows from the shipped table\n  Kill.Confirmed             'Kill confirmed.'\n  Kill.Confirmed             'Target down.'\n  Kill.Confirmed             'Hostile down.'\n  Rocket.Spawned             'Rocket up at the Core.'\n  Rocket.Spawned             'Rocket is live at the Core.'\n  Rocket.Spawned             'The Core is contested.'\n  Score.Blowout.Lead         'Lead is holding.'\n  Score.Blowout.Deficit      'Down heavy.'\n\nMeasured across all 63 shipped lines: 1 to 6 words, median 2, zero exclamation\nmarks. Match that.\n\n## THE EVENT\n`Team.Regroup` \u2014 your team is scattered and should regroup\n\n## THE CONSTRAINT THAT MATTERS\nThese lines ship inside the build and play when the game has no connectivity.\nThe build does not know who is playing or what the score is, so a line cannot\nrefer to anything only a live match would know.\n\nWrite 3 short variants. Return JSON only:\n{\"lines\": [\"...\", \"...\", \"...\"]}\n",
+      "response": {
+        "lines": [
+          "Regroup.",
+          "Team is scattered.",
+          "Fall back together."
+        ]
+      },
+      "usage": {
+        "input_tokens": 2,
+        "output_tokens": 33,
+        "cost_usd": 0.010371799999999999
+      },
+      "parse_retries": 0
+    }
+  ]
+}

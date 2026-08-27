@@ -156,11 +156,31 @@ def detect_person_names(text: str) -> list[str]:
     return found
 
 
-def evaluate(text: str) -> list[Violation]:
+def normalise(text: str) -> str:
+    return re.sub(r"[^a-z ]", "", text.lower()).strip()
+
+
+def evaluate(text: str, accepted: tuple = ()) -> list[Violation]:
     """Every rule here is traceable to a line of the GDD. Rule 1 is the one the
-    assignment asks for: specific to this game, not a validity check."""
+    assignment asks for: specific to this game, not a validity check.
+
+    `accepted` is what has already passed for THIS slot, and rule 5 needs it.
+    """
     v: list[Violation] = []
     words = text.split()
+
+    # --- RULE 5 — DISTINCT ------------------------------------------------
+    # The shipped table gives every trigger three variants for one reason: a
+    # player who earns the same event twice should not hear the identical clip.
+    # This rule exists because the first live run shipped a table where it was
+    # violated — the refiner escaped a count violation on "All four down." by
+    # writing "Team wipe.", which was already accepted for that slot. Three
+    # variants, two distinct. A refiner's cheapest escape from any rule is to
+    # collapse onto the safest line it has already seen, so the loop has to
+    # forbid that explicitly or it silently trades variety for compliance.
+    if normalise(text) in {normalise(a) for a in accepted}:
+        v.append(Violation("DISTINCT", f"{text!r} duplicates a variant already accepted "
+                           f"for this trigger", "DT_SpotterLines.csv — 3 variants/trigger"))
 
     # --- RULE 1 — STANDS_ALONE. The headline rule. ------------------------
     # GDD §3.3: the canned table ships in the build and plays with no
@@ -446,7 +466,7 @@ def run_slot(engine: Engine, trigger: str, brief: str, tempts: str,
     for line in lines:
         attempt, current = 1, line
         while True:
-            violations = evaluate(current)
+            violations = evaluate(current, tuple(res.accepted))
             res.history.append(Attempt(attempt, "generate" if attempt == 1 else "refine",
                                        current, [str(x) for x in violations]))
             if not violations:
