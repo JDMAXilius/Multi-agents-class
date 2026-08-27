@@ -1,0 +1,72 @@
+# TICKET — AIB17: converge on a teammate's fight — the ally-gunfire channel
+
+> STATUS: DESIGNED 27 Aug 2026 (cloud lead, from the team-play audit's ranked candidate
+> #2 — highest per-event impact on the teams contact-density collapse). BUILD HELD until
+> the BN22 review barrier clears (the wave law: never stack on an unvalidated change).
+> Law: FAIRPLAY F1-F8; the two guarded channels are F-4.5 (a sense added later must not
+> silently become vision) and F5-C (a friendly must never become a stimulus/target).
+
+## The behavior
+
+A teammate's gunfire, HEARD within the bot's own hearing envelope, pulls an idle bot
+toward that fight. Enemy gunfire already does this (noise → matured memory → Search);
+a TEAMMATE's own shots are today dropped whole at the hostility filter
+(`AIBBotController.cpp:~527` — correctly, so a friendly footstep cannot evict enemy
+memory). The fix is a separate, smaller door at the same site — never a target.
+
+## The design (transcription-grounded, every seam located)
+
+1. **The tap** — in `OnPerceptionUpdated`'s Note boundary, BEFORE the non-Hostile drop:
+   a HEARING stimulus from a FRIENDLY whose `Stimulus.Tag` is a weapon-fire tag becomes
+   an ally-fight note, then falls through to the existing drop. The tag exists: BN
+   reports `BNWeaponFire` (BNGA_Fire.cpp:97) and `BNGrenadeBlast` (BNProjectile.cpp:284)
+   on every authority shot/blast. The module must not name BN's tags (boundary law) —
+   the HOST maps them: add `IAIBWorldQuery::IsWeaponNoiseTag(FName)` default-false (the
+   AreAllies precedent — defaulted, adapter implements) OR simpler: note ANY friendly
+   hearing stimulus and let loudness/decay carry it (footsteps are quiet + the envelope
+   is short — decide at build with aib-critic's input; the tag door is the safer cut).
+2. **The memory** — controller-side (`FAIBAllyFightMemory`, beside the movement state):
+   ONE point + stamp, newest-wins, decays after ~8s. Matured on the reaction clock (F1)
+   like every stimulus; NEVER enters `FAIBTargetMemory` (F5-C) and is its own kind, not
+   a sighting (F-4.5).
+3. **The gate** — Teamwork skill at note time (the CanEvadeBlast precedent: a Novice
+   never even receives): Novice deaf, Trained+ notes. Scaling headroom: Skilled+ could
+   sprint the approach later; not in the first cut.
+4. **The consumer** — `FAIBWanderTask` (Roam) only: with a fresh ally-fight point, the
+   wander destination draws from a radius AROUND the heard point instead of around
+   self (range-capped by the existing WanderRadiusUU so it never becomes a cross-map
+   teleport of intent). Roam stays the 0.2-floor want — this changes WHERE idle bots
+   wander, never WHETHER something real outbids idling. No new ambition, no new
+   selector, no facts change — the smallest surface that produces "bots show up to
+   their teammate's fight".
+5. **Instrument** — one Verbose line at note time (`ally fight heard — %s at %.0fuu`)
+   and one when a wander biases (`wandering toward the team's fight`), countable, exact
+   formats frozen for the harness before the terminal measures.
+
+## FAIRPLAY analysis (pre-answered for the critic)
+
+- Perception-bounded end to end: the note exists only if the bot's own ears (2200uu
+  default) heard it; matured on the reaction clock; decays; position is the HEARD
+  point, not the ally's live location afterward.
+- Never a target: the note carries a PLACE, no actor; consumed only by Roam's
+  destination draw. The existing hostility filter still drops the stimulus itself.
+- The enemy-knowledge derivative (a fight's location correlates with an enemy):
+  identical in kind to the ENEMY-gunfire path that already exists and to a human
+  hearing their teammate's rifle — bounded by the same ears.
+
+## Wave plan (after the BN22 barrier)
+
+Serial (lead): the memory struct + controller field + note-time tap and gate.
+Then ONE builder: wander consumer + adapter tag-door + instrument lines.
+Then aib-critic, one dimension: the two guarded channels above.
+
+## Done when
+
+- [ ] Rung 1; module specs green (+1 pin: Novice never notes — the gate's table)
+- [ ] Live: idle bots converge on a staged fight (log lines count it); FFA unchanged
+      (friendly = nobody in FFA — the tap is unreachable by construction)
+- [ ] The 26 Aug collapse metric re-run with Rally + this: kills/switches vs 12/461
+
+## Log
+
+_(outputs verbatim)_
