@@ -14,6 +14,7 @@
 #include "AbilitySystem/Attributes/BNAttributeSet.h"
 #include "AbilitySystem/Effects/BNGameplayEffects.h"
 #include "BreachpointNext.h"
+#include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 // FOverlapResult is FORWARD-DECLARED by Engine/World.h, not defined there. The hill's
 // OverlapMultiByChannel stores them in a TArray, which needs the complete type for
@@ -1199,22 +1200,82 @@ void ABNGameMode::HillTick()
 
 void ABNGameMode::GetModeAmbitions(TArray<FAIBModeAmbition>& OutAmbitions) const
 {
-	if (!bHillEnabled)
+	if (bHillEnabled)
 	{
-		return; // Slayer: no mode ambitions, and the bots just fight — the interface's zero case.
+		// BaseUtility 1.2 reads as "the objective can outrank a fight it is losing anyway":
+		// Engage peaks at 1.0×considerations, so the hill wins only when engagement's own
+		// facts sag — visible target and healthy nerve still take the fight.
+		FAIBModeAmbition& Hold = OutAmbitions.AddDefaulted_GetRef();
+		Hold.AmbitionTag = BNAIBTags::Ambition_Mode_Hold;
+		Hold.BaseUtility = 1.2f;
+		Hold.ObjectiveKind = BNAIBTags::POI_Hill;
 	}
 
-	// BaseUtility 1.2 reads as "the objective can outrank a fight it is losing anyway":
-	// Engage peaks at 1.0×considerations, so the hill wins only when engagement's own
-	// facts sag — visible target and healthy nerve still take the fight.
-	FAIBModeAmbition& Hold = OutAmbitions.AddDefaulted_GetRef();
-	Hold.AmbitionTag = BNAIBTags::Ambition_Mode_Hold;
-	Hold.BaseUtility = 1.2f;
-	Hold.ObjectiveKind = BNAIBTags::POI_Hill;
+	// TEAMS (founder, 27 Aug): the regroup want, teams matches only. BaseUtility 1.0 with
+	// urgency capped at 0.55 (below the EMPTY hill's 0.6) orders the wants deliberately:
+	// Engage/Seek/Search with anything real to act on beat Rally, Rally beats the 0.2
+	// Roam floor — an isolated bot walks toward its team instead of wandering alone,
+	// which is the measured teams-ON collapse (12 kills/461 switches) attacked at its
+	// mechanism: halved target density punished lone wanderers most. FFA-inert by
+	// CONSTRUCTION twice over: no ambition registered here, and no POI published there.
+	if (bTeamsEnabled)
+	{
+		FAIBModeAmbition& Rally = OutAmbitions.AddDefaulted_GetRef();
+		Rally.AmbitionTag = BNAIBTags::Ambition_Mode_Rally;
+		Rally.BaseUtility = 1.0f;
+		Rally.ObjectiveKind = BNAIBTags::POI_Ally;
+	}
 }
 
 float ABNGameMode::GetObjectiveUrgency(const AActor* Bot, FGameplayTag AmbitionTag) const
 {
+	// TEAMS (founder, 27 Aug): how loudly "regroup" calls = how ALONE this bot is, read
+	// the way a human reads their teammate radar — HUD-grade, no perception crosses.
+	// Zero inside RallyNearUU (arrival quiets the want — the POI's ReachRadiusUU is the
+	// same number), scaling to the 0.55 cap at RallyFarUU. No living teammate at all
+	// (everyone dead this instant) reads fully alone.
+	if (AmbitionTag == BNAIBTags::Ambition_Mode_Rally)
+	{
+		if (!bTeamsEnabled)
+		{
+			return 0.f;
+		}
+		const APawn* RallyPawn = Cast<APawn>(Bot);
+		const ABNPlayerState* RallyPS = RallyPawn ? RallyPawn->GetPlayerState<ABNPlayerState>() : nullptr;
+		const FGenericTeamId RallyTeam = RallyPS ? RallyPS->GetGenericTeamId() : FGenericTeamId::NoTeam;
+		UWorld* World = GetWorld();
+		if (!RallyPawn || !World || RallyTeam == FGenericTeamId::NoTeam)
+		{
+			return 0.f;
+		}
+		float NearestAllySq = TNumericLimits<float>::Max();
+		for (TActorIterator<APawn> It(World); It; ++It)
+		{
+			const APawn* Candidate = *It;
+			if (!Candidate || Candidate == RallyPawn)
+			{
+				continue;
+			}
+			const ABNPlayerState* PS = Candidate->GetPlayerState<ABNPlayerState>();
+			const FGenericTeamId Team = PS ? PS->GetGenericTeamId() : FGenericTeamId::NoTeam;
+			if (!BNTeams::AreFriendly(RallyTeam, Team))
+			{
+				continue;
+			}
+			const UAbilitySystemComponent* ASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(const_cast<APawn*>(Candidate));
+			if (!ASC || ASC->HasMatchingGameplayTag(BNTags::State_Dead))
+			{
+				continue;
+			}
+			NearestAllySq = FMath::Min(NearestAllySq,
+				static_cast<float>(FVector::DistSquared(RallyPawn->GetActorLocation(), Candidate->GetActorLocation())));
+		}
+		const float NearestAlly = NearestAllySq < TNumericLimits<float>::Max() ? FMath::Sqrt(NearestAllySq) : BNAIB::RallyFarUU;
+		const float Alone = FMath::Clamp(
+			(NearestAlly - BNAIB::RallyNearUU) / FMath::Max(1.f, BNAIB::RallyFarUU - BNAIB::RallyNearUU), 0.f, 1.f);
+		return Alone * 0.55f;
+	}
+
 	if (!bHillEnabled || AmbitionTag != BNAIBTags::Ambition_Mode_Hold)
 	{
 		return 0.f; // "the mode does not care" — the contract's own zero.

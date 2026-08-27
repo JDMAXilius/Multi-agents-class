@@ -16,4 +16,10 @@ namespace BNAIBTags
 	/** The Hill's POI kind — the typed join between the mode's ambition and the world
 	 *  query's points. */
 	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(POI_Hill);
+
+	/** TEAMS: regroup with the team (the want) and where the team is (the POI kind).
+	 *  The join that makes bots move TOWARD each other when isolated — the measured
+	 *  teams-ON collapse was bots wandering alone on a halved target density. */
+	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ambition_Mode_Rally);
+	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(POI_Ally);
 }

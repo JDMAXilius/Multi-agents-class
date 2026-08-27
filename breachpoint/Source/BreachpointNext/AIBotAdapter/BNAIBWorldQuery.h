@@ -7,6 +7,17 @@
 
 class ABNHillPoint;
 
+/** The rally geometry (TEAMS, 27 Aug), shared by the POI publisher (each ally POI's
+ *  ReachRadiusUU) and the mode's urgency (which reads ZERO inside Near) — one pair of
+ *  numbers, or the mover and the want disagree about what "with the team" means.
+ *  Near 600: close enough to fight together, far enough not to stack in one doorway.
+ *  Far 3000: past this, being alone is the loudest a regroup ever gets. */
+namespace BNAIB
+{
+	inline constexpr float RallyNearUU = 600.f;
+	inline constexpr float RallyFarUU = 3000.f;
+}
+
 /**
  * BN's answers to the AIBot module's world questions (Phase 6, teams landed BN15):
  * QueryPointsOfInterest, AreEnemies and CountNearbyAllies are implemented;
