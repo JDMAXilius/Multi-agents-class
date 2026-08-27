@@ -1,8 +1,8 @@
 {
-  "accepted": 13,
-  "escalated": 2,
-  "rejections": 6,
-  "refined_to_pass": 0,
+  "accepted": 19,
+  "escalated": 1,
+  "rejections": 7,
+  "refined_to_pass": 3,
   "max_attempts": 3,
   "slots": [
     {
@@ -12,7 +12,7 @@
       "accepted": [
         "Teammate down.",
         "Ally down.",
-        "Friendly down."
+        "You lost a teammate."
       ],
       "history": [
         {
@@ -30,7 +30,7 @@
         {
           "n": 1,
           "stage": "generate",
-          "line": "Friendly down.",
+          "line": "You lost a teammate.",
           "violations": []
         }
       ],
@@ -43,7 +43,7 @@
       "accepted": [
         "Avenged.",
         "Payback.",
-        "Revenge kill."
+        "Answered for it."
       ],
       "history": [
         {
@@ -61,7 +61,7 @@
         {
           "n": 1,
           "stage": "generate",
-          "line": "Revenge kill.",
+          "line": "Answered for it.",
           "violations": []
         }
       ],
@@ -72,8 +72,8 @@
       "brief": "you are the last living member of your team",
       "tempts": "TEMPTS a count of the living",
       "accepted": [
-        "You're all that's left.",
-        "Alone out there."
+        "Alone out there.",
+        "You're all that's left."
       ],
       "history": [
         {
@@ -103,13 +103,13 @@
         {
           "n": 1,
           "stage": "generate",
-          "line": "You're all that's left.",
+          "line": "Alone out there.",
           "violations": []
         },
         {
           "n": 1,
           "stage": "generate",
-          "line": "Alone out there.",
+          "line": "You're all that's left.",
           "violations": []
         }
       ],
@@ -155,20 +155,27 @@
       "brief": "your team killed all four enemies at once",
       "tempts": "safe",
       "accepted": [
-        "Team wipe.",
-        "Squad wiped."
+        "Team wiped.",
+        "Full wipe.",
+        "Enemy team wiped."
       ],
       "history": [
         {
           "n": 1,
           "stage": "generate",
-          "line": "Team wipe.",
+          "line": "Team wiped.",
           "violations": []
         },
         {
           "n": 1,
           "stage": "generate",
-          "line": "All four down.",
+          "line": "Full wipe.",
+          "violations": []
+        },
+        {
+          "n": 1,
+          "stage": "generate",
+          "line": "Squad down. All four.",
           "violations": [
             "[STANDS_ALONE] spelled-out count 'four' \u2014 the canned path cannot know how many (GDD \u00a73.3)"
           ]
@@ -176,68 +183,11 @@
         {
           "n": 2,
           "stage": "refine",
-          "line": "Team wipe.",
-          "violations": [
-            "[DISTINCT] 'Team wipe.' duplicates a variant already accepted for this trigger (DT_SpotterLines.csv \u2014 3 variants/trigger)"
-          ]
-        },
-        {
-          "n": 3,
-          "stage": "refine",
-          "line": "All four down.",
-          "violations": [
-            "[STANDS_ALONE] spelled-out count 'four' \u2014 the canned path cannot know how many (GDD \u00a73.3)"
-          ]
-        },
-        {
-          "n": 1,
-          "stage": "generate",
-          "line": "Squad wiped.",
+          "line": "Enemy team wiped.",
           "violations": []
         }
       ],
-      "escalated": [
-        {
-          "final_line": "All four down.",
-          "attempts": 3,
-          "unresolved": [
-            "[STANDS_ALONE] spelled-out count 'four' \u2014 the canned path cannot know how many (GDD \u00a73.3)"
-          ],
-          "history": [
-            {
-              "n": 1,
-              "stage": "generate",
-              "line": "Team wipe.",
-              "violations": []
-            },
-            {
-              "n": 1,
-              "stage": "generate",
-              "line": "All four down.",
-              "violations": [
-                "[STANDS_ALONE] spelled-out count 'four' \u2014 the canned path cannot know how many (GDD \u00a73.3)"
-              ]
-            },
-            {
-              "n": 2,
-              "stage": "refine",
-              "line": "Team wipe.",
-              "violations": [
-                "[DISTINCT] 'Team wipe.' duplicates a variant already accepted for this trigger (DT_SpotterLines.csv \u2014 3 variants/trigger)"
-              ]
-            },
-            {
-              "n": 3,
-              "stage": "refine",
-              "line": "All four down.",
-              "violations": [
-                "[STANDS_ALONE] spelled-out count 'four' \u2014 the canned path cannot know how many (GDD \u00a73.3)"
-              ]
-            }
-          ],
-          "why": "the refiner could not satisfy the rule without losing the event; a human decides whether the event needs a line at all"
-        }
-      ]
+      "escalated": []
     },
     {
       "trigger": "Team.Regroup",
@@ -245,7 +195,7 @@
       "tempts": "safe",
       "accepted": [
         "Regroup.",
-        "Team is scattered.",
+        "Team, regroup.",
         "Fall back together."
       ],
       "history": [
@@ -258,13 +208,102 @@
         {
           "n": 1,
           "stage": "generate",
-          "line": "Team is scattered.",
+          "line": "Team, regroup.",
           "violations": []
         },
         {
           "n": 1,
           "stage": "generate",
           "line": "Fall back together.",
+          "violations": []
+        }
+      ],
+      "escalated": []
+    },
+    {
+      "trigger": "Rocket.PickedUp.Team",
+      "brief": "a teammate picked up the Rocket Launcher (2 shots, back on the pad in 90 seconds)",
+      "tempts": "TEMPTS the weapon's numbers",
+      "accepted": [
+        "Rocket up.",
+        "Rocket picked up.",
+        "Team has the Rocket."
+      ],
+      "history": [
+        {
+          "n": 1,
+          "stage": "generate",
+          "line": "Rocket up.",
+          "violations": []
+        },
+        {
+          "n": 1,
+          "stage": "generate",
+          "line": "Rocket picked up.",
+          "violations": []
+        },
+        {
+          "n": 1,
+          "stage": "generate",
+          "line": "Team has the Rocket.",
+          "violations": []
+        }
+      ],
+      "escalated": []
+    },
+    {
+      "trigger": "Team.Mate.Down",
+      "brief": "a teammate was killed",
+      "tempts": "FIXTURE \u2014 generated live, 27 Aug run 3 \u2014 the count is incidental; the event survives losing it",
+      "accepted": [
+        "Ally lost."
+      ],
+      "history": [
+        {
+          "n": 1,
+          "stage": "fixture",
+          "line": "One of ours is down.",
+          "violations": [
+            "[STANDS_ALONE] spelled-out count 'one' \u2014 the canned path cannot know how many (GDD \u00a73.3)"
+          ]
+        },
+        {
+          "n": 2,
+          "stage": "refine",
+          "line": "Teammate down.",
+          "violations": [
+            "[DISTINCT] 'Teammate down.' duplicates a variant already accepted for this trigger (DT_SpotterLines.csv \u2014 3 variants/trigger)"
+          ]
+        },
+        {
+          "n": 3,
+          "stage": "refine",
+          "line": "Ally lost.",
+          "violations": []
+        }
+      ],
+      "escalated": []
+    },
+    {
+      "trigger": "Team.Wipe.Enemy",
+      "brief": "your team killed all four enemies at once",
+      "tempts": "FIXTURE \u2014 generated live, 27 Aug run 4 \u2014 the brief's own number copied into the line",
+      "accepted": [
+        "Team wipe."
+      ],
+      "history": [
+        {
+          "n": 1,
+          "stage": "fixture",
+          "line": "All four down.",
+          "violations": [
+            "[STANDS_ALONE] spelled-out count 'four' \u2014 the canned path cannot know how many (GDD \u00a73.3)"
+          ]
+        },
+        {
+          "n": 2,
+          "stage": "refine",
+          "line": "Team wipe.",
           "violations": []
         }
       ],

@@ -101,6 +101,16 @@ SLOTS = [
      "TEMPTS a count of the living"),
     ("Team.Wipe.Enemy", "your team killed all four enemies at once", "safe"),
     ("Team.Regroup", "your team is scattered and should regroup", "safe"),
+    # The shipped table announces the ENEMY taking the rocket
+    # (Rocket.PickedUp.Enemy — "Power weapon lost.") but has no trigger for a
+    # teammate securing it: the good news has no mirror. The brief states the
+    # weapon's real numbers (GDD Appendix A: 2 shots, 90 s respawn) because the
+    # generator copying them into a line is exactly the fixable violation the
+    # refiner exists for — unlike LastAlive's "one", a rocket line survives
+    # losing its numbers.
+    ("Rocket.PickedUp.Team",
+     "a teammate picked up the Rocket Launcher (2 shots, back on the pad in 90 seconds)",
+     "TEMPTS the weapon's numbers"),
 ]
 
 
@@ -383,6 +393,19 @@ def extract_json(text: str):
 # GENERATOR and REFINER prompts
 # ===========================================================================
 
+# The generator is DELIBERATELY not told the STANDS_ALONE rule.
+#
+# The first version's prompt carried a paragraph explaining the connectivity
+# constraint, and across three live runs the generator self-censored almost
+# perfectly — clean lines everywhere except the un-refinable "one" idiom. That
+# looks like success and is the opposite: enforcement had quietly moved into
+# the generator's prompt, where it is invisible, unversioned against the GDD,
+# and only as reliable as the model's mood. The GER shape puts enforcement in
+# ONE place — the deterministic evaluator — and lets the generator do the one
+# thing it is for. A generator that happens to write a compliant line is fine;
+# a generator instructed into compliance means the evaluator is never tested
+# by realistic input. Voice stays in the prompt because voice IS generation's
+# job; the rule does not, because the rule is the evaluator's.
 VOICE_BLOCK = """## THE HOUSE VOICE — these are real rows from the shipped table
 {exemplars}
 
@@ -395,11 +418,6 @@ GENERATE_PROMPT = """You write announcer lines for BREACHPOINT, a 4v4 team arena
 
 ## THE EVENT
 `{trigger}` — {brief}
-
-## THE CONSTRAINT THAT MATTERS
-These lines ship inside the build and play when the game has no connectivity.
-The build does not know who is playing or what the score is, so a line cannot
-refer to anything only a live match would know.
 
 Write {n} short variants. Return JSON only:
 {{"lines": ["...", "...", "..."]}}
@@ -530,6 +548,81 @@ def run_slot(engine: Engine, trigger: str, brief: str, tempts: str,
     return res
 
 
+# ===========================================================================
+# Regression fixtures — real defects from recorded runs, kept so the repair
+# path is proven on EVERY run
+# ===========================================================================
+#
+# Across five live runs the generator's violations split into two kinds: the
+# semantic trap ("Last one standing.", where the concept invites the banned
+# word — breaker material by design) and the incidental slip, where a count
+# rides along and the line survives losing it. The slips are the refiner's
+# whole reason to exist, and they are INTERMITTENT: three consecutive runs
+# produced none, because a strong model imitating 63 compliant exemplars
+# mostly writes compliant lines. A repair path exercised only when sampling
+# happens to misfire is a repair path nobody can rely on — so the defects the
+# generator DID produce are kept as fixtures and pushed through the same live
+# refine loop every run. Same evaluator, same refiner, same breaker; only the
+# first line is history instead of fresh sampling.
+
+FIXTURES = [
+    ("Team.Mate.Down", "One of ours is down.",
+     "generated live, 27 Aug run 3 — the count is incidental; the event survives losing it"),
+    ("Team.Wipe.Enemy", "All four down.",
+     "generated live, 27 Aug run 4 — the brief's own number copied into the line"),
+]
+
+
+def run_fixture(engine: Engine, trigger: str, line: str, why: str, voice: str,
+                already_accepted: list[str], brief: str) -> SlotResult:
+    """The refine loop from run_slot, entered with a known-defective line.
+
+    `already_accepted` carries the main slot's landed variants, so a fixture
+    fix cannot dodge its violation by duplicating one of them — the exact
+    escape rule 5 exists to forbid.
+    """
+    res = SlotResult(trigger=trigger, brief=brief, tempts=f"FIXTURE — {why}")
+    log(f"\n=== fixture: {trigger} — {line!r}")
+    log(f"    ({why})")
+    attempt, current = 1, line
+    while True:
+        violations = evaluate(current, tuple(already_accepted + res.accepted))
+        res.history.append(Attempt(attempt, "fixture" if attempt == 1 else "refine",
+                                   current, [str(x) for x in violations]))
+        if not violations:
+            res.accepted.append(current)
+            log(f"  REFINED    {current!r}  (passed on attempt {attempt})")
+            break
+        log(f"  REJECTED   {current!r}")
+        for viol in violations:
+            log(f"             {viol}")
+        if attempt >= MAX_ATTEMPTS:
+            log(f"  BREAKER    tripped after {attempt} attempts — escalating")
+            res.escalated.append({
+                "final_line": current, "attempts": attempt,
+                "unresolved": [str(x) for x in violations],
+                "history": [asdict(a) for a in res.history if a.line],
+                "why": "a known-fixable defect could not be refined — the repair "
+                       "path itself has regressed"})
+            break
+        attempt += 1
+        try:
+            ref = engine.call(
+                REFINE_PROMPT.format(voice=voice, trigger=trigger, brief=brief,
+                                     line=current,
+                                     violations="\n".join(f"  - {v}" for v in violations)),
+                {"agent": "refiner", "slot": f"fixture:{trigger}", "attempt": attempt})
+        except ParseFailure as e:
+            res.escalated.append({
+                "final_line": current, "attempts": attempt,
+                "unresolved": [str(x) for x in violations] + [f"refiner unparseable: {e}"],
+                "history": [asdict(a) for a in res.history if a.line],
+                "why": "the refiner stopped returning usable output on a fixture"})
+            break
+        current = str(ref["line"]).strip()
+    return res
+
+
 def rows_to_csv(results: list[SlotResult]) -> str:
     buf = io.StringIO()
     cols = ["RowName", "TriggerId", "Text", "Audience", "Weight", "RepeatCooldown_s"]
@@ -567,6 +660,14 @@ def main():
     log(f"rule under enforcement: STANDS_ALONE ({GDD_33}) + length, canon, voice")
 
     results = [run_slot(engine, t, b, tempt, voice) for t, b, tempt in SLOTS]
+
+    # The regression fixtures run through the same refine loop, seeded with the
+    # main slot's accepted lines so a fix cannot pass by duplicating one.
+    briefs = {t: b for t, b, _ in SLOTS}
+    for trigger, line, why in FIXTURES:
+        landed = next((r.accepted for r in results if r.trigger == trigger), [])
+        results.append(run_fixture(engine, trigger, line, why, voice,
+                                   list(landed), briefs.get(trigger, trigger)))
     engine.save()
 
     accepted = sum(len(r.accepted) for r in results)

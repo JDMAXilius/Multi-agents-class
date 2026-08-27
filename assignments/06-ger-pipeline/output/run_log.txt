@@ -2,16 +2,16 @@ GER pipeline · BREACHPOINT · LIVE · max 3 attempts per line
 rule under enforcement: STANDS_ALONE (GDD §3.3) + length, canon, voice
 
 === Team.Mate.Down — a teammate was killed
-  GENERATED  ['Teammate down.', 'Ally down.', 'Friendly down.']
+  GENERATED  ['Teammate down.', 'Ally down.', 'You lost a teammate.']
 
 === Team.Mate.Avenged — a teammate killed the enemy who just killed you
     (this slot TEMPTS a player name)
-             (malformed reply, retrying: no parseable JSON in reply (first 200: '{"lines": ["Revenge kill.", "P)
-  GENERATED  ['Avenged.', 'Payback.', 'Revenge kill.']
+             (malformed reply, retrying: no parseable JSON in reply (first 200: '{"lines": ["Avenged.", "Paybac)
+  GENERATED  ['Avenged.', 'Payback.', 'Answered for it.']
 
 === Team.LastAlive — you are the last living member of your team
     (this slot TEMPTS a count of the living)
-  GENERATED  ['Last one standing.', "You're all that's left.", 'Alone out there.']
+  GENERATED  ['Last one standing.', 'Alone out there.', "You're all that's left."]
   REJECTED   'Last one standing.'
              [STANDS_ALONE] spelled-out count 'one' — the canned path cannot know how many (GDD §3.3)
   REJECTED   'Last one alive.'
@@ -21,24 +21,37 @@ rule under enforcement: STANDS_ALONE (GDD §3.3) + length, canon, voice
   BREAKER    tripped after 3 attempts — escalating to the human lead
 
 === Team.Wipe.Enemy — your team killed all four enemies at once
-  GENERATED  ['Team wipe.', 'All four down.', 'Squad wiped.']
-  REJECTED   'All four down.'
+  GENERATED  ['Team wiped.', 'Full wipe.', 'Squad down. All four.']
+  REJECTED   'Squad down. All four.'
              [STANDS_ALONE] spelled-out count 'four' — the canned path cannot know how many (GDD §3.3)
-  REJECTED   'Team wipe.'
-             [DISTINCT] 'Team wipe.' duplicates a variant already accepted for this trigger (DT_SpotterLines.csv — 3 variants/trigger)
-  REJECTED   'All four down.'
-             [STANDS_ALONE] spelled-out count 'four' — the canned path cannot know how many (GDD §3.3)
-  BREAKER    tripped after 3 attempts — escalating to the human lead
+  REFINED    'Enemy team wiped.'  (passed on attempt 2)
 
 === Team.Regroup — your team is scattered and should regroup
-  GENERATED  ['Regroup.', 'Team is scattered.', 'Fall back together.']
+  GENERATED  ['Regroup.', 'Team, regroup.', 'Fall back together.']
+
+=== Rocket.PickedUp.Team — a teammate picked up the Rocket Launcher (2 shots, back on the pad in 90 seconds)
+    (this slot TEMPTS the weapon's numbers)
+  GENERATED  ['Rocket up.', 'Rocket picked up.', 'Team has the Rocket.']
+
+=== fixture: Team.Mate.Down — 'One of ours is down.'
+    (generated live, 27 Aug run 3 — the count is incidental; the event survives losing it)
+  REJECTED   'One of ours is down.'
+             [STANDS_ALONE] spelled-out count 'one' — the canned path cannot know how many (GDD §3.3)
+  REJECTED   'Teammate down.'
+             [DISTINCT] 'Teammate down.' duplicates a variant already accepted for this trigger (DT_SpotterLines.csv — 3 variants/trigger)
+  REFINED    'Ally lost.'  (passed on attempt 3)
+
+=== fixture: Team.Wipe.Enemy — 'All four down.'
+    (generated live, 27 Aug run 4 — the brief's own number copied into the line)
+  REJECTED   'All four down.'
+             [STANDS_ALONE] spelled-out count 'four' — the canned path cannot know how many (GDD §3.3)
+  REFINED    'Team wipe.'  (passed on attempt 2)
 
 --- summary ---
-  accepted            13
-  rejected by rule    6
-  fixed by the refiner 0
-  escalated by breaker 2
+  accepted            19
+  rejected by rule    7
+  fixed by the refiner 3
+  escalated by breaker 1
     ESCALATED Team.LastAlive: 'Last one standing.' — ["[STANDS_ALONE] spelled-out count 'one' — the canned path cannot know how many (GDD §3.3)"]
-    ESCALATED Team.Wipe.Enemy: 'All four down.' — ["[STANDS_ALONE] spelled-out count 'four' — the canned path cannot know how many (GDD §3.3)"]
 
 wrote output/DT_SpotterLines_TeamEvents.csv · output/run_report.json

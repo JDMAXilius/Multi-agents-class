@@ -8,6 +8,7 @@ A Generator → Evaluator → Refiner loop with a Circuit Breaker, writing annou
 team events and enforcing one rule from BREACHPOINT's GDD.
 
 ```bash
+./verify.sh               # ← START HERE: checks every rubric criterion, exit 0 = all pass
 python3 ger.py            # replay the committed run — stdlib only, no API key
 python3 ger.py --rules    # the evaluator's rules, no model call at all
 python3 ger.py --live     # real model calls, re-records
@@ -108,19 +109,47 @@ each exempted when the word is BREACHPOINT's own vocabulary. `"Teammate down."` 
 ## The committed run
 
 ```
-accepted             13
-rejected by rule      6
-fixed by the refiner  0
-escalated by breaker  2
+accepted             19
+rejected by rule      7
+fixed by the refiner  3
+escalated by breaker  1
 ```
 
 Landed: **[`output/DT_SpotterLines_TeamEvents.csv`](output/DT_SpotterLines_TeamEvents.csv)** —
-13 lines across 5 team triggers. Verified after landing: no duplicate variants, max 4 words
-against a cap of 18, and **zero rows fail the evaluator that produced them**.
+19 lines across 6 team triggers (one of them, `Rocket.PickedUp.Team`, is the good-news mirror
+the shipped table lacks: `Rocket.PickedUp.Enemy` has three lines, a teammate securing it had
+zero). Verified after landing: no duplicate variants, well under the 18-word cap, and **zero
+rows fail the evaluator that produced them**.
 
-Two of the five slots were chosen **because they tempt the rule** — a line about the last
-survivor wants a count, a line about being avenged wants a name. An evaluator that only ever
-sees safe input demonstrates nothing.
+Three of the six slots were chosen **because they tempt the rule** — a line about the last
+survivor wants a count, a line about being avenged wants a name, a line about the rocket wants
+its numbers (2 shots, 90 s). An evaluator that only ever sees safe input demonstrates nothing.
+
+The refiner's demonstrated fix, from a main slot:
+
+```
+REJECTED  'Squad down. All four.'   [STANDS_ALONE] spelled-out count 'four'
+REFINED   'Enemy team wiped.'       (passed on attempt 2)
+```
+
+### Two design findings the runs forced
+
+**The generator is deliberately not told the rule.** The first prompt explained the
+connectivity constraint to the generator, and across three live runs it self-censored almost
+perfectly. That looks like success and is the opposite: enforcement had quietly moved into a
+prompt, where it is invisible, unversioned against the GDD, and only as reliable as the
+model's mood. The GER shape puts enforcement in **one** place — the deterministic evaluator.
+Voice stays in the generator's prompt because voice *is* generation's job; the rule does not.
+
+**Known defects are kept as regression fixtures.** Even the naive generator, imitating 63
+compliant exemplars, produces fixable violations only intermittently — three consecutive runs
+produced none. A repair path exercised only when sampling misfires is a repair path nobody can
+rely on. So two real defects from earlier recorded runs (`'One of ours is down.'`,
+`'All four down.'`) are pushed through the same live refine loop on **every** run. Fixture 1
+demonstrated three rules in one arc this run: the count caught, the refiner's first fix
+(`'Teammate down.'`) **rejected as a duplicate by rule 5**, and `'Ally lost.'` landing on
+attempt 3. If a fixture ever escalates, the report reads *"the repair path itself has
+regressed"* — which is what a regression test is for.
 
 ### The Circuit Breaker earned its place
 
@@ -135,7 +164,7 @@ BREAKER tripped — escalating to the human lead
 
 Attempt 3 returned attempt 1's line. The refiner could not escape the word *"one"* because
 the **concept** of being last invites it. Without a breaker that loop runs until the budget
-does. Both escalations carry their full history into
+does. The escalation carries its full history into
 [`output/run_report.json`](output/run_report.json), so the human inherits the attempts rather
 than a bare failure.
 
@@ -207,10 +236,13 @@ paid calls because it was written only on success.
 
 ```
 PRE-BUILD-DECLARATION.txt   the three answers, written before any code   ← deliverable
+verify.sh                   checks every rubric criterion against a fresh replay ← run this first
+TICKET_VERIFY.md            what each check does, and what it does not prove
+make_submission.sh          builds the zip; refuses to ship a package that fails its replay
 ger.py                      Generator · Evaluator · Refiner · Circuit Breaker
 recording.json              the committed live run, so replay needs no API key
 output/
-  DT_SpotterLines_TeamEvents.csv   13 accepted lines               ← deliverable
+  DT_SpotterLines_TeamEvents.csv   19 accepted lines               ← deliverable
   run_report.json                  every attempt, every violation, both escalations
   rules.txt                        the evaluator's rules, as printed by --rules
 README.md                   this file
