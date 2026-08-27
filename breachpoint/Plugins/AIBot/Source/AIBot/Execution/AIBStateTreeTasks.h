@@ -207,6 +207,17 @@ struct FAIBMoveNearBeliefTaskInstanceData
 	UPROPERTY(EditAnywhere, Category = "Parameter")
 	float AcceptanceRadiusUU = 350.f;
 
+	/** FOOTWORK OWNS THE FIGHT (founder, 27 Aug: "they don't seem to be strafing at
+	 *  all"): with the target VISIBLE inside this range, this mover stands down entirely
+	 *  and the strafe task owns the legs — the old shape closed to 350uu before any
+	 *  footwork could run, so bots beelined instead of fighting at range, and the strafe
+	 *  measured gated-out. MIRRORS FAIBStrafeTaskInstanceData::FightRangeUU on purpose
+	 *  (two movers issuing in one tick cancel per tick — one number is the whole
+	 *  arbitration). Closing resumes the moment sight is lost (this task fails) or the
+	 *  target is beyond this range. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float FightRangeUU = 900.f;
+
 	/** Floor between move requests. Out of position for ANY reason — the belief drifted
 	 *  or the BOT was displaced (knockback, a pad) — re-closes on this cadence, which is
 	 *  also what keeps pathfinds off per-frame cost (W-REVIEW P3 M3: the old drift-only
@@ -580,16 +591,23 @@ struct FAIBStrafeTaskInstanceData
 	/** The FLOOR of the stand-off band. Chord dips captured by mid-walk leg decisions
 	 *  re-normalize OUT to at least this radius on the next leg (the spiral fix), so
 	 *  a fight never creeps from station-keeping into melee-accident range. Above the
-	 *  audited weapon reach (120uu x 0.8 commit) with margin; below EngagedRadiusUU
+	 *  audited weapon reach (120uu x 0.8 commit) with margin; below FightRangeUU
 	 *  so the band is real. */
 	UPROPERTY(EditAnywhere, Category = "Parameter")
 	float StandOffMinUU = 280.f;
 
-	/** Strafe only while STATION-KEEPING — inside this radius of the belief. Mirrors
-	 *  FAIBMoveNearBeliefTask's acceptance radius on purpose: outside it the mover owns
-	 *  the legs, and two tasks issuing moves at once cancel each other per tick. */
+	/** Strafe whenever the fight is INSIDE this range of the belief — the whole visible
+	 *  mid-range fight, not just the 350uu station (founder, 27 Aug). Mirrors
+	 *  FAIBMoveNearBeliefTaskInstanceData::FightRangeUU on purpose: inside it the mover
+	 *  stands down and footwork owns the legs; outside it the mover closes and this task
+	 *  holds — one number, one arbitration, never two movers in one tick.
+	 *
+	 *  RENAMED from EngagedRadiusUU deliberately: the authored tree serialized the old
+	 *  350 default into its task instance data, and a rename is what drops that stale
+	 *  value to this fresh default on load — a plain default change would have been
+	 *  silently pinned by the asset. */
 	UPROPERTY(EditAnywhere, Category = "Parameter")
-	float EngagedRadiusUU = 350.f;
+	float FightRangeUU = 900.f;
 
 	/* The last-actuated-leg stamp used to live here — and re-initialised on every Engage
 	 * re-entry, so one leg re-fired per belief blink (W-REVIEW P4+5 H1). It is

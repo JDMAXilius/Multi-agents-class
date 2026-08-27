@@ -487,12 +487,23 @@ EStateTreeRunStatus FAIBMoveNearBeliefTask::Tick(FStateTreeExecutionContext& Con
 		return EStateTreeRunStatus::Failed;
 	}
 
+	// FOOTWORK OWNS THE FIGHT RANGE (founder, 27 Aug — see the instance data's comment):
+	// target visible inside FightRangeUU, this mover stands down and the strafe task has
+	// the legs. The sprint hand-off matters: TickLocomotion below is what RELEASES a
+	// held sprint, so yielding must release it explicitly or the bot strafes at sprint
+	// speed with the key stuck down (ReleaseLocomotion is state-guarded — free per tick).
+	const FVector Belief = Bot->GetSensorium().GetLastSeenLocation();
+	if (IsWithin(*Bot, Belief, InstanceData.FightRangeUU))
+	{
+		ReleaseLocomotion(*Bot, InstanceData.Locomotion);
+		return EStateTreeRunStatus::Running;
+	}
+
 	// Station-keeping: chase the belief's drift, never complete. Firing runs beside
 	// this task; the sentinel or a visibility loss is what ends the branch. Out of
 	// position for ANY reason — belief drift or the BOT displaced (knockback, a pad) —
 	// re-closes on the repath cadence (W-REVIEW P3 M3).
 	InstanceData.RepathCooldown -= DeltaTime;
-	const FVector Belief = Bot->GetSensorium().GetLastSeenLocation();
 	if (!IsWithin(*Bot, Belief, InstanceData.AcceptanceRadiusUU)
 		&& InstanceData.RepathCooldown <= 0.f)
 	{
@@ -1392,9 +1403,12 @@ EStateTreeRunStatus FAIBStrafeTask::Tick(FStateTreeExecutionContext& Context, co
 		return EStateTreeRunStatus::Running;
 	}
 
-	// Only while station-keeping: outside the engaged radius the mover owns the legs.
+	// The whole visible fight range is footwork's (founder, 27 Aug): outside FightRangeUU
+	// the mover owns the legs and this task holds. The log wording below is FROZEN — the
+	// harness's strafe_hold regex transcribes it, and "the engaged radius" now names this
+	// wider gate.
 	const FVector Belief = Bot->GetSensorium().GetLastSeenLocation();
-	if (!IsWithin(*Bot, Belief, InstanceData.EngagedRadiusUU))
+	if (!IsWithin(*Bot, Belief, InstanceData.FightRangeUU))
 	{
 		// THE SPELL EDGE (AIB10 re-instrument): the first cut logged this hold EVERY TICK
 		// while the leg line fired once per leg, and the "182:1 gated out" measurement was
@@ -1409,7 +1423,7 @@ EStateTreeRunStatus FAIBStrafeTask::Tick(FStateTreeExecutionContext& Context, co
 			MovementState.bStrafeOutsideGate = true;
 			MovementState.StrafeOutsideSinceSeconds = Bot->GetWorld()->GetTimeSeconds();
 			UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s strafe held — outside the engaged radius (range %.0fuu > %.0fuu)."),
-				*Bot->GetName(), FVector::Dist(Pawn->GetActorLocation(), Belief), InstanceData.EngagedRadiusUU);
+				*Bot->GetName(), FVector::Dist(Pawn->GetActorLocation(), Belief), InstanceData.FightRangeUU);
 		}
 		return EStateTreeRunStatus::Running;
 	}
@@ -1485,16 +1499,16 @@ EStateTreeRunStatus FAIBStrafeTask::Tick(FStateTreeExecutionContext& Context, co
 	const float Signed = ArcRadians * (Intent == EAIBStrafeIntent::Right ? 1.f : -1.f);
 	const FVector Rotated = FromBelief.GetSafeNormal().RotateAngleAxisRad(Signed, FVector::UpVector);
 
-	// THE SPIRAL FIX (founder's strafe review, 26 Aug). Only the ENDPOINTS of an arc
-	// step sit on the range circle — the walk between them is the CHORD, dipping inward
-	// by R(1-cos(arc/2)) at midpoint. Legs are TIME-driven and routinely expire
-	// mid-chord, so the next leg re-measured range from the dip and KEPT it; nothing in
-	// Engage ever backs away, so repeated moving legs compounded 350 -> ~300 -> ~255...
-	// and strafing bots crept into their target's face. Re-normalizing each leg's
-	// DESTINATION radius into the stand-off band makes every captured dip self-correct
-	// on the next leg instead of compounding — one clamp, no second mover, no new task.
+	// THE SPIRAL FIX (founder's strafe review, 26 Aug), rebanded for the fight range.
+	// Only the ENDPOINTS of an arc step sit on the range circle — the walk between them
+	// is the CHORD, dipping inward by R(1-cos(arc/2)) at midpoint. Legs are TIME-driven
+	// and routinely expire mid-chord, so the next leg re-measures range from the dip and
+	// keeps it. Over the old NARROW band that compounded into the target's face; over
+	// the wide fight range the same ratchet is kept ON PURPOSE as gradual pressure — a
+	// jinking bot slowly working closer is the Halo read — and the floor is what stops
+	// it at stand-off instead of at melee-accident range.
 	const float DesiredRangeUU = FMath::Clamp(RangeUU,
-		FMath::Min(InstanceData.StandOffMinUU, InstanceData.EngagedRadiusUU), InstanceData.EngagedRadiusUU);
+		FMath::Min(InstanceData.StandOffMinUU, InstanceData.FightRangeUU), InstanceData.FightRangeUU);
 	const FVector Destination = Belief + Rotated * DesiredRangeUU;
 
 	// Projected onto the navmesh by the move itself: a step into a wall or off a ledge
