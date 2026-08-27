@@ -54,6 +54,13 @@ public:
 	                                                  // behind the bot's back, and then
 	                                                  // presses at exactly the wrong moment.
 	virtual bool IsAlive() const = 0;                 // alive by the host's own definition
+	virtual bool IsAiming() const = 0;                // sights up RIGHT NOW, the host's truth.
+	                                                  // A read, not a mirror of our own press:
+	                                                  // the host DESCOPES on a landed hit
+	                                                  // (self-cancelling the aim behind the
+	                                                  // bot's back), and a presser trusting
+	                                                  // its own held flag would believe in a
+	                                                  // zoom it lost a second ago.
 
 	/** Reach of the held weapon's melee, in uu; 0 when this avatar cannot melee at all.
 	 *  A DISTANCE, not a verdict, because the brain owns how far inside a reach it commits

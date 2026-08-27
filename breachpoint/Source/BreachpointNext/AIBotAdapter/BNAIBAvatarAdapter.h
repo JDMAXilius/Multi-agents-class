@@ -49,6 +49,10 @@ public:
 	virtual bool IsGrounded() const override;
 	virtual bool IsCrouched() const override;
 	virtual bool IsAlive() const override;
+	/** State.Weapon.ADS off the persistent ASC — the same tag the anim layers and the
+	 *  descope machinery read, so the bot's belief about its own sights can never drift
+	 *  from the host's. */
+	virtual bool IsAiming() const override;
 	virtual float GetMeleeRangeUU() const override;
 	virtual bool IsBestWeaponForRange(float DistanceUU) const override;
 

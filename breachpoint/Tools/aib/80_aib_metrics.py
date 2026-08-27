@@ -60,6 +60,8 @@ RX = {
     "strafe_leg":  re.compile(r"AIBot: (?P<bot>\S+) strafe leg — (?P<arc>[0-9.]+)uu of arc at range (?P<range>[0-9.]+)uu"),
     "strafe_hold": re.compile(r"AIBot: (?P<bot>\S+) strafe held — outside the engaged radius"),
     "strafe_back": re.compile(r"AIBot: (?P<bot>\S+) strafe opportunity back — (?P<seconds>[0-9.]+)s outside \((?P<reason>[^)]+)\)\."),
+    # AIB18 (Verbose): the bot raised its sights — the ADS discipline's countable event.
+    "ads_in": re.compile(r"AIBot: (?P<bot>\S+) aimed in at (?P<range>[0-9.]+)uu\."),
     # AIB9 step 2/3 (rides every self=NO refusal): WHERE the off-mesh bot is and WHAT
     # MOMENT it is in. age < 2s reads as a spawn problem, falling=yes as mid-air (the
     # projector cannot land a body in flight), a fresh lastHit as knockback, and none
@@ -153,6 +155,9 @@ def per_match_summary(counts):
         # stepped legs — not the old frames-over-legs ratio.
         "strafe_denied_seconds": (round(sum(float(hit["seconds"]) for hit in counts["strafe_back"]), 1)
             if counts["strafe_back"] else None),
+        "ads_ins": len(counts["ads_in"]) or None,        # Verbose-only
+        "ads_mean_range_uu": (round(statistics.mean(float(hit["range"]) for hit in counts["ads_in"]), 0)
+            if counts["ads_in"] else None),
         "strafe_spell_ends": ({reason: sum(1 for hit in counts["strafe_back"] if hit["reason"] == reason)
             for reason in sorted({hit["reason"] for hit in counts["strafe_back"]})}
             if counts["strafe_back"] else None),
@@ -257,7 +262,7 @@ def main():
                     if key in ("swings", "throws", "throttled_throws", "denial_throws",
                         "strafe_legs", "strafe_holds", "strafe_mean_arc_uu",
                         "strafe_denied_seconds", "strafe_spell_ends", "ff_refused",
-                        "offmesh_self", "offmesh_moments")
+                        "offmesh_self", "offmesh_moments", "ads_ins", "ads_mean_range_uu")
                     else "none (FFA?)" if key in ("team_assignments", "team_populations",
                         "team_kills_denied")
                     else "n/a")

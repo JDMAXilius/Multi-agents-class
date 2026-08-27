@@ -159,6 +159,7 @@ FGameplayTag UBNAIBAvatarAdapter::MapVerb(FGameplayTag VerbTag)
 	if (VerbTag == AIBTags::Verb_Grenade)    { return BNTags::Input_Grenade; }
 	if (VerbTag == AIBTags::Verb_Reload)     { return BNTags::Input_Weapon_Reload; }
 	if (VerbTag == AIBTags::Verb_WeaponNext) { return BNTags::Input_Weapon_Next; }
+	if (VerbTag == AIBTags::Verb_Aim)        { return BNTags::Input_Weapon_ADS; }
 	return FGameplayTag();
 }
 
@@ -294,6 +295,13 @@ bool UBNAIBAvatarAdapter::IsGrounded() const
 	const ACharacter* Character = Cast<ACharacter>(GetOwner());
 	const UCharacterMovementComponent* Move = Character ? Character->GetCharacterMovement() : nullptr;
 	return Move ? !Move->IsFalling() : true;
+}
+
+bool UBNAIBAvatarAdapter::IsAiming() const
+{
+	// The header says why this is a tag read and never a mirror of the press.
+	const UBNAbilitySystemComponent* ASC = GetASC();
+	return ASC && ASC->HasMatchingGameplayTag(BNTags::State_Weapon_ADS);
 }
 
 bool UBNAIBAvatarAdapter::IsCrouched() const

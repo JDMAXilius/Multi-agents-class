@@ -10,6 +10,9 @@ namespace AIBTags
 	UE_DEFINE_GAMEPLAY_TAG(Verb_Grenade, "AIBot.Verb.Grenade");
 	UE_DEFINE_GAMEPLAY_TAG(Verb_Reload, "AIBot.Verb.Reload");
 	UE_DEFINE_GAMEPLAY_TAG(Verb_WeaponNext, "AIBot.Verb.WeaponNext");
+	// ADS (founder, 27 Aug). HELD like Fire — press raises the sights, release drops
+	// them; what aiming DOES (spread, speed, descope-on-hit) is entirely the host's.
+	UE_DEFINE_GAMEPLAY_TAG(Verb_Aim, "AIBot.Verb.Aim");
 
 	UE_DEFINE_GAMEPLAY_TAG(Ambition_Engage, "AIBot.Ambition.Engage");
 	UE_DEFINE_GAMEPLAY_TAG(Ambition_Retreat, "AIBot.Ambition.Retreat");
