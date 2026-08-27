@@ -1,0 +1,21 @@
+PRE-BUILD DECLARATION — Assignment #6
+Juan Diego Lugo · BREACHPOINT (4v4 arena FPS, Unreal Engine 5.8)
+
+1. WHAT CONTENT DOES MY GAME GENERATE MANUALLY, INCONSISTENTLY, OR NOT AT ALL?
+
+Canned announcer lines for team events. BREACHPOINT became a team game this
+week — the founder ruled TEAMS the default — but DT_SpotterLines has 23
+triggers and not one is about a teammate. A teammate dying is silent.
+
+2. WHAT SPECIFIC RULE FROM MY GDD MUST EVERY PIECE SATISFY?
+
+GDD §3.3: the canned table is "shipped in the build" and "No connectivity =>
+the game is identical minus flavor." Every line must therefore stand alone —
+no player name, no score, no count, nothing the offline path cannot know. The
+same section caps an event line at 18 words.
+
+3. WHAT DOES A FAILURE LOOK LIKE, CONCRETELY?
+
+The announcer says "Reyes is down" or "Two teammates left" from a table that
+knows neither. Offline it renders empty or stale, and the player hears the
+match misreported — in a game that cut radar, so audio IS the awareness system.
