@@ -29,7 +29,13 @@ cp "$GAME/Content/Data/DT_SpotterLines.csv" "$STAGE/game/"
       mkdir -p "$STAGE/$(dirname "$f")"; cp "$f" "$STAGE/$f"
     done )
 
-( cd "$STAGE" && rm -rf output && python3 ger.py >/dev/null 2>&1 \
+# Delete only what replay regenerates — output/run_log.txt is the LIVE run's
+# terminal capture and cannot be rewritten by replay. `rm -rf output` here
+# shipped an archive missing that file until a completeness diff caught it:
+# the same defect verify.sh had, hiding in a second place.
+( cd "$STAGE" && rm -f output/DT_SpotterLines_TeamEvents.csv \
+      output/run_report.json output/rules.txt \
+  && python3 ger.py >/dev/null 2>&1 \
   && [ -s output/DT_SpotterLines_TeamEvents.csv ] ) \
   || { echo "error: staged package failed its own replay — not zipping" >&2; exit 1; }
 
