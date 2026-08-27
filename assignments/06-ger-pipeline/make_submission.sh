@@ -52,6 +52,9 @@ print(f"  staged replay: {len(rows)} accepted, {r['escalated']} escalated, "
       f"0 rows failing the rules")
 PY
 
+# The staged verification runs Python inside the stage, which mints a
+# __pycache__ AFTER the pruned copy — scrub it or it ships in the zip.
+find "$STAGE" -name '__pycache__' -type d -prune -exec rm -rf {} +
 rm -f "$OUT"
 ( cd "$(dirname "$STAGE")" && zip -qr "$OUT" "$(basename "$STAGE")" )
 echo "built $OUT ($(du -h "$OUT" | cut -f1), $(unzip -l "$OUT" | tail -1 | awk '{print $2}') files) — replay verified"
