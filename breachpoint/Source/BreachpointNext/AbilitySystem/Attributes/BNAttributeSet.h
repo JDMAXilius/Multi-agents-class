@@ -99,6 +99,13 @@ public:
 	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Shield")
 	float ShieldRechargeDelay = 2.5f;
 
+	/** HEALTH REGEN's own delay (founder, 27 Aug) — its own knob and its own TAG, not the
+	 *  shield's: Halo's health comes back later than shields, and a shared window would
+	 *  force one number on both. 5s = long enough that disengaging is a real choice, short
+	 *  enough that a retreating bot re-enters the fight inside one roam leg. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Health")
+	float HealthRegenDelay = 5.f;
+
 	/** R7.4 — GRENADES AS AN ATTRIBUTE, which is what makes the throw's cost a cost GE instead of
 	 *  a counter some ability decrements (purity law 2: costs are GEs). It buys three things at
 	 *  once: GAS refuses the activation at zero with no code, the client predicts and rolls back

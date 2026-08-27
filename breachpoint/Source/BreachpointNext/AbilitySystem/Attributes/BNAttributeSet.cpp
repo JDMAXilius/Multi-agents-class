@@ -191,6 +191,19 @@ void UBNAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallback
 			Spec.Data->SetSetByCallerMagnitude(BNSetByCaller::RecentDamageWindow, ShieldRechargeDelay);
 			ASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
 		}
+
+		// HEALTH REGEN's window rides the same drain, as a SECOND spec of the same class
+		// with its own tag and its own (longer) duration — spec parameterization, not GE
+		// proliferation. A sibling tag on purpose: a child of RecentDamage would propagate
+		// into the parent's count and silently hold the SHIELD down for the health window
+		// too. Re-application refreshes, so sustained fire holds healing off.
+		const FGameplayEffectSpecHandle RegenSpec = ASC->MakeOutgoingSpec(UBNGE_RecentDamage::StaticClass(), 1.f, RechargeContext);
+		if (RegenSpec.IsValid())
+		{
+			RegenSpec.Data->DynamicGrantedTags.AddTag(BNTags::State_Combat_HealthRegenDelay);
+			RegenSpec.Data->SetSetByCallerMagnitude(BNSetByCaller::RecentDamageWindow, HealthRegenDelay);
+			ASC->ApplyGameplayEffectSpecToSelf(*RegenSpec.Data.Get());
+		}
 	}
 
 	// THE TEST. The roadmap asks for exactly this line and nothing else logs damage.

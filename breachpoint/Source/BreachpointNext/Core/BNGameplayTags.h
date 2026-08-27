@@ -42,6 +42,7 @@ namespace BNTags
 	/** Applied by every landed damage. Blocks shield recharge while it is present — the delay in
 	 *  the shield dance is this tag's duration, not a timer anyone hand-runs. */
 	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Combat_RecentDamage);
+	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Combat_HealthRegenDelay);
 
 	/** Shield at zero. Named by gas-purity/SKILL.md §5 — "State.Dead/State.Shields.Broken rules
 	 *  live in tags, not branches" — so the shield-down state is queryable by UI, audio and

@@ -64,6 +64,18 @@ protected:
 	/** Authority only. Idempotent — the handle is what makes a second call a no-op. */
 	void SetShieldRechargeActive(bool bActive);
 
+	/** HEALTH REGEN (founder, 27 Aug). The shield dance's twin with TWO gate tags: the
+	 *  regen runs only while State.Combat.HealthRegenDelay AND State.Dead are both
+	 *  absent. The dead half is the load-bearing difference from shields — see the GE's
+	 *  header for the corpse-resurrection hazard it closes. */
+	void HandleHealthRegenGateChanged(const FGameplayTag Tag, int32 NewCount);
+
+	/** Authority only. Idempotent — the handle is the guard, like the recharge's. */
+	void SetHealthRegenActive(bool bActive);
+
+	/** Recomputed from the two gate tags; the one truth for "may heal right now". */
+	bool ShouldHealthRegenRun() const;
+
 	/** ON, as of the founder's go-ahead. It was gated off for one commit while the rest of R3
 	 *  landed, because the recharge is a real change to how a fight FEELS — shields returning after
 	 *  2.5s rewrites every duel — and that should not arrive unannounced mid-playtest.
@@ -74,7 +86,19 @@ protected:
 	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Health")
 	bool bShieldRechargeEnabled = true;
 
+	/** Same contract as the shield switch: the fastest "is the regen making this fight
+	 *  strange?" answer without a rebuild. `bHealthRegenEnabled=False` in DefaultGame.ini
+	 *  under [/Script/BreachpointNext.BNHealthComponent] turns healing off. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Health")
+	bool bHealthRegenEnabled = true;
+
 	FActiveGameplayEffectHandle ShieldRechargeHandle;
+
+	FActiveGameplayEffectHandle HealthRegenHandle;
+
+	FDelegateHandle HealthRegenDelayHandle;
+
+	FDelegateHandle DeadTagHandle;
 
 	FActiveGameplayEffectHandle ShieldBrokenHandle;
 

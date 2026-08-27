@@ -87,6 +87,16 @@ namespace BNShield
 	constexpr float RechargePerPeriod = 10.f;
 }
 
+/** HEALTH REGEN's numbers (founder, 27 Aug: retreat, heal after a while, re-engage).
+ *  Same constants-not-Config rule as BNShield — read in a CDO ctor. Deliberately SLOWER
+ *  than the shield: 2.5/period at 0.1s = 25 health per second, a full 100 bar in ~4s —
+ *  disengaging buys recovery, it does not erase a fight the way the ~1s shield does. */
+namespace BNHealth
+{
+	constexpr float RegenPeriod = 0.1f;
+	constexpr float RegenPerPeriod = 2.5f;
+}
+
 /**
  * The fire rate, as a cooldown rather than a timer. Duration is SetByCaller so it is the ROW's
  * FireDelay per weapon — a literal here would be a fire rate living in code. The Cooldown tag
@@ -156,4 +166,24 @@ class BREACHPOINTNEXT_API UBNGE_ShieldRecharge : public UGameplayEffect
 
 public:
 	UBNGE_ShieldRecharge();
+};
+
+/**
+ * HEALTH REGEN's engine (founder, 27 Aug) — UBNGE_ShieldRecharge's exact shape with Health
+ * swapped in: infinite, periodic, adds Health, knows nothing about when to run.
+ * UBNHealthComponent gates it on State.Combat.HealthRegenDelay AND State.Dead — the dead
+ * gate is NOT optional: the corpse pawn outlives its lethal hit's window, the ASC persists
+ * on the PlayerState, and an ungated regen would raise a dead body's Health above zero,
+ * which resets the death latch and resurrects it (the tripwire class the respawn path
+ * documents). A distinct class, not a parameterized recharge, because the component
+ * removes by class-scoped handle and the two regens gate on different conditions.
+ * Both clamps (current and BASE) already cap it at MaxHealth.
+ */
+UCLASS()
+class BREACHPOINTNEXT_API UBNGE_HealthRegen : public UGameplayEffect
+{
+	GENERATED_BODY()
+
+public:
+	UBNGE_HealthRegen();
 };

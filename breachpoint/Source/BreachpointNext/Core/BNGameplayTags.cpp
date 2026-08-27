@@ -35,6 +35,11 @@ namespace BNTags
 	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Grenade, "Cooldown.Grenade");
 
 	UE_DEFINE_GAMEPLAY_TAG(State_Combat_RecentDamage, "State.Combat.RecentDamage");
+	// HEALTH REGEN's own window (founder, 27 Aug), a SIBLING of RecentDamage on purpose:
+	// a child tag's count propagates into parent queries, so the health window's longer
+	// duration would silently extend shield suppression too. Sibling under State.* keeps
+	// the respawn sweep's reach.
+	UE_DEFINE_GAMEPLAY_TAG(State_Combat_HealthRegenDelay, "State.Combat.HealthRegenDelay");
 	UE_DEFINE_GAMEPLAY_TAG(State_Shields_Broken, "State.Shields.Broken");
 	UE_DEFINE_GAMEPLAY_TAG(State_Match_Frozen, "State.Match.Frozen");
 

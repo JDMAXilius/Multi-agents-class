@@ -192,3 +192,16 @@ UBNGE_ShieldRecharge::UBNGE_ShieldRecharge()
 	Modifier.ModifierMagnitude = FScalableFloat(BNShield::RechargePerPeriod);
 	Modifiers.Add(Modifier);
 }
+
+UBNGE_HealthRegen::UBNGE_HealthRegen()
+{
+	// The recharge's shape verbatim — the header says why it is its own class.
+	DurationPolicy = EGameplayEffectDurationType::Infinite;
+	Period = FScalableFloat(BNHealth::RegenPeriod);
+
+	FGameplayModifierInfo Modifier;
+	Modifier.ModifierOp = EGameplayModOp::Additive;
+	Modifier.Attribute = UBNAttributeSet::GetHealthAttribute();
+	Modifier.ModifierMagnitude = FScalableFloat(BNHealth::RegenPerPeriod);
+	Modifiers.Add(Modifier);
+}

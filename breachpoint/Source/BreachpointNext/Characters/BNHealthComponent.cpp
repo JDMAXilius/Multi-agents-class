@@ -83,10 +83,35 @@ void UBNHealthComponent::InitializeWithAbilitySystem(UAbilitySystemComponent* In
 	ShieldChangedHandle = InASC->GetGameplayAttributeValueChangeDelegate(UBNAttributeSet::GetShieldAttribute())
 		.AddUObject(this, &UBNHealthComponent::HandleShieldChanged);
 
+	// HEALTH REGEN's two gate tags (founder, 27 Aug). One handler recomputes from both —
+	// the window arriving/expiring and death arriving/clearing are the same question:
+	// "may this body heal right now".
+	HealthRegenDelayHandle = InASC->RegisterGameplayTagEvent(BNTags::State_Combat_HealthRegenDelay, EGameplayTagEventType::NewOrRemoved)
+		.AddUObject(this, &UBNHealthComponent::HandleHealthRegenGateChanged);
+	DeadTagHandle = InASC->RegisterGameplayTagEvent(BNTags::State_Dead, EGameplayTagEventType::NewOrRemoved)
+		.AddUObject(this, &UBNHealthComponent::HandleHealthRegenGateChanged);
+
 	// Start recharging immediately: a pawn that has just spawned has taken no damage, so the tag is
 	// absent and the dance's resting state is "coming back". The clamp to MaxShield makes that a
 	// no-op at full rather than a runaway.
 	SetShieldRechargeActive(!InASC->HasMatchingGameplayTag(BNTags::State_Combat_RecentDamage));
+	SetHealthRegenActive(ShouldHealthRegenRun());
+}
+
+bool UBNHealthComponent::ShouldHealthRegenRun() const
+{
+	const UAbilitySystemComponent* ASC = CachedAbilitySystem.Get();
+	return ASC
+		&& !ASC->HasMatchingGameplayTag(BNTags::State_Combat_HealthRegenDelay)
+		&& !ASC->HasMatchingGameplayTag(BNTags::State_Dead)
+		&& !bDeathReported; // belt for the frame between Health hitting 0 and State.Dead landing
+}
+
+void UBNHealthComponent::HandleHealthRegenGateChanged(const FGameplayTag Tag, int32 NewCount)
+{
+	// The parameter is deliberately unread: whichever tag moved, the answer is recomputed
+	// from BOTH — a window expiring on a corpse must not start healing it.
+	SetHealthRegenActive(ShouldHealthRegenRun());
 }
 
 void UBNHealthComponent::HandleRecentDamageChanged(const FGameplayTag Tag, int32 NewCount)
@@ -205,6 +230,45 @@ void UBNHealthComponent::SetShieldRechargeActive(bool bActive)
 	}
 }
 
+void UBNHealthComponent::SetHealthRegenActive(bool bActive)
+{
+	// The switch, the shield's contract: off = the GE is never applied and health behaves
+	// exactly as before this landed — it drains and stays drained until a respawn.
+	if (bActive && !bHealthRegenEnabled)
+	{
+		return;
+	}
+
+	UAbilitySystemComponent* ASC = CachedAbilitySystem.Get();
+	if (!ASC || !ASC->IsOwnerActorAuthoritative())
+	{
+		// An attribute change is the server's alone (purity law 1); clients see Health
+		// replicate up exactly as they see it replicate down.
+		return;
+	}
+
+	if (bActive)
+	{
+		if (HealthRegenHandle.IsValid())
+		{
+			return;
+		}
+		const FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
+		const FGameplayEffectSpecHandle Spec = ASC->MakeOutgoingSpec(UBNGE_HealthRegen::StaticClass(), 1.f, Context);
+		if (Spec.IsValid())
+		{
+			HealthRegenHandle = ASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+		}
+		return;
+	}
+
+	if (HealthRegenHandle.IsValid())
+	{
+		ASC->RemoveActiveGameplayEffect(HealthRegenHandle);
+		HealthRegenHandle.Invalidate();
+	}
+}
+
 void UBNHealthComponent::HandleHealthChanged(const FOnAttributeChangeData& Data)
 {
 	// The AIB ledger hears every health drop — the lethal one included, which is why
@@ -269,14 +333,32 @@ void UBNHealthComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 		}
 		ShieldChangedHandle.Reset();
 	}
+	if (HealthRegenDelayHandle.IsValid())
+	{
+		if (UAbilitySystemComponent* ASC = CachedAbilitySystem.Get())
+		{
+			ASC->UnregisterGameplayTagEvent(HealthRegenDelayHandle, BNTags::State_Combat_HealthRegenDelay, EGameplayTagEventType::NewOrRemoved);
+		}
+		HealthRegenDelayHandle.Reset();
+	}
+	if (DeadTagHandle.IsValid())
+	{
+		if (UAbilitySystemComponent* ASC = CachedAbilitySystem.Get())
+		{
+			ASC->UnregisterGameplayTagEvent(DeadTagHandle, BNTags::State_Dead, EGameplayTagEventType::NewOrRemoved);
+		}
+		DeadTagHandle.Reset();
+	}
 	// Both pawn-scoped states off the PERSISTENT ASC before the corpse goes: a body that died with
 	// its shield down would otherwise hand State.Shields.Broken to the one that replaces it.
 	SetShieldsBroken(false);
 	// The recharge is this pawn's, not the persistent ASC's: a corpse left recharging would keep
 	// filling the shield of the body that replaces it. Same class of leak as the ability-set grant
 	// Wave 2 found, and the same cure — the CACHED ASC, because UnPossessed() has already nulled
-	// the path back through PlayerState by the time EndPlay runs.
+	// the path back through PlayerState by the time EndPlay runs. The health regen leaks the
+	// same way and gets the same cure.
 	SetShieldRechargeActive(false);
+	SetHealthRegenActive(false);
 	CachedAbilitySystem.Reset();
 
 	Super::EndPlay(EndPlayReason);
