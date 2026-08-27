@@ -76,6 +76,19 @@ stands down (releasing its held sprint) and the arc strafe owns the legs; the sp
 clamp rebands [280, 900] with the chord ratchet kept as deliberate closing pressure.
 Param renamed so the authored tree's stale serialized 350 drops to the new default.
 
+## 6. SHIELDS ON (founder, 27 Aug: "everything we need for shield and shield
+## regeneration, but even more time since not taking damage")
+
+The 13-Aug pause ends the way its own comment promised: MaxShield and the Shield init
+back to 100 in UBNGE_InitAttributes, nothing else — recharge GE (100/s), RecentDamage
+window, State.Shields.Broken, the HUD's HasShields() gate and the shield-then-health
+drain were all built and waiting. The founder's delay: `ShieldRechargeDelay=7.0` in
+DefaultGame.ini (the Config knob built for this), deliberately LONGER than the health
+regen's 5s — health recovers first, a full shield needs a real disengage. And the edge
+the pause was hiding is closed: the recharge now shares the health regen's dead gate
+(one recomputing handler over the window tags + State.Dead) — a corpse neither heals
+nor recharges, whatever the window/respawn timing knife-edges do.
+
 ## Terminal proof list
 
 - [ ] Rung 1 all targets; spec suites green (no new specs in this packet — the regen
@@ -89,6 +102,10 @@ Param renamed so the authored tree's stale serialized 350 drops to the new defau
 - [ ] Regen visible: `BNDamage:` log lines show health RISING between fights
       (health x -> y with y > x across hits); a corpse never regens (kill, watch 5s,
       health stays 0 until respawn); suppression under sustained fire holds
+- [ ] Shields visible: damage lines read `shield 100 -> N` before health moves; the
+      shield bar renders (HasShields flipped the HUD gate); after a clean 7s the shield
+      refills at ~100/s; health starts refilling at 5s — BEFORE the shield window ends;
+      a corpse's shield stays down; ShieldsBroken raises at 0 and clears on recharge
 - [ ] Strafe: `strafe leg` lines at ranges 350-900 (the old gate's impossible band);
       `strafe_denied_seconds` collapses vs the 26 Aug instrument baseline
 

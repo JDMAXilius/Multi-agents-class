@@ -94,7 +94,7 @@ void UBNHealthComponent::InitializeWithAbilitySystem(UAbilitySystemComponent* In
 	// Start recharging immediately: a pawn that has just spawned has taken no damage, so the tag is
 	// absent and the dance's resting state is "coming back". The clamp to MaxShield makes that a
 	// no-op at full rather than a runaway.
-	SetShieldRechargeActive(!InASC->HasMatchingGameplayTag(BNTags::State_Combat_RecentDamage));
+	SetShieldRechargeActive(ShouldShieldRechargeRun());
 	SetHealthRegenActive(ShouldHealthRegenRun());
 }
 
@@ -107,18 +107,30 @@ bool UBNHealthComponent::ShouldHealthRegenRun() const
 		&& !bDeathReported; // belt for the frame between Health hitting 0 and State.Dead landing
 }
 
+bool UBNHealthComponent::ShouldShieldRechargeRun() const
+{
+	const UAbilitySystemComponent* ASC = CachedAbilitySystem.Get();
+	return ASC
+		&& !ASC->HasMatchingGameplayTag(BNTags::State_Combat_RecentDamage)
+		&& !ASC->HasMatchingGameplayTag(BNTags::State_Dead)
+		&& !bDeathReported;
+}
+
 void UBNHealthComponent::HandleHealthRegenGateChanged(const FGameplayTag Tag, int32 NewCount)
 {
-	// The parameter is deliberately unread: whichever tag moved, the answer is recomputed
-	// from BOTH — a window expiring on a corpse must not start healing it.
+	// The parameter is deliberately unread: whichever tag moved, BOTH answers recompute —
+	// this handler hears State.Dead too, and a death mid-window must stop the shield the
+	// same way it stops the healing (a window expiring on a corpse starts neither).
 	SetHealthRegenActive(ShouldHealthRegenRun());
+	SetShieldRechargeActive(ShouldShieldRechargeRun());
 }
 
 void UBNHealthComponent::HandleRecentDamageChanged(const FGameplayTag Tag, int32 NewCount)
 {
-	// Tag up = just been hit, stop. Tag gone = the window expired, start again. The delay itself is
-	// UBNGE_RecentDamage's duration, so nothing here counts time.
-	SetShieldRechargeActive(NewCount <= 0);
+	// Tag up = just been hit, stop. Tag gone = the window expired, start again — unless the
+	// body died inside the window (shields ON, 27 Aug: the dead read joined the recompute).
+	// The delay itself is UBNGE_RecentDamage's duration, so nothing here counts time.
+	SetShieldRechargeActive(ShouldShieldRechargeRun());
 }
 
 void UBNHealthComponent::HandleShieldChanged(const FOnAttributeChangeData& Data)

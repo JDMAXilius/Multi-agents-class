@@ -15,19 +15,18 @@ UBNGE_InitAttributes::UBNGE_InitAttributes()
 		Modifier.ModifierMagnitude = FScalableFloat(100.f);
 		Modifiers.Add(Modifier);
 	}
-	// SHIELDS ARE OFF, on purpose (founder, 13 Aug 2026): "I want to see the health perfectly working
-	// first." A shield in front of health means every health test spends its first hits chewing
-	// through something else, and a wrong number in either pool looks identical from the outside.
-	// Zero here makes damage land on health directly and makes the log line read plainly.
-	//
-	// This is a PAUSE, not a removal. The whole dance is built and stays built — MaxShield, the
-	// recharge GE, the RecentDamage window, State.Shields.Broken. Restoring it is this one number
-	// back to 100.f, nothing else: everything downstream already gates itself on MaxShield > 0.
+	// SHIELDS ARE ON (founder, 27 Aug 2026: "everything we need for shield and shield
+	// regeneration") — the 13 Aug pause is over, exactly the way its own comment promised:
+	// this one number back to 100, the Shield init below to match, and nothing else —
+	// the recharge GE, the RecentDamage window, State.Shields.Broken and every downstream
+	// MaxShield>0 gate were built and waiting. The recharge DELAY is the founder's second
+	// instruction ("even more time since not taking damage") and lives in DefaultGame.ini
+	// as ShieldRechargeDelay — the Config knob built for exactly this retune.
 	{
 		FGameplayModifierInfo Modifier;
 		Modifier.ModifierOp = EGameplayModOp::Override;
 		Modifier.Attribute = UBNAttributeSet::GetMaxShieldAttribute();
-		Modifier.ModifierMagnitude = FScalableFloat(0.f);
+		Modifier.ModifierMagnitude = FScalableFloat(100.f);
 		Modifiers.Add(Modifier);
 	}
 	{
@@ -38,11 +37,12 @@ UBNGE_InitAttributes::UBNGE_InitAttributes()
 		Modifiers.Add(Modifier);
 	}
 	{
-		// Matches MaxShield above. Restore to 100.f in the same edit that restores the max.
+		// Matches MaxShield above, restored in the same edit as promised: a fresh life
+		// spawns SHIELDED — the Halo convention, and the respawn re-applies this whole GE.
 		FGameplayModifierInfo Modifier;
 		Modifier.ModifierOp = EGameplayModOp::Override;
 		Modifier.Attribute = UBNAttributeSet::GetShieldAttribute();
-		Modifier.ModifierMagnitude = FScalableFloat(0.f);
+		Modifier.ModifierMagnitude = FScalableFloat(100.f);
 		Modifiers.Add(Modifier);
 	}
 	// R7.4 — the pouch. TWO, the arena-shooter convention this design is built on, and the max

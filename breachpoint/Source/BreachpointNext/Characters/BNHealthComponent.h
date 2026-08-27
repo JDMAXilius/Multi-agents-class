@@ -76,6 +76,12 @@ protected:
 	/** Recomputed from the two gate tags; the one truth for "may heal right now". */
 	bool ShouldHealthRegenRun() const;
 
+	/** The shield's twin truth (shields ON, 27 Aug): window absent AND not dead. The
+	 *  dead half was tolerable while MaxShield was 0 — a live pool makes a recharging
+	 *  corpse a real edge (the window can expire before the respawn destroys the body,
+	 *  and knife-edge timing between the two numbers is the N1 lesson, not a guard). */
+	bool ShouldShieldRechargeRun() const;
+
 	/** ON, as of the founder's go-ahead. It was gated off for one commit while the rest of R3
 	 *  landed, because the recharge is a real change to how a fight FEELS — shields returning after
 	 *  2.5s rewrites every duel — and that should not arrive unannounced mid-playtest.
