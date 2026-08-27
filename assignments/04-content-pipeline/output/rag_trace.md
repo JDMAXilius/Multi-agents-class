@@ -15,7 +15,7 @@ announcer callout line medal killfeed rocket multi kill first kill of the match 
 
 ### Retrieved chunks
 
-<details open><summary><b>[1] breachpoint/Content/Data/DT_Medals.csv:2-12</b> — canon <code>slice</code>, BM25 39.7 — DT_Medals.csv</summary>
+<details open><summary><b>[1] breachpoint/Content/Data/DT_Medals.csv:2-12</b> — canon <code>slice</code>, BM25 39.72 — DT_Medals.csv</summary>
 
 ```text
 DT_Medals.csv (existing shipped table)
@@ -35,7 +35,7 @@ M11,Spree Ender,Killed an enemy who was on a killing spree.,Kill.SpreeEnder
 
 </details>
 
-<details open><summary><b>[2] breachpoint/Content/Data/DT_SpotterLines.csv:50-64</b> — canon <code>slice</code>, BM25 23.41 — DT_SpotterLines.csv</summary>
+<details open><summary><b>[2] breachpoint/Content/Data/DT_SpotterLines.csv:50-64</b> — canon <code>slice</code>, BM25 23.42 — DT_SpotterLines.csv</summary>
 
 ```text
 DT_SpotterLines.csv (existing shipped table)
@@ -59,7 +59,7 @@ S21b1,Score.Blowout.Deficit,Down heavy.,Team,1.0,8
 
 </details>
 
-<details open><summary><b>[3] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:213-227</b> — canon <code>slice</code>, BM25 23.06 — BREACHPOINT — VERTICAL SLICE > 2. Game Mechanics (Player-Facing Actions and Loop) > 2.9 What the Player Sees (HUD)</summary>
+<details open><summary><b>[3] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:213-227</b> — canon <code>slice</code>, BM25 23.07 — BREACHPOINT — VERTICAL SLICE > 2. Game Mechanics (Player-Facing Actions and Loop) > 2.9 What the Player Sees (HUD)</summary>
 
 ```text
 BREACHPOINT — VERTICAL SLICE > 2. Game Mechanics (Player-Facing Actions and Loop) > 2.9 What the Player Sees (HUD)
@@ -82,7 +82,7 @@ BREACHPOINT — VERTICAL SLICE > 2. Game Mechanics (Player-Facing Actions and Lo
 
 </details>
 
-<details open><summary><b>[4] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:41-46</b> — canon <code>slice</code>, BM25 15.12 — BREACHPOINT — VERTICAL SLICE > 1. Executive Summary > 1.2 Win and Loss Conditions</summary>
+<details open><summary><b>[4] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:41-46</b> — canon <code>slice</code>, BM25 15.13 — BREACHPOINT — VERTICAL SLICE > 1. Executive Summary > 1.2 Win and Loss Conditions</summary>
 
 ```text
 BREACHPOINT — VERTICAL SLICE > 1. Executive Summary > 1.2 Win and Loss Conditions
@@ -121,7 +121,7 @@ load-bearing.
 
 </details>
 
-<details open><summary><b>[6] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:528-544</b> — canon <code>slice</code>, BM25 12.32 — BREACHPOINT — VERTICAL SLICE > Appendix A — Combat Tuning (first pass)</summary>
+<details open><summary><b>[6] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:528-544</b> — canon <code>slice</code>, BM25 12.33 — BREACHPOINT — VERTICAL SLICE > Appendix A — Combat Tuning (first pass)</summary>
 
 ```text
 BREACHPOINT — VERTICAL SLICE > Appendix A — Combat Tuning (first pass)
@@ -146,7 +146,7 @@ BREACHPOINT — VERTICAL SLICE > Appendix A — Combat Tuning (first pass)
 
 </details>
 
-<details open><summary><b>[7] breachpoint/Content/Data/DT_SpotterLines.csv:2-25</b> — canon <code>slice</code>, BM25 11.09 — DT_SpotterLines.csv</summary>
+<details open><summary><b>[7] breachpoint/Content/Data/DT_SpotterLines.csv:2-25</b> — canon <code>slice</code>, BM25 11.1 — DT_SpotterLines.csv</summary>
 
 ```text
 DT_SpotterLines.csv (existing shipped table)
@@ -322,7 +322,7 @@ telemetry fields recorded per player match kills deaths assists self inflicted f
 
 ### Retrieved chunks
 
-<details open><summary><b>[1] breachpoint/Source/Breachpoint/Telemetry/BRTelemetrySubsystem.h:53-90</b> — canon <code>slice</code>, BM25 31.71 — BRTelemetrySubsystem.h :: FBRPlayerMatchTelemetry</summary>
+<details open><summary><b>[1] breachpoint/Source/Breachpoint/Telemetry/BRTelemetrySubsystem.h:53-90</b> — canon <code>slice</code>, BM25 31.72 — BRTelemetrySubsystem.h :: FBRPlayerMatchTelemetry</summary>
 
 ```text
 BRTelemetrySubsystem.h :: FBRPlayerMatchTelemetry  (the SHIPPED schema — what the game records today)
@@ -367,7 +367,7 @@ struct FBRPlayerMatchTelemetry
 
 </details>
 
-<details open><summary><b>[2] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:556-562</b> — canon <code>slice</code>, BM25 30.79 — BREACHPOINT — VERTICAL SLICE > Appendix C — Telemetry Schema</summary>
+<details open><summary><b>[2] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:556-562</b> — canon <code>slice</code>, BM25 30.81 — BREACHPOINT — VERTICAL SLICE > Appendix C — Telemetry Schema</summary>
 
 ```text
 BREACHPOINT — VERTICAL SLICE > Appendix C — Telemetry Schema
@@ -382,7 +382,7 @@ time alive. Consumed by: Spotter (coach lines), the tuning-curator
 
 </details>
 
-<details open><summary><b>[3] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:282-298</b> — canon <code>slice</code>, BM25 30.52 — BREACHPOINT — VERTICAL SLICE > 3. AI Architecture (What Each Agent Does, Through Its Effect on Gameplay) > 3.3 The Runtime Agent — Spotter</summary>
+<details open><summary><b>[3] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:282-298</b> — canon <code>slice</code>, BM25 30.54 — BREACHPOINT — VERTICAL SLICE > 3. AI Architecture (What Each Agent Does, Through Its Effect on Gameplay) > 3.3 The Runtime Agent — Spotter</summary>
 
 ```text
 BREACHPOINT — VERTICAL SLICE > 3. AI Architecture (What Each Agent Does, Through Its Effect on Gameplay) > 3.3 The Runtime Agent — Spotter
@@ -407,7 +407,7 @@ load-bearing.
 
 </details>
 
-<details open><summary><b>[4] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:213-227</b> — canon <code>slice</code>, BM25 15.52 — BREACHPOINT — VERTICAL SLICE > 2. Game Mechanics (Player-Facing Actions and Loop) > 2.9 What the Player Sees (HUD)</summary>
+<details open><summary><b>[4] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:213-227</b> — canon <code>slice</code>, BM25 15.53 — BREACHPOINT — VERTICAL SLICE > 2. Game Mechanics (Player-Facing Actions and Loop) > 2.9 What the Player Sees (HUD)</summary>
 
 ```text
 BREACHPOINT — VERTICAL SLICE > 2. Game Mechanics (Player-Facing Actions and Loop) > 2.9 What the Player Sees (HUD)
@@ -453,7 +453,7 @@ different, worse project.
 
 </details>
 
-<details open><summary><b>[6] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:329-342</b> — canon <code>slice</code>, BM25 11.38 — BREACHPOINT — VERTICAL SLICE > 4. Technical Strategy > 4.2 Token Budget (runtime, per match)</summary>
+<details open><summary><b>[6] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:329-342</b> — canon <code>slice</code>, BM25 11.39 — BREACHPOINT — VERTICAL SLICE > 4. Technical Strategy > 4.2 Token Budget (runtime, per match)</summary>
 
 ```text
 BREACHPOINT — VERTICAL SLICE > 4. Technical Strategy > 4.2 Token Budget (runtime, per match)
@@ -475,7 +475,7 @@ Caps enforced server-side; every failure path falls back to canned lines.
 
 </details>
 
-<details open><summary><b>[7] breachpoint/Source/Breachpoint/Telemetry/BRTelemetrySubsystem.h:141-218</b> — canon <code>slice</code>, BM25 10.62 — BRTelemetrySubsystem.h :: BREACHPOINT_API</summary>
+<details open><summary><b>[7] breachpoint/Source/Breachpoint/Telemetry/BRTelemetrySubsystem.h:141-218</b> — canon <code>slice</code>, BM25 10.63 — BRTelemetrySubsystem.h :: BREACHPOINT_API</summary>
 
 ```text
 BRTelemetrySubsystem.h :: BREACHPOINT_API  (the SHIPPED schema — what the game records today)
@@ -561,7 +561,7 @@ private:
 
 </details>
 
-<details open><summary><b>[8] breachpoint/Content/Data/DT_SpotterLines.csv:26-49</b> — canon <code>slice</code>, BM25 9.27 — DT_SpotterLines.csv</summary>
+<details open><summary><b>[8] breachpoint/Content/Data/DT_SpotterLines.csv:26-49</b> — canon <code>slice</code>, BM25 9.28 — DT_SpotterLines.csv</summary>
 
 ```text
 DT_SpotterLines.csv (existing shipped table)
@@ -737,7 +737,7 @@ bots fill every unfilled slot difficulty profiles Recruit Marine Veteran reactio
 
 ### Retrieved chunks
 
-<details open><summary><b>[1] breachpoint/Content/Data/DT_BotTuning.csv:2-4</b> — canon <code>slice</code>, BM25 26.97 — DT_BotTuning.csv</summary>
+<details open><summary><b>[1] breachpoint/Content/Data/DT_BotTuning.csv:2-4</b> — canon <code>slice</code>, BM25 26.98 — DT_BotTuning.csv</summary>
 
 ```text
 DT_BotTuning.csv (existing shipped table)
@@ -749,7 +749,7 @@ Veteran,220,20,60,0.65,3.0,0.15,600,200,1.00,0.85,0.85,35.0,90.0,5.0,220,/Game/A
 
 </details>
 
-<details open><summary><b>[2] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:195-210</b> — canon <code>slice</code>, BM25 24.2 — BREACHPOINT — VERTICAL SLICE > 2. Game Mechanics (Player-Facing Actions and Loop) > 2.8 Bots — one brain, dialed</summary>
+<details open><summary><b>[2] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:195-210</b> — canon <code>slice</code>, BM25 24.22 — BREACHPOINT — VERTICAL SLICE > 2. Game Mechanics (Player-Facing Actions and Loop) > 2.8 Bots — one brain, dialed</summary>
 
 ```text
 BREACHPOINT — VERTICAL SLICE > 2. Game Mechanics (Player-Facing Actions and Loop) > 2.8 Bots — one brain, dialed
@@ -827,7 +827,7 @@ path — nothing is silently dropped.
 
 </details>
 
-<details open><summary><b>[6] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:264-279</b> — canon <code>slice</code>, BM25 9.14 — BREACHPOINT — VERTICAL SLICE > 3. AI Architecture (What Each Agent Does, Through Its Effect on Gameplay) > 3.2 The Dev-Time Crew (Claude + Unreal MCP)</summary>
+<details open><summary><b>[6] breachpoint/BREACHPOINT-GDD-VERTICAL-SLICE.md:264-279</b> — canon <code>slice</code>, BM25 9.15 — BREACHPOINT — VERTICAL SLICE > 3. AI Architecture (What Each Agent Does, Through Its Effect on Gameplay) > 3.2 The Dev-Time Crew (Claude + Unreal MCP)</summary>
 
 ```text
 BREACHPOINT — VERTICAL SLICE > 3. AI Architecture (What Each Agent Does, Through Its Effect on Gameplay) > 3.2 The Dev-Time Crew (Claude + Unreal MCP)
