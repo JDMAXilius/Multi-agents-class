@@ -228,6 +228,10 @@ def describe_rules() -> str:
 # Engine — live or replay
 # ===========================================================================
 
+class ParseFailure(Exception):
+    """The model returned something that is not JSON, twice."""
+
+
 class Engine:
     def __init__(self, live: bool):
         self.live, self.exchanges, self.i = live, [], 0
@@ -237,6 +241,16 @@ class Engine:
             self.exchanges = json.loads(RECORDING.read_text(encoding="utf-8"))["exchanges"]
 
     def call(self, prompt: str, meta: dict) -> dict:
+        """One logical call, with a single self-correction on malformed output.
+
+        A live run died here first time round: the generator returned
+        `{"lines": ["Revenge kill.", "Payback.", "Avenged."}` — a missing
+        bracket, genuinely invalid, not a parsing-strategy problem. Crashing on
+        it loses the whole run. Feeding the parse error back and asking again
+        recovers it; failing twice is a `ParseFailure`, which the slot loop
+        escalates through the circuit breaker like any other unrecoverable
+        failure. "The loop can't self-correct" covers transport, not just rules.
+        """
         if not self.live:
             if self.i >= len(self.exchanges):
                 sys.exit(f"error: replay exhausted at {meta}")
@@ -248,6 +262,25 @@ class Engine:
                 sys.exit(f"error: replay mismatch — recorded {got}, asked for {want}")
             return ex["response"]
 
+        err = ""
+        for tries in range(2):
+            ask = prompt if tries == 0 else (
+                f"{prompt}\n\n## YOUR PREVIOUS REPLY WAS NOT VALID JSON\n{err}\n"
+                f"Return ONLY the JSON object, nothing else.")
+            text, usage = self._raw(ask, meta)
+            try:
+                data = extract_json(text)
+            except ValueError as e:
+                err = str(e)
+                log(f"             (malformed reply, retrying: {err[:70]})")
+                continue
+            self.exchanges.append({**meta, "prompt": ask, "response": data,
+                                   "usage": usage, "parse_retries": tries})
+            self.save()
+            return data
+        raise ParseFailure(err)
+
+    def _raw(self, prompt: str, meta: dict) -> tuple[str, dict]:
         text, usage = None, {}
         if os.environ.get("ANTHROPIC_API_KEY"):
             try:
@@ -277,14 +310,11 @@ class Engine:
             usage = {"input_tokens": u.get("input_tokens", 0),
                      "output_tokens": u.get("output_tokens", 0),
                      "cost_usd": payload.get("total_cost_usd")}
-        data = extract_json(text)
-        self.exchanges.append({**meta, "prompt": prompt, "response": data, "usage": usage})
-        # Save after EVERY call, not at the end. The first live run crashed on a
-        # parse error at slot three and took two slots of paid calls with it,
-        # because the recording was only written once the whole run succeeded.
-        self.save()
-        return data
+        return text, usage
 
+    # Saved after EVERY call, not at the end. The first live run crashed at slot
+    # three and took two slots of paid calls with it, because the recording was
+    # only written once the whole run succeeded.
     def save(self):
         if self.live:
             RECORDING.write_text(json.dumps({"model": MODEL, "exchanges": self.exchanges},
@@ -310,7 +340,7 @@ def extract_json(text: str):
                 return decoder.raw_decode(text[i:])[0]
             except json.JSONDecodeError:
                 continue
-    raise SystemExit(f"error: no JSON in reply (first 200: {text[:200]!r})")
+    raise ValueError(f"no parseable JSON in reply (first 200: {text[:200]!r})")
 
 
 # ===========================================================================
@@ -398,9 +428,18 @@ def run_slot(engine: Engine, trigger: str, brief: str, tempts: str,
         log(f"    (this slot {tempts})")
 
     # ---- GENERATOR ----
-    gen = engine.call(GENERATE_PROMPT.format(voice=voice, trigger=trigger, brief=brief,
-                                             n=CANDIDATES_PER_SLOT),
-                      {"agent": "generator", "slot": trigger, "attempt": 0})
+    try:
+        gen = engine.call(GENERATE_PROMPT.format(voice=voice, trigger=trigger, brief=brief,
+                                                 n=CANDIDATES_PER_SLOT),
+                          {"agent": "generator", "slot": trigger, "attempt": 0})
+    except ParseFailure as e:
+        log(f"  BREAKER    generator returned unparseable output twice — escalating")
+        res.escalated.append({"final_line": None, "attempts": 2,
+                              "unresolved": [f"generator output unparseable: {e}"],
+                              "history": [],
+                              "why": "the slot produced nothing to evaluate; a human "
+                                     "decides whether to re-prompt or drop the event"})
+        return res
     lines = [str(x).strip() for x in gen["lines"]][:CANDIDATES_PER_SLOT]
     log(f"  GENERATED  {lines}")
 
@@ -436,11 +475,21 @@ def run_slot(engine: Engine, trigger: str, brief: str, tempts: str,
 
             # ---- REFINER ----
             attempt += 1
-            ref = engine.call(
-                REFINE_PROMPT.format(voice=voice, trigger=trigger, brief=brief,
-                                     line=current,
-                                     violations="\n".join(f"  - {v}" for v in violations)),
-                {"agent": "refiner", "slot": trigger, "attempt": attempt})
+            try:
+                ref = engine.call(
+                    REFINE_PROMPT.format(
+                        voice=voice, trigger=trigger, brief=brief, line=current,
+                        violations="\n".join(f"  - {v}" for v in violations)),
+                    {"agent": "refiner", "slot": trigger, "attempt": attempt})
+            except ParseFailure as e:
+                log(f"  BREAKER    refiner returned unparseable output twice — escalating")
+                res.escalated.append({
+                    "final_line": current, "attempts": attempt,
+                    "unresolved": [str(x) for x in violations] + [f"refiner unparseable: {e}"],
+                    "history": [asdict(a) for a in res.history if a.line],
+                    "why": "the refiner stopped returning usable output; the line is "
+                           "left as it last stood, unaccepted"})
+                break
             current = str(ref["line"]).strip()
     return res
 
