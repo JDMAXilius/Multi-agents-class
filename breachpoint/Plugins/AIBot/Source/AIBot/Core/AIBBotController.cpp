@@ -190,6 +190,7 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	}
 	LastLoggedAmbition = FGameplayTag();
 	LastFacts = FAIBFacts(); // a fresh life reads no stale world
+	AllyFightMemory = FAIBAllyFightMemory(); // and heard no stale fights (AIB17)
 
 	// PHASE 8 — the real tier, resolved per possession from the C++ registry (the ONE
 	// source of truth; DT_AIBTiers only mirrors it). An unknown name is a config typo
@@ -524,8 +525,34 @@ void AAIBBotController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 	// The hostility filter at the Note boundary: senses are FFA-open by design, but a
 	// friendly must never become a stimulus — or a teammate's footstep evicts the
 	// enemy from memory and the bot "acquires" its own side (F5-C and two handoffs).
-	if (GetTeamAttitudeTowards(*Actor) != ETeamAttitude::Hostile)
+	const ETeamAttitude::Type Attitude = GetTeamAttitudeTowards(*Actor);
+	if (Attitude != ETeamAttitude::Hostile)
 	{
+		// THE ALLY-FIGHT TAP (AIB17), inside the drop and smaller than it: a FRIENDLY's
+		// WEAPON noise (the host's tag door says which tags are weapons), heard by this
+		// bot's own ears, becomes one place-and-stamp note — never a stimulus, never a
+		// target, consumed only by the idle wander's destination draw. Teamwork-gated
+		// at note time (the CanEvadeBlast precedent: a Novice never even receives).
+		// Friendly ONLY — Neutral (scenery, a dead man's PlayerState-attributed blast)
+		// stays fully dropped. FFA has no friendlies, so this is unreachable there by
+		// construction. The log fires once per fight-heard spell, not per shot.
+		if (Attitude == ETeamAttitude::Friendly
+			&& Stimulus.Type == UAISense::GetSenseID<UAISense_Hearing>()
+			&& SkillProfile.Level(EAIBSkill::Teamwork) >= EAIBCompetence::Trained)
+		{
+			if (IAIBWorldQuery* Query = GetWorldQuery(); Query && Query->IsWeaponNoiseTag(Stimulus.Tag))
+			{
+				const double HeardNow = World->GetTimeSeconds();
+				const bool bAlreadyFresh = AllyFightMemory.IsFresh(HeardNow);
+				AllyFightMemory.HeardAt = Stimulus.StimulusLocation;
+				AllyFightMemory.HeardAtSeconds = HeardNow;
+				if (!bAlreadyFresh)
+				{
+					UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s heard the team's fight — %.0fuu away."),
+						*GetName(), GetPawn() ? FVector::Dist(GetPawn()->GetActorLocation(), Stimulus.StimulusLocation) : 0.f);
+				}
+			}
+		}
 		return;
 	}
 

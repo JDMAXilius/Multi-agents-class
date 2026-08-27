@@ -1225,8 +1225,23 @@ EStateTreeRunStatus FAIBMoveToPOITask::EnterState(FStateTreeExecutionContext& Co
 	if (!InstanceData.bHasGoal && ShouldWanderWithoutProvider())
 	{
 		UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(Bot->GetWorld());
+
+		// AIB17: an idle leg walks TOWARD the team's heard fight while the note is
+		// fresh — the draw stays a navmesh RANDOM point (never a beeline, F6-clean),
+		// just centred on the heard place with a tighter spread. The note was earned
+		// by this bot's own ears at note time and decays in seconds; an unreachable
+		// heard-point falls back to the plain self-centred draw below.
+		const FAIBAllyFightMemory& AllyFight = Bot->GetAllyFightMemory();
+		const bool bTowardFight = AllyFight.IsFresh(Bot->GetWorld()->GetTimeSeconds());
 		FNavLocation Wander;
-		if (NavSys && NavSys->GetRandomReachablePointInRadius(
+		if (bTowardFight && NavSys && NavSys->GetRandomReachablePointInRadius(
+			AllyFight.HeardAt, InstanceData.WanderRadiusUU * 0.4f, Wander))
+		{
+			InstanceData.Goal = Wander.Location;
+			InstanceData.bHasGoal = true;
+			UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s wandering toward the team's fight."), *Bot->GetName());
+		}
+		else if (NavSys && NavSys->GetRandomReachablePointInRadius(
 			Pawn->GetActorLocation(), InstanceData.WanderRadiusUU, Wander))
 		{
 			InstanceData.Goal = Wander.Location;

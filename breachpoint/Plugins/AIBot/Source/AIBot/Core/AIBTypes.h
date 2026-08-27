@@ -116,6 +116,25 @@ struct AIBOT_API FAIBObjectiveFact
  * Unknowns are explicit flags, never confident defaults (F-6.10): an unknowable health
  * must not read as full health and make a broken adapter fight to the death.
  */
+/** AIB17 — the ally-fight note: ONE heard place and its stamp, controller-owned per
+ *  life. Deliberately NOT a target memory and NOT a fact (F-4.5: a sense added later
+ *  must not silently become vision; F5-C: a friendly must never become a stimulus):
+ *  the only consumer is the idle wander's destination draw. Newest-wins; decays. */
+struct AIBOT_API FAIBAllyFightMemory
+{
+	FVector HeardAt = FVector::ZeroVector;
+	double HeardAtSeconds = -1.0;
+
+	/** How long a heard fight stays worth walking toward. Past this the fight has
+	 *  moved or ended, and biasing a wander at stale noise reads as clairvoyance. */
+	static constexpr double FreshSeconds = 8.0;
+
+	bool IsFresh(double Now) const
+	{
+		return HeardAtSeconds >= 0.0 && (Now - HeardAtSeconds) <= FreshSeconds;
+	}
+};
+
 USTRUCT()
 struct AIBOT_API FAIBFacts
 {

@@ -176,6 +176,15 @@ bool UBNAIBWorldQuery::AreEnemies(const AActor* A, const AActor* B) const
 	return !BNTeams::AreFriendly(TeamA, TeamB);
 }
 
+bool UBNAIBWorldQuery::IsWeaponNoiseTag(const FName Tag) const
+{
+	// The exact tags the authority reports: BNGA_Fire's shot and BNProjectile's blast.
+	// Strings matched here and nowhere else adapter-side — a renamed tag breaks ONE site.
+	static const FName WeaponFire(TEXT("BNWeaponFire"));
+	static const FName GrenadeBlast(TEXT("BNGrenadeBlast"));
+	return Tag == WeaponFire || Tag == GrenadeBlast;
+}
+
 bool UBNAIBWorldQuery::AreAllies(const AActor* A, const AActor* B) const
 {
 	// The header says why there is no alive door here. Team resolution is the same

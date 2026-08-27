@@ -90,6 +90,10 @@ public:
 	FAIBGrenadeState& GetGrenadeState() { return GrenadeState; }
 	FAIBMovementState& GetMovementState() { return MovementState; }
 
+	/** AIB17 — the ally-fight note the idle wander walks toward. Read-only outside the
+	 *  Note boundary; the tap in OnPerceptionUpdated is the one writer. */
+	const FAIBAllyFightMemory& GetAllyFightMemory() const { return AllyFightMemory; }
+
 	/** AIB9's moment instrument (both const — the failure describer holds a const ref):
 	 *  when this life began, and when it last took damage (0 = never this life). Together
 	 *  with the pawn's falling state they separate the off-mesh candidate causes the
@@ -269,6 +273,9 @@ private:
 	FAIBMeleeState MeleeState;
 	FAIBGrenadeState GrenadeState;
 	FAIBMovementState MovementState;
+
+	/** AIB17 — see GetAllyFightMemory. Reset at possession: a fresh life heard nothing. */
+	FAIBAllyFightMemory AllyFightMemory;
 	FRandomStream PolicyRandom;
 
 	/** The misjudge draws. Its OWN stream, seeded per bot beside the sensorium's:

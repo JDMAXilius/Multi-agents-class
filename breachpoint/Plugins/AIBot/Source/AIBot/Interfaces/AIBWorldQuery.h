@@ -82,6 +82,12 @@ public:
 	 *  answer (a corpse is nobody's enemy), so its NEGATION is not "ally". */
 	virtual bool AreEnemies(const AActor* A, const AActor* B) const = 0;
 
+	/** AIB17 — the tag door for the ally-fight tap: does this HEARING stimulus tag mean
+	 *  weapon noise? The module must not name a host's noise tags (boundary law), so the
+	 *  host answers. Default false: a host that wires nothing keeps friendly hearing
+	 *  fully dropped — exactly the pre-AIB17 behavior. */
+	virtual bool IsWeaponNoiseTag(FName Tag) const { return false; }
+
 	/** Alliance WITHOUT liveness: true iff the game says A and B stand on the same side
 	 *  — a dead teammate is still a teammate, a dead enemy is still an enemy. Exists
 	 *  because two consumers (the attitude consult, the claims board's binding

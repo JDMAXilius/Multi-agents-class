@@ -71,6 +71,10 @@ public:
 	 *  false for every pair — nobody has allies, the pre-teams truth. */
 	virtual bool AreAllies(const AActor* A, const AActor* B) const override;
 
+	/** AIB17's tag door: BN's two authority-reported weapon noises. Footsteps and every
+	 *  other sound stay outside — the ally-fight tap hears GUNS, not walking. */
+	virtual bool IsWeaponNoiseTag(FName Tag) const override;
+
 private:
 	TArray<TWeakObjectPtr<ABNHillPoint>> Hills;
 };

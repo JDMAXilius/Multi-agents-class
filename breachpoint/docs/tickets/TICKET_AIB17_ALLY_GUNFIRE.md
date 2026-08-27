@@ -1,8 +1,7 @@
 # TICKET — AIB17: converge on a teammate's fight — the ally-gunfire channel
 
-> STATUS: DESIGNED 27 Aug 2026 (cloud lead, from the team-play audit's ranked candidate
-> #2 — highest per-event impact on the teams contact-density collapse). BUILD HELD until
-> the BN22 review barrier clears (the wave law: never stack on an unvalidated change).
+> STATUS: BUILT 27 Aug 2026 (cloud lead; WRITTEN, NOT COMPILED) — the BN22 barrier
+> cleared and the held build landed the same day, to this design verbatim.
 > Law: FAIRPLAY F1-F8; the two guarded channels are F-4.5 (a sense added later must not
 > silently become vision) and F5-C (a friendly must never become a stimulus/target).
 
@@ -70,3 +69,24 @@ Then aib-critic, one dimension: the two guarded channels above.
 ## Log
 
 _(outputs verbatim)_
+
+## Log
+
+### 27 Aug — built, to the design verbatim (WRITTEN, NOT COMPILED)
+
+- The tap took the SAFER cut (the tag door): `IAIBWorldQuery::IsWeaponNoiseTag`
+  default-false, adapter answering BN's two authority tags (BNWeaponFire,
+  BNGrenadeBlast) — footsteps stay outside. Friendly ONLY at the boundary: Neutral
+  (scenery, a dead man's PlayerState-attributed blast) stays fully dropped.
+- `FAIBAllyFightMemory` (AIBTypes.h): one place + stamp, 8s fresh window, newest-wins,
+  reset at possession. Controller-owned, one writer (the tap), one reader (the wander).
+- The consumer: the idle wander's destination draw re-centres on the heard place with
+  a 0.4x spread — still a navmesh RANDOM point, never a beeline (F6); unreachable
+  heard-points fall back to the plain self-centred draw.
+- The log fires once per fight-heard SPELL, not per shot — countable without drowning.
+  Harness: ally_fights_heard + wanders_to_fight, proven on synthetic lines.
+- WATCH-LIST (transcription): `FAIStimulus::Tag` is read nowhere else in this repo —
+  the engine field ReportNoiseEvent's Tag parameter lands in. First compile tells.
+- The spec pin promised in Done-when ("Novice never notes") moved to the LIVE protocol:
+  the tap lives in the perception handler, out of headless reach — a Recruit-tier match
+  logging zero ally-fight lines is the countable equivalent.

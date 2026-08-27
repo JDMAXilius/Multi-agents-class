@@ -62,6 +62,10 @@ RX = {
     "strafe_back": re.compile(r"AIBot: (?P<bot>\S+) strafe opportunity back — (?P<seconds>[0-9.]+)s outside \((?P<reason>[^)]+)\)\."),
     # AIB18 (Verbose): the bot raised its sights — the ADS discipline's countable event.
     "ads_in": re.compile(r"AIBot: (?P<bot>\S+) aimed in at (?P<range>[0-9.]+)uu\."),
+    # AIB17 (Verbose): a teammate's gunfire heard (once per spell) and an idle wander
+    # leg biased toward it — the convergence behavior's two countable halves.
+    "ally_heard":      re.compile(r"AIBot: (?P<bot>\S+) heard the team's fight — (?P<dist>[0-9.]+)uu away\."),
+    "wander_to_fight": re.compile(r"AIBot: (?P<bot>\S+) wandering toward the team's fight\."),
     # AIB9 step 2/3 (rides every self=NO refusal): WHERE the off-mesh bot is and WHAT
     # MOMENT it is in. age < 2s reads as a spawn problem, falling=yes as mid-air (the
     # projector cannot land a body in flight), a fresh lastHit as knockback, and none
@@ -158,6 +162,8 @@ def per_match_summary(counts):
         "ads_ins": len(counts["ads_in"]) or None,        # Verbose-only
         "ads_mean_range_uu": (round(statistics.mean(float(hit["range"]) for hit in counts["ads_in"]), 0)
             if counts["ads_in"] else None),
+        "ally_fights_heard": len(counts["ally_heard"]) or None,        # Verbose-only
+        "wanders_to_fight": len(counts["wander_to_fight"]) or None,    # Verbose-only
         "strafe_spell_ends": ({reason: sum(1 for hit in counts["strafe_back"] if hit["reason"] == reason)
             for reason in sorted({hit["reason"] for hit in counts["strafe_back"]})}
             if counts["strafe_back"] else None),
@@ -262,7 +268,8 @@ def main():
                     if key in ("swings", "throws", "throttled_throws", "denial_throws",
                         "strafe_legs", "strafe_holds", "strafe_mean_arc_uu",
                         "strafe_denied_seconds", "strafe_spell_ends", "ff_refused",
-                        "offmesh_self", "offmesh_moments", "ads_ins", "ads_mean_range_uu")
+                        "offmesh_self", "offmesh_moments", "ads_ins", "ads_mean_range_uu",
+                        "ally_fights_heard", "wanders_to_fight")
                     else "none (FFA?)" if key in ("team_assignments", "team_populations",
                         "team_kills_denied")
                     else "n/a")
