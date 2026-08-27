@@ -33,10 +33,16 @@ printf 'Student: Juan Diego Lugo · Game: BREACHPOINT · %s\n' "$(date -u '+%Y-%
 # ---------------------------------------------------------------------------
 head2 "0. The gate: code that does not run scores 0 across all criteria"
 # ---------------------------------------------------------------------------
-rm -rf output
-if env -u ANTHROPIC_API_KEY python3 ger.py >/tmp/ger_verify.$$.log 2>&1; then
+# Delete exactly what the replay regenerates — not the whole directory.
+# output/run_log.txt is a capture of the LIVE run's terminal output; replay
+# cannot rewrite it, so `rm -rf output` here would leave every verification
+# permanently missing a committed file. (It did, twice, before this comment.)
+rm -f output/DT_SpotterLines_TeamEvents.csv output/run_report.json output/rules.txt
+if env -u ANTHROPIC_API_KEY python3 ger.py >/tmp/ger_verify.$$.log 2>&1 \
+   && [ -s output/DT_SpotterLines_TeamEvents.csv ] \
+   && [ -s output/run_report.json ]; then
   pass "replay runs from a clean state, no API key" \
-       "$(wc -l </tmp/ger_verify.$$.log | tr -d ' ') lines; output/ regenerated"
+       "$(wc -l </tmp/ger_verify.$$.log | tr -d ' ') lines; deleted outputs regenerated"
 else
   fail "replay runs from a clean state, no API key" "see below"
   sed 's/^/        /' /tmp/ger_verify.$$.log; rm -f /tmp/ger_verify.$$.log; exit 1
