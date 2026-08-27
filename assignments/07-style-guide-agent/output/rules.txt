@@ -1,0 +1,17 @@
+THE STYLE GUIDE, EXECUTABLE — sources in STYLE-GUIDE.md, verbatim citations
+
+1 CANON_PLACES   (arena_manifest.json)  seven landmarks — The Core, Mezzanine
+                 Catwalks, The Gantry, South/North Barricade, West/East Stack —
+                 and no other proper noun. Invented places and factions fail.
+2 CANON_ARSENAL  (GDD §2.4)  three weapons + triangle + Grappleshot. No sniper,
+                 shotgun, SMG, sword, needler, laser, turret.
+3 CUT_SYSTEMS    (GDD §6, §2.7, §5.1)  radar, motion tracker, plasma, vehicles,
+                 flag modes are named cuts and may not be mentioned.
+4 CANON_NUMBERS  (GDD Appendix A + manifest)  every digit must be a real tuning
+                 value: [2, 3, 4, 5, 8, 13, 14, 20, 22, 25, 32, 35, 60, 70, 90, 100, 120, 600] + 0.4, 2.5, "8:00".
+5 VOICE          (measured: 63 spotter lines + all UI LOCTEXTs)  zero "!", zero
+                 first person. Terse, present, certain.
+6 FORMAT         (STYLE-GUIDE.md's own slot spec, honestly labeled)  <= 2
+                 sentences, <= 28 words.
++ NO_FICTION     (measured: the GDD contains zero fiction)  no years, no
+                 backstory vocabulary — tactical present tense only.

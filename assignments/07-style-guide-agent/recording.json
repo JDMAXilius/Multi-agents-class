@@ -1,0 +1,185 @@
+{
+  "model": "claude-sonnet-5",
+  "exchanges": [
+    {
+      "agent": "generator",
+      "slot": "The Core",
+      "attempt": 1,
+      "prompt": "You write player-facing copy for BREACHPOINT, a 4v4 team arena FPS\n(shields over health, Assault Rifle / Magnum / Rocket Launcher, Grappleshot).\n\n## THE HOUSE VOICE \u2014 real shipped BREACHPOINT lines\n  Kill.Confirmed             'Kill confirmed.'\n  Kill.Confirmed             'Target down.'\n  Kill.Confirmed             'Hostile down.'\n  Rocket.Spawned             'Rocket up at the Core.'\n  Rocket.Spawned             'Rocket is live at the Core.'\n  Rocket.Spawned             'The Core is contested.'\n  Score.Blowout.Lead         'Lead is holding.'\n  Score.Blowout.Deficit      'Down heavy.'\n\nMeasured across everything the game ships: no exclamation marks, no first\nperson, terse and certain. Tactical present tense \u2014 what a position does for\nthe player NOW. BREACHPOINT has no story: no factions, no dates, no lore.\n\n## THE JOB\nAn intel card for the map screen: an evocative, useful blurb for one landmark\nof the arena. Players read it in the seconds before a match.\n\n## THE LANDMARK \u2014 `The Core`\nThe level designer's notes, verbatim from the arena manifest:\nCentral structure, the map's centerpiece and primary sightline-breaker, restructured in v3 so the Rocket Launcher pad is buildable at MID level per GDD 2.6. Base drum x[16,24] y[16,24] z[0,4] is solid; its roof at height 4 is the mid-level rocket terrace and rocket_node (20,17,4) stands on its south side. Spire x[18,22] y[18,22] z[4,9] rises from the roof center, breaking the mid-level north-south line; its flat top at height 9 is a grapple perch (Core Top, GP5/GP6). Four full-height corner pylons x[15,17] y[15,17] z[0,9], x[23,25] y[15,17] z[0,9], x[15,17] y[23,25] z[0,9], x[23,25] y[23,25] z[0,9] carry the diagonal occlusion between mid and upper spawns; they deliberately embed 1 m into the base drum's corners (union geometry).\n\nWrite the card: at most 2 sentences. Return JSON only:\n{\"card\": \"...\"}\n",
+      "response": {
+        "card": "Rocket terrace crowns the mid drum, and the spire above breaks the line north-south while its flat top holds the Core Top grapple perch. Corner pylons carve the last diagonal sightlines between mid and upper spawns."
+      },
+      "usage": {
+        "input_tokens": 2,
+        "output_tokens": 317,
+        "cost_usd": 0.013584
+      },
+      "parse_retries": 0
+    },
+    {
+      "agent": "refiner",
+      "slot": "The Core",
+      "attempt": 2,
+      "prompt": "You write player-facing copy for BREACHPOINT, a 4v4 team arena FPS.\n\n## THE HOUSE VOICE \u2014 real shipped BREACHPOINT lines\n  Kill.Confirmed             'Kill confirmed.'\n  Kill.Confirmed             'Target down.'\n  Kill.Confirmed             'Hostile down.'\n  Rocket.Spawned             'Rocket up at the Core.'\n  Rocket.Spawned             'Rocket is live at the Core.'\n  Rocket.Spawned             'The Core is contested.'\n  Score.Blowout.Lead         'Lead is holding.'\n  Score.Blowout.Deficit      'Down heavy.'\n\nMeasured across everything the game ships: no exclamation marks, no first\nperson, terse and certain. Tactical present tense \u2014 what a position does for\nthe player NOW. BREACHPOINT has no story: no factions, no dates, no lore.\n\n## THE LANDMARK \u2014 `The Core`\nCentral structure, the map's centerpiece and primary sightline-breaker, restructured in v3 so the Rocket Launcher pad is buildable at MID level per GDD 2.6. Base drum x[16,24] y[16,24] z[0,4] is solid; its roof at height 4 is the mid-level rocket terrace and rocket_node (20,17,4) stands on its south side. Spire x[18,22] y[18,22] z[4,9] rises from the roof center, breaking the mid-level north-south line; its flat top at height 9 is a grapple perch (Core Top, GP5/GP6). Four full-height corner pylons x[15,17] y[15,17] z[0,9], x[23,25] y[15,17] z[0,9], x[15,17] y[23,25] z[0,9], x[23,25] y[23,25] z[0,9] carry the diagonal occlusion between mid and upper spawns; they deliberately embed 1 m into the base drum's corners (union geometry).\n\n## A CARD YOU WROTE FAILED THE STYLE GUIDE\nCard: 'Rocket terrace crowns the mid drum, and the spire above breaks the line north-south while its flat top holds the Core Top grapple perch. Corner pylons carve the last diagonal sightlines between mid and upper spawns.'\n\nViolations:\n  - [FORMAT] 36 words, cap is 28 (STYLE-GUIDE.md rule 6)\n  - [CANON_PLACES] 'Top' is not BREACHPOINT vocabulary \u2014 the arena has seven landmarks and no fiction (arena_manifest.json landmarks[])\n\nRewrite ONLY this card so it passes, keeping it evocative and useful \u2014 a card\nsanded down to \"a place on the map\" passes every rule and says nothing.\nAt most 2 sentences. Return JSON only: {\"card\": \"...\"}\n",
+      "response": {
+        "card": "Rocket terrace crowns the mid drum, and the spire above breaks the line north-south. Corner pylons carve the last diagonal sightlines between mid and upper spawns."
+      },
+      "usage": {
+        "input_tokens": 2,
+        "output_tokens": 66,
+        "cost_usd": 0.0387116
+      },
+      "parse_retries": 0
+    },
+    {
+      "agent": "generator",
+      "slot": "Mezzanine Catwalks",
+      "attempt": 1,
+      "prompt": "You write player-facing copy for BREACHPOINT, a 4v4 team arena FPS\n(shields over health, Assault Rifle / Magnum / Rocket Launcher, Grappleshot).\n\n## THE HOUSE VOICE \u2014 real shipped BREACHPOINT lines\n  Kill.Confirmed             'Kill confirmed.'\n  Kill.Confirmed             'Target down.'\n  Kill.Confirmed             'Hostile down.'\n  Rocket.Spawned             'Rocket up at the Core.'\n  Rocket.Spawned             'Rocket is live at the Core.'\n  Rocket.Spawned             'The Core is contested.'\n  Score.Blowout.Lead         'Lead is holding.'\n  Score.Blowout.Deficit      'Down heavy.'\n\nMeasured across everything the game ships: no exclamation marks, no first\nperson, terse and certain. Tactical present tense \u2014 what a position does for\nthe player NOW. BREACHPOINT has no story: no factions, no dates, no lore.\n\n## THE JOB\nAn intel card for the map screen: an evocative, useful blurb for one landmark\nof the arena. Players read it in the seconds before a match.\n\n## THE LANDMARK \u2014 `Mezzanine Catwalks`\nThe level designer's notes, verbatim from the arena manifest:\nMid-level ring at height 4. South deck x[14,26] y[12,16] z[3.6,4] and north deck x[14,26] y[24,28] z[3.6,4] abut the Core base faces (v3 closes v2's 1 m gap - these decks carried SP5/SP6 as floating islands), so deck, base roof and rocket terrace form one continuous mid level. West stair x[13,16] y[19,21] z[0,4] and east stair x[24,27] y[19,21] z[0,4] climb ground to the mid level ONLY; nothing walkable continues to height 8 - the Gantry above is grapple-only by design.\n\nWrite the card: at most 2 sentences. Return JSON only:\n{\"card\": \"...\"}\n",
+      "response": {
+        "card": "Catwalks tie both flanks of the Core into one mid level with the roof and rocket terrace. Stairs top out here \u2014 the Gantry above is grapple-only."
+      },
+      "usage": {
+        "input_tokens": 4,
+        "output_tokens": 285,
+        "cost_usd": 0.023104200000000002
+      },
+      "parse_retries": 0
+    },
+    {
+      "agent": "generator",
+      "slot": "The Gantry",
+      "attempt": 1,
+      "prompt": "You write player-facing copy for BREACHPOINT, a 4v4 team arena FPS\n(shields over health, Assault Rifle / Magnum / Rocket Launcher, Grappleshot).\n\n## THE HOUSE VOICE \u2014 real shipped BREACHPOINT lines\n  Kill.Confirmed             'Kill confirmed.'\n  Kill.Confirmed             'Target down.'\n  Kill.Confirmed             'Hostile down.'\n  Rocket.Spawned             'Rocket up at the Core.'\n  Rocket.Spawned             'Rocket is live at the Core.'\n  Rocket.Spawned             'The Core is contested.'\n  Score.Blowout.Lead         'Lead is holding.'\n  Score.Blowout.Deficit      'Down heavy.'\n\nMeasured across everything the game ships: no exclamation marks, no first\nperson, terse and certain. Tactical present tense \u2014 what a position does for\nthe player NOW. BREACHPOINT has no story: no factions, no dates, no lore.\n\n## THE JOB\nAn intel card for the map screen: an evocative, useful blurb for one landmark\nof the arena. Players read it in the seconds before a match.\n\n## THE LANDMARK \u2014 `The Gantry`\nThe level designer's notes, verbatim from the arena manifest:\nUpper walkway at height 8: west segment x[10,14] y[18,22] z[7.6,8] and east segment x[26,30] y[18,22] z[7.6,8], carrying SP7 and SP8. Grapple-only by design (BP07 Done-when; GDD 2.6 upper = grapple-primary/load-bearing): no walkable structure reaches height 8, and each segment carries two grapple anchors (GP1/GP2 west, GP3/GP4 east) so no single-point choke exists. Exits are drops or grapple.\n\nWrite the card: at most 2 sentences. Return JSON only:\n{\"card\": \"...\"}\n",
+      "response": {
+        "card": "Grapple-only, height 8. Twin anchors on each segment keep both approaches open \u2014 no choke, drop or grapple out."
+      },
+      "usage": {
+        "input_tokens": 2,
+        "output_tokens": 49,
+        "cost_usd": 0.0107672
+      },
+      "parse_retries": 0
+    },
+    {
+      "agent": "generator",
+      "slot": "South Barricade",
+      "attempt": 1,
+      "prompt": "You write player-facing copy for BREACHPOINT, a 4v4 team arena FPS\n(shields over health, Assault Rifle / Magnum / Rocket Launcher, Grappleshot).\n\n## THE HOUSE VOICE \u2014 real shipped BREACHPOINT lines\n  Kill.Confirmed             'Kill confirmed.'\n  Kill.Confirmed             'Target down.'\n  Kill.Confirmed             'Hostile down.'\n  Rocket.Spawned             'Rocket up at the Core.'\n  Rocket.Spawned             'Rocket is live at the Core.'\n  Rocket.Spawned             'The Core is contested.'\n  Score.Blowout.Lead         'Lead is holding.'\n  Score.Blowout.Deficit      'Down heavy.'\n\nMeasured across everything the game ships: no exclamation marks, no first\nperson, terse and certain. Tactical present tense \u2014 what a position does for\nthe player NOW. BREACHPOINT has no story: no factions, no dates, no lore.\n\n## THE JOB\nAn intel card for the map screen: an evocative, useful blurb for one landmark\nof the arena. Players read it in the seconds before a match.\n\n## THE LANDMARK \u2014 `South Barricade`\nThe level designer's notes, verbatim from the arena manifest:\nFull-height cover block x[18,22] y[3,5] z[0,3], centered on the SP1-SP2 edge corridor (y=4) to split its 32 m sightline into 14 m spawn-to-face runs.\n\nWrite the card: at most 2 sentences. Return JSON only:\n{\"card\": \"...\"}\n",
+      "response": {
+        "card": "Full-height cover splits the SP1\u2013SP2 corridor, cutting a 32 m sightline into 14 m spawn-to-face runs. Breaks the long angle before it breaks you."
+      },
+      "usage": {
+        "input_tokens": 2,
+        "output_tokens": 172,
+        "cost_usd": 0.0118916
+      },
+      "parse_retries": 0
+    },
+    {
+      "agent": "refiner",
+      "slot": "South Barricade",
+      "attempt": 2,
+      "prompt": "You write player-facing copy for BREACHPOINT, a 4v4 team arena FPS.\n\n## THE HOUSE VOICE \u2014 real shipped BREACHPOINT lines\n  Kill.Confirmed             'Kill confirmed.'\n  Kill.Confirmed             'Target down.'\n  Kill.Confirmed             'Hostile down.'\n  Rocket.Spawned             'Rocket up at the Core.'\n  Rocket.Spawned             'Rocket is live at the Core.'\n  Rocket.Spawned             'The Core is contested.'\n  Score.Blowout.Lead         'Lead is holding.'\n  Score.Blowout.Deficit      'Down heavy.'\n\nMeasured across everything the game ships: no exclamation marks, no first\nperson, terse and certain. Tactical present tense \u2014 what a position does for\nthe player NOW. BREACHPOINT has no story: no factions, no dates, no lore.\n\n## THE LANDMARK \u2014 `South Barricade`\nFull-height cover block x[18,22] y[3,5] z[0,3], centered on the SP1-SP2 edge corridor (y=4) to split its 32 m sightline into 14 m spawn-to-face runs.\n\n## A CARD YOU WROTE FAILED THE STYLE GUIDE\nCard: 'Full-height cover splits the SP1\u2013SP2 corridor, cutting a 32 m sightline into 14 m spawn-to-face runs. Breaks the long angle before it breaks you.'\n\nViolations:\n  - [CANON_PLACES] 'SP' is not BREACHPOINT vocabulary \u2014 the arena has seven landmarks and no fiction (arena_manifest.json landmarks[])\n  - [CANON_NUMBERS] '1' is not a canon tuning value \u2014 a wrong number is worse than none (GDD Appendix A + arena_manifest.json)\n\nRewrite ONLY this card so it passes, keeping it evocative and useful \u2014 a card\nsanded down to \"a place on the map\" passes every rule and says nothing.\nAt most 2 sentences. Return JSON only: {\"card\": \"...\"}\n",
+      "response": {
+        "card": "Full-height cover splits the South Barricade corridor, cutting a 32 m sightline into 14 m spawn-to-face runs. Breaks the long angle before it breaks you."
+      },
+      "usage": {
+        "input_tokens": 2,
+        "output_tokens": 67,
+        "cost_usd": 0.0375376
+      },
+      "parse_retries": 0
+    },
+    {
+      "agent": "generator",
+      "slot": "North Barricade",
+      "attempt": 1,
+      "prompt": "You write player-facing copy for BREACHPOINT, a 4v4 team arena FPS\n(shields over health, Assault Rifle / Magnum / Rocket Launcher, Grappleshot).\n\n## THE HOUSE VOICE \u2014 real shipped BREACHPOINT lines\n  Kill.Confirmed             'Kill confirmed.'\n  Kill.Confirmed             'Target down.'\n  Kill.Confirmed             'Hostile down.'\n  Rocket.Spawned             'Rocket up at the Core.'\n  Rocket.Spawned             'Rocket is live at the Core.'\n  Rocket.Spawned             'The Core is contested.'\n  Score.Blowout.Lead         'Lead is holding.'\n  Score.Blowout.Deficit      'Down heavy.'\n\nMeasured across everything the game ships: no exclamation marks, no first\nperson, terse and certain. Tactical present tense \u2014 what a position does for\nthe player NOW. BREACHPOINT has no story: no factions, no dates, no lore.\n\n## THE JOB\nAn intel card for the map screen: an evocative, useful blurb for one landmark\nof the arena. Players read it in the seconds before a match.\n\n## THE LANDMARK \u2014 `North Barricade`\nThe level designer's notes, verbatim from the arena manifest:\nFull-height cover block x[18,22] y[35,37] z[0,3], centered on the SP3-SP4 edge corridor (y=36) to split its 32 m sightline into 14 m spawn-to-face runs.\n\nWrite the card: at most 2 sentences. Return JSON only:\n{\"card\": \"...\"}\n",
+      "response": {
+        "card": "Full-height cover splits the SP3-SP4 sightline into two 14 m runs. Break line of sight, close fast."
+      },
+      "usage": {
+        "input_tokens": 2,
+        "output_tokens": 48,
+        "cost_usd": 0.0106516
+      },
+      "parse_retries": 0
+    },
+    {
+      "agent": "refiner",
+      "slot": "North Barricade",
+      "attempt": 2,
+      "prompt": "You write player-facing copy for BREACHPOINT, a 4v4 team arena FPS.\n\n## THE HOUSE VOICE \u2014 real shipped BREACHPOINT lines\n  Kill.Confirmed             'Kill confirmed.'\n  Kill.Confirmed             'Target down.'\n  Kill.Confirmed             'Hostile down.'\n  Rocket.Spawned             'Rocket up at the Core.'\n  Rocket.Spawned             'Rocket is live at the Core.'\n  Rocket.Spawned             'The Core is contested.'\n  Score.Blowout.Lead         'Lead is holding.'\n  Score.Blowout.Deficit      'Down heavy.'\n\nMeasured across everything the game ships: no exclamation marks, no first\nperson, terse and certain. Tactical present tense \u2014 what a position does for\nthe player NOW. BREACHPOINT has no story: no factions, no dates, no lore.\n\n## THE LANDMARK \u2014 `North Barricade`\nFull-height cover block x[18,22] y[35,37] z[0,3], centered on the SP3-SP4 edge corridor (y=36) to split its 32 m sightline into 14 m spawn-to-face runs.\n\n## A CARD YOU WROTE FAILED THE STYLE GUIDE\nCard: 'Full-height cover splits the SP3-SP4 sightline into two 14 m runs. Break line of sight, close fast.'\n\nViolations:\n  - [CANON_PLACES] 'SP' is not BREACHPOINT vocabulary \u2014 the arena has seven landmarks and no fiction (arena_manifest.json landmarks[])\n\nRewrite ONLY this card so it passes, keeping it evocative and useful \u2014 a card\nsanded down to \"a place on the map\" passes every rule and says nothing.\nAt most 2 sentences. Return JSON only: {\"card\": \"...\"}\n",
+      "response": {
+        "card": "Full-height cover splits the North Barricade sightline into two 14 m runs. Break line of sight, close fast."
+      },
+      "usage": {
+        "input_tokens": 2,
+        "output_tokens": 45,
+        "cost_usd": 0.036945599999999995
+      },
+      "parse_retries": 0
+    },
+    {
+      "agent": "generator",
+      "slot": "West Stack",
+      "attempt": 1,
+      "prompt": "You write player-facing copy for BREACHPOINT, a 4v4 team arena FPS\n(shields over health, Assault Rifle / Magnum / Rocket Launcher, Grappleshot).\n\n## THE HOUSE VOICE \u2014 real shipped BREACHPOINT lines\n  Kill.Confirmed             'Kill confirmed.'\n  Kill.Confirmed             'Target down.'\n  Kill.Confirmed             'Hostile down.'\n  Rocket.Spawned             'Rocket up at the Core.'\n  Rocket.Spawned             'Rocket is live at the Core.'\n  Rocket.Spawned             'The Core is contested.'\n  Score.Blowout.Lead         'Lead is holding.'\n  Score.Blowout.Deficit      'Down heavy.'\n\nMeasured across everything the game ships: no exclamation marks, no first\nperson, terse and certain. Tactical present tense \u2014 what a position does for\nthe player NOW. BREACHPOINT has no story: no factions, no dates, no lore.\n\n## THE JOB\nAn intel card for the map screen: an evocative, useful blurb for one landmark\nof the arena. Players read it in the seconds before a match.\n\n## THE LANDMARK \u2014 `West Stack`\nThe level designer's notes, verbatim from the arena manifest:\nFull-height cover block x[3,5] y[18,22] z[0,3], centered on the SP1-SP3 edge corridor (x=4) to split its 32 m sightline into 14 m spawn-to-face runs.\n\nWrite the card: at most 2 sentences. Return JSON only:\n{\"card\": \"...\"}\n",
+      "response": {
+        "card": "Full-height cover splits the SP1-SP3 sightline into 14 m runs. Peek angles, not the open lane."
+      },
+      "usage": {
+        "input_tokens": 2,
+        "output_tokens": 48,
+        "cost_usd": 0.010633400000000001
+      },
+      "parse_retries": 0
+    },
+    {
+      "agent": "refiner",
+      "slot": "West Stack",
+      "attempt": 2,
+      "prompt": "You write player-facing copy for BREACHPOINT, a 4v4 team arena FPS.\n\n## THE HOUSE VOICE \u2014 real shipped BREACHPOINT lines\n  Kill.Confirmed             'Kill confirmed.'\n  Kill.Confirmed             'Target down.'\n  Kill.Confirmed             'Hostile down.'\n  Rocket.Spawned             'Rocket up at the Core.'\n  Rocket.Spawned             'Rocket is live at the Core.'\n  Rocket.Spawned             'The Core is contested.'\n  Score.Blowout.Lead         'Lead is holding.'\n  Score.Blowout.Deficit      'Down heavy.'\n\nMeasured across everything the game ships: no exclamation marks, no first\nperson, terse and certain. Tactical present tense \u2014 what a position does for\nthe player NOW. BREACHPOINT has no story: no factions, no dates, no lore.\n\n## THE LANDMARK \u2014 `West Stack`\nFull-height cover block x[3,5] y[18,22] z[0,3], centered on the SP1-SP3 edge corridor (x=4) to split its 32 m sightline into 14 m spawn-to-face runs.\n\n## A CARD YOU WROTE FAILED THE STYLE GUIDE\nCard: 'Full-height cover splits the SP1-SP3 sightline into 14 m runs. Peek angles, not the open lane.'\n\nViolations:\n  - [CANON_PLACES] 'SP' is not BREACHPOINT vocabulary \u2014 the arena has seven landmarks and no fiction (arena_manifest.json landmarks[])\n  - [CANON_NUMBERS] '1' is not a canon tuning value \u2014 a wrong number is worse than none (GDD Appendix A + arena_manifest.json)\n\nRewrite ONLY this card so it passes, keeping it evocative and useful \u2014 a card\nsanded down to \"a place on the map\" passes every rule and says nothing.\nAt most 2 sentences. Return JSON only: {\"card\": \"...\"}\n",
+      "response": {
+        "card": "Full-height cover at West Stack splits the sightline into 14 m runs. Peek angles, not the open lane."
+      },
+      "usage": {
+        "input_tokens": 2,
+        "output_tokens": 45,
+        "cost_usd": 0.037203599999999996
+      },
+      "parse_retries": 0
+    },
+    {
+      "agent": "generator",
+      "slot": "East Stack",
+      "attempt": 1,
+      "prompt": "You write player-facing copy for BREACHPOINT, a 4v4 team arena FPS\n(shields over health, Assault Rifle / Magnum / Rocket Launcher, Grappleshot).\n\n## THE HOUSE VOICE \u2014 real shipped BREACHPOINT lines\n  Kill.Confirmed             'Kill confirmed.'\n  Kill.Confirmed             'Target down.'\n  Kill.Confirmed             'Hostile down.'\n  Rocket.Spawned             'Rocket up at the Core.'\n  Rocket.Spawned             'Rocket is live at the Core.'\n  Rocket.Spawned             'The Core is contested.'\n  Score.Blowout.Lead         'Lead is holding.'\n  Score.Blowout.Deficit      'Down heavy.'\n\nMeasured across everything the game ships: no exclamation marks, no first\nperson, terse and certain. Tactical present tense \u2014 what a position does for\nthe player NOW. BREACHPOINT has no story: no factions, no dates, no lore.\n\n## THE JOB\nAn intel card for the map screen: an evocative, useful blurb for one landmark\nof the arena. Players read it in the seconds before a match.\n\n## THE LANDMARK \u2014 `East Stack`\nThe level designer's notes, verbatim from the arena manifest:\nFull-height cover block x[35,37] y[18,22] z[0,3], centered on the SP2-SP4 edge corridor (x=36) to split its 32 m sightline into 14 m spawn-to-face runs.\n\nWrite the card: at most 2 sentences. Return JSON only:\n{\"card\": \"...\"}\n",
+      "response": {
+        "card": "Full-height cover splits the SP2-SP4 sightline into 14 m runs. Peek, don't cross."
+      },
+      "usage": {
+        "input_tokens": 2,
+        "output_tokens": 45,
+        "cost_usd": 0.0106034
+      },
+      "parse_retries": 0
+    },
+    {
+      "agent": "refiner",
+      "slot": "East Stack",
+      "attempt": 2,
+      "prompt": "You write player-facing copy for BREACHPOINT, a 4v4 team arena FPS.\n\n## THE HOUSE VOICE \u2014 real shipped BREACHPOINT lines\n  Kill.Confirmed             'Kill confirmed.'\n  Kill.Confirmed             'Target down.'\n  Kill.Confirmed             'Hostile down.'\n  Rocket.Spawned             'Rocket up at the Core.'\n  Rocket.Spawned             'Rocket is live at the Core.'\n  Rocket.Spawned             'The Core is contested.'\n  Score.Blowout.Lead         'Lead is holding.'\n  Score.Blowout.Deficit      'Down heavy.'\n\nMeasured across everything the game ships: no exclamation marks, no first\nperson, terse and certain. Tactical present tense \u2014 what a position does for\nthe player NOW. BREACHPOINT has no story: no factions, no dates, no lore.\n\n## THE LANDMARK \u2014 `East Stack`\nFull-height cover block x[35,37] y[18,22] z[0,3], centered on the SP2-SP4 edge corridor (x=36) to split its 32 m sightline into 14 m spawn-to-face runs.\n\n## A CARD YOU WROTE FAILED THE STYLE GUIDE\nCard: \"Full-height cover splits the SP2-SP4 sightline into 14 m runs. Peek, don't cross.\"\n\nViolations:\n  - [CANON_PLACES] 'SP' is not BREACHPOINT vocabulary \u2014 the arena has seven landmarks and no fiction (arena_manifest.json landmarks[])\n\nRewrite ONLY this card so it passes, keeping it evocative and useful \u2014 a card\nsanded down to \"a place on the map\" passes every rule and says nothing.\nAt most 2 sentences. Return JSON only: {\"card\": \"...\"}\n",
+      "response": {
+        "card": "Full-height cover splits the East Stack sightline into 14 m runs. Peek, don't cross."
+      },
+      "usage": {
+        "input_tokens": 2,
+        "output_tokens": 41,
+        "cost_usd": 0.0368756
+      },
+      "parse_retries": 0
+    }
+  ]
+}

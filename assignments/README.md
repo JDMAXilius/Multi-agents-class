@@ -23,15 +23,16 @@ source, and the artifacts they produce are the game's own data and code.
 | 4 | Dynamic Content Pipeline | [`04-content-pipeline/`](04-content-pipeline/) | [`README.md`](04-content-pipeline/README.md) → `run_pipeline.py` |
 | 5 | Goal-Oriented Coding Agent | [`05-goal-oriented-agent/`](05-goal-oriented-agent/) | [`README.md`](05-goal-oriented-agent/README.md) → `agent.py` |
 | 6 | GER Pipeline | [`06-ger-pipeline/`](06-ger-pipeline/) | [`README.md`](06-ger-pipeline/README.md) → `ger.py` |
+| 7 | Style Guide Agent | [`07-style-guide-agent/`](07-style-guide-agent/) | [`README.md`](07-style-guide-agent/README.md) → `style_agent.py` |
 
 **Read the folder's own `README.md` first** — each one is the graded write-up for that
 assignment. This file is only the map.
 
 ---
 
-## Running the four that are code
+## Running the five that are code
 
-All four are **Python 3, standard library only**. No `pip install`, no API key, no network.
+All five are **Python 3, standard library only**. No `pip install`, no API key, no network.
 Each ships a recorded run so the pipeline executes end-to-end on any machine:
 
 ```bash
@@ -39,9 +40,10 @@ cd assignments/03-agent-crew     && python3 run_crew.py
 cd assignments/04-content-pipeline && python3 run_pipeline.py
 cd assignments/05-goal-oriented-agent && python3 agent.py
 cd assignments/06-ger-pipeline       && python3 ger.py
+cd assignments/07-style-guide-agent  && python3 style_agent.py
 ```
 
-**Replay is not a printout.** In all four, everything except the model responses executes for
+**Replay is not a printout.** In all five, everything except the model responses executes for
 real — retrieval, validation gates, scoring, file writing. Only the LLM calls are served from
 `recording.json`. Delete the outputs and re-run; they come back.
 
@@ -130,6 +132,26 @@ The circuit breaker did not fire on a failure — it fired on a **cycle**: the r
 attempt 1's line as attempt 3, because the concept of being the last survivor invites the word
 "one" and the rule forbids counts.
 
+### #7 — Style Guide Agent · [`07-style-guide-agent/`](07-style-guide-agent/)
+
+The same GER + breaker loop, now enforcing the game's **whole aesthetic and narrative law**:
+[`STYLE-GUIDE.md`](07-style-guide-agent/STYLE-GUIDE.md) codifies six rule families extracted
+from the real project (seven landmarks, three weapons, the cut list, canon-only numbers, a
+measured voice, the no-fiction doctrine), each cited to its source file. It writes the arena's
+missing intel cards from the level designer's raw manifest notes.
+
+| Look at | For |
+|---|---|
+| [`STYLE-GUIDE.md`](07-style-guide-agent/STYLE-GUIDE.md) | the codified rules — the artifact the Evaluator implements |
+| [`README.md`](07-style-guide-agent/README.md) | the write-up — including the Evaluator bug the first live run exposed |
+| `output/run_report.json` | 5 of 7 first drafts rejected, every one refined to pass |
+| `python3 style_agent.py --selftest` | every rule fires + the breaker trips, deterministically, no model |
+
+Five of seven first drafts leaked engineering jargon (`SP1`–`SP4` spawn IDs) or invented a
+place ("Core Top") — caught, refined, landed. And the first live run caught a bug in the
+**Evaluator itself**: it flagged "the Core's" — the possessive of a canon landmark — as an
+invented noun. Fixed, pinned in the self-test, re-recorded.
+
 ---
 
 ## One structural difference worth knowing
@@ -199,6 +221,7 @@ Per-assignment submission checklists, where they exist:
 | 4 | ✅ | ✅ | |
 | 5 | ✅ | **not yet** | due 13 Aug — **needs a short late note on submission** |
 | 6 | ✅ | **not yet** | due 18 Aug — **needs a short late note on submission** |
+| 7 | ✅ | **not yet** | due 20 Aug — **needs a short late note on submission** |
 
 **Honesty note that applies to all of these:** none of the generated C++ or CSV has been
 compiled or imported into a running build of the game. The container these ran in has no

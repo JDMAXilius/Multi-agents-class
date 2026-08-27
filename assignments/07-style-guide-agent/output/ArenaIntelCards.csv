@@ -1,0 +1,8 @@
+RowName,Landmark,Card
+IC00,The Core,"Rocket terrace crowns the mid drum, and the spire above breaks the line north-south. Corner pylons carve the last diagonal sightlines between mid and upper spawns."
+IC01,Mezzanine Catwalks,Catwalks tie both flanks of the Core into one mid level with the roof and rocket terrace. Stairs top out here — the Gantry above is grapple-only.
+IC02,The Gantry,"Grapple-only, height 8. Twin anchors on each segment keep both approaches open — no choke, drop or grapple out."
+IC03,South Barricade,"Full-height cover splits the South Barricade corridor, cutting a 32 m sightline into 14 m spawn-to-face runs. Breaks the long angle before it breaks you."
+IC04,North Barricade,"Full-height cover splits the North Barricade sightline into two 14 m runs. Break line of sight, close fast."
+IC05,West Stack,"Full-height cover at West Stack splits the sightline into 14 m runs. Peek angles, not the open lane."
+IC06,East Stack,"Full-height cover splits the East Stack sightline into 14 m runs. Peek, don't cross."

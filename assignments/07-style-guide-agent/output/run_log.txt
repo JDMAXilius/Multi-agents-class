@@ -1,0 +1,54 @@
+Style Guide Agent · BREACHPOINT · replay · max 3 attempts per card · 7 landmarks
+enforcing: STYLE-GUIDE.md — 6 sourced rule families + the no-fiction doctrine
+
+=== The Core
+    (this slot TEMPTS reactor lore + coordinate echoes from the manifest prose)
+  GENERATED  'Rocket terrace crowns the mid drum, and the spire above breaks the line north-south while its flat top holds the Core Top grapple perch. Corner pylons carve the last diagonal sightlines between mid and upper spawns.'
+  REJECTED   'Rocket terrace crowns the mid drum, and the spire above breaks the line north-south while its flat top holds the Core Top grapple perch. Corner pylons carve the last diagonal sightlines between mid and upper spawns.'
+             [FORMAT] 36 words, cap is 28 (STYLE-GUIDE.md rule 6)
+             [CANON_PLACES] 'Top' is not BREACHPOINT vocabulary — the arena has seven landmarks and no fiction (arena_manifest.json landmarks[])
+  REFINED    'Rocket terrace crowns the mid drum, and the spire above breaks the line north-south. Corner pylons carve the last diagonal sightlines between mid and upper spawns.'  (passed on attempt 2)
+
+=== Mezzanine Catwalks
+    (this slot TEMPTS coordinate echoes (the prose is v2-vs-v3 engineering))
+  GENERATED  'Catwalks tie both flanks of the Core into one mid level with the roof and rocket terrace. Stairs top out here — the Gantry above is grapple-only.'
+  ACCEPTED   first pass
+
+=== The Gantry
+    (this slot TEMPTS a sniper perch + engineering heights (z[7.6,8]))
+  GENERATED  'Grapple-only, height 8. Twin anchors on each segment keep both approaches open — no choke, drop or grapple out.'
+  ACCEPTED   first pass
+
+=== South Barricade
+  GENERATED  'Full-height cover splits the SP1–SP2 corridor, cutting a 32 m sightline into 14 m spawn-to-face runs. Breaks the long angle before it breaks you.'
+  REJECTED   'Full-height cover splits the SP1–SP2 corridor, cutting a 32 m sightline into 14 m spawn-to-face runs. Breaks the long angle before it breaks you.'
+             [CANON_PLACES] 'SP' is not BREACHPOINT vocabulary — the arena has seven landmarks and no fiction (arena_manifest.json landmarks[])
+             [CANON_NUMBERS] '1' is not a canon tuning value — a wrong number is worse than none (GDD Appendix A + arena_manifest.json)
+  REFINED    'Full-height cover splits the South Barricade corridor, cutting a 32 m sightline into 14 m spawn-to-face runs. Breaks the long angle before it breaks you.'  (passed on attempt 2)
+
+=== North Barricade
+  GENERATED  'Full-height cover splits the SP3-SP4 sightline into two 14 m runs. Break line of sight, close fast.'
+  REJECTED   'Full-height cover splits the SP3-SP4 sightline into two 14 m runs. Break line of sight, close fast.'
+             [CANON_PLACES] 'SP' is not BREACHPOINT vocabulary — the arena has seven landmarks and no fiction (arena_manifest.json landmarks[])
+  REFINED    'Full-height cover splits the North Barricade sightline into two 14 m runs. Break line of sight, close fast.'  (passed on attempt 2)
+
+=== West Stack
+  GENERATED  'Full-height cover splits the SP1-SP3 sightline into 14 m runs. Peek angles, not the open lane.'
+  REJECTED   'Full-height cover splits the SP1-SP3 sightline into 14 m runs. Peek angles, not the open lane.'
+             [CANON_PLACES] 'SP' is not BREACHPOINT vocabulary — the arena has seven landmarks and no fiction (arena_manifest.json landmarks[])
+             [CANON_NUMBERS] '1' is not a canon tuning value — a wrong number is worse than none (GDD Appendix A + arena_manifest.json)
+  REFINED    'Full-height cover at West Stack splits the sightline into 14 m runs. Peek angles, not the open lane.'  (passed on attempt 2)
+
+=== East Stack
+  GENERATED  "Full-height cover splits the SP2-SP4 sightline into 14 m runs. Peek, don't cross."
+  REJECTED   "Full-height cover splits the SP2-SP4 sightline into 14 m runs. Peek, don't cross."
+             [CANON_PLACES] 'SP' is not BREACHPOINT vocabulary — the arena has seven landmarks and no fiction (arena_manifest.json landmarks[])
+  REFINED    "Full-height cover splits the East Stack sightline into 14 m runs. Peek, don't cross."  (passed on attempt 2)
+
+--- summary ---
+  accepted             7/7
+  rejected by rule     5
+  fixed by the refiner 5
+  escalated by breaker 0
+
+wrote output/ArenaIntelCards.csv · output/run_report.json · output/rules.txt

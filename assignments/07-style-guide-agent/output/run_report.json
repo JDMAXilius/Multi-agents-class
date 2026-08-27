@@ -1,0 +1,150 @@
+{
+  "accepted": 7,
+  "escalated": 0,
+  "rejections": 5,
+  "refined_to_pass": 5,
+  "max_attempts": 3,
+  "slots": [
+    {
+      "landmark": "The Core",
+      "tempts": "TEMPTS reactor lore + coordinate echoes from the manifest prose",
+      "accepted": "Rocket terrace crowns the mid drum, and the spire above breaks the line north-south. Corner pylons carve the last diagonal sightlines between mid and upper spawns.",
+      "history": [
+        {
+          "n": 1,
+          "stage": "generate",
+          "card": "Rocket terrace crowns the mid drum, and the spire above breaks the line north-south while its flat top holds the Core Top grapple perch. Corner pylons carve the last diagonal sightlines between mid and upper spawns.",
+          "violations": [
+            "[FORMAT] 36 words, cap is 28 (STYLE-GUIDE.md rule 6)",
+            "[CANON_PLACES] 'Top' is not BREACHPOINT vocabulary \u2014 the arena has seven landmarks and no fiction (arena_manifest.json landmarks[])"
+          ]
+        },
+        {
+          "n": 2,
+          "stage": "refine",
+          "card": "Rocket terrace crowns the mid drum, and the spire above breaks the line north-south. Corner pylons carve the last diagonal sightlines between mid and upper spawns.",
+          "violations": []
+        }
+      ],
+      "escalated": []
+    },
+    {
+      "landmark": "Mezzanine Catwalks",
+      "tempts": "TEMPTS coordinate echoes (the prose is v2-vs-v3 engineering)",
+      "accepted": "Catwalks tie both flanks of the Core into one mid level with the roof and rocket terrace. Stairs top out here \u2014 the Gantry above is grapple-only.",
+      "history": [
+        {
+          "n": 1,
+          "stage": "generate",
+          "card": "Catwalks tie both flanks of the Core into one mid level with the roof and rocket terrace. Stairs top out here \u2014 the Gantry above is grapple-only.",
+          "violations": []
+        }
+      ],
+      "escalated": []
+    },
+    {
+      "landmark": "The Gantry",
+      "tempts": "TEMPTS a sniper perch + engineering heights (z[7.6,8])",
+      "accepted": "Grapple-only, height 8. Twin anchors on each segment keep both approaches open \u2014 no choke, drop or grapple out.",
+      "history": [
+        {
+          "n": 1,
+          "stage": "generate",
+          "card": "Grapple-only, height 8. Twin anchors on each segment keep both approaches open \u2014 no choke, drop or grapple out.",
+          "violations": []
+        }
+      ],
+      "escalated": []
+    },
+    {
+      "landmark": "South Barricade",
+      "tempts": "safe",
+      "accepted": "Full-height cover splits the South Barricade corridor, cutting a 32 m sightline into 14 m spawn-to-face runs. Breaks the long angle before it breaks you.",
+      "history": [
+        {
+          "n": 1,
+          "stage": "generate",
+          "card": "Full-height cover splits the SP1\u2013SP2 corridor, cutting a 32 m sightline into 14 m spawn-to-face runs. Breaks the long angle before it breaks you.",
+          "violations": [
+            "[CANON_PLACES] 'SP' is not BREACHPOINT vocabulary \u2014 the arena has seven landmarks and no fiction (arena_manifest.json landmarks[])",
+            "[CANON_NUMBERS] '1' is not a canon tuning value \u2014 a wrong number is worse than none (GDD Appendix A + arena_manifest.json)"
+          ]
+        },
+        {
+          "n": 2,
+          "stage": "refine",
+          "card": "Full-height cover splits the South Barricade corridor, cutting a 32 m sightline into 14 m spawn-to-face runs. Breaks the long angle before it breaks you.",
+          "violations": []
+        }
+      ],
+      "escalated": []
+    },
+    {
+      "landmark": "North Barricade",
+      "tempts": "safe",
+      "accepted": "Full-height cover splits the North Barricade sightline into two 14 m runs. Break line of sight, close fast.",
+      "history": [
+        {
+          "n": 1,
+          "stage": "generate",
+          "card": "Full-height cover splits the SP3-SP4 sightline into two 14 m runs. Break line of sight, close fast.",
+          "violations": [
+            "[CANON_PLACES] 'SP' is not BREACHPOINT vocabulary \u2014 the arena has seven landmarks and no fiction (arena_manifest.json landmarks[])"
+          ]
+        },
+        {
+          "n": 2,
+          "stage": "refine",
+          "card": "Full-height cover splits the North Barricade sightline into two 14 m runs. Break line of sight, close fast.",
+          "violations": []
+        }
+      ],
+      "escalated": []
+    },
+    {
+      "landmark": "West Stack",
+      "tempts": "safe",
+      "accepted": "Full-height cover at West Stack splits the sightline into 14 m runs. Peek angles, not the open lane.",
+      "history": [
+        {
+          "n": 1,
+          "stage": "generate",
+          "card": "Full-height cover splits the SP1-SP3 sightline into 14 m runs. Peek angles, not the open lane.",
+          "violations": [
+            "[CANON_PLACES] 'SP' is not BREACHPOINT vocabulary \u2014 the arena has seven landmarks and no fiction (arena_manifest.json landmarks[])",
+            "[CANON_NUMBERS] '1' is not a canon tuning value \u2014 a wrong number is worse than none (GDD Appendix A + arena_manifest.json)"
+          ]
+        },
+        {
+          "n": 2,
+          "stage": "refine",
+          "card": "Full-height cover at West Stack splits the sightline into 14 m runs. Peek angles, not the open lane.",
+          "violations": []
+        }
+      ],
+      "escalated": []
+    },
+    {
+      "landmark": "East Stack",
+      "tempts": "safe",
+      "accepted": "Full-height cover splits the East Stack sightline into 14 m runs. Peek, don't cross.",
+      "history": [
+        {
+          "n": 1,
+          "stage": "generate",
+          "card": "Full-height cover splits the SP2-SP4 sightline into 14 m runs. Peek, don't cross.",
+          "violations": [
+            "[CANON_PLACES] 'SP' is not BREACHPOINT vocabulary \u2014 the arena has seven landmarks and no fiction (arena_manifest.json landmarks[])"
+          ]
+        },
+        {
+          "n": 2,
+          "stage": "refine",
+          "card": "Full-height cover splits the East Stack sightline into 14 m runs. Peek, don't cross.",
+          "violations": []
+        }
+      ],
+      "escalated": []
+    }
+  ]
+}
