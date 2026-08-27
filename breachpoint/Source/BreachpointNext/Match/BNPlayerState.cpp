@@ -6,6 +6,7 @@
 #include "AbilitySystem/Abilities/BNGA_Death.h"
 #include "AbilitySystem/Abilities/BNGA_Equip.h"
 #include "AbilitySystem/Abilities/BNGA_ADS.h"
+#include "AbilitySystem/Abilities/BNGA_Grapple.h"
 #include "AbilitySystem/Abilities/BNGA_Grenade.h"
 #include "AbilitySystem/Abilities/BNGA_HitReact.h"
 #include "AbilitySystem/Abilities/BNGA_Melee.h"
@@ -222,6 +223,12 @@ void ABNPlayerState::GrantDefaults()
 	FGameplayAbilitySpec ADSSpec(UBNGA_ADS::StaticClass(), 1);
 	ADSSpec.GetDynamicSpecSourceTags().AddTag(BNTags::Input_Weapon_ADS);
 	AbilitySystemComponent->GiveAbility(ADSSpec);
+
+	// BN23 — the Grappleshot, a body verb like the three above: granted here so no
+	// ability-set asset edit gates it, survives every weapon swap.
+	FGameplayAbilitySpec GrappleSpec(UBNGA_Grapple::StaticClass(), 1);
+	GrappleSpec.GetDynamicSpecSourceTags().AddTag(BNTags::Input_Grapple);
+	AbilitySystemComponent->GiveAbility(GrappleSpec);
 
 	// No input tag: nobody presses "flinch". UBNHealthComponent activates it by class when health
 	// drops and stays above zero — death's shape, one delegate over.

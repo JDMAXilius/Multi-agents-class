@@ -47,6 +47,7 @@ protected:
 	void HandleADSReleased();
 	void HandleMeleePressed();
 	void HandleGrenadePressed();
+	void HandleGrapplePressed();
 
 	/** R7 — THE UI VERB: hold-to-show scoreboard, routed to the HUD director and NEVER to the
 	 *  ASC. A UI verb is not an ability; forwarding it would log "NO granted ability carries

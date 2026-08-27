@@ -1,5 +1,7 @@
 #include "Characters/BNCharacter.h"
 
+#include "Characters/BNCharacterMovementComponent.h"
+
 #include "AIBotAdapter/BNAIBAvatarAdapter.h"
 #include "AbilitySystem/BNAbilitySystemComponent.h"
 #include "AbilitySystem/Abilities/BNGA_Death.h"
@@ -91,7 +93,11 @@ namespace
 	}
 }
 
-ABNCharacter::ABNCharacter()
+ABNCharacter::ABNCharacter(const FObjectInitializer& ObjectInitializer)
+	// The engine's one sanctioned swap point for a default subobject: the grapple's
+	// predicted pull lives in the movement component, so the class changes HERE — the
+	// legacy module's own compiled pattern (BRCharacter.cpp:21).
+	: Super(ObjectInitializer.SetDefaultSubobjectClass<UBNCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
 	PrimaryActorTick.bCanEverTick = false;
 

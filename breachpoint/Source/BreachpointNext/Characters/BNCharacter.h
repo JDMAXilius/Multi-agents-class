@@ -19,7 +19,10 @@ class BREACHPOINTNEXT_API ABNCharacter : public ACharacter, public IAbilitySyste
 	GENERATED_BODY()
 
 public:
-	ABNCharacter();
+	/** ObjectInitializer form since BN23: the ctor swaps the movement component class for
+	 *  UBNCharacterMovementComponent (the grapple's predicted pull) — the one sanctioned
+	 *  way to replace an ACharacter default subobject. */
+	ABNCharacter(const FObjectInitializer& ObjectInitializer);
 
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	virtual void PostInitializeComponents() override;

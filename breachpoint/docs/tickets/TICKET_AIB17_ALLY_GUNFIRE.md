@@ -68,10 +68,6 @@ Then aib-critic, one dimension: the two guarded channels above.
 
 ## Log
 
-_(outputs verbatim)_
-
-## Log
-
 ### 27 Aug — built, to the design verbatim (WRITTEN, NOT COMPILED)
 
 - The tap took the SAFER cut (the tag door): `IAIBWorldQuery::IsWeaponNoiseTag`

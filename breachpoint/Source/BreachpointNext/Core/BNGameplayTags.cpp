@@ -33,6 +33,10 @@ namespace BNTags
 
 	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Weapon_Fire, "Cooldown.Weapon.Fire");
 	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Grenade, "Cooldown.Grenade");
+	// GRAPPLE (BN23): the press and its cooldown. Input.Grapple sits beside Jump/Sprint —
+	// a body verb, not a weapon's.
+	UE_DEFINE_GAMEPLAY_TAG(Input_Grapple, "Input.Grapple");
+	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Grapple, "Cooldown.Grapple");
 
 	UE_DEFINE_GAMEPLAY_TAG(State_Combat_RecentDamage, "State.Combat.RecentDamage");
 	// HEALTH REGEN's own window (founder, 27 Aug), a SIBLING of RecentDamage on purpose:

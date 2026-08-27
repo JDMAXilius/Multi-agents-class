@@ -167,6 +167,17 @@ UBNGE_GrenadeCooldown::UBNGE_GrenadeCooldown()
 	// UBNGE_State documents: native tags are not guaranteed registered while CDOs are built.
 }
 
+UBNGE_GrappleCooldown::UBNGE_GrappleCooldown()
+{
+	DurationPolicy = EGameplayEffectDurationType::HasDuration;
+
+	FSetByCallerFloat Duration;
+	Duration.DataName = BNSetByCaller::GrappleCooldown;
+	DurationMagnitude = FGameplayEffectModifierMagnitude(Duration);
+
+	// Cooldown.Grapple rides the spec — the same construction-order rule as above.
+}
+
 UBNGE_RecentDamage::UBNGE_RecentDamage()
 {
 	DurationPolicy = EGameplayEffectDurationType::HasDuration;

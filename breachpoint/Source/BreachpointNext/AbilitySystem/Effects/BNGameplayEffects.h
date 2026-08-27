@@ -73,6 +73,9 @@ namespace BNSetByCaller
 	/** UBNGE_GrenadeCooldown's duration key. Same construction-order reason as FireDelay. */
 	const FName GrenadeCooldown(TEXT("GrenadeCooldown"));
 
+	/** UBNGE_GrappleCooldown's duration key (BN23). Same construction-order reason. */
+	const FName GrappleCooldown(TEXT("GrappleCooldown"));
+
 	/** UBNGE_RecentDamage's duration key — the shield's delay before it starts coming back. */
 	const FName RecentDamageWindow(TEXT("RecentDamageWindow"));
 }
@@ -124,6 +127,18 @@ class BREACHPOINTNEXT_API UBNGE_GrenadeCooldown : public UGameplayEffect
 
 public:
 	UBNGE_GrenadeCooldown();
+};
+
+/** The Grappleshot's rate limit (BN23) — the grenade cooldown's exact shape. A PREDICTED
+ *  cooldown GE on purpose: a server-rejected grapple rolls the cooldown back with the
+ *  prediction window, where a hand-tracked float never would (rejection leaves zero state). */
+UCLASS()
+class BREACHPOINTNEXT_API UBNGE_GrappleCooldown : public UGameplayEffect
+{
+	GENERATED_BODY()
+
+public:
+	UBNGE_GrappleCooldown();
 };
 
 /**

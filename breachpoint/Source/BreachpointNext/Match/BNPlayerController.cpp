@@ -93,6 +93,7 @@ void ABNPlayerController::SetupInputComponent()
 	Bind(BNTags::Input_Weapon_ADS, ETriggerEvent::Completed, &ABNPlayerController::HandleADSReleased);
 	Bind(BNTags::Input_Melee, ETriggerEvent::Started, &ABNPlayerController::HandleMeleePressed);
 	Bind(BNTags::Input_Grenade, ETriggerEvent::Started, &ABNPlayerController::HandleGrenadePressed);
+	Bind(BNTags::Input_Grapple, ETriggerEvent::Started, &ABNPlayerController::HandleGrapplePressed);
 	Bind(BNTags::Input_Scoreboard, ETriggerEvent::Started, &ABNPlayerController::HandleScoreboardPressed);
 	Bind(BNTags::Input_Scoreboard, ETriggerEvent::Completed, &ABNPlayerController::HandleScoreboardReleased);
 	Bind(BNTags::Input_Menu, ETriggerEvent::Started, &ABNPlayerController::HandleMenuPressed);
@@ -273,6 +274,16 @@ void ABNPlayerController::HandleGrenadePressed()
 	if (UBNAbilitySystemComponent* ASC = GetBNAbilitySystemComponent())
 	{
 		ASC->AbilityInputTagPressed(BNTags::Input_Grenade);
+	}
+}
+
+void ABNPlayerController::HandleGrapplePressed()
+{
+	// A tap like the grenade — the pull's lifecycle is the movement component's, so
+	// there is no release to forward.
+	if (UBNAbilitySystemComponent* ASC = GetBNAbilitySystemComponent())
+	{
+		ASC->AbilityInputTagPressed(BNTags::Input_Grapple);
 	}
 }
 
