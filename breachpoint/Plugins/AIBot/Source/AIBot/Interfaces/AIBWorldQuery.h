@@ -88,6 +88,20 @@ public:
 	 *  fully dropped — exactly the pre-AIB17 behavior. */
 	virtual bool IsWeaponNoiseTag(FName Tag) const { return false; }
 
+	/** AIB19 — the traversal door: the host's nearest grapple ROUTE to NearLocation, as
+	 *  two world points — where a body stands to make the shot (walkable, nav-reachable)
+	 *  and what it aims at (level geometry the host's own grapple accepts). STATIC MAP
+	 *  KNOWLEDGE, the same FAIRPLAY grade as a POI: humans learn anchor spots from the
+	 *  level itself; nothing here is perceptual and nothing is about enemies.
+	 *
+	 *  Default false: a host without grapple routes (or without a grapple at all) keeps
+	 *  its bots walking, byte-identical — the AreAllies precedent. The module never
+	 *  learns HOW the host's hook works; it stands at the approach, aims at the anchor,
+	 *  presses AIBot.Verb.Grapple, and the host's own authority validation judges the
+	 *  shot like any player's. */
+	virtual bool GetGrappleRoute(const FVector& NearLocation, FVector& OutApproachPoint,
+		FVector& OutAnchorPoint) const { return false; }
+
 	/** Alliance WITHOUT liveness: true iff the game says A and B stand on the same side
 	 *  — a dead teammate is still a teammate, a dead enemy is still an enemy. Exists
 	 *  because two consumers (the attitude consult, the claims board's binding

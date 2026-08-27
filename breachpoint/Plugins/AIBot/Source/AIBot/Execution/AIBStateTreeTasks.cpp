@@ -195,6 +195,11 @@ namespace
 	constexpr float WedgeProgressUU = 50.f;
 	constexpr float WedgeStallSeconds = 1.5f;
 
+	/** AIB19: the traverse aim's turn rate. Faster than combat facing on purpose — the
+	 *  anchor is scenery that cannot dodge, and a slow pan here is seconds spent as a
+	 *  stationary target at a known doorstep. Still through the ONE bounded steer (F4). */
+	constexpr float TraverseAimTurnRate = 540.f;
+
 	/** RELOAD below a quarter magazine, re-tapped no faster than this. The magazine only
 	 *  refills on the weapon's own notify, so a refused reload (frozen, dead, no montage)
 	 *  would otherwise be re-pressed at tick rate forever. */
@@ -1203,6 +1208,55 @@ EStateTreeRunStatus FAIBMoveToPOITask::EnterState(FStateTreeExecutionContext& Co
 	}
 
 	InstanceData.bHasGoal = false;
+	InstanceData.TraversePhase = 0;
+
+	// AIB19 — sometimes an idle leg is the climb (or the drop). Armed BEFORE the
+	// ordinary picks so the traverse owns the Goal; every guard that fails just falls
+	// through to the wander this leg would have been anyway. The short clock is charged
+	// at ARMING, not at success — a route whose path immediately refuses must not
+	// re-arm on every branch re-entry.
+	if (MayGrappleTraverse())
+	{
+		IAIBWorldQuery* Query = Bot->GetWorldQuery();
+		IAIBAvatarInterface* Avatar = Bot->GetAvatar();
+		const double Now = Bot->GetWorld()->GetTimeSeconds();
+		FVector Approach, Anchor;
+		if (Query && Avatar && Avatar->IsGrounded()
+			&& Now >= InstanceData.NextTraverseAllowedSeconds
+			&& Bot->GetSkillProfile().Level(EAIBSkill::Movement) >= EAIBCompetence::Trained
+			&& Query->GetGrappleRoute(Pawn->GetActorLocation(), Approach, Anchor))
+		{
+			const float SelfZ = Pawn->GetActorLocation().Z;
+			FRandomStream& Random = Bot->GetPolicyRandom();
+			if (Anchor.Z > SelfZ + InstanceData.MinTraverseRiseUU
+				&& Random.FRand() < InstanceData.ClimbChance)
+			{
+				InstanceData.RouteApproach = Approach;
+				InstanceData.RouteAnchor = Anchor;
+				InstanceData.Goal = Approach;
+				InstanceData.bHasGoal = true;
+				InstanceData.TraversePhase = 1;
+			}
+			else if (SelfZ > Approach.Z + InstanceData.MinTraverseRiseUU
+				&& Random.FRand() < InstanceData.DescendChance)
+			{
+				InstanceData.RouteApproach = Approach;
+				InstanceData.RouteAnchor = Anchor;
+				// The lip: the anchor's spot at the bot's own height — on this deck's
+				// navmesh island by construction, so the walk there is an ordinary walk.
+				InstanceData.Goal = FVector(Anchor.X, Anchor.Y, SelfZ);
+				InstanceData.bHasGoal = true;
+				InstanceData.TraversePhase = 4;
+			}
+			if (InstanceData.TraversePhase != 0)
+			{
+				InstanceData.PhaseSeconds = 0.f;
+				InstanceData.bAirborneSeen = false;
+				InstanceData.NextTraverseAllowedSeconds =
+					Now + InstanceData.TraverseCooldownSeconds / 3.0;
+			}
+		}
+	}
 
 	// SOMEWHERE TO BE, in preference order. The belief comes from the memory's fresh
 	// window — F5-lawful, never a live actor read — so "move toward the current target"
@@ -1271,10 +1325,14 @@ EStateTreeRunStatus FAIBMoveToPOITask::Tick(FStateTreeExecutionContext& Context,
 {
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller);
-	const APawn* Pawn = Bot ? Bot->GetPawn() : nullptr;
+	APawn* Pawn = Bot ? Bot->GetPawn() : nullptr;
 	if (!Pawn || !InstanceData.bHasGoal)
 	{
 		return EStateTreeRunStatus::Failed;
+	}
+	if (InstanceData.TraversePhase != 0)
+	{
+		return TickTraverse(*Bot, *Pawn, InstanceData, DeltaTime);
 	}
 	if (IsWithin(*Bot, InstanceData.Goal, InstanceData.AcceptanceRadiusUU))
 	{
@@ -1303,10 +1361,160 @@ EStateTreeRunStatus FAIBMoveToPOITask::Tick(FStateTreeExecutionContext& Context,
 void FAIBMoveToPOITask::ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
 {
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	// A branch ended mid-traverse (the sentinel: the want moved on) resets the machine
+	// but NOT a pull in flight — the host's movement component owns a started pull, and
+	// a bot yanked into Engage mid-ride finishes arriving exactly like a human would.
+	InstanceData.TraversePhase = 0;
 	if (AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller))
 	{
 		ReleaseLocomotion(*Bot, InstanceData.Locomotion);
 		Bot->StopMovement();
+	}
+}
+
+/** AIB19's micro-machine. Every exit path either logs an outcome or logs a whiff, sets
+ *  the traverse clock, and returns a status the branch can live with — a failed hook is
+ *  never a stranded bot (F7): Succeeded re-selects Roam, which wanders as if the climb
+ *  had never been offered. */
+EStateTreeRunStatus FAIBMoveToPOITask::TickTraverse(AAIBBotController& Bot, APawn& Pawn,
+	FInstanceDataType& InstanceData, float DeltaTime) const
+{
+	IAIBAvatarInterface* Avatar = Bot.GetAvatar();
+	if (!Avatar)
+	{
+		InstanceData.TraversePhase = 0;
+		return EStateTreeRunStatus::Failed;
+	}
+	const double Now = Bot.GetWorld()->GetTimeSeconds();
+	const FVector Here = Pawn.GetActorLocation();
+	const float RetrySoonSeconds = InstanceData.TraverseCooldownSeconds / 3.f;
+
+	switch (InstanceData.TraversePhase)
+	{
+	case 1: // ---- walk to the approach --------------------------------------------
+	case 4: // ---- walk to the lip (same walk, different doorstep) -----------------
+	{
+		if (IsWithin(Bot, InstanceData.Goal, InstanceData.ApproachReachUU))
+		{
+			ReleaseLocomotion(Bot, InstanceData.Locomotion);
+			Bot.StopMovement();
+			InstanceData.PhaseSeconds = 0.f;
+			InstanceData.bAirborneSeen = false;
+			if (InstanceData.TraversePhase == 1)
+			{
+				InstanceData.TraversePhase = 2;
+			}
+			else
+			{
+				// THE DROP: pathfinding OFF and no nav projection on purpose — the
+				// approach point is a storey below this island, and walking straight
+				// off the lip toward it is the whole mechanism. The fall is the move.
+				Bot.MoveToLocation(InstanceData.RouteApproach, /*AcceptanceRadius=*/80.f,
+					/*bStopOnOverlap=*/true, /*bUsePathfinding=*/false,
+					/*bProjectDestinationToNavigation=*/false, /*bCanStrafe=*/true);
+				UE_LOG(LogAIBot, Log, TEXT("AIBot: %s steps off the lip."), *Bot.GetName());
+				InstanceData.TraversePhase = 5;
+			}
+			return EStateTreeRunStatus::Running;
+		}
+		// The ordinary walk machinery: progress bookkeeping, sprint, the wedge jump.
+		const float DistNow = FVector::Dist(Here, InstanceData.Goal);
+		if (DistNow < InstanceData.ClosestSoFarUU - 1.f)
+		{
+			InstanceData.ClosestSoFarUU = DistNow;
+			InstanceData.SecondsWithoutProgress = 0.f;
+		}
+		else if ((InstanceData.SecondsWithoutProgress += DeltaTime)
+			>= InstanceData.GiveUpAfterNoProgressSeconds)
+		{
+			UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s could not reach the grapple %s — back to wandering."),
+				*Bot.GetName(), InstanceData.TraversePhase == 1 ? TEXT("approach") : TEXT("lip"));
+			InstanceData.TraversePhase = 0;
+			InstanceData.NextTraverseAllowedSeconds = Now + RetrySoonSeconds;
+			return EStateTreeRunStatus::Failed;
+		}
+		TickLocomotion(Bot, InstanceData.Locomotion, InstanceData.Goal,
+			InstanceData.ApproachReachUU, DeltaTime);
+		return EStateTreeRunStatus::Running;
+	}
+
+	case 2: // ---- aim at the anchor, then ONE press -------------------------------
+	{
+		SteerControlRotation(Bot, InstanceData.RouteAnchor, TraverseAimTurnRate, DeltaTime);
+		const FVector Desired = (InstanceData.RouteAnchor - Pawn.GetPawnViewLocation()).GetSafeNormal();
+		const float CosErr = FVector::DotProduct(Bot.GetControlRotation().Vector(), Desired);
+		if (CosErr >= FMath::Cos(FMath::DegreesToRadians(InstanceData.AimToleranceDeg)))
+		{
+			// The press goes through the ONE door and the host's own authority
+			// validation judges it — range, LOS, cooldown — like any player's press.
+			Avatar->PressVerb(AIBTags::Verb_Grapple);
+			Avatar->ReleaseVerb(AIBTags::Verb_Grapple);
+			UE_LOG(LogAIBot, Log, TEXT("AIBot: %s grapples for the high ground (rise %.0fuu)."),
+				*Bot.GetName(), InstanceData.RouteAnchor.Z - Here.Z);
+			InstanceData.TraversePhase = 3;
+			InstanceData.PhaseSeconds = 0.f;
+			InstanceData.bAirborneSeen = false;
+			return EStateTreeRunStatus::Running;
+		}
+		if ((InstanceData.PhaseSeconds += DeltaTime) >= InstanceData.AimTimeoutSeconds)
+		{
+			UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s hook shot never lined up — back to wandering."),
+				*Bot.GetName());
+			InstanceData.TraversePhase = 0;
+			InstanceData.NextTraverseAllowedSeconds = Now + RetrySoonSeconds;
+			return EStateTreeRunStatus::Succeeded;
+		}
+		return EStateTreeRunStatus::Running;
+	}
+
+	case 3: // ---- the ride --------------------------------------------------------
+	case 5: // ---- the drop (same watch: airborne, then ground again) --------------
+	{
+		InstanceData.PhaseSeconds += DeltaTime;
+		if (!Avatar->IsGrounded())
+		{
+			InstanceData.bAirborneSeen = true;
+		}
+		const bool bLanded = Avatar->IsGrounded() && InstanceData.bAirborneSeen
+			&& InstanceData.PhaseSeconds > 0.25f;
+		// Never left the ground after a full second = the press was REFUSED (the host's
+		// cooldown or validation said no) — waiting out the whole ride timeout would
+		// just be a bot standing at a known doorstep. The refusal was the host's right;
+		// the early exit is ours.
+		const bool bTimedOut = InstanceData.PhaseSeconds
+			>= InstanceData.RideTimeoutSeconds + (InstanceData.TraversePhase == 5 ? 1.f : 0.f)
+			|| (!InstanceData.bAirborneSeen && InstanceData.PhaseSeconds > 1.f);
+		if (!bLanded && !bTimedOut)
+		{
+			return EStateTreeRunStatus::Running;
+		}
+		const bool bClimb = InstanceData.TraversePhase == 3;
+		const float RiseUU = Here.Z - InstanceData.RouteApproach.Z;
+		const bool bMadeIt = bLanded && (bClimb
+			? RiseUU > InstanceData.MinTraverseRiseUU * 0.5f
+			: RiseUU < InstanceData.MinTraverseRiseUU * 0.5f);
+		if (bMadeIt && bClimb)
+		{
+			UE_LOG(LogAIBot, Log, TEXT("AIBot: %s made the deck (%.0fuu up)."), *Bot.GetName(), RiseUU);
+		}
+		else if (bMadeIt)
+		{
+			UE_LOG(LogAIBot, Log, TEXT("AIBot: %s dropped back down."), *Bot.GetName());
+		}
+		else
+		{
+			UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s %s — back to wandering."), *Bot.GetName(),
+				bClimb ? TEXT("hook did not take") : TEXT("drop never left the deck"));
+		}
+		InstanceData.TraversePhase = 0;
+		InstanceData.NextTraverseAllowedSeconds = Now
+			+ (bMadeIt ? InstanceData.TraverseCooldownSeconds : RetrySoonSeconds);
+		return EStateTreeRunStatus::Succeeded;
+	}
+
+	default:
+		InstanceData.TraversePhase = 0;
+		return EStateTreeRunStatus::Failed;
 	}
 }
 

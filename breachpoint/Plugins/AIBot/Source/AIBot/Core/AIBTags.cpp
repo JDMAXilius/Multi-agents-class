@@ -14,6 +14,10 @@ namespace AIBTags
 	// them; what aiming DOES (spread, speed, descope-on-hit) is entirely the host's.
 	UE_DEFINE_GAMEPLAY_TAG(Verb_Aim, "AIBot.Verb.Aim");
 
+	// Grapple traversal (founder, 27 Aug: "climb or drop down"). A PRESS, not a hold —
+	// the host's hook is fire-and-forget; what the pull does is entirely the host's.
+	UE_DEFINE_GAMEPLAY_TAG(Verb_Grapple, "AIBot.Verb.Grapple");
+
 	UE_DEFINE_GAMEPLAY_TAG(Ambition_Engage, "AIBot.Ambition.Engage");
 	UE_DEFINE_GAMEPLAY_TAG(Ambition_Retreat, "AIBot.Ambition.Retreat");
 	UE_DEFINE_GAMEPLAY_TAG(Ambition_Seek, "AIBot.Ambition.Seek");

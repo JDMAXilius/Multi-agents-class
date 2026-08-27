@@ -7,6 +7,7 @@
 #include "AIBStateTreeTasks.generated.h"
 
 class AAIController;
+class APawn;
 
 /**
  * The tree's C++ vocabulary — the host's proven mechanical shape (plain instance-data
@@ -483,6 +484,60 @@ struct FAIBMoveToPOITaskInstanceData
 	float ClosestSoFarUU = 0.f;
 	float SecondsWithoutProgress = 0.f;
 	FAIBLocomotionState Locomotion;
+
+	// -- AIB19 grapple traversal (the wandering variant only; MayGrappleTraverse gates).
+	// -- New UPROPERTYs on an existing instance struct default on load: the authored
+	// -- tree asset needs NO regen for any of this.
+	/** Odds one wander entry becomes a climb, when grounded, skilled, off cooldown and
+	 *  the host offers a route meaningfully above. Roll, not schedule: patrols should
+	 *  sometimes climb, not queue for the lift. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float ClimbChance = 0.35f;
+
+	/** Odds one wander entry from ON HIGH becomes the drop back down. Higher than the
+	 *  climb's on purpose — a deck is a visit, not a residence, and the island's wander
+	 *  draws cannot leave it any other way. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float DescendChance = 0.5f;
+
+	/** A route only counts as a CLIMB when its anchor is at least this far above the
+	 *  bot (and as a DROP when its approach is at least this far below) — stairs and
+	 *  slopes stay the mover's ordinary business. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float MinTraverseRiseUU = 250.f;
+
+	/** Close enough to the approach point to stop and take the shot. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float ApproachReachUU = 140.f;
+
+	/** The press waits for the view to be INSIDE this cone of the anchor — the host's
+	 *  hook traces where the eyes look, and a press mid-turn hooks a wall. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float AimToleranceDeg = 4.f;
+
+	/** A steer that never settles (geometry between, a fight yanking the view) aborts
+	 *  to the plain wander instead of standing forever at the approach. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float AimTimeoutSeconds = 1.5f;
+
+	/** The ride's ceiling: pressed but never flew, or flew and snagged — either way the
+	 *  branch moves on. The whiff is logged; the bot is never stranded (F7). */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float RideTimeoutSeconds = 4.f;
+
+	/** One traverse per this many seconds (whiffs retry at a third of it). The host's
+	 *  own ability cooldown backstops spam besides — two clocks, different owners. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float TraverseCooldownSeconds = 30.f;
+
+	/** 0 none · 1 walk-to-approach · 2 aim · 3 ride · 4 walk-to-lip · 5 drop.
+	 *  Plain state, not serialized tuning — reset whenever a traverse starts or ends. */
+	uint8 TraversePhase = 0;
+	FVector RouteApproach = FVector::ZeroVector;
+	FVector RouteAnchor = FVector::ZeroVector;
+	float PhaseSeconds = 0.f;
+	double NextTraverseAllowedSeconds = 0.0;
+	bool bAirborneSeen = false;
 };
 
 /** Walks to a point worth being at — a provider's POI when one exists, else (for the
@@ -514,6 +569,17 @@ struct FAIBMoveToPOITask : public FStateTreeTaskCommonBase
 	/** True = the matured target belief outranks any POI as the place to be. Seek's
 	 *  answer; Roam's wander must NOT chase people it cannot fight. */
 	virtual bool ShouldMoveToBeliefFirst() const { return false; }
+
+	/** AIB19: may an idle leg become a grapple climb or a lip drop? ROAM ONLY — a Seek
+	 *  leg is chasing something real and must not detour through the ceiling. */
+	virtual bool MayGrappleTraverse() const { return false; }
+
+protected:
+	/** The traverse micro-machine's tick, shared so EnterState stays readable. Returns
+	 *  true while a traverse owns this frame; false hands the frame back to the plain
+	 *  wander flow. Defined beside the task in the .cpp. */
+	EStateTreeRunStatus TickTraverse(class AAIBBotController& Bot, APawn& Pawn,
+		FInstanceDataType& InstanceData, float DeltaTime) const;
 };
 
 /** SEEK's mover: somewhere to be, in order — the matured target belief, else any POI a
@@ -684,10 +750,12 @@ struct FAIBUnservedWantTask : public FStateTreeTaskCommonBase
 	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
 };
 
-/** Roam's mover: any POI a provider offers, else a random reachable point. */
+/** Roam's mover: any POI a provider offers, else a random reachable point — and, when
+ *  the host publishes grapple routes (AIB19), sometimes the climb up or the drop down. */
 USTRUCT(meta = (DisplayName = "AIB Wander", Category = "AIBot"))
 struct FAIBWanderTask : public FAIBMoveToPOITask
 {
 	GENERATED_BODY()
 	virtual bool ShouldWanderWithoutProvider() const override { return true; }
+	virtual bool MayGrappleTraverse() const override { return true; }
 };

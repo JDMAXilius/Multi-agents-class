@@ -150,7 +150,8 @@ void UBNAIBAvatarAdapter::ArmIfEmptyHanded()
 FGameplayTag UBNAIBAvatarAdapter::MapVerb(FGameplayTag VerbTag)
 {
 	// The map IS the seam: the module speaks AIBot.Verb.*, this game listens on
-	// Input.* — and only the eight the seam audit proved the input path accepts.
+	// Input.* — only verbs the seam audit (and its BN23/AIB19 additions) proved
+	// the input path accepts.
 	if (VerbTag == AIBTags::Verb_Fire)       { return BNTags::Input_Weapon_Fire; }
 	if (VerbTag == AIBTags::Verb_Jump)       { return BNTags::Input_Jump; }
 	if (VerbTag == AIBTags::Verb_Crouch)     { return BNTags::Input_Crouch; }
@@ -160,6 +161,7 @@ FGameplayTag UBNAIBAvatarAdapter::MapVerb(FGameplayTag VerbTag)
 	if (VerbTag == AIBTags::Verb_Reload)     { return BNTags::Input_Weapon_Reload; }
 	if (VerbTag == AIBTags::Verb_WeaponNext) { return BNTags::Input_Weapon_Next; }
 	if (VerbTag == AIBTags::Verb_Aim)        { return BNTags::Input_Weapon_ADS; }
+	if (VerbTag == AIBTags::Verb_Grapple)    { return BNTags::Input_Grapple; }
 	return FGameplayTag();
 }
 

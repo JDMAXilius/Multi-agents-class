@@ -30,6 +30,7 @@ namespace AIBTags
 	AIBOT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Verb_Reload);
 	AIBOT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Verb_WeaponNext);
 	AIBOT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Verb_Aim);
+	AIBOT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Verb_Grapple);
 
 	// -- ambitions (the core set; modes add their own) ----------------------------
 	AIBOT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ambition_Engage);

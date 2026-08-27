@@ -202,3 +202,30 @@ bool UBNAIBWorldQuery::AreAllies(const AActor* A, const AActor* B) const
 	const FGenericTeamId TeamB = PSB ? PSB->GetGenericTeamId() : FGenericTeamId::NoTeam;
 	return BNTeams::AreFriendly(TeamA, TeamB);
 }
+
+bool UBNAIBWorldQuery::GetGrappleRoute(const FVector& NearLocation, FVector& OutApproachPoint,
+	FVector& OutAnchorPoint) const
+{
+	// Nearest by EITHER end (the ticket's decision): a ground bot is near an approach,
+	// a deck bot is near an anchor, and the same query hands each its own direction.
+	float BestDistSq = TNumericLimits<float>::Max();
+	const FBNGrappleRoute* Best = nullptr;
+	for (const FBNGrappleRoute& Route : GrappleRoutes)
+	{
+		const float DistSq = FMath::Min(
+			FVector::DistSquared(NearLocation, Route.Approach),
+			FVector::DistSquared(NearLocation, Route.Anchor));
+		if (DistSq < BestDistSq)
+		{
+			BestDistSq = DistSq;
+			Best = &Route;
+		}
+	}
+	if (!Best)
+	{
+		return false; // no generated routes in the ini — bots walk, byte-identical
+	}
+	OutApproachPoint = Best->Approach;
+	OutAnchorPoint = Best->Anchor;
+	return true;
+}
