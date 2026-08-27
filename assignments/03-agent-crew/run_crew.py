@@ -138,12 +138,19 @@ routes worth grappling to.
 def find_agents_dir() -> Path:
     candidates = [
         HERE / "agents",                                      # zip layout
-        HERE.parent.parent / "crew" / ".claude" / "agents",   # repo layout
+        # The crew studio moved INTO the game repo after this assignment was
+        # submitted (root README: "crew/ at the root is an empty leftover of
+        # the move"), which silently broke replay from a fresh clone. The old
+        # path stays first for the historical layout; the live crew is the
+        # fallback that actually resolves today.
+        HERE.parent.parent / "crew" / ".claude" / "agents",   # pre-move layout
+        HERE.parent.parent / "breachpoint" / ".claude" / "agents",  # the live crew
     ]
     for cand in candidates:
         if (cand / "critic.md").exists():
             return cand
-    sys.exit("error: agent definitions not found (looked in ./agents and ../../crew/.claude/agents)")
+    sys.exit("error: agent definitions not found (looked in ./agents, "
+             "../../crew/.claude/agents and ../../breachpoint/.claude/agents)")
 
 
 def load_agent(agents_dir: Path, name: str) -> str:

@@ -10,6 +10,8 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SRC="$HERE/../../crew/.claude/agents"
+# The crew moved into the game repo after submission; fall back to it.
+[ -f "$SRC/critic.md" ] || SRC="$HERE/../../breachpoint/.claude/agents"
 OUT="$HERE/BREACHPOINT-agent-crew.zip"
 STAGE="$(mktemp -d)/BREACHPOINT-agent-crew"
 

@@ -1,4 +1,4 @@
-BREACHPOINT agent crew — mode: REPLAY (recorded exchanges, same pipeline code) — agents: /home/user/Multi-agents-class/crew/.claude/agents
+BREACHPOINT agent crew — mode: REPLAY (recorded exchanges, same pipeline code) — agents: /home/user/Multi-agents-class/breachpoint/.claude/agents
 
 === JOB: weapons → DT_Weapons.csv ===
   tuning-curator: 3 rows proposed (TTKs: 2.5, 3.1, 0.67 s)
