@@ -463,6 +463,15 @@ EStateTreeRunStatus FAIBMoveNearBeliefTask::EnterState(FStateTreeExecutionContex
 	}
 	InstanceData.LastGoal = Bot->GetSensorium().GetLastSeenLocation();
 	InstanceData.RepathCooldown = 0.f;
+	// THE ENTRY MIRRORS THE TICK'S YIELD (BN22 W-REVIEW M3): Engage re-enters on every
+	// belief blink, and without this gate each re-entry issued a close-to-350 request
+	// that ran at full speed until the current strafe leg expired — the beeline the
+	// fight-range hand-off exists to kill, surviving at exactly the moments fights
+	// blink most. Inside the fight range, footwork owns the legs from the first frame.
+	if (IsWithin(*Bot, InstanceData.LastGoal, InstanceData.FightRangeUU))
+	{
+		return EStateTreeRunStatus::Running;
+	}
 	// Already in position: station-keep from here (issuing a move to where we stand
 	// would complete instantly and thrash the branch — the never-succeed contract).
 	if (!IsWithin(*Bot, InstanceData.LastGoal, InstanceData.AcceptanceRadiusUU))
@@ -583,6 +592,11 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 			InstanceData.bHolding = false;
 			InstanceData.PhaseSecondsLeft = 0.f;
 		}
+		if (InstanceData.bAimHeld)
+		{
+			Avatar->ReleaseVerb(AIBTags::Verb_Aim);
+			InstanceData.bAimHeld = false;
+		}
 		return EStateTreeRunStatus::Running;
 	}
 
@@ -600,6 +614,7 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 	// melee throttle is an ABSOLUTE deadline on controller state now — nothing to decay.)
 	InstanceData.ReloadCooldownLeft = FMath::Max(0.f, InstanceData.ReloadCooldownLeft - DeltaTime);
 	InstanceData.SwapCooldownLeft = FMath::Max(0.f, InstanceData.SwapCooldownLeft - DeltaTime);
+	InstanceData.ReAimCooldownLeft = FMath::Max(0.f, InstanceData.ReAimCooldownLeft - DeltaTime);
 	if (Facts.bHasReserveAmmo && Facts.AmmoNorm <= ReloadAtMagazineFraction)
 	{
 		if (InstanceData.bHolding)
@@ -607,6 +622,13 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 			Avatar->ReleaseVerb(AIBTags::Verb_Fire);
 			InstanceData.bHolding = false;
 			InstanceData.PhaseSecondsLeft = 0.f;
+		}
+		// Hands busy = sights down: a human drops out of ADS to reload, and holding the
+		// aim through the magazine change is a speed penalty bought for nothing.
+		if (InstanceData.bAimHeld)
+		{
+			Avatar->ReleaseVerb(AIBTags::Verb_Aim);
+			InstanceData.bAimHeld = false;
 		}
 		SetCrouch(*Avatar, true);
 		InstanceData.bCrouchedToReload = true;
@@ -657,6 +679,11 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 			Avatar->ReleaseVerb(AIBTags::Verb_Fire);
 			InstanceData.bHolding = false;
 			InstanceData.PhaseSecondsLeft = 0.f;
+		}
+		if (InstanceData.bAimHeld) // nobody knifes through a scope
+		{
+			Avatar->ReleaseVerb(AIBTags::Verb_Aim);
+			InstanceData.bAimHeld = false;
 		}
 		Avatar->PressVerb(AIBTags::Verb_Melee);
 		Avatar->ReleaseVerb(AIBTags::Verb_Melee);
@@ -729,6 +756,11 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 			InstanceData.bHolding = false;
 			InstanceData.PhaseSecondsLeft = 0.f;
 		}
+		if (InstanceData.bAimHeld) // the throw drops the sights, like the human's
+		{
+			Avatar->ReleaseVerb(AIBTags::Verb_Aim);
+			InstanceData.bAimHeld = false;
+		}
 		Avatar->PressVerb(AIBTags::Verb_Grenade);
 		Avatar->ReleaseVerb(AIBTags::Verb_Grenade);
 		Bot->NoteGrenadeThrown(GrenadeCooldownSeconds);
@@ -751,7 +783,44 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 			InstanceData.bHolding = false;
 			InstanceData.PhaseSecondsLeft = 0.f;
 		}
+		if (InstanceData.bAimHeld) // nothing to aim AT — sights down with the trigger
+		{
+			Avatar->ReleaseVerb(AIBTags::Verb_Aim);
+			InstanceData.bAimHeld = false;
+		}
 		return EStateTreeRunStatus::Running; // stay: visibility may return next pump
+	}
+
+	// -- ADS: the sights come up for the mid-range fight (founder, 27 Aug) --------------
+	// Aim skill gates it (a Novice hip-fires — the ladder's shape everywhere else);
+	// the band is [AimRangeUU, AimMaxRangeUU] with hysteresis so the boundary never
+	// flaps; the HOST owns everything aiming means (spread, the speed penalty, and the
+	// DESCOPE — a landed hit cancels the aim behind this task's back, which is why the
+	// read is Avatar->IsAiming() and never our own flag, and why the re-press waits
+	// ReAimSeconds: the descope must be FELT, not instantly erased). The press is
+	// release-then-press on purpose — after a descope the old press is still logically
+	// down, and the ability activates on the press EDGE.
+	if (bHasDistance)
+	{
+		constexpr float AimHysteresisUU = 80.f;
+		const bool bSkillAims = Bot->GetSkillProfile().Level(EAIBSkill::Aim) >= EAIBCompetence::Trained;
+		const float InEdge = InstanceData.bAimHeld ? InstanceData.AimRangeUU - AimHysteresisUU : InstanceData.AimRangeUU;
+		const float OutEdge = InstanceData.bAimHeld ? InstanceData.AimMaxRangeUU + AimHysteresisUU : InstanceData.AimMaxRangeUU;
+		const bool bWantAim = bSkillAims && DistanceUU >= InEdge && DistanceUU <= OutEdge;
+		if (bWantAim && !Avatar->IsAiming() && InstanceData.ReAimCooldownLeft <= 0.f)
+		{
+			Avatar->ReleaseVerb(AIBTags::Verb_Aim);
+			Avatar->PressVerb(AIBTags::Verb_Aim);
+			InstanceData.bAimHeld = true;
+			InstanceData.ReAimCooldownLeft = InstanceData.ReAimSeconds;
+			UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s aimed in at %.0fuu."), *Bot->GetName(), DistanceUU);
+		}
+		else if (!bWantAim && InstanceData.bAimHeld)
+		{
+			Avatar->ReleaseVerb(AIBTags::Verb_Aim);
+			InstanceData.bAimHeld = false;
+			UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s let the aim go at %.0fuu."), *Bot->GetName(), DistanceUU);
+		}
 	}
 
 	// The muzzle gate's measured quantity: degrees between where the control rotation
@@ -811,6 +880,10 @@ void FAIBFireWhenAbleTask::ExitState(FStateTreeExecutionContext& Context, const 
 		if (InstanceData.bHolding)
 		{
 			Avatar->ReleaseVerb(AIBTags::Verb_Fire);
+		}
+		if (InstanceData.bAimHeld)
+		{
+			Avatar->ReleaseVerb(AIBTags::Verb_Aim);
 		}
 		if (InstanceData.bCrouchedToReload)
 		{
@@ -1227,6 +1300,68 @@ bool FAIBMoveToPOITask::ShouldWanderWithoutProvider() const  { return false; }
 
 ////////////////////////////////////////////////////////////////////
 
+namespace
+{
+	/** The objective pick, callable from Tick as well as EnterState (BN22 W-REVIEW H1:
+	 *  a goal snapshotted once was written for a hill that never moves, and Rally POIs
+	 *  are PAWNS — a bot "arrived" at a teammate's abandoned spot stood there forever
+	 *  while the live urgency kept the want winning). Worth ties break NEAREST (L2:
+	 *  uniform-Worth ally POIs picked in iterator order sent a bot across the map past
+	 *  a 700uu teammate). Returns false when no POI of the kind survives the filters. */
+	bool PickObjectiveGoal(AAIBBotController& Bot, const APawn& Pawn,
+		FAIBMoveToObjectiveTaskInstanceData& InstanceData)
+	{
+		InstanceData.bHasGoal = false;
+		const FGameplayTag Kind = Bot.GetObjectiveKindForCurrentAmbition();
+		IAIBWorldQuery* Query = Bot.GetWorldQuery();
+		if (!Query)
+		{
+			return false;
+		}
+
+		// Phase 7: the scoring seam has a task-side mirror — a claim honoured at the
+		// want but not at the pick is a bot that walks to a claimed slot anyway
+		// (multi-slot kinds keep the want alive while one slot is spoken for). Self
+		// passes through IsClaimedByOtherTeammate by definition; the gate matches the
+		// builder's (a Novice's board is nobody's business here either — the
+		// coordinator read below is what the builder's Teamwork gate already allowed
+		// or refused at scoring time, mirrored on the same profile read).
+		const UAIBTeamCoordinator* Coordinator =
+			Bot.GetSkillProfile().Level(EAIBSkill::Teamwork) >= EAIBCompetence::Trained
+				? (Bot.GetWorld() ? Bot.GetWorld()->GetSubsystem<UAIBTeamCoordinator>() : nullptr)
+				: nullptr;
+
+		TArray<FAIBPointOfInterest> Points;
+		Query->QueryPointsOfInterest(&Pawn, AIB::ObjectiveQueryRadiusUU, Points);
+		float BestWorth = -1.f;
+		float BestDistSq = TNumericLimits<float>::Max();
+		for (const FAIBPointOfInterest& Point : Points)
+		{
+			if (Kind.IsValid() && Point.Kind != Kind)
+			{
+				continue;
+			}
+			if (Coordinator && Point.bClaimableSlot
+				&& Coordinator->IsClaimedByOtherTeammate(Bot, Point))
+			{
+				continue;
+			}
+			const float DistSq = static_cast<float>(FVector::DistSquared(Pawn.GetActorLocation(), Point.Location));
+			if (Point.Worth > BestWorth || (Point.Worth == BestWorth && DistSq < BestDistSq))
+			{
+				BestWorth = Point.Worth;
+				BestDistSq = DistSq;
+				InstanceData.Goal = Point.Location;
+				InstanceData.bHasGoal = true;
+				// Never SHRINK the arrival test below the mover's own floor — a provider
+				// publishing 0 (a point objective) must not make arrival impossible.
+				InstanceData.GoalReachUU = FMath::Max(InstanceData.AcceptanceRadiusUU, Point.ReachRadiusUU);
+			}
+		}
+		return InstanceData.bHasGoal;
+	}
+}
+
 EStateTreeRunStatus FAIBMoveToObjectiveTask::EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
 {
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
@@ -1237,58 +1372,18 @@ EStateTreeRunStatus FAIBMoveToObjectiveTask::EnterState(FStateTreeExecutionConte
 		return EStateTreeRunStatus::Failed;
 	}
 
-	InstanceData.bHasGoal = false;
-
 	// The kind join: the CURRENT ambition's ObjectiveKind from the controller's cached
 	// mode set (data, never a serialized node parameter), then the best matching POI
 	// the world query offers. A servable want with no POI is the provider
 	// under-delivering — loud (F7), and the 1s failed-delay keeps it cheap.
-	const FGameplayTag Kind = Bot->GetObjectiveKindForCurrentAmbition();
-	IAIBWorldQuery* Query = Bot->GetWorldQuery();
-	if (Query)
-	{
-		// Phase 7: the scoring seam has a task-side mirror — a claim honoured at the
-		// want but not at the pick is a bot that walks to a claimed slot anyway
-		// (multi-slot kinds keep the want alive while one slot is spoken for). Self
-		// passes through IsClaimedByOtherTeammate by definition; the gate matches the
-		// builder's (a Novice's board is nobody's business here either — the
-		// coordinator read below is what the builder's Teamwork gate already allowed
-		// or refused at scoring time, mirrored on the same profile read).
-		const UAIBTeamCoordinator* Coordinator =
-			Bot->GetSkillProfile().Level(EAIBSkill::Teamwork) >= EAIBCompetence::Trained
-				? (Bot->GetWorld() ? Bot->GetWorld()->GetSubsystem<UAIBTeamCoordinator>() : nullptr)
-				: nullptr;
-
-		TArray<FAIBPointOfInterest> Points;
-		Query->QueryPointsOfInterest(Pawn, AIB::ObjectiveQueryRadiusUU, Points);
-		float BestWorth = -1.f;
-		for (const FAIBPointOfInterest& Point : Points)
-		{
-			if (Kind.IsValid() && Point.Kind != Kind)
-			{
-				continue;
-			}
-			if (Coordinator && Point.bClaimableSlot
-				&& Coordinator->IsClaimedByOtherTeammate(*Bot, Point))
-			{
-				continue;
-			}
-			if (Point.Worth > BestWorth)
-			{
-				BestWorth = Point.Worth;
-				InstanceData.Goal = Point.Location;
-				InstanceData.bHasGoal = true;
-				// Never SHRINK the arrival test below the mover's own floor — a provider
-				// publishing 0 (a point objective) must not make arrival impossible.
-				InstanceData.GoalReachUU = FMath::Max(InstanceData.AcceptanceRadiusUU, Point.ReachRadiusUU);
-			}
-		}
-	}
+	PickObjectiveGoal(*Bot, *Pawn, InstanceData);
+	InstanceData.RepollCooldown = InstanceData.RepollIntervalSeconds;
 
 	if (!InstanceData.bHasGoal)
 	{
+		const FGameplayTag Kind = Bot->GetObjectiveKindForCurrentAmbition();
 		UE_LOG(LogAIBot, Warning, TEXT("AIBot: %s won a mode want but %s offered no POI of kind %s — branch fails (F7)."),
-			*Bot->GetName(), Query ? TEXT("the world query") : TEXT("NO world query is registered and it"),
+			*Bot->GetName(), Bot->GetWorldQuery() ? TEXT("the world query") : TEXT("NO world query is registered and it"),
 			Kind.IsValid() ? *Kind.ToString() : TEXT("<any>"));
 		// The deadlock of record: with the hill registered 2ms after possession, seven
 		// bots won this want, landed here, and never made another decision for four
@@ -1320,6 +1415,38 @@ EStateTreeRunStatus FAIBMoveToObjectiveTask::Tick(FStateTreeExecutionContext& Co
 	if (!Pawn || !InstanceData.bHasGoal)
 	{
 		return EStateTreeRunStatus::Failed;
+	}
+
+	// THE GOAL FOLLOWS THE POI (BN22 W-REVIEW H1). The snapshot was correct for a hill;
+	// a Rally POI is a pawn, and standing at a teammate's ABANDONED spot while the live
+	// urgency keeps the want winning was a 10-60s statue — the isolation collapse this
+	// want exists to fix, re-created as standing. Re-pick on the repath cadence: the
+	// hill re-picks itself (byte-identical goal, nothing resets), a moved ally re-aims
+	// the walk. Progress tracking resets ONLY when the goal actually moved — a re-poll
+	// that reset it every time would neuter the no-progress give-up law. A pick that
+	// comes back empty means the provider stopped offering (the last ally died): fail
+	// loudly, the F7 shape, and suppression rests the want.
+	InstanceData.RepollCooldown -= DeltaTime;
+	if (InstanceData.RepollCooldown <= 0.f)
+	{
+		InstanceData.RepollCooldown = InstanceData.RepollIntervalSeconds;
+		const FVector OldGoal = InstanceData.Goal;
+		if (!PickObjectiveGoal(*Bot, *Pawn, InstanceData))
+		{
+			UE_LOG(LogAIBot, Log, TEXT("AIBot: %s's objective POI is gone — the branch fails with it (F7)."),
+				*Bot->GetName());
+			Bot->NoteCurrentAmbitionFailed();
+			return EStateTreeRunStatus::Failed;
+		}
+		if (FVector::DistSquared(OldGoal, InstanceData.Goal) > FMath::Square(50.f))
+		{
+			InstanceData.ClosestSoFarUU = FVector::Dist(Pawn->GetActorLocation(), InstanceData.Goal);
+			InstanceData.SecondsWithoutProgress = 0.f;
+			if (!IsWithin(*Bot, InstanceData.Goal, InstanceData.GoalReachUU))
+			{
+				MoveToNavPoint(*Bot, InstanceData.Goal, InstanceData.GoalReachUU);
+			}
+		}
 	}
 
 	// ON the objective: STAND — a hill is held by being there. SweepLook rides beside;

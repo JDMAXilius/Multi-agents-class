@@ -87,6 +87,17 @@ ALSO wired the same day: `CanEvadeBlast` gained its promised caller — a Novice
 competence never receives the matured blast warning at all (the capability gate the
 policy documented but nothing consulted; giving LESS information is always fair).
 
+**Amendment, 27 Aug 2026 (BN22 W-REVIEW M2):** ALLY POSITIONS are HUD-grade and may
+cross the world-query door (the Rally POIs), ACCEPTED WITH A DEBT: the interface ruled
+teammate radar HUD-grade at Phase 6 (`CountNearbyAllies`), Rally widens the crossing
+from a count to positions, and the game does not yet RENDER a teammate marker — so
+today a human could not have this information. Accepted anyway on the genre premise
+(ally-only data, Halo's own doctrine, the comms a team of humans would have) and
+because the critic verified no enemy derivative rides it — Worth is a constant, the
+urgency float carries distance-to-nearest-ally only, and the POI carries no actor.
+THE DEBT: land the teammate HUD marker (the BN11 family) so the premise is literally
+true; revisit this line then.
+
 **Amendment, 25 Aug 2026 (W-REVIEW F-2.2):** UObject lifetime is authoritative for
 memory validity — a memory of a destroyed actor reads as no memory, the instant the
 actor dies, anywhere on the map. This IS an omniscience channel (a bot stops searching a

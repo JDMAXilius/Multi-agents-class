@@ -287,6 +287,28 @@ struct FAIBFireWhenAbleTaskInstanceData
 	 *  worst blink cost is one extra wheel press, which the equipment cycle absorbs. */
 	float SwapCooldownLeft = 0.f;
 	int32 SwapPresses = 0;
+
+	// -- ADS (founder, 27 Aug: "the aibot doing ADS properly") --------------------------
+	/** The sights come up at mid range and stay down in a knife fight: closer than this,
+	 *  hip fire tracks better and the speed penalty costs a duel. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float AimRangeUU = 500.f;
+
+	/** And no further than the fight range: beyond it the mover is CLOSING at sprint,
+	 *  and the host's sprint-exclusion would bounce every press — mirrors FightRangeUU
+	 *  so the aim band is exactly the band where footwork owns the legs. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float AimMaxRangeUU = 900.f;
+
+	/** The beat a human takes to re-raise the sights after a DESCOPE (the host cancels
+	 *  the aim on a landed hit). Not zero on purpose: an instant re-scope erases the
+	 *  descope's whole point and reads as a machine. Instance-data blink cost: one
+	 *  extra beat per belief blink, absorbed like the swap throttle's. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float ReAimSeconds = 0.75f;
+
+	float ReAimCooldownLeft = 0.f;
+	bool bAimHeld = false;
 };
 
 /** Presses Verb_Fire in bursts while the cached FACTS say the weapon can fight and the
@@ -537,6 +559,15 @@ struct FAIBMoveToObjectiveTaskInstanceData
 	 *  when it declares one, else AcceptanceRadiusUU. Captured at EnterState so Tick
 	 *  cannot drift from the test EnterState used. */
 	float GoalReachUU = 200.f;
+
+	/** THE GOAL FOLLOWS THE POI (BN22 W-REVIEW H1): re-pick on this cadence, because a
+	 *  Rally POI is a pawn and pawns move — a once-snapshotted goal statued bots at a
+	 *  teammate's abandoned spot. The hill re-picks itself unchanged; the cadence is the
+	 *  repath interval's own number. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float RepollIntervalSeconds = 0.5f;
+	float RepollCooldown = 0.f;
+
 	FAIBLocomotionState Locomotion;
 };
 

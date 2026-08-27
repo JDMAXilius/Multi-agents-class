@@ -111,4 +111,43 @@ nor recharges, whatever the window/respawn timing knife-edges do.
 
 ## Log
 
-_(outputs verbatim)_
+**27 Aug — W-REVIEW ×2 (bn-critic GAS/lifecycle: PASS, 1 medium 3 lows; aib-critic
+fairness/behavior: BLOCK, 1 high 3 mediums 3 lows). All highs and mediums FIXED at the
+barrier; register below.**
+
+- **H1 (aib) / M1 (bn), one root — Rally statued at a stale snapshot of a moving ally.**
+  FAIBMoveToObjectiveTask snapshotted its goal once (correct for a hill, wrong for a
+  pawn): a bot "arrived" at a teammate's abandoned spot and stood while the live
+  urgency kept the want winning — a 10-60s statue reproducing the isolation collapse
+  as standing. FIXED: the pick is a helper re-run on a 0.5s cadence in Tick; the hill
+  re-picks itself byte-identically (nothing resets), a moved ally re-aims the walk,
+  progress tracking resets only when the goal moved >50uu (the no-progress law keeps
+  its teeth), and an empty re-pick fails loudly (the ally died — F7 + suppression).
+  Worth ties now break NEAREST (L2 folded in).
+- **M1 (aib) — the sag band**: a 0→0.55 urgency ramp dipped under Roam's floor at
+  ~1470uu, so a mid-rally bot abandoned the approach a kilometre short and hovered in
+  an annulus. FIXED: floored at 0.3 the moment it is nonzero (lerp 0.3→0.55); exactly
+  0 inside the near radius stays, so arrival still quiets the want.
+- **M2 (aib) — the radar premise**: ally positions are HUD-grade but no teammate HUD
+  marker exists yet in this build. RECORDED as a dated FAIRPLAY amendment (accepted on
+  the genre premise, no enemy derivative rides it — the critic verified) with THE DEBT
+  named: land the teammate marker (BN11 family), then revisit.
+- **M3 (aib) — the 350-beeline survived at EnterState**: Engage re-enters per belief
+  blink and each re-entry issued a close-to-350 request the Tick yield never aborted.
+  FIXED: EnterState mirrors the fight-range yield.
+- **L1 (aib)** all-teammates-dead urgency churn → urgency now 0 with no living ally.
+  **L3 (bn)** regen zero-max gate added (the shield's HasShieldPool twin).
+- **REGISTER (accepted, dated)**: bn-L1 a dead man's grenade forms no AIB memory
+  (dropped at the Neutral attitude — not poisoned; rare, AI-only); bn-L2 two
+  RecentDamage GE instances per hit — perf/bandwidth note for rung 5, no stacking
+  policy set; aib-L3 a corpse can hold sprint until branch exit (movers' verbs ride
+  persistent grants — outside the fire task's gate scope, cannot feed BN20's warning);
+  aib-P8's verify hook: add hit-rate-at-range to the strafe proof (weapon rows live in
+  a binary table — behavior is the check).
+- Passes worth keeping: a corpse cannot regen through ANY ordering (three independent
+  gates, each sufficient); no persistent-ASC regen leak; the respawn sweep covers the
+  new window tag with correct ordering; PlayerState-as-instigator breaks no BN
+  consumer and self-damage survives; Rally's laundering attack held (no enemy
+  derivative crosses; Actor=null verified end-to-end); FFA-inert twice over; the 600
+  accordion has a ~900uu geometric dead-band (no oscillation); teams-ON + hill-OFF
+  coherent; the corpse press gate reads live state and re-acquires cleanly.

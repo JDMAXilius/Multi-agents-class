@@ -251,6 +251,19 @@ void UBNHealthComponent::SetHealthRegenActive(bool bActive)
 		return;
 	}
 
+	// The shield's zero-max gate, mirrored (BN22 W-REVIEW L3): an Add modifier against a
+	// MaxHealth that has not been initialised yet has no ceiling — the floor-only clamp
+	// branch cannot cap it. Unobservable today (init lands in the same call stack), but
+	// the hazard shape is documented and the gate is one line.
+	if (bActive)
+	{
+		const UAbilitySystemComponent* GateASC = CachedAbilitySystem.Get();
+		if (!GateASC || GateASC->GetNumericAttribute(UBNAttributeSet::GetMaxHealthAttribute()) <= 0.f)
+		{
+			return;
+		}
+	}
+
 	UAbilitySystemComponent* ASC = CachedAbilitySystem.Get();
 	if (!ASC || !ASC->IsOwnerActorAuthoritative())
 	{

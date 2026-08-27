@@ -1270,10 +1270,21 @@ float ABNGameMode::GetObjectiveUrgency(const AActor* Bot, FGameplayTag AmbitionT
 			NearestAllySq = FMath::Min(NearestAllySq,
 				static_cast<float>(FVector::DistSquared(RallyPawn->GetActorLocation(), Candidate->GetActorLocation())));
 		}
-		const float NearestAlly = NearestAllySq < TNumericLimits<float>::Max() ? FMath::Sqrt(NearestAllySq) : BNAIB::RallyFarUU;
+		// NO living teammate = NOTHING to rally to: zero, not maximum-alone (BN22 W-REVIEW
+		// L1 — a full-alone read with zero POIs published fed the fail-loudly path a
+		// Warning per suppression cycle through every team-wipe window).
+		if (NearestAllySq >= TNumericLimits<float>::Max())
+		{
+			return 0.f;
+		}
+		const float NearestAlly = FMath::Sqrt(NearestAllySq);
 		const float Alone = FMath::Clamp(
 			(NearestAlly - BNAIB::RallyNearUU) / FMath::Max(1.f, BNAIB::RallyFarUU - BNAIB::RallyNearUU), 0.f, 1.f);
-		return Alone * 0.55f;
+		// FLOORED at 0.3 the moment it is nonzero (BN22 W-REVIEW M1): a 0-to-0.55 ramp
+		// dipped below Roam's 0.2 floor at ~1470uu, so a mid-rally bot lost the want a
+		// kilometre short and hovered in an annulus around its team — half a regroup.
+		// Exactly 0 inside the near radius stays: arrival still quiets the want cleanly.
+		return Alone > 0.f ? FMath::Lerp(0.3f, 0.55f, Alone) : 0.f;
 	}
 
 	if (!bHillEnabled || AmbitionTag != BNAIBTags::Ambition_Mode_Hold)
