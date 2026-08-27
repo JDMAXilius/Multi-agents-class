@@ -1,0 +1,25 @@
+{
+ "identical_input": "I hold out the Ember to Sera and ask her to carry it home for the village.",
+ "input_matches": true,
+ "loyal": {
+  "sera_trust": "loyal",
+  "narration": "You hold out the Ember, and Sera's hands close around it like it's the most fragile thing she's ever touched. \"I've got it,\" she says, tucking it close against her coat, voice steadying with every word. \"Straight down the stair, gatehouse, then home \u2014 just like you promised.\" She glances toward the vault door, already thinking of Moss waiting below. \"Stay close with that lantern. I'd rather not learn what's down here in the dark.\"",
+  "facts_used": [
+   "npcs.sera.trust",
+   "npcs.sera.knows",
+   "flags.ember_taken",
+   "player.oil_remaining",
+   "promises"
+  ]
+ },
+ "betrayal": {
+  "sera_trust": "wary",
+  "narration": "You hold the Ember out, and its light steadies in your palm. Sera's arms uncross; she takes it with both hands like it might still refuse her. 'That's the promise kept, then,' she says, testing the weight of it against the one still owed. 'Moss is on the stair, and he'll be wanting his silver \u2014 mind you remember which promise you're keeping when we reach him.' She tucks the stone inside her coat, the glow dimming to a seam of amber light, and starts for the way down.",
+  "facts_used": [
+   "flags.ember_taken",
+   "npcs.sera.trust",
+   "promises",
+   "npcs.moss.location"
+  ]
+ }
+}

@@ -1,0 +1,399 @@
+{
+ "model": "claude-sonnet-5",
+ "exchanges": [
+  {
+   "role": "extractor",
+   "turn": 1,
+   "session": "betrayal",
+   "attempt": 1,
+   "prompt": "You are the STATE EXTRACTOR for a text adventure. You do not write\nstory. You read what the player DID and report what changed as ledger edits.\n\n# THE EMBER VAULT\n\nA sealed mountain vault holds the Ember \u2014 a fist-sized stone that burns\nwithout fuel. The village of Harrow's Rest will not last the winter without\nit. You have climbed to the vault with SERA, the village lamplighter, who\ntrusts you. Your lantern burns lamp oil; when the oil is gone, the dark of\nthe vault is lethal.\n\n## PLACES (movement only along these connections)\n- gatehouse  <-> stair_of_hooks\n- stair_of_hooks <-> vault_floor\n\n## PEOPLE\n- SERA \u2014 lamplighter of Harrow's Rest. Came to carry the Ember home. Loyal,\n  practical, keeps count of promises out loud.\n- MOSS \u2014 a scavenger who works these ruins. He ALWAYS intercepts travellers\n  on the stair_of_hooks and offers silver for the Ember. He is charming,\n  patient, and keeps his word to the letter and no further.\n\n## THINGS\n- vault_key (unique, in the gatehouse desk) \u00b7 ember (unique, on vault_floor,\n  inside the vault) \u00b7 moss_silver (only if Moss pays)\n\n## HARD RULES OF THIS WORLD\n- The vault door opens only with the vault_key, only from vault_floor.\n- The Ember cannot be taken before the vault is opened.\n- Dead is dead. Broken trust does not mend in a day.\n- Lamp oil only ever burns down.\n\n\n## CURRENT LEDGER (authoritative)\n{\n \"turn\": 0,\n \"player\": {\n  \"location\": \"gatehouse\",\n  \"inventory\": [\n   \"lantern\"\n  ],\n  \"wounds\": [],\n  \"oil_remaining\": 8\n },\n \"npcs\": {\n  \"sera\": {\n   \"status\": \"alive\",\n   \"location\": \"gatehouse\",\n   \"trust\": \"loyal\",\n   \"knows\": [\n    \"the village needs the ember\"\n   ]\n  },\n  \"moss\": {\n   \"status\": \"alive\",\n   \"location\": \"stair_of_hooks\",\n   \"trust\": \"wary\",\n   \"knows\": [\n    \"travellers must pass the stair\"\n   ]\n  }\n },\n \"flags\": {\n  \"vault_opened\": false,\n  \"ember_taken\": false,\n  \"deal_with_moss\": false\n },\n \"promises\": []\n}\n\n## THE PLAYER'S ACTION THIS TURN\nI search the gatekeeper's desk in the gatehouse for the vault key.\n\nReport only changes that actually follow from this action. Editable paths:\nplayer.location \u00b7 player.inventory (add/remove) \u00b7 player.wounds (add) \u00b7\nnpcs.<name>.status/location/trust \u00b7 npcs.<name>.knows (add) \u00b7\nflags.vault_opened/ember_taken/deal_with_moss \u00b7 promises (add).\nDo NOT touch turn or oil_remaining \u2014 the engine owns them. An action that\nchanges nothing returns an empty list.\n\nJSON only:\n{\"deltas\": [{\"op\": \"set|add|remove\", \"path\": \"...\", \"value\": ...}],\n  \"reason\": \"<one line>\"}\n",
+   "response": {
+    "deltas": [
+     {
+      "op": "add",
+      "path": "player.inventory",
+      "value": "vault_key"
+     }
+    ],
+    "reason": "The vault key was in the gatehouse desk and the player found it there."
+   }
+  },
+  {
+   "role": "narrator",
+   "turn": 1,
+   "session": "betrayal",
+   "attempt": 1,
+   "prompt": "You are the DUNGEON MASTER of a text adventure. Write the next beat.\n\n# THE EMBER VAULT\n\nA sealed mountain vault holds the Ember \u2014 a fist-sized stone that burns\nwithout fuel. The village of Harrow's Rest will not last the winter without\nit. You have climbed to the vault with SERA, the village lamplighter, who\ntrusts you. Your lantern burns lamp oil; when the oil is gone, the dark of\nthe vault is lethal.\n\n## PLACES (movement only along these connections)\n- gatehouse  <-> stair_of_hooks\n- stair_of_hooks <-> vault_floor\n\n## PEOPLE\n- SERA \u2014 lamplighter of Harrow's Rest. Came to carry the Ember home. Loyal,\n  practical, keeps count of promises out loud.\n- MOSS \u2014 a scavenger who works these ruins. He ALWAYS intercepts travellers\n  on the stair_of_hooks and offers silver for the Ember. He is charming,\n  patient, and keeps his word to the letter and no further.\n\n## THINGS\n- vault_key (unique, in the gatehouse desk) \u00b7 ember (unique, on vault_floor,\n  inside the vault) \u00b7 moss_silver (only if Moss pays)\n\n## HARD RULES OF THIS WORLD\n- The vault door opens only with the vault_key, only from vault_floor.\n- The Ember cannot be taken before the vault is opened.\n- Dead is dead. Broken trust does not mend in a day.\n- Lamp oil only ever burns down.\n\n\n## THE LEDGER \u2014 this is your ONLY memory of the story so far\nYou are not shown the transcript. Everything you say must be consistent with\nthis ledger; if the ledger and your instincts disagree, the ledger is right.\n{\n \"turn\": 1,\n \"player\": {\n  \"location\": \"gatehouse\",\n  \"inventory\": [\n   \"lantern\",\n   \"vault_key\"\n  ],\n  \"wounds\": [],\n  \"oil_remaining\": 7\n },\n \"npcs\": {\n  \"sera\": {\n   \"status\": \"alive\",\n   \"location\": \"gatehouse\",\n   \"trust\": \"loyal\",\n   \"knows\": [\n    \"the village needs the ember\"\n   ]\n  },\n  \"moss\": {\n   \"status\": \"alive\",\n   \"location\": \"stair_of_hooks\",\n   \"trust\": \"wary\",\n   \"knows\": [\n    \"travellers must pass the stair\"\n   ]\n  }\n },\n \"flags\": {\n  \"vault_opened\": false,\n  \"ember_taken\": false,\n  \"deal_with_moss\": false\n },\n \"promises\": []\n}\n\n## WHAT JUST HAPPENED (for prose continuity only)\nPrevious beat: You and Sera stand at the gatehouse door, lantern lit, eight fingers of oil in the reservoir.\nThe player's action this turn: I search the gatekeeper's desk in the gatehouse for the vault key.\n\nWrite 2-5 sentences of narration and dialogue. NPC dialogue must reflect the\nledger \u2014 an NPC whose trust is \"betrayed\" does not speak like one whose trust\nis \"loyal\"; a dead NPC does not speak at all; promises the ledger records are\nremembered by whoever heard them.\n\nJSON only:\n{\"narration\": \"<the beat, dialogue inline>\",\n  \"facts_used\": [\"npcs.sera.trust\", \"flags.vault_opened\"]}\n\n`facts_used` entries are BARE ledger paths exactly as above \u2014 never\n\"npcs.sera.trust: loyal\", never prose. Paths only.\n",
+   "response": {
+    "narration": "You wrench open the desk's swollen drawer and there it is, half-buried under mouse-chewed ledgers: a heavy iron key, cold to the touch. Sera leans over your shoulder, lantern light catching the vault sigil stamped into its head. 'That's it,' she says, already counting under her breath. 'One key, one climb, one Ember home before the snow. Don't lose it on the stair.'",
+    "facts_used": [
+     "player.inventory",
+     "npcs.sera.trust",
+     "npcs.sera.location"
+    ]
+   }
+  },
+  {
+   "role": "extractor",
+   "turn": 2,
+   "session": "betrayal",
+   "attempt": 1,
+   "prompt": "You are the STATE EXTRACTOR for a text adventure. You do not write\nstory. You read what the player DID and report what changed as ledger edits.\n\n# THE EMBER VAULT\n\nA sealed mountain vault holds the Ember \u2014 a fist-sized stone that burns\nwithout fuel. The village of Harrow's Rest will not last the winter without\nit. You have climbed to the vault with SERA, the village lamplighter, who\ntrusts you. Your lantern burns lamp oil; when the oil is gone, the dark of\nthe vault is lethal.\n\n## PLACES (movement only along these connections)\n- gatehouse  <-> stair_of_hooks\n- stair_of_hooks <-> vault_floor\n\n## PEOPLE\n- SERA \u2014 lamplighter of Harrow's Rest. Came to carry the Ember home. Loyal,\n  practical, keeps count of promises out loud.\n- MOSS \u2014 a scavenger who works these ruins. He ALWAYS intercepts travellers\n  on the stair_of_hooks and offers silver for the Ember. He is charming,\n  patient, and keeps his word to the letter and no further.\n\n## THINGS\n- vault_key (unique, in the gatehouse desk) \u00b7 ember (unique, on vault_floor,\n  inside the vault) \u00b7 moss_silver (only if Moss pays)\n\n## HARD RULES OF THIS WORLD\n- The vault door opens only with the vault_key, only from vault_floor.\n- The Ember cannot be taken before the vault is opened.\n- Dead is dead. Broken trust does not mend in a day.\n- Lamp oil only ever burns down.\n\n\n## CURRENT LEDGER (authoritative)\n{\n \"turn\": 1,\n \"player\": {\n  \"location\": \"gatehouse\",\n  \"inventory\": [\n   \"lantern\",\n   \"vault_key\"\n  ],\n  \"wounds\": [],\n  \"oil_remaining\": 7\n },\n \"npcs\": {\n  \"sera\": {\n   \"status\": \"alive\",\n   \"location\": \"gatehouse\",\n   \"trust\": \"loyal\",\n   \"knows\": [\n    \"the village needs the ember\"\n   ]\n  },\n  \"moss\": {\n   \"status\": \"alive\",\n   \"location\": \"stair_of_hooks\",\n   \"trust\": \"wary\",\n   \"knows\": [\n    \"travellers must pass the stair\"\n   ]\n  }\n },\n \"flags\": {\n  \"vault_opened\": false,\n  \"ember_taken\": false,\n  \"deal_with_moss\": false\n },\n \"promises\": []\n}\n\n## THE PLAYER'S ACTION THIS TURN\nI tell Sera: 'I promise you \u2014 the Ember goes home to Harrow's Rest.' Then we take the stair down.\n\nReport only changes that actually follow from this action. Editable paths:\nplayer.location \u00b7 player.inventory (add/remove) \u00b7 player.wounds (add) \u00b7\nnpcs.<name>.status/location/trust \u00b7 npcs.<name>.knows (add) \u00b7\nflags.vault_opened/ember_taken/deal_with_moss \u00b7 promises (add).\nDo NOT touch turn or oil_remaining \u2014 the engine owns them. An action that\nchanges nothing returns an empty list.\n\nJSON only:\n{\"deltas\": [{\"op\": \"set|add|remove\", \"path\": \"...\", \"value\": ...}],\n  \"reason\": \"<one line>\"}\n",
+   "response": {
+    "deltas": [
+     {
+      "op": "add",
+      "path": "promises",
+      "value": {
+       "who": "sera",
+       "what": "the Ember goes home to Harrow's Rest",
+       "turn": 1
+      }
+     },
+     {
+      "op": "set",
+      "path": "player.location",
+      "value": "stair_of_hooks"
+     },
+     {
+      "op": "set",
+      "path": "npcs.sera.location",
+      "value": "stair_of_hooks"
+     }
+    ],
+    "reason": "Player made a promise to Sera and both moved down the stair from the gatehouse."
+   }
+  },
+  {
+   "role": "extractor",
+   "turn": 2,
+   "session": "betrayal",
+   "attempt": 2,
+   "prompt": "You are the STATE EXTRACTOR for a text adventure. You do not write\nstory. You read what the player DID and report what changed as ledger edits.\n\n# THE EMBER VAULT\n\nA sealed mountain vault holds the Ember \u2014 a fist-sized stone that burns\nwithout fuel. The village of Harrow's Rest will not last the winter without\nit. You have climbed to the vault with SERA, the village lamplighter, who\ntrusts you. Your lantern burns lamp oil; when the oil is gone, the dark of\nthe vault is lethal.\n\n## PLACES (movement only along these connections)\n- gatehouse  <-> stair_of_hooks\n- stair_of_hooks <-> vault_floor\n\n## PEOPLE\n- SERA \u2014 lamplighter of Harrow's Rest. Came to carry the Ember home. Loyal,\n  practical, keeps count of promises out loud.\n- MOSS \u2014 a scavenger who works these ruins. He ALWAYS intercepts travellers\n  on the stair_of_hooks and offers silver for the Ember. He is charming,\n  patient, and keeps his word to the letter and no further.\n\n## THINGS\n- vault_key (unique, in the gatehouse desk) \u00b7 ember (unique, on vault_floor,\n  inside the vault) \u00b7 moss_silver (only if Moss pays)\n\n## HARD RULES OF THIS WORLD\n- The vault door opens only with the vault_key, only from vault_floor.\n- The Ember cannot be taken before the vault is opened.\n- Dead is dead. Broken trust does not mend in a day.\n- Lamp oil only ever burns down.\n\n\n## CURRENT LEDGER (authoritative)\n{\n \"turn\": 1,\n \"player\": {\n  \"location\": \"gatehouse\",\n  \"inventory\": [\n   \"lantern\",\n   \"vault_key\"\n  ],\n  \"wounds\": [],\n  \"oil_remaining\": 7\n },\n \"npcs\": {\n  \"sera\": {\n   \"status\": \"alive\",\n   \"location\": \"gatehouse\",\n   \"trust\": \"loyal\",\n   \"knows\": [\n    \"the village needs the ember\"\n   ]\n  },\n  \"moss\": {\n   \"status\": \"alive\",\n   \"location\": \"stair_of_hooks\",\n   \"trust\": \"wary\",\n   \"knows\": [\n    \"travellers must pass the stair\"\n   ]\n  }\n },\n \"flags\": {\n  \"vault_opened\": false,\n  \"ember_taken\": false,\n  \"deal_with_moss\": false\n },\n \"promises\": []\n}\n\n## THE PLAYER'S ACTION THIS TURN\nI tell Sera: 'I promise you \u2014 the Ember goes home to Harrow's Rest.' Then we take the stair down.\n\nReport only changes that actually follow from this action. Editable paths:\nplayer.location \u00b7 player.inventory (add/remove) \u00b7 player.wounds (add) \u00b7\nnpcs.<name>.status/location/trust \u00b7 npcs.<name>.knows (add) \u00b7\nflags.vault_opened/ember_taken/deal_with_moss \u00b7 promises (add).\nDo NOT touch turn or oil_remaining \u2014 the engine owns them. An action that\nchanges nothing returns an empty list.\n\nJSON only:\n{\"deltas\": [{\"op\": \"set|add|remove\", \"path\": \"...\", \"value\": ...}],\n  \"reason\": \"<one line>\"}\n\n\n## YOUR PREVIOUS REPLY FAILED\npromises takes add of {\"to\": ..., \"text\": ...}\nReturn corrected JSON only.",
+   "response": {
+    "deltas": [
+     {
+      "op": "add",
+      "path": "promises",
+      "value": {
+       "to": "sera",
+       "text": "the Ember goes home to Harrow's Rest"
+      }
+     },
+     {
+      "op": "set",
+      "path": "player.location",
+      "value": "stair_of_hooks"
+     },
+     {
+      "op": "set",
+      "path": "npcs.sera.location",
+      "value": "stair_of_hooks"
+     }
+    ],
+    "reason": "Player vowed to Sera, then both descended to the stair."
+   }
+  },
+  {
+   "role": "narrator",
+   "turn": 2,
+   "session": "betrayal",
+   "attempt": 1,
+   "prompt": "You are the DUNGEON MASTER of a text adventure. Write the next beat.\n\n# THE EMBER VAULT\n\nA sealed mountain vault holds the Ember \u2014 a fist-sized stone that burns\nwithout fuel. The village of Harrow's Rest will not last the winter without\nit. You have climbed to the vault with SERA, the village lamplighter, who\ntrusts you. Your lantern burns lamp oil; when the oil is gone, the dark of\nthe vault is lethal.\n\n## PLACES (movement only along these connections)\n- gatehouse  <-> stair_of_hooks\n- stair_of_hooks <-> vault_floor\n\n## PEOPLE\n- SERA \u2014 lamplighter of Harrow's Rest. Came to carry the Ember home. Loyal,\n  practical, keeps count of promises out loud.\n- MOSS \u2014 a scavenger who works these ruins. He ALWAYS intercepts travellers\n  on the stair_of_hooks and offers silver for the Ember. He is charming,\n  patient, and keeps his word to the letter and no further.\n\n## THINGS\n- vault_key (unique, in the gatehouse desk) \u00b7 ember (unique, on vault_floor,\n  inside the vault) \u00b7 moss_silver (only if Moss pays)\n\n## HARD RULES OF THIS WORLD\n- The vault door opens only with the vault_key, only from vault_floor.\n- The Ember cannot be taken before the vault is opened.\n- Dead is dead. Broken trust does not mend in a day.\n- Lamp oil only ever burns down.\n\n\n## THE LEDGER \u2014 this is your ONLY memory of the story so far\nYou are not shown the transcript. Everything you say must be consistent with\nthis ledger; if the ledger and your instincts disagree, the ledger is right.\n{\n \"turn\": 2,\n \"player\": {\n  \"location\": \"stair_of_hooks\",\n  \"inventory\": [\n   \"lantern\",\n   \"vault_key\"\n  ],\n  \"wounds\": [],\n  \"oil_remaining\": 6\n },\n \"npcs\": {\n  \"sera\": {\n   \"status\": \"alive\",\n   \"location\": \"stair_of_hooks\",\n   \"trust\": \"loyal\",\n   \"knows\": [\n    \"the village needs the ember\"\n   ]\n  },\n  \"moss\": {\n   \"status\": \"alive\",\n   \"location\": \"stair_of_hooks\",\n   \"trust\": \"wary\",\n   \"knows\": [\n    \"travellers must pass the stair\"\n   ]\n  }\n },\n \"flags\": {\n  \"vault_opened\": false,\n  \"ember_taken\": false,\n  \"deal_with_moss\": false\n },\n \"promises\": [\n  {\n   \"to\": \"sera\",\n   \"text\": \"the Ember goes home to Harrow's Rest\",\n   \"kept\": null\n  }\n ]\n}\n\n## WHAT JUST HAPPENED (for prose continuity only)\nPrevious beat: You wrench open the desk's swollen drawer and there it is, half-buried under mouse-chewed ledgers: a heavy iron key, cold to the touch. Sera leans over your shoulder, lantern light catching the vault sigil stamped into its head. 'That's it,' she says, already counting under her breath. 'One key, one climb, one Ember home before the snow. Don't lose it on the stair.'\nThe player's action this turn: I tell Sera: 'I promise you \u2014 the Ember goes home to Harrow's Rest.' Then we take the stair down.\n\nWrite 2-5 sentences of narration and dialogue. NPC dialogue must reflect the\nledger \u2014 an NPC whose trust is \"betrayed\" does not speak like one whose trust\nis \"loyal\"; a dead NPC does not speak at all; promises the ledger records are\nremembered by whoever heard them.\n\nJSON only:\n{\"narration\": \"<the beat, dialogue inline>\",\n  \"facts_used\": [\"npcs.sera.trust\", \"flags.vault_opened\"]}\n\n`facts_used` entries are BARE ledger paths exactly as above \u2014 never\n\"npcs.sera.trust: loyal\", never prose. Paths only.\n",
+   "response": {
+    "narration": "'The Ember goes home to Harrow's Rest,' you say, and Sera nods once, sharp, like she's nailing it to the air between you. 'One promise, heard,' she says, and starts down the stair ahead of you, lantern light swinging over hook-scarred stone. You're three steps down when a voice unfolds from the shadows below \u2014 unhurried, amused. 'Travellers,' Moss says, stepping into the light with his hands open and empty. 'I don't suppose you'd sell before you've even opened the door.'",
+    "facts_used": [
+     "player.location",
+     "npcs.sera.trust",
+     "promises",
+     "npcs.moss.location",
+     "npcs.moss.knows"
+    ]
+   }
+  },
+  {
+   "role": "extractor",
+   "turn": 3,
+   "session": "betrayal",
+   "attempt": 1,
+   "prompt": "You are the STATE EXTRACTOR for a text adventure. You do not write\nstory. You read what the player DID and report what changed as ledger edits.\n\n# THE EMBER VAULT\n\nA sealed mountain vault holds the Ember \u2014 a fist-sized stone that burns\nwithout fuel. The village of Harrow's Rest will not last the winter without\nit. You have climbed to the vault with SERA, the village lamplighter, who\ntrusts you. Your lantern burns lamp oil; when the oil is gone, the dark of\nthe vault is lethal.\n\n## PLACES (movement only along these connections)\n- gatehouse  <-> stair_of_hooks\n- stair_of_hooks <-> vault_floor\n\n## PEOPLE\n- SERA \u2014 lamplighter of Harrow's Rest. Came to carry the Ember home. Loyal,\n  practical, keeps count of promises out loud.\n- MOSS \u2014 a scavenger who works these ruins. He ALWAYS intercepts travellers\n  on the stair_of_hooks and offers silver for the Ember. He is charming,\n  patient, and keeps his word to the letter and no further.\n\n## THINGS\n- vault_key (unique, in the gatehouse desk) \u00b7 ember (unique, on vault_floor,\n  inside the vault) \u00b7 moss_silver (only if Moss pays)\n\n## HARD RULES OF THIS WORLD\n- The vault door opens only with the vault_key, only from vault_floor.\n- The Ember cannot be taken before the vault is opened.\n- Dead is dead. Broken trust does not mend in a day.\n- Lamp oil only ever burns down.\n\n\n## CURRENT LEDGER (authoritative)\n{\n \"turn\": 2,\n \"player\": {\n  \"location\": \"stair_of_hooks\",\n  \"inventory\": [\n   \"lantern\",\n   \"vault_key\"\n  ],\n  \"wounds\": [],\n  \"oil_remaining\": 6\n },\n \"npcs\": {\n  \"sera\": {\n   \"status\": \"alive\",\n   \"location\": \"stair_of_hooks\",\n   \"trust\": \"loyal\",\n   \"knows\": [\n    \"the village needs the ember\"\n   ]\n  },\n  \"moss\": {\n   \"status\": \"alive\",\n   \"location\": \"stair_of_hooks\",\n   \"trust\": \"wary\",\n   \"knows\": [\n    \"travellers must pass the stair\"\n   ]\n  }\n },\n \"flags\": {\n  \"vault_opened\": false,\n  \"ember_taken\": false,\n  \"deal_with_moss\": false\n },\n \"promises\": [\n  {\n   \"to\": \"sera\",\n   \"text\": \"the Ember goes home to Harrow's Rest\",\n   \"kept\": null\n  }\n ]\n}\n\n## THE PLAYER'S ACTION THIS TURN\nI hear Moss out \u2014 what exactly is he offering for the Ember?\n\nReport only changes that actually follow from this action. Editable paths:\nplayer.location \u00b7 player.inventory (add/remove) \u00b7 player.wounds (add) \u00b7\nnpcs.<name>.status/location/trust \u00b7 npcs.<name>.knows (add) \u00b7\nflags.vault_opened/ember_taken/deal_with_moss \u00b7 promises (add).\nDo NOT touch turn or oil_remaining \u2014 the engine owns them. An action that\nchanges nothing returns an empty list.\n\nJSON only:\n{\"deltas\": [{\"op\": \"set|add|remove\", \"path\": \"...\", \"value\": ...}],\n  \"reason\": \"<one line>\"}\n",
+   "response": {
+    "deltas": [],
+    "reason": "Player only asks Moss what he's offering; no state changes, just dialogue"
+   }
+  },
+  {
+   "role": "narrator",
+   "turn": 3,
+   "session": "betrayal",
+   "attempt": 1,
+   "prompt": "You are the DUNGEON MASTER of a text adventure. Write the next beat.\n\n# THE EMBER VAULT\n\nA sealed mountain vault holds the Ember \u2014 a fist-sized stone that burns\nwithout fuel. The village of Harrow's Rest will not last the winter without\nit. You have climbed to the vault with SERA, the village lamplighter, who\ntrusts you. Your lantern burns lamp oil; when the oil is gone, the dark of\nthe vault is lethal.\n\n## PLACES (movement only along these connections)\n- gatehouse  <-> stair_of_hooks\n- stair_of_hooks <-> vault_floor\n\n## PEOPLE\n- SERA \u2014 lamplighter of Harrow's Rest. Came to carry the Ember home. Loyal,\n  practical, keeps count of promises out loud.\n- MOSS \u2014 a scavenger who works these ruins. He ALWAYS intercepts travellers\n  on the stair_of_hooks and offers silver for the Ember. He is charming,\n  patient, and keeps his word to the letter and no further.\n\n## THINGS\n- vault_key (unique, in the gatehouse desk) \u00b7 ember (unique, on vault_floor,\n  inside the vault) \u00b7 moss_silver (only if Moss pays)\n\n## HARD RULES OF THIS WORLD\n- The vault door opens only with the vault_key, only from vault_floor.\n- The Ember cannot be taken before the vault is opened.\n- Dead is dead. Broken trust does not mend in a day.\n- Lamp oil only ever burns down.\n\n\n## THE LEDGER \u2014 this is your ONLY memory of the story so far\nYou are not shown the transcript. Everything you say must be consistent with\nthis ledger; if the ledger and your instincts disagree, the ledger is right.\n{\n \"turn\": 3,\n \"player\": {\n  \"location\": \"stair_of_hooks\",\n  \"inventory\": [\n   \"lantern\",\n   \"vault_key\"\n  ],\n  \"wounds\": [],\n  \"oil_remaining\": 5\n },\n \"npcs\": {\n  \"sera\": {\n   \"status\": \"alive\",\n   \"location\": \"stair_of_hooks\",\n   \"trust\": \"loyal\",\n   \"knows\": [\n    \"the village needs the ember\"\n   ]\n  },\n  \"moss\": {\n   \"status\": \"alive\",\n   \"location\": \"stair_of_hooks\",\n   \"trust\": \"wary\",\n   \"knows\": [\n    \"travellers must pass the stair\"\n   ]\n  }\n },\n \"flags\": {\n  \"vault_opened\": false,\n  \"ember_taken\": false,\n  \"deal_with_moss\": false\n },\n \"promises\": [\n  {\n   \"to\": \"sera\",\n   \"text\": \"the Ember goes home to Harrow's Rest\",\n   \"kept\": null\n  }\n ]\n}\n\n## WHAT JUST HAPPENED (for prose continuity only)\nPrevious beat: 'The Ember goes home to Harrow's Rest,' you say, and Sera nods once, sharp, like she's nailing it to the air between you. 'One promise, heard,' she says, and starts down the stair ahead of you, lantern light swinging over hook-scarred stone. You're three steps down when a voice unfolds from the shadows below \u2014 unhurried, amused. 'Travellers,' Moss says, stepping into the light with his hands open and empty. 'I don't suppose you'd sell before you've even opened the door.'\nThe player's action this turn: I hear Moss out \u2014 what exactly is he offering for the Ember?\n\nWrite 2-5 sentences of narration and dialogue. NPC dialogue must reflect the\nledger \u2014 an NPC whose trust is \"betrayed\" does not speak like one whose trust\nis \"loyal\"; a dead NPC does not speak at all; promises the ledger records are\nremembered by whoever heard them.\n\nJSON only:\n{\"narration\": \"<the beat, dialogue inline>\",\n  \"facts_used\": [\"npcs.sera.trust\", \"flags.vault_opened\"]}\n\n`facts_used` entries are BARE ledger paths exactly as above \u2014 never\n\"npcs.sera.trust: loyal\", never prose. Paths only.\n",
+   "response": {
+    "narration": "Moss spreads his hands wider, a showman's gesture. 'Silver \u2014 good weight of it, enough to see Harrow's Rest through more than one winter, if that's what you're carrying home. I don't ask how you open that door, and I don't touch it myself. I ask after, on your way back down, when it's warm in your hands.' He glances at Sera, then back to you, patient as stone. 'That's the whole of the offer. No tricks folded into it.'",
+    "facts_used": [
+     "npcs.moss.trust",
+     "npcs.sera.trust",
+     "flags.vault_opened",
+     "promises"
+    ]
+   }
+  },
+  {
+   "role": "extractor",
+   "turn": 4,
+   "session": "betrayal",
+   "attempt": 1,
+   "prompt": "You are the STATE EXTRACTOR for a text adventure. You do not write\nstory. You read what the player DID and report what changed as ledger edits.\n\n# THE EMBER VAULT\n\nA sealed mountain vault holds the Ember \u2014 a fist-sized stone that burns\nwithout fuel. The village of Harrow's Rest will not last the winter without\nit. You have climbed to the vault with SERA, the village lamplighter, who\ntrusts you. Your lantern burns lamp oil; when the oil is gone, the dark of\nthe vault is lethal.\n\n## PLACES (movement only along these connections)\n- gatehouse  <-> stair_of_hooks\n- stair_of_hooks <-> vault_floor\n\n## PEOPLE\n- SERA \u2014 lamplighter of Harrow's Rest. Came to carry the Ember home. Loyal,\n  practical, keeps count of promises out loud.\n- MOSS \u2014 a scavenger who works these ruins. He ALWAYS intercepts travellers\n  on the stair_of_hooks and offers silver for the Ember. He is charming,\n  patient, and keeps his word to the letter and no further.\n\n## THINGS\n- vault_key (unique, in the gatehouse desk) \u00b7 ember (unique, on vault_floor,\n  inside the vault) \u00b7 moss_silver (only if Moss pays)\n\n## HARD RULES OF THIS WORLD\n- The vault door opens only with the vault_key, only from vault_floor.\n- The Ember cannot be taken before the vault is opened.\n- Dead is dead. Broken trust does not mend in a day.\n- Lamp oil only ever burns down.\n\n\n## CURRENT LEDGER (authoritative)\n{\n \"turn\": 3,\n \"player\": {\n  \"location\": \"stair_of_hooks\",\n  \"inventory\": [\n   \"lantern\",\n   \"vault_key\"\n  ],\n  \"wounds\": [],\n  \"oil_remaining\": 5\n },\n \"npcs\": {\n  \"sera\": {\n   \"status\": \"alive\",\n   \"location\": \"stair_of_hooks\",\n   \"trust\": \"loyal\",\n   \"knows\": [\n    \"the village needs the ember\"\n   ]\n  },\n  \"moss\": {\n   \"status\": \"alive\",\n   \"location\": \"stair_of_hooks\",\n   \"trust\": \"wary\",\n   \"knows\": [\n    \"travellers must pass the stair\"\n   ]\n  }\n },\n \"flags\": {\n  \"vault_opened\": false,\n  \"ember_taken\": false,\n  \"deal_with_moss\": false\n },\n \"promises\": [\n  {\n   \"to\": \"sera\",\n   \"text\": \"the Ember goes home to Harrow's Rest\",\n   \"kept\": null\n  }\n ]\n}\n\n## THE PLAYER'S ACTION THIS TURN\nI shake Moss's hand in front of Sera and promise him the Ember for his silver. Then we go down to the vault floor.\n\nReport only changes that actually follow from this action. Editable paths:\nplayer.location \u00b7 player.inventory (add/remove) \u00b7 player.wounds (add) \u00b7\nnpcs.<name>.status/location/trust \u00b7 npcs.<name>.knows (add) \u00b7\nflags.vault_opened/ember_taken/deal_with_moss \u00b7 promises (add).\nDo NOT touch turn or oil_remaining \u2014 the engine owns them. An action that\nchanges nothing returns an empty list.\n\nJSON only:\n{\"deltas\": [{\"op\": \"set|add|remove\", \"path\": \"...\", \"value\": ...}],\n  \"reason\": \"<one line>\"}\n",
+   "response": {
+    "deltas": [
+     {
+      "op": "set",
+      "path": "flags.deal_with_moss",
+      "value": true
+     },
+     {
+      "op": "add",
+      "path": "promises",
+      "value": {
+       "to": "moss",
+       "text": "the Ember for his silver",
+       "kept": null
+      }
+     },
+     {
+      "op": "set",
+      "path": "npcs.moss.trust",
+      "value": "trusting"
+     },
+     {
+      "op": "add",
+      "path": "npcs.sera.knows",
+      "value": "the player promised the Ember to Moss for silver"
+     },
+     {
+      "op": "set",
+      "path": "npcs.sera.trust",
+      "value": "wary"
+     },
+     {
+      "op": "set",
+      "path": "player.location",
+      "value": "vault_floor"
+     },
+     {
+      "op": "set",
+      "path": "npcs.sera.location",
+      "value": "vault_floor"
+     }
+    ],
+    "reason": "Player struck a deal with Moss in front of Sera (contradicting his promise to her) and both descended to the vault floor; Moss stayed at the stair as he always does."
+   }
+  },
+  {
+   "role": "extractor",
+   "turn": 4,
+   "session": "betrayal",
+   "attempt": 2,
+   "prompt": "You are the STATE EXTRACTOR for a text adventure. You do not write\nstory. You read what the player DID and report what changed as ledger edits.\n\n# THE EMBER VAULT\n\nA sealed mountain vault holds the Ember \u2014 a fist-sized stone that burns\nwithout fuel. The village of Harrow's Rest will not last the winter without\nit. You have climbed to the vault with SERA, the village lamplighter, who\ntrusts you. Your lantern burns lamp oil; when the oil is gone, the dark of\nthe vault is lethal.\n\n## PLACES (movement only along these connections)\n- gatehouse  <-> stair_of_hooks\n- stair_of_hooks <-> vault_floor\n\n## PEOPLE\n- SERA \u2014 lamplighter of Harrow's Rest. Came to carry the Ember home. Loyal,\n  practical, keeps count of promises out loud.\n- MOSS \u2014 a scavenger who works these ruins. He ALWAYS intercepts travellers\n  on the stair_of_hooks and offers silver for the Ember. He is charming,\n  patient, and keeps his word to the letter and no further.\n\n## THINGS\n- vault_key (unique, in the gatehouse desk) \u00b7 ember (unique, on vault_floor,\n  inside the vault) \u00b7 moss_silver (only if Moss pays)\n\n## HARD RULES OF THIS WORLD\n- The vault door opens only with the vault_key, only from vault_floor.\n- The Ember cannot be taken before the vault is opened.\n- Dead is dead. Broken trust does not mend in a day.\n- Lamp oil only ever burns down.\n\n\n## CURRENT LEDGER (authoritative)\n{\n \"turn\": 3,\n \"player\": {\n  \"location\": \"stair_of_hooks\",\n  \"inventory\": [\n   \"lantern\",\n   \"vault_key\"\n  ],\n  \"wounds\": [],\n  \"oil_remaining\": 5\n },\n \"npcs\": {\n  \"sera\": {\n   \"status\": \"alive\",\n   \"location\": \"stair_of_hooks\",\n   \"trust\": \"loyal\",\n   \"knows\": [\n    \"the village needs the ember\"\n   ]\n  },\n  \"moss\": {\n   \"status\": \"alive\",\n   \"location\": \"stair_of_hooks\",\n   \"trust\": \"wary\",\n   \"knows\": [\n    \"travellers must pass the stair\"\n   ]\n  }\n },\n \"flags\": {\n  \"vault_opened\": false,\n  \"ember_taken\": false,\n  \"deal_with_moss\": false\n },\n \"promises\": [\n  {\n   \"to\": \"sera\",\n   \"text\": \"the Ember goes home to Harrow's Rest\",\n   \"kept\": null\n  }\n ]\n}\n\n## THE PLAYER'S ACTION THIS TURN\nI shake Moss's hand in front of Sera and promise him the Ember for his silver. Then we go down to the vault floor.\n\nReport only changes that actually follow from this action. Editable paths:\nplayer.location \u00b7 player.inventory (add/remove) \u00b7 player.wounds (add) \u00b7\nnpcs.<name>.status/location/trust \u00b7 npcs.<name>.knows (add) \u00b7\nflags.vault_opened/ember_taken/deal_with_moss \u00b7 promises (add).\nDo NOT touch turn or oil_remaining \u2014 the engine owns them. An action that\nchanges nothing returns an empty list.\n\nJSON only:\n{\"deltas\": [{\"op\": \"set|add|remove\", \"path\": \"...\", \"value\": ...}],\n  \"reason\": \"<one line>\"}\n\n\n## YOUR PREVIOUS REPLY FAILED\ntrust 'trusting' is not ['betrayed', 'loyal', 'wary']\nReturn corrected JSON only.",
+   "response": {
+    "deltas": [
+     {
+      "op": "set",
+      "path": "flags.deal_with_moss",
+      "value": true
+     },
+     {
+      "op": "set",
+      "path": "npcs.moss.trust",
+      "value": "loyal"
+     },
+     {
+      "op": "set",
+      "path": "npcs.sera.trust",
+      "value": "wary"
+     },
+     {
+      "op": "add",
+      "path": "npcs.sera.knows",
+      "value": "the player promised the Ember to Moss"
+     },
+     {
+      "op": "add",
+      "path": "promises",
+      "value": {
+       "to": "moss",
+       "text": "the Ember for his silver",
+       "kept": null
+      }
+     },
+     {
+      "op": "set",
+      "path": "player.location",
+      "value": "vault_floor"
+     },
+     {
+      "op": "set",
+      "path": "npcs.sera.location",
+      "value": "vault_floor"
+     }
+    ],
+    "reason": "Player struck a deal with Moss in front of Sera, straining Sera's trust, then descended with her to the vault floor."
+   }
+  },
+  {
+   "role": "narrator",
+   "turn": 4,
+   "session": "betrayal",
+   "attempt": 1,
+   "prompt": "You are the DUNGEON MASTER of a text adventure. Write the next beat.\n\n# THE EMBER VAULT\n\nA sealed mountain vault holds the Ember \u2014 a fist-sized stone that burns\nwithout fuel. The village of Harrow's Rest will not last the winter without\nit. You have climbed to the vault with SERA, the village lamplighter, who\ntrusts you. Your lantern burns lamp oil; when the oil is gone, the dark of\nthe vault is lethal.\n\n## PLACES (movement only along these connections)\n- gatehouse  <-> stair_of_hooks\n- stair_of_hooks <-> vault_floor\n\n## PEOPLE\n- SERA \u2014 lamplighter of Harrow's Rest. Came to carry the Ember home. Loyal,\n  practical, keeps count of promises out loud.\n- MOSS \u2014 a scavenger who works these ruins. He ALWAYS intercepts travellers\n  on the stair_of_hooks and offers silver for the Ember. He is charming,\n  patient, and keeps his word to the letter and no further.\n\n## THINGS\n- vault_key (unique, in the gatehouse desk) \u00b7 ember (unique, on vault_floor,\n  inside the vault) \u00b7 moss_silver (only if Moss pays)\n\n## HARD RULES OF THIS WORLD\n- The vault door opens only with the vault_key, only from vault_floor.\n- The Ember cannot be taken before the vault is opened.\n- Dead is dead. Broken trust does not mend in a day.\n- Lamp oil only ever burns down.\n\n\n## THE LEDGER \u2014 this is your ONLY memory of the story so far\nYou are not shown the transcript. Everything you say must be consistent with\nthis ledger; if the ledger and your instincts disagree, the ledger is right.\n{\n \"turn\": 4,\n \"player\": {\n  \"location\": \"vault_floor\",\n  \"inventory\": [\n   \"lantern\",\n   \"vault_key\"\n  ],\n  \"wounds\": [],\n  \"oil_remaining\": 4\n },\n \"npcs\": {\n  \"sera\": {\n   \"status\": \"alive\",\n   \"location\": \"vault_floor\",\n   \"trust\": \"wary\",\n   \"knows\": [\n    \"the village needs the ember\",\n    \"the player promised the Ember to Moss\"\n   ]\n  },\n  \"moss\": {\n   \"status\": \"alive\",\n   \"location\": \"stair_of_hooks\",\n   \"trust\": \"loyal\",\n   \"knows\": [\n    \"travellers must pass the stair\"\n   ]\n  }\n },\n \"flags\": {\n  \"vault_opened\": false,\n  \"ember_taken\": false,\n  \"deal_with_moss\": true\n },\n \"promises\": [\n  {\n   \"to\": \"sera\",\n   \"text\": \"the Ember goes home to Harrow's Rest\",\n   \"kept\": null\n  },\n  {\n   \"to\": \"moss\",\n   \"text\": \"the Ember for his silver\",\n   \"kept\": null\n  }\n ]\n}\n\n## WHAT JUST HAPPENED (for prose continuity only)\nPrevious beat: Moss spreads his hands wider, a showman's gesture. 'Silver \u2014 good weight of it, enough to see Harrow's Rest through more than one winter, if that's what you're carrying home. I don't ask how you open that door, and I don't touch it myself. I ask after, on your way back down, when it's warm in your hands.' He glances at Sera, then back to you, patient as stone. 'That's the whole of the offer. No tricks folded into it.'\nThe player's action this turn: I shake Moss's hand in front of Sera and promise him the Ember for his silver. Then we go down to the vault floor.\n\nWrite 2-5 sentences of narration and dialogue. NPC dialogue must reflect the\nledger \u2014 an NPC whose trust is \"betrayed\" does not speak like one whose trust\nis \"loyal\"; a dead NPC does not speak at all; promises the ledger records are\nremembered by whoever heard them.\n\nJSON only:\n{\"narration\": \"<the beat, dialogue inline>\",\n  \"facts_used\": [\"npcs.sera.trust\", \"flags.vault_opened\"]}\n\n`facts_used` entries are BARE ledger paths exactly as above \u2014 never\n\"npcs.sera.trust: loyal\", never prose. Paths only.\n",
+   "response": {
+    "narration": "The stair narrows into the vault floor, cold air pressing close, and the great door stands before you scarred with old locks \u2014 unopened still, waiting on the key in your fist. Sera doesn't look at you as she says it: 'Moss's silver. You shook on it right in front of me.' She counts it off like she counts oil, flat and sure. 'That's one promise to me, one to him, and only one Ember between them. I'll be watching which hand you open first.' She sets her lantern down and waits, arms crossed, eyes on the door.",
+    "facts_used": [
+     "player.location",
+     "player.inventory",
+     "flags.vault_opened",
+     "npcs.sera.trust",
+     "npcs.sera.knows",
+     "promises"
+    ]
+   }
+  },
+  {
+   "role": "extractor",
+   "turn": 5,
+   "session": "betrayal",
+   "attempt": 1,
+   "prompt": "You are the STATE EXTRACTOR for a text adventure. You do not write\nstory. You read what the player DID and report what changed as ledger edits.\n\n# THE EMBER VAULT\n\nA sealed mountain vault holds the Ember \u2014 a fist-sized stone that burns\nwithout fuel. The village of Harrow's Rest will not last the winter without\nit. You have climbed to the vault with SERA, the village lamplighter, who\ntrusts you. Your lantern burns lamp oil; when the oil is gone, the dark of\nthe vault is lethal.\n\n## PLACES (movement only along these connections)\n- gatehouse  <-> stair_of_hooks\n- stair_of_hooks <-> vault_floor\n\n## PEOPLE\n- SERA \u2014 lamplighter of Harrow's Rest. Came to carry the Ember home. Loyal,\n  practical, keeps count of promises out loud.\n- MOSS \u2014 a scavenger who works these ruins. He ALWAYS intercepts travellers\n  on the stair_of_hooks and offers silver for the Ember. He is charming,\n  patient, and keeps his word to the letter and no further.\n\n## THINGS\n- vault_key (unique, in the gatehouse desk) \u00b7 ember (unique, on vault_floor,\n  inside the vault) \u00b7 moss_silver (only if Moss pays)\n\n## HARD RULES OF THIS WORLD\n- The vault door opens only with the vault_key, only from vault_floor.\n- The Ember cannot be taken before the vault is opened.\n- Dead is dead. Broken trust does not mend in a day.\n- Lamp oil only ever burns down.\n\n\n## CURRENT LEDGER (authoritative)\n{\n \"turn\": 4,\n \"player\": {\n  \"location\": \"vault_floor\",\n  \"inventory\": [\n   \"lantern\",\n   \"vault_key\"\n  ],\n  \"wounds\": [],\n  \"oil_remaining\": 4\n },\n \"npcs\": {\n  \"sera\": {\n   \"status\": \"alive\",\n   \"location\": \"vault_floor\",\n   \"trust\": \"wary\",\n   \"knows\": [\n    \"the village needs the ember\",\n    \"the player promised the Ember to Moss\"\n   ]\n  },\n  \"moss\": {\n   \"status\": \"alive\",\n   \"location\": \"stair_of_hooks\",\n   \"trust\": \"loyal\",\n   \"knows\": [\n    \"travellers must pass the stair\"\n   ]\n  }\n },\n \"flags\": {\n  \"vault_opened\": false,\n  \"ember_taken\": false,\n  \"deal_with_moss\": true\n },\n \"promises\": [\n  {\n   \"to\": \"sera\",\n   \"text\": \"the Ember goes home to Harrow's Rest\",\n   \"kept\": null\n  },\n  {\n   \"to\": \"moss\",\n   \"text\": \"the Ember for his silver\",\n   \"kept\": null\n  }\n ]\n}\n\n## THE PLAYER'S ACTION THIS TURN\nI unlock the vault with the key and take the Ember.\n\nReport only changes that actually follow from this action. Editable paths:\nplayer.location \u00b7 player.inventory (add/remove) \u00b7 player.wounds (add) \u00b7\nnpcs.<name>.status/location/trust \u00b7 npcs.<name>.knows (add) \u00b7\nflags.vault_opened/ember_taken/deal_with_moss \u00b7 promises (add).\nDo NOT touch turn or oil_remaining \u2014 the engine owns them. An action that\nchanges nothing returns an empty list.\n\nJSON only:\n{\"deltas\": [{\"op\": \"set|add|remove\", \"path\": \"...\", \"value\": ...}],\n  \"reason\": \"<one line>\"}\n",
+   "response": {
+    "deltas": [
+     {
+      "op": "set",
+      "path": "flags.vault_opened",
+      "value": true
+     },
+     {
+      "op": "set",
+      "path": "flags.ember_taken",
+      "value": true
+     },
+     {
+      "op": "add",
+      "path": "player.inventory",
+      "value": "ember"
+     }
+    ],
+    "reason": "Vault key used from vault_floor opens the vault, allowing the Ember to be taken."
+   }
+  },
+  {
+   "role": "narrator",
+   "turn": 5,
+   "session": "betrayal",
+   "attempt": 1,
+   "prompt": "You are the DUNGEON MASTER of a text adventure. Write the next beat.\n\n# THE EMBER VAULT\n\nA sealed mountain vault holds the Ember \u2014 a fist-sized stone that burns\nwithout fuel. The village of Harrow's Rest will not last the winter without\nit. You have climbed to the vault with SERA, the village lamplighter, who\ntrusts you. Your lantern burns lamp oil; when the oil is gone, the dark of\nthe vault is lethal.\n\n## PLACES (movement only along these connections)\n- gatehouse  <-> stair_of_hooks\n- stair_of_hooks <-> vault_floor\n\n## PEOPLE\n- SERA \u2014 lamplighter of Harrow's Rest. Came to carry the Ember home. Loyal,\n  practical, keeps count of promises out loud.\n- MOSS \u2014 a scavenger who works these ruins. He ALWAYS intercepts travellers\n  on the stair_of_hooks and offers silver for the Ember. He is charming,\n  patient, and keeps his word to the letter and no further.\n\n## THINGS\n- vault_key (unique, in the gatehouse desk) \u00b7 ember (unique, on vault_floor,\n  inside the vault) \u00b7 moss_silver (only if Moss pays)\n\n## HARD RULES OF THIS WORLD\n- The vault door opens only with the vault_key, only from vault_floor.\n- The Ember cannot be taken before the vault is opened.\n- Dead is dead. Broken trust does not mend in a day.\n- Lamp oil only ever burns down.\n\n\n## THE LEDGER \u2014 this is your ONLY memory of the story so far\nYou are not shown the transcript. Everything you say must be consistent with\nthis ledger; if the ledger and your instincts disagree, the ledger is right.\n{\n \"turn\": 5,\n \"player\": {\n  \"location\": \"vault_floor\",\n  \"inventory\": [\n   \"lantern\",\n   \"vault_key\",\n   \"ember\"\n  ],\n  \"wounds\": [],\n  \"oil_remaining\": 3\n },\n \"npcs\": {\n  \"sera\": {\n   \"status\": \"alive\",\n   \"location\": \"vault_floor\",\n   \"trust\": \"wary\",\n   \"knows\": [\n    \"the village needs the ember\",\n    \"the player promised the Ember to Moss\"\n   ]\n  },\n  \"moss\": {\n   \"status\": \"alive\",\n   \"location\": \"stair_of_hooks\",\n   \"trust\": \"loyal\",\n   \"knows\": [\n    \"travellers must pass the stair\"\n   ]\n  }\n },\n \"flags\": {\n  \"vault_opened\": true,\n  \"ember_taken\": true,\n  \"deal_with_moss\": true\n },\n \"promises\": [\n  {\n   \"to\": \"sera\",\n   \"text\": \"the Ember goes home to Harrow's Rest\",\n   \"kept\": null\n  },\n  {\n   \"to\": \"moss\",\n   \"text\": \"the Ember for his silver\",\n   \"kept\": null\n  }\n ]\n}\n\n## WHAT JUST HAPPENED (for prose continuity only)\nPrevious beat: The stair narrows into the vault floor, cold air pressing close, and the great door stands before you scarred with old locks \u2014 unopened still, waiting on the key in your fist. Sera doesn't look at you as she says it: 'Moss's silver. You shook on it right in front of me.' She counts it off like she counts oil, flat and sure. 'That's one promise to me, one to him, and only one Ember between them. I'll be watching which hand you open first.' She sets her lantern down and waits, arms crossed, eyes on the door.\nThe player's action this turn: I unlock the vault with the key and take the Ember.\n\nWrite 2-5 sentences of narration and dialogue. NPC dialogue must reflect the\nledger \u2014 an NPC whose trust is \"betrayed\" does not speak like one whose trust\nis \"loyal\"; a dead NPC does not speak at all; promises the ledger records are\nremembered by whoever heard them.\n\nJSON only:\n{\"narration\": \"<the beat, dialogue inline>\",\n  \"facts_used\": [\"npcs.sera.trust\", \"flags.vault_opened\"]}\n\n`facts_used` entries are BARE ledger paths exactly as above \u2014 never\n\"npcs.sera.trust: loyal\", never prose. Paths only.\n",
+   "response": {
+    "narration": "The key grinds home and the great door shudders open, breathing out air that's been cold since before Harrow's Rest had a name. Inside, the Ember sits on its plinth, pulsing like a coal that never dies, and when you close your hand around it the whole vault fills with amber light. Sera's arms stay crossed, but her eyes go to the stone, then to the stair behind her. 'There it is, then,' she says, low. 'Now we find out which promise you meant.'",
+    "facts_used": [
+     "flags.vault_opened",
+     "flags.ember_taken",
+     "npcs.sera.trust",
+     "promises"
+    ]
+   }
+  },
+  {
+   "role": "extractor",
+   "turn": 6,
+   "session": "betrayal",
+   "attempt": 1,
+   "prompt": "You are the STATE EXTRACTOR for a text adventure. You do not write\nstory. You read what the player DID and report what changed as ledger edits.\n\n# THE EMBER VAULT\n\nA sealed mountain vault holds the Ember \u2014 a fist-sized stone that burns\nwithout fuel. The village of Harrow's Rest will not last the winter without\nit. You have climbed to the vault with SERA, the village lamplighter, who\ntrusts you. Your lantern burns lamp oil; when the oil is gone, the dark of\nthe vault is lethal.\n\n## PLACES (movement only along these connections)\n- gatehouse  <-> stair_of_hooks\n- stair_of_hooks <-> vault_floor\n\n## PEOPLE\n- SERA \u2014 lamplighter of Harrow's Rest. Came to carry the Ember home. Loyal,\n  practical, keeps count of promises out loud.\n- MOSS \u2014 a scavenger who works these ruins. He ALWAYS intercepts travellers\n  on the stair_of_hooks and offers silver for the Ember. He is charming,\n  patient, and keeps his word to the letter and no further.\n\n## THINGS\n- vault_key (unique, in the gatehouse desk) \u00b7 ember (unique, on vault_floor,\n  inside the vault) \u00b7 moss_silver (only if Moss pays)\n\n## HARD RULES OF THIS WORLD\n- The vault door opens only with the vault_key, only from vault_floor.\n- The Ember cannot be taken before the vault is opened.\n- Dead is dead. Broken trust does not mend in a day.\n- Lamp oil only ever burns down.\n\n\n## CURRENT LEDGER (authoritative)\n{\n \"turn\": 5,\n \"player\": {\n  \"location\": \"vault_floor\",\n  \"inventory\": [\n   \"lantern\",\n   \"vault_key\",\n   \"ember\"\n  ],\n  \"wounds\": [],\n  \"oil_remaining\": 3\n },\n \"npcs\": {\n  \"sera\": {\n   \"status\": \"alive\",\n   \"location\": \"vault_floor\",\n   \"trust\": \"wary\",\n   \"knows\": [\n    \"the village needs the ember\",\n    \"the player promised the Ember to Moss\"\n   ]\n  },\n  \"moss\": {\n   \"status\": \"alive\",\n   \"location\": \"stair_of_hooks\",\n   \"trust\": \"loyal\",\n   \"knows\": [\n    \"travellers must pass the stair\"\n   ]\n  }\n },\n \"flags\": {\n  \"vault_opened\": true,\n  \"ember_taken\": true,\n  \"deal_with_moss\": true\n },\n \"promises\": [\n  {\n   \"to\": \"sera\",\n   \"text\": \"the Ember goes home to Harrow's Rest\",\n   \"kept\": null\n  },\n  {\n   \"to\": \"moss\",\n   \"text\": \"the Ember for his silver\",\n   \"kept\": null\n  }\n ]\n}\n\n## THE PLAYER'S ACTION THIS TURN\nI hold out the Ember to Sera and ask her to carry it home for the village.\n\nReport only changes that actually follow from this action. Editable paths:\nplayer.location \u00b7 player.inventory (add/remove) \u00b7 player.wounds (add) \u00b7\nnpcs.<name>.status/location/trust \u00b7 npcs.<name>.knows (add) \u00b7\nflags.vault_opened/ember_taken/deal_with_moss \u00b7 promises (add).\nDo NOT touch turn or oil_remaining \u2014 the engine owns them. An action that\nchanges nothing returns an empty list.\n\nJSON only:\n{\"deltas\": [{\"op\": \"set|add|remove\", \"path\": \"...\", \"value\": ...}],\n  \"reason\": \"<one line>\"}\n",
+   "response": {
+    "deltas": [
+     {
+      "op": "add",
+      "path": "npcs.sera.knows",
+      "value": "the player offered to give her the Ember to carry home"
+     }
+    ],
+    "reason": "Player made an offer to Sera; no item change or trust resolution follows without her response."
+   }
+  },
+  {
+   "role": "narrator",
+   "turn": 6,
+   "session": "betrayal",
+   "attempt": 1,
+   "prompt": "You are the DUNGEON MASTER of a text adventure. Write the next beat.\n\n# THE EMBER VAULT\n\nA sealed mountain vault holds the Ember \u2014 a fist-sized stone that burns\nwithout fuel. The village of Harrow's Rest will not last the winter without\nit. You have climbed to the vault with SERA, the village lamplighter, who\ntrusts you. Your lantern burns lamp oil; when the oil is gone, the dark of\nthe vault is lethal.\n\n## PLACES (movement only along these connections)\n- gatehouse  <-> stair_of_hooks\n- stair_of_hooks <-> vault_floor\n\n## PEOPLE\n- SERA \u2014 lamplighter of Harrow's Rest. Came to carry the Ember home. Loyal,\n  practical, keeps count of promises out loud.\n- MOSS \u2014 a scavenger who works these ruins. He ALWAYS intercepts travellers\n  on the stair_of_hooks and offers silver for the Ember. He is charming,\n  patient, and keeps his word to the letter and no further.\n\n## THINGS\n- vault_key (unique, in the gatehouse desk) \u00b7 ember (unique, on vault_floor,\n  inside the vault) \u00b7 moss_silver (only if Moss pays)\n\n## HARD RULES OF THIS WORLD\n- The vault door opens only with the vault_key, only from vault_floor.\n- The Ember cannot be taken before the vault is opened.\n- Dead is dead. Broken trust does not mend in a day.\n- Lamp oil only ever burns down.\n\n\n## THE LEDGER \u2014 this is your ONLY memory of the story so far\nYou are not shown the transcript. Everything you say must be consistent with\nthis ledger; if the ledger and your instincts disagree, the ledger is right.\n{\n \"turn\": 6,\n \"player\": {\n  \"location\": \"vault_floor\",\n  \"inventory\": [\n   \"lantern\",\n   \"vault_key\",\n   \"ember\"\n  ],\n  \"wounds\": [],\n  \"oil_remaining\": 2\n },\n \"npcs\": {\n  \"sera\": {\n   \"status\": \"alive\",\n   \"location\": \"vault_floor\",\n   \"trust\": \"wary\",\n   \"knows\": [\n    \"the village needs the ember\",\n    \"the player promised the Ember to Moss\",\n    \"the player offered to give her the Ember to carry home\"\n   ]\n  },\n  \"moss\": {\n   \"status\": \"alive\",\n   \"location\": \"stair_of_hooks\",\n   \"trust\": \"loyal\",\n   \"knows\": [\n    \"travellers must pass the stair\"\n   ]\n  }\n },\n \"flags\": {\n  \"vault_opened\": true,\n  \"ember_taken\": true,\n  \"deal_with_moss\": true\n },\n \"promises\": [\n  {\n   \"to\": \"sera\",\n   \"text\": \"the Ember goes home to Harrow's Rest\",\n   \"kept\": null\n  },\n  {\n   \"to\": \"moss\",\n   \"text\": \"the Ember for his silver\",\n   \"kept\": null\n  }\n ]\n}\n\n## WHAT JUST HAPPENED (for prose continuity only)\nPrevious beat: The key grinds home and the great door shudders open, breathing out air that's been cold since before Harrow's Rest had a name. Inside, the Ember sits on its plinth, pulsing like a coal that never dies, and when you close your hand around it the whole vault fills with amber light. Sera's arms stay crossed, but her eyes go to the stone, then to the stair behind her. 'There it is, then,' she says, low. 'Now we find out which promise you meant.'\nThe player's action this turn: I hold out the Ember to Sera and ask her to carry it home for the village.\n\nWrite 2-5 sentences of narration and dialogue. NPC dialogue must reflect the\nledger \u2014 an NPC whose trust is \"betrayed\" does not speak like one whose trust\nis \"loyal\"; a dead NPC does not speak at all; promises the ledger records are\nremembered by whoever heard them.\n\nJSON only:\n{\"narration\": \"<the beat, dialogue inline>\",\n  \"facts_used\": [\"npcs.sera.trust\", \"flags.vault_opened\"]}\n\n`facts_used` entries are BARE ledger paths exactly as above \u2014 never\n\"npcs.sera.trust: loyal\", never prose. Paths only.\n",
+   "response": {
+    "narration": "You hold the Ember out, and its light steadies in your palm. Sera's arms uncross; she takes it with both hands like it might still refuse her. 'That's the promise kept, then,' she says, testing the weight of it against the one still owed. 'Moss is on the stair, and he'll be wanting his silver \u2014 mind you remember which promise you're keeping when we reach him.' She tucks the stone inside her coat, the glow dimming to a seam of amber light, and starts for the way down.",
+    "facts_used": [
+     "flags.ember_taken",
+     "npcs.sera.trust",
+     "promises",
+     "npcs.moss.location"
+    ]
+   }
+  },
+  {
+   "role": "extractor",
+   "turn": 7,
+   "session": "betrayal",
+   "attempt": 1,
+   "prompt": "You are the STATE EXTRACTOR for a text adventure. You do not write\nstory. You read what the player DID and report what changed as ledger edits.\n\n# THE EMBER VAULT\n\nA sealed mountain vault holds the Ember \u2014 a fist-sized stone that burns\nwithout fuel. The village of Harrow's Rest will not last the winter without\nit. You have climbed to the vault with SERA, the village lamplighter, who\ntrusts you. Your lantern burns lamp oil; when the oil is gone, the dark of\nthe vault is lethal.\n\n## PLACES (movement only along these connections)\n- gatehouse  <-> stair_of_hooks\n- stair_of_hooks <-> vault_floor\n\n## PEOPLE\n- SERA \u2014 lamplighter of Harrow's Rest. Came to carry the Ember home. Loyal,\n  practical, keeps count of promises out loud.\n- MOSS \u2014 a scavenger who works these ruins. He ALWAYS intercepts travellers\n  on the stair_of_hooks and offers silver for the Ember. He is charming,\n  patient, and keeps his word to the letter and no further.\n\n## THINGS\n- vault_key (unique, in the gatehouse desk) \u00b7 ember (unique, on vault_floor,\n  inside the vault) \u00b7 moss_silver (only if Moss pays)\n\n## HARD RULES OF THIS WORLD\n- The vault door opens only with the vault_key, only from vault_floor.\n- The Ember cannot be taken before the vault is opened.\n- Dead is dead. Broken trust does not mend in a day.\n- Lamp oil only ever burns down.\n\n\n## CURRENT LEDGER (authoritative)\n{\n \"turn\": 6,\n \"player\": {\n  \"location\": \"vault_floor\",\n  \"inventory\": [\n   \"lantern\",\n   \"vault_key\",\n   \"ember\"\n  ],\n  \"wounds\": [],\n  \"oil_remaining\": 2\n },\n \"npcs\": {\n  \"sera\": {\n   \"status\": \"alive\",\n   \"location\": \"vault_floor\",\n   \"trust\": \"wary\",\n   \"knows\": [\n    \"the village needs the ember\",\n    \"the player promised the Ember to Moss\",\n    \"the player offered to give her the Ember to carry home\"\n   ]\n  },\n  \"moss\": {\n   \"status\": \"alive\",\n   \"location\": \"stair_of_hooks\",\n   \"trust\": \"loyal\",\n   \"knows\": [\n    \"travellers must pass the stair\"\n   ]\n  }\n },\n \"flags\": {\n  \"vault_opened\": true,\n  \"ember_taken\": true,\n  \"deal_with_moss\": true\n },\n \"promises\": [\n  {\n   \"to\": \"sera\",\n   \"text\": \"the Ember goes home to Harrow's Rest\",\n   \"kept\": null\n  },\n  {\n   \"to\": \"moss\",\n   \"text\": \"the Ember for his silver\",\n   \"kept\": null\n  }\n ]\n}\n\n## THE PLAYER'S ACTION THIS TURN\nI check my pack and my lantern \u2014 what exactly am I carrying, and how much oil is left?\n\nReport only changes that actually follow from this action. Editable paths:\nplayer.location \u00b7 player.inventory (add/remove) \u00b7 player.wounds (add) \u00b7\nnpcs.<name>.status/location/trust \u00b7 npcs.<name>.knows (add) \u00b7\nflags.vault_opened/ember_taken/deal_with_moss \u00b7 promises (add).\nDo NOT touch turn or oil_remaining \u2014 the engine owns them. An action that\nchanges nothing returns an empty list.\n\nJSON only:\n{\"deltas\": [{\"op\": \"set|add|remove\", \"path\": \"...\", \"value\": ...}],\n  \"reason\": \"<one line>\"}\n",
+   "response": {
+    "deltas": [],
+    "reason": "checking inventory/oil is a query, not an action that changes world state"
+   }
+  },
+  {
+   "role": "narrator",
+   "turn": 7,
+   "session": "betrayal",
+   "attempt": 1,
+   "prompt": "You are the DUNGEON MASTER of a text adventure. Write the next beat.\n\n# THE EMBER VAULT\n\nA sealed mountain vault holds the Ember \u2014 a fist-sized stone that burns\nwithout fuel. The village of Harrow's Rest will not last the winter without\nit. You have climbed to the vault with SERA, the village lamplighter, who\ntrusts you. Your lantern burns lamp oil; when the oil is gone, the dark of\nthe vault is lethal.\n\n## PLACES (movement only along these connections)\n- gatehouse  <-> stair_of_hooks\n- stair_of_hooks <-> vault_floor\n\n## PEOPLE\n- SERA \u2014 lamplighter of Harrow's Rest. Came to carry the Ember home. Loyal,\n  practical, keeps count of promises out loud.\n- MOSS \u2014 a scavenger who works these ruins. He ALWAYS intercepts travellers\n  on the stair_of_hooks and offers silver for the Ember. He is charming,\n  patient, and keeps his word to the letter and no further.\n\n## THINGS\n- vault_key (unique, in the gatehouse desk) \u00b7 ember (unique, on vault_floor,\n  inside the vault) \u00b7 moss_silver (only if Moss pays)\n\n## HARD RULES OF THIS WORLD\n- The vault door opens only with the vault_key, only from vault_floor.\n- The Ember cannot be taken before the vault is opened.\n- Dead is dead. Broken trust does not mend in a day.\n- Lamp oil only ever burns down.\n\n\n## THE LEDGER \u2014 this is your ONLY memory of the story so far\nYou are not shown the transcript. Everything you say must be consistent with\nthis ledger; if the ledger and your instincts disagree, the ledger is right.\n{\n \"turn\": 7,\n \"player\": {\n  \"location\": \"vault_floor\",\n  \"inventory\": [\n   \"lantern\",\n   \"vault_key\",\n   \"ember\"\n  ],\n  \"wounds\": [],\n  \"oil_remaining\": 1\n },\n \"npcs\": {\n  \"sera\": {\n   \"status\": \"alive\",\n   \"location\": \"vault_floor\",\n   \"trust\": \"wary\",\n   \"knows\": [\n    \"the village needs the ember\",\n    \"the player promised the Ember to Moss\",\n    \"the player offered to give her the Ember to carry home\"\n   ]\n  },\n  \"moss\": {\n   \"status\": \"alive\",\n   \"location\": \"stair_of_hooks\",\n   \"trust\": \"loyal\",\n   \"knows\": [\n    \"travellers must pass the stair\"\n   ]\n  }\n },\n \"flags\": {\n  \"vault_opened\": true,\n  \"ember_taken\": true,\n  \"deal_with_moss\": true\n },\n \"promises\": [\n  {\n   \"to\": \"sera\",\n   \"text\": \"the Ember goes home to Harrow's Rest\",\n   \"kept\": null\n  },\n  {\n   \"to\": \"moss\",\n   \"text\": \"the Ember for his silver\",\n   \"kept\": null\n  }\n ]\n}\n\n## WHAT JUST HAPPENED (for prose continuity only)\nPrevious beat: You hold the Ember out, and its light steadies in your palm. Sera's arms uncross; she takes it with both hands like it might still refuse her. 'That's the promise kept, then,' she says, testing the weight of it against the one still owed. 'Moss is on the stair, and he'll be wanting his silver \u2014 mind you remember which promise you're keeping when we reach him.' She tucks the stone inside her coat, the glow dimming to a seam of amber light, and starts for the way down.\nThe player's action this turn: I check my pack and my lantern \u2014 what exactly am I carrying, and how much oil is left?\n\nWrite 2-5 sentences of narration and dialogue. NPC dialogue must reflect the\nledger \u2014 an NPC whose trust is \"betrayed\" does not speak like one whose trust\nis \"loyal\"; a dead NPC does not speak at all; promises the ledger records are\nremembered by whoever heard them.\n\nJSON only:\n{\"narration\": \"<the beat, dialogue inline>\",\n  \"facts_used\": [\"npcs.sera.trust\", \"flags.vault_opened\"]}\n\n`facts_used` entries are BARE ledger paths exactly as above \u2014 never\n\"npcs.sera.trust: loyal\", never prose. Paths only.\n",
+   "response": {
+    "narration": "You pat down your gear on the move: the lantern still swings from your hand, its flame low and steady, one measure of oil left in the reservoir \u2014 enough for the stair, maybe not much past it. The vault_key rides heavy in your pocket, its work done. 'One flask left,' Sera confirms, glancing sideways at the lantern's dimming glow. 'So we don't dawdle on the stair \u2014 whatever Moss wants from you.'",
+    "facts_used": [
+     "player.inventory",
+     "player.oil_remaining",
+     "npcs.sera.trust",
+     "npcs.moss.location"
+    ]
+   }
+  },
+  {
+   "role": "extractor",
+   "turn": 8,
+   "session": "betrayal",
+   "attempt": 1,
+   "prompt": "You are the STATE EXTRACTOR for a text adventure. You do not write\nstory. You read what the player DID and report what changed as ledger edits.\n\n# THE EMBER VAULT\n\nA sealed mountain vault holds the Ember \u2014 a fist-sized stone that burns\nwithout fuel. The village of Harrow's Rest will not last the winter without\nit. You have climbed to the vault with SERA, the village lamplighter, who\ntrusts you. Your lantern burns lamp oil; when the oil is gone, the dark of\nthe vault is lethal.\n\n## PLACES (movement only along these connections)\n- gatehouse  <-> stair_of_hooks\n- stair_of_hooks <-> vault_floor\n\n## PEOPLE\n- SERA \u2014 lamplighter of Harrow's Rest. Came to carry the Ember home. Loyal,\n  practical, keeps count of promises out loud.\n- MOSS \u2014 a scavenger who works these ruins. He ALWAYS intercepts travellers\n  on the stair_of_hooks and offers silver for the Ember. He is charming,\n  patient, and keeps his word to the letter and no further.\n\n## THINGS\n- vault_key (unique, in the gatehouse desk) \u00b7 ember (unique, on vault_floor,\n  inside the vault) \u00b7 moss_silver (only if Moss pays)\n\n## HARD RULES OF THIS WORLD\n- The vault door opens only with the vault_key, only from vault_floor.\n- The Ember cannot be taken before the vault is opened.\n- Dead is dead. Broken trust does not mend in a day.\n- Lamp oil only ever burns down.\n\n\n## CURRENT LEDGER (authoritative)\n{\n \"turn\": 7,\n \"player\": {\n  \"location\": \"vault_floor\",\n  \"inventory\": [\n   \"lantern\",\n   \"vault_key\",\n   \"ember\"\n  ],\n  \"wounds\": [],\n  \"oil_remaining\": 1\n },\n \"npcs\": {\n  \"sera\": {\n   \"status\": \"alive\",\n   \"location\": \"vault_floor\",\n   \"trust\": \"wary\",\n   \"knows\": [\n    \"the village needs the ember\",\n    \"the player promised the Ember to Moss\",\n    \"the player offered to give her the Ember to carry home\"\n   ]\n  },\n  \"moss\": {\n   \"status\": \"alive\",\n   \"location\": \"stair_of_hooks\",\n   \"trust\": \"loyal\",\n   \"knows\": [\n    \"travellers must pass the stair\"\n   ]\n  }\n },\n \"flags\": {\n  \"vault_opened\": true,\n  \"ember_taken\": true,\n  \"deal_with_moss\": true\n },\n \"promises\": [\n  {\n   \"to\": \"sera\",\n   \"text\": \"the Ember goes home to Harrow's Rest\",\n   \"kept\": null\n  },\n  {\n   \"to\": \"moss\",\n   \"text\": \"the Ember for his silver\",\n   \"kept\": null\n  }\n ]\n}\n\n## THE PLAYER'S ACTION THIS TURN\nI climb back up toward the gatehouse and settle what I owe.\n\nReport only changes that actually follow from this action. Editable paths:\nplayer.location \u00b7 player.inventory (add/remove) \u00b7 player.wounds (add) \u00b7\nnpcs.<name>.status/location/trust \u00b7 npcs.<name>.knows (add) \u00b7\nflags.vault_opened/ember_taken/deal_with_moss \u00b7 promises (add).\nDo NOT touch turn or oil_remaining \u2014 the engine owns them. An action that\nchanges nothing returns an empty list.\n\nJSON only:\n{\"deltas\": [{\"op\": \"set|add|remove\", \"path\": \"...\", \"value\": ...}],\n  \"reason\": \"<one line>\"}\n",
+   "response": {
+    "deltas": [
+     {
+      "op": "set",
+      "path": "player.location",
+      "value": "stair_of_hooks"
+     }
+    ],
+    "reason": "Player left vault_floor and moved to the adjacent stair_of_hooks toward the gatehouse; no specific settlement (payment, gift, or conversation) was enacted yet to justify further changes."
+   }
+  },
+  {
+   "role": "narrator",
+   "turn": 8,
+   "session": "betrayal",
+   "attempt": 1,
+   "prompt": "You are the DUNGEON MASTER of a text adventure. Write the next beat.\n\n# THE EMBER VAULT\n\nA sealed mountain vault holds the Ember \u2014 a fist-sized stone that burns\nwithout fuel. The village of Harrow's Rest will not last the winter without\nit. You have climbed to the vault with SERA, the village lamplighter, who\ntrusts you. Your lantern burns lamp oil; when the oil is gone, the dark of\nthe vault is lethal.\n\n## PLACES (movement only along these connections)\n- gatehouse  <-> stair_of_hooks\n- stair_of_hooks <-> vault_floor\n\n## PEOPLE\n- SERA \u2014 lamplighter of Harrow's Rest. Came to carry the Ember home. Loyal,\n  practical, keeps count of promises out loud.\n- MOSS \u2014 a scavenger who works these ruins. He ALWAYS intercepts travellers\n  on the stair_of_hooks and offers silver for the Ember. He is charming,\n  patient, and keeps his word to the letter and no further.\n\n## THINGS\n- vault_key (unique, in the gatehouse desk) \u00b7 ember (unique, on vault_floor,\n  inside the vault) \u00b7 moss_silver (only if Moss pays)\n\n## HARD RULES OF THIS WORLD\n- The vault door opens only with the vault_key, only from vault_floor.\n- The Ember cannot be taken before the vault is opened.\n- Dead is dead. Broken trust does not mend in a day.\n- Lamp oil only ever burns down.\n\n\n## THE LEDGER \u2014 this is your ONLY memory of the story so far\nYou are not shown the transcript. Everything you say must be consistent with\nthis ledger; if the ledger and your instincts disagree, the ledger is right.\n{\n \"turn\": 8,\n \"player\": {\n  \"location\": \"stair_of_hooks\",\n  \"inventory\": [\n   \"lantern\",\n   \"vault_key\",\n   \"ember\"\n  ],\n  \"wounds\": [],\n  \"oil_remaining\": 0\n },\n \"npcs\": {\n  \"sera\": {\n   \"status\": \"alive\",\n   \"location\": \"vault_floor\",\n   \"trust\": \"wary\",\n   \"knows\": [\n    \"the village needs the ember\",\n    \"the player promised the Ember to Moss\",\n    \"the player offered to give her the Ember to carry home\"\n   ]\n  },\n  \"moss\": {\n   \"status\": \"alive\",\n   \"location\": \"stair_of_hooks\",\n   \"trust\": \"loyal\",\n   \"knows\": [\n    \"travellers must pass the stair\"\n   ]\n  }\n },\n \"flags\": {\n  \"vault_opened\": true,\n  \"ember_taken\": true,\n  \"deal_with_moss\": true\n },\n \"promises\": [\n  {\n   \"to\": \"sera\",\n   \"text\": \"the Ember goes home to Harrow's Rest\",\n   \"kept\": null\n  },\n  {\n   \"to\": \"moss\",\n   \"text\": \"the Ember for his silver\",\n   \"kept\": null\n  }\n ]\n}\n\n## WHAT JUST HAPPENED (for prose continuity only)\nPrevious beat: You pat down your gear on the move: the lantern still swings from your hand, its flame low and steady, one measure of oil left in the reservoir \u2014 enough for the stair, maybe not much past it. The vault_key rides heavy in your pocket, its work done. 'One flask left,' Sera confirms, glancing sideways at the lantern's dimming glow. 'So we don't dawdle on the stair \u2014 whatever Moss wants from you.'\nThe player's action this turn: I climb back up toward the gatehouse and settle what I owe.\n\nWrite 2-5 sentences of narration and dialogue. NPC dialogue must reflect the\nledger \u2014 an NPC whose trust is \"betrayed\" does not speak like one whose trust\nis \"loyal\"; a dead NPC does not speak at all; promises the ledger records are\nremembered by whoever heard them.\n\nJSON only:\n{\"narration\": \"<the beat, dialogue inline>\",\n  \"facts_used\": [\"npcs.sera.trust\", \"flags.vault_opened\"]}\n\n`facts_used` entries are BARE ledger paths exactly as above \u2014 never\n\"npcs.sera.trust: loyal\", never prose. Paths only.\n",
+   "response": {
+    "narration": "Two steps up the hooks and the lantern gutters to nothing \u2014 the last of the oil spent, the flame folding into a thin red thread and then dark. You don't need light to find Moss, though; he's already there, exactly where the stair narrows, silver pouch weighing his palm like he's been waiting since you passed the first time. 'There you are,' he says, easy as ever, no edge in it. 'You said the Ember for my silver. I've kept my word on my end \u2014 every coin's here. So.' He doesn't reach for it. He just holds his hand out, patient, and waits for you to be the one who decides what a promise is worth.",
+    "facts_used": [
+     "player.location",
+     "player.oil_remaining",
+     "npcs.moss.location",
+     "npcs.moss.trust",
+     "promises"
+    ]
+   }
+  }
+ ]
+}

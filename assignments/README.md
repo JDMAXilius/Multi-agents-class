@@ -24,15 +24,16 @@ source, and the artifacts they produce are the game's own data and code.
 | 5 | Goal-Oriented Coding Agent | [`05-goal-oriented-agent/`](05-goal-oriented-agent/) | [`README.md`](05-goal-oriented-agent/README.md) → `agent.py` |
 | 6 | GER Pipeline | [`06-ger-pipeline/`](06-ger-pipeline/) | [`README.md`](06-ger-pipeline/README.md) → `ger.py` |
 | 7 | Style Guide Agent | [`07-style-guide-agent/`](07-style-guide-agent/) | [`README.md`](07-style-guide-agent/README.md) → `style_agent.py` |
+| 8 | Narrative Engine (optional) | [`08-narrative-engine/`](08-narrative-engine/) | [`README.md`](08-narrative-engine/README.md) → `dm.py` |
 
 **Read the folder's own `README.md` first** — each one is the graded write-up for that
 assignment. This file is only the map.
 
 ---
 
-## Running the five that are code
+## Running the six that are code
 
-All five are **Python 3, standard library only**. No `pip install`, no API key, no network.
+All six are **Python 3, standard library only**. No `pip install`, no API key, no network.
 Each ships a recorded run so the pipeline executes end-to-end on any machine:
 
 ```bash
@@ -41,9 +42,10 @@ cd assignments/04-content-pipeline && python3 run_pipeline.py
 cd assignments/05-goal-oriented-agent && python3 agent.py
 cd assignments/06-ger-pipeline       && python3 ger.py
 cd assignments/07-style-guide-agent  && python3 style_agent.py
+cd assignments/08-narrative-engine   && python3 dm.py
 ```
 
-**Replay is not a printout.** In all five, everything except the model responses executes for
+**Replay is not a printout.** In all six, everything except the model responses executes for
 real — retrieval, validation gates, scoring, file writing. Only the LLM calls are served from
 `recording.json`. Delete the outputs and re-run; they come back.
 
@@ -151,6 +153,15 @@ Five of seven first drafts leaked engineering jargon (`SP1`–`SP4` spawn IDs) o
 place ("Core Top") — caught, refined, landed. And the first live run caught a bug in the
 **Evaluator itself**: it flagged "the Core's" — the possessive of a canon landmark — as an
 invented noun. Fixed, pinned in the self-test, re-recorded.
+
+### #8 — Narrative Engine (optional) · [`08-narrative-engine/`](08-narrative-engine/)
+
+A virtual Dungeon Master whose **only memory is a JSON facts ledger** — the narrator never
+sees the transcript, so eight consistent turns prove the ledger works. Deterministic guards
+apply or bounce every state change; a **twin session** (loyal / betrayal) sends the identical
+input at turn 6 and gets different dialogue, driven only by ledger state. Standalone by the
+assignment's own definition. `./verify.sh` checks every rubric criterion; the README's
+surprise moment is real: the extractor out-judged the author's own verification.
 
 ---
 

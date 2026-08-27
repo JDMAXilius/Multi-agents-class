@@ -1,0 +1,968 @@
+{
+ "session": "betrayal",
+ "turns": [
+  {
+   "turn": 1,
+   "action": "I search the gatekeeper's desk in the gatehouse for the vault key.",
+   "deltas": [
+    {
+     "op": "add",
+     "path": "player.inventory",
+     "value": "vault_key"
+    }
+   ],
+   "narration": "You wrench open the desk's swollen drawer and there it is, half-buried under mouse-chewed ledgers: a heavy iron key, cold to the touch. Sera leans over your shoulder, lantern light catching the vault sigil stamped into its head. 'That's it,' she says, already counting under her breath. 'One key, one climb, one Ember home before the snow. Don't lose it on the stair.'",
+   "facts_used": [
+    "player.inventory",
+    "npcs.sera.trust",
+    "npcs.sera.location"
+   ],
+   "ledger_after": {
+    "turn": 1,
+    "player": {
+     "location": "gatehouse",
+     "inventory": [
+      "lantern",
+      "vault_key"
+     ],
+     "wounds": [],
+     "oil_remaining": 7
+    },
+    "npcs": {
+     "sera": {
+      "status": "alive",
+      "location": "gatehouse",
+      "trust": "loyal",
+      "knows": [
+       "the village needs the ember"
+      ]
+     },
+     "moss": {
+      "status": "alive",
+      "location": "stair_of_hooks",
+      "trust": "wary",
+      "knows": [
+       "travellers must pass the stair"
+      ]
+     }
+    },
+    "flags": {
+     "vault_opened": false,
+     "ember_taken": false,
+     "deal_with_moss": false
+    },
+    "promises": []
+   }
+  },
+  {
+   "turn": 2,
+   "action": "I tell Sera: 'I promise you \u2014 the Ember goes home to Harrow's Rest.' Then we take the stair down.",
+   "deltas": [
+    {
+     "op": "add",
+     "path": "promises",
+     "value": {
+      "to": "sera",
+      "text": "the Ember goes home to Harrow's Rest"
+     }
+    },
+    {
+     "op": "set",
+     "path": "player.location",
+     "value": "stair_of_hooks"
+    },
+    {
+     "op": "set",
+     "path": "npcs.sera.location",
+     "value": "stair_of_hooks"
+    }
+   ],
+   "narration": "'The Ember goes home to Harrow's Rest,' you say, and Sera nods once, sharp, like she's nailing it to the air between you. 'One promise, heard,' she says, and starts down the stair ahead of you, lantern light swinging over hook-scarred stone. You're three steps down when a voice unfolds from the shadows below \u2014 unhurried, amused. 'Travellers,' Moss says, stepping into the light with his hands open and empty. 'I don't suppose you'd sell before you've even opened the door.'",
+   "facts_used": [
+    "player.location",
+    "npcs.sera.trust",
+    "promises",
+    "npcs.moss.location",
+    "npcs.moss.knows"
+   ],
+   "ledger_after": {
+    "turn": 2,
+    "player": {
+     "location": "stair_of_hooks",
+     "inventory": [
+      "lantern",
+      "vault_key"
+     ],
+     "wounds": [],
+     "oil_remaining": 6
+    },
+    "npcs": {
+     "sera": {
+      "status": "alive",
+      "location": "stair_of_hooks",
+      "trust": "loyal",
+      "knows": [
+       "the village needs the ember"
+      ]
+     },
+     "moss": {
+      "status": "alive",
+      "location": "stair_of_hooks",
+      "trust": "wary",
+      "knows": [
+       "travellers must pass the stair"
+      ]
+     }
+    },
+    "flags": {
+     "vault_opened": false,
+     "ember_taken": false,
+     "deal_with_moss": false
+    },
+    "promises": [
+     {
+      "to": "sera",
+      "text": "the Ember goes home to Harrow's Rest",
+      "kept": null
+     }
+    ]
+   }
+  },
+  {
+   "turn": 3,
+   "action": "I hear Moss out \u2014 what exactly is he offering for the Ember?",
+   "deltas": [],
+   "narration": "Moss spreads his hands wider, a showman's gesture. 'Silver \u2014 good weight of it, enough to see Harrow's Rest through more than one winter, if that's what you're carrying home. I don't ask how you open that door, and I don't touch it myself. I ask after, on your way back down, when it's warm in your hands.' He glances at Sera, then back to you, patient as stone. 'That's the whole of the offer. No tricks folded into it.'",
+   "facts_used": [
+    "npcs.moss.trust",
+    "npcs.sera.trust",
+    "flags.vault_opened",
+    "promises"
+   ],
+   "ledger_after": {
+    "turn": 3,
+    "player": {
+     "location": "stair_of_hooks",
+     "inventory": [
+      "lantern",
+      "vault_key"
+     ],
+     "wounds": [],
+     "oil_remaining": 5
+    },
+    "npcs": {
+     "sera": {
+      "status": "alive",
+      "location": "stair_of_hooks",
+      "trust": "loyal",
+      "knows": [
+       "the village needs the ember"
+      ]
+     },
+     "moss": {
+      "status": "alive",
+      "location": "stair_of_hooks",
+      "trust": "wary",
+      "knows": [
+       "travellers must pass the stair"
+      ]
+     }
+    },
+    "flags": {
+     "vault_opened": false,
+     "ember_taken": false,
+     "deal_with_moss": false
+    },
+    "promises": [
+     {
+      "to": "sera",
+      "text": "the Ember goes home to Harrow's Rest",
+      "kept": null
+     }
+    ]
+   }
+  },
+  {
+   "turn": 4,
+   "action": "I shake Moss's hand in front of Sera and promise him the Ember for his silver. Then we go down to the vault floor.",
+   "deltas": [
+    {
+     "op": "set",
+     "path": "flags.deal_with_moss",
+     "value": true
+    },
+    {
+     "op": "set",
+     "path": "npcs.moss.trust",
+     "value": "loyal"
+    },
+    {
+     "op": "set",
+     "path": "npcs.sera.trust",
+     "value": "wary"
+    },
+    {
+     "op": "add",
+     "path": "npcs.sera.knows",
+     "value": "the player promised the Ember to Moss"
+    },
+    {
+     "op": "add",
+     "path": "promises",
+     "value": {
+      "to": "moss",
+      "text": "the Ember for his silver",
+      "kept": null
+     }
+    },
+    {
+     "op": "set",
+     "path": "player.location",
+     "value": "vault_floor"
+    },
+    {
+     "op": "set",
+     "path": "npcs.sera.location",
+     "value": "vault_floor"
+    }
+   ],
+   "narration": "The stair narrows into the vault floor, cold air pressing close, and the great door stands before you scarred with old locks \u2014 unopened still, waiting on the key in your fist. Sera doesn't look at you as she says it: 'Moss's silver. You shook on it right in front of me.' She counts it off like she counts oil, flat and sure. 'That's one promise to me, one to him, and only one Ember between them. I'll be watching which hand you open first.' She sets her lantern down and waits, arms crossed, eyes on the door.",
+   "facts_used": [
+    "player.location",
+    "player.inventory",
+    "flags.vault_opened",
+    "npcs.sera.trust",
+    "npcs.sera.knows",
+    "promises"
+   ],
+   "ledger_after": {
+    "turn": 4,
+    "player": {
+     "location": "vault_floor",
+     "inventory": [
+      "lantern",
+      "vault_key"
+     ],
+     "wounds": [],
+     "oil_remaining": 4
+    },
+    "npcs": {
+     "sera": {
+      "status": "alive",
+      "location": "vault_floor",
+      "trust": "wary",
+      "knows": [
+       "the village needs the ember",
+       "the player promised the Ember to Moss"
+      ]
+     },
+     "moss": {
+      "status": "alive",
+      "location": "stair_of_hooks",
+      "trust": "loyal",
+      "knows": [
+       "travellers must pass the stair"
+      ]
+     }
+    },
+    "flags": {
+     "vault_opened": false,
+     "ember_taken": false,
+     "deal_with_moss": true
+    },
+    "promises": [
+     {
+      "to": "sera",
+      "text": "the Ember goes home to Harrow's Rest",
+      "kept": null
+     },
+     {
+      "to": "moss",
+      "text": "the Ember for his silver",
+      "kept": null
+     }
+    ]
+   }
+  },
+  {
+   "turn": 5,
+   "action": "I unlock the vault with the key and take the Ember.",
+   "deltas": [
+    {
+     "op": "set",
+     "path": "flags.vault_opened",
+     "value": true
+    },
+    {
+     "op": "set",
+     "path": "flags.ember_taken",
+     "value": true
+    },
+    {
+     "op": "add",
+     "path": "player.inventory",
+     "value": "ember"
+    }
+   ],
+   "narration": "The key grinds home and the great door shudders open, breathing out air that's been cold since before Harrow's Rest had a name. Inside, the Ember sits on its plinth, pulsing like a coal that never dies, and when you close your hand around it the whole vault fills with amber light. Sera's arms stay crossed, but her eyes go to the stone, then to the stair behind her. 'There it is, then,' she says, low. 'Now we find out which promise you meant.'",
+   "facts_used": [
+    "flags.vault_opened",
+    "flags.ember_taken",
+    "npcs.sera.trust",
+    "promises"
+   ],
+   "ledger_after": {
+    "turn": 5,
+    "player": {
+     "location": "vault_floor",
+     "inventory": [
+      "lantern",
+      "vault_key",
+      "ember"
+     ],
+     "wounds": [],
+     "oil_remaining": 3
+    },
+    "npcs": {
+     "sera": {
+      "status": "alive",
+      "location": "vault_floor",
+      "trust": "wary",
+      "knows": [
+       "the village needs the ember",
+       "the player promised the Ember to Moss"
+      ]
+     },
+     "moss": {
+      "status": "alive",
+      "location": "stair_of_hooks",
+      "trust": "loyal",
+      "knows": [
+       "travellers must pass the stair"
+      ]
+     }
+    },
+    "flags": {
+     "vault_opened": true,
+     "ember_taken": true,
+     "deal_with_moss": true
+    },
+    "promises": [
+     {
+      "to": "sera",
+      "text": "the Ember goes home to Harrow's Rest",
+      "kept": null
+     },
+     {
+      "to": "moss",
+      "text": "the Ember for his silver",
+      "kept": null
+     }
+    ]
+   }
+  },
+  {
+   "turn": 6,
+   "action": "I hold out the Ember to Sera and ask her to carry it home for the village.",
+   "deltas": [
+    {
+     "op": "add",
+     "path": "npcs.sera.knows",
+     "value": "the player offered to give her the Ember to carry home"
+    }
+   ],
+   "narration": "You hold the Ember out, and its light steadies in your palm. Sera's arms uncross; she takes it with both hands like it might still refuse her. 'That's the promise kept, then,' she says, testing the weight of it against the one still owed. 'Moss is on the stair, and he'll be wanting his silver \u2014 mind you remember which promise you're keeping when we reach him.' She tucks the stone inside her coat, the glow dimming to a seam of amber light, and starts for the way down.",
+   "facts_used": [
+    "flags.ember_taken",
+    "npcs.sera.trust",
+    "promises",
+    "npcs.moss.location"
+   ],
+   "ledger_after": {
+    "turn": 6,
+    "player": {
+     "location": "vault_floor",
+     "inventory": [
+      "lantern",
+      "vault_key",
+      "ember"
+     ],
+     "wounds": [],
+     "oil_remaining": 2
+    },
+    "npcs": {
+     "sera": {
+      "status": "alive",
+      "location": "vault_floor",
+      "trust": "wary",
+      "knows": [
+       "the village needs the ember",
+       "the player promised the Ember to Moss",
+       "the player offered to give her the Ember to carry home"
+      ]
+     },
+     "moss": {
+      "status": "alive",
+      "location": "stair_of_hooks",
+      "trust": "loyal",
+      "knows": [
+       "travellers must pass the stair"
+      ]
+     }
+    },
+    "flags": {
+     "vault_opened": true,
+     "ember_taken": true,
+     "deal_with_moss": true
+    },
+    "promises": [
+     {
+      "to": "sera",
+      "text": "the Ember goes home to Harrow's Rest",
+      "kept": null
+     },
+     {
+      "to": "moss",
+      "text": "the Ember for his silver",
+      "kept": null
+     }
+    ]
+   }
+  },
+  {
+   "turn": 7,
+   "action": "I check my pack and my lantern \u2014 what exactly am I carrying, and how much oil is left?",
+   "deltas": [],
+   "narration": "You pat down your gear on the move: the lantern still swings from your hand, its flame low and steady, one measure of oil left in the reservoir \u2014 enough for the stair, maybe not much past it. The vault_key rides heavy in your pocket, its work done. 'One flask left,' Sera confirms, glancing sideways at the lantern's dimming glow. 'So we don't dawdle on the stair \u2014 whatever Moss wants from you.'",
+   "facts_used": [
+    "player.inventory",
+    "player.oil_remaining",
+    "npcs.sera.trust",
+    "npcs.moss.location"
+   ],
+   "ledger_after": {
+    "turn": 7,
+    "player": {
+     "location": "vault_floor",
+     "inventory": [
+      "lantern",
+      "vault_key",
+      "ember"
+     ],
+     "wounds": [],
+     "oil_remaining": 1
+    },
+    "npcs": {
+     "sera": {
+      "status": "alive",
+      "location": "vault_floor",
+      "trust": "wary",
+      "knows": [
+       "the village needs the ember",
+       "the player promised the Ember to Moss",
+       "the player offered to give her the Ember to carry home"
+      ]
+     },
+     "moss": {
+      "status": "alive",
+      "location": "stair_of_hooks",
+      "trust": "loyal",
+      "knows": [
+       "travellers must pass the stair"
+      ]
+     }
+    },
+    "flags": {
+     "vault_opened": true,
+     "ember_taken": true,
+     "deal_with_moss": true
+    },
+    "promises": [
+     {
+      "to": "sera",
+      "text": "the Ember goes home to Harrow's Rest",
+      "kept": null
+     },
+     {
+      "to": "moss",
+      "text": "the Ember for his silver",
+      "kept": null
+     }
+    ]
+   }
+  },
+  {
+   "turn": 8,
+   "action": "I climb back up toward the gatehouse and settle what I owe.",
+   "deltas": [
+    {
+     "op": "set",
+     "path": "player.location",
+     "value": "stair_of_hooks"
+    }
+   ],
+   "narration": "Two steps up the hooks and the lantern gutters to nothing \u2014 the last of the oil spent, the flame folding into a thin red thread and then dark. You don't need light to find Moss, though; he's already there, exactly where the stair narrows, silver pouch weighing his palm like he's been waiting since you passed the first time. 'There you are,' he says, easy as ever, no edge in it. 'You said the Ember for my silver. I've kept my word on my end \u2014 every coin's here. So.' He doesn't reach for it. He just holds his hand out, patient, and waits for you to be the one who decides what a promise is worth.",
+   "facts_used": [
+    "player.location",
+    "player.oil_remaining",
+    "npcs.moss.location",
+    "npcs.moss.trust",
+    "promises"
+   ],
+   "ledger_after": {
+    "turn": 8,
+    "player": {
+     "location": "stair_of_hooks",
+     "inventory": [
+      "lantern",
+      "vault_key",
+      "ember"
+     ],
+     "wounds": [],
+     "oil_remaining": 0
+    },
+    "npcs": {
+     "sera": {
+      "status": "alive",
+      "location": "vault_floor",
+      "trust": "wary",
+      "knows": [
+       "the village needs the ember",
+       "the player promised the Ember to Moss",
+       "the player offered to give her the Ember to carry home"
+      ]
+     },
+     "moss": {
+      "status": "alive",
+      "location": "stair_of_hooks",
+      "trust": "loyal",
+      "knows": [
+       "travellers must pass the stair"
+      ]
+     }
+    },
+    "flags": {
+     "vault_opened": true,
+     "ember_taken": true,
+     "deal_with_moss": true
+    },
+    "promises": [
+     {
+      "to": "sera",
+      "text": "the Ember goes home to Harrow's Rest",
+      "kept": null
+     },
+     {
+      "to": "moss",
+      "text": "the Ember for his silver",
+      "kept": null
+     }
+    ]
+   }
+  }
+ ],
+ "ledger_history": [
+  {
+   "turn": 0,
+   "player": {
+    "location": "gatehouse",
+    "inventory": [
+     "lantern"
+    ],
+    "wounds": [],
+    "oil_remaining": 8
+   },
+   "npcs": {
+    "sera": {
+     "status": "alive",
+     "location": "gatehouse",
+     "trust": "loyal",
+     "knows": [
+      "the village needs the ember"
+     ]
+    },
+    "moss": {
+     "status": "alive",
+     "location": "stair_of_hooks",
+     "trust": "wary",
+     "knows": [
+      "travellers must pass the stair"
+     ]
+    }
+   },
+   "flags": {
+    "vault_opened": false,
+    "ember_taken": false,
+    "deal_with_moss": false
+   },
+   "promises": []
+  },
+  {
+   "turn": 1,
+   "player": {
+    "location": "gatehouse",
+    "inventory": [
+     "lantern",
+     "vault_key"
+    ],
+    "wounds": [],
+    "oil_remaining": 7
+   },
+   "npcs": {
+    "sera": {
+     "status": "alive",
+     "location": "gatehouse",
+     "trust": "loyal",
+     "knows": [
+      "the village needs the ember"
+     ]
+    },
+    "moss": {
+     "status": "alive",
+     "location": "stair_of_hooks",
+     "trust": "wary",
+     "knows": [
+      "travellers must pass the stair"
+     ]
+    }
+   },
+   "flags": {
+    "vault_opened": false,
+    "ember_taken": false,
+    "deal_with_moss": false
+   },
+   "promises": []
+  },
+  {
+   "turn": 2,
+   "player": {
+    "location": "stair_of_hooks",
+    "inventory": [
+     "lantern",
+     "vault_key"
+    ],
+    "wounds": [],
+    "oil_remaining": 6
+   },
+   "npcs": {
+    "sera": {
+     "status": "alive",
+     "location": "stair_of_hooks",
+     "trust": "loyal",
+     "knows": [
+      "the village needs the ember"
+     ]
+    },
+    "moss": {
+     "status": "alive",
+     "location": "stair_of_hooks",
+     "trust": "wary",
+     "knows": [
+      "travellers must pass the stair"
+     ]
+    }
+   },
+   "flags": {
+    "vault_opened": false,
+    "ember_taken": false,
+    "deal_with_moss": false
+   },
+   "promises": [
+    {
+     "to": "sera",
+     "text": "the Ember goes home to Harrow's Rest",
+     "kept": null
+    }
+   ]
+  },
+  {
+   "turn": 3,
+   "player": {
+    "location": "stair_of_hooks",
+    "inventory": [
+     "lantern",
+     "vault_key"
+    ],
+    "wounds": [],
+    "oil_remaining": 5
+   },
+   "npcs": {
+    "sera": {
+     "status": "alive",
+     "location": "stair_of_hooks",
+     "trust": "loyal",
+     "knows": [
+      "the village needs the ember"
+     ]
+    },
+    "moss": {
+     "status": "alive",
+     "location": "stair_of_hooks",
+     "trust": "wary",
+     "knows": [
+      "travellers must pass the stair"
+     ]
+    }
+   },
+   "flags": {
+    "vault_opened": false,
+    "ember_taken": false,
+    "deal_with_moss": false
+   },
+   "promises": [
+    {
+     "to": "sera",
+     "text": "the Ember goes home to Harrow's Rest",
+     "kept": null
+    }
+   ]
+  },
+  {
+   "turn": 4,
+   "player": {
+    "location": "vault_floor",
+    "inventory": [
+     "lantern",
+     "vault_key"
+    ],
+    "wounds": [],
+    "oil_remaining": 4
+   },
+   "npcs": {
+    "sera": {
+     "status": "alive",
+     "location": "vault_floor",
+     "trust": "wary",
+     "knows": [
+      "the village needs the ember",
+      "the player promised the Ember to Moss"
+     ]
+    },
+    "moss": {
+     "status": "alive",
+     "location": "stair_of_hooks",
+     "trust": "loyal",
+     "knows": [
+      "travellers must pass the stair"
+     ]
+    }
+   },
+   "flags": {
+    "vault_opened": false,
+    "ember_taken": false,
+    "deal_with_moss": true
+   },
+   "promises": [
+    {
+     "to": "sera",
+     "text": "the Ember goes home to Harrow's Rest",
+     "kept": null
+    },
+    {
+     "to": "moss",
+     "text": "the Ember for his silver",
+     "kept": null
+    }
+   ]
+  },
+  {
+   "turn": 5,
+   "player": {
+    "location": "vault_floor",
+    "inventory": [
+     "lantern",
+     "vault_key",
+     "ember"
+    ],
+    "wounds": [],
+    "oil_remaining": 3
+   },
+   "npcs": {
+    "sera": {
+     "status": "alive",
+     "location": "vault_floor",
+     "trust": "wary",
+     "knows": [
+      "the village needs the ember",
+      "the player promised the Ember to Moss"
+     ]
+    },
+    "moss": {
+     "status": "alive",
+     "location": "stair_of_hooks",
+     "trust": "loyal",
+     "knows": [
+      "travellers must pass the stair"
+     ]
+    }
+   },
+   "flags": {
+    "vault_opened": true,
+    "ember_taken": true,
+    "deal_with_moss": true
+   },
+   "promises": [
+    {
+     "to": "sera",
+     "text": "the Ember goes home to Harrow's Rest",
+     "kept": null
+    },
+    {
+     "to": "moss",
+     "text": "the Ember for his silver",
+     "kept": null
+    }
+   ]
+  },
+  {
+   "turn": 6,
+   "player": {
+    "location": "vault_floor",
+    "inventory": [
+     "lantern",
+     "vault_key",
+     "ember"
+    ],
+    "wounds": [],
+    "oil_remaining": 2
+   },
+   "npcs": {
+    "sera": {
+     "status": "alive",
+     "location": "vault_floor",
+     "trust": "wary",
+     "knows": [
+      "the village needs the ember",
+      "the player promised the Ember to Moss",
+      "the player offered to give her the Ember to carry home"
+     ]
+    },
+    "moss": {
+     "status": "alive",
+     "location": "stair_of_hooks",
+     "trust": "loyal",
+     "knows": [
+      "travellers must pass the stair"
+     ]
+    }
+   },
+   "flags": {
+    "vault_opened": true,
+    "ember_taken": true,
+    "deal_with_moss": true
+   },
+   "promises": [
+    {
+     "to": "sera",
+     "text": "the Ember goes home to Harrow's Rest",
+     "kept": null
+    },
+    {
+     "to": "moss",
+     "text": "the Ember for his silver",
+     "kept": null
+    }
+   ]
+  },
+  {
+   "turn": 7,
+   "player": {
+    "location": "vault_floor",
+    "inventory": [
+     "lantern",
+     "vault_key",
+     "ember"
+    ],
+    "wounds": [],
+    "oil_remaining": 1
+   },
+   "npcs": {
+    "sera": {
+     "status": "alive",
+     "location": "vault_floor",
+     "trust": "wary",
+     "knows": [
+      "the village needs the ember",
+      "the player promised the Ember to Moss",
+      "the player offered to give her the Ember to carry home"
+     ]
+    },
+    "moss": {
+     "status": "alive",
+     "location": "stair_of_hooks",
+     "trust": "loyal",
+     "knows": [
+      "travellers must pass the stair"
+     ]
+    }
+   },
+   "flags": {
+    "vault_opened": true,
+    "ember_taken": true,
+    "deal_with_moss": true
+   },
+   "promises": [
+    {
+     "to": "sera",
+     "text": "the Ember goes home to Harrow's Rest",
+     "kept": null
+    },
+    {
+     "to": "moss",
+     "text": "the Ember for his silver",
+     "kept": null
+    }
+   ]
+  },
+  {
+   "turn": 8,
+   "player": {
+    "location": "stair_of_hooks",
+    "inventory": [
+     "lantern",
+     "vault_key",
+     "ember"
+    ],
+    "wounds": [],
+    "oil_remaining": 0
+   },
+   "npcs": {
+    "sera": {
+     "status": "alive",
+     "location": "vault_floor",
+     "trust": "wary",
+     "knows": [
+      "the village needs the ember",
+      "the player promised the Ember to Moss",
+      "the player offered to give her the Ember to carry home"
+     ]
+    },
+    "moss": {
+     "status": "alive",
+     "location": "stair_of_hooks",
+     "trust": "loyal",
+     "knows": [
+      "travellers must pass the stair"
+     ]
+    }
+   },
+   "flags": {
+    "vault_opened": true,
+    "ember_taken": true,
+    "deal_with_moss": true
+   },
+   "promises": [
+    {
+     "to": "sera",
+     "text": "the Ember goes home to Harrow's Rest",
+     "kept": null
+    },
+    {
+     "to": "moss",
+     "text": "the Ember for his silver",
+     "kept": null
+    }
+   ]
+  }
+ ]
+}
