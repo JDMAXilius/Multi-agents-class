@@ -124,8 +124,8 @@ table ships in the build and plays with no connectivity.
 |---|---|
 | [`PRE-BUILD-DECLARATION.txt`](06-ger-pipeline/PRE-BUILD-DECLARATION.txt) | the three answers, written before any code |
 | [`README.md`](06-ger-pipeline/README.md) | the write-up — what the pipeline caught that I would have missed |
-| `output/run_report.json` | every attempt, every violation, both escalations with their history |
-| `output/DT_SpotterLines_TeamEvents.csv` | the 13 accepted lines |
+| `output/run_report.json` | every attempt, every violation, the escalation with its history |
+| `output/DT_SpotterLines_TeamEvents.csv` | the 19 accepted lines |
 | `python3 ger.py --rules` | the five rules and their GDD citations, no model call |
 
 The circuit breaker did not fire on a failure — it fired on a **cycle**: the refiner returned
