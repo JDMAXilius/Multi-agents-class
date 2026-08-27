@@ -54,8 +54,24 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
 GAME = REPO / "breachpoint"
-GDD = GAME / "BREACHPOINT-GDD-VERTICAL-SLICE.md"
-SHIPPED = GAME / "Content" / "Data" / "DT_SpotterLines.csv"
+
+
+def _game_file(repo_rel: Path, mirror_name: str) -> Path:
+    """The live game file, or the copy a zip carries.
+
+    The pipeline reads two things from BREACHPOINT: the GDD it enforces a rule
+    from, and the shipped line table it takes the house voice from. Both live in
+    the game tree, which a submitted zip does not have — so `make_submission.sh`
+    mirrors them into `game/` and this falls back to them. The rule is still the
+    real GDD's rule either way.
+    """
+    return repo_rel if repo_rel.exists() else HERE / "game" / mirror_name
+
+
+GDD = _game_file(GAME / "BREACHPOINT-GDD-VERTICAL-SLICE.md",
+                 "BREACHPOINT-GDD-VERTICAL-SLICE.md")
+SHIPPED = _game_file(GAME / "Content" / "Data" / "DT_SpotterLines.csv",
+                     "DT_SpotterLines.csv")
 OUT = HERE / "output"
 RECORDING = HERE / "recording.json"
 MODEL = "claude-sonnet-5"

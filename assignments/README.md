@@ -5,7 +5,7 @@
 Gameplay Ability System, Steam listen server).
 
 Every assignment targets the same capstone. Nothing here uses placeholder lore or a toy
-project: assignments #3, #4 and #5 all read BREACHPOINT's real design documents and its real
+project: assignments #3 through #6 all read BREACHPOINT's real design documents and its real
 source, and the artifacts they produce are the game's own data and code.
 
 **Repo:** `https://github.com/JDMAXilius/Multi-agents-class`
@@ -22,24 +22,26 @@ source, and the artifacts they produce are the game's own data and code.
 | 3 | Build an Agent Crew | [`03-agent-crew/`](03-agent-crew/) | [`README.md`](03-agent-crew/README.md) → `run_crew.py` |
 | 4 | Dynamic Content Pipeline | [`04-content-pipeline/`](04-content-pipeline/) | [`README.md`](04-content-pipeline/README.md) → `run_pipeline.py` |
 | 5 | Goal-Oriented Coding Agent | [`05-goal-oriented-agent/`](05-goal-oriented-agent/) | [`README.md`](05-goal-oriented-agent/README.md) → `agent.py` |
+| 6 | GER Pipeline | [`06-ger-pipeline/`](06-ger-pipeline/) | [`README.md`](06-ger-pipeline/README.md) → `ger.py` |
 
 **Read the folder's own `README.md` first** — each one is the graded write-up for that
 assignment. This file is only the map.
 
 ---
 
-## Running the three that are code
+## Running the four that are code
 
-All three are **Python 3, standard library only**. No `pip install`, no API key, no network.
+All four are **Python 3, standard library only**. No `pip install`, no API key, no network.
 Each ships a recorded run so the pipeline executes end-to-end on any machine:
 
 ```bash
 cd assignments/03-agent-crew     && python3 run_crew.py
 cd assignments/04-content-pipeline && python3 run_pipeline.py
 cd assignments/05-goal-oriented-agent && python3 agent.py
+cd assignments/06-ger-pipeline       && python3 ger.py
 ```
 
-**Replay is not a printout.** In all three, everything except the model responses executes for
+**Replay is not a printout.** In all four, everything except the model responses executes for
 real — retrieval, validation gates, scoring, file writing. Only the LLM calls are served from
 `recording.json`. Delete the outputs and re-run; they come back.
 
@@ -110,6 +112,24 @@ plainly what it does *not* prove.
    16.0     12.0     0.0    0.0     4.0  1 three-level arena map
 ```
 
+### #6 — GER Pipeline · [`06-ger-pipeline/`](06-ger-pipeline/)
+
+Generator → Evaluator → Refiner with a Circuit Breaker, writing announcer lines for team
+events and enforcing one rule from GDD §3.3: a canned line must **stand alone**, because the
+table ships in the build and plays with no connectivity.
+
+| Look at | For |
+|---|---|
+| [`PRE-BUILD-DECLARATION.txt`](06-ger-pipeline/PRE-BUILD-DECLARATION.txt) | the three answers, written before any code |
+| [`README.md`](06-ger-pipeline/README.md) | the write-up — what the pipeline caught that I would have missed |
+| `output/run_report.json` | every attempt, every violation, both escalations with their history |
+| `output/DT_SpotterLines_TeamEvents.csv` | the 13 accepted lines |
+| `python3 ger.py --rules` | the five rules and their GDD citations, no model call |
+
+The circuit breaker did not fire on a failure — it fired on a **cycle**: the refiner returned
+attempt 1's line as attempt 3, because the concept of being the last survivor invites the word
+"one" and the rule forbids counts.
+
 ---
 
 ## One structural difference worth knowing
@@ -147,14 +167,16 @@ Link straight to the assignment folder, not the repo root:
 https://github.com/JDMAXilius/Multi-agents-class/tree/main/assignments/05-goal-oriented-agent
 ```
 
-**If the form demands a file upload**, #3 and #4 build self-testing zips:
+**If the form demands a file upload**, all four code assignments build self-testing zips:
 
 ```bash
-cd assignments/03-agent-crew      && ./make_submission.sh
-cd assignments/04-content-pipeline && ./make_submission.sh
+cd assignments/03-agent-crew          && ./make_submission.sh
+cd assignments/04-content-pipeline    && ./make_submission.sh
+cd assignments/05-goal-oriented-agent && ./make_submission.sh
+cd assignments/06-ger-pipeline        && ./make_submission.sh
 ```
 
-Do not hand-zip either folder. Both scripts bundle things the code needs at runtime (agent
+Do not hand-zip any of them. Both scripts bundle things the code needs at runtime (agent
 definitions, the knowledge-base mirror) and **refuse to build a package that fails its own
 replay**. A hand-zip omits them and the code exits immediately, which is the whole submission.
 
@@ -175,7 +197,8 @@ Per-assignment submission checklists, where they exist:
 | 2 | ✅ | ✅ | |
 | 3 | ✅ | ✅ | landed a day past the deadline, with a note |
 | 4 | ✅ | ✅ | |
-| 5 | ✅ | **not yet** | due 13 Aug; built and pushed 17 Aug — **needs a short late note on submission** |
+| 5 | ✅ | **not yet** | due 13 Aug — **needs a short late note on submission** |
+| 6 | ✅ | **not yet** | due 18 Aug — **needs a short late note on submission** |
 
 **Honesty note that applies to all of these:** none of the generated C++ or CSV has been
 compiled or imported into a running build of the game. The container these ran in has no
