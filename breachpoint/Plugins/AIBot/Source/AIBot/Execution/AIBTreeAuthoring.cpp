@@ -382,6 +382,36 @@ FString UAIBTreeAuthoring::AuditBotAssets()
 					{
 						Report.Add(FString::Printf(TEXT("    +- %s (%d enter conditions, %d tasks, %d transitions)"),
 							*Child->Name.ToString(), Child->EnterConditions.Num(), Child->Tasks.Num(), Child->Transitions.Num()));
+
+						// THE TASK NAMES AND THE NUMBERS THAT ARBITRATE THEM. A task COUNT is not
+						// proof the branch behaves: Retreat read "5 tasks" while its defend band
+						// could still have been a default 0, which would leave the flee mover
+						// running forever and look exactly like no change at all. This codebase
+						// has already been bitten once by an authored tree serialising a stale
+						// instance value (see FAIBStrafeTaskInstanceData::FightRangeUU's rename
+						// comment), so the read-back prints the values rather than trusting them.
+						for (const FStateTreeEditorNode& TaskNode : Child->Tasks)
+						{
+							const UScriptStruct* NodeType = TaskNode.Node.GetScriptStruct();
+							FString Line = FString::Printf(TEXT("       . %s"),
+								NodeType ? *NodeType->GetName() : TEXT("<empty>"));
+
+							if (const FAIBStrafeTaskInstanceData* Strafe = TaskNode.Instance.GetPtr<FAIBStrafeTaskInstanceData>())
+							{
+								Line += FString::Printf(TEXT("  MinRangeUU=%.0f FightRangeUU=%.0f"),
+									Strafe->MinRangeUU, Strafe->FightRangeUU);
+							}
+							else if (const FAIBFleeFromBeliefTaskInstanceData* Flee = TaskNode.Instance.GetPtr<FAIBFleeFromBeliefTaskInstanceData>())
+							{
+								Line += FString::Printf(TEXT("  DefendRangeUU=%.0f"), Flee->DefendRangeUU);
+							}
+							else if (const FAIBFaceBeliefTaskInstanceData* Face = TaskNode.Instance.GetPtr<FAIBFaceBeliefTaskInstanceData>())
+							{
+								Line += FString::Printf(TEXT("  bRequireTarget=%s"),
+									Face->bRequireTarget ? TEXT("true") : TEXT("false"));
+							}
+							Report.Add(Line);
+						}
 					}
 				}
 			}
