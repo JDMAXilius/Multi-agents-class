@@ -243,3 +243,71 @@ TeamId; `GetAuthGameMode` is read only behind `BNDamage`'s authority refusal; an
 - The two REJECTED verifier passes stand rejected — the re-run protocol is the
   terminal's own (acquisition lines as the instrument, `LogBN Verbose` on so the FF
   refusal line CAN appear; the harness's `ff_refused` counter is already waiting).
+
+### 2026-08-28 — terminal: B1 and B2 COMPILED, and B1 is now spec-pinned
+
+The cloud lead's B1/B2 text was on disk (WRITTEN, NOT COMPILED). This pass compiled it,
+corrected the shape of B1, and turned its ORDER into a spec — because the order is the
+whole defect and a one-human PIE can never reach the pop path that exposes it.
+
+- **B1 — the fix stands, restructured so it can be REFUTED headlessly.** The two balance
+  decisions are now pure statics on `ABNGameMode` and the counting is one function:
+  `CountTeamPopulations` (PlayerArray → per-team counts, NoTeam counts for nobody) feeds
+  `LowestPopulationTeam` (assignment, tie → lower id) and `PickYieldingBotIndex` (yield:
+  newest bot on the most-populated team, tie → lower id, `INDEX_NONE` when that side has
+  no bot and the caller keeps the plain tail pop). The lead's version had **inlined a
+  second copy of the counting loop** inside `EnsureBotFill` — two counters that could
+  drift apart on the one invariant that must never disagree, "who is crowded". Net −13
+  lines in the mode.
+- **The order, verified rather than asserted.** `AssignTeamIfNeeded` fires at
+  `GenericPlayerInitialization`; `EnsureBotFill` at `OnPostLogin` — strictly after, so
+  the counts the yield reads ALREADY include the joiner. That is why reading them is
+  sufficient and no "who just joined" bookkeeping is needed. The per-iteration recount in
+  the `BotsNeeded < 0` loop is load-bearing and correct: `DespawnBot`'s
+  `Controller->Destroy()` runs `AController::Destroyed` → `CleanupPlayerState` →
+  `RemovePlayerState` **synchronously**, so iteration N+1 counts a roster already one
+  shorter. Server-only throughout (`HasAuthority` at the top of `EnsureBotFill`, and the
+  assignment's own gate); no new replicated state, no RPC, no Tick.
+- **New spec — `BreachpointNext.Sim.Teams` "uncrowds the side the joiner just crowded"**,
+  driving the mode's OWN two functions in the seam's order: host + 7 alternating bots →
+  4v4 with the tail on Team 1, then humans **2, 3 and 4** each tie to Team 0 ({5,4}) and
+  each yield asserts the popped bot is on Team 0 and the split is back to 4/4. Under the
+  old tail pop this spec is 5v3 at every one of the three humans. A second It pins the
+  `INDEX_NONE` fallback. Teams suite 5 → **7 Its**.
+- **B2 — compiled, and the call shape the lead flagged as unverified is CONFIRMED**
+  against this machine's engine: `UWorld::EncroachingBlockingGeometry(const AActor*,
+  FVector, FRotator, FVector* = NULL)` (`Engine/Classes/Engine/World.h:3942`), and
+  `AGameModeBase::ChoosePlayerStart_Implementation` calls it with exactly this
+  CDO-as-TestActor shape. No edit needed; it builds. **Deliberately NOT copied** from the
+  engine: its middle rung (`FindTeleportSpot` → "occupied but adjustable"). We return a
+  start actor, not an adjusted location, and `SpawnDefaultPawnAtTransform` is
+  `AlwaysSpawn` — the rung would buy nothing over the existing all-blocked fallback to the
+  full pool. Rebodying is sequential, so pawn N is standing there and encroaching when
+  pawn N+1 chooses: the with-replacement draw is what closes.
+
+**Rung 1 (mac terminal, no editor open) — both targets PASS.** `BreachpointServer` is
+unbuildable on this launcher install (no server binaries), so the runner prints PARTIAL;
+that is the machine, not the code.
+
+```
+BreachpointEditor   Result: Succeeded   (touched libUnrealEditor-BreachpointNext.dylib)
+Breachpoint         Result: Succeeded   (touched CodeResources)
+```
+
+**Specs:**
+
+```
+AIBot                            119 started, 0 failures
+BreachpointNext.Sim.Teams        7/7 PASS  (5 + the two new order Its)
+Breachpoint (whole run)          124 started, 4 failures
+```
+
+**On the 4 failures — 3 are the ticket's known pre-existing legacy ones, the 4th is NOT
+mine and NOT legacy.** `BreachpointNext.Sim.Damage.drains health through the door`
+expects 30 damage to take Health 100 → 70; it reads 100. Cause: **BN22 turned shields
+back ON** (`BNGameplayEffects.cpp`, commit `7afc0aff`, 27 Aug — Shield/MaxShield init
+Override 100). 30 damage is now fully absorbed by a 100-point shield pool, so the spec is
+stale, not the code. Its siblings agree: "never drives health below zero" (500 > 200)
+still passes, and the LastDamage Its assert the record, not health. **BN22/BN23's to fix**
+— the diff of this pass touches only `BNGameMode.h/.cpp` and `BNTeamsSpec.cpp`, none of
+which is on the damage path. Not chased here.

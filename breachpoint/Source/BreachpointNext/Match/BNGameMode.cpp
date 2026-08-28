@@ -308,33 +308,70 @@ void ABNGameMode::AssignTeamIfNeeded(AController* C)
 	UE_LOG(LogBN, Log, TEXT("BNGameMode: %s assigned to team %d."), *PS->GetPlayerName(), Team);
 }
 
-uint8 ABNGameMode::GetLowestPopulationTeam() const
+void ABNGameMode::CountTeamPopulations(TArrayView<int32> OutCounts) const
 {
-	// Fewest members wins, ties to the lower id (the OnSight shape, BN-idiomatic). NoTeam
-	// members — the caller is mid-assigning them — count for nobody.
-	int32 Counts[BNTeams::NumTeams] = { 0 };
+	// NoTeam members — the caller is mid-assigning them — count for nobody.
+	for (int32& Count : OutCounts)
+	{
+		Count = 0;
+	}
 	if (const ABNGameState* GS = GetGameState<ABNGameState>())
 	{
 		for (const APlayerState* PS : GS->PlayerArray)
 		{
 			const ABNPlayerState* BNPS = Cast<ABNPlayerState>(PS);
-			const uint8 Id = BNPS ? BNPS->GetGenericTeamId().GetId() : FGenericTeamId::NoTeam.GetId();
-			if (Id < BNTeams::NumTeams)
+			const int32 Id = BNPS ? BNPS->GetGenericTeamId().GetId() : FGenericTeamId::NoTeam.GetId();
+			if (OutCounts.IsValidIndex(Id))
 			{
-				++Counts[Id];
+				++OutCounts[Id];
 			}
 		}
 	}
+}
 
+uint8 ABNGameMode::LowestPopulationTeam(TConstArrayView<int32> TeamCounts)
+{
+	// Fewest members wins, ties to the lower id (the OnSight shape, BN-idiomatic).
 	uint8 Best = 0;
-	for (uint8 Team = 1; Team < BNTeams::NumTeams; ++Team)
+	for (int32 Team = 1; Team < TeamCounts.Num(); ++Team)
 	{
-		if (Counts[Team] < Counts[Best]) // strict <, so a tie keeps the lower id
+		if (TeamCounts[Team] < TeamCounts[Best]) // strict <, so a tie keeps the lower id
 		{
-			Best = Team;
+			Best = static_cast<uint8>(Team);
 		}
 	}
 	return Best;
+}
+
+int32 ABNGameMode::PickYieldingBotIndex(TConstArrayView<int32> TeamCounts, TConstArrayView<uint8> BotTeams)
+{
+	// The MIRROR of the assignment: a joiner takes the emptiest side, so the seat that yields
+	// must come off the fullest one, or every second human is a permanent 5v3.
+	int32 Crowded = 0;
+	for (int32 Team = 1; Team < TeamCounts.Num(); ++Team)
+	{
+		if (TeamCounts[Team] > TeamCounts[Crowded]) // strict >, so a tie keeps the lower id
+		{
+			Crowded = Team;
+		}
+	}
+
+	// Newest first — the tail-pop's own reasoning, which keeps the named veterans and their scores.
+	for (int32 Index = BotTeams.Num() - 1; Index >= 0; --Index)
+	{
+		if (BotTeams[Index] == Crowded)
+		{
+			return Index;
+		}
+	}
+	return INDEX_NONE;
+}
+
+uint8 ABNGameMode::GetLowestPopulationTeam() const
+{
+	int32 Counts[BNTeams::NumTeams];
+	CountTeamPopulations(Counts);
+	return LowestPopulationTeam(Counts);
 }
 
 AActor* ABNGameMode::ChoosePlayerStart_Implementation(AController* Player)
@@ -696,42 +733,28 @@ void ABNGameMode::EnsureBotFill()
 		{
 			// TEAMS (BN15 REFUTER B1): the seat yielded must come from the side the human
 			// just crowded, or every second human makes a deterministic 5v3 — the joiner
-			// ties {4,4} to Team 0 while the tail bot popped here is always Team 1's. Pick
-			// the NEWEST bot on the most-populated team (newest keeps the named veterans,
-			// the tail-pop's own reasoning); FFA and a no-match oddity keep the plain tail.
+			// runs AssignTeamIfNeeded FIRST and ties {4,4} to Team 0, while the tail bot
+			// popped here is always Team 1's. Counts are re-read every iteration because
+			// DespawnBot leaves PlayerArray one shorter. FFA, and a crowded side with no
+			// bot on it, keep the plain tail pop.
 			int32 YieldIndex = SpawnedBots.Num() - 1;
 			if (bTeamsEnabled)
 			{
-				int32 Counts[BNTeams::NumTeams] = { 0 };
-				if (const ABNGameState* GS = GetGameState<ABNGameState>())
+				int32 Counts[BNTeams::NumTeams];
+				CountTeamPopulations(Counts);
+
+				TArray<uint8, TInlineAllocator<8>> BotTeams;
+				BotTeams.Reserve(SpawnedBots.Num());
+				for (const TObjectPtr<AAIController>& Bot : SpawnedBots)
 				{
-					for (const APlayerState* PS : GS->PlayerArray)
-					{
-						const ABNPlayerState* BNPS = Cast<ABNPlayerState>(PS);
-						const uint8 Id = BNPS ? BNPS->GetGenericTeamId().GetId() : FGenericTeamId::NoTeam.GetId();
-						if (Id < BNTeams::NumTeams)
-						{
-							++Counts[Id];
-						}
-					}
-				}
-				uint8 Crowded = 0;
-				for (uint8 Team = 1; Team < BNTeams::NumTeams; ++Team)
-				{
-					if (Counts[Team] > Counts[Crowded]) // strict >, so a tie keeps the lower id
-					{
-						Crowded = Team;
-					}
-				}
-				for (int32 BotIdx = SpawnedBots.Num() - 1; BotIdx >= 0; --BotIdx)
-				{
-					const AAIController* Bot = SpawnedBots[BotIdx];
 					const ABNPlayerState* BotPS = Bot ? Bot->GetPlayerState<ABNPlayerState>() : nullptr;
-					if (BotPS && BotPS->GetGenericTeamId().GetId() == Crowded)
-					{
-						YieldIndex = BotIdx;
-						break;
-					}
+					BotTeams.Add(BotPS ? BotPS->GetGenericTeamId().GetId() : FGenericTeamId::NoTeam.GetId());
+				}
+
+				const int32 Picked = PickYieldingBotIndex(Counts, BotTeams);
+				if (Picked != INDEX_NONE)
+				{
+					YieldIndex = Picked;
 				}
 			}
 			AAIController* Yielding = SpawnedBots[YieldIndex];

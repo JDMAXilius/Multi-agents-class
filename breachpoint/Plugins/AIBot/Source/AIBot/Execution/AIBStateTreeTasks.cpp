@@ -1663,8 +1663,22 @@ EStateTreeRunStatus FAIBMoveToObjectiveTask::Tick(FStateTreeExecutionContext& Co
 		}
 		if (FVector::DistSquared(OldGoal, InstanceData.Goal) > FMath::Square(50.f))
 		{
+			// Re-seed the RATCHET against the new goal — progress toward a post that moved
+			// must be measured from where it moved to.
 			InstanceData.ClosestSoFarUU = FVector::Dist(Pawn->GetActorLocation(), InstanceData.Goal);
-			InstanceData.SecondsWithoutProgress = 0.f;
+
+			// But do NOT reset the stall CLOCK here. It used to, and that silently disabled
+			// the give-up entirely: the goal is a live teammate, the repoll runs every
+			// RepollIntervalSeconds (0.5s), and any teammate who is walking, strafing or
+			// fighting moves more than 50uu in that time — so the clock was zeroed ~16
+			// times before it could ever reach GiveUpAfterNoProgressSeconds (8s).
+			// NoteCurrentAmbitionFailed() below became unreachable, and a bot walled off
+			// from its team stood there for the rest of the match with no F7 line to say
+			// so. Under teams-by-default that is a silent, permanent deadlock.
+			//
+			// The clock is now cleared in exactly one place — the genuine-progress branch
+			// below — so a bot that is actually closing keeps its reprieve and a bot that
+			// is not eventually gives up and lets another want run.
 			if (!IsWithin(*Bot, InstanceData.Goal, InstanceData.GoalReachUU))
 			{
 				MoveToNavPoint(*Bot, InstanceData.Goal, InstanceData.GoalReachUU);

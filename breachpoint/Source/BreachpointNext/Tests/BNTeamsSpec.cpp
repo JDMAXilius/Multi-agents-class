@@ -8,6 +8,7 @@
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
 #include "GenericTeamAgentInterface.h"
+#include "Match/BNGameMode.h"
 #include "Match/BNTeams.h"
 
 /**
@@ -135,6 +136,70 @@ void FBNTeamsSpec::Define()
 		// A plain AActor implements no IGenericTeamAgentInterface — the honest default for a
 		// projectile, a prop, or anything else the combat path might hand this query.
 		TestFalse(TEXT("two interface-less actors"), BNTeams::AreActorsFriendly(A, B));
+	});
+
+	// THE 5v3, PINNED IN ORDER (REFUTER B1). The defect was never in either decision alone —
+	// it was the SEQUENCE: AssignTeamIfNeeded runs at GenericPlayerInitialization, so by the
+	// time OnPostLogin's EnsureBotFill yields a seat the joiner has ALREADY crowded a side.
+	// The old yield popped the SpawnedBots tail, which the alternating fill guarantees is the
+	// other side's. No world, no logins, no second machine — this is the whole bug as a table,
+	// and it is the only instrument that can see it (a one-human PIE never reaches the pop).
+	It("uncrowds the side the joiner just crowded, so a second human never makes it 5v3", [this]()
+	{
+		int32 Counts[BNTeams::NumTeams] = { 0 };
+		TArray<uint8> BotTeams; // SpawnedBots order: oldest first, so Last() is the old tail pop
+
+		auto Arrive = [&Counts](TArray<uint8>* Roster) -> uint8
+		{
+			const uint8 Team = ABNGameMode::LowestPopulationTeam(Counts);
+			++Counts[Team];
+			if (Roster)
+			{
+				Roster->Add(Team);
+			}
+			return Team;
+		};
+
+		// Host joins a {0,0} lobby, the fill alternates 7 bots: 4v4, tail on Team 1.
+		Arrive(nullptr);
+		for (int32 Bot = 0; Bot < 7; ++Bot)
+		{
+			Arrive(&BotTeams);
+		}
+		TestEqual(TEXT("host + 7 bots, Team 0"), Counts[0], 4);
+		TestEqual(TEXT("host + 7 bots, Team 1"), Counts[1], 4);
+		TestEqual(TEXT("the tail bot is Team 1's"), static_cast<int32>(BotTeams.Last()), 1);
+
+		// Humans 2, 3 and 4 — the defect repeated at every one of them.
+		for (int32 Human = 2; Human <= 4; ++Human)
+		{
+			const uint8 JoinerTeam = Arrive(nullptr);
+			TestEqual(TEXT("the joiner ties to the lower id"), static_cast<int32>(JoinerTeam), 0);
+			TestEqual(TEXT("the joiner crowds Team 0 to five"), Counts[0], 5);
+
+			const int32 Yield = ABNGameMode::PickYieldingBotIndex(Counts, BotTeams);
+			TestTrue(TEXT("a bot was found to yield"), BotTeams.IsValidIndex(Yield));
+			if (!BotTeams.IsValidIndex(Yield))
+			{
+				return;
+			}
+			TestEqual(TEXT("it is on the crowded side, not the tail"),
+				static_cast<int32>(BotTeams[Yield]), static_cast<int32>(JoinerTeam));
+
+			--Counts[BotTeams[Yield]];
+			BotTeams.RemoveAt(Yield);
+			TestEqual(TEXT("4v4 restored, Team 0"), Counts[0], 4);
+			TestEqual(TEXT("4v4 restored, Team 1"), Counts[1], 4);
+		}
+	});
+
+	It("keeps the plain tail pop when the crowded side has no bot left to give", [this]()
+	{
+		// Four humans crowd Team 0 with no bot on it; INDEX_NONE is the caller's signal to
+		// fall back to the tail rather than refuse the yield and stay over target.
+		const int32 Counts[BNTeams::NumTeams] = { 4, 2 };
+		const uint8 AllOnTeamOne[] = { 1, 1 };
+		TestEqual(TEXT("no candidate"), ABNGameMode::PickYieldingBotIndex(Counts, AllOnTeamOne), INDEX_NONE);
 	});
 }
 

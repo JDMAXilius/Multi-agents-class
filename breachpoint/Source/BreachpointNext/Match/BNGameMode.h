@@ -102,6 +102,12 @@ public:
 	bool AreTeamsEnabled() const { return bTeamsEnabled; }
 	bool IsFriendlyFireEnabled() const { return bFriendlyFire; }
 
+	/** TEAMS (BN15 REFUTER B1): the two BALANCE decisions, pure and static so BNTeamsSpec can
+	 *  pin the ORDER they run in (assign-then-yield) without a world. Both tie to the lower id;
+	 *  a yield with no bot on the crowded side answers INDEX_NONE and the caller keeps the tail. */
+	static uint8 LowestPopulationTeam(TConstArrayView<int32> TeamCounts);
+	static int32 PickYieldingBotIndex(TConstArrayView<int32> TeamCounts, TConstArrayView<uint8> BotTeams);
+
 	// -- IAIBAmbitionProvider (Phase 6: the mode tells bots what it wants) --------------
 	/** One ambition when the hill is on, none in plain Slayer — "a mode adds ambitions,
 	 *  never a system" is the interface's own sentence, and Slayer proves the zero case. */
@@ -173,6 +179,10 @@ protected:
 	 *  pass through, before each entity's first spawn choice. No-op when teams are off. */
 	void AssignTeamIfNeeded(AController* C);
 	uint8 GetLowestPopulationTeam() const;
+
+	/** Members per team over PlayerArray, NoTeam counted for nobody. One counter for both the
+	 *  assignment and the yield — they must never disagree about who is crowded. */
+	void CountTeamPopulations(TArrayView<int32> OutCounts) const;
 
 	/** The team win: writes WinningTeamId FIRST, then EndMatch — FinishMatch's own
 	 *  ordering, sibling'd for a team (the PlayerState winner stays null; the HUD renders
