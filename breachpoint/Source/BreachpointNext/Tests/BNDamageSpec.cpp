@@ -159,12 +159,51 @@ void FBNDamageSpec::Define()
 
 	It("drains health through the door", [this]()
 	{
+		// SHIELDS FIRST, and that is why this spec had to change. It read
+		// "30 damage -> Health 70" and went red the day BN22 turned shields back ON
+		// (7afc0aff): the shield swallowed all 30 and health never moved. The CODE was
+		// right and the assertion was stale — the honest fix is to drop the shield and
+		// then test the thing this spec is named for, not to weaken the number.
+		Target.ASC->SetNumericAttributeBase(UBNAttributeSet::GetShieldAttribute(), 0.f);
+
 		BNDamage::ApplyDamage(Attacker.Actor, Target.Actor, 30.f, FHitResult());
 		TestEqual(TEXT("Health"), Attr(Target, UBNAttributeSet::GetHealthAttribute()), 70.f);
 	});
 
+	It("spends the shield before the health, and spills the remainder into it", [this]()
+	{
+		// THE SUMMING PATH, which nothing covered. AIB4 closed with the double-fire check
+		// passing VACUOUSLY: every damage event in that match read `shield 0 -> 0` because
+		// shields were disabled project-wide, so a hit that crosses BOTH pools could not
+		// occur and the claim went unproven. BN22 re-enabled shields and made it reachable,
+		// so it is proven here rather than left as a note in a closed ticket.
+		Target.ASC->SetNumericAttributeBase(UBNAttributeSet::GetShieldAttribute(), 20.f);
+
+		BNDamage::ApplyDamage(Attacker.Actor, Target.Actor, 50.f, FHitResult());
+
+		// 50 against a 20 shield: the shield empties and the remaining 30 reaches health.
+		// Both pools move on ONE hit — the shape the ledger sums rather than double-counts.
+		TestEqual(TEXT("Shield emptied"), Attr(Target, UBNAttributeSet::GetShieldAttribute()), 0.f);
+		TestEqual(TEXT("Health took the overflow"), Attr(Target, UBNAttributeSet::GetHealthAttribute()), 70.f);
+	});
+
+	It("leaves health untouched while the shield can absorb the whole hit", [this]()
+	{
+		// The other half of the same contract, and the one the stale assertion was
+		// accidentally testing: a hit smaller than the shield must not reach health at all.
+		Target.ASC->SetNumericAttributeBase(UBNAttributeSet::GetShieldAttribute(), 100.f);
+
+		BNDamage::ApplyDamage(Attacker.Actor, Target.Actor, 30.f, FHitResult());
+
+		TestEqual(TEXT("Shield absorbed it"), Attr(Target, UBNAttributeSet::GetShieldAttribute()), 70.f);
+		TestEqual(TEXT("Health untouched"), Attr(Target, UBNAttributeSet::GetHealthAttribute()), 100.f);
+	});
+
 	It("never drives health below zero", [this]()
 	{
+		// Passes either way (500 overruns any shield), but the shield is dropped for the
+		// same reason as above: the spec should say what it depends on.
+		Target.ASC->SetNumericAttributeBase(UBNAttributeSet::GetShieldAttribute(), 0.f);
 		BNDamage::ApplyDamage(Attacker.Actor, Target.Actor, 500.f, FHitResult());
 		TestEqual(TEXT("Health"), Attr(Target, UBNAttributeSet::GetHealthAttribute()), 0.f);
 	});
