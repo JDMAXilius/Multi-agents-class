@@ -25,6 +25,7 @@ source, and the artifacts they produce are the game's own data and code.
 | 6 | GER Pipeline | [`06-ger-pipeline/`](06-ger-pipeline/) | [`README.md`](06-ger-pipeline/README.md) → `ger.py` |
 | 7 | Style Guide Agent | [`07-style-guide-agent/`](07-style-guide-agent/) | [`README.md`](07-style-guide-agent/README.md) → `style_agent.py` |
 | 8 | Narrative Engine (optional) | [`08-narrative-engine/`](08-narrative-engine/) | [`README.md`](08-narrative-engine/README.md) → `dm.py` |
+| 9 | Adversarial QA Agent (optional) | [`09-adversarial-qa/`](09-adversarial-qa/) | [`README.md`](09-adversarial-qa/README.md) → `verify.sh` · C++ in `breachpoint/Source/BreachpointNext/QA/` |
 
 **Read the folder's own `README.md` first** — each one is the graded write-up for that
 assignment. This file is only the map.
@@ -163,6 +164,17 @@ input at turn 6 and gets different dialogue, driven only by ledger state. Standa
 assignment's own definition. `./verify.sh` checks every rubric criterion; the README's
 surprise moment is real: the extractor out-judged the author's own verification.
 
+### #9 — Adversarial QA Agent (optional) · [`09-adversarial-qa/`](09-adversarial-qa/)
+
+The one assignment that **runs inside the game itself**: `ABNAQAController`, native C++ in
+the capstone's source tree, joins a match through the same doors a bot does and then tries
+to break it — cycling five behaviors (boundary walks, ledge dives, grapple abuse, ability
+mashing) against seven precisely-defined detector classes, and writing a structured JSON
+report (location + error type + game context per finding) from inside the run.
+`./verify.sh` audits the committed report without needing Unreal; the run itself needs the
+editor once — `docs/tickets/TICKET_BN24_ADVERSARIAL_QA_RUN.md` is the recipe, and
+`verify.sh` deliberately fails until that real report lands.
+
 ---
 
 ## One structural difference worth knowing
@@ -233,6 +245,8 @@ Per-assignment submission checklists, where they exist:
 | 5 | ✅ | **not yet** | due 13 Aug — **needs a short late note on submission** |
 | 6 | ✅ | **not yet** | due 18 Aug — **needs a short late note on submission** |
 | 7 | ✅ | **not yet** | due 20 Aug — **needs a short late note on submission** |
+| 8 | ✅ | **not yet** | due 25 Aug — **needs a short late note on submission** |
+| 9 | agent code + harness ✅ | **not yet** | due 27 Aug — **needs the one PIE run (TICKET_BN24) before the zip can build** |
 
 **Honesty note that applies to all of these:** none of the generated C++ or CSV has been
 compiled or imported into a running build of the game. The container these ran in has no

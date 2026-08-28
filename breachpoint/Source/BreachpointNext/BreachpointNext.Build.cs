@@ -49,6 +49,11 @@ public class BreachpointNext : ModuleRules
 			"ModelViewViewModel"
 		});
 
+		// PRIVATE: QA/BNAdversarialAgent.cpp serialises its findings report through the
+		// engine's Json module (Dom/JsonObject.h, TJsonWriter). Nothing public names a
+		// Json type — the report writer is the one consumer.
+		PrivateDependencyModuleNames.Add("Json");
+
 		// PRIVATE: AbilitySystem/BNGameplayCues.cpp spawns cue FX through
 		// UNiagaraFunctionLibrary, but its header types the assets as TSoftObjectPtr<UFXSystemAsset>
 		// — the Engine-module base of both FX systems — so no public header names a Niagara type.
