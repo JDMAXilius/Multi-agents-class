@@ -146,6 +146,21 @@ ACTIONS = [
         "reuse": BN_INPUT_PATH + "/IA_BN_Grenade",
         "keys": [("G", [])],
     },
+    {
+        # THE GRAPPLE (founder, 28 Aug). UBNGA_Grapple and the Input.Grapple tag already
+        # existed, and the ability is already granted in BNPlayerState — the ONLY missing
+        # link was this row. With no IA asset, no key ever reached the tag, so the player
+        # could not grapple while AIB19's bots could.
+        #
+        # "One" is UE's key name for the 1 key. Founder's call after G and Q both turned
+        # out taken: G is Grenade, Q/E are LeanLeft/LeanRight. Double-binding any of them
+        # would fire two abilities on a single press.
+        "id": "Grapple",
+        "tag": "Input.Grapple",
+        "value_type": "BOOLEAN",
+        "reuse": BN_INPUT_PATH + "/IA_BN_Grapple",
+        "keys": [("One", [])],
+    },
 ]
 
 AUDIT_FMT = "%-38s | %-56s | %-56s | %s"
