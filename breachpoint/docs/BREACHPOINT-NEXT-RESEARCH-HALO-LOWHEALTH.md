@@ -285,3 +285,33 @@ tracking player's aim.
 
 Ladder: rung 1 Succeeded · rung 2 AIBot **123/0** (2 new) · ST_AIBBot rebuilt, Retreat 5 tasks,
 compile OK. **Not PIE-verified** — no eyes-on claim for how it reads in a live fight.
+
+### Measured, 28 Aug — one headless match, BR_Arena01
+
+Founder: *"right now is still the same."* The tree read-back proves the asset is applied
+(`DefendRangeUU=700`, `MinRangeUU=700`, `FightRangeUU=3000` on Retreat; Engage untouched at
+`0 / 900`). So the question was never "did it land" — it was "does it ever run".
+
+| | count |
+|---|---|
+| Engage | 154 |
+| Roam | 144 |
+| Search | 34 |
+| Mode.Rally | 27 |
+| **Retreat** | **12** |
+| **DEFEND stand-downs** | **9** |
+| defensive hops | **0** |
+| eliminations | 9 |
+
+**The defend band works.** 9 of 12 Retreats reached it and held, logged at 701, 774 and 859uu
+— the 700 floor doing exactly what it was built to do. Those bots stopped running and fought.
+
+**The hop cannot fire at this tier, by design.** The match ran Marine — `Mv 1`, Movement
+level *Trained* — and `JukeChance` is `0.00 / 0.00 / 0.25 / 0.50`, i.e. zero below Skilled.
+The hop rides the juke precisely so it would inherit that gate without adding a tier lever
+(R28), and the gate is now doing its job: a Trained bot never jukes, so it never hops. Against
+Marine bots the evasive jump is structurally unreachable.
+
+**Retreat is rare: 12 of 371 ambitions, 3.2%.** So even working perfectly, defend mode shows
+in roughly one engagement in thirty. That is the real reason it reads as "the same" in play —
+not that it is broken, but that it is seldom seen.
