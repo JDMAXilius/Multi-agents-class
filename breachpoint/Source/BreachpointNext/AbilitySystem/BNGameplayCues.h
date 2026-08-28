@@ -74,6 +74,21 @@ protected:
 	/** Writes the tint to TintParameter, or does nothing. */
 	void ApplyTeamTint(UNiagaraComponent* Component, const AActor* Target) const;
 
+public:
+	/** ResolveTeamTint, for the ONE caller that is not a cue: ABNProjectile tints the grenade
+	 *  trail it spawns itself. Public rather than copied — this ladder has a NoTeam guard and a
+	 *  viewer-identity rule that a second copy would drift from, and a drifted copy shows up as
+	 *  a grenade whose trail disagrees with its own explosion. Pure and static; it reads two
+	 *  replicated ids and returns a colour.
+	 *
+	 *  Named without the Resolve prefix so the protected original stays the cue-internal name. */
+	static bool ResolveTeamTintForActor(const AActor* Target, FLinearColor& OutTint)
+	{
+		return ResolveTeamTint(Target, OutTint);
+	}
+
+protected:
+
 	/** The Niagara USER parameter the tint is written to. Config because this name is a contract
 	 *  with an FX ASSET, not with this code, and a name the system does not declare is a SILENT
 	 *  no-op — no warning, no log, no colour.

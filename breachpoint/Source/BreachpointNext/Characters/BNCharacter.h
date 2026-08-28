@@ -106,25 +106,30 @@ protected:
 	void HandleOwnTeamChanged(ABNPlayerState* PS);
 	void HandleViewerTeamChanged(ABNPlayerState* PS);
 
-	/** Slot-NAME keyed, never slot index: SKM_Manny's torso is MI_Manny_02 and its head/legs
+	/** EditDefaultsOnly beside Config on all six, following TintParameter's precedent: a bare
+	 *  UPROPERTY(Config) is loaded from the ini but is NOT inspectable — it appears in no
+	 *  details panel and no editor property query, so "did the config actually land" has no
+	 *  answer from inside the editor. Tools/bn/80_team_audit.py reads these back.
+	 *
+	 *  Slot-NAME keyed, never slot index: SKM_Manny's torso is MI_Manny_02 and its head/legs
 	 *  are MI_Manny_01, so an index-ordered pairing silently swaps the two materials and the
 	 *  bug looks like a texture problem. Empty = leave that slot alone. */
-	UPROPERTY(Config)
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Team")
 	FSoftObjectPath AllyTorsoMaterial;
 
-	UPROPERTY(Config)
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Team")
 	FSoftObjectPath AllyHeadLegsMaterial;
 
-	UPROPERTY(Config)
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Team")
 	FSoftObjectPath ThreatTorsoMaterial;
 
-	UPROPERTY(Config)
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Team")
 	FSoftObjectPath ThreatHeadLegsMaterial;
 
-	UPROPERTY(Config)
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Team")
 	FName TorsoSlotName = TEXT("M_torso");
 
-	UPROPERTY(Config)
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Team")
 	FName HeadLegsSlotName = TEXT("M_HeadLegs");
 
 	/** The PlayerStates this body listens to. Weak, and cleared in EndPlay — a body outlives

@@ -19,6 +19,8 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
+#include "AbilitySystem/BNGameplayCues.h"
+#include "NiagaraComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "TimerManager.h"
 
@@ -96,9 +98,23 @@ void ABNProjectile::BeginPlay()
 	}
 	if (UNiagaraSystem* Trail = Cast<UNiagaraSystem>(TrailEffect.IsNull() ? nullptr : TrailEffect.LoadSynchronous()))
 	{
-		UNiagaraFunctionLibrary::SpawnSystemAttached(
+		UNiagaraComponent* TrailComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(
 			Trail, CollisionComponent, NAME_None, FVector::ZeroVector, FRotator::ZeroRotator,
 			EAttachLocation::KeepRelativeOffset, /*bAutoDestroy=*/true);
+
+		// TEAM COLOUR ON THE GRENADE IN FLIGHT. The explosion has been tinted since BN25 and the
+		// trail never was, so a thrown grenade changed sides at the moment it detonated. Asked of
+		// the THROWER, because a grenade belongs to whoever threw it — and answered from the
+		// LOCAL viewer's seat by the cue's own ladder rather than a second copy of it.
+		//
+		// False (FFA, an unassigned side, your own grenade) leaves the system alone, which is the
+		// look it has always had.
+		FLinearColor Tint;
+		if (TrailComponent && !TrailTintParameter.IsNone()
+			&& UBNGameplayCue_Base::ResolveTeamTintForActor(GetInstigator(), Tint))
+		{
+			TrailComponent->SetVariableLinearColor(TrailTintParameter, Tint);
+		}
 	}
 
 	// The fuse is the authority's clock alone. A client running its own would explode at a

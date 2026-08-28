@@ -132,6 +132,14 @@ protected:
 	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Projectile")
 	TSoftObjectPtr<UFXSystemAsset> TrailEffect;
 
+	/** The trail's team-colour parameter. NS_Grenade_Trail is one of only four systems in the
+	 *  whole project that declares a colour USER parameter at all, and it declares this one —
+	 *  so the grenade in FLIGHT can read as ally or threat exactly like its explosion already
+	 *  does. Same contract as UBNGameplayCue_Base::TintParameter: a name the system does not
+	 *  declare is a SILENT no-op, so this is config, not a literal. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Team")
+	FName TrailTintParameter = TEXT("User.Team_Color");
+
 	FTimerHandle FuseTimer;
 
 	/** The bot warning's own timer — see WarnNearbyBots. */
