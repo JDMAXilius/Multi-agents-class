@@ -82,7 +82,16 @@ public:
 	void StartRun(float DurationSeconds);
 
 	/** End, write the report, log the path, despawn pawn + self. Idempotent. */
-	void StopRun(const FString& Reason);
+	/** BY VALUE, not const&: this is bound as a TIMER PAYLOAD
+	 *  (FTimerDelegate::CreateUObject(this, &StopRun, FString(...))), and the payload
+	 *  overload cannot bind an FString payload through a const-reference parameter — it
+	 *  broke the build for every session on the branch (BN27). Copying one FString once
+	 *  per run is not a cost worth a cleverer binding.
+	 *
+	 *  Changed by the team-colours packet under an explicit law-5 exception (founder,
+	 *  28 Aug) purely to unblock the branch; QA/ is not that packet's folder and nothing
+	 *  else in this file was touched. */
+	void StopRun(FString Reason);
 
 	virtual void OnPossess(APawn* InPawn) override;
 

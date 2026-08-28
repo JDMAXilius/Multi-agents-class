@@ -75,7 +75,9 @@ static void BNAQA_Start(const TArray<FString>& Args, UWorld* World)
 		UE_LOG(LogBNAQA, Warning, TEXT("bn.aqa.start: authority worlds only — the probe presses server-gated paths."));
 		return;
 	}
-	for (TActorIterator<ABNAQAController> It(World); It; ++It)
+	// `if`, not `for`: the body returns on the first hit, so the increment is unreachable
+	// and -Werror rejects it (BN27). Behaviour is identical — "is there already one?".
+	if (TActorIterator<ABNAQAController> Existing(World); (bool)Existing)
 	{
 		UE_LOG(LogBNAQA, Warning, TEXT("bn.aqa.start: a probe is already running — bn.aqa.stop it first."));
 		return;
@@ -116,9 +118,10 @@ static void BNAQA_Stop(const TArray<FString>& Args, UWorld* World)
 	{
 		return;
 	}
-	for (TActorIterator<ABNAQAController> It(World); It; ++It)
+	// Same shape as the start guard: first match, act, done (BN27).
+	if (TActorIterator<ABNAQAController> Running(World); (bool)Running)
 	{
-		It->StopRun(TEXT("bn.aqa.stop"));
+		Running->StopRun(TEXT("bn.aqa.stop"));
 		return;
 	}
 	UE_LOG(LogBNAQA, Warning, TEXT("bn.aqa.stop: no probe running."));
@@ -171,7 +174,7 @@ void ABNAQAController::StartRun(float DurationSeconds)
 		DurationSeconds, Anchors.Num(), *ArenaHull.ToString());
 }
 
-void ABNAQAController::StopRun(const FString& Reason)
+void ABNAQAController::StopRun(FString Reason)
 {
 	UWorld* World = GetWorld();
 	if (!World || !EndTimer.IsValid())

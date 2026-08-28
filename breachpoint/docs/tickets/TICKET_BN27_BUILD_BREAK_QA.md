@@ -1,6 +1,6 @@
 # BN27 — main does not compile: BNAdversarialAgent (contract_gap)
 
-> STATUS: blocked — contract_gap, owner of `Source/BreachpointNext/QA/` must fix (28 Aug 2026)
+> STATUS: done — unblocked under an explicit founder-authorised law-5 exception (28 Aug 2026)
 
 ## The break
 
@@ -43,4 +43,21 @@ tree read-back that prints each Retreat task's arbitration numbers, which exists
 
 ## Done when
 
-- [ ] `Tools/run-ubt.sh` passes on the Editor and Game targets again
+- [x] `Tools/run-ubt.sh` passes on the Editor and Game targets again
+
+## Log — 28 Aug, resolved
+
+Founder authorised the one-line fix rather than leaving the branch broken for every session.
+Recorded here so the QA packet's owner sees exactly what was touched and why.
+
+THREE errors, not one — the first masked the other two:
+
+1. `StopRun` took `const FString&` while bound as a timer PAYLOAD. Payload delegates bind by
+   value; changed the declaration and definition to `FString Reason`. One copy per run.
+2. + 3. Two `for (TActorIterator<...> It(World); It; ++It)` loops whose bodies `return` on the
+   first hit, so the increment is unreachable and `-Werror` rejects it. Rewritten as
+   `if (TActorIterator<...> X(World); (bool)X)`, which is behaviourally identical — first
+   match, act, done.
+
+NOTHING else in `Source/BreachpointNext/QA/` was read or changed. No behaviour was altered:
+all three are compile-shape fixes, and the probe does exactly what its author wrote.

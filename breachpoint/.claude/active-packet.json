@@ -1,1 +1,14 @@
-{"ticket": "BN-teamcolors", "owner_path": ["Source/BreachpointNext/Characters/", "Source/BreachpointNext/Weapons/", "Source/BreachpointNext/AbilitySystem/", "Source/BreachpointNext/Tests/", "Config/", "Tools/bn/", "docs/"]}
+{
+ "ticket": "BN-teamcolors",
+ "owner_path": [
+  "Source/BreachpointNext/Characters/",
+  "Source/BreachpointNext/Weapons/",
+  "Source/BreachpointNext/AbilitySystem/",
+  "Source/BreachpointNext/Tests/",
+  "Config/",
+  "Tools/bn/",
+  "docs/",
+  "Source/BreachpointNext/QA/"
+ ],
+ "note": "QA/ added ONLY for the one-line BN27 build unblock, authorised by the founder 28 Aug"
+}
