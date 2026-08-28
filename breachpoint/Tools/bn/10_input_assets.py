@@ -153,6 +153,30 @@ ACTIONS = [
         "keys": [("G", [])],
     },
     {
+        # SCOREBOARD AND MENU — RESTORED, and their absence was a self-inflicted wound.
+        # This file's docstring calls itself "the full source of truth" for IMC_BNNext, and
+        # it means it: every run REBUILDS the context from this table. Scoreboard and Menu
+        # had IA assets on disk and live C++ handlers (BNPlayerController.cpp:97-99) but no
+        # row here, so the first regeneration for an unrelated reason silently dropped both
+        # bindings and Tab stopped opening the scoreboard. Nothing errored — the table is
+        # the contract, and anything missing from it does not exist.
+        #
+        # Scoreboard is a HOLD: the controller binds Started AND Completed, so the board is
+        # up only while the key is down.
+        "id": "Scoreboard",
+        "tag": "Input.Scoreboard",
+        "value_type": "BOOLEAN",
+        "reuse": BN_INPUT_PATH + "/IA_BNScoreboard",
+        "keys": [("Tab", [])],
+    },
+    {
+        "id": "Menu",
+        "tag": "Input.Menu",
+        "value_type": "BOOLEAN",
+        "reuse": BN_INPUT_PATH + "/IA_BNMenu",
+        "keys": [("Escape", [])],
+    },
+    {
         # THE GRAPPLE (founder, 28 Aug). UBNGA_Grapple and the Input.Grapple tag already
         # existed, and the ability is already granted in BNPlayerState — the ONLY missing
         # link was this row. With no IA asset, no key ever reached the tag, so the player
