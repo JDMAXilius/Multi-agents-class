@@ -15,7 +15,7 @@ or a stale config shows up as UNSET here instead of as a mystery in PIE.
 | Surface | State |
 |---|---|
 | 3P mannequin body | **APPLIED** — ally blue / threat red, per slot, verified against SKM_Manny |
-| Grenade explosion | **APPLIED** — `NS_Grenade_Explosion` declares `User.Team_Color` |
+| Grenade explosion | **APPLIED (28 Aug, second pass)** — the asset always declared `User.Team_Color`, but the cue is handled on the PROJECTILE and the resolver cast its target to a pawn, so no colour was ever produced. Fixed in the shared resolver |
 | Grenade trail (in flight) | **APPLIED (28 Aug)** — was spawned untinted while its own explosion was tinted, so a thrown grenade changed sides at the moment it detonated |
 | Muzzle flash, tracer, impact, grapple fire/rope/hit | **SILENT** — see below |
 | Death cue | no Effect property at all; nothing to tint |
@@ -90,3 +90,35 @@ Death has no Effect), which reported six healthy classes as unreadable; and the 
 fixed it was case-sensitive while the lister answers camelCase, which turned the mesh slot
 check into a SILENT SKIP — the four materials still printed OK while the pairing that can be
 invisibly swapped went unchecked. Both fixed; the skip now prints FAIL and files a finding.
+
+**28 Aug 2026, second pass** — Founder: "grenade explosion effect should have team colour
+relevant." It was reported APPLIED by the audit and was still drawing neutral, which exposed
+the limit of what the audit had actually proven.
+
+The audit proved the ASSET declares a colour parameter. That is not the same claim as A
+COLOUR REACHES IT, and the blast was failing on the second one: `MulticastExplosion` hands the
+cue `this` — the projectile — and `ResolveTeamTint` opened with `Cast<APawn>(Target)`, which is
+null for a projectile every time. No PlayerState, no colour, no tint. Silent, because a tint
+that resolves to "no answer" is indistinguishable from FFA, and a comment in the same file
+asserted this was "the one cue where it currently draws".
+
+Fixed in the SHARED resolver rather than at the explosion's call site: any future cue handled
+on a non-pawn (a decal, a dropped weapon, any prop) had the identical bug waiting, and one
+guard in the resolver is a smaller diff than a guard per caller. `ResolveEffectOwner` is the
+target when it is a pawn, otherwise the target's instigator — and it is split out public
+precisely so it can be pinned headless, which the viewer half cannot be.
+
+`BNEffectOwnerSpec` now holds three rows: the projectile resolves to its thrower (the row that
+would have caught this), a pawn target stays its own owner even with a misleading instigator
+(the fallback must not become an override), and an ownerless actor answers null rather than
+guessing.
+
+NOTE for the founder: your OWN blast still draws neutral. That is the pre-existing cue rule —
+"your own fire keeps the look it has always had" — not an oversight; teammates read Ally blue
+and enemies Threat red. Say the word if you want your own grenade tinted too; it is one line,
+but it contradicts a rule the other cues follow, so it is not mine to flip.
+
+Still unproven without eyes-on: that the parameter reaches the visible output. Evidence is
+strong — it is a declared user parameter, `UserParamBinding` is in the package name table, and
+its default is `(1,1,1,1)`, the canonical white tint identity — but a screenshot of PIE is the
+only thing that closes it, and CaptureViewport returns the EDITOR viewport, not PIE.

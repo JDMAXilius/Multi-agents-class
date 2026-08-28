@@ -78,9 +78,31 @@ UNiagaraComponent* UBNGameplayCue_Base::SpawnAt(const UObject* WorldContext, UFX
 	return BNSpawnSystem(WorldContext, Asset, Location, Rotation);
 }
 
+const APawn* UBNGameplayCue_Base::ResolveEffectOwner(const AActor* Target)
+{
+	if (const APawn* AsPawn = Cast<APawn>(Target))
+	{
+		return AsPawn;
+	}
+	// THE GRENADE CASE. The blast cue is handled on the PROJECTILE — an actor with no
+	// PlayerState — so the pawn cast returned null every time and no colour was ever resolved.
+	// The instigator is the thrower, which is exactly "whose grenade is this".
+	return Target ? Target->GetInstigator() : nullptr;
+}
+
 bool UBNGameplayCue_Base::ResolveTeamTint(const AActor* Target, FLinearColor& OutTint)
 {
-	const APawn* TargetPawn = Cast<APawn>(Target);
+	// WHOSE effect is this? A cue's target is usually the pawn that fired, but not always: the
+	// grenade blast is handled on the PROJECTILE, an actor with no PlayerState, and this cast
+	// returned null for it every single time. The tint was never dropped for want of a colour
+	// parameter there — NS_Grenade_Explosion declares one — it was dropped because nothing ever
+	// resolved a colour to write. The blast has been neutral since the day it was wired.
+	//
+	// So: fall back to the actor's INSTIGATOR, which is exactly the "whose is this" answer for
+	// any effect spawned by a projectile, a decal or any other ownerless prop. Fixed HERE rather
+	// than at the explosion's call site because every future non-pawn cue target has the same
+	// bug waiting, and one guard in the shared resolver is smaller than a guard in each caller.
+	const APawn* TargetPawn = ResolveEffectOwner(Target);
 	const ABNPlayerState* TargetPS = TargetPawn ? TargetPawn->GetPlayerState<ABNPlayerState>() : nullptr;
 	if (!TargetPS)
 	{
@@ -284,8 +306,11 @@ bool UBNGameplayCue_Explosion::OnExecute_Implementation(AActor* MyTarget, const 
 	// NOT ResolveMuzzle: the source object is the projectile, which the authority has already
 	// destroyed by the time this reaches a client. Parameters.Location is the blast's own record.
 	//
-	// TEAM TINT, and THIS is the one cue where it currently draws. The tint is wired into
-	// five other cues, but none of THEIR systems declares a colour parameter — read straight
+	// TEAM TINT. This is the one cue whose system CAN take a colour — though for a long time it
+	// still did not draw one: the cue is handled on the projectile, so the resolver's pawn cast
+	// failed and no colour was ever produced (fixed in ResolveTeamTint, which now falls back to
+	// the instigator). The tint is wired into five other cues, but none of THEIR systems
+	// declares a colour parameter — read straight
 	// out of the shipped .uasset payloads, the tracer exposes User.ImpactPositions /
 	// MuzzlePosition / Trigger, the muzzle flash User.Direction / SmokePuffTexture / Trigger,
 	// the impact ImpactPositions / Normals / NumberOfHits. NS_Grenade_Explosion is the only

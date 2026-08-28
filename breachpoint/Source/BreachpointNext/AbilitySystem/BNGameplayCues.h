@@ -82,6 +82,15 @@ public:
 	 *  replicated ids and returns a colour.
 	 *
 	 *  Named without the Resolve prefix so the protected original stays the cue-internal name. */
+	/** WHOSE effect is this — the pawn a cue's colour should be asked about. The target itself
+	 *  when it is a pawn; otherwise the target's INSTIGATOR, which is how an effect handled on a
+	 *  projectile, a decal or any other ownerless prop finds the player it belongs to.
+	 *
+	 *  Split out and public so the grenade case is pinned headless: the viewer half of
+	 *  ResolveTeamTint needs a local player controller and cannot run in a spec world, but THIS
+	 *  half is where the blast was losing its colour. */
+	static const APawn* ResolveEffectOwner(const AActor* Target);
+
 	static bool ResolveTeamTintForActor(const AActor* Target, FLinearColor& OutTint)
 	{
 		return ResolveTeamTint(Target, OutTint);
