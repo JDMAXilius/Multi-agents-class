@@ -5,13 +5,26 @@
 #include "AbilitySystemInterface.h"
 #include "GameplayEffectTypes.h"
 #include "UObject/SoftObjectPath.h"
+#include "GenericTeamAgentInterface.h"
 #include "BNCharacter.generated.h"
 
+class ABNPlayerState;
 class UBNEquipmentComponent;
 class UBNHealthComponent;
 class UCameraComponent;
 class USpringArmComponent;
 struct FOnAttributeChangeData;
+
+/** Which colourway a body wears on THIS machine. Shipped means "leave the mesh alone" — the
+ *  honest third answer AreFriendly cannot give, and the one FFA and every not-yet-assigned
+ *  frame must land on. */
+UENUM()
+enum class EBNBodyColorway : uint8
+{
+	Shipped,
+	Ally,
+	Threat,
+};
 
 UCLASS(Config=Game)
 class BREACHPOINTNEXT_API ABNCharacter : public ACharacter, public IAbilitySystemInterface
@@ -32,6 +45,11 @@ public:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
 	virtual void OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
+
+	/** THE decision behind team-coloured bodies, split out from the actor so it can be pinned
+	 *  without a world: three answers, not two. Static and pure — the material lookup, the
+	 *  viewer lookup and the mesh all live in RefreshTeamColors. */
+	static EBNBodyColorway ResolveBodyColorway(FGenericTeamId ViewerTeam, FGenericTeamId OwnTeam, bool bIsViewerSelf);
 
 	UClass* GetCurrentWeaponAnimLayer() const;
 	UBNEquipmentComponent* GetEquipmentComponent() const { return EquipmentComponent; }
@@ -75,6 +93,47 @@ protected:
 	TObjectPtr<UClass> LinkedAnimLayerClass;
 
 	void InitializeAbilitySystem();
+
+	/** THE BODY'S SIDE, in the viewer's terms. Swaps GetMesh's two material slots for the ally
+	 *  or threat colourway. Purely cosmetic and purely LOCAL — it runs on every machine off
+	 *  replicated team ids, and nothing about it is authoritative. */
+	void RefreshTeamColors();
+
+	/** Binds this body to the two team ids its colour depends on — its OWN and the VIEWER'S.
+	 *  Idempotent and retried, because either PlayerState can arrive after the pawn does. */
+	void EnsureTeamSubscriptions();
+
+	void HandleOwnTeamChanged(ABNPlayerState* PS);
+	void HandleViewerTeamChanged(ABNPlayerState* PS);
+
+	/** Slot-NAME keyed, never slot index: SKM_Manny's torso is MI_Manny_02 and its head/legs
+	 *  are MI_Manny_01, so an index-ordered pairing silently swaps the two materials and the
+	 *  bug looks like a texture problem. Empty = leave that slot alone. */
+	UPROPERTY(Config)
+	FSoftObjectPath AllyTorsoMaterial;
+
+	UPROPERTY(Config)
+	FSoftObjectPath AllyHeadLegsMaterial;
+
+	UPROPERTY(Config)
+	FSoftObjectPath ThreatTorsoMaterial;
+
+	UPROPERTY(Config)
+	FSoftObjectPath ThreatHeadLegsMaterial;
+
+	UPROPERTY(Config)
+	FName TorsoSlotName = TEXT("M_torso");
+
+	UPROPERTY(Config)
+	FName HeadLegsSlotName = TEXT("M_HeadLegs");
+
+	/** The PlayerStates this body listens to. Weak, and cleared in EndPlay — a body outlives
+	 *  neither, but a delegate held on the VIEWER'S PlayerState would outlive this pawn every
+	 *  respawn if it were not released. */
+	TWeakObjectPtr<ABNPlayerState> SubscribedOwnPS;
+	TWeakObjectPtr<ABNPlayerState> SubscribedViewerPS;
+	FDelegateHandle OwnTeamChangedHandle;
+	FDelegateHandle ViewerTeamChangedHandle;
 	UClass* ResolveAnimLayerClass();
 	UClass* ResolveLyraLayerForRow(FName RowName) const;
 	void OnMoveSpeedChanged(const FOnAttributeChangeData& Data);

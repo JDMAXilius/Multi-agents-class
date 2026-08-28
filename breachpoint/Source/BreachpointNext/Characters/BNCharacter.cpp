@@ -12,6 +12,8 @@
 #include "Core/BNGameplayTags.h"
 #include "Data/BNDataRows.h"
 #include "Match/BNPlayerState.h"
+#include "Match/BNTeams.h"
+#include "Materials/MaterialInterface.h"
 #include "Weapons/BNEquipmentComponent.h"
 #include "Animation/AnimInstance.h"
 #include "Animation/BNLAnimInstance.h"
@@ -268,6 +270,12 @@ void ABNCharacter::BeginPlay()
 	// component this character owns, so it dies with the body and leaks nothing onto the
 	// persistent ability system component.
 	HealthComponent->OnDeath.AddUObject(this, &ABNCharacter::HandleDeath);
+
+	// TEAM COLOURS. Runs on every machine including the server's own listen window, because
+	// the colourway is a LOCAL read of two replicated ids — never a replicated property of
+	// its own. Called here and again at every point either id can land.
+	EnsureTeamSubscriptions();
+	RefreshTeamColors();
 }
 
 // THE HITTABILITY CHECK — every weapon's damage depends on this and nothing else reports it.
@@ -407,6 +415,22 @@ void ABNCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 		}
 	}
 
+	// The OWN handle dies with its PlayerState anyway, but the VIEWER'S does not: that
+	// PlayerState outlives every one of this player's pawns, so an unreleased handle would
+	// stack one dead delegate per respawn for the whole match.
+	if (ABNPlayerState* OwnPS = SubscribedOwnPS.Get(); OwnPS && OwnTeamChangedHandle.IsValid())
+	{
+		OwnPS->OnTeamChanged.Remove(OwnTeamChangedHandle);
+	}
+	if (ABNPlayerState* ViewerPS = SubscribedViewerPS.Get(); ViewerPS && ViewerTeamChangedHandle.IsValid())
+	{
+		ViewerPS->OnTeamChanged.Remove(ViewerTeamChangedHandle);
+	}
+	OwnTeamChangedHandle.Reset();
+	ViewerTeamChangedHandle.Reset();
+	SubscribedOwnPS.Reset();
+	SubscribedViewerPS.Reset();
+
 	CachedAbilitySystem.Reset();
 	Super::EndPlay(EndPlayReason);
 }
@@ -438,6 +462,9 @@ void ABNCharacter::PossessedBy(AController* NewController)
 	{
 		EquipmentComponent->InitializeCarriedWeapons();
 	}
+
+	EnsureTeamSubscriptions();
+	RefreshTeamColors();
 }
 
 void ABNCharacter::OnRep_PlayerState()
@@ -446,6 +473,12 @@ void ABNCharacter::OnRep_PlayerState()
 
 	InitializeAbilitySystem();
 	InitializeAnimLayer();
+
+	// A pawn routinely replicates BEFORE its PlayerState: until this fires there was no team
+	// to read and the body wore the mesh's shipped colours. This is the retry that matters
+	// most on a joining client.
+	EnsureTeamSubscriptions();
+	RefreshTeamColors();
 }
 
 void ABNCharacter::InitializeAnimLayer()
@@ -589,4 +622,146 @@ UClass* ABNCharacter::ResolveAnimLayerClass()
 	// is precisely what let three aim fixes land on assets the game never loads.
 	const ABNWeapon* Weapon = EquipmentComponent ? EquipmentComponent->GetCurrentWeapon() : nullptr;
 	return ResolveLyraLayerForRow(Weapon ? Weapon->GetRowName() : NAME_None);
+}
+
+
+// ---------------------------------------------------------------------------- team colours
+
+void ABNCharacter::EnsureTeamSubscriptions()
+{
+	// MY side. Rebound rather than skipped when the PlayerState changes identity, which it
+	// does on a rejoin — a handle held on the old one would never fire again.
+	ABNPlayerState* OwnPS = GetPlayerState<ABNPlayerState>();
+	if (OwnPS != SubscribedOwnPS.Get())
+	{
+		if (ABNPlayerState* Previous = SubscribedOwnPS.Get(); Previous && OwnTeamChangedHandle.IsValid())
+		{
+			Previous->OnTeamChanged.Remove(OwnTeamChangedHandle);
+		}
+		OwnTeamChangedHandle.Reset();
+		SubscribedOwnPS = OwnPS;
+		if (OwnPS)
+		{
+			OwnTeamChangedHandle = OwnPS->OnTeamChanged.AddUObject(this, &ABNCharacter::HandleOwnTeamChanged);
+		}
+	}
+
+	// THE VIEWER'S side, and this is the subscription that is easy to forget: when the local
+	// player's own team id lands, EVERY body already in the world is wearing the wrong colour,
+	// including bodies whose own team never changes again. Asked of this actor's world, not
+	// GEngine's first controller globally — in PIE two clients share a process (the same trap
+	// ResolveTeamTint documents).
+	const APlayerController* Viewer = GEngine ? GEngine->GetFirstLocalPlayerController(GetWorld()) : nullptr;
+	ABNPlayerState* ViewerPS = Viewer ? Viewer->GetPlayerState<ABNPlayerState>() : nullptr;
+	if (ViewerPS != SubscribedViewerPS.Get())
+	{
+		if (ABNPlayerState* Previous = SubscribedViewerPS.Get(); Previous && ViewerTeamChangedHandle.IsValid())
+		{
+			Previous->OnTeamChanged.Remove(ViewerTeamChangedHandle);
+		}
+		ViewerTeamChangedHandle.Reset();
+		SubscribedViewerPS = ViewerPS;
+		if (ViewerPS)
+		{
+			ViewerTeamChangedHandle = ViewerPS->OnTeamChanged.AddUObject(this, &ABNCharacter::HandleViewerTeamChanged);
+		}
+	}
+}
+
+void ABNCharacter::HandleOwnTeamChanged(ABNPlayerState* /*PS*/)
+{
+	RefreshTeamColors();
+}
+
+void ABNCharacter::HandleViewerTeamChanged(ABNPlayerState* /*PS*/)
+{
+	// Same work, different reason — every body re-reads itself because each holds its own
+	// subscription to this one PlayerState. No sweep, no iteration over the world.
+	RefreshTeamColors();
+}
+
+
+EBNBodyColorway ABNCharacter::ResolveBodyColorway(FGenericTeamId ViewerTeam, FGenericTeamId OwnTeam, bool bIsViewerSelf)
+{
+	// YOUR OWN body is your own side, always — checked BEFORE the unassigned guard, because in
+	// FFA you are still yourself. ResolveTeamTint answers "no tint" for self on purpose (your
+	// own muzzle flash keeps the look it always had); a BODY is the opposite case, the one a
+	// kill-cam or a spectator sees, where reading as your own side is what you want.
+	if (bIsViewerSelf)
+	{
+		return EBNBodyColorway::Ally;
+	}
+
+	// EITHER side unassigned answers SHIPPED, and this is the guard that keeps FFA from turning
+	// red. AreFriendly has two answers and this needs three: without it an unassigned body would
+	// read ENEMY rather than unknown, so a teams-OFF match — and every joining client's first
+	// frames, before the id replicates — would paint the whole lobby as threats.
+	if (ViewerTeam == FGenericTeamId::NoTeam || OwnTeam == FGenericTeamId::NoTeam)
+	{
+		return EBNBodyColorway::Shipped;
+	}
+
+	return BNTeams::AreFriendly(ViewerTeam, OwnTeam) ? EBNBodyColorway::Ally : EBNBodyColorway::Threat;
+}
+
+void ABNCharacter::RefreshTeamColors()
+{
+	USkeletalMeshComponent* Body = GetMesh();
+	if (!Body || !Body->GetSkeletalMeshAsset())
+	{
+		return;
+	}
+
+	// THE VIEWER, not the instigator — the same question BNGameplayCues::ResolveTeamTint asks,
+	// and deliberately the same ANSWER: BN16's ruling is that red means threat and blue means
+	// your side, "one hue, one meaning — held, not bent". Absolute Red-team/Blue-team bodies
+	// would bend it, putting red on your own team-mates while the scoreboard called them blue.
+	const ABNPlayerState* OwnPS = GetPlayerState<ABNPlayerState>();
+	const APlayerController* Viewer = GEngine ? GEngine->GetFirstLocalPlayerController(GetWorld()) : nullptr;
+	const ABNPlayerState* ViewerPS = Viewer ? Viewer->GetPlayerState<ABNPlayerState>() : nullptr;
+	if (!OwnPS || !ViewerPS)
+	{
+		return; // nothing known yet; the body keeps the mesh's shipped colours
+	}
+
+	const EBNBodyColorway Colorway = ResolveBodyColorway(
+		ViewerPS->GetGenericTeamId(), OwnPS->GetGenericTeamId(), /*bIsViewerSelf=*/OwnPS == ViewerPS);
+	if (Colorway == EBNBodyColorway::Shipped)
+	{
+		return; // FFA, or a team id that has not landed yet — the mesh keeps what it shipped with
+	}
+
+	const bool bFriendly = (Colorway == EBNBodyColorway::Ally);
+	const FSoftObjectPath& TorsoPath    = bFriendly ? AllyTorsoMaterial    : ThreatTorsoMaterial;
+	const FSoftObjectPath& HeadLegsPath = bFriendly ? AllyHeadLegsMaterial : ThreatHeadLegsMaterial;
+
+	// BY SLOT NAME. SKM_Manny's torso slot carries MI_Manny_02 and its head/legs slot carries
+	// MI_Manny_01 — the numbering runs OPPOSITE to the slot order, so pairing by index swaps
+	// the two materials and the result looks like a broken texture rather than a wrong pairing.
+	const auto ApplySlot = [Body](FName SlotName, const FSoftObjectPath& Path)
+	{
+		if (SlotName.IsNone() || !Path.IsValid())
+		{
+			return; // an unconfigured slot is left exactly as the mesh shipped it
+		}
+		const int32 Index = Body->GetMaterialIndex(SlotName);
+		if (Index == INDEX_NONE)
+		{
+			UE_LOG(LogBN, Warning, TEXT("BNCharacter: team colours name slot '%s', which %s does not have — that slot keeps its shipped material."),
+				*SlotName.ToString(), *GetNameSafe(Body->GetSkeletalMeshAsset()));
+			return;
+		}
+		if (UMaterialInterface* Material = Cast<UMaterialInterface>(Path.TryLoad()))
+		{
+			Body->SetMaterial(Index, Material);
+		}
+		else
+		{
+			UE_LOG(LogBN, Warning, TEXT("BNCharacter: team colour material '%s' would not load — slot '%s' keeps its shipped material."),
+				*Path.ToString(), *SlotName.ToString());
+		}
+	};
+
+	ApplySlot(TorsoSlotName, TorsoPath);
+	ApplySlot(HeadLegsSlotName, HeadLegsPath);
 }
