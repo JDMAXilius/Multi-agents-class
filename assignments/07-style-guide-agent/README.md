@@ -34,6 +34,39 @@ python3 style_agent.py --live      # real model calls (re-records recording.json
 ./make_submission.sh               # verified standalone zip
 ```
 
+## Pre-Build Declaration
+
+Written before any pipeline code, as the assignment requires. Full text in
+**[`PRE-BUILD-DECLARATION.txt`](PRE-BUILD-DECLARATION.txt)**.
+
+**1. What aesthetic and narrative rules does my capstone actually have?**
+Six — and none were written down in one place before this assignment. They
+were scattered across the GDD, the shipped arena manifest, and the shipped
+text tables. [`STYLE-GUIDE.md`](STYLE-GUIDE.md) now codifies them with
+citations: the arena has exactly **seven landmarks**
+(`arena_manifest.json`) and **three weapons** (GDD §2.4);
+radar/plasma/vehicles/flags are **named cuts** (§6, §2.7, §5.1); every number
+in copy must be a **real tuning value** (Appendix A); the voice is
+**measured** — zero exclamation marks and zero first person across all 63
+spotter lines and every UI LOCTEXT; and the narrative doctrine is that the
+arena is **a place, not a story** — the GDD contains zero fiction, so
+backstory is invention by definition.
+
+**2. What content will the loop hold to those rules?**
+**Arena intel cards** — the map-screen blurb for each of the seven landmarks.
+The arena ships callouts and geometry but **zero player-facing prose**. The
+generator is handed the level designer's raw manifest notes (walls of
+coordinates) and asked for something evocative; that tension is the
+temptation the Evaluator exists to catch.
+
+**3. What does a failure look like, concretely?**
+*"Built by the Vanguard Corporation to guard the reactor core"* — grammatical,
+atmospheric, and wrong three ways: a faction the fiction doesn't have, lore
+the game never claims, in a register no shipped string uses. Or quieter:
+*"the rocket returns every 45 seconds"* — **it's 90**, and a wrong number is
+worse than none because players plan around it. Or *"a sniper's perch"* on the
+Gantry — a weapon that is not in the build, repeated over voice chat forever.
+
 ## What it generates, and why this content
 
 **Arena intel cards** — the map-screen blurb for each of the seven landmarks
