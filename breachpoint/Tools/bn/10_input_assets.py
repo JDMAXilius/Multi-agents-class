@@ -123,14 +123,20 @@ ACTIONS = [
         "tag": "Input.Weapon.Next",
         "value_type": "BOOLEAN",
         "reuse": BN_INPUT_PATH + "/IA_BNWeaponNext",
-        "keys": [("MouseWheelUp", [])],
+        # MouseScrollUp, not MouseWheelUp. UE's key names are MouseScrollUp/MouseScrollDown
+        # (InputCoreTypes.cpp); "MouseWheelUp" is not a key at all, so the IMC entry looked
+        # perfectly correct in the editor and could never fire. Bots were unaffected because
+        # they call AbilityInputTagPressed directly and never touch Enhanced Input — which is
+        # exactly why this survived: the logs showed 308 successful weapon swaps while the
+        # founder's wheel did nothing.
+        "keys": [("MouseScrollUp", [])],
     },
     {
         "id": "WeaponPrevious",
         "tag": "Input.Weapon.Previous",
         "value_type": "BOOLEAN",
         "reuse": BN_INPUT_PATH + "/IA_BNWeaponPrevious",
-        "keys": [("MouseWheelDown", [])],
+        "keys": [("MouseScrollDown", [])],
     },
     {
         "id": "Melee",

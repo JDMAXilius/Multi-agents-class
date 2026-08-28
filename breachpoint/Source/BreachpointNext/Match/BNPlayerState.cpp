@@ -5,6 +5,7 @@
 #include "AbilitySystem/Effects/BNGameplayEffects.h"
 #include "AbilitySystem/Abilities/BNGA_Death.h"
 #include "AbilitySystem/Abilities/BNGA_Equip.h"
+#include "AbilitySystem/Abilities/BNGA_Reload.h"
 #include "AbilitySystem/Abilities/BNGA_ADS.h"
 #include "AbilitySystem/Abilities/BNGA_Grapple.h"
 #include "AbilitySystem/Abilities/BNGA_Grenade.h"
@@ -260,6 +261,21 @@ void ABNPlayerState::GrantDefaults()
 		FGameplayAbilitySpec SwapPreviousSpec(UBNGA_SwapPrevious::StaticClass(), 1);
 		SwapPreviousSpec.GetDynamicSpecSourceTags().AddTag(BNTags::Input_Weapon_Previous);
 		AbilitySystemComponent->GiveAbility(SwapPreviousSpec);
+
+		// RELOAD IS THE BODY'S VERB TOO, for the same reason Swap is — and it was the last
+		// one still granted only by the weapon's ability set. Measured: 142 "no granted
+		// ability carries Input.Weapon.Reload" warnings in a single match against a handful
+		// of successful reloads, every one of them `dead=no` with a live avatar. The cause
+		// is the null Unarmed slot (Weapons[0]) and the gap between equips: with no set
+		// granted there is no reload spec, so the press reaches the ASC and finds nothing.
+		// Fire fails the same way in the same moments, just far less often because a bot
+		// only presses Fire with a target while it presses Reload whenever it is low.
+		//
+		// BNGA_Reload reads the HELD weapon's montage and magazine at activation, so one
+		// granted spec serves every weapon; it simply has nothing to do while unarmed.
+		FGameplayAbilitySpec ReloadSpec(UBNGA_Reload::StaticClass(), 1);
+		ReloadSpec.GetDynamicSpecSourceTags().AddTag(BNTags::Input_Weapon_Reload);
+		AbilitySystemComponent->GiveAbility(ReloadSpec);
 
 		// Character verbs, not weapon verbs: sprint and lean belong to the body and must survive
 		// every weapon swap, so they are granted here and never by a weapon's ability set.
