@@ -1,4 +1,6 @@
 #include "AbilitySystem/Abilities/BNGA_Grapple.h"
+#include "AbilitySystemComponent.h"
+#include "Animation/AnimMontage.h"
 
 #include "AbilitySystem/Effects/BNGameplayEffects.h"
 #include "BreachpointNext.h"
@@ -91,6 +93,41 @@ void UBNGA_Grapple::ActivateAbility(const FGameplayAbilitySpecHandle Handle, con
 	UE_LOG(LogBN, Log, TEXT("BNGrapple: %s hooked %.0fuu away."),
 		*GetNameSafe(GetAvatarActorFromActorInfo()),
 		FVector::Dist(GetAvatarActorFromActorInfo()->GetActorLocation(), Hit.ImpactPoint));
+
+	// PRESENTATION (BN23), and only from here — every early return above is a whiff, and a
+	// whiff must look like nothing happened. Law 2: all FX through cues, never spawned by
+	// the ability itself.
+	//
+	// The three moments are separate cues because a player feels them separately: the shot
+	// leaving, the rope existing while you fly, and the anchor biting at the far end.
+	// EXECUTE for the two instants; ADD for the rope, because it needs a lifetime — it is
+	// removed when the pull ends, which is the component's business, not this ability's.
+	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+	{
+		FGameplayCueParameters CueParams;
+		CueParams.Location = Hit.ImpactPoint;
+		CueParams.Normal = Hit.ImpactNormal;
+		CueParams.Instigator = GetAvatarActorFromActorInfo();
+		CueParams.EffectCauser = GetAvatarActorFromActorInfo();
+		CueParams.SourceObject = GetSourceObject(Handle, ActorInfo);
+
+		ASC->ExecuteGameplayCue(BNTags::GameplayCue_Grapple_Fire, CueParams);
+		ASC->ExecuteGameplayCue(BNTags::GameplayCue_Grapple_Hit, CueParams);
+		ASC->AddGameplayCue(BNTags::GameplayCue_Grapple_Rope, CueParams);
+	}
+
+	// The arm coming up. Soft and unset by default — the montage is Tier-4 content this
+	// packet announces rather than authors, and an unset one must cost nothing. Played
+	// through the ASC's montage path so it replicates like every other body verb, rather
+	// than PlayAnimMontage which would be a second animation route (the split BNGA_Melee's
+	// header warns about).
+	if (UAnimMontage* Loaded = FireMontage.IsNull() ? nullptr : FireMontage.LoadSynchronous())
+	{
+		if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+		{
+			ASC->PlayMontage(this, ActivationInfo, Loaded, 1.f);
+		}
+	}
 
 	// Fire-and-forget, the dated delta from the BR original: the component owns the
 	// pull's whole lifecycle from here. A clean end must NOT stop the pull it started.

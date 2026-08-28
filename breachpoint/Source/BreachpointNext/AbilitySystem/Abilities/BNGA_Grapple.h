@@ -6,6 +6,7 @@
 #include "BNGA_Grapple.generated.h"
 
 class UBNCharacterMovementComponent;
+class UAnimMontage;
 
 /**
  * BN23 — the Grappleshot, SELF-PULL ONLY (founder discussion, 27 Aug: first cut walls the
@@ -43,6 +44,12 @@ protected:
 
 	virtual const FGameplayTagContainer* GetCooldownTags() const override;
 	virtual void ApplyCooldown(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) const override;
+
+	/** The launch animation. Soft and UNSET by default: Tier-4 content this packet
+	 *  announces rather than authors, and an unset montage must cost nothing at runtime
+	 *  and log nothing. Set it in DefaultGame.ini beside the cue assets. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Grapple")
+	TSoftObjectPtr<UAnimMontage> FireMontage;
 
 	/** Eyes-forward line trace out to MaxRangeUU. Both sides run it independently. */
 	bool TraceForTarget(FHitResult& OutHit) const;

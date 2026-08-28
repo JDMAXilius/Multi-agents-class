@@ -66,6 +66,15 @@ namespace BNTags
 	 *  corpse ragdolls on the machines watching it. */
 	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Character_Death);
 
+	// -- BN23 the Grappleshot's presentation. THREE cues because the shot has three
+	// moments a player feels separately: the launch (recoil, sound, the arm coming up),
+	// the rope existing while you fly, and the anchor bite at the far end. One cue for
+	// all three would fire the bite at the wrong instant and leave the rope with no
+	// lifetime of its own.
+	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Grapple_Fire);
+	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Grapple_Rope);
+	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Grapple_Hit);
+
 	/** R7 — a UI verb, NOT an ability: ABNPlayerController handles it BEFORE the ASC forward, so
 	 *  holding Tab never logs "NO granted ability carries it". The UI.Layer.* tags are NOT here —
 	 *  CommonUI keys its stacks on FUITag, which these macros cannot produce; they live in

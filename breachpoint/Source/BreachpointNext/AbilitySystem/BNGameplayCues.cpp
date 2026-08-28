@@ -15,6 +15,9 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Camera/CameraShakeBase.h"
+#include "GameFramework/ForceFeedbackEffect.h"
+#include "GameFramework/PlayerController.h"
 #include "NiagaraComponent.h"
 #include "NiagaraDataInterfaceArrayFunctionLibrary.h"
 #include "NiagaraFunctionLibrary.h"
@@ -354,4 +357,122 @@ void UBNGameplayCueRegistrar::OnWorldBeginPlay(UWorld& InWorld)
 	{
 		RuntimeSet->AddCues(CuesToAdd);
 	}
+}
+
+
+////////////////////////////////////////////////////////////////////
+// BN23 — the Grappleshot's presentation
+
+FGameplayTag UBNGameplayCue_GrappleFire::GetHandledCueTag() const
+{
+	return BNTags::GameplayCue_Grapple_Fire;
+}
+
+bool UBNGameplayCue_GrappleFire::OnExecute_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters) const
+{
+	if (!MyTarget)
+	{
+		return true;
+	}
+
+	const FTransform Muzzle = ResolveMuzzle(MyTarget, Parameters);
+
+	if (USoundBase* Loaded = Sound.IsNull() ? nullptr : Sound.LoadSynchronous())
+	{
+		UGameplayStatics::PlaySoundAtLocation(MyTarget, Loaded, Muzzle.GetLocation());
+	}
+	if (UFXSystemAsset* Burst = Resolve(Effect))
+	{
+		SpawnAt(MyTarget, Burst, Muzzle.GetLocation(), Muzzle.GetRotation().Rotator());
+	}
+
+	// LOCAL PLAYER ONLY. This cue runs on every client that can see the grappler, so an
+	// unguarded shake would kick the camera of everyone watching a teammate fire — the
+	// bug PIE cannot show you, because in PIE you are the only viewer.
+	const APawn* Pawn = Cast<APawn>(MyTarget);
+	APlayerController* PC = Pawn ? Cast<APlayerController>(Pawn->GetController()) : nullptr;
+	if (!PC || !PC->IsLocalController())
+	{
+		return true;
+	}
+
+	if (UClass* ShakeClass = Shake.IsNull() ? nullptr : Shake.LoadSynchronous())
+	{
+		if (PC->PlayerCameraManager)
+		{
+			PC->PlayerCameraManager->StartCameraShake(ShakeClass);
+		}
+	}
+	if (UForceFeedbackEffect* Rumble = Haptic.IsNull() ? nullptr : Haptic.LoadSynchronous())
+	{
+		PC->ClientPlayForceFeedback(Rumble);
+	}
+	return true;
+}
+
+FGameplayTag UBNGameplayCue_GrappleRope::GetHandledCueTag() const
+{
+	return BNTags::GameplayCue_Grapple_Rope;
+}
+
+bool UBNGameplayCue_GrappleRope::OnActive_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters) const
+{
+	if (!MyTarget)
+	{
+		return true;
+	}
+	const FTransform Muzzle = ResolveMuzzle(MyTarget, Parameters);
+
+	// The TRACER's contract, not a new one: spawn at the muzzle and write the far end into
+	// the `User.ImpactPositions` vector ARRAY, which is what the shipped beam systems read.
+	// A single BeamEnd vector compiles and draws nothing.
+	if (UFXSystemAsset* Rope = Resolve(Effect))
+	{
+		if (UNiagaraComponent* Comp = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+				MyTarget->GetWorld(), Cast<UNiagaraSystem>(Rope),
+				Muzzle.GetLocation(), Muzzle.GetRotation().Rotator(),
+				FVector(1.f), /*bAutoDestroy=*/false))
+		{
+			TArray<FVector> Ends;
+			Ends.Add(Parameters.Location);
+			UNiagaraDataInterfaceArrayFunctionLibrary::SetNiagaraArrayVector(
+				Comp, TEXT("User.ImpactPositions"), Ends);
+			Comp->SetVariableBool(TEXT("User.Trigger"), true);
+		}
+	}
+	if (USoundBase* Loaded = Loop.IsNull() ? nullptr : Loop.LoadSynchronous())
+	{
+		UGameplayStatics::PlaySoundAtLocation(MyTarget, Loaded, Muzzle.GetLocation());
+	}
+	return true;
+}
+
+bool UBNGameplayCue_GrappleRope::OnRemove_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters) const
+{
+	// The rope's own end. Nothing to tear down while the FX asset is unset, which is the
+	// shipped state — recorded rather than left as an empty override someone deletes as
+	// dead code. When a rope asset lands it is stopped HERE, and the component must be
+	// found by tag rather than remembered: a static cue holds no per-instance state.
+	return true;
+}
+
+FGameplayTag UBNGameplayCue_GrappleHit::GetHandledCueTag() const
+{
+	return BNTags::GameplayCue_Grapple_Hit;
+}
+
+bool UBNGameplayCue_GrappleHit::OnExecute_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters) const
+{
+	// At the ANCHOR, not the shooter: Parameters.Location is the trace hit, so the bite
+	// reads as something that happened over there rather than in the player's hands.
+	const FVector Where = Parameters.Location;
+	if (UFXSystemAsset* Burst = Resolve(Effect))
+	{
+		SpawnAt(MyTarget, Burst, Where, Parameters.Normal.Rotation());
+	}
+	if (USoundBase* Loaded = Sound.IsNull() ? nullptr : Sound.LoadSynchronous())
+	{
+		UGameplayStatics::PlaySoundAtLocation(MyTarget, Loaded, Where);
+	}
+	return true;
 }
