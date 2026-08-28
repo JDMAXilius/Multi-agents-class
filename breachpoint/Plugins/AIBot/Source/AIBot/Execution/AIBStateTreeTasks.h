@@ -176,6 +176,15 @@ struct FAIBFaceBeliefTaskInstanceData
 	 *  focus alone never turns a tickless controller). */
 	UPROPERTY(EditAnywhere, Category = "Parameter")
 	float TurnDegreesPerSecond = 360.f;
+
+	/** TRUE (Engage): losing the target FAILS this task, which is how the fight branch
+	 *  ends on a lost belief — "wait, where'd he go" is a transition, not a bug.
+	 *
+	 *  FALSE (Retreat): no target is not a failure, it is just nothing to face. A
+	 *  retreating bot must keep fleeing when the threat goes out of sight, so failing
+	 *  here would collapse the branch that exists to save it. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	bool bRequireTarget = true;
 };
 
 /** Faces the sensorium's BELIEF — never the live actor. During the juke window this is

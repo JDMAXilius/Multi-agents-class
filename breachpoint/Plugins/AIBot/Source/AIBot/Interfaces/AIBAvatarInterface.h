@@ -41,6 +41,15 @@ public:
 
 	// -- self reads (FAIBFacts' self block) ---------------------------------------
 	virtual float GetHealthNorm() const = 0;          // 0..1; 1 when unknowable
+
+	/** 0..1 of max shield; 1 when unknowable, and 1 when the host has no shields at all —
+	 *  a game without shields must read "full", never "broken", or every bot on it would
+	 *  believe it is one burst from death.
+	 *
+	 *  Exists because HealthNorm alone cannot see the moment that actually matters in a
+	 *  shielded game. A body at full health with a broken shield IS in mortal danger, and
+	 *  scored zero on every retreat consideration this module had. */
+	virtual float GetShieldNorm() const = 0;
 	virtual float GetAmmoNorm() const = 0;            // magazine fraction of held weapon
 	virtual bool HasReserveAmmo() const = 0;
 	virtual bool CanWeaponFight() const = 0;          // the assembled four-read answer

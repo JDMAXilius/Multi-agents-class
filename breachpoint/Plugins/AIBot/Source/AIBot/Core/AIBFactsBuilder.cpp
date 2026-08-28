@@ -21,6 +21,7 @@ FAIBFacts AIBFactsBuilder::Build(const AAIBBotController& Bot, double NowSeconds
 	{
 		Facts.bVitalsKnown = true;
 		Facts.HealthNorm = Avatar->GetHealthNorm();
+		Facts.ShieldNorm = Avatar->GetShieldNorm();
 		Facts.AmmoNorm = Avatar->GetAmmoNorm();
 		Facts.bHasReserveAmmo = Avatar->HasReserveAmmo();
 		Facts.bWeaponCanFight = Avatar->CanWeaponFight();

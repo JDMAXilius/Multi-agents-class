@@ -16,6 +16,7 @@ UENUM()
 enum class EAIBFactSelector : uint8
 {
 	HealthNorm,             // unset unless bVitalsKnown
+	VitalityNorm,           // unset unless bVitalsKnown; min(health, shield) — see AIBFacts
 	AmmoNorm,
 	GrenadeCount,
 	WeaponCanFight,         // bool as 0/1

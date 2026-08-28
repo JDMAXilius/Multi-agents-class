@@ -143,6 +143,10 @@ struct AIBOT_API FAIBFacts
 	// -- self ----------------------------------------------------------------------
 	bool bVitalsKnown = false;         // false => HealthNorm is meaningless, score "unknown"
 	float HealthNorm = 0.f;            // 0..1 of max, valid only when bVitalsKnown
+	/** 0..1 of max shield, valid only when bVitalsKnown. Rides the SAME known flag as
+	 *  HealthNorm because they come from one avatar read — a host that can answer one can
+	 *  answer both, and a second flag would only ever disagree by being wrong. */
+	float ShieldNorm = 1.f;
 	float AmmoNorm = 0.f;              // magazine fraction of the held weapon
 	bool bHasReserveAmmo = false;
 	bool bWeaponCanFight = false;      // the avatar door's assembled answer (F-6.4) —

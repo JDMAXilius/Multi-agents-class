@@ -425,8 +425,13 @@ EStateTreeRunStatus FAIBFaceBeliefTask::EnterState(FStateTreeExecutionContext& C
 {
 	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	const AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller);
-	return (Bot && Bot->GetSensorium().HasVisibleTarget())
-		? EStateTreeRunStatus::Running : EStateTreeRunStatus::Failed;
+	if (Bot && Bot->GetSensorium().HasVisibleTarget())
+	{
+		return EStateTreeRunStatus::Running;
+	}
+	// Nothing to face. In Engage that ends the fight; in Retreat it is a normal moment
+	// mid-flight and the flee must go on (see bRequireTarget).
+	return InstanceData.bRequireTarget ? EStateTreeRunStatus::Failed : EStateTreeRunStatus::Running;
 }
 
 EStateTreeRunStatus FAIBFaceBeliefTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
@@ -436,7 +441,10 @@ EStateTreeRunStatus FAIBFaceBeliefTask::Tick(FStateTreeExecutionContext& Context
 	APawn* Pawn = Bot ? Bot->GetPawn() : nullptr;
 	if (!Pawn || !Bot->GetSensorium().HasVisibleTarget())
 	{
-		return EStateTreeRunStatus::Failed;
+		// No pawn is a real failure either way. No TARGET is only a failure where the
+		// branch is built on holding one.
+		const bool bFatal = !Pawn || InstanceData.bRequireTarget;
+		return bFatal ? EStateTreeRunStatus::Failed : EStateTreeRunStatus::Running;
 	}
 	// THE BELIEF, never the live actor: during the juke window this is the frozen
 	// last-seen spot — a bot aiming through the pillar is the bug this line bans.

@@ -56,6 +56,19 @@ BEGIN_DEFINE_SPEC(FAIBAmbitionEngineSpec, "AIBot.Sim.AmbitionEngine",
 	 * which PRINTS both tags on failure — a spec that fails without naming the ambition
 	 * that won costs the next session more than it saves this one.
 	 */
+	/** Retreat's raw score from the last Rescore — 0 if it did not score at all. */
+	float RetreatScore() const
+	{
+		for (const FAIBScoredAmbition& Row : Engine->GetLastScores())
+		{
+			if (Row.Tag == AIBTags::Ambition_Retreat)
+			{
+				return Row.Score;
+			}
+		}
+		return 0.f;
+	}
+
 	bool TestTag(const TCHAR* What, FGameplayTag Actual, FGameplayTag Expected)
 	{
 		return TestEqual(What, Actual.GetTagName(), Expected.GetTagName());
@@ -215,6 +228,85 @@ void FAIBAmbitionEngineSpec::Define()
 		Facts.bWeaponCanFight = true;
 		TestTag(TEXT("unknown vitals roam, not rout"),
 			Engine->Rescore(Facts, 1.0), AIBTags::Ambition_Roam);
+	});
+
+	It("breaks contact on a SHIELD break at full health — the Halo rhythm", [this]()
+	{
+		// THE GAP (28 Aug, docs/BREACHPOINT-NEXT-RESEARCH-HALO-LOWHEALTH.md): Retreat's
+		// danger input was HealthNorm alone. In a shielded game a bot at 100% health with a
+		// broken shield is one burst from death, and it scored 0.0 on that input — so it
+		// kept pushing the fight that had just stripped it. Halo's low-health loop is
+		// shield-break -> break contact -> recharge -> re-engage.
+		TArray<FAIBAmbitionSpec> Defaults;
+		UAIBAmbitionEngine::BuildDefaultCoreAmbitions(Defaults);
+		for (const FAIBAmbitionSpec& Spec : Defaults)
+		{
+			Engine->RegisterAmbition(Spec);
+		}
+
+		// Under fire, because a shield does not break in silence: UnderFire gates Retreat
+		// at 0.35 when nothing has shot you lately ("merely being hurt is not yet a rout"),
+		// and a spec that left damage unset would be testing a state that cannot occur.
+		FAIBFacts Facts;
+		Facts.bVitalsKnown = true;
+		Facts.bDamageHistoryKnown = true;
+		Facts.RecentDamageTakenNorm = 0.5f;
+		Facts.bTargetVisible = true;
+		Facts.bWeaponCanFight = true;
+		Facts.HealthNorm = 1.f;
+
+		// Intact shield: unchanged. Healthy bot, visible enemy, working gun -> fight.
+		Facts.ShieldNorm = 1.f;
+		TestTag(TEXT("intact shield still fights"), Engine->Rescore(Facts, 1.0), AIBTags::Ambition_Engage);
+
+		// Shield stripped, health untouched. THE case that used to score a dead zero.
+		Facts.ShieldNorm = 0.f;
+		TestTag(TEXT("broken shield breaks contact"), Engine->Rescore(Facts, 20.0), AIBTags::Ambition_Retreat);
+
+		// And it RELEASES as the shield refills — the want must ease, or this is a one-way
+		// exit instead of a rhythm and the bot never comes back to the fight.
+		Facts.ShieldNorm = 1.f;
+		TestTag(TEXT("recharged shield re-engages"), Engine->Rescore(Facts, 40.0), AIBTags::Ambition_Engage);
+	});
+
+	It("leaves SHIELDLESS play exactly as it was — a full shield is neutral", [this]()
+	{
+		// The safety half, and the one that matters TODAY: BNGE_InitVitals sets MaxShield
+		// to 0 (shields paused, 13 Aug), and the adapter answers ShieldNorm = 1 there — a
+		// mode without shields must read FULL, never BROKEN, or every bot in it would flee
+		// permanently. Pinned on SCORES rather than on the winning tag, because "unchanged"
+		// is a claim about the number, not about who happened to win one rescore.
+		TArray<FAIBAmbitionSpec> Defaults;
+		UAIBAmbitionEngine::BuildDefaultCoreAmbitions(Defaults);
+		for (const FAIBAmbitionSpec& Spec : Defaults)
+		{
+			Engine->RegisterAmbition(Spec);
+		}
+
+		FAIBFacts Facts;
+		Facts.bVitalsKnown = true;
+		Facts.bDamageHistoryKnown = true;
+		Facts.RecentDamageTakenNorm = 0.5f;
+
+		// Hurt through health, shield full — the shieldless host's only shape.
+		Facts.HealthNorm = 0.3f;
+		Facts.ShieldNorm = 1.f;
+		Engine->Rescore(Facts, 1.0);
+		const float ThroughHealth = RetreatScore();
+		TestTrue(TEXT("a hurt shieldless bot still wants out"), ThroughHealth > 0.f);
+
+		// The mirror: same depletion, through the shield instead. min() makes these the
+		// SAME danger, which is the whole claim — one layer at H is one layer at H.
+		Facts.HealthNorm = 1.f;
+		Facts.ShieldNorm = 0.3f;
+		Engine->Rescore(Facts, 20.0);
+		TestEqual(TEXT("a full shield adds nothing of its own"), RetreatScore(), ThroughHealth, 0.0001f);
+
+		// Whole and shieldless: no want at all. A neutral term must not manufacture one.
+		Facts.HealthNorm = 1.f;
+		Facts.ShieldNorm = 1.f;
+		Engine->Rescore(Facts, 40.0);
+		TestEqual(TEXT("whole and shieldless wants no retreat"), RetreatScore(), 0.f, 0.0001f);
 	});
 
 	It("wants nothing this world cannot satisfy — SeekWeapon is retired, Seek moves", [this]()

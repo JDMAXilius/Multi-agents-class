@@ -217,6 +217,26 @@ void UBNAIBAvatarAdapter::ReleaseVerb(FGameplayTag VerbTag)
 	}
 }
 
+float UBNAIBAvatarAdapter::GetShieldNorm() const
+{
+	// SAME contract as GetHealthNorm: 1 when unknowable. And critically, 1 when the game
+	// has NO SHIELDS — MaxShield <= 0 is a shieldless build, which must read "full" rather
+	// than "broken". Reading 0 there would make every bot believe it was one burst from
+	// death and flee permanently, which is exactly what shipped for the whole period
+	// shields were disabled had this fact existed then.
+	const UBNAbilitySystemComponent* ASC = GetASC();
+	if (!ASC)
+	{
+		return 1.f;
+	}
+	const float MaxShield = ASC->GetNumericAttribute(UBNAttributeSet::GetMaxShieldAttribute());
+	if (MaxShield <= 0.f)
+	{
+		return 1.f;
+	}
+	return FMath::Clamp(ASC->GetNumericAttribute(UBNAttributeSet::GetShieldAttribute()) / MaxShield, 0.f, 1.f);
+}
+
 float UBNAIBAvatarAdapter::GetHealthNorm() const
 {
 	// The interface contract: 1 when unknowable — a missing ASC must not read as dying.

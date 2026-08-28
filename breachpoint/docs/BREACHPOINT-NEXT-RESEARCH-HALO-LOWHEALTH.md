@@ -172,3 +172,65 @@ gate (AIB10) which is itself still unmeasured.
 - [343/Microsoft — *Halo 3 Leadership*](https://learn.microsoft.com/en-us/halo-master-chief-collection/h3/ai/leadership)
 - [Halo Support — *Shields in Halo Infinite*](https://support.halowaypoint.com/hc/en-us/articles/24284987877524-Shields-in-Halo-Infinite)
 - [343 — *Forge Overview, Season 5*](https://www.halowaypoint.com/news/forge-overview-season-5)
+
+---
+
+## Log — 28 Aug: fix ① landed, and the fighting retreat that came with it
+
+**① ShieldNorm — landed, but NOT in the shape this doc proposed.**
+
+The doc said "add a Retreat consideration on ShieldNorm, curved steeper than health."
+Writing it exposed why that cannot work: `UAIBAmbitionEngine::Rescore` multiplies every
+consideration into the base utility. A multiplicative term can only pull a want DOWN. So
+
+- it could never have RAISED Retreat at full health — the case the whole fix exists for.
+  `Hurt` on `HealthNorm` is already 0.0 there, and 0 × anything is 0; and
+- whatever it scored on a FULL shield would have taxed every health-driven retreat in a
+  shieldless game. At the drafted 0.15 that was an 85% cut to behaviour that works today.
+
+What landed instead: `Hurt` reads a new `EAIBFactSelector::VitalityNorm` =
+`min(HealthNorm, ShieldNorm)` — the more depleted of the two layers is the one you are
+dying through. Same Halo intent, one selector, no second term.
+
+"Steeper than health" falls out rather than being authored: a shield swings 1→0 in one
+burst while health decays across a fight, so the same curve reads as a spike on the shield
+and a slope on health.
+
+- `IAIBAvatarInterface::GetShieldNorm()` — 1 when unknowable AND 1 when `MaxShield <= 0`.
+  That second clause is the safety: **`BNGE_InitVitals` sets MaxShield to 0 today** (shields
+  paused, 13 Aug), so `min()` collapses to `HealthNorm` and live behaviour is unchanged by
+  construction. This arms itself the day shields come back on.
+- Pinned by two specs: the shield-break rhythm (intact → fight, broken → break contact,
+  recharged → fight again) and shieldless neutrality (a full shield adds nothing of its own,
+  proven on SCORES, not on who won one rescore).
+
+**A spec of mine was wrong first, twice, and the engine was right both times.** The first
+draft asserted a hurt bot retreats with no recent damage — but `UnderFire` gates Retreat at
+0.35 when nothing has shot you lately ("merely being hurt is not yet a rout"), which is
+deliberate. A shield does not break in silence, so the spec now sets damage history and
+tests the state that can actually occur.
+
+**② (unplanned, from the founder's question) — Retreat could not shoot back.**
+
+Retreat's branch was `Sentinel + Flee` and nothing else: the bot turned its back and jogged
+away without a shot, a free kill for whoever had just stripped it. Halo's spartans backpedal
+firing. Retreat now also runs `FaceBelief` + `FireWhenAble` beside the flee (a state runs all
+its tasks; the mover still owns where the body goes).
+
+`FaceBelief` needed a new `bRequireTarget` flag, default true. It FAILS on lost visibility —
+which is how Engage ends on a lost belief, and which in Retreat would collapse the branch at
+the exact moment a retreat is WORKING. `FireWhenAble` needed no flag; it already gates every
+press on visibility and fails only when the avatar door closes.
+
+ST_AIBBot rebuilt through the editor (`Tools/aib/70_aib_assets.py build`): Retreat 2 → 4
+tasks, compile OK, save OK.
+
+**Known gap, named not fixed:** `Mode` is now the only branch that can hold while an enemy
+is visible and still not return fire (Engage is never suppressed — `NoteAmbitionFailed` has
+exactly one caller, `FAIBMoveToObjectiveTask` on an unreachable objective — so there is no
+defenceless-Engage path). Mode's `SweepLook` already owns control rotation, so adding aim
+there is a rotation-arbitration decision, not a task addition. Founder's call.
+
+Ladder: rung 1 both targets Succeeded · rung 2 AIBot **121/0**, Breachpoint **126 started,
+3 failing** — the same three pre-existing legacy failures, unchanged. Not run: PIE, and no
+multiplayer claim is made for any of this.

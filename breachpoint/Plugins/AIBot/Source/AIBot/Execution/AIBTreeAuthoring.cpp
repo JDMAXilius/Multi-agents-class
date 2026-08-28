@@ -160,6 +160,20 @@ FString UAIBTreeAuthoring::BuildBotStateTree()
 	Retreat.AddEnterCondition<FAIBGateRetreatCondition>();
 	Retreat.AddTask<FAIBAmbitionSentinelTask>();
 	Retreat.AddTask<FAIBFleeFromBeliefTask>();
+	// A FIGHTING retreat, not a rout. Retreat used to be flee-and-nothing-else: the bot
+	// turned its back and jogged away without a shot, which is a free kill for whoever
+	// broke its shield and reads as panic rather than discipline. Halo's spartans
+	// backpedal firing. Both tasks run BESIDE the flee (a state runs all its tasks),
+	// so the mover still owns where the body goes — this only decides where it looks
+	// and whether the trigger is pressed on the way out.
+	//
+	// bRequireTarget=false is load-bearing: FaceBelief fails on lost visibility, and in
+	// Retreat that would collapse the branch a hurt bot depends on the moment it breaks
+	// line of sight — which is the exact moment a retreat is WORKING. FireWhenAble needs
+	// no such flag; it already gates every press on visibility and fails only when the
+	// avatar door closes.
+	Retreat.AddTask<FAIBFaceBeliefTask>().GetInstanceData().bRequireTarget = false;
+	Retreat.AddTask<FAIBFireWhenAbleTask>();
 	// Reaching the flee goal while still wanting Retreat re-selects and flees further.
 	AddCompletionTransition(Retreat, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
 	AddCompletionTransition(Retreat, Root, EStateTreeTransitionTrigger::OnStateFailed, 0.5f);

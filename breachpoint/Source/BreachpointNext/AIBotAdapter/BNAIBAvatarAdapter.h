@@ -42,6 +42,7 @@ public:
 
 	// -- IAIBAvatarInterface: self reads --------------------------------------------
 	virtual float GetHealthNorm() const override;
+	virtual float GetShieldNorm() const override;
 	virtual float GetAmmoNorm() const override;
 	virtual bool HasReserveAmmo() const override;
 	virtual bool CanWeaponFight() const override;

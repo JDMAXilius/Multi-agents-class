@@ -310,8 +310,23 @@ void UAIBAmbitionEngine::BuildDefaultCoreAmbitions(TArray<FAIBAmbitionSpec>& Out
 		Retreat.BaseUtility = 1.2f;
 		Retreat.CommitSeconds = 3.f;
 
+		// VITALITY, not health. In a shielded game the moment that matters is the
+		// SHIELD BREAK, and this consideration used to be blind to it: a body at full
+		// health with a broken shield is one burst from death and scored 0.0 here, so
+		// Retreat could not outbid anything (docs/BREACHPOINT-NEXT-RESEARCH-HALO-LOWHEALTH.md).
+		//
+		// Why one combined selector rather than a second shield consideration: scores are
+		// MULTIPLICATIVE. A separate term can only ever pull a want DOWN, so it could not
+		// have raised Retreat at full health — and its full-shield value would have taxed
+		// every health-driven retreat in a shieldless game. min() is the shape that fits:
+		// the more depleted of the two layers is the one you are dying through.
+		//
+		// Shieldless play is byte-identical to before, by construction: ShieldNorm is 1
+		// when a mode has no shields (MaxShield == 0, which is TODAY — vitals are paused
+		// per the 13 Aug call), so min() collapses to HealthNorm and every existing pin
+		// still holds. This arms itself the day shields come back on.
 		FAIBConsideration& Hurt = Retreat.Considerations.AddDefaulted_GetRef();
-		Hurt.Selector = EAIBFactSelector::HealthNorm;
+		Hurt.Selector = EAIBFactSelector::VitalityNorm;
 		Hurt.InputMin = 0.f;
 		Hurt.InputMax = 0.6f;
 		Hurt.SetLinearCurve(false); // low health -> high want

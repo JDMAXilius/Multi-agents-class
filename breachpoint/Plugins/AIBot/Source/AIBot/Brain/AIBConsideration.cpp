@@ -10,6 +10,10 @@ namespace
 		{
 		case EAIBFactSelector::HealthNorm:
 			return Facts.bVitalsKnown ? TOptional<float>(Facts.HealthNorm) : TOptional<float>();
+		case EAIBFactSelector::VitalityNorm:
+			return Facts.bVitalsKnown
+				? TOptional<float>(FMath::Min(Facts.HealthNorm, Facts.ShieldNorm))
+				: TOptional<float>();
 		case EAIBFactSelector::AmmoNorm:
 			return Facts.AmmoNorm;
 		case EAIBFactSelector::GrenadeCount:
