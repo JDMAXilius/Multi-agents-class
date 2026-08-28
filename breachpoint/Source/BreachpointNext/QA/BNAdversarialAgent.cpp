@@ -101,7 +101,7 @@ static void BNAQA_Start(const TArray<FString>& Args, UWorld* World)
 		UE_LOG(LogBNAQA, Error, TEXT("bn.aqa.start: SpawnActor failed."));
 		return;
 	}
-	if (APlayerState* PS = Probe->PlayerState)
+	if (APlayerState* PS = Probe->GetPlayerState<APlayerState>())
 	{
 		PS->SetPlayerName(TEXT("AQA-Probe"));
 	}
@@ -189,8 +189,11 @@ void ABNAQAController::StopRun(const FString& Reason)
 	UE_LOG(LogBNAQA, Log, TEXT("AQA run stopped (%s): %d finding class(es), %d behavior cycles, %d presses, %d moves, %d deaths."),
 		*Reason, Findings.Num(), BehaviorCycles, Presses, MoveRequests, Deaths);
 
+	// DespawnBot's proven order: pawn first (unpossession unhooks delegates), then the
+	// controller, whose destruction retires its PlayerState from every roster.
 	if (APawn* P = GetPawn())
 	{
+		UnPossess();
 		P->Destroy();
 	}
 	Destroy();
