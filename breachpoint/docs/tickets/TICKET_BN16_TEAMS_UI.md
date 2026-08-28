@@ -1,6 +1,12 @@
 # TICKET — BN16: the team UI (T5 — relative presentation over the BN15 feeds)
 
-> STATUS: in-progress — cloud lead + crew wave, 26 Aug 2026. Design authority:
+> STATUS: in-progress — cloud lead + crew wave, 26 Aug 2026; **header corrected 28 Aug
+> 2026.** The F3 HIGH is **CLOSED**: `MyTeamScoreText` and `EnemyTeamScoreText` are placed
+> in `WBP_BNScreen_Scoreboard` and the re-run audit reports **"Findings: none"** — so the
+> team-score header can render, and the 26 Aug entries' "WRITTEN, NOT COMPILED" is stale
+> (Editor and Game both build clean). **What keeps this open is unchanged and is not
+> code: the OFF-case and ON-case are EYES-ON protocols the founder must run, and the
+> 26 Aug audit's own verdict says why the editor cannot close them.** Design authority:
 > docs/BN-TEAMS-PACKET.md (§UI: relative friendly/enemy off `OnTeamChanged`, deferred
 > subscription for the replication race, two-block scoreboard, killfeed tints, match
 > band); order: docs/BN-TEAMS-ROADMAP.md T5. Contracts: the UI doctrine already in
@@ -46,7 +52,9 @@ from the setter) — law 3's deletion test must be re-run against this wave.
 
 ## Done when (terminal proof, after the review barrier)
 
-- [ ] Rung 1 all targets
+- [x] Rung 1 — Editor + Game compile clean (28 Aug); `BreachpointServer` unsatisfiable on
+      this launcher install (environmental, not ticked as a pass). Supersedes the 26 Aug
+      audit's "EDITOR TARGET ONLY" CDO probe
 - [ ] OFF-case: today's FFA HUD renders untouched (relations all None; no team strip)
 - [ ] ON (eyes-on protocol): scoreboard two blocks, my side listed first and tinted
       Ally/Self, enemies Threat; match band shows the two team scores relative
@@ -251,3 +259,33 @@ the first pass.
      is the gate. Anything else means step 1 did not land and the ON protocol is not ready.
   3. Rung 1, all three targets.
   4. Then the eyes-on protocol, OFF-case glance FIRST.
+
+**2026-08-28 — board-hygiene pass: F3 closed, the eyes-on is not.**
+
+Corrections and one landed fix recorded; nothing re-audited by this pass.
+
+- **F3 (HIGH) is CLOSED.** `Tools/bn/bn16_scoreboard_team_header.py` ran: the two
+  CommonTextBlocks are placed on BoardCanvas, and the re-run audit reports **"Findings:
+  none"**. The failure mode that made F3 nasty — both binds `BindWidgetOptional`, so the
+  WBP compiled clean, no warning fired, and `RefreshTeamScores` returned at its opening
+  guard forever — is gone. It was the packet's only new asset obligation.
+- **"WRITTEN, NOT COMPILED" is stale beyond the editor target.** The 26 Aug audit could
+  only supersede it FOR THE EDITOR via a CDO probe and said so; both buildable targets
+  compile clean now.
+- **The OFF-case box got HARDER, exactly as the audit predicted, and that is the entry
+  worth reading.** Its own words: *"'no team strip' passes today only BY ABSENCE (the two
+  widgets do not exist) — once F3's fix lands, the Collapsed path becomes load-bearing and
+  this box needs re-checking."* F3's fix has landed. The widgets are stored Collapsed, so
+  the FFA board's clean look is now a structural claim about stored visibility instead of
+  a claim about nothing being there. **Nobody has looked at an FFA HUD since.**
+- **Both remaining boxes are the founder's eyes and stay `[ ]`.** The audit's verdict
+  stands unamended: MCP's reach ends at the asset, every value BN16 could disturb is
+  written at runtime onto a `UUserWidget` instance inside a running world, and
+  `CaptureViewport` returns the editor viewport — no HUD in it. The static "no instruction
+  differs" argument is still not frame proof and must not be written up as one.
+- **The MEDIUM stands unfixed and unowned**: both match-band bars are still engine-default
+  `(0, 0.5, 1)` with nothing in `UI/` writing them, so teams mode reads as two blue bars
+  under one red and one blue number. Not a Done-when blocker (the box says the NUMBERS
+  read relative) — but it is the first thing a founder's eye will land on during the very
+  eyes-on session these boxes are waiting for. Same family as BN11's recorded gap; wants
+  a C++ owner.

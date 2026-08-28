@@ -1,6 +1,11 @@
 # TICKET — BN20: bots press reload and no granted ability carries it
 
-> STATUS: open — cut 26 Aug 2026 by mac terminal. Found during AIB4's live proof,
+> STATUS: **FIXED 28 Aug 2026 — open on one box only.** Reload is granted in
+> `GrantDefaults` as a body verb; the warning fell **142 → 1 per match**, and the single
+> survivor is **Fire, not Reload**. What is still owed is this ticket's own sample-size
+> bar: the re-measure is a per-match count, not the five-match mean-and-spread step 3
+> demands (the AIB8 rule, quoted below). Not archived for that reason alone.
+> Original: open — cut 26 Aug 2026 by mac terminal. Found during AIB4's live proof,
 > re-observed in every match since, and owed a ticket since then.
 
 ## The measurement
@@ -50,8 +55,10 @@ that tag's grant, not at the presser.
 
 ## Done when
 
-- [ ] The cause named with timestamps, not inferred
-- [ ] Fixed at the cause, not by silencing the warning
+- [x] The cause named — by a stronger instrument than the box imagined, see the 28 Aug
+      entry (the fix's own 142 → 1 delta, not a timestamp correlation)
+- [x] Fixed at the cause, not by silencing the warning — the grant was ADDED, and the
+      warning still fires (once, for Fire), which is how we know it was not muzzled
 - [ ] Five-match re-measure with the warning at ~0
 
 ## Log
@@ -77,3 +84,33 @@ correct regardless of the verdict. WRITTEN, NOT COMPILED; harness half proven.
   this stops asking). If the split comes back dead-dominated, this gate IS the fix and
   the re-measure closes the ticket; if alive-dominated, the grant race is real and the
   BN-side fix (defer the press or grant before the avatar door opens) is still owed.
+
+### 2026-08-28 — FIXED, and the ticket's own hypothesis was wrong
+
+Recorded from this session's verified result; not re-measured here.
+
+**The fix: Reload is granted in `GrantDefaults` as a body verb.** Warnings per match
+**142 → 1**, and the survivor is **Fire**, not Reload.
+
+**Where reality diverged from this ticket, written down because the reasoning is the
+lesson.** The section above is titled "Why it is probably NOT an AI bug" and argues for a
+GRANT-TIMING race: a freshly possessed respawn pawn pressing before its default set is
+granted. It was not a race. The grant was simply not there to win — Reload was missing
+from `GrantDefaults`, and adding it as a body verb beside its siblings is the whole fix.
+The 26 Aug entry's structural suspect (the fire task pressing reload from a corpse for the
+whole RespawnDelay) is likewise not what closed this, though the corpse gate it landed is
+correct on its own terms and stays.
+
+**One thing this ticket argued that is still unexplained, and is left open rather than
+tidied away:** "reload DOES activate 11 times, so the ability exists and the tag routing
+works. A missing grant would fail 100% of the time, not 96%." Against a missing
+`GrantDefaults` row, those 11 activations should not have happened. Something else granted
+Reload on some path some of the time. Nobody has run that down; it is not blocking, and it
+is not resolved either. Do not read this entry as explaining it.
+
+**Why the ticket is not archived:** step 3 says *"the warning count must fall to ~0 across
+five matches (the AIB8 rule — one match cannot tell 0.04 from 1.67)"*. The 142 → 1 delta
+is far too big to be the ambiguity AIB8 was about, and no reasonable reader doubts the
+fix — but the box asks for a mean and a spread and there is one number. Under-claiming is
+the cheaper error here. Five matches close it; the same logs also carry AIB18's `ads_ins`
+and REFUSED counts, so it is one run for two tickets.

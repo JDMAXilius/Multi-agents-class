@@ -1,6 +1,13 @@
 # TICKET — AIB11: Phase 6 proof — the bot plays the objective (Hill)
 
-> STATUS: blocked — mac terminal 26 Aug 2026. Steps 1-4 and 6 PASS. Step 5 BLOCKED by a
+> STATUS: **open (was blocked) — UNBLOCKED 28 Aug 2026.** The gate this ticket named,
+> hill REACHABILITY via AIB9, is gone: BN21 replaced the two solid stair volumes with 26
+> walkable treads and bots climb them (pawns caught mid-flight 1 → 16 across 90 PIE
+> samples; footprint hits 5 → 53). Step 5 is now RUNNABLE and **UNRUN** — nobody has put
+> the hill back on since, so `bHillEnabled` is still False and the 42-cannot-reach-per-
+> match number is still the last one measured. Everything below is history, kept verbatim.
+>
+> Superseded 26 Aug status, kept: blocked — mac terminal. Steps 1-4 and 6 PASS. Step 5 BLOCKED by a
 > HIGH module defect: a mode ambition that fails its branch never yields, starving every
 > other behaviour (76 kills with the hill off vs 0 with it on). bHillEnabled restored False.
 >
@@ -66,7 +73,8 @@
 
 ## Steps (terminal)
 
-1. Rung 1: all targets compile. Everything above is WRITTEN, NOT COMPILED.
+1. ~~Rung 1: all targets compile. Everything above is WRITTEN, NOT COMPILED.~~ **DONE**
+   (Done-when box 1, and re-confirmed 28 Aug: all targets build clean).
 2. Specs: `AIBot.Sim.*` — expect **97/97** (AmbitionEngine 18 → 22 with Phase 6;
    AimPolicy 7 → 9 with the P4+5 review barrier — see docs/AIBOT-P45-REVIEW.md,
    which also landed module fixes riding this same proof run).
@@ -244,3 +252,21 @@ that this evidence cannot answer — the starvation would look identical either 
 `Source/BreachpointNext/Match/` was outside this ticket's declared owner_path; I extended
 the claim to make the one-line ordering fix, because no observable past #3 is reachable
 while every bot is deadlocked. Recording it rather than widening scope quietly.
+
+### 2026-08-28 — board-hygiene pass: the blocker cleared, the proof did not run
+
+Corrections only.
+
+- **Step 1's "everything above is WRITTEN, NOT COMPILED" is stale** and was already
+  contradicted by this ticket's own first Done-when box. All targets build clean this
+  session; the module suite reads 119/119/0 (this ticket's era was 114).
+- **The BLOCKED status is stale in the other direction — the blocker is gone.** This
+  header sent readers to AIB9 for hill reachability; AIB9 no longer owns it. BN21 built
+  the treads (26 of them, generated, sized for the NAVMESH AGENT — AgentMaxStepHeight 35,
+  AgentRadius 34 — which is why an earlier attempt sized to the character's MaxStepHeight
+  45 did nothing) and bots demonstrably climb.
+- **Step 5 remains UNRUN, and that is the honest state.** Reachability being possible is
+  not the same claim as the hill banking points. The box stays `[ ]` and reads BLOCKED no
+  longer — it reads *unrun*. Re-enabling `bHillEnabled` and re-running step 5 is the next
+  action, and AIB16's escalating-strikes suppression (compiled, 117/117 at the time,
+  switches 7 → 589) means a failing branch can no longer starve the board while it runs.

@@ -1,10 +1,12 @@
 # TICKET — AIB15: Phase 10 proof — the plugin compiles, here and in a blank project
 
-> STATUS: open — cut 26 Aug 2026 by the cloud lead with the extraction ("WRITTEN, NOT
-> COMPILED"). TERMINAL WORK: regenerate, compile all targets, spec run, PIE sanity,
-> then the blank-project proof. The extraction followed the module's own recorded
-> delta VERBATIM (ARCHITECTURE.md carries the EXECUTED note and the two deliberate
-> deviations: Config=Game stands; content stays project-side).
+> STATUS: open — cut 26 Aug 2026 by the cloud lead with the extraction
+> (~~"WRITTEN, NOT COMPILED"~~ — **corrected 28 Aug 2026: the extracted plugin COMPILES.**
+> Editor and Game targets build clean from `Plugins/AIBot/`; module suite 119/119/0,
+> superseding the 118 below). TERMINAL WORK REMAINING: **the blank-project proof** — the
+> roadmap's actual Phase-10 claim — plus the PIE sanity pass. The extraction followed the
+> module's own recorded delta VERBATIM (ARCHITECTURE.md carries the EXECUTED note and the
+> two deliberate deviations: Config=Game stands; content stays project-side).
 
 ## What landed (cloud)
 
@@ -43,8 +45,10 @@
 
 ## Done when
 
-- [ ] All three targets compile after regen
-- [ ] 118/118
+- [x] Editor + Game compile after regen (28 Aug, clean). **THIRD TARGET UNSATISFIABLE
+      HERE** — `BreachpointServer` has no server binaries on this launcher install; closed
+      as environmental and NOT ticked as a pass, per AIB1's precedent
+- [x] Module suite green — **count re-pinned 118 → 119/119/0** (28 Aug)
 - [ ] PIE sanity: tier lines + a fight + the tree loads from /Game/AIBot
 - [ ] Blank-project compile pasted (the roadmap's Phase-10 proof, verbatim)
 - [ ] Watch-list confirmed or errors pasted
@@ -52,3 +56,24 @@
 ## Log
 
 _(terminal: outputs verbatim)_
+
+### 2026-08-28 — board-hygiene pass: the extraction holds; the portability claim is unproven
+
+Corrected, not measured.
+
+The header called this uncompiled text. It is not: the module now lives at
+`Plugins/AIBot/Source/AIBot/` (BN15's own wave table names that path as the one
+pre-sanctioned module edit site, and it built there), Editor and Game targets are clean,
+and the suite reads 119/119/0. Step 1's two predicted break points — the editor-only
+authoring block and the DeveloperSettings link — survived. Step 5's watch-list is answered
+the same way: `EnabledByDefault` coexisting with the explicit uproject entry, and the
+uplugin's `Plugins[]` schema against 5.8, are both confirmed by a build that loads the
+plugin.
+
+**What is NOT proven, and is the whole point of Phase 10:** step 4, the blank-project
+compile. Compiling *here* proves the boundary laws held in a tree that still contains
+BreachpointNext; it does not prove engine-only deps. A BN symbol reaching the linker is
+exactly the thing that only shows up in a bare host, and this ticket stays open for it.
+Step 3's PIE sanity (the `/Game/AIBot/AI/ST_AIBBot` soft path still loading after the
+move — content deliberately did not move) is also unrun, and it is the one that would
+catch a bot standing still on a null path.

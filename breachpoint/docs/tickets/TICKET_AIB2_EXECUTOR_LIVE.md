@@ -1,9 +1,14 @@
 # TICKET — AIB2: the executor goes live (tree built, bots move, BotSystem=AIB in PIE)
 
-> STATUS: in-progress — mac terminal 26 Aug 2026 (6806a5f).
+> STATUS: in-progress — mac terminal 26 Aug 2026 (6806a5f). **CORRECTED 28 Aug 2026: the
+> "WRITTEN, NOT COMPILED" below is FALSE, and has been since this ticket's own
+> `2f8b51a` entry — rung 1 PASSES on a clean relink and rung 2 read 43/43/0 there.**
+> What is still owed is LIVE, not a compile: the `BotSystem=AIB` PIE excerpts (P-1/P-2/
+> P-3) and the barrier's NEEDS-LIVE-PROOF list. Open for those.
 
-> STATUS: open — cut 26 Aug 2026 by the cloud lead. Phase 3's module half is landed
-> **WRITTEN, NOT COMPILED** (the cloud container has no engine). Needs the ENGINE ON DISK
+> STATUS: open — cut 26 Aug 2026 by the cloud lead. Phase 3's module half was landed
+> ~~**WRITTEN, NOT COMPILED**~~ (the cloud container had no engine — it compiles now, see
+> above). Needs the ENGINE ON DISK
 > for step 1 and a **LIVE EDITOR** from step 2 on (the MCP trigger lives inside it).
 
 Phase 3 of `docs/AIBOT-ROADMAP.md`, second half. What landed since AIB1 closed:
@@ -782,3 +787,17 @@ restored; BN gameplay untouched, the rename living on AIB's side of the bridge.
 state, not log counts — see the entry above). The merge changed only the fire gate, in
 the strictly-more-careful direction, plus mechanical renames. A fresh live pass needs
 `BotSystem=AIB`, which is still a founder decision and not mine to flip.
+
+### 2026-08-28 — board-hygiene pass: the header was three days behind its own Log
+
+No new work, no re-measurement. The header still read as if Phase 3's module half were
+uncompiled text; the `2f8b51a` entry above already recorded **Rung 1 PASS on a clean
+relink** and **Rung 2 43/43/0** with no editor running. Re-confirmed at the board level
+this session: BreachpointEditor and Breachpoint both build clean, AIBot 119/119/0 (43 was
+this ticket's era; the pins have accumulated through Phase 10 and AIB16-19).
+
+**Every Done-when box stays unchecked on purpose.** The four that matter here are live
+ones — the `BotSystem=AIB` PIE, the probe against a RUNNING editor, the post-barrier
+rebuild read-back, and the barrier's NEEDS-LIVE-PROOF list — and `BotSystem` flipping is
+still a founder decision, exactly as the entry above says. Compiling was never the thing
+this ticket was waiting on; the header just made it look that way.

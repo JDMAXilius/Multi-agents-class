@@ -1,8 +1,11 @@
 # TICKET — AIB12: Phase 7 proof — the claims board (headless + inertness)
 
-> STATUS: open — cut 26 Aug 2026 by the cloud lead with the Phase-7 build ("WRITTEN,
-> NOT COMPILED"). TERMINAL WORK: compile, specs, one negative live check. The design,
-> the two-audit barrier, and the closed rulings are docs/AIBOT-PHASE7-PACKET.md.
+> STATUS: open — cut 26 Aug 2026 by the cloud lead with the Phase-7 build
+> (~~"WRITTEN, NOT COMPILED"~~ — **corrected 28 Aug 2026: it compiles; all targets build
+> clean and the module suite reads 119/119/0**, which supersedes the 108 expected below).
+> TERMINAL WORK REMAINING: **the negative live check only** — the FFA inertness grep.
+> The design, the two-audit barrier, and the closed rulings are
+> docs/AIBOT-PHASE7-PACKET.md.
 
 ## What landed (cloud)
 
@@ -33,7 +36,8 @@ still names the old structs and will not load against this code.
 
 ## Steps (terminal)
 
-1. Rung 1: all targets compile (everything above is WRITTEN, NOT COMPILED).
+1. ~~Rung 1: all targets compile (everything above is WRITTEN, NOT COMPILED).~~ **DONE
+   28 Aug — all targets build clean.**
 2. Specs: `AIBot.Sim.*` — expect **108/108** (Claims 11 new; totals history: 91 → 95
    Phase 6 → 97 P4+5 barrier → 108).
 3. Watch-list (assumed APIs to confirm at compile): `FObjectKey` equality + construction
@@ -53,7 +57,8 @@ still names the old structs and will not load against this code.
 
 ## Done when
 
-- [ ] Rung 1 + 108/108
+- [x] Rung 1 (all targets clean) + module suite green — **count re-pinned 108 → 119/119/0
+      on 28 Aug**; 108 was this phase's number and eight waves of pins have landed since
 - [ ] FFA inertness grep pasted (0 grants)
 - [ ] Watch-list APIs confirmed or the failures pasted
 - [ ] (optional) raised-tier negative pasted
@@ -61,3 +66,19 @@ still names the old structs and will not load against this code.
 ## Log
 
 _(terminal: outputs verbatim)_
+
+### 2026-08-28 — board-hygiene pass: compiled; the countable absence is still owed
+
+Corrected, not measured. The header said "WRITTEN, NOT COMPILED" for a build that Phases
+8, 9 and 10 were later stacked on — Phase 10 physically moved this code to
+`Plugins/AIBot/` and it still compiles. All targets clean this session, AIBot 119/119/0.
+The watch-list APIs in step 3 (`FObjectKey` equality, `TFunctionRef` from a free function,
+`FIntVector` `==`, the second `UE_DEFINE_GAMEPLAY_TAG_STATIC` TU) are therefore all
+CONFIRMED by the fact of the build — that box could be ticked by inspection, but the
+ticket asks for confirmation *or the failures pasted*, so it is recorded here instead.
+
+**Still open, and it is the interesting one:** step 4's FFA inertness grep. Later tickets
+have been leaning on this result as if it were banked — BN15's Done-when says "AIB12 FFA-
+inert holds OFF", BN17's protocol 6 says "AIB12's result still holds", AIB13's step 3 says
+it "must NOT change". None of them can hold what was never measured. **Zero grants in FFA
+is still an unrun grep**, and it is one match's work.

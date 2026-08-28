@@ -1,6 +1,11 @@
 # TICKET — BN18: teams at rung 5 — multiplayer in threes (T6, the DONE bar)
 
-> STATUS: QUEUED — opens when BN15+BN16 pass their terminal proofs (rungs 1–4).
+> STATUS: **QUEUED — still queued, gate narrowed (28 Aug 2026).** BN15 and BN16 have now
+> passed the rungs a terminal can pass alone — both compile clean, `Sim.Teams` reads 7/7,
+> BN16's F3 asset HIGH is closed — but neither has run its LIVE half, and BN16's ON/OFF
+> cases are eyes-on protocols only the founder can run. Those are rungs 3-4 and they are
+> the gate. Opens when they are green, not before.
+> Original: QUEUED — opens when BN15+BN16 pass their terminal proofs (rungs 1–4).
 > SERIAL protocol, not a wave: one live listen+2-client session (the editor/live-
 > session rule — the aib-editor exemption's reasoning). Per netcode law every claim
 > below is made in THREES: server / acting client / observing client. Teams are the
@@ -52,3 +57,15 @@
 ## Log
 
 _(outputs verbatim)_
+
+### 2026-08-28 — board-hygiene pass: gate narrowed, not opened
+
+No work done. Recorded so the next reader does not mistake "BN15/BN16 compile" for "BN18
+is open": the eight rows below are a single serial listen+2-client session, and running
+them before BN15's own live half would spend a three-machine session discovering things
+one PIE match would have found for free.
+
+Two rows gained content while this ticket waited, worth knowing before the session is
+scheduled: teams is now `bTeamsEnabled=True` by DEFAULT (BN22 §1), so row 1's setup is the
+shipped config rather than an override; and BN16's team-score header widgets now exist
+(F3 closed), which is what rows 1, 2 and 5 read off the scoreboard.

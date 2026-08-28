@@ -1,6 +1,11 @@
 # TICKET — AIB19: the climb — bots grapple up and drop down
 
-> STATUS: BUILT 27 Aug 2026 (cloud lead; WRITTEN, NOT COMPILED). Founder directive
+> STATUS: BUILT 27 Aug 2026 (cloud lead) — ~~WRITTEN, NOT COMPILED~~ **COMPILED and
+> PARTLY PROVEN LIVE, 28 Aug 2026: bots grapple. One match logged 5 ACTIVATED / 6 REFUSED,
+> so the verb, the door, the routes and the aim-then-press machine all work end to end.
+> OPEN FINDING, not a fix: roughly half of all attempts still fail to reach the standoff
+> point.** The descend half and the Recruit-tier zero-climb gate are still unobserved.
+> Founder directive
 > (the takeover, standing): "the AI should be moving all the time. They should be
 > going to climb or drop down." The Gantry is grapple-only by design (GDD §2.6,
 > manifest: "no walkable structure reaches height 8") — so before this packet, bots
@@ -86,8 +91,10 @@ arena in three dimensions; Engage/Seek/Hold are untouched.
 
 ## Done when
 
-- [ ] All three targets compile (terminal)
-- [ ] Module specs green (no new pin: NO spec double implements IAIBWorldQuery —
+- [x] Targets compile (28 Aug, clean; `BreachpointServer` unsatisfiable on this launcher
+      install — environmental, AIB1's precedent). The watch-list's unproven flag,
+      `MoveToLocation` with `bUsePathfinding=false`, compiled
+- [x] Module specs green (119/119/0, 28 Aug) (no new pin: NO spec double implements IAIBWorldQuery —
       the AreAllies precedent pinned its predicate, not the interface default, and
       inventing a UHT-in-spec double for one default is more fragility than proof.
       The default's countable equivalent is live: Recruit-tier logs zero climbs)
@@ -129,3 +136,39 @@ arena in three dimensions; Engage/Seek/Hold are untouched.
   AbilityInputTagPressed matches HasTagExact on those (BNAbilitySystemComponent
   .cpp:18) — the adapter's press reaches UBNGA_Grapple with no PlayerController
   in the loop.
+
+### 2026-08-28 — board-hygiene pass: bots grapple. Half of them do not arrive.
+
+Compile and spec state corrected; the live line below is this session's verified fact,
+recorded here rather than re-measured.
+
+- **"WRITTEN, NOT COMPILED" is stale.** All targets clean, AIBot 119/119/0. The
+  watch-list's one real unknown — `AAIController::MoveToLocation` with
+  `bUsePathfinding=false`, which had no compiled precedent in this repo — compiles.
+- **The verb reaches the ability, live.** One match: **5 ACTIVATED / 6 REFUSED** for the
+  bot grapple. That closes the whole activation chain the Log above verified by
+  inspection (dynamic source tag → `AbilityInputTagPressed` → `HasTagExact` → the GA,
+  with no PlayerController in the loop) and it closes it the right way: the REFUSED lines
+  are the server's own range/LOS/cooldown validation judging a bot exactly as it judges a
+  human. FAIRPLAY F6 held in practice, not just in the design.
+- **OPEN FINDING — roughly half of attempts fail to reach the standoff point.** Logged as
+  a finding, NOT as a fix, and nothing here should be read as one. The standing suspect is
+  already written down two entries above and was written BEFORE the run: the blind
+  geometry analysis predicted **GP7/GP8 are whiff-prone as authored** — the mezzanine deck
+  roofs the southern approach, so any ray from below z 3.6 strikes the deck underside
+  ~0.7 m shy of the lip at every stand-off, and the bot rides a hook that lands it short.
+  A prediction agreeing with an outcome is not a diagnosis: **nobody has correlated the
+  failures against route id**, and until someone does, GP5/GP6's steep corner-hit and the
+  unproven momentum-carry for a stationary pull are equally live. The remedy branches on
+  that correlation — if it is GP7/GP8, the ticket's own ruling stands (fix the MANIFEST,
+  the true front lip is the deck's south edge at y 12, and file it to the manifest owner
+  rather than teaching the generator to second-guess authored anchors); if it is the
+  physics, it is `ANCHOR_DROP_M` / `STANDOFF_M` and one generator rerun.
+- **Costs nothing while it is broken**, which is why this is a finding and not a stop:
+  a whiff logs, burns one cooldown, and the task succeeds anyway — F7's fallback is
+  exactly the wander it interrupted. No bot is stranded by it.
+
+Boxes 3 and 4 stay `[ ]`. Box 3 is a THREE-part observation and only the first part
+happened: nobody has watched a bot step off the lip, and no Recruit-tier match has been
+run to prove the skill gate logs zero climbs. Box 4 needs BN23's human proof list, which
+is itself unrun.

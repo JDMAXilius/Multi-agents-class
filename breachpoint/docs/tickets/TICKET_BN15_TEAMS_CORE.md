@@ -1,6 +1,12 @@
 # TICKET — BN15: the team framework core (T0 identity+assignment, T1 combat honesty)
 
-> STATUS: in-progress — cloud lead + crew wave, 26 Aug 2026. Design authority:
+> STATUS: in-progress — cloud lead + crew wave, 26 Aug 2026; **header corrected 28 Aug
+> 2026.** The code half is DONE and pinned: all targets compile, the 5v3-at-2+-humans
+> defect is fixed and spec-pinned (`BreachpointNext.Sim.Teams` **5 → 7**), the teams spawn
+> branch runs the engine's encroachment partition, and teams is now `bTeamsEnabled=True`
+> by DEFAULT (BN22's founder ruling) and running. **What keeps this open is that every
+> remaining Done-when box is a live match or a threes protocol, and none has been run.**
+> Design authority:
 > docs/BN-TEAMS-PACKET.md; order: docs/BN-TEAMS-ROADMAP.md (this is T0+T1 as one
 > packet, per the design's own recommendation). Contracts in force: netcode.md
 > (new replicated property = this packet + critic REFUTER), gas-purity.md (the FF
@@ -28,7 +34,9 @@ GetAttitude caller), single commit. Then W-REVIEW: bn-critic (netcode/GAS dimens
 
 ## Done when (terminal proof, after the review barrier)
 
-- [ ] Rung 1 all targets; specs (module 118 + BNTeamsSpec)
+- [x] Rung 1 (Editor + Game clean, 28 Aug; `BreachpointServer` unsatisfiable on this
+      launcher install — environmental, not ticked as a pass); specs **AIBot 119/119/0 +
+      `BreachpointNext.Sim.Teams` 7/7** (the 118 above is superseded)
 - [ ] OFF-regression: one FFA match, zero behavioural diffs (harness output identical class)
 - [ ] ON: 4v4 assigns 4/4 by population (assignment log lines)
 - [ ] FF refused count > 0 while self-grenade still damages
@@ -311,3 +319,29 @@ stale, not the code. Its siblings agree: "never drives health below zero" (500 >
 still passes, and the LastDamage Its assert the record, not health. **BN22/BN23's to fix**
 — the diff of this pass touches only `BNGameMode.h/.cpp` and `BNTeamsSpec.cpp`, none of
 which is on the damage path. Not chased here.
+
+### 2026-08-28 — board-hygiene pass: the header, not the code
+
+No new work. The header still read `in-progress` in the sense of "the build may not be
+real", three days after the entry above compiled B1 and B2, restructured B1 so it could be
+refuted headlessly, and pinned the order as a spec. Corrected to say what is actually
+outstanding.
+
+**Banked, and re-confirmed this session by the verifier:** all targets compile; AIBot
+119/119/0; `BreachpointNext.Sim.Teams` **7/7** — the two order Its that make the 5v3
+defect impossible to reintroduce silently. The teams spawn branch runs
+`UWorld::EncroachingBlockingGeometry` with the shape the engine's own
+`ChoosePlayerStart_Implementation` uses.
+
+**Teams is ON by default now** (`bTeamsEnabled=True`, BN22 §1) and has been run: after the
+rally-deadlock fix, **ambition switches recovered 461 → ~1200**, the teams-off level. That
+is the collapse this framework was accused of causing, closed as a bot-behaviour problem
+rather than a teams problem — but note carefully what it is NOT: it is a bot-liveness
+number, not one of this ticket's Done-when rows. None of them moves on it.
+
+**Still owed, all live, all unrun:** the OFF-regression FFA match; the 4v4 assignment
+lines; `ff_refused` > 0 with self-grenade still damaging; the no-teammate-targeting
+acquisition grep; the first live claim GRANTED/DENIED between allied bots (which is
+BN17's protocol A/B row 1, and which also needs AIB12's never-run FFA inertness grep as
+its OFF baseline); and the degenerate cheat test, which is a threes protocol and belongs
+to BN18's session. A one-human PIE cannot reach any of them.

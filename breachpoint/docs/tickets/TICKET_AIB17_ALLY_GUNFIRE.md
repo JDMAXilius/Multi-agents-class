@@ -1,7 +1,10 @@
 # TICKET — AIB17: converge on a teammate's fight — the ally-gunfire channel
 
-> STATUS: BUILT 27 Aug 2026 (cloud lead; WRITTEN, NOT COMPILED) — the BN22 barrier
-> cleared and the held build landed the same day, to this design verbatim.
+> STATUS: BUILT 27 Aug 2026 (cloud lead) — ~~WRITTEN, NOT COMPILED~~ **COMPILED, 28 Aug
+> 2026: all targets clean, AIBot suite 119/119/0. The watch-list item resolved with it —
+> `FAIStimulus::Tag` is real and reads.** The BN22 barrier cleared and the held build
+> landed the same day, to this design verbatim. **UNPROVEN LIVE: no run has counted an
+> `ally fight heard` or `wandering toward the team's fight` line yet.**
 > Law: FAIRPLAY F1-F8; the two guarded channels are F-4.5 (a sense added later must not
 > silently become vision) and F5-C (a friendly must never become a stimulus/target).
 
@@ -61,7 +64,10 @@ Then aib-critic, one dimension: the two guarded channels above.
 
 ## Done when
 
-- [ ] Rung 1; module specs green (+1 pin: Novice never notes — the gate's table)
+- [x] Rung 1 (all targets clean, 28 Aug); module specs green (119/119/0). The promised
+      "+1 pin" is NOT in that count — the Log below moved it to the live protocol on
+      purpose (the tap lives in the perception handler, out of headless reach), so a
+      Recruit-tier match logging zero ally-fight lines is the outstanding equivalent
 - [ ] Live: idle bots converge on a staged fight (log lines count it); FFA unchanged
       (friendly = nobody in FFA — the tap is unreachable by construction)
 - [ ] The 26 Aug collapse metric re-run with Rally + this: kills/switches vs 12/461
@@ -86,3 +92,23 @@ Then aib-critic, one dimension: the two guarded channels above.
 - The spec pin promised in Done-when ("Novice never notes") moved to the LIVE protocol:
   the tap lives in the perception handler, out of headless reach — a Recruit-tier match
   logging zero ally-fight lines is the countable equivalent.
+
+### 2026-08-28 — board-hygiene pass: compiles, and the transcription risk is retired
+
+Corrected, not measured.
+
+- **"WRITTEN, NOT COMPILED" is stale.** All targets build clean; AIBot 119/119/0.
+- **The watch-list is closed by that build.** `FAIStimulus::Tag` — "read nowhere else in
+  this repo", the one thing in this packet that could have been a phantom field — compiles
+  and reads. `IsWeaponNoiseTag`'s default-false door and the adapter's two answers
+  (BNWeaponFire, BNGrenadeBlast) are real code.
+- **Nothing about the BEHAVIOUR is proven.** A compiled tap is a tap nobody has heard
+  fire. Both remaining boxes are live and unrun.
+
+**Partial credit, recorded honestly rather than ticked:** the third box asks for the
+26 Aug collapse metric re-run "with Rally + this", against 12 kills / 461 switches. Since
+then, teams went ON by default and the rally-deadlock fix landed, and **ambition switches
+recovered 461 → ~1200** — back to the teams-off level. That is half the box: the switches
+half, measured with Rally and the strafe rebanding and the traversal fix all in at once.
+The **kills** half is unmeasured, and no run has isolated this ticket's contribution from
+the other three levers. Box stays `[ ]`.

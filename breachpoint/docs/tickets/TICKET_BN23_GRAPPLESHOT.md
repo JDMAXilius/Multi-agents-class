@@ -1,6 +1,12 @@
 # TICKET — BN23: the Grappleshot, self-pull first cut
 
-> STATUS: landed cloud-side 27 Aug 2026 (WRITTEN, NOT COMPILED) — from the founder's
+> STATUS: landed cloud-side 27 Aug 2026 — ~~WRITTEN, NOT COMPILED~~ **COMPILED and WIRED,
+> 28 Aug 2026.** All targets clean; the saved-move path compiles for the first time in BN.
+> Player input is bound to key **"1"** (UE name `One`), three cues are registered live
+> (Fire / Rope / Hit), a **C++ camera shake** landed, and real assets are wired — tracer
+> beam as the rope, muzzle flash, impact burst. **STILL UNSET: rumble, the taut-line loop,
+> the hit sound, and `FireMontage`. NOTHING about the feel is proven — no PIE hook, no
+> multi-process pass, no threes.** From the founder's
 > grapple discussion. Scope RULING recorded there: SELF-PULL ONLY this cut;
 > WeaponAttract is the safe second packet; PawnReel awaits its own founder ruling on
 > whether BREACHPOINT wants enemy-yanking at all. Contracts: netcode.md (clients send
@@ -45,8 +51,12 @@ packet: Verb.Grapple, the Gantry for AIB) independent of this step.
 
 ## Done when (terminal)
 
-- [ ] Rung 1 all three targets (the saved-move path compiles for the first time in BN)
-- [ ] InputConfig row added (committed script or one editor edit, noted here)
+- [x] Rung 1 — the saved-move path compiles for the first time in BN (28 Aug, clean).
+      `BreachpointServer` unsatisfiable on this launcher install (environmental, not
+      ticked as a pass — AIB1's precedent)
+- [x] InputConfig row added — `Input.Grapple` → `IA_Grapple`, bound to key **"1"**
+      (`One`). The designed loud error ("Input.Grapple has no InputAction in ...") no
+      longer fires; humans can press it
 - [ ] PIE host: hook a surface — pulled at ~1800uu/s, detach at arrival; jump mid-pull
       keeps momentum; a sky shot costs NO cooldown; a wall-blocked claim logs REFUSED
 - [ ] The Gantry reachable by grapple from the mid deck (the arena's design promise)
@@ -67,3 +77,37 @@ compiled answer. Bit budget after BN23: Custom_0 grapple, 1-3 free (BN sprint is
 and spends nothing). The skill's §2-§4 API shapes matched the compiled code exactly
 except: BR's saved move carries sprint (BN's does not — GE sprint), and BR read tuning
 from curve tables (BN reads Config).
+
+### 2026-08-28 — board-hygiene pass: wired end to end, felt by nobody
+
+Corrections and this session's verified facts; nothing re-measured.
+
+**Closed since the build:**
+
+- **It compiles**, all targets — the header's "WRITTEN, NOT COMPILED" is stale, and with
+  it goes the packet's biggest transcription risk: `FSavedMove_BN`, the prediction-data
+  factory and `FRootMotionSource_MoveToForce` are BN's first custom CMC and they build.
+- **The one asset step is done.** `Input.Grapple` maps to `IA_Grapple` and the key is
+  **"1"** (`One`).
+- **The presentation half landed further than this ticket asked for**: three cues
+  registered live (**Fire / Rope / Hit**), a **C++ camera shake**, and real assets wired —
+  the tracer beam doing duty as the rope, muzzle flash, impact burst.
+
+**Explicitly UNSET, so nobody reports the feel as finished:** rumble, the taut-line loop,
+the hit sound, and `FireMontage`. A grapple with no rope loop and no hit sound is a
+silent pull.
+
+**Every remaining box is a rung nobody has climbed, and they stay `[ ]`:**
+
+- the PIE host proof — pulled at ~1800uu/s, detach at arrival, jump mid-pull keeps
+  momentum, a sky shot costs NO cooldown, a wall-blocked claim logs REFUSED. This is the
+  cheapest one and it is the one that would tell us whether the whiff-costs-nothing design
+  actually holds;
+- the Gantry reachable by grapple from the mid deck. **Related evidence exists and must
+  not be mistaken for this box**: AIB19 got BOTS grappling live (5 ACTIVATED / 6 REFUSED)
+  with roughly half of attempts falling short of the standoff point — an open finding on
+  route geometry. If that is geometry rather than bot aim, a human firing at the same
+  anchors will fall short too. Read AIB19's finding before running this row;
+- multi-process PIE with `-PktLag=120 -PktLoss=5`, reported as "editor multi-process" and
+  never as rung 4;
+- threes at rung 5, including the corpse-never-keeps-flying cancel path.

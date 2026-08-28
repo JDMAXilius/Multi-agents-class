@@ -1,6 +1,10 @@
 # TICKET — AIB10: strafe on an arc so the step can fill its leg
 
-> STATUS: in-progress — mac terminal 26 Aug 2026.
+> STATUS: in-progress — mac terminal 26 Aug 2026. **28 Aug: it COMPILES** (the 26 Aug
+> entry's "WRITTEN, NOT COMPILED" is stale) **and the fix landed** — BN22 §5 put
+> FightRangeUU (900) on BOTH the strafe and MoveNearBelief and rebanded the spiral clamp
+> to [280, 900], which is this ticket's root cause taken out at the geometry. Still open
+> on the one thing it exists for: **the live before/after has not been pasted.**
 
 Founder report: the strafe distance is far too short. It is, and the fixed 220uu step is
 not the reason — the geometry is.
@@ -98,3 +102,25 @@ synthetic-log asserts green).**
 - Collision note: this ticket is terminal-owned; the cloud took the instrument half
   on the founder's word with no terminal pushes in flight (fetch clean at 5af5041).
   The behavior half stays the terminal's after the re-measure.
+
+### 2026-08-28 — board-hygiene pass: compiled, landed, unmeasured
+
+Nothing re-measured here. Three corrections:
+
+1. **"WRITTEN, NOT COMPILED" (26 Aug entry) is false.** All targets build clean this
+   session; the AIBot suite reads 119/119/0.
+2. **The fix shipped inside BN22 §5**, not under this ticket's own commit — "footwork
+   owns the fight range": FightRangeUU (900) on the strafe gate AND MoveNearBelief, the
+   spiral clamp rebanded [280, 900] with the chord ratchet kept as closing pressure, and
+   the param renamed so the authored tree's stale serialized 350 drops to the new
+   default. That is the root cause in this ticket's own Root-cause section — the 350
+   gate that squeezed every lateral step to nothing — removed.
+3. **BN22's review barrier also fixed a survivor of the same bug** (M3, aib-critic): the
+   350-beeline lived on at `EnterState`, re-issued on every belief blink, and now mirrors
+   the fight-range yield.
+
+Boxes stay unchecked. The first two are code claims that a reader could verify by
+inspection, but this ticket's bar is a **measured** one — its whole cut was that a number
+(182:1) meant nothing without the right instrument, and the fixed instrument has not
+produced a run yet. BN22's own proof list carries the same row (`strafe leg` lines at
+350-900, `strafe_denied_seconds` vs the 26 Aug baseline); one run closes both.

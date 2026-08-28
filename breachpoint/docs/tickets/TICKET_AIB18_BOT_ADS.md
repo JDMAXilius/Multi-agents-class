@@ -1,8 +1,10 @@
 # TICKET — AIB18: the bots aim down sights properly
 
-> STATUS: landed cloud-side 27 Aug 2026 (WRITTEN, NOT COMPILED) — founder: "let's have
-> the aibot doing ADS properly." The host's ADS was fully built and granted to bots
-> (a PlayerState body verb) — nothing ever pressed it.
+> STATUS: landed cloud-side 27 Aug 2026 — ~~WRITTEN, NOT COMPILED~~ **COMPILED, 28 Aug
+> 2026: all targets clean, AIBot suite 119/119/0.** Founder: "let's have the aibot doing
+> ADS properly." The host's ADS was fully built and granted to bots (a PlayerState body
+> verb) — nothing ever pressed it. **UNPROVEN LIVE: every box below is eyes-on or a log
+> count, and no run has produced either — `ads_ins` has never been read off a real match.**
 
 ## What landed
 
@@ -40,3 +42,22 @@
 ## Log
 
 _(outputs verbatim)_
+
+### 2026-08-28 — board-hygiene pass: compiled, unobserved
+
+Corrected, not measured. "WRITTEN, NOT COMPILED" was false — all targets build clean and
+the AIBot suite reads 119/119/0, so the verb, the `IsAiming()` read, the band gating and
+the release paths are all real code.
+
+**No box moves.** All three are observations of a running match:
+
+- the eyes-on (sights up mid-range, hip-fire close, a beat after a descope) — nobody has
+  watched a match for it;
+- `ads_ins` > 0 with mean range inside 500-900 — the harness counter exists and has only
+  ever been fed synthetic lines;
+- REFUSED for `Input.Weapon.ADS` staying ~0 — the interesting one, because it is the
+  falsifier: a spike means the band and the mover disagree about sprint. Worth reading in
+  the same pass as BN20's warning counts, which come off the same log.
+
+Recorded so the next agent does not read "landed" as "working": this is a compiled press
+with no evidence any bot has ever raised its sights.

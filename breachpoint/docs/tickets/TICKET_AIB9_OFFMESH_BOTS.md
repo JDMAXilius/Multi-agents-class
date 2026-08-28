@@ -1,7 +1,12 @@
 # TICKET — AIB9: bots go off the navmesh, and the tile-config lead is dead
 
 > STATUS: open — cut 26 Aug 2026 by mac terminal. Two results, one closing a lead and one
-> opening a real defect.
+> opening a real defect. **28 Aug: the traversal half this ticket became famous for is
+> DONE and has left — the DROP is fixed (JumpMaxDepth 800 → 1000; refusals 9.54 → 0.42
+> per ambition switch) and the CLIMB was never navlinks' to answer: BN21's treads and
+> AIB19's grapple took it. §2's own defect — bots leaving the mesh, `self=NO` — is
+> UNMEASURED, and is now the only thing holding this ticket open. The 26 Aug entry's
+> "WRITTEN, NOT COMPILED" instrument compiles.**
 
 ## 1. The tile-config lead is CLOSED — it was an engine bug, not our config
 
@@ -108,3 +113,29 @@ critical path). WRITTEN, NOT COMPILED; the harness half proven on a synthetic lo
   knockback, and none-of-the-above says nav-bounds geometry, with (X,Y) clustering
   to point at WHERE. The fix packet then names its cause with evidence, per the
   ticket's own bar.
+
+### 2026-08-28 — board-hygiene pass: what left this ticket, and what did not
+
+Corrections only; nothing below was measured by this pass.
+
+- **The instrument COMPILES.** The 26 Aug entry's "WRITTEN, NOT COMPILED" is stale —
+  `DescribeMoveFailure`'s off-mesh clause, `PossessedAtSeconds`, and the damage-ledger
+  stamp accessor are all in a clean build (all targets, verified this session). The
+  harness half was already proven on synthetic lines. So steps 2+3 are ready to run and
+  have not been run.
+- **The drop half is FIXED** — `JumpMaxDepth` 800 → 1000, move refusals **9.54 → 0.42
+  per ambition switch**. That is the number BN22 §3 audits as "the machinery is INTACT".
+- **The climb half is CLOSED OUT OF THIS TICKET, as it should have been.** This ticket's
+  own reasoning said it: a navlink promising a 400uu climb against a 90uu apex is a
+  promise the body cannot keep. The answers were geometry and a grapple, not a link —
+  **BN21** (26 walkable treads; mid-flight pawns 1 → 16 across 90 PIE samples, footprint
+  hits 5 → 53) and **AIB19** (bots fire the Grappleshot; 5 ACTIVATED / 6 REFUSED in one
+  match, roughly half still short of the standoff point — AIB19's open finding, not
+  this ticket's).
+- **BN17 is therefore UNBLOCKED**, and told so in its own header. Its stated gate was
+  "hill reachability"; the reachability was the stairs.
+
+**What still holds this ticket open, unchanged:** the four Done-when boxes are all about
+`self=NO`, and none of them has a number yet. The five-match sweep died after run 1 on 26
+Aug and has not been re-launched — one run is what this ticket was cut to forbid. Whoever
+picks it up starts at step 1, with the instrument already in the build.

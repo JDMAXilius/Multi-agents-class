@@ -1,8 +1,11 @@
 # TICKET — AIB1: first compile of the AIBot module, and its first spec counts
 
-> STATUS: open — RUNG 1 now COMPILES (Editor+Game; Server is environmental). RUNG 2 is
+> STATUS: **CLOSED 28 Aug 2026 — archived.** 41/41/0, and every Done-when box below was
+> already ticked; the header simply never followed the Log's own "AIB1 CLOSED at 41/41/0"
+> entry down. Every status line below is superseded and kept for the record:
+> ~~open — RUNG 1 now COMPILES (Editor+Game; Server is environmental). RUNG 2 is
 > **40/41 — ONE REAL FAILURE**, and the runner reported it as a pass. Handed back to
-> `aib-builder`. Superseded status line below kept for the record:
+> `aib-builder`.~~
 > ~~RUNG 1 FAILED, handed back to `aib-builder`.~~ mac terminal 25 Aug 2026
 > (2b59469). Two real compile errors, BOTH confined to `Source/AIBot/Tests/`; the module's
 > own code compiled clean. Mechanical checks 1-4 all pass. Rung 2 is BLOCKED, not failed.
@@ -398,3 +401,14 @@ behaviour change, and that exact ambiguity has now cost two sessions.
 situation right — fixture, not module — and shipped something that still failed, because the
 real cause was one layer below the one it reasoned about. The only reason that did not land on
 main as a green tick is that the runner had been repaired an hour earlier.
+
+### 2026-08-28 — closing entry (board-hygiene pass). Archived.
+
+The ticket finished on 25 Aug and the STATUS line did not. It kept saying **40/41 — ONE
+REAL FAILURE** for three days after the entry above recorded `41 test(s) started, 0
+failures.` — so a reader skimming headers saw a red module where the Log had a green one.
+Nothing here is re-measured; the four boxes stand as the terminal ticked them.
+
+Independently re-confirmed this session (verifier, no editor open): **BreachpointEditor
+and Breachpoint both build clean; the AIBot suite reads 119/119/0** — 41 was this
+ticket's era, the module has grown ten phases since. Moved to `docs/tickets/archive/`.

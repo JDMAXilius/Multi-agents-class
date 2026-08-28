@@ -1,8 +1,9 @@
 # TICKET — AIB13: Phase 8 proof — four tiers observably distinct
 
-> STATUS: open — cut 26 Aug 2026 by the cloud lead with the Phase-8 build ("WRITTEN,
-> NOT COMPILED"). TERMINAL WORK: compile, specs, one A/B/C/D PIE observation, overlay
-> eyeball.
+> STATUS: open — cut 26 Aug 2026 by the cloud lead with the Phase-8 build
+> (~~"WRITTEN, NOT COMPILED"~~ — **corrected 28 Aug 2026: it compiles; all targets clean,
+> module suite 119/119/0**, superseding the 118 expected below). TERMINAL WORK REMAINING:
+> the A/B PIE observation and the overlay eyeball — both eyes-on, both unrun.
 
 ## What landed (cloud)
 
@@ -68,7 +69,8 @@ hunts for a missing deliverable.
 
 ## Done when
 
-- [ ] Rung 1 + 118/118
+- [x] Rung 1 (all targets clean) + module suite green — **count re-pinned 118 → 119/119/0
+      on 28 Aug**; the 117-vs-118 reconciliation this step worried about is moot at 119
 - [ ] DT_AIBTiers 5 rows, zero warnings
 - [ ] Recruit-vs-Spartan latency delta pasted (the countable distinctness)
 - [ ] Overlay screenshot or "renders and breathes" line
@@ -77,3 +79,22 @@ hunts for a missing deliverable.
 ## Log
 
 _(terminal: outputs verbatim)_
+
+### 2026-08-28 — board-hygiene pass: compiled, including the watch-list API
+
+Corrected, not measured.
+
+- **"WRITTEN, NOT COMPILED" is false.** All targets build clean; AIBot 119/119/0.
+- **Step 5's watch-list API is confirmed by that build**: `DrawDebugString` was the
+  transcribed-but-unproven shape, and the overlay TU compiles — so the *call* is real.
+  That is NOT the box, which asks whether the overlay renders and breathes over a bot's
+  head; that needs an eye on a running PIE and has none.
+- **Step 1's count question is closed by supersession, not by reconciliation.** It asked
+  whether the runner would say 117 or 118 and to reconcile before trusting either. It
+  says 119, and the fuse pin plus AIB16's three suppression pins are all inside it.
+
+Everything else stays `[ ]` because it is observational: the Recruit-vs-Spartan latency
+delta (the distinctness bar's whole content), the DT_AIBTiers 5-row report, and the
+`denied the remembered spot` grep. Note for whoever runs the A/B: step 3's third clause
+assumes `claim GRANTED` reads zero in FFA on AIB12's authority — **AIB12 never ran that
+grep either** (see its 28 Aug entry). Treat it as a measurement, not a given.

@@ -1,9 +1,12 @@
 # TICKET — AIB7: the skill ladders reach the body (Phase 4 integration)
 
-> STATUS: open — cut 26 Aug 2026 by the cloud lead. The integration is landed **WRITTEN,
-> NOT COMPILED** (serial, one writer, on top of AIB3/AIB4's green). Needs the ENGINE ON
-> DISK for steps 1–2, a LIVE EDITOR for step 3 (tree rebuild — a NEW node struct), and a
-> `BotSystem=AIB` PIE for step 4.
+> STATUS: open — cut 26 Aug 2026 by the cloud lead. The integration is landed and
+> ~~**WRITTEN, NOT COMPILED**~~ **COMPILES** (corrected 28 Aug 2026: all targets build
+> clean and the module suite reads 119/119/0, which supersedes this ticket's 91/91 —
+> Phases 6-10 landed on top of this integration and could not have if it had not
+> compiled). Steps 1–2 are answered. What keeps it open is step 3 (LIVE EDITOR, tree
+> rebuild — a NEW node struct) and step 4's `BotSystem=AIB` PIE observations; neither
+> has been run.
 
 Phase 4's second half: the four proven policies now DRIVE the proven task layer. The
 principle throughout: the live-PIE actuators the terminal built stay; the policies add
@@ -91,3 +94,20 @@ the COMPETENCE dimension on top.
 ## Log
 
 _(terminal: outputs verbatim)_
+
+### 2026-08-28 — board-hygiene pass: "WRITTEN, NOT COMPILED" was stale, the live half is not
+
+Corrected, not re-measured. This ticket claimed uncompiled text while five later phases
+sat on top of it — a header that would have told the next agent this integration was
+unsafe to touch, when the only unsafe thing about it is that **nobody has watched it
+run**. Verified this session by the verifier: all targets compile, AIBot 119/119/0.
+
+Boxes deliberately left unchecked:
+
+- *Rung 2: 91/91/0* — the count is dead (119 now). It is re-pinned, not ticked, because
+  this ticket's own reconciliation was against 91 and re-reading a later number is not
+  the same act.
+- *Probe 18/18; rebuild; read-back shows Engage with 5 tasks* — LIVE EDITOR, unrun. The
+  strafe node (`FAIBStrafeTask`) is the new struct; AIB10 later moved its geometry
+  (BN22 §5), so whoever runs the rebuild should read back against TODAY's task list.
+- *Step-4 observations (strafe, aim settle, melee beat, grenade calls)* — eyes-on, unrun.

@@ -1,7 +1,14 @@
 # TICKET — BN22: the founder's 27 Aug takeover packet (teams default · team play ·
 # traversal · health regen · visible strafe)
 
-> STATUS: landed cloud-side 27 Aug 2026 (WRITTEN, NOT COMPILED) — cut from the founder's
+> STATUS: landed cloud-side 27 Aug 2026 — ~~WRITTEN, NOT COMPILED~~ **COMPILED, 28 Aug
+> 2026 (all targets clean).** Two of the seven proof rows are closed: the stairs (BN21,
+> bots climb) and, partly, teams-ON — ambition switches recovered **461 → ~1200** after
+> the rally-deadlock fix, the teams-off level. **The rung-1 row does NOT close: spec
+> suites are not green.** `BreachpointNext.Sim.Damage` "drains health through the door"
+> fails because §6 turned shields back on and 30 damage is now fully absorbed — a stale
+> spec, and BN15's terminal pass named it **this ticket's to fix**. Regen, shields and
+> strafe remain UNSEEN by any eye. Cut from the founder's
 > direct instruction: "take over… teams should be the default… the AI should work as a
 > team… traversal/jumping between platforms back, moving all the time… health
 > regeneration as a GE, gas purity… make sure they are strafing in an arc." Three
@@ -93,8 +100,10 @@ nor recharges, whatever the window/respawn timing knife-edges do.
 
 - [ ] Rung 1 all targets; spec suites green (no new specs in this packet — the regen
       gate is delegate-driven; eyes-on + log proof below is its rung)
-- [ ] Stairs: bn21_stairs_mcp.py + ONE hand level-save; then nav proves itself (bots
-      climb; `offmesh_self`/refusal counters vs the AIB9 baseline)
+- [x] Stairs: `bn21_stairs_mcp.py` + ONE hand level-save — DONE (BN21, archived). 26
+      treads; bots climb: mid-flight pawns **1 → 16** over 90 PIE samples, footprint hits
+      **5 → 53**. NOT included: the `offmesh_self`/refusal counters against the AIB9
+      baseline — that half of the row is unmeasured and stays with AIB9
 - [ ] Teams ON five-match run: kills/switches vs the 12/461 collapse baseline —
       Rally + strafe + traversal are the three levers; measure with all three in
 - [ ] Rally visible: isolated bots walk toward teammates (Mode want lines with
@@ -151,3 +160,56 @@ barrier; register below.**
   derivative crosses; Actor=null verified end-to-end); FFA-inert twice over; the 600
   accordion has a ~900uu geometric dead-band (no oscillation); teams-ON + hill-OFF
   coherent; the corpse press gate reads live state and re-acquires cleanly.
+
+**2026-08-28 — board-hygiene pass: it compiles; five of seven proof rows are still dark.**
+
+Corrections and this session's verified facts, recorded rather than re-measured.
+
+- **"WRITTEN, NOT COMPILED" is stale.** All targets build clean. Every transcription in
+  this packet — the health-regen GE, the sibling `State.Combat.HealthRegenDelay` window,
+  the two-tag dead gate, the shield re-enable, the Rally ambition and its adapter POIs,
+  the fight-range strafe rebanding — is real code.
+- **Row 1 (rung 1 + spec suites green) does NOT close, and the reason is this packet's
+  own.** `BreachpointNext.Sim.Damage` "drains health through the door" expects 30 damage
+  to take Health 100 → 70 and reads 100, because §6 restored Shield/MaxShield to 100 and
+  a 100-point pool absorbs 30 whole. The spec is stale, not the code — its siblings agree
+  (500 > 200 still drives health to zero). BN15's terminal pass diagnosed it and assigned
+  it here explicitly. **It is an owed fix, not a known-failure to route around**, and the
+  fix is the spec's expectation, not the shields.
+- **Row 2 (stairs) closes**, ticked above — with its second clause left open, because the
+  refusal counters against AIB9's baseline were never read.
+- **Row 3 (teams ON five-match run) is HALF measured and stays `[ ]`.** Ambition switches
+  recovered **461 → ~1200** after the rally-deadlock fix — the collapse metric's switches
+  half, back at the teams-off level, and the strongest evidence the §1 ruling was
+  survivable. But the box asks for **kills/switches over five matches with all three
+  levers in**, and what exists is a switch count. Kills are unmeasured, and the three
+  levers (Rally, strafe, traversal) have never been separated.
+- **Rows 4-7 are entirely unobserved**: Rally want lines with the Rally tag and the FFA
+  zero-Rally inert check; health RISING between fights and a corpse that never regens;
+  the shield drain reading `shield 100 -> N` before health moves, the 7s refill, the
+  5s-before-that health start, ShieldsBroken raising and clearing; `strafe leg` lines in
+  the 350-900 band and `strafe_denied_seconds` against the 26 Aug baseline. Every one is
+  a log grep or an eye on a running match, and this packet shipped the largest behaviour
+  change on the board — **the review barrier above found a HIGH by reading, and the live
+  pass has not happened at all.**
+
+Nothing here re-opens the register: the accepted lows (bn-L1, bn-L2, aib-L3, the M2
+FAIRPLAY amendment and its named teammate-marker debt) stand as dated and accepted.
+
+### 2026-08-28 — correction: the stale damage spec is already fixed
+
+The hygiene pass left this ticket's rung-1 row unchecked because
+`BreachpointNext.Sim.Damage "drains health through the door"` was failing — §6
+re-enabled shields, so 30 damage was absorbed and health never moved. That was
+true when the note was written and is no longer: the spec was corrected in
+`386bcaeb` (drop the shield, then test the door — rather than weakening the number
+to whatever the code returns, which would have made it a tautology).
+
+Verified after: `Result={Success}` for that spec, Breachpoint 126 started / 3
+failures, and the surviving three are the pre-existing legacy `Breachpoint.Sim.*`
+BR-module failures this project has carried throughout. Nothing here is owed.
+
+That commit also added the coverage shields made reachable: a hit crossing BOTH
+pools (50 into a 20 shield → shield empties, 30 reaches health), which closes the
+AIB4 claim that the ledger's summing path "passes vacuously because shields are
+off". It no longer is off.
