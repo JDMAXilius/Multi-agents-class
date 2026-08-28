@@ -122,3 +122,25 @@ Still unproven without eyes-on: that the parameter reaches the visible output. E
 strong — it is a declared user parameter, `UserParamBinding` is in the package name table, and
 its default is `(1,1,1,1)`, the canonical white tint identity — but a screenshot of PIE is the
 only thing that closes it, and CaptureViewport returns the EDITOR viewport, not PIE.
+
+**28 Aug 2026, third pass** — Founder: "grenade explosion is still gray not blue or red."
+
+The instigator fallback was necessary but not sufficient. With the owner finally resolving,
+the blast hit the NEXT early return: the identity rule. `ViewerPS == TargetPS` returns false —
+"your own fire keeps the look it has always had" — and you are nearly always looking at a
+grenade YOU threw. So the one case the founder could actually see was the one case that was
+guaranteed to stay neutral. The rule was right for a muzzle flash and wrong for a blast.
+
+`bTintOwnEffects` (Config + EditDefaultsOnly, default FALSE) opts a cue in. True for the
+explosion only; muzzle flash and tracer keep the old rule, verified over MCP rather than
+assumed. Your own blast now reads ALLY, which is what the 3P body already does for the same
+reason. `bTintOwnTrail` matches on the projectile — a trail that stayed neutral while its own
+blast turned blue would be a grenade that changed colour the instant it landed.
+
+`ApplyTeamTint` now logs which of its three exits it took (Verbose, `LogBN`). That is the real
+lesson here: this path had three separate ways to silently produce nothing, and it cost two
+rounds of "it's still gray" to find the second one. Turn it on with
+`-LogCmds="LogBN Verbose"`.
+
+Expected in PIE: your own and team-mates' blasts blue (#4A9BFF), enemies' red (#FF4A3D).
+Still not verified by eyes-on — a headless run was started to confirm it and stopped.

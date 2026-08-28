@@ -140,6 +140,12 @@ protected:
 	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Team")
 	FName TrailTintParameter = TEXT("User.Team_Color");
 
+	/** Tint YOUR OWN grenade's trail too. Matches UBNGameplayCue_Explosion's bTintOwnEffects,
+	 *  and must: a trail that stays neutral while its own blast turns blue is a grenade that
+	 *  changes colour the instant it lands. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Team")
+	bool bTintOwnTrail = true;
+
 	FTimerHandle FuseTimer;
 
 	/** The bot warning's own timer — see WarnNearbyBots. */

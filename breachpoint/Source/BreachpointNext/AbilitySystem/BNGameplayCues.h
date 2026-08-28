@@ -69,7 +69,7 @@ protected:
 	 *  UBNHUDDirector::RelationTo's ladder verbatim (identity, NoTeam guard, BNTeams::AreFriendly)
 	 *  and the HUD's own two hues. False = leave the system alone, which is what FFA, an
 	 *  unassigned side, a non-pawn target and the viewer's OWN fire all answer. */
-	static bool ResolveTeamTint(const AActor* Target, FLinearColor& OutTint);
+	static bool ResolveTeamTint(const AActor* Target, FLinearColor& OutTint, bool bTintOwnEffects = false);
 
 	/** Writes the tint to TintParameter, or does nothing. */
 	void ApplyTeamTint(UNiagaraComponent* Component, const AActor* Target) const;
@@ -91,9 +91,9 @@ public:
 	 *  half is where the blast was losing its colour. */
 	static const APawn* ResolveEffectOwner(const AActor* Target);
 
-	static bool ResolveTeamTintForActor(const AActor* Target, FLinearColor& OutTint)
+	static bool ResolveTeamTintForActor(const AActor* Target, FLinearColor& OutTint, bool bTintOwnEffects = false)
 	{
-		return ResolveTeamTint(Target, OutTint);
+		return ResolveTeamTint(Target, OutTint, bTintOwnEffects);
 	}
 
 protected:
@@ -110,6 +110,20 @@ protected:
 	 *  nothing at all. Override per cue class in DefaultGame.ini when one does. */
 	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Cue")
 	FName TintParameter = TEXT("User.Team_Color");
+
+	/** Does YOUR OWN effect get a colour too?
+	 *
+	 *  FALSE by default, and that is the older rule on purpose: your own muzzle flash and your
+	 *  own tracers should keep the look they have always had, because tinting the thing that
+	 *  fires from your own hands every frame is noise, not information.
+	 *
+	 *  TRUE for the grenade blast (founder, 28 Aug: "still gray"). A thrown grenade is the one
+	 *  effect where the rule backfired — you are almost always looking at your OWN blast, so
+	 *  identity meant the explosion was neutral essentially all the time and the team colour
+	 *  looked broken rather than deliberate. Your own reads ALLY, which is what the 3P body
+	 *  already does for the same reason. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Cue")
+	bool bTintOwnEffects = false;
 
 	/** The WEAPON's own muzzle socket, never the character's (MyCharacter.h:120-124,
 	 *  .cpp:1557-1580). Falls back to the target's transform when SourceObject is not a weapon. */

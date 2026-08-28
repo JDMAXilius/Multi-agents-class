@@ -90,7 +90,7 @@ const APawn* UBNGameplayCue_Base::ResolveEffectOwner(const AActor* Target)
 	return Target ? Target->GetInstigator() : nullptr;
 }
 
-bool UBNGameplayCue_Base::ResolveTeamTint(const AActor* Target, FLinearColor& OutTint)
+bool UBNGameplayCue_Base::ResolveTeamTint(const AActor* Target, FLinearColor& OutTint, bool bTintOwnEffects)
 {
 	// WHOSE effect is this? A cue's target is usually the pawn that fired, but not always: the
 	// grenade blast is handled on the PROJECTILE, an actor with no PlayerState, and this cast
@@ -115,9 +115,22 @@ bool UBNGameplayCue_Base::ResolveTeamTint(const AActor* Target, FLinearColor& Ou
 	// controller belongs to whichever window came up first.
 	const APlayerController* Viewer = GEngine ? GEngine->GetFirstLocalPlayerController(Target->GetWorld()) : nullptr;
 	const ABNPlayerState* ViewerPS = Viewer ? Viewer->GetPlayerState<ABNPlayerState>() : nullptr;
-	if (!ViewerPS || ViewerPS == TargetPS)
+	if (!ViewerPS)
 	{
-		return false; // identity first — your own fire keeps the look it has always had
+		return false;
+	}
+	if (ViewerPS == TargetPS)
+	{
+		// IDENTITY. Your own fire keeps the look it has always had — unless the caller opted in,
+		// which the grenade blast does: you are nearly always watching your OWN explosion, so the
+		// old rule made the tint look broken rather than deliberate (founder, 28 Aug: "still
+		// gray"). Your own side is Ally, exactly as your own body reads to a spectator.
+		if (!bTintOwnEffects)
+		{
+			return false;
+		}
+		OutTint = BNUIColors::Ally;
+		return true;
 	}
 
 	// Either side unassigned answers "no tint": FFA, and the joining client's honest-unknown
@@ -138,12 +151,25 @@ bool UBNGameplayCue_Base::ResolveTeamTint(const AActor* Target, FLinearColor& Ou
 void UBNGameplayCue_Base::ApplyTeamTint(UNiagaraComponent* Component, const AActor* Target) const
 {
 	FLinearColor Tint;
-	if (Component && !TintParameter.IsNone() && ResolveTeamTint(Target, Tint))
+	const bool bResolved = ResolveTeamTint(Target, Tint, bTintOwnEffects);
+	if (Component && !TintParameter.IsNone() && bResolved)
 	{
 		// A name the system does not declare is a SILENT no-op — see TintParameter's comment for
 		// which shipped systems declare one (today: only the grenade's).
 		Component->SetVariableLinearColor(TintParameter, Tint);
 	}
+
+	// THE LOG THIS BUG EARNED. The grenade blast drew neutral for weeks with nothing to show for
+	// it: the tint failed to RESOLVE (the cue is handled on a projectile, so the pawn cast missed)
+	// and a tint that resolves to "no answer" is indistinguishable from FFA. Two rounds of
+	// "it's still gray" is what an unlogged silent path costs, so the path now says which of its
+	// three ways out it took. Verbose — off in a normal run, one line per cue when asked for.
+	UE_LOG(LogBN, Verbose, TEXT("BNCue: %s tint on %s -> %s (param %s, component %s)"),
+		*GetClass()->GetName(),
+		*GetNameSafe(Target),
+		bResolved ? *Tint.ToString() : TEXT("NOT RESOLVED (no owner pawn, no viewer, or unassigned side)"),
+		TintParameter.IsNone() ? TEXT("<none>") : *TintParameter.ToString(),
+		Component ? TEXT("spawned") : TEXT("NULL — nothing to write to"));
 }
 
 FGameplayTag UBNGameplayCue_MuzzleFlash::GetHandledCueTag() const

@@ -111,7 +111,7 @@ void ABNProjectile::BeginPlay()
 		// look it has always had.
 		FLinearColor Tint;
 		if (TrailComponent && !TrailTintParameter.IsNone()
-			&& UBNGameplayCue_Base::ResolveTeamTintForActor(GetInstigator(), Tint))
+			&& UBNGameplayCue_Base::ResolveTeamTintForActor(GetInstigator(), Tint, bTintOwnTrail))
 		{
 			TrailComponent->SetVariableLinearColor(TrailTintParameter, Tint);
 		}
