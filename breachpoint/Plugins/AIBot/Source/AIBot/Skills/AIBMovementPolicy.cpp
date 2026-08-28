@@ -102,6 +102,7 @@ EAIBStrafeIntent FAIBMovementPolicy::StepStrafe(FAIBMovementState& State, EAIBCo
 		// This window stands. Note the direction memory goes with it: a bot that stopped
 		// has nothing to reverse OFF, so the leg after a hold is a fresh pick, not a juke.
 		State.Current = EAIBStrafeIntent::Hold;
+		State.bLastLegWasJuke = false;
 	}
 	else
 	{
@@ -110,6 +111,7 @@ EAIBStrafeIntent FAIBMovementPolicy::StepStrafe(FAIBMovementState& State, EAIBCo
 		// because FRandRange never returns below its floor. That is the capability gate.
 		const bool bHasDirection = Previous != EAIBStrafeIntent::Hold;
 		const bool bJuke = bHasDirection && Roll(Rng) < JukeChance(Level);
+		State.bLastLegWasJuke = bJuke;
 		if (bJuke)
 		{
 			State.Current = (Previous == EAIBStrafeIntent::Left)
@@ -120,6 +122,7 @@ EAIBStrafeIntent FAIBMovementPolicy::StepStrafe(FAIBMovementState& State, EAIBCo
 		{
 			// No juke: an even pick. Even, deliberately — a bot that favours one side
 			// drifts across the arena over a fight and reads as broken pathing.
+			State.bLastLegWasJuke = false;
 			State.Current = (Roll(Rng) < 0.5f)
 				? EAIBStrafeIntent::Left
 				: EAIBStrafeIntent::Right;

@@ -370,6 +370,62 @@ void FAIBMovementPolicySpec::Define()
 			/ static_cast<float>(Left + Right);
 		TestTrue(TEXT("neither side is favoured"), Imbalance < 0.10f);
 	});
+
+	It("marks a REVERSING leg as a juke, and a hold or a fresh pick as not — the hop's trigger", [this]()
+	{
+		// THE DEFENSIVE HOP rides this flag (AIBStateTreeTasks: a defending bot jumps on the
+		// leg that reverses). Getting it wrong in either direction is visible: a stale true
+		// makes the bot hop on every leg and read as a pogo stick, a stuck false makes the
+		// evasion this was asked for silently never happen.
+		//
+		// Expert, because JukeChance is 0 below Skilled by design — that is the capability
+		// gate the hop inherits rather than re-declaring (R28).
+		FAIBMovementState State;
+		FRandomStream Rng(20260828);
+		const EAIBCompetence Level = EAIBCompetence::Expert;
+
+		bool bSawJukeTrue = false;
+		bool bSawJukeFalse = false;
+		double Now = 0.0;
+		for (int32 Step = 0; Step < 400; ++Step)
+		{
+			Now = State.NextDecisionAtSeconds;
+			const EAIBStrafeIntent Previous = State.Current;
+			FAIBMovementPolicy::StepStrafe(State, Level, Rng, Now);
+
+			if (State.Current == EAIBStrafeIntent::Hold)
+			{
+				// A stand has nothing to reverse off, so it can never be a juke.
+				TestFalse(TEXT("a hold leg is never a juke"), State.bLastLegWasJuke);
+				bSawJukeFalse = true;
+				continue;
+			}
+			if (State.bLastLegWasJuke)
+			{
+				// The flag's whole meaning: this leg REVERSED the one before it.
+				TestTrue(TEXT("a juke leg has a direction to reverse"), Previous != EAIBStrafeIntent::Hold);
+				TestTrue(TEXT("a juke leg actually reversed"), State.Current != Previous);
+				bSawJukeTrue = true;
+			}
+		}
+		TestTrue(TEXT("the sweep saw at least one juke"), bSawJukeTrue);
+		TestTrue(TEXT("and at least one non-juke"), bSawJukeFalse);
+	});
+
+	It("never lets a Novice juke — so the defensive hop cannot reach the low tiers", [this]()
+	{
+		// The gate the hop leans on, pinned from the hop's side. If JukeChance ever gained a
+		// floor above zero this would go red here rather than as a Novice bouncing in a
+		// firefight, which is the kind of tier bleed R28 exists to stop.
+		FAIBMovementState State;
+		FRandomStream Rng(99);
+		for (int32 Step = 0; Step < 300; ++Step)
+		{
+			FAIBMovementPolicy::StepStrafe(State, EAIBCompetence::Novice, Rng, State.NextDecisionAtSeconds);
+			TestFalse(TEXT("a Novice leg is never a juke"), State.bLastLegWasJuke);
+		}
+	});
+
 }
 
 #endif // WITH_DEV_AUTOMATION_TESTS

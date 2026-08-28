@@ -159,7 +159,7 @@ FString UAIBTreeAuthoring::BuildBotStateTree()
 	UStateTreeState& Retreat = Root.AddChildState(TEXT("Retreat"));
 	Retreat.AddEnterCondition<FAIBGateRetreatCondition>();
 	Retreat.AddTask<FAIBAmbitionSentinelTask>();
-	Retreat.AddTask<FAIBFleeFromBeliefTask>();
+	auto& Flee = Retreat.AddTask<FAIBFleeFromBeliefTask>();
 	// A FIGHTING retreat, not a rout. Retreat used to be flee-and-nothing-else: the bot
 	// turned its back and jogged away without a shot, which is a free kill for whoever
 	// broke its shield and reads as panic rather than discipline. Halo's spartans
@@ -174,6 +174,24 @@ FString UAIBTreeAuthoring::BuildBotStateTree()
 	// avatar door closes.
 	Retreat.AddTask<FAIBFaceBeliefTask>().GetInstanceData().bRequireTarget = false;
 	Retreat.AddTask<FAIBFireWhenAbleTask>();
+
+	// DEFEND MODE, not a rout (founder, 28 Aug: "make them defend mode where they crouch
+	// jump, evade, fire — everything they do on attacking mode but in defence mode").
+	//
+	// Retreat now has two halves separated by ONE number. Closer than DEFEND_RANGE the flee
+	// mover breaks contact; at or beyond it the flee mover stands down and this footwork
+	// owns the legs, so the bot circles, jukes and shoots exactly as it does in Engage.
+	// The two ranges MUST agree — two movers issuing in one tick cancel per tick, which is
+	// why this is one constant read twice rather than two tuned numbers.
+	//
+	// The upper bound is deliberately far wider than Engage's 900: a defending bot should
+	// keep evading for as long as it can SEE the threat, not stop dancing at the range
+	// where an attacker would stop closing.
+	constexpr float DEFEND_RANGE_UU = 700.f;
+	Flee.GetInstanceData().DefendRangeUU = DEFEND_RANGE_UU;
+	FAIBStrafeTaskInstanceData& RetreatFootwork = Retreat.AddTask<FAIBStrafeTask>().GetInstanceData();
+	RetreatFootwork.MinRangeUU = DEFEND_RANGE_UU;
+	RetreatFootwork.FightRangeUU = 3000.f;
 	// Reaching the flee goal while still wanting Retreat re-selects and flees further.
 	AddCompletionTransition(Retreat, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
 	AddCompletionTransition(Retreat, Root, EStateTreeTransitionTrigger::OnStateFailed, 0.5f);

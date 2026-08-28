@@ -44,6 +44,16 @@ struct AIBOT_API FAIBMovementState
 	 *  re-measure can state the true split: seconds denied vs seconds stepping. */
 	bool bStrafeOutsideGate = false;
 	double StrafeOutsideSinceSeconds = 0.0;
+
+	/** Did the leg just drawn REVERSE the previous one? The strafe task reads this to put
+	 *  an evasive hop on a defending bot's direction changes. Recorded here rather than
+	 *  returned, because the juke is a property of the LEG the policy drew and the task
+	 *  actuates that leg on a later tick.
+	 *
+	 *  Riding the juke keeps the hop capability-shaped for free: JukeChance is 0 below
+	 *  Skilled, so a Novice cannot juke and therefore cannot hop, and no new tier lever
+	 *  is introduced (R28). */
+	bool bLastLegWasJuke = false;
 };
 
 struct AIBOT_API FAIBMovementPolicy

@@ -371,7 +371,29 @@ struct FAIBFleeFromBeliefTaskInstanceData
 	UPROPERTY(EditAnywhere, Category = "Parameter")
 	float GiveUpAfterNoProgressSeconds = 6.f;
 
+	/** THE DEFEND BAND'S FLOOR. Retreat used to be flee-and-only-flee: reach the goal,
+	 *  re-select, flee again — a bot that ran until the want expired and never fought back,
+	 *  which reads as panic and is a free kill (founder, 28 Aug: "do not just make them
+	 *  crouch and just doing nothing or retreating").
+	 *
+	 *  With the threat VISIBLE and already this far away, contact is broken enough: this
+	 *  mover stands down and FAIBStrafeTask owns the legs, so the bot evades and shoots
+	 *  instead of running. Closer than this it still breaks contact, because a defensive
+	 *  fight at knife range is just dying slower.
+	 *
+	 *  MIRRORS FAIBStrafeTaskInstanceData::MinRangeUU on purpose — the same one-number
+	 *  arbitration MoveNearBelief and Strafe already share through FightRangeUU. Two movers
+	 *  issuing in one tick cancel per tick, so exactly one of them may actuate at a time.
+	 *
+	 *  0 disables the band entirely and restores flee-only behaviour. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float DefendRangeUU = 0.f;
+
 	FVector FleeGoal = FVector::ZeroVector;
+	/** Edge flag: StopMovement is issued ONCE on entering the band, never per tick — a
+	 *  per-tick stop would cancel the footwork's own step every frame and the bot would
+	 *  stand still, which is the exact complaint this whole change answers. */
+	bool bStoodDownToDefend = false;
 	float ClosestSoFarUU = 0.f;
 	float SecondsWithoutProgress = 0.f;
 	FAIBLocomotionState Locomotion;
@@ -714,6 +736,14 @@ struct FAIBStrafeTaskInstanceData
 	 *  silently pinned by the asset. */
 	UPROPERTY(EditAnywhere, Category = "Parameter")
 	float FightRangeUU = 900.f;
+
+	/** The band's FLOOR — hold while the belief is CLOSER than this. 0 in Engage, where
+	 *  footwork owns the whole fight; set in Retreat to the flee task's DefendRangeUU so
+	 *  the two never actuate in the same tick (see FAIBFleeFromBeliefTaskInstanceData::
+	 *  DefendRangeUU). Inside the floor the flee mover is still breaking contact and this
+	 *  task must keep its hands off the legs. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float MinRangeUU = 0.f;
 
 	/* The last-actuated-leg stamp used to live here — and re-initialised on every Engage
 	 * re-entry, so one leg re-fired per belief blink (W-REVIEW P4+5 H1). It is

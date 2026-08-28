@@ -1011,6 +1011,31 @@ EStateTreeRunStatus FAIBFleeFromBeliefTask::Tick(FStateTreeExecutionContext& Con
 	{
 		return EStateTreeRunStatus::Failed;
 	}
+	// DEFEND, rather than run until the want expires. With the threat IN SIGHT and contact
+	// already broken to the band's floor, this mover stands down and the footwork beside it
+	// takes the legs — the bot evades and keeps shooting instead of jogging away with its
+	// back turned (founder, 28 Aug). Out of sight it still flees: you cannot fight what you
+	// cannot see, and breaking contact fully is the right answer there.
+	if (InstanceData.DefendRangeUU > 0.f && Bot->GetSensorium().HasVisibleTarget()
+		&& !IsWithin(*Bot, Bot->GetSensorium().GetLastSeenLocation(), InstanceData.DefendRangeUU))
+	{
+		ReleaseLocomotion(*Bot, InstanceData.Locomotion);
+		if (!InstanceData.bStoodDownToDefend)
+		{
+			// ONCE, on the edge. Per-tick this would cancel the strafe step every frame and
+			// the bot would stand rooted — the exact "doing nothing" this change exists to end.
+			InstanceData.bStoodDownToDefend = true;
+			Bot->StopMovement();
+			UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s broke contact — holding to DEFEND (%.0fuu out)."),
+				*Bot->GetName(), FVector::Dist(Pawn->GetActorLocation(), Bot->GetSensorium().GetLastSeenLocation()));
+		}
+		// Deliberately NOT Succeeded: succeeding would re-select the branch and re-pick a
+		// new flee goal, which is the running-away loop again. The bot stays in Retreat,
+		// fighting, until the brain's own score says the danger has passed.
+		return EStateTreeRunStatus::Running;
+	}
+	InstanceData.bStoodDownToDefend = false;
+
 	if (IsWithin(*Bot, InstanceData.FleeGoal, 200.f))
 	{
 		return EStateTreeRunStatus::Succeeded;
@@ -1780,6 +1805,12 @@ EStateTreeRunStatus FAIBStrafeTask::Tick(FStateTreeExecutionContext& Context, co
 	// harness's strafe_hold regex transcribes it, and "the engaged radius" now names this
 	// wider gate.
 	const FVector Belief = Bot->GetSensorium().GetLastSeenLocation();
+	// THE BAND'S FLOOR (Retreat only; 0 in Engage). Inside it the flee mover is still
+	// breaking contact and owns the legs — one mover per tick, always.
+	if (InstanceData.MinRangeUU > 0.f && IsWithin(*Bot, Belief, InstanceData.MinRangeUU))
+	{
+		return EStateTreeRunStatus::Running;
+	}
 	if (!IsWithin(*Bot, Belief, InstanceData.FightRangeUU))
 	{
 		// THE SPELL EDGE (AIB10 re-instrument): the first cut logged this hold EVERY TICK
@@ -1828,6 +1859,31 @@ EStateTreeRunStatus FAIBStrafeTask::Tick(FStateTreeExecutionContext& Context, co
 		Bot->StopMovement();
 		UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s strafe hold — planted for this leg."), *Bot->GetName());
 		return EStateTreeRunStatus::Running;
+	}
+
+	// THE EVASIVE HOP. A defending bot that only slides left and right is a predictable
+	// target on a flat plane; breaking the vertical too is what makes it hard to track
+	// (founder, 28 Aug: "crouch jump, evade, fire"). Ridden on the JUKE — the leg that
+	// already reverses direction — so the hop lands on the direction change a human would
+	// use it on, and so it inherits JukeChance's capability gate for free: zero below
+	// Skilled, no new tier lever (R28).
+	//
+	// DEFEND ONLY (MinRangeUU > 0 is Retreat's band, 0 in Engage). Engage's footwork is
+	// unchanged, byte for byte, which keeps every strafe measurement in the AIB tickets
+	// comparable rather than silently re-baselined.
+	if (InstanceData.MinRangeUU > 0.f && MovementState.bLastLegWasJuke)
+	{
+		if (IAIBAvatarInterface* Avatar = Bot->GetAvatar())
+		{
+			// Grounded only: pressing jump mid-air is a no-op the ability system still has
+			// to refuse, and a bot that spams it reads as a stuck key.
+			if (Avatar->IsGrounded())
+			{
+				Avatar->PressVerb(AIBTags::Verb_Jump);
+				Avatar->ReleaseVerb(AIBTags::Verb_Jump);
+				UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s defensive juke — hopping the direction change."), *Bot->GetName());
+			}
+		}
 	}
 
 	// ON AN ARC AROUND THE BELIEF, not perpendicular to it. A perpendicular step always

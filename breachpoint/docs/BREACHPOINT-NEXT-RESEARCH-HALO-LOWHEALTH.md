@@ -234,3 +234,54 @@ there is a rotation-arbitration decision, not a task addition. Founder's call.
 Ladder: rung 1 both targets Succeeded · rung 2 AIBot **121/0**, Breachpoint **126 started,
 3 failing** — the same three pre-existing legacy failures, unchanged. Not run: PIE, and no
 multiplayer claim is made for any of this.
+
+---
+
+## Log — 28 Aug: Retreat becomes DEFEND
+
+Founder: *"for the ai bot low health do not just make them crouch and just doing nothing or
+retreating. make them just defend mode where they crouch jump, evade, fire at you —
+everything they do on attacking mode but in defence mode."*
+
+**What Retreat was.** Even after the fighting-retreat fix it was still a rout: `Flee` runs to
+a goal, SUCCEEDS on arrival, the branch re-selects, and it picks a new goal and runs again.
+A bot that ran until the want expired. The only crouching in the module is the reload crouch
+(`bCrouchedToReload`) — bots crouch because they reload often, not because they are hurt.
+
+**What it is now: two halves separated by ONE number.** `DEFEND_RANGE_UU = 700`.
+
+- Closer than 700 → `Flee` owns the legs and breaks contact. A defensive fight at knife range
+  is just dying slower.
+- At/beyond 700 with the threat VISIBLE → `Flee` stands down and `Strafe` owns the legs. The
+  bot circles, jukes, hops and shoots — Engage's own footwork, in the retreat branch.
+- Out of sight → `Flee` again. You cannot fight what you cannot see.
+
+Retreat went 2 tasks → 5, the same count as Engage: Sentinel, Flee, FaceBelief, FireWhenAble,
+Strafe.
+
+**Why one number and not two tuned ones.** This file's own rule: *two movers issuing in one
+tick cancel per tick*. `Flee.DefendRangeUU` and `Strafe.MinRangeUU` are the same constant read
+twice, exactly as `MoveNearBelief` and `Strafe` already share `FightRangeUU`. If they ever
+disagreed, the overlap band would have both movers issuing and the bot would stand vibrating —
+which is precisely the "doing nothing" being complained about.
+
+Two details that would each have re-created the bug:
+
+- The stand-down returns **Running, never Succeeded**. Succeeding re-selects the branch and
+  picks a fresh flee goal — the running-away loop again.
+- `StopMovement` fires **once on the edge**, not per tick. Per tick it would cancel the strafe
+  step every frame and root the bot in place.
+
+**The evasive hop.** Jump was previously used for exactly one thing: unsticking a wedge stall.
+It now also fires on a defending bot's JUKE — the leg that reverses direction. Riding the juke
+means it inherits `JukeChance`'s capability gate for free (0.00/0.00/0.25/0.50), so a Novice
+cannot hop and no new tier lever is introduced (R28). Gated on `MinRangeUU > 0`, so **Engage's
+footwork is byte-identical** and every strafe measurement in the AIB tickets stays comparable.
+
+**Not done, deliberately:** a literal crouch-jump. Crouch is a toggle here and is already
+spent on the reload; adding deliberate crouching to a firefight risks re-creating the earlier
+"they crouch a lot" complaint. The hop is the evasive half and is the part that breaks a
+tracking player's aim.
+
+Ladder: rung 1 Succeeded · rung 2 AIBot **123/0** (2 new) · ST_AIBBot rebuilt, Retreat 5 tasks,
+compile OK. **Not PIE-verified** — no eyes-on claim for how it reads in a live fight.
