@@ -66,6 +66,14 @@ namespace BNTags
 	 *  corpse ragdolls on the machines watching it. */
 	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Character_Death);
 
+	/** BN25 — the two pools coming back. ADDED and REMOVED, never executed: "regenerating" is a
+	 *  state with a duration, and an executed cue would have to be re-fired every period to say
+	 *  the same thing. UBNHealthComponent owns both, and lights them only while the pool is
+	 *  actually BELOW its ceiling — the recharge GE is applied at spawn and clamped to a no-op
+	 *  at full, so a cue gated on the GE alone would be lit all match and mean nothing. */
+	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Character_ShieldRegen);
+	BREACHPOINTNEXT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Character_HealthRegen);
+
 	// -- BN23 the Grappleshot's presentation. THREE cues because the shot has three
 	// moments a player feels separately: the launch (recoil, sound, the arm coming up),
 	// the rope existing while you fly, and the anchor bite at the far end. One cue for

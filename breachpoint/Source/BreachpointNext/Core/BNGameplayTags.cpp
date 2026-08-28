@@ -52,6 +52,8 @@ namespace BNTags
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_Tracer, "GameplayCue.Weapon.Tracer");
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Grenade_Explode, "GameplayCue.Grenade.Explode");
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Character_Death, "GameplayCue.Character.Death");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Character_ShieldRegen, "GameplayCue.Character.ShieldRegen");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Character_HealthRegen, "GameplayCue.Character.HealthRegen");
 
 UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Grapple_Fire, "GameplayCue.Grapple.Fire");
 UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Grapple_Rope, "GameplayCue.Grapple.Rope");

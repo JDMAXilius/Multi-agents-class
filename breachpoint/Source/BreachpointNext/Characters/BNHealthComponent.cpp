@@ -123,6 +123,7 @@ void UBNHealthComponent::HandleHealthRegenGateChanged(const FGameplayTag Tag, in
 	// same way it stops the healing (a window expiring on a corpse starts neither).
 	SetHealthRegenActive(ShouldHealthRegenRun());
 	SetShieldRechargeActive(ShouldShieldRechargeRun());
+	UpdateRegenCues();
 }
 
 void UBNHealthComponent::HandleRecentDamageChanged(const FGameplayTag Tag, int32 NewCount)
@@ -131,6 +132,7 @@ void UBNHealthComponent::HandleRecentDamageChanged(const FGameplayTag Tag, int32
 	// body died inside the window (shields ON, 27 Aug: the dead read joined the recompute).
 	// The delay itself is UBNGE_RecentDamage's duration, so nothing here counts time.
 	SetShieldRechargeActive(ShouldShieldRechargeRun());
+	UpdateRegenCues();
 }
 
 void UBNHealthComponent::HandleShieldChanged(const FOnAttributeChangeData& Data)
@@ -150,6 +152,53 @@ void UBNHealthComponent::HandleShieldChanged(const FOnAttributeChangeData& Data)
 	// permanently State.Shields.Broken — a tag that is supposed to mean "you are exposed RIGHT NOW"
 	// reduced to always-true, which is worse than absent for anything that later reads it.
 	SetShieldsBroken(HasShieldPool() && Data.NewValue <= 0.f);
+
+	// Every recharge tick lands here, which is how the cue stops the instant the pool tops out.
+	UpdateRegenCues();
+}
+
+void UBNHealthComponent::UpdateRegenCues()
+{
+	const UAbilitySystemComponent* ASC = CachedAbilitySystem.Get();
+	const UBNAttributeSet* Attributes = ASC ? ASC->GetSet<UBNAttributeSet>() : nullptr;
+	if (!Attributes)
+	{
+		return;
+	}
+
+	// The handle is "the engine is running", the comparison is "it is actually filling something".
+	// Both halves, or the cue means nothing: shields sit at full for most of a match with the
+	// recharge GE applied the whole time.
+	SetRegenCueActive(BNTags::GameplayCue_Character_ShieldRegen, bShieldRegenCueActive,
+		ShieldRechargeHandle.IsValid() && Attributes->GetShield() < Attributes->GetMaxShield());
+	SetRegenCueActive(BNTags::GameplayCue_Character_HealthRegen, bHealthRegenCueActive,
+		HealthRegenHandle.IsValid() && Attributes->GetHealth() < Attributes->GetMaxHealth());
+}
+
+void UBNHealthComponent::SetRegenCueActive(const FGameplayTag& CueTag, bool& bCueState, bool bActive)
+{
+	if (bCueState == bActive)
+	{
+		return;
+	}
+	UAbilitySystemComponent* ASC = CachedAbilitySystem.Get();
+	if (!ASC || !ASC->IsOwnerActorAuthoritative())
+	{
+		// The server's alone, like every other write here. It lands on every client through the
+		// ASC's cue container and its add/remove multicast — clients do not infer "regenerating"
+		// from watching an attribute climb, because a client that missed the start would never
+		// see it and a joiner would have no way to know it was already running.
+		return;
+	}
+	bCueState = bActive;
+	if (bActive)
+	{
+		ASC->AddGameplayCue(CueTag);
+	}
+	else
+	{
+		ASC->RemoveGameplayCue(CueTag);
+	}
 }
 
 bool UBNHealthComponent::HasShieldPool() const
@@ -304,6 +353,9 @@ void UBNHealthComponent::HandleHealthChanged(const FOnAttributeChangeData& Data)
 		NotifyAIBDamage(CachedAbilitySystem.Get(), GetOwner(), Data.OldValue - Data.NewValue);
 	}
 
+	// The regen tick that healed this body, or the hit that stopped it — both arrive here.
+	UpdateRegenCues();
+
 	if (Data.NewValue > 0.f)
 	{
 		bDeathReported = false;
@@ -384,6 +436,10 @@ void UBNHealthComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	// same way and gets the same cure.
 	SetShieldRechargeActive(false);
 	SetHealthRegenActive(false);
+	// And the cues with them, BEFORE the cached ASC goes: an added cue outlives the pawn on the
+	// persistent PlayerState ASC, so a body that died mid-recharge would hand a stuck
+	// "regenerating" loop to the one that replaces it — the same leak, one layer up.
+	UpdateRegenCues();
 	CachedAbilitySystem.Reset();
 
 	Super::EndPlay(EndPlayReason);

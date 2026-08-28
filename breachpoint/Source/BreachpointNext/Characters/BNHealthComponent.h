@@ -73,6 +73,20 @@ protected:
 	/** Authority only. Idempotent — the handle is the guard, like the recharge's. */
 	void SetHealthRegenActive(bool bActive);
 
+	/** BN25 — the two regen CUES, recomputed wherever a pool or a gate moves. Deliberately NOT
+	 *  "the GE is applied": the recharge is applied at spawn and clamped to a no-op at full, so a
+	 *  cue tied to the handle alone would be lit all match. Below the ceiling AND running is what
+	 *  the player is actually being told. */
+	void UpdateRegenCues();
+
+	/** Authority only; the bool is the guard, because ASC->AddGameplayCue re-multicasts OnActive
+	 *  on every call and this is reached from an attribute delegate that fires each regen tick. */
+	void SetRegenCueActive(const FGameplayTag& CueTag, bool& bCueState, bool bActive);
+
+	bool bShieldRegenCueActive = false;
+
+	bool bHealthRegenCueActive = false;
+
 	/** Recomputed from the two gate tags; the one truth for "may heal right now". */
 	bool ShouldHealthRegenRun() const;
 

@@ -4,6 +4,9 @@
 #include "Characters/BNCharacter.h"
 #include "Core/BNCollision.h"
 #include "Core/BNGameplayTags.h"
+#include "Match/BNPlayerState.h"
+#include "Match/BNTeams.h"
+#include "UI/BNUITypes.h"
 #include "Weapons/BNWeapon.h"
 #include "Data/BNDataRows.h"
 #include "AbilitySystemGlobals.h"
@@ -12,8 +15,10 @@
 #include "GameplayCueSet.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/Character.h"
+#include "Components/AudioComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Engine/Engine.h"
 #include "Kismet/GameplayStatics.h"
 #include "Camera/CameraShakeBase.h"
 #include "GameFramework/ForceFeedbackEffect.h"
@@ -68,9 +73,55 @@ FTransform UBNGameplayCue_Base::ResolveMuzzle(const AActor* Target, const FGamep
 	return Target ? Target->GetActorTransform() : FTransform::Identity;
 }
 
-void UBNGameplayCue_Base::SpawnAt(const UObject* WorldContext, UFXSystemAsset* Asset, const FVector& Location, const FRotator& Rotation)
+UNiagaraComponent* UBNGameplayCue_Base::SpawnAt(const UObject* WorldContext, UFXSystemAsset* Asset, const FVector& Location, const FRotator& Rotation)
 {
-	BNSpawnSystem(WorldContext, Asset, Location, Rotation);
+	return BNSpawnSystem(WorldContext, Asset, Location, Rotation);
+}
+
+bool UBNGameplayCue_Base::ResolveTeamTint(const AActor* Target, FLinearColor& OutTint)
+{
+	const APawn* TargetPawn = Cast<APawn>(Target);
+	const ABNPlayerState* TargetPS = TargetPawn ? TargetPawn->GetPlayerState<ABNPlayerState>() : nullptr;
+	if (!TargetPS)
+	{
+		return false;
+	}
+
+	// THE VIEWER, not the instigator. This runs on every machine that can see the shooter, so the
+	// only correct question is "who is this to the person looking at the screen" — asked of the
+	// TARGET'S OWN WORLD, because in PIE two clients share a process and GEngine's first local
+	// controller belongs to whichever window came up first.
+	const APlayerController* Viewer = GEngine ? GEngine->GetFirstLocalPlayerController(Target->GetWorld()) : nullptr;
+	const ABNPlayerState* ViewerPS = Viewer ? Viewer->GetPlayerState<ABNPlayerState>() : nullptr;
+	if (!ViewerPS || ViewerPS == TargetPS)
+	{
+		return false; // identity first — your own fire keeps the look it has always had
+	}
+
+	// Either side unassigned answers "no tint": FFA, and the joining client's honest-unknown
+	// frame. AreFriendly guards the same sentinel, but it has two answers and this needs three
+	// — without this test an unassigned shooter would read ENEMY rather than unknown, and the
+	// teams-OFF game would go red. Byte-identical to today's FFA by construction.
+	const FGenericTeamId ViewerTeam = ViewerPS->GetGenericTeamId();
+	const FGenericTeamId TargetTeam = TargetPS->GetGenericTeamId();
+	if (ViewerTeam == FGenericTeamId::NoTeam || TargetTeam == FGenericTeamId::NoTeam)
+	{
+		return false;
+	}
+
+	OutTint = BNTeams::AreFriendly(ViewerTeam, TargetTeam) ? BNUIColors::Ally : BNUIColors::Threat;
+	return true;
+}
+
+void UBNGameplayCue_Base::ApplyTeamTint(UNiagaraComponent* Component, const AActor* Target) const
+{
+	FLinearColor Tint;
+	if (Component && !TintParameter.IsNone() && ResolveTeamTint(Target, Tint))
+	{
+		// A name the system does not declare is a SILENT no-op — see TintParameter's comment for
+		// which shipped systems declare one (today: only the grenade's).
+		Component->SetVariableLinearColor(TintParameter, Tint);
+	}
 }
 
 FGameplayTag UBNGameplayCue_MuzzleFlash::GetHandledCueTag() const
@@ -81,7 +132,7 @@ FGameplayTag UBNGameplayCue_MuzzleFlash::GetHandledCueTag() const
 bool UBNGameplayCue_MuzzleFlash::OnExecute_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters) const
 {
 	const FTransform Muzzle = ResolveMuzzle(MyTarget, Parameters);
-	SpawnAt(MyTarget, Resolve(Effect), Muzzle.GetLocation(), Muzzle.Rotator());
+	ApplyTeamTint(SpawnAt(MyTarget, Resolve(Effect), Muzzle.GetLocation(), Muzzle.Rotator()), MyTarget);
 
 	// The shot. Per-weapon first — one cue class serves rifle and pistol, and they are not the
 	// same sound — then the cue's own Config line as the fallback.
@@ -232,7 +283,16 @@ bool UBNGameplayCue_Explosion::OnExecute_Implementation(AActor* MyTarget, const 
 {
 	// NOT ResolveMuzzle: the source object is the projectile, which the authority has already
 	// destroyed by the time this reaches a client. Parameters.Location is the blast's own record.
-	SpawnAt(MyTarget, Resolve(Effect), Parameters.Location, FRotator::ZeroRotator);
+	//
+	// TEAM TINT, and THIS is the one cue where it currently draws. The tint is wired into
+	// five other cues, but none of THEIR systems declares a colour parameter — read straight
+	// out of the shipped .uasset payloads, the tracer exposes User.ImpactPositions /
+	// MuzzlePosition / Trigger, the muzzle flash User.Direction / SmokePuffTexture / Trigger,
+	// the impact ImpactPositions / Normals / NumberOfHits. NS_Grenade_Explosion is the only
+	// shipped system in the project carrying `User.Team_Color`, which is exactly the name
+	// TintParameter defaults to. So a grenade blast shows Ally blue or Threat red today,
+	// while the rest stay colourless until an FX asset declares the parameter.
+	ApplyTeamTint(SpawnAt(MyTarget, Resolve(Effect), Parameters.Location, FRotator::ZeroRotator), MyTarget);
 
 	if (USoundBase* Loaded = Sound.IsNull() ? nullptr : Sound.LoadSynchronous())
 	{
@@ -255,6 +315,7 @@ bool UBNGameplayCue_Tracer::OnExecute_Implementation(AActor* MyTarget, const FGa
 	if (UNiagaraComponent* Tracer = BNSpawnSystem(MyTarget, Resolve(Effect), Muzzle.GetLocation(), Muzzle.Rotator()))
 	{
 		UNiagaraDataInterfaceArrayFunctionLibrary::SetNiagaraArrayVector(Tracer, TEXT("ImpactPositions"), { Parameters.Location });
+		ApplyTeamTint(Tracer, MyTarget);
 		Tracer->SetVariableBool(TEXT("Trigger"), true);
 	}
 	return true;
@@ -383,7 +444,7 @@ bool UBNGameplayCue_GrappleFire::OnExecute_Implementation(AActor* MyTarget, cons
 	}
 	if (UFXSystemAsset* Burst = Resolve(Effect))
 	{
-		SpawnAt(MyTarget, Burst, Muzzle.GetLocation(), Muzzle.GetRotation().Rotator());
+		ApplyTeamTint(SpawnAt(MyTarget, Burst, Muzzle.GetLocation(), Muzzle.GetRotation().Rotator()), MyTarget);
 	}
 
 	// LOCAL PLAYER ONLY. This cue runs on every client that can see the grappler, so an
@@ -437,6 +498,7 @@ bool UBNGameplayCue_GrappleRope::OnActive_Implementation(AActor* MyTarget, const
 			Ends.Add(Parameters.Location);
 			UNiagaraDataInterfaceArrayFunctionLibrary::SetNiagaraArrayVector(
 				Comp, TEXT("User.ImpactPositions"), Ends);
+			ApplyTeamTint(Comp, MyTarget);
 			Comp->SetVariableBool(TEXT("User.Trigger"), true);
 		}
 	}
@@ -468,11 +530,74 @@ bool UBNGameplayCue_GrappleHit::OnExecute_Implementation(AActor* MyTarget, const
 	const FVector Where = Parameters.Location;
 	if (UFXSystemAsset* Burst = Resolve(Effect))
 	{
-		SpawnAt(MyTarget, Burst, Where, Parameters.Normal.Rotation());
+		// Tinted from the GRAPPLER, who is MyTarget — the bite happens over there, but whose
+		// hook it was is the fact worth colouring.
+		ApplyTeamTint(SpawnAt(MyTarget, Burst, Where, Parameters.Normal.Rotation()), MyTarget);
 	}
 	if (USoundBase* Loaded = Sound.IsNull() ? nullptr : Sound.LoadSynchronous())
 	{
 		UGameplayStatics::PlaySoundAtLocation(MyTarget, Loaded, Where);
+	}
+	return true;
+}
+
+
+////////////////////////////////////////////////////////////////////
+// BN25 — the pools coming back
+
+FGameplayTag UBNGameplayCue_ShieldRegen::GetHandledCueTag() const
+{
+	return BNTags::GameplayCue_Character_ShieldRegen;
+}
+
+FGameplayTag UBNGameplayCue_HealthRegen::GetHandledCueTag() const
+{
+	return BNTags::GameplayCue_Character_HealthRegen;
+}
+
+bool UBNGameplayCue_RegenBase::OnActive_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters) const
+{
+	USceneComponent* Root = MyTarget ? MyTarget->GetRootComponent() : nullptr;
+	if (!Root)
+	{
+		return true;
+	}
+
+	// ATTACHED, not spawned at a location: a player heals while running, and a burst left at the
+	// spot where the window expired would say the wrong thing about where they are.
+	const FName Marker = GetHandledCueTag().GetTagName();
+	if (UNiagaraSystem* System = Cast<UNiagaraSystem>(Resolve(Effect)))
+	{
+		if (UNiagaraComponent* Comp = UNiagaraFunctionLibrary::SpawnSystemAttached(
+				System, Root, NAME_None, FVector::ZeroVector, FRotator::ZeroRotator,
+				EAttachLocation::SnapToTarget, /*bAutoDestroy=*/false))
+		{
+			// Stamped so OnRemove can find it. A static cue keeps no per-instance state, so the
+			// component tag IS the memory — the rope's own note, cashed here.
+			Comp->ComponentTags.Add(Marker);
+		}
+	}
+	if (USoundBase* Loaded = Loop.IsNull() ? nullptr : Loop.LoadSynchronous())
+	{
+		if (UAudioComponent* Audio = UGameplayStatics::SpawnSoundAttached(Loaded, Root))
+		{
+			Audio->ComponentTags.Add(Marker);
+		}
+	}
+	return true;
+}
+
+bool UBNGameplayCue_RegenBase::OnRemove_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters) const
+{
+	if (!MyTarget)
+	{
+		return true;
+	}
+	// Only THIS cue's work: the two regens can run at once and the marker is the cue tag, so the
+	// shield's teardown cannot take the health loop with it.
+	for (UActorComponent* Spawned : MyTarget->GetComponentsByTag(USceneComponent::StaticClass(), GetHandledCueTag().GetTagName()))
+	{
+		Spawned->DestroyComponent();
 	}
 	return true;
 }

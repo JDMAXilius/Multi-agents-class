@@ -12,6 +12,9 @@ class UFXSystemAsset;
 class USoundBase;
 class UForceFeedbackEffect;
 class UCameraShakeBase;
+/** Forward only — a declaration costs no include, so Niagara stays a PRIVATE module dependency
+ *  exactly as the base class's comment requires. */
+class UNiagaraComponent;
 
 /** One surface's answer, the template's ImpactEffectInfoMap row: which burst plays and which
  *  sound, keyed by the hit's physical surface. The decal system is shared across surfaces
@@ -40,7 +43,7 @@ struct FBNImpactEffectRow
  * base of both systems, so no public header names a Niagara type and Niagara stays a PRIVATE
  * module dependency.
  */
-UCLASS(Abstract)
+UCLASS(Abstract, Config = Game)
 class BREACHPOINTNEXT_API UBNGameplayCue_Base : public UGameplayCueNotify_Static
 {
 	GENERATED_BODY()
@@ -60,11 +63,37 @@ protected:
 	/** Null when the asset is unset or fails to load — callers just do nothing. */
 	static UFXSystemAsset* Resolve(const TSoftObjectPtr<UFXSystemAsset>& Soft);
 
+	/** TEAM COLOUR (BN25), FROM THE LOCAL VIEWER'S SEAT — the whole point. A cue runs on every
+	 *  machine that can see the actor, so "ally" is ally TO WHOEVER IS WATCHING, never to the
+	 *  instigator: the same tracer must read blue on a teammate's screen and red on an enemy's.
+	 *  UBNHUDDirector::RelationTo's ladder verbatim (identity, NoTeam guard, BNTeams::AreFriendly)
+	 *  and the HUD's own two hues. False = leave the system alone, which is what FFA, an
+	 *  unassigned side, a non-pawn target and the viewer's OWN fire all answer. */
+	static bool ResolveTeamTint(const AActor* Target, FLinearColor& OutTint);
+
+	/** Writes the tint to TintParameter, or does nothing. */
+	void ApplyTeamTint(UNiagaraComponent* Component, const AActor* Target) const;
+
+	/** The Niagara USER parameter the tint is written to. Config because this name is a contract
+	 *  with an FX ASSET, not with this code, and a name the system does not declare is a SILENT
+	 *  no-op — no warning, no log, no colour.
+	 *
+	 *  MEASURED, not assumed: of the systems these cues ship pointed at, NS_WeaponFire_Tracer
+	 *  exposes only ImpactPositions/MuzzlePosition/Trigger, NS_WeaponFire_MuzzleFlash_Rifle only
+	 *  Direction/SmokePuffTexture/Trigger, and NS_ImpactConcrete none. The ONE colour parameter in
+	 *  the shipped content is `User.Team_Color` (NS_Grenade_Explosion, NS_Grenade_Trail), so it is
+	 *  the default here — and until an FX asset declares it, the tint on those systems does
+	 *  nothing at all. Override per cue class in DefaultGame.ini when one does. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Cue")
+	FName TintParameter = TEXT("User.Team_Color");
+
 	/** The WEAPON's own muzzle socket, never the character's (MyCharacter.h:120-124,
 	 *  .cpp:1557-1580). Falls back to the target's transform when SourceObject is not a weapon. */
 	static FTransform ResolveMuzzle(const AActor* Target, const FGameplayCueParameters& Parameters);
 
-	static void SpawnAt(const UObject* WorldContext, UFXSystemAsset* Asset, const FVector& Location, const FRotator& Rotation);
+	/** The spawned component, so callers can write user parameters (a tint, a beam end); null
+	 *  when the asset is unset or is not a Niagara system. */
+	static UNiagaraComponent* SpawnAt(const UObject* WorldContext, UFXSystemAsset* Asset, const FVector& Location, const FRotator& Rotation);
 };
 
 UCLASS(Config = Game, meta = (DisplayName = "GC_BN_Weapon_MuzzleFlash"))
@@ -278,6 +307,56 @@ protected:
 
 	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Cue")
 	TSoftObjectPtr<USoundBase> Sound;
+};
+
+/**
+ * BN25 — THE POOLS COMING BACK, and the second family here with a LIFETIME (the rope is the
+ * other). ADD/REMOVE, never Execute: "regenerating" lasts as long as it lasts, and
+ * UBNHealthComponent is what turns it on and off — on the SERVER, so the state replicates to
+ * every viewer through the ASC's cue container rather than each client guessing from attributes.
+ *
+ * One base for two cues because the only difference is which tag they answer to; the component
+ * tag they stamp on what they spawn is that tag's name, which is how OnRemove finds its own work
+ * without a static cue holding per-instance state.
+ *
+ * Both assets are UNSET and stay unset: this project ships no heal or recharge FX, and a soft
+ * pointer at nothing is indistinguishable from a wrong one. The hooks land; the content does not.
+ */
+UCLASS(Abstract)
+class BREACHPOINTNEXT_API UBNGameplayCue_RegenBase : public UBNGameplayCue_Base
+{
+	GENERATED_BODY()
+
+public:
+	virtual bool OnActive_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters) const override;
+	virtual bool OnRemove_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters) const override;
+
+protected:
+	/** Looping, attached to the target — it has to follow a player who is running while healing. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Cue")
+	TSoftObjectPtr<UFXSystemAsset> Effect;
+
+	/** The hum, started with the effect and stopped with it. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Cue")
+	TSoftObjectPtr<USoundBase> Loop;
+};
+
+UCLASS(Config = Game, meta = (DisplayName = "GC_BN_Character_ShieldRegen"))
+class BREACHPOINTNEXT_API UBNGameplayCue_ShieldRegen : public UBNGameplayCue_RegenBase
+{
+	GENERATED_BODY()
+
+public:
+	virtual FGameplayTag GetHandledCueTag() const override;
+};
+
+UCLASS(Config = Game, meta = (DisplayName = "GC_BN_Character_HealthRegen"))
+class BREACHPOINTNEXT_API UBNGameplayCue_HealthRegen : public UBNGameplayCue_RegenBase
+{
+	GENERATED_BODY()
+
+public:
+	virtual FGameplayTag GetHandledCueTag() const override;
 };
 
 /**
