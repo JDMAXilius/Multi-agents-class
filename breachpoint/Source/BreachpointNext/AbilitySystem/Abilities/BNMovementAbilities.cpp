@@ -7,6 +7,11 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "TimerManager.h"
+#include "Camera/CameraShakeBase.h"
+#include "Camera/PlayerCameraManager.h"
+#include "Animation/AnimMontage.h"
+#include "GameFramework/PlayerController.h"
+#include "Camera/BNDashCameraShake.h"
 
 // Known gap this wave: walking off a ledge without jumping applies no State.Movement.InAir tag.
 
@@ -379,6 +384,38 @@ bool UBNGA_Dash::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, con
 	return Move->IsMovingOnGround();
 }
 
+UAnimMontage* UBNGA_Dash::SelectDirectionalMontage(const FVector& WorldDirection, const AActor* Avatar, float& OutRollSign) const
+{
+	OutRollSign = 0.f;
+	if (!Avatar)
+	{
+		return nullptr;
+	}
+
+	// THE PAWN'S OWN FRAME. A dash "left" means left of where the player is FACING, not west —
+	// so the world direction is resolved against the actor's axes before anything is chosen.
+	const float Forward = FVector::DotProduct(WorldDirection, Avatar->GetActorForwardVector());
+	const float Right   = FVector::DotProduct(WorldDirection, Avatar->GetActorRightVector());
+
+	// Whichever axis dominates wins. A diagonal dash is mostly-forward or mostly-sideways and
+	// picking the larger component is what a player reads as correct; blending two montages
+	// would be a Tier-4 anim-graph job for a 0.25s action nobody watches twice.
+	const TSoftObjectPtr<UAnimMontage>& Chosen = (FMath::Abs(Forward) >= FMath::Abs(Right))
+		? (Forward >= 0.f ? MontageForward : MontageBackward)
+		: (Right   >= 0.f ? MontageRight   : MontageLeft);
+
+	// The camera banks only on a LATERAL dash. Rolling on a straight forward or backward dash
+	// reads as a stumble — the body tripping — rather than as a bank into the movement.
+	if (FMath::Abs(Right) > FMath::Abs(Forward))
+	{
+		OutRollSign = Right >= 0.f ? 1.f : -1.f;
+	}
+
+	// Unset is silent and free: Tier-4 content this packet points at rather than authors, and
+	// a missing montage must never cost a load attempt or a warning per press.
+	return Chosen.IsNull() ? nullptr : Chosen.LoadSynchronous();
+}
+
 void UBNGA_Dash::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
 	ACharacter* Character = ActorInfo ? Cast<ACharacter>(ActorInfo->AvatarActor.Get()) : nullptr;
@@ -417,6 +454,17 @@ void UBNGA_Dash::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 	// and anything gating on "is this body dashing" reads the same answer on every machine.
 	DashingHandle = ApplyStateTag(BNTags::State_Movement_Dashing);
 
+	// THE ANIMATION, chosen by direction. Played through the ASC rather than the mesh so it
+	// reaches simulated proxies — everyone watching sees the same body throw itself sideways.
+	float RollSign = 0.f;
+	if (UAnimMontage* Montage = SelectDirectionalMontage(Direction, Character, RollSign))
+	{
+		if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
+		{
+			ASC->PlayMontage(this, ActivationInfo, Montage, 1.f);
+		}
+	}
+
 	// Cosmetics on every machine, through the cue system — never spawned directly.
 	if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
 	{
@@ -425,6 +473,49 @@ void UBNGA_Dash::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 		Params.Normal = Direction;
 		Params.Instigator = Character;
 		ASC->ExecuteGameplayCue(BNTags::GameplayCue_Character_Dash, Params);
+	}
+
+	// THE CAMERA AND THE HANDS, and both are LOCAL ONLY — a shake or a rumble on someone
+	// else's machine is somebody else's dash being felt in your controller. IsLocalController
+	// is the whole guard.
+	if (APlayerController* PC = Cast<APlayerController>(Character->GetController()))
+	{
+		if (PC->IsLocalController())
+		{
+			if (UClass* ShakeClass = CameraShake.IsNull() ? nullptr : CameraShake.LoadSynchronous())
+			{
+				// The roll SIGN rides the instance, so a left dash and a right dash are mirror
+				// images rather than the same shake played twice.
+				// Through the camera MANAGER, not ClientStartCameraShake: the RPC form returns
+				// void, and this shake has to be reached after it starts to set its roll.
+				// Safe here because the whole block is already local-only.
+				UCameraShakeBase* Shake = PC->PlayerCameraManager
+					? PC->PlayerCameraManager->StartCameraShake(ShakeClass)
+					: nullptr;
+				if (Shake)
+				{
+					if (UBNDashShakePattern* Pattern = Cast<UBNDashShakePattern>(Shake->GetRootShakePattern()))
+					{
+						Pattern->RollSign = RollSign;
+					}
+				}
+			}
+
+			// DYNAMIC force feedback, not an asset. It needs nothing authored, so the dash
+			// has weight in the hands the first time it is pressed rather than "announced,
+			// unset" like the montage and the burst. Both motors: a dash is a whole-body
+			// shove, not a trigger click.
+			if (HapticIntensity > 0.f && HapticDuration > 0.f)
+			{
+				FForceFeedbackValues Values;
+				Values.LeftLarge = Values.RightLarge = HapticIntensity;
+				Values.LeftSmall = Values.RightSmall = HapticIntensity * 0.6f;
+				PC->PlayDynamicForceFeedback(HapticIntensity, HapticDuration,
+					/*bAffectsLeftLarge=*/true, /*bAffectsLeftSmall=*/true,
+					/*bAffectsRightLarge=*/true, /*bAffectsRightSmall=*/true,
+					EDynamicForceFeedbackAction::Start);
+			}
+		}
 	}
 
 	// A TIMER, not a montage notify: nothing waits on an animation here, the ability owns its

@@ -4,9 +4,13 @@
 #include "AbilitySystem/BNGameplayAbility.h"
 #include "GameplayTagContainer.h"
 #include "Engine/TimerHandle.h"
+#include "Templates/SubclassOf.h"
+
 #include "BNMovementAbilities.generated.h"
 
 class ACharacter;
+class UAnimMontage;
+class UCameraShakeBase;
 
 UCLASS()
 class BREACHPOINTNEXT_API UBNGA_Jump : public UBNGameplayAbility
@@ -188,6 +192,44 @@ protected:
 	 *  thrust you cannot use to escape the thing that knocked you off it. */
 	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Dash")
 	bool bAllowInAir = true;
+
+	// -- POLISH ---------------------------------------------------------------------------
+	// FOUR montages, not one, because the template ships all four and a dash that always
+	// plays the forward animation while the body slides sideways is worse than no animation:
+	// it actively tells the player the game is lying about the direction.
+
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Dash|Polish")
+	TSoftObjectPtr<UAnimMontage> MontageForward;
+
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Dash|Polish")
+	TSoftObjectPtr<UAnimMontage> MontageBackward;
+
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Dash|Polish")
+	TSoftObjectPtr<UAnimMontage> MontageLeft;
+
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Dash|Polish")
+	TSoftObjectPtr<UAnimMontage> MontageRight;
+
+	/** Camera kick. TSoftClassPtr, NOT TSubclassOf — a shake is a CLASS the manager
+	 *  instantiates, and TSubclassOf does not resolve from a config path: it reads back
+	 *  None and the shake silently never plays. UBNGameplayCue_Base::Shake carries the same
+	 *  type with the same warning, and this property was written the wrong way first and
+	 *  caught only because the live CDO was read back. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Dash|Polish")
+	TSoftClassPtr<UCameraShakeBase> CameraShake;
+
+	/** Rumble intensity for the launch. Dynamic force feedback, so it needs no asset and
+	 *  works the moment the key is pressed. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Dash|Polish")
+	float HapticIntensity = 0.55f;
+
+	/** Seconds of rumble. Matched to the launch, not to the cooldown — a dash should feel
+	 *  like a shove, and a shove is over quickly. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Dash|Polish")
+	float HapticDuration = 0.16f;
+
+	/** Picks the montage whose direction matches the dash, in the pawn's own frame. */
+	UAnimMontage* SelectDirectionalMontage(const FVector& WorldDirection, const AActor* Avatar, float& OutRollSign) const;
 
 	/** Closes the dash window. Its own function because a timer delegate cannot bind to
 	 *  EndAbility's signature, and because the cancel path must be able to clear it. */
