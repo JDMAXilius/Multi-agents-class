@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1028" height="756" viewBox="0 0 1028 756">
+<style>
+  .paper{fill:#ffffff}
+  .frame{fill:none;stroke:#000;stroke-width:2.5}
+  .z0{fill:#3a3a3a;stroke:#000;stroke-width:1.6;rx:7}
+  .z1{fill:#ffffff;stroke:#000;stroke-width:1.8;rx:7}
+  .z2{fill:#f0f0f0;stroke:#000;stroke-width:1.6;stroke-dasharray:7 4;rx:7}
+  .t0{font:bold 11px monospace;fill:#ffffff}
+  .t1{font:bold 11px monospace;fill:#000}
+  .sub{font:9px monospace;fill:#555}
+  .sub0{font:9px monospace;fill:#cccccc}
+  .conn{stroke:#000;stroke-width:2.2;fill:none}
+  .stair{stroke:#000;stroke-width:1.2}
+  .badge{fill:#000}
+  .badgetxt{font:bold 10px monospace;fill:#fff}
+  .side{font:bold 13px monospace;fill:#000;letter-spacing:2px}
+  .big{font:bold 16px monospace;fill:#000;letter-spacing:1px}
+  .small{font:9.5px monospace;fill:#000}
+  .note{font:italic 10px monospace;fill:#333}
+</style>
+<rect class="paper" width="1028" height="756"/>
+<rect class="frame" x="8" y="8" width="1012" height="740"/>
+<text class="big" x="80" y="52">AQUARIUS</text>
+<text class="small" x="80" y="72">4v4 arena · mirror-symmetric · 2 levels · HCS pool since launch (Slayer / CTF / Neutral Bomb)</text>
+<text class="note" x="80" y="90">RECONSTRUCTION from documented callouts — adjacency and floors sourced, proportions diagrammatic, NOT measured.</text>
+<line class="conn" x1="142" y1="368" x2="359" y2="368"/>
+<line class="conn" x1="886" y1="368" x2="669" y2="368"/>
+<line class="conn" x1="142" y1="368" x2="250.5" y2="188.2"/>
+<line class="conn" x1="142" y1="368" x2="250.5" y2="550.9"/>
+<line class="conn" x1="886" y1="368" x2="777.5" y2="188.2"/>
+<line class="conn" x1="886" y1="368" x2="777.5" y2="550.9"/>
+<line class="conn" x1="359" y1="368" x2="514" y2="368"/>
+<line class="stair" x1="417.9" y1="361" x2="417.9" y2="375"/>
+<line class="stair" x1="436.5" y1="361" x2="436.5" y2="375"/>
+<line class="stair" x1="455.1" y1="361" x2="455.1" y2="375"/>
+<line class="conn" x1="669" y1="368" x2="514" y2="368"/>
+<line class="stair" x1="610.1" y1="375" x2="610.1" y2="361"/>
+<line class="stair" x1="591.5" y1="375" x2="591.5" y2="361"/>
+<line class="stair" x1="572.9" y1="375" x2="572.9" y2="361"/>
+<line class="conn" x1="359" y1="368" x2="514" y2="368"/>
+<line class="conn" x1="669" y1="368" x2="514" y2="368"/>
+<line class="conn" x1="250.5" y1="550.9" x2="514" y2="566.4"/>
+<line class="conn" x1="514" y1="566.4" x2="777.5" y2="550.9"/>
+<line class="conn" x1="250.5" y1="188.2" x2="514" y2="182"/>
+<line class="conn" x1="514" y1="182" x2="777.5" y2="188.2"/>
+<rect class="z0" x="452" y="225.4" width="124" height="285.2" rx="8"/>
+<text class="t0" text-anchor="middle" x="514" y="245.4">BOTTOM MID</text>
+<text class="sub0" text-anchor="middle" x="514" y="257.4">under the bridge</text>
+<rect class="z1" x="80" y="275" width="124" height="186" rx="8"/>
+<text class="t1" text-anchor="middle" x="142" y="372">YELLOW BASE</text>
+<text class="sub" text-anchor="middle" x="142" y="384">spawn</text>
+<rect class="z1" x="824" y="275" width="124" height="186" rx="8"/>
+<text class="t1" text-anchor="middle" x="886" y="372">BLUE BASE</text>
+<text class="sub" text-anchor="middle" x="886" y="384">spawn</text>
+<rect class="z1" x="266" y="275" width="186" height="186" rx="8"/>
+<text class="t1" text-anchor="middle" x="359" y="372">YELLOW COURT</text>
+<text class="sub" text-anchor="middle" x="359" y="384">open arena</text>
+<rect class="z1" x="576" y="275" width="186" height="186" rx="8"/>
+<text class="t1" text-anchor="middle" x="669" y="372">BLUE COURT</text>
+<text class="sub" text-anchor="middle" x="669" y="384">open arena</text>
+<rect class="z1" x="173" y="504.4" width="155" height="93" rx="8"/>
+<text class="t1" text-anchor="middle" x="250.5" y="548.9">YELLOW</text>
+<text class="t1" text-anchor="middle" x="250.5" y="560.9">REFRIG</text>
+<rect class="z1" x="700" y="504.4" width="155" height="93" rx="8"/>
+<text class="t1" text-anchor="middle" x="777.5" y="554.9">BLUE REFRIG</text>
+<rect class="z1" x="390" y="529.2" width="248" height="74.4" rx="8"/>
+<text class="t1" text-anchor="middle" x="514" y="570.4">PLANTERS</text>
+<text class="sub" text-anchor="middle" x="514" y="582.4">under Pump</text>
+<rect class="z2" x="427.2" y="485.8" width="173.6" height="37.2" rx="8"/>
+<text class="t1" text-anchor="middle" x="514" y="508.4">PUMP</text>
+<rect class="z1" x="173" y="144.8" width="155" height="86.8" rx="8"/>
+<text class="t1" text-anchor="middle" x="250.5" y="186.2">YELLOW</text>
+<text class="t1" text-anchor="middle" x="250.5" y="198.2">UTILITY</text>
+<rect class="z1" x="700" y="144.8" width="155" height="86.8" rx="8"/>
+<text class="t1" text-anchor="middle" x="777.5" y="192.2">BLUE UTILITY</text>
+<rect class="z1" x="390" y="144.8" width="248" height="74.4" rx="8"/>
+<text class="t1" text-anchor="middle" x="514" y="186">HYDRO</text>
+<text class="sub" text-anchor="middle" x="514" y="198">long hall</text>
+<rect class="z2" x="467.5" y="290.5" width="93" height="155" rx="8"/>
+<text class="t1" text-anchor="middle" x="514" y="372">TOP MID</text>
+<text class="sub" text-anchor="middle" x="514" y="384">bridge</text>
+<circle class="badge" cx="547.5" cy="303.5" r="10"/>
+<text class="badgetxt" text-anchor="middle" x="547.5" y="307">P</text>
+<circle class="badge" cx="625" cy="157.8" r="10"/>
+<text class="badgetxt" text-anchor="middle" x="625" y="161.3">R</text>
+<circle class="badge" cx="625" cy="542.2" r="10"/>
+<text class="badgetxt" text-anchor="middle" x="625" y="545.7">S</text>
+<text class="side" x="80" y="650" text-anchor="start">YELLOW BASE SIDE</text>
+<text class="side" x="948" y="650" text-anchor="end">BLUE BASE SIDE</text>
+<rect class="frame" x="80" y="660" width="828" height="66"/>
+<rect class="z0" x="92" y="672" width="22" height="14" rx="4"/>
+<text class="small" x="120" y="683">sunken / bottom floor</text>
+<rect class="z1" x="282" y="672" width="22" height="14" rx="4"/>
+<text class="small" x="310" y="683">main floor</text>
+<rect class="z2" x="472" y="672" width="22" height="14" rx="4"/>
+<text class="small" x="500" y="683">upper (dashed)</text>
+<text class="small" x="92" y="708">conn: line=walk, ticks=stairs/ramp, triangle=lift · badges: S=shotgun, R=shock rifle, P=power-up (camo/OS), H=heatwave</text>
+<text class="small" x="92" y="722">sources: Gfinity Aquarius callouts; dotesports map guide; Pro Game Guides weapon spawns; Majmudar (UX Collective) level-design analysis</text>
+</svg>

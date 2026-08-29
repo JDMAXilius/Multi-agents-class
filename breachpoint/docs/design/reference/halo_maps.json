@@ -1,0 +1,245 @@
+{
+ "_note": "Spatial gazetteer of Halo Infinite arena maps, from documented callout guides (see each map's sources). Grid cells are DIAGRAMMATIC positions, not measurements. Seeded with Aquarius; the full sweep lands from the BN28 research pass.",
+ "maps": [
+  {
+   "id": "aquarius",
+   "title": "Aquarius",
+   "subtitle": "4v4 arena \u00b7 mirror-symmetric \u00b7 2 levels \u00b7 HCS pool since launch (Slayer / CTF / Neutral Bomb)",
+   "grid": [
+    14,
+    8
+   ],
+   "side_a": "yellow base side",
+   "side_b": "blue base side",
+   "badge_key": "S=shotgun, R=shock rifle, P=power-up (camo/OS), H=heatwave",
+   "sources": "Gfinity Aquarius callouts; dotesports map guide; Pro Game Guides weapon spawns; Majmudar (UX Collective) level-design analysis",
+   "zones": [
+    {
+     "name": "Bottom Mid",
+     "cell": [
+      6.0,
+      1.7,
+      2.0,
+      4.6
+     ],
+     "floor": 0,
+     "tag": "under the bridge",
+     "label_at": "top"
+    },
+    {
+     "name": "Yellow Base",
+     "cell": [
+      0,
+      2.5,
+      2,
+      3
+     ],
+     "floor": 1,
+     "tag": "spawn"
+    },
+    {
+     "name": "Blue Base",
+     "cell": [
+      12,
+      2.5,
+      2,
+      3
+     ],
+     "floor": 1,
+     "tag": "spawn"
+    },
+    {
+     "name": "Yellow Court",
+     "cell": [
+      3,
+      2.5,
+      3,
+      3
+     ],
+     "floor": 1,
+     "tag": "open arena"
+    },
+    {
+     "name": "Blue Court",
+     "cell": [
+      8,
+      2.5,
+      3,
+      3
+     ],
+     "floor": 1,
+     "tag": "open arena"
+    },
+    {
+     "name": "Yellow Refrig",
+     "cell": [
+      1.5,
+      6.2,
+      2.5,
+      1.5
+     ],
+     "floor": 1
+    },
+    {
+     "name": "Blue Refrig",
+     "cell": [
+      10,
+      6.2,
+      2.5,
+      1.5
+     ],
+     "floor": 1
+    },
+    {
+     "name": "Planters",
+     "cell": [
+      5,
+      6.6,
+      4,
+      1.2
+     ],
+     "floor": 1,
+     "tag": "under Pump"
+    },
+    {
+     "name": "Pump",
+     "cell": [
+      5.6,
+      5.9,
+      2.8,
+      0.6
+     ],
+     "floor": 2
+    },
+    {
+     "name": "Yellow Utility",
+     "cell": [
+      1.5,
+      0.4,
+      2.5,
+      1.4
+     ],
+     "floor": 1
+    },
+    {
+     "name": "Blue Utility",
+     "cell": [
+      10,
+      0.4,
+      2.5,
+      1.4
+     ],
+     "floor": 1
+    },
+    {
+     "name": "Hydro",
+     "cell": [
+      5,
+      0.4,
+      4,
+      1.2
+     ],
+     "floor": 1,
+     "tag": "long hall"
+    },
+    {
+     "name": "Top Mid",
+     "cell": [
+      6.25,
+      2.75,
+      1.5,
+      2.5
+     ],
+     "floor": 2,
+     "tag": "bridge"
+    }
+   ],
+   "connections": [
+    [
+     "Yellow Base",
+     "Yellow Court",
+     "walk"
+    ],
+    [
+     "Blue Base",
+     "Blue Court",
+     "walk"
+    ],
+    [
+     "Yellow Base",
+     "Yellow Utility",
+     "walk"
+    ],
+    [
+     "Yellow Base",
+     "Yellow Refrig",
+     "walk"
+    ],
+    [
+     "Blue Base",
+     "Blue Utility",
+     "walk"
+    ],
+    [
+     "Blue Base",
+     "Blue Refrig",
+     "walk"
+    ],
+    [
+     "Yellow Court",
+     "Top Mid",
+     "stairs"
+    ],
+    [
+     "Blue Court",
+     "Top Mid",
+     "stairs"
+    ],
+    [
+     "Yellow Court",
+     "Bottom Mid",
+     "walk"
+    ],
+    [
+     "Blue Court",
+     "Bottom Mid",
+     "walk"
+    ],
+    [
+     "Yellow Refrig",
+     "Planters",
+     "walk"
+    ],
+    [
+     "Planters",
+     "Blue Refrig",
+     "walk"
+    ],
+    [
+     "Yellow Utility",
+     "Hydro",
+     "walk"
+    ],
+    [
+     "Hydro",
+     "Blue Utility",
+     "walk"
+    ]
+   ],
+   "pickups": [
+    {
+     "zone": "Top Mid",
+     "glyph": "P"
+    },
+    {
+     "zone": "Hydro",
+     "glyph": "R"
+    },
+    {
+     "zone": "Planters",
+     "glyph": "S"
+    }
+   ]
+  }
+ ]
+}
