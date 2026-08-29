@@ -77,6 +77,11 @@ struct AIBOT_API FAIBMovementPolicy
 	 *  actually played. Measured 0 hops across a full match before this existed. */
 	static float HopChance(EAIBCompetence Level);
 
+	/** Odds that ONE strafe leg spends the dash, when the bot's throttle says it may. Runs in
+	 *  BOTH Engage and Retreat — a dash is how a fight stops being two bodies sliding left and
+	 *  right at each other — and the throttle, not this roll, is what bounds the rate. */
+	static float DashChance(EAIBCompetence Level);
+
 	/**
 	 * The one step, called at task tick rate while engaging: advances the decision
 	 * clock and returns the current intent. Pure over its inputs + Rng.

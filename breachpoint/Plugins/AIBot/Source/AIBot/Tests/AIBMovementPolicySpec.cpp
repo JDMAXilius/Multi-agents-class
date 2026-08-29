@@ -452,6 +452,31 @@ void FAIBMovementPolicySpec::Define()
 		TestTrue(TEXT("never a certainty"), Expert < 1.f);
 	});
 
+
+	It("lets every tier dash, and still climbs — the same gate the hop needed", [this]()
+	{
+		// The hop shipped tied to JukeChance, which is 0.00 below Skilled, so the behaviour was
+		// structurally impossible at Marine — the tier actually played — and measured ZERO in a
+		// full match. DashChance is its own lever for the same reason, and this row is what
+		// stops it drifting back to a gate that silences it.
+		const float Novice  = FAIBMovementPolicy::DashChance(EAIBCompetence::Novice);
+		const float Trained = FAIBMovementPolicy::DashChance(EAIBCompetence::Trained);
+		const float Skilled = FAIBMovementPolicy::DashChance(EAIBCompetence::Skilled);
+		const float Expert  = FAIBMovementPolicy::DashChance(EAIBCompetence::Expert);
+
+		TestTrue(TEXT("a Novice can dash at all"), Novice > 0.f);
+		TestTrue(TEXT("and Trained — the Marine rung — can dash"), Trained > 0.f);
+		TestTrue(TEXT("Trained >= Novice"), Trained >= Novice);
+		TestTrue(TEXT("Skilled >= Trained"), Skilled >= Trained);
+		TestTrue(TEXT("Expert >= Skilled"), Expert >= Skilled);
+		TestTrue(TEXT("the ladder climbs"), Expert > Novice);
+
+		// A CHANCE, and a modest one: the throttle bounds the rate, but a roll near 1 would
+		// spend the dash the instant it came off cooldown, every time, forever — which reads
+		// as a twitch rather than a decision.
+		TestTrue(TEXT("never a certainty"), Expert < 0.75f);
+	});
+
 }
 
 #endif // WITH_DEV_AUTOMATION_TESTS

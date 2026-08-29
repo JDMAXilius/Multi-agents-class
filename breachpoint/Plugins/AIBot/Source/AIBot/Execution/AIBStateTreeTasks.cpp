@@ -1973,6 +1973,34 @@ EStateTreeRunStatus FAIBStrafeTask::Tick(FStateTreeExecutionContext& Context, co
 		return EStateTreeRunStatus::Running;
 	}
 
+	// THE COMBAT DASH. The scatter proved the verb works; this is what makes it visible,
+	// because grenades are rare and a dash nobody sees may as well not exist.
+	//
+	// Runs in BOTH branches, unlike the hop: dashing is how a fight stops being two bodies
+	// sliding left and right at each other, and a bot that only dashes while retreating
+	// reads as a bot that only panics. The direction is the LEG's — the dash launches along
+	// the movement input the step already set, so it lengthens the footwork rather than
+	// arguing with it.
+	//
+	// Gated on the bot's own throttle FIRST and the tier roll second: the throttle is what
+	// actually bounds the rate (one dash per 3.5s however eager the tier), and asking it
+	// first is what keeps this off the futile-press path when the host would refuse.
+	if (Bot->CanDash()
+		&& Bot->GetPolicyRandom().FRand() < FAIBMovementPolicy::DashChance(
+			Bot->GetSkillProfile().Level(EAIBSkill::Movement)))
+	{
+		if (IAIBAvatarInterface* DashAvatar = Bot->GetAvatar())
+		{
+			if (DashAvatar->IsGrounded())
+			{
+				DashAvatar->PressVerb(AIBTags::Verb_Dash);
+				DashAvatar->ReleaseVerb(AIBTags::Verb_Dash);
+				Bot->NoteDashed(AIB::DashThrottleSeconds);
+				UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s dashed on the strafe leg."), *Bot->GetName());
+			}
+		}
+	}
+
 	// THE EVASIVE HOP. A defending bot that only slides left and right is a predictable
 	// target on a flat plane; breaking the vertical is what spoils a tracking aim
 	// (founder, 28 Aug: "crouch jump, evade, fire").

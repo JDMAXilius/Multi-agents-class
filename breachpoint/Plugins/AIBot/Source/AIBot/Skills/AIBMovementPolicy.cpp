@@ -36,6 +36,7 @@ namespace
 		float LegMax;   // longest, seconds
 		float Juke;     // odds a new leg reverses the previous direction
 		float Hop;      // odds a DEFENDING leg leaves the ground (Retreat only)
+		float Dash;     // odds a strafe leg spends the dash, if it is off cooldown
 	};
 
 	// HOP, the last column, is NOT zero at the bottom two rungs — and that is the whole
@@ -46,10 +47,15 @@ namespace
 	// Still capability-shaped, still monotone: a Novice hops sometimes and clumsily, an
 	// Expert hops often. It is its own lever because it is its own behaviour — evading a
 	// tracking aim — and not a side effect of changing direction.
-	constexpr FAIBStrafeRung NoviceRung  { 0.05f, 1.20f, 2.00f, 0.00f, 0.20f };
-	constexpr FAIBStrafeRung TrainedRung { 0.40f, 0.80f, 1.60f, 0.00f, 0.30f };
-	constexpr FAIBStrafeRung SkilledRung { 0.75f, 0.55f, 1.20f, 0.25f, 0.45f };
-	constexpr FAIBStrafeRung ExpertRung  { 0.95f, 0.35f, 0.90f, 0.50f, 0.60f };
+	// DASH, the last column. Nonzero everywhere for the same reason Hop is — a behaviour the
+	// low tiers can never show is a behaviour most players never see, since Marine is the
+	// tier actually played. The real rate limiter is not this roll but the bot's own 3.5s
+	// throttle: even an Expert rolling 0.35 every leg can only spend one dash per throttle
+	// window, so these numbers shape WHO dashes eagerly, not how often anyone can.
+	constexpr FAIBStrafeRung NoviceRung  { 0.05f, 1.20f, 2.00f, 0.00f, 0.20f, 0.10f };
+	constexpr FAIBStrafeRung TrainedRung { 0.40f, 0.80f, 1.60f, 0.00f, 0.30f, 0.18f };
+	constexpr FAIBStrafeRung SkilledRung { 0.75f, 0.55f, 1.20f, 0.25f, 0.45f, 0.28f };
+	constexpr FAIBStrafeRung ExpertRung  { 0.95f, 0.35f, 0.90f, 0.50f, 0.60f, 0.40f };
 
 	/** Out-of-range asks answer Trained — the same degrade-to-average rule the skill
 	 *  profile's Level() query uses, so a future enum entry is average, never superhuman. */
@@ -95,6 +101,11 @@ float FAIBMovementPolicy::JukeChance(EAIBCompetence Level)
 float FAIBMovementPolicy::HopChance(EAIBCompetence Level)
 {
 	return Rung(Level).Hop;
+}
+
+float FAIBMovementPolicy::DashChance(EAIBCompetence Level)
+{
+	return Rung(Level).Dash;
 }
 
 EAIBStrafeIntent FAIBMovementPolicy::StepStrafe(FAIBMovementState& State, EAIBCompetence Level,
