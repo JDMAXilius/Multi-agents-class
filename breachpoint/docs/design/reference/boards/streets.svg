@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1028" height="756" viewBox="0 0 1028 756">
+<style>
+  .paper{fill:#ffffff}
+  .frame{fill:none;stroke:#000;stroke-width:2.5}
+  .z0{fill:#3a3a3a;stroke:#000;stroke-width:1.6;rx:7}
+  .z1{fill:#ffffff;stroke:#000;stroke-width:1.8;rx:7}
+  .z2{fill:#f0f0f0;stroke:#000;stroke-width:1.6;stroke-dasharray:7 4;rx:7}
+  .t0{font:bold 11px monospace;fill:#ffffff}
+  .t1{font:bold 11px monospace;fill:#000}
+  .sub{font:9px monospace;fill:#555}
+  .sub0{font:9px monospace;fill:#cccccc}
+  .conn{stroke:#000;stroke-width:2.2;fill:none}
+  .stair{stroke:#000;stroke-width:1.2}
+  .badge{fill:#000}
+  .badgetxt{font:bold 10px monospace;fill:#fff}
+  .side{font:bold 13px monospace;fill:#000;letter-spacing:2px}
+  .big{font:bold 16px monospace;fill:#000;letter-spacing:1px}
+  .small{font:9.5px monospace;fill:#000}
+  .note{font:italic 10px monospace;fill:#333}
+</style>
+<rect class="paper" width="1028" height="756"/>
+<rect class="frame" x="8" y="8" width="1012" height="740"/>
+<text class="big" x="80" y="52">STREETS</text>
+<text class="small" x="80" y="72">4v4 arena · ASYMMETRIC city block, elongated · HCS core (Slayer / KotH / Strongholds) · some positions (approx)</text>
+<text class="note" x="80" y="90">RECONSTRUCTION from documented callouts — adjacency and floors sourced, proportions diagrammatic, NOT measured.</text>
+<line class="conn" x1="179.2" y1="392.8" x2="514" y2="389.7"/>
+<line class="conn" x1="514" y1="389.7" x2="851.9" y2="392.8"/>
+<line class="conn" x1="179.2" y1="392.8" x2="185.4" y2="268.8"/>
+<line class="stair" x1="174.565" y1="345.33" x2="188.547" y2="346.03"/>
+<line class="stair" x1="175.309" y1="330.45" x2="189.291" y2="331.15"/>
+<line class="stair" x1="176.053" y1="315.57" x2="190.035" y2="316.27"/>
+<line class="conn" x1="851.9" y1="392.8" x2="851.9" y2="256.4"/>
+<line class="stair" x1="844.9" y1="340.968" x2="858.9" y2="340.968"/>
+<line class="stair" x1="844.9" y1="324.6" x2="858.9" y2="324.6"/>
+<line class="stair" x1="844.9" y1="308.232" x2="858.9" y2="308.232"/>
+<line class="conn" x1="179.2" y1="392.8" x2="452" y2="200.6"/>
+<line class="conn" x1="452" y1="200.6" x2="731" y2="203.7"/>
+<line class="conn" x1="731" y1="203.7" x2="851.9" y2="392.8"/>
+<line class="conn" x1="179.2" y1="392.8" x2="197.8" y2="550.9"/>
+<line class="stair" x1="193.22" y1="452.06" x2="179.316" y2="453.696"/>
+<line class="stair" x1="195.452" y1="471.032" x2="181.548" y2="472.668"/>
+<line class="stair" x1="197.684" y1="490.004" x2="183.78" y2="491.64"/>
+<line class="conn" x1="197.8" y1="550.9" x2="445.8" y2="535.4"/>
+<line class="conn" x1="445.8" y1="535.4" x2="669" y2="538.5"/>
+<line class="conn" x1="669" y1="538.5" x2="805.4" y2="538.5"/>
+<line class="conn" x1="805.4" y1="538.5" x2="851.9" y2="392.8"/>
+<line class="conn" x1="452" y1="200.6" x2="514" y2="389.7"/>
+<line class="conn" x1="445.8" y1="535.4" x2="514" y2="389.7"/>
+<rect class="z1" x="290.8" y="151" width="322.4" height="99.2" rx="8"/>
+<text class="t1" text-anchor="middle" x="452" y="204.6">OLD TOWN</text>
+<text class="sub" text-anchor="middle" x="452" y="216.6">B hold · bar + alley inside</text>
+<rect class="z1" x="650.4" y="163.4" width="161.2" height="80.6" rx="8"/>
+<text class="t1" text-anchor="middle" x="731" y="207.7">ARC STREET</text>
+<text class="sub" text-anchor="middle" x="731" y="219.7">(approx) bend + hallway</text>
+<rect class="z2" x="123.4" y="237.8" width="124" height="62" rx="8"/>
+<text class="t1" text-anchor="middle" x="185.4" y="266.8">SUBWAY</text>
+<text class="t1" text-anchor="middle" x="185.4" y="278.8">BALCONY</text>
+<rect class="z2" x="793" y="219.2" width="117.8" height="74.4" rx="8"/>
+<text class="t1" text-anchor="middle" x="851.9" y="254.4">STATION</text>
+<text class="t1" text-anchor="middle" x="851.9" y="266.4">TOWER</text>
+<text class="sub" text-anchor="middle" x="851.9" y="278.4">police station tower</text>
+<rect class="z1" x="111" y="318.4" width="136.4" height="148.8" rx="8"/>
+<text class="t1" text-anchor="middle" x="179.2" y="396.8">SUBWAY</text>
+<text class="sub" text-anchor="middle" x="179.2" y="408.8">spawn · orange striping</text>
+<rect class="z1" x="780.6" y="318.4" width="142.6" height="148.8" rx="8"/>
+<text class="t1" text-anchor="middle" x="851.9" y="390.8">STATION</text>
+<text class="t1" text-anchor="middle" x="851.9" y="402.8">SQUARE</text>
+<text class="sub" text-anchor="middle" x="851.9" y="414.8">spawn</text>
+<rect class="z1" x="290.8" y="343.2" width="446.4" height="93" rx="8"/>
+<text class="t1" text-anchor="middle" x="514" y="393.7">MAIN STREET</text>
+<text class="sub" text-anchor="middle" x="514" y="405.7">the direct route</text>
+<rect class="z1" x="129.6" y="510.6" width="136.4" height="80.6" rx="8"/>
+<text class="t1" text-anchor="middle" x="197.8" y="554.9">PLAZA</text>
+<text class="sub" text-anchor="middle" x="197.8" y="566.9">via Plaza Stairs</text>
+<rect class="z1" x="303.2" y="485.8" width="285.2" height="99.2" rx="8"/>
+<text class="t1" text-anchor="middle" x="445.8" y="533.4">COMMERCIAL</text>
+<text class="t1" text-anchor="middle" x="445.8" y="545.4">DISTRICT</text>
+<text class="sub" text-anchor="middle" x="445.8" y="557.4">crescent alley inside</text>
+<rect class="z1" x="619.4" y="498.2" width="99.2" height="80.6" rx="8"/>
+<text class="t1" text-anchor="middle" x="669" y="542.5">BLUE ROOM</text>
+<text class="sub" text-anchor="middle" x="669" y="554.5">(approx) round room</text>
+<rect class="z1" x="749.6" y="498.2" width="111.6" height="80.6" rx="8"/>
+<text class="t1" text-anchor="middle" x="805.4" y="542.5">CAFE</text>
+<text class="sub" text-anchor="middle" x="805.4" y="554.5">(approx)</text>
+<circle class="badge" cx="724.2" cy="356.2" r="10"/>
+<text class="badgetxt" text-anchor="middle" x="724.2" y="359.7">K</text>
+<circle class="badge" cx="234.4" cy="250.8" r="10"/>
+<text class="badgetxt" text-anchor="middle" x="234.4" y="254.3">E</text>
+<circle class="badge" cx="253" cy="523.6" r="10"/>
+<text class="badgetxt" text-anchor="middle" x="253" y="527.1">N</text>
+<circle class="badge" cx="575.4" cy="498.8" r="10"/>
+<text class="badgetxt" text-anchor="middle" x="575.4" y="502.3">S</text>
+<circle class="badge" cx="705.6" cy="511.2" r="10"/>
+<text class="badgetxt" text-anchor="middle" x="705.6" y="514.7">W</text>
+<circle class="badge" cx="798.6" cy="176.4" r="10"/>
+<text class="badgetxt" text-anchor="middle" x="798.6" y="179.9">T</text>
+<text class="side" x="80" y="650" text-anchor="start">SUBWAY SPAWN</text>
+<text class="side" x="948" y="650" text-anchor="end">STATION SQUARE SPAWN</text>
+<rect class="frame" x="80" y="660" width="828" height="66"/>
+<rect class="z0" x="92" y="672" width="22" height="14" rx="4"/>
+<text class="small" x="120" y="683">sunken / bottom floor</text>
+<rect class="z1" x="282" y="672" width="22" height="14" rx="4"/>
+<text class="small" x="310" y="683">main floor</text>
+<rect class="z2" x="472" y="672" width="22" height="14" rx="4"/>
+<text class="small" x="500" y="683">upper (dashed)</text>
+<text class="small" x="92" y="708">conn: line=walk, ticks=stairs/ramp, triangle=lift · badges: K=SPNKr/cindershot (mid Main St), E=stalker (Subway Balcony), N=needler (Plaza Stairs), S=shotgun-tier (Commercial), W=sword/hammer (blue room), T=thrusters (Arc St)</text>
+<text class="small" x="92" y="722">sources: Halopedia Streets (full callout list); Gfinity; Gamer Guides; PGG weapon spawns</text>
+</svg>

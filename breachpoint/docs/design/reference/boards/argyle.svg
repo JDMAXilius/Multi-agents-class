@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1028" height="756" viewBox="0 0 1028 756">
+<style>
+  .paper{fill:#ffffff}
+  .frame{fill:none;stroke:#000;stroke-width:2.5}
+  .z0{fill:#3a3a3a;stroke:#000;stroke-width:1.6;rx:7}
+  .z1{fill:#ffffff;stroke:#000;stroke-width:1.8;rx:7}
+  .z2{fill:#f0f0f0;stroke:#000;stroke-width:1.6;stroke-dasharray:7 4;rx:7}
+  .t0{font:bold 11px monospace;fill:#ffffff}
+  .t1{font:bold 11px monospace;fill:#000}
+  .sub{font:9px monospace;fill:#555}
+  .sub0{font:9px monospace;fill:#cccccc}
+  .conn{stroke:#000;stroke-width:2.2;fill:none}
+  .stair{stroke:#000;stroke-width:1.2}
+  .badge{fill:#000}
+  .badgetxt{font:bold 10px monospace;fill:#fff}
+  .side{font:bold 13px monospace;fill:#000;letter-spacing:2px}
+  .big{font:bold 16px monospace;fill:#000;letter-spacing:1px}
+  .small{font:9.5px monospace;fill:#000}
+  .note{font:italic 10px monospace;fill:#333}
+</style>
+<rect class="paper" width="1028" height="756"/>
+<rect class="frame" x="8" y="8" width="1012" height="740"/>
+<text class="big" x="80" y="52">ARGYLE</text>
+<text class="small" x="80" y="72">4v4 arena · mirror-symmetric · UNSC starship interior · Winter Update Forge map · drawn from Halopedia's verbal blueprint (no community callout names)</text>
+<text class="note" x="80" y="90">RECONSTRUCTION from documented callouts — adjacency and floors sourced, proportions diagrammatic, NOT measured.</text>
+<line class="conn" x1="179.2" y1="436.2" x2="514" y2="411.4"/>
+<line class="conn" x1="514" y1="411.4" x2="848.8" y2="436.2"/>
+<line class="conn" x1="179.2" y1="436.2" x2="154.4" y2="306"/>
+<polygon points="160.8,377.1 172.8,377.1 166.8,363.1"/>
+<line class="conn" x1="848.8" y1="436.2" x2="873.6" y2="306"/>
+<polygon points="855.2,377.1 867.2,377.1 861.2,363.1"/>
+<line class="conn" x1="179.2" y1="436.2" x2="216.4" y2="572.6"/>
+<line class="stair" x1="200.089" y1="486.19" x2="186.583" y2="489.874"/>
+<line class="stair" x1="204.553" y1="502.558" x2="191.047" y2="506.242"/>
+<line class="stair" x1="209.017" y1="518.926" x2="195.511" y2="522.61"/>
+<line class="conn" x1="848.8" y1="436.2" x2="811.6" y2="572.6"/>
+<line class="stair" x1="841.417" y1="489.874" x2="827.911" y2="486.19"/>
+<line class="stair" x1="836.953" y1="506.242" x2="823.447" y2="502.558"/>
+<line class="stair" x1="832.489" y1="522.61" x2="818.983" y2="518.926"/>
+<line class="conn" x1="179.2" y1="436.2" x2="309.4" y2="194.4"/>
+<line class="conn" x1="309.4" y1="194.4" x2="514" y2="299.8"/>
+<line class="conn" x1="514" y1="299.8" x2="718.6" y2="194.4"/>
+<line class="conn" x1="718.6" y1="194.4" x2="848.8" y2="436.2"/>
+<line class="conn" x1="179.2" y1="436.2" x2="402.4" y2="557.1"/>
+<line class="conn" x1="402.4" y1="557.1" x2="625.6" y2="557.1"/>
+<line class="conn" x1="625.6" y1="557.1" x2="848.8" y2="436.2"/>
+<rect class="z2" x="179.2" y="157.2" width="260.4" height="74.4" rx="8"/>
+<text class="t1" text-anchor="middle" x="309.4" y="192.4">PIT</text>
+<text class="t1" text-anchor="middle" x="309.4" y="204.4">WALKWAY A</text>
+<text class="sub" text-anchor="middle" x="309.4" y="216.4">over bottomless pit</text>
+<rect class="z2" x="588.4" y="157.2" width="260.4" height="74.4" rx="8"/>
+<text class="t1" text-anchor="middle" x="718.6" y="192.4">PIT</text>
+<text class="t1" text-anchor="middle" x="718.6" y="204.4">WALKWAY B</text>
+<text class="sub" text-anchor="middle" x="718.6" y="216.4">over bottomless pit</text>
+<rect class="z2" x="104.8" y="268.8" width="99.2" height="74.4" rx="8"/>
+<text class="t1" text-anchor="middle" x="154.4" y="310">BATTLEMENT A</text>
+<text class="sub" text-anchor="middle" x="154.4" y="322">via grav lift</text>
+<rect class="z2" x="824" y="268.8" width="99.2" height="74.4" rx="8"/>
+<text class="t1" text-anchor="middle" x="873.6" y="310">BATTLEMENT B</text>
+<text class="sub" text-anchor="middle" x="873.6" y="322">via grav lift</text>
+<rect class="z1" x="111" y="361.8" width="136.4" height="148.8" rx="8"/>
+<text class="t1" text-anchor="middle" x="179.2" y="440.2">BASE A</text>
+<text class="sub" text-anchor="middle" x="179.2" y="452.2">spawn</text>
+<rect class="z1" x="780.6" y="361.8" width="136.4" height="148.8" rx="8"/>
+<text class="t1" text-anchor="middle" x="848.8" y="440.2">BASE B</text>
+<text class="sub" text-anchor="middle" x="848.8" y="452.2">spawn</text>
+<rect class="z1" x="290.8" y="361.8" width="446.4" height="99.2" rx="8"/>
+<text class="t1" text-anchor="middle" x="514" y="409.4">CENTRAL</text>
+<text class="t1" text-anchor="middle" x="514" y="421.4">HALLWAY</text>
+<text class="sub" text-anchor="middle" x="514" y="433.4">long, wide, base-to-base line</text>
+<rect class="z2" x="464.4" y="262.6" width="99.2" height="74.4" rx="8"/>
+<text class="t1" text-anchor="middle" x="514" y="297.8">CENTER</text>
+<text class="t1" text-anchor="middle" x="514" y="309.8">PLATFORM</text>
+<text class="sub" text-anchor="middle" x="514" y="321.8">floating · repulsor below</text>
+<rect class="z0" x="142" y="541.6" width="148.8" height="62" rx="8"/>
+<text class="t0" text-anchor="middle" x="216.4" y="570.6">LOWER</text>
+<text class="t0" text-anchor="middle" x="216.4" y="582.6">LEVEL A</text>
+<text class="sub0" text-anchor="middle" x="216.4" y="594.6">ramp behind base</text>
+<rect class="z0" x="737.2" y="541.6" width="148.8" height="62" rx="8"/>
+<text class="t0" text-anchor="middle" x="811.6" y="570.6">LOWER</text>
+<text class="t0" text-anchor="middle" x="811.6" y="582.6">LEVEL B</text>
+<text class="sub0" text-anchor="middle" x="811.6" y="594.6">ramp behind base</text>
+<rect class="z1" x="315.6" y="516.8" width="173.6" height="80.6" rx="8"/>
+<text class="t1" text-anchor="middle" x="402.4" y="555.1">FLANK</text>
+<text class="t1" text-anchor="middle" x="402.4" y="567.1">HALL A</text>
+<text class="sub" text-anchor="middle" x="402.4" y="579.1">open toward center</text>
+<rect class="z1" x="538.8" y="516.8" width="173.6" height="80.6" rx="8"/>
+<text class="t1" text-anchor="middle" x="625.6" y="555.1">FLANK</text>
+<text class="t1" text-anchor="middle" x="625.6" y="567.1">HALL B</text>
+<text class="sub" text-anchor="middle" x="625.6" y="579.1">open toward center</text>
+<circle class="badge" cx="426.6" cy="170.2" r="10"/>
+<text class="badgetxt" text-anchor="middle" x="426.6" y="173.7">N</text>
+<circle class="badge" cx="835.8" cy="170.2" r="10"/>
+<text class="badgetxt" text-anchor="middle" x="835.8" y="173.7">N</text>
+<circle class="badge" cx="550.6" cy="275.6" r="10"/>
+<text class="badgetxt" text-anchor="middle" x="550.6" y="279.1">P</text>
+<circle class="badge" cx="191" cy="281.8" r="10"/>
+<text class="badgetxt" text-anchor="middle" x="191" y="285.3">G</text>
+<circle class="badge" cx="910.2" cy="281.8" r="10"/>
+<text class="badgetxt" text-anchor="middle" x="910.2" y="285.3">G</text>
+<text class="side" x="80" y="650" text-anchor="start">BASE A</text>
+<text class="side" x="948" y="650" text-anchor="end">BASE B</text>
+<rect class="frame" x="80" y="660" width="828" height="66"/>
+<rect class="z0" x="92" y="672" width="22" height="14" rx="4"/>
+<text class="small" x="120" y="683">sunken / bottom floor</text>
+<rect class="z1" x="282" y="672" width="22" height="14" rx="4"/>
+<text class="small" x="310" y="683">main floor</text>
+<rect class="z2" x="472" y="672" width="22" height="14" rx="4"/>
+<text class="small" x="500" y="683">upper (dashed)</text>
+<text class="small" x="92" y="708">conn: line=walk, ticks=stairs/ramp, triangle=lift · badges: N=sniper (walkway corners), P=camo (floating platform top), R=repulsor (below platform), G=grappleshot (battlements)</text>
+<text class="small" x="92" y="722">sources: Halopedia Argyle — full verbal layout</text>
+</svg>

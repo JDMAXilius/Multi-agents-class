@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1028" height="756" viewBox="0 0 1028 756">
+<style>
+  .paper{fill:#ffffff}
+  .frame{fill:none;stroke:#000;stroke-width:2.5}
+  .z0{fill:#3a3a3a;stroke:#000;stroke-width:1.6;rx:7}
+  .z1{fill:#ffffff;stroke:#000;stroke-width:1.8;rx:7}
+  .z2{fill:#f0f0f0;stroke:#000;stroke-width:1.6;stroke-dasharray:7 4;rx:7}
+  .t0{font:bold 11px monospace;fill:#ffffff}
+  .t1{font:bold 11px monospace;fill:#000}
+  .sub{font:9px monospace;fill:#555}
+  .sub0{font:9px monospace;fill:#cccccc}
+  .conn{stroke:#000;stroke-width:2.2;fill:none}
+  .stair{stroke:#000;stroke-width:1.2}
+  .badge{fill:#000}
+  .badgetxt{font:bold 10px monospace;fill:#fff}
+  .side{font:bold 13px monospace;fill:#000;letter-spacing:2px}
+  .big{font:bold 16px monospace;fill:#000;letter-spacing:1px}
+  .small{font:9.5px monospace;fill:#000}
+  .note{font:italic 10px monospace;fill:#333}
+</style>
+<rect class="paper" width="1028" height="756"/>
+<rect class="frame" x="8" y="8" width="1012" height="740"/>
+<text class="big" x="80" y="52">BAZAAR</text>
+<text class="small" x="80" y="72">4v4 arena · mirror-symmetric E-W · outdoor town, mostly one level + upper hall · launch map (CTF staple)</text>
+<text class="note" x="80" y="90">RECONSTRUCTION from documented callouts — adjacency and floors sourced, proportions diagrammatic, NOT measured.</text>
+<line class="conn" x1="166.8" y1="392.8" x2="334.2" y2="392.8"/>
+<line class="conn" x1="334.2" y1="392.8" x2="514" y2="392.8"/>
+<line class="conn" x1="514" y1="392.8" x2="693.8" y2="392.8"/>
+<line class="conn" x1="693.8" y1="392.8" x2="861.2" y2="392.8"/>
+<line class="conn" x1="334.2" y1="392.8" x2="334.2" y2="262.6"/>
+<line class="conn" x1="334.2" y1="262.6" x2="514" y2="166.5"/>
+<line class="stair" x1="399.224" y1="219.908" x2="405.824" y2="232.256"/>
+<line class="stair" x1="420.8" y1="208.376" x2="427.4" y2="220.724"/>
+<line class="stair" x1="442.376" y1="196.844" x2="448.976" y2="209.192"/>
+<line class="conn" x1="514" y1="166.5" x2="693.8" y2="262.6"/>
+<line class="stair" x1="585.624" y1="196.844" x2="579.024" y2="209.192"/>
+<line class="stair" x1="607.2" y1="208.376" x2="600.6" y2="220.724"/>
+<line class="stair" x1="628.776" y1="219.908" x2="622.176" y2="232.256"/>
+<line class="conn" x1="693.8" y1="262.6" x2="693.8" y2="392.8"/>
+<line class="conn" x1="166.8" y1="392.8" x2="334.2" y2="538.5"/>
+<line class="conn" x1="334.2" y1="538.5" x2="514" y2="529.2"/>
+<line class="conn" x1="514" y1="529.2" x2="693.8" y2="538.5"/>
+<line class="conn" x1="693.8" y1="538.5" x2="861.2" y2="392.8"/>
+<line class="conn" x1="514" y1="265.7" x2="514" y2="392.8"/>
+<line class="stair" x1="521" y1="313.998" x2="507" y2="313.998"/>
+<line class="stair" x1="521" y1="329.25" x2="507" y2="329.25"/>
+<line class="stair" x1="521" y1="344.502" x2="507" y2="344.502"/>
+<rect class="z2" x="365.2" y="138.6" width="297.6" height="55.8" rx="8"/>
+<text class="t1" text-anchor="middle" x="514" y="170.5">UPPER HALL</text>
+<text class="sub" text-anchor="middle" x="514" y="182.5">indoor top flank, snipes center</text>
+<rect class="z1" x="266" y="219.2" width="136.4" height="86.8" rx="8"/>
+<text class="t1" text-anchor="middle" x="334.2" y="266.6">CAFE</text>
+<text class="sub" text-anchor="middle" x="334.2" y="278.6">west room before mid</text>
+<rect class="z1" x="625.6" y="219.2" width="136.4" height="86.8" rx="8"/>
+<text class="t1" text-anchor="middle" x="693.8" y="266.6">DEN</text>
+<text class="sub" text-anchor="middle" x="693.8" y="278.6">east room before mid</text>
+<rect class="z2" x="464.4" y="225.4" width="99.2" height="80.6" rx="8"/>
+<text class="t1" text-anchor="middle" x="514" y="269.7">TOWER</text>
+<text class="sub" text-anchor="middle" x="514" y="281.7">overlooks Market</text>
+<rect class="z1" x="104.8" y="318.4" width="124" height="148.8" rx="8"/>
+<text class="t1" text-anchor="middle" x="166.8" y="396.8">WEST BASE</text>
+<text class="sub" text-anchor="middle" x="166.8" y="408.8">spawn</text>
+<rect class="z1" x="799.2" y="318.4" width="124" height="148.8" rx="8"/>
+<text class="t1" text-anchor="middle" x="861.2" y="396.8">EAST BASE</text>
+<text class="sub" text-anchor="middle" x="861.2" y="408.8">spawn</text>
+<rect class="z1" x="259.8" y="330.8" width="148.8" height="124" rx="8"/>
+<text class="t1" text-anchor="middle" x="334.2" y="390.8">WEST</text>
+<text class="t1" text-anchor="middle" x="334.2" y="402.8">COURTYARD</text>
+<rect class="z1" x="619.4" y="330.8" width="148.8" height="124" rx="8"/>
+<text class="t1" text-anchor="middle" x="693.8" y="390.8">EAST</text>
+<text class="t1" text-anchor="middle" x="693.8" y="402.8">COURTYARD</text>
+<rect class="z1" x="445.8" y="324.6" width="136.4" height="136.4" rx="8"/>
+<text class="t1" text-anchor="middle" x="514" y="396.8">MARKET</text>
+<text class="sub" text-anchor="middle" x="514" y="408.8">center, exposed all sides</text>
+<rect class="z1" x="458.2" y="492" width="111.6" height="74.4" rx="8"/>
+<text class="t1" text-anchor="middle" x="514" y="533.2">TRUCK</text>
+<text class="sub" text-anchor="middle" x="514" y="545.2">camo+OS ~50m apart here</text>
+<rect class="z1" x="259.8" y="504.4" width="148.8" height="68.2" rx="8"/>
+<text class="t1" text-anchor="middle" x="334.2" y="542.5">WEST ALLEY</text>
+<rect class="z1" x="619.4" y="504.4" width="148.8" height="68.2" rx="8"/>
+<text class="t1" text-anchor="middle" x="693.8" y="542.5">EAST ALLEY</text>
+<circle class="badge" cx="550.6" cy="238.4" r="10"/>
+<text class="badgetxt" text-anchor="middle" x="550.6" y="241.9">K</text>
+<circle class="badge" cx="556.8" cy="505" r="10"/>
+<text class="badgetxt" text-anchor="middle" x="556.8" y="508.5">P</text>
+<circle class="badge" cx="569.2" cy="337.6" r="10"/>
+<text class="badgetxt" text-anchor="middle" x="569.2" y="341.1">G</text>
+<circle class="badge" cx="395.6" cy="517.4" r="10"/>
+<text class="badgetxt" text-anchor="middle" x="395.6" y="520.9">S</text>
+<circle class="badge" cx="755.2" cy="517.4" r="10"/>
+<text class="badgetxt" text-anchor="middle" x="755.2" y="520.9">S</text>
+<text class="side" x="80" y="650" text-anchor="start">WEST BASE (BLUE TRIM)</text>
+<text class="side" x="948" y="650" text-anchor="end">EAST BASE (RED/YELLOW)</text>
+<rect class="frame" x="80" y="660" width="828" height="66"/>
+<rect class="z0" x="92" y="672" width="22" height="14" rx="4"/>
+<text class="small" x="120" y="683">sunken / bottom floor</text>
+<rect class="z1" x="282" y="672" width="22" height="14" rx="4"/>
+<text class="small" x="310" y="683">main floor</text>
+<rect class="z2" x="472" y="672" width="22" height="14" rx="4"/>
+<text class="small" x="500" y="683">upper (dashed)</text>
+<text class="small" x="92" y="708">conn: line=walk, ticks=stairs/ramp, triangle=lift · badges: K=rockets/cindershot (Tower), P=camo+OS (near Truck), S=SMG-tier behind gates, G=grapple pickup mid</text>
+<text class="small" x="92" y="722">sources: Halopedia Bazaar; Gamer Guides; Majmudar level-design analysis; Gfinity callouts</text>
+</svg>

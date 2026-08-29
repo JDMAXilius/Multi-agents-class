@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1028" height="818" viewBox="0 0 1028 818">
+<style>
+  .paper{fill:#ffffff}
+  .frame{fill:none;stroke:#000;stroke-width:2.5}
+  .z0{fill:#3a3a3a;stroke:#000;stroke-width:1.6;rx:7}
+  .z1{fill:#ffffff;stroke:#000;stroke-width:1.8;rx:7}
+  .z2{fill:#f0f0f0;stroke:#000;stroke-width:1.6;stroke-dasharray:7 4;rx:7}
+  .t0{font:bold 11px monospace;fill:#ffffff}
+  .t1{font:bold 11px monospace;fill:#000}
+  .sub{font:9px monospace;fill:#555}
+  .sub0{font:9px monospace;fill:#cccccc}
+  .conn{stroke:#000;stroke-width:2.2;fill:none}
+  .stair{stroke:#000;stroke-width:1.2}
+  .badge{fill:#000}
+  .badgetxt{font:bold 10px monospace;fill:#fff}
+  .side{font:bold 13px monospace;fill:#000;letter-spacing:2px}
+  .big{font:bold 16px monospace;fill:#000;letter-spacing:1px}
+  .small{font:9.5px monospace;fill:#000}
+  .note{font:italic 10px monospace;fill:#333}
+</style>
+<rect class="paper" width="1028" height="818"/>
+<rect class="frame" x="8" y="8" width="1012" height="802"/>
+<text class="big" x="80" y="52">LIVE FIRE</text>
+<text class="small" x="80" y="72">4v4 arena · ASYMMETRIC (House corner vs Tower corner) · HCS core (Slayer / KotH / Strongholds / Oddball)</text>
+<text class="note" x="80" y="90">RECONSTRUCTION from documented callouts — adjacency and floors sourced, proportions diagrammatic, NOT measured.</text>
+<line class="conn" x1="188.5" y1="386.6" x2="501.6" y2="197.5"/>
+<line class="conn" x1="501.6" y1="197.5" x2="743.4" y2="213"/>
+<line class="conn" x1="743.4" y1="213" x2="851.9" y2="368"/>
+<line class="conn" x1="188.5" y1="386.6" x2="514" y2="368"/>
+<line class="stair" x1="311.791" y1="372.543" x2="312.589" y2="386.521"/>
+<line class="stair" x1="350.851" y1="370.311" x2="351.649" y2="384.289"/>
+<line class="stair" x1="389.911" y1="368.079" x2="390.709" y2="382.057"/>
+<line class="conn" x1="514" y1="368" x2="851.9" y2="368"/>
+<line class="conn" x1="188.5" y1="386.6" x2="514" y2="457.9"/>
+<line class="conn" x1="514" y1="457.9" x2="501.6" y2="197.5"/>
+<line class="conn" x1="514" y1="457.9" x2="272.2" y2="622.2"/>
+<line class="conn" x1="188.5" y1="386.6" x2="185.4" y2="541.6"/>
+<line class="conn" x1="185.4" y1="541.6" x2="272.2" y2="622.2"/>
+<line class="conn" x1="272.2" y1="622.2" x2="514" y2="609.8"/>
+<line class="conn" x1="514" y1="609.8" x2="796.1" y2="526.1"/>
+<line class="conn" x1="796.1" y1="526.1" x2="851.9" y2="368"/>
+<line class="stair" x1="810.703" y1="463.692" x2="823.905" y2="468.352"/>
+<line class="stair" x1="817.399" y1="444.72" x2="830.601" y2="449.38"/>
+<line class="stair" x1="824.095" y1="425.748" x2="837.297" y2="430.408"/>
+<line class="conn" x1="799.2" y1="616" x2="514" y2="457.9"/>
+<line class="conn" x1="851.9" y1="368" x2="799.2" y2="616"/>
+<rect class="z1" x="365.2" y="144.8" width="272.8" height="105.4" rx="8"/>
+<text class="t1" text-anchor="middle" x="501.6" y="201.5">TURBINE</text>
+<text class="sub" text-anchor="middle" x="501.6" y="213.5">open field, top of map</text>
+<rect class="z1" x="675.2" y="169.6" width="136.4" height="86.8" rx="8"/>
+<text class="t1" text-anchor="middle" x="743.4" y="217">BRUTES</text>
+<text class="sub" text-anchor="middle" x="743.4" y="229">target dummies</text>
+<rect class="z1" x="111" y="293.6" width="155" height="186" rx="8"/>
+<text class="t1" text-anchor="middle" x="188.5" y="390.6">HOUSE</text>
+<text class="sub" text-anchor="middle" x="188.5" y="402.6">spawn · wide building</text>
+<rect class="z1" x="117.2" y="504.4" width="136.4" height="74.4" rx="8"/>
+<text class="t1" text-anchor="middle" x="185.4" y="545.6">HOUSE ELBOW</text>
+<rect class="z2" x="786.8" y="281.2" width="130.2" height="173.6" rx="8"/>
+<text class="t1" text-anchor="middle" x="851.9" y="372">TOWER</text>
+<text class="sub" text-anchor="middle" x="851.9" y="384">spawn · raised, exposed</text>
+<rect class="z0" x="365.2" y="423.8" width="297.6" height="68.2" rx="8"/>
+<text class="t0" text-anchor="middle" x="514" y="443.8">TUNNEL</text>
+<text class="sub0" text-anchor="middle" x="514" y="455.8">under Hallway</text>
+<rect class="z2" x="377.6" y="330.8" width="272.8" height="74.4" rx="8"/>
+<text class="t1" text-anchor="middle" x="514" y="372">HALLWAY</text>
+<text class="sub" text-anchor="middle" x="514" y="384">narrow, exposed both sides</text>
+<rect class="z2" x="737.2" y="485.8" width="117.8" height="80.6" rx="8"/>
+<text class="t1" text-anchor="middle" x="796.1" y="530.1">NEST</text>
+<text class="sub" text-anchor="middle" x="796.1" y="542.1">links Green Bldg-Tower</text>
+<rect class="z0" x="693.8" y="585" width="210.8" height="62" rx="8"/>
+<text class="t0" text-anchor="middle" x="799.2" y="620">CANAL</text>
+<text class="sub0" text-anchor="middle" x="799.2" y="632">beneath Tower</text>
+<rect class="z1" x="390" y="566.4" width="248" height="86.8" rx="8"/>
+<text class="t1" text-anchor="middle" x="514" y="613.8">YARD</text>
+<text class="sub" text-anchor="middle" x="514" y="625.8">open, bottom of map</text>
+<rect class="z1" x="191.6" y="578.8" width="161.2" height="86.8" rx="8"/>
+<text class="t1" text-anchor="middle" x="272.2" y="620.2">GREEN</text>
+<text class="t1" text-anchor="middle" x="272.2" y="632.2">BUILDING</text>
+<text class="sub" text-anchor="middle" x="272.2" y="644.2">B flag</text>
+<circle class="badge" cx="637.4" cy="343.8" r="10"/>
+<text class="badgetxt" text-anchor="middle" x="637.4" y="347.3">N</text>
+<circle class="badge" cx="649.8" cy="436.8" r="10"/>
+<text class="badgetxt" text-anchor="middle" x="649.8" y="440.3">H</text>
+<circle class="badge" cx="625" cy="157.8" r="10"/>
+<text class="badgetxt" text-anchor="middle" x="625" y="161.3">P</text>
+<circle class="badge" cx="625" cy="579.4" r="10"/>
+<text class="badgetxt" text-anchor="middle" x="625" y="582.9">R</text>
+<text class="side" x="80" y="712" text-anchor="start">HOUSE SIDE</text>
+<text class="side" x="948" y="712" text-anchor="end">TOWER SIDE</text>
+<rect class="frame" x="80" y="722" width="828" height="66"/>
+<rect class="z0" x="92" y="734" width="22" height="14" rx="4"/>
+<text class="small" x="120" y="745">sunken / bottom floor</text>
+<rect class="z1" x="282" y="734" width="22" height="14" rx="4"/>
+<text class="small" x="310" y="745">main floor</text>
+<rect class="z2" x="472" y="734" width="22" height="14" rx="4"/>
+<text class="small" x="500" y="745">upper (dashed)</text>
+<text class="small" x="92" y="770">conn: line=walk, ticks=stairs/ramp, triangle=lift · badges: N=sniper/skewer, H=heatwave/bulldog, P=camo/OS (on the cylindrical platform), R=repulsor</text>
+<text class="small" x="92" y="784">sources: Halopedia Live Fire; Gfinity callouts; dotesports map guide; GameRant weapon spawns</text>
+</svg>

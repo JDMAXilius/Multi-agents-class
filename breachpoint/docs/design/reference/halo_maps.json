@@ -240,6 +240,1477 @@
      "glyph": "S"
     }
    ]
+  },
+  {
+   "id": "live_fire",
+   "title": "Live Fire",
+   "subtitle": "4v4 arena \u00b7 ASYMMETRIC (House corner vs Tower corner) \u00b7 HCS core (Slayer / KotH / Strongholds / Oddball)",
+   "grid": [
+    14,
+    9
+   ],
+   "side_a": "house side",
+   "side_b": "tower side",
+   "badge_key": "N=sniper/skewer, H=heatwave/bulldog, P=camo/OS (on the cylindrical platform), R=repulsor",
+   "sources": "Halopedia Live Fire; Gfinity callouts; dotesports map guide; GameRant weapon spawns",
+   "zones": [
+    {
+     "name": "Turbine",
+     "cell": [
+      4.6,
+      0.4,
+      4.4,
+      1.7
+     ],
+     "floor": 1,
+     "tag": "open field, top of map"
+    },
+    {
+     "name": "Brutes",
+     "cell": [
+      9.6,
+      0.8,
+      2.2,
+      1.4
+     ],
+     "floor": 1,
+     "tag": "target dummies"
+    },
+    {
+     "name": "House",
+     "cell": [
+      0.5,
+      2.8,
+      2.5,
+      3.0
+     ],
+     "floor": 1,
+     "tag": "spawn \u00b7 wide building"
+    },
+    {
+     "name": "House Elbow",
+     "cell": [
+      0.6,
+      6.2,
+      2.2,
+      1.2
+     ],
+     "floor": 1
+    },
+    {
+     "name": "Tower",
+     "cell": [
+      11.4,
+      2.6,
+      2.1,
+      2.8
+     ],
+     "floor": 2,
+     "tag": "spawn \u00b7 raised, exposed"
+    },
+    {
+     "name": "Tunnel",
+     "cell": [
+      4.6,
+      4.9,
+      4.8,
+      1.1
+     ],
+     "floor": 0,
+     "label_at": "top",
+     "tag": "under Hallway"
+    },
+    {
+     "name": "Hallway",
+     "cell": [
+      4.8,
+      3.4,
+      4.4,
+      1.2
+     ],
+     "floor": 2,
+     "tag": "narrow, exposed both sides"
+    },
+    {
+     "name": "Nest",
+     "cell": [
+      10.6,
+      5.9,
+      1.9,
+      1.3
+     ],
+     "floor": 2,
+     "tag": "links Green Bldg-Tower"
+    },
+    {
+     "name": "Canal",
+     "cell": [
+      9.9,
+      7.5,
+      3.4,
+      1.0
+     ],
+     "floor": 0,
+     "tag": "beneath Tower"
+    },
+    {
+     "name": "Yard",
+     "cell": [
+      5.0,
+      7.2,
+      4.0,
+      1.4
+     ],
+     "floor": 1,
+     "tag": "open, bottom of map"
+    },
+    {
+     "name": "Green Building",
+     "cell": [
+      1.8,
+      7.4,
+      2.6,
+      1.4
+     ],
+     "floor": 1,
+     "tag": "B flag"
+    }
+   ],
+   "connections": [
+    [
+     "House",
+     "Turbine",
+     "walk"
+    ],
+    [
+     "Turbine",
+     "Brutes",
+     "walk"
+    ],
+    [
+     "Brutes",
+     "Tower",
+     "walk"
+    ],
+    [
+     "House",
+     "Hallway",
+     "stairs"
+    ],
+    [
+     "Hallway",
+     "Tower",
+     "walk"
+    ],
+    [
+     "House",
+     "Tunnel",
+     "walk"
+    ],
+    [
+     "Tunnel",
+     "Turbine",
+     "walk"
+    ],
+    [
+     "Tunnel",
+     "Green Building",
+     "walk"
+    ],
+    [
+     "House",
+     "House Elbow",
+     "walk"
+    ],
+    [
+     "House Elbow",
+     "Green Building",
+     "walk"
+    ],
+    [
+     "Green Building",
+     "Yard",
+     "walk"
+    ],
+    [
+     "Yard",
+     "Nest",
+     "walk"
+    ],
+    [
+     "Nest",
+     "Tower",
+     "stairs"
+    ],
+    [
+     "Canal",
+     "Tunnel",
+     "walk"
+    ],
+    [
+     "Tower",
+     "Canal",
+     "walk"
+    ]
+   ],
+   "pickups": [
+    {
+     "zone": "Hallway",
+     "glyph": "N"
+    },
+    {
+     "zone": "Tunnel",
+     "glyph": "H"
+    },
+    {
+     "zone": "Turbine",
+     "glyph": "P"
+    },
+    {
+     "zone": "Yard",
+     "glyph": "R"
+    }
+   ]
+  },
+  {
+   "id": "recharge",
+   "title": "Recharge",
+   "subtitle": "4v4 arena \u00b7 ASYMMETRIC \u00b7 3 floors, circulation ring changes level \u00b7 HCS core (Slayer / KotH / Strongholds / Oddball)",
+   "grid": [
+    13,
+    9
+   ],
+   "side_a": "elevator spawn (A)",
+   "side_b": "long hall spawn (B)",
+   "badge_key": "P=camo/OS, W=sword/hammer, Y=hydra/ravager (upper Batteries), N=needler/sentinel",
+   "sources": "Halopedia Recharge (18 HUD callouts); Liquipedia; Gfinity; dotesports; Gamer Guides",
+   "zones": [
+    {
+     "name": "Whirlpool Dam",
+     "cell": [
+      0.5,
+      0.5,
+      2.6,
+      2.0
+     ],
+     "floor": 1,
+     "tag": "circular room"
+    },
+    {
+     "name": "Orange Pipes",
+     "cell": [
+      3.6,
+      0.5,
+      2.8,
+      1.3
+     ],
+     "floor": 1,
+     "tag": "hallway behind Batteries"
+    },
+    {
+     "name": "Maintenance Bay",
+     "cell": [
+      6.9,
+      0.5,
+      2.8,
+      1.3
+     ],
+     "floor": 2,
+     "tag": "overlooks most of map"
+    },
+    {
+     "name": "Attic",
+     "cell": [
+      5.0,
+      2.1,
+      3.4,
+      1.3
+     ],
+     "floor": 2,
+     "tag": "top level, defensible"
+    },
+    {
+     "name": "Long Hall",
+     "cell": [
+      10.2,
+      0.6,
+      2.3,
+      2.6
+     ],
+     "floor": 1,
+     "tag": "spawn B"
+    },
+    {
+     "name": "Elevator",
+     "cell": [
+      0.5,
+      3.4,
+      2.0,
+      2.4
+     ],
+     "floor": 1,
+     "tag": "spawn A \u00b7 A flag top"
+    },
+    {
+     "name": "Control Room",
+     "cell": [
+      0.6,
+      6.4,
+      2.4,
+      2.0
+     ],
+     "floor": 2,
+     "tag": "two-story, sees Pit+Attic"
+    },
+    {
+     "name": "Pit",
+     "cell": [
+      4.4,
+      4.4,
+      3.0,
+      2.4
+     ],
+     "floor": 0,
+     "tag": "center bottom"
+    },
+    {
+     "name": "Batteries",
+     "cell": [
+      4.0,
+      7.2,
+      3.8,
+      1.4
+     ],
+     "floor": 1,
+     "tag": "moving pillar cover"
+    },
+    {
+     "name": "Bridge",
+     "cell": [
+      7.9,
+      3.4,
+      2.6,
+      1.1
+     ],
+     "floor": 2,
+     "tag": "mid-floor diagonal (approx)"
+    },
+    {
+     "name": "Storage",
+     "cell": [
+      8.2,
+      7.3,
+      2.2,
+      1.3
+     ],
+     "floor": 1,
+     "tag": "(approx)"
+    },
+    {
+     "name": "Blue Pipes",
+     "cell": [
+      7.7,
+      5.2,
+      2.4,
+      1.1
+     ],
+     "floor": 0,
+     "tag": "Pit to lower Hydro"
+    },
+    {
+     "name": "Hydro",
+     "cell": [
+      10.6,
+      4.6,
+      2.0,
+      2.2
+     ],
+     "floor": 1,
+     "tag": "C flag \u00b7 two levels"
+    },
+    {
+     "name": "Sword Platform",
+     "cell": [
+      11.0,
+      7.3,
+      1.6,
+      1.2
+     ],
+     "floor": 1,
+     "tag": "isolated, behind Hydro"
+    }
+   ],
+   "connections": [
+    [
+     "Whirlpool Dam",
+     "Orange Pipes",
+     "walk"
+    ],
+    [
+     "Orange Pipes",
+     "Maintenance Bay",
+     "walk"
+    ],
+    [
+     "Maintenance Bay",
+     "Long Hall",
+     "walk"
+    ],
+    [
+     "Orange Pipes",
+     "Attic",
+     "stairs"
+    ],
+    [
+     "Elevator",
+     "Whirlpool Dam",
+     "walk"
+    ],
+    [
+     "Elevator",
+     "Pit",
+     "walk"
+    ],
+    [
+     "Elevator",
+     "Control Room",
+     "lift"
+    ],
+    [
+     "Control Room",
+     "Batteries",
+     "walk"
+    ],
+    [
+     "Pit",
+     "Batteries",
+     "stairs"
+    ],
+    [
+     "Pit",
+     "Blue Pipes",
+     "walk"
+    ],
+    [
+     "Blue Pipes",
+     "Hydro",
+     "walk"
+    ],
+    [
+     "Long Hall",
+     "Bridge",
+     "walk"
+    ],
+    [
+     "Bridge",
+     "Attic",
+     "walk"
+    ],
+    [
+     "Long Hall",
+     "Hydro",
+     "walk"
+    ],
+    [
+     "Hydro",
+     "Sword Platform",
+     "walk"
+    ],
+    [
+     "Batteries",
+     "Storage",
+     "walk"
+    ],
+    [
+     "Storage",
+     "Hydro",
+     "walk"
+    ]
+   ],
+   "pickups": [
+    {
+     "zone": "Pit",
+     "glyph": "P"
+    },
+    {
+     "zone": "Sword Platform",
+     "glyph": "W"
+    },
+    {
+     "zone": "Batteries",
+     "glyph": "Y"
+    },
+    {
+     "zone": "Whirlpool Dam",
+     "glyph": "N"
+    }
+   ]
+  },
+  {
+   "id": "empyrean",
+   "title": "Empyrean",
+   "subtitle": "4v4 arena \u00b7 mirror-symmetric E-W \u00b7 Forge remake of Halo 3's The Pit \u00b7 HCS core (Slayer / CTF)",
+   "grid": [
+    14,
+    8
+   ],
+   "side_a": "west base",
+   "side_b": "east base",
+   "badge_key": "K=rockets (mid corridor), C=cindershot (center pit), N=sniper pads, H=heatwave (old sword room), O=overshield balcony",
+   "sources": "Halopedia Empyrean + The Pit; Liquipedia callouts; Waypoint BTB update. Deck/Terminal/Gulch named but placement unestablished",
+   "zones": [
+    {
+     "name": "West Tower",
+     "cell": [
+      0.6,
+      0.5,
+      2.0,
+      1.6
+     ],
+     "floor": 2,
+     "tag": "3-level, faces East Tower"
+    },
+    {
+     "name": "East Tower",
+     "cell": [
+      11.4,
+      0.5,
+      2.0,
+      1.6
+     ],
+     "floor": 2,
+     "tag": "3-level, faces West Tower"
+    },
+    {
+     "name": "OS Balcony",
+     "cell": [
+      6.1,
+      0.4,
+      1.8,
+      1.1
+     ],
+     "floor": 2,
+     "tag": "overlooks open edge"
+    },
+    {
+     "name": "West Base",
+     "cell": [
+      0.5,
+      2.6,
+      2.2,
+      2.8
+     ],
+     "floor": 1,
+     "tag": "spawn"
+    },
+    {
+     "name": "East Base",
+     "cell": [
+      11.3,
+      2.6,
+      2.2,
+      2.8
+     ],
+     "floor": 1,
+     "tag": "spawn"
+    },
+    {
+     "name": "West Catwalk",
+     "cell": [
+      3.2,
+      1.0,
+      2.2,
+      1.0
+     ],
+     "floor": 2
+    },
+    {
+     "name": "East Catwalk",
+     "cell": [
+      8.6,
+      1.0,
+      2.2,
+      1.0
+     ],
+     "floor": 2
+    },
+    {
+     "name": "Rocket Corridor",
+     "cell": [
+      4.6,
+      2.3,
+      4.8,
+      1.2
+     ],
+     "floor": 1,
+     "tag": "old camo hall"
+    },
+    {
+     "name": "Center Pit",
+     "cell": [
+      4.6,
+      3.8,
+      4.8,
+      0.9
+     ],
+     "floor": 0,
+     "label_at": "top",
+     "tag": "central trench"
+    },
+    {
+     "name": "Heatwave Room",
+     "cell": [
+      5.4,
+      5.0,
+      3.2,
+      1.3
+     ],
+     "floor": 1,
+     "tag": "old sword room"
+    },
+    {
+     "name": "Underpass",
+     "cell": [
+      5.6,
+      6.6,
+      2.8,
+      1.0
+     ],
+     "floor": 0,
+     "tag": "under Heatwave room, 3 ways in"
+    },
+    {
+     "name": "West Bend",
+     "cell": [
+      2.2,
+      5.6,
+      2.0,
+      1.2
+     ],
+     "floor": 1,
+     "tag": "(approx)"
+    },
+    {
+     "name": "East Bend",
+     "cell": [
+      9.8,
+      5.6,
+      2.0,
+      1.2
+     ],
+     "floor": 1,
+     "tag": "(approx)"
+    }
+   ],
+   "connections": [
+    [
+     "West Base",
+     "West Tower",
+     "stairs"
+    ],
+    [
+     "East Base",
+     "East Tower",
+     "stairs"
+    ],
+    [
+     "West Base",
+     "Rocket Corridor",
+     "walk"
+    ],
+    [
+     "Rocket Corridor",
+     "East Base",
+     "walk"
+    ],
+    [
+     "West Tower",
+     "West Catwalk",
+     "walk"
+    ],
+    [
+     "West Catwalk",
+     "OS Balcony",
+     "walk"
+    ],
+    [
+     "OS Balcony",
+     "East Catwalk",
+     "walk"
+    ],
+    [
+     "East Catwalk",
+     "East Tower",
+     "walk"
+    ],
+    [
+     "West Base",
+     "West Bend",
+     "walk"
+    ],
+    [
+     "West Bend",
+     "Heatwave Room",
+     "walk"
+    ],
+    [
+     "Heatwave Room",
+     "East Bend",
+     "walk"
+    ],
+    [
+     "East Bend",
+     "East Base",
+     "walk"
+    ],
+    [
+     "Center Pit",
+     "Rocket Corridor",
+     "walk"
+    ],
+    [
+     "Center Pit",
+     "Heatwave Room",
+     "walk"
+    ],
+    [
+     "Underpass",
+     "West Bend",
+     "walk"
+    ],
+    [
+     "Underpass",
+     "East Bend",
+     "walk"
+    ]
+   ],
+   "pickups": [
+    {
+     "zone": "Rocket Corridor",
+     "glyph": "K"
+    },
+    {
+     "zone": "Center Pit",
+     "glyph": "C"
+    },
+    {
+     "zone": "Heatwave Room",
+     "glyph": "H"
+    },
+    {
+     "zone": "OS Balcony",
+     "glyph": "O"
+    },
+    {
+     "zone": "West Catwalk",
+     "glyph": "N"
+    },
+    {
+     "zone": "East Catwalk",
+     "glyph": "N"
+    }
+   ]
+  },
+  {
+   "id": "bazaar",
+   "title": "Bazaar",
+   "subtitle": "4v4 arena \u00b7 mirror-symmetric E-W \u00b7 outdoor town, mostly one level + upper hall \u00b7 launch map (CTF staple)",
+   "grid": [
+    14,
+    8
+   ],
+   "side_a": "west base (blue trim)",
+   "side_b": "east base (red/yellow)",
+   "badge_key": "K=rockets/cindershot (Tower), P=camo+OS (near Truck), S=SMG-tier behind gates, G=grapple pickup mid",
+   "sources": "Halopedia Bazaar; Gamer Guides; Majmudar level-design analysis; Gfinity callouts",
+   "zones": [
+    {
+     "name": "Upper Hall",
+     "cell": [
+      4.6,
+      0.3,
+      4.8,
+      0.9
+     ],
+     "floor": 2,
+     "tag": "indoor top flank, snipes center"
+    },
+    {
+     "name": "Cafe",
+     "cell": [
+      3.0,
+      1.6,
+      2.2,
+      1.4
+     ],
+     "floor": 1,
+     "tag": "west room before mid"
+    },
+    {
+     "name": "Den",
+     "cell": [
+      8.8,
+      1.6,
+      2.2,
+      1.4
+     ],
+     "floor": 1,
+     "tag": "east room before mid"
+    },
+    {
+     "name": "Tower",
+     "cell": [
+      6.2,
+      1.7,
+      1.6,
+      1.3
+     ],
+     "floor": 2,
+     "tag": "overlooks Market"
+    },
+    {
+     "name": "West Base",
+     "cell": [
+      0.4,
+      3.2,
+      2.0,
+      2.4
+     ],
+     "floor": 1,
+     "tag": "spawn"
+    },
+    {
+     "name": "East Base",
+     "cell": [
+      11.6,
+      3.2,
+      2.0,
+      2.4
+     ],
+     "floor": 1,
+     "tag": "spawn"
+    },
+    {
+     "name": "West Courtyard",
+     "cell": [
+      2.9,
+      3.4,
+      2.4,
+      2.0
+     ],
+     "floor": 1
+    },
+    {
+     "name": "East Courtyard",
+     "cell": [
+      8.7,
+      3.4,
+      2.4,
+      2.0
+     ],
+     "floor": 1
+    },
+    {
+     "name": "Market",
+     "cell": [
+      5.9,
+      3.3,
+      2.2,
+      2.2
+     ],
+     "floor": 1,
+     "tag": "center, exposed all sides"
+    },
+    {
+     "name": "Truck",
+     "cell": [
+      6.1,
+      6.0,
+      1.8,
+      1.2
+     ],
+     "floor": 1,
+     "tag": "camo+OS ~50m apart here"
+    },
+    {
+     "name": "West Alley",
+     "cell": [
+      2.9,
+      6.2,
+      2.4,
+      1.1
+     ],
+     "floor": 1
+    },
+    {
+     "name": "East Alley",
+     "cell": [
+      8.7,
+      6.2,
+      2.4,
+      1.1
+     ],
+     "floor": 1
+    }
+   ],
+   "connections": [
+    [
+     "West Base",
+     "West Courtyard",
+     "walk"
+    ],
+    [
+     "West Courtyard",
+     "Market",
+     "walk"
+    ],
+    [
+     "Market",
+     "East Courtyard",
+     "walk"
+    ],
+    [
+     "East Courtyard",
+     "East Base",
+     "walk"
+    ],
+    [
+     "West Courtyard",
+     "Cafe",
+     "walk"
+    ],
+    [
+     "Cafe",
+     "Upper Hall",
+     "stairs"
+    ],
+    [
+     "Upper Hall",
+     "Den",
+     "stairs"
+    ],
+    [
+     "Den",
+     "East Courtyard",
+     "walk"
+    ],
+    [
+     "West Base",
+     "West Alley",
+     "walk"
+    ],
+    [
+     "West Alley",
+     "Truck",
+     "walk"
+    ],
+    [
+     "Truck",
+     "East Alley",
+     "walk"
+    ],
+    [
+     "East Alley",
+     "East Base",
+     "walk"
+    ],
+    [
+     "Tower",
+     "Market",
+     "stairs"
+    ]
+   ],
+   "pickups": [
+    {
+     "zone": "Tower",
+     "glyph": "K"
+    },
+    {
+     "zone": "Truck",
+     "glyph": "P"
+    },
+    {
+     "zone": "Market",
+     "glyph": "G"
+    },
+    {
+     "zone": "West Alley",
+     "glyph": "S"
+    },
+    {
+     "zone": "East Alley",
+     "glyph": "S"
+    }
+   ]
+  },
+  {
+   "id": "streets",
+   "title": "Streets",
+   "subtitle": "4v4 arena \u00b7 ASYMMETRIC city block, elongated \u00b7 HCS core (Slayer / KotH / Strongholds) \u00b7 some positions (approx)",
+   "grid": [
+    14,
+    8
+   ],
+   "side_a": "subway spawn",
+   "side_b": "station square spawn",
+   "badge_key": "K=SPNKr/cindershot (mid Main St), E=stalker (Subway Balcony), N=needler (Plaza Stairs), S=shotgun-tier (Commercial), W=sword/hammer (blue room), T=thrusters (Arc St)",
+   "sources": "Halopedia Streets (full callout list); Gfinity; Gamer Guides; PGG weapon spawns",
+   "zones": [
+    {
+     "name": "Old Town",
+     "cell": [
+      3.4,
+      0.5,
+      5.2,
+      1.6
+     ],
+     "floor": 1,
+     "tag": "B hold \u00b7 bar + alley inside"
+    },
+    {
+     "name": "Arc Street",
+     "cell": [
+      9.2,
+      0.7,
+      2.6,
+      1.3
+     ],
+     "floor": 1,
+     "tag": "(approx) bend + hallway"
+    },
+    {
+     "name": "Subway Balcony",
+     "cell": [
+      0.7,
+      1.9,
+      2.0,
+      1.0
+     ],
+     "floor": 2
+    },
+    {
+     "name": "Station Tower",
+     "cell": [
+      11.5,
+      1.6,
+      1.9,
+      1.2
+     ],
+     "floor": 2,
+     "tag": "police station tower"
+    },
+    {
+     "name": "Subway",
+     "cell": [
+      0.5,
+      3.2,
+      2.2,
+      2.4
+     ],
+     "floor": 1,
+     "tag": "spawn \u00b7 orange striping"
+    },
+    {
+     "name": "Station Square",
+     "cell": [
+      11.3,
+      3.2,
+      2.3,
+      2.4
+     ],
+     "floor": 1,
+     "tag": "spawn"
+    },
+    {
+     "name": "Main Street",
+     "cell": [
+      3.4,
+      3.6,
+      7.2,
+      1.5
+     ],
+     "floor": 1,
+     "tag": "the direct route"
+    },
+    {
+     "name": "Plaza",
+     "cell": [
+      0.8,
+      6.3,
+      2.2,
+      1.3
+     ],
+     "floor": 1,
+     "tag": "via Plaza Stairs"
+    },
+    {
+     "name": "Commercial District",
+     "cell": [
+      3.6,
+      5.9,
+      4.6,
+      1.6
+     ],
+     "floor": 1,
+     "tag": "crescent alley inside"
+    },
+    {
+     "name": "Blue Room",
+     "cell": [
+      8.7,
+      6.1,
+      1.6,
+      1.3
+     ],
+     "floor": 1,
+     "tag": "(approx) round room"
+    },
+    {
+     "name": "Cafe",
+     "cell": [
+      10.8,
+      6.1,
+      1.8,
+      1.3
+     ],
+     "floor": 1,
+     "tag": "(approx)"
+    }
+   ],
+   "connections": [
+    [
+     "Subway",
+     "Main Street",
+     "walk"
+    ],
+    [
+     "Main Street",
+     "Station Square",
+     "walk"
+    ],
+    [
+     "Subway",
+     "Subway Balcony",
+     "stairs"
+    ],
+    [
+     "Station Square",
+     "Station Tower",
+     "stairs"
+    ],
+    [
+     "Subway",
+     "Old Town",
+     "walk"
+    ],
+    [
+     "Old Town",
+     "Arc Street",
+     "walk"
+    ],
+    [
+     "Arc Street",
+     "Station Square",
+     "walk"
+    ],
+    [
+     "Subway",
+     "Plaza",
+     "stairs"
+    ],
+    [
+     "Plaza",
+     "Commercial District",
+     "walk"
+    ],
+    [
+     "Commercial District",
+     "Blue Room",
+     "walk"
+    ],
+    [
+     "Blue Room",
+     "Cafe",
+     "walk"
+    ],
+    [
+     "Cafe",
+     "Station Square",
+     "walk"
+    ],
+    [
+     "Old Town",
+     "Main Street",
+     "walk"
+    ],
+    [
+     "Commercial District",
+     "Main Street",
+     "walk"
+    ]
+   ],
+   "pickups": [
+    {
+     "zone": "Main Street",
+     "glyph": "K"
+    },
+    {
+     "zone": "Subway Balcony",
+     "glyph": "E"
+    },
+    {
+     "zone": "Plaza",
+     "glyph": "N"
+    },
+    {
+     "zone": "Commercial District",
+     "glyph": "S"
+    },
+    {
+     "zone": "Blue Room",
+     "glyph": "W"
+    },
+    {
+     "zone": "Arc Street",
+     "glyph": "T"
+    }
+   ]
+  },
+  {
+   "id": "argyle",
+   "title": "Argyle",
+   "subtitle": "4v4 arena \u00b7 mirror-symmetric \u00b7 UNSC starship interior \u00b7 Winter Update Forge map \u00b7 drawn from Halopedia's verbal blueprint (no community callout names)",
+   "grid": [
+    14,
+    8
+   ],
+   "side_a": "base A",
+   "side_b": "base B",
+   "badge_key": "N=sniper (walkway corners), P=camo (floating platform top), R=repulsor (below platform), G=grappleshot (battlements)",
+   "sources": "Halopedia Argyle \u2014 full verbal layout",
+   "zones": [
+    {
+     "name": "Pit Walkway A",
+     "cell": [
+      1.6,
+      0.6,
+      4.2,
+      1.2
+     ],
+     "floor": 2,
+     "tag": "over bottomless pit"
+    },
+    {
+     "name": "Pit Walkway B",
+     "cell": [
+      8.2,
+      0.6,
+      4.2,
+      1.2
+     ],
+     "floor": 2,
+     "tag": "over bottomless pit"
+    },
+    {
+     "name": "Battlement A",
+     "cell": [
+      0.4,
+      2.4,
+      1.6,
+      1.2
+     ],
+     "floor": 2,
+     "tag": "via grav lift"
+    },
+    {
+     "name": "Battlement B",
+     "cell": [
+      12.0,
+      2.4,
+      1.6,
+      1.2
+     ],
+     "floor": 2,
+     "tag": "via grav lift"
+    },
+    {
+     "name": "Base A",
+     "cell": [
+      0.5,
+      3.9,
+      2.2,
+      2.4
+     ],
+     "floor": 1,
+     "tag": "spawn"
+    },
+    {
+     "name": "Base B",
+     "cell": [
+      11.3,
+      3.9,
+      2.2,
+      2.4
+     ],
+     "floor": 1,
+     "tag": "spawn"
+    },
+    {
+     "name": "Central Hallway",
+     "cell": [
+      3.4,
+      3.9,
+      7.2,
+      1.6
+     ],
+     "floor": 1,
+     "tag": "long, wide, base-to-base line"
+    },
+    {
+     "name": "Center Platform",
+     "cell": [
+      6.2,
+      2.3,
+      1.6,
+      1.2
+     ],
+     "floor": 2,
+     "tag": "floating \u00b7 repulsor below"
+    },
+    {
+     "name": "Lower Level A",
+     "cell": [
+      1.0,
+      6.8,
+      2.4,
+      1.0
+     ],
+     "floor": 0,
+     "tag": "ramp behind base"
+    },
+    {
+     "name": "Lower Level B",
+     "cell": [
+      10.6,
+      6.8,
+      2.4,
+      1.0
+     ],
+     "floor": 0,
+     "tag": "ramp behind base"
+    },
+    {
+     "name": "Flank Hall A",
+     "cell": [
+      3.8,
+      6.4,
+      2.8,
+      1.3
+     ],
+     "floor": 1,
+     "tag": "open toward center"
+    },
+    {
+     "name": "Flank Hall B",
+     "cell": [
+      7.4,
+      6.4,
+      2.8,
+      1.3
+     ],
+     "floor": 1,
+     "tag": "open toward center"
+    }
+   ],
+   "connections": [
+    [
+     "Base A",
+     "Central Hallway",
+     "walk"
+    ],
+    [
+     "Central Hallway",
+     "Base B",
+     "walk"
+    ],
+    [
+     "Base A",
+     "Battlement A",
+     "lift"
+    ],
+    [
+     "Base B",
+     "Battlement B",
+     "lift"
+    ],
+    [
+     "Base A",
+     "Lower Level A",
+     "stairs"
+    ],
+    [
+     "Base B",
+     "Lower Level B",
+     "stairs"
+    ],
+    [
+     "Base A",
+     "Pit Walkway A",
+     "walk"
+    ],
+    [
+     "Pit Walkway A",
+     "Center Platform",
+     "walk"
+    ],
+    [
+     "Center Platform",
+     "Pit Walkway B",
+     "walk"
+    ],
+    [
+     "Pit Walkway B",
+     "Base B",
+     "walk"
+    ],
+    [
+     "Base A",
+     "Flank Hall A",
+     "walk"
+    ],
+    [
+     "Flank Hall A",
+     "Flank Hall B",
+     "walk"
+    ],
+    [
+     "Flank Hall B",
+     "Base B",
+     "walk"
+    ]
+   ],
+   "pickups": [
+    {
+     "zone": "Pit Walkway A",
+     "glyph": "N"
+    },
+    {
+     "zone": "Pit Walkway B",
+     "glyph": "N"
+    },
+    {
+     "zone": "Center Platform",
+     "glyph": "P"
+    },
+    {
+     "zone": "Battlement A",
+     "glyph": "G"
+    },
+    {
+     "zone": "Battlement B",
+     "glyph": "G"
+    }
+   ]
   }
  ]
 }

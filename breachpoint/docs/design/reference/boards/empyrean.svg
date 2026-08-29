@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1028" height="756" viewBox="0 0 1028 756">
+<style>
+  .paper{fill:#ffffff}
+  .frame{fill:none;stroke:#000;stroke-width:2.5}
+  .z0{fill:#3a3a3a;stroke:#000;stroke-width:1.6;rx:7}
+  .z1{fill:#ffffff;stroke:#000;stroke-width:1.8;rx:7}
+  .z2{fill:#f0f0f0;stroke:#000;stroke-width:1.6;stroke-dasharray:7 4;rx:7}
+  .t0{font:bold 11px monospace;fill:#ffffff}
+  .t1{font:bold 11px monospace;fill:#000}
+  .sub{font:9px monospace;fill:#555}
+  .sub0{font:9px monospace;fill:#cccccc}
+  .conn{stroke:#000;stroke-width:2.2;fill:none}
+  .stair{stroke:#000;stroke-width:1.2}
+  .badge{fill:#000}
+  .badgetxt{font:bold 10px monospace;fill:#fff}
+  .side{font:bold 13px monospace;fill:#000;letter-spacing:2px}
+  .big{font:bold 16px monospace;fill:#000;letter-spacing:1px}
+  .small{font:9.5px monospace;fill:#000}
+  .note{font:italic 10px monospace;fill:#333}
+</style>
+<rect class="paper" width="1028" height="756"/>
+<rect class="frame" x="8" y="8" width="1012" height="740"/>
+<text class="big" x="80" y="52">EMPYREAN</text>
+<text class="small" x="80" y="72">4v4 arena · mirror-symmetric E-W · Forge remake of Halo 3's The Pit · HCS core (Slayer / CTF)</text>
+<text class="note" x="80" y="90">RECONSTRUCTION from documented callouts — adjacency and floors sourced, proportions diagrammatic, NOT measured.</text>
+<line class="conn" x1="179.2" y1="368" x2="179.2" y2="200.6"/>
+<line class="stair" x1="172.2" y1="304.388" x2="186.2" y2="304.388"/>
+<line class="stair" x1="172.2" y1="284.3" x2="186.2" y2="284.3"/>
+<line class="stair" x1="172.2" y1="264.212" x2="186.2" y2="264.212"/>
+<line class="conn" x1="848.8" y1="368" x2="848.8" y2="200.6"/>
+<line class="stair" x1="841.8" y1="304.388" x2="855.8" y2="304.388"/>
+<line class="stair" x1="841.8" y1="284.3" x2="855.8" y2="284.3"/>
+<line class="stair" x1="841.8" y1="264.212" x2="855.8" y2="264.212"/>
+<line class="conn" x1="179.2" y1="368" x2="514" y2="299.8"/>
+<line class="conn" x1="514" y1="299.8" x2="848.8" y2="368"/>
+<line class="conn" x1="179.2" y1="200.6" x2="346.6" y2="213"/>
+<line class="conn" x1="346.6" y1="213" x2="514" y2="178.9"/>
+<line class="conn" x1="514" y1="178.9" x2="681.4" y2="213"/>
+<line class="conn" x1="681.4" y1="213" x2="848.8" y2="200.6"/>
+<line class="conn" x1="179.2" y1="368" x2="278.4" y2="504.4"/>
+<line class="conn" x1="278.4" y1="504.4" x2="514" y2="470.3"/>
+<line class="conn" x1="514" y1="470.3" x2="749.6" y2="504.4"/>
+<line class="conn" x1="749.6" y1="504.4" x2="848.8" y2="368"/>
+<line class="conn" x1="514" y1="383.5" x2="514" y2="299.8"/>
+<line class="conn" x1="514" y1="383.5" x2="514" y2="470.3"/>
+<line class="conn" x1="514" y1="560.2" x2="278.4" y2="504.4"/>
+<line class="conn" x1="514" y1="560.2" x2="749.6" y2="504.4"/>
+<rect class="z2" x="117.2" y="151" width="124" height="99.2" rx="8"/>
+<text class="t1" text-anchor="middle" x="179.2" y="204.6">WEST TOWER</text>
+<text class="sub" text-anchor="middle" x="179.2" y="216.6">3-level, faces East Tower</text>
+<rect class="z2" x="786.8" y="151" width="124" height="99.2" rx="8"/>
+<text class="t1" text-anchor="middle" x="848.8" y="204.6">EAST TOWER</text>
+<text class="sub" text-anchor="middle" x="848.8" y="216.6">3-level, faces West Tower</text>
+<rect class="z2" x="458.2" y="144.8" width="111.6" height="68.2" rx="8"/>
+<text class="t1" text-anchor="middle" x="514" y="182.9">OS BALCONY</text>
+<text class="sub" text-anchor="middle" x="514" y="194.9">overlooks open edge</text>
+<rect class="z1" x="111" y="281.2" width="136.4" height="173.6" rx="8"/>
+<text class="t1" text-anchor="middle" x="179.2" y="372">WEST BASE</text>
+<text class="sub" text-anchor="middle" x="179.2" y="384">spawn</text>
+<rect class="z1" x="780.6" y="281.2" width="136.4" height="173.6" rx="8"/>
+<text class="t1" text-anchor="middle" x="848.8" y="372">EAST BASE</text>
+<text class="sub" text-anchor="middle" x="848.8" y="384">spawn</text>
+<rect class="z2" x="278.4" y="182" width="136.4" height="62" rx="8"/>
+<text class="t1" text-anchor="middle" x="346.6" y="217">WEST CATWALK</text>
+<rect class="z2" x="613.2" y="182" width="136.4" height="62" rx="8"/>
+<text class="t1" text-anchor="middle" x="681.4" y="217">EAST CATWALK</text>
+<rect class="z1" x="365.2" y="262.6" width="297.6" height="74.4" rx="8"/>
+<text class="t1" text-anchor="middle" x="514" y="297.8">ROCKET</text>
+<text class="t1" text-anchor="middle" x="514" y="309.8">CORRIDOR</text>
+<text class="sub" text-anchor="middle" x="514" y="321.8">old camo hall</text>
+<rect class="z0" x="365.2" y="355.6" width="297.6" height="55.8" rx="8"/>
+<text class="t0" text-anchor="middle" x="514" y="375.6">CENTER PIT</text>
+<text class="sub0" text-anchor="middle" x="514" y="387.6">central trench</text>
+<rect class="z1" x="414.8" y="430" width="198.4" height="80.6" rx="8"/>
+<text class="t1" text-anchor="middle" x="514" y="468.3">HEATWAVE</text>
+<text class="t1" text-anchor="middle" x="514" y="480.3">ROOM</text>
+<text class="sub" text-anchor="middle" x="514" y="492.3">old sword room</text>
+<rect class="z0" x="427.2" y="529.2" width="173.6" height="62" rx="8"/>
+<text class="t0" text-anchor="middle" x="514" y="564.2">UNDERPASS</text>
+<text class="sub0" text-anchor="middle" x="514" y="576.2">under Heatwave room, 3 ways in</text>
+<rect class="z1" x="216.4" y="467.2" width="124" height="74.4" rx="8"/>
+<text class="t1" text-anchor="middle" x="278.4" y="508.4">WEST BEND</text>
+<text class="sub" text-anchor="middle" x="278.4" y="520.4">(approx)</text>
+<rect class="z1" x="687.6" y="467.2" width="124" height="74.4" rx="8"/>
+<text class="t1" text-anchor="middle" x="749.6" y="508.4">EAST BEND</text>
+<text class="sub" text-anchor="middle" x="749.6" y="520.4">(approx)</text>
+<circle class="badge" cx="649.8" cy="275.6" r="10"/>
+<text class="badgetxt" text-anchor="middle" x="649.8" y="279.1">K</text>
+<circle class="badge" cx="649.8" cy="368.6" r="10"/>
+<text class="badgetxt" text-anchor="middle" x="649.8" y="372.1">C</text>
+<circle class="badge" cx="600.2" cy="443" r="10"/>
+<text class="badgetxt" text-anchor="middle" x="600.2" y="446.5">H</text>
+<circle class="badge" cx="556.8" cy="157.8" r="10"/>
+<text class="badgetxt" text-anchor="middle" x="556.8" y="161.3">O</text>
+<circle class="badge" cx="401.8" cy="195" r="10"/>
+<text class="badgetxt" text-anchor="middle" x="401.8" y="198.5">N</text>
+<circle class="badge" cx="736.6" cy="195" r="10"/>
+<text class="badgetxt" text-anchor="middle" x="736.6" y="198.5">N</text>
+<text class="side" x="80" y="650" text-anchor="start">WEST BASE</text>
+<text class="side" x="948" y="650" text-anchor="end">EAST BASE</text>
+<rect class="frame" x="80" y="660" width="828" height="66"/>
+<rect class="z0" x="92" y="672" width="22" height="14" rx="4"/>
+<text class="small" x="120" y="683">sunken / bottom floor</text>
+<rect class="z1" x="282" y="672" width="22" height="14" rx="4"/>
+<text class="small" x="310" y="683">main floor</text>
+<rect class="z2" x="472" y="672" width="22" height="14" rx="4"/>
+<text class="small" x="500" y="683">upper (dashed)</text>
+<text class="small" x="92" y="708">conn: line=walk, ticks=stairs/ramp, triangle=lift · badges: K=rockets (mid corridor), C=cindershot (center pit), N=sniper pads, H=heatwave (old sword room), O=overshield balcony</text>
+<text class="small" x="92" y="722">sources: Halopedia Empyrean + The Pit; Liquipedia callouts; Waypoint BTB update. Deck/Terminal/Gulch named but placement unestablished</text>
+</svg>
