@@ -347,3 +347,36 @@ a defensive stand rather than a run. That is the change that actually landed.
 lingering in the band where retreating is the right call. If more retreating is genuinely
 wanted, the lever is probably TTK or health regen pacing — not the ambition curve. That is a
 game-feel decision, not a bot-tuning one, so it is not taken here.
+
+### 28 Aug — "they should go back to attack once they regenerate enough"
+
+Checked before changing anything, and it already works. Measured across the same four runs:
+
+- **Regen runs.** 28 recoveries between hits, **2,354 HP restored**. (A first pass reported
+  "0 rises, 209 falls" — that was a measurement artifact, not a finding: the `BNDamage:` line
+  only fires on DAMAGE, so healing can never appear in it. Comparing each victim's health at
+  its NEXT hit against what the previous hit left it at is what actually shows recovery.)
+- **Bots return.** `Retreat -> Engage` 16 times. The other exits went to Rally (22), Roam (6)
+  and Search (5) — correct, since those are the frames with no enemy in sight to attack.
+
+**Why it cannot get stuck.** `Hurt` reads `VitalityNorm` over `[0, 0.8]` inverted, so:
+
+| vitality | Retreat under fire | fire decayed |
+|---|---|---|
+| 0.3 | 0.844 | 0.422 |
+| 0.5 | 0.506 | 0.253 |
+| 0.7 | 0.169 | 0.084 |
+| **0.8** | **0.000** | **0.000** |
+
+Engage measured 0.5–0.9. So a bot re-engages at roughly 60–70% vitality, and at 80% Retreat
+scores a hard zero and *cannot* win regardless of anything else. The return is a property of
+the curve, not a timer.
+
+**The one case where this WILL be wrong — when shields come back on.** `VitalityNorm` is
+`min(health, shield)`, chosen so a broken shield reads as danger at full health. But it also
+means a bot whose SHIELD has fully recharged while its health stays low keeps retreating —
+and in Halo a recovered shield is exactly the signal to re-engage, because the shield is the
+buffer between you and death. With `MaxShield` at 0 today this is unreachable and untestable,
+so it is recorded rather than built: the moment shields are switched on, this term needs
+revisiting, and `min()` is probably the wrong shape for the recovery direction even though it
+is the right shape for the break.
