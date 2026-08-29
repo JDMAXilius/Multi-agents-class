@@ -426,6 +426,32 @@ void FAIBMovementPolicySpec::Define()
 		}
 	});
 
+
+	It("lets EVERY tier hop, and still climbs — the gate that must not silence the behaviour", [this]()
+	{
+		// THE REGRESSION THIS EXISTS FOR (28 Aug). The hop first rode JukeChance so it would
+		// inherit a tier gate for free. JukeChance is 0.00 below Skilled, so the evasive jump
+		// was structurally impossible at Marine — the tier actually played — and a full match
+		// measured 9 defend stand-downs and exactly 0 hops. Capability-shaped must not mean
+		// capability-SILENCED: R28 asks that tiers differ, not that a behaviour vanish.
+		const float Novice  = FAIBMovementPolicy::HopChance(EAIBCompetence::Novice);
+		const float Trained = FAIBMovementPolicy::HopChance(EAIBCompetence::Trained);
+		const float Skilled = FAIBMovementPolicy::HopChance(EAIBCompetence::Skilled);
+		const float Expert  = FAIBMovementPolicy::HopChance(EAIBCompetence::Expert);
+
+		TestTrue(TEXT("a Novice can hop at all"), Novice > 0.f);
+		TestTrue(TEXT("and a Trained bot — the Marine rung — can hop"), Trained > 0.f);
+
+		// Monotone, like every other rung on this ladder: no skill ever decreases.
+		TestTrue(TEXT("Trained >= Novice"), Trained >= Novice);
+		TestTrue(TEXT("Skilled >= Trained"), Skilled >= Trained);
+		TestTrue(TEXT("Expert >= Skilled"), Expert >= Skilled);
+		TestTrue(TEXT("and the ladder actually climbs"), Expert > Novice);
+
+		// A chance, not a certainty — a bot that hopped every leg would be a pogo stick.
+		TestTrue(TEXT("never a certainty"), Expert < 1.f);
+	});
+
 }
 
 #endif // WITH_DEV_AUTOMATION_TESTS

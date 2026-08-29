@@ -307,7 +307,10 @@ void UAIBAmbitionEngine::BuildDefaultCoreAmbitions(TArray<FAIBAmbitionSpec>& Out
 	{
 		FAIBAmbitionSpec& Retreat = OutSpecs.AddDefaulted_GetRef();
 		Retreat.Tag = AIBTags::Ambition_Retreat;
-		Retreat.BaseUtility = 1.2f;
+		// 1.35, up from 1.2 (founder, 28 Aug — "make them retreat more"). MEASURED first:
+		// one match chose Retreat 12 times against Engage's 154, so the defend behaviour was
+		// correct and almost never seen — about one engagement in thirty.
+		Retreat.BaseUtility = 1.35f;
 		Retreat.CommitSeconds = 3.f;
 
 		// VITALITY, not health. In a shielded game the moment that matters is the
@@ -328,7 +331,12 @@ void UAIBAmbitionEngine::BuildDefaultCoreAmbitions(TArray<FAIBAmbitionSpec>& Out
 		FAIBConsideration& Hurt = Retreat.Considerations.AddDefaulted_GetRef();
 		Hurt.Selector = EAIBFactSelector::VitalityNorm;
 		Hurt.InputMin = 0.f;
-		Hurt.InputMax = 0.6f;
+		// 0.8, up from 0.6: the band is WHEN a bot starts caring, and at 0.6 it barely cared
+		// until it was nearly dead. At half vitality the want was 0.167 of full — noise
+		// against Engage — so bots fought on through wounds that should have moved them.
+		// At 0.8 that same half-vitality bot scores 0.375, and a bot at 0.6 (which used to
+		// score exactly ZERO) now registers at all.
+		Hurt.InputMax = 0.8f;
 		Hurt.SetLinearCurve(false); // low health -> high want
 		Hurt.ValueWhenUnknown = 0.f; // unknown vitals must not trigger flight
 
@@ -339,10 +347,14 @@ void UAIBAmbitionEngine::BuildDefaultCoreAmbitions(TArray<FAIBAmbitionSpec>& Out
 		{
 			FRichCurve* C = UnderFire.Curve.GetRichCurve();
 			C->Reset();
-			C->AddKey(0.f, 0.35f); // merely being hurt is not yet a rout
+			// 0.5 at the floor, up from 0.35. This term exists so that being hurt LONG AGO is
+			// not a rout, and that still holds — but 0.35 also throttled the legitimate case
+			// of a wounded bot taking fresh fire down to a third of its want. Half is still a
+			// clear discount on a quiet moment while letting real damage read.
+			C->AddKey(0.f, 0.5f);
 			C->AddKey(1.f, 1.f);
 		}
-		UnderFire.ValueWhenUnknown = 0.35f;
+		UnderFire.ValueWhenUnknown = 0.5f;
 
 		// PHASE 5 — the mirror of Engage's nerve: high confidence SUPPRESSES the urge
 		// to leave (a winning bot presses through the same wounds a losing one flees),

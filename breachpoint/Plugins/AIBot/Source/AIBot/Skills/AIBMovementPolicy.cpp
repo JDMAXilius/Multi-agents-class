@@ -35,12 +35,21 @@ namespace
 		float LegMin;   // shortest leg the draw may land on, seconds
 		float LegMax;   // longest, seconds
 		float Juke;     // odds a new leg reverses the previous direction
+		float Hop;      // odds a DEFENDING leg leaves the ground (Retreat only)
 	};
 
-	constexpr FAIBStrafeRung NoviceRung  { 0.05f, 1.20f, 2.00f, 0.00f };
-	constexpr FAIBStrafeRung TrainedRung { 0.40f, 0.80f, 1.60f, 0.00f };
-	constexpr FAIBStrafeRung SkilledRung { 0.75f, 0.55f, 1.20f, 0.25f };
-	constexpr FAIBStrafeRung ExpertRung  { 0.95f, 0.35f, 0.90f, 0.50f };
+	// HOP, the last column, is NOT zero at the bottom two rungs — and that is the whole
+	// point of it existing (founder, 28 Aug). The first cut rode the hop on Juke, which is
+	// 0.00 below Skilled, so the evasive jump was structurally unreachable at Marine — the
+	// tier actually being played. Measured: 9 defend stand-downs, 0 hops, in one match.
+	//
+	// Still capability-shaped, still monotone: a Novice hops sometimes and clumsily, an
+	// Expert hops often. It is its own lever because it is its own behaviour — evading a
+	// tracking aim — and not a side effect of changing direction.
+	constexpr FAIBStrafeRung NoviceRung  { 0.05f, 1.20f, 2.00f, 0.00f, 0.20f };
+	constexpr FAIBStrafeRung TrainedRung { 0.40f, 0.80f, 1.60f, 0.00f, 0.30f };
+	constexpr FAIBStrafeRung SkilledRung { 0.75f, 0.55f, 1.20f, 0.25f, 0.45f };
+	constexpr FAIBStrafeRung ExpertRung  { 0.95f, 0.35f, 0.90f, 0.50f, 0.60f };
 
 	/** Out-of-range asks answer Trained — the same degrade-to-average rule the skill
 	 *  profile's Level() query uses, so a future enum entry is average, never superhuman. */
@@ -81,6 +90,11 @@ float FAIBMovementPolicy::StrafeLegSecondsMax(EAIBCompetence Level)
 float FAIBMovementPolicy::JukeChance(EAIBCompetence Level)
 {
 	return Rung(Level).Juke;
+}
+
+float FAIBMovementPolicy::HopChance(EAIBCompetence Level)
+{
+	return Rung(Level).Hop;
 }
 
 EAIBStrafeIntent FAIBMovementPolicy::StepStrafe(FAIBMovementState& State, EAIBCompetence Level,

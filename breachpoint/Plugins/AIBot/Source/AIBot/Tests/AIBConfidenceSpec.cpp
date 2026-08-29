@@ -240,23 +240,40 @@ void FAIBConfidenceSpec::Define()
 			// [0.195, 0.555], and BOTH injected values below sit inside that span —
 			// the axis is injected (this spec pins the ENGINE's response, the model
 			// spec pins the producer), but every number is one the producer can make.
+			//
+			// RE-PINNED AGAIN (28 Aug), and the reason matters more than the numbers. The
+			// founder asked for more retreating; Retreat's appetite went up (BaseUtility
+			// 1.2 -> 1.35, the hurt band 0.6 -> 0.8, the under-fire floor 0.35 -> 0.5).
+			// At the OLD row — H=0.30, d=1200 — Retreat now wins at BOTH ends of the
+			// reachable span (0.589 and 0.751 against Engage's 0.508 and 0.407), so
+			// confidence no longer decides anything there.
+			//
+			// That is a DESIGN OUTCOME, not a regression: a bot at 30% health taking heavy
+			// fire should leave whatever its nerve says. The axis this spec exists to pin
+			// still exists, at a milder wound — so the row moves to where confidence is
+			// genuinely the deciding input rather than being deleted.
+			//
+			// H=0.38, d=1000 -> Assess = 0.415, and a Trained misjudge (amplitude 0.18)
+			// spans C in [0.235, 0.595]. Both injected values below sit inside that span,
+			// so the old "green spec, unreachable feature" trap stays shut. Worked margin
+			// is 0.118 at the tighter end — not a knife's edge this time.
 			FAIBFacts Facts;
 			Facts.bVitalsKnown = true;
-			Facts.HealthNorm = 0.30f;
+			Facts.HealthNorm = 0.38f;
 			Facts.bWeaponCanFight = true;
 			Facts.bHasTarget = true;
 			Facts.bTargetVisible = true;
-			Facts.DistToTargetUU = 1200.f;
+			Facts.DistToTargetUU = 1000.f;
 			Facts.bDamageHistoryKnown = true;
 			Facts.RecentDamageTakenNorm = 0.5f;
 			Facts.bConfidenceKnown = true;
 
-			Facts.ConfidenceNorm = 0.55f; // top of the reachable span — above the band
+			Facts.ConfidenceNorm = 0.59f; // top of the reachable span — above the band
 			TestTag(TEXT("a confident bot PRESSES the same fight"),
 				Engine->Rescore(Facts, 1.0), AIBTags::Ambition_Engage);
 
 			Engine->ResetArbitration();
-			Facts.ConfidenceNorm = 0.20f; // bottom of the span — below the band
+			Facts.ConfidenceNorm = 0.24f; // bottom of the span — below the band
 			TestTag(TEXT("a shaken bot DISENGAGES from it"),
 				Engine->Rescore(Facts, 2.0), AIBTags::Ambition_Retreat);
 		});

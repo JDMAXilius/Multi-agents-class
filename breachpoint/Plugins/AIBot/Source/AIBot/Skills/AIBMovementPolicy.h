@@ -68,6 +68,15 @@ struct AIBOT_API FAIBMovementPolicy
 	 *  Capability-shaped: below Skilled this is 0 at any tuning value. */
 	static float JukeChance(EAIBCompetence Level);
 
+	/** Odds that ONE defending strafe leg leaves the ground. Retreat's band only — Engage's
+	 *  footwork never consults it, so every strafe measurement in the AIB tickets stays
+	 *  comparable.
+	 *
+	 *  Its own lever rather than a rider on JukeChance: the first cut rode the juke, which is
+	 *  0.00 below Skilled, and the evasive jump was therefore impossible at Marine — the tier
+	 *  actually played. Measured 0 hops across a full match before this existed. */
+	static float HopChance(EAIBCompetence Level);
+
 	/**
 	 * The one step, called at task tick rate while engaging: advances the decision
 	 * clock and returns the current intent. Pure over its inputs + Rng.

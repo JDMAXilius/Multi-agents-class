@@ -1862,16 +1862,22 @@ EStateTreeRunStatus FAIBStrafeTask::Tick(FStateTreeExecutionContext& Context, co
 	}
 
 	// THE EVASIVE HOP. A defending bot that only slides left and right is a predictable
-	// target on a flat plane; breaking the vertical too is what makes it hard to track
-	// (founder, 28 Aug: "crouch jump, evade, fire"). Ridden on the JUKE — the leg that
-	// already reverses direction — so the hop lands on the direction change a human would
-	// use it on, and so it inherits JukeChance's capability gate for free: zero below
-	// Skilled, no new tier lever (R28).
+	// target on a flat plane; breaking the vertical is what spoils a tracking aim
+	// (founder, 28 Aug: "crouch jump, evade, fire").
+	//
+	// ITS OWN CHANCE, not a rider on the juke. The first cut fired only on juke legs so it
+	// would inherit JukeChance's tier gate for free — but that gate is 0.00 below Skilled,
+	// so the jump was structurally impossible at Marine, the tier actually being played.
+	// Measured: 9 defend stand-downs and 0 hops in a full match. HopChance is nonzero on
+	// every rung and still rises with competence, so it is capability-shaped without being
+	// capability-BLOCKED (R28 wants tiers to differ, not to silence a behaviour).
 	//
 	// DEFEND ONLY (MinRangeUU > 0 is Retreat's band, 0 in Engage). Engage's footwork is
 	// unchanged, byte for byte, which keeps every strafe measurement in the AIB tickets
 	// comparable rather than silently re-baselined.
-	if (InstanceData.MinRangeUU > 0.f && MovementState.bLastLegWasJuke)
+	if (InstanceData.MinRangeUU > 0.f
+		&& Bot->GetPolicyRandom().FRand() < FAIBMovementPolicy::HopChance(
+			Bot->GetSkillProfile().Level(EAIBSkill::Movement)))
 	{
 		if (IAIBAvatarInterface* Avatar = Bot->GetAvatar())
 		{
