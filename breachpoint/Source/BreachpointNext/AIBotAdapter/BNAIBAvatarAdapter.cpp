@@ -263,7 +263,24 @@ float UBNAIBAvatarAdapter::GetAmmoNorm() const
 	const int32 MagazineSize = Weapon->GetMagazineSize();
 	if (MagazineSize <= 0)
 	{
-		return 0.f;
+		// A WEAPON WITH NO MAGAZINE IS NOT AN EMPTY ONE, and reporting it as empty is what
+		// froze bots mid-match in a crouch.
+		//
+		// MEASURED (28 Aug): 51 reads of `ammo 0/0 reserve 90` in one match. GetMagazineSize
+		// returns 0 whenever GetRow() misses — a weapon whose row lookup fails still carries
+		// its replicated AmmoReserve, so it reads as "empty magazine, plenty of spare". This
+		// used to return 0.0, which is exactly the reload trigger, so the bot crouched and
+		// pressed reload once a second forever: UBNGA_Reload's own gate is
+		// CurrentAmmo < MagazineSize, and 0 < 0 is FALSE, so that press can never succeed.
+		// 65 asks, 1 activation, 65 refusals, and a Spartan squatting in the open (founder:
+		// "they are just staying crouched").
+		//
+		// 1.0 — "nothing to reload" — is the honest answer: you cannot reload a magazine that
+		// does not exist. Same rule as GetShieldNorm's unknowable case: an unknown must never
+		// resolve to the value that triggers an action.
+		UE_LOG(LogBN, Warning, TEXT("BNAIBAdapter: %s holds %s whose row is unresolved (MagazineSize 0, reserve %d) — reporting FULL so the bot does not crouch on a reload that can never activate."),
+			*GetNameSafe(GetOwner()), *GetNameSafe(Weapon), Weapon->GetAmmoReserve());
+		return 1.f;
 	}
 	return FMath::Clamp(static_cast<float>(Weapon->GetCurrentAmmo()) / MagazineSize, 0.f, 1.f);
 }
@@ -271,7 +288,15 @@ float UBNAIBAvatarAdapter::GetAmmoNorm() const
 bool UBNAIBAvatarAdapter::HasReserveAmmo() const
 {
 	const ABNWeapon* Weapon = GetHeldWeapon();
-	return Weapon && Weapon->GetAmmoReserve() > 0;
+	if (!Weapon)
+	{
+		return false;
+	}
+	// THE RAW NUMBERS, once per call at Verbose — the reload loop was diagnosed for an hour
+	// from normalised values that could not distinguish "empty magazine" from "no magazine".
+	UE_LOG(LogBN, Verbose, TEXT("BNAIBAdapter: %s ammo %d/%d reserve %d"),
+		*GetNameSafe(GetOwner()), Weapon->GetCurrentAmmo(), Weapon->GetMagazineSize(), Weapon->GetAmmoReserve());
+	return Weapon->GetAmmoReserve() > 0;
 }
 
 bool UBNAIBAvatarAdapter::CanWeaponFight() const

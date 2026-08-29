@@ -205,6 +205,10 @@ namespace
 	 *  would otherwise be re-pressed at tick rate forever. */
 	constexpr float ReloadAtMagazineFraction = 0.25f;
 	constexpr float ReloadRetrySeconds = 1.0f;
+	/** How long a bot may hold the reload crouch before it gives up on the magazine. Longer
+	 *  than any real reload in the table (2.2s is the slowest) with room for the retry
+	 *  cadence, so a working reload is never interrupted by this. */
+	constexpr float ReloadGiveUpSeconds = 6.0f;
 
 	/** MELEE commits inside this fraction of the HELD WEAPON's own reach — the host's rule,
 	 *  and below 1 for the host's reason: a swing at the exact edge of the reach turns one
@@ -628,7 +632,27 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 	InstanceData.ReloadCooldownLeft = FMath::Max(0.f, InstanceData.ReloadCooldownLeft - DeltaTime);
 	InstanceData.SwapCooldownLeft = FMath::Max(0.f, InstanceData.SwapCooldownLeft - DeltaTime);
 	InstanceData.ReAimCooldownLeft = FMath::Max(0.f, InstanceData.ReAimCooldownLeft - DeltaTime);
-	if (Facts.bHasReserveAmmo && Facts.AmmoNorm <= ReloadAtMagazineFraction)
+	const bool bWantsReload = Facts.bHasReserveAmmo && Facts.AmmoNorm <= ReloadAtMagazineFraction;
+	InstanceData.ReloadWantedSeconds = bWantsReload ? InstanceData.ReloadWantedSeconds + DeltaTime : 0.f;
+
+	// THE CROUCH MUST NOT OUTLIVE ITS REASON. Crouching is rented against hands that are busy
+	// changing a magazine; when the magazine never arrives the rent is never paid and the bot
+	// simply squats in the open until it dies. One measured cause was an unresolved weapon row
+	// (fixed in the adapter, which now reports such a weapon as FULL) — this is the guard for
+	// every cause not yet measured. Standing up and fighting badly beats crouching and not
+	// fighting at all.
+	if (bWantsReload && InstanceData.ReloadWantedSeconds >= ReloadGiveUpSeconds)
+	{
+		if (InstanceData.bCrouchedToReload)
+		{
+			SetCrouch(*Avatar, false);
+			InstanceData.bCrouchedToReload = false;
+			UE_LOG(LogAIBot, Warning, TEXT("AIBot: %s wanted a reload for %.0fs and never got one (ammo %.2f, reserve %s) — standing up and fighting anyway."),
+				*Bot->GetName(), InstanceData.ReloadWantedSeconds, Facts.AmmoNorm,
+				Facts.bHasReserveAmmo ? TEXT("yes") : TEXT("no"));
+		}
+	}
+	else if (bWantsReload)
 	{
 		if (InstanceData.bHolding)
 		{
@@ -647,6 +671,16 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 		InstanceData.bCrouchedToReload = true;
 		if (InstanceData.ReloadCooldownLeft <= 0.f)
 		{
+			// THE CROUCH INSTRUMENT (founder, 28 Aug: "they are just staying crouched").
+			// Measured 1222 reload REFUSALS against 1 activation in a single match, so the
+			// bot asks every second, is told no, and holds the crouch that goes with asking.
+			// The refusal happens on the GAME side and its reason is invisible from here, so
+			// this prints the inputs the decision was made on — ammo, reserve, and whether the
+			// body actually crouched — which is the half this module can see.
+			UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s wants RELOAD — ammo %.2f (gate %.2f), reserve %s, crouched %s."),
+				*Bot->GetName(), Facts.AmmoNorm, ReloadAtMagazineFraction,
+				Facts.bHasReserveAmmo ? TEXT("yes") : TEXT("no"),
+				Avatar->IsCrouched() ? TEXT("yes") : TEXT("no"));
 			// One tap, like the human's R: the press activates, the release clears the
 			// held flag so the next reload is a fresh press rather than an input the
 			// ability system still believes is down.

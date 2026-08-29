@@ -288,6 +288,12 @@ struct FAIBFireWhenAbleTaskInstanceData
 	float ReloadCooldownLeft = 0.f;
 	bool bCrouchedToReload = false;
 
+	/** How long this bot has been ASKING for a reload that never lands. The crouch is spent
+	 *  while the hands are busy; if the hands never become busy, the crouch is just a bot
+	 *  squatting in the open. Any future reason a reload can be refused forever — not just
+	 *  the unresolved-row one that was measured — ends here instead of in a founder report. */
+	float ReloadWantedSeconds = 0.f;
+
 	/** Swap scratch. A THROTTLE: the verb behind it is a tap on an ability that can
 	 *  silently refuse, and an untimed re-tap is a button pressed at tick rate forever.
 	 *  The GRENADE's and the MELEE's throttles are deliberately NOT here — they live on
