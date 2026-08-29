@@ -46,12 +46,18 @@ Proven by rendering `arena_manifest.json` (Arena01) — sheets committed under
 
 ## Still owed (this ticket stays open)
 
-- [ ] The Halo Infinite research digest lands in this Log (agent in flight)
-- [ ] `arena02_manifest.json` — the new arena, full schema, kickoff-gate clean
-      (`arena_plan.py --verbose` accepts it: >=8 spawns @ >=8 m, <=35 m
-      sightlines, named rocket node, >=2 grapple points per upper position)
-- [ ] Its blueprint sheets, founder-reviewed through iterations
-- [ ] The sheets in Figma (top/front/side/3-4 as frames; SVG import)
+- [x] The research digest landed: `docs/design/HALO-INFINITE-RESEARCH.md`
+      (29 Aug — Aquarius plan x Recharge section x Streets sightlines, sourced)
+- [x] `arena02_manifest.json` — THE LOCKS, emitted by
+      `Tools/blockout/gen_arena02_manifest.py` (symmetry is code), VERDICT PASS
+      from arena_plan.py (8 spawns @ 9 m; Gallery 26 m designed max; baffled
+      culvert; rocket at map center on the deck's south lip; 10 anchors)
+- [ ] Its blueprint sheets, founder-reviewed through iterations (REV B sent
+      29 Aug; awaiting the founder's read)
+- [ ] Figma — PARKED BY FOUNDER RULING (29 Aug: "let's not use figma until we
+      have something we like"). The route is proven (S3 imported and screenshot-
+      verified in file w3cwEivZs1feyvcLMORTpH) and stays shut until the sheets
+      pass the founder's eye.
 - [ ] Handoff: terminal builds Arena 02 from the manifest via the SAME
       build_arena.py (new -Manifest arg or a copy step — terminal's call),
       then editor screenshots close the loop
@@ -63,3 +69,24 @@ Proven by rendering `arena_manifest.json` (Arena01) — sheets committed under
 - Everything above. The generator is manifest-agnostic on purpose: Arena01
   proved it so Arena 02 iterates on a proven instrument (the AIB10 lesson —
   instrument first).
+
+### 29 Aug — REV B: the founder's eye ("look horrible") forced the redraw
+
+The REV A sheets were data-correct and read as boxes on white — the founder
+rejected the LOOK, and the fix was drawing convention, not data:
+
+4. It. 4 — the poché rewrite: S1 became one floor plan PER LEVEL (cut structure
+   filled black, walkable plates grey, overhead dashed, below faint), perimeter
+   drawn as the black band it is, stairs drawn as stairs (treads + UP), a
+   LEGEND, markers only on their own level. S2 sections went poché with a heavy
+   ground line; S3 gained a ground plate with the 5 m grid and the perimeter
+   wall CUT TO 2 m (enclosure without hiding the interior), three face tones.
+5. It. 5 — Section A-A's beyond-filter was INVERTED (drew the front, hid the
+   beyond); fixed, and the section now shows the cut stairs/baffle in black with
+   the culvert void between them. Datum labels moved clear of the end walls;
+   plan labels clamped inside their panels.
+- Arena 02 classification lesson: prose-sniffing marked a pier "deck" (it
+  "carries the deck") and a canopy "stair" ("not stair-served") — the role's
+  LEADING tag is authoritative now.
+- FIGMA RULING (founder, verbatim intent): no Figma until the sheets are liked.
+  Nothing further goes to the file until then.
