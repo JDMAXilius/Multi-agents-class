@@ -220,7 +220,7 @@ void FAIBAmbitionEngineSpec::Define()
 		{
 			Engine->RegisterAmbition(Spec);
 		}
-		TestEqual(TEXT("five core wants"), Engine->NumAmbitions(), 5);
+		TestEqual(TEXT("six core wants"), Engine->NumAmbitions(), 6); // + Evade (28 Aug)
 
 		// Unknown vitals, working gun, nothing visible: a broken adapter must not read
 		// as a dying bot. Roam is the honest answer, not Retreat.
@@ -309,6 +309,67 @@ void FAIBAmbitionEngineSpec::Define()
 		TestEqual(TEXT("whole and shieldless wants no retreat"), RetreatScore(), 0.f, 0.0001f);
 	});
 
+	It("SCATTERS from a grenade at full health, while winning the fight", [this]()
+	{
+		// THE GAP THIS CLOSES (aib-critic H3, 28 Aug). The whole warning chain — the
+		// perceivability trace, the fuse-noise draw, the CanEvadeBlast capability gate, the
+		// reaction clock — ended in facts that NOTHING read. BlastCenterRelative had zero
+		// readers. A grenade at a bot's feet was answered with the rest of its strafe leg.
+		//
+		// It is its own want and not a term on Retreat, because considerations MULTIPLY and
+		// Retreat's Hurt is exactly 0 above 0.8 vitality: no factor can lift a healthy bot off
+		// zero. The bot winning a fight at full health is precisely the one that must move.
+		TArray<FAIBAmbitionSpec> Defaults;
+		UAIBAmbitionEngine::BuildDefaultCoreAmbitions(Defaults);
+		for (const FAIBAmbitionSpec& Spec : Defaults)
+		{
+			Engine->RegisterAmbition(Spec);
+		}
+
+		FAIBFacts Facts;
+		Facts.bVitalsKnown = true;
+		Facts.HealthNorm = 1.f;          // untouched
+		Facts.bWeaponCanFight = true;
+		Facts.bHasTarget = true;
+		Facts.bTargetVisible = true;     // and winning
+		Facts.DistToTargetUU = 600.f;
+
+		// No grenade: the want must be INVISIBLE. Every pre-Evade measurement depends on this.
+		TestTag(TEXT("no blast, no change"), Engine->Rescore(Facts, 1.0), AIBTags::Ambition_Engage);
+
+		// A grenade lands at its feet.
+		Facts.bIncomingBlast = true;
+		Facts.BlastSecondsToDetonation = 0.4f;
+		Facts.BlastCenterRelative = FVector(120.f, 0.f, 0.f);
+		TestTag(TEXT("a live grenade outranks a fight being won"),
+			Engine->Rescore(Facts, 20.0), AIBTags::Ambition_Evade);
+
+		// It goes off / is gone: back to the fight, and the commit must not outlive the blast.
+		Facts.bIncomingBlast = false;
+		Facts.BlastSecondsToDetonation = 0.f;
+		TestTag(TEXT("and the fight resumes after it"),
+			Engine->Rescore(Facts, 40.0), AIBTags::Ambition_Engage);
+	});
+
+	It("stays silent on a host with no blast seam — the unknown is not a live grenade", [this]()
+	{
+		// bIncomingBlast false means the selector is UNSET, so Evade scores its
+		// ValueWhenUnknown of 0. If that were ever flipped to a number, every bot on a build
+		// without grenades would sprint away from nothing, forever, and the cause would look
+		// like broken pathing rather than a scoring default.
+		TArray<FAIBAmbitionSpec> Defaults;
+		UAIBAmbitionEngine::BuildDefaultCoreAmbitions(Defaults);
+		for (const FAIBAmbitionSpec& Spec : Defaults)
+		{
+			Engine->RegisterAmbition(Spec);
+		}
+
+		FAIBFacts Facts; // nothing known at all
+		Facts.bWeaponCanFight = true;
+		const FGameplayTag Won = Engine->Rescore(Facts, 1.0);
+		TestTrue(TEXT("a bare facts row never scatters"), Won != AIBTags::Ambition_Evade);
+	});
+
 	It("wants nothing this world cannot satisfy — SeekWeapon is retired, Seek moves", [this]()
 	{
 		// THE BUG (25 Aug): an empty-handed bot scored SeekWeapon 1.40 on every think, its
@@ -323,7 +384,7 @@ void FAIBAmbitionEngineSpec::Define()
 				Spec.Tag.ToString().Contains(TEXT("SeekWeapon")));
 			Engine->RegisterAmbition(Spec);
 		}
-		TestEqual(TEXT("still five core wants"), Engine->NumAmbitions(), 5);
+		TestEqual(TEXT("still six core wants"), Engine->NumAmbitions(), 6);
 
 		// The exact old trap state — cannot fight, nothing visible, no mode naming a
 		// destination. The old brain froze here at SeekWeapon 1.40; the floor now takes

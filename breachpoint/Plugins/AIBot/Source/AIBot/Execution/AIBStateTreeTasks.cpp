@@ -381,6 +381,7 @@ bool FAIBAmbitionGateCondition::Matches(const FGameplayTag& Current) const
 FGameplayTag FAIBAmbitionGateCondition::GetBranchTag() const     { return FGameplayTag(); }
 FGameplayTag FAIBGateEngageCondition::GetBranchTag() const       { return AIBTags::Ambition_Engage; }
 FGameplayTag FAIBGateRetreatCondition::GetBranchTag() const      { return AIBTags::Ambition_Retreat; }
+FGameplayTag FAIBGateEvadeCondition::GetBranchTag() const        { return AIBTags::Ambition_Evade; }
 FGameplayTag FAIBGateSearchCondition::GetBranchTag() const       { return AIBTags::Ambition_Search; }
 FGameplayTag FAIBGateSeekCondition::GetBranchTag() const   { return AIBTags::Ambition_Seek; }
 FGameplayTag FAIBGateRoamCondition::GetBranchTag() const         { return AIBTags::Ambition_Roam; }
@@ -990,14 +991,30 @@ EStateTreeRunStatus FAIBFleeFromBeliefTask::EnterState(FStateTreeExecutionContex
 		return EStateTreeRunStatus::Failed;
 	}
 
-	// Away from the freshest threat knowledge we hold: the visible belief, else memory.
-	// With NOTHING held — hurt, threat unknown — Retreat still needs an executable exit
+	// THE BLAST OUTRANKS THE ENEMY, and this is what turns the Evade want into a dodge.
+	// A grenade at your feet is a closer problem than the rifle across the room, and running
+	// "away from the shooter" while standing on the grenade is how a bot dies looking clever.
+	// BlastCenterRelative is centre-minus-self, so self + it is the centre in world space —
+	// the fact was published for exactly this and had no reader until now.
+	//
+	// Same node, same mover, same projection and stall handling: the dodge is a flee with a
+	// different threat, not a second movement system.
+	FVector ThreatPoint;
+	bool bHasThreatPoint = false;
+	const FAIBFacts& BlastFacts = Bot->GetLastFacts();
+	if (BlastFacts.bIncomingBlast)
+	{
+		ThreatPoint = Pawn->GetActorLocation() + BlastFacts.BlastCenterRelative;
+		bHasThreatPoint = true;
+		UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s scattering — blast %.1fs out, %.0fuu away."),
+			*Bot->GetName(), BlastFacts.BlastSecondsToDetonation, BlastFacts.BlastCenterRelative.Size2D());
+	}
+	// Otherwise: away from the freshest threat knowledge we hold — the visible belief, else
+	// memory. With NOTHING held — hurt, threat unknown — Retreat still needs an executable exit
 	// (W-REVIEW P3 H1): reposition to a random reachable point. A hurt bot that
 	// relocates reads as falling back; a hurt bot frozen mid-arena reads as broken, and
 	// the hysteresis defends the freeze.
-	FVector ThreatPoint;
-	bool bHasThreatPoint = Bot->GetSensorium().HasVisibleTarget();
-	if (bHasThreatPoint)
+	else if ((bHasThreatPoint = Bot->GetSensorium().HasVisibleTarget()))
 	{
 		ThreatPoint = Bot->GetSensorium().GetLastSeenLocation();
 	}
@@ -1071,7 +1088,11 @@ EStateTreeRunStatus FAIBFleeFromBeliefTask::Tick(FStateTreeExecutionContext& Con
 	// takes the legs — the bot evades and keeps shooting instead of jogging away with its
 	// back turned (founder, 28 Aug). Out of sight it still flees: you cannot fight what you
 	// cannot see, and breaking contact fully is the right answer there.
-	if (InstanceData.DefendRangeUU > 0.f && Bot->GetSensorium().HasVisibleTarget()
+	// NEVER stand down on a live grenade. The defend band's whole purpose is to stop running
+	// and fight — which is exactly the wrong answer while something is about to detonate, and
+	// would cancel the scatter one tick after it started.
+	if (InstanceData.DefendRangeUU > 0.f && !Bot->GetLastFacts().bIncomingBlast
+		&& Bot->GetSensorium().HasVisibleTarget()
 		&& !IsWithin(*Bot, Bot->GetSensorium().GetLastSeenLocation(), InstanceData.DefendRangeUU))
 	{
 		ReleaseLocomotion(*Bot, InstanceData.Locomotion);

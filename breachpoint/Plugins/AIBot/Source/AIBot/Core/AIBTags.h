@@ -35,6 +35,7 @@ namespace AIBTags
 	// -- ambitions (the core set; modes add their own) ----------------------------
 	AIBOT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ambition_Engage);
 	AIBOT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ambition_Retreat);
+	AIBOT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ambition_Evade);
 	AIBOT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ambition_Seek);
 	AIBOT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ambition_Search);
 	AIBOT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ambition_Roam);

@@ -372,6 +372,48 @@ void UAIBAmbitionEngine::BuildDefaultCoreAmbitions(TArray<FAIBAmbitionSpec>& Out
 		Nerve.ValueWhenUnknown = 1.f;
 	}
 
+	// EVADE — a grenade is about to go off and this bot has READ it. Its own want, and it
+	// has to be, for a reason the ShieldNorm change taught the hard way: considerations
+	// MULTIPLY. A blast term bolted onto Retreat could never make a HEALTHY bot dodge,
+	// because Retreat's Hurt is exactly 0 above 0.8 vitality and 0 x anything is 0. The bot
+	// winning a fight at full health is precisely the bot that needs to move.
+	//
+	// This is the most legible behaviour a Halo bot has — the scatter — and until now the
+	// whole chain that feeds it (perceivability trace, fuse-noise draw, the CanEvadeBlast
+	// capability gate, the reaction clock, the facts) terminated in a fact NOTHING read.
+	// A grenade at a bot's feet was answered with the rest of its strafe leg.
+	{
+		FAIBAmbitionSpec& Evade = OutSpecs.AddDefaulted_GetRef();
+		Evade.Tag = AIBTags::Ambition_Evade;
+		// Above every other want by design. A dodge that loses to a fight is not a dodge, and
+		// the window is ~2s — there is no time to be outbid and reconsider.
+		Evade.BaseUtility = 4.f;
+		// SHORT, and shorter than the fuse. The commit exists so the bot does not abandon the
+		// dodge halfway; it must not outlive the blast, or a bot spends two seconds running
+		// from a crater.
+		Evade.CommitSeconds = 1.5f;
+
+		// THE FUSE, falling. Full want the instant it is about to land, fading to nothing at
+		// the edge of the window the interrupt already uses (BlastInterruptSeconds).
+		FAIBConsideration& Fuse = Evade.Considerations.AddDefaulted_GetRef();
+		Fuse.Selector = EAIBFactSelector::BlastSecondsToDetonation;
+		Fuse.InputMin = 0.f;
+		// The DEFAULT interrupt window, not the live member: this builder is static, and the
+		// two must agree anyway — the want should fade out exactly where the commit-breaking
+		// edge stops firing. Reading the CDO keeps them one number even if it is retuned.
+		Fuse.InputMax = GetDefault<UAIBAmbitionEngine>()->BlastInterruptSeconds;
+		{
+			FRichCurve* C = Fuse.Curve.GetRichCurve();
+			C->Reset();
+			C->AddKey(0.f, 1.f);   // going off now
+			C->AddKey(1.f, 0.2f);  // at the window's edge: worth starting to move
+		}
+		// ZERO when unknown, and this is the whole safety of the want. No blast, no seam, or
+		// a host that never publishes one = Evade scores 0.0 and is invisible. Every existing
+		// tier, spec and measurement is untouched on a build without grenades.
+		Fuse.ValueWhenUnknown = 0.f;
+	}
+
 	// SEARCH — a fresh memory and nothing visible. Freshness IS the curve.
 	{
 		FAIBAmbitionSpec& Search = OutSpecs.AddDefaulted_GetRef();

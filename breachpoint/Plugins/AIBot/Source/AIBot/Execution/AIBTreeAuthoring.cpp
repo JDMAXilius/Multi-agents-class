@@ -139,6 +139,28 @@ FString UAIBTreeAuthoring::BuildBotStateTree()
 	// move + face + fire together is the Halo read, and every mover is written to keep
 	// station rather than complete on arrival, so nothing thrashes the selector.
 
+	// ---- Evade: something is about to go off -------------------------------------------
+	// FIRST, and first matters: StateTree picks the earliest child whose enter condition
+	// passes, so the scatter is considered before the fight. The brain already scores Evade
+	// above everything (BaseUtility 4.0), but ordering the branch too means the two agree
+	// rather than racing.
+	//
+	// Sentinel + Flee and nothing else. No FaceBelief, no FireWhenAble: a Spartan diving away
+	// from a grenade is not also lining up a shot, and adding the fight tasks here would put
+	// a second rotation owner on a body that needs to be running.
+	UStateTreeState& Evade = Root.AddChildState(TEXT("Evade"));
+	Evade.AddEnterCondition<FAIBGateEvadeCondition>();
+	Evade.AddTask<FAIBAmbitionSentinelTask>();
+	{
+		// FleeDistance short on purpose: escaping a blast radius is a few metres of hard
+		// movement, not a retreat across the arena. DefendRangeUU stays 0 — the defend band
+		// is Retreat's idea and must never stand a dodging bot up.
+		FAIBFleeFromBeliefTaskInstanceData& Scatter = Evade.AddTask<FAIBFleeFromBeliefTask>().GetInstanceData();
+		Scatter.FleeDistanceUU = 600.f;
+	}
+	AddCompletionTransition(Evade, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
+	AddCompletionTransition(Evade, Root, EStateTreeTransitionTrigger::OnStateFailed, 0.f);
+
 	// ---- Engage: the brain wants the fight ---------------------------------------------
 	UStateTreeState& Engage = Root.AddChildState(TEXT("Engage"));
 	Engage.AddEnterCondition<FAIBGateEngageCondition>();
@@ -283,7 +305,7 @@ FString UAIBTreeAuthoring::BuildBotStateTree()
 	AddCompletionTransition(Fallback, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
 	AddCompletionTransition(Fallback, Root, EStateTreeTransitionTrigger::OnStateFailed, 1.0f);
 
-	Report.Add(TEXT("states     : Root > [Engage, Retreat, Search, Seek, Roam, Mode, Fallback] (every ambition gated — Mode by hierarchy — the ungated Fallback floor last, sentinel in each)"));
+	Report.Add(TEXT("states     : Root > [Evade, Engage, Retreat, Search, Seek, Roam, Mode, Fallback] (every ambition gated — Mode by hierarchy — the ungated Fallback floor last, sentinel in each)"));
 	Report.Add(TEXT("seek       : AIBot.Ambition.Seek — deliberate movement (belief -> POI -> reachable point). SeekWeapon is RETIRED: no pickups in this game."));
 
 	// An uncompiled StateTree runs NOTHING — the asset would exist, the ini would resolve,

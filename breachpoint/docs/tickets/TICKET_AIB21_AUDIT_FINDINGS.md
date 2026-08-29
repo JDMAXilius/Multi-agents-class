@@ -1,6 +1,6 @@
 # AIB21 — the Halo-fidelity audit, and what it found
 
-> STATUS: in-progress — 6 of 9 findings closed 28 Aug; H3, M1, L3 open
+> STATUS: in-progress — 7 of 9 findings closed (H3 closed 29 Aug); M1, L3 open
 
 `aib-critic` audited the whole module against the Halo-Infinite-1:1 bar. Verdict:
 containment PASS, server-only PASS, F1/F4/F8 PASS, arbitration sound. The stuck-state
@@ -20,7 +20,8 @@ surface failed.
 
 ## Open
 
-- **H3 — grenade evasion does not exist.** The whole chain (perceivability trace → fuse
+- ~~**H3 — grenade evasion does not exist.**~~ **CLOSED 29 Aug — see the Log.**
+- **H3 (as filed):** The whole chain (perceivability trace → fuse
   noise → `CanEvadeBlast` → reaction clock → facts) terminates in a dead fact:
   `BlastCenterRelative` has **zero readers**, and `BlastSecondsToDetonation` is read only
   as a commit-breaking edge that explicitly does not pick a winner. Throw a grenade at a
@@ -47,3 +48,41 @@ row was the live cause, but the critic's leak theory is worth keeping for the 2 
 
 Measured after all six fixes, one match: reload REFUSED 5, crouch presses 3, DEFEND
 stand-downs 26, **defend-band re-entries 19**, melee swings 3, eliminations 9.
+
+
+## Log — 29 Aug: the scatter
+
+H3 closed, but **not** by the fix the critic proposed, and the difference is the same trap
+`ShieldNorm` fell into.
+
+The proposal was "one consideration on Retreat — `BlastSecondsToDetonation`, falling — so an
+imminent blast lifts Retreat over Engage." Considerations MULTIPLY, and Retreat's `Hurt` is
+exactly 0 above 0.8 vitality. A healthy bot's Retreat is 0.000, and no factor lifts zero. The
+bot winning a fight at full health is precisely the one that needs to move, so the proposed
+term would have dodged only for bots already hurt.
+
+**EVADE is its own want.** `AIBot.Ambition.Evade`, BaseUtility 4.0 (a dodge that loses to a
+fight is not a dodge), CommitSeconds 1.5 (shorter than the fuse — a bot must not spend two
+seconds running from a crater), one consideration on the fuse falling from 1.0 to 0.2 across
+the interrupt window, and `ValueWhenUnknown = 0.0` so the want is INVISIBLE on any host
+without a blast seam.
+
+The movement half needed no new node: `FAIBFleeFromBeliefTask` now prefers the blast centre
+over the enemy as its threat point when `bIncomingBlast`. `BlastCenterRelative` was published
+for exactly this and had zero readers. The Evade branch is `Sentinel + Flee` only — no
+FaceBelief, no FireWhenAble, because a Spartan diving from a grenade is not also lining up a
+shot, and a second rotation owner on a running body is a bug waiting. Retreat's defend
+stand-down is now also blocked while `bIncomingBlast`, or the band would stand a dodging bot
+up one tick after it started.
+
+Measured, one match: 12 grenades thrown, 26 blasts perceived, **14 Evade wins, 22 scatter
+moves**, at 0.2–0.8s from detonation. Bots visibly break off and run.
+
+Known and accepted: the want is driven by the FUSE only, not by proximity. The source gating
+is already right — `WarnNearbyBots` overlaps at the blast's own 500uu radius, so a bot only
+ever learns about a blast that could hurt it — but a bot that has already escaped keeps
+dodging until its 1.5s commit ends. Cheap to refine later with a distance selector; not worth
+a new fact today.
+
+Eliminations 9 -> 6 in the sampled match. Single-sample and inside this project's known
+variance, but directionally expected: bots that dodge grenades die less to grenades.

@@ -86,6 +86,14 @@ struct FAIBGateRetreatCondition : public FAIBAmbitionGateCondition
 	virtual FGameplayTag GetBranchTag() const override;
 };
 
+/** Gates the Evade branch — AIBot.Ambition.Evade, the grenade scatter. */
+USTRUCT(meta = (DisplayName = "AIB Gate: Evade", Category = "AIBot"))
+struct FAIBGateEvadeCondition : public FAIBAmbitionGateCondition
+{
+	GENERATED_BODY()
+	virtual FGameplayTag GetBranchTag() const override;
+};
+
 USTRUCT(meta = (DisplayName = "AIB Gate: Search", Category = "AIBot"))
 struct FAIBGateSearchCondition : public FAIBAmbitionGateCondition
 {
