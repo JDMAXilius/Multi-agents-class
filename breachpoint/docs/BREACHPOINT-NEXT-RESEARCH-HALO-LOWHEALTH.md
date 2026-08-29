@@ -315,3 +315,35 @@ Marine bots the evasive jump is structurally unreachable.
 **Retreat is rare: 12 of 371 ambitions, 3.2%.** So even working perfectly, defend mode shows
 in roughly one engagement in thirty. That is the real reason it reads as "the same" in play —
 not that it is broken, but that it is seldom seen.
+
+### A/B measured, 28 Aug — 4 runs after the hop + appetite change
+
+| run | switches | Retreat | DEFEND stand-downs | hops |
+|---|---|---|---|---|
+| baseline (before) | 371 | 12 | 9 | **0** |
+| after 1 | 343 | 11 | 9 | 1 |
+| after 2 | 310 | 15 | 14 | 1 |
+| after 3 | 302 | 12 | 16 | 1 |
+| after 4 | 311 | 12 | 10 | 0 |
+| **after mean** | 317 | **12.5** | **12.3** | **0.75** |
+
+**The hop is fixed structurally, and is still rare.** It went from *impossible* to *possible*
+at Marine — that part is settled, and it is the part that was actually broken. But ~1 per match
+means a player will seldom witness it. The limiter is not `HopChance` (0.30 at Trained); it is
+that a defending bot only gets a handful of stepping legs before the fight resolves. Raising
+the chance further would make each defence bouncier without making defences more common.
+
+**The retreat appetite change did NOT move the rate, and that is the honest result.** 12 → 12.5
+mean is noise. The scores demonstrably rose — Retreat now wins at 1.35 and 1.14 where it
+previously topped out lower — but winning bigger is not winning *more often*. Where it loses it
+loses to a strong Engage (0.77 vs 0.90, 0.56 vs 0.64), and closing that would take another
+20–30%, at which point Retreat starts winning fights it should not.
+
+**Stand-downs rose 9 → 12.3 (+36%).** So the same number of retreats now more often turn into
+a defensive stand rather than a run. That is the change that actually landed.
+
+**The real limiter looks like time-at-low-health, not utility.** One match: 127 damage events,
+4 deaths, and health readings clustered at the extremes. Bots go from healthy to dead without
+lingering in the band where retreating is the right call. If more retreating is genuinely
+wanted, the lever is probably TTK or health regen pacing — not the ambition curve. That is a
+game-feel decision, not a bot-tuning one, so it is not taken here.
