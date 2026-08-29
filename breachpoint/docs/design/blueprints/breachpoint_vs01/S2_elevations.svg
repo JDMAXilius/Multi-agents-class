@@ -1,0 +1,261 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1070" height="1032" viewBox="0 0 1070 1032">
+<style>
+  .paper{fill:#ffffff}
+  .frame{fill:none;stroke:#000;stroke-width:2}
+  .grid{stroke:#000;stroke-width:0.25;opacity:0.18}
+  .grid5{stroke:#000;stroke-width:0.5;opacity:0.30}
+  .solid{fill:#ffffff;stroke:#000;stroke-width:1.8}
+  .wall{fill:#ffffff;stroke:#000;stroke-width:2.2}
+  .deck{fill:none;stroke:#000;stroke-width:1.2;stroke-dasharray:7 4}
+  .stair{fill:none;stroke:#000;stroke-width:1.0;stroke-dasharray:2.5 2.5}
+  .cover{fill:#ffffff;stroke:#000;stroke-width:0.9}
+  .hatch{stroke:#000;stroke-width:0.45;opacity:0.65}
+  .dim{stroke:#000;stroke-width:0.7}
+  .dimtext{font:10px monospace;fill:#000}
+  .label{font:11px monospace;fill:#000}
+  .small{font:9px monospace;fill:#000}
+  .big{font:bold 15px monospace;fill:#000;letter-spacing:1px}
+  .datum{stroke:#000;stroke-width:0.7;stroke-dasharray:12 4 2 4}
+  .iso{fill:#ffffff;stroke:#000;stroke-width:1.1;stroke-linejoin:round}
+  .isotop{fill:#f2f2f2;stroke:#000;stroke-width:1.1;stroke-linejoin:round}
+</style>
+<rect class="paper" width="1070" height="1032"/>
+<title>ELEVATIONS</title>
+<rect class="frame" x="8" y="8" width="1054" height="1016"/>
+<text class="big" x="110" y="58">SOUTH ELEVATION — LOOKING NORTH</text>
+<line class="datum" x1="110" y1="286" x2="830" y2="286"/>
+<text class="small" x="838" y="289">LVL 0  GROUND ±0.00</text>
+<line class="datum" x1="110" y1="214" x2="830" y2="214"/>
+<text class="small" x="838" y="217">LVL 1  MID +4.00</text>
+<line class="datum" x1="110" y1="142" x2="830" y2="142"/>
+<text class="small" x="838" y="145">LVL 2  UPPER +8.00</text>
+<rect class="solid" x="434" y="232" width="72" height="54"/>
+<rect class="solid" x="218" y="264.4" width="36" height="21.6"/>
+<rect class="solid" x="686" y="264.4" width="36" height="21.6"/>
+<rect class="deck" x="362" y="214" width="216" height="7.2"/>
+<rect class="solid" x="380" y="124" width="36" height="162"/>
+<rect class="solid" x="524" y="124" width="36" height="162"/>
+<rect class="solid" x="344" y="214" width="54" height="72"/>
+<rect class="solid" x="542" y="214" width="54" height="72"/>
+<rect class="solid" x="434" y="124" width="72" height="90"/>
+<rect class="deck" x="290" y="142" width="72" height="7.2"/>
+<rect class="deck" x="578" y="142" width="72" height="7.2"/>
+<rect class="solid" x="164" y="232" width="36" height="54"/>
+<rect class="solid" x="740" y="232" width="36" height="54"/>
+<rect class="solid" x="398" y="214" width="144" height="72"/>
+<rect class="solid" x="380" y="124" width="36" height="162"/>
+<rect class="solid" x="524" y="124" width="36" height="162"/>
+<rect class="deck" x="362" y="214" width="216" height="7.2"/>
+<rect class="solid" x="218" y="264.4" width="36" height="21.6"/>
+<rect class="solid" x="686" y="264.4" width="36" height="21.6"/>
+<rect class="solid" x="434" y="232" width="72" height="54"/>
+<line class="dim" x1="88" y1="142" x2="88" y2="286"/>
+<line class="dim" x1="84" y1="142" x2="92" y2="142"/>
+<line class="dim" x1="84" y1="286" x2="92" y2="286"/>
+<text class="dimtext" x="82" y="214" transform="rotate(-90 82 214)" text-anchor="middle">8.00 m</text>
+<line class="dim" x1="890" y1="70" x2="890" y2="286"/>
+<line class="dim" x1="886" y1="70" x2="894" y2="70"/>
+<line class="dim" x1="886" y1="286" x2="894" y2="286"/>
+<text class="dimtext" x="884" y="178" transform="rotate(-90 884 178)" text-anchor="middle">12.00 m clear</text>
+<line class="dim" x1="110" y1="310" x2="830" y2="310"/>
+<line class="dim" x1="110" y1="306" x2="110" y2="314"/>
+<line class="dim" x1="830" y1="306" x2="830" y2="314"/>
+<text class="dimtext" text-anchor="middle" x="470" y="305">40.0 m</text>
+<text class="big" x="110" y="352">WEST ELEVATION — LOOKING EAST</text>
+<line class="datum" x1="110" y1="580" x2="830" y2="580"/>
+<text class="small" x="838" y="583">LVL 0  GROUND ±0.00</text>
+<line class="datum" x1="110" y1="508" x2="830" y2="508"/>
+<text class="small" x="838" y="511">LVL 1  MID +4.00</text>
+<line class="datum" x1="110" y1="436" x2="830" y2="436"/>
+<text class="small" x="838" y="439">LVL 2  UPPER +8.00</text>
+<rect class="solid" x="434" y="526" width="72" height="54"/>
+<rect class="solid" x="218" y="558.4" width="36" height="21.6"/>
+<rect class="solid" x="686" y="558.4" width="36" height="21.6"/>
+<rect class="deck" x="434" y="436" width="72" height="7.2"/>
+<rect class="solid" x="452" y="508" width="36" height="72"/>
+<rect class="solid" x="380" y="418" width="36" height="162"/>
+<rect class="solid" x="524" y="418" width="36" height="162"/>
+<rect class="solid" x="434" y="418" width="72" height="90"/>
+<rect class="solid" x="164" y="526" width="36" height="54"/>
+<rect class="solid" x="740" y="526" width="36" height="54"/>
+<rect class="solid" x="398" y="508" width="144" height="72"/>
+<rect class="solid" x="380" y="418" width="36" height="162"/>
+<rect class="solid" x="524" y="418" width="36" height="162"/>
+<rect class="deck" x="326" y="508" width="72" height="7.2"/>
+<rect class="deck" x="542" y="508" width="72" height="7.2"/>
+<rect class="solid" x="452" y="508" width="36" height="72"/>
+<rect class="deck" x="434" y="436" width="72" height="7.2"/>
+<rect class="solid" x="218" y="558.4" width="36" height="21.6"/>
+<rect class="solid" x="686" y="558.4" width="36" height="21.6"/>
+<rect class="solid" x="434" y="526" width="72" height="54"/>
+<line class="dim" x1="88" y1="436" x2="88" y2="580"/>
+<line class="dim" x1="84" y1="436" x2="92" y2="436"/>
+<line class="dim" x1="84" y1="580" x2="92" y2="580"/>
+<text class="dimtext" x="82" y="508" transform="rotate(-90 82 508)" text-anchor="middle">8.00 m</text>
+<line class="dim" x1="890" y1="364" x2="890" y2="580"/>
+<line class="dim" x1="886" y1="364" x2="894" y2="364"/>
+<line class="dim" x1="886" y1="580" x2="894" y2="580"/>
+<text class="dimtext" x="884" y="472" transform="rotate(-90 884 472)" text-anchor="middle">12.00 m clear</text>
+<line class="dim" x1="110" y1="604" x2="830" y2="604"/>
+<line class="dim" x1="110" y1="600" x2="110" y2="608"/>
+<line class="dim" x1="830" y1="600" x2="830" y2="608"/>
+<text class="dimtext" text-anchor="middle" x="470" y="599">40.0 m</text>
+<text class="big" x="110" y="646">SECTION A–A — CUT AT y=20 m, LOOKING NORTH</text>
+<line class="datum" x1="110" y1="874" x2="830" y2="874"/>
+<text class="small" x="838" y="877">LVL 0  GROUND ±0.00</text>
+<line class="datum" x1="110" y1="802" x2="830" y2="802"/>
+<text class="small" x="838" y="805">LVL 1  MID +4.00</text>
+<line class="datum" x1="110" y1="730" x2="830" y2="730"/>
+<text class="small" x="838" y="733">LVL 2  UPPER +8.00</text>
+<rect class="solid" x="344" y="802" width="54" height="72"/>
+<line class="hatch" x1="344" y1="874" x2="351" y2="867"/>
+<line class="hatch" x1="344" y1="874" x2="358" y2="860"/>
+<line class="hatch" x1="344" y1="874" x2="365" y2="853"/>
+<line class="hatch" x1="344" y1="874" x2="372" y2="846"/>
+<line class="hatch" x1="344" y1="874" x2="379" y2="839"/>
+<line class="hatch" x1="344" y1="874" x2="386" y2="832"/>
+<line class="hatch" x1="344" y1="874" x2="393" y2="825"/>
+<line class="hatch" x1="344" y1="872" x2="398" y2="818"/>
+<line class="hatch" x1="344" y1="865" x2="398" y2="811"/>
+<line class="hatch" x1="344" y1="858" x2="398" y2="804"/>
+<line class="hatch" x1="349" y1="851" x2="398" y2="802"/>
+<line class="hatch" x1="356" y1="844" x2="398" y2="802"/>
+<line class="hatch" x1="363" y1="837" x2="398" y2="802"/>
+<line class="hatch" x1="370" y1="830" x2="398" y2="802"/>
+<line class="hatch" x1="377" y1="823" x2="398" y2="802"/>
+<line class="hatch" x1="384" y1="816" x2="398" y2="802"/>
+<line class="hatch" x1="391" y1="809" x2="398" y2="802"/>
+<rect class="solid" x="542" y="802" width="54" height="72"/>
+<line class="hatch" x1="542" y1="874" x2="549" y2="867"/>
+<line class="hatch" x1="542" y1="874" x2="556" y2="860"/>
+<line class="hatch" x1="542" y1="874" x2="563" y2="853"/>
+<line class="hatch" x1="542" y1="874" x2="570" y2="846"/>
+<line class="hatch" x1="542" y1="874" x2="577" y2="839"/>
+<line class="hatch" x1="542" y1="874" x2="584" y2="832"/>
+<line class="hatch" x1="542" y1="874" x2="591" y2="825"/>
+<line class="hatch" x1="542" y1="872" x2="596" y2="818"/>
+<line class="hatch" x1="542" y1="865" x2="596" y2="811"/>
+<line class="hatch" x1="542" y1="858" x2="596" y2="804"/>
+<line class="hatch" x1="547" y1="851" x2="596" y2="802"/>
+<line class="hatch" x1="554" y1="844" x2="596" y2="802"/>
+<line class="hatch" x1="561" y1="837" x2="596" y2="802"/>
+<line class="hatch" x1="568" y1="830" x2="596" y2="802"/>
+<line class="hatch" x1="575" y1="823" x2="596" y2="802"/>
+<line class="hatch" x1="582" y1="816" x2="596" y2="802"/>
+<line class="hatch" x1="589" y1="809" x2="596" y2="802"/>
+<rect class="solid" x="434" y="712" width="72" height="90"/>
+<line class="hatch" x1="434" y1="802" x2="441" y2="795"/>
+<line class="hatch" x1="434" y1="802" x2="448" y2="788"/>
+<line class="hatch" x1="434" y1="802" x2="455" y2="781"/>
+<line class="hatch" x1="434" y1="802" x2="462" y2="774"/>
+<line class="hatch" x1="434" y1="802" x2="469" y2="767"/>
+<line class="hatch" x1="434" y1="802" x2="476" y2="760"/>
+<line class="hatch" x1="434" y1="802" x2="483" y2="753"/>
+<line class="hatch" x1="434" y1="802" x2="490" y2="746"/>
+<line class="hatch" x1="434" y1="802" x2="497" y2="739"/>
+<line class="hatch" x1="434" y1="802" x2="504" y2="732"/>
+<line class="hatch" x1="434" y1="797" x2="506" y2="725"/>
+<line class="hatch" x1="434" y1="790" x2="506" y2="718"/>
+<line class="hatch" x1="435" y1="783" x2="506" y2="712"/>
+<line class="hatch" x1="442" y1="776" x2="506" y2="712"/>
+<line class="hatch" x1="449" y1="769" x2="506" y2="712"/>
+<line class="hatch" x1="456" y1="762" x2="506" y2="712"/>
+<line class="hatch" x1="463" y1="755" x2="506" y2="712"/>
+<line class="hatch" x1="470" y1="748" x2="506" y2="712"/>
+<line class="hatch" x1="477" y1="741" x2="506" y2="712"/>
+<line class="hatch" x1="484" y1="734" x2="506" y2="712"/>
+<line class="hatch" x1="491" y1="727" x2="506" y2="712"/>
+<line class="hatch" x1="498" y1="720" x2="506" y2="712"/>
+<line class="hatch" x1="505" y1="713" x2="506" y2="712"/>
+<rect class="deck" x="290" y="730" width="72" height="7.2"/>
+<rect class="deck" x="578" y="730" width="72" height="7.2"/>
+<rect class="solid" x="164" y="820" width="36" height="54"/>
+<line class="hatch" x1="164" y1="874" x2="171" y2="867"/>
+<line class="hatch" x1="164" y1="874" x2="178" y2="860"/>
+<line class="hatch" x1="164" y1="874" x2="185" y2="853"/>
+<line class="hatch" x1="164" y1="874" x2="192" y2="846"/>
+<line class="hatch" x1="164" y1="874" x2="199" y2="839"/>
+<line class="hatch" x1="164" y1="868" x2="200" y2="832"/>
+<line class="hatch" x1="164" y1="861" x2="200" y2="825"/>
+<line class="hatch" x1="166" y1="854" x2="200" y2="820"/>
+<line class="hatch" x1="173" y1="847" x2="200" y2="820"/>
+<line class="hatch" x1="180" y1="840" x2="200" y2="820"/>
+<line class="hatch" x1="187" y1="833" x2="200" y2="820"/>
+<line class="hatch" x1="194" y1="826" x2="200" y2="820"/>
+<rect class="solid" x="740" y="820" width="36" height="54"/>
+<line class="hatch" x1="740" y1="874" x2="747" y2="867"/>
+<line class="hatch" x1="740" y1="874" x2="754" y2="860"/>
+<line class="hatch" x1="740" y1="874" x2="761" y2="853"/>
+<line class="hatch" x1="740" y1="874" x2="768" y2="846"/>
+<line class="hatch" x1="740" y1="874" x2="775" y2="839"/>
+<line class="hatch" x1="740" y1="868" x2="776" y2="832"/>
+<line class="hatch" x1="740" y1="861" x2="776" y2="825"/>
+<line class="hatch" x1="742" y1="854" x2="776" y2="820"/>
+<line class="hatch" x1="749" y1="847" x2="776" y2="820"/>
+<line class="hatch" x1="756" y1="840" x2="776" y2="820"/>
+<line class="hatch" x1="763" y1="833" x2="776" y2="820"/>
+<line class="hatch" x1="770" y1="826" x2="776" y2="820"/>
+<rect class="solid" x="398" y="802" width="144" height="72"/>
+<line class="hatch" x1="398" y1="874" x2="405" y2="867"/>
+<line class="hatch" x1="398" y1="874" x2="412" y2="860"/>
+<line class="hatch" x1="398" y1="874" x2="419" y2="853"/>
+<line class="hatch" x1="398" y1="874" x2="426" y2="846"/>
+<line class="hatch" x1="398" y1="874" x2="433" y2="839"/>
+<line class="hatch" x1="398" y1="874" x2="440" y2="832"/>
+<line class="hatch" x1="398" y1="874" x2="447" y2="825"/>
+<line class="hatch" x1="398" y1="874" x2="454" y2="818"/>
+<line class="hatch" x1="398" y1="874" x2="461" y2="811"/>
+<line class="hatch" x1="398" y1="874" x2="468" y2="804"/>
+<line class="hatch" x1="403" y1="874" x2="475" y2="802"/>
+<line class="hatch" x1="410" y1="874" x2="482" y2="802"/>
+<line class="hatch" x1="417" y1="874" x2="489" y2="802"/>
+<line class="hatch" x1="424" y1="874" x2="496" y2="802"/>
+<line class="hatch" x1="431" y1="874" x2="503" y2="802"/>
+<line class="hatch" x1="438" y1="874" x2="510" y2="802"/>
+<line class="hatch" x1="445" y1="874" x2="517" y2="802"/>
+<line class="hatch" x1="452" y1="874" x2="524" y2="802"/>
+<line class="hatch" x1="459" y1="874" x2="531" y2="802"/>
+<line class="hatch" x1="466" y1="874" x2="538" y2="802"/>
+<line class="hatch" x1="473" y1="871" x2="542" y2="802"/>
+<line class="hatch" x1="480" y1="864" x2="542" y2="802"/>
+<line class="hatch" x1="487" y1="857" x2="542" y2="802"/>
+<line class="hatch" x1="494" y1="850" x2="542" y2="802"/>
+<line class="hatch" x1="501" y1="843" x2="542" y2="802"/>
+<line class="hatch" x1="508" y1="836" x2="542" y2="802"/>
+<line class="hatch" x1="515" y1="829" x2="542" y2="802"/>
+<line class="hatch" x1="522" y1="822" x2="542" y2="802"/>
+<line class="hatch" x1="529" y1="815" x2="542" y2="802"/>
+<line class="hatch" x1="536" y1="808" x2="542" y2="802"/>
+<rect class="solid" x="380" y="712" width="36" height="162"/>
+<rect class="solid" x="524" y="712" width="36" height="162"/>
+<rect class="deck" x="362" y="802" width="216" height="7.2"/>
+<rect class="solid" x="218" y="852.4" width="36" height="21.6"/>
+<rect class="solid" x="686" y="852.4" width="36" height="21.6"/>
+<rect class="solid" x="434" y="820" width="72" height="54"/>
+<line class="dim" x1="88" y1="730" x2="88" y2="874"/>
+<line class="dim" x1="84" y1="730" x2="92" y2="730"/>
+<line class="dim" x1="84" y1="874" x2="92" y2="874"/>
+<text class="dimtext" x="82" y="802" transform="rotate(-90 82 802)" text-anchor="middle">8.00 m</text>
+<line class="dim" x1="890" y1="658" x2="890" y2="874"/>
+<line class="dim" x1="886" y1="658" x2="894" y2="658"/>
+<line class="dim" x1="886" y1="874" x2="894" y2="874"/>
+<text class="dimtext" x="884" y="766" transform="rotate(-90 884 766)" text-anchor="middle">12.00 m clear</text>
+<line class="dim" x1="110" y1="898" x2="830" y2="898"/>
+<line class="dim" x1="110" y1="894" x2="110" y2="902"/>
+<line class="dim" x1="830" y1="894" x2="830" y2="902"/>
+<text class="dimtext" text-anchor="middle" x="470" y="893">40.0 m</text>
+<g>
+<rect class="frame" x="728" y="940" width="330" height="80"/>
+<text class="small" x="736" y="957">PROJECT</text>
+<text class="dimtext" x="834" y="957">BREACHPOINT — 4v4 ARENA FPS</text>
+<text class="small" x="736" y="976">DRAWING</text>
+<text class="dimtext" x="834" y="976">ELEVATIONS + SECTION A-A</text>
+<line class="dim" x1="728" y1="962" x2="1058" y2="962"/>
+<text class="small" x="736" y="995">ARENA / SHEET</text>
+<text class="dimtext" x="834" y="995">breachpoint_vs01   ·   S2</text>
+<line class="dim" x1="728" y1="981" x2="1058" y2="981"/>
+<text class="small" x="736" y="1014">SCALE / DATE</text>
+<text class="dimtext" x="834" y="1014">18 px/m   ·   2026-08-29   ·   REV A</text>
+<line class="dim" x1="728" y1="1000" x2="1058" y2="1000"/>
+</g>
+</svg>
