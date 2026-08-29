@@ -94,6 +94,12 @@ void ABNPlayerController::SetupInputComponent()
 	Bind(BNTags::Input_Melee, ETriggerEvent::Started, &ABNPlayerController::HandleMeleePressed);
 	Bind(BNTags::Input_Grenade, ETriggerEvent::Started, &ABNPlayerController::HandleGrenadePressed);
 	Bind(BNTags::Input_Grapple, ETriggerEvent::Started, &ABNPlayerController::HandleGrapplePressed);
+	// THE LINE THAT MADE KEY 2 DO NOTHING. Every other link in the dash's chain existed —
+	// the IA asset, the IMC binding, the Input.Dash tag pairing in DA_BNInput, the granted
+	// ability — but this list is EXPLICIT, so a tag nobody binds here reaches no handler and
+	// the press dies silently between Enhanced Input and the ASC. Nothing logs it, because
+	// from the input system's side the key worked perfectly.
+	Bind(BNTags::Input_Dash, ETriggerEvent::Started, &ABNPlayerController::HandleDashPressed);
 	Bind(BNTags::Input_Scoreboard, ETriggerEvent::Started, &ABNPlayerController::HandleScoreboardPressed);
 	Bind(BNTags::Input_Scoreboard, ETriggerEvent::Completed, &ABNPlayerController::HandleScoreboardReleased);
 	Bind(BNTags::Input_Menu, ETriggerEvent::Started, &ABNPlayerController::HandleMenuPressed);
@@ -274,6 +280,16 @@ void ABNPlayerController::HandleGrenadePressed()
 	if (UBNAbilitySystemComponent* ASC = GetBNAbilitySystemComponent())
 	{
 		ASC->AbilityInputTagPressed(BNTags::Input_Grenade);
+	}
+}
+
+void ABNPlayerController::HandleDashPressed()
+{
+	// A tap, like the grapple and the grenade: the dash owns its own lifetime through its
+	// launch and its timer, so there is no release to forward.
+	if (UBNAbilitySystemComponent* ASC = GetBNAbilitySystemComponent())
+	{
+		ASC->AbilityInputTagPressed(BNTags::Input_Dash);
 	}
 }
 
