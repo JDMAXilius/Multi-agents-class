@@ -24,7 +24,7 @@ class UCharacterMovementComponent;
  * nodes in the linked layer. Do NOT publish a second aim surface from C++ without proving the
  * layer reads it — a duplicate that nothing consumes is how this went wrong the first time.
  */
-UCLASS()
+UCLASS(Config = Game)
 class BREACHPOINTNEXT_API UBNLAnimInstance : public UAnimInstance
 {
 	GENERATED_BODY()
@@ -126,6 +126,13 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "GameplayTags")
 	bool GameplayTag_IsDashing = false;
 
+	/** THE REAL DASH (BN29). GameplayTag_IsDashing above is a MISNOMER that predates the
+	 *  ability — it is bound to State.Movement.Sprinting and drives the sprint pose, so it
+	 *  is deliberately left alone: ABP graphs bind these by NAME and renaming it would break
+	 *  the sprint branch silently. This one is bound to the tag the dash actually applies. */
+	UPROPERTY(BlueprintReadOnly, Category = "BN|State")
+	bool GameplayTag_IsDashingActual = false;
+
 	UPROPERTY(BlueprintReadOnly, Category = "GameplayTags")
 	bool GameplayTag_IsCrouching = false;
 
@@ -140,7 +147,10 @@ protected:
 
 	/** The ADS lens, shared with UBNAnimInstance. This instance is the one ABP_Mannequin_Base
 	 *  actually runs, so without this the zoom never happens on the pawn anyone plays. */
-	UPROPERTY(EditDefaultsOnly, Category = "BN|Tuning")
+		/** Config so the zoom can be tuned by FEEL without a rebuild — the ini is the source of
+	 *  truth and beats both this C++ default and anything an ABP asset serialised. Set it as
+	 *  ADSCameraBlend=(ADSFOV=60.000000,InterpSpeed=18.000000). */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Tuning")
 	FBNADSCameraBlend ADSCameraBlend;
 
 	struct FTagBool

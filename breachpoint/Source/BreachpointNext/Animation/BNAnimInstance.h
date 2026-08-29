@@ -139,7 +139,7 @@ struct FBNLinkedLayer
  * Everything in this class is per-machine presentation. Gameplay state arrives as replicated
  * gameplay tags off the ability system component and is never mirrored into a bool that travels.
  */
-UCLASS()
+UCLASS(Config = Game)
 class BREACHPOINTNEXT_API UBNAnimInstance : public UAnimInstance
 {
 	GENERATED_BODY()
@@ -209,7 +209,10 @@ protected:
 
 	/** The ADS lens. Shared with UBNLAnimInstance — see FBNADSCameraBlend for why a struct and
 	 *  not a base-class method: the two anim instances are siblings, not parent and child. */
-	UPROPERTY(EditDefaultsOnly, Category = "BN|Tuning")
+		/** Config so the zoom can be tuned by FEEL without a rebuild — the ini is the source of
+	 *  truth and beats both this C++ default and anything an ABP asset serialised. Set it as
+	 *  ADSCameraBlend=(ADSFOV=60.000000,InterpSpeed=18.000000). */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Tuning")
 	FBNADSCameraBlend ADSCameraBlend;
 
 	// ---------------------------------------------------------------- locomotion (output)

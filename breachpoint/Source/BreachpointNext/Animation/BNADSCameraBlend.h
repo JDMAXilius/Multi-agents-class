@@ -25,9 +25,15 @@ struct FBNADSCameraBlend
 {
 	GENERATED_BODY()
 
-	/** The reference's measured AimFOV (MyCharacter.h). */
+	/** The aimed field of view. The camera's own FOV is 90, so this IS the zoom factor:
+	 *  90/ADSFOV. 80 was 1.125x — a change most players cannot see, which is why aiming
+	 *  read as "the gun moved" rather than "I zoomed" (founder, 29 Aug).
+	 *
+	 *  60 is 1.5x: unmistakably a zoom, still an arena-rifle sight rather than a scope.
+	 *  Lower is tighter — 55 is 1.64x, 50 is 1.8x and starts to feel like a marksman
+	 *  optic on a weapon that does not have one. */
 	UPROPERTY(EditDefaultsOnly, Category = "BN|Tuning")
-	float ADSFOV = 80.f;
+	float ADSFOV = 60.f;
 
 	/** The reference's measured AimPoseChangeSpeed. */
 	UPROPERTY(EditDefaultsOnly, Category = "BN|Tuning")

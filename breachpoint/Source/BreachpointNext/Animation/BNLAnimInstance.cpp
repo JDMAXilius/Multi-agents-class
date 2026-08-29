@@ -163,7 +163,11 @@ void UBNLAnimInstance::BindAbilitySystem()
 		{ BNTags::State_Weapon_ADS,            &GameplayTag_IsADS },
 		{ BNTags::State_Weapon_Firing,         &GameplayTag_IsFiring },
 		{ BNTags::State_Weapon_Reloading,      &GameplayTag_IsReloading },
+		// NOTE the name: this row is SPRINTING, not dashing. The flag predates UBNGA_Dash and
+		// drives the sprint pose; the row below is the real dash. Left as-is on purpose —
+		// ABP graphs bind by name, so renaming would break the sprint branch without a word.
 		{ BNTags::State_Movement_Sprinting,    &GameplayTag_IsDashing },
+		{ BNTags::State_Movement_Dashing,      &GameplayTag_IsDashingActual },
 		{ BNTags::State_Weapon_Melee,          &GameplayTag_IsMelee },
 		{ BNTags::State_Movement_Crouching,    &GameplayTag_IsCrouching },
 		{ BNTags::State_Dead,                  &GameplayTag_IsDead },
