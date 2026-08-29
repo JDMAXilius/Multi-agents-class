@@ -158,8 +158,19 @@ FString UAIBTreeAuthoring::BuildBotStateTree()
 		FAIBFleeFromBeliefTaskInstanceData& Scatter = Evade.AddTask<FAIBFleeFromBeliefTask>().GetInstanceData();
 		Scatter.FleeDistanceUU = 600.f;
 	}
+	// Success re-selects immediately — reaching one dodge point while a blast is still live
+	// should pick the next one without a beat, which is what a real scatter looks like.
 	AddCompletionTransition(Evade, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
-	AddCompletionTransition(Evade, Root, EStateTreeTransitionTrigger::OnStateFailed, 0.f);
+	// FAILURE MUST COST TIME, and shipping this at 0 was a real bug: a scatter that cannot
+	// project a goal — a bot cornered against geometry with a grenade at its feet — failed,
+	// re-selected, still wanted Evade, re-entered and failed again inside the same frame
+	// budget. MEASURED: one bot logged 881 scatter entries in a single match while every
+	// other bot managed three.
+	//
+	// 0.25s, not Retreat's 0.5s: a fuse is about two seconds, so half of it spent waiting is
+	// half a dodge thrown away. Long enough to break the spin, short enough that a scatter
+	// which fails once can still try again inside the window that matters.
+	AddCompletionTransition(Evade, Root, EStateTreeTransitionTrigger::OnStateFailed, 0.25f);
 
 	// ---- Engage: the brain wants the fight ---------------------------------------------
 	UStateTreeState& Engage = Root.AddChildState(TEXT("Engage"));

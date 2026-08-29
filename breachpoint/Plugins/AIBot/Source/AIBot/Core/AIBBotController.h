@@ -145,6 +145,12 @@ public:
 	bool CanThrowGrenade() const;
 	void NoteGrenadeThrown(float CooldownSeconds);
 
+	/** THE DASH's own throttle. The host refuses a dash on cooldown, and a refused verb
+	 *  pressed on a timer is the futile-press shape F7 bans — so the bot tracks its own
+	 *  window rather than discovering the answer by being told no. */
+	bool CanDash() const;
+	void NoteDashed(float CooldownSeconds);
+
 	/** The game's projectile warning seam calls this (via the adapter wiring). It NOTES —
 	 *  the dodge happens only after the stimulus matures (FAIRPLAY F2). */
 	void NoteIncomingBlast(const FVector& Center, float Radius, double DetonateAtSeconds);
@@ -246,6 +252,11 @@ private:
 
 	/** World seconds before which no grenade may be thrown; see CanThrowGrenade. */
 	float NextGrenadeThrowTimeSeconds = 0.f;
+
+	/** Same, for the dash. Deliberately a BOT-SIDE guess at the host's cooldown rather than
+	 *  a query: the module owns no ability system and must not learn one. Set slightly long
+	 *  so the bot is never the thing that discovers the real number by being refused. */
+	float NextDashTimeSeconds = 0.f;
 
 	/** World seconds at OnPossess — the current life's birth stamp (AIB9: an off-mesh
 	 *  report inside the first breaths of a life points at the SPAWN, not at play). */

@@ -54,6 +54,12 @@ namespace AIB
 	 *  LoseSightRadius — the band must live INSIDE the sight envelope or the
 	 *  consideration is provably inert (W-REVIEW P2 C3: the first band started AT the
 	 *  envelope's edge and evaluated to 1.0 on every think, forever). */
+	/** How long a bot waits between dashes. A BOT-SIDE guess at the host's cooldown, held
+	 *  deliberately LONGER than the host's own (3s at time of writing) so the bot is never the
+	 *  thing that discovers the real number by being refused — the module owns no ability
+	 *  system and must not learn one. */
+	inline constexpr float DashThrottleSeconds = 3.5f;
+
 	inline constexpr float EngageFullAppetiteUU = 400.f;
 	inline constexpr float EngageFadeEndUU = 1500.f;
 }

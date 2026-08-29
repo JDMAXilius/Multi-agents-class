@@ -17,6 +17,7 @@ namespace AIBTags
 	// Grapple traversal (founder, 27 Aug: "climb or drop down"). A PRESS, not a hold —
 	// the host's hook is fire-and-forget; what the pull does is entirely the host's.
 	UE_DEFINE_GAMEPLAY_TAG(Verb_Grapple, "AIBot.Verb.Grapple");
+	UE_DEFINE_GAMEPLAY_TAG(Verb_Dash, "AIBot.Verb.Dash");
 
 	UE_DEFINE_GAMEPLAY_TAG(Ambition_Engage, "AIBot.Ambition.Engage");
 	UE_DEFINE_GAMEPLAY_TAG(Ambition_Retreat, "AIBot.Ambition.Retreat");

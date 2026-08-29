@@ -1008,6 +1008,28 @@ EStateTreeRunStatus FAIBFleeFromBeliefTask::EnterState(FStateTreeExecutionContex
 		bHasThreatPoint = true;
 		UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s scattering — blast %.1fs out, %.0fuu away."),
 			*Bot->GetName(), BlastFacts.BlastSecondsToDetonation, BlastFacts.BlastCenterRelative.Size2D());
+
+		// AND DASH OUT OF IT. This is what the verb is FOR: a grenade at your feet is the one
+		// moment where walking away is not fast enough, and the host's dash covers ~500uu in a
+		// quarter second — most of a blast radius, in the window a fuse actually leaves.
+		//
+		// Pressed HERE rather than in the strafe or on a timer, so it fires once per scatter
+		// and only when something is genuinely about to go off. The bot tracks its own window
+		// (CanDash) because the host refuses a dash on cooldown, and a refused verb pressed on
+		// a timer is exactly the futile-press shape F7 bans — the reload taught that lesson.
+		//
+		// The MOVER still owns where the body goes: the dash is a shove along the direction
+		// the flee already chose, not a second opinion about where safety is.
+		if (Bot->CanDash())
+		{
+			if (IAIBAvatarInterface* DashAvatar = Bot->GetAvatar())
+			{
+				DashAvatar->PressVerb(AIBTags::Verb_Dash);
+				DashAvatar->ReleaseVerb(AIBTags::Verb_Dash);
+				Bot->NoteDashed(AIB::DashThrottleSeconds);
+				UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s dashed clear of the blast."), *Bot->GetName());
+			}
+		}
 	}
 	// Otherwise: away from the freshest threat knowledge we hold — the visible belief, else
 	// memory. With NOTHING held — hurt, threat unknown — Retreat still needs an executable exit

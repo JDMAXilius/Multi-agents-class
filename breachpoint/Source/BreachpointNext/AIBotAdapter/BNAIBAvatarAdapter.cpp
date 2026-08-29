@@ -162,6 +162,7 @@ FGameplayTag UBNAIBAvatarAdapter::MapVerb(FGameplayTag VerbTag)
 	if (VerbTag == AIBTags::Verb_WeaponNext) { return BNTags::Input_Weapon_Next; }
 	if (VerbTag == AIBTags::Verb_Aim)        { return BNTags::Input_Weapon_ADS; }
 	if (VerbTag == AIBTags::Verb_Grapple)    { return BNTags::Input_Grapple; }
+	if (VerbTag == AIBTags::Verb_Dash)       { return BNTags::Input_Dash; }
 	return FGameplayTag();
 }
 

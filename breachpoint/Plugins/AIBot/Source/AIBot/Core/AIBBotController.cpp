@@ -388,6 +388,20 @@ void AAIBBotController::NoteGrenadeThrown(float CooldownSeconds)
 	}
 }
 
+bool AAIBBotController::CanDash() const
+{
+	const UWorld* World = GetWorld();
+	return World && World->GetTimeSeconds() >= NextDashTimeSeconds;
+}
+
+void AAIBBotController::NoteDashed(float CooldownSeconds)
+{
+	if (const UWorld* World = GetWorld())
+	{
+		NextDashTimeSeconds = World->GetTimeSeconds() + FMath::Max(0.f, CooldownSeconds);
+	}
+}
+
 void AAIBBotController::NoteCurrentAmbitionFailed()
 {
 	const UWorld* World = GetWorld();

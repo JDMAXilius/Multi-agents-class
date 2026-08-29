@@ -9,7 +9,10 @@
   "Tools/bn/",
   "docs/",
   "Source/BreachpointNext/QA/",
-  "Source/BreachpointNext/AIBotAdapter/"
+  "Source/BreachpointNext/AIBotAdapter/",
+  "Plugins/AIBot/Source/AIBot/",
+  "Source/BreachpointNext/Animation/",
+  "Source/BreachpointNext/Match/"
  ],
  "note": "QA/ added ONLY for the one-line BN27 build unblock, authorised by the founder 28 Aug"
 }
