@@ -173,7 +173,14 @@ FString UAIBTreeAuthoring::BuildBotStateTree()
 	// no such flag; it already gates every press on visibility and fails only when the
 	// avatar door closes.
 	Retreat.AddTask<FAIBFaceBeliefTask>().GetInstanceData().bRequireTarget = false;
-	Retreat.AddTask<FAIBFireWhenAbleTask>();
+
+	// ONE number, read by three tasks below — the whole of the defend band's arbitration.
+	constexpr float DEFEND_RANGE_UU = 700.f;
+	// The ADS band must start where the flee mover STOPS SPRINTING, or the two fight: below
+	// the defend floor the mover holds sprint, the host refuses ADS while sprinting, and the
+	// task re-presses Aim every 0.75s forever with nothing to show for it (aib-critic M2 —
+	// the same F7 futile-press shape the ADS band was originally shaped to avoid).
+	Retreat.AddTask<FAIBFireWhenAbleTask>().GetInstanceData().AimRangeUU = DEFEND_RANGE_UU;
 
 	// DEFEND MODE, not a rout (founder, 28 Aug: "make them defend mode where they crouch
 	// jump, evade, fire — everything they do on attacking mode but in defence mode").
@@ -187,11 +194,18 @@ FString UAIBTreeAuthoring::BuildBotStateTree()
 	// The upper bound is deliberately far wider than Engage's 900: a defending bot should
 	// keep evading for as long as it can SEE the threat, not stop dancing at the range
 	// where an attacker would stop closing.
-	constexpr float DEFEND_RANGE_UU = 700.f;
 	Flee.GetInstanceData().DefendRangeUU = DEFEND_RANGE_UU;
 	FAIBStrafeTaskInstanceData& RetreatFootwork = Retreat.AddTask<FAIBStrafeTask>().GetInstanceData();
 	RetreatFootwork.MinRangeUU = DEFEND_RANGE_UU;
-	RetreatFootwork.FightRangeUU = 3000.f;
+	// The chord's re-normalisation clamps out to StandOffMinUU, and leaving that at its 280
+	// default let the defend footwork ratchet straight through its own floor and back into the
+	// flee mover's half of the band (aib-critic H1). The stand-off IS the band floor here.
+	RetreatFootwork.StandOffMinUU = DEFEND_RANGE_UU;
+	// EngageFadeEndUU, not 3000: every tier's LoseSightRadius is 1500, so a 3000 gate could
+	// never fire — and if it somehow did it would open a hole where NEITHER mover owns the
+	// legs (flee stands down past 700, strafe holds past 3000). A dead number that hides a
+	// stall is worse than a small one (aib-critic L1).
+	RetreatFootwork.FightRangeUU = AIB::EngageFadeEndUU;
 	// Reaching the flee goal while still wanting Retreat re-selects and flees further.
 	AddCompletionTransition(Retreat, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
 	AddCompletionTransition(Retreat, Root, EStateTreeTransitionTrigger::OnStateFailed, 0.5f);

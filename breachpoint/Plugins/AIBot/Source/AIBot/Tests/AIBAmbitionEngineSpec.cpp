@@ -232,7 +232,7 @@ void FAIBAmbitionEngineSpec::Define()
 
 	It("breaks contact on a SHIELD break at full health — the Halo rhythm", [this]()
 	{
-		// THE GAP (28 Aug, docs/BREACHPOINT-NEXT-RESEARCH-HALO-LOWHEALTH.md): Retreat's
+		// THE GAP (28 Aug): Retreat's
 		// danger input was HealthNorm alone. In a shielded game a bot at 100% health with a
 		// broken shield is one burst from death, and it scored 0.0 on that input — so it
 		// kept pushing the fight that had just stripped it. Halo's low-health loop is
@@ -271,8 +271,8 @@ void FAIBAmbitionEngineSpec::Define()
 
 	It("leaves SHIELDLESS play exactly as it was — a full shield is neutral", [this]()
 	{
-		// The safety half, and the one that matters TODAY: BNGE_InitVitals sets MaxShield
-		// to 0 (shields paused, 13 Aug), and the adapter answers ShieldNorm = 1 there — a
+		// The safety half, and the one that matters TODAY: the host currently initialises
+		// MaxShield to 0 (shields paused, 13 Aug), and its adapter answers ShieldNorm = 1 — a
 		// mode without shields must read FULL, never BROKEN, or every bot in it would flee
 		// permanently. Pinned on SCORES rather than on the winning tag, because "unchanged"
 		// is a claim about the number, not about who happened to win one rescore.

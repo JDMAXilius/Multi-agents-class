@@ -316,7 +316,8 @@ void UAIBAmbitionEngine::BuildDefaultCoreAmbitions(TArray<FAIBAmbitionSpec>& Out
 		// VITALITY, not health. In a shielded game the moment that matters is the
 		// SHIELD BREAK, and this consideration used to be blind to it: a body at full
 		// health with a broken shield is one burst from death and scored 0.0 here, so
-		// Retreat could not outbid anything (docs/BREACHPOINT-NEXT-RESEARCH-HALO-LOWHEALTH.md).
+		// Retreat could not outbid anything. (The host's low-health research note carries the
+		// Halo reading; it is not named here — law 1 keeps this module free of host symbols.)
 		//
 		// Why one combined selector rather than a second shield consideration: scores are
 		// MULTIPLICATIVE. A separate term can only ever pull a want DOWN, so it could not

@@ -614,6 +614,15 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 			Avatar->ReleaseVerb(AIBTags::Verb_Aim);
 			InstanceData.bAimHeld = false;
 		}
+		// AND THE CROUCH. This block already gives back the trigger and the sights; the crouch
+		// was the one rented verb it kept, so a corpse stayed squatting and the next life's
+		// task instance started believing it was mid-reload (aib-critic L2).
+		if (InstanceData.bCrouchedToReload)
+		{
+			SetCrouch(*Avatar, false);
+			InstanceData.bCrouchedToReload = false;
+		}
+		InstanceData.ReloadWantedSeconds = 0.f;
 		return EStateTreeRunStatus::Running;
 	}
 
@@ -632,6 +641,39 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 	InstanceData.ReloadCooldownLeft = FMath::Max(0.f, InstanceData.ReloadCooldownLeft - DeltaTime);
 	InstanceData.SwapCooldownLeft = FMath::Max(0.f, InstanceData.SwapCooldownLeft - DeltaTime);
 	InstanceData.ReAimCooldownLeft = FMath::Max(0.f, InstanceData.ReAimCooldownLeft - DeltaTime);
+	// HOISTED ABOVE THE RELOAD GATE (aib-critic M3, 28 Aug), for two reasons that turned out
+	// to be one. A bot mid-reload would not swing at a rusher inside knife range — it crouched
+	// and took the beating, where Halo's answer to a rusher mid-reload is ALWAYS the melee. And
+	// worse, the reload's early return skipped FAIBMeleePolicy::ShouldMelee entirely, while that
+	// policy's own contract says it must be stepped EVERY tick or its continuous-range reset law
+	// does not hold. Stepping it here honours the contract and makes the interrupt possible.
+	// THIS FRAME'S distance to the belief — the reason the three checks below can exist at
+	// all. Everything past here that names a range uses it; nothing past here reads the
+	// think-rate DistToTargetUU, which is a want's number, not a swing's. (One deliberate
+	// exception below: the grenade CALL reads the fact snapshot, because a throw is a
+	// decision, not a swing — the policy's one-info-door law.)
+	float DistanceUU = 0.f;
+	const bool bHasDistance = LiveDistanceToBelief(*Bot, DistanceUU);
+	const double Now = Bot->GetWorld()->GetTimeSeconds();
+
+	// -- MELEE: they are close enough to touch, AND the bot has READ that ---------------
+	// Two gates, two owners. The REACH is the held weapon's, through the door — a knife
+	// commits from further than a rifle butt, and this code never learns which is which.
+	// The RECOGNITION is the level's (Phase 4): the policy's clock starts when the range
+	// picture becomes continuously true and answers after the level's delay — an Expert
+	// reads the closing fight early and is already swinging on arrival, a Novice only
+	// realises at point-blank and takes a beat more (the R11 reasoning, applied to the
+	// knife). Stepped EVERY tick so the continuous-range reset law holds.
+	const bool bMeleeRecognised = FAIBMeleePolicy::ShouldMelee(
+		Bot->GetMeleeState(), bHasDistance ? DistanceUU : -1.f, Facts.bTargetVisible,
+		Bot->GetSkillProfile().Level(EAIBSkill::Melee), Now);
+	const float MeleeRangeUU = Avatar->GetMeleeRangeUU();
+	// THE INTERRUPT. Reach and recognition both, so the swing still obeys the level's read
+	// (an Expert reads the rush early, a Novice a beat later) — the reload does not get to
+	// bypass a capability gate, it only stops OUTRANKING one.
+	const bool bMeleeWarranted = bMeleeRecognised && bHasDistance && MeleeRangeUU > 0.f
+		&& DistanceUU <= MeleeRangeUU * MeleeCommitFraction;
+
 	const bool bWantsReload = Facts.bHasReserveAmmo && Facts.AmmoNorm <= ReloadAtMagazineFraction;
 	InstanceData.ReloadWantedSeconds = bWantsReload ? InstanceData.ReloadWantedSeconds + DeltaTime : 0.f;
 
@@ -652,7 +694,7 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 				Facts.bHasReserveAmmo ? TEXT("yes") : TEXT("no"));
 		}
 	}
-	else if (bWantsReload)
+	else if (bWantsReload && !bMeleeWarranted)
 	{
 		if (InstanceData.bHolding)
 		{
@@ -696,27 +738,6 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 		InstanceData.bCrouchedToReload = false;
 	}
 
-	// THIS FRAME'S distance to the belief — the reason the three checks below can exist at
-	// all. Everything past here that names a range uses it; nothing past here reads the
-	// think-rate DistToTargetUU, which is a want's number, not a swing's. (One deliberate
-	// exception below: the grenade CALL reads the fact snapshot, because a throw is a
-	// decision, not a swing — the policy's one-info-door law.)
-	float DistanceUU = 0.f;
-	const bool bHasDistance = LiveDistanceToBelief(*Bot, DistanceUU);
-	const double Now = Bot->GetWorld()->GetTimeSeconds();
-
-	// -- MELEE: they are close enough to touch, AND the bot has READ that ---------------
-	// Two gates, two owners. The REACH is the held weapon's, through the door — a knife
-	// commits from further than a rifle butt, and this code never learns which is which.
-	// The RECOGNITION is the level's (Phase 4): the policy's clock starts when the range
-	// picture becomes continuously true and answers after the level's delay — an Expert
-	// reads the closing fight early and is already swinging on arrival, a Novice only
-	// realises at point-blank and takes a beat more (the R11 reasoning, applied to the
-	// knife). Stepped EVERY tick so the continuous-range reset law holds.
-	const bool bMeleeRecognised = FAIBMeleePolicy::ShouldMelee(
-		Bot->GetMeleeState(), bHasDistance ? DistanceUU : -1.f, Facts.bTargetVisible,
-		Bot->GetSkillProfile().Level(EAIBSkill::Melee), Now);
-	const float MeleeRangeUU = Avatar->GetMeleeRangeUU();
 	if (bMeleeRecognised && bHasDistance && MeleeRangeUU > 0.f
 		&& Now >= Bot->GetMeleeState().NextSwingAtSeconds
 		&& DistanceUU <= MeleeRangeUU * MeleeCommitFraction)
@@ -1068,7 +1089,21 @@ EStateTreeRunStatus FAIBFleeFromBeliefTask::Tick(FStateTreeExecutionContext& Con
 		// fighting, until the brain's own score says the danger has passed.
 		return EStateTreeRunStatus::Running;
 	}
-	InstanceData.bStoodDownToDefend = false;
+	if (InstanceData.bStoodDownToDefend)
+	{
+		// THE WAY BACK OUT, and without it the band was a ONE-WAY DOOR (aib-critic H1, 28 Aug).
+		// Standing down issued StopMovement, which kills the path request the enter state made.
+		// Dropping back inside the band then cleared the flag and fell straight into
+		// TickLocomotion, which holds sprint against a DEAD request — so the bot froze in the
+		// open for about a second and a half until the wedge watchdog happened to re-issue it.
+		//
+		// And re-entry is not incidental, it is structural: the strafe walks a chord, whose
+		// midpoint dips inward by ~11% at MaxArcDegrees 55, so two legs from 700-790uu put the
+		// bot back under the floor by construction.
+		InstanceData.bStoodDownToDefend = false;
+		MoveToNavPoint(*Bot, InstanceData.FleeGoal, 150.f);
+		UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s fell back inside the defend band — resuming the break."), *Bot->GetName());
+	}
 
 	if (IsWithin(*Bot, InstanceData.FleeGoal, 200.f))
 	{
