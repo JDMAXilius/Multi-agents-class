@@ -172,10 +172,13 @@ protected:
 	virtual const FGameplayTagContainer* GetCooldownTags() const override;
 	virtual void ApplyCooldown(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) const override;
 
-	/** Launch speed. 1200 carries roughly 4m before friction bleeds it — far enough to leave
-	 *  a burst, short enough that it cannot cross an arena lane. */
+	/** Launch speed, and it is only half the story — see SetFrictionSuppressed. MEASURED
+	 *  against the character's real values (ground friction 8 x factor 2, braking 2048):
+	 *  with friction live, 1200 carries 39uu and even 3200 carries only 124uu, because the
+	 *  burst is dead in about 0.15s. Distance is set by the WINDOW, not the speed, so the
+	 *  ability suppresses friction for DashDuration and the dash covers speed x duration. */
 	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Dash")
-	float DashSpeedUU = 1200.f;
+	float DashSpeedUU = 2000.f;
 
 	/** How long State.Movement.Dashing is held. Only the tag's lifetime — the velocity is the
 	 *  launch's and decays on its own — so this is "how long the dash READS as happening" for
@@ -235,8 +238,18 @@ protected:
 	 *  EndAbility's signature, and because the cancel path must be able to clear it. */
 	void EndDashWindow();
 
+	/** Suppresses ground friction and braking for the dash window, and puts them back.
+	 *  Called on activate and unconditionally on end — including a cancel, because a player
+	 *  left frictionless slides forever. */
+	void SetFrictionSuppressed(bool bSuppressed);
+
 private:
 	FActiveGameplayEffectHandle DashingHandle;
 	FTimerHandle DashTimer;
 	mutable FGameplayTagContainer CooldownTags;
+
+	/** The character's own values, cached the instant before they are zeroed. -1 means
+	 *  "nothing cached", so a double-restore can never write a bogus friction. */
+	float CachedGroundFriction = -1.f;
+	float CachedBrakingDeceleration = -1.f;
 };

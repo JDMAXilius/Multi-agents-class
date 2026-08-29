@@ -384,6 +384,39 @@ bool UBNGA_Dash::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, con
 	return Move->IsMovingOnGround();
 }
 
+void UBNGA_Dash::SetFrictionSuppressed(bool bSuppressed)
+{
+	const ACharacter* Character = CurrentActorInfo ? Cast<ACharacter>(CurrentActorInfo->AvatarActor.Get()) : nullptr;
+	UCharacterMovementComponent* Move = Character ? Character->GetCharacterMovement() : nullptr;
+	if (!Move)
+	{
+		return;
+	}
+
+	if (bSuppressed)
+	{
+		// Already suppressed: never re-cache, or a second call would store the ZEROES as the
+		// values to restore and the player would keep frictionless movement for the match.
+		if (CachedGroundFriction >= 0.f)
+		{
+			return;
+		}
+		CachedGroundFriction = Move->GroundFriction;
+		CachedBrakingDeceleration = Move->BrakingDecelerationWalking;
+		Move->GroundFriction = 0.f;
+		Move->BrakingDecelerationWalking = 0.f;
+		return;
+	}
+
+	if (CachedGroundFriction >= 0.f)
+	{
+		Move->GroundFriction = CachedGroundFriction;
+		Move->BrakingDecelerationWalking = CachedBrakingDeceleration;
+		CachedGroundFriction = -1.f;
+		CachedBrakingDeceleration = -1.f;
+	}
+}
+
 UAnimMontage* UBNGA_Dash::SelectDirectionalMontage(const FVector& WorldDirection, const AActor* Avatar, float& OutRollSign) const
 {
 	OutRollSign = 0.f;
@@ -448,6 +481,13 @@ void UBNGA_Dash::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 	// XY OVERRIDE, Z UNTOUCHED. Overriding horizontal makes the dash the same distance from a
 	// standstill as from a sprint, which is what lets a player trust it; leaving Z alone keeps
 	// it from cancelling a fall or granting height it did not earn.
+	// FRICTION OFF FIRST, then launch. Without this the dash is a twitch: measured against
+	// the character's own values (ground friction 8 x factor 2, braking 2048 uu/s^2) a
+	// 1200 launch travels 39uu and dies in 0.15s, and raising the speed barely helps —
+	// 3200 still only reaches 124uu. The DISTANCE IS THE WINDOW, not the speed. With
+	// friction suppressed the velocity holds, so the dash covers speed x duration and the
+	// two numbers below finally mean what they say.
+	SetFrictionSuppressed(true);
 	Character->LaunchCharacter(Direction * DashSpeedUU, /*bXYOverride=*/true, /*bZOverride=*/false);
 
 	// The state tag through a GE like every other state here, so it reaches simulated proxies
@@ -543,6 +583,13 @@ void UBNGA_Dash::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGame
 	{
 		World->GetTimerManager().ClearTimer(DashTimer);
 	}
+
+	// FRICTION BACK, unconditionally and before anything else can return early. A player left
+	// frictionless does not slide a little — they never stop, on ice, for the rest of the
+	// match. This is the single most dangerous line in the ability, which is why it sits in
+	// EndAbility (which a cancel, a death and a match freeze all reach) rather than in the
+	// timer callback.
+	SetFrictionSuppressed(false);
 
 	// And the tag, unconditionally. A stranded State.Movement.Dashing would block every future
 	// dash through CanActivateAbility above — the same never-clears shape that kept bots
