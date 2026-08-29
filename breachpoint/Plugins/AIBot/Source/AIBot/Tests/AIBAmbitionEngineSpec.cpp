@@ -370,6 +370,101 @@ void FAIBAmbitionEngineSpec::Define()
 		TestTrue(TEXT("a bare facts row never scatters"), Won != AIBTags::Ambition_Evade);
 	});
 
+	It("does not punish a want for being well described — the make-up value", [this]()
+	{
+		// THE UTILITY-AI BIAS this compensates (Dave Mark's IAUS). Multiplying normalised
+		// considerations means the more carefully a want is modelled the lower it scores:
+		// four terms at 0.8 leave a base-1.0 want at 0.410, while two terms at the same
+		// quality keep 0.640. Authors learn to describe less, which is backwards.
+		//
+		// Pinned as a COMPARISON, not an absolute: two wants of identical base and identical
+		// per-term quality, differing only in how many terms they carry.
+		const auto Described = [](FGameplayTag Tag, int32 Terms)
+		{
+			FAIBAmbitionSpec Spec;
+			Spec.Tag = Tag;
+			Spec.BaseUtility = 1.f;
+			for (int32 i = 0; i < Terms; ++i)
+			{
+				// AmmoNorm is a plain pass-through fact, so each term is exactly the value
+				// the facts carry — no curve shaping in the way of the arithmetic.
+				FAIBConsideration& C = Spec.Considerations.AddDefaulted_GetRef();
+				C.Selector = EAIBFactSelector::AmmoNorm;
+				C.SetLinearCurve(true);
+			}
+			return Spec;
+		};
+
+		Engine->RegisterAmbition(Described(AIBTags::Ambition_Engage, 4));
+		Engine->RegisterAmbition(Described(AIBTags::Ambition_Roam, 2));
+
+		FAIBFacts Facts;
+		Facts.AmmoNorm = 0.8f;
+		Engine->Rescore(Facts, 1.0);
+
+		float FourTerms = 0.f, TwoTerms = 0.f;
+		for (const FAIBScoredAmbition& Row : Engine->GetLastScores())
+		{
+			if (Row.Tag == AIBTags::Ambition_Engage) { FourTerms = Row.Score; }
+			if (Row.Tag == AIBTags::Ambition_Roam)   { TwoTerms  = Row.Score; }
+		}
+
+		// Uncompensated this would be 0.410 vs 0.640 — a 36% penalty for description alone.
+		// Compensated the four-term want must stay competitive: within a quarter of the two.
+		TestTrue(TEXT("the four-term want is not crushed"), FourTerms > 0.65f * TwoTerms);
+		TestTrue(TEXT("but more terms still cost something"), FourTerms < TwoTerms);
+	});
+
+	It("keeps a veto a veto, and a certainty a certainty, under compensation", [this]()
+	{
+		// THE TWO ENDPOINTS ARE WHY THE COMPENSATION IS SAFE HERE, and this is the row that
+		// says so. Half this module leans on a consideration of 0 meaning NEVER: a suppressed
+		// want, an unknown that must not act, Evade's silence with no blast, Seek's dormancy.
+		// If the make-up value ever lifted 0 off the floor, all of those would start firing.
+		FAIBAmbitionSpec Vetoed;
+		Vetoed.Tag = AIBTags::Ambition_Engage;
+		Vetoed.BaseUtility = 10.f; // enormous, so only a true zero can hold it down
+		for (int32 i = 0; i < 4; ++i)
+		{
+			FAIBConsideration& C = Vetoed.Considerations.AddDefaulted_GetRef();
+			C.Selector = EAIBFactSelector::AmmoNorm;
+			C.SetLinearCurve(true);
+		}
+		Engine->RegisterAmbition(Vetoed);
+		Engine->RegisterAmbition(Constant(AIBTags::Ambition_Roam, 0.2f));
+
+		FAIBFacts Facts;
+		Facts.AmmoNorm = 0.f; // every term reads zero
+		TestTag(TEXT("zero still vetoes, at any base"),
+			Engine->Rescore(Facts, 1.0), AIBTags::Ambition_Roam);
+
+		// And the other end: all-perfect terms must not be inflated past the base either.
+		Engine->ResetArbitration();
+		Facts.AmmoNorm = 1.f;
+		Engine->Rescore(Facts, 2.0);
+		for (const FAIBScoredAmbition& Row : Engine->GetLastScores())
+		{
+			if (Row.Tag == AIBTags::Ambition_Engage)
+			{
+				TestEqual(TEXT("all-perfect terms score exactly the base"), Row.Score, 10.f, 0.001f);
+			}
+		}
+	});
+
+	It("elects NOTHING when every want scores zero — not the first one registered", [this]()
+	{
+		// Selection used to start at "no best yet", so the FIRST REGISTERED spec won an
+		// all-zero scoreboard by default: a bot that "wants Engage at 0.00" and enters a
+		// branch which fails on the belief it does not have (aib-critic L3). The tree's
+		// ungated Fallback is what should catch this, loudly.
+		Engine->RegisterAmbition(VisibleGated(AIBTags::Ambition_Engage, 2.0f));
+		Engine->RegisterAmbition(VisibleGated(AIBTags::Ambition_Retreat, 1.0f));
+
+		FAIBFacts Facts; // nothing visible: both gates read zero
+		TestFalse(TEXT("no want is elected on an all-zero board"),
+			Engine->Rescore(Facts, 1.0).IsValid());
+	});
+
 	It("wants nothing this world cannot satisfy — SeekWeapon is retired, Seek moves", [this]()
 	{
 		// THE BUG (25 Aug): an empty-handed bot scored SeekWeapon 1.40 on every think, its

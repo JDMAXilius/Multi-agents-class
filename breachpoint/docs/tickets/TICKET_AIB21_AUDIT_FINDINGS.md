@@ -1,6 +1,6 @@
 # AIB21 — the Halo-fidelity audit, and what it found
 
-> STATUS: in-progress — 7 of 9 findings closed (H3 closed 29 Aug); M1, L3 open
+> STATUS: in-progress — 8 of 9 findings closed (H3, L3 closed 29 Aug); M1 open
 
 `aib-critic` audited the whole module against the Halo-Infinite-1:1 bar. Verdict:
 containment PASS, server-only PASS, F1/F4/F8 PASS, arbitration sound. The stuck-state
@@ -86,3 +86,51 @@ a new fact today.
 
 Eliminations 9 -> 6 in the sampled match. Single-sample and inside this project's known
 variance, but directionally expected: bots that dodge grenades die less to grenades.
+
+
+## Log — 29 Aug: the utility model itself
+
+Founder asked whether the goal/utility AI is applied *properly*. Reviewed against the
+Infinite Axis Utility System, which this design otherwise follows closely: normalised
+considerations, arbitrary curves, an explicit veto at 0, commit windows, a switch cost for
+inertia, and per-want hysteresis. One canonical piece was missing.
+
+**The compensation (make-up value) was absent.** Multiplying normalised considerations
+punishes a want for being well described: four terms at a healthy 0.8 left Engage at 0.410
+of its base while a two-term want kept 0.640. Engage is the most carefully modelled want in
+the module and was therefore the most demoted — 59% of its base gone before any fact was
+even bad. Authors learn to add fewer considerations, which is exactly backwards.
+
+Now each term is lifted toward 1 in proportion to how many terms share the product. The two
+endpoints are why it is safe here, and both are pinned:
+
+- value `0` → `0` — a veto is still a veto (suppression, unknown-must-not-act, Evade's
+  silence without a blast, Seek's dormancy all depend on this)
+- value `1` → `1` — an all-perfect want scores exactly its base, never more
+
+**It immediately broke a real thing, which is the point.** Seek's dormancy was a NUMERIC
+COINCIDENCE — `ValueWhenUnknown = 0.1` with the comment "1.4 x 0.1 = 0.14 < Roam's 0.2
+floor", a value tuned against another want's base. Compensation lifted it to 0.23 and a bot
+wanted to Seek with nowhere to go: the exact SeekWeapon trap this ambition was rewritten to
+escape. Dormancy is now an explicit `0` — an unsatisfiable want must be VETOED, not merely
+outbid, and 0 says that at any base and under any compensation.
+
+**L3 closed alongside it.** Selection started at "no best yet", so on an all-zero scoreboard
+the FIRST REGISTERED spec won by default — a bot wanting Engage at 0.00, entering a branch
+that fails on the belief it does not have. Electing nothing is the honest answer; the
+ungated Fallback catches it and says so.
+
+Measured, one match against the run before it — Engage's share of all selections:
+
+| | before | after |
+|---|---|---|
+| Engage | 100 (31.8%) | **158 (41.0%)** |
+| Roam | 95 | 132 |
+| Search | 41 | 30 |
+| Mode.Rally | 40 | 31 |
+| Retreat | 24 | 21 |
+| Evade | 14 | 13 |
+
+Bots fight more. Retreat's small drop is the same correction seen from the other side —
+it had been winning partly because Engage was structurally depressed. Evade is unchanged, as
+expected: one consideration, so it is uncompensated by construction. Zero unserved wants.

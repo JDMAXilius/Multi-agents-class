@@ -180,10 +180,32 @@ FGameplayTag UAIBAmbitionEngine::Rescore(const FAIBFacts& Facts, double NowSecon
 	{
 		const FAIBObjectiveFact* Matched = MatchObjective(Facts, Spec.Tag);
 
+		// THE MAKE-UP VALUE (Dave Mark's Infinite Axis Utility System compensation).
+		//
+		// Multiplying normalised considerations has a bias that gets worse the better you
+		// model a want: four terms at a healthy 0.8 leave Engage at 0.410 of its base, while
+		// a two-term want at the same quality keeps 0.640. The most carefully described
+		// behaviour is the most punished, purely for being described — so authors learn to
+		// add fewer considerations, which is exactly backwards.
+		//
+		// The compensation lifts each term toward 1 in proportion to how many terms share the
+		// product. Its two endpoints are the reason it is safe here:
+		//   value 0 -> 0 + (1-0)*mod*0 = 0     a veto is still a veto
+		//   value 1 -> 1 + (1-1)*mod*1 = 1     a perfect term is still perfect
+		// Only the middle moves. Everything this module relies on at the endpoints — a
+		// suppressed want, an unknown that scores 0, Evade's silence without a blast — is
+		// untouched by construction.
+		const int32 NumConsiderations = Spec.Considerations.Num();
+		const float ModificationFactor = NumConsiderations > 1
+			? 1.f - (1.f / static_cast<float>(NumConsiderations))
+			: 0.f; // a single term shares the product with nobody and needs no make-up
+
 		float Raw = FMath::Max(Spec.BaseUtility, 0.f);
 		for (const FAIBConsideration& Consideration : Spec.Considerations)
 		{
-			Raw *= Consideration.Evaluate(Facts, Matched);
+			const float Value = Consideration.Evaluate(Facts, Matched);
+			const float MakeUp = (1.f - Value) * ModificationFactor;
+			Raw *= Value + (MakeUp * Value);
 		}
 
 		// A want whose branch just failed scores ZERO for its window — see
@@ -208,7 +230,13 @@ FGameplayTag UAIBAmbitionEngine::Rescore(const FAIBFacts& Facts, double NowSecon
 		Row.bWasIncumbent = bIncumbent;
 
 		const float SelectionScore = bIncumbent ? Raw * SwitchCostFactor : Raw;
-		if (!Best || SelectionScore > BestSelectionScore)
+		// `> 0` and not `!Best`: starting Best at nothing let the FIRST REGISTERED spec win
+		// unconditionally on an all-zero scoreboard, so a bot would "want Engage at 0.00" and
+		// enter a branch that fails on the belief it does not have. Unreachable while Roam is
+		// a consideration-less floor, but the floor is a convention and this is the invariant
+		// (aib-critic L3). Nothing selected is an honest answer; the tree's ungated Fallback
+		// is what catches it and says so.
+		if (SelectionScore > 0.f && (!Best || SelectionScore > BestSelectionScore))
 		{
 			BestSelectionScore = SelectionScore;
 			BestRawScore = Raw;
@@ -453,7 +481,15 @@ void UAIBAmbitionEngine::BuildDefaultCoreAmbitions(TArray<FAIBAmbitionSpec>& Out
 		FAIBConsideration& KnownSource = Seek.Considerations.AddDefaulted_GetRef();
 		KnownSource.Selector = EAIBFactSelector::ObjectiveUrgency;
 		KnownSource.SetLinearCurve(true);
-		KnownSource.ValueWhenUnknown = 0.1f; // 1.4 x 0.1 = 0.14 < Roam's 0.2 floor
+		// ZERO, not a small number. This used to be 0.1 with the comment "1.4 x 0.1 = 0.14 <
+		// Roam's 0.2 floor" — dormancy as a NUMERIC COINCIDENCE, tuned against another want's
+		// base. The make-up value broke it immediately (0.1 across two terms lifts to 0.405,
+		// and 1.4 x 0.405^2 = 0.23 beats the floor), and a bot wanted to Seek with nowhere to
+		// go — the exact SeekWeapon trap this ambition was rewritten to escape.
+		//
+		// An unsatisfiable want must be VETOED, not merely outbid: nothing named a place, so
+		// there is nothing to seek, and 0 says that at any base and under any compensation.
+		KnownSource.ValueWhenUnknown = 0.f;
 	}
 
 	// ROAM — the floor under everything, and it NEVER COMMITS: a fresh bot's Roam win
