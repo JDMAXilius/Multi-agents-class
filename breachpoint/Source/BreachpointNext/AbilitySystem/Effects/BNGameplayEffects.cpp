@@ -178,6 +178,17 @@ UBNGE_GrappleCooldown::UBNGE_GrappleCooldown()
 	// Cooldown.Grapple rides the spec — the same construction-order rule as above.
 }
 
+UBNGE_DashCooldown::UBNGE_DashCooldown()
+{
+	DurationPolicy = EGameplayEffectDurationType::HasDuration;
+
+	FSetByCallerFloat Duration;
+	Duration.DataName = BNSetByCaller::DashCooldown;
+	DurationMagnitude = FGameplayEffectModifierMagnitude(Duration);
+
+	// Cooldown.Dash rides the spec — the same construction-order rule.
+}
+
 UBNGE_RecentDamage::UBNGE_RecentDamage()
 {
 	DurationPolicy = EGameplayEffectDurationType::HasDuration;

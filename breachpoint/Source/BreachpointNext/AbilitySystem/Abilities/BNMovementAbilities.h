@@ -132,3 +132,69 @@ class BREACHPOINTNEXT_API UBNGA_LeanRight : public UBNGA_Lean
 protected:
 	virtual FGameplayTag GetLeanTag() const override;
 };
+
+/**
+ * THE DASH (founder, 29 Aug) — a thrust, not a sprint.
+ *
+ * DIRECTION IS THE WHOLE DESIGN. It launches along the player's MOVEMENT INPUT, not the
+ * camera: a forward-only dash is just a faster sprint, while dashing sideways and backwards
+ * is what makes this a dodge — the thing you press when a burst is already coming at you.
+ * With no movement held it falls back to camera-forward, so the key is never dead.
+ *
+ * LaunchCharacter, deliberately, and NOT a custom movement mode like the grapple's. The
+ * grapple needed one because a PULL is sustained and has to be re-simulated every frame of
+ * the move; a dash is an IMPULSE, and PendingLaunchVelocity is already consumed inside
+ * PerformMovement and replayed with the saved move. A second compressed-flag path would be
+ * real cost for a value the engine already carries correctly.
+ *
+ * XY override on, Z override OFF. Overriding horizontal makes the dash a constant — the same
+ * distance whether you were sprinting or standing, which is what a dodge has to be to be
+ * trusted. Leaving Z alone means it never cancels a fall and never grants free height, so it
+ * cannot become a jump.
+ */
+UCLASS(Config = Game)
+class BREACHPOINTNEXT_API UBNGA_Dash : public UBNGameplayAbility
+{
+	GENERATED_BODY()
+
+public:
+	UBNGA_Dash();
+
+protected:
+	virtual bool CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags = nullptr, const FGameplayTagContainer* TargetTags = nullptr, FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
+	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
+	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
+
+	virtual const FGameplayTagContainer* GetCooldownTags() const override;
+	virtual void ApplyCooldown(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) const override;
+
+	/** Launch speed. 1200 carries roughly 4m before friction bleeds it — far enough to leave
+	 *  a burst, short enough that it cannot cross an arena lane. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Dash")
+	float DashSpeedUU = 1200.f;
+
+	/** How long State.Movement.Dashing is held. Only the tag's lifetime — the velocity is the
+	 *  launch's and decays on its own — so this is "how long the dash READS as happening" for
+	 *  anim, cues, and anything that gates on it. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Dash")
+	float DashDuration = 0.25f;
+
+	/** Seconds between dashes. Long enough that a dodge is a decision rather than a movement
+	 *  tax you pay every fight. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Dash")
+	float CooldownDuration = 3.f;
+
+	/** Air dashing. TRUE: a thrust that stops working the moment you leave the ground is a
+	 *  thrust you cannot use to escape the thing that knocked you off it. */
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Dash")
+	bool bAllowInAir = true;
+
+	/** Closes the dash window. Its own function because a timer delegate cannot bind to
+	 *  EndAbility's signature, and because the cancel path must be able to clear it. */
+	void EndDashWindow();
+
+private:
+	FActiveGameplayEffectHandle DashingHandle;
+	FTimerHandle DashTimer;
+	mutable FGameplayTagContainer CooldownTags;
+};

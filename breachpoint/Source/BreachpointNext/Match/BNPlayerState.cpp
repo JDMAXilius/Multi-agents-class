@@ -231,6 +231,12 @@ void ABNPlayerState::GrantDefaults()
 	GrappleSpec.GetDynamicSpecSourceTags().AddTag(BNTags::Input_Grapple);
 	AbilitySystemComponent->GiveAbility(GrappleSpec);
 
+	// BN29 — the Dash, granted the same way and for the same reason: a body verb that must
+	// survive every weapon swap and must not depend on an ability-set asset being edited.
+	FGameplayAbilitySpec DashSpec(UBNGA_Dash::StaticClass(), 1);
+	DashSpec.GetDynamicSpecSourceTags().AddTag(BNTags::Input_Dash);
+	AbilitySystemComponent->GiveAbility(DashSpec);
+
 	// No input tag: nobody presses "flinch". UBNHealthComponent activates it by class when health
 	// drops and stays above zero — death's shape, one delegate over.
 	AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(UBNGA_HitReact::StaticClass(), 1));

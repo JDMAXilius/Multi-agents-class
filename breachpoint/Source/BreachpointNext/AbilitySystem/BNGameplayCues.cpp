@@ -652,3 +652,24 @@ bool UBNGameplayCue_RegenBase::OnRemove_Implementation(AActor* MyTarget, const F
 	}
 	return true;
 }
+
+
+FGameplayTag UBNGameplayCue_Dash::GetHandledCueTag() const
+{
+	return BNTags::GameplayCue_Character_Dash;
+}
+
+bool UBNGameplayCue_Dash::OnExecute_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters) const
+{
+	// Parameters.Normal carries the dash DIRECTION, so the burst can face the way the body
+	// actually went rather than always blooming forward.
+	const FRotator Facing = Parameters.Normal.IsNearlyZero()
+		? FRotator::ZeroRotator : Parameters.Normal.Rotation();
+	ApplyTeamTint(SpawnAt(MyTarget, Resolve(Effect), Parameters.Location, Facing), MyTarget);
+
+	if (USoundBase* Loaded = Sound.IsNull() ? nullptr : Sound.LoadSynchronous())
+	{
+		UGameplayStatics::PlaySoundAtLocation(MyTarget, Loaded, Parameters.Location);
+	}
+	return true;
+}

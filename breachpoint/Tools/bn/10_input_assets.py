@@ -191,6 +191,20 @@ ACTIONS = [
         "reuse": BN_INPUT_PATH + "/IA_BN_Grapple",
         "keys": [("One", [])],
     },
+    {
+        # THE DASH (founder, 29 Aug). "Two" is UE's key name for the 2 key, sitting beside
+        # the grapple's One — the two mobility verbs on adjacent keys, which is how a player
+        # learns them as a pair rather than as two unrelated bindings.
+        #
+        # Checked against every other row in this table before choosing: 2 is unbound.
+        # Double-binding is the failure this whole generated table exists to prevent, since
+        # a duplicate key fires two abilities on one press and neither looks broken alone.
+        "id": "Dash",
+        "tag": "Input.Dash",
+        "value_type": "BOOLEAN",
+        "reuse": BN_INPUT_PATH + "/IA_BN_Dash",
+        "keys": [("Two", [])],
+    },
 ]
 
 AUDIT_FMT = "%-38s | %-56s | %-56s | %s"

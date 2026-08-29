@@ -312,3 +312,151 @@ FGameplayTag UBNGA_LeanRight::GetLeanTag() const
 {
 	return BNTags::State_Lean_Right;
 }
+
+
+// ---------------------------------------------------------------------------- UBNGA_Dash
+
+UBNGA_Dash::UBNGA_Dash()
+{
+	// Base defaults stand: InstancedPerActor, LocalPredicted. The press must move the body on
+	// the machine that pressed it — a dodge that waits half an RTT is a dodge you did not make.
+}
+
+const FGameplayTagContainer* UBNGA_Dash::GetCooldownTags() const
+{
+	CooldownTags.Reset();
+	CooldownTags.AddTag(BNTags::Cooldown_Dash);
+	return &CooldownTags;
+}
+
+void UBNGA_Dash::ApplyCooldown(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) const
+{
+	if (CooldownDuration <= 0.f)
+	{
+		return;
+	}
+
+	const FGameplayEffectSpecHandle Spec = MakeOutgoingGameplayEffectSpec(UBNGE_DashCooldown::StaticClass(), GetAbilityLevel());
+	if (!Spec.IsValid())
+	{
+		return;
+	}
+
+	Spec.Data->SetSetByCallerMagnitude(BNSetByCaller::DashCooldown, CooldownDuration);
+	Spec.Data->DynamicGrantedTags.AddTag(BNTags::Cooldown_Dash);
+	ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, Spec);
+}
+
+bool UBNGA_Dash::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, FGameplayTagContainer* OptionalRelevantTags) const
+{
+	if (!Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags))
+	{
+		return false;
+	}
+
+	const ACharacter* Character = ActorInfo ? Cast<ACharacter>(ActorInfo->AvatarActor.Get()) : nullptr;
+	const UCharacterMovementComponent* Move = Character ? Character->GetCharacterMovement() : nullptr;
+	if (!Move)
+	{
+		return false;
+	}
+
+	// Not while already dashing: re-pressing mid-dash would stack launches into a slingshot.
+	if (const UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
+	{
+		if (ASC->HasMatchingGameplayTag(BNTags::State_Movement_Dashing))
+		{
+			return false;
+		}
+	}
+
+	// Airborne is a CHOICE, not an accident — see bAllowInAir. Swimming/flying modes are
+	// neither ground nor the air this ability means, so they are refused outright.
+	if (Move->IsFalling())
+	{
+		return bAllowInAir;
+	}
+	return Move->IsMovingOnGround();
+}
+
+void UBNGA_Dash::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
+{
+	ACharacter* Character = ActorInfo ? Cast<ACharacter>(ActorInfo->AvatarActor.Get()) : nullptr;
+	if (!CommitAbility(Handle, ActorInfo, ActivationInfo) || !Character)
+	{
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
+	}
+
+	// THE DIRECTION, and the whole reason this is a dodge rather than a sprint. The pawn's
+	// last input vector is what the player is ASKING for — strafe left, back off, cut right —
+	// so the dash goes there. Flattened, because a thrust is horizontal; the Z below is
+	// deliberately left to gravity.
+	FVector Direction = Character->GetLastMovementInputVector();
+	Direction.Z = 0.f;
+	if (Direction.IsNearlyZero())
+	{
+		// Standing still with the key pressed: dash where they are LOOKING. The alternative —
+		// refusing — makes the key feel broken at exactly the moment a player panics.
+		Direction = Character->GetActorForwardVector();
+		Direction.Z = 0.f;
+	}
+	Direction = Direction.GetSafeNormal();
+	if (Direction.IsNearlyZero())
+	{
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
+	}
+
+	// XY OVERRIDE, Z UNTOUCHED. Overriding horizontal makes the dash the same distance from a
+	// standstill as from a sprint, which is what lets a player trust it; leaving Z alone keeps
+	// it from cancelling a fall or granting height it did not earn.
+	Character->LaunchCharacter(Direction * DashSpeedUU, /*bXYOverride=*/true, /*bZOverride=*/false);
+
+	// The state tag through a GE like every other state here, so it reaches simulated proxies
+	// and anything gating on "is this body dashing" reads the same answer on every machine.
+	DashingHandle = ApplyStateTag(BNTags::State_Movement_Dashing);
+
+	// Cosmetics on every machine, through the cue system — never spawned directly.
+	if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
+	{
+		FGameplayCueParameters Params;
+		Params.Location = Character->GetActorLocation();
+		Params.Normal = Direction;
+		Params.Instigator = Character;
+		ASC->ExecuteGameplayCue(BNTags::GameplayCue_Character_Dash, Params);
+	}
+
+	// A TIMER, not a montage notify: nothing waits on an animation here, the ability owns its
+	// own lifetime, and an unset montage must never be able to strand the dashing tag.
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimer(DashTimer,
+			FTimerDelegate::CreateUObject(this, &UBNGA_Dash::EndDashWindow),
+			FMath::Max(0.05f, DashDuration), /*bLoop=*/false);
+		return;
+	}
+	EndDashWindow();
+}
+
+void UBNGA_Dash::EndDashWindow()
+{
+	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+}
+
+void UBNGA_Dash::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
+{
+	// The timer first: a cancelled dash — death, a swap, the match freezing — must not have a
+	// pending callback that ends an ability which has already ended.
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(DashTimer);
+	}
+
+	// And the tag, unconditionally. A stranded State.Movement.Dashing would block every future
+	// dash through CanActivateAbility above — the same never-clears shape that kept bots
+	// crouched for a whole match.
+	RemoveStateTag(DashingHandle);
+
+	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+}

@@ -76,6 +76,9 @@ namespace BNSetByCaller
 	/** UBNGE_GrappleCooldown's duration key (BN23). Same construction-order reason. */
 	const FName GrappleCooldown(TEXT("GrappleCooldown"));
 
+	/** UBNGE_DashCooldown's duration key. Same construction-order reason as the grapple's. */
+	const FName DashCooldown(TEXT("DashCooldown"));
+
 	/** UBNGE_RecentDamage's duration key — the shield's delay before it starts coming back. */
 	const FName RecentDamageWindow(TEXT("RecentDamageWindow"));
 }
@@ -139,6 +142,18 @@ class BREACHPOINTNEXT_API UBNGE_GrappleCooldown : public UGameplayEffect
 
 public:
 	UBNGE_GrappleCooldown();
+};
+
+/** The dash's cooldown, shaped exactly like the grapple's: duration by SetByCaller so the
+ *  ability owns the number, and the Cooldown.Dash tag rides the SPEC rather than the CDO
+ *  (a tag added in a CDO constructor is added before the tag tree exists). */
+UCLASS()
+class BREACHPOINTNEXT_API UBNGE_DashCooldown : public UGameplayEffect
+{
+	GENERATED_BODY()
+
+public:
+	UBNGE_DashCooldown();
 };
 
 /**

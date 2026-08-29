@@ -388,6 +388,27 @@ public:
 	virtual FGameplayTag GetHandledCueTag() const override;
 };
 
+/** THE DASH's burst (BN29). One-shot at the body, tinted by side like every other cue that
+ *  can take a colour — an enemy thrusting past you should read as a threat, not as weather.
+ *  Effect unset by default: Tier-4 content this packet announces rather than authors. */
+UCLASS(Config = Game, meta = (DisplayName = "GC_BN_Character_Dash"))
+class BREACHPOINTNEXT_API UBNGameplayCue_Dash : public UBNGameplayCue_Base
+{
+	GENERATED_BODY()
+
+public:
+	virtual FGameplayTag GetHandledCueTag() const override;
+
+protected:
+	virtual bool OnExecute_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters) const override;
+
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Cue")
+	TSoftObjectPtr<UFXSystemAsset> Effect;
+
+	UPROPERTY(Config, EditDefaultsOnly, Category = "BN|Cue")
+	TSoftObjectPtr<USoundBase> Sound;
+};
+
 UCLASS(Config = Game, meta = (DisplayName = "GC_BN_Character_HealthRegen"))
 class BREACHPOINTNEXT_API UBNGameplayCue_HealthRegen : public UBNGameplayCue_RegenBase
 {

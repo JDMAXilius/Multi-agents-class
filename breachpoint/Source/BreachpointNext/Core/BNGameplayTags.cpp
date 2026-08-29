@@ -24,6 +24,7 @@ namespace BNTags
 	UE_DEFINE_GAMEPLAY_TAG(State_Movement_InAir, "State.Movement.InAir");
 	UE_DEFINE_GAMEPLAY_TAG(State_Movement_Crouching, "State.Movement.Crouching");
 	UE_DEFINE_GAMEPLAY_TAG(State_Movement_Sprinting, "State.Movement.Sprinting");
+	UE_DEFINE_GAMEPLAY_TAG(State_Movement_Dashing, "State.Movement.Dashing");
 	UE_DEFINE_GAMEPLAY_TAG(State_Lean_Left, "State.Lean.Left");
 	UE_DEFINE_GAMEPLAY_TAG(State_Lean_Right, "State.Lean.Right");
 	UE_DEFINE_GAMEPLAY_TAG(State_Weapon_Reloading, "State.Weapon.Reloading");
@@ -36,7 +37,9 @@ namespace BNTags
 	// GRAPPLE (BN23): the press and its cooldown. Input.Grapple sits beside Jump/Sprint —
 	// a body verb, not a weapon's.
 	UE_DEFINE_GAMEPLAY_TAG(Input_Grapple, "Input.Grapple");
+	UE_DEFINE_GAMEPLAY_TAG(Input_Dash, "Input.Dash");
 	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Grapple, "Cooldown.Grapple");
+	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Dash, "Cooldown.Dash");
 
 	UE_DEFINE_GAMEPLAY_TAG(State_Combat_RecentDamage, "State.Combat.RecentDamage");
 	// HEALTH REGEN's own window (founder, 27 Aug), a SIBLING of RecentDamage on purpose:
@@ -53,6 +56,7 @@ namespace BNTags
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Grenade_Explode, "GameplayCue.Grenade.Explode");
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Character_Death, "GameplayCue.Character.Death");
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Character_ShieldRegen, "GameplayCue.Character.ShieldRegen");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Character_Dash, "GameplayCue.Character.Dash");
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Character_HealthRegen, "GameplayCue.Character.HealthRegen");
 
 UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Grapple_Fire, "GameplayCue.Grapple.Fire");
