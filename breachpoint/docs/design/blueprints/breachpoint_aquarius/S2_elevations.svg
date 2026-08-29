@@ -1,0 +1,198 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1168" height="1107" viewBox="0 0 1168 1107">
+<style>
+  .paper{fill:#ffffff}
+  .frame{fill:none;stroke:#000;stroke-width:2.5}
+  .grid{stroke:#000;stroke-width:0.3;opacity:0.13}
+  .poche{fill:#111111;stroke:none}
+  .floor{fill:#e8e8e8;stroke:#000;stroke-width:0.6}
+  .below{fill:none;stroke:#000;stroke-width:0.5;opacity:0.35}
+  .over{fill:none;stroke:#000;stroke-width:1.1;stroke-dasharray:6 3.5}
+  .cover{fill:#ffffff;stroke:#000;stroke-width:1.1}
+  .tread{stroke:#000;stroke-width:0.7}
+  .dim{stroke:#000;stroke-width:0.8}
+  .dimtext{font:10px monospace;fill:#000}
+  .label{font:bold 10.5px monospace;fill:#000;letter-spacing:0.5px}
+  .small{font:9px monospace;fill:#000}
+  .big{font:bold 16px monospace;fill:#000;letter-spacing:1px}
+  .panel{font:bold 13px monospace;fill:#000;letter-spacing:1px}
+  .datum{stroke:#000;stroke-width:0.8;stroke-dasharray:12 4 2 4}
+  .iso{fill:#ffffff;stroke:#000;stroke-width:1.1;stroke-linejoin:round}
+  .isotop{fill:#ededed;stroke:#000;stroke-width:1.1;stroke-linejoin:round}
+  .isodark{fill:#d4d4d4;stroke:#000;stroke-width:1.1;stroke-linejoin:round}
+  .isoplate{fill:#f7f7f7;stroke:#000;stroke-width:1.6;stroke-linejoin:round}
+</style>
+<rect class="paper" width="1168" height="1107"/>
+<title>ELEVATIONS</title>
+<rect class="frame" x="10" y="10" width="1148" height="1087"/>
+<text class="big" x="130" y="48">ELEVATIONS + SECTION — BLACK = CUT / END WALLS · WHITE = BEYOND</text>
+<text class="panel" x="130" y="98">SOUTH ELEVATION — LOOKING NORTH</text>
+<line class="datum" x1="130" y1="246" x2="878" y2="246"/>
+<text class="small" x="913.3" y="249">+4.00  L1</text>
+<line class="datum" x1="130" y1="178" x2="878" y2="178"/>
+<text class="small" x="913.3" y="181">+8.00  L2</text>
+<text class="small" x="913.3" y="317">±0.00  GROUND</text>
+<rect class="cover" x="487" y="293.6" width="34" height="20.4"/>
+<rect class="cover" x="419" y="246" width="34" height="68"/>
+<rect class="cover" x="555" y="246" width="34" height="68"/>
+<rect class="cover" x="266" y="246" width="34" height="68"/>
+<rect class="cover" x="708" y="246" width="34" height="68"/>
+<rect class="cover" x="317" y="246" width="34" height="68"/>
+<rect class="cover" x="385" y="246" width="238" height="68"/>
+<rect class="cover" x="657" y="246" width="34" height="68"/>
+<rect class="cover" x="164" y="246" width="136" height="68"/>
+<rect class="cover" x="708" y="246" width="136" height="68"/>
+<rect class="cover" x="487" y="263" width="34" height="51"/>
+<rect class="cover" x="342.5" y="293.6" width="34" height="20.4"/>
+<rect class="cover" x="631.5" y="293.6" width="34" height="20.4"/>
+<rect class="cover" x="436" y="252.8" width="136" height="61.2"/>
+<rect class="cover" x="374.8" y="312.3" width="20.4" height="1.7"/>
+<rect class="cover" x="612.8" y="312.3" width="20.4" height="1.7"/>
+<rect class="cover" x="376.5" y="246" width="59.5" height="68"/>
+<rect class="cover" x="572" y="246" width="59.5" height="68"/>
+<rect class="cover" x="436" y="246" width="136" height="6.8"/>
+<rect class="cover" x="436" y="252.8" width="136" height="61.2"/>
+<rect class="cover" x="181" y="246" width="42.5" height="68"/>
+<rect class="cover" x="784.5" y="246" width="42.5" height="68"/>
+<rect class="cover" x="164" y="246" width="136" height="6.8"/>
+<rect class="cover" x="145.3" y="161" width="18.7" height="153"/>
+<rect class="cover" x="708" y="246" width="136" height="6.8"/>
+<rect class="cover" x="844" y="161" width="18.7" height="153"/>
+<rect class="cover" x="342.5" y="293.6" width="34" height="20.4"/>
+<rect class="cover" x="631.5" y="293.6" width="34" height="20.4"/>
+<rect class="cover" x="164" y="246" width="136" height="68"/>
+<rect class="cover" x="708" y="246" width="136" height="68"/>
+<rect class="cover" x="487" y="263" width="34" height="51"/>
+<rect class="cover" x="317" y="246" width="34" height="68"/>
+<rect class="cover" x="385" y="246" width="238" height="68"/>
+<rect class="cover" x="657" y="246" width="34" height="68"/>
+<rect class="cover" x="266" y="246" width="34" height="68"/>
+<rect class="cover" x="708" y="246" width="34" height="68"/>
+<rect class="cover" x="436" y="252.8" width="25.5" height="61.2"/>
+<rect class="cover" x="546.5" y="252.8" width="25.5" height="61.2"/>
+<rect class="cover" x="376.5" y="246" width="51" height="68"/>
+<rect class="cover" x="580.5" y="246" width="51" height="68"/>
+<rect class="cover" x="436" y="246" width="136" height="6.8"/>
+<rect class="poche" x="114.7" y="110" width="15.3" height="204"/>
+<rect class="poche" x="878" y="110" width="15.3" height="204"/>
+<line x1="100.7" y1="314" x2="907.3" y2="314" stroke="#000" stroke-width="3.5"/>
+<line class="dim" x1="94.7" y1="178" x2="94.7" y2="314"/>
+<line class="dim" x1="90.7" y1="178" x2="98.7" y2="178"/>
+<line class="dim" x1="90.7" y1="314" x2="98.7" y2="314"/>
+<text class="dimtext" x="88.7" y="246" transform="rotate(-90 88.7 246)" text-anchor="middle">8.00 m</text>
+<line class="dim" x1="130" y1="340" x2="878" y2="340"/>
+<line class="dim" x1="130" y1="336" x2="130" y2="344"/>
+<line class="dim" x1="878" y1="336" x2="878" y2="344"/>
+<text class="dimtext" text-anchor="middle" x="504" y="335">44.0 m</text>
+<text class="panel" x="130" y="397">WEST ELEVATION — LOOKING EAST</text>
+<line class="datum" x1="130" y1="545" x2="674" y2="545"/>
+<text class="small" x="709.3" y="548">+4.00  L1</text>
+<line class="datum" x1="130" y1="477" x2="674" y2="477"/>
+<text class="small" x="709.3" y="480">+8.00  L2</text>
+<text class="small" x="709.3" y="616">±0.00  GROUND</text>
+<rect class="cover" x="317" y="460" width="170" height="153"/>
+<rect class="cover" x="334" y="545" width="59.5" height="68"/>
+<rect class="cover" x="317" y="545" width="170" height="6.8"/>
+<rect class="cover" x="487" y="545" width="17" height="68"/>
+<rect class="cover" x="300" y="545" width="17" height="68"/>
+<rect class="cover" x="589" y="545" width="34" height="68"/>
+<rect class="cover" x="181" y="545" width="34" height="68"/>
+<rect class="cover" x="555" y="545" width="17" height="68"/>
+<rect class="cover" x="232" y="545" width="17" height="68"/>
+<rect class="cover" x="317" y="592.6" width="34" height="20.4"/>
+<rect class="cover" x="453" y="592.6" width="34" height="20.4"/>
+<rect class="cover" x="391.8" y="611.3" width="20.4" height="1.7"/>
+<rect class="cover" x="155.5" y="545" width="51" height="68"/>
+<rect class="cover" x="368" y="545" width="68" height="68"/>
+<rect class="cover" x="597.5" y="545" width="34" height="68"/>
+<rect class="cover" x="164" y="551.8" width="51" height="61.2"/>
+<rect class="cover" x="619.6" y="592.6" width="34" height="20.4"/>
+<rect class="cover" x="478.5" y="562" width="34" height="51"/>
+<rect class="cover" x="291.5" y="562" width="34" height="51"/>
+<rect class="cover" x="359.5" y="545" width="85" height="6.8"/>
+<rect class="cover" x="444.5" y="551.8" width="17" height="61.2"/>
+<rect class="cover" x="342.5" y="551.8" width="17" height="61.2"/>
+<rect class="cover" x="147" y="545" width="85" height="6.8"/>
+<rect class="cover" x="164" y="551.8" width="51" height="61.2"/>
+<rect class="cover" x="597.5" y="545" width="34" height="68"/>
+<rect class="cover" x="555" y="545" width="17" height="68"/>
+<rect class="cover" x="232" y="545" width="17" height="68"/>
+<rect class="cover" x="368" y="545" width="68" height="68"/>
+<rect class="cover" x="155.5" y="545" width="51" height="68"/>
+<rect class="cover" x="391.8" y="611.3" width="20.4" height="1.7"/>
+<rect class="cover" x="317" y="592.6" width="34" height="20.4"/>
+<rect class="cover" x="453" y="592.6" width="34" height="20.4"/>
+<rect class="cover" x="555" y="545" width="17" height="68"/>
+<rect class="cover" x="232" y="545" width="17" height="68"/>
+<rect class="cover" x="589" y="545" width="34" height="68"/>
+<rect class="cover" x="181" y="545" width="34" height="68"/>
+<rect class="cover" x="334" y="545" width="59.5" height="68"/>
+<rect class="cover" x="317" y="545" width="170" height="6.8"/>
+<rect class="cover" x="487" y="545" width="17" height="68"/>
+<rect class="cover" x="300" y="545" width="17" height="68"/>
+<rect class="cover" x="317" y="460" width="170" height="153"/>
+<rect class="poche" x="114.7" y="409" width="15.3" height="204"/>
+<rect class="poche" x="674" y="409" width="15.3" height="204"/>
+<line x1="100.7" y1="613" x2="703.3" y2="613" stroke="#000" stroke-width="3.5"/>
+<line class="dim" x1="94.7" y1="477" x2="94.7" y2="613"/>
+<line class="dim" x1="90.7" y1="477" x2="98.7" y2="477"/>
+<line class="dim" x1="90.7" y1="613" x2="98.7" y2="613"/>
+<text class="dimtext" x="88.7" y="545" transform="rotate(-90 88.7 545)" text-anchor="middle">8.00 m</text>
+<line class="dim" x1="130" y1="639" x2="674" y2="639"/>
+<line class="dim" x1="130" y1="635" x2="130" y2="643"/>
+<line class="dim" x1="674" y1="635" x2="674" y2="643"/>
+<text class="dimtext" text-anchor="middle" x="402" y="634">32.0 m</text>
+<text class="panel" x="130" y="696">SECTION A–A — CUT AT y = 16 m, LOOKING NORTH</text>
+<line class="datum" x1="130" y1="844" x2="878" y2="844"/>
+<text class="small" x="913.3" y="847">+4.00  L1</text>
+<line class="datum" x1="130" y1="776" x2="878" y2="776"/>
+<text class="small" x="913.3" y="779">+8.00  L2</text>
+<text class="small" x="913.3" y="915">±0.00  GROUND</text>
+<rect class="cover" x="487" y="891.6" width="34" height="20.4"/>
+<rect class="cover" x="419" y="844" width="34" height="68"/>
+<rect class="cover" x="555" y="844" width="34" height="68"/>
+<rect class="cover" x="266" y="844" width="34" height="68"/>
+<rect class="cover" x="708" y="844" width="34" height="68"/>
+<rect class="cover" x="317" y="844" width="34" height="68"/>
+<rect class="cover" x="385" y="844" width="238" height="68"/>
+<rect class="cover" x="657" y="844" width="34" height="68"/>
+<rect class="cover" x="164" y="844" width="136" height="68"/>
+<rect class="cover" x="708" y="844" width="136" height="68"/>
+<rect class="cover" x="487" y="861" width="34" height="51"/>
+<rect class="cover" x="342.5" y="891.6" width="34" height="20.4"/>
+<rect class="cover" x="631.5" y="891.6" width="34" height="20.4"/>
+<rect class="cover" x="436" y="850.8" width="136" height="61.2"/>
+<rect class="isodark" x="374.8" y="910.3" width="20.4" height="1.7"/>
+<rect class="isodark" x="612.8" y="910.3" width="20.4" height="1.7"/>
+<rect class="poche" x="376.5" y="844" width="59.5" height="68"/>
+<rect class="poche" x="572" y="844" width="59.5" height="68"/>
+<rect class="isodark" x="436" y="844" width="136" height="6.8"/>
+<rect class="isodark" x="164" y="844" width="136" height="6.8"/>
+<rect class="poche" x="145.3" y="759" width="18.7" height="153"/>
+<rect class="isodark" x="708" y="844" width="136" height="6.8"/>
+<rect class="poche" x="844" y="759" width="18.7" height="153"/>
+<rect class="poche" x="114.7" y="708" width="15.3" height="204"/>
+<rect class="poche" x="878" y="708" width="15.3" height="204"/>
+<line x1="100.7" y1="912" x2="907.3" y2="912" stroke="#000" stroke-width="3.5"/>
+<line class="dim" x1="94.7" y1="776" x2="94.7" y2="912"/>
+<line class="dim" x1="90.7" y1="776" x2="98.7" y2="776"/>
+<line class="dim" x1="90.7" y1="912" x2="98.7" y2="912"/>
+<text class="dimtext" x="88.7" y="844" transform="rotate(-90 88.7 844)" text-anchor="middle">8.00 m</text>
+<line class="dim" x1="130" y1="938" x2="878" y2="938"/>
+<line class="dim" x1="130" y1="934" x2="130" y2="942"/>
+<line class="dim" x1="878" y1="934" x2="878" y2="942"/>
+<text class="dimtext" text-anchor="middle" x="504" y="933">44.0 m</text>
+<g>
+<rect class="frame" x="816" y="1007" width="336" height="84"/>
+<text class="small" x="824" y="1025">PROJECT</text>
+<text class="dimtext" x="926" y="1025">BREACHPOINT — 4v4 ARENA FPS</text>
+<text class="small" x="824" y="1045">DRAWING</text>
+<text class="dimtext" x="926" y="1045">ELEVATIONS + SECTION A-A</text>
+<line class="dim" x1="816" y1="1031" x2="1152" y2="1031"/>
+<text class="small" x="824" y="1065">ARENA / SHEET</text>
+<text class="dimtext" x="926" y="1065">breachpoint_aquarius   ·   S2</text>
+<line class="dim" x1="816" y1="1051" x2="1152" y2="1051"/>
+<text class="small" x="824" y="1085">SCALE / DATE</text>
+<text class="dimtext" x="926" y="1085">17 px/m   ·   2026-08-29   ·   REV B</text>
+<line class="dim" x1="816" y1="1071" x2="1152" y2="1071"/>
+</g>
+</svg>

@@ -1,0 +1,865 @@
+{
+ "arena_id": "breachpoint_aquarius",
+ "manifest_version": 1,
+ "units": "meters",
+ "schema_note": "Same schema as arena_manifest.json; footprints[] authoritative; EMITTED by Tools/blockout/gen_aquarius_manifest.py - edit that. STUDY RECREATION of 343 Industries' Aquarius (Halo Infinite) at blockout fidelity; proportions DERIVED pending traced/measured evidence (TICKET_BN29 channels a/b).",
+ "bounds": {
+  "x": 44.0,
+  "y": 32.0,
+  "z": 10.0
+ },
+ "rocket_node": {
+  "x": 22,
+  "y": 16,
+  "z": 4,
+  "elevation": "mid",
+  "landmark": "Top Mid",
+  "notes": "z=4 is topmid_deck's walk surface, bridge center - Aquarius' camo/OS slot, taken by BREACHPOINT's one power pickup (adaptation, TICKET_BN29). Overlooks both courts; timing stays BP09's DT_Weapons row."
+ },
+ "spawn_points": [
+  {
+   "id": "SP1",
+   "location": {
+    "x": 9,
+    "y": 12,
+    "z": 0
+   },
+   "facing": 0,
+   "pool": "team_a",
+   "scoring_hints": {
+    "min_dist_to_combat_m": 12,
+    "last_used_cooldown_s": 8
+   }
+  },
+  {
+   "id": "SP2",
+   "location": {
+    "x": 2.7,
+    "y": 20.3,
+    "z": 0
+   },
+   "facing": 0,
+   "pool": "team_a",
+   "scoring_hints": {
+    "min_dist_to_combat_m": 12,
+    "last_used_cooldown_s": 8
+   }
+  },
+  {
+   "id": "SP3",
+   "location": {
+    "x": 41.3,
+    "y": 20.3,
+    "z": 0
+   },
+   "facing": 180,
+   "pool": "team_b",
+   "scoring_hints": {
+    "min_dist_to_combat_m": 12,
+    "last_used_cooldown_s": 8
+   }
+  },
+  {
+   "id": "SP4",
+   "location": {
+    "x": 35.0,
+    "y": 12,
+    "z": 0
+   },
+   "facing": 180,
+   "pool": "team_b",
+   "scoring_hints": {
+    "min_dist_to_combat_m": 12,
+    "last_used_cooldown_s": 8
+   }
+  },
+  {
+   "id": "SP5",
+   "location": {
+    "x": 17,
+    "y": 9.2,
+    "z": 0
+   },
+   "facing": 45,
+   "pool": "neutral",
+   "scoring_hints": {
+    "min_dist_to_combat_m": 12,
+    "last_used_cooldown_s": 8
+   }
+  },
+  {
+   "id": "SP6",
+   "location": {
+    "x": 17,
+    "y": 22.8,
+    "z": 0
+   },
+   "facing": -45,
+   "pool": "neutral",
+   "scoring_hints": {
+    "min_dist_to_combat_m": 12,
+    "last_used_cooldown_s": 8
+   }
+  },
+  {
+   "id": "SP7",
+   "location": {
+    "x": 27.0,
+    "y": 22.8,
+    "z": 0
+   },
+   "facing": -135,
+   "pool": "neutral",
+   "scoring_hints": {
+    "min_dist_to_combat_m": 12,
+    "last_used_cooldown_s": 8
+   }
+  },
+  {
+   "id": "SP8",
+   "location": {
+    "x": 27.0,
+    "y": 9.2,
+    "z": 0
+   },
+   "facing": 135,
+   "pool": "neutral",
+   "scoring_hints": {
+    "min_dist_to_combat_m": 12,
+    "last_used_cooldown_s": 8
+   }
+  }
+ ],
+ "spawn_pools_note": "2 per base room + the four scored court neutrals, mirrored; base spawns face their open front.",
+ "landmarks": [
+  {
+   "name": "Yellow Base",
+   "purpose": "West spawn room, two storeys: roof deck yb_roof x[2,10] y[11,21] z[3.6,4] on walls x[0.9,2] y[11,21] z[0,9] (back), x[2,10] y[21,22] z[0,4] and x[2,10] y[10,11] z[0,4] (sides), stair x[3,5.5] y[12,15.5] z[0,4] inside. Open FRONT to the courtyard plus north/south exits around the side walls - three ways out (the article's rule: every room >= 2 exits).",
+   "footprints": [
+    {
+     "label": "yb_roof",
+     "x": [
+      2,
+      10
+     ],
+     "y": [
+      11,
+      21
+     ],
+     "z": [
+      3.6,
+      4
+     ],
+     "role": "deck slab; the base's upper deck, overlooks the courtyard; tactical rifle sits just before the stairs (documented)"
+    },
+    {
+     "label": "yb_back",
+     "x": [
+      0.9,
+      2
+     ],
+     "y": [
+      11,
+      21
+     ],
+     "z": [
+      0,
+      9.0
+     ],
+     "role": "solid; base back wall against the perimeter"
+    },
+    {
+     "label": "yb_wall_n",
+     "x": [
+      2,
+      10
+     ],
+     "y": [
+      21,
+      22
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "solid; base north wall - the gap OUTSIDE it at x[10,11] is the north exit toward Utility"
+    },
+    {
+     "label": "yb_wall_s",
+     "x": [
+      2,
+      10
+     ],
+     "y": [
+      10,
+      11
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "solid; base south wall - mirror gap is the south exit toward Refrigeration"
+    },
+    {
+     "label": "yb_stair",
+     "x": [
+      3,
+      5.5
+     ],
+     "y": [
+      12,
+      15.5
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "ground-to-deck stair volume inside the base"
+    }
+   ]
+  },
+  {
+   "name": "Blue Base",
+   "purpose": "East spawn, exact x-mirror: roof x[34,42] y[11,21] z[3.6,4], back wall x[42,43.1] y[11,21] z[0,9], side walls x[34,42] y[21,22] z[0,4] and x[34,42] y[10,11] z[0,4], stair x[38.5,41] y[12,15.5] z[0,4].",
+   "footprints": [
+    {
+     "label": "bb_roof",
+     "x": [
+      34.0,
+      42.0
+     ],
+     "y": [
+      11,
+      21
+     ],
+     "z": [
+      3.6,
+      4
+     ],
+     "role": "deck slab; the base's upper deck, overlooks the courtyard; tactical rifle sits just before the stairs (documented) (mirror)"
+    },
+    {
+     "label": "bb_back",
+     "x": [
+      42.0,
+      43.1
+     ],
+     "y": [
+      11,
+      21
+     ],
+     "z": [
+      0,
+      9.0
+     ],
+     "role": "solid; base back wall against the perimeter (mirror)"
+    },
+    {
+     "label": "bb_wall_n",
+     "x": [
+      34.0,
+      42.0
+     ],
+     "y": [
+      21,
+      22
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "solid; base north wall - the gap OUTSIDE it at x[10,11] is the north exit toward Utility (mirror)"
+    },
+    {
+     "label": "bb_wall_s",
+     "x": [
+      34.0,
+      42.0
+     ],
+     "y": [
+      10,
+      11
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "solid; base south wall - mirror gap is the south exit toward Refrigeration (mirror)"
+    },
+    {
+     "label": "bb_stair",
+     "x": [
+      38.5,
+      41.0
+     ],
+     "y": [
+      12,
+      15.5
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "ground-to-deck stair volume inside the base (mirror)"
+    }
+   ]
+  },
+  {
+   "name": "Courtyards",
+   "purpose": "The two open arenas in front of the bases: yellow court is the open floor x[11,19] y[8,24] at ground, blue court its mirror x[25,33]. No structure of their own - the surrounding walls shape them; cover crates carry the documented thruster pads.",
+   "footprints": [
+    {
+     "label": "court_marker_w",
+     "x": [
+      14.4,
+      15.6
+     ],
+     "y": [
+      15.4,
+      16.6
+     ],
+     "z": [
+      0,
+      0.1
+     ],
+     "role": "deck slab; nav marker only - the yellow court's centroid, kept sub-knee so it plays as open floor"
+    },
+    {
+     "label": "court_marker_e",
+     "x": [
+      28.4,
+      29.6
+     ],
+     "y": [
+      15.4,
+      16.6
+     ],
+     "z": [
+      0,
+      0.1
+     ],
+     "role": "deck slab; nav marker only - blue court centroid"
+    }
+   ]
+  },
+  {
+   "name": "Top Mid",
+   "purpose": "The elevated center bridge, the map's most important position: deck x[18,26] y[13.5,18.5] z[3.6,4] carried by tunnel walls x[18,26] y[18.5,19.5] z[0,3.6] and x[18,26] y[12.5,13.5] z[0,3.6]; BOTTOM MID is the open passage between them (y[13.5,18.5] at ground) - the one hallway that runs through both arenas. Court stairs x[14.5,18] y[14,18] z[0,4] (west) and x[26,29.5] y[14,18] z[0,4] (east) climb onto the bridge ends: the article's split-level junction - from either court you choose Bottom Mid (ground) or Top Mid (up), and the choice changes how the next fight is engaged. Power pickup at bridge center (BREACHPOINT adaptation: the rocket takes Aquarius' camo/OS slot).",
+   "footprints": [
+    {
+     "label": "topmid_deck",
+     "x": [
+      18,
+      26
+     ],
+     "y": [
+      13.5,
+      18.5
+     ],
+     "z": [
+      3.6,
+      4
+     ],
+     "role": "deck slab; the bridge - overlooks both courts, no cover on it"
+    },
+    {
+     "label": "topmid_wall_n",
+     "x": [
+      18,
+      26
+     ],
+     "y": [
+      18.5,
+      19.5
+     ],
+     "z": [
+      0,
+      3.6
+     ],
+     "role": "solid; Bottom Mid tunnel north wall"
+    },
+    {
+     "label": "topmid_wall_s",
+     "x": [
+      18,
+      26
+     ],
+     "y": [
+      12.5,
+      13.5
+     ],
+     "z": [
+      0,
+      3.6
+     ],
+     "role": "solid; Bottom Mid tunnel south wall"
+    },
+    {
+     "label": "stair_court_w",
+     "x": [
+      14.5,
+      18
+     ],
+     "y": [
+      14,
+      18
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "ground-to-mid stair volume; abuts the bridge at x=18"
+    },
+    {
+     "label": "stair_court_e",
+     "x": [
+      26,
+      29.5
+     ],
+     "y": [
+      14,
+      18
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "ground-to-mid stair volume; abuts the bridge at x=26"
+    }
+   ]
+  },
+  {
+   "name": "Hydro",
+   "purpose": "North side hallway linking Yellow Utility to Blue Utility along y[26,31]: inner wall segments x[11,13] y[25,26] z[0,4], x[15,29] y[25,26] z[0,4], x[31,33] y[25,26] z[0,4] leave a door into each court at x[13,15] and x[29,31]; columns x[17,19] y[27.5,29.5] z[0,4] and x[25,27] y[27.5,29.5] z[0,4] BREAK the hall's sightline into ~6 m reads (the article: the developers broke the side hallways up so players keep moving). Long-range pickup at the hall's exact center, on the floor.",
+   "footprints": [
+    {
+     "label": "hydro_wall_w",
+     "x": [
+      11,
+      13
+     ],
+     "y": [
+      25,
+      26
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "solid; hydro inner wall, west segment"
+    },
+    {
+     "label": "hydro_wall_m",
+     "x": [
+      15,
+      29
+     ],
+     "y": [
+      25,
+      26
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "solid; hydro inner wall, center segment"
+    },
+    {
+     "label": "hydro_wall_e",
+     "x": [
+      31,
+      33
+     ],
+     "y": [
+      25,
+      26
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "solid; hydro inner wall, east segment"
+    },
+    {
+     "label": "hydro_col_w",
+     "x": [
+      17,
+      19
+     ],
+     "y": [
+      27.5,
+      29.5
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "solid; sightline breaker column"
+    },
+    {
+     "label": "hydro_col_e",
+     "x": [
+      25,
+      27
+     ],
+     "y": [
+      27.5,
+      29.5
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "solid; sightline breaker column (mirror)"
+    }
+   ]
+  },
+  {
+   "name": "Utility Corners",
+   "purpose": "The corner rooms on the Hydro side, one per base (sidearm racks): shaped by the base north walls and corner piers x[8,10] y[27,29] z[0,4] (yellow) and x[34,36] y[27,29] z[0,4] (blue) - each utility corner keeps two exits: into its base's north door and into Hydro.",
+   "footprints": [
+    {
+     "label": "util_pier_w",
+     "x": [
+      8,
+      10
+     ],
+     "y": [
+      27,
+      29
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "solid; yellow utility corner pier"
+    },
+    {
+     "label": "util_pier_e",
+     "x": [
+      34,
+      36
+     ],
+     "y": [
+      27,
+      29
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "solid; blue utility corner pier (mirror)"
+    }
+   ]
+  },
+  {
+   "name": "Planters and Pump",
+   "purpose": "South side hallway linking the Refrigeration corners along y[1,6], roofed at its middle by PUMP: slab x[18,26] y[1,6] z[3.6,4] on piers x[18,19.5] y[2,5] z[0,3.6] and x[24.5,26] y[2,5] z[0,3.6] (the piers double as the lane's sightline breakers); pump stair x[14.5,17.5] y[1.5,4.5] z[0,4] climbs the west end (its mirror climbs the east). Inner wall segments x[11,13] y[6,7] z[0,4], x[15,29] y[6,7] z[0,4], x[31,33] y[6,7] z[0,4] leave court doors at x[13,15] and x[29,31]. Shotgun-tier pickup beneath Pump; grenades on top.",
+   "footprints": [
+    {
+     "label": "plant_wall_w",
+     "x": [
+      11,
+      13
+     ],
+     "y": [
+      6,
+      7
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "solid; planters inner wall, west segment"
+    },
+    {
+     "label": "plant_wall_m",
+     "x": [
+      15,
+      29
+     ],
+     "y": [
+      6,
+      7
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "solid; planters inner wall, center segment"
+    },
+    {
+     "label": "plant_wall_e",
+     "x": [
+      31,
+      33
+     ],
+     "y": [
+      6,
+      7
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "solid; planters inner wall, east segment"
+    },
+    {
+     "label": "pump_deck",
+     "x": [
+      18,
+      26
+     ],
+     "y": [
+      1,
+      6
+     ],
+     "z": [
+      3.6,
+      4
+     ],
+     "role": "deck slab; Pump - the raised structure over Planters"
+    },
+    {
+     "label": "pump_pier_w",
+     "x": [
+      18,
+      19.5
+     ],
+     "y": [
+      2,
+      5
+     ],
+     "z": [
+      0,
+      3.6
+     ],
+     "role": "solid; pump pier + lane sightline breaker"
+    },
+    {
+     "label": "pump_pier_e",
+     "x": [
+      24.5,
+      26
+     ],
+     "y": [
+      2,
+      5
+     ],
+     "z": [
+      0,
+      3.6
+     ],
+     "role": "solid; pump pier + lane sightline breaker (mirror)"
+    },
+    {
+     "label": "pump_stair_w",
+     "x": [
+      14.5,
+      17.5
+     ],
+     "y": [
+      1.5,
+      4.5
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "ground-to-mid stair volume; abuts Pump at x=18"
+    },
+    {
+     "label": "pump_stair_e",
+     "x": [
+      26.5,
+      29.5
+     ],
+     "y": [
+      1.5,
+      4.5
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "ground-to-mid stair volume; abuts Pump at x=26 (mirror)"
+    },
+    {
+     "label": "refrig_pier_w",
+     "x": [
+      8,
+      10
+     ],
+     "y": [
+      3,
+      5
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "solid; yellow refrigeration corner pier"
+    },
+    {
+     "label": "refrig_pier_e",
+     "x": [
+      34,
+      36
+     ],
+     "y": [
+      3,
+      5
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "solid; blue refrigeration corner pier (mirror)"
+    }
+   ]
+  }
+ ],
+ "grapple_points": [
+  {
+   "id": "GP1",
+   "location": {
+    "x": 18,
+    "y": 16,
+    "z": 4
+   },
+   "serves": "Top Mid (west lip)",
+   "approach": "south ground of the yellow court",
+   "notes": "west lip of topmid_deck"
+  },
+  {
+   "id": "GP2",
+   "location": {
+    "x": 26,
+    "y": 16,
+    "z": 4
+   },
+   "serves": "Top Mid (east lip)",
+   "approach": "south ground of the blue court",
+   "notes": "east lip of topmid_deck"
+  },
+  {
+   "id": "GP3",
+   "location": {
+    "x": 19,
+    "y": 6,
+    "z": 4
+   },
+   "serves": "Pump (west lip)",
+   "approach": "north ground lane",
+   "notes": "north-west lip of pump_deck"
+  },
+  {
+   "id": "GP4",
+   "location": {
+    "x": 25,
+    "y": 6,
+    "z": 4
+   },
+   "serves": "Pump (east lip)",
+   "approach": "north ground lane",
+   "notes": "north-east lip of pump_deck"
+  },
+  {
+   "id": "GP5",
+   "location": {
+    "x": 10,
+    "y": 16,
+    "z": 4
+   },
+   "serves": "Yellow Base deck",
+   "approach": "east ground (the court)",
+   "notes": "front lip of yb_roof"
+  },
+  {
+   "id": "GP6",
+   "location": {
+    "x": 34,
+    "y": 16,
+    "z": 4
+   },
+   "serves": "Blue Base deck",
+   "approach": "west ground (the court)",
+   "notes": "front lip of bb_roof (mirror)"
+  }
+ ],
+ "grapple_note": "BREACHPOINT adaptation: Aquarius serves thruster/clamber mobility; our Grappleshot (20 m, GDD 2.5) stands in. Every deck lip carries an anchor with a distinct ground approach; rises are one storey (4 m) so the stairs remain the primary route - the hook is the flank option, exactly the article's split-level junction doctrine.",
+ "cover": [
+  {
+   "location": {
+    "x": 13.5,
+    "y": 12,
+    "z": 0
+   },
+   "height_class": "chest"
+  },
+  {
+   "location": {
+    "x": 30.5,
+    "y": 12,
+    "z": 0
+   },
+   "height_class": "chest"
+  },
+  {
+   "location": {
+    "x": 13.5,
+    "y": 20,
+    "z": 0
+   },
+   "height_class": "chest"
+  },
+  {
+   "location": {
+    "x": 30.5,
+    "y": 20,
+    "z": 0
+   },
+   "height_class": "chest"
+  },
+  {
+   "location": {
+    "x": 22,
+    "y": 29.8,
+    "z": 0
+   },
+   "height_class": "chest"
+  },
+  {
+   "location": {
+    "x": 22,
+    "y": 21.5,
+    "z": 0
+   },
+   "height_class": "full"
+  },
+  {
+   "location": {
+    "x": 22,
+    "y": 10.5,
+    "z": 0
+   },
+   "height_class": "full"
+  }
+ ],
+ "cover_note": "Chest crates at the courts' documented thruster pads and mid-Hydro; full crates north and south of the Top Mid block so the court-to-court ground lines break outside the tunnel. Mirrored in x.",
+ "sightlines": {
+  "max_length_m": 35,
+  "notes": "Arena01 slab-test semantics. Longest designed lines: court-to-court through Bottom Mid ~=22 m; a side hall read between breakers ~=6-10 m (the article: side-hall sightlines deliberately broken); base-to-base blocked by the court stair volumes and the Top Mid block. Everything sits inside the GDD 35 m cap - 'mostly close range engagements' (Majmudar) and our cap agree; the feared 35 m ruling is NOT needed."
+ },
+ "hazards": [
+  "Top Mid carries no cover and is overlooked from nowhere - holding it after the grab is the trade (the documented 'most important position, exposed').",
+  "Bottom Mid is a blind 8 m tunnel with door-fights at both mouths.",
+  "Pump's top is reachable by two stairs and the hook; its plasma-grenade rack makes it a contested perch."
+ ],
+ "doubts": [
+  "All proportions are DERIVED (channel c) - the article's figures and the real map's Forge measurements upgrade them (TICKET_BN29 a/b).",
+  "Aquarius' real base interiors have a richer two-storey layout than one stair volume; blockout fidelity accepts this until channel b measures them.",
+  "Utility/Refrigeration corner rooms are shaped here by piers rather than full room shells; if traced figures show enclosed rooms, the generator grows walls."
+ ],
+ "landing_note": "STUDY RECREATION: Halo Infinite's Aquarius as BREACHPOINT's arena (TICKET_BN29, founder directive 29 Aug). Skeleton per Majmudar: three hallways, two arenas, split-level junctions, broken side-hall sightlines, two exits per room."
+}

@@ -111,7 +111,21 @@ STYLE = """
   .isoplate{fill:#f7f7f7;stroke:#000;stroke-width:1.6;stroke-linejoin:round}
 """
 
-LEVELS = [(0.0, "L0", "GROUND  ±0.00"), (4.0, "L1", "DECKS  +4.00"), (8.0, "L2", "CROSSING  +8.00")]
+LEVELS = [(0.0, "L0", "GROUND  ±0.00"), (4.0, "L1", "DECKS  +4.00"), (8.0, "L2", "UPPER  +8.00")]
+
+
+def levels_for(boxes):
+    """Only levels that HAVE something: a walkable plate at the level or a cut
+    at its eye plane. A two-level arena gets two panels, not an empty third
+    (the Aquarius recreation is 2 levels; Arena 02 was 3)."""
+    out = []
+    for lz, lid, lname in LEVELS:
+        cut = lz + 1.5
+        if lz == 0 or any(
+                (abs(b.z1 - lz) <= 0.45) or (b.z0 <= cut - 0.1 and b.z1 > cut)
+                for b in boxes if b.kind != "wall"):
+            out.append((lz, lid, lname))
+    return out
 
 
 def svg_open(w, h, title):
@@ -288,13 +302,15 @@ def sheet_plan(manifest, boxes, out_dir):
     S = 13.5
     pw = b["x"] * S
     gap, M = 120, 100
-    w = int(3 * pw + 2 * gap + 2 * M)
+    n_panels = len(levels_for(boxes))
+    w = int(n_panels * pw + (n_panels - 1) * gap + 2 * M)
     h = int(b["y"] * S + 320)
     o = svg_open(w, h, "FLOOR PLANS")
     o.append('<rect class="frame" x="10" y="10" width="%d" height="%d"/>' % (w - 20, h - 20))
     o.append('<text class="big" x="%d" y="46">FLOOR PLANS — ONE PER LEVEL · CUT 1.5 m ABOVE EACH · '
              'BLACK = CUT STRUCTURE · GREY = WALKABLE · DASHED = OVERHEAD</text>' % M)
-    for i, (lz, lid, lname) in enumerate(LEVELS):
+    shown = levels_for(boxes)
+    for i, (lz, lid, lname) in enumerate(shown):
         _level_panel(o, manifest, boxes, lz, lid, lname, M + i * (pw + gap), 100, S)
 
     # legend + north arrow + scale bar, bottom-left

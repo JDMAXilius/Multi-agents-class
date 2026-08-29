@@ -199,7 +199,7 @@
 <line class="dim" x1="729.85" y1="100" x2="737.85" y2="100"/>
 <line class="dim" x1="729.85" y1="640" x2="737.85" y2="640"/>
 <text class="dimtext" x="727.85" y="370" transform="rotate(-90 727.85 370)" text-anchor="middle">40.0 m</text>
-<text class="panel" x="1420" y="86">L2 — CROSSING  +8.00</text>
+<text class="panel" x="1420" y="86">L2 — UPPER  +8.00</text>
 <rect class="floor" x="1420" y="100" width="540" height="540" opacity="0.0"/>
 <line class="grid" x1="1420" y1="640" x2="1420" y2="100"/>
 <line class="grid" x1="1487.5" y1="640" x2="1487.5" y2="100"/>

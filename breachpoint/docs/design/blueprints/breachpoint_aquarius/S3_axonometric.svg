@@ -1,0 +1,219 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1339" height="1106" viewBox="0 0 1339 1106">
+<style>
+  .paper{fill:#ffffff}
+  .frame{fill:none;stroke:#000;stroke-width:2.5}
+  .grid{stroke:#000;stroke-width:0.3;opacity:0.13}
+  .poche{fill:#111111;stroke:none}
+  .floor{fill:#e8e8e8;stroke:#000;stroke-width:0.6}
+  .below{fill:none;stroke:#000;stroke-width:0.5;opacity:0.35}
+  .over{fill:none;stroke:#000;stroke-width:1.1;stroke-dasharray:6 3.5}
+  .cover{fill:#ffffff;stroke:#000;stroke-width:1.1}
+  .tread{stroke:#000;stroke-width:0.7}
+  .dim{stroke:#000;stroke-width:0.8}
+  .dimtext{font:10px monospace;fill:#000}
+  .label{font:bold 10.5px monospace;fill:#000;letter-spacing:0.5px}
+  .small{font:9px monospace;fill:#000}
+  .big{font:bold 16px monospace;fill:#000;letter-spacing:1px}
+  .panel{font:bold 13px monospace;fill:#000;letter-spacing:1px}
+  .datum{stroke:#000;stroke-width:0.8;stroke-dasharray:12 4 2 4}
+  .iso{fill:#ffffff;stroke:#000;stroke-width:1.1;stroke-linejoin:round}
+  .isotop{fill:#ededed;stroke:#000;stroke-width:1.1;stroke-linejoin:round}
+  .isodark{fill:#d4d4d4;stroke:#000;stroke-width:1.1;stroke-linejoin:round}
+  .isoplate{fill:#f7f7f7;stroke:#000;stroke-width:1.6;stroke-linejoin:round}
+</style>
+<rect class="paper" width="1339" height="1106"/>
+<title>AXONOMETRIC</title>
+<rect class="frame" x="10" y="10" width="1319" height="1086"/>
+<text class="big" x="110" y="52">3/4 AXONOMETRIC — ISO 30° FROM THE NORTH-EAST · PERIMETER WALL CUT TO 2 m</text>
+<polygon class="isodark" points="1229.6,691.2 752.937,966.4 752.937,955.2 1229.6,680"/>
+<polygon class="iso" points="110,595.2 752.937,966.4 752.937,955.2 110,584"/>
+<polygon class="isoplate" points="586.66,308.8 1229.6,680 752.937,955.2 110,584"/>
+<polyline fill="none" class="grid" points="586.66,328 143.255,584"/>
+<polyline fill="none" class="grid" points="655.942,368 212.537,624"/>
+<polyline fill="none" class="grid" points="725.224,408 281.819,664"/>
+<polyline fill="none" class="grid" points="794.506,448 351.101,704"/>
+<polyline fill="none" class="grid" points="863.789,488 420.384,744"/>
+<polyline fill="none" class="grid" points="933.071,528 489.666,784"/>
+<polyline fill="none" class="grid" points="1002.35,568 558.948,824"/>
+<polyline fill="none" class="grid" points="1071.63,608 628.23,864"/>
+<polyline fill="none" class="grid" points="1140.92,648 697.512,904"/>
+<polyline fill="none" class="grid" points="586.66,328 1196.34,680"/>
+<polyline fill="none" class="grid" points="517.378,368 1127.06,720"/>
+<polyline fill="none" class="grid" points="448.096,408 1057.78,760"/>
+<polyline fill="none" class="grid" points="378.814,448 988.496,800"/>
+<polyline fill="none" class="grid" points="309.532,488 919.214,840"/>
+<polyline fill="none" class="grid" points="240.25,528 849.932,880"/>
+<polyline fill="none" class="grid" points="170.968,568 780.65,920"/>
+<polygon class="isodark" points="1210.2,672 1196.34,680 1196.34,648 1210.2,640"/>
+<polygon class="iso" points="586.66,328 1196.34,680 1196.34,648 586.66,296"/>
+<polygon class="isodark" points="600.517,288 1210.2,640 1196.34,648 586.66,296"/>
+<polygon class="isodark" points="586.66,328 143.255,584 143.255,552 586.66,296"/>
+<polygon class="iso" points="129.399,576 143.255,584 143.255,552 129.399,544"/>
+<polygon class="isodark" points="572.804,288 586.66,296 143.255,552 129.399,544"/>
+<polygon class="isodark" points="752.937,936 739.081,944 739.081,912 752.937,904"/>
+<polygon class="iso" points="129.399,592 739.081,944 739.081,912 129.399,560"/>
+<polygon class="isodark" points="143.255,552 752.937,904 739.081,912 129.399,560"/>
+<polygon class="isodark" points="1210.2,688 766.794,944 766.794,912 1210.2,656"/>
+<polygon class="iso" points="752.937,936 766.794,944 766.794,912 752.937,904"/>
+<polygon class="isodark" points="1196.34,648 1210.2,656 766.794,912 752.937,904"/>
+<polygon class="isodark" points="683.655,432 655.942,448 655.942,384 683.655,368"/>
+<polygon class="iso" points="628.23,432 655.942,448 655.942,384 628.23,368"/>
+<polygon class="isotop" points="655.942,352 683.655,368 655.942,384 628.23,368"/>
+<polygon class="isodark" points="461.953,432 323.389,512 323.389,368 461.953,288"/>
+<polygon class="iso" points="308.147,503.2 323.389,512 323.389,368 308.147,359.2"/>
+<polygon class="isotop" points="446.711,279.2 461.953,288 323.389,368 308.147,359.2"/>
+<polygon class="isodark" points="586.66,488 572.804,496 572.804,432 586.66,424"/>
+<polygon class="iso" points="461.953,432 572.804,496 572.804,432 461.953,368"/>
+<polygon class="isotop" points="475.809,360 586.66,424 572.804,432 461.953,368"/>
+<polygon class="isodark" points="572.804,438.4 434.24,518.4 434.24,512 572.804,432"/>
+<polygon class="iso" points="323.389,454.4 434.24,518.4 434.24,512 323.389,448"/>
+<polygon class="isotop" points="461.953,368 572.804,432 434.24,512 323.389,448"/>
+<polygon class="isodark" points="496.594,468 448.096,496 448.096,432 496.594,404"/>
+<polygon class="iso" points="413.455,476 448.096,496 448.096,432 413.455,412"/>
+<polygon class="isotop" points="461.953,384 496.594,404 448.096,432 413.455,412"/>
+<polygon class="isodark" points="808.363,480 766.794,504 766.794,440 808.363,416"/>
+<polygon class="iso" points="725.224,480 766.794,504 766.794,440 725.224,416"/>
+<polygon class="isotop" points="766.794,392 808.363,416 766.794,440 725.224,416"/>
+<polygon class="isodark" points="683.655,480 669.799,488 669.799,424 683.655,416"/>
+<polygon class="iso" points="642.086,472 669.799,488 669.799,424 642.086,408"/>
+<polygon class="isotop" points="655.942,400 683.655,416 669.799,424 642.086,408"/>
+<polygon class="isodark" points="933.071,486.4 863.789,526.4 863.789,520 933.071,480"/>
+<polygon class="iso" points="752.937,462.4 863.789,526.4 863.789,520 752.937,456"/>
+<polygon class="isotop" points="822.219,416 933.071,480 863.789,520 752.937,456"/>
+<polygon class="isodark" points="829.147,500 787.578,524 787.578,466.4 829.147,442.4"/>
+<polygon class="iso" points="766.794,512 787.578,524 787.578,466.4 766.794,454.4"/>
+<polygon class="isotop" points="808.363,430.4 829.147,442.4 787.578,466.4 766.794,454.4"/>
+<polygon class="isodark" points="905.358,608 891.501,616 891.501,552 905.358,544"/>
+<polygon class="iso" points="697.512,504 891.501,616 891.501,552 697.512,440"/>
+<polygon class="isotop" points="711.368,432 905.358,544 891.501,552 697.512,440"/>
+<polygon class="isodark" points="434.24,576 420.384,584 420.384,520 434.24,512"/>
+<polygon class="iso" points="309.532,520 420.384,584 420.384,520 309.532,456"/>
+<polygon class="isotop" points="323.389,448 434.24,512 420.384,520 309.532,456"/>
+<polygon class="isodark" points="635.158,532 607.445,548 607.445,528.8 635.158,512.8"/>
+<polygon class="iso" points="579.732,532 607.445,548 607.445,528.8 579.732,512.8"/>
+<polygon class="isotop" points="607.445,496.8 635.158,512.8 607.445,528.8 579.732,512.8"/>
+<polygon class="isodark" points="919.214,552 877.645,576 877.645,518.4 919.214,494.4"/>
+<polygon class="iso" points="856.86,564 877.645,576 877.645,518.4 856.86,506.4"/>
+<polygon class="isotop" points="898.43,482.4 919.214,494.4 877.645,518.4 856.86,506.4"/>
+<polygon class="isodark" points="974.64,576 933.071,600 933.071,536 974.64,512"/>
+<polygon class="iso" points="891.501,576 933.071,600 933.071,536 891.501,512"/>
+<polygon class="isotop" points="933.071,488 974.64,512 933.071,536 891.501,512"/>
+<polygon class="isodark" points="642.086,584 586.66,616 586.66,552 642.086,520"/>
+<polygon class="iso" points="538.163,588 586.66,616 586.66,552 538.163,524"/>
+<polygon class="isotop" points="593.589,492 642.086,520 586.66,552 538.163,524"/>
+<polygon class="isodark" points="589.432,576 572.804,585.6 572.804,584 589.432,574.4"/>
+<polygon class="iso" points="556.176,576 572.804,585.6 572.804,584 556.176,574.4"/>
+<polygon class="isotop" points="572.804,564.8 589.432,574.4 572.804,584 556.176,574.4"/>
+<polygon class="isodark" points="773.722,636 759.865,644 759.865,586.4 773.722,578.4"/>
+<polygon class="iso" points="649.014,580 759.865,644 759.865,586.4 649.014,522.4"/>
+<polygon class="isotop" points="662.871,514.4 773.722,578.4 759.865,586.4 649.014,522.4"/>
+<polygon class="isodark" points="773.722,588 746.009,604 746.009,556 773.722,540"/>
+<polygon class="iso" points="718.296,588 746.009,604 746.009,556 718.296,540"/>
+<polygon class="isotop" points="746.009,524 773.722,540 746.009,556 718.296,540"/>
+<polygon class="isodark" points="524.307,596 496.594,612 496.594,592.8 524.307,576.8"/>
+<polygon class="iso" points="468.881,596 496.594,612 496.594,592.8 468.881,576.8"/>
+<polygon class="isotop" points="496.594,560.8 524.307,576.8 496.594,592.8 468.881,576.8"/>
+<polygon class="isodark" points="759.865,586.4 690.583,626.4 690.583,620 759.865,580"/>
+<polygon class="iso" points="579.732,562.4 690.583,626.4 690.583,620 579.732,556"/>
+<polygon class="isotop" points="649.014,516 759.865,580 690.583,620 579.732,556"/>
+<polygon class="isodark" points="351.101,624 323.389,640 323.389,576 351.101,560"/>
+<polygon class="iso" points="295.676,624 323.389,640 323.389,576 295.676,560"/>
+<polygon class="isotop" points="323.389,544 351.101,560 323.389,576 295.676,560"/>
+<polygon class="isodark" points="420.384,632 406.527,640 406.527,576 420.384,568"/>
+<polygon class="iso" points="378.814,624 406.527,640 406.527,576 378.814,560"/>
+<polygon class="isotop" points="392.671,552 420.384,568 406.527,576 378.814,560"/>
+<polygon class="isodark" points="690.583,684 676.727,692 676.727,634.4 690.583,626.4"/>
+<polygon class="iso" points="565.876,628 676.727,692 676.727,634.4 565.876,570.4"/>
+<polygon class="isotop" points="579.732,562.4 690.583,626.4 676.727,634.4 565.876,570.4"/>
+<polygon class="isodark" points="960.783,640 946.927,648 946.927,584 960.783,576"/>
+<polygon class="iso" points="919.214,632 946.927,648 946.927,584 919.214,568"/>
+<polygon class="isotop" points="933.071,560 960.783,576 946.927,584 919.214,568"/>
+<polygon class="isodark" points="1043.92,640 1016.21,656 1016.21,592 1043.92,576"/>
+<polygon class="iso" points="988.496,640 1016.21,656 1016.21,592 988.496,576"/>
+<polygon class="isotop" points="1016.21,560 1043.92,576 1016.21,592 988.496,576"/>
+<polygon class="isodark" points="801.435,676 746.009,708 746.009,644 801.435,612"/>
+<polygon class="iso" points="697.512,680 746.009,708 746.009,644 697.512,616"/>
+<polygon class="isotop" points="752.937,584 801.435,612 746.009,644 697.512,616"/>
+<polygon class="isodark" points="642.086,760 628.23,768 628.23,704 642.086,696"/>
+<polygon class="iso" points="434.24,656 628.23,768 628.23,704 434.24,592"/>
+<polygon class="isotop" points="448.096,584 642.086,696 628.23,704 434.24,592"/>
+<polygon class="isodark" points="870.717,668 843.004,684 843.004,664.8 870.717,648.8"/>
+<polygon class="iso" points="815.291,668 843.004,684 843.004,664.8 815.291,648.8"/>
+<polygon class="isotop" points="843.004,632.8 870.717,648.8 843.004,664.8 815.291,648.8"/>
+<polygon class="isodark" points="621.301,676 593.589,692 593.589,644 621.301,628"/>
+<polygon class="iso" points="565.876,676 593.589,692 593.589,644 565.876,628"/>
+<polygon class="isotop" points="593.589,612 621.301,628 593.589,644 565.876,628"/>
+<polygon class="isodark" points="783.421,688 766.794,697.6 766.794,696 783.421,686.4"/>
+<polygon class="iso" points="750.166,688 766.794,697.6 766.794,696 750.166,686.4"/>
+<polygon class="isotop" points="766.794,676.8 783.421,686.4 766.794,696 750.166,686.4"/>
+<polygon class="isodark" points="1030.07,744 1016.21,752 1016.21,688 1030.07,680"/>
+<polygon class="iso" points="905.358,688 1016.21,752 1016.21,688 905.358,624"/>
+<polygon class="isotop" points="919.214,616 1030.07,680 1016.21,688 905.358,624"/>
+<polygon class="isodark" points="468.881,700 441.168,716 441.168,652 468.881,636"/>
+<polygon class="iso" points="413.455,700 441.168,716 441.168,652 413.455,636"/>
+<polygon class="isotop" points="441.168,620 468.881,636 441.168,652 413.455,636"/>
+<polygon class="isodark" points="1016.21,694.4 877.645,774.4 877.645,768 1016.21,688"/>
+<polygon class="iso" points="766.794,710.4 877.645,774.4 877.645,768 766.794,704"/>
+<polygon class="isotop" points="905.358,624 1016.21,688 877.645,768 766.794,704"/>
+<polygon class="isodark" points="759.865,732 732.153,748 732.153,728.8 759.865,712.8"/>
+<polygon class="iso" points="704.44,732 732.153,748 732.153,728.8 704.44,712.8"/>
+<polygon class="isotop" points="732.153,696.8 759.865,712.8 732.153,728.8 704.44,712.8"/>
+<polygon class="isodark" points="506.293,742.4 478.58,758.4 478.58,739.2 506.293,723.2"/>
+<polygon class="iso" points="450.868,742.4 478.58,758.4 478.58,739.2 450.868,723.2"/>
+<polygon class="isotop" points="478.58,707.2 506.293,723.2 478.58,739.2 450.868,723.2"/>
+<polygon class="isodark" points="988.496,752 939.999,780 939.999,716 988.496,688"/>
+<polygon class="iso" points="905.358,760 939.999,780 939.999,716 905.358,696"/>
+<polygon class="isotop" points="953.855,668 988.496,688 939.999,716 905.358,696"/>
+<polygon class="isodark" points="579.732,764 552.019,780 552.019,716 579.732,700"/>
+<polygon class="iso" points="524.307,764 552.019,780 552.019,716 524.307,700"/>
+<polygon class="isotop" points="552.019,684 579.732,700 552.019,716 524.307,700"/>
+<polygon class="isodark" points="1031.45,760.8 892.887,840.8 892.887,696.8 1031.45,616.8"/>
+<polygon class="iso" points="877.645,832 892.887,840.8 892.887,696.8 877.645,688"/>
+<polygon class="isotop" points="1016.21,608 1031.45,616.8 892.887,696.8 877.645,688"/>
+<polygon class="isodark" points="877.645,832 863.789,840 863.789,776 877.645,768"/>
+<polygon class="iso" points="752.937,776 863.789,840 863.789,776 752.937,712"/>
+<polygon class="isotop" points="766.794,704 877.645,768 863.789,776 752.937,712"/>
+<polygon class="isodark" points="697.512,792 683.655,800 683.655,736 697.512,728"/>
+<polygon class="iso" points="655.942,784 683.655,800 683.655,736 655.942,720"/>
+<polygon class="isotop" points="669.799,712 697.512,728 683.655,736 655.942,720"/>
+<polygon class="isodark" points="711.368,832 683.655,848 683.655,784 711.368,768"/>
+<polygon class="iso" points="655.942,832 683.655,848 683.655,784 655.942,768"/>
+<polygon class="isotop" points="683.655,752 711.368,768 683.655,784 655.942,768"/>
+<circle cx="385.05" cy="323.6" r="2.2"/>
+<line class="dim" x1="385.05" y1="323.6" x2="385.05" y2="287.6"/>
+<text class="label" x="385.05" y="283.6" text-anchor="middle">YELLOW BASE</text>
+<circle cx="954.548" cy="652.4" r="2.2"/>
+<line class="dim" x1="954.548" y1="652.4" x2="954.548" y2="616.4"/>
+<text class="label" x="954.548" y="612.4" text-anchor="middle">BLUE BASE</text>
+<circle cx="572.804" cy="574.4" r="2.2"/>
+<line class="dim" x1="572.804" y1="574.4" x2="572.804" y2="538.4"/>
+<text class="label" x="572.804" y="534.4" text-anchor="middle">COURTYARDS</text>
+<circle cx="669.799" cy="568" r="2.2"/>
+<line class="dim" x1="669.799" y1="568" x2="669.799" y2="532"/>
+<text class="label" x="669.799" y="528" text-anchor="middle">TOP MID</text>
+<circle cx="399.599" cy="564" r="2.2"/>
+<line class="dim" x1="399.599" y1="564" x2="399.599" y2="528"/>
+<text class="label" x="399.599" y="524" text-anchor="middle">HYDRO</text>
+<circle cx="323.389" cy="560" r="2.2"/>
+<line class="dim" x1="323.389" y1="560" x2="323.389" y2="524"/>
+<text class="label" x="323.389" y="520" text-anchor="middle">UTILITY CORNERS</text>
+<circle cx="662.871" cy="412" r="2.2"/>
+<line class="dim" x1="662.871" y1="412" x2="662.871" y2="376"/>
+<text class="label" x="662.871" y="372" text-anchor="middle">PLANTERS AND PUMP</text>
+<polygon class="cover" points="669.799,559 664.509,575.281 678.358,565.219 661.239,565.219 675.089,575.281"/>
+<text class="small" x="681.799" y="571">ROCKET</text>
+<g>
+<rect class="frame" x="987" y="1006" width="336" height="84"/>
+<text class="small" x="995" y="1024">PROJECT</text>
+<text class="dimtext" x="1097" y="1024">BREACHPOINT — 4v4 ARENA FPS</text>
+<text class="small" x="995" y="1044">DRAWING</text>
+<text class="dimtext" x="1097" y="1044">3/4 AXONOMETRIC</text>
+<line class="dim" x1="987" y1="1030" x2="1323" y2="1030"/>
+<text class="small" x="995" y="1064">ARENA / SHEET</text>
+<text class="dimtext" x="1097" y="1064">breachpoint_aquarius   ·   S3</text>
+<line class="dim" x1="987" y1="1050" x2="1323" y2="1050"/>
+<text class="small" x="995" y="1084">SCALE / DATE</text>
+<text class="dimtext" x="1097" y="1084">iso 30 deg   ·   2026-08-29   ·   REV B</text>
+<line class="dim" x1="987" y1="1070" x2="1323" y2="1070"/>
+</g>
+</svg>

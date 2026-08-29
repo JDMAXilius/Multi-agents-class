@@ -1,0 +1,373 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1508" height="752" viewBox="0 0 1508 752">
+<style>
+  .paper{fill:#ffffff}
+  .frame{fill:none;stroke:#000;stroke-width:2.5}
+  .grid{stroke:#000;stroke-width:0.3;opacity:0.13}
+  .poche{fill:#111111;stroke:none}
+  .floor{fill:#e8e8e8;stroke:#000;stroke-width:0.6}
+  .below{fill:none;stroke:#000;stroke-width:0.5;opacity:0.35}
+  .over{fill:none;stroke:#000;stroke-width:1.1;stroke-dasharray:6 3.5}
+  .cover{fill:#ffffff;stroke:#000;stroke-width:1.1}
+  .tread{stroke:#000;stroke-width:0.7}
+  .dim{stroke:#000;stroke-width:0.8}
+  .dimtext{font:10px monospace;fill:#000}
+  .label{font:bold 10.5px monospace;fill:#000;letter-spacing:0.5px}
+  .small{font:9px monospace;fill:#000}
+  .big{font:bold 16px monospace;fill:#000;letter-spacing:1px}
+  .panel{font:bold 13px monospace;fill:#000;letter-spacing:1px}
+  .datum{stroke:#000;stroke-width:0.8;stroke-dasharray:12 4 2 4}
+  .iso{fill:#ffffff;stroke:#000;stroke-width:1.1;stroke-linejoin:round}
+  .isotop{fill:#ededed;stroke:#000;stroke-width:1.1;stroke-linejoin:round}
+  .isodark{fill:#d4d4d4;stroke:#000;stroke-width:1.1;stroke-linejoin:round}
+  .isoplate{fill:#f7f7f7;stroke:#000;stroke-width:1.6;stroke-linejoin:round}
+</style>
+<rect class="paper" width="1508" height="752"/>
+<title>FLOOR PLANS</title>
+<rect class="frame" x="10" y="10" width="1488" height="732"/>
+<text class="big" x="100" y="46">FLOOR PLANS — ONE PER LEVEL · CUT 1.5 m ABOVE EACH · BLACK = CUT STRUCTURE · GREY = WALKABLE · DASHED = OVERHEAD</text>
+<text class="panel" x="100" y="86">L0 — GROUND  ±0.00</text>
+<rect class="floor" x="100" y="100" width="594" height="432" opacity="0.55"/>
+<line class="grid" x1="100" y1="532" x2="100" y2="100"/>
+<line class="grid" x1="167.5" y1="532" x2="167.5" y2="100"/>
+<line class="grid" x1="235" y1="532" x2="235" y2="100"/>
+<line class="grid" x1="302.5" y1="532" x2="302.5" y2="100"/>
+<line class="grid" x1="370" y1="532" x2="370" y2="100"/>
+<line class="grid" x1="437.5" y1="532" x2="437.5" y2="100"/>
+<line class="grid" x1="505" y1="532" x2="505" y2="100"/>
+<line class="grid" x1="572.5" y1="532" x2="572.5" y2="100"/>
+<line class="grid" x1="640" y1="532" x2="640" y2="100"/>
+<line class="grid" x1="100" y1="532" x2="694" y2="532"/>
+<line class="grid" x1="100" y1="464.5" x2="694" y2="464.5"/>
+<line class="grid" x1="100" y1="397" x2="694" y2="397"/>
+<line class="grid" x1="100" y1="329.5" x2="694" y2="329.5"/>
+<line class="grid" x1="100" y1="262" x2="694" y2="262"/>
+<line class="grid" x1="100" y1="194.5" x2="694" y2="194.5"/>
+<line class="grid" x1="100" y1="127" x2="694" y2="127"/>
+<rect class="floor" x="294.4" y="307.9" width="16.2" height="16.2"/>
+<rect class="floor" x="483.4" y="307.9" width="16.2" height="16.2"/>
+<rect class="over" x="127" y="248.5" width="108" height="135"/>
+<rect class="over" x="559" y="248.5" width="108" height="135"/>
+<rect class="over" x="343" y="282.25" width="108" height="67.5"/>
+<rect class="over" x="343" y="451" width="108" height="67.5"/>
+<rect class="poche" x="112.15" y="248.5" width="14.85" height="135"/>
+<rect class="poche" x="127" y="235" width="108" height="13.5"/>
+<rect class="poche" x="127" y="383.5" width="108" height="13.5"/>
+<rect class="poche" x="667" y="248.5" width="14.85" height="135"/>
+<rect class="poche" x="559" y="235" width="108" height="13.5"/>
+<rect class="poche" x="559" y="383.5" width="108" height="13.5"/>
+<rect class="poche" x="343" y="268.75" width="108" height="13.5"/>
+<rect class="poche" x="343" y="349.75" width="108" height="13.5"/>
+<rect class="poche" x="248.5" y="181" width="27" height="13.5"/>
+<rect class="poche" x="302.5" y="181" width="189" height="13.5"/>
+<rect class="poche" x="518.5" y="181" width="27" height="13.5"/>
+<rect class="poche" x="329.5" y="133.75" width="27" height="27"/>
+<rect class="poche" x="437.5" y="133.75" width="27" height="27"/>
+<rect class="poche" x="208" y="140.5" width="27" height="27"/>
+<rect class="poche" x="559" y="140.5" width="27" height="27"/>
+<rect class="poche" x="248.5" y="437.5" width="27" height="13.5"/>
+<rect class="poche" x="302.5" y="437.5" width="189" height="13.5"/>
+<rect class="poche" x="518.5" y="437.5" width="27" height="13.5"/>
+<rect class="poche" x="343" y="464.5" width="20.25" height="40.5"/>
+<rect class="poche" x="430.75" y="464.5" width="20.25" height="40.5"/>
+<rect class="poche" x="208" y="464.5" width="27" height="27"/>
+<rect class="poche" x="559" y="464.5" width="27" height="27"/>
+<rect class="poche" x="383.5" y="228.25" width="27" height="27"/>
+<rect class="poche" x="383.5" y="376.75" width="27" height="27"/>
+<rect class="poche" x="87.85" y="87.85" width="618.3" height="12.15"/>
+<rect class="poche" x="87.85" y="532" width="618.3" height="12.15"/>
+<rect class="poche" x="87.85" y="100" width="12.15" height="432"/>
+<rect class="poche" x="694" y="100" width="12.15" height="432"/>
+<line class="tread" x1="140.5" y1="364.094" x2="174.25" y2="364.094"/>
+<line class="tread" x1="140.5" y1="358.188" x2="174.25" y2="358.188"/>
+<line class="tread" x1="140.5" y1="352.281" x2="174.25" y2="352.281"/>
+<line class="tread" x1="140.5" y1="346.375" x2="174.25" y2="346.375"/>
+<line class="tread" x1="140.5" y1="340.469" x2="174.25" y2="340.469"/>
+<line class="tread" x1="140.5" y1="334.562" x2="174.25" y2="334.562"/>
+<line class="tread" x1="140.5" y1="328.656" x2="174.25" y2="328.656"/>
+<rect class="cover" fill="none" x="140.5" y="322.75" width="33.75" height="47.25"/>
+<text class="small" x="157.375" y="349.375" text-anchor="middle">UP</text>
+<line class="tread" x1="619.75" y1="364.094" x2="653.5" y2="364.094"/>
+<line class="tread" x1="619.75" y1="358.188" x2="653.5" y2="358.188"/>
+<line class="tread" x1="619.75" y1="352.281" x2="653.5" y2="352.281"/>
+<line class="tread" x1="619.75" y1="346.375" x2="653.5" y2="346.375"/>
+<line class="tread" x1="619.75" y1="340.469" x2="653.5" y2="340.469"/>
+<line class="tread" x1="619.75" y1="334.562" x2="653.5" y2="334.562"/>
+<line class="tread" x1="619.75" y1="328.656" x2="653.5" y2="328.656"/>
+<rect class="cover" fill="none" x="619.75" y="322.75" width="33.75" height="47.25"/>
+<text class="small" x="636.625" y="349.375" text-anchor="middle">UP</text>
+<line class="tread" x1="295.75" y1="336.25" x2="343" y2="336.25"/>
+<line class="tread" x1="295.75" y1="329.5" x2="343" y2="329.5"/>
+<line class="tread" x1="295.75" y1="322.75" x2="343" y2="322.75"/>
+<line class="tread" x1="295.75" y1="316" x2="343" y2="316"/>
+<line class="tread" x1="295.75" y1="309.25" x2="343" y2="309.25"/>
+<line class="tread" x1="295.75" y1="302.5" x2="343" y2="302.5"/>
+<line class="tread" x1="295.75" y1="295.75" x2="343" y2="295.75"/>
+<rect class="cover" fill="none" x="295.75" y="289" width="47.25" height="54"/>
+<text class="small" x="319.375" y="319" text-anchor="middle">UP</text>
+<line class="tread" x1="451" y1="336.25" x2="498.25" y2="336.25"/>
+<line class="tread" x1="451" y1="329.5" x2="498.25" y2="329.5"/>
+<line class="tread" x1="451" y1="322.75" x2="498.25" y2="322.75"/>
+<line class="tread" x1="451" y1="316" x2="498.25" y2="316"/>
+<line class="tread" x1="451" y1="309.25" x2="498.25" y2="309.25"/>
+<line class="tread" x1="451" y1="302.5" x2="498.25" y2="302.5"/>
+<line class="tread" x1="451" y1="295.75" x2="498.25" y2="295.75"/>
+<rect class="cover" fill="none" x="451" y="289" width="47.25" height="54"/>
+<text class="small" x="474.625" y="319" text-anchor="middle">UP</text>
+<line class="tread" x1="300.812" y1="471.25" x2="300.812" y2="511.75"/>
+<line class="tread" x1="305.875" y1="471.25" x2="305.875" y2="511.75"/>
+<line class="tread" x1="310.938" y1="471.25" x2="310.938" y2="511.75"/>
+<line class="tread" x1="316" y1="471.25" x2="316" y2="511.75"/>
+<line class="tread" x1="321.062" y1="471.25" x2="321.062" y2="511.75"/>
+<line class="tread" x1="326.125" y1="471.25" x2="326.125" y2="511.75"/>
+<line class="tread" x1="331.188" y1="471.25" x2="331.188" y2="511.75"/>
+<rect class="cover" fill="none" x="295.75" y="471.25" width="40.5" height="40.5"/>
+<text class="small" x="316" y="494.5" text-anchor="middle">UP</text>
+<line class="tread" x1="462.812" y1="471.25" x2="462.812" y2="511.75"/>
+<line class="tread" x1="467.875" y1="471.25" x2="467.875" y2="511.75"/>
+<line class="tread" x1="472.938" y1="471.25" x2="472.938" y2="511.75"/>
+<line class="tread" x1="478" y1="471.25" x2="478" y2="511.75"/>
+<line class="tread" x1="483.062" y1="471.25" x2="483.062" y2="511.75"/>
+<line class="tread" x1="488.125" y1="471.25" x2="488.125" y2="511.75"/>
+<line class="tread" x1="493.188" y1="471.25" x2="493.188" y2="511.75"/>
+<rect class="cover" fill="none" x="457.75" y="471.25" width="40.5" height="40.5"/>
+<text class="small" x="478" y="494.5" text-anchor="middle">UP</text>
+<circle class="cover" cx="221.5" cy="370" r="7.5"/>
+<line class="dim" x1="221.5" y1="370" x2="233.5" y2="370"/>
+<text class="small" text-anchor="middle" x="221.5" y="373">1</text>
+<circle class="cover" cx="136.45" cy="257.95" r="7.5"/>
+<line class="dim" x1="136.45" y1="257.95" x2="148.45" y2="257.95"/>
+<text class="small" text-anchor="middle" x="136.45" y="260.95">2</text>
+<circle class="cover" cx="657.55" cy="257.95" r="7.5"/>
+<line class="dim" x1="657.55" y1="257.95" x2="645.55" y2="257.95"/>
+<text class="small" text-anchor="middle" x="657.55" y="260.95">3</text>
+<circle class="cover" cx="572.5" cy="370" r="7.5"/>
+<line class="dim" x1="572.5" y1="370" x2="560.5" y2="370"/>
+<text class="small" text-anchor="middle" x="572.5" y="373">4</text>
+<circle class="cover" cx="329.5" cy="407.8" r="7.5"/>
+<line class="dim" x1="329.5" y1="407.8" x2="337.985" y2="399.315"/>
+<text class="small" text-anchor="middle" x="329.5" y="410.8">5</text>
+<circle class="cover" cx="329.5" cy="224.2" r="7.5"/>
+<line class="dim" x1="329.5" y1="224.2" x2="337.985" y2="232.685"/>
+<text class="small" text-anchor="middle" x="329.5" y="227.2">6</text>
+<circle class="cover" cx="464.5" cy="224.2" r="7.5"/>
+<line class="dim" x1="464.5" y1="224.2" x2="456.015" y2="232.685"/>
+<text class="small" text-anchor="middle" x="464.5" y="227.2">7</text>
+<circle class="cover" cx="464.5" cy="407.8" r="7.5"/>
+<line class="dim" x1="464.5" y1="407.8" x2="456.015" y2="399.315"/>
+<text class="small" text-anchor="middle" x="464.5" y="410.8">8</text>
+<text class="label" text-anchor="middle" x="159.738" y="227">YELLOW BASE</text>
+<text class="label" text-anchor="middle" x="634.263" y="227">BLUE BASE</text>
+<text class="label" text-anchor="middle" x="397" y="299.9">COURTYARDS</text>
+<text class="label" text-anchor="middle" x="397" y="260.75">TOP MID</text>
+<text class="label" text-anchor="middle" x="397" y="125.75">HYDRO</text>
+<text class="label" text-anchor="middle" x="397" y="148.5">UTILITY CORNERS</text>
+<text class="label" text-anchor="middle" x="397" y="429.5">PLANTERS AND PUMP</text>
+<line class="dim" x1="100" y1="75.85" x2="694" y2="75.85"/>
+<line class="dim" x1="100" y1="71.85" x2="100" y2="79.85"/>
+<line class="dim" x1="694" y1="71.85" x2="694" y2="79.85"/>
+<text class="dimtext" text-anchor="middle" x="397" y="70.85">44.0 m</text>
+<line class="dim" x1="73.85" y1="100" x2="73.85" y2="532"/>
+<line class="dim" x1="69.85" y1="100" x2="77.85" y2="100"/>
+<line class="dim" x1="69.85" y1="532" x2="77.85" y2="532"/>
+<text class="dimtext" x="67.85" y="316" transform="rotate(-90 67.85 316)" text-anchor="middle">32.0 m</text>
+<text class="panel" x="814" y="86">L1 — DECKS  +4.00</text>
+<rect class="floor" x="814" y="100" width="594" height="432" opacity="0.0"/>
+<line class="grid" x1="814" y1="532" x2="814" y2="100"/>
+<line class="grid" x1="881.5" y1="532" x2="881.5" y2="100"/>
+<line class="grid" x1="949" y1="532" x2="949" y2="100"/>
+<line class="grid" x1="1016.5" y1="532" x2="1016.5" y2="100"/>
+<line class="grid" x1="1084" y1="532" x2="1084" y2="100"/>
+<line class="grid" x1="1151.5" y1="532" x2="1151.5" y2="100"/>
+<line class="grid" x1="1219" y1="532" x2="1219" y2="100"/>
+<line class="grid" x1="1286.5" y1="532" x2="1286.5" y2="100"/>
+<line class="grid" x1="1354" y1="532" x2="1354" y2="100"/>
+<line class="grid" x1="814" y1="532" x2="1408" y2="532"/>
+<line class="grid" x1="814" y1="464.5" x2="1408" y2="464.5"/>
+<line class="grid" x1="814" y1="397" x2="1408" y2="397"/>
+<line class="grid" x1="814" y1="329.5" x2="1408" y2="329.5"/>
+<line class="grid" x1="814" y1="262" x2="1408" y2="262"/>
+<line class="grid" x1="814" y1="194.5" x2="1408" y2="194.5"/>
+<line class="grid" x1="814" y1="127" x2="1408" y2="127"/>
+<rect class="below" x="1008.4" y="307.9" width="16.2" height="16.2"/>
+<rect class="below" x="1197.4" y="307.9" width="16.2" height="16.2"/>
+<rect class="below" x="982.75" y="356.5" width="27" height="27"/>
+<rect class="below" x="1212.25" y="356.5" width="27" height="27"/>
+<rect class="below" x="982.75" y="248.5" width="27" height="27"/>
+<rect class="below" x="1212.25" y="248.5" width="27" height="27"/>
+<rect class="below" x="1097.5" y="116.2" width="27" height="27"/>
+<rect class="below" x="1097.5" y="228.25" width="27" height="27"/>
+<rect class="below" x="1097.5" y="376.75" width="27" height="27"/>
+<rect class="floor" x="1057" y="268.75" width="108" height="13.5"/>
+<rect class="floor" x="1057" y="349.75" width="108" height="13.5"/>
+<rect class="floor" x="1057" y="464.5" width="20.25" height="40.5"/>
+<rect class="floor" x="1144.75" y="464.5" width="20.25" height="40.5"/>
+<rect class="floor" x="841" y="248.5" width="108" height="135"/>
+<rect class="floor" x="841" y="235" width="108" height="13.5"/>
+<rect class="floor" x="841" y="383.5" width="108" height="13.5"/>
+<rect class="floor" x="1273" y="248.5" width="108" height="135"/>
+<rect class="floor" x="1273" y="235" width="108" height="13.5"/>
+<rect class="floor" x="1273" y="383.5" width="108" height="13.5"/>
+<rect class="floor" x="1057" y="282.25" width="108" height="67.5"/>
+<rect class="floor" x="962.5" y="181" width="27" height="13.5"/>
+<rect class="floor" x="1016.5" y="181" width="189" height="13.5"/>
+<rect class="floor" x="1232.5" y="181" width="27" height="13.5"/>
+<rect class="floor" x="1043.5" y="133.75" width="27" height="27"/>
+<rect class="floor" x="1151.5" y="133.75" width="27" height="27"/>
+<rect class="floor" x="922" y="140.5" width="27" height="27"/>
+<rect class="floor" x="1273" y="140.5" width="27" height="27"/>
+<rect class="floor" x="962.5" y="437.5" width="27" height="13.5"/>
+<rect class="floor" x="1016.5" y="437.5" width="189" height="13.5"/>
+<rect class="floor" x="1232.5" y="437.5" width="27" height="13.5"/>
+<rect class="floor" x="1057" y="451" width="108" height="67.5"/>
+<rect class="floor" x="922" y="464.5" width="27" height="27"/>
+<rect class="floor" x="1273" y="464.5" width="27" height="27"/>
+<rect class="poche" x="826.15" y="248.5" width="14.85" height="135"/>
+<rect class="poche" x="1381" y="248.5" width="14.85" height="135"/>
+<rect class="poche" x="801.85" y="87.85" width="618.3" height="12.15"/>
+<rect class="poche" x="801.85" y="532" width="618.3" height="12.15"/>
+<rect class="poche" x="801.85" y="100" width="12.15" height="432"/>
+<rect class="poche" x="1408" y="100" width="12.15" height="432"/>
+<line class="tread" x1="854.5" y1="364.094" x2="888.25" y2="364.094"/>
+<line class="tread" x1="854.5" y1="358.188" x2="888.25" y2="358.188"/>
+<line class="tread" x1="854.5" y1="352.281" x2="888.25" y2="352.281"/>
+<line class="tread" x1="854.5" y1="346.375" x2="888.25" y2="346.375"/>
+<line class="tread" x1="854.5" y1="340.469" x2="888.25" y2="340.469"/>
+<line class="tread" x1="854.5" y1="334.562" x2="888.25" y2="334.562"/>
+<line class="tread" x1="854.5" y1="328.656" x2="888.25" y2="328.656"/>
+<rect class="cover" fill="none" x="854.5" y="322.75" width="33.75" height="47.25"/>
+<text class="small" x="871.375" y="349.375" text-anchor="middle">UP</text>
+<line class="tread" x1="1333.75" y1="364.094" x2="1367.5" y2="364.094"/>
+<line class="tread" x1="1333.75" y1="358.188" x2="1367.5" y2="358.188"/>
+<line class="tread" x1="1333.75" y1="352.281" x2="1367.5" y2="352.281"/>
+<line class="tread" x1="1333.75" y1="346.375" x2="1367.5" y2="346.375"/>
+<line class="tread" x1="1333.75" y1="340.469" x2="1367.5" y2="340.469"/>
+<line class="tread" x1="1333.75" y1="334.562" x2="1367.5" y2="334.562"/>
+<line class="tread" x1="1333.75" y1="328.656" x2="1367.5" y2="328.656"/>
+<rect class="cover" fill="none" x="1333.75" y="322.75" width="33.75" height="47.25"/>
+<text class="small" x="1350.62" y="349.375" text-anchor="middle">UP</text>
+<line class="tread" x1="1009.75" y1="336.25" x2="1057" y2="336.25"/>
+<line class="tread" x1="1009.75" y1="329.5" x2="1057" y2="329.5"/>
+<line class="tread" x1="1009.75" y1="322.75" x2="1057" y2="322.75"/>
+<line class="tread" x1="1009.75" y1="316" x2="1057" y2="316"/>
+<line class="tread" x1="1009.75" y1="309.25" x2="1057" y2="309.25"/>
+<line class="tread" x1="1009.75" y1="302.5" x2="1057" y2="302.5"/>
+<line class="tread" x1="1009.75" y1="295.75" x2="1057" y2="295.75"/>
+<rect class="cover" fill="none" x="1009.75" y="289" width="47.25" height="54"/>
+<text class="small" x="1033.38" y="319" text-anchor="middle">UP</text>
+<line class="tread" x1="1165" y1="336.25" x2="1212.25" y2="336.25"/>
+<line class="tread" x1="1165" y1="329.5" x2="1212.25" y2="329.5"/>
+<line class="tread" x1="1165" y1="322.75" x2="1212.25" y2="322.75"/>
+<line class="tread" x1="1165" y1="316" x2="1212.25" y2="316"/>
+<line class="tread" x1="1165" y1="309.25" x2="1212.25" y2="309.25"/>
+<line class="tread" x1="1165" y1="302.5" x2="1212.25" y2="302.5"/>
+<line class="tread" x1="1165" y1="295.75" x2="1212.25" y2="295.75"/>
+<rect class="cover" fill="none" x="1165" y="289" width="47.25" height="54"/>
+<text class="small" x="1188.62" y="319" text-anchor="middle">UP</text>
+<line class="tread" x1="1014.81" y1="471.25" x2="1014.81" y2="511.75"/>
+<line class="tread" x1="1019.88" y1="471.25" x2="1019.88" y2="511.75"/>
+<line class="tread" x1="1024.94" y1="471.25" x2="1024.94" y2="511.75"/>
+<line class="tread" x1="1030" y1="471.25" x2="1030" y2="511.75"/>
+<line class="tread" x1="1035.06" y1="471.25" x2="1035.06" y2="511.75"/>
+<line class="tread" x1="1040.12" y1="471.25" x2="1040.12" y2="511.75"/>
+<line class="tread" x1="1045.19" y1="471.25" x2="1045.19" y2="511.75"/>
+<rect class="cover" fill="none" x="1009.75" y="471.25" width="40.5" height="40.5"/>
+<text class="small" x="1030" y="494.5" text-anchor="middle">UP</text>
+<line class="tread" x1="1176.81" y1="471.25" x2="1176.81" y2="511.75"/>
+<line class="tread" x1="1181.88" y1="471.25" x2="1181.88" y2="511.75"/>
+<line class="tread" x1="1186.94" y1="471.25" x2="1186.94" y2="511.75"/>
+<line class="tread" x1="1192" y1="471.25" x2="1192" y2="511.75"/>
+<line class="tread" x1="1197.06" y1="471.25" x2="1197.06" y2="511.75"/>
+<line class="tread" x1="1202.12" y1="471.25" x2="1202.12" y2="511.75"/>
+<line class="tread" x1="1207.19" y1="471.25" x2="1207.19" y2="511.75"/>
+<rect class="cover" fill="none" x="1171.75" y="471.25" width="40.5" height="40.5"/>
+<text class="small" x="1192" y="494.5" text-anchor="middle">UP</text>
+<polygon class="cover" points="1111,306 1105.12,324.09 1120.51,312.91 1101.49,312.91 1116.88,324.09"/>
+<text class="small" x="1124" y="319">ROCKET</text>
+<circle class="dim" fill="none" cx="1057" cy="316" r="5"/>
+<line class="dim" x1="1050" y1="316" x2="1064" y2="316"/>
+<line class="dim" x1="1057" y1="309" x2="1057" y2="323"/>
+<text class="small" x="1065" y="309">GP1</text>
+<circle class="dim" fill="none" cx="1165" cy="316" r="5"/>
+<line class="dim" x1="1158" y1="316" x2="1172" y2="316"/>
+<line class="dim" x1="1165" y1="309" x2="1165" y2="323"/>
+<text class="small" x="1173" y="309">GP2</text>
+<circle class="dim" fill="none" cx="1070.5" cy="451" r="5"/>
+<line class="dim" x1="1063.5" y1="451" x2="1077.5" y2="451"/>
+<line class="dim" x1="1070.5" y1="444" x2="1070.5" y2="458"/>
+<text class="small" x="1078.5" y="444">GP3</text>
+<circle class="dim" fill="none" cx="1151.5" cy="451" r="5"/>
+<line class="dim" x1="1144.5" y1="451" x2="1158.5" y2="451"/>
+<line class="dim" x1="1151.5" y1="444" x2="1151.5" y2="458"/>
+<text class="small" x="1159.5" y="444">GP4</text>
+<circle class="dim" fill="none" cx="949" cy="316" r="5"/>
+<line class="dim" x1="942" y1="316" x2="956" y2="316"/>
+<line class="dim" x1="949" y1="309" x2="949" y2="323"/>
+<text class="small" x="957" y="309">GP5</text>
+<circle class="dim" fill="none" cx="1273" cy="316" r="5"/>
+<line class="dim" x1="1266" y1="316" x2="1280" y2="316"/>
+<line class="dim" x1="1273" y1="309" x2="1273" y2="323"/>
+<text class="small" x="1281" y="309">GP6</text>
+<text class="label" text-anchor="middle" x="877.99" y="227">YELLOW BASE</text>
+<text class="label" text-anchor="middle" x="1344.01" y="227">BLUE BASE</text>
+<text class="label" text-anchor="middle" x="1111" y="260.75">TOP MID</text>
+<text class="label" text-anchor="middle" x="1111" y="125.75">HYDRO</text>
+<text class="label" text-anchor="middle" x="1111" y="148.5">UTILITY CORNERS</text>
+<text class="label" text-anchor="middle" x="1111" y="429.5">PLANTERS AND PUMP</text>
+<line class="dim" x1="814" y1="75.85" x2="1408" y2="75.85"/>
+<line class="dim" x1="814" y1="71.85" x2="814" y2="79.85"/>
+<line class="dim" x1="1408" y1="71.85" x2="1408" y2="79.85"/>
+<text class="dimtext" text-anchor="middle" x="1111" y="70.85">44.0 m</text>
+<line class="dim" x1="787.85" y1="100" x2="787.85" y2="532"/>
+<line class="dim" x1="783.85" y1="100" x2="791.85" y2="100"/>
+<line class="dim" x1="783.85" y1="532" x2="791.85" y2="532"/>
+<text class="dimtext" x="781.85" y="316" transform="rotate(-90 781.85 316)" text-anchor="middle">32.0 m</text>
+<rect class="frame" x="100" y="602" width="560" height="118"/>
+<text class="label" x="110" y="620">LEGEND</text>
+<rect class="poche" x="112" y="627" width="16" height="10"/>
+<text class="small" x="136" y="636">cut structure (poche)</text>
+<rect class="floor" x="112" y="647" width="16" height="10"/>
+<text class="small" x="136" y="656">walkable plate at level</text>
+<rect class="over" x="112" y="667" width="16" height="10"/>
+<text class="small" x="136" y="676">structure overhead (dashed)</text>
+<rect class="below" x="112" y="687" width="16" height="10"/>
+<text class="small" x="136" y="696">structure below (faint)</text>
+<circle class="cover" cx="408" cy="632" r="6"/>
+<line class="dim" x1="408" y1="632" x2="418" y2="632"/>
+<text class="small" x="428" y="636">spawn + facing</text>
+<polygon class="cover" points="408,645 403.886,657.663 414.657,649.837 401.343,649.837 412.114,657.663"/>
+<text class="small" x="428" y="656">rocket node</text>
+<circle class="dim" fill="none" cx="408" cy="672" r="5"/>
+<line class="dim" x1="401" y1="672" x2="415" y2="672"/>
+<line class="dim" x1="408" y1="665" x2="408" y2="679"/>
+<text class="small" x="428" y="676">grapple anchor</text>
+<line class="tread" x1="400" y1="686" x2="400" y2="697"/>
+<line class="tread" x1="405" y1="686" x2="405" y2="697"/>
+<line class="tread" x1="410" y1="686" x2="410" y2="697"/>
+<line class="tread" x1="415" y1="686" x2="415" y2="697"/>
+<text class="small" x="428" y="696">stair, treads UP</text>
+<line class="dim" x1="1428" y1="120" x2="1428" y2="84"/>
+<polygon points="1422,96 1434,96 1428,80"/>
+<text class="label" x="1428" y="136" text-anchor="middle">N</text>
+<line class="dim" x1="720" y1="692" x2="855" y2="692"/>
+<line class="dim" x1="720" y1="687" x2="720" y2="697"/>
+<text class="small" x="720" y="710" text-anchor="middle">0</text>
+<line class="dim" x1="787.5" y1="687" x2="787.5" y2="697"/>
+<text class="small" x="787.5" y="710" text-anchor="middle">5</text>
+<line class="dim" x1="855" y1="687" x2="855" y2="697"/>
+<text class="small" x="855" y="710" text-anchor="middle">10</text>
+<text class="small" x="865" y="710">m</text>
+<g>
+<rect class="frame" x="1156" y="652" width="336" height="84"/>
+<text class="small" x="1164" y="670">PROJECT</text>
+<text class="dimtext" x="1266" y="670">BREACHPOINT — 4v4 ARENA FPS</text>
+<text class="small" x="1164" y="690">DRAWING</text>
+<text class="dimtext" x="1266" y="690">FLOOR PLANS L0 / L1 / L2</text>
+<line class="dim" x1="1156" y1="676" x2="1492" y2="676"/>
+<text class="small" x="1164" y="710">ARENA / SHEET</text>
+<text class="dimtext" x="1266" y="710">breachpoint_aquarius   ·   S1</text>
+<line class="dim" x1="1156" y1="696" x2="1492" y2="696"/>
+<text class="small" x="1164" y="730">SCALE / DATE</text>
+<text class="dimtext" x="1266" y="730">13.5 px/m   ·   2026-08-29   ·   REV B</text>
+<line class="dim" x1="1156" y1="716" x2="1492" y2="716"/>
+</g>
+</svg>

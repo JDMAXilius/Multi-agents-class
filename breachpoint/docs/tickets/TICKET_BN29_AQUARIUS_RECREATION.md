@@ -60,4 +60,49 @@ the capstone (learning exercise, not shipped commercial content).
 
 ## Log
 
-### 29 Aug — opened; mining in flight
+### 29 Aug — the article, reconstructed (quote-mining agent; fetches all blocked)
+
+Recovered as-surfaced (near-verbatim, attribution Ketul Majmudar, UX Collective,
+Jan 5 2022 — second of a five-part series):
+
+- LEVEL DESIGN GOAL: "an indoor small size symmetrical map focusing on mostly
+  close range engagements for 4v4 or small team battles with no vehicle play
+  included."
+- SKELETON: "made of three major hallways and two open arenas, with one hallway
+  going through the two arenas and the other two on either side of the arenas."
+- PATH SPLITS, LEVELS: "Path splits leading to different levels give players
+  moment to moment strategic choices which actually affect how they are going
+  to engage the next enemy."
+- PATH SPLITS, SAME LEVEL: "mainly strategically useful to players when they
+  open into completely different spaces, allowing players to ensure it is not
+  easy for enemies to chase them through an area and that they can move fights
+  to desirable locations."
+- VERTICALITY: classic Halo leaned on jumps/grav-lifts/jump-pads; Infinite's
+  grapple and thruster "added a need for a lot more levels and platforms."
+- SIGHT LINES: "The developers wanted to break up sight lines on the side
+  hallways so that the player would keep moving rather than standing on one
+  side of the hallway and shooting everything in sight."
+- FIGURES: annotated top-downs sourced from thegamescabin.com (also egress-
+  blocked; its walkthrough unfetchable).
+- NOT RECOVERED (declared gaps): the article's weapons/spawn reasoning, the
+  per-arena breakdown, intro/conclusion, figure captions, any numbers beyond
+  the 3-hallway/2-arena counts.
+- Sibling-article principles that cross-apply: refuge spaces small, low-
+  ceilinged, ALWAYS >=2 exits (anti-camp, stays part of a loop); short sight
+  lines force movement; landmarks triple-duty as wayfinding/callouts/cover.
+
+DESIGN LAWS FOR THE RECREATION, extracted from the above: (1) three hallways +
+two arenas is the skeleton, sacred; (2) every junction should offer a level
+split where possible, and same-level splits must diverge into different
+spaces; (3) side-hallway sightlines get broken deliberately; (4) the map is
+indoor, small, close-range; (5) two exits minimum from every room.
+
+### 29 Aug — manifest built at DERIVED proportions (channel c)
+
+- Emitted by Tools/blockout/gen_aquarius_manifest.py -> Content/Data/
+  aquarius_manifest.json. Every derived number carries its reasoning in the
+  script; upgrade path to channels (a)/(b) unchanged.
+- BREACHPOINT adaptations, each logged in the generator: the rocket takes
+  Aquarius' power-up slot at Top Mid center (our slice's one power pickup);
+  grapple anchors on Top Mid and Pump lips (our hook stands in for thruster
+  mobility); our spawn schema (2 per base + 4 courtyard neutrals).
