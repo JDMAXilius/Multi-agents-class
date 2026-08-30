@@ -922,19 +922,24 @@ def sheet_blockout(solids, floor, W, H, cell_m, out_dir):
         return (nx, ny)
 
     def draw_prism(s, cls_top="isotop"):
+        # DOUBLE-SIDED (founder, 30 Aug): every side face draws, far to
+        # near, so no culling-sign mistake can hollow a mass; the sampled
+        # normal only picks the tone.
         z0, z1 = s.z0, s.z1
+        faces = []
         for lp in s.loops:
             for i in range(len(lp)):
                 nx, ny = interior_side(lp, i, s.cells)
-                ne, nn = nx, -ny
-                if ne + nn <= 0.02:
-                    continue
                 a, b = lp[i], lp[(i + 1) % len(lp)]
-                quad = [Q(a[0], a[1], z0), Q(b[0], b[1], z0),
-                        Q(b[0], b[1], z1), Q(a[0], a[1], z1)]
-                cls = "isoeast" if ne >= nn else "isonorth"
-                o.append('<path class="%s" d="M %s Z"/>'
-                         % (cls, " L ".join("%.1f %.1f" % p for p in quad)))
+                mx = (a[0] + b[0]) / 2
+                my = (a[1] + b[1]) / 2
+                faces.append((mx + (H - my), a, b, nx, -ny))
+        for _, a, b, ne, nn in sorted(faces, key=lambda f: f[0]):
+            quad = [Q(a[0], a[1], z0), Q(b[0], b[1], z0),
+                    Q(b[0], b[1], z1), Q(a[0], a[1], z1)]
+            cls = "isoeast" if ne >= nn else "isonorth"
+            o.append('<path class="%s" d="M %s Z"/>'
+                     % (cls, " L ".join("%.1f %.1f" % p for p in quad)))
         d = []
         for lp in s.loops:
             d.append("M " + " L ".join("%.1f %.1f" % Q(px, py, z1) for px, py in lp) + " Z")

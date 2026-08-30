@@ -23,9 +23,14 @@
 <text class="small" x="34" y="104">07</text>
 <text class="name" x="54" y="106">BLK_Column_100</text>
 <path class="shadow" d="M 259.0 292.5 L 324.0 330.0 L 259.0 367.5 L 194.0 330.0 Z"/>
-<path class="east" d="M 268.7 343.5 L 249.3 343.5 L 249.3 159.5 L 268.7 159.5 Z"/>
-<path class="north" d="M 249.3 343.5 L 235.6 335.6 L 235.6 151.6 L 249.3 159.5 Z"/>
+<path class="north" d="M 249.3 316.5 L 268.7 316.5 L 268.7 132.5 L 249.3 132.5 Z"/>
+<path class="north" d="M 235.6 324.4 L 249.3 316.5 L 249.3 132.5 L 235.6 140.4 Z"/>
+<path class="east" d="M 268.7 316.5 L 282.4 324.4 L 282.4 140.4 L 268.7 132.5 Z"/>
+<path class="east" d="M 282.4 324.4 L 282.4 335.6 L 282.4 151.6 L 282.4 140.4 Z"/>
+<path class="north" d="M 235.6 335.6 L 235.6 324.4 L 235.6 140.4 L 235.6 151.6 Z"/>
 <path class="east" d="M 282.4 335.6 L 268.7 343.5 L 268.7 159.5 L 282.4 151.6 Z"/>
+<path class="north" d="M 249.3 343.5 L 235.6 335.6 L 235.6 151.6 L 249.3 159.5 Z"/>
+<path class="east" d="M 268.7 343.5 L 249.3 343.5 L 249.3 159.5 L 268.7 159.5 Z"/>
 <path class="top" d="M 268.7 159.5 L 249.3 159.5 L 235.6 151.6 L 235.6 140.4 L 249.3 132.5 L 268.7 132.5 L 282.4 140.4 L 282.4 151.6 Z"/>
 <text class="dims" x="38" y="456">0.90 dia x 4.00 m octagon</text>
 <text class="role" x="38" y="476">free-standing, never wall-touching (orbitable - notes 21-25)</text>
@@ -34,6 +39,8 @@
 <text class="small" x="528" y="104">08</text>
 <text class="name" x="548" y="106">BLK_Pier_100</text>
 <path class="shadow" d="M 753.0 282.2 L 824.7 323.6 L 753.0 365.0 L 681.3 323.6 Z"/>
+<path class="east" d="M 753.0 300.6 L 792.8 323.6 L 792.8 158.0 L 753.0 135.0 Z"/>
+<path class="north" d="M 713.2 323.6 L 753.0 300.6 L 753.0 135.0 L 713.2 158.0 Z"/>
 <path class="east" d="M 792.8 323.6 L 753.0 346.6 L 753.0 181.0 L 792.8 158.0 Z"/>
 <path class="north" d="M 753.0 346.6 L 713.2 323.6 L 713.2 158.0 L 753.0 181.0 Z"/>
 <path class="top" d="M 753.0 135.0 L 792.8 158.0 L 753.0 181.0 L 713.2 158.0 Z"/>
@@ -44,6 +51,8 @@
 <text class="small" x="1022" y="104">09</text>
 <text class="name" x="1042" y="106">BLK_Crate_100</text>
 <path class="shadow" d="M 1247.0 222.4 L 1318.7 263.8 L 1247.0 305.2 L 1175.3 263.8 Z"/>
+<path class="east" d="M 1247.0 240.8 L 1286.8 263.8 L 1286.8 217.8 L 1247.0 194.8 Z"/>
+<path class="north" d="M 1207.2 263.8 L 1247.0 240.8 L 1247.0 194.8 L 1207.2 217.8 Z"/>
 <path class="east" d="M 1286.8 263.8 L 1247.0 286.8 L 1247.0 240.8 L 1286.8 217.8 Z"/>
 <path class="north" d="M 1247.0 286.8 L 1207.2 263.8 L 1207.2 217.8 L 1247.0 240.8 Z"/>
 <path class="top" d="M 1247.0 194.8 L 1286.8 217.8 L 1247.0 240.8 L 1207.2 217.8 Z"/>
@@ -54,9 +63,14 @@
 <text class="small" x="34" y="558">10</text>
 <text class="name" x="54" y="560">BLK_Battery_240</text>
 <path class="shadow" d="M 259.0 645.5 L 379.2 714.9 L 259.0 784.3 L 138.8 714.9 Z"/>
-<path class="east" d="M 284.9 751.0 L 233.1 751.0 L 233.1 695.8 L 284.9 695.8 Z"/>
-<path class="north" d="M 233.1 751.0 L 196.5 729.9 L 196.5 674.7 L 233.1 695.8 Z"/>
+<path class="north" d="M 233.1 678.9 L 284.9 678.9 L 284.9 623.7 L 233.1 623.7 Z"/>
+<path class="north" d="M 196.5 700.0 L 233.1 678.9 L 233.1 623.7 L 196.5 644.8 Z"/>
+<path class="east" d="M 284.9 678.9 L 321.5 700.0 L 321.5 644.8 L 284.9 623.7 Z"/>
+<path class="east" d="M 321.5 700.0 L 321.5 729.9 L 321.5 674.7 L 321.5 644.8 Z"/>
+<path class="north" d="M 196.5 729.9 L 196.5 700.0 L 196.5 644.8 L 196.5 674.7 Z"/>
 <path class="east" d="M 321.5 729.9 L 284.9 751.0 L 284.9 695.8 L 321.5 674.7 Z"/>
+<path class="north" d="M 233.1 751.0 L 196.5 729.9 L 196.5 674.7 L 233.1 695.8 Z"/>
+<path class="east" d="M 284.9 751.0 L 233.1 751.0 L 233.1 695.8 L 284.9 695.8 Z"/>
 <path class="top" d="M 284.9 695.8 L 233.1 695.8 L 196.5 674.7 L 196.5 644.8 L 233.1 623.7 L 284.9 623.7 L 321.5 644.8 L 321.5 674.7 Z"/>
 <text class="dims" x="38" y="910">2.40 dia x 1.20 m octagon</text>
 <text class="role" x="38" y="930">the AQUARIUS battery: mantle cover at each base mouth (shot13)</text>
@@ -65,15 +79,23 @@
 <text class="small" x="528" y="558">11</text>
 <text class="name" x="548" y="560">BLK_Rail_400</text>
 <path class="shadow" d="M 675.3 652.2 L 866.5 762.6 L 830.7 783.4 L 639.5 672.9 Z"/>
+<path class="east" d="M 675.3 670.6 L 679.3 672.9 L 679.3 630.6 L 675.3 628.3 Z"/>
+<path class="north" d="M 671.3 672.9 L 675.3 670.6 L 675.3 628.3 L 671.3 630.6 Z"/>
 <path class="east" d="M 679.3 672.9 L 675.3 675.2 L 675.3 632.9 L 679.3 630.6 Z"/>
 <path class="north" d="M 675.3 675.2 L 671.3 672.9 L 671.3 630.6 L 675.3 632.9 Z"/>
 <path class="top" d="M 675.3 628.3 L 679.3 630.6 L 675.3 632.9 L 671.3 630.6 Z"/>
-<path class="east" d="M 834.7 720.3 L 830.7 722.6 L 830.7 718.9 L 834.7 716.6 Z"/>
+<path class="north" d="M 671.3 630.6 L 675.3 628.3 L 675.3 624.6 L 671.3 626.9 Z"/>
+<path class="east" d="M 675.3 628.3 L 834.7 720.3 L 834.7 716.6 L 675.3 624.6 Z"/>
 <path class="north" d="M 830.7 722.6 L 671.3 630.6 L 671.3 626.9 L 830.7 718.9 Z"/>
+<path class="east" d="M 834.7 720.3 L 830.7 722.6 L 830.7 718.9 L 834.7 716.6 Z"/>
 <path class="top" d="M 675.3 624.6 L 834.7 716.6 L 830.7 718.9 L 671.3 626.9 Z"/>
+<path class="east" d="M 753.0 715.5 L 757.0 717.8 L 757.0 675.5 L 753.0 673.2 Z"/>
+<path class="north" d="M 749.0 717.8 L 753.0 715.5 L 753.0 673.2 L 749.0 675.5 Z"/>
 <path class="east" d="M 757.0 717.8 L 753.0 720.1 L 753.0 677.8 L 757.0 675.5 Z"/>
 <path class="north" d="M 753.0 720.1 L 749.0 717.8 L 749.0 675.5 L 753.0 677.8 Z"/>
 <path class="top" d="M 753.0 673.2 L 757.0 675.5 L 753.0 677.8 L 749.0 675.5 Z"/>
+<path class="north" d="M 826.7 762.6 L 830.7 760.4 L 830.7 718.0 L 826.7 720.3 Z"/>
+<path class="east" d="M 830.7 760.4 L 834.7 762.6 L 834.7 720.3 L 830.7 718.0 Z"/>
 <path class="east" d="M 834.7 762.6 L 830.7 764.9 L 830.7 722.6 L 834.7 720.3 Z"/>
 <path class="north" d="M 830.7 764.9 L 826.7 762.6 L 826.7 720.3 L 830.7 722.6 Z"/>
 <path class="top" d="M 830.7 718.0 L 834.7 720.3 L 830.7 722.6 L 826.7 720.3 Z"/>
@@ -84,8 +106,10 @@
 <text class="small" x="1022" y="558">12</text>
 <text class="name" x="1042" y="560">BLK_Curb_400</text>
 <path class="shadow" d="M 1173.3 636.1 L 1364.5 746.5 L 1320.7 771.8 L 1129.5 661.4 Z"/>
-<path class="east" d="M 1332.6 746.5 L 1320.7 753.4 L 1320.7 746.5 L 1332.6 739.6 Z"/>
+<path class="north" d="M 1161.4 661.4 L 1173.3 654.5 L 1173.3 647.6 L 1161.4 654.5 Z"/>
+<path class="east" d="M 1173.3 654.5 L 1332.6 746.5 L 1332.6 739.6 L 1173.3 647.6 Z"/>
 <path class="north" d="M 1320.7 753.4 L 1161.4 661.4 L 1161.4 654.5 L 1320.7 746.5 Z"/>
+<path class="east" d="M 1332.6 746.5 L 1320.7 753.4 L 1320.7 746.5 L 1332.6 739.6 Z"/>
 <path class="top" d="M 1173.3 647.6 L 1332.6 739.6 L 1320.7 746.5 L 1161.4 654.5 Z"/>
 <text class="dims" x="1026" y="910">4.00 x 0.30 x 0.15 m</text>
 <text class="role" x="1026" y="930">trim / edge lip: reads edges, channels movement</text>

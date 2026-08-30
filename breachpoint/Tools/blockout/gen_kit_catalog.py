@@ -75,8 +75,10 @@ def octagon(cx, cy, r):
 
 
 def prism(o, poly, z0, z1, S, ox, oy, treads=None):
-    """One extruded polygon, painter-correct for a single convex-ish solid:
-    visible side faces (outward normal toward viewer NE = +x+y), then top."""
+    """One extruded polygon, DOUBLE-SIDED: every side face draws, sorted far
+    to near by midpoint depth, so front faces paint over back faces and no
+    culling-sign mistake can ever hollow a solid again (founder, 30 Aug).
+    The outward normal is used only to pick the face TONE."""
     n = len(poly)
     cx = sum(p[0] for p in poly) / n
     cy = sum(p[1] for p in poly) / n
@@ -84,15 +86,13 @@ def prism(o, poly, z0, z1, S, ox, oy, treads=None):
     for i in range(n):
         a, b = poly[i], poly[(i + 1) % n]
         mx, my = (a[0] + b[0]) / 2, (a[1] + b[1]) / 2
-        nx, ny = my - cy, mx - cx          # rough outward: away from centroid
         dx, dy = b[0] - a[0], b[1] - a[1]
         onx, ony = dy, -dx                 # right normal
         if onx * (mx - cx) + ony * (my - cy) < 0:
             onx, ony = -onx, -ony
-        vis = onx + ony > 0.02             # view axis is +x +y here
-        if vis:
-            faces.append((a, b, onx, ony))
-    for a, b, ne, ns in faces:
+        depth = mx + my                    # view axis +x+y: small = far
+        faces.append((depth, a, b, onx, ony))
+    for _, a, b, ne, ns in sorted(faces, key=lambda f: f[0]):
         quad = [P(a[0], a[1], z0, S), P(b[0], b[1], z0, S),
                 P(b[0], b[1], z1, S), P(a[0], a[1], z1, S)]
         cls = "east" if ne >= ns else "north"

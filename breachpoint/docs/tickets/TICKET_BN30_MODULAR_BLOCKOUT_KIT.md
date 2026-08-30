@@ -92,3 +92,16 @@
 - aquarius_blockout_kit.json now carries asset_map (families -> assets) and
   points at the catalog; the renderer's face-culling bug (view axis is
   +x+y, so east+SOUTH faces show) found and fixed via a unit-cube probe.
+
+### 30 Aug — founder: WHY the hollow-geometry problems; renderers go double-sided
+
+- Root cause, on the record: the sheet renderers are a hand-rolled SVG
+  painter with BACK-FACE CULLING, and the cull test's view-axis sign was
+  wrong twice (the projection's camera sits on +X+Y; the test assumed
+  +X-Y) - a culled real face IS a hole, hence every "hollow" artifact the
+  founder caught (A-301 walls, catalog crate/column faces).
+- Fix, per the founder's instinct: DOUBLE-SIDED drawing. Both prism
+  painters (gen_kit_catalog, gen_aquarius_blueprint A-301) now draw EVERY
+  side face sorted far-to-near, so front faces overpaint back faces and a
+  sign mistake can no longer delete geometry; normals only pick the tone.
+  Unit-cube and A-301 center crops verified closed.
