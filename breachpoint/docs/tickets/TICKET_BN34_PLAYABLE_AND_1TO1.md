@@ -143,8 +143,6 @@ Repeat until the founder says the level reads as Aquarius and plays.
 
 ## Log
 
-## Log
-
 ### 30 Aug — the founder was right: it is NOT playable. Two causes fixed, one open.
 
 Founder, on seeing the first build: *"make sure is playble right now is not
@@ -309,3 +307,56 @@ per ramp rather than probing points, which is as far as point-projection can go.
 
 Also still unexplained and possibly related: **32 of 97 deck pieces carry no
 navmesh**, and `Deck_001` is one of them despite being demonstrably walkable.
+
+### 30 Aug (cloud) — one untested hypothesis for the ramp-link failure, and the
+### experiment that settles it in ten minutes
+
+Not a claim, a candidate. Offered because finding 5's inversion fits it and
+none of the five disproved hypotheses do.
+
+**Hypothesis: coincident coplanar abutment.** Every junction in this level is
+built as an EXACT abutment — the ramp head measures a 0.00 m gap to its deck,
+and deck slabs meet edge-to-edge with zero overlap. Recast does not voxelize
+two separately-authored surfaces that share a plane the way a human reads them:
+`rcFilterLedgeSpans` marks a span unwalkable when a neighbour span's height
+differs by more than `walkableClimb`, and coincident faces from two meshes land
+in the same or adjacent voxel rows depending on float epsilon. The result is
+exactly what is being seen — navmesh that EXISTS on both surfaces but belongs
+to two islands that never merge, and a scattering of slabs (32 of 97 decks)
+that carve no navmesh at all while being demonstrably walkable. It also
+explains why `Deck_001` — served by the two ramps that DO link — is itself one
+of the 32: if the merge is decided at the junction rather than on the surface,
+surface coverage and linking are independent, which is finding 5's inversion.
+
+**The decisive experiment — do this before anything else, it is one map:**
+
+Build a scratch map with exactly three pieces from the real kit: one
+`BLK_Floor_400`, one `BLK_Floor_400` raised to deck height as the target, and
+one `BLK_Ramp_800` seated by the same code path as BR_Aquarius. Nav bounds over
+it, build, then path foot→top.
+
+- **Links in isolation** → the geometry is fine and the fault is neighbourhood
+  (tiles, overlapping pieces, or the pieces adjacent to the junction). Add the
+  surrounding walls one at a time until it breaks.
+- **Fails in isolation** → the junction itself is the fault, and the fix is
+  cheap: give the ramp head a real **overlap** into the deck (start at 0.5 m,
+  i.e. more than one nav cell) and sink the ramp top **3-5 cm BELOW** the deck
+  top, so the transition is an unambiguous sub-`walkableClimb` step instead of
+  a coincident plane. Re-run the isolation map to confirm before regenerating
+  the whole level.
+
+**Two numbers worth reading out while you are in there**, because the
+hypothesis lives or dies on them: `RecastNavMesh-Default`'s `CellSize` and
+`CellHeight`. At the default `CellHeight = 10 uu` a 400.00 vs 400.00 junction
+is inside a single voxel, which is precisely where this failure mode lives.
+
+If the overlap fix is the answer, it is a GENERATOR change (law 7) — say so
+here and the cloud puts the head-overlap and the sink into
+`gen_aquarius_kit.py`'s `ramp_instances()` rather than anyone hand-seating it.
+
+**Second route up, independent of all this:** `BLK_Stair_200` is placed
+nowhere, and BN31 authored it. A stair is a stack of sub-`walkableClimb` steps
+with no coplanar junction at either end — if the hypothesis is right, stairs
+would link where ramps do not, which makes placing one a *second* test as well
+as a fallback route. Reference note 19's side hallways are two-level; stairs
+belong there regardless.
