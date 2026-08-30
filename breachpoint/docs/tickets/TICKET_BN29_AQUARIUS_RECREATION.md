@@ -106,3 +106,33 @@ indoor, small, close-range; (5) two exits minimum from every room.
   Aquarius' power-up slot at Top Mid center (our slice's one power pickup);
   grapple anchors on Top Mid and Pump lips (our hook stands in for thruster
   mobility); our spawn schema (2 per base + 4 courtyard neutrals).
+
+### 30 Aug — v2: TRACED. The layout is the layout.
+
+- Founder rejected v1 (topology-only) and SUPPLIED the reference — the
+  thegamescabin.com top-down, the article's own figure source. Channel (a)
+  achieved: docs/design/reference/aquarius_thegamescabin.jpg.
+- trace_aquarius.py classifies the image's four structural tones + background,
+  resolves accent pixels (mirror line, team trim) by neighborhood, downsamples
+  with a thin-wall-preserving vote (a plain majority erased the 2 px room
+  borders and opened phantom sightlines — iteration logged in the script),
+  keeps the largest connected component (drops the logo), and emits the class
+  grid + a preview PNG for eyeball diff.
+- gen_aquarius_manifest.py v2 consumes the trace: symmetrizes about the map's
+  own mirror line (left wins; the art is hand-drawn), then BLACK -> solid
+  masses at full room height (a 5 m cap let deck-to-deck eye lines sail over
+  the tanks - fixed), LIGHT -> raised decks z4, small isolated LIGHT capsules
+  -> auto-detected stair volumes (the image's ramp pills), the center sliver
+  -> the Top Mid bridge deck with the rocket at its center; 312 boxes, all
+  from the image. Scale stays the one derived number (52 m long axis;
+  channel (b) replaces it).
+- **R45 RECORDED (DESIGN-RULINGS.md)**: the traced map's spawn-pair lines
+  measure 39.9-47.7 m — Aquarius' documented end-to-end base sightlines. No
+  honest geometry passes the 35 m kickoff gate on this map; the founder's
+  one-to-one directive is the ruling. arena_plan.py now accepts a manifest
+  that CITES a ruling (sightlines.cap_ruling), loudly: SIGHTLINE_CAP_RULED +
+  SIGHTLINE_PAIR_RULED warnings name R45 on every affected line; the 35 m
+  constant stays law for every manifest without a citation.
+- VERDICT: **PASS** (spawn spacing 11.77 m min; longest ruled pair 47.65 m).
+- Box 'Article digest' [x]; 'Manifest + verdict' [x]; 'Proportions channel'
+  upgraded to (a) for SHAPE — absolute scale still derived, channel (b) owed.

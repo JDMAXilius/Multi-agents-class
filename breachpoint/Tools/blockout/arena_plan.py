@@ -373,12 +373,26 @@ def validate(manifest, profile, solids):
 
     # ---- Kickoff 3: max sightline <= 35 m --------------------------------------------
     declared = (manifest.get("sightlines") or {}).get("max_length_m")
+    # R45 machinery: a manifest may exceed the Kickoff cap ONLY by citing a
+    # ruling from docs/DESIGN-RULINGS.md (sightlines.cap_ruling: "R<n>"). The
+    # exception is LOUD - every affected finding names the ruling - so the gate
+    # is audited, never quietly weakened. The constant itself stays law for
+    # every manifest without a citation.
+    cap_ruling = str((manifest.get("sightlines") or {}).get("cap_ruling") or "")
+    cap = KICKOFF_MAX_SIGHTLINE_M
     if declared is None:
         f.append(Finding(ERROR, "SIGHTLINE_UNDECLARED", "manifest declares no sightlines.max_length_m."))
     elif float(declared) > KICKOFF_MAX_SIGHTLINE_M:
-        f.append(Finding(ERROR, "SIGHTLINE_CAP",
-                         "declared sightlines.max_length_m=%g exceeds the %g m Kickoff cap."
-                         % (float(declared), KICKOFF_MAX_SIGHTLINE_M)))
+        if re.match(r"^R\d+$", cap_ruling):
+            cap = float(declared)
+            f.append(Finding(WARN, "SIGHTLINE_CAP_RULED",
+                             "sightlines.max_length_m=%g exceeds the %g m Kickoff cap under cited "
+                             "ruling %s (docs/DESIGN-RULINGS.md) - audited exception, this map only."
+                             % (cap, KICKOFF_MAX_SIGHTLINE_M, cap_ruling)))
+        else:
+            f.append(Finding(ERROR, "SIGHTLINE_CAP",
+                             "declared sightlines.max_length_m=%g exceeds the %g m Kickoff cap."
+                             % (float(declared), KICKOFF_MAX_SIGHTLINE_M)))
     eye = float(profile["eye_height_m"])
     longest_open = None
     for i in range(len(pts)):
@@ -390,10 +404,15 @@ def validate(manifest, profile, solids):
             d = dist3(a, b)
             if longest_open is None or d > longest_open[0]:
                 longest_open = (d, pts[i][0], pts[j][0])
-            if d > KICKOFF_MAX_SIGHTLINE_M:
+            if d > cap:
                 f.append(Finding(ERROR, "SIGHTLINE_OPEN_PAIR",
                                  "%s-%s: %.2f m with no solid on the line at %.1f m eye height; cap is %g m."
-                                 % (pts[i][0], pts[j][0], d, eye, KICKOFF_MAX_SIGHTLINE_M)))
+                                 % (pts[i][0], pts[j][0], d, eye, cap)))
+            elif d > KICKOFF_MAX_SIGHTLINE_M:
+                f.append(Finding(WARN, "SIGHTLINE_PAIR_RULED",
+                                 "%s-%s: %.2f m - past the %g m Kickoff cap, inside the %g m cap of "
+                                 "cited ruling %s."
+                                 % (pts[i][0], pts[j][0], d, KICKOFF_MAX_SIGHTLINE_M, cap, cap_ruling)))
     if longest_open:
         f.append(Finding("info", "SIGHTLINE_LONGEST_OPEN",
                          "longest unoccluded spawn-to-spawn line: %s-%s at %.2f m (static AABB test only)."

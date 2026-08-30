@@ -1,28 +1,28 @@
 {
  "arena_id": "breachpoint_aquarius",
- "manifest_version": 1,
+ "manifest_version": 2,
  "units": "meters",
- "schema_note": "Same schema as arena_manifest.json; footprints[] authoritative; EMITTED by Tools/blockout/gen_aquarius_manifest.py - edit that. STUDY RECREATION of 343 Industries' Aquarius (Halo Infinite) at blockout fidelity; proportions DERIVED pending traced/measured evidence (TICKET_BN29 channels a/b).",
+ "schema_note": "TRACED from docs/design/reference/aquarius_thegamescabin.jpg (founder-supplied, the article's own figure source) by trace_aquarius.py; EMITTED by gen_aquarius_manifest.py. footprints[] authoritative. STUDY RECREATION of 343's Aquarius.",
  "bounds": {
-  "x": 44.0,
-  "y": 32.0,
-  "z": 10.0
+  "x": 52.25,
+  "y": 31.15,
+  "z": 10
  },
  "rocket_node": {
-  "x": 22,
-  "y": 16,
+  "x": 25.87,
+  "y": 16.23,
   "z": 4,
   "elevation": "mid",
   "landmark": "Top Mid",
-  "notes": "z=4 is topmid_deck's walk surface, bridge center - Aquarius' camo/OS slot, taken by BREACHPOINT's one power pickup (adaptation, TICKET_BN29). Overlooks both courts; timing stays BP09's DT_Weapons row."
+  "notes": "Bridge-deck center from the trace - Aquarius' camo/OS slot, taken by BREACHPOINT's one power pickup (BN29 adaptation)."
  },
  "spawn_points": [
   {
    "id": "SP1",
    "location": {
-    "x": 9,
-    "y": 12,
-    "z": 0
+    "x": 2.3,
+    "y": 21.6,
+    "z": 4
    },
    "facing": 0,
    "pool": "team_a",
@@ -34,9 +34,9 @@
   {
    "id": "SP2",
    "location": {
-    "x": 2.7,
-    "y": 20.3,
-    "z": 0
+    "x": 6.2,
+    "y": 10.5,
+    "z": 4
    },
    "facing": 0,
    "pool": "team_a",
@@ -48,9 +48,9 @@
   {
    "id": "SP3",
    "location": {
-    "x": 41.3,
-    "y": 20.3,
-    "z": 0
+    "x": 46.05,
+    "y": 10.5,
+    "z": 4
    },
    "facing": 180,
    "pool": "team_b",
@@ -62,9 +62,9 @@
   {
    "id": "SP4",
    "location": {
-    "x": 35.0,
-    "y": 12,
-    "z": 0
+    "x": 49.95,
+    "y": 21.6,
+    "z": 4
    },
    "facing": 180,
    "pool": "team_b",
@@ -76,8 +76,8 @@
   {
    "id": "SP5",
    "location": {
-    "x": 17,
-    "y": 9.2,
+    "x": 18.8,
+    "y": 8.1,
     "z": 0
    },
    "facing": 45,
@@ -90,8 +90,8 @@
   {
    "id": "SP6",
    "location": {
-    "x": 17,
-    "y": 22.8,
+    "x": 18.8,
+    "y": 23.1,
     "z": 0
    },
    "facing": -45,
@@ -104,8 +104,8 @@
   {
    "id": "SP7",
    "location": {
-    "x": 27.0,
-    "y": 22.8,
+    "x": 33.45,
+    "y": 23.1,
     "z": 0
    },
    "facing": -135,
@@ -118,8 +118,8 @@
   {
    "id": "SP8",
    "location": {
-    "x": 27.0,
-    "y": 9.2,
+    "x": 33.45,
+    "y": 8.1,
     "z": 0
    },
    "facing": 135,
@@ -130,736 +130,5087 @@
    }
   }
  ],
- "spawn_pools_note": "2 per base room + the four scored court neutrals, mirrored; base spawns face their open front.",
+ "spawn_pools_note": "Base pairs on the base decks (z4, the traced light regions); four scored neutrals on the courts' open floor.",
  "landmarks": [
   {
-   "name": "Yellow Base",
-   "purpose": "West spawn room, two storeys: roof deck yb_roof x[2,10] y[11,21] z[3.6,4] on walls x[0.9,2] y[11,21] z[0,9] (back), x[2,10] y[21,22] z[0,4] and x[2,10] y[10,11] z[0,4] (sides), stair x[3,5.5] y[12,15.5] z[0,4] inside. Open FRONT to the courtyard plus north/south exits around the side walls - three ways out (the article's rule: every room >= 2 exits).",
+   "name": "Masses and Perimeter",
    "footprints": [
     {
-     "label": "yb_roof",
+     "label": "blk_00",
      "x": [
-      2,
-      10
+      14.07,
+      16.08
      ],
      "y": [
-      11,
-      21
-     ],
-     "z": [
-      3.6,
-      4
-     ],
-     "role": "deck slab; the base's upper deck, overlooks the courtyard; tactical rifle sits just before the stairs (documented)"
-    },
-    {
-     "label": "yb_back",
-     "x": [
-      0.9,
-      2
-     ],
-     "y": [
-      11,
-      21
+      1.0,
+      2.51
      ],
      "z": [
       0,
-      9.0
+      7
      ],
-     "role": "solid; base back wall against the perimeter"
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
     },
     {
-     "label": "yb_wall_n",
+     "label": "blk_01",
      "x": [
-      2,
-      10
+      24.62,
+      27.63
      ],
      "y": [
-      21,
-      22
+      1.0,
+      1.51
      ],
      "z": [
       0,
-      4
+      7
      ],
-     "role": "solid; base north wall - the gap OUTSIDE it at x[10,11] is the north exit toward Utility"
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
     },
     {
-     "label": "yb_wall_s",
+     "label": "blk_02",
      "x": [
-      2,
-      10
+      36.17,
+      38.18
      ],
      "y": [
-      10,
-      11
+      1.0,
+      2.51
      ],
      "z": [
       0,
-      4
+      7
      ],
-     "role": "solid; base south wall - mirror gap is the south exit toward Refrigeration"
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
     },
     {
-     "label": "yb_stair",
+     "label": "blk_03",
      "x": [
-      3,
-      5.5
+      13.57,
+      14.07
      ],
      "y": [
-      12,
-      15.5
+      1.51,
+      3.01
      ],
      "z": [
       0,
-      4
+      7
      ],
-     "role": "ground-to-deck stair volume inside the base"
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_04",
+     "x": [
+      16.08,
+      16.58
+     ],
+     "y": [
+      1.51,
+      3.01
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_05",
+     "x": [
+      24.62,
+      25.12
+     ],
+     "y": [
+      1.51,
+      2.51
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_06",
+     "x": [
+      27.13,
+      27.63
+     ],
+     "y": [
+      1.51,
+      2.51
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_07",
+     "x": [
+      35.67,
+      36.17
+     ],
+     "y": [
+      1.51,
+      3.01
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_08",
+     "x": [
+      38.18,
+      38.69
+     ],
+     "y": [
+      1.51,
+      3.01
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_09",
+     "x": [
+      23.61,
+      24.62
+     ],
+     "y": [
+      2.01,
+      2.51
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_10",
+     "x": [
+      27.63,
+      28.64
+     ],
+     "y": [
+      2.01,
+      2.51
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_11",
+     "x": [
+      11.05,
+      13.57
+     ],
+     "y": [
+      2.51,
+      3.01
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_12",
+     "x": [
+      14.57,
+      16.08
+     ],
+     "y": [
+      2.51,
+      3.01
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_13",
+     "x": [
+      23.11,
+      23.61
+     ],
+     "y": [
+      2.51,
+      3.01
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_14",
+     "x": [
+      28.64,
+      29.14
+     ],
+     "y": [
+      2.51,
+      3.01
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_15",
+     "x": [
+      36.17,
+      37.68
+     ],
+     "y": [
+      2.51,
+      3.01
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_16",
+     "x": [
+      38.69,
+      41.2
+     ],
+     "y": [
+      2.51,
+      3.01
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_17",
+     "x": [
+      16.58,
+      17.08
+     ],
+     "y": [
+      3.01,
+      3.52
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_18",
+     "x": [
+      22.61,
+      23.11
+     ],
+     "y": [
+      3.01,
+      3.52
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_19",
+     "x": [
+      29.14,
+      29.64
+     ],
+     "y": [
+      3.01,
+      3.52
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_20",
+     "x": [
+      35.17,
+      35.67
+     ],
+     "y": [
+      3.01,
+      3.52
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_21",
+     "x": [
+      10.05,
+      10.55
+     ],
+     "y": [
+      3.52,
+      10.05
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_22",
+     "x": [
+      17.08,
+      17.58
+     ],
+     "y": [
+      3.52,
+      4.02
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_23",
+     "x": [
+      22.11,
+      22.61
+     ],
+     "y": [
+      3.52,
+      4.02
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_24",
+     "x": [
+      25.12,
+      27.13
+     ],
+     "y": [
+      3.52,
+      5.02
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_25",
+     "x": [
+      29.64,
+      30.14
+     ],
+     "y": [
+      3.52,
+      4.02
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_26",
+     "x": [
+      34.67,
+      35.17
+     ],
+     "y": [
+      3.52,
+      4.02
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_27",
+     "x": [
+      41.7,
+      42.2
+     ],
+     "y": [
+      3.52,
+      10.05
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_28",
+     "x": [
+      9.55,
+      10.05
+     ],
+     "y": [
+      4.02,
+      10.05
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_29",
+     "x": [
+      17.58,
+      18.09
+     ],
+     "y": [
+      4.02,
+      5.02
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_30",
+     "x": [
+      19.09,
+      22.11
+     ],
+     "y": [
+      4.02,
+      4.52
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_31",
+     "x": [
+      24.62,
+      25.12
+     ],
+     "y": [
+      4.02,
+      5.02
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_32",
+     "x": [
+      27.13,
+      27.63
+     ],
+     "y": [
+      4.02,
+      5.02
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_33",
+     "x": [
+      30.14,
+      33.16
+     ],
+     "y": [
+      4.02,
+      4.52
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_34",
+     "x": [
+      34.16,
+      34.67
+     ],
+     "y": [
+      4.02,
+      5.02
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_35",
+     "x": [
+      42.2,
+      42.71
+     ],
+     "y": [
+      4.02,
+      10.05
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_36",
+     "x": [
+      18.09,
+      19.59
+     ],
+     "y": [
+      4.52,
+      5.02
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_37",
+     "x": [
+      32.66,
+      34.16
+     ],
+     "y": [
+      4.52,
+      5.02
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_38",
+     "x": [
+      17.58,
+      19.59
+     ],
+     "y": [
+      6.03,
+      12.06
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_39",
+     "x": [
+      32.66,
+      34.67
+     ],
+     "y": [
+      6.03,
+      12.06
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_40",
+     "x": [
+      17.08,
+      17.58
+     ],
+     "y": [
+      6.53,
+      11.56
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_41",
+     "x": [
+      19.59,
+      23.61
+     ],
+     "y": [
+      6.53,
+      9.04
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_42",
+     "x": [
+      28.64,
+      32.66
+     ],
+     "y": [
+      6.53,
+      9.04
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_43",
+     "x": [
+      34.67,
+      35.17
+     ],
+     "y": [
+      6.53,
+      11.56
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_44",
+     "x": [
+      16.58,
+      17.08
+     ],
+     "y": [
+      7.03,
+      11.56
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_45",
+     "x": [
+      23.61,
+      24.12
+     ],
+     "y": [
+      7.03,
+      8.54
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_46",
+     "x": [
+      28.14,
+      28.64
+     ],
+     "y": [
+      7.03,
+      8.54
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_47",
+     "x": [
+      35.17,
+      35.67
+     ],
+     "y": [
+      7.03,
+      11.56
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_48",
+     "x": [
+      16.08,
+      16.58
+     ],
+     "y": [
+      7.54,
+      11.05
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_49",
+     "x": [
+      35.67,
+      36.17
+     ],
+     "y": [
+      7.54,
+      11.05
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_50",
+     "x": [
+      15.57,
+      16.08
+     ],
+     "y": [
+      8.04,
+      10.55
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_51",
+     "x": [
+      36.17,
+      36.68
+     ],
+     "y": [
+      8.04,
+      10.55
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_52",
+     "x": [
+      1.51,
+      7.03
+     ],
+     "y": [
+      9.04,
+      9.55
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_53",
+     "x": [
+      11.56,
+      13.57
+     ],
+     "y": [
+      9.04,
+      9.55
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_54",
+     "x": [
+      19.59,
+      23.11
+     ],
+     "y": [
+      9.04,
+      9.55
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_55",
+     "x": [
+      29.14,
+      32.66
+     ],
+     "y": [
+      9.04,
+      9.55
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_56",
+     "x": [
+      38.69,
+      40.7
+     ],
+     "y": [
+      9.04,
+      9.55
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_57",
+     "x": [
+      45.22,
+      50.74
+     ],
+     "y": [
+      9.04,
+      9.55
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_58",
+     "x": [
+      7.03,
+      9.55
+     ],
+     "y": [
+      9.55,
+      10.05
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_59",
+     "x": [
+      19.59,
+      22.61
+     ],
+     "y": [
+      9.55,
+      10.05
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_60",
+     "x": [
+      29.64,
+      32.66
+     ],
+     "y": [
+      9.55,
+      10.05
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_61",
+     "x": [
+      42.71,
+      45.22
+     ],
+     "y": [
+      9.55,
+      10.05
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_62",
+     "x": [
+      1.0,
+      1.51
+     ],
+     "y": [
+      10.05,
+      12.56
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_63",
+     "x": [
+      19.59,
+      22.11
+     ],
+     "y": [
+      10.05,
+      10.55
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_64",
+     "x": [
+      30.14,
+      32.66
+     ],
+     "y": [
+      10.05,
+      10.55
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_65",
+     "x": [
+      50.74,
+      51.25
+     ],
+     "y": [
+      10.05,
+      12.56
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_66",
+     "x": [
+      19.59,
+      21.6
+     ],
+     "y": [
+      10.55,
+      11.05
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_67",
+     "x": [
+      30.65,
+      32.66
+     ],
+     "y": [
+      10.55,
+      11.05
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_68",
+     "x": [
+      19.59,
+      21.1
+     ],
+     "y": [
+      11.05,
+      11.56
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_69",
+     "x": [
+      31.15,
+      32.66
+     ],
+     "y": [
+      11.05,
+      11.56
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_70",
+     "x": [
+      19.59,
+      20.6
+     ],
+     "y": [
+      11.56,
+      12.06
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_71",
+     "x": [
+      24.12,
+      28.14
+     ],
+     "y": [
+      11.56,
+      15.57
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_72",
+     "x": [
+      31.65,
+      32.66
+     ],
+     "y": [
+      11.56,
+      12.06
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_73",
+     "x": [
+      1.51,
+      2.01
+     ],
+     "y": [
+      12.06,
+      13.57
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_74",
+     "x": [
+      7.03,
+      10.05
+     ],
+     "y": [
+      12.06,
+      13.06
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_75",
+     "x": [
+      18.09,
+      19.59
+     ],
+     "y": [
+      12.06,
+      12.56
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_76",
+     "x": [
+      23.61,
+      24.12
+     ],
+     "y": [
+      12.06,
+      15.57
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_77",
+     "x": [
+      28.14,
+      28.64
+     ],
+     "y": [
+      12.06,
+      15.57
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_78",
+     "x": [
+      32.66,
+      34.16
+     ],
+     "y": [
+      12.06,
+      12.56
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_79",
+     "x": [
+      42.2,
+      45.22
+     ],
+     "y": [
+      12.06,
+      13.06
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_80",
+     "x": [
+      50.24,
+      50.74
+     ],
+     "y": [
+      12.06,
+      13.57
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_81",
+     "x": [
+      18.59,
+      19.59
+     ],
+     "y": [
+      12.56,
+      13.06
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_82",
+     "x": [
+      32.66,
+      33.66
+     ],
+     "y": [
+      12.56,
+      13.06
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_83",
+     "x": [
+      7.03,
+      9.04
+     ],
+     "y": [
+      13.06,
+      13.57
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_84",
+     "x": [
+      43.21,
+      45.22
+     ],
+     "y": [
+      13.06,
+      13.57
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_85",
+     "x": [
+      1.0,
+      1.51
+     ],
+     "y": [
+      13.57,
+      14.07
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_86",
+     "x": [
+      7.03,
+      8.54
+     ],
+     "y": [
+      13.57,
+      14.07
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_87",
+     "x": [
+      43.71,
+      45.22
+     ],
+     "y": [
+      13.57,
+      14.07
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_88",
+     "x": [
+      50.74,
+      51.25
+     ],
+     "y": [
+      13.57,
+      14.07
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_89",
+     "x": [
+      0.5,
+      1.0
+     ],
+     "y": [
+      14.07,
+      14.57
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_90",
+     "x": [
+      51.25,
+      51.75
+     ],
+     "y": [
+      14.07,
+      14.57
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_91",
+     "x": [
+      0.0,
+      0.5
+     ],
+     "y": [
+      14.57,
+      18.09
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_92",
+     "x": [
+      23.11,
+      23.61
+     ],
+     "y": [
+      14.57,
+      15.07
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_93",
+     "x": [
+      28.64,
+      29.14
+     ],
+     "y": [
+      14.57,
+      15.07
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_94",
+     "x": [
+      51.75,
+      52.25
+     ],
+     "y": [
+      14.57,
+      18.09
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_95",
+     "x": [
+      12.56,
+      13.06
+     ],
+     "y": [
+      15.07,
+      15.57
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_96",
+     "x": [
+      39.19,
+      39.69
+     ],
+     "y": [
+      15.07,
+      15.57
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_97",
+     "x": [
+      1.0,
+      2.51
+     ],
+     "y": [
+      15.57,
+      17.08
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_98",
+     "x": [
+      49.74,
+      51.25
+     ],
+     "y": [
+      15.57,
+      17.08
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_99",
+     "x": [
+      2.51,
+      3.01
+     ],
+     "y": [
+      16.08,
+      16.58
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_100",
+     "x": [
+      49.24,
+      49.74
+     ],
+     "y": [
+      16.08,
+      16.58
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_101",
+     "x": [
+      12.56,
+      13.06
+     ],
+     "y": [
+      17.08,
+      17.58
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_102",
+     "x": [
+      23.61,
+      24.12
+     ],
+     "y": [
+      17.08,
+      20.6
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_103",
+     "x": [
+      28.14,
+      28.64
+     ],
+     "y": [
+      17.08,
+      20.6
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_104",
+     "x": [
+      39.19,
+      39.69
+     ],
+     "y": [
+      17.08,
+      17.58
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_105",
+     "x": [
+      24.12,
+      28.14
+     ],
+     "y": [
+      17.58,
+      21.1
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_106",
+     "x": [
+      0.5,
+      1.0
+     ],
+     "y": [
+      18.09,
+      18.59
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_107",
+     "x": [
+      7.03,
+      8.54
+     ],
+     "y": [
+      18.09,
+      20.6
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_108",
+     "x": [
+      23.11,
+      23.61
+     ],
+     "y": [
+      18.09,
+      18.59
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_109",
+     "x": [
+      28.64,
+      29.14
+     ],
+     "y": [
+      18.09,
+      18.59
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_110",
+     "x": [
+      43.71,
+      45.22
+     ],
+     "y": [
+      18.09,
+      20.6
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_111",
+     "x": [
+      51.25,
+      51.75
+     ],
+     "y": [
+      18.09,
+      18.59
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_112",
+     "x": [
+      1.0,
+      2.01
+     ],
+     "y": [
+      18.59,
+      19.09
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_113",
+     "x": [
+      8.54,
+      9.04
+     ],
+     "y": [
+      18.59,
+      20.6
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_114",
+     "x": [
+      12.06,
+      12.56
+     ],
+     "y": [
+      18.59,
+      19.09
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_115",
+     "x": [
+      39.69,
+      40.19
+     ],
+     "y": [
+      18.59,
+      19.09
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_116",
+     "x": [
+      43.21,
+      43.71
+     ],
+     "y": [
+      18.59,
+      20.6
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_117",
+     "x": [
+      50.24,
+      51.25
+     ],
+     "y": [
+      18.59,
+      19.09
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_118",
+     "x": [
+      1.51,
+      2.01
+     ],
+     "y": [
+      19.09,
+      20.6
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_119",
+     "x": [
+      9.04,
+      12.06
+     ],
+     "y": [
+      19.09,
+      20.6
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_120",
+     "x": [
+      40.19,
+      43.21
+     ],
+     "y": [
+      19.09,
+      20.6
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_121",
+     "x": [
+      50.24,
+      50.74
+     ],
+     "y": [
+      19.09,
+      20.6
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_122",
+     "x": [
+      18.09,
+      19.09
+     ],
+     "y": [
+      19.59,
+      25.62
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_123",
+     "x": [
+      33.16,
+      34.16
+     ],
+     "y": [
+      19.59,
+      25.62
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_124",
+     "x": [
+      1.0,
+      1.51
+     ],
+     "y": [
+      20.1,
+      22.61
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_125",
+     "x": [
+      17.58,
+      18.09
+     ],
+     "y": [
+      20.1,
+      25.62
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_126",
+     "x": [
+      19.09,
+      19.59
+     ],
+     "y": [
+      20.1,
+      25.62
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_127",
+     "x": [
+      32.66,
+      33.16
+     ],
+     "y": [
+      20.1,
+      25.62
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_128",
+     "x": [
+      34.16,
+      34.67
+     ],
+     "y": [
+      20.1,
+      25.62
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_129",
+     "x": [
+      50.74,
+      51.25
+     ],
+     "y": [
+      20.1,
+      22.61
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_130",
+     "x": [
+      10.55,
+      11.56
+     ],
+     "y": [
+      20.6,
+      21.1
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_131",
+     "x": [
+      15.57,
+      17.58
+     ],
+     "y": [
+      20.6,
+      24.12
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_132",
+     "x": [
+      19.59,
+      20.6
+     ],
+     "y": [
+      20.6,
+      25.62
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_133",
+     "x": [
+      31.65,
+      32.66
+     ],
+     "y": [
+      20.6,
+      25.62
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_134",
+     "x": [
+      34.67,
+      36.68
+     ],
+     "y": [
+      20.6,
+      24.12
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_135",
+     "x": [
+      40.7,
+      41.7
+     ],
+     "y": [
+      20.6,
+      21.1
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_136",
+     "x": [
+      15.07,
+      15.57
+     ],
+     "y": [
+      21.1,
+      23.61
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_137",
+     "x": [
+      20.6,
+      21.1
+     ],
+     "y": [
+      21.1,
+      25.12
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_138",
+     "x": [
+      31.15,
+      31.65
+     ],
+     "y": [
+      21.1,
+      25.12
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_139",
+     "x": [
+      36.68,
+      37.18
+     ],
+     "y": [
+      21.1,
+      23.61
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_140",
+     "x": [
+      21.1,
+      21.6
+     ],
+     "y": [
+      21.6,
+      24.12
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_141",
+     "x": [
+      30.65,
+      31.15
+     ],
+     "y": [
+      21.6,
+      24.12
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_142",
+     "x": [
+      7.54,
+      10.05
+     ],
+     "y": [
+      22.11,
+      23.11
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_143",
+     "x": [
+      21.6,
+      22.11
+     ],
+     "y": [
+      22.11,
+      23.11
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_144",
+     "x": [
+      30.14,
+      30.65
+     ],
+     "y": [
+      22.11,
+      23.11
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_145",
+     "x": [
+      42.2,
+      44.71
+     ],
+     "y": [
+      22.11,
+      23.11
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_146",
+     "x": [
+      1.51,
+      2.01
+     ],
+     "y": [
+      22.61,
+      23.11
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_147",
+     "x": [
+      6.53,
+      7.54
+     ],
+     "y": [
+      22.61,
+      23.11
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_148",
+     "x": [
+      10.05,
+      10.55
+     ],
+     "y": [
+      22.61,
+      23.11
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_149",
+     "x": [
+      41.7,
+      42.2
+     ],
+     "y": [
+      22.61,
+      23.11
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_150",
+     "x": [
+      44.71,
+      45.72
+     ],
+     "y": [
+      22.61,
+      23.11
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_151",
+     "x": [
+      50.24,
+      50.74
+     ],
+     "y": [
+      22.61,
+      23.11
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_152",
+     "x": [
+      2.01,
+      6.53
+     ],
+     "y": [
+      23.11,
+      23.61
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_153",
+     "x": [
+      10.55,
+      11.05
+     ],
+     "y": [
+      23.11,
+      23.61
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_154",
+     "x": [
+      41.2,
+      41.7
+     ],
+     "y": [
+      23.11,
+      23.61
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_155",
+     "x": [
+      45.72,
+      50.24
+     ],
+     "y": [
+      23.11,
+      23.61
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_156",
+     "x": [
+      11.05,
+      11.56
+     ],
+     "y": [
+      23.61,
+      24.12
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_157",
+     "x": [
+      25.12,
+      27.13
+     ],
+     "y": [
+      23.61,
+      26.13
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_158",
+     "x": [
+      40.7,
+      41.2
+     ],
+     "y": [
+      23.61,
+      24.12
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_159",
+     "x": [
+      11.56,
+      12.06
+     ],
+     "y": [
+      24.12,
+      27.63
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_160",
+     "x": [
+      17.08,
+      17.58
+     ],
+     "y": [
+      24.12,
+      25.62
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_161",
+     "x": [
+      24.62,
+      25.12
+     ],
+     "y": [
+      24.12,
+      25.62
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_162",
+     "x": [
+      27.13,
+      27.63
+     ],
+     "y": [
+      24.12,
+      25.62
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_163",
+     "x": [
+      34.67,
+      35.17
+     ],
+     "y": [
+      24.12,
+      25.62
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_164",
+     "x": [
+      40.19,
+      40.7
+     ],
+     "y": [
+      24.12,
+      27.63
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_165",
+     "x": [
+      24.12,
+      24.62
+     ],
+     "y": [
+      24.62,
+      25.62
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_166",
+     "x": [
+      27.63,
+      28.14
+     ],
+     "y": [
+      24.62,
+      25.62
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_167",
+     "x": [
+      13.06,
+      13.57
+     ],
+     "y": [
+      26.63,
+      27.13
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_168",
+     "x": [
+      38.69,
+      39.19
+     ],
+     "y": [
+      26.63,
+      27.13
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_169",
+     "x": [
+      11.05,
+      11.56
+     ],
+     "y": [
+      27.63,
+      28.14
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_170",
+     "x": [
+      16.58,
+      20.6
+     ],
+     "y": [
+      27.63,
+      28.14
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_171",
+     "x": [
+      23.61,
+      28.64
+     ],
+     "y": [
+      27.63,
+      28.14
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_172",
+     "x": [
+      31.65,
+      35.67
+     ],
+     "y": [
+      27.63,
+      28.14
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_173",
+     "x": [
+      40.7,
+      41.2
+     ],
+     "y": [
+      27.63,
+      28.14
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_174",
+     "x": [
+      10.55,
+      11.05
+     ],
+     "y": [
+      28.14,
+      29.64
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_175",
+     "x": [
+      14.07,
+      15.07
+     ],
+     "y": [
+      28.14,
+      28.64
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_176",
+     "x": [
+      16.58,
+      17.08
+     ],
+     "y": [
+      28.14,
+      28.64
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_177",
+     "x": [
+      20.6,
+      21.1
+     ],
+     "y": [
+      28.14,
+      28.64
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_178",
+     "x": [
+      23.61,
+      24.62
+     ],
+     "y": [
+      28.14,
+      28.64
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_179",
+     "x": [
+      27.63,
+      28.64
+     ],
+     "y": [
+      28.14,
+      28.64
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_180",
+     "x": [
+      31.15,
+      31.65
+     ],
+     "y": [
+      28.14,
+      28.64
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_181",
+     "x": [
+      35.17,
+      35.67
+     ],
+     "y": [
+      28.14,
+      28.64
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_182",
+     "x": [
+      37.18,
+      38.18
+     ],
+     "y": [
+      28.14,
+      28.64
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_183",
+     "x": [
+      41.2,
+      41.7
+     ],
+     "y": [
+      28.14,
+      29.64
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_184",
+     "x": [
+      16.08,
+      16.58
+     ],
+     "y": [
+      28.64,
+      30.14
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_185",
+     "x": [
+      21.1,
+      21.6
+     ],
+     "y": [
+      28.64,
+      30.14
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_186",
+     "x": [
+      23.61,
+      24.12
+     ],
+     "y": [
+      28.64,
+      30.65
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_187",
+     "x": [
+      28.14,
+      28.64
+     ],
+     "y": [
+      28.64,
+      30.65
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_188",
+     "x": [
+      30.65,
+      31.15
+     ],
+     "y": [
+      28.64,
+      30.14
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_189",
+     "x": [
+      35.67,
+      36.17
+     ],
+     "y": [
+      28.64,
+      30.14
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_190",
+     "x": [
+      21.6,
+      22.11
+     ],
+     "y": [
+      29.14,
+      30.65
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_191",
+     "x": [
+      30.14,
+      30.65
+     ],
+     "y": [
+      29.14,
+      30.65
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_192",
+     "x": [
+      11.05,
+      11.56
+     ],
+     "y": [
+      29.64,
+      30.14
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_193",
+     "x": [
+      13.57,
+      16.08
+     ],
+     "y": [
+      29.64,
+      30.14
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_194",
+     "x": [
+      36.17,
+      38.69
+     ],
+     "y": [
+      29.64,
+      30.14
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_195",
+     "x": [
+      40.7,
+      41.2
+     ],
+     "y": [
+      29.64,
+      30.14
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_196",
+     "x": [
+      11.56,
+      12.06
+     ],
+     "y": [
+      30.14,
+      30.65
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_197",
+     "x": [
+      13.06,
+      13.57
+     ],
+     "y": [
+      30.14,
+      30.65
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_198",
+     "x": [
+      22.11,
+      23.61
+     ],
+     "y": [
+      30.14,
+      30.65
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_199",
+     "x": [
+      28.64,
+      30.14
+     ],
+     "y": [
+      30.14,
+      30.65
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_200",
+     "x": [
+      38.69,
+      39.19
+     ],
+     "y": [
+      30.14,
+      30.65
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_201",
+     "x": [
+      40.19,
+      40.7
+     ],
+     "y": [
+      30.14,
+      30.65
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_202",
+     "x": [
+      12.06,
+      13.06
+     ],
+     "y": [
+      30.65,
+      31.15
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
+    },
+    {
+     "label": "blk_203",
+     "x": [
+      39.19,
+      40.19
+     ],
+     "y": [
+      30.65,
+      31.15
+     ],
+     "z": [
+      0,
+      7
+     ],
+     "role": "solid; traced BLACK: fish-tank columns, interior blocks, perimeter ring - FULL room height (a 5 m cap let the deck-to-deck eye line sail over the tanks; the real columns reach the ceiling)"
     }
-   ]
+   ],
+   "purpose": "Every BLACK region of the traced reference as solid mass x[0,52.3] y[0,31.1] overall; the outline ring is the arena wall."
   },
   {
-   "name": "Blue Base",
-   "purpose": "East spawn, exact x-mirror: roof x[34,42] y[11,21] z[3.6,4], back wall x[42,43.1] y[11,21] z[0,9], side walls x[34,42] y[21,22] z[0,4] and x[34,42] y[10,11] z[0,4], stair x[38.5,41] y[12,15.5] z[0,4].",
+   "name": "Upper Decks",
    "footprints": [
     {
-     "label": "bb_roof",
+     "label": "dek_00",
      "x": [
-      34.0,
-      42.0
+      1.51,
+      7.03
      ],
      "y": [
-      11,
-      21
-     ],
-     "z": [
-      3.6,
-      4
-     ],
-     "role": "deck slab; the base's upper deck, overlooks the courtyard; tactical rifle sits just before the stairs (documented) (mirror)"
-    },
-    {
-     "label": "bb_back",
-     "x": [
-      42.0,
-      43.1
-     ],
-     "y": [
-      11,
-      21
-     ],
-     "z": [
-      0,
-      9.0
-     ],
-     "role": "solid; base back wall against the perimeter (mirror)"
-    },
-    {
-     "label": "bb_wall_n",
-     "x": [
-      34.0,
-      42.0
-     ],
-     "y": [
-      21,
-      22
+      9.55,
+      12.06
      ],
      "z": [
       0,
       4
      ],
-     "role": "solid; base north wall - the gap OUTSIDE it at x[10,11] is the north exit toward Utility (mirror)"
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
     },
     {
-     "label": "bb_wall_s",
+     "label": "dek_01",
      "x": [
-      34.0,
-      42.0
+      45.22,
+      50.74
      ],
      "y": [
-      10,
-      11
+      9.55,
+      12.06
      ],
      "z": [
       0,
       4
      ],
-     "role": "solid; base south wall - mirror gap is the south exit toward Refrigeration (mirror)"
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
     },
     {
-     "label": "bb_stair",
+     "label": "dek_02",
      "x": [
-      38.5,
-      41.0
+      7.03,
+      8.54
      ],
      "y": [
-      12,
-      15.5
+      10.05,
+      12.06
      ],
      "z": [
       0,
       4
      ],
-     "role": "ground-to-deck stair volume inside the base (mirror)"
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_03",
+     "x": [
+      43.71,
+      45.22
+     ],
+     "y": [
+      10.05,
+      12.06
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_04",
+     "x": [
+      2.01,
+      7.03
+     ],
+     "y": [
+      12.06,
+      15.57
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_05",
+     "x": [
+      10.55,
+      11.56
+     ],
+     "y": [
+      12.06,
+      19.09
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_06",
+     "x": [
+      40.7,
+      41.7
+     ],
+     "y": [
+      12.06,
+      19.09
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_07",
+     "x": [
+      45.22,
+      50.24
+     ],
+     "y": [
+      12.06,
+      15.57
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_08",
+     "x": [
+      10.05,
+      10.55
+     ],
+     "y": [
+      12.56,
+      19.09
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_09",
+     "x": [
+      41.7,
+      42.2
+     ],
+     "y": [
+      12.56,
+      19.09
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_10",
+     "x": [
+      9.04,
+      10.05
+     ],
+     "y": [
+      13.06,
+      19.09
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_11",
+     "x": [
+      11.56,
+      12.06
+     ],
+     "y": [
+      13.06,
+      19.09
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_12",
+     "x": [
+      40.19,
+      40.7
+     ],
+     "y": [
+      13.06,
+      19.09
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_13",
+     "x": [
+      42.2,
+      43.21
+     ],
+     "y": [
+      13.06,
+      19.09
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_14",
+     "x": [
+      1.51,
+      2.01
+     ],
+     "y": [
+      13.57,
+      15.57
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_15",
+     "x": [
+      8.54,
+      9.04
+     ],
+     "y": [
+      13.57,
+      18.59
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_16",
+     "x": [
+      43.21,
+      43.71
+     ],
+     "y": [
+      13.57,
+      18.59
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_17",
+     "x": [
+      50.24,
+      50.74
+     ],
+     "y": [
+      13.57,
+      15.57
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_18",
+     "x": [
+      1.0,
+      1.51
+     ],
+     "y": [
+      14.07,
+      15.57
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_19",
+     "x": [
+      7.03,
+      8.54
+     ],
+     "y": [
+      14.07,
+      18.09
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_20",
+     "x": [
+      12.06,
+      12.56
+     ],
+     "y": [
+      14.07,
+      18.59
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_21",
+     "x": [
+      39.69,
+      40.19
+     ],
+     "y": [
+      14.07,
+      18.59
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_22",
+     "x": [
+      43.71,
+      45.22
+     ],
+     "y": [
+      14.07,
+      18.09
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_23",
+     "x": [
+      50.74,
+      51.25
+     ],
+     "y": [
+      14.07,
+      15.57
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_24",
+     "x": [
+      0.5,
+      1.0
+     ],
+     "y": [
+      14.57,
+      18.09
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_25",
+     "x": [
+      12.56,
+      13.06
+     ],
+     "y": [
+      14.57,
+      15.07
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_26",
+     "x": [
+      39.19,
+      39.69
+     ],
+     "y": [
+      14.57,
+      15.07
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_27",
+     "x": [
+      51.25,
+      51.75
+     ],
+     "y": [
+      14.57,
+      18.09
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_28",
+     "x": [
+      2.51,
+      7.03
+     ],
+     "y": [
+      15.57,
+      16.08
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_29",
+     "x": [
+      12.56,
+      13.06
+     ],
+     "y": [
+      15.57,
+      17.08
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_30",
+     "x": [
+      39.19,
+      39.69
+     ],
+     "y": [
+      15.57,
+      17.08
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_31",
+     "x": [
+      45.22,
+      49.74
+     ],
+     "y": [
+      15.57,
+      16.08
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_32",
+     "x": [
+      3.01,
+      7.03
+     ],
+     "y": [
+      16.08,
+      22.61
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_33",
+     "x": [
+      45.22,
+      49.24
+     ],
+     "y": [
+      16.08,
+      22.61
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_34",
+     "x": [
+      2.51,
+      3.01
+     ],
+     "y": [
+      16.58,
+      23.11
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_35",
+     "x": [
+      49.24,
+      49.74
+     ],
+     "y": [
+      16.58,
+      23.11
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_36",
+     "x": [
+      1.0,
+      2.51
+     ],
+     "y": [
+      17.08,
+      18.59
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_37",
+     "x": [
+      49.74,
+      51.25
+     ],
+     "y": [
+      17.08,
+      18.59
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_38",
+     "x": [
+      12.56,
+      13.06
+     ],
+     "y": [
+      17.58,
+      18.09
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_39",
+     "x": [
+      39.19,
+      39.69
+     ],
+     "y": [
+      17.58,
+      18.09
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_40",
+     "x": [
+      2.01,
+      2.51
+     ],
+     "y": [
+      18.59,
+      23.11
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_41",
+     "x": [
+      49.74,
+      50.24
+     ],
+     "y": [
+      18.59,
+      23.11
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_42",
+     "x": [
+      1.51,
+      2.01
+     ],
+     "y": [
+      20.6,
+      22.61
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_43",
+     "x": [
+      7.03,
+      10.55
+     ],
+     "y": [
+      20.6,
+      22.11
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_44",
+     "x": [
+      41.7,
+      45.22
+     ],
+     "y": [
+      20.6,
+      22.11
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_45",
+     "x": [
+      50.24,
+      50.74
+     ],
+     "y": [
+      20.6,
+      22.61
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_46",
+     "x": [
+      10.55,
+      11.56
+     ],
+     "y": [
+      21.1,
+      23.11
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_47",
+     "x": [
+      40.7,
+      41.7
+     ],
+     "y": [
+      21.1,
+      23.11
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_48",
+     "x": [
+      11.56,
+      12.06
+     ],
+     "y": [
+      21.6,
+      24.12
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_49",
+     "x": [
+      40.19,
+      40.7
+     ],
+     "y": [
+      21.6,
+      24.12
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_50",
+     "x": [
+      7.03,
+      7.54
+     ],
+     "y": [
+      22.11,
+      22.61
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_51",
+     "x": [
+      10.05,
+      10.55
+     ],
+     "y": [
+      22.11,
+      22.61
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_52",
+     "x": [
+      12.06,
+      12.56
+     ],
+     "y": [
+      22.11,
+      23.61
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_53",
+     "x": [
+      39.69,
+      40.19
+     ],
+     "y": [
+      22.11,
+      23.61
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_54",
+     "x": [
+      41.7,
+      42.2
+     ],
+     "y": [
+      22.11,
+      22.61
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_55",
+     "x": [
+      44.71,
+      45.22
+     ],
+     "y": [
+      22.11,
+      22.61
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_56",
+     "x": [
+      3.01,
+      6.53
+     ],
+     "y": [
+      22.61,
+      23.11
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_57",
+     "x": [
+      12.56,
+      13.06
+     ],
+     "y": [
+      22.61,
+      30.65
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_58",
+     "x": [
+      39.19,
+      39.69
+     ],
+     "y": [
+      22.61,
+      30.65
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_59",
+     "x": [
+      45.72,
+      49.24
+     ],
+     "y": [
+      22.61,
+      23.11
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_60",
+     "x": [
+      11.05,
+      11.56
+     ],
+     "y": [
+      23.11,
+      23.61
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_61",
+     "x": [
+      13.06,
+      13.57
+     ],
+     "y": [
+      23.11,
+      26.63
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_62",
+     "x": [
+      38.69,
+      39.19
+     ],
+     "y": [
+      23.11,
+      26.63
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_63",
+     "x": [
+      40.7,
+      41.2
+     ],
+     "y": [
+      23.11,
+      23.61
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_64",
+     "x": [
+      12.06,
+      12.56
+     ],
+     "y": [
+      24.12,
+      30.65
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_65",
+     "x": [
+      39.69,
+      40.19
+     ],
+     "y": [
+      24.12,
+      30.65
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_66",
+     "x": [
+      13.57,
+      14.07
+     ],
+     "y": [
+      26.63,
+      29.64
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_67",
+     "x": [
+      38.18,
+      38.69
+     ],
+     "y": [
+      26.63,
+      29.64
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_68",
+     "x": [
+      14.07,
+      14.57
+     ],
+     "y": [
+      27.13,
+      28.14
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_69",
+     "x": [
+      37.68,
+      38.18
+     ],
+     "y": [
+      27.13,
+      28.14
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_70",
+     "x": [
+      11.56,
+      12.06
+     ],
+     "y": [
+      27.63,
+      29.64
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_71",
+     "x": [
+      13.06,
+      13.57
+     ],
+     "y": [
+      27.63,
+      30.14
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_72",
+     "x": [
+      38.69,
+      39.19
+     ],
+     "y": [
+      27.63,
+      30.14
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_73",
+     "x": [
+      40.19,
+      40.7
+     ],
+     "y": [
+      27.63,
+      29.64
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_74",
+     "x": [
+      11.05,
+      11.56
+     ],
+     "y": [
+      28.64,
+      29.64
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_75",
+     "x": [
+      14.07,
+      15.57
+     ],
+     "y": [
+      28.64,
+      29.64
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_76",
+     "x": [
+      36.68,
+      38.18
+     ],
+     "y": [
+      28.64,
+      29.64
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_77",
+     "x": [
+      40.7,
+      41.2
+     ],
+     "y": [
+      28.64,
+      29.64
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_78",
+     "x": [
+      15.57,
+      16.08
+     ],
+     "y": [
+      29.14,
+      29.64
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
+    },
+    {
+     "label": "dek_79",
+     "x": [
+      36.17,
+      36.68
+     ],
+     "y": [
+      29.14,
+      29.64
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "deck slab; traced LIGHT: bases, wings, protrusion interiors - raised one storey, walkable top"
     }
-   ]
+   ],
+   "purpose": "Every large LIGHT region as a raised deck x[0,52.3] y[0,31.1] overall; the two bases and their wings live here."
   },
   {
-   "name": "Courtyards",
-   "purpose": "The two open arenas in front of the bases: yellow court is the open floor x[11,19] y[8,24] at ground, blue court its mirror x[25,33]. No structure of their own - the surrounding walls shape them; cover crates carry the documented thruster pads.",
+   "name": "Ramps",
    "footprints": [
     {
-     "label": "court_marker_w",
+     "label": "rmp_00",
      "x": [
-      14.4,
-      15.6
+      25.12,
+      27.13
      ],
      "y": [
-      15.4,
-      16.6
+      2.01,
+      3.01
      ],
      "z": [
       0,
-      0.1
+      4
      ],
-     "role": "deck slab; nav marker only - the yellow court's centroid, kept sub-knee so it plays as open floor"
+     "role": "ground-to-mid stair volume; traced capsule - the image's ramp pills"
     },
     {
-     "label": "court_marker_e",
+     "label": "rmp_01",
      "x": [
-      28.4,
-      29.6
+      23.61,
+      25.12
      ],
      "y": [
-      15.4,
-      16.6
+      2.51,
+      3.52
      ],
      "z": [
       0,
-      0.1
+      4
      ],
-     "role": "deck slab; nav marker only - blue court centroid"
+     "role": "ground-to-mid stair volume; traced capsule - the image's ramp pills"
+    },
+    {
+     "label": "rmp_02",
+     "x": [
+      27.13,
+      28.64
+     ],
+     "y": [
+      2.51,
+      3.52
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "ground-to-mid stair volume; traced capsule - the image's ramp pills"
+    },
+    {
+     "label": "rmp_03",
+     "x": [
+      10.55,
+      11.56
+     ],
+     "y": [
+      3.01,
+      10.05
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "ground-to-mid stair volume; traced capsule - the image's ramp pills"
+    },
+    {
+     "label": "rmp_04",
+     "x": [
+      23.11,
+      23.61
+     ],
+     "y": [
+      3.01,
+      5.02
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "ground-to-mid stair volume; traced capsule - the image's ramp pills"
+    },
+    {
+     "label": "rmp_05",
+     "x": [
+      25.12,
+      25.62
+     ],
+     "y": [
+      3.01,
+      3.52
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "ground-to-mid stair volume; traced capsule - the image's ramp pills"
+    },
+    {
+     "label": "rmp_06",
+     "x": [
+      26.63,
+      27.13
+     ],
+     "y": [
+      3.01,
+      3.52
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "ground-to-mid stair volume; traced capsule - the image's ramp pills"
+    },
+    {
+     "label": "rmp_07",
+     "x": [
+      28.64,
+      29.14
+     ],
+     "y": [
+      3.01,
+      5.02
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "ground-to-mid stair volume; traced capsule - the image's ramp pills"
+    },
+    {
+     "label": "rmp_08",
+     "x": [
+      40.7,
+      41.7
+     ],
+     "y": [
+      3.01,
+      10.05
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "ground-to-mid stair volume; traced capsule - the image's ramp pills"
+    },
+    {
+     "label": "rmp_09",
+     "x": [
+      11.56,
+      12.06
+     ],
+     "y": [
+      3.52,
+      4.02
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "ground-to-mid stair volume; traced capsule - the image's ramp pills"
+    },
+    {
+     "label": "rmp_10",
+     "x": [
+      22.61,
+      23.11
+     ],
+     "y": [
+      3.52,
+      5.53
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "ground-to-mid stair volume; traced capsule - the image's ramp pills"
+    },
+    {
+     "label": "rmp_11",
+     "x": [
+      23.61,
+      24.62
+     ],
+     "y": [
+      3.52,
+      4.52
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "ground-to-mid stair volume; traced capsule - the image's ramp pills"
+    },
+    {
+     "label": "rmp_12",
+     "x": [
+      27.63,
+      28.64
+     ],
+     "y": [
+      3.52,
+      4.52
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "ground-to-mid stair volume; traced capsule - the image's ramp pills"
+    },
+    {
+     "label": "rmp_13",
+     "x": [
+      29.14,
+      29.64
+     ],
+     "y": [
+      3.52,
+      5.53
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "ground-to-mid stair volume; traced capsule - the image's ramp pills"
+    },
+    {
+     "label": "rmp_14",
+     "x": [
+      40.19,
+      40.7
+     ],
+     "y": [
+      3.52,
+      4.02
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "ground-to-mid stair volume; traced capsule - the image's ramp pills"
+    },
+    {
+     "label": "rmp_15",
+     "x": [
+      22.11,
+      22.61
+     ],
+     "y": [
+      4.02,
+      5.53
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "ground-to-mid stair volume; traced capsule - the image's ramp pills"
+    },
+    {
+     "label": "rmp_16",
+     "x": [
+      29.64,
+      30.14
+     ],
+     "y": [
+      4.02,
+      5.53
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "ground-to-mid stair volume; traced capsule - the image's ramp pills"
+    },
+    {
+     "label": "rmp_17",
+     "x": [
+      11.56,
+      12.56
+     ],
+     "y": [
+      5.02,
+      5.53
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "ground-to-mid stair volume; traced capsule - the image's ramp pills"
+    },
+    {
+     "label": "rmp_18",
+     "x": [
+      39.69,
+      40.7
+     ],
+     "y": [
+      5.02,
+      5.53
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "ground-to-mid stair volume; traced capsule - the image's ramp pills"
+    },
+    {
+     "label": "rmp_19",
+     "x": [
+      11.56,
+      13.57
+     ],
+     "y": [
+      7.54,
+      9.04
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "ground-to-mid stair volume; traced capsule - the image's ramp pills"
+    },
+    {
+     "label": "rmp_20",
+     "x": [
+      38.69,
+      40.7
+     ],
+     "y": [
+      7.54,
+      9.04
+     ],
+     "z": [
+      0,
+      4
+     ],
+     "role": "ground-to-mid stair volume; traced capsule - the image's ramp pills"
     }
-   ]
+   ],
+   "purpose": "Small isolated LIGHT capsules as stair volumes x[0,52.3] y[0,31.1] overall - the reference draws its ramps as light pills inside the open floor."
   },
   {
    "name": "Top Mid",
-   "purpose": "The elevated center bridge, the map's most important position: deck x[18,26] y[13.5,18.5] z[3.6,4] carried by tunnel walls x[18,26] y[18.5,19.5] z[0,3.6] and x[18,26] y[12.5,13.5] z[0,3.6]; BOTTOM MID is the open passage between them (y[13.5,18.5] at ground) - the one hallway that runs through both arenas. Court stairs x[14.5,18] y[14,18] z[0,4] (west) and x[26,29.5] y[14,18] z[0,4] (east) climb onto the bridge ends: the article's split-level junction - from either court you choose Bottom Mid (ground) or Top Mid (up), and the choice changes how the next fight is engaged. Power pickup at bridge center (BREACHPOINT adaptation: the rocket takes Aquarius' camo/OS slot).",
    "footprints": [
     {
-     "label": "topmid_deck",
+     "label": "tmd_00",
      "x": [
-      18,
-      26
+      24.12,
+      28.14
      ],
      "y": [
-      13.5,
-      18.5
+      15.57,
+      17.08
      ],
      "z": [
       3.6,
       4
      ],
-     "role": "deck slab; the bridge - overlooks both courts, no cover on it"
+     "role": "deck slab; traced center sliver - the bridge between the tanks, walk-under below"
     },
     {
-     "label": "topmid_wall_n",
+     "label": "tmd_01",
      "x": [
-      18,
-      26
+      23.11,
+      24.12
      ],
      "y": [
-      18.5,
-      19.5
-     ],
-     "z": [
-      0,
-      3.6
-     ],
-     "role": "solid; Bottom Mid tunnel north wall"
-    },
-    {
-     "label": "topmid_wall_s",
-     "x": [
-      18,
-      26
-     ],
-     "y": [
-      12.5,
-      13.5
-     ],
-     "z": [
-      0,
-      3.6
-     ],
-     "role": "solid; Bottom Mid tunnel south wall"
-    },
-    {
-     "label": "stair_court_w",
-     "x": [
-      14.5,
-      18
-     ],
-     "y": [
-      14,
-      18
-     ],
-     "z": [
-      0,
-      4
-     ],
-     "role": "ground-to-mid stair volume; abuts the bridge at x=18"
-    },
-    {
-     "label": "stair_court_e",
-     "x": [
-      26,
-      29.5
-     ],
-     "y": [
-      14,
-      18
-     ],
-     "z": [
-      0,
-      4
-     ],
-     "role": "ground-to-mid stair volume; abuts the bridge at x=26"
-    }
-   ]
-  },
-  {
-   "name": "Hydro",
-   "purpose": "North side hallway linking Yellow Utility to Blue Utility along y[26,31]: inner wall segments x[11,13] y[25,26] z[0,4], x[15,29] y[25,26] z[0,4], x[31,33] y[25,26] z[0,4] leave a door into each court at x[13,15] and x[29,31]; columns x[17,19] y[27.5,29.5] z[0,4] and x[25,27] y[27.5,29.5] z[0,4] BREAK the hall's sightline into ~6 m reads (the article: the developers broke the side hallways up so players keep moving). Long-range pickup at the hall's exact center, on the floor.",
-   "footprints": [
-    {
-     "label": "hydro_wall_w",
-     "x": [
-      11,
-      13
-     ],
-     "y": [
-      25,
-      26
-     ],
-     "z": [
-      0,
-      4
-     ],
-     "role": "solid; hydro inner wall, west segment"
-    },
-    {
-     "label": "hydro_wall_m",
-     "x": [
-      15,
-      29
-     ],
-     "y": [
-      25,
-      26
-     ],
-     "z": [
-      0,
-      4
-     ],
-     "role": "solid; hydro inner wall, center segment"
-    },
-    {
-     "label": "hydro_wall_e",
-     "x": [
-      31,
-      33
-     ],
-     "y": [
-      25,
-      26
-     ],
-     "z": [
-      0,
-      4
-     ],
-     "role": "solid; hydro inner wall, east segment"
-    },
-    {
-     "label": "hydro_col_w",
-     "x": [
-      17,
-      19
-     ],
-     "y": [
-      27.5,
-      29.5
-     ],
-     "z": [
-      0,
-      4
-     ],
-     "role": "solid; sightline breaker column"
-    },
-    {
-     "label": "hydro_col_e",
-     "x": [
-      25,
-      27
-     ],
-     "y": [
-      27.5,
-      29.5
-     ],
-     "z": [
-      0,
-      4
-     ],
-     "role": "solid; sightline breaker column (mirror)"
-    }
-   ]
-  },
-  {
-   "name": "Utility Corners",
-   "purpose": "The corner rooms on the Hydro side, one per base (sidearm racks): shaped by the base north walls and corner piers x[8,10] y[27,29] z[0,4] (yellow) and x[34,36] y[27,29] z[0,4] (blue) - each utility corner keeps two exits: into its base's north door and into Hydro.",
-   "footprints": [
-    {
-     "label": "util_pier_w",
-     "x": [
-      8,
-      10
-     ],
-     "y": [
-      27,
-      29
-     ],
-     "z": [
-      0,
-      4
-     ],
-     "role": "solid; yellow utility corner pier"
-    },
-    {
-     "label": "util_pier_e",
-     "x": [
-      34,
-      36
-     ],
-     "y": [
-      27,
-      29
-     ],
-     "z": [
-      0,
-      4
-     ],
-     "role": "solid; blue utility corner pier (mirror)"
-    }
-   ]
-  },
-  {
-   "name": "Planters and Pump",
-   "purpose": "South side hallway linking the Refrigeration corners along y[1,6], roofed at its middle by PUMP: slab x[18,26] y[1,6] z[3.6,4] on piers x[18,19.5] y[2,5] z[0,3.6] and x[24.5,26] y[2,5] z[0,3.6] (the piers double as the lane's sightline breakers); pump stair x[14.5,17.5] y[1.5,4.5] z[0,4] climbs the west end (its mirror climbs the east). Inner wall segments x[11,13] y[6,7] z[0,4], x[15,29] y[6,7] z[0,4], x[31,33] y[6,7] z[0,4] leave court doors at x[13,15] and x[29,31]. Shotgun-tier pickup beneath Pump; grenades on top.",
-   "footprints": [
-    {
-     "label": "plant_wall_w",
-     "x": [
-      11,
-      13
-     ],
-     "y": [
-      6,
-      7
-     ],
-     "z": [
-      0,
-      4
-     ],
-     "role": "solid; planters inner wall, west segment"
-    },
-    {
-     "label": "plant_wall_m",
-     "x": [
-      15,
-      29
-     ],
-     "y": [
-      6,
-      7
-     ],
-     "z": [
-      0,
-      4
-     ],
-     "role": "solid; planters inner wall, center segment"
-    },
-    {
-     "label": "plant_wall_e",
-     "x": [
-      31,
-      33
-     ],
-     "y": [
-      6,
-      7
-     ],
-     "z": [
-      0,
-      4
-     ],
-     "role": "solid; planters inner wall, east segment"
-    },
-    {
-     "label": "pump_deck",
-     "x": [
-      18,
-      26
-     ],
-     "y": [
-      1,
-      6
+      16.08,
+      16.58
      ],
      "z": [
       3.6,
       4
      ],
-     "role": "deck slab; Pump - the raised structure over Planters"
+     "role": "deck slab; traced center sliver - the bridge between the tanks, walk-under below"
     },
     {
-     "label": "pump_pier_w",
+     "label": "tmd_02",
      "x": [
-      18,
-      19.5
+      28.14,
+      29.14
      ],
      "y": [
-      2,
-      5
+      16.08,
+      16.58
      ],
      "z": [
-      0,
-      3.6
-     ],
-     "role": "solid; pump pier + lane sightline breaker"
-    },
-    {
-     "label": "pump_pier_e",
-     "x": [
-      24.5,
-      26
-     ],
-     "y": [
-      2,
-      5
-     ],
-     "z": [
-      0,
-      3.6
-     ],
-     "role": "solid; pump pier + lane sightline breaker (mirror)"
-    },
-    {
-     "label": "pump_stair_w",
-     "x": [
-      14.5,
-      17.5
-     ],
-     "y": [
-      1.5,
-      4.5
-     ],
-     "z": [
-      0,
+      3.6,
       4
      ],
-     "role": "ground-to-mid stair volume; abuts Pump at x=18"
+     "role": "deck slab; traced center sliver - the bridge between the tanks, walk-under below"
     },
     {
-     "label": "pump_stair_e",
+     "label": "tmd_03",
      "x": [
-      26.5,
-      29.5
+      23.61,
+      24.12
      ],
      "y": [
-      1.5,
-      4.5
+      16.58,
+      17.08
      ],
      "z": [
-      0,
+      3.6,
       4
      ],
-     "role": "ground-to-mid stair volume; abuts Pump at x=26 (mirror)"
+     "role": "deck slab; traced center sliver - the bridge between the tanks, walk-under below"
     },
     {
-     "label": "refrig_pier_w",
+     "label": "tmd_04",
      "x": [
-      8,
-      10
+      28.14,
+      28.64
      ],
      "y": [
-      3,
-      5
+      16.58,
+      17.08
      ],
      "z": [
-      0,
+      3.6,
       4
      ],
-     "role": "solid; yellow refrigeration corner pier"
+     "role": "deck slab; traced center sliver - the bridge between the tanks, walk-under below"
     },
     {
-     "label": "refrig_pier_e",
+     "label": "tmd_05",
      "x": [
-      34,
-      36
+      24.62,
+      25.62
      ],
      "y": [
-      3,
-      5
+      17.08,
+      17.58
      ],
      "z": [
-      0,
+      3.6,
       4
      ],
-     "role": "solid; blue refrigeration corner pier (mirror)"
+     "role": "deck slab; traced center sliver - the bridge between the tanks, walk-under below"
+    },
+    {
+     "label": "tmd_06",
+     "x": [
+      26.63,
+      27.63
+     ],
+     "y": [
+      17.08,
+      17.58
+     ],
+     "z": [
+      3.6,
+      4
+     ],
+     "role": "deck slab; traced center sliver - the bridge between the tanks, walk-under below"
     }
-   ]
+   ],
+   "purpose": "The LIGHT sliver between the center tank columns as the Top Mid bridge deck x[0,52.3] y[0,31.1] overall; Aquarius' power position - the ROCKET stands at bridge center (our slice's one power pickup, in the camo/OS slot)."
   }
  ],
  "grapple_points": [
   {
    "id": "GP1",
    "location": {
-    "x": 18,
-    "y": 16,
+    "x": 23.9,
+    "y": 16.2,
     "z": 4
    },
    "serves": "Top Mid (west lip)",
-   "approach": "south ground of the yellow court",
-   "notes": "west lip of topmid_deck"
+   "approach": "west ground",
+   "notes": "bridge west lip, from the trace"
   },
   {
    "id": "GP2",
    "location": {
-    "x": 26,
-    "y": 16,
+    "x": 27.9,
+    "y": 16.2,
     "z": 4
    },
    "serves": "Top Mid (east lip)",
-   "approach": "south ground of the blue court",
-   "notes": "east lip of topmid_deck"
+   "approach": "east ground",
+   "notes": "bridge east lip"
   },
   {
    "id": "GP3",
    "location": {
-    "x": 19,
-    "y": 6,
+    "x": 13.1,
+    "y": 15.6,
     "z": 4
    },
-   "serves": "Pump (west lip)",
-   "approach": "north ground lane",
-   "notes": "north-west lip of pump_deck"
+   "serves": "Yellow base deck lip",
+   "approach": "east ground (the court)",
+   "notes": "base front lip"
   },
   {
    "id": "GP4",
    "location": {
-    "x": 25,
-    "y": 6,
+    "x": 39.15,
+    "y": 15.6,
     "z": 4
    },
-   "serves": "Pump (east lip)",
-   "approach": "north ground lane",
-   "notes": "north-east lip of pump_deck"
-  },
-  {
-   "id": "GP5",
-   "location": {
-    "x": 10,
-    "y": 16,
-    "z": 4
-   },
-   "serves": "Yellow Base deck",
-   "approach": "east ground (the court)",
-   "notes": "front lip of yb_roof"
-  },
-  {
-   "id": "GP6",
-   "location": {
-    "x": 34,
-    "y": 16,
-    "z": 4
-   },
-   "serves": "Blue Base deck",
+   "serves": "Blue base deck lip",
    "approach": "west ground (the court)",
-   "notes": "front lip of bb_roof (mirror)"
+   "notes": "base front lip (mirror)"
   }
  ],
- "grapple_note": "BREACHPOINT adaptation: Aquarius serves thruster/clamber mobility; our Grappleshot (20 m, GDD 2.5) stands in. Every deck lip carries an anchor with a distinct ground approach; rises are one storey (4 m) so the stairs remain the primary route - the hook is the flank option, exactly the article's split-level junction doctrine.",
- "cover": [
-  {
-   "location": {
-    "x": 13.5,
-    "y": 12,
-    "z": 0
-   },
-   "height_class": "chest"
-  },
-  {
-   "location": {
-    "x": 30.5,
-    "y": 12,
-    "z": 0
-   },
-   "height_class": "chest"
-  },
-  {
-   "location": {
-    "x": 13.5,
-    "y": 20,
-    "z": 0
-   },
-   "height_class": "chest"
-  },
-  {
-   "location": {
-    "x": 30.5,
-    "y": 20,
-    "z": 0
-   },
-   "height_class": "chest"
-  },
-  {
-   "location": {
-    "x": 22,
-    "y": 29.8,
-    "z": 0
-   },
-   "height_class": "chest"
-  },
-  {
-   "location": {
-    "x": 22,
-    "y": 21.5,
-    "z": 0
-   },
-   "height_class": "full"
-  },
-  {
-   "location": {
-    "x": 22,
-    "y": 10.5,
-    "z": 0
-   },
-   "height_class": "full"
-  }
- ],
- "cover_note": "Chest crates at the courts' documented thruster pads and mid-Hydro; full crates north and south of the Top Mid block so the court-to-court ground lines break outside the tunnel. Mirrored in x.",
+ "grapple_note": "BN29 adaptation: our Grappleshot (20 m) stands in for Infinite's thruster/clamber mobility; anchors on the traced deck lips, rises one storey, stairs stay primary.",
+ "cover": [],
+ "cover_note": "None added: the traced solids ARE the cover (the reference's own blocks). Cover crates return only if the terminal walk finds the real map's loose crates.",
  "sightlines": {
-  "max_length_m": 35,
-  "notes": "Arena01 slab-test semantics. Longest designed lines: court-to-court through Bottom Mid ~=22 m; a side hall read between breakers ~=6-10 m (the article: side-hall sightlines deliberately broken); base-to-base blocked by the court stair volumes and the Top Mid block. Everything sits inside the GDD 35 m cap - 'mostly close range engagements' (Majmudar) and our cap agree; the feared 35 m ruling is NOT needed."
+  "max_length_m": 48,
+  "cap_ruling": "R45",
+  "notes": "R45 (DESIGN-RULINGS.md): one-to-one supersedes the GDD 35 m cap for this map only. The traced geometry's own worst spawn-pair line is 47.65 m - Aquarius' documented end-to-end base sightlines, kept because the layout is the layout. 48 m declared as the measured ceiling; every line past 35 m surfaces as a SIGHTLINE_PAIR_RULED warning naming the ruling."
  },
  "hazards": [
-  "Top Mid carries no cover and is overlooked from nowhere - holding it after the grab is the trade (the documented 'most important position, exposed').",
-  "Bottom Mid is a blind 8 m tunnel with door-fights at both mouths.",
-  "Pump's top is reachable by two stairs and the hook; its plasma-grenade rack makes it a contested perch."
+  "Top Mid bridge has no rails - the traced sliver is exactly as narrow as the reference draws it."
  ],
  "doubts": [
-  "All proportions are DERIVED (channel c) - the article's figures and the real map's Forge measurements upgrade them (TICKET_BN29 a/b).",
-  "Aquarius' real base interiors have a richer two-storey layout than one stair volume; blockout fidelity accepts this until channel b measures them.",
-  "Utility/Refrigeration corner rooms are shaped here by piers rather than full room shells; if traced figures show enclosed rooms, the generator grows walls."
+  "GDD RULING PENDING: the map's real (non-spawn) long lines run ~38-44 m, past the GDD 2.6 cap of 35 m - one-to-one supersedes per the BN29 founder directive, and the GDD amendment awaits the founder's signature.",
+  "Scale: long axis assumed 52 m (derived) - a Forge walk (channel b) replaces it.",
+  "The image's two gray tones (a subtle floor grade) are flattened to one ground plane in this blockout; the trace keeps the distinction for a later pass.",
+  "Interior door openings under the decks cannot be read from a top-down: deck undersides are open at their edges in this blockout; terminal refines."
  ],
- "landing_note": "STUDY RECREATION: Halo Infinite's Aquarius as BREACHPOINT's arena (TICKET_BN29, founder directive 29 Aug). Skeleton per Majmudar: three hallways, two arenas, split-level junctions, broken side-hall sightlines, two exits per room."
+ "landing_note": "BN29: THE LAYOUT IS THE LAYOUT - every box traced from the founder-supplied reference; symmetrized about the map's own mirror line (left half wins; hand-drawn art was a cell or two off)."
 }

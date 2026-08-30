@@ -714,3 +714,15 @@ re-litigated inside a packet.
   scope, that is a new packet after BP101 (the §7 table names it BP103, owned by ai-builder,
   re-fitting `BRBotFacts` to the new attribute names) — not a side effect of any rework
   ticket.
+
+- **R45 (BN29). ONE-TO-ONE SUPERSEDES THE 35 m SIGHTLINE CAP — for
+  `breachpoint_aquarius` only.** Founder directive, 29 Aug 2026, verbatim intent:
+  "Recreate from scratch... one to one. It has to be one to one. If it is not like
+  the layout, I don't want it." The traced Aquarius reference carries the real
+  map's documented base-to-base sightlines (Gfinity: "long sight lines span from
+  one end of the map to the other from the main bases"), measured 39.9–47.7 m on
+  the traced geometry — irreducible without breaking the layout. This map declares
+  `sightlines.max_length_m` = its own measured maximum and cites this ruling via
+  `sightlines.cap_ruling: "R45"`; `arena_plan.py` accepts a cited ruling LOUDLY
+  (warning naming the ruling on every affected finding — an audited exception,
+  never a quiet weakening). GDD §2.6's cap stands untouched for every other arena.
