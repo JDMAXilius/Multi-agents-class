@@ -242,3 +242,29 @@ indoor, small, close-range; (5) two exits minimum from every room.
   the walkable interior floor draws as its own grey plate so masses sit
   ON something. Title block: "3/4 BLOCKOUT (SOLID MASSING)".
 - S1/S2 unchanged beyond regeneration.
+
+### 30 Aug — REV D: the ENGINEERING SET (founder: "like a civil engineer")
+
+- Founder on REV C: "remake it from scratch... floor one, floor two, and the
+  in-betweens... different heights and widths in the different rooms... an
+  actual civil-engineer layout blueprint." Generator rewritten as a five-
+  sheet documentation set:
+  A-101 LEVEL 1 PLAN (FFL 0.00) · A-102 LEVEL 2 PLAN (+4.00) ·
+  A-103 INTERMEDIATE LEVEL (the in-betweens: ramps R1-R12 with rise, deck
+  soffit +3.60 dashed, supports) · A-201 SECTIONS A-A/B-B/C-C ·
+  A-301 3/4 BLOCKOUT (solid-massing doctrine unchanged).
+- Civil conventions now on every sheet: double border; title block with big
+  sheet number, "DO NOT SCALE - USE FIGURED DIMENSIONS"; structural grid
+  A-I / 1-6 with bubbles on plans AND carried onto the sections; bay
+  dimension chains + overalls both axes; graphic scale bar; north arrow;
+  general-notes column (source, symmetry, derived scale, two-level lanes,
+  pillar-borne decks, trench owed, R45).
+- "Different heights and widths per room" answered mechanically: ROOM TAGS
+  101-107 / 201-205 on plan carry each room's measured clear W x L (runs
+  through the tag point, windowed to the room) and clear height (3.60 under
+  deck / 8.00 open / 4.00 on Level 2), summarized in a ROOM SCHEDULE table
+  per plan sheet. Poche by material: solid walls, /// towers, \\\ supports.
+- Sections got level TAGS (FFL/U.S. DECK/T.O. DECK/T.O. TOWER/T.O. WALL),
+  the vertical level chain, grid bubbles, and room numbers in the voids.
+- Old S1-S3 sheet files retired (replaced by A-set); comparison.png rebuilt
+  against the founder overheads from A-101/A-102.

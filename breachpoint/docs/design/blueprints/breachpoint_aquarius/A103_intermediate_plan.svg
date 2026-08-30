@@ -1,0 +1,441 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3249" height="1833" viewBox="0 0 3249 1833">
+<style>
+  .paper{fill:#ffffff}
+  .frame{fill:none;stroke:#000;stroke-width:1.4}
+  .border{fill:none;stroke:#000;stroke-width:2.6}
+  .border2{fill:none;stroke:#000;stroke-width:1.0}
+  .poche{fill:#111111;stroke:#000;stroke-width:0.9}
+  .hatch{fill:url(#h45);stroke:#000;stroke-width:1.1}
+  .hatch2{fill:url(#h135);stroke:#000;stroke-width:0.9}
+  .plate{fill:#e8e8e8;stroke:#000;stroke-width:1.1}
+  .floorp{fill:#f1f1f1;stroke:#333;stroke-width:0.9}
+  .stairp{fill:#fafafa;stroke:#000;stroke-width:1.0}
+  .over{fill:none;stroke:#000;stroke-width:0.9;stroke-dasharray:6 4}
+  .below{fill:none;stroke:#9a9a9a;stroke-width:0.7}
+  .tread{stroke:#000;stroke-width:0.6;fill:none}
+  .gridl{stroke:#777;stroke-width:0.7;stroke-dasharray:16 7}
+  .bubble{fill:#fff;stroke:#000;stroke-width:1.2}
+  .secline{stroke:#000;stroke-width:1.7;stroke-dasharray:18 5 4 5}
+  .ground{stroke:#000;stroke-width:2.6}
+  .beyond{fill:#f4f4f4;stroke:#8a8a8a;stroke-width:0.8}
+  .beyond2{fill:#d9d9d9;stroke:#6e6e6e;stroke-width:0.8}
+  .dim{stroke:#000;stroke-width:0.8;fill:none}
+  .dimtext{font:10px monospace;fill:#000}
+  .label{font:bold 10.5px monospace;fill:#000;letter-spacing:0.5px}
+  .rooml{font:bold 12.5px monospace;fill:#000;letter-spacing:1px}
+  .roomd{font:10px monospace;fill:#000}
+  .small{font:9px monospace;fill:#000}
+  .note{font:10.5px monospace;fill:#000}
+  .big{font:bold 17px monospace;fill:#000;letter-spacing:1px}
+  .panel{font:bold 13px monospace;fill:#000;letter-spacing:1px}
+  .sheetno{font:bold 30px monospace;fill:#000;letter-spacing:2px}
+  .datum{stroke:#000;stroke-width:0.7;stroke-dasharray:12 4 2 4}
+  .isotop{fill:#ededed;stroke:#000;stroke-width:1.0;stroke-linejoin:round}
+  .isoeast{fill:#ffffff;stroke:#000;stroke-width:1.0;stroke-linejoin:round}
+  .isonorth{fill:#d4d4d4;stroke:#000;stroke-width:1.0;stroke-linejoin:round}
+  .isoplate{fill:#f7f7f7;stroke:#000;stroke-width:1.6;stroke-linejoin:round}
+  .isofloor{fill:#e2e2e2;stroke:#555;stroke-width:0.8;stroke-linejoin:round}
+</style>
+<defs>
+<pattern id="h45" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+  <rect width="7" height="7" fill="#ffffff"/><line x1="0" y1="0" x2="0" y2="7" stroke="#000" stroke-width="1.2"/>
+</pattern>
+<pattern id="h135" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)">
+  <rect width="5" height="5" fill="#ffffff"/><line x1="0" y1="0" x2="0" y2="5" stroke="#555" stroke-width="1.0"/>
+</pattern>
+</defs>
+<rect class="paper" width="3249" height="1833"/>
+<title>AQUARIUS — INTERMEDIATE LEVEL — BETWEEN FFL 0.00 AND +4.00</title>
+<text class="big" x="80" y="44">INTERMEDIATE LEVEL · RAMPS, DECK SOFFIT +3.60, SUPPORTS</text>
+<line class="gridl" x1="160" y1="136" x2="160" y2="1607"/>
+<circle class="bubble" cx="160" cy="124" r="12"/>
+<text class="label" x="160" y="128" text-anchor="middle">A</text>
+<circle class="bubble" cx="160" cy="1623" r="12"/>
+<text class="label" x="160" y="1627" text-anchor="middle">A</text>
+<line class="gridl" x1="473.625" y1="136" x2="473.625" y2="1607"/>
+<circle class="bubble" cx="473.625" cy="124" r="12"/>
+<text class="label" x="473.625" y="128" text-anchor="middle">B</text>
+<circle class="bubble" cx="473.625" cy="1623" r="12"/>
+<text class="label" x="473.625" y="1627" text-anchor="middle">B</text>
+<line class="gridl" x1="787.25" y1="136" x2="787.25" y2="1607"/>
+<circle class="bubble" cx="787.25" cy="124" r="12"/>
+<text class="label" x="787.25" y="128" text-anchor="middle">C</text>
+<circle class="bubble" cx="787.25" cy="1623" r="12"/>
+<text class="label" x="787.25" y="1627" text-anchor="middle">C</text>
+<line class="gridl" x1="1100.88" y1="136" x2="1100.88" y2="1607"/>
+<circle class="bubble" cx="1100.88" cy="124" r="12"/>
+<text class="label" x="1100.88" y="128" text-anchor="middle">D</text>
+<circle class="bubble" cx="1100.88" cy="1623" r="12"/>
+<text class="label" x="1100.88" y="1627" text-anchor="middle">D</text>
+<line class="gridl" x1="1414.5" y1="136" x2="1414.5" y2="1607"/>
+<circle class="bubble" cx="1414.5" cy="124" r="12"/>
+<text class="label" x="1414.5" y="128" text-anchor="middle">E</text>
+<circle class="bubble" cx="1414.5" cy="1623" r="12"/>
+<text class="label" x="1414.5" y="1627" text-anchor="middle">E</text>
+<line class="gridl" x1="1728.12" y1="136" x2="1728.12" y2="1607"/>
+<circle class="bubble" cx="1728.12" cy="124" r="12"/>
+<text class="label" x="1728.12" y="128" text-anchor="middle">F</text>
+<circle class="bubble" cx="1728.12" cy="1623" r="12"/>
+<text class="label" x="1728.12" y="1627" text-anchor="middle">F</text>
+<line class="gridl" x1="2041.75" y1="136" x2="2041.75" y2="1607"/>
+<circle class="bubble" cx="2041.75" cy="124" r="12"/>
+<text class="label" x="2041.75" y="128" text-anchor="middle">G</text>
+<circle class="bubble" cx="2041.75" cy="1623" r="12"/>
+<text class="label" x="2041.75" y="1627" text-anchor="middle">G</text>
+<line class="gridl" x1="2355.38" y1="136" x2="2355.38" y2="1607"/>
+<circle class="bubble" cx="2355.38" cy="124" r="12"/>
+<text class="label" x="2355.38" y="128" text-anchor="middle">H</text>
+<circle class="bubble" cx="2355.38" cy="1623" r="12"/>
+<text class="label" x="2355.38" y="1627" text-anchor="middle">H</text>
+<line class="gridl" x1="2669" y1="136" x2="2669" y2="1607"/>
+<circle class="bubble" cx="2669" cy="124" r="12"/>
+<text class="label" x="2669" y="128" text-anchor="middle">I</text>
+<circle class="bubble" cx="2669" cy="1623" r="12"/>
+<text class="label" x="2669" y="1627" text-anchor="middle">I</text>
+<line class="gridl" x1="146" y1="150" x2="2683" y2="150"/>
+<circle class="bubble" cx="130" cy="150" r="12"/>
+<text class="label" x="130" y="154" text-anchor="middle">1</text>
+<line class="gridl" x1="146" y1="438.6" x2="2683" y2="438.6"/>
+<circle class="bubble" cx="130" cy="438.6" r="12"/>
+<text class="label" x="130" y="442.6" text-anchor="middle">2</text>
+<line class="gridl" x1="146" y1="727.2" x2="2683" y2="727.2"/>
+<circle class="bubble" cx="130" cy="727.2" r="12"/>
+<text class="label" x="130" y="731.2" text-anchor="middle">3</text>
+<line class="gridl" x1="146" y1="1015.8" x2="2683" y2="1015.8"/>
+<circle class="bubble" cx="130" cy="1015.8" r="12"/>
+<text class="label" x="130" y="1019.8" text-anchor="middle">4</text>
+<line class="gridl" x1="146" y1="1304.4" x2="2683" y2="1304.4"/>
+<circle class="bubble" cx="130" cy="1304.4" r="12"/>
+<text class="label" x="130" y="1308.4" text-anchor="middle">5</text>
+<line class="gridl" x1="146" y1="1593" x2="2683" y2="1593"/>
+<circle class="bubble" cx="130" cy="1593" r="12"/>
+<text class="label" x="130" y="1597" text-anchor="middle">6</text>
+<path class="floorp" fill-rule="evenodd" d="M 173.0 800.0 L 264.0 735.0 L 264.0 670.0 L 238.0 670.0 L 251.0 540.0 L 667.0 566.0 L 732.0 501.0 L 732.0 306.0 L 680.0 254.0 L 758.0 163.0 L 823.0 228.0 L 940.0 228.0 L 966.0 319.0 L 1174.0 306.0 L 1200.0 267.0 L 1200.0 189.0 L 1304.0 189.0 L 1304.0 319.0 L 1525.0 319.0 L 1525.0 189.0 L 1629.0 189.0 L 1629.0 267.0 L 1681.0 319.0 L 1863.0 319.0 L 1889.0 228.0 L 2006.0 228.0 L 2071.0 163.0 L 2149.0 254.0 L 2097.0 306.0 L 2097.0 501.0 L 2162.0 566.0 L 2578.0 540.0 L 2591.0 670.0 L 2565.0 670.0 L 2565.0 735.0 L 2656.0 800.0 L 2656.0 930.0 L 2565.0 995.0 L 2565.0 1060.0 L 2591.0 1060.0 L 2578.0 1190.0 L 2175.0 1164.0 L 2175.0 1463.0 L 2149.0 1489.0 L 2006.0 1489.0 L 1993.0 1528.0 L 1980.0 1502.0 L 1941.0 1502.0 L 1902.0 1541.0 L 1902.0 1502.0 L 1824.0 1450.0 L 1824.0 1398.0 L 1733.0 1398.0 L 1733.0 1437.0 L 1590.0 1437.0 L 1512.0 1528.0 L 1473.0 1528.0 L 1473.0 1567.0 L 1356.0 1567.0 L 1356.0 1528.0 L 1317.0 1528.0 L 1239.0 1437.0 L 1096.0 1437.0 L 1096.0 1398.0 L 1005.0 1398.0 L 1005.0 1450.0 L 927.0 1502.0 L 927.0 1541.0 L 888.0 1502.0 L 849.0 1502.0 L 836.0 1528.0 L 823.0 1489.0 L 680.0 1489.0 L 654.0 1463.0 L 654.0 1164.0 L 251.0 1190.0 L 238.0 1060.0 L 264.0 1060.0 L 264.0 995.0 L 173.0 930.0 Z M 212.0 826.0 L 212.0 891.0 L 303.0 891.0 L 303.0 839.0 L 290.0 839.0 L 290.0 826.0 Z M 498.0 670.0 L 498.0 774.0 L 576.0 774.0 L 576.0 761.0 L 589.0 761.0 L 589.0 722.0 L 732.0 722.0 L 732.0 644.0 L 719.0 644.0 L 719.0 631.0 L 680.0 631.0 L 680.0 644.0 L 667.0 644.0 L 654.0 670.0 Z M 498.0 982.0 L 498.0 1060.0 L 654.0 1060.0 L 654.0 1021.0 L 589.0 1021.0 L 589.0 982.0 L 576.0 982.0 L 576.0 969.0 L 511.0 969.0 L 511.0 982.0 Z M 719.0 1190.0 L 719.0 1216.0 L 810.0 1216.0 L 810.0 1190.0 Z M 732.0 722.0 L 732.0 735.0 L 745.0 735.0 L 745.0 722.0 Z M 771.0 761.0 L 771.0 774.0 L 784.0 774.0 L 784.0 761.0 Z M 771.0 787.0 L 771.0 826.0 L 797.0 826.0 L 797.0 787.0 Z M 771.0 891.0 L 771.0 943.0 L 797.0 943.0 L 797.0 891.0 Z M 784.0 332.0 L 784.0 358.0 L 797.0 358.0 L 797.0 371.0 L 823.0 371.0 L 823.0 345.0 L 810.0 345.0 L 810.0 332.0 Z M 836.0 280.0 L 836.0 293.0 L 849.0 293.0 L 849.0 306.0 L 875.0 319.0 L 875.0 280.0 Z M 901.0 514.0 L 914.0 657.0 L 992.0 657.0 L 1044.0 709.0 L 1096.0 696.0 L 1109.0 657.0 L 1148.0 657.0 L 1161.0 618.0 L 1226.0 579.0 L 1200.0 488.0 L 1122.0 397.0 L 979.0 410.0 L 979.0 501.0 Z M 914.0 1138.0 L 914.0 1255.0 L 1005.0 1359.0 L 1096.0 1359.0 L 1096.0 1333.0 L 1291.0 1333.0 L 1317.0 1307.0 L 1304.0 1216.0 L 1148.0 1060.0 L 1109.0 1060.0 L 1109.0 1034.0 L 1044.0 1034.0 Z M 1291.0 657.0 L 1291.0 813.0 L 1317.0 813.0 L 1317.0 800.0 L 1512.0 800.0 L 1512.0 813.0 L 1538.0 813.0 L 1538.0 657.0 L 1525.0 657.0 L 1512.0 631.0 L 1317.0 631.0 L 1317.0 644.0 Z M 1291.0 891.0 L 1291.0 1047.0 L 1330.0 1086.0 L 1499.0 1086.0 L 1538.0 1047.0 L 1538.0 891.0 L 1499.0 917.0 L 1330.0 917.0 Z M 1304.0 436.0 L 1369.0 501.0 L 1460.0 501.0 L 1525.0 449.0 L 1486.0 410.0 L 1343.0 410.0 Z M 1343.0 1411.0 L 1343.0 1450.0 L 1356.0 1450.0 L 1369.0 1476.0 L 1460.0 1476.0 L 1460.0 1463.0 L 1486.0 1450.0 L 1486.0 1411.0 Z M 1512.0 1242.0 L 1512.0 1307.0 L 1538.0 1333.0 L 1733.0 1333.0 L 1733.0 1359.0 L 1824.0 1359.0 L 1915.0 1255.0 L 1915.0 1138.0 L 1785.0 1034.0 L 1720.0 1034.0 L 1720.0 1060.0 L 1681.0 1060.0 Z M 1603.0 540.0 L 1603.0 579.0 L 1772.0 709.0 L 1811.0 670.0 L 1915.0 657.0 L 1928.0 631.0 L 1928.0 514.0 L 1850.0 501.0 L 1850.0 410.0 L 1707.0 397.0 Z M 1954.0 280.0 L 1954.0 319.0 L 1967.0 319.0 L 1967.0 306.0 L 1980.0 306.0 L 1993.0 280.0 Z M 2006.0 345.0 L 2006.0 371.0 L 2032.0 371.0 L 2032.0 358.0 L 2045.0 358.0 L 2045.0 332.0 L 2019.0 332.0 L 2019.0 345.0 Z M 2019.0 1190.0 L 2019.0 1216.0 L 2110.0 1216.0 L 2110.0 1190.0 Z M 2032.0 787.0 L 2032.0 826.0 L 2058.0 826.0 L 2058.0 787.0 Z M 2032.0 891.0 L 2032.0 943.0 L 2058.0 943.0 L 2058.0 891.0 Z M 2045.0 761.0 L 2045.0 774.0 L 2058.0 774.0 L 2058.0 761.0 Z M 2084.0 722.0 L 2084.0 735.0 L 2097.0 735.0 L 2097.0 722.0 Z M 2097.0 644.0 L 2097.0 722.0 L 2240.0 722.0 L 2240.0 761.0 L 2253.0 761.0 L 2253.0 774.0 L 2331.0 774.0 L 2331.0 670.0 L 2175.0 670.0 L 2175.0 657.0 L 2162.0 657.0 L 2149.0 631.0 L 2110.0 631.0 L 2110.0 644.0 Z M 2175.0 1021.0 L 2175.0 1060.0 L 2331.0 1060.0 L 2331.0 982.0 L 2318.0 982.0 L 2318.0 969.0 L 2253.0 969.0 L 2253.0 982.0 L 2240.0 982.0 L 2240.0 1021.0 Z M 2526.0 839.0 L 2526.0 891.0 L 2617.0 891.0 L 2617.0 826.0 L 2539.0 826.0 L 2539.0 839.0 Z"/>
+<path class="poche" fill-rule="evenodd" d="M 160.0 787.0 L 238.0 722.0 L 238.0 527.0 L 654.0 553.0 L 706.0 501.0 L 719.0 332.0 L 667.0 280.0 L 667.0 241.0 L 706.0 215.0 L 680.0 267.0 L 732.0 306.0 L 732.0 501.0 L 667.0 566.0 L 498.0 566.0 L 485.0 540.0 L 238.0 553.0 L 238.0 670.0 L 264.0 670.0 L 264.0 735.0 L 173.0 800.0 L 173.0 930.0 L 264.0 995.0 L 264.0 1060.0 L 238.0 1060.0 L 238.0 1177.0 L 238.0 1008.0 L 160.0 943.0 Z"/>
+<path class="hatch" fill-rule="evenodd" d="M 212.0 826.0 L 290.0 826.0 L 290.0 839.0 L 303.0 839.0 L 303.0 891.0 L 212.0 891.0 Z"/>
+<path class="poche" fill-rule="evenodd" d="M 238.0 1177.0 L 251.0 1177.0 L 251.0 1190.0 L 485.0 1190.0 L 485.0 1203.0 L 472.0 1203.0 L 472.0 1216.0 L 277.0 1216.0 L 277.0 1203.0 L 238.0 1203.0 Z"/>
+<path class="poche" fill-rule="evenodd" d="M 485.0 1177.0 L 654.0 1164.0 L 654.0 1463.0 L 680.0 1489.0 L 823.0 1489.0 L 836.0 1528.0 L 849.0 1502.0 L 888.0 1502.0 L 914.0 1541.0 L 927.0 1502.0 L 966.0 1489.0 L 966.0 1515.0 L 940.0 1515.0 L 940.0 1580.0 L 823.0 1580.0 L 810.0 1515.0 L 667.0 1502.0 L 641.0 1476.0 L 641.0 1203.0 L 615.0 1177.0 Z"/>
+<path class="hatch" fill-rule="evenodd" d="M 498.0 670.0 L 654.0 670.0 L 654.0 657.0 L 667.0 657.0 L 680.0 631.0 L 719.0 631.0 L 719.0 644.0 L 732.0 644.0 L 732.0 722.0 L 589.0 722.0 L 589.0 761.0 L 576.0 761.0 L 576.0 774.0 L 498.0 774.0 Z"/>
+<path class="hatch" fill-rule="evenodd" d="M 498.0 982.0 L 511.0 982.0 L 511.0 969.0 L 576.0 969.0 L 576.0 982.0 L 589.0 982.0 L 589.0 1021.0 L 654.0 1021.0 L 654.0 1060.0 L 498.0 1060.0 Z"/>
+<path class="poche" fill-rule="evenodd" d="M 706.0 202.0 L 719.0 202.0 L 719.0 215.0 L 706.0 215.0 Z"/>
+<path class="poche" fill-rule="evenodd" d="M 719.0 189.0 L 732.0 189.0 L 732.0 202.0 L 719.0 202.0 Z"/>
+<path class="hatch" fill-rule="evenodd" d="M 719.0 1190.0 L 810.0 1190.0 L 810.0 1216.0 L 719.0 1216.0 Z"/>
+<path class="poche" fill-rule="evenodd" d="M 732.0 176.0 L 745.0 176.0 L 745.0 189.0 L 732.0 189.0 Z"/>
+<path class="hatch" fill-rule="evenodd" d="M 732.0 722.0 L 745.0 722.0 L 745.0 735.0 L 732.0 735.0 Z"/>
+<path class="poche" fill-rule="evenodd" d="M 745.0 150.0 L 784.0 150.0 L 784.0 176.0 L 771.0 176.0 L 771.0 163.0 L 745.0 176.0 Z"/>
+<path class="hatch2" fill-rule="evenodd" d="M 771.0 761.0 L 784.0 761.0 L 784.0 774.0 L 771.0 774.0 Z"/>
+<path class="hatch" fill-rule="evenodd" d="M 771.0 787.0 L 797.0 787.0 L 797.0 826.0 L 771.0 826.0 Z"/>
+<path class="hatch" fill-rule="evenodd" d="M 771.0 891.0 L 797.0 891.0 L 797.0 943.0 L 771.0 943.0 Z"/>
+<path class="poche" fill-rule="evenodd" d="M 784.0 176.0 L 862.0 215.0 L 953.0 215.0 L 992.0 306.0 L 1122.0 306.0 L 1174.0 267.0 L 1187.0 293.0 L 1148.0 319.0 L 966.0 319.0 L 940.0 228.0 L 823.0 228.0 Z"/>
+<path class="hatch" fill-rule="evenodd" d="M 784.0 332.0 L 810.0 332.0 L 810.0 345.0 L 823.0 345.0 L 823.0 371.0 L 797.0 371.0 L 797.0 358.0 L 784.0 358.0 Z"/>
+<path class="hatch" fill-rule="evenodd" d="M 836.0 280.0 L 875.0 280.0 L 875.0 319.0 L 862.0 319.0 L 862.0 306.0 L 849.0 306.0 Z"/>
+<path class="hatch" fill-rule="evenodd" d="M 901.0 514.0 L 979.0 501.0 L 979.0 410.0 L 1122.0 397.0 L 1200.0 488.0 L 1226.0 579.0 L 1161.0 618.0 L 1148.0 657.0 L 1109.0 657.0 L 1096.0 696.0 L 1044.0 709.0 L 992.0 657.0 L 914.0 657.0 Z"/>
+<path class="hatch" fill-rule="evenodd" d="M 914.0 1138.0 L 1044.0 1034.0 L 1109.0 1034.0 L 1109.0 1060.0 L 1148.0 1060.0 L 1304.0 1216.0 L 1317.0 1307.0 L 1291.0 1333.0 L 1096.0 1333.0 L 1096.0 1359.0 L 1005.0 1359.0 L 914.0 1255.0 Z"/>
+<path class="poche" fill-rule="evenodd" d="M 966.0 1476.0 L 979.0 1476.0 L 979.0 1463.0 L 1005.0 1450.0 L 1005.0 1476.0 L 992.0 1476.0 L 992.0 1489.0 L 966.0 1489.0 Z"/>
+<path class="poche" fill-rule="evenodd" d="M 1005.0 1398.0 L 1096.0 1398.0 L 1096.0 1437.0 L 1239.0 1437.0 L 1317.0 1528.0 L 1356.0 1528.0 L 1356.0 1567.0 L 1473.0 1567.0 L 1473.0 1528.0 L 1512.0 1528.0 L 1590.0 1437.0 L 1733.0 1437.0 L 1733.0 1398.0 L 1824.0 1398.0 L 1824.0 1450.0 L 1798.0 1411.0 L 1746.0 1424.0 L 1746.0 1450.0 L 1603.0 1450.0 L 1603.0 1476.0 L 1499.0 1541.0 L 1473.0 1593.0 L 1356.0 1593.0 L 1330.0 1541.0 L 1226.0 1476.0 L 1226.0 1450.0 L 1083.0 1450.0 L 1057.0 1411.0 L 1005.0 1450.0 Z"/>
+<path class="poche" fill-rule="evenodd" d="M 1187.0 189.0 L 1200.0 189.0 L 1200.0 267.0 L 1187.0 267.0 Z"/>
+<path class="poche" fill-rule="evenodd" d="M 1200.0 176.0 L 1317.0 176.0 L 1317.0 267.0 L 1330.0 267.0 L 1330.0 306.0 L 1499.0 306.0 L 1499.0 267.0 L 1512.0 267.0 L 1512.0 176.0 L 1629.0 176.0 L 1629.0 189.0 L 1525.0 189.0 L 1525.0 319.0 L 1304.0 319.0 L 1304.0 189.0 L 1200.0 189.0 Z"/>
+<path class="hatch2" fill-rule="evenodd" d="M 1291.0 657.0 L 1304.0 657.0 L 1317.0 631.0 L 1512.0 631.0 L 1512.0 644.0 L 1538.0 657.0 L 1538.0 813.0 L 1512.0 813.0 L 1512.0 800.0 L 1317.0 800.0 L 1317.0 813.0 L 1291.0 813.0 Z"/>
+<path class="hatch2" fill-rule="evenodd" d="M 1291.0 891.0 L 1330.0 917.0 L 1499.0 917.0 L 1538.0 891.0 L 1538.0 1047.0 L 1499.0 1086.0 L 1330.0 1086.0 L 1291.0 1047.0 Z"/>
+<path class="hatch" fill-rule="evenodd" d="M 1304.0 436.0 L 1343.0 410.0 L 1486.0 410.0 L 1525.0 449.0 L 1460.0 501.0 L 1369.0 501.0 Z"/>
+<path class="hatch" fill-rule="evenodd" d="M 1343.0 1411.0 L 1486.0 1411.0 L 1486.0 1450.0 L 1473.0 1450.0 L 1460.0 1476.0 L 1369.0 1476.0 L 1369.0 1463.0 L 1343.0 1450.0 Z"/>
+<path class="hatch" fill-rule="evenodd" d="M 1512.0 1242.0 L 1681.0 1060.0 L 1720.0 1060.0 L 1720.0 1034.0 L 1785.0 1034.0 L 1915.0 1138.0 L 1915.0 1255.0 L 1824.0 1359.0 L 1733.0 1359.0 L 1733.0 1333.0 L 1538.0 1333.0 L 1512.0 1307.0 Z"/>
+<path class="hatch" fill-rule="evenodd" d="M 1603.0 540.0 L 1707.0 397.0 L 1850.0 410.0 L 1850.0 501.0 L 1928.0 514.0 L 1928.0 631.0 L 1915.0 657.0 L 1837.0 657.0 L 1772.0 709.0 L 1733.0 696.0 L 1720.0 657.0 L 1681.0 657.0 L 1668.0 618.0 L 1603.0 579.0 Z"/>
+<path class="poche" fill-rule="evenodd" d="M 1629.0 189.0 L 1642.0 189.0 L 1642.0 267.0 L 1629.0 267.0 Z"/>
+<path class="poche" fill-rule="evenodd" d="M 1642.0 267.0 L 1707.0 306.0 L 1837.0 306.0 L 1876.0 215.0 L 1967.0 215.0 L 2045.0 176.0 L 2006.0 228.0 L 1889.0 228.0 L 1863.0 319.0 L 1681.0 319.0 Z"/>
+<path class="poche" fill-rule="evenodd" d="M 1824.0 1450.0 L 1837.0 1450.0 L 1837.0 1463.0 L 1850.0 1463.0 L 1863.0 1489.0 L 1837.0 1489.0 L 1837.0 1476.0 L 1824.0 1476.0 Z"/>
+<path class="poche" fill-rule="evenodd" d="M 1863.0 1489.0 L 1902.0 1502.0 L 1902.0 1541.0 L 1941.0 1502.0 L 1980.0 1502.0 L 1993.0 1528.0 L 2006.0 1489.0 L 2149.0 1489.0 L 2175.0 1463.0 L 2175.0 1164.0 L 2344.0 1177.0 L 2214.0 1177.0 L 2188.0 1203.0 L 2188.0 1476.0 L 2162.0 1502.0 L 2019.0 1515.0 L 2006.0 1580.0 L 1889.0 1580.0 L 1889.0 1515.0 L 1863.0 1515.0 Z"/>
+<path class="hatch" fill-rule="evenodd" d="M 1954.0 280.0 L 1993.0 280.0 L 1993.0 293.0 L 1980.0 293.0 L 1980.0 306.0 L 1954.0 319.0 Z"/>
+<path class="hatch" fill-rule="evenodd" d="M 2006.0 345.0 L 2019.0 345.0 L 2019.0 332.0 L 2045.0 332.0 L 2045.0 358.0 L 2032.0 358.0 L 2032.0 371.0 L 2006.0 371.0 Z"/>
+<path class="hatch" fill-rule="evenodd" d="M 2019.0 1190.0 L 2110.0 1190.0 L 2110.0 1216.0 L 2019.0 1216.0 Z"/>
+<path class="hatch" fill-rule="evenodd" d="M 2032.0 787.0 L 2058.0 787.0 L 2058.0 826.0 L 2032.0 826.0 Z"/>
+<path class="hatch" fill-rule="evenodd" d="M 2032.0 891.0 L 2058.0 891.0 L 2058.0 943.0 L 2032.0 943.0 Z"/>
+<path class="poche" fill-rule="evenodd" d="M 2045.0 150.0 L 2084.0 150.0 L 2084.0 176.0 L 2071.0 176.0 L 2071.0 163.0 L 2045.0 176.0 Z"/>
+<path class="hatch2" fill-rule="evenodd" d="M 2045.0 761.0 L 2058.0 761.0 L 2058.0 774.0 L 2045.0 774.0 Z"/>
+<path class="poche" fill-rule="evenodd" d="M 2084.0 176.0 L 2097.0 176.0 L 2097.0 189.0 L 2084.0 189.0 Z"/>
+<path class="hatch" fill-rule="evenodd" d="M 2084.0 722.0 L 2097.0 722.0 L 2097.0 735.0 L 2084.0 735.0 Z"/>
+<path class="poche" fill-rule="evenodd" d="M 2097.0 189.0 L 2110.0 189.0 L 2110.0 202.0 L 2097.0 202.0 Z"/>
+<path class="poche" fill-rule="evenodd" d="M 2097.0 306.0 L 2149.0 267.0 L 2123.0 215.0 L 2162.0 241.0 L 2162.0 280.0 L 2110.0 332.0 L 2110.0 475.0 L 2175.0 553.0 L 2318.0 553.0 L 2331.0 527.0 L 2604.0 540.0 L 2591.0 722.0 L 2669.0 787.0 L 2669.0 943.0 L 2591.0 1008.0 L 2604.0 1177.0 L 2565.0 995.0 L 2656.0 930.0 L 2656.0 800.0 L 2565.0 735.0 L 2565.0 670.0 L 2591.0 670.0 L 2591.0 553.0 L 2344.0 540.0 L 2331.0 566.0 L 2162.0 566.0 L 2097.0 501.0 Z"/>
+<path class="hatch" fill-rule="evenodd" d="M 2097.0 644.0 L 2110.0 644.0 L 2110.0 631.0 L 2149.0 631.0 L 2149.0 644.0 L 2162.0 644.0 L 2175.0 670.0 L 2331.0 670.0 L 2331.0 774.0 L 2253.0 774.0 L 2253.0 761.0 L 2240.0 761.0 L 2240.0 722.0 L 2097.0 722.0 Z"/>
+<path class="poche" fill-rule="evenodd" d="M 2110.0 202.0 L 2123.0 202.0 L 2123.0 215.0 L 2110.0 215.0 Z"/>
+<path class="hatch" fill-rule="evenodd" d="M 2175.0 1021.0 L 2240.0 1021.0 L 2240.0 982.0 L 2253.0 982.0 L 2253.0 969.0 L 2318.0 969.0 L 2318.0 982.0 L 2331.0 982.0 L 2331.0 1060.0 L 2175.0 1060.0 Z"/>
+<path class="poche" fill-rule="evenodd" d="M 2344.0 1190.0 L 2578.0 1190.0 L 2578.0 1177.0 L 2591.0 1177.0 L 2591.0 1203.0 L 2552.0 1203.0 L 2552.0 1216.0 L 2357.0 1216.0 Z"/>
+<path class="hatch" fill-rule="evenodd" d="M 2526.0 839.0 L 2539.0 839.0 L 2539.0 826.0 L 2617.0 826.0 L 2617.0 891.0 L 2526.0 891.0 Z"/>
+<path class="over" fill-rule="evenodd" d="M 173.0 800.0 L 264.0 735.0 L 264.0 670.0 L 238.0 670.0 L 251.0 540.0 L 667.0 566.0 L 719.0 501.0 L 745.0 514.0 L 745.0 410.0 L 771.0 436.0 L 784.0 358.0 L 797.0 501.0 L 758.0 579.0 L 654.0 670.0 L 498.0 670.0 L 498.0 774.0 L 576.0 774.0 L 589.0 722.0 L 732.0 722.0 L 797.0 774.0 L 771.0 787.0 L 797.0 852.0 L 797.0 891.0 L 771.0 891.0 L 784.0 956.0 L 719.0 1008.0 L 719.0 1216.0 L 992.0 1216.0 L 992.0 1190.0 L 1135.0 1190.0 L 1200.0 1099.0 L 1291.0 1047.0 L 1291.0 943.0 L 1317.0 943.0 L 1317.0 904.0 L 1278.0 904.0 L 1278.0 800.0 L 1317.0 774.0 L 1317.0 735.0 L 1291.0 735.0 L 1291.0 657.0 L 1213.0 592.0 L 1200.0 501.0 L 1083.0 501.0 L 1083.0 423.0 L 1226.0 410.0 L 1304.0 319.0 L 1525.0 319.0 L 1603.0 410.0 L 1746.0 423.0 L 1746.0 501.0 L 1629.0 501.0 L 1616.0 592.0 L 1538.0 657.0 L 1538.0 735.0 L 1512.0 735.0 L 1512.0 774.0 L 1551.0 800.0 L 1551.0 904.0 L 1512.0 904.0 L 1512.0 943.0 L 1538.0 943.0 L 1538.0 1047.0 L 1629.0 1099.0 L 1694.0 1190.0 L 1837.0 1190.0 L 1837.0 1216.0 L 2110.0 1216.0 L 2110.0 1008.0 L 2045.0 956.0 L 2058.0 891.0 L 2032.0 891.0 L 2032.0 852.0 L 2058.0 787.0 L 2032.0 774.0 L 2097.0 722.0 L 2240.0 722.0 L 2253.0 774.0 L 2331.0 774.0 L 2331.0 670.0 L 2175.0 670.0 L 2071.0 579.0 L 2032.0 501.0 L 2045.0 358.0 L 2058.0 436.0 L 2084.0 410.0 L 2084.0 514.0 L 2110.0 501.0 L 2162.0 566.0 L 2578.0 540.0 L 2591.0 670.0 L 2565.0 670.0 L 2565.0 735.0 L 2656.0 800.0 L 2656.0 865.0 L 2643.0 943.0 L 2565.0 995.0 L 2565.0 1060.0 L 2591.0 1060.0 L 2578.0 1190.0 L 2344.0 1190.0 L 2331.0 1164.0 L 2253.0 1164.0 L 2253.0 1073.0 L 2331.0 1060.0 L 2318.0 969.0 L 2253.0 969.0 L 2240.0 1021.0 L 2175.0 1021.0 L 2175.0 1463.0 L 2149.0 1489.0 L 2097.0 1476.0 L 2097.0 1437.0 L 2123.0 1437.0 L 2110.0 1281.0 L 1889.0 1281.0 L 1850.0 1320.0 L 1798.0 1268.0 L 1538.0 1268.0 L 1525.0 1307.0 L 1304.0 1307.0 L 1291.0 1268.0 L 1031.0 1268.0 L 979.0 1320.0 L 940.0 1281.0 L 719.0 1281.0 L 706.0 1437.0 L 732.0 1437.0 L 732.0 1476.0 L 680.0 1489.0 L 654.0 1463.0 L 654.0 1021.0 L 589.0 1021.0 L 576.0 969.0 L 511.0 969.0 L 498.0 1060.0 L 576.0 1073.0 L 576.0 1164.0 L 498.0 1164.0 L 485.0 1190.0 L 251.0 1190.0 L 238.0 1060.0 L 264.0 1060.0 L 264.0 995.0 L 186.0 943.0 Z M 212.0 826.0 L 212.0 891.0 L 303.0 891.0 L 303.0 839.0 L 290.0 839.0 L 290.0 826.0 Z M 290.0 670.0 L 290.0 683.0 L 303.0 683.0 L 303.0 670.0 Z M 1369.0 410.0 L 1369.0 540.0 L 1382.0 540.0 L 1382.0 527.0 L 1395.0 527.0 L 1395.0 540.0 L 1434.0 540.0 L 1434.0 527.0 L 1460.0 540.0 L 1460.0 410.0 Z M 2526.0 670.0 L 2526.0 683.0 L 2539.0 683.0 L 2539.0 670.0 Z M 2526.0 839.0 L 2526.0 891.0 L 2617.0 891.0 L 2617.0 826.0 L 2539.0 826.0 L 2539.0 839.0 Z"/>
+<path class="over" fill-rule="evenodd" d="M 680.0 254.0 L 719.0 254.0 L 745.0 176.0 L 784.0 176.0 L 823.0 241.0 L 927.0 228.0 L 940.0 280.0 L 836.0 267.0 L 745.0 397.0 L 745.0 319.0 Z"/>
+<path class="over" fill-rule="evenodd" d="M 719.0 202.0 L 732.0 202.0 L 732.0 215.0 L 719.0 215.0 Z"/>
+<path class="over" fill-rule="evenodd" d="M 732.0 1372.0 L 745.0 1372.0 L 745.0 1398.0 L 758.0 1398.0 L 758.0 1411.0 L 745.0 1411.0 L 745.0 1437.0 L 732.0 1437.0 Z"/>
+<path class="over" fill-rule="evenodd" d="M 758.0 163.0 L 771.0 163.0 L 771.0 176.0 L 758.0 176.0 Z"/>
+<path class="over" fill-rule="evenodd" d="M 810.0 319.0 L 823.0 319.0 L 836.0 293.0 L 862.0 306.0 L 862.0 332.0 L 849.0 332.0 L 836.0 358.0 L 810.0 345.0 Z"/>
+<path class="over" fill-rule="evenodd" d="M 953.0 293.0 L 966.0 293.0 L 966.0 306.0 L 953.0 306.0 Z"/>
+<path class="over" fill-rule="evenodd" d="M 1109.0 800.0 L 1122.0 800.0 L 1122.0 813.0 L 1109.0 813.0 Z"/>
+<path class="over" fill-rule="evenodd" d="M 1148.0 1073.0 L 1161.0 1073.0 L 1161.0 1086.0 L 1148.0 1086.0 Z"/>
+<path class="over" fill-rule="evenodd" d="M 1213.0 1372.0 L 1278.0 1372.0 L 1278.0 1398.0 L 1343.0 1411.0 L 1343.0 1463.0 L 1382.0 1476.0 L 1382.0 1502.0 L 1447.0 1502.0 L 1447.0 1476.0 L 1486.0 1463.0 L 1486.0 1411.0 L 1551.0 1398.0 L 1551.0 1372.0 L 1616.0 1385.0 L 1590.0 1398.0 L 1603.0 1437.0 L 1564.0 1450.0 L 1538.0 1502.0 L 1499.0 1502.0 L 1512.0 1528.0 L 1447.0 1541.0 L 1460.0 1567.0 L 1369.0 1567.0 L 1382.0 1541.0 L 1317.0 1528.0 L 1330.0 1502.0 L 1291.0 1502.0 L 1265.0 1450.0 L 1226.0 1437.0 L 1239.0 1398.0 Z M 1291.0 1411.0 L 1291.0 1424.0 L 1304.0 1424.0 L 1304.0 1411.0 Z M 1525.0 1411.0 L 1525.0 1424.0 L 1538.0 1424.0 L 1538.0 1411.0 Z"/>
+<path class="over" fill-rule="evenodd" d="M 1668.0 1073.0 L 1681.0 1073.0 L 1681.0 1086.0 L 1668.0 1086.0 Z"/>
+<path class="over" fill-rule="evenodd" d="M 1707.0 800.0 L 1720.0 800.0 L 1720.0 813.0 L 1707.0 813.0 Z"/>
+<path class="over" fill-rule="evenodd" d="M 1863.0 293.0 L 1876.0 293.0 L 1876.0 306.0 L 1863.0 306.0 Z"/>
+<path class="over" fill-rule="evenodd" d="M 1889.0 254.0 L 1902.0 228.0 L 2006.0 241.0 L 2045.0 176.0 L 2084.0 176.0 L 2097.0 241.0 L 2149.0 267.0 L 2084.0 319.0 L 2071.0 397.0 L 2071.0 358.0 L 1993.0 293.0 L 1993.0 267.0 L 1889.0 280.0 Z"/>
+<path class="over" fill-rule="evenodd" d="M 1967.0 306.0 L 1993.0 293.0 L 1993.0 306.0 L 2019.0 319.0 L 2019.0 345.0 L 1993.0 358.0 L 1993.0 345.0 L 1967.0 332.0 Z"/>
+<path class="over" fill-rule="evenodd" d="M 2058.0 163.0 L 2071.0 163.0 L 2071.0 176.0 L 2058.0 176.0 Z"/>
+<path class="over" fill-rule="evenodd" d="M 2071.0 1398.0 L 2084.0 1398.0 L 2084.0 1372.0 L 2097.0 1372.0 L 2097.0 1437.0 L 2084.0 1437.0 L 2084.0 1411.0 L 2071.0 1411.0 Z"/>
+<path class="over" fill-rule="evenodd" d="M 2097.0 202.0 L 2110.0 202.0 L 2110.0 215.0 L 2097.0 215.0 Z"/>
+<path class="stairp" fill-rule="evenodd" d="M 654.0 1164.0 L 719.0 1164.0 L 719.0 1216.0 L 797.0 1216.0 L 797.0 1281.0 L 719.0 1281.0 L 719.0 1489.0 L 654.0 1463.0 Z"/>
+<path class="stairp" fill-rule="evenodd" d="M 732.0 1372.0 L 758.0 1372.0 L 758.0 1411.0 L 732.0 1411.0 Z"/>
+<path class="stairp" fill-rule="evenodd" d="M 810.0 319.0 L 823.0 319.0 L 836.0 293.0 L 862.0 306.0 L 862.0 332.0 L 849.0 332.0 L 836.0 358.0 L 810.0 345.0 Z"/>
+<path class="stairp" fill-rule="evenodd" d="M 940.0 280.0 L 966.0 280.0 L 966.0 306.0 L 953.0 306.0 Z"/>
+<path class="stairp" fill-rule="evenodd" d="M 1226.0 1385.0 L 1278.0 1372.0 L 1265.0 1398.0 L 1343.0 1411.0 L 1343.0 1463.0 L 1395.0 1489.0 L 1473.0 1476.0 L 1499.0 1437.0 L 1486.0 1411.0 L 1564.0 1398.0 L 1551.0 1372.0 L 1603.0 1385.0 L 1603.0 1437.0 L 1564.0 1450.0 L 1538.0 1502.0 L 1499.0 1502.0 L 1512.0 1528.0 L 1460.0 1528.0 L 1460.0 1567.0 L 1369.0 1567.0 L 1369.0 1528.0 L 1317.0 1528.0 L 1330.0 1502.0 L 1291.0 1502.0 L 1291.0 1476.0 L 1226.0 1437.0 Z M 1291.0 1424.0 L 1291.0 1437.0 L 1304.0 1437.0 L 1304.0 1424.0 Z M 1525.0 1424.0 L 1525.0 1437.0 L 1538.0 1437.0 L 1538.0 1424.0 Z"/>
+<path class="stairp" fill-rule="evenodd" d="M 1278.0 878.0 L 1291.0 878.0 L 1291.0 891.0 L 1278.0 891.0 Z"/>
+<path class="stairp" fill-rule="evenodd" d="M 1291.0 826.0 L 1499.0 813.0 L 1538.0 826.0 L 1538.0 878.0 L 1499.0 878.0 L 1486.0 904.0 L 1343.0 904.0 L 1330.0 878.0 L 1291.0 878.0 Z"/>
+<path class="stairp" fill-rule="evenodd" d="M 1538.0 878.0 L 1551.0 878.0 L 1551.0 891.0 L 1538.0 891.0 Z"/>
+<path class="stairp" fill-rule="evenodd" d="M 1863.0 280.0 L 1889.0 280.0 L 1889.0 293.0 L 1863.0 306.0 Z"/>
+<path class="stairp" fill-rule="evenodd" d="M 1967.0 306.0 L 1993.0 293.0 L 1993.0 306.0 L 2019.0 319.0 L 2019.0 345.0 L 1993.0 358.0 L 1993.0 345.0 L 1967.0 332.0 Z"/>
+<path class="stairp" fill-rule="evenodd" d="M 2032.0 1216.0 L 2110.0 1216.0 L 2110.0 1164.0 L 2175.0 1164.0 L 2175.0 1463.0 L 2149.0 1489.0 L 2097.0 1476.0 L 2110.0 1281.0 L 2032.0 1281.0 Z"/>
+<path class="stairp" fill-rule="evenodd" d="M 2071.0 1372.0 L 2097.0 1372.0 L 2097.0 1411.0 L 2071.0 1411.0 Z"/>
+<line class="tread" x1="654" y1="1187.21" x2="719" y2="1187.21"/>
+<line class="tread" x1="667" y1="1210.43" x2="719" y2="1210.43"/>
+<line class="tread" x1="654" y1="1233.64" x2="797" y2="1233.64"/>
+<line class="tread" x1="654" y1="1256.86" x2="797" y2="1256.86"/>
+<line class="tread" x1="654" y1="1280.07" x2="797" y2="1280.07"/>
+<line class="tread" x1="654" y1="1303.29" x2="719" y2="1303.29"/>
+<line class="tread" x1="654" y1="1326.5" x2="719" y2="1326.5"/>
+<line class="tread" x1="654" y1="1349.71" x2="719" y2="1349.71"/>
+<line class="tread" x1="654" y1="1372.93" x2="719" y2="1372.93"/>
+<line class="tread" x1="654" y1="1396.14" x2="719" y2="1396.14"/>
+<line class="tread" x1="654" y1="1419.36" x2="719" y2="1419.36"/>
+<line class="tread" x1="654" y1="1442.57" x2="719" y2="1442.57"/>
+<line class="tread" x1="667" y1="1465.79" x2="732" y2="1465.79"/>
+<line class="tread" x1="732" y1="1385" x2="758" y2="1385"/>
+<line class="tread" x1="732" y1="1398" x2="758" y2="1398"/>
+<line class="tread" x1="823" y1="314.667" x2="862" y2="314.667"/>
+<line class="tread" x1="810" y1="336.333" x2="849" y2="336.333"/>
+<line class="tread" x1="948.667" y1="280" x2="948.667" y2="293"/>
+<line class="tread" x1="957.333" y1="280" x2="957.333" y2="306"/>
+<line class="tread" x1="1248.18" y1="1372" x2="1248.18" y2="1450"/>
+<line class="tread" x1="1270.35" y1="1372" x2="1270.35" y2="1385"/>
+<line class="tread" x1="1270.35" y1="1398" x2="1270.35" y2="1476"/>
+<line class="tread" x1="1292.53" y1="1411" x2="1292.53" y2="1424"/>
+<line class="tread" x1="1292.53" y1="1437" x2="1292.53" y2="1502"/>
+<line class="tread" x1="1314.71" y1="1411" x2="1314.71" y2="1502"/>
+<line class="tread" x1="1336.88" y1="1411" x2="1336.88" y2="1424"/>
+<line class="tread" x1="1336.88" y1="1437" x2="1336.88" y2="1528"/>
+<line class="tread" x1="1359.06" y1="1476" x2="1359.06" y2="1528"/>
+<line class="tread" x1="1381.24" y1="1476" x2="1381.24" y2="1567"/>
+<line class="tread" x1="1403.41" y1="1489" x2="1403.41" y2="1567"/>
+<line class="tread" x1="1425.59" y1="1489" x2="1425.59" y2="1567"/>
+<line class="tread" x1="1447.76" y1="1476" x2="1447.76" y2="1567"/>
+<line class="tread" x1="1469.94" y1="1476" x2="1469.94" y2="1528"/>
+<line class="tread" x1="1492.12" y1="1411" x2="1492.12" y2="1424"/>
+<line class="tread" x1="1492.12" y1="1437" x2="1492.12" y2="1528"/>
+<line class="tread" x1="1514.29" y1="1411" x2="1514.29" y2="1502"/>
+<line class="tread" x1="1536.47" y1="1411" x2="1536.47" y2="1424"/>
+<line class="tread" x1="1536.47" y1="1437" x2="1536.47" y2="1502"/>
+<line class="tread" x1="1558.65" y1="1372" x2="1558.65" y2="1385"/>
+<line class="tread" x1="1558.65" y1="1398" x2="1558.65" y2="1476"/>
+<line class="tread" x1="1580.82" y1="1372" x2="1580.82" y2="1450"/>
+<line class="tread" x1="1282.33" y1="878" x2="1282.33" y2="891"/>
+<line class="tread" x1="1286.67" y1="878" x2="1286.67" y2="891"/>
+<line class="tread" x1="1313.45" y1="826" x2="1313.45" y2="891"/>
+<line class="tread" x1="1335.91" y1="813" x2="1335.91" y2="891"/>
+<line class="tread" x1="1358.36" y1="813" x2="1358.36" y2="904"/>
+<line class="tread" x1="1380.82" y1="813" x2="1380.82" y2="904"/>
+<line class="tread" x1="1403.27" y1="813" x2="1403.27" y2="904"/>
+<line class="tread" x1="1425.73" y1="813" x2="1425.73" y2="904"/>
+<line class="tread" x1="1448.18" y1="813" x2="1448.18" y2="904"/>
+<line class="tread" x1="1470.64" y1="813" x2="1470.64" y2="904"/>
+<line class="tread" x1="1493.09" y1="813" x2="1493.09" y2="891"/>
+<line class="tread" x1="1515.55" y1="826" x2="1515.55" y2="891"/>
+<line class="tread" x1="1542.33" y1="878" x2="1542.33" y2="891"/>
+<line class="tread" x1="1546.67" y1="878" x2="1546.67" y2="891"/>
+<line class="tread" x1="1871.67" y1="280" x2="1871.67" y2="306"/>
+<line class="tread" x1="1880.33" y1="280" x2="1880.33" y2="293"/>
+<line class="tread" x1="1967" y1="314.667" x2="2006" y2="314.667"/>
+<line class="tread" x1="1980" y1="336.333" x2="2019" y2="336.333"/>
+<line class="tread" x1="2110" y1="1187.21" x2="2175" y2="1187.21"/>
+<line class="tread" x1="2110" y1="1210.43" x2="2162" y2="1210.43"/>
+<line class="tread" x1="2032" y1="1233.64" x2="2175" y2="1233.64"/>
+<line class="tread" x1="2032" y1="1256.86" x2="2175" y2="1256.86"/>
+<line class="tread" x1="2032" y1="1280.07" x2="2175" y2="1280.07"/>
+<line class="tread" x1="2110" y1="1303.29" x2="2175" y2="1303.29"/>
+<line class="tread" x1="2110" y1="1326.5" x2="2175" y2="1326.5"/>
+<line class="tread" x1="2110" y1="1349.71" x2="2175" y2="1349.71"/>
+<line class="tread" x1="2110" y1="1372.93" x2="2175" y2="1372.93"/>
+<line class="tread" x1="2110" y1="1396.14" x2="2175" y2="1396.14"/>
+<line class="tread" x1="2110" y1="1419.36" x2="2175" y2="1419.36"/>
+<line class="tread" x1="2110" y1="1442.57" x2="2175" y2="1442.57"/>
+<line class="tread" x1="2097" y1="1465.79" x2="2162" y2="1465.79"/>
+<line class="tread" x1="2071" y1="1385" x2="2097" y2="1385"/>
+<line class="tread" x1="2071" y1="1398" x2="2097" y2="1398"/>
+<rect class="bubble" x="936" y="285" width="34" height="15" rx="7"/>
+<text class="small" x="953" y="296" text-anchor="middle">R1</text>
+<text class="small" x="953" y="313" text-anchor="middle">RISE 4.00</text>
+<rect class="bubble" x="1859" y="285" width="34" height="15" rx="7"/>
+<text class="small" x="1876" y="296" text-anchor="middle">R2</text>
+<text class="small" x="1876" y="313" text-anchor="middle">RISE 4.00</text>
+<rect class="bubble" x="819" y="317.5" width="34" height="15" rx="7"/>
+<text class="small" x="836" y="328.5" text-anchor="middle">R3</text>
+<text class="small" x="836" y="345.5" text-anchor="middle">RISE 4.00</text>
+<rect class="bubble" x="1976" y="317.5" width="34" height="15" rx="7"/>
+<text class="small" x="1993" y="328.5" text-anchor="middle">R4</text>
+<text class="small" x="1993" y="345.5" text-anchor="middle">RISE 4.00</text>
+<rect class="bubble" x="1397.5" y="850.5" width="34" height="15" rx="7"/>
+<text class="small" x="1414.5" y="861.5" text-anchor="middle">R5</text>
+<text class="small" x="1414.5" y="878.5" text-anchor="middle">RISE 4.00</text>
+<rect class="bubble" x="1267.5" y="876.5" width="34" height="15" rx="7"/>
+<text class="small" x="1284.5" y="887.5" text-anchor="middle">R6</text>
+<text class="small" x="1284.5" y="904.5" text-anchor="middle">RISE 4.00</text>
+<rect class="bubble" x="1527.5" y="876.5" width="34" height="15" rx="7"/>
+<text class="small" x="1544.5" y="887.5" text-anchor="middle">R7</text>
+<text class="small" x="1544.5" y="904.5" text-anchor="middle">RISE 4.00</text>
+<rect class="bubble" x="708.5" y="1318.5" width="34" height="15" rx="7"/>
+<text class="small" x="725.5" y="1329.5" text-anchor="middle">R8</text>
+<text class="small" x="725.5" y="1346.5" text-anchor="middle">RISE 4.00</text>
+<rect class="bubble" x="2086.5" y="1318.5" width="34" height="15" rx="7"/>
+<text class="small" x="2103.5" y="1329.5" text-anchor="middle">R9</text>
+<text class="small" x="2103.5" y="1346.5" text-anchor="middle">RISE 4.00</text>
+<rect class="bubble" x="728" y="1383.5" width="34" height="15" rx="7"/>
+<text class="small" x="745" y="1394.5" text-anchor="middle">R10</text>
+<text class="small" x="745" y="1411.5" text-anchor="middle">RISE 4.00</text>
+<rect class="bubble" x="1397.5" y="1461.5" width="34" height="15" rx="7"/>
+<text class="small" x="1414.5" y="1472.5" text-anchor="middle">R11</text>
+<text class="small" x="1414.5" y="1489.5" text-anchor="middle">RISE 4.00</text>
+<rect class="bubble" x="2067" y="1383.5" width="34" height="15" rx="7"/>
+<text class="small" x="2084" y="1394.5" text-anchor="middle">R12</text>
+<text class="small" x="2084" y="1411.5" text-anchor="middle">RISE 4.00</text>
+<text class="note" x="100" y="1669">DASHED = DECK SOFFIT AT +3.60 (U.S. DECK) · HATCH ///  TOWERS (RISE TO +6.50) · HATCH \\\ SUPPORTS (0.00 TO +3.60)</text>
+<text class="note" x="100" y="1687">RAMPS R1-R12: 0.00 TO +4.00. THE ONLY VERTICAL CIRCULATION; NO STAIR CORES, NO LIFTS.</text>
+<line class="dim" x1="160" y1="86" x2="473.625" y2="86"/>
+<line class="dim" x1="160" y1="82" x2="160" y2="90"/>
+<line class="dim" x1="473.625" y1="82" x2="473.625" y2="90"/>
+<text class="dimtext" text-anchor="middle" x="316.812" y="81">6.50</text>
+<line class="dim" x1="473.625" y1="86" x2="787.25" y2="86"/>
+<line class="dim" x1="473.625" y1="82" x2="473.625" y2="90"/>
+<line class="dim" x1="787.25" y1="82" x2="787.25" y2="90"/>
+<text class="dimtext" text-anchor="middle" x="630.438" y="81">6.50</text>
+<line class="dim" x1="787.25" y1="86" x2="1100.88" y2="86"/>
+<line class="dim" x1="787.25" y1="82" x2="787.25" y2="90"/>
+<line class="dim" x1="1100.88" y1="82" x2="1100.88" y2="90"/>
+<text class="dimtext" text-anchor="middle" x="944.062" y="81">6.50</text>
+<line class="dim" x1="1100.88" y1="86" x2="1414.5" y2="86"/>
+<line class="dim" x1="1100.88" y1="82" x2="1100.88" y2="90"/>
+<line class="dim" x1="1414.5" y1="82" x2="1414.5" y2="90"/>
+<text class="dimtext" text-anchor="middle" x="1257.69" y="81">6.50</text>
+<line class="dim" x1="1414.5" y1="86" x2="1728.12" y2="86"/>
+<line class="dim" x1="1414.5" y1="82" x2="1414.5" y2="90"/>
+<line class="dim" x1="1728.12" y1="82" x2="1728.12" y2="90"/>
+<text class="dimtext" text-anchor="middle" x="1571.31" y="81">6.50</text>
+<line class="dim" x1="1728.12" y1="86" x2="2041.75" y2="86"/>
+<line class="dim" x1="1728.12" y1="82" x2="1728.12" y2="90"/>
+<line class="dim" x1="2041.75" y1="82" x2="2041.75" y2="90"/>
+<text class="dimtext" text-anchor="middle" x="1884.94" y="81">6.50</text>
+<line class="dim" x1="2041.75" y1="86" x2="2355.38" y2="86"/>
+<line class="dim" x1="2041.75" y1="82" x2="2041.75" y2="90"/>
+<line class="dim" x1="2355.38" y1="82" x2="2355.38" y2="90"/>
+<text class="dimtext" text-anchor="middle" x="2198.56" y="81">6.50</text>
+<line class="dim" x1="2355.38" y1="86" x2="2669" y2="86"/>
+<line class="dim" x1="2355.38" y1="82" x2="2355.38" y2="90"/>
+<line class="dim" x1="2669" y1="82" x2="2669" y2="90"/>
+<text class="dimtext" text-anchor="middle" x="2512.19" y="81">6.50</text>
+<line class="dim" x1="160" y1="58" x2="2669" y2="58"/>
+<line class="dim" x1="160" y1="54" x2="160" y2="62"/>
+<line class="dim" x1="2669" y1="54" x2="2669" y2="62"/>
+<text class="dimtext" text-anchor="middle" x="1414.5" y="53">52.0 m OVERALL</text>
+<line class="dim" x1="102" y1="150" x2="102" y2="438.6"/>
+<line class="dim" x1="98" y1="150" x2="106" y2="150"/>
+<line class="dim" x1="98" y1="438.6" x2="106" y2="438.6"/>
+<text class="dimtext" x="96" y="294.3" transform="rotate(-90 96 294.3)" text-anchor="middle">5.98</text>
+<line class="dim" x1="102" y1="438.6" x2="102" y2="727.2"/>
+<line class="dim" x1="98" y1="438.6" x2="106" y2="438.6"/>
+<line class="dim" x1="98" y1="727.2" x2="106" y2="727.2"/>
+<text class="dimtext" x="96" y="582.9" transform="rotate(-90 96 582.9)" text-anchor="middle">5.98</text>
+<line class="dim" x1="102" y1="727.2" x2="102" y2="1015.8"/>
+<line class="dim" x1="98" y1="727.2" x2="106" y2="727.2"/>
+<line class="dim" x1="98" y1="1015.8" x2="106" y2="1015.8"/>
+<text class="dimtext" x="96" y="871.5" transform="rotate(-90 96 871.5)" text-anchor="middle">5.98</text>
+<line class="dim" x1="102" y1="1015.8" x2="102" y2="1304.4"/>
+<line class="dim" x1="98" y1="1015.8" x2="106" y2="1015.8"/>
+<line class="dim" x1="98" y1="1304.4" x2="106" y2="1304.4"/>
+<text class="dimtext" x="96" y="1160.1" transform="rotate(-90 96 1160.1)" text-anchor="middle">5.98</text>
+<line class="dim" x1="102" y1="1304.4" x2="102" y2="1593"/>
+<line class="dim" x1="98" y1="1304.4" x2="106" y2="1304.4"/>
+<line class="dim" x1="98" y1="1593" x2="106" y2="1593"/>
+<text class="dimtext" x="96" y="1448.7" transform="rotate(-90 96 1448.7)" text-anchor="middle">5.98</text>
+<line class="dim" x1="64" y1="150" x2="64" y2="1593"/>
+<line class="dim" x1="60" y1="150" x2="68" y2="150"/>
+<line class="dim" x1="60" y1="1593" x2="68" y2="1593"/>
+<text class="dimtext" x="58" y="871.5" transform="rotate(-90 58 871.5)" text-anchor="middle">29.9 m OVERALL</text>
+<g transform="translate(2709,158)">
+<circle class="bubble" cx="0" cy="0" r="17"/>
+<path d="M 0 10 L 0 -12 M -5 -4 L 0 -12 L 5 -4" stroke="#000" stroke-width="1.6" fill="none"/>
+<text class="label" x="-4" y="32">N</text></g>
+<text class="small" x="160" y="1715">GRAPHIC SCALE</text>
+<rect x="160" y="1723" width="96.5" height="7" fill="#000" stroke="#000" stroke-width="0.8"/>
+<rect x="256.5" y="1723" width="96.5" height="7" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<rect x="353" y="1723" width="96.5" height="7" fill="#000" stroke="#000" stroke-width="0.8"/>
+<rect x="449.5" y="1723" width="96.5" height="7" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<rect x="546" y="1723" width="96.5" height="7" fill="#000" stroke="#000" stroke-width="0.8"/>
+<text class="small" x="160" y="1743" text-anchor="middle">0</text>
+<text class="small" x="256.5" y="1743" text-anchor="middle">2</text>
+<text class="small" x="353" y="1743" text-anchor="middle">4</text>
+<text class="small" x="449.5" y="1743" text-anchor="middle">6</text>
+<text class="small" x="546" y="1743" text-anchor="middle">8</text>
+<text class="small" x="642.5" y="1743" text-anchor="middle">10</text>
+<text class="small" x="654.5" y="1743">m</text>
+<text class="panel" x="2759" y="110">LEGEND</text>
+<rect class="poche" x="2759" y="123" width="26" height="11"/>
+<text class="small" x="2795" y="132">perimeter wall, cut (solid poche)</text>
+<rect class="hatch" x="2759" y="142" width="26" height="11"/>
+<text class="small" x="2795" y="151">tower / interior mass, cut (hatch)</text>
+<rect class="hatch2" x="2759" y="161" width="26" height="11"/>
+<text class="small" x="2795" y="170">deck support 0.00-3.60, cut</text>
+<rect class="plate" x="2759" y="180" width="26" height="11"/>
+<text class="small" x="2795" y="189">walkable deck plate at level</text>
+<rect class="floorp" x="2759" y="199" width="26" height="11"/>
+<text class="small" x="2795" y="208">walkable floor at FFL 0.00</text>
+<rect class="stairp" x="2759" y="218" width="26" height="11"/>
+<text class="small" x="2795" y="227">ramp volume, treads + UP</text>
+<rect class="over" x="2759" y="237" width="26" height="11"/>
+<text class="small" x="2795" y="246">structure overhead (dashed)</text>
+<rect class="below" x="2759" y="256" width="26" height="11"/>
+<text class="small" x="2795" y="265">structure below (faint)</text>
+<text class="panel" x="2759" y="306">LEVEL SCHEDULE</text>
+<text class="note" x="2759" y="326">FFL 0.00   LEVEL 1 (GROUND)</text>
+<text class="note" x="2759" y="343">U.S. DECK  +3.60 (SOFFIT)</text>
+<text class="note" x="2759" y="360">T.O. DECK  +4.00 (LEVEL 2)</text>
+<text class="note" x="2759" y="377">T.O. TOWER +6.50</text>
+<text class="note" x="2759" y="394">T.O. WALL  +8.00 (DATUM)</text>
+<text class="panel" x="2759" y="441">GENERAL NOTES</text>
+<text class="note" x="2759" y="461">1. STUDY RECREATION of 343 Industries' Halo Infinite</text>
+<text class="note" x="2759" y="478">   map AQUARIUS. Source: founder reference set (25</text>
+<text class="note" x="2759" y="495">   images) traced per floor at ~0.27 m cells.</text>
+<text class="note" x="2759" y="512">2. All plan geometry mirror-symmetric about the map's</text>
+<text class="note" x="2759" y="529">   long axis center; left half governs.</text>
+<text class="note" x="2759" y="546">3. Long axis 52.0 m DERIVED - pending in-game walk</text>
+<text class="note" x="2759" y="563">   (channel b). Heights authored from reference shots.</text>
+<text class="note" x="2759" y="580">4. Side hallways (106/107) are TWO-LEVEL: lane at FFL</text>
+<text class="note" x="2759" y="597">   0.00, walk deck over at +4.00 (rooms 204/205).</text>
+<text class="note" x="2759" y="614">5. Decks are pillar-borne; hatched supports carry</text>
+<text class="note" x="2759" y="631">   them. Editor pass places the octagonal pillars.</text>
+<text class="note" x="2759" y="648">6. Sunken center trench drawn at grade this revision;</text>
+<text class="note" x="2759" y="665">   below-grade geometry owed to channel (b).</text>
+<text class="note" x="2759" y="682">7. Sightline governance: R45 (DESIGN-RULINGS.md).</text>
+<rect class="border" x="8" y="8" width="3233" height="1817"/>
+<rect class="border2" x="20" y="20" width="3209" height="1793"/>
+<rect class="frame" x="2759" y="1661" width="470" height="152" fill="#fff"/>
+<text class="small" x="2769" y="1683">PROJECT</text>
+<text class="dimtext" x="2889" y="1683">BREACHPOINT — 4v4 ARENA FPS</text>
+<text class="small" x="2769" y="1705">ARENA</text>
+<text class="dimtext" x="2889" y="1705">AQUARIUS — STUDY RECREATION (BN29)</text>
+<line class="dim" x1="2759" y1="1689" x2="3111" y2="1689"/>
+<text class="small" x="2769" y="1727">DRAWING</text>
+<text class="dimtext" x="2889" y="1727">INTERMEDIATE LEVEL — BETWEEN FFL 0.00 AND +4.00</text>
+<line class="dim" x1="2759" y1="1711" x2="3111" y2="1711"/>
+<text class="small" x="2769" y="1749">SCALE/DATE/REV</text>
+<text class="dimtext" x="2889" y="1749">48.2 px/m nominal · 2026-08-30 · REV D</text>
+<line class="dim" x1="2759" y1="1733" x2="3111" y2="1733"/>
+<line class="frame" x1="3111" y1="1661" x2="3111" y2="1813"/>
+<text class="small" x="3123" y="1687">SHEET</text>
+<text class="sheetno" x="3121" y="1731">A-103</text>
+<line class="frame" x1="2759" y1="1757" x2="3111" y2="1757"/>
+<text class="small" x="2769" y="1777">DO NOT SCALE — USE FIGURED DIMENSIONS. UNITS: METERS.</text>
+<text class="small" x="2769" y="1795">FFL 0.00 / T.O. DECK +4.00 / T.O. WALL +8.00. PLAN SCALE DERIVED.</text>
+</svg>
