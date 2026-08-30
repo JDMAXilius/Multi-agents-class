@@ -227,3 +227,18 @@ indoor, small, close-range; (5) two exits minimum from every room.
 - The MANIFEST is untouched: the game blockout stays box-driven and
   validated; REV C is the drawing truth. Heights remain authored from the
   reference shots; scale remains the derived 52 m pending the Forge walk.
+
+### 30 Aug — the 3/4 goes BLOCKOUT (founder: "not hollow")
+
+- Founder on REV C's cutaway axon: "rough representation of level design
+  [blocked] out... make sure the walls are not hollow... like an actual
+  blockout level design." The 2 m viewer-side wall cut read as hollow
+  shells - gone.
+- S3 redrawn as SOLID MASSING: every mass full height, no cutaway; the
+  camera goes UP instead (steep dimetric from the NE, HX/HY/HZ
+  0.74/0.62/0.42) so the whole interior reads over the intact 8 m wall.
+  Ramps now draw as real wedges (low end at the arena floor, high end
+  found by which edge touches the deck mask, treads on the slope), and
+  the walkable interior floor draws as its own grey plate so masses sit
+  ON something. Title block: "3/4 BLOCKOUT (SOLID MASSING)".
+- S1/S2 unchanged beyond regeneration.

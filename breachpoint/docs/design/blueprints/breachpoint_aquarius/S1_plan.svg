@@ -25,6 +25,7 @@
   .isoeast{fill:#ffffff;stroke:#000;stroke-width:1.0;stroke-linejoin:round}
   .isonorth{fill:#d4d4d4;stroke:#000;stroke-width:1.0;stroke-linejoin:round}
   .isoplate{fill:#f7f7f7;stroke:#000;stroke-width:1.6;stroke-linejoin:round}
+  .isofloor{fill:#e2e2e2;stroke:#555;stroke-width:0.8;stroke-linejoin:round}
 </style>
 <rect class="paper" width="3938" height="1423"/>
 <title>AQUARIUS — FLOOR PLANS</title>

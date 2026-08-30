@@ -16,7 +16,7 @@ diagonals - crisp walls, hex towers, true corners), and draws:
   S1  floor plans L0/L1 - poche cut, walkable plates, stairs, founder labels
   S2  front (Section A-A, looking north), side (Section B-B, looking west),
       Section C-C through Hallway 2's two-level lane - all with level datums
-  S3  3/4 axonometric from the extruded polygons
+  S3  3/4 blockout view - solid massing, high camera, ramp wedges
 
 LEVEL SCHEDULE (authored from the founder's 25 references; scale itself is
 the one derived number - 52 m long axis until a Forge walk replaces it):
@@ -73,6 +73,7 @@ STYLE = """
   .isoeast{fill:#ffffff;stroke:#000;stroke-width:1.0;stroke-linejoin:round}
   .isonorth{fill:#d4d4d4;stroke:#000;stroke-width:1.0;stroke-linejoin:round}
   .isoplate{fill:#f7f7f7;stroke:#000;stroke-width:1.6;stroke-linejoin:round}
+  .isofloor{fill:#e2e2e2;stroke:#555;stroke-width:0.8;stroke-linejoin:round}
 """
 
 
@@ -586,12 +587,19 @@ COS30 = math.cos(math.radians(30))
 
 
 def sheet_axon(solids, floor, W, H, cell_m, out_dir):
+    """The BLOCKOUT view (founder, 30 Aug): 'like an actual blockout level
+    design... make sure the walls are not hollow.' REV C's iso-30 cutaway
+    (near wall sliced to 2 m) read as hollow shells - gone. Every mass now
+    draws SOLID at full height, and the camera goes UP instead: a steep
+    3/4 from the north-east, high enough to see down into the arena over
+    the intact 8 m perimeter. Ramps draw as real wedges, low end to high."""
     S = 11.0
+    HX, HY, HZ = 0.74, 0.62, 0.42     # steep dimetric: high camera, solid walls
 
     def P(x, y, z):
-        """world: X east = x·cell, Y north = (H−y)·cell; iso 30° from the NE."""
+        """world: X east = x·cell, Y north = (H−y)·cell; steep 3/4 from NE."""
         Xw, Yw = x * cell_m, (H - y) * cell_m
-        return ((Xw - Yw) * COS30 * S, (Xw + Yw) * 0.5 * S - z * S)
+        return ((Xw - Yw) * HX * S, (Xw + Yw) * HY * S - z * HZ * S)
 
     pts = [P(0, 0, 0), P(W, 0, 0), P(0, H, 0), P(W, H, 0),
            P(0, 0, WALL_H), P(W, 0, WALL_H), P(0, H, WALL_H), P(W, H, WALL_H)]
@@ -600,21 +608,31 @@ def sheet_axon(solids, floor, W, H, cell_m, out_dir):
     miny = min(p[1] for p in pts)
     maxy = max(p[1] for p in pts)
     ox, oy = 80 - minx, 120 - miny
-    w = int(maxx - minx + 160)
+    w = int(maxx - minx + 300)
     h = int(maxy - miny + 300)
 
     def Q(x, y, z):
         px, py = P(x, y, z)
         return (px + ox, py + oy)
 
-    o = svg_open(w, h, "AQUARIUS — 3/4 AXONOMETRIC")
-    o.append('<text class="big" x="60" y="46">3/4 AXONOMETRIC — ISO 30° FROM THE '
-             'NORTH-EAST · NEAR WALL CUT TO 2 m</text>')
+    o = svg_open(w, h, "AQUARIUS — 3/4 BLOCKOUT")
+    o.append('<text class="big" x="60" y="46">3/4 BLOCKOUT — SOLID MASSING · '
+             'HIGH CAMERA FROM THE NE</text>')
 
-    # ground plate
+    # ground plate, then the walkable interior floor as its own grey plate
     plate = [Q(-2, -2, 0), Q(W + 2, -2, 0), Q(W + 2, H + 2, 0), Q(-2, H + 2, 0)]
     o.append('<path class="isoplate" d="M %s Z"/>'
              % " L ".join("%.1f %.1f" % p for p in plate))
+    for comp in components(floor):
+        if len(comp) < 30:
+            continue
+        d = []
+        for lp in (simplify(l) for l in mask_loops(comp)):
+            if len(lp) >= 3:
+                d.append("M " + " L ".join("%.1f %.1f" % Q(px, py, 0)
+                                           for px, py in lp) + " Z")
+        if d:
+            o.append('<path class="isofloor" fill-rule="evenodd" d="%s"/>' % " ".join(d))
 
     def interior_side(lp, i, cells):
         (ax, ay), (bx, by) = lp[i], lp[(i + 1) % len(lp)]
@@ -649,18 +667,73 @@ def sheet_axon(solids, floor, W, H, cell_m, out_dir):
             d.append("M " + " L ".join("%.1f %.1f" % Q(px, py, z1) for px, py in lp) + " Z")
         o.append('<path class="%s" fill-rule="evenodd" d="%s"/>' % (cls_top, " ".join(d)))
 
+    upper_cells = set().union(*(s.cells for s in solids if s.kind == "deck")) \
+        if any(s.kind == "deck" for s in solids) else set()
+
+    def draw_ramp_wedge(s):
+        """Blockout ramp: the stair bbox as a solid wedge, low end at the
+        arena floor, high end against whichever side touches the deck."""
+        x0, y0, x1, y1 = s.bbox
+        horiz = (x1 - x0) >= (y1 - y0)
+
+        def deck_touch(edge_cells):
+            return sum(1 for c in edge_cells if c in upper_cells)
+
+        if horiz:
+            lo_e = [(x0 - 1, y) for y in range(y0, y1)]
+            hi_e = [(x1, y) for y in range(y0, y1)]
+            corners_lo = [(x0, y0), (x0, y1)]
+            corners_hi = [(x1, y0), (x1, y1)]
+        else:
+            lo_e = [(x, y0 - 1) for x in range(x0, x1)]
+            hi_e = [(x, y1) for x in range(x0, x1)]
+            corners_lo = [(x0, y0), (x1, y0)]
+            corners_hi = [(x0, y1), (x1, y1)]
+        if deck_touch(lo_e) > deck_touch(hi_e):
+            corners_lo, corners_hi = corners_hi, corners_lo
+        zlo, zhi = 0.25, s.z1
+        (a, b), (c, d) = corners_lo, corners_hi
+        top = [Q(a[0], a[1], zlo), Q(b[0], b[1], zlo),
+               Q(d[0], d[1], zhi), Q(c[0], c[1], zhi)]
+        base = {p: 0.0 for p in (a, b, c, d)}
+        zz = {a: zlo, b: zlo, c: zhi, d: zhi}
+        for e0, e1 in ((a, b), (b, d), (d, c), (c, a)):
+            mxx = (e0[0] + e1[0]) / 2
+            myy = (e0[1] + e1[1]) / 2
+            nx, ny = interior_side([e0, e1, (2 * e1[0] - e0[0], 2 * e1[1] - e0[1])],
+                                   0, s.cells)
+            ne, nn = nx, -ny
+            if ne + nn <= 0.02:
+                continue
+            quad = [Q(e0[0], e0[1], 0), Q(e1[0], e1[1], 0),
+                    Q(e1[0], e1[1], zz[e1]), Q(e0[0], e0[1], zz[e0])]
+            cls = "isoeast" if ne >= nn else "isonorth"
+            o.append('<path class="%s" d="M %s Z"/>'
+                     % (cls, " L ".join("%.1f %.1f" % p for p in quad)))
+        o.append('<path class="isotop" d="M %s Z"/>'
+                 % " L ".join("%.1f %.1f" % p for p in top))
+        # tread ticks on the slope so it reads as a ramp, not a slab
+        n = max(3, int(math.hypot(c[0] - a[0], c[1] - a[1]) * cell_m / 0.9))
+        for i in range(1, n):
+            t = i / n
+            p0 = Q(a[0] + (c[0] - a[0]) * t, a[1] + (c[1] - a[1]) * t,
+                   zlo + (zhi - zlo) * t)
+            p1 = Q(b[0] + (d[0] - b[0]) * t, b[1] + (d[1] - b[1]) * t,
+                   zlo + (zhi - zlo) * t)
+            o.append('<line class="tread" x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f"/>'
+                     % (p0[0], p0[1], p1[0], p1[1]))
+
     # ONE painter's list, far to near: NE viewer => near = big (x + (H - y)).
-    # Wall segments nearer than the map's center draw cut to 2 m so the
-    # interior stays visible; the far wall keeps its full 8 m.
+    # EVERYTHING solid, full height - no cutaway (the founder's ruling: an
+    # actual blockout, no hollow walls). The high camera does the seeing-in.
     def depth(s):
         x0, y0, x1, y1 = s.bbox
         return (x0 + x1) / 2 + (H - (y0 + y1) / 2)
 
-    center_depth = W / 2 + H / 2
     order = sorted(solids, key=lambda s: (depth(s), s.z0))
     for s in order:
-        if s.kind == "wall" and depth(s) > center_depth:
-            draw_prism(s, z1_override=2.0)
+        if s.kind == "stair":
+            draw_ramp_wedge(s)
         elif s.kind == "deck":
             draw_prism(s, cls_top="isoplate")
         else:
@@ -695,10 +768,9 @@ def sheet_axon(solids, floor, W, H, cell_m, out_dir):
                  % (px + tx + (6 if tx >= 0 else -6), py + ty - 4,
                     "start" if tx >= 0 else "end", txt))
 
-    o.append('<text class="small" x="60" y="76">Every mass is the traced polygon extruded to '
-             'its scheduled height · near (NE) perimeter drawn cut to 2 m · '
-             'decks pillar-borne, supports beneath</text>')
-    o += title_block(w, h, "S3", "3/4 AXONOMETRIC (POLYGON-TRUE)", "iso 30 deg")
+    o.append('<text class="small" x="60" y="76">Solid extrusions of the traced polygons · full 8 m walls, no cutaway · '
+             'ramps as wedges · interior floor grey</text>')
+    o += title_block(w, h, "S3", "3/4 BLOCKOUT (SOLID MASSING)", "steep 3/4 from NE")
     o.append("</svg>")
     (out_dir / "S3_axonometric.svg").write_text("\n".join(o), encoding="utf-8")
 
