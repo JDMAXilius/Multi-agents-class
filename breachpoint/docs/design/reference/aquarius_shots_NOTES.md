@@ -114,3 +114,46 @@
   light regions), Bridge (N-S upper center).
 - TWO per-floor overheads now exist - v3 traces EACH floor from its own
   image instead of inferring floors from one composite.
+
+## BATCH 4 (30 Aug, five more, no text — banked and read)
+
+16. **shot12_hallway_entrance_crate** — standing OUTSIDE a side-hallway
+    door looking down its length: hydroponic vine racks flank the doorway
+    (the perimeter wall treatment), "S-2" maintenance plates, and a yellow
+    AQUARIUS CRATE sits mid-hallway as cover — the long lanes are not
+    empty tubes; the overhead's small gray squares in the lanes are these
+    crates. Door frame is a full airlock portal (~3 m clear).
+17. **overhead_founder_hallway_numbers** — FOUNDER YELLOW LINES confirm
+    the numbering already on the ledger: HALLWAY 1 = the center east-west
+    run, FULL width, passing through both arenas between the two bridge
+    blocks; HALLWAY 2 = north long lane; HALLWAY 3 = south long lane.
+    No correction — confirmation.
+18. **shot13_base_view_battery_octagon** — from inside a base door facing
+    the arena: the octagonal AQUARIUS BATTERY (mantle height, ~1.2 m) sits
+    directly in front of the base entrance; behind it the raised center
+    platform with structures; the upper balcony ring overlooks from above;
+    stairs at frame-left drop toward the lower route. Confirms shot2's
+    center-platform reading and fixes the octagon's position: base-side,
+    not platform-center.
+19. **shot14_ramp_two_level_side_hallway** — FOUNDER ANNOTATED: the long
+    mesh ramp is the "Path to upper level of side hallway" (green), and a
+    ground opening beside it is the "Path to lower level of side hallway"
+    (yellow). **THE SIDE HALLWAYS (2 and 3) ARE TWO-LEVEL** — each long
+    lane has a ground floor and an upper floor, and the arena ramps feed
+    the UPPER one. v3's geometry already carries decks over the lanes
+    (upper trace) and the capsule ramps — this pins their MEANING.
+20. **overhead_founder_orbit_loops** — FOUNDER CIRCLES, read as movement:
+    YELLOW rings each discrete cover mass (four hydro towers, the two
+    bridge blocks, the north-center oval) = orbitable cover; GREEN draws
+    the two big circulation loops — a NORTH run and a SOUTH run looping
+    around the cover through both arenas. This is the article's path-split
+    doctrine drawn by hand: every fight object can be orbited, and the two
+    long loops cross at the center. No region relabel — the arena naming
+    from note 14 stands.
+
+### What batch 4 changes for the manifest
+
+- Nothing geometric — v3 already carries lane decks and ramps. Three
+  semantic pins for the editor pass: (a) side hallways are explicitly
+  two-level routes; (b) crate cover belongs IN the lanes; (c) the battery
+  octagon anchors each base mouth. Logged, not rebuilt.

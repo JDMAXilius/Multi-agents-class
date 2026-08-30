@@ -168,3 +168,17 @@ indoor, small, close-range; (5) two exits minimum from every room.
 - Still owed: founder verdict on the sheets; channel (b) Forge walk for true
   scale; sunken trench below-grade geometry; terminal blockout + editor
   screenshots.
+
+### 30 Aug — batch 4: five more references banked (notes 16-20)
+
+- Founder confirmations: hallway numbering (1 center E-W / 2 north /
+  3 south, yellow lines) and the orbit-loop reading of the courts (yellow =
+  orbitable cover, green = the two long circulation loops — the article's
+  path-split doctrine hand-drawn).
+- NEW PIN: **the side hallways are two-level** (founder-annotated ramp
+  shot: green "path to upper level of side hallway", yellow "path to lower
+  level"). v3's geometry already carries the lane decks and ramps, so no
+  rebuild — the pin is semantic, for the editor pass.
+- Two more editor-pass anchors: crate cover sits IN the long lanes
+  (shot12), and the mantle-height battery octagon fronts each BASE mouth,
+  not the platform center (shot13 corrects shot2's guess).
