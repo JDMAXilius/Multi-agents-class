@@ -226,6 +226,29 @@ def _selfcheck():
           % (len(boxes), len(texts), len(p)))
 
 
+
+def ensure_lighting(actor_ss, tag_fn, FOLDER="MetricsGym/Lights"):
+    """A map made by new_level() has NO lights - every screenshot comes out black.
+
+    Found 30 Aug 2026: BR_MetricsGym's first capture was unreadable and an actor
+    audit showed no DirectionalLight and no SkyLight in the level at all. Both
+    are tagged like everything else, so a re-run replaces them rather than
+    stacking a new sun on every build.
+    """
+    sun = actor_ss.spawn_actor_from_class(
+        unreal.DirectionalLight, unreal.Vector(0, 0, 1000),
+        unreal.Rotator(0.0, -46.0, 30.0))
+    sun.set_actor_label("Light_Sun")
+    tag_fn(sun)
+    sun.set_folder_path(unreal.Name(FOLDER))
+    sky = actor_ss.spawn_actor_from_class(
+        unreal.SkyLight, unreal.Vector(0, 0, 1000), unreal.Rotator(0, 0, 0))
+    sky.set_actor_label("Light_Sky")
+    tag_fn(sky)
+    sky.set_folder_path(unreal.Name(FOLDER))
+    return 2
+
+
 def main():
     actor_ss = unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
     level_ss = unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
@@ -278,7 +301,7 @@ def main():
             trc = a.text_render
             trc.set_text(spec["text"])
             trc.set_world_size(LABEL_SIZE_UU)
-            trc.set_horizontal_alignment(unreal.HorizTextAligment.CENTER)
+            trc.set_horizontal_alignment(unreal.HorizTextAligment.EHTA_CENTER)
             texts += 1
     print("placed %d boxes and %d in-game labels" % (boxes, texts))
 
@@ -300,6 +323,14 @@ def main():
     nav.set_actor_scale3d(unreal.Vector(floor["size"][0], floor["size"][1], 8.0))
     finish(nav, {"label": "Nav_MetricsGym", "folder": "MetricsGym/Nav"})
     print("nav bounds over x span %.1f..%.1f m" % (min(xs), max(xs)))
+
+    def _tag_only(a):
+        t = list(a.get_editor_property("tags"))
+        t.append(unreal.Name(TAG))
+        a.set_editor_property("tags", t)
+
+    lights = ensure_lighting(actor_ss, _tag_only)
+    print("placed %d lights (a new_level map ships with none)" % lights)
 
     level_ss.save_current_level()
     print("saved %s" % MAP_PATH)

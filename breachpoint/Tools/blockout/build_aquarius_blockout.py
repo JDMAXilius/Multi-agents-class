@@ -41,6 +41,29 @@ def load_json(rel):
         return json.load(f)
 
 
+
+def ensure_lighting(actor_ss, tag_fn, FOLDER="Blockout/Lights"):
+    """A map made by new_level() has NO lights - every screenshot comes out black.
+
+    Found 30 Aug 2026: BR_MetricsGym's first capture was unreadable and an actor
+    audit showed no DirectionalLight and no SkyLight in the level at all. Both
+    are tagged like everything else, so a re-run replaces them rather than
+    stacking a new sun on every build.
+    """
+    sun = actor_ss.spawn_actor_from_class(
+        unreal.DirectionalLight, unreal.Vector(0, 0, 1000),
+        unreal.Rotator(0.0, -46.0, 30.0))
+    sun.set_actor_label("Light_Sun")
+    tag_fn(sun)
+    sun.set_folder_path(unreal.Name(FOLDER))
+    sky = actor_ss.spawn_actor_from_class(
+        unreal.SkyLight, unreal.Vector(0, 0, 1000), unreal.Rotator(0, 0, 0))
+    sky.set_actor_label("Light_Sky")
+    tag_fn(sky)
+    sky.set_folder_path(unreal.Name(FOLDER))
+    return 2
+
+
 def main():
     actor_ss = unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
     level_ss = unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
@@ -159,6 +182,9 @@ def main():
     nav.set_actor_label("Nav_Aquarius")
     tag(nav)
     nav.set_folder_path(unreal.Name("Blockout/Nav"))
+
+    lights = ensure_lighting(actor_ss, tag)
+    print("placed %d lights (a new_level map ships with none)" % lights)
 
     level_ss.save_current_level()
     print("saved %s" % MAP_PATH)
