@@ -66,3 +66,6 @@ Content/Maps/FrontendTestMap.umap
 # Build receipts: written by the gen_ui/audit tools, useful locally when a run dies
 # mid-way, but 2.7 MB of logs in git is not history anyone reads.
 docs/ui/receipts/
+
+# BN35: extracted Halo 4 reference geometry - study material, never shipped.
+Content/Halo4_Landfall/
