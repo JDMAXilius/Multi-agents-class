@@ -42,6 +42,11 @@
    pattern, and the four rules that cause most failures.
 3. `docs/design/BLOCKOUT-KIT.md` — the research digest, the kit roster and
    scaling law, the piece budgets, and the validator's current verdict.
+4. `docs/design/HALO-SOURCING-AND-METRICS.md` — **new**. Why no Halo geometry
+   may ever enter this repo, 343's published movement metrics (jump 2.44 m,
+   clamber 3.66 m, grapple 24.38 m, sprint 8.5 m/s), the fact that Halo is
+   authored on a 1-FOOT grid and our metres are not, and the ranked methods
+   for actually measuring Aquarius. Feeds BN32 and BN34 Part C.
 
 ## The order of work (each ticket says why)
 

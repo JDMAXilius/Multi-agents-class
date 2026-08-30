@@ -31,11 +31,31 @@ numbers we have not verified for the BREACHPOINT pawn.
    say so LOUDLY here — the cloud regenerates the kit and manifest from the
    corrected numbers.
 
+## Compare against a REAL shipped arena (BN35 research)
+
+`docs/design/HALO-SOURCING-AND-METRICS.md` §4: **Lyra Starter Game** is free,
+UE-licence-only, and ships `L_ShooterGym` and `L_Convolution_Blockout` — the
+only free first-party shipped-arena greyboxes that exist. Nothing Halo can be
+used; this is the legal substitute.
+
+5. Install Lyra (Epic Games Launcher > Samples). Open `L_ShooterGym` and
+   measure the same quantities there: cover heights, corridor widths, deck
+   heights, ramp angles. Two columns in the sheet — BREACHPOINT vs Lyra.
+6. Compare both against 343's PUBLISHED metrics (source and confidence in the
+   BN35 doc): jump 2.44 m · comfortable clamber 3.66 m · jump-clearance
+   headroom 5.49 m · grapple range 24.38 m · sprint 8.5 m/s. Where our pawn
+   diverges from Halo's numbers, that is a **tuning decision for the founder**,
+   not a bug — record it, do not silently retune.
+7. Also record every number in FEET. Halo authors on a 1-foot grid and the
+   Aquarius schedule will be re-cut onto it (BN34 Part C).
+
 ## Done when
 
 - [x] Rig script committed; measured sheet written into BLOCKOUT-KIT.md
 - [x] Every number tagged [measured] with the date
 - [x] Contradictions with the current kit listed here for the cloud
+- [ ] Lyra `L_ShooterGym` measured alongside ours, both columns in the sheet
+- [ ] Every number also expressed in feet (BN35: Halo authors on a 1-foot grid)
 
 ### 30 Aug — measured off the CDO, and the rig that will confirm it
 

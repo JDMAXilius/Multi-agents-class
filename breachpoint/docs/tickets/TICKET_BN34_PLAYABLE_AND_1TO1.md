@@ -30,7 +30,11 @@ reachable, 8.9 s longest rotation, 2.3% team skew, parallel lanes, ramps
       down survivable/intended?
 - [ ] Jump/mantle audit: is any deck reachable that should NOT be (Halo's
       rule: no accidental clambers)? Decks are +4.00 m — ramps and the
-      Grappleshot only, by design.
+      Grappleshot only, **and BN35 research says that may be wrong**: 343's
+      published comfortable-clamber height is 12 ft = **3.66 m**, so a real
+      Aquarius deck a Spartan can mantle would be 3.66 m, not 4.00 m. That
+      0.34 m is a gameplay difference, not a cosmetic one. Settle it in
+      Part C and report which it is.
 - [ ] Head-bump audit under every deck soffit (+3.60 m) and in every doorway.
 - [ ] Stopwatch the routes with the real pawn and compare to the cloud's
       model: longest rotation 8.9 s, spawn-to-centre ~3.6 s. Report the
@@ -59,14 +63,65 @@ game. Close that loop:
       * pass-2 kit pieces not yet placed anywhere: columns, the battery
         octagons at the base mouths, lane crates, deck railings, the 45°
         corner walls. The reference has them; the level does not yet.
-      * the derived scale: long axis 52 m is DERIVED, never measured. If
-        you can measure the real Aquarius (Forge, or a known-length object
-        in a reference shot), that single number corrects everything.
+      * the derived scale: long axis 52 m is DERIVED, never measured, and
+        BN35 confirmed **no published Aquarius dimension exists anywhere** —
+        it cannot be corrected by citation, only by measurement. Use Part C.
 - [ ] Write the deviation list into this ticket as a numbered table with a
       severity (blocks play / breaks fidelity / cosmetic). The cloud
       regenerates the manifest from it — deviations go back into
       `Tools/blockout/gen_aquarius_kit.py`, never hand-fixed in the map
       (law 7: hand edits are lost on the next rebuild).
+
+## Part C — the METRIC STANDARD (new, from BN35 research)
+
+Read `docs/design/HALO-SOURCING-AND-METRICS.md` first. Two things it settles:
+
+**Halo is authored in FEET.** 1 Forge unit = 1 foot = 0.3048 m; 1 world unit
+= 10 ft = 3.048 m (343's own Forge documentation, plus the `ekur` importer's
+`FEET_TO_METER = 0.3048 * 10.0`, read first-hand). Our schedule is in round
+metres, which lands off Halo's grid at every level: 52.0 m = 170.6 ft,
+8.00 m walls = 26.2 ft, +4.00 m decks = 13.1 ft. Nobody designs to those.
+
+**Published movement metrics — treat these as the acceptance criteria:**
+
+| Metric | Forge units | Metres |
+|---|---|---|
+| Jump, no clamber | 8 | 2.44 |
+| Comfortable clamber | 12 | 3.66 |
+| Overhead clearance, jumping | 18 | 5.49 |
+| Grappleshot range | 80 | 24.38 |
+| Sprint speed | — | 8.5 m/s |
+| Motion tracker radius | — | 25 m |
+
+- [ ] **Measure the real Aquarius, don't estimate it.** Ranked methods, best
+      first: (1) clamber/jump binary search on the actual ledges — a ledge you
+      can mantle but not jump onto is between 2.44 m and 3.66 m; (2) the
+      Grappleshot as a tape measure — it attaches only within 24.38 m, so back
+      up until the reticle refuses; (3) the motion tracker as an on-HUD ruler
+      (25 m); (4) timed sprint at 8.5 m/s (over-reads — upper bound only).
+      Screenshot-vs-Spartan-height, which is what the cloud did, is the
+      weakest rung. Report at least the long axis and one deck height.
+- [ ] **Report every measurement in FEET as well as metres**, snapped to whole
+      feet. The cloud will re-cut the schedule onto the foot grid once there
+      are real numbers — that is a generator change, so do not hand-fix it.
+**Reconcile with BN32's MEASURED pawn — the two standards are not the same.**
+BN32 read the shipped CDO: capsule **1.92 m**, MaxStepHeight **0.45 m**, jump
+apex **0.90 m**, and **no clamber verb at all**. So:
+
+- Halo's 2.44/3.66 m jump-and-clamber band does not exist for our pawn. Any
+  deck above 0.90 m is ramp-or-grapple for us whether it is 3.66 m or 4.00 m.
+  The 0.34 m therefore matters for **fidelity to the reference**, not for
+  traversal — do not report it as a play blocker, report it as a deviation.
+- Halo's 5.49 m jump headroom is *their* pawn's. Ours needs 1.92 + 0.90 =
+  **2.82 m** plus margin, so the +3.60 m soffit clears us. Check it against
+  the real pawn anyway; the number above is arithmetic, not observation.
+- Where our pawn and Halo's diverge, that is a **tuning decision for the
+  founder**, recorded here — never a silent retune of either.
+
+- [ ] Compare our schedule against BOTH standards: does any lane run longer
+      than 24.38 m of ungrappleable surface (Halo's grapple reach)? Does any
+      overhead land in the 1.44-1.92 m band BN32 flagged as the navmesh's
+      lie? Report both.
 
 ## The loop
 
