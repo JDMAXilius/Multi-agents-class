@@ -65,9 +65,16 @@ TAG = "BN35_HaloRef_" + WHICH
 UNITS_TO_UU = 100.0
 
 # Interchange maps OBJ (x,y,z) -> UE (x,-y,z) and does NOT rotate Y-up to Z-up
-# (InterchangeOBJTranslator.cpp:186, measured in BN31), so the model's up axis
-# lands on UE -Y and a -90 roll about X carries -Y onto +Z.
-UPRIGHT_ROLL = -90.0
+# (InterchangeOBJTranslator.cpp:186, measured in BN31), so the model needs a
+# roll about X to stand up.
+#
+# +90, NOT -90. Founder caught this by eye, 30 Aug: at -90 the entire map is
+# UPSIDE DOWN. It is a nasty failure because it looks plausible in a screenshot
+# and traces still hit geometry - you are standing under ceilings. What gives it
+# away is the navmesh: an inverted level has no UP-FACING surfaces, so Recast
+# finds nothing walkable. Measured at -90: 2,086 collision hits, 0% navmesh,
+# while a plain engine cube dropped into the same volume navmeshed fine.
+UPRIGHT_ROLL = 90.0
 
 
 def imported_mesh():
@@ -207,7 +214,7 @@ def main():
                            "the bounds; move it by hand and say so")
     ps = actor_ss.spawn_actor_from_class(
         unreal.PlayerStart, unreal.Vector(*spot), unreal.Rotator(0, 0, 0))
-    tag(ps, "PlayerStart_Landfall", "HaloRef/Spawns")
+    tag(ps, "PlayerStart_" + WHICH, "HaloRef/Spawns")
     unreal.log("PlayerStart at %.0f, %.0f, %.0f" % spot)
 
     # HUMAN SCALE: exactly our measured capsule, 0.68 x 1.92 m (BN32).
@@ -241,12 +248,39 @@ def main():
     except Exception as e:
         unreal.log_warning("could not lock exposure: %s" % e)
 
+    # NAV VOLUME Z COMES FROM THE MESH, NOT FROM get_actor_bounds().
+    #
+    # Measured 30 Aug: on this actor get_actor_bounds() reports centre z -1986
+    # while the true world range is -1120..5092 cm - the Z is SIGN-FLIPPED, and
+    # re-reading it does not help. Using it put the nav volume almost entirely
+    # BELOW the level, so Recast voxelised empty air: 2,086 collision hits and
+    # 0% navmesh coverage.
+    #
+    # The mesh's own local box is reliable. The model is Y-up, Interchange
+    # negates Y, and the -90 roll then carries that onto +Z, so world Z is
+    # simply the local Y times the scale.
+    # World Z follows the roll. With UPRIGHT_ROLL = +90 a rotation about X
+    # carries local +Y onto world +Z, so world z = local_y * scale directly.
+    # (get_actor_bounds() cannot be trusted for this - it reported centre
+    # z -1986 against a true range of -1120..5092 - so the mesh's own local
+    # box is the source of truth.)
+    # The sign is MEASURED, not derived. With UPRIGHT_ROLL = +90 the actor
+    # bounds read z -1120..5092 cm while the mesh's local Y runs -50.92..11.20,
+    # so world z = -local_y * scale. Interchange's Y mirror on import is why the
+    # obvious sign is the wrong one; trust the measurement.
+    lb = mesh.get_bounding_box()
+    z_min = -lb.max.y * UNITS_TO_UU
+    z_max = -lb.min.y * UNITS_TO_UU
+    z_mid = (z_min + z_max) / 2.0
+    z_half = (z_max - z_min) / 2.0 + 500.0          # 5 m of headroom
+    unreal.log("nav volume Z from mesh box: %.0f .. %.0f cm (centre %.0f)"
+               % (z_min, z_max, z_mid))
     nav = actor_ss.spawn_actor_from_class(
-        unreal.NavMeshBoundsVolume, unreal.Vector(origin.x, origin.y, origin.z),
+        unreal.NavMeshBoundsVolume, unreal.Vector(origin.x, origin.y, z_mid),
         unreal.Rotator(0, 0, 0))
     # a volume's default brush is a 200 uu cube (measured BN33), so halve
     nav.set_actor_scale3d(unreal.Vector(extent.x / 100.0, extent.y / 100.0,
-                                        extent.z / 100.0))
+                                        z_half / 100.0))
     tag(nav, "Nav_" + WHICH, "HaloRef/Nav")
 
     level_ss.save_current_level()
