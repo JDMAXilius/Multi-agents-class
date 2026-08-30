@@ -77,3 +77,18 @@
 - Reuse numbers, since reuse was the ask: 878 instances from 2 meshes;
   top variants repeat x53/x52/x51; the whole level is scale-and-position
   of the same cube.
+
+### 30 Aug — founder correction: the kit IS the twelve assets
+
+- "Have the individual assets into a couple screenshots, not the level.
+  There should not be more than 12 modular individual assets." The kit's
+  identity moved from "2 scaled meshes" to a TWELVE-ASSET roster, each
+  drawn alone: K-101/K-102 catalog sheets (gen_kit_catalog.py) - one card
+  per asset with canonical dims and its scaling rule (plates/walls/columns
+  scale; STAIRS and DOOR OPENINGS never; ramps re-length only).
+- The roster: Floor, Wall, HalfWall, Doorway, Ramp, Stair, Column (oct),
+  Pier, Crate, Battery (oct), Rail, Curb - the full object breakdown the
+  directive named, each traceable to a reference note or research metric.
+- aquarius_blockout_kit.json now carries asset_map (families -> assets) and
+  points at the catalog; the renderer's face-culling bug (view axis is
+  +x+y, so east+SOUTH faces show) found and fixed via a unit-cube probe.

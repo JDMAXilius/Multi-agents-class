@@ -266,6 +266,13 @@ def main():
                 "of the traced footprint; rotations are UE rotators (deg)",
         "grid_m": GRID_M,
         "length_family_m": LENGTHS,
+        "asset_catalog": "docs/design/blueprints/breachpoint_aquarius/"
+                         "K101_kit_catalog_1.png + K102_kit_catalog_2.png - "
+                         "the TWELVE modular assets (gen_kit_catalog.py); "
+                         "placements below map onto them via asset_map",
+        "asset_map": {"Floor": "BLK_Floor_400", "Deck": "BLK_Floor_400",
+                      "Wall": "BLK_Wall_400", "Tower": "BLK_Wall_400",
+                      "Support": "BLK_Pier_100", "Ramp": "BLK_Ramp_800"},
         "modules": [
             {"id": "BLK_Cube", "mesh": "/Engine/BasicShapes/Cube.Cube",
              "note": "100 cm cube, pivot at CENTER; every Floor/Deck/Wall/"

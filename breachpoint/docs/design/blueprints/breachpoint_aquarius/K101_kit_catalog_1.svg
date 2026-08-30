@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1506" height="1082" viewBox="0 0 1506 1082">
+<style>
+  .paper{fill:#ffffff}
+  .frame{fill:none;stroke:#000;stroke-width:1.4}
+  .border{fill:none;stroke:#000;stroke-width:2.6}
+  .top{fill:#ededed;stroke:#000;stroke-width:1.1;stroke-linejoin:round}
+  .east{fill:#ffffff;stroke:#000;stroke-width:1.1;stroke-linejoin:round}
+  .north{fill:#d2d2d2;stroke:#000;stroke-width:1.1;stroke-linejoin:round}
+  .shadow{fill:#f0f0f0;stroke:none}
+  .name{font:bold 15px monospace;fill:#000;letter-spacing:1px}
+  .dims{font:12px monospace;fill:#000}
+  .role{font:11px monospace;fill:#333}
+  .rule{font:bold 11px monospace;fill:#000}
+  .big{font:bold 17px monospace;fill:#000;letter-spacing:1px}
+  .small{font:9px monospace;fill:#000}
+  .tread{stroke:#000;stroke-width:0.7;fill:none}
+</style>
+<rect class="paper" width="1506" height="1082"/>
+<rect class="border" x="8" y="8" width="1490" height="1066"/>
+<text class="big" x="28" y="46">MODULAR BLOCKOUT KIT — ASSETS 01-06</text>
+<text class="small" x="28" y="66">BREACHPOINT BN30 · the modular blockout set · 12 assets total · grey = form only, grid 0.5 m · 2026-08-30 · sheet K-101</text>
+<rect class="frame" x="24" y="84" width="470" height="430"/>
+<text class="small" x="34" y="104">01</text>
+<text class="name" x="54" y="106">BLK_Floor_400</text>
+<path class="shadow" d="M 259.0 139.6 L 450.2 250.0 L 259.0 360.4 L 67.8 250.0 Z"/>
+<path class="east" d="M 418.3 250.0 L 259.0 342.0 L 259.0 332.8 L 418.3 240.8 Z"/>
+<path class="north" d="M 259.0 342.0 L 99.7 250.0 L 99.7 240.8 L 259.0 332.8 Z"/>
+<path class="top" d="M 259.0 148.8 L 418.3 240.8 L 259.0 332.8 L 99.7 240.8 Z"/>
+<text class="dims" x="38" y="456">4.00 x 4.00 x 0.20 m</text>
+<text class="role" x="38" y="476">floor AND deck plate; top face is the walking surface</text>
+<text class="rule" x="38" y="498">SCALES: L / W / T (deck t 0.40)</text>
+<rect class="frame" x="518" y="84" width="470" height="430"/>
+<text class="small" x="528" y="104">02</text>
+<text class="name" x="548" y="106">BLK_Wall_400</text>
+<path class="shadow" d="M 698.3 259.9 L 848.3 346.5 L 807.7 370.0 L 657.7 283.4 Z"/>
+<path class="east" d="M 823.3 346.5 L 807.7 355.6 L 807.7 211.2 L 823.3 202.2 Z"/>
+<path class="north" d="M 807.7 355.6 L 682.7 283.4 L 682.7 139.0 L 807.7 211.2 Z"/>
+<path class="top" d="M 698.3 130.0 L 823.3 202.2 L 807.7 211.2 L 682.7 139.0 Z"/>
+<text class="dims" x="532" y="456">4.00 x 0.50 x 4.00 m</text>
+<text class="role" x="532" y="476">story wall and solid mass segment (towers stack two)</text>
+<text class="rule" x="532" y="498">SCALES: L / H / T</text>
+<rect class="frame" x="1012" y="84" width="470" height="430"/>
+<text class="small" x="1022" y="104">03</text>
+<text class="name" x="1042" y="106">BLK_HalfWall_200</text>
+<path class="shadow" d="M 1217.1 218.9 L 1328.7 283.4 L 1276.9 313.2 L 1165.3 248.8 Z"/>
+<path class="east" d="M 1296.8 283.4 L 1276.9 294.9 L 1276.9 244.2 L 1296.8 232.8 Z"/>
+<path class="north" d="M 1276.9 294.9 L 1197.2 248.8 L 1197.2 198.2 L 1276.9 244.2 Z"/>
+<path class="top" d="M 1217.1 186.8 L 1296.8 232.8 L 1276.9 244.2 L 1197.2 198.2 Z"/>
+<text class="dims" x="1026" y="456">2.00 x 0.50 x 1.10 m</text>
+<text class="role" x="1026" y="476">crouch-cover wall: hides a crouched player exactly</text>
+<text class="rule" x="1026" y="498">SCALES: L only - H 1.10 FIXED (cover band)</text>
+<rect class="frame" x="24" y="538" width="470" height="430"/>
+<text class="small" x="34" y="558">04</text>
+<text class="name" x="54" y="560">BLK_Doorway_400</text>
+<path class="shadow" d="M 204.3 713.9 L 354.3 800.5 L 313.7 824.0 L 163.7 737.4 Z"/>
+<path class="east" d="M 329.3 800.5 L 313.7 809.6 L 313.7 665.2 L 329.3 656.2 Z"/>
+<path class="north" d="M 313.7 809.6 L 188.7 737.4 L 188.7 593.0 L 313.7 665.2 Z"/>
+<path class="top" d="M 204.3 584.0 L 329.3 656.2 L 313.7 665.2 L 188.7 593.0 Z"/>
+<path d="M 229.3 760.8 L 273.1 786.1 L 273.1 699.5 L 229.3 674.2 Z" fill="#5a5a5a" stroke="#000" stroke-width="1.1"/>
+<text class="dims" x="38" y="910">4.00 x 0.50 x 4.00 m / opening 1.40 x 2.40</text>
+<text class="role" x="38" y="930">wall piece with the door punched through</text>
+<text class="rule" x="38" y="952">JAMBS stretch - OPENING NEVER SCALES</text>
+<rect class="frame" x="518" y="538" width="470" height="430"/>
+<text class="small" x="528" y="558">05</text>
+<text class="name" x="548" y="560">BLK_Ramp_800</text>
+<path class="shadow" d="M 694.2 588.5 L 953.0 738.0 L 811.8 819.5 L 553.0 670.0 Z"/>
+<path class="east" d="M 929.5 738.0 L 811.8 805.9 L 811.8 670.0 L 929.5 602.1 Z"/>
+<path class="north" d="M 576.5 670.0 L 811.8 805.9 L 811.8 670.0 Z"/>
+<path class="top" d="M 694.2 602.1 L 929.5 602.1 L 811.8 670.0 L 576.5 670.0 Z"/>
+<line class="tread" x1="723.6" y1="602.1" x2="605.9" y2="670.0"/>
+<line class="tread" x1="753.0" y1="602.1" x2="635.4" y2="670.0"/>
+<line class="tread" x1="782.4" y1="602.1" x2="664.8" y2="670.0"/>
+<line class="tread" x1="811.8" y1="602.1" x2="694.2" y2="670.0"/>
+<line class="tread" x1="841.2" y1="602.1" x2="723.6" y2="670.0"/>
+<line class="tread" x1="870.6" y1="602.1" x2="753.0" y2="670.0"/>
+<line class="tread" x1="900.1" y1="602.1" x2="782.4" y2="670.0"/>
+<line class="tread" style="stroke-width:1.6" x1="653.0" y1="625.2" x2="829.5" y2="625.2"/>
+<text class="rule" x="835.5" y="621.2">UP</text>
+<text class="dims" x="532" y="910">8.00 run x 4.00 w, rise 4.00 (27 deg)</text>
+<text class="role" x="532" y="930">the vertical circulation; slope stays under 30 deg</text>
+<text class="rule" x="532" y="952">RE-LENGTH ONLY - never steepen past 45 deg</text>
+<rect class="frame" x="1012" y="538" width="470" height="430"/>
+<text class="small" x="1022" y="558">06</text>
+<text class="name" x="1042" y="560">BLK_Stair_200</text>
+<path class="shadow" d="M 1227.1 664.9 L 1378.5 752.3 L 1266.9 816.7 L 1115.5 729.3 Z"/>
+<path class="east" d="M 1346.6 752.3 L 1266.9 798.3 L 1266.9 789.1 L 1346.6 743.1 Z"/>
+<path class="north" d="M 1266.9 798.3 L 1147.4 729.3 L 1147.4 720.1 L 1266.9 789.1 Z"/>
+<path class="top" d="M 1227.1 674.1 L 1346.6 743.1 L 1266.9 789.1 L 1147.4 720.1 Z"/>
+<path class="east" d="M 1334.6 745.4 L 1255.0 791.4 L 1255.0 773.0 L 1334.6 727.0 Z"/>
+<path class="north" d="M 1255.0 791.4 L 1147.4 729.3 L 1147.4 710.9 L 1255.0 773.0 Z"/>
+<path class="top" d="M 1227.1 664.9 L 1334.6 727.0 L 1255.0 773.0 L 1147.4 710.9 Z"/>
+<path class="east" d="M 1322.7 738.5 L 1243.0 784.5 L 1243.0 756.9 L 1322.7 710.9 Z"/>
+<path class="north" d="M 1243.0 784.5 L 1147.4 729.3 L 1147.4 701.7 L 1243.0 756.9 Z"/>
+<path class="top" d="M 1227.1 655.7 L 1322.7 710.9 L 1243.0 756.9 L 1147.4 701.7 Z"/>
+<path class="east" d="M 1310.7 731.6 L 1231.1 777.6 L 1231.1 740.8 L 1310.7 694.8 Z"/>
+<path class="north" d="M 1231.1 777.6 L 1147.4 729.3 L 1147.4 692.5 L 1231.1 740.8 Z"/>
+<path class="top" d="M 1227.1 646.5 L 1310.7 694.8 L 1231.1 740.8 L 1147.4 692.5 Z"/>
+<path class="east" d="M 1298.8 724.7 L 1219.1 770.7 L 1219.1 724.7 L 1298.8 678.7 Z"/>
+<path class="north" d="M 1219.1 770.7 L 1147.4 729.3 L 1147.4 683.3 L 1219.1 724.7 Z"/>
+<path class="top" d="M 1227.1 637.3 L 1298.8 678.7 L 1219.1 724.7 L 1147.4 683.3 Z"/>
+<path class="east" d="M 1286.8 717.8 L 1207.2 763.8 L 1207.2 708.6 L 1286.8 662.6 Z"/>
+<path class="north" d="M 1207.2 763.8 L 1147.4 729.3 L 1147.4 674.1 L 1207.2 708.6 Z"/>
+<path class="top" d="M 1227.1 628.1 L 1286.8 662.6 L 1207.2 708.6 L 1147.4 674.1 Z"/>
+<path class="east" d="M 1274.9 710.9 L 1195.2 756.9 L 1195.2 692.5 L 1274.9 646.5 Z"/>
+<path class="north" d="M 1195.2 756.9 L 1147.4 729.3 L 1147.4 664.9 L 1195.2 692.5 Z"/>
+<path class="top" d="M 1227.1 618.9 L 1274.9 646.5 L 1195.2 692.5 L 1147.4 664.9 Z"/>
+<path class="east" d="M 1262.9 704.0 L 1183.3 750.0 L 1183.3 676.4 L 1262.9 630.4 Z"/>
+<path class="north" d="M 1183.3 750.0 L 1147.4 729.3 L 1147.4 655.7 L 1183.3 676.4 Z"/>
+<path class="top" d="M 1227.1 609.7 L 1262.9 630.4 L 1183.3 676.4 L 1147.4 655.7 Z"/>
+<path class="east" d="M 1251.0 697.1 L 1171.3 743.1 L 1171.3 660.3 L 1251.0 614.3 Z"/>
+<path class="north" d="M 1171.3 743.1 L 1147.4 729.3 L 1147.4 646.5 L 1171.3 660.3 Z"/>
+<path class="top" d="M 1227.1 600.5 L 1251.0 614.3 L 1171.3 660.3 L 1147.4 646.5 Z"/>
+<path class="east" d="M 1239.0 690.2 L 1159.4 736.2 L 1159.4 644.2 L 1239.0 598.2 Z"/>
+<path class="north" d="M 1159.4 736.2 L 1147.4 729.3 L 1147.4 637.3 L 1159.4 644.2 Z"/>
+<path class="top" d="M 1227.1 591.3 L 1239.0 598.2 L 1159.4 644.2 L 1147.4 637.3 Z"/>
+<text class="dims" x="1026" y="910">3.00 run x 2.00 w, rise 2.00 (10 steps 0.20/0.30)</text>
+<text class="role" x="1026" y="930">steps for short hops; treads are gameplay metric</text>
+<text class="rule" x="1026" y="952">NEVER SCALES - new rise:run = new asset</text>
+<text class="small" x="28" y="1054">SCALING LAW: plates, walls, columns, piers, rails, curbs scale · STAIRS and DOOR OPENINGS never scale (rise:run and clearances are gameplay) · ramps re-length, never steepen past 45 deg · everything snaps to the 0.5 m grid</text>
+</svg>
