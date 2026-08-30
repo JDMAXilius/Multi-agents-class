@@ -196,3 +196,34 @@ indoor, small, close-range; (5) two exits minimum from every room.
 - Editor-pass anchors added to the notes: pockets deep enough to strafe
   in; base = double-pocket around a column; columns never touch walls.
   No manifest rebuild — the pockets are already in the trace.
+
+### 30 Aug — REV C: the blueprints redrawn from POLYGONS (founder order)
+
+- Founder: "re do the blueprints to be as accurate 1:1 as possible - front,
+  side, top, 3/4, level floors, height, width, stairs, platforms, columns,
+  corners, floors, walls." The generic box-driven sheets were honest for a
+  blockout and blocky as drawings; REV C stops drawing the manifest.
+- NEW: Tools/blockout/gen_aquarius_blueprint.py - goes back to the traced
+  per-floor grids at FULL resolution (0.27 m cells), classifies with the v3
+  semantics, and extracts region BOUNDARIES as polygons (edge-chaining with
+  interior-on-left + closed-loop Douglas-Peucker, eps tightened on small
+  features) so the 45-degree chamfers come out as true diagonals - crisp
+  walls, hex towers, real corners. 80 solids: 22 wall segments / 24 towers /
+  4 supports / 18 decks / 12 ramps.
+- S1: polygon-true floor plans L0/L1, poche cut, founder's region names on
+  the plan, keyed dims (52.0 x 29.9 overall; biggest tower 8.4 x 6.7; lane
+  clear width + wall thickness at mid; bridge width on L1), stair treads+UP,
+  legend with the LEVEL SCHEDULE (0 / +3.60 / +4.00 / +6.50 / +8.00).
+- S2: FRONT = Section A-A at mid looking north; SIDE = Section B-B at mid
+  looking west; Section C-C through Hallway 2 - drawn instead of a south
+  facade (which is honestly one 8 m wall) and showing the batch-4 pin: the
+  side lanes are TWO-LEVEL, deck over the lane at +4. Beyond drawn as
+  layered silhouettes (perimeter light, interior masses darker), cut poche.
+- S3: 3/4 axonometric from the extruded polygons, ONE painter's list far to
+  near, the near (NE) wall segments drawn cut to 2 m so the interior reads;
+  labels leader-lined to real mass centroids.
+- Comparison rebuilt (comparison.png): reference vs REV C per floor -
+  silhouette, castellations, scallops, hex towers, bridge blocks register.
+- The MANIFEST is untouched: the game blockout stays box-driven and
+  validated; REV C is the drawing truth. Heights remain authored from the
+  reference shots; scale remains the derived 52 m pending the Forge walk.
