@@ -205,3 +205,52 @@ Ramps are fixed and provably seated. Ground play is connected. **The upper floor
 is not reachable except at the centre, so the level does not yet play as an
 arena.** Nobody has walked it in PIE - every statement above is a navmesh
 measurement, which is a rung below the pawn actually moving.
+
+### 30 Aug (later) — the recast tile-config lead is a DEAD END, and why
+
+Founder asked for the tile config to be fixed. **There is nothing to fix.** The
+`BorderForLinks (23 vx) exceeds tileSize (0 vx)` warning that has been treated as
+evidence since AIB8 is an **engine log-ordering bug**:
+
+- `RecastNavMeshGenerator.cpp:5263` calls `ComputeConfigBorderSizes()`, which
+  prints the warning;
+- `RecastNavMeshGenerator.cpp:5270` assigns `OutConfig.tileSize` — *seven lines
+  later*. (Same pattern at 5358 / 5390.)
+
+So the warning reads `tileSize` before it exists. The `0` is an uninitialised
+field, not our configuration. Three further confirmations:
+
+1. `:5271` logs an **Error** whenever the real tileSize computes to 1 ("highly
+   discouraged... indicates an issue with RecastNavMesh's generation
+   properties"). That error has never been logged here.
+2. The warning is about MEMORY, not correctness — its own text says "This will
+   increase memory usage during nav build", and the source comments "At this
+   point we do not clamp -- a large JumpLength is a valid (if expensive)
+   configuration."
+3. Live `RecastNavMesh-Default` reads `TileSizeUU = 1000`, so the real tile size
+   is `1000 / CellSize` voxels, comfortably above the 23 vx border.
+
+`Config/DefaultEngine.ini` has been corrected in place, because it recorded this
+lead as the next thing to investigate and would have cost the next session too.
+
+### Hypotheses tested and DISPROVED for the ramp-link failure
+
+Recorded so nobody re-runs them. The failure is stable and reproducible:
+**2 of 8 ramps link, the same two, across every rebuild.**
+
+| # | Hypothesis | Test | Result |
+|---|---|---|---|
+| 1 | Ramps overlap walls, so Recast cannot carve a corridor | perfect correlation (0.00 m2 on both working ramps, 0.13-2.26 m2 on all six failures); added `clear_ramps()`, regenerated, rebuilt, verified live actors match manifest | **DISPROVED** — link results byte-identical |
+| 2 | Recast tile config is degenerate (AIB8's lead) | read the engine source | **DISPROVED** — log-ordering bug, see above |
+| 3 | The navmesh is stale from the build when ramps still floated | `ProcessTileTasksAndGetUpdatedTiles` is async dispatch, so waited and re-probed after tiles settled | **DISPROVED** — identical results |
+| 4 | Ramp heads do not reach their decks | measured head-to-nearest-deck gap from the manifest | **DISPROVED** — all 8 gaps are 0.00 m (one 0.02 m) |
+| 5 | The target decks carry no navmesh | probed each deck a failing ramp serves | **DISPROVED, and it inverts** — the failing ramps' decks (007/020/015/006) all have nav at z410, while `Deck_001`, the deck the two WORKING ramps serve, probes NONE at its centre |
+
+Finding 5 is the most interesting and is where the next session should start: the
+correlation runs OPPOSITE to the obvious reading, which means the failure is
+probably not about the deck surface at all but about which navmesh ISLAND the
+ramp's own surface belongs to. Worth dumping the actual navmesh polygons/tiles
+per ramp rather than probing points, which is as far as point-projection can go.
+
+Also still unexplained and possibly related: **32 of 97 deck pieces carry no
+navmesh**, and `Deck_001` is one of them despite being demonstrably walkable.
