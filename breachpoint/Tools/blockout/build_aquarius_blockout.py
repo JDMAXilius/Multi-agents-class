@@ -178,7 +178,12 @@ def main():
         unreal.Vector(b["x"] * M_TO_UU / 2, b["y"] * M_TO_UU / 2,
                       b["z"] * M_TO_UU / 2),
         unreal.Rotator(0, 0, 0))
-    nav.set_actor_scale3d(unreal.Vector(b["x"] + 4, b["y"] + 4, b["z"] + 4))
+    # A volume's default brush is a 200 uu cube, NOT 100 - measured 30 Aug:
+    # scale (b+4) gave an 112 x 68 m volume over a 52 x 30 m map (4x the area
+    # to voxelise, for nothing). Half it so the volume is bounds + 2 m margin.
+    nav.set_actor_scale3d(unreal.Vector((b["x"] + 4) / 2.0,
+                                        (b["y"] + 4) / 2.0,
+                                        (b["z"] + 4) / 2.0))
     nav.set_actor_label("Nav_Aquarius")
     tag(nav)
     nav.set_folder_path(unreal.Name("Blockout/Nav"))
