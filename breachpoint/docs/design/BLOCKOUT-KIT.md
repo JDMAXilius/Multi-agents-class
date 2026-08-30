@@ -155,6 +155,28 @@ all placements as individual blocks; floors/decks as flat seamed plates,
 long pieces subdivided for correct occlusion). These sheets read ONLY the
 manifest: regenerate it and they re-render to match.
 
+### Piece-count budgets — the third research pass (founder: "why so many?")
+
+The 878-piece first decomposition was machine granularity, not level-design
+practice. Researched anchors: complete SHIPPED 4v4 Forge arenas lived under
+the Halo 3 / Reach hard cap of 640-650 objects for two console generations
+[solid]; Halo 5's 1,600 and Infinite's ~7,000 budgets exist for the ART pass
+[solid]; finished Quake 3 duel maps run ~900-1,000 brushes WITH art [solid];
+community performance bands: <300 objects flawless / <500 decent for a whole
+map [thin]; doctrine: "big simple shapes, cheap to throw away" [solid].
+
+**Budgets adopted (enforced by the generator, recorded in the JSON):**
+- MASSING pass: 50-100 pieces (2.0 m grid) - ours lands at 97
+  (`aquarius_blockout_massing.json`).
+- GREYBOX: 200-400 pieces, soft ceiling 500, red line ~650 (1.0 m grid) -
+  ours lands at 208 (`aquarius_blockout_kit.json`, the canonical manifest:
+  30 floor plates + 70 deck plates + 53 walls + 38 towers + 5 piers +
+  12 ramps).
+- How the count fell 878 -> 208: maximal rects instead of length-family
+  tiling (the family returns at the ART pass as authored variants), floor
+  plates running hidden under structure, and the 1.0 m pass grid absorbing
+  the 0.5 m trace-edge slivers (368 of the old 878 were slivers).
+
 ## 3. The pipeline (doctrine: ue-editor skill, law 7)
 
 ```

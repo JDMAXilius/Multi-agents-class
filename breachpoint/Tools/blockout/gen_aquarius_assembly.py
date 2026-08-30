@@ -244,9 +244,9 @@ def assembly_plan(kit, Wm, Hm, out_dir, level):
         o.append('<text class="small" x="%d" y="%d">%s</text>' % (sx + 36, y2, txt))
     y3 = yy + 20 + len(key) * 19 + 24
     o.append('<text class="small" x="%d" y="%d">White joints inside dark pieces are '
-             'the MODULE SEAMS -</text>' % (sx, y3))
-    o.append('<text class="small" x="%d" y="%d">the standard length family '
-             '[8 / 4 / 2 / 1 / 0.5] m.</text>' % (sx, y3 + 16))
+             'the MODULE SEAMS between</text>' % (sx, y3))
+    o.append('<text class="small" x="%d" y="%d">maximal pieces on the pass grid '
+             '(research: big simple shapes).</text>' % (sx, y3 + 16))
     o.append('<text class="small" x="%d" y="%d">Full parts list: '
              'Content/Data/aquarius_blockout_kit.json (deterministic).</text>'
              % (sx, y3 + 34))

@@ -133,3 +133,21 @@
 - The sheets read ONLY aquarius_blockout_kit.json - manifest regenerates,
   sheets follow. BOM headline: L1 = 338 floor + 141 wall + 131 tower +
   11 pier + 12 ramp pieces; L2 = 245 deck plates.
+
+### 30 Aug — founder: "why so many?" — piece-count research + retune
+
+- Third research pass anchors the budget: Halo 3/Reach shipped COMPLETE
+  4v4 arenas under a 640-650 object hard cap; H5/Infinite's bigger budgets
+  are for art; Q3 duel maps ~900 brushes finished; community bands <300
+  flawless / <500 decent; doctrine "big simple shapes". Adopted: MASSING
+  50-100, GREYBOX 200-400 (soft 500, red line ~650). Full digest + sources
+  in BLOCKOUT-KIT.md.
+- Generator retuned: maximal rects (length-family tiling retired to the
+  art pass), floor plates run hidden under structure, pass grids 2.0 m /
+  1.0 m. Two-pass output: massing 97 pieces (IN BAND) to
+  aquarius_blockout_massing.json; greybox 208 pieces (IN BAND) to the
+  canonical aquarius_blockout_kit.json. 878 -> 208; 368 of the old
+  pieces were 0.5 m trace-edge slivers.
+- Budget is IN the JSON (piece_budget.band/actual) so the builder and
+  every future regeneration is judged against it. Assembly sheets
+  re-rendered from the new manifest.

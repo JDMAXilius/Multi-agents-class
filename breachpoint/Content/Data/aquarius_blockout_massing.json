@@ -1,0 +1,2338 @@
+{
+ "kit_id": "aquarius_blockout_kit",
+ "version": 2,
+ "pass": "massing",
+ "piece_budget": {
+  "band": [
+   50,
+   100
+  ],
+  "actual": 97,
+  "basis": "BLOCKOUT-KIT.md piece-count research: massing 50-100, greybox 200-400 (soft ceiling 500, red line ~650 - the Halo 3/Reach complete-map cap)"
+ },
+ "units": "location cm (1uu), scale = metres of a 100 cm unit mesh",
+ "axes": "X = map EAST, Y = map SOUTH, Z up; origin at NW ground corner of the traced footprint; rotations are UE rotators (deg)",
+ "grid_m": 2.0,
+ "asset_catalog": "docs/design/blueprints/breachpoint_aquarius/K101_kit_catalog_1.png + K102_kit_catalog_2.png - the TWELVE modular assets (gen_kit_catalog.py); placements below map onto them via asset_map",
+ "asset_map": {
+  "Floor": "BLK_Floor_400",
+  "Deck": "BLK_Floor_400",
+  "Wall": "BLK_Wall_400",
+  "Tower": "BLK_Wall_400",
+  "Support": "BLK_Pier_100",
+  "Ramp": "BLK_Ramp_800"
+ },
+ "modules": [
+  {
+   "id": "BLK_Cube",
+   "mesh": "/Engine/BasicShapes/Cube.Cube",
+   "note": "100 cm cube, pivot at CENTER; every Floor/Deck/Wall/Tower/Support/Ramp variant is this mesh scaled (ramps additionally pitched)."
+  },
+  {
+   "id": "BLK_Cylinder",
+   "mesh": "/Engine/BasicShapes/Cylinder.Cylinder",
+   "note": "reserved for the pass-2 free-standing columns (orbitable, never wall-touching - reference notes 21-25); no auto-placements this pass."
+  }
+ ],
+ "variants": [
+  {
+   "id": "Floor_520x060x002",
+   "family": "Floor",
+   "size_m": [
+    52.0,
+    6.0,
+    0.2
+   ],
+   "count": 1
+  },
+  {
+   "id": "Floor_480x040x002",
+   "family": "Floor",
+   "size_m": [
+    48.0,
+    4.0,
+    0.2
+   ],
+   "count": 2
+  },
+  {
+   "id": "Floor_320x020x002",
+   "family": "Floor",
+   "size_m": [
+    32.0,
+    2.0,
+    0.2
+   ],
+   "count": 2
+  },
+  {
+   "id": "Floor_320x040x002",
+   "family": "Floor",
+   "size_m": [
+    32.0,
+    4.0,
+    0.2
+   ],
+   "count": 1
+  },
+  {
+   "id": "Floor_080x020x002",
+   "family": "Floor",
+   "size_m": [
+    8.0,
+    2.0,
+    0.2
+   ],
+   "count": 2
+  },
+  {
+   "id": "Floor_040x020x002",
+   "family": "Floor",
+   "size_m": [
+    4.0,
+    2.0,
+    0.2
+   ],
+   "count": 3
+  },
+  {
+   "id": "Floor_280x020x002",
+   "family": "Floor",
+   "size_m": [
+    28.0,
+    2.0,
+    0.2
+   ],
+   "count": 1
+  },
+  {
+   "id": "Floor_020x020x002",
+   "family": "Floor",
+   "size_m": [
+    2.0,
+    2.0,
+    0.2
+   ],
+   "count": 4
+  },
+  {
+   "id": "Floor_120x020x002",
+   "family": "Floor",
+   "size_m": [
+    12.0,
+    2.0,
+    0.2
+   ],
+   "count": 1
+  },
+  {
+   "id": "Deck_120x040x004",
+   "family": "Deck",
+   "size_m": [
+    12.0,
+    4.0,
+    0.4
+   ],
+   "count": 1
+  },
+  {
+   "id": "Deck_100x020x004",
+   "family": "Deck",
+   "size_m": [
+    10.0,
+    2.0,
+    0.4
+   ],
+   "count": 4
+  },
+  {
+   "id": "Deck_080x020x004",
+   "family": "Deck",
+   "size_m": [
+    8.0,
+    2.0,
+    0.4
+   ],
+   "count": 5
+  },
+  {
+   "id": "Deck_060x040x004",
+   "family": "Deck",
+   "size_m": [
+    6.0,
+    4.0,
+    0.4
+   ],
+   "count": 2
+  },
+  {
+   "id": "Deck_020x100x004",
+   "family": "Deck",
+   "size_m": [
+    2.0,
+    10.0,
+    0.4
+   ],
+   "count": 1
+  },
+  {
+   "id": "Deck_020x040x004",
+   "family": "Deck",
+   "size_m": [
+    2.0,
+    4.0,
+    0.4
+   ],
+   "count": 4
+  },
+  {
+   "id": "Deck_020x020x004",
+   "family": "Deck",
+   "size_m": [
+    2.0,
+    2.0,
+    0.4
+   ],
+   "count": 5
+  },
+  {
+   "id": "Deck_300x020x004",
+   "family": "Deck",
+   "size_m": [
+    30.0,
+    2.0,
+    0.4
+   ],
+   "count": 1
+  },
+  {
+   "id": "Deck_120x020x004",
+   "family": "Deck",
+   "size_m": [
+    12.0,
+    2.0,
+    0.4
+   ],
+   "count": 3
+  },
+  {
+   "id": "Deck_040x080x004",
+   "family": "Deck",
+   "size_m": [
+    4.0,
+    8.0,
+    0.4
+   ],
+   "count": 1
+  },
+  {
+   "id": "Deck_040x020x004",
+   "family": "Deck",
+   "size_m": [
+    4.0,
+    2.0,
+    0.4
+   ],
+   "count": 1
+  },
+  {
+   "id": "Deck_140x020x004",
+   "family": "Deck",
+   "size_m": [
+    14.0,
+    2.0,
+    0.4
+   ],
+   "count": 1
+  },
+  {
+   "id": "Wall_020x020x080",
+   "family": "Wall",
+   "size_m": [
+    2.0,
+    2.0,
+    8.0
+   ],
+   "count": 14
+  },
+  {
+   "id": "Wall_040x020x080",
+   "family": "Wall",
+   "size_m": [
+    4.0,
+    2.0,
+    8.0
+   ],
+   "count": 3
+  },
+  {
+   "id": "Tower_040x020x065",
+   "family": "Tower",
+   "size_m": [
+    4.0,
+    2.0,
+    6.5
+   ],
+   "count": 4
+  },
+  {
+   "id": "Tower_020x020x065",
+   "family": "Tower",
+   "size_m": [
+    2.0,
+    2.0,
+    6.5
+   ],
+   "count": 11
+  },
+  {
+   "id": "Tower_060x040x065",
+   "family": "Tower",
+   "size_m": [
+    6.0,
+    4.0,
+    6.5
+   ],
+   "count": 3
+  },
+  {
+   "id": "Tower_080x020x065",
+   "family": "Tower",
+   "size_m": [
+    8.0,
+    2.0,
+    6.5
+   ],
+   "count": 1
+  },
+  {
+   "id": "Tower_060x020x065",
+   "family": "Tower",
+   "size_m": [
+    6.0,
+    2.0,
+    6.5
+   ],
+   "count": 1
+  },
+  {
+   "id": "Support_040x040x036",
+   "family": "Support",
+   "size_m": [
+    4.0,
+    4.0,
+    3.6
+   ],
+   "count": 2
+  },
+  {
+   "id": "Ramp_070x020x003",
+   "family": "Ramp",
+   "size_m": [
+    7.08,
+    2.0,
+    0.3
+   ],
+   "count": 3
+  },
+  {
+   "id": "Ramp_020x020x040",
+   "family": "Ramp",
+   "size_m": [
+    2.0,
+    2.0,
+    4.0
+   ],
+   "count": 8
+  },
+  {
+   "id": "Ramp_088x040x003",
+   "family": "Ramp",
+   "size_m": [
+    8.84,
+    4.0,
+    0.3
+   ],
+   "count": 1
+  }
+ ],
+ "level_schedule_m": {
+  "floor_top": 0.0,
+  "deck": [
+   3.6,
+   4.0
+  ],
+  "tower_top": 6.5,
+  "wall_top": 8.0,
+  "ramp": [
+   0.25,
+   4.0
+  ]
+ },
+ "doubts": [
+  "BLK_Ramp_002: slope 62 deg exceeds walkable 45 - placed as solid block pending channel (b)",
+  "BLK_Ramp_003: slope 62 deg exceeds walkable 45 - placed as solid block pending channel (b)",
+  "BLK_Ramp_004: slope 62 deg exceeds walkable 45 - placed as solid block pending channel (b)",
+  "BLK_Ramp_006: slope 62 deg exceeds walkable 45 - placed as solid block pending channel (b)",
+  "BLK_Ramp_008: slope 62 deg exceeds walkable 45 - placed as solid block pending channel (b)",
+  "BLK_Ramp_009: slope 62 deg exceeds walkable 45 - placed as solid block pending channel (b)",
+  "BLK_Ramp_010: slope 62 deg exceeds walkable 45 - placed as solid block pending channel (b)",
+  "BLK_Ramp_012: slope 62 deg exceeds walkable 45 - placed as solid block pending channel (b)"
+ ],
+ "pass2_owed": [
+  "yaw-45 wall variants where the trace shows true diagonals (stepped at 0.5 m this pass)",
+  "free-standing columns (BLK_Cylinder), battery octagons at the base mouths, lane crates - reference notes 16-25 anchors",
+  "railings on deck edges the reference shows railed",
+  "sunken center trench below grade (channel b)"
+ ],
+ "placements": [
+  {
+   "variant": "Floor_520x060x002",
+   "label": "BLK_Floor_001",
+   "folder": "Blockout/Floors",
+   "location_cm": [
+    2600.0,
+    1500.0,
+    -10.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    52.0,
+    6.0,
+    0.2
+   ]
+  },
+  {
+   "variant": "Floor_480x040x002",
+   "label": "BLK_Floor_002",
+   "folder": "Blockout/Floors",
+   "location_cm": [
+    2600.0,
+    1000.0,
+    -10.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    48.0,
+    4.0,
+    0.2
+   ]
+  },
+  {
+   "variant": "Floor_480x040x002",
+   "label": "BLK_Floor_003",
+   "folder": "Blockout/Floors",
+   "location_cm": [
+    2600.0,
+    2000.0,
+    -10.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    48.0,
+    4.0,
+    0.2
+   ]
+  },
+  {
+   "variant": "Floor_320x020x002",
+   "label": "BLK_Floor_004",
+   "folder": "Blockout/Floors",
+   "location_cm": [
+    2600.0,
+    300.0,
+    -10.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    32.0,
+    2.0,
+    0.2
+   ]
+  },
+  {
+   "variant": "Floor_320x020x002",
+   "label": "BLK_Floor_005",
+   "folder": "Blockout/Floors",
+   "location_cm": [
+    2600.0,
+    700.0,
+    -10.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    32.0,
+    2.0,
+    0.2
+   ]
+  },
+  {
+   "variant": "Floor_320x040x002",
+   "label": "BLK_Floor_006",
+   "folder": "Blockout/Floors",
+   "location_cm": [
+    2600.0,
+    2400.0,
+    -10.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    32.0,
+    4.0,
+    0.2
+   ]
+  },
+  {
+   "variant": "Floor_080x020x002",
+   "label": "BLK_Floor_007",
+   "folder": "Blockout/Floors",
+   "location_cm": [
+    1400.0,
+    2700.0,
+    -10.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    8.0,
+    2.0,
+    0.2
+   ]
+  },
+  {
+   "variant": "Floor_040x020x002",
+   "label": "BLK_Floor_008",
+   "folder": "Blockout/Floors",
+   "location_cm": [
+    1400.0,
+    100.0,
+    -10.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    4.0,
+    2.0,
+    0.2
+   ]
+  },
+  {
+   "variant": "Floor_280x020x002",
+   "label": "BLK_Floor_009",
+   "folder": "Blockout/Floors",
+   "location_cm": [
+    2600.0,
+    500.0,
+    -10.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    28.0,
+    2.0,
+    0.2
+   ]
+  },
+  {
+   "variant": "Floor_020x020x002",
+   "label": "BLK_Floor_010",
+   "folder": "Blockout/Floors",
+   "location_cm": [
+    1500.0,
+    2900.0,
+    -10.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    0.2
+   ]
+  },
+  {
+   "variant": "Floor_120x020x002",
+   "label": "BLK_Floor_011",
+   "folder": "Blockout/Floors",
+   "location_cm": [
+    2600.0,
+    2700.0,
+    -10.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    12.0,
+    2.0,
+    0.2
+   ]
+  },
+  {
+   "variant": "Floor_020x020x002",
+   "label": "BLK_Floor_012",
+   "folder": "Blockout/Floors",
+   "location_cm": [
+    2300.0,
+    100.0,
+    -10.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    0.2
+   ]
+  },
+  {
+   "variant": "Floor_040x020x002",
+   "label": "BLK_Floor_013",
+   "folder": "Blockout/Floors",
+   "location_cm": [
+    2600.0,
+    2900.0,
+    -10.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    4.0,
+    2.0,
+    0.2
+   ]
+  },
+  {
+   "variant": "Floor_020x020x002",
+   "label": "BLK_Floor_014",
+   "folder": "Blockout/Floors",
+   "location_cm": [
+    2900.0,
+    100.0,
+    -10.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    0.2
+   ]
+  },
+  {
+   "variant": "Floor_080x020x002",
+   "label": "BLK_Floor_015",
+   "folder": "Blockout/Floors",
+   "location_cm": [
+    3800.0,
+    2700.0,
+    -10.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    8.0,
+    2.0,
+    0.2
+   ]
+  },
+  {
+   "variant": "Floor_040x020x002",
+   "label": "BLK_Floor_016",
+   "folder": "Blockout/Floors",
+   "location_cm": [
+    3800.0,
+    100.0,
+    -10.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    4.0,
+    2.0,
+    0.2
+   ]
+  },
+  {
+   "variant": "Floor_020x020x002",
+   "label": "BLK_Floor_017",
+   "folder": "Blockout/Floors",
+   "location_cm": [
+    3700.0,
+    2900.0,
+    -10.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    0.2
+   ]
+  },
+  {
+   "variant": "Deck_120x040x004",
+   "label": "BLK_Deck_001",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    600.0,
+    1400.0,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    12.0,
+    4.0,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_100x020x004",
+   "label": "BLK_Deck_002",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    700.0,
+    900.0,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    10.0,
+    2.0,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_080x020x004",
+   "label": "BLK_Deck_003",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    600.0,
+    1100.0,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    8.0,
+    2.0,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_100x020x004",
+   "label": "BLK_Deck_004",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    700.0,
+    1700.0,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    10.0,
+    2.0,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_060x040x004",
+   "label": "BLK_Deck_005",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    500.0,
+    2000.0,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    6.0,
+    4.0,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_020x100x004",
+   "label": "BLK_Deck_006",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    1100.0,
+    2300.0,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    10.0,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_020x040x004",
+   "label": "BLK_Deck_007",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    1300.0,
+    200.0,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    4.0,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_020x020x004",
+   "label": "BLK_Deck_008",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    1300.0,
+    700.0,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_020x020x004",
+   "label": "BLK_Deck_009",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    1300.0,
+    1500.0,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_300x020x004",
+   "label": "BLK_Deck_010",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    2700.0,
+    2300.0,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    30.0,
+    2.0,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_120x020x004",
+   "label": "BLK_Deck_011",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    2600.0,
+    700.0,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    12.0,
+    2.0,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_120x020x004",
+   "label": "BLK_Deck_012",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    2600.0,
+    2100.0,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    12.0,
+    2.0,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_080x020x004",
+   "label": "BLK_Deck_013",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    2600.0,
+    500.0,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    8.0,
+    2.0,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_080x020x004",
+   "label": "BLK_Deck_014",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    2600.0,
+    900.0,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    8.0,
+    2.0,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_080x020x004",
+   "label": "BLK_Deck_015",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    2600.0,
+    1900.0,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    8.0,
+    2.0,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_020x020x004",
+   "label": "BLK_Deck_016",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    2300.0,
+    2700.0,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_040x080x004",
+   "label": "BLK_Deck_017",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    2600.0,
+    1400.0,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    4.0,
+    8.0,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_040x020x004",
+   "label": "BLK_Deck_018",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    2600.0,
+    2900.0,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    4.0,
+    2.0,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_020x020x004",
+   "label": "BLK_Deck_019",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    2900.0,
+    2700.0,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_020x040x004",
+   "label": "BLK_Deck_020",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    3900.0,
+    200.0,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    4.0,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_020x020x004",
+   "label": "BLK_Deck_021",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    3900.0,
+    700.0,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_140x020x004",
+   "label": "BLK_Deck_022",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    4500.0,
+    1500.0,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    14.0,
+    2.0,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_100x020x004",
+   "label": "BLK_Deck_023",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    4500.0,
+    900.0,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    10.0,
+    2.0,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_120x020x004",
+   "label": "BLK_Deck_024",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    4600.0,
+    1300.0,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    12.0,
+    2.0,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_100x020x004",
+   "label": "BLK_Deck_025",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    4500.0,
+    1700.0,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    10.0,
+    2.0,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_020x040x004",
+   "label": "BLK_Deck_026",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    4100.0,
+    2000.0,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    4.0,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_020x040x004",
+   "label": "BLK_Deck_027",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    4100.0,
+    2600.0,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    4.0,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_080x020x004",
+   "label": "BLK_Deck_028",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    4600.0,
+    1100.0,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    8.0,
+    2.0,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_060x040x004",
+   "label": "BLK_Deck_029",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    4700.0,
+    2000.0,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    6.0,
+    4.0,
+    0.4
+   ]
+  },
+  {
+   "variant": "Wall_020x020x080",
+   "label": "BLK_Wall_001",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    100.0,
+    1300.0,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_020x020x080",
+   "label": "BLK_Wall_002",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    100.0,
+    1700.0,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_020x020x080",
+   "label": "BLK_Wall_003",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    500.0,
+    2100.0,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_020x020x080",
+   "label": "BLK_Wall_004",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    1100.0,
+    300.0,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_020x020x080",
+   "label": "BLK_Wall_005",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    1100.0,
+    2700.0,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_020x020x080",
+   "label": "BLK_Wall_006",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    1300.0,
+    100.0,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_040x020x080",
+   "label": "BLK_Wall_007",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    1400.0,
+    2900.0,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    4.0,
+    2.0,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_020x020x080",
+   "label": "BLK_Wall_008",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    1700.0,
+    300.0,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_040x020x080",
+   "label": "BLK_Wall_009",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    2600.0,
+    2900.0,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    4.0,
+    2.0,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_020x020x080",
+   "label": "BLK_Wall_010",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    3500.0,
+    300.0,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_040x020x080",
+   "label": "BLK_Wall_011",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    3800.0,
+    2900.0,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    4.0,
+    2.0,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_020x020x080",
+   "label": "BLK_Wall_012",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    3900.0,
+    100.0,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_020x020x080",
+   "label": "BLK_Wall_013",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    4100.0,
+    300.0,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_020x020x080",
+   "label": "BLK_Wall_014",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    4100.0,
+    2700.0,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_020x020x080",
+   "label": "BLK_Wall_015",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    4700.0,
+    2100.0,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_020x020x080",
+   "label": "BLK_Wall_016",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    5100.0,
+    1300.0,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_020x020x080",
+   "label": "BLK_Wall_017",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    5100.0,
+    1700.0,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    8.0
+   ]
+  },
+  {
+   "variant": "Tower_040x020x065",
+   "label": "BLK_Tower_001",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    1000.0,
+    1100.0,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    4.0,
+    2.0,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_020x020x065",
+   "label": "BLK_Tower_002",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    900.0,
+    1900.0,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_060x040x065",
+   "label": "BLK_Tower_003",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    1900.0,
+    800.0,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    6.0,
+    4.0,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_060x040x065",
+   "label": "BLK_Tower_004",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    1900.0,
+    2200.0,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    6.0,
+    4.0,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_020x020x065",
+   "label": "BLK_Tower_005",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    1900.0,
+    500.0,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_020x020x065",
+   "label": "BLK_Tower_006",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    1900.0,
+    1100.0,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_020x020x065",
+   "label": "BLK_Tower_007",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    1900.0,
+    1900.0,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_020x020x065",
+   "label": "BLK_Tower_008",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    1900.0,
+    2500.0,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_020x020x065",
+   "label": "BLK_Tower_009",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    2300.0,
+    2300.0,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_040x020x065",
+   "label": "BLK_Tower_010",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    2600.0,
+    700.0,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    4.0,
+    2.0,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_040x020x065",
+   "label": "BLK_Tower_011",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    2600.0,
+    2700.0,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    4.0,
+    2.0,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_080x020x065",
+   "label": "BLK_Tower_012",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    3200.0,
+    2300.0,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    8.0,
+    2.0,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_060x040x065",
+   "label": "BLK_Tower_013",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    3300.0,
+    800.0,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    6.0,
+    4.0,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_060x020x065",
+   "label": "BLK_Tower_014",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    3300.0,
+    2100.0,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    6.0,
+    2.0,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_020x020x065",
+   "label": "BLK_Tower_015",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    3300.0,
+    500.0,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_020x020x065",
+   "label": "BLK_Tower_016",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    3300.0,
+    1100.0,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_020x020x065",
+   "label": "BLK_Tower_017",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    3300.0,
+    1900.0,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_020x020x065",
+   "label": "BLK_Tower_018",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    3300.0,
+    2500.0,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_040x020x065",
+   "label": "BLK_Tower_019",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    4200.0,
+    1100.0,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    4.0,
+    2.0,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_020x020x065",
+   "label": "BLK_Tower_020",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    4300.0,
+    1900.0,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    6.5
+   ]
+  },
+  {
+   "variant": "Support_040x040x036",
+   "label": "BLK_Support_001",
+   "folder": "Blockout/Supports",
+   "location_cm": [
+    2600.0,
+    1200.0,
+    180.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    4.0,
+    4.0,
+    3.6
+   ]
+  },
+  {
+   "variant": "Support_040x040x036",
+   "label": "BLK_Support_002",
+   "folder": "Blockout/Supports",
+   "location_cm": [
+    2600.0,
+    1800.0,
+    180.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    4.0,
+    4.0,
+    3.6
+   ]
+  },
+  {
+   "variant": "Ramp_070x020x003",
+   "label": "BLK_Ramp_001",
+   "folder": "Blockout/Ramps",
+   "location_cm": [
+    1172.0,
+    2438.3,
+    212.5
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 32.01,
+    "yaw": -90.0
+   },
+   "scale": [
+    7.08,
+    2.0,
+    0.3
+   ]
+  },
+  {
+   "variant": "Ramp_020x020x040",
+   "label": "BLK_Ramp_002",
+   "folder": "Blockout/Ramps",
+   "location_cm": [
+    1212.4,
+    2573.1,
+    200.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 90.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    4.0
+   ],
+   "suspect": "slope 62 deg exceeds walkable 45 - placed as solid block pending channel (b)"
+  },
+  {
+   "variant": "Ramp_020x020x040",
+   "label": "BLK_Ramp_003",
+   "folder": "Blockout/Ramps",
+   "location_cm": [
+    1401.0,
+    363.7,
+    200.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 90.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    4.0
+   ],
+   "suspect": "slope 62 deg exceeds walkable 45 - placed as solid block pending channel (b)"
+  },
+  {
+   "variant": "Ramp_020x020x040",
+   "label": "BLK_Ramp_004",
+   "folder": "Blockout/Ramps",
+   "location_cm": [
+    1643.5,
+    296.4,
+    200.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    4.0
+   ],
+   "suspect": "slope 62 deg exceeds walkable 45 - placed as solid block pending channel (b)"
+  },
+  {
+   "variant": "Ramp_088x040x003",
+   "label": "BLK_Ramp_005",
+   "folder": "Blockout/Ramps",
+   "location_cm": [
+    2600.0,
+    2734.7,
+    212.5
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 25.11,
+    "yaw": 0.0
+   },
+   "scale": [
+    8.84,
+    4.0,
+    0.3
+   ]
+  },
+  {
+   "variant": "Ramp_020x020x040",
+   "label": "BLK_Ramp_006",
+   "folder": "Blockout/Ramps",
+   "location_cm": [
+    2330.6,
+    1522.3,
+    200.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    4.0
+   ],
+   "suspect": "slope 62 deg exceeds walkable 45 - placed as solid block pending channel (b)"
+  },
+  {
+   "variant": "Ramp_070x020x003",
+   "label": "BLK_Ramp_007",
+   "folder": "Blockout/Ramps",
+   "location_cm": [
+    2600.0,
+    1468.4,
+    212.5
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 32.01,
+    "yaw": 0.0
+   },
+   "scale": [
+    7.08,
+    2.0,
+    0.3
+   ]
+  },
+  {
+   "variant": "Ramp_020x020x040",
+   "label": "BLK_Ramp_008",
+   "folder": "Blockout/Ramps",
+   "location_cm": [
+    2869.4,
+    1522.3,
+    200.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    4.0
+   ],
+   "suspect": "slope 62 deg exceeds walkable 45 - placed as solid block pending channel (b)"
+  },
+  {
+   "variant": "Ramp_020x020x040",
+   "label": "BLK_Ramp_009",
+   "folder": "Blockout/Ramps",
+   "location_cm": [
+    3556.5,
+    296.4,
+    200.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    4.0
+   ],
+   "suspect": "slope 62 deg exceeds walkable 45 - placed as solid block pending channel (b)"
+  },
+  {
+   "variant": "Ramp_020x020x040",
+   "label": "BLK_Ramp_010",
+   "folder": "Blockout/Ramps",
+   "location_cm": [
+    3799.0,
+    363.7,
+    200.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 90.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    4.0
+   ],
+   "suspect": "slope 62 deg exceeds walkable 45 - placed as solid block pending channel (b)"
+  },
+  {
+   "variant": "Ramp_070x020x003",
+   "label": "BLK_Ramp_011",
+   "folder": "Blockout/Ramps",
+   "location_cm": [
+    4028.0,
+    2438.3,
+    212.5
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 32.01,
+    "yaw": -90.0
+   },
+   "scale": [
+    7.08,
+    2.0,
+    0.3
+   ]
+  },
+  {
+   "variant": "Ramp_020x020x040",
+   "label": "BLK_Ramp_012",
+   "folder": "Blockout/Ramps",
+   "location_cm": [
+    3987.6,
+    2573.1,
+    200.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 90.0
+   },
+   "scale": [
+    2.0,
+    2.0,
+    4.0
+   ],
+   "suspect": "slope 62 deg exceeds walkable 45 - placed as solid block pending channel (b)"
+  }
+ ]
+}

@@ -13,10 +13,14 @@ WHAT THIS EMITS — Content/Data/aquarius_blockout_kit.json:
 - kit.modules: the FEW meshes (engine basic shapes; a blockout scales
   primitives, it does not author meshes): BLK_Cube for floors/walls/masses/
   ramps, BLK_Cylinder reserved for pass-2 columns.
-- kit.variants: unique (family, size) combinations - the "modular pieces".
-  Sizes snap to the 0.5 m blockout grid and long runs split into the standard
-  length family [8, 4, 2, 1, 0.5] m, so the same variant repeats across the
-  level instead of every box being unique.
+- kit.variants: unique (family, size) combinations. Piece-count research
+  (30 Aug, third agent pass - Halo Forge caps 640-650 objects for COMPLETE
+  shipped 4v4 arenas, Q3 duel maps ~900 brushes finished, community bands
+  <300-500 objects, doctrine "big simple shapes, cheap to throw away")
+  sets the budgets: MASSING pass 50-100 pieces, GREYBOX 200-400 (soft
+  ceiling 500). Decomposition is therefore MAXIMAL RECTS on a coarse grid
+  (2.0 m massing / 1.0 m greybox), floors running under structure - no
+  micro-tiling, no length-splitting; reuse means the same MESH scaled.
 - placements: one entry per instance - {variant, label, folder, location_cm,
   rotation_deg (roll,pitch,yaw), scale} in UNREAL conventions: 1 uu = 1 cm,
   Z up, X = map EAST, Y = map SOUTH, origin at the arena's NW ground corner.
@@ -24,10 +28,9 @@ WHAT THIS EMITS — Content/Data/aquarius_blockout_kit.json:
   unit meshes, so scale = size_m). Deterministic: same inputs, same JSON.
 
 SOURCE GEOMETRY: the same per-floor trace extraction as the REV D blueprint
-set (gen_aquarius_blueprint.extract) - classes wall / tower / support / deck /
-stair / floor, quantized to the 0.5 m grid (area-coverage vote, thin-wall
-bias). Diagonal chamfers step at 0.5 m this pass; yaw-45 wall variants are a
-pass-2 refinement and are called out in docs/design/BLOCKOUT-KIT.md.
+set (gen_aquarius_blueprint.extract), quantized to the PASS grid (area-
+coverage vote, thin-wall bias). Diagonal chamfers step at the pass grid;
+yaw-45 wall variants are a pass-2 refinement (BLOCKOUT-KIT.md).
 
 LEVEL SCHEDULE (unchanged): floors t=0.20 top at 0.00 · decks 3.60-4.00 ·
 supports 0-3.60 · towers 0-6.50 · perimeter 0-8.00 · ramps rise 0.25->4.00.
@@ -48,8 +51,13 @@ from gen_aquarius_blueprint import extract, DECK, TOWER_H, WALL_H  # noqa: E402
 GAME = HERE.parents[1]
 OUT = GAME / "Content" / "Data" / "aquarius_blockout_kit.json"
 
-GRID_M = 0.5                       # the blockout grid everything snaps to
-LENGTHS = [8.0, 4.0, 2.0, 1.0, 0.5]  # standard modular length family
+PASSES = {                          # research-set budgets (BLOCKOUT-KIT.md)
+    "greybox": {"grid": 1.0, "wall_t": 0.30, "slab_t": 0.45, "floor_t": 0.40,
+                "budget": (200, 400)},
+    "massing": {"grid": 2.0, "wall_t": 0.22, "slab_t": 0.40, "floor_t": 0.35,
+                "budget": (50, 100)},
+}
+GRID_M = 1.0                       # set per pass in main()
 FLOOR_T = 0.2
 RAMP_T = 0.3
 RAMP_Z0 = 0.25                     # ramps land a quarter-step above the floor
@@ -63,23 +71,24 @@ FAMILIES = {                       # family -> (z0, z1, folder)
 }
 
 
-def quantize(cells, W, H, cell_m, thresh):
-    """Trace cells -> 0.5 m occupancy grid by area coverage."""
-    gw = math.ceil(W * cell_m / GRID_M)
-    gh = math.ceil(H * cell_m / GRID_M)
+def quantize(cells, W, H, cell_m, thresh, G=None):
+    """Trace cells -> pass-grid occupancy by area coverage."""
+    G = G or GRID_M
+    gw = math.ceil(W * cell_m / G)
+    gh = math.ceil(H * cell_m / G)
     acc = {}
     for (x, y) in cells:
         # spread each trace cell's area over the metre-grid bins it overlaps
         x0, x1 = x * cell_m, (x + 1) * cell_m
         y0, y1 = y * cell_m, (y + 1) * cell_m
-        bx0, bx1 = int(x0 / GRID_M), min(int(x1 / GRID_M), gw - 1)
-        by0, by1 = int(y0 / GRID_M), min(int(y1 / GRID_M), gh - 1)
+        bx0, bx1 = int(x0 / G), min(int(x1 / G), gw - 1)
+        by0, by1 = int(y0 / G), min(int(y1 / G), gh - 1)
         for bx in range(bx0, bx1 + 1):
             for by in range(by0, by1 + 1):
-                ox = max(0.0, min(x1, (bx + 1) * GRID_M) - max(x0, bx * GRID_M))
-                oy = max(0.0, min(y1, (by + 1) * GRID_M) - max(y0, by * GRID_M))
+                ox = max(0.0, min(x1, (bx + 1) * G) - max(x0, bx * G))
+                oy = max(0.0, min(y1, (by + 1) * G) - max(y0, by * G))
                 acc[(bx, by)] = acc.get((bx, by), 0.0) + ox * oy
-    full = GRID_M * GRID_M
+    full = G * G
     return {b for b, a in acc.items() if a >= thresh * full}, gw, gh
 
 
@@ -101,36 +110,18 @@ def merge_rects(cells):
     return rects
 
 
-def split_standard(length_m):
-    """Greedy split of a run into the standard length family."""
-    out, rest = [], round(length_m / GRID_M) * GRID_M
-    for L in LENGTHS:
-        while rest >= L - 1e-9:
-            out.append(L)
-            rest = round((rest - L) / GRID_M) * GRID_M
-    return out
-
-
-def decompose(bins, family, z0, z1):
-    """Grid bins -> modular box instances: rects, long axis split into the
-    standard family so identical variants repeat."""
+def decompose(bins, family, z0, z1, G):
+    """Grid bins -> modular box instances as MAXIMAL rects (research: big
+    simple shapes, few pieces; reuse = the same mesh scaled)."""
     inst = []
     for (bx, by, bw, bh) in merge_rects(bins):
-        horiz = bw >= bh
-        run_m = (bw if horiz else bh) * GRID_M
-        cross_m = (bh if horiz else bw) * GRID_M
-        off = 0.0
-        for L in split_standard(run_m):
-            cx = (bx * GRID_M) + (off + L / 2 if horiz else bw * GRID_M / 2)
-            cy = (by * GRID_M) + (bh * GRID_M / 2 if horiz else off + L / 2)
-            size = (L, cross_m) if horiz else (cross_m, L)
-            inst.append({"family": family,
-                         "size_m": [round(size[0], 2), round(size[1], 2),
-                                    round(z1 - z0, 2)],
-                         "center_m": [round(cx, 3), round(cy, 3),
-                                      round((z0 + z1) / 2, 3)],
-                         "yaw_deg": 0.0, "pitch_deg": 0.0})
-            off += L
+        inst.append({"family": family,
+                     "size_m": [round(bw * G, 2), round(bh * G, 2),
+                                round(z1 - z0, 2)],
+                     "center_m": [round((bx + bw / 2) * G, 3),
+                                  round((by + bh / 2) * G, 3),
+                                  round((z0 + z1) / 2, 3)],
+                     "yaw_deg": 0.0, "pitch_deg": 0.0})
     return inst
 
 
@@ -193,9 +184,14 @@ def ramp_instances(solids, deckcells, cell_m):
 
 
 def main():
+    global GRID_M
     ap = argparse.ArgumentParser()
     ap.add_argument("--png", action="store_true")
+    ap.add_argument("--pass", dest="pass_name", default="greybox",
+                    choices=sorted(PASSES))
     args = ap.parse_args()
+    cfg = PASSES[args.pass_name]
+    GRID_M = cfg["grid"]
 
     solids, floor, W, H, cell_m = extract()
     deckcells = set().union(*(s.cells for s in solids if s.kind == "deck")) \
@@ -205,22 +201,23 @@ def main():
         masks[s.kind] |= s.cells
 
     inst = []
-    # thin-wall bias: walls keep bins at 35% coverage; slabs want half
-    qwall, gw, gh = quantize(masks["wall"], W, H, cell_m, 0.35)
-    qtower, _, _ = quantize(masks["tower"], W, H, cell_m, 0.45)
-    qsup, _, _ = quantize(masks["support"], W, H, cell_m, 0.45)
-    qdeck, _, _ = quantize(masks["deck"], W, H, cell_m, 0.45)
-    qstair, _, _ = quantize(masks["stair"], W, H, cell_m, 0.45)
-    qfloor, _, _ = quantize(floor, W, H, cell_m, 0.4)
+    G = cfg["grid"]
+    qwall, gw, gh = quantize(masks["wall"], W, H, cell_m, cfg["wall_t"], G)
+    qtower, _, _ = quantize(masks["tower"], W, H, cell_m, cfg["slab_t"], G)
+    qsup, _, _ = quantize(masks["support"], W, H, cell_m, cfg["slab_t"], G)
+    qdeck, _, _ = quantize(masks["deck"], W, H, cell_m, cfg["slab_t"], G)
     qtower -= qwall
     qsup -= qwall | qtower
-    qfloor -= qwall | qtower           # floor continues under decks and ramps
+    # floor plates run UNDER walls/towers/supports (hidden inside the masses)
+    # so the plates stay big and few - the research's "big simple shapes"
+    qfloor, _, _ = quantize(floor | masks["wall"] | masks["tower"]
+                            | masks["support"], W, H, cell_m, cfg["floor_t"], G)
 
-    inst += decompose(qfloor, "Floor", *FAMILIES["Floor"][:2])
-    inst += decompose(qdeck, "Deck", *FAMILIES["Deck"][:2])
-    inst += decompose(qwall, "Wall", *FAMILIES["Wall"][:2])
-    inst += decompose(qtower, "Tower", *FAMILIES["Tower"][:2])
-    inst += decompose(qsup, "Support", *FAMILIES["Support"][:2])
+    inst += decompose(qfloor, "Floor", *FAMILIES["Floor"][:2], G)
+    inst += decompose(qdeck, "Deck", *FAMILIES["Deck"][:2], G)
+    inst += decompose(qwall, "Wall", *FAMILIES["Wall"][:2], G)
+    inst += decompose(qtower, "Tower", *FAMILIES["Tower"][:2], G)
+    inst += decompose(qsup, "Support", *FAMILIES["Support"][:2], G)
     inst += ramp_instances(solids, deckcells, cell_m)
 
     # variants: the modular catalogue - unique (family, size)
@@ -258,14 +255,20 @@ def main():
             entry["suspect"] = it["suspect"]
         placements.append(entry)
 
+    lo, hi = cfg["budget"]
     kit = {
         "kit_id": "aquarius_blockout_kit",
-        "version": 1,
+        "version": 2,
+        "pass": args.pass_name,
+        "piece_budget": {"band": [lo, hi], "actual": len(inst),
+                         "basis": "BLOCKOUT-KIT.md piece-count research: "
+                                  "massing 50-100, greybox 200-400 "
+                                  "(soft ceiling 500, red line ~650 - the "
+                                  "Halo 3/Reach complete-map cap)"},
         "units": "location cm (1uu), scale = metres of a 100 cm unit mesh",
         "axes": "X = map EAST, Y = map SOUTH, Z up; origin at NW ground corner "
                 "of the traced footprint; rotations are UE rotators (deg)",
         "grid_m": GRID_M,
-        "length_family_m": LENGTHS,
         "asset_catalog": "docs/design/blueprints/breachpoint_aquarius/"
                          "K101_kit_catalog_1.png + K102_kit_catalog_2.png - "
                          "the TWELVE modular assets (gen_kit_catalog.py); "
@@ -299,12 +302,16 @@ def main():
         ],
         "placements": placements,
     }
-    OUT.write_text(json.dumps(kit, indent=1), encoding="utf-8")
+    out = OUT if args.pass_name == "greybox" else \
+        OUT.with_name("aquarius_blockout_massing.json")
+    out.write_text(json.dumps(kit, indent=1), encoding="utf-8")
 
     top = sorted(kit["variants"], key=lambda v: -v["count"])[:8]
-    print("wrote %s" % OUT.relative_to(GAME))
-    print("grid %.1f m · %d placements · %d variants of %d modules"
-          % (GRID_M, len(placements), len(kit["variants"]), len(kit["modules"])))
+    print("wrote %s [%s pass]" % (out.relative_to(GAME), args.pass_name))
+    verdict = "IN BAND" if lo <= len(placements) <= hi else \
+        ("UNDER" if len(placements) < lo else "OVER")
+    print("grid %.1f m · %d placements (%s %d-%d) · %d variants"
+          % (GRID_M, len(placements), verdict, lo, hi, len(kit["variants"])))
     print("per family: %s" % {k: per_family.get(k, 0) for k in
                               ("Floor", "Deck", "Wall", "Tower", "Support", "Ramp")})
     print("top variants: " + ", ".join("%s x%d" % (v["id"], v["count"]) for v in top))
