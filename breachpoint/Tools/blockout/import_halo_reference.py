@@ -21,14 +21,44 @@ play-space core (5-95th pct of vertices) 121 x 130 units.
 """
 
 import os
+import sys
 import unreal
 
-SRC = os.path.expanduser(
-    "~/Downloads/halo-4multiplayermajesticlandfall/source/Landfall/Landfall.obj")
-ROOT = "/Game/Halo4_Landfall"
+# One script, one level per invocation:  py import_landfall.py rallypoint
+LEVELS = {
+    "landfall": {
+        "src": "~/Downloads/halo-4multiplayermajesticlandfall/source/"
+               "Landfall/Landfall.obj",
+        "root": "/Game/Halo4_Landfall",
+        "mesh": "Landfall",
+        "map": "MAP_Halo4_Landfall",
+        # exposure + sun are PER LEVEL because these rips carry very different
+        # albedo. Landfall is bright concrete and blew out; Rally Point is a
+        # night-ish street and came in almost black at the same settings.
+        "exposure": 1.0,
+        "sun": 3.0,
+    },
+    "rallypoint": {
+        "src": "~/Downloads/locationshalo-3firefightodstrally-point/source/"
+               "RallyPoint/Rally Point.obj",
+        "root": "/Game/Halo3ODST_RallyPoint",
+        "mesh": "Rally_Point",
+        "map": "MAP_Halo3ODST_RallyPoint",
+        "exposure": 0.25,
+        "sun": 8.0,
+    },
+}
+WHICH = (sys.argv[1].lower() if len(sys.argv) > 1 else "landfall")
+if WHICH not in LEVELS:
+    raise SystemExit("unknown level %r; choose one of %s"
+                     % (WHICH, sorted(LEVELS)))
+CFG = LEVELS[WHICH]
+
+SRC = os.path.expanduser(CFG["src"])
+ROOT = CFG["root"]
 MESH_PKG = ROOT + "/Meshes"
-MAP_PATH = ROOT + "/Maps/MAP_Halo4_Landfall"
-TAG = "BN35_LandfallRef"
+MAP_PATH = ROOT + "/Maps/" + CFG["map"]
+TAG = "BN35_HaloRef_" + WHICH
 
 # 1 OBJ unit = 1 metre is a HYPOTHESIS. The scale-reference box is how you
 # check it: it is exactly our measured 0.68 x 1.92 m player capsule (BN32).
@@ -41,7 +71,7 @@ UPRIGHT_ROLL = -90.0
 
 
 def imported_mesh():
-    existing = MESH_PKG + "/Landfall"
+    existing = MESH_PKG + "/" + CFG["mesh"]
     if unreal.EditorAssetLibrary.does_asset_exist(existing):
         unreal.log("reusing already-imported mesh %s" % existing)
         return unreal.EditorAssetLibrary.load_asset(existing)
@@ -135,10 +165,10 @@ def main():
     smc.set_mobility(unreal.ComponentMobility.STATIC)
     smc.set_collision_enabled(unreal.CollisionEnabled.QUERY_AND_PHYSICS)
     smc.set_collision_profile_name("BlockAll")
-    tag(a, "Landfall_Geometry", "Landfall/Geometry")
+    tag(a, WHICH + "_Geometry", "HaloRef/Geometry")
 
     origin, extent = a.get_actor_bounds(False)
-    unreal.log("Landfall placed: %.1f x %.1f x %.1f m, z %.1f .. %.1f m"
+    unreal.log(WHICH + " placed: %.1f x %.1f x %.1f m, z %.1f .. %.1f m"
                % (extent.x * 2 / 100, extent.y * 2 / 100, extent.z * 2 / 100,
                   (origin.z - extent.z) / 100, (origin.z + extent.z) / 100))
 
@@ -146,16 +176,16 @@ def main():
     sun = actor_ss.spawn_actor_from_class(
         unreal.DirectionalLight, unreal.Vector(0, 0, origin.z + extent.z + 2000),
         unreal.Rotator(0.0, -48.0, 25.0))
-    sun.light_component.set_intensity(3.0)
-    tag(sun, "Light_Sun", "Landfall/Lights")
+    sun.light_component.set_intensity(CFG.get("sun", 3.0))
+    tag(sun, "Light_Sun", "HaloRef/Lights")
     sky = actor_ss.spawn_actor_from_class(
         unreal.SkyLight, unreal.Vector(0, 0, origin.z + extent.z + 2000),
         unreal.Rotator(0, 0, 0))
-    tag(sky, "Light_Sky", "Landfall/Lights")
+    tag(sky, "Light_Sky", "HaloRef/Lights")
     try:
         atm = actor_ss.spawn_actor_from_class(
             unreal.SkyAtmosphere, unreal.Vector(0, 0, 0), unreal.Rotator(0, 0, 0))
-        tag(atm, "SkyAtmosphere", "Landfall/Lights")
+        tag(atm, "SkyAtmosphere", "HaloRef/Lights")
     except Exception as e:
         unreal.log_warning("no SkyAtmosphere: %s" % e)
 
@@ -177,7 +207,7 @@ def main():
                            "the bounds; move it by hand and say so")
     ps = actor_ss.spawn_actor_from_class(
         unreal.PlayerStart, unreal.Vector(*spot), unreal.Rotator(0, 0, 0))
-    tag(ps, "PlayerStart_Landfall", "Landfall/Spawns")
+    tag(ps, "PlayerStart_Landfall", "HaloRef/Spawns")
     unreal.log("PlayerStart at %.0f, %.0f, %.0f" % spot)
 
     # HUMAN SCALE: exactly our measured capsule, 0.68 x 1.92 m (BN32).
@@ -186,7 +216,7 @@ def main():
         cube, unreal.Vector(spot[0] + 150, spot[1], spot[2]),
         unreal.Rotator(0, 0, 0))
     ref.set_actor_scale3d(unreal.Vector(0.68, 0.68, 1.92))
-    tag(ref, "SCALE_REF_player_1m92", "Landfall/Scale")
+    tag(ref, "SCALE_REF_player_1m92", "HaloRef/Scale")
 
     # EXPOSURE LOCK. Without this the level renders blown-out white: Lumen's
     # auto-exposure adapts to a bright sky and clips everything (the editor
@@ -202,11 +232,12 @@ def main():
         st = ppv.get_editor_property("settings")
         st.set_editor_property("override_auto_exposure_min_brightness", True)
         st.set_editor_property("override_auto_exposure_max_brightness", True)
-        st.set_editor_property("auto_exposure_min_brightness", 1.0)
-        st.set_editor_property("auto_exposure_max_brightness", 1.0)
+        ev = CFG.get("exposure", 1.0)
+        st.set_editor_property("auto_exposure_min_brightness", ev)
+        st.set_editor_property("auto_exposure_max_brightness", ev)
         ppv.set_editor_property("settings", st)
-        tag(ppv, "PP_ExposureLock", "Landfall/Lights")
-        unreal.log("exposure locked at 1.0 via an unbound PostProcessVolume")
+        tag(ppv, "PP_ExposureLock", "HaloRef/Lights")
+        unreal.log("exposure locked at %.2f via an unbound PostProcessVolume" % ev)
     except Exception as e:
         unreal.log_warning("could not lock exposure: %s" % e)
 
@@ -216,7 +247,7 @@ def main():
     # a volume's default brush is a 200 uu cube (measured BN33), so halve
     nav.set_actor_scale3d(unreal.Vector(extent.x / 100.0, extent.y / 100.0,
                                         extent.z / 100.0))
-    tag(nav, "Nav_Landfall", "Landfall/Nav")
+    tag(nav, "Nav_" + WHICH, "HaloRef/Nav")
 
     level_ss.save_current_level()
     unreal.log("saved %s" % MAP_PATH)
