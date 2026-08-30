@@ -144,6 +144,17 @@ trace extraction the REV D blueprint set draws (single geometry truth).
   mouths, lane crates, deck-edge railings (~1.0 m [thin]), the sunken
   trench.
 
+### The ASSEMBLY sheets — the level drawn as the kit
+
+Founder (30 Aug): "now make the blueprint with those modular assets."
+`Tools/blockout/gen_aquarius_assembly.py` draws the kit JSON directly:
+AK-101 / AK-102 (per-level assembly plans - every placed instance its own
+outlined piece, module seams true, BILL OF MATERIALS per level with
+per-asset quantities and top size variants) and AK-301 (the 3/4 assembly -
+all placements as individual blocks; floors/decks as flat seamed plates,
+long pieces subdivided for correct occlusion). These sheets read ONLY the
+manifest: regenerate it and they re-render to match.
+
 ## 3. The pipeline (doctrine: ue-editor skill, law 7)
 
 ```

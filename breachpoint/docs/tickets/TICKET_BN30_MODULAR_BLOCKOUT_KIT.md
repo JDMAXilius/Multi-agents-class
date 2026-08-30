@@ -117,3 +117,19 @@
   chord lies on the camera diagonal), BLK_GlassWall_400 (hydro-tower
   glazing - blocks movement, shows the sightline), BLK_Pedestal_120
   (shot11's power-up / the rocket node read height).
+
+### 30 Aug — assembly blueprints: the level drawn AS the kit (AK-set)
+
+- Founder: "now make the blueprint with those modular assets." New
+  gen_aquarius_assembly.py renders the kit JSON itself: AK-101/AK-102
+  per-level ASSEMBLY plans (every instance an outlined piece, white module
+  seams through the dark masses, grid + dims + module key + BILL OF
+  MATERIALS: per-asset quantities and top size variants per level) and
+  AK-301, the 3/4 assembly with all 878 placements as individual blocks.
+- Rendering calls: floors/decks draw as flat seamed plates (thin slabs as
+  3D blocks crumbled the read) and long vertical pieces subdivide to <=2 m
+  chunks for the painter (long boxes break depth sorting) - drawing calls
+  only; the manifest is untouched.
+- The sheets read ONLY aquarius_blockout_kit.json - manifest regenerates,
+  sheets follow. BOM headline: L1 = 338 floor + 141 wall + 131 tower +
+  11 pier + 12 ramp pieces; L2 = 245 deck plates.
