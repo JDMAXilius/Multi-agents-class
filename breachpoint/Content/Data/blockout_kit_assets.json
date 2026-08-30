@@ -1,0 +1,240 @@
+{
+ "kit_id": "breachpoint_blockout_kit",
+ "version": 1,
+ "units": "metres; author at these exact sizes, pivot at CENTER of the footprint on the GROUND plane (z=0 at the base) except Floor/Deck plates which centre in Z",
+ "material": "/Game/Blockout/M_Blockout_Grey",
+ "collision": "simple box (convex wedge for Ramp, box for Stair)",
+ "mobility": "Static",
+ "catalog_sheets": [
+  "K101_kit_catalog_1.png",
+  "K102_kit_catalog_2.png",
+  "K103_kit_catalog_3.png"
+ ],
+ "assets": [
+  {
+   "index": 1,
+   "id": "BLK_Floor_400",
+   "asset_path": "/Game/Blockout/Meshes/SM_BLK_Floor_400",
+   "shape": "box",
+   "size_m": [
+    4.0,
+    4.0,
+    0.2
+   ],
+   "scales": "LWT",
+   "dims_text": "4.00 x 4.00 x 0.20 m",
+   "role": "floor AND deck plate; top face is the walking surface",
+   "rule": "SCALES: L / W / T (deck t 0.40)"
+  },
+  {
+   "index": 2,
+   "id": "BLK_Wall_400",
+   "asset_path": "/Game/Blockout/Meshes/SM_BLK_Wall_400",
+   "shape": "box",
+   "size_m": [
+    4.0,
+    0.5,
+    4.0
+   ],
+   "scales": "LHT",
+   "dims_text": "4.00 x 0.50 x 4.00 m",
+   "role": "story wall and solid mass segment (towers stack two)",
+   "rule": "SCALES: L / H / T"
+  },
+  {
+   "index": 3,
+   "id": "BLK_HalfWall_200",
+   "asset_path": "/Game/Blockout/Meshes/SM_BLK_HalfWall_200",
+   "shape": "box",
+   "size_m": [
+    2.0,
+    0.5,
+    1.1
+   ],
+   "scales": "L",
+   "dims_text": "2.00 x 0.50 x 1.10 m",
+   "role": "crouch-cover wall: hides a crouched player exactly",
+   "rule": "SCALES: L only - H 1.10 FIXED (cover band)"
+  },
+  {
+   "index": 4,
+   "id": "BLK_Doorway_400",
+   "asset_path": "/Game/Blockout/Meshes/SM_BLK_Doorway_400",
+   "shape": "doorway",
+   "size_m": [
+    4.0,
+    0.5,
+    4.0,
+    1.4,
+    2.4
+   ],
+   "scales": "L",
+   "dims_text": "4.00 x 0.50 x 4.00 m / opening 1.40 x 2.40",
+   "role": "wall piece with the door punched through",
+   "rule": "JAMBS stretch - OPENING NEVER SCALES"
+  },
+  {
+   "index": 5,
+   "id": "BLK_Ramp_800",
+   "asset_path": "/Game/Blockout/Meshes/SM_BLK_Ramp_800",
+   "shape": "wedge",
+   "size_m": [
+    8.0,
+    4.0,
+    4.0
+   ],
+   "scales": "L",
+   "dims_text": "8.00 run x 4.00 w, rise 4.00 (27 deg)",
+   "role": "the vertical circulation; slope stays under 30 deg",
+   "rule": "RE-LENGTH ONLY - never steepen past 45 deg"
+  },
+  {
+   "index": 6,
+   "id": "BLK_Stair_200",
+   "asset_path": "/Game/Blockout/Meshes/SM_BLK_Stair_200",
+   "shape": "stair",
+   "size_m": [
+    3.0,
+    2.0,
+    2.0,
+    10
+   ],
+   "scales": "none",
+   "dims_text": "3.00 run x 2.00 w, rise 2.00 (10 steps 0.20/0.30)",
+   "role": "steps for short hops; treads are gameplay metric",
+   "rule": "NEVER SCALES - new rise:run = new asset"
+  },
+  {
+   "index": 7,
+   "id": "BLK_Column_100",
+   "asset_path": "/Game/Blockout/Meshes/SM_BLK_Column_100",
+   "shape": "octagon",
+   "size_m": [
+    0.9,
+    4.0
+   ],
+   "scales": "H",
+   "dims_text": "0.90 dia x 4.00 m octagon",
+   "role": "free-standing, never wall-touching (orbitable - notes 21-25)",
+   "rule": "SCALES: H only"
+  },
+  {
+   "index": 8,
+   "id": "BLK_Pier_100",
+   "asset_path": "/Game/Blockout/Meshes/SM_BLK_Pier_100",
+   "shape": "box",
+   "size_m": [
+    1.0,
+    1.0,
+    3.6
+   ],
+   "scales": "LW",
+   "dims_text": "1.00 x 1.00 x 3.60 m",
+   "role": "deck support pier; carries BLK_Floor decks at +3.60",
+   "rule": "SCALES: footprint only - H matches deck soffit"
+  },
+  {
+   "index": 9,
+   "id": "BLK_Crate_100",
+   "asset_path": "/Game/Blockout/Meshes/SM_BLK_Crate_100",
+   "shape": "box",
+   "size_m": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "scales": "uniform",
+   "dims_text": "1.00 x 1.00 x 1.00 m",
+   "role": "lane cover crate (shot12); jump-over at 1.0",
+   "rule": "SCALES: uniform, max +/-25%"
+  },
+  {
+   "index": 10,
+   "id": "BLK_Battery_240",
+   "asset_path": "/Game/Blockout/Meshes/SM_BLK_Battery_240",
+   "shape": "octagon",
+   "size_m": [
+    2.4,
+    1.2
+   ],
+   "scales": "none",
+   "dims_text": "2.40 dia x 1.20 m octagon",
+   "role": "the AQUARIUS battery: mantle cover at each base mouth (shot13)",
+   "rule": "DOES NOT SCALE - mantle height is gameplay"
+  },
+  {
+   "index": 11,
+   "id": "BLK_Rail_400",
+   "asset_path": "/Game/Blockout/Meshes/SM_BLK_Rail_400",
+   "shape": "rail",
+   "size_m": [
+    4.0,
+    0.1,
+    1.0
+   ],
+   "scales": "L",
+   "dims_text": "4.00 x 0.10 x 1.00 m",
+   "role": "deck-edge railing: stops falls, not shots",
+   "rule": "SCALES: L only"
+  },
+  {
+   "index": 12,
+   "id": "BLK_Curb_400",
+   "asset_path": "/Game/Blockout/Meshes/SM_BLK_Curb_400",
+   "shape": "box",
+   "size_m": [
+    4.0,
+    0.3,
+    0.15
+   ],
+   "scales": "L",
+   "dims_text": "4.00 x 0.30 x 0.15 m",
+   "role": "trim / edge lip: reads edges, channels movement",
+   "rule": "SCALES: L only"
+  },
+  {
+   "index": 13,
+   "id": "BLK_Wall45_200",
+   "asset_path": "/Game/Blockout/Meshes/SM_BLK_Wall45_200",
+   "shape": "box45",
+   "size_m": [
+    2.0,
+    0.5,
+    4.0
+   ],
+   "scales": "H",
+   "dims_text": "2.00 chord x 0.50 x 4.00 m at 45 deg",
+   "role": "the corner piece: true diagonals for the octagonal chamfers",
+   "rule": "SCALES: H only - chord fixed (connection piece)"
+  },
+  {
+   "index": 14,
+   "id": "BLK_GlassWall_400",
+   "asset_path": "/Game/Blockout/Meshes/SM_BLK_GlassWall_400",
+   "shape": "box",
+   "size_m": [
+    4.0,
+    0.3,
+    4.0
+   ],
+   "scales": "LH",
+   "dims_text": "4.00 x 0.30 x 4.00 m",
+   "role": "hydro-tower glazing: blocks movement, SHOWS the sightline",
+   "rule": "SCALES: L/H - stays see-through (gameplay)"
+  },
+  {
+   "index": 15,
+   "id": "BLK_Pedestal_120",
+   "asset_path": "/Game/Blockout/Meshes/SM_BLK_Pedestal_120",
+   "shape": "octagon",
+   "size_m": [
+    1.2,
+    0.4
+   ],
+   "scales": "none",
+   "dims_text": "1.20 dia x 0.40 m octagon",
+   "role": "weapon / power-up pedestal (shot11; the rocket node)",
+   "rule": "DOES NOT SCALE - pickup read height"
+  }
+ ]
+}

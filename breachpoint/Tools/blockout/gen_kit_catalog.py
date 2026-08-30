@@ -32,6 +32,7 @@ Stdlib only; --png rasterizes via headless chromium.
 from __future__ import annotations
 
 import argparse
+import json
 import math
 import shutil
 import subprocess
@@ -341,10 +342,58 @@ def rasterize():
         print("  rasterized %s" % png.name)
 
 
+SHAPES = {
+    "BLK_Floor_400": ("box", [4.0, 4.0, 0.20], "LWT"),
+    "BLK_Wall_400": ("box", [4.0, 0.50, 4.0], "LHT"),
+    "BLK_HalfWall_200": ("box", [2.0, 0.50, 1.10], "L"),
+    "BLK_Doorway_400": ("doorway", [4.0, 0.50, 4.0, 1.40, 2.40], "L"),
+    "BLK_Ramp_800": ("wedge", [8.0, 4.0, 4.0], "L"),
+    "BLK_Stair_200": ("stair", [3.0, 2.0, 2.0, 10], "none"),
+    "BLK_Column_100": ("octagon", [0.90, 4.0], "H"),
+    "BLK_Pier_100": ("box", [1.0, 1.0, 3.60], "LW"),
+    "BLK_Crate_100": ("box", [1.0, 1.0, 1.0], "uniform"),
+    "BLK_Battery_240": ("octagon", [2.40, 1.20], "none"),
+    "BLK_Rail_400": ("rail", [4.0, 0.10, 1.0], "L"),
+    "BLK_Curb_400": ("box", [4.0, 0.30, 0.15], "L"),
+    "BLK_Wall45_200": ("box45", [2.0, 0.50, 4.0], "H"),
+    "BLK_GlassWall_400": ("box", [4.0, 0.30, 4.0], "LH"),
+    "BLK_Pedestal_120": ("octagon", [1.20, 0.40], "none"),
+}
+
+
+def write_spec():
+    """Machine-readable asset spec: the single source the terminal's
+    authoring script and the level builder both read."""
+    out = []
+    for i, (name, dims, role, rule, _S, _g) in enumerate(ASSETS, 1):
+        shape, size, scales = SHAPES[name]
+        out.append({"index": i, "id": name,
+                    "asset_path": "/Game/Blockout/Meshes/SM_%s" % name,
+                    "shape": shape, "size_m": size, "scales": scales,
+                    "dims_text": dims, "role": role, "rule": rule})
+    spec = {"kit_id": "breachpoint_blockout_kit", "version": 1,
+            "units": "metres; author at these exact sizes, pivot at CENTER "
+                     "of the footprint on the GROUND plane (z=0 at the base) "
+                     "except Floor/Deck plates which centre in Z",
+            "material": "/Game/Blockout/M_Blockout_Grey",
+            "collision": "simple box (convex wedge for Ramp, box for Stair)",
+            "mobility": "Static",
+            "catalog_sheets": ["K101_kit_catalog_1.png",
+                               "K102_kit_catalog_2.png",
+                               "K103_kit_catalog_3.png"],
+            "assets": out}
+    path = GAME / "Content" / "Data" / "blockout_kit_assets.json"
+    path.write_text(json.dumps(spec, indent=1), encoding="utf-8")
+    print("wrote %s (%d assets)" % (path.relative_to(GAME), len(out)))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--png", action="store_true")
+    ap.add_argument("--spec", action="store_true")
     args = ap.parse_args()
+    if args.spec:
+        write_spec()
     OUTD.mkdir(parents=True, exist_ok=True)
     sheet("K101_kit_catalog_1", "K-101", "MODULAR BLOCKOUT KIT — ASSETS 01-06",
           ASSETS[:6], 1)

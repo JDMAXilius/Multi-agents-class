@@ -58,9 +58,31 @@ def main():
     print("cleared %d previously generated actors" % len(stale))
 
     kit = load_json(KIT_PATH)
-    meshes = {m["id"]: unreal.EditorAssetLibrary.load_asset(m["mesh"])
-              for m in kit["modules"]}
-    cube = meshes["BLK_Cube"]
+
+    # Place instances of the FIFTEEN AUTHORED KIT ASSETS (BN31). Each family
+    # maps to its kit asset; scale = desired size / the asset's own size, so
+    # editing an asset repropagates everywhere. If BN31's assets are absent
+    # (its watch-list unresolved) fall back to the engine cube and SAY SO -
+    # a written-down fallback is fine, a silent one is not.
+    try:
+        spec = load_json("Content/Data/blockout_kit_assets.json")
+        asset_size = {a["id"]: a for a in spec["assets"]}
+    except Exception:
+        asset_size = {}
+    FAMILY_ASSET = kit.get("asset_map", {})
+    resolved, fallback = {}, False
+    for fam, aid in FAMILY_ASSET.items():
+        path = "/Game/Blockout/Meshes/SM_%s" % aid
+        obj = (unreal.EditorAssetLibrary.load_asset(path)
+               if unreal.EditorAssetLibrary.does_asset_exist(path) else None)
+        if obj is None:
+            fallback = True
+        resolved[fam] = (obj, asset_size.get(aid))
+    cube = unreal.EditorAssetLibrary.load_asset("/Engine/BasicShapes/Cube")
+    if fallback:
+        print("NOTE: one or more SM_BLK kit assets missing - falling back to "
+              "/Engine/BasicShapes/Cube for those families. RECORD THIS in "
+              "TICKET_BN31 before claiming the build is kit-built.")
 
     def tag(a):
         # UPROPERTY arrays through the Python proxy: read, modify, write back
@@ -70,13 +92,24 @@ def main():
 
     count = 0
     for p in kit["placements"]:
+        fam = p["variant"].split("_")[0]
+        obj, aspec = resolved.get(fam, (None, None))
         loc = unreal.Vector(*p["location_cm"])
         # research-confirmed rotator order: Rotator(roll, pitch, yaw)
         rot = unreal.Rotator(p["rotation_deg"]["roll"],
                              p["rotation_deg"]["pitch"],
                              p["rotation_deg"]["yaw"])
-        a = actor_ss.spawn_actor_from_object(cube, loc, rot)
-        a.set_actor_scale3d(unreal.Vector(*p["scale"]))
+        want = p["scale"]                       # metres of the placed piece
+        if obj is not None and aspec:
+            base = aspec["size_m"]
+            if aspec["shape"] == "wedge":       # ramp: run, width, rise
+                sc = [want[0] / base[0], want[1] / base[1], 1.0]
+            else:
+                sc = [want[i] / base[i] if base[i] else 1.0 for i in range(3)]
+        else:
+            obj, sc = cube, want                # unit cube: scale IS metres
+        a = actor_ss.spawn_actor_from_object(obj, loc, rot)
+        a.set_actor_scale3d(unreal.Vector(*sc))
         a.set_actor_label(p["label"])
         tag(a)
         a.set_folder_path(unreal.Name(p["folder"]))
