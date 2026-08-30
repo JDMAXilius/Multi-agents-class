@@ -70,6 +70,11 @@ GRID_M = 1.0                       # set per pass in main()
 FLOOR_T = 0.2
 RAMP_T = 0.3
 RAMP_Z0 = 0.25                     # ramps land a quarter-step above the floor
+RAMP_MIN_W = 2.0                   # MEASURED FIX (30 Aug, terminal): the traced
+                                   # capsules gave 0.75 m ramps against a 0.68 m
+                                   # capsule - 3 cm of clearance per side. Nobody
+                                   # can play that. 2.0 m clears the 1.40 m comfort
+                                   # width and lets two players pass.
 
 FAMILIES = {                       # family -> (z0, z1, folder)
     "Floor":   (-FLOOR_T, 0.0, "Blockout/Floors"),
@@ -275,7 +280,8 @@ def ramp_instances(solids, deckcells, cell_m, qdeck, qwalk, qblock, G):
         cx = (x0 + x1) / 2 * cell_m
         cy = (y0 + y1) / 2 * cell_m
         span = ((x1 - x0) if horiz else (y1 - y0)) * cell_m
-        width = max(G, round((((y1 - y0) if horiz else (x1 - x0)) * cell_m) / G) * G)
+        width = max(G, RAMP_MIN_W,
+                    round((((y1 - y0) if horiz else (x1 - x0)) * cell_m) / G) * G)
         centre = cx if ax == 0 else cy
         other = cy if ax == 0 else cx
 
@@ -363,6 +369,86 @@ def ramp_instances(solids, deckcells, cell_m, qdeck, qwalk, qblock, G):
 
 
 
+
+def clear_ramps(inst):
+    """Keep every ramp OUT of the walls, or it is not a ramp.
+
+    MEASURED 30 Aug (terminal, against the built level): a ramp whose footprint
+    overlaps a Wall/Tower loses walkable width, and Recast then cannot carve a
+    corridor wide enough for the 35 cm-radius nav agent. The navmesh runs up the
+    ramp surface but never joins the deck, so the decks strand.
+
+    The evidence was exact - only the two ramps with 0.00 m2 of wall overlap
+    (BLK_Ramp_003/004) linked ground to deck; all six with any overlap failed:
+
+        Ramp_001 0.13   Ramp_002 0.39   Ramp_005 0.56
+        Ramp_006 0.13   Ramp_007 1.79   Ramp_008 2.26   (m2)
+
+    So: slide each ramp sideways into a clear lane, and only if no offset is
+    clear, narrow it - never below MIN_W, because a ramp the capsule cannot fit
+    on is not a route either.
+    """
+    MIN_W = 1.2                       # 0.68 capsule + margin both sides
+    blockers = [r for r in inst if r["family"] in ("Wall", "Tower")]
+
+    def rect(c, size, yaw, is_ramp):
+        if is_ramp:
+            import math as _m
+            length = size[0] * _m.cos(_m.radians(is_ramp))
+        else:
+            length = size[0]
+        w = size[1]
+        if round(yaw) % 180 == 90:
+            length, w = w, length
+        return (c[0] - length / 2, c[1] - w / 2, c[0] + length / 2, c[1] + w / 2)
+
+    def overlap(a, b):
+        ix = min(a[2], b[2]) - max(a[0], b[0])
+        iy = min(a[3], b[3]) - max(a[1], b[1])
+        return ix * iy if ix > 0 and iy > 0 else 0.0
+
+    def blocked(c, size, yaw, pitch):
+        r = rect(c, size, yaw, pitch)
+        return sum(overlap(r, rect(b["center_m"], b["size_m"], b.get("yaw_deg", 0.0), 0))
+                   for b in blockers)
+
+    moved = []
+    for rec in inst:
+        if rec["family"] != "Ramp":
+            continue
+        yaw, pitch = rec["yaw_deg"], rec["pitch_deg"]
+        base = blocked(rec["center_m"], rec["size_m"], yaw, pitch)
+        if base <= 0.01:
+            continue
+        lateral = 1 if round(yaw) % 180 == 0 else 0   # shift across the ramp's width
+        best = None
+        for width in (rec["size_m"][1], 1.6, MIN_W):
+            for step in [d * 0.2 for d in range(0, 16)]:
+                for sgn in (1, -1):
+                    c = list(rec["center_m"])
+                    c[lateral] += sgn * step
+                    size = [rec["size_m"][0], width, rec["size_m"][2]]
+                    if blocked(c, size, yaw, pitch) <= 0.01:
+                        best = (c, size, step * sgn, width)
+                        break
+                if best: break
+            if best: break
+        if best:
+            c, size, shift, width = best
+            rec["center_m"] = [round(v, 3) for v in c]
+            rec["size_m"] = [rec["size_m"][0], round(width, 2), rec["size_m"][2]]
+            rec["deviation"] = (rec.get("deviation", "") +
+                                " | cleared walls: shifted %.1f m, width %.1f m "
+                                "(was blocked by %.2f m2)" % (shift, width, base)).strip(" |")
+            moved.append("%s shifted %.1f m, width %.1f" % (rec.get("label", "ramp"), shift, width))
+        else:
+            rec["deviation"] = (rec.get("deviation", "") +
+                                " | UNCLEARED: %.2f m2 of wall overlap, no clear lane "
+                                "found - this ramp will not link" % base).strip(" |")
+            moved.append("UNCLEARED ramp, %.2f m2 blocked" % base)
+    return moved
+
+
 def add_access_ramps(inst, qdeck, qwalk, qblock, G):
     """PLAYABILITY GUARANTEE: every sizeable upper region must have a way up.
 
@@ -430,7 +516,8 @@ def add_access_ramps(inst, qdeck, qwalk, qblock, G):
         cxy = [(bx + 0.5) * G, (by + 0.5) * G]
         cxy[ax] = mid
         rec = {"family": "Ramp",
-               "size_m": [round(math.hypot(run, rise), 2), round(G, 2), RAMP_T],
+               "size_m": [round(math.hypot(run, rise), 2),
+                          round(max(G, RAMP_MIN_W), 2), RAMP_T],
                "center_m": [round(cxy[0], 3), round(cxy[1], 3),
                             round((RAMP_Z0 + DECK[1]) / 2, 3)],
                "yaw_deg": (0.0 if sgn > 0 else 180.0) if ax == 0
@@ -493,6 +580,10 @@ def main():
     inst += ramps_built
     access_log = add_access_ramps(inst, qdeck - (qwall | qtower),
                                   qfloor - qblock, qblock, G)
+    cleared = clear_ramps(inst)
+    for line in cleared:
+        print("  ramp cleared: %s" % line)
+    access_log = list(access_log) + cleared
 
     # variants: the modular catalogue - unique (family, size)
     variants, order = {}, []

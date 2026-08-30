@@ -956,24 +956,34 @@
    "count": 2
   },
   {
-   "id": "Ramp_063x007x003",
+   "id": "Ramp_063x020x003",
    "family": "Ramp",
    "size_m": [
     6.34,
-    0.75,
+    2.0,
     0.3
    ],
    "count": 2
   },
   {
-   "id": "Ramp_082x007x003",
+   "id": "Ramp_082x012x003",
    "family": "Ramp",
    "size_m": [
     8.26,
-    0.75,
+    1.2,
     0.3
    ],
-   "count": 6
+   "count": 4
+  },
+  {
+   "id": "Ramp_082x020x003",
+   "family": "Ramp",
+   "size_m": [
+    8.26,
+    2.0,
+    0.3
+   ],
+   "count": 2
   }
  ],
  "level_schedule_m": {
@@ -1087,7 +1097,13 @@
   "SP7 snapped 2.0 m onto walkable ground",
   "SP8 snapped 1.8 m onto walkable ground",
   "ACCESS RAMP synthesised: a 129 m2 upper region had no route up after quantisation",
-  "ACCESS RAMP synthesised: a 12 m2 upper region had no route up after quantisation"
+  "ACCESS RAMP synthesised: a 12 m2 upper region had no route up after quantisation",
+  "ramp shifted 1.6 m, width 2.0",
+  "ramp shifted 0.2 m, width 1.2",
+  "ramp shifted -0.4 m, width 1.2",
+  "ramp shifted -2.0 m, width 2.0",
+  "ramp shifted 0.4 m, width 1.2",
+  "ramp shifted -0.4 m, width 1.2"
  ],
  "unresolved_capsules": [
   "traced capsule at (11.7, 24.4) could not be anchored as a walkable ramp at this quantisation - left OPEN, channel (b) rules",
@@ -1096,14 +1112,14 @@
   "traced capsule at (26.0, 14.7) could not be anchored as a walkable ramp at this quantisation - left OPEN, channel (b) rules",
   "traced capsule at (35.6, 3.0) could not be anchored as a walkable ramp at this quantisation - left OPEN, channel (b) rules",
   "traced capsule at (40.3, 24.4) could not be anchored as a walkable ramp at this quantisation - left OPEN, channel (b) rules",
-  "run extended 4.3 m beyond the traced capsule to reach a walkable 36 deg",
-  "run extended 6.0 m beyond the traced capsule to reach a walkable 27 deg",
+  "run extended 4.3 m beyond the traced capsule to reach a walkable 36 deg | cleared walls: shifted 1.6 m, width 2.0 m (was blocked by 0.13 m2)",
+  "run extended 6.0 m beyond the traced capsule to reach a walkable 27 deg | cleared walls: shifted 0.2 m, width 1.2 m (was blocked by 0.39 m2)",
   "run extended 7.1 m beyond the traced capsule to reach a walkable 27 deg",
   "run extended 7.1 m beyond the traced capsule to reach a walkable 27 deg",
-  "run extended 6.0 m beyond the traced capsule to reach a walkable 27 deg",
-  "run extended 4.3 m beyond the traced capsule to reach a walkable 36 deg",
-  "ACCESS RAMP synthesised: a 129 m2 upper region had no route up after quantisation",
-  "ACCESS RAMP synthesised: a 12 m2 upper region had no route up after quantisation"
+  "run extended 6.0 m beyond the traced capsule to reach a walkable 27 deg | cleared walls: shifted -0.4 m, width 1.2 m (was blocked by 0.56 m2)",
+  "run extended 4.3 m beyond the traced capsule to reach a walkable 36 deg | cleared walls: shifted -2.0 m, width 2.0 m (was blocked by 0.13 m2)",
+  "ACCESS RAMP synthesised: a 129 m2 upper region had no route up after quantisation | cleared walls: shifted 0.4 m, width 1.2 m (was blocked by 1.79 m2)",
+  "ACCESS RAMP synthesised: a 12 m2 upper region had no route up after quantisation | cleared walls: shifted -0.4 m, width 1.2 m (was blocked by 2.26 m2)"
  ],
  "placements": [
   {
@@ -6787,11 +6803,11 @@
    ]
   },
   {
-   "variant": "Ramp_063x007x003",
+   "variant": "Ramp_063x020x003",
    "label": "BLK_Ramp_001",
    "folder": "Blockout/Ramps",
    "location_cm": [
-    1212.4,
+    1372.4,
     2488.1,
     212.5
    ],
@@ -6802,16 +6818,16 @@
    },
    "scale": [
     6.34,
-    0.75,
+    2.0,
     0.3
    ]
   },
   {
-   "variant": "Ramp_082x007x003",
+   "variant": "Ramp_082x012x003",
    "label": "BLK_Ramp_002",
    "folder": "Blockout/Ramps",
    "location_cm": [
-    1401.0,
+    1421.0,
     589.4,
     212.5
    ],
@@ -6822,12 +6838,12 @@
    },
    "scale": [
     8.26,
-    0.75,
+    1.2,
     0.3
    ]
   },
   {
-   "variant": "Ramp_082x007x003",
+   "variant": "Ramp_082x020x003",
    "label": "BLK_Ramp_003",
    "folder": "Blockout/Ramps",
    "location_cm": [
@@ -6842,12 +6858,12 @@
    },
    "scale": [
     8.26,
-    0.75,
+    2.0,
     0.3
    ]
   },
   {
-   "variant": "Ramp_082x007x003",
+   "variant": "Ramp_082x020x003",
    "label": "BLK_Ramp_004",
    "folder": "Blockout/Ramps",
    "location_cm": [
@@ -6862,16 +6878,16 @@
    },
    "scale": [
     8.26,
-    0.75,
+    2.0,
     0.3
    ]
   },
   {
-   "variant": "Ramp_082x007x003",
+   "variant": "Ramp_082x012x003",
    "label": "BLK_Ramp_005",
    "folder": "Blockout/Ramps",
    "location_cm": [
-    3799.0,
+    3759.0,
     589.4,
     212.5
    ],
@@ -6882,16 +6898,16 @@
    },
    "scale": [
     8.26,
-    0.75,
+    1.2,
     0.3
    ]
   },
   {
-   "variant": "Ramp_063x007x003",
+   "variant": "Ramp_063x020x003",
    "label": "BLK_Ramp_006",
    "folder": "Blockout/Ramps",
    "location_cm": [
-    3987.6,
+    3787.6,
     2488.1,
     212.5
    ],
@@ -6902,17 +6918,17 @@
    },
    "scale": [
     6.34,
-    0.75,
+    2.0,
     0.3
    ]
   },
   {
-   "variant": "Ramp_082x007x003",
+   "variant": "Ramp_082x012x003",
    "label": "BLK_Ramp_007",
    "folder": "Blockout/Ramps",
    "location_cm": [
     480.5,
-    1312.5,
+    1352.5,
     212.5
    ],
    "rotation_deg": {
@@ -6922,17 +6938,17 @@
    },
    "scale": [
     8.26,
-    0.75,
+    1.2,
     0.3
    ]
   },
   {
-   "variant": "Ramp_082x007x003",
+   "variant": "Ramp_082x012x003",
    "label": "BLK_Ramp_008",
    "folder": "Blockout/Ramps",
    "location_cm": [
     2580.5,
-    2587.5,
+    2547.5,
     212.5
    ],
    "rotation_deg": {
@@ -6942,7 +6958,7 @@
    },
    "scale": [
     8.26,
-    0.75,
+    1.2,
     0.3
    ]
   }

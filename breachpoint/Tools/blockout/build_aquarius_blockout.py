@@ -25,6 +25,7 @@ Axes:   kit X = map east, kit Y = map south, Z up — spawned as-is into UE
 """
 
 import json
+import math
 
 import unreal
 
@@ -125,8 +126,30 @@ def main():
         want = p["scale"]                       # metres of the placed piece
         if obj is not None and aspec:
             base = aspec["size_m"]
-            if aspec["shape"] == "wedge":       # ramp: run, width, rise
-                sc = [want[0] / base[0], want[1] / base[1], 1.0]
+            if aspec["shape"] == "wedge":
+                # THE MANIFEST AND THE ASSET DISAGREE, AND THE ASSET WINS.
+                #
+                # The manifest describes a ramp as a PITCHED SLAB: size_m is
+                # [slope_length, width, 0.30 thickness] and the slope lives in
+                # rotation_deg.pitch. BN31 authored BLK_Ramp_800 as a WEDGE that
+                # already climbs its own rise across its own run.
+                #
+                # Applying the manifest pitch to it therefore counted the slope
+                # TWICE. Measured 30 Aug on the first build: ramp tops landed at
+                # 7.2-7.6 m against decks at 3.6-4.0 m - eight wedges hanging in
+                # mid-air, which is what "not playable" looked like. The Z scale
+                # was also pinned to 1.0, so the rise could never be corrected.
+                #
+                # Fix: recover the true run/rise from the slab (the pitch is the
+                # slope, so run = L*cos, rise = L*sin), scale the wedge to them,
+                # drop the pitch entirely, and seat the wedge's base at the FOOT
+                # (the manifest's z is the slab's mid-height, hence -rise/2).
+                pitch_rad = math.radians(p["rotation_deg"]["pitch"])
+                run = want[0] * math.cos(pitch_rad)
+                rise = want[0] * math.sin(pitch_rad)
+                sc = [run / base[0], want[1] / base[1], rise / base[2]]
+                rot = unreal.Rotator(0.0, 0.0, p["rotation_deg"]["yaw"])
+                loc = unreal.Vector(loc.x, loc.y, loc.z - rise * M_TO_UU / 2.0)
             else:
                 sc = [want[i] / base[i] if base[i] else 1.0 for i in range(3)]
         else:
