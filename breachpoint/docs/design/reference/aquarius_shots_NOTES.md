@@ -157,3 +157,41 @@
   semantic pins for the editor pass: (a) side hallways are explicitly
   two-level routes; (b) crate cover belongs IN the lanes; (c) the battery
   octagon anchors each base mouth. Logged, not rebuilt.
+
+## BATCH 5 (30 Aug, five more, no text) — the WIDE-CORNER doctrine, placed
+
+21. **overhead_founder_arena_loops_corner_nooks** — GREEN: two loops, one
+    around the WEST court, one around the EAST court — settles batch 4's
+    ambiguity in favor of note 14: the arenas ARE Arena 1 west / Arena 2
+    east, each a circulation loop. YELLOW ovals ring the small POCKETS off
+    the loops: the two north castellation nooks, the top-center oval room,
+    the base-side pockets west and east, the east perimeter nook, the
+    south-center notch. Read with shots 15-16: these pockets are the map's
+    WIDE CORNERS — deliberate 1v1 pockets seeded around the two loops.
+22. **shot15_wide_corner_lower_level** — founder-annotated "Wide corner
+    for a comfortable 1v1 fight": a green-circled floor patch on the LOWER
+    level under the deck slabs (dark metal, red column at frame right,
+    center-platform kitchen glass behind). The lower level is not just a
+    route — it holds fightable corner rooms with strafe room.
+23. **shot16_base_interior_wide_corners** — "Good set of wide corners for
+    comfortable 1v1 fights": inside a BASE, curved white walls, central
+    AQUARIUS column; SYMMETRIC wide corners left and right of the column,
+    each backed by a crate. The base interior is a double-pocket around a
+    center column — you can never see both corners at once from the door.
+24. **shot17_column_orbit_wrap** — yellow arrow path wrapping the AQUARIUS
+    column, dashed where hidden: the column is orbitable cover with ~1.5 m
+    of clear floor all the way around. Same doctrine as shot10's corner
+    wraps: no column touches a wall.
+25. **shot18_ramp_junction_path_split** — the shot14 ramp junction
+    re-annotated with the SPLIT drawn: one approach arrow arrives, then
+    forks green UP the mesh ramp (side-hallway upper) and green LEFT into
+    the lower-level opening. Every junction offers two onward choices —
+    the article's path-split rule made literal.
+
+### What batch 5 changes for the manifest
+
+- Again nothing geometric — the pockets exist in the trace (the nooks and
+  base pockets are light cells). Editor-pass anchors: (d) the yellow-oval
+  pockets are WIDE corners — build them deep enough to strafe in, never
+  shallow dents; (e) base interiors are double-pockets around a central
+  free-standing column; (f) columns never touch walls (orbitable).

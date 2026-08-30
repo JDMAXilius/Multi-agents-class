@@ -182,3 +182,17 @@ indoor, small, close-range; (5) two exits minimum from every room.
 - Two more editor-pass anchors: crate cover sits IN the long lanes
   (shot12), and the mantle-height battery octagon fronts each BASE mouth,
   not the platform center (shot13 corrects shot2's guess).
+
+### 30 Aug — batch 5: wide corners placed (notes 21-25)
+
+- The founder's green loops settle the arena question the batch-4 circles
+  left open: Arena 1 WEST / Arena 2 EAST, each a circulation loop — note 14
+  stands.
+- Yellow ovals place the article's WIDE-CORNER doctrine on the map: the
+  perimeter nooks, base pockets, top-center oval and south notch are
+  deliberate 1v1 pockets off the loops. Two annotated shots prove them
+  in-game (lower-level corner room; symmetric base corners around a
+  free-standing center column).
+- Editor-pass anchors added to the notes: pockets deep enough to strafe
+  in; base = double-pocket around a column; columns never touch walls.
+  No manifest rebuild — the pockets are already in the trace.
