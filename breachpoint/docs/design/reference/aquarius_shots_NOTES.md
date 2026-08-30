@@ -79,3 +79,38 @@
 - Long mesh ramps (the capsule pills) connect ground to the upper walkway ring;
   wide two-flight staircases at the court back walls do the same.
 - Corner rooms: wrap-around column with two exits (matches the two-exit rule).
+
+## Batch 3 (30 Aug) — the founder's designer handoff: per-floor overheads + labeled skeleton
+
+11. **shot11_court_powerup_pedestal** — the octagonal AQUARIUS pedestal stands
+    in the court with the POWER-UP ON TOP, flanked by the two glass towers;
+    stairs climb behind-left; the two-story mid structure behind.
+12. **overhead_UPPER_floor** — a SECOND thegamescabin overhead: the UPPER
+    level. The light ring of walkways, the upper room at top-center (black
+    void = its opening), the center strip at upper level with two door
+    notches. Per-floor tracing is now possible: two overheads, two floors.
+13. **overhead_GROUND_floor** — the ground-floor overhead variant (blobs
+    rounder, trench visible bottom-center, no top-center oval). To be
+    diffed against the first reference during v3 tracing.
+14. **overhead_founder_arenas_hallways** — FOUNDER LABELS: ARENA 1 = left
+    court, ARENA 2 = right court (green); HALLWAY 2 = the TOP long lane,
+    HALLWAY 3 = the BOTTOM long lane, HALLWAY 1 = the SHORT CENTER CROSSING
+    between the arenas (yellow hatch mid-map) - "the one hallway going
+    through the two arenas" is the EAST-WEST center corridor.
+15. **overhead_founder_bases_bridge** — FOUNDER LABELS: BASE 1 west light
+    region, BASE 2 east; BRIDGE = the CENTER VERTICAL STRIP, running
+    NORTH-SOUTH through map center.
+
+## MAJOR v3 CORRECTIONS (from the founder's labels)
+
+- **THE BRIDGE RUNS NORTH-SOUTH.** v2 modeled Top Mid as an east-west deck
+  between the courts. Truth: the bridge is the N-S center strip connecting
+  the Hallway-2 side to the Hallway-3 side, and HALLWAY 1 (east-west, ground)
+  passes through the center UNDER/BESIDE it between the two arenas. The
+  center is a crossing: E-W ground hallway x N-S upper bridge.
+- The skeleton, in the founder's own labels: Arena 1 (west court), Arena 2
+  (east court), Hallway 1 (center E-W, through both arenas), Hallway 2
+  (north long lane), Hallway 3 (south long lane), Base 1 / Base 2 (the end
+  light regions), Bridge (N-S upper center).
+- TWO per-floor overheads now exist - v3 traces EACH floor from its own
+  image instead of inferring floors from one composite.
