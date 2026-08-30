@@ -39,3 +39,43 @@
 - BASES: two-level interiors with a wide ramp between floors.
 - The lane skeleton per the founder's annotation is the structure to preserve
   above all: three red E-W hallways, three green N-S connectors.
+
+## Batch 2 (30 Aug, founder still uploading — rebuild still HELD)
+
+6. **shot6_court_towers_and_trench** — the top-down's four dark BLOBS are these:
+   room-height GLASS HYDROPONIC TOWERS (two stories, lit tops) standing in the
+   courts — solid for gameplay, tall; my v2 full-height read of the blobs was
+   right. Center: the sunken trench runs across the court with the power-up
+   visible inside; part of the trench carries a GLASS-GRATE roof players walk
+   on; the octagonal AQUARIUS step caps its near end. Back wall: second-floor
+   console room with railing; stairs up at the right edge.
+7. **shot7_balcony_pillars_stairs** — upper-floor walkways ride on white
+   octagonal PILLARS (open below, walkable above); a wide two-flight staircase
+   climbs the far wall; a power-up rack sits in the far side room against
+   gold-slat vents (the yellow-tone lane's interior).
+8. **shot8_midlane_split_red_column** — founder's green arrows: the mid-lane
+   glass walkway SPLITS at a big red-striped column — left up a wide ramp
+   toward the base approach, straight on up a short ramp into the drying-room
+   lane with a far staircase to the upper floor. The article's path-split
+   doctrine drawn in place; the red column is a mid-lane landmark.
+9. **shot9_ramp_junction_split** — green arrows at a side-lane junction: the
+   long mesh RAMP climbs right to the upper level, the left arrow drops to a
+   lower landing/door. The top-down's capsule pills ARE these long ramps;
+   every one is a split-level junction (up the ramp vs under/past it).
+10. **shot10_corner_column_wrap** — yellow path wraps tight around a big
+    branded rectangular column at a corner room (gold barrels one side,
+    low greenhouse windows the other): the corner rooms' two exits are the
+    wrap-around routes at these columns.
+
+## Running corrections ledger (v3, updated)
+
+- BLOBS = tall glass hydro towers (solid, ~2 stories) — v2's full-height solid
+  stands for THESE; the CENTER remains the piece to lower (deck over pipes +
+  mantle step + sunken trench with the power-up, partly glass-roofed).
+- The trench: sunken channel through the court center, walk-on glass over part
+  of it, open pit at the power-up — a third micro-level (below-grade).
+- Upper walkways on octagonal pillars = open UNDER, walkable OVER (v2 drew
+  solid plateaus; v3 needs pillar-borne decks so ground flows beneath).
+- Long mesh ramps (the capsule pills) connect ground to the upper walkway ring;
+  wide two-flight staircases at the court back walls do the same.
+- Corner rooms: wrap-around column with two exits (matches the two-exit rule).
