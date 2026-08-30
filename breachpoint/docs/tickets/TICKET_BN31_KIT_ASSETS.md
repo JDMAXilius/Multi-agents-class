@@ -77,17 +77,122 @@ Your job on that one line:
 
 ## Done when
 
-- [ ] `list_toolsets` succeeded and the toolsets used are named in the Log
-- [ ] 15 assets exist at `/Game/Blockout/Meshes/SM_BLK_*`, or the fallback
+- [x] `list_toolsets` succeeded and the toolsets used are named in the Log
+- [x] 15 assets exist at `/Game/Blockout/Meshes/SM_BLK_*`, or the fallback
       is recorded here with the reason
-- [ ] Each asset verified: size (measure it), pivot, simple collision,
-      Static mobility, grey material
+- [x] Each asset verified: size (measure it), pivot, simple collision,
+      Static mobility, grey material  (mobility: see the Log - not expressible)
 - [ ] A CONTACT SHEET screenshot: all 15 assets laid out in a scratch level,
       captured with `EditorAppToolset.CaptureViewport`, sent to the founder
       next to `K101/K102/K103` for a like-for-like check
-- [ ] `make_kit_assets.py` re-run proves idempotent (re-running overwrites,
+- [x] `make_kit_assets.py` re-run proves idempotent (re-running overwrites,
       does not duplicate)
-- [ ] Log records: what worked, what the real API was, anything the cloud
+- [x] Log records: what worked, what the real API was, anything the cloud
       script got wrong
 
 ## Log
+
+### 30 Aug — fifteen real meshes, and the two APIs that do not work
+
+**Rung: assets exist and were audited back from the live editor (15/15 clean,
+twice). NOT eyeballed in a viewport yet** — orientation, size, pivot, winding
+and collision are proven numerically; "it looks right" is the contact-sheet box
+and is still open.
+
+Toolsets used: `ObjectTools` (search_subclasses, get_properties),
+`SceneTools` (get_current_level, find_actors, get_actors_in_folder, get_folders),
+`ActorTools` (get_label, get_actor_bounds), `EditorAppToolset` (SetCameraTransform,
+CaptureViewport), `LogsToolset` (GetLogEntries), `StaticMeshTools` (describe only),
+`SlateInspectorToolset` (Windows/Observe/Snapshot/Type - the editor's own console).
+
+#### The watch-list line: what the real API turned out to be
+
+The ticket said to discover the mesh-creation path and fix the one raising line.
+Three candidates were tried IN THE EDITOR, and the first two are dead:
+
+1. **`StaticMeshTools` has no create tool.** Its whole surface is `import_file`
+   plus modify-existing (collision, material, LOD, Nanite, bounds). Confirmed by
+   `describe_toolset`.
+2. **`MeshDescription` cannot author polygons from Python. Proven, and it cost
+   an editor.** The live binding is
+   `create_polygon(polygon_group_id) -> (PolygonID, vertex_instance_i_ds, new_edge_i_ds)`
+   — the vertex-instance array is an **output**. Passing it positionally or as
+   the keyword `vertex_instance_i_ds` both raise
+   `TypeError: create_polygon() takes at most 1 argument`. Creating the polygon
+   empty and then calling `set_polygon_vertex_instances` **CRASHED THE EDITOR**:
+   `Assertion failed: (Index >= 0) & (Index < ArrayNum)
+   [Runtime/Core/Public/Containers/Array.h:1339]` then `SIGSEGV`.
+   *Anyone reading this: do not try path (a) again. It is not a skill issue.*
+3. **What works: write OBJ, import through Interchange.** One committed script
+   generates the geometry, writes `Intermediate/BlockoutKit/SM_*.obj`, and
+   imports with `unreal.AssetImportTask` (`filename`, `destination_path`,
+   `automated`, `replace_existing`, `save`) through
+   `AssetToolsHelpers.get_asset_tools().import_asset_tasks([...])`. Law 7 holds:
+   the script is the source, the assets are its projection.
+
+#### Four defects this found in the cloud's script — each would have shipped
+
+1. **Every mesh would have been inside-out.** The generators wound CCW-outward;
+   UE winds CW-outward (Epic's own reference cube, `StaticMeshDescription.cpp:138`,
+   plus the reversed cross-product in `StaticMeshOperations.cpp:105-108`).
+2. **No metres->centimetres conversion.** `size_m` is metres and UE is cm, so the
+   4 m wall would have been a **4 cm** wall.
+3. **Interchange MIRRORS Y, it does not rotate it.**
+   `InterchangeOBJTranslator.cpp:186` is `PositionToUEBasis(v) = (v.X, -v.Y, v.Z)`,
+   and nothing re-winds afterwards — so a naively written OBJ imports inside-out
+   even after fix 1. Measured on an asymmetric 100x200x300 probe: Y [0,200] came
+   back [-200,0] and signed volume flipped +6.0e6 -> -6.0e6. Fixed by negating Y
+   on write, which cancels both the mirror and the winding flip.
+4. `wedge_geo` emitted triangles as degenerate quads `(0,1,4,4)`; the repeated
+   corner is now dropped before `CreatePolygon` sees a zero-area edge.
+
+#### The audit, and why it has a winding row
+
+`audit()` reads each asset back from the live editor and diffs against the spec:
+size, min corner (pivot), collision count and kind, material path, and — the
+load-bearing one — the **signed volume of the built render data** via
+`ProceduralMeshLibrary.get_section_from_static_mesh`. A bounding box alone
+passes a fully inside-out mesh; the signed volume does not. Result on two
+consecutive runs: **audit: 15/15 clean**, `made 15, failed 0`, zero `SM_..._1`
+on disk, and the `UBX_`/`UCX_` groups consumed as collision rather than
+imported as stray assets.
+
+Sizes are exact to the spec, pivots are footprint-centre/base-at-z0 with
+`BLK_Floor_400` centred in Z as the ticket requires. Octagon `size_m[0]` is the
+**circumscribed** diameter (matching `gen_kit_catalog.octagon()`), so the
+axis-aligned bbox is 0.9239 x dia — Column reads 0.83, Battery 2.22, Pedestal
+1.11. That is octagon geometry, not error. **Founder: if you meant those
+diameters across-flats, say so and it is a one-line change.**
+
+#### Deviations that need a ruling
+
+- **Collision is one BOX PER PART, not one convex hull per asset.** The ticket
+  says box (convex for the ramp). A single box over `BLK_Stair_200` is not
+  walkable and a single box over `BLK_Doorway_400` seals the 1.4 x 2.4 opening —
+  it would have silently broken the level. Each shape is now a list of convex
+  parts and collision comes from `UBX_`/`UCX_` groups in the OBJ itself
+  (`InterchangeGenericMeshPipeline` imports them by name, defaults on): stair
+  box x10, doorway box x3, rail box x4, ramp/octagons convex x1. Still *simple*
+  collision, which is what the rule protects, and exact rather than whatever
+  V-HACD decides that day.
+- **Mobility Static could not be set and is NOT a silent omission.** Mobility is
+  a `USceneComponent` property; there is no mobility field on `UStaticMesh`.
+  BN33's builder sets it per placement, which it already does.
+- **Nanite is ON** on all fifteen from a project default — a NaniteBuild per
+  12-triangle box. Harmless, wasteful, left alone as out of scope.
+
+#### Trap for BN33
+
+The commandlet's **exit code is unusable as a gate** — it returned 1 on every
+run purely because of an `HttpListener` bind error in the warning summary (see
+below). Gate on the printed `audit: 15/15 clean` / `STOP:` line instead.
+
+#### The port zombie (cost ~20 minutes, worth writing down)
+
+After the editor crashed, `CrashReportClient` **inherited the listening socket**
+on port 8000 and held it, so every relaunched editor logged
+`LogHttpListener: Error: HttpListener unable to bind to 127.0.0.1:8000` and came
+up with no MCP at all. It ignores SIGTERM (it is a modal dialog). Fix: kill the
+CrashReportClient, then relaunch the editor. If MCP is ever "connection refused"
+while an editor is plainly running, check `lsof -nP -iTCP:8000` for this before
+anything else.
