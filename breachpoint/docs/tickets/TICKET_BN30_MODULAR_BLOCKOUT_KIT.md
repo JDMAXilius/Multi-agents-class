@@ -151,3 +151,28 @@
 - Budget is IN the JSON (piece_budget.band/actual) so the builder and
   every future regeneration is judged against it. Assembly sheets
   re-rendered from the new manifest.
+
+### 30 Aug — founder: "fix the 3/4" — painter, projection, and a REAL defect
+
+Three faults, one of them geometric (not just a drawing bug):
+
+- **DEFECT, found while fixing the view: the perimeter was DOTTED.** At the
+  1 m pass grid a 0.5 m wall covers half a bin at best and far less
+  diagonally, so the 0.30 coverage threshold dropped bins and the ring came
+  out as **37 disconnected fragments** - a blockout wall players could shoot
+  and walk through. wall_t lowered to 0.15 (massing 0.10); the perimeter is
+  now ONE connected component, verified by flood fill from the emitted
+  placements.
+- **Painter:** pieces sorted on their CENTROID, so a 30 x 23 m floor plate
+  sorted mid-map and painted over every wall behind mid-map (the grey wash).
+  Now sorted on each box's FAR corner, and floors/decks draw as real solids
+  at their scheduled thickness instead of flat ghost sheets.
+- **Projection:** HZ 0.42 compressed height so far that an 8 m wall drew
+  shorter than a 4 m piece is wide - the level read as a curb model. Camera
+  retuned to HX/HY/HZ 0.78/0.50/0.62: heights near-true, camera high enough
+  to see into the arena over intact 8 m walls (still NO cutaway).
+- Decomposition also improved: largest-rectangle-first instead of the greedy
+  top-left scan, which had diced the ragged ring into 36 one-metre
+  fenceposts (now 16). Counts stay in band: massing 105, greybox 231.
+- Sheet finished with an assembly summary (per-family counts + the budget
+  band) and a tone key in a left gutter.

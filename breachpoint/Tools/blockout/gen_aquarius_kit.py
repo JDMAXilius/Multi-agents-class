@@ -52,9 +52,13 @@ GAME = HERE.parents[1]
 OUT = GAME / "Content" / "Data" / "aquarius_blockout_kit.json"
 
 PASSES = {                          # research-set budgets (BLOCKOUT-KIT.md)
-    "greybox": {"grid": 1.0, "wall_t": 0.30, "slab_t": 0.45, "floor_t": 0.40,
+    # wall_t is LOW on purpose: a 0.5 m wall crossing a 1 m bin covers half
+    # at best and far less diagonally, so a high threshold DOTS the perimeter
+    # (measured: 0.30 -> 37 disconnected fragments; 0.15 -> one closed ring).
+    # A blockout wall you can shoot through is a defect, not a drawing bug.
+    "greybox": {"grid": 1.0, "wall_t": 0.15, "slab_t": 0.45, "floor_t": 0.40,
                 "budget": (200, 400)},
-    "massing": {"grid": 2.0, "wall_t": 0.22, "slab_t": 0.40, "floor_t": 0.35,
+    "massing": {"grid": 2.0, "wall_t": 0.10, "slab_t": 0.40, "floor_t": 0.35,
                 "budget": (50, 100)},
 }
 GRID_M = 1.0                       # set per pass in main()
@@ -93,20 +97,39 @@ def quantize(cells, W, H, cell_m, thresh, G=None):
 
 
 def merge_rects(cells):
+    """LARGEST-RECTANGLE-FIRST decomposition: repeatedly carve out the biggest
+    axis-aligned rectangle that fits in the remaining cells. The old greedy
+    top-left scan diced ragged rings (a perimeter came out as 36 one-metre
+    fenceposts); largest-first yields long runs - fewer, bigger pieces, which
+    is exactly the blockout doctrine."""
     cs = set(cells)
     rects = []
     while cs:
-        x, y = min(cs)
-        w = 1
-        while (x + w, y) in cs:
-            w += 1
-        h = 1
-        while all((xx, y + h) in cs for xx in range(x, x + w)):
-            h += 1
-        for yy in range(y, y + h):
-            for xx in range(x, x + w):
+        x0 = min(x for x, _ in cs)
+        x1 = max(x for x, _ in cs)
+        y0 = min(y for _, y in cs)
+        y1 = max(y for _, y in cs)
+        best = None                      # (area, x, y, w, h)
+        heights = [0] * (x1 - x0 + 2)
+        for y in range(y0, y1 + 1):      # histogram sweep, row by row
+            for i in range(x1 - x0 + 1):
+                heights[i] = heights[i] + 1 if (x0 + i, y) in cs else 0
+            stack = []                   # (start index, height)
+            for i in range(x1 - x0 + 2):
+                hcur = heights[i] if i <= x1 - x0 else 0
+                start = i
+                while stack and stack[-1][1] >= hcur:
+                    si, sh = stack.pop()
+                    area = sh * (i - si)
+                    if sh and (best is None or area > best[0]):
+                        best = (area, x0 + si, y - sh + 1, i - si, sh)
+                    start = si
+                stack.append((start, hcur))
+        _, bx, by, bw, bh = best
+        for yy in range(by, by + bh):
+            for xx in range(bx, bx + bw):
                 cs.discard((xx, yy))
-        rects.append((x, y, w, h))
+        rects.append((bx, by, bw, bh))
     return rects
 
 

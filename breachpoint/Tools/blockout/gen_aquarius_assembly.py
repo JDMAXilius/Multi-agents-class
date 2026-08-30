@@ -262,7 +262,9 @@ def assembly_plan(kit, Wm, Hm, out_dir, level):
 
 def assembly_axon(kit, Wm, Hm, out_dir):
     S = 11.5
-    HX, HY, HZ = 0.74, 0.62, 0.42
+    # HZ was 0.42 - so an 8 m wall drew SHORTER than a 4 m piece is wide and
+    # the level read as a flat curb model. Heights now draw near true.
+    HX, HY, HZ = 0.78, 0.50, 0.62
 
     def P3(x, y, z):
         Xw, Yw = x, Hm - y
@@ -274,8 +276,8 @@ def assembly_axon(kit, Wm, Hm, out_dir):
     maxx = max(p[0] for p in corners_extent)
     miny = min(p[1] for p in corners_extent)
     maxy = max(p[1] for p in corners_extent)
-    ox, oy = 100 - minx, 150 - miny
-    w = int(maxx - minx + 340)
+    ox, oy = 430 - minx, 150 - miny   # left gutter holds the key
+    w = int(maxx - minx + 670)
     h = int(maxy - miny + 330)
 
     def Q(x, y, z):
@@ -286,7 +288,7 @@ def assembly_axon(kit, Wm, Hm, out_dir):
     o.append('<text class="big" x="70" y="58">3/4 ASSEMBLY — EVERY KIT INSTANCE '
              'AS ITS OWN BLOCK</text>')
     o.append('<text class="small" x="70" y="82">%d placements of the 15-asset kit · '
-             'seams true · suspect capsules included as blocks</text>'
+             'maximal pieces on the 1.0 m pass grid · suspect capsules included</text>'
              % len(kit["placements"]))
 
     plate = [Q(-2, -2, 0), Q(Wm + 2, -2, 0), Q(Wm + 2, Hm + 2, 0), Q(-2, Hm + 2, 0)]
@@ -328,65 +330,73 @@ def assembly_axon(kit, Wm, Hm, out_dir):
         cx, cy, _ = (v / 100 for v in p["location_cm"])
         return cx + (Hm - cy)
 
-    # Build the draw list. Floors and decks render as FLAT seamed plates
-    # (338 thin slabs as 3D blocks crumble the read); vertical pieces render
-    # as blocks, and long ones are SUBDIVIDED into <=2 m chunks so the
-    # painter's depth sort occludes correctly (long boxes break painters).
-    pieces = []
-    for p in kit["placements"]:
-        f = fam(p)
-        cx, cy, cz = (v / 100 for v in p["location_cm"])
-        sx, sy, sz = p["scale"]
-        if f in ("Floor", "Deck"):
-            ztop = cz + sz / 2
-            pieces.append(("flat", cx + (Hm - cy),
-                           (cx - sx / 2, cy - sy / 2, sx, sy, ztop),
-                           "isofloor" if f == "Floor" else "isoplate"))
-            continue
-        pitched = abs(p["rotation_deg"]["pitch"]) > 0.01
-        if pitched or max(sx, sy) <= 2.0:
-            pieces.append(("box", cx + (Hm - cy), p, None))
-        else:
-            horiz = sx >= sy
-            L = sx if horiz else sy
-            n = int(math.ceil(L / 2.0))
-            step = L / n
-            for i in range(n):
-                off = -L / 2 + step * (i + 0.5)
-                q = dict(p)
-                q = json.loads(json.dumps(p))
-                if horiz:
-                    q["location_cm"] = [cx * 100 + off * 100, cy * 100, cz * 100]
-                    q["scale"] = [step, sy, sz]
-                else:
-                    q["location_cm"] = [cx * 100, cy * 100 + off * 100, cz * 100]
-                    q["scale"] = [sx, step, sz]
-                qx, qy, _ = (v / 100 for v in q["location_cm"])
-                pieces.append(("box", qx + (Hm - qy), q, None))
+    # PAINTER, fixed (founder: "fix the 3/4"). Two rules the old version
+    # broke: (a) EVERY piece is a real box with its true thickness - floors
+    # and decks were flat ghost sheets before; (b) sort by the piece's FAR
+    # corner, not its centroid. A 20 m floor plate has a centroid mid-map,
+    # so centroid-sorting painted it over every wall behind mid-map (the
+    # grey wash). Its far corner sorts it first, where the ground belongs.
+    def far_depth(corners):
+        return min(c[0] + (Hm - c[1]) for c in corners.values())
 
-    for kind, _, item, cls in sorted(pieces, key=lambda t: (t[1],
-                                     0 if t[0] == "flat" else 1)):
-        if kind == "flat":
-            x0, y0, sx, sy, ztop = item
-            quad = [Q(x0, y0, ztop), Q(x0 + sx, y0, ztop),
-                    Q(x0 + sx, y0 + sy, ztop), Q(x0, y0 + sy, ztop)]
-            o.append('<path class="%s" style="stroke-width:0.5" d="M %s Z"/>'
-                     % (cls, " L ".join("%.1f %.1f" % q for q in quad)))
-            continue
-        cs = box_corners(item)
+    TONE = {"Floor": ("isofloor", "isonorth", "isoeast"),
+            "Deck": ("isotop", "isonorth", "isoeast"),
+            "Wall": ("isotop", "isonorth", "isoeast"),
+            "Tower": ("isotop", "isonorth", "isoeast"),
+            "Support": ("isotop", "isonorth", "isoeast"),
+            "Ramp": ("isotop", "isonorth", "isoeast")}
+
+    draw = []
+    for p in kit["placements"]:
+        cs = box_corners(p)
+        draw.append((far_depth(cs), p["location_cm"][2], cs, fam(p)))
+
+    for _, _, cs, family in sorted(draw, key=lambda t: (t[0], t[1])):
+        top_cls, n_cls, e_cls = TONE.get(family, TONE["Wall"])
         faces = []
         for f in FACES:
             pts = [cs[f[i]] for i in range(4)]
             fc = [sum(c[i] for c in pts) / 4 for i in range(3)]
-            faces.append((fc[0] + (Hm - fc[1]) + fc[2] * 0.05, pts, f[4]))
+            cls = {"isotop": top_cls, "isonorth": n_cls,
+                   "isoeast": e_cls}[f[4]]
+            faces.append((fc[0] + (Hm - fc[1]) + fc[2] * 0.05, pts, cls))
         for _, pts, fcls in sorted(faces, key=lambda t: t[0]):
             quad = [Q(*c) for c in pts]
-            o.append('<path class="%s" style="stroke-width:0.6" d="M %s Z"/>'
+            o.append('<path class="%s" style="stroke-width:0.55" d="M %s Z"/>'
                      % (fcls, " L ".join("%.1f %.1f" % q for q in quad)))
 
-    o.append('<text class="small" x="70" y="102">Floors and decks drawn as flat '
-             'seamed plates · vertical pieces as blocks (seams = the length '
-             'family) · build_aquarius_blockout.py places exactly these.</text>')
+    # key + count summary in the sheet's free lower-left corner
+    fam_tot = {}
+    for pl in kit["placements"]:
+        fam_tot[fam(pl)] = fam_tot.get(fam(pl), 0) + 1
+    kx, ky = 90, h - 450
+    o.append('<text class="panel" x="%d" y="%d">ASSEMBLY SUMMARY</text>' % (kx, ky))
+    rows = [("%d pieces total" % len(kit["placements"]), None)]
+    for f in ("Floor", "Deck", "Wall", "Tower", "Support", "Ramp"):
+        if f in fam_tot:
+            rows.append(("%-8s %3d   as %s" % (f, fam_tot[f], ASSET_OF[f]), None))
+    bud = kit.get("piece_budget", {})
+    if bud:
+        rows.append(("budget %d-%d (%s pass)" % (bud["band"][0], bud["band"][1],
+                                                 kit.get("pass", "greybox")), None))
+    for i, (txt, _) in enumerate(rows):
+        o.append('<text class="roomd" x="%d" y="%d">%s</text>'
+                 % (kx, ky + 22 + i * 18, txt))
+    ly = ky + 22 + len(rows) * 18 + 16
+    o.append('<text class="panel" x="%d" y="%d">TONE KEY</text>' % (kx, ly))
+    for i, (cls, txt) in enumerate((("isotop", "top face (lit)"),
+                                    ("isoeast", "east face"),
+                                    ("isonorth", "north face"),
+                                    ("isofloor", "floor plate top"),
+                                    ("isoplate", "ground plane"))):
+        yy = ly + 22 + i * 18
+        o.append('<rect class="%s" x="%d" y="%d" width="24" height="11"/>'
+                 % (cls, kx, yy - 9))
+        o.append('<text class="small" x="%d" y="%d">%s</text>' % (kx + 34, yy, txt))
+
+    o.append('<text class="small" x="70" y="102">Every piece a real solid at its '
+             'scheduled thickness · painter sorts on each box far corner · '
+             'build_aquarius_blockout.py places exactly these.</text>')
     sheet_chrome(o, w, h, "AK-301", "3/4 ASSEMBLY (MODULAR INSTANCES)", "steep 3/4 from NE")
     o.append("</svg>")
     (out_dir / "AK301_assembly_axon.svg").write_text("\n".join(o), encoding="utf-8")

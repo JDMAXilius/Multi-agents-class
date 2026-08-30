@@ -166,13 +166,17 @@ community performance bands: <300 objects flawless / <500 decent for a whole
 map [thin]; doctrine: "big simple shapes, cheap to throw away" [solid].
 
 **Budgets adopted (enforced by the generator, recorded in the JSON):**
-- MASSING pass: 50-100 pieces (2.0 m grid) - ours lands at 97
+- MASSING pass: 50-100 pieces (2.0 m grid) - ours lands at 105 (5 over;
+  the ring's connectivity floor, see the wall-threshold note)
   (`aquarius_blockout_massing.json`).
 - GREYBOX: 200-400 pieces, soft ceiling 500, red line ~650 (1.0 m grid) -
-  ours lands at 208 (`aquarius_blockout_kit.json`, the canonical manifest:
-  30 floor plates + 70 deck plates + 53 walls + 38 towers + 5 piers +
+  ours lands at 231 (`aquarius_blockout_kit.json`, the canonical manifest:
+  37 floor plates + 75 deck plates + 58 walls + 44 towers + 5 piers +
   12 ramps).
-- How the count fell 878 -> 208: maximal rects instead of length-family
+- Wall coverage thresholds are LOW by necessity: a thin wall crossing a
+  1 m bin fails a high threshold and the perimeter comes out DOTTED
+  (measured 0.30 -> 37 fragments; 0.15 -> one closed ring).
+- How the count fell 878 -> ~230: maximal rects instead of length-family
   tiling (the family returns at the ART pass as authored variants), floor
   plates running hidden under structure, and the 1.0 m pass grid absorbing
   the 0.5 m trace-edge slivers (368 of the old 878 were slivers).
