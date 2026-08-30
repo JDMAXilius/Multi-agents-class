@@ -136,3 +136,35 @@ indoor, small, close-range; (5) two exits minimum from every room.
 - VERDICT: **PASS** (spawn spacing 11.77 m min; longest ruled pair 47.65 m).
 - Box 'Article digest' [x]; 'Manifest + verdict' [x]; 'Proportions channel'
   upgraded to (a) for SHAPE — absolute scale still derived, channel (b) owed.
+
+### 30 Aug — v3: PER-FLOOR. Built from the founder's fifteen, not the one.
+
+- Founder supplied 15 references across three batches (banked with notes in
+  docs/design/reference/, corrections ledger in aquarius_shots_NOTES.md),
+  including SEPARATE ground and upper overheads and their own labeled
+  skeleton. Their labels are LAW for v3 naming: ARENA 1/2 the two courts,
+  HALLWAY 1 the short east-west center crossing, HALLWAY 2/3 the long
+  north/south lanes, BASE 1/2 the end regions, and the BRIDGE runs
+  NORTH-SOUTH — v2 had it east-west, corrected.
+- trace_aquarius.py parametrized (--image/--tag); both floor overheads traced
+  to registered 275x156 grids (identical bbox [41,17,233,127], so the floors
+  stack pixel-true).
+- gen_aquarius_manifest.py rewritten for per-floor semantics: GROUND blacks
+  split into perimeter ring z[0,8] (bg-adjacent), glass hydro towers z[0,6.5]
+  (interior, no deck above), and deck supports z[0,3.6] (under upper LIGHT);
+  UPPER lights -> deck slabs z[3.6,4] (pillar-borne; slabs float, noted as a
+  doubt); ground LIGHT capsules -> stair volumes z[0,4]; rocket at the N-S
+  bridge centroid; SP1-4 on the base upper decks (west-half corner pair,
+  +20% pull-in), SP5-8 ground neutrals mirrored; GP1/2 bridge lips, GP3/4
+  base front lips.
+- Output: 52.27x30.18 m, 5 landmarks, 442 boxes. arena_plan VERDICT **PASS**
+  — longest unoccluded spawn line SP1-SP3 at 36.06 m, under R45's ruled 48 m
+  and BARELY over the default 35 (v2's 47.65 m lines died with the tucked
+  spawns: base decks break the end-to-end line).
+- Sheets S1-S3 rendered REV B; per-floor comparison
+  (docs/design/blueprints/breachpoint_aquarius/v3_comparison.png) eyeballed:
+  silhouette, tower quad, scalloped south bays, castellated north edge, and
+  base wings all register against the founder's overheads on both floors.
+- Still owed: founder verdict on the sheets; channel (b) Forge walk for true
+  scale; sunken trench below-grade geometry; terminal blockout + editor
+  screenshots.

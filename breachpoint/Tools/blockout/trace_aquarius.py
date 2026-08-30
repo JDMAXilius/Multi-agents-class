@@ -35,6 +35,9 @@ REF = GAME / "docs" / "design" / "reference" / "aquarius_thegamescabin.jpg"
 OUT_JSON = GAME / "docs" / "design" / "reference" / "aquarius_trace.json"
 OUT_PNG = GAME / "docs" / "design" / "reference" / "aquarius_trace_preview.png"
 
+# v3: the founder supplied PER-FLOOR overheads - trace each from its own image.
+import argparse as _argparse
+
 CELL = 4          # px per grid cell
 CLASSES = ["bg", "black", "dark", "mid", "light"]
 CENTERS = {"black": 26, "dark": 65, "mid": 102, "light": 150}
@@ -54,6 +57,16 @@ def classify(px):
 
 
 def main():
+    global REF, OUT_JSON, OUT_PNG
+    ap = _argparse.ArgumentParser()
+    ap.add_argument("--image", default=str(REF))
+    ap.add_argument("--tag", default="")
+    a = ap.parse_args()
+    REF = Path(a.image)
+    if a.tag:
+        base = GAME / "docs" / "design" / "reference"
+        OUT_JSON = base / ("aquarius_trace_%s.json" % a.tag)
+        OUT_PNG = base / ("aquarius_trace_%s_preview.png" % a.tag)
     im = Image.open(REF).convert("RGB")
     W, H = im.size
     p = im.load()
