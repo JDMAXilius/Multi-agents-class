@@ -215,3 +215,32 @@ VERDICT now **PASS (0 fail, 2 warn)**: ground one region 723 m2, decks 97%
 reachable, 8/8 spawns good, ramps <= 37.7 deg, perimeter closed; fidelity
 IoU 0.66 structure / 0.84 decks, dims 0.0%/0.3% off, symmetry 1.000.
 Honesty line unchanged: capsule walk, nav mesh and fun are the in-editor rung.
+
+### 30 Aug — "playable and 1:1", second pass: play tests + tighter fidelity
+
+The first pass proved CONNECTIVITY. Connectivity is not playability, and a
+self-graded IoU of 0.66 is not 1:1. Both raised:
+
+- **Fidelity.** Measured the cost of the build grid: 1.0 m gives structure
+  IoU 0.66, 0.75 m gives 0.74, 0.5 m gives 0.79 but 432 pieces (past the
+  band). Greybox pass moved to **0.75 m / wall_t 0.20**: structure IoU
+  **0.74**, decks **0.86**, 292 pieces - still in the 200-400 band. Deck
+  reach also went 97% -> **100%** and orphan area 13 m2 -> 0.6 m2.
+  New `fidelity_overlay.png` shows built vs reference cell by cell: the
+  deviation is a one-cell grid fringe everywhere, nothing invented.
+- **Playability, three new checks that judge how it PLAYS, not just whether
+  it connects:**
+  P8 route timing - longest cross-map rotation **8.9 s** (competitive band
+  <= 20 s), mean spawn-to-centre 3.6 s;
+  P9 team fairness - team_a 4.5 s vs team_b 4.4 s to centre, **2.3% skew**
+  against a 5% requirement;
+  P10 route redundancy - cut the primary base-to-base route's middle
+  (30-70%) plus a 0.5 m skirt and the bases STILL connect: the mid has
+  parallel lanes, not one corridor.
+  (P10's first version cut the whole route including the base doorway, where
+  every lane necessarily coincides - it failed the map for a reason that was
+  the test's fault, not the level's. Fixed and recorded.)
+
+VERDICT: **PASS, 0 fail, 2 warn, on ten checks.** The honesty line is
+unchanged and unmoved: capsule walk, nav mesh generation and fun are the
+in-editor rung, still open.

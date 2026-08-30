@@ -169,8 +169,8 @@ map [thin]; doctrine: "big simple shapes, cheap to throw away" [solid].
 - MASSING pass: 50-100 pieces (2.0 m grid) - ours lands at 105 (5 over;
   the ring's connectivity floor, see the wall-threshold note)
   (`aquarius_blockout_massing.json`).
-- GREYBOX: 200-400 pieces, soft ceiling 500, red line ~650 (1.0 m grid) -
-  ours lands at 231 (`aquarius_blockout_kit.json`, the canonical manifest:
+- GREYBOX: 200-400 pieces, soft ceiling 500, red line ~650 (0.75 m grid) -
+  ours lands at 292 (`aquarius_blockout_kit.json`, the canonical manifest:
   37 floor plates + 75 deck plates + 58 walls + 44 towers + 5 piers +
   12 ramps).
 - Wall coverage thresholds are LOW by necessity: a thin wall crossing a
@@ -185,17 +185,25 @@ map [thin]; doctrine: "big simple shapes, cheap to throw away" [solid].
 
 `Tools/blockout/validate_aquarius_blockout.py` (founder: "make sure the level
 is playable and is 1:1") builds the walkable graph from the kit manifest and
-reports PASS/WARN/FAIL. Current verdict **PASS (0 fail, 2 warn)**:
+reports PASS/WARN/FAIL. Current verdict **PASS (0 fail, 2 warn)** on TEN checks:
 
-- ground floor is ONE walkable region, 723 m2; all three big deck regions
-  (both side rings + the bridge) reachable, 97% of deck area
+- ground floor is ONE walkable region, 742 m2; **100%** of the deck area
+  (both side rings AND the bridge) reachable from it
 - the 0.68 m capsule reaches 86% of the ground in one eroded region
+- HOW IT PLAYS: longest cross-map rotation **8.9 s** (competitive band
+  <= 20 s), mean spawn-to-centre 3.6 s, team_a 4.5 s vs team_b 4.4 s to
+  centre (**2.3% skew**, requirement <= 5%), and cutting the primary route's
+  middle still leaves the bases connected - **parallel lanes, not one
+  corridor**
 - all 8 spawns on walkable ground in the main region; all 6 ramps <= 37.7 deg;
   head clearance 3.60 m under decks; perimeter one closed ring
-- FIDELITY: structure IoU 0.66 / decks IoU 0.84 against the traced reference,
-  83-88% of the reference covered; 52.0 x 30.0 m vs traced 52.0 x 29.9 m
-  (0.0% / 0.3%); mirror symmetry 1.000
-- WARN carried: 13 m2 of deck slivers (largest 4 m2) sit behind towers, and
+- FIDELITY: structure IoU **0.74** / decks IoU **0.86** against the traced
+  reference (86-88% of the reference covered); 52.5 x 30.0 m vs traced
+  52.0 x 29.9 m (1.0% / 0.3%); mirror symmetry 0.956. See
+  `fidelity_overlay.png` - every deviation is a one-cell grid fringe; no
+  shape is invented. Build grid tightened 1.0 -> 0.75 m for this (measured
+  IoU 0.66 -> 0.74) at 292 pieces, still inside the researched band.
+- WARN carried: 0.6 m2 of deck sliver, and
   100 m2 of ground lies within a capsule radius of structure (corridor edges)
 
 Defects this validator FOUND and the generator now fixes: spawns were being

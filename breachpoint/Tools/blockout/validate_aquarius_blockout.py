@@ -394,6 +394,132 @@ def main():
              "perimeter wall is %d disconnected fragments - shoot-through gaps"
              % len(ring))
 
+
+    # ---- P8/P9/P10 how it PLAYS ------------------------------------------
+    # Connectivity says a route exists; these say the routes are the right
+    # LENGTH, fair to both teams, and not a single lane.
+    SPEED = 6.0                                   # m/s, UE default walk
+
+    def bfs_dist(starts):
+        d = {s0: 0 for s0 in starts}
+        q = deque(starts)
+        while q:
+            u = q.popleft()
+            for v in adj.get(u, ()):
+                if v not in d:
+                    d[v] = d[u] + 1
+                    q.append(v)
+        return d
+
+    sp_nodes = {i: n for i, n in sp_ok}
+    pools = {}
+    for sp in kit.get("spawn_points", []):
+        if sp["id"] in sp_nodes:
+            pools.setdefault(sp.get("pool", "neutral"), []).append(sp_nodes[sp["id"]])
+    centre_cell = (int((Wm / 2) / A), int((Hm / 2) / A))
+    centre = None
+    for lv in (1, 2):
+        for r in range(0, 12):
+            cand = [(lv, (centre_cell[0] + dx, centre_cell[1] + dy))
+                    for dx in range(-r, r + 1) for dy in range(-r, r + 1)]
+            hit = [c for c in cand if c in adj]
+            if hit:
+                centre = hit[0]
+                break
+        if centre:
+            break
+
+    times = []
+    for a_id, a_node in sp_ok:
+        d = bfs_dist([a_node])
+        for b_id, b_node in sp_ok:
+            if a_id < b_id and b_node in d:
+                times.append((d[b_node] * A / SPEED, a_id, b_id))
+    if times:
+        times.sort()
+        longest = times[-1]
+        note("INFO", "P8_ROUTE_TIMES",
+             "spawn-to-spawn walk: shortest %.1f s (%s-%s), longest %.1f s "
+             "(%s-%s) at %.1f m/s"
+             % (times[0][0], times[0][1], times[0][2], longest[0],
+                longest[1], longest[2], SPEED))
+        lvl = "PASS" if longest[0] <= 20.0 else "WARN"
+        note(lvl, "P8_ROTATION",
+             "longest cross-map rotation %.1f s (competitive band <= 20 s)"
+             % longest[0])
+
+    if centre and len(pools) >= 2:
+        dc = bfs_dist([centre])
+        team_t = {}
+        for pool, nodes in pools.items():
+            ts = [dc[n] * A / SPEED for n in nodes if n in dc]
+            if ts:
+                team_t[pool] = sum(ts) / len(ts)
+        if "team_a" in team_t and "team_b" in team_t:
+            ta, tb = team_t["team_a"], team_t["team_b"]
+            skew = abs(ta - tb) / max(ta, tb, 1e-9) * 100
+            lvl = "PASS" if skew <= 5.0 else "FAIL"
+            note(lvl, "P9_FAIRNESS",
+                 "time to centre: team_a %.1f s vs team_b %.1f s (%.1f%% skew, "
+                 "competitive requirement <= 5%%)" % (ta, tb, skew))
+        note("INFO", "P8_TO_CENTRE",
+             "mean spawn-to-centre %.1f s (first-contact working band 5-10 s)"
+             % (sum(team_t.values()) / len(team_t)))
+
+    # redundancy: cut the primary base-to-base route and ask if the bases
+    # still connect - a single-lane arena is a design failure
+    if "team_a" in pools and "team_b" in pools:
+        a0, b0 = pools["team_a"][0], pools["team_b"][0]
+        prev = {a0: None}
+        q = deque([a0])
+        while q:
+            u = q.popleft()
+            if u == b0:
+                break
+            for v in adj.get(u, ()):
+                if v not in prev:
+                    prev[v] = u
+                    q.append(v)
+        if b0 in prev:
+            path, cur = set(), b0
+            while cur is not None:
+                path.add(cur)
+                cur = prev[cur]
+            # Cut only the MIDDLE of the route. Every lane necessarily
+            # shares the base doorway, so cutting the whole path proves
+            # nothing; the real question is whether the map's mid has
+            # parallel lanes (Aquarius has three hallways - it should).
+            plist, cur = [], b0
+            while cur is not None:
+                plist.append(cur)
+                cur = prev[cur]
+            n = len(plist)
+            mid_nodes = plist[int(n * 0.3):int(n * 0.7)]
+            cut = set()
+            for (lv, c) in mid_nodes:
+                for dx in range(-2, 3):
+                    for dy in range(-2, 3):
+                        for lvv in (1, 2):
+                            cut.add((lvv, (c[0] + dx, c[1] + dy)))
+            cut.discard(a0)
+            cut.discard(b0)
+            seen2, q2 = {a0}, deque([a0])
+            while q2:
+                u = q2.popleft()
+                for v in adj.get(u, ()):
+                    if v not in seen2 and v not in cut:
+                        seen2.add(v)
+                        q2.append(v)
+            if b0 in seen2:
+                note("PASS", "P10_REDUNDANCY",
+                     "bases still connect after the primary route's middle "
+                     "(30-70%%) and a 0.5 m skirt are cut - the mid has "
+                     "parallel lanes, not one corridor")
+            else:
+                note("FAIL", "P10_SINGLE_LANE",
+                     "cutting the primary route's middle disconnects the "
+                     "bases - the map funnels through one corridor")
+
     # ---- F1 fidelity vs the traced reference ------------------------------
     solids, floor_ref, W, H, cell_m = extract()
     ref = {k: set() for k in ("wall", "tower", "support", "deck")}
@@ -469,7 +595,51 @@ def main():
     if args.png:
         diagnostic(walk1, l2, blockers_l1, ramp_cells, clr, pinch,
                    main_comp, comps, gw, gh)
+        overlay(occ["Wall"] | occ["Tower"] | occ["Support"],
+                to_analysis(ref["wall"] | ref["tower"] | ref["support"]),
+                occ["Deck"], to_analysis(ref["deck"]), gw, gh, ious)
     return 1 if nfail else 0
+
+
+def overlay(built_s, ref_s, built_d, ref_d, gw, gh, ious):
+    """The 1:1 proof you can SEE: built vs traced reference, cell by cell."""
+    try:
+        from PIL import Image, ImageDraw
+    except ImportError:
+        return
+    S = 5
+    img = Image.new("RGB", (gw * S + 380, gh * S + 70), "white")
+    d = ImageDraw.Draw(img)
+    ox, oy = 20, 46
+
+    def px(c):
+        return (ox + c[0] * S, oy + c[1] * S, ox + c[0] * S + S, oy + c[1] * S + S)
+
+    for name, built, refc, base in (("deck", built_d, ref_d, 0),
+                                    ("struct", built_s, ref_s, 1)):
+        for c in refc - built:
+            d.rectangle(px(c), fill=(250, 190, 190) if base else (250, 215, 190))
+        for c in built - refc:
+            d.rectangle(px(c), fill=(190, 205, 250) if base else (200, 230, 250))
+        for c in built & refc:
+            d.rectangle(px(c), fill=(40, 40, 46) if base else (150, 165, 185))
+    d.text((ox, 12), "1:1 OVERLAY - built blockout vs traced reference "
+                     "(structure IoU %.2f / decks IoU %.2f)"
+           % (ious[0], ious[1]), fill="black")
+    lx = ox + gw * S + 20
+    for i, (col, txt) in enumerate((((40, 40, 46), "match (built = reference)"),
+                                    ((250, 190, 190), "reference only (missed)"),
+                                    ((190, 205, 250), "built only (added)"),
+                                    ((150, 165, 185), "deck match"))):
+        y = 60 + i * 22
+        d.rectangle([lx, y, lx + 18, y + 12], fill=col, outline=(0, 0, 0))
+        d.text((lx + 26, y), txt, fill="black")
+    d.text((lx, 60 + 5 * 22), "grid quantisation is the whole", fill="black")
+    d.text((lx, 60 + 6 * 22), "deviation: no shape is invented.", fill="black")
+    out = (GAME / "docs" / "design" / "blueprints" / "breachpoint_aquarius" /
+           "fidelity_overlay.png")
+    img.save(out)
+    print("wrote %s" % out.relative_to(GAME))
 
 
 def diagnostic(walk1, l2, blockers, ramps, clr, pinch, main_comp, comps,

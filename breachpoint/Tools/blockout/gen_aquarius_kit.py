@@ -57,7 +57,11 @@ PASSES = {                          # research-set budgets (BLOCKOUT-KIT.md)
     # at best and far less diagonally, so a high threshold DOTS the perimeter
     # (measured: 0.30 -> 37 disconnected fragments; 0.15 -> one closed ring).
     # A blockout wall you can shoot through is a defect, not a drawing bug.
-    "greybox": {"grid": 1.0, "wall_t": 0.15, "slab_t": 0.45, "floor_t": 0.40,
+    # 0.75 m, not 1.0: measured structure fidelity against the traced
+    # reference rises 0.66 -> 0.74 IoU (decks 0.84 -> 0.86) for 284 pieces,
+    # still inside the researched 200-400 greybox band. 0.5 m would reach
+    # 0.79 but costs 432 pieces, past the band.
+    "greybox": {"grid": 0.75, "wall_t": 0.20, "slab_t": 0.45, "floor_t": 0.40,
                 "budget": (200, 400)},
     "massing": {"grid": 2.0, "wall_t": 0.10, "slab_t": 0.40, "floor_t": 0.35,
                 "budget": (50, 100)},

@@ -7,12 +7,12 @@
    200,
    400
   ],
-  "actual": 225,
+  "actual": 292,
   "basis": "BLOCKOUT-KIT.md piece-count research: massing 50-100, greybox 200-400 (soft ceiling 500, red line ~650 - the Halo 3/Reach complete-map cap)"
  },
  "units": "location cm (1uu), scale = metres of a 100 cm unit mesh",
  "axes": "X = map EAST, Y = map SOUTH, Z up; origin at NW ground corner of the traced footprint; rotations are UE rotators (deg)",
- "grid_m": 1.0,
+ "grid_m": 0.75,
  "asset_catalog": "docs/design/blueprints/breachpoint_aquarius/K101_kit_catalog_1.png + K102_kit_catalog_2.png - the TWELVE modular assets (gen_kit_catalog.py); placements below map onto them via asset_map",
  "asset_map": {
   "Floor": "BLK_Floor_400",
@@ -36,594 +36,944 @@
  ],
  "variants": [
   {
-   "id": "Floor_300x230x002",
+   "id": "Floor_292x232x002",
    "family": "Floor",
    "size_m": [
-    30.0,
-    23.0,
+    29.25,
+    23.25,
     0.2
    ],
    "count": 1
   },
   {
-   "id": "Floor_100x130x002",
+   "id": "Floor_097x127x002",
    "family": "Floor",
    "size_m": [
-    10.0,
-    13.0,
+    9.75,
+    12.75,
     0.2
    ],
    "count": 2
   },
   {
-   "id": "Floor_060x030x002",
+   "id": "Floor_060x022x002",
    "family": "Floor",
    "size_m": [
     6.0,
-    3.0,
-    0.2
-   ],
-   "count": 1
-  },
-  {
-   "id": "Floor_070x020x002",
-   "family": "Floor",
-   "size_m": [
-    7.0,
-    2.0,
-    0.2
-   ],
-   "count": 2
-  },
-  {
-   "id": "Floor_050x020x002",
-   "family": "Floor",
-   "size_m": [
-    5.0,
-    2.0,
-    0.2
-   ],
-   "count": 2
-  },
-  {
-   "id": "Floor_020x030x002",
-   "family": "Floor",
-   "size_m": [
-    2.0,
-    3.0,
-    0.2
-   ],
-   "count": 2
-  },
-  {
-   "id": "Floor_050x010x002",
-   "family": "Floor",
-   "size_m": [
-    5.0,
-    1.0,
-    0.2
-   ],
-   "count": 2
-  },
-  {
-   "id": "Floor_010x050x002",
-   "family": "Floor",
-   "size_m": [
-    1.0,
-    5.0,
-    0.2
-   ],
-   "count": 2
-  },
-  {
-   "id": "Floor_010x040x002",
-   "family": "Floor",
-   "size_m": [
-    1.0,
-    4.0,
-    0.2
-   ],
-   "count": 2
-  },
-  {
-   "id": "Floor_040x010x002",
-   "family": "Floor",
-   "size_m": [
-    4.0,
-    1.0,
+    2.25,
     0.2
    ],
    "count": 3
   },
   {
-   "id": "Floor_020x020x002",
+   "id": "Floor_060x015x002",
    "family": "Floor",
    "size_m": [
-    2.0,
-    2.0,
-    0.2
-   ],
-   "count": 2
-  },
-  {
-   "id": "Floor_010x020x002",
-   "family": "Floor",
-   "size_m": [
-    1.0,
-    2.0,
-    0.2
-   ],
-   "count": 2
-  },
-  {
-   "id": "Floor_010x010x002",
-   "family": "Floor",
-   "size_m": [
-    1.0,
-    1.0,
-    0.2
-   ],
-   "count": 14
-  },
-  {
-   "id": "Deck_040x160x004",
-   "family": "Deck",
-   "size_m": [
-    4.0,
-    16.0,
-    0.4
-   ],
-   "count": 1
-  },
-  {
-   "id": "Deck_040x140x004",
-   "family": "Deck",
-   "size_m": [
-    4.0,
-    14.0,
-    0.4
-   ],
-   "count": 2
-  },
-  {
-   "id": "Deck_020x150x004",
-   "family": "Deck",
-   "size_m": [
-    2.0,
-    15.0,
-    0.4
-   ],
-   "count": 2
-  },
-  {
-   "id": "Deck_040x030x004",
-   "family": "Deck",
-   "size_m": [
-    4.0,
-    3.0,
-    0.4
-   ],
-   "count": 2
-  },
-  {
-   "id": "Deck_030x040x004",
-   "family": "Deck",
-   "size_m": [
-    3.0,
-    4.0,
-    0.4
-   ],
-   "count": 2
-  },
-  {
-   "id": "Deck_120x010x004",
-   "family": "Deck",
-   "size_m": [
-    12.0,
-    1.0,
-    0.4
-   ],
-   "count": 2
-  },
-  {
-   "id": "Deck_040x020x004",
-   "family": "Deck",
-   "size_m": [
-    4.0,
-    2.0,
-    0.4
-   ],
-   "count": 1
-  },
-  {
-   "id": "Deck_010x080x004",
-   "family": "Deck",
-   "size_m": [
-    1.0,
-    8.0,
-    0.4
-   ],
-   "count": 2
-  },
-  {
-   "id": "Deck_010x070x004",
-   "family": "Deck",
-   "size_m": [
-    1.0,
-    7.0,
-    0.4
-   ],
-   "count": 2
-  },
-  {
-   "id": "Deck_030x020x004",
-   "family": "Deck",
-   "size_m": [
-    3.0,
-    2.0,
-    0.4
-   ],
-   "count": 2
-  },
-  {
-   "id": "Deck_010x060x004",
-   "family": "Deck",
-   "size_m": [
-    1.0,
     6.0,
-    0.4
+    1.5,
+    0.2
    ],
    "count": 2
   },
   {
-   "id": "Deck_020x030x004",
-   "family": "Deck",
+   "id": "Floor_015x052x002",
+   "family": "Floor",
    "size_m": [
-    2.0,
+    1.5,
+    5.25,
+    0.2
+   ],
+   "count": 2
+  },
+  {
+   "id": "Floor_030x022x002",
+   "family": "Floor",
+   "size_m": [
     3.0,
-    0.4
+    2.25,
+    0.2
    ],
    "count": 2
   },
   {
-   "id": "Deck_010x050x004",
-   "family": "Deck",
+   "id": "Floor_015x045x002",
+   "family": "Floor",
    "size_m": [
-    1.0,
-    5.0,
-    0.4
-   ],
-   "count": 2
-  },
-  {
-   "id": "Deck_020x020x004",
-   "family": "Deck",
-   "size_m": [
-    2.0,
-    2.0,
-    0.4
-   ],
-   "count": 6
-  },
-  {
-   "id": "Deck_040x010x004",
-   "family": "Deck",
-   "size_m": [
-    4.0,
-    1.0,
-    0.4
+    1.5,
+    4.5,
+    0.2
    ],
    "count": 1
   },
   {
-   "id": "Deck_010x030x004",
-   "family": "Deck",
+   "id": "Floor_015x037x002",
+   "family": "Floor",
    "size_m": [
-    1.0,
+    1.5,
+    3.75,
+    0.2
+   ],
+   "count": 1
+  },
+  {
+   "id": "Floor_037x015x002",
+   "family": "Floor",
+   "size_m": [
+    3.75,
+    1.5,
+    0.2
+   ],
+   "count": 1
+  },
+  {
+   "id": "Floor_060x007x002",
+   "family": "Floor",
+   "size_m": [
+    6.0,
+    0.75,
+    0.2
+   ],
+   "count": 1
+  },
+  {
+   "id": "Floor_030x015x002",
+   "family": "Floor",
+   "size_m": [
     3.0,
-    0.4
+    1.5,
+    0.2
    ],
-   "count": 6
+   "count": 1
   },
   {
-   "id": "Deck_010x020x004",
-   "family": "Deck",
+   "id": "Floor_052x007x002",
+   "family": "Floor",
    "size_m": [
-    1.0,
-    2.0,
-    0.4
-   ],
-   "count": 16
-  },
-  {
-   "id": "Deck_020x010x004",
-   "family": "Deck",
-   "size_m": [
-    2.0,
-    1.0,
-    0.4
+    5.25,
+    0.75,
+    0.2
    ],
    "count": 2
   },
   {
-   "id": "Deck_010x010x004",
-   "family": "Deck",
+   "id": "Floor_045x007x002",
+   "family": "Floor",
    "size_m": [
-    1.0,
-    1.0,
-    0.4
+    4.5,
+    0.75,
+    0.2
+   ],
+   "count": 1
+  },
+  {
+   "id": "Floor_022x015x002",
+   "family": "Floor",
+   "size_m": [
+    2.25,
+    1.5,
+    0.2
+   ],
+   "count": 2
+  },
+  {
+   "id": "Floor_037x007x002",
+   "family": "Floor",
+   "size_m": [
+    3.75,
+    0.75,
+    0.2
+   ],
+   "count": 1
+  },
+  {
+   "id": "Floor_015x015x002",
+   "family": "Floor",
+   "size_m": [
+    1.5,
+    1.5,
+    0.2
+   ],
+   "count": 1
+  },
+  {
+   "id": "Floor_030x007x002",
+   "family": "Floor",
+   "size_m": [
+    3.0,
+    0.75,
+    0.2
+   ],
+   "count": 2
+  },
+  {
+   "id": "Floor_007x030x002",
+   "family": "Floor",
+   "size_m": [
+    0.75,
+    3.0,
+    0.2
+   ],
+   "count": 1
+  },
+  {
+   "id": "Floor_007x022x002",
+   "family": "Floor",
+   "size_m": [
+    0.75,
+    2.25,
+    0.2
+   ],
+   "count": 1
+  },
+  {
+   "id": "Floor_015x007x002",
+   "family": "Floor",
+   "size_m": [
+    1.5,
+    0.75,
+    0.2
+   ],
+   "count": 3
+  },
+  {
+   "id": "Floor_007x015x002",
+   "family": "Floor",
+   "size_m": [
+    0.75,
+    1.5,
+    0.2
+   ],
+   "count": 2
+  },
+  {
+   "id": "Floor_007x007x002",
+   "family": "Floor",
+   "size_m": [
+    0.75,
+    0.75,
+    0.2
    ],
    "count": 20
   },
   {
-   "id": "Wall_100x010x080",
-   "family": "Wall",
+   "id": "Deck_037x157x004",
+   "family": "Deck",
    "size_m": [
-    10.0,
-    1.0,
-    8.0
+    3.75,
+    15.75,
+    0.4
+   ],
+   "count": 1
+  },
+  {
+   "id": "Deck_037x135x004",
+   "family": "Deck",
+   "size_m": [
+    3.75,
+    13.5,
+    0.4
    ],
    "count": 2
   },
   {
-   "id": "Wall_010x060x080",
+   "id": "Deck_060x045x004",
+   "family": "Deck",
+   "size_m": [
+    6.0,
+    4.5,
+    0.4
+   ],
+   "count": 2
+  },
+  {
+   "id": "Deck_142x015x004",
+   "family": "Deck",
+   "size_m": [
+    14.25,
+    1.5,
+    0.4
+   ],
+   "count": 1
+  },
+  {
+   "id": "Deck_135x015x004",
+   "family": "Deck",
+   "size_m": [
+    13.5,
+    1.5,
+    0.4
+   ],
+   "count": 1
+  },
+  {
+   "id": "Deck_052x022x004",
+   "family": "Deck",
+   "size_m": [
+    5.25,
+    2.25,
+    0.4
+   ],
+   "count": 2
+  },
+  {
+   "id": "Deck_015x067x004",
+   "family": "Deck",
+   "size_m": [
+    1.5,
+    6.75,
+    0.4
+   ],
+   "count": 1
+  },
+  {
+   "id": "Deck_015x060x004",
+   "family": "Deck",
+   "size_m": [
+    1.5,
+    6.0,
+    0.4
+   ],
+   "count": 1
+  },
+  {
+   "id": "Deck_037x022x004",
+   "family": "Deck",
+   "size_m": [
+    3.75,
+    2.25,
+    0.4
+   ],
+   "count": 2
+  },
+  {
+   "id": "Deck_052x015x004",
+   "family": "Deck",
+   "size_m": [
+    5.25,
+    1.5,
+    0.4
+   ],
+   "count": 1
+  },
+  {
+   "id": "Deck_030x022x004",
+   "family": "Deck",
+   "size_m": [
+    3.0,
+    2.25,
+    0.4
+   ],
+   "count": 2
+  },
+  {
+   "id": "Deck_015x045x004",
+   "family": "Deck",
+   "size_m": [
+    1.5,
+    4.5,
+    0.4
+   ],
+   "count": 1
+  },
+  {
+   "id": "Deck_007x082x004",
+   "family": "Deck",
+   "size_m": [
+    0.75,
+    8.25,
+    0.4
+   ],
+   "count": 1
+  },
+  {
+   "id": "Deck_015x037x004",
+   "family": "Deck",
+   "size_m": [
+    1.5,
+    3.75,
+    0.4
+   ],
+   "count": 1
+  },
+  {
+   "id": "Deck_022x022x004",
+   "family": "Deck",
+   "size_m": [
+    2.25,
+    2.25,
+    0.4
+   ],
+   "count": 4
+  },
+  {
+   "id": "Deck_007x060x004",
+   "family": "Deck",
+   "size_m": [
+    0.75,
+    6.0,
+    0.4
+   ],
+   "count": 1
+  },
+  {
+   "id": "Deck_015x030x004",
+   "family": "Deck",
+   "size_m": [
+    1.5,
+    3.0,
+    0.4
+   ],
+   "count": 2
+  },
+  {
+   "id": "Deck_007x045x004",
+   "family": "Deck",
+   "size_m": [
+    0.75,
+    4.5,
+    0.4
+   ],
+   "count": 2
+  },
+  {
+   "id": "Deck_015x022x004",
+   "family": "Deck",
+   "size_m": [
+    1.5,
+    2.25,
+    0.4
+   ],
+   "count": 3
+  },
+  {
+   "id": "Deck_045x007x004",
+   "family": "Deck",
+   "size_m": [
+    4.5,
+    0.75,
+    0.4
+   ],
+   "count": 1
+  },
+  {
+   "id": "Deck_037x007x004",
+   "family": "Deck",
+   "size_m": [
+    3.75,
+    0.75,
+    0.4
+   ],
+   "count": 2
+  },
+  {
+   "id": "Deck_015x015x004",
+   "family": "Deck",
+   "size_m": [
+    1.5,
+    1.5,
+    0.4
+   ],
+   "count": 6
+  },
+  {
+   "id": "Deck_007x030x004",
+   "family": "Deck",
+   "size_m": [
+    0.75,
+    3.0,
+    0.4
+   ],
+   "count": 4
+  },
+  {
+   "id": "Deck_007x022x004",
+   "family": "Deck",
+   "size_m": [
+    0.75,
+    2.25,
+    0.4
+   ],
+   "count": 3
+  },
+  {
+   "id": "Deck_022x007x004",
+   "family": "Deck",
+   "size_m": [
+    2.25,
+    0.75,
+    0.4
+   ],
+   "count": 2
+  },
+  {
+   "id": "Deck_015x007x004",
+   "family": "Deck",
+   "size_m": [
+    1.5,
+    0.75,
+    0.4
+   ],
+   "count": 11
+  },
+  {
+   "id": "Deck_007x015x004",
+   "family": "Deck",
+   "size_m": [
+    0.75,
+    1.5,
+    0.4
+   ],
+   "count": 6
+  },
+  {
+   "id": "Deck_007x007x004",
+   "family": "Deck",
+   "size_m": [
+    0.75,
+    0.75,
+    0.4
+   ],
+   "count": 31
+  },
+  {
+   "id": "Wall_097x007x080",
    "family": "Wall",
    "size_m": [
-    1.0,
+    9.75,
+    0.75,
+    8.0
+   ],
+   "count": 1
+  },
+  {
+   "id": "Wall_090x007x080",
+   "family": "Wall",
+   "size_m": [
+    9.0,
+    0.75,
+    8.0
+   ],
+   "count": 1
+  },
+  {
+   "id": "Wall_060x007x080",
+   "family": "Wall",
+   "size_m": [
+    6.0,
+    0.75,
+    8.0
+   ],
+   "count": 1
+  },
+  {
+   "id": "Wall_007x060x080",
+   "family": "Wall",
+   "size_m": [
+    0.75,
     6.0,
     8.0
    ],
    "count": 2
   },
   {
-   "id": "Wall_030x020x080",
+   "id": "Wall_030x015x080",
    "family": "Wall",
    "size_m": [
     3.0,
-    2.0,
+    1.5,
+    8.0
+   ],
+   "count": 1
+  },
+  {
+   "id": "Wall_052x007x080",
+   "family": "Wall",
+   "size_m": [
+    5.25,
+    0.75,
     8.0
    ],
    "count": 2
   },
   {
-   "id": "Wall_050x010x080",
+   "id": "Wall_045x007x080",
    "family": "Wall",
    "size_m": [
-    5.0,
-    1.0,
+    4.5,
+    0.75,
+    8.0
+   ],
+   "count": 5
+  },
+  {
+   "id": "Wall_007x045x080",
+   "family": "Wall",
+   "size_m": [
+    0.75,
+    4.5,
+    8.0
+   ],
+   "count": 5
+  },
+  {
+   "id": "Wall_022x015x080",
+   "family": "Wall",
+   "size_m": [
+    2.25,
+    1.5,
+    8.0
+   ],
+   "count": 1
+  },
+  {
+   "id": "Wall_037x007x080",
+   "family": "Wall",
+   "size_m": [
+    3.75,
+    0.75,
     8.0
    ],
    "count": 6
   },
   {
-   "id": "Wall_010x050x080",
-   "family": "Wall",
-   "size_m": [
-    1.0,
-    5.0,
-    8.0
-   ],
-   "count": 6
-  },
-  {
-   "id": "Wall_040x010x080",
-   "family": "Wall",
-   "size_m": [
-    4.0,
-    1.0,
-    8.0
-   ],
-   "count": 6
-  },
-  {
-   "id": "Wall_010x040x080",
-   "family": "Wall",
-   "size_m": [
-    1.0,
-    4.0,
-    8.0
-   ],
-   "count": 2
-  },
-  {
-   "id": "Wall_020x020x080",
-   "family": "Wall",
-   "size_m": [
-    2.0,
-    2.0,
-    8.0
-   ],
-   "count": 2
-  },
-  {
-   "id": "Wall_030x010x080",
+   "id": "Wall_030x007x080",
    "family": "Wall",
    "size_m": [
     3.0,
-    1.0,
+    0.75,
     8.0
    ],
    "count": 2
   },
   {
-   "id": "Wall_020x010x080",
+   "id": "Wall_007x030x080",
    "family": "Wall",
    "size_m": [
-    2.0,
-    1.0,
+    0.75,
+    3.0,
+    8.0
+   ],
+   "count": 1
+  },
+  {
+   "id": "Wall_015x015x080",
+   "family": "Wall",
+   "size_m": [
+    1.5,
+    1.5,
+    8.0
+   ],
+   "count": 1
+  },
+  {
+   "id": "Wall_007x022x080",
+   "family": "Wall",
+   "size_m": [
+    0.75,
+    2.25,
     8.0
    ],
    "count": 7
   },
   {
-   "id": "Wall_010x020x080",
+   "id": "Wall_022x007x080",
    "family": "Wall",
    "size_m": [
-    1.0,
-    2.0,
+    2.25,
+    0.75,
     8.0
    ],
-   "count": 4
+   "count": 2
   },
   {
-   "id": "Wall_010x010x080",
+   "id": "Wall_015x007x080",
    "family": "Wall",
    "size_m": [
-    1.0,
-    1.0,
+    1.5,
+    0.75,
+    8.0
+   ],
+   "count": 9
+  },
+  {
+   "id": "Wall_007x015x080",
+   "family": "Wall",
+   "size_m": [
+    0.75,
+    1.5,
+    8.0
+   ],
+   "count": 12
+  },
+  {
+   "id": "Wall_007x007x080",
+   "family": "Wall",
+   "size_m": [
+    0.75,
+    0.75,
     8.0
    ],
    "count": 17
   },
   {
-   "id": "Tower_050x050x065",
+   "id": "Tower_052x045x065",
    "family": "Tower",
    "size_m": [
-    5.0,
-    5.0,
-    6.5
-   ],
-   "count": 2
-  },
-  {
-   "id": "Tower_030x060x065",
-   "family": "Tower",
-   "size_m": [
-    3.0,
-    6.0,
-    6.5
-   ],
-   "count": 2
-  },
-  {
-   "id": "Tower_040x020x065",
-   "family": "Tower",
-   "size_m": [
-    4.0,
-    2.0,
+    5.25,
+    4.5,
     6.5
    ],
    "count": 1
   },
   {
-   "id": "Tower_050x010x065",
+   "id": "Tower_045x052x065",
    "family": "Tower",
    "size_m": [
-    5.0,
-    1.0,
+    4.5,
+    5.25,
+    6.5
+   ],
+   "count": 1
+  },
+  {
+   "id": "Tower_037x052x065",
+   "family": "Tower",
+   "size_m": [
+    3.75,
+    5.25,
+    6.5
+   ],
+   "count": 1
+  },
+  {
+   "id": "Tower_037x045x065",
+   "family": "Tower",
+   "size_m": [
+    3.75,
+    4.5,
+    6.5
+   ],
+   "count": 1
+  },
+  {
+   "id": "Tower_052x015x065",
+   "family": "Tower",
+   "size_m": [
+    5.25,
+    1.5,
+    6.5
+   ],
+   "count": 1
+  },
+  {
+   "id": "Tower_045x015x065",
+   "family": "Tower",
+   "size_m": [
+    4.5,
+    1.5,
+    6.5
+   ],
+   "count": 1
+  },
+  {
+   "id": "Tower_022x030x065",
+   "family": "Tower",
+   "size_m": [
+    2.25,
+    3.0,
+    6.5
+   ],
+   "count": 1
+  },
+  {
+   "id": "Tower_037x015x065",
+   "family": "Tower",
+   "size_m": [
+    3.75,
+    1.5,
+    6.5
+   ],
+   "count": 1
+  },
+  {
+   "id": "Tower_015x037x065",
+   "family": "Tower",
+   "size_m": [
+    1.5,
+    3.75,
+    6.5
+   ],
+   "count": 1
+  },
+  {
+   "id": "Tower_022x022x065",
+   "family": "Tower",
+   "size_m": [
+    2.25,
+    2.25,
+    6.5
+   ],
+   "count": 1
+  },
+  {
+   "id": "Tower_015x030x065",
+   "family": "Tower",
+   "size_m": [
+    1.5,
+    3.0,
+    6.5
+   ],
+   "count": 1
+  },
+  {
+   "id": "Tower_022x015x065",
+   "family": "Tower",
+   "size_m": [
+    2.25,
+    1.5,
+    6.5
+   ],
+   "count": 3
+  },
+  {
+   "id": "Tower_045x007x065",
+   "family": "Tower",
+   "size_m": [
+    4.5,
+    0.75,
+    6.5
+   ],
+   "count": 1
+  },
+  {
+   "id": "Tower_007x037x065",
+   "family": "Tower",
+   "size_m": [
+    0.75,
+    3.75,
     6.5
    ],
    "count": 2
   },
   {
-   "id": "Tower_020x020x065",
+   "id": "Tower_037x007x065",
    "family": "Tower",
    "size_m": [
-    2.0,
-    2.0,
+    3.75,
+    0.75,
     6.5
    ],
-   "count": 11
+   "count": 1
   },
   {
-   "id": "Tower_010x040x065",
+   "id": "Tower_030x007x065",
    "family": "Tower",
    "size_m": [
-    1.0,
-    4.0,
+    3.0,
+    0.75,
+    6.5
+   ],
+   "count": 1
+  },
+  {
+   "id": "Tower_007x030x065",
+   "family": "Tower",
+   "size_m": [
+    0.75,
+    3.0,
     6.5
    ],
    "count": 2
   },
   {
-   "id": "Tower_020x010x065",
+   "id": "Tower_015x015x065",
    "family": "Tower",
    "size_m": [
-    2.0,
-    1.0,
+    1.5,
+    1.5,
+    6.5
+   ],
+   "count": 2
+  },
+  {
+   "id": "Tower_022x007x065",
+   "family": "Tower",
+   "size_m": [
+    2.25,
+    0.75,
     6.5
    ],
    "count": 6
   },
   {
-   "id": "Tower_010x010x065",
+   "id": "Tower_007x015x065",
    "family": "Tower",
    "size_m": [
-    1.0,
-    1.0,
+    0.75,
+    1.5,
+    6.5
+   ],
+   "count": 5
+  },
+  {
+   "id": "Tower_015x007x065",
+   "family": "Tower",
+   "size_m": [
+    1.5,
+    0.75,
+    6.5
+   ],
+   "count": 2
+  },
+  {
+   "id": "Tower_007x007x065",
+   "family": "Tower",
+   "size_m": [
+    0.75,
+    0.75,
     6.5
    ],
    "count": 18
   },
   {
-   "id": "Support_040x040x036",
+   "id": "Support_052x030x036",
    "family": "Support",
    "size_m": [
-    4.0,
-    4.0,
-    3.6
-   ],
-   "count": 1
-  },
-  {
-   "id": "Support_060x020x036",
-   "family": "Support",
-   "size_m": [
-    6.0,
-    2.0,
-    3.6
-   ],
-   "count": 1
-  },
-  {
-   "id": "Support_040x010x036",
-   "family": "Support",
-   "size_m": [
-    4.0,
-    1.0,
-    3.6
-   ],
-   "count": 1
-  },
-  {
-   "id": "Support_010x020x036",
-   "family": "Support",
-   "size_m": [
-    1.0,
-    2.0,
-    3.6
-   ],
-   "count": 2
-  },
-  {
-   "id": "Ramp_078x030x003",
-   "family": "Ramp",
-   "size_m": [
-    7.82,
+    5.25,
     3.0,
-    0.3
+    3.6
    ],
    "count": 2
   },
   {
-   "id": "Ramp_061x010x003",
+   "id": "Support_037x007x036",
+   "family": "Support",
+   "size_m": [
+    3.75,
+    0.75,
+    3.6
+   ],
+   "count": 2
+  },
+  {
+   "id": "Ramp_063x007x003",
    "family": "Ramp",
    "size_m": [
-    6.14,
-    1.0,
+    6.34,
+    0.75,
     0.3
    ],
    "count": 2
   },
   {
-   "id": "Ramp_082x010x003",
+   "id": "Ramp_082x007x003",
    "family": "Ramp",
    "size_m": [
     8.26,
-    1.0,
+    0.75,
     0.3
    ],
-   "count": 2
+   "count": 6
   }
  ],
  "level_schedule_m": {
@@ -651,8 +1001,8 @@
    "id": "SP1",
    "pool": "team_a",
    "location_cm": [
-    1150.0,
-    2550.0,
+    1090.0,
+    2470.0,
     410.0
    ],
    "yaw_deg": -0.0
@@ -671,8 +1021,8 @@
    "id": "SP3",
    "pool": "team_b",
    "location_cm": [
-    3950.0,
-    450.0,
+    3937.5,
+    412.5,
     410.0
    ],
    "yaw_deg": -180.0
@@ -681,8 +1031,8 @@
    "id": "SP4",
    "pool": "team_b",
    "location_cm": [
-    4050.0,
-    2550.0,
+    4087.5,
+    2512.5,
     410.0
    ],
    "yaw_deg": -180.0
@@ -691,8 +1041,8 @@
    "id": "SP5",
    "pool": "neutral",
    "location_cm": [
-    2150.0,
-    1950.0,
+    1987.5,
+    1837.5,
     10.0
    ],
    "yaw_deg": -45.0
@@ -701,8 +1051,8 @@
    "id": "SP6",
    "pool": "neutral",
    "location_cm": [
-    2050.0,
-    1050.0,
+    1987.5,
+    1087.5,
     10.0
    ],
    "yaw_deg": 45.0
@@ -711,8 +1061,8 @@
    "id": "SP7",
    "pool": "neutral",
    "location_cm": [
-    3350.0,
-    1150.0,
+    3487.5,
+    1087.5,
     10.0
    ],
    "yaw_deg": 135.0
@@ -721,8 +1071,8 @@
    "id": "SP8",
    "pool": "neutral",
    "location_cm": [
-    3550.0,
-    1950.0,
+    3487.5,
+    1912.5,
     10.0
    ],
    "yaw_deg": -135.0
@@ -730,35 +1080,39 @@
  ],
  "spawn_note": "converted from Content/Data/aquarius_manifest.json into the KIT FRAME (+y south, cm) and snapped onto walkable ground; the builder must use THESE, not the arena manifest's north-up coordinates.",
  "repairs": [
-  "carved 1 bin(s) to reconnect a 2 m2 pocket",
-  "SP1 snapped 1.0 m onto walkable ground",
-  "SP3 snapped 1.2 m onto walkable ground",
-  "SP4 snapped 1.2 m onto walkable ground",
-  "SP5 snapped 2.8 m onto walkable ground",
-  "SP6 snapped 2.0 m onto walkable ground",
+  "SP3 snapped 0.9 m onto walkable ground",
+  "SP4 snapped 0.7 m onto walkable ground",
+  "SP5 snapped 2.2 m onto walkable ground",
+  "SP6 snapped 1.7 m onto walkable ground",
   "SP7 snapped 2.0 m onto walkable ground",
-  "SP8 snapped 2.2 m onto walkable ground"
+  "SP8 snapped 1.8 m onto walkable ground",
+  "ACCESS RAMP synthesised: a 129 m2 upper region had no route up after quantisation",
+  "ACCESS RAMP synthesised: a 12 m2 upper region had no route up after quantisation"
  ],
  "unresolved_capsules": [
-  "traced capsule at (14.0, 3.6) could not be anchored as a walkable ramp at this quantisation - left OPEN, channel (b) rules",
+  "traced capsule at (11.7, 24.4) could not be anchored as a walkable ramp at this quantisation - left OPEN, channel (b) rules",
   "traced capsule at (16.4, 3.0) could not be anchored as a walkable ramp at this quantisation - left OPEN, channel (b) rules",
   "traced capsule at (26.0, 27.3) could not be anchored as a walkable ramp at this quantisation - left OPEN, channel (b) rules",
   "traced capsule at (26.0, 14.7) could not be anchored as a walkable ramp at this quantisation - left OPEN, channel (b) rules",
   "traced capsule at (35.6, 3.0) could not be anchored as a walkable ramp at this quantisation - left OPEN, channel (b) rules",
-  "traced capsule at (38.0, 3.6) could not be anchored as a walkable ramp at this quantisation - left OPEN, channel (b) rules",
-  "run extended 4.1 m beyond the traced capsule to reach a walkable 38 deg",
+  "traced capsule at (40.3, 24.4) could not be anchored as a walkable ramp at this quantisation - left OPEN, channel (b) rules",
+  "run extended 4.3 m beyond the traced capsule to reach a walkable 36 deg",
+  "run extended 6.0 m beyond the traced capsule to reach a walkable 27 deg",
   "run extended 7.1 m beyond the traced capsule to reach a walkable 27 deg",
   "run extended 7.1 m beyond the traced capsule to reach a walkable 27 deg",
-  "run extended 4.1 m beyond the traced capsule to reach a walkable 38 deg"
+  "run extended 6.0 m beyond the traced capsule to reach a walkable 27 deg",
+  "run extended 4.3 m beyond the traced capsule to reach a walkable 36 deg",
+  "ACCESS RAMP synthesised: a 129 m2 upper region had no route up after quantisation",
+  "ACCESS RAMP synthesised: a 12 m2 upper region had no route up after quantisation"
  ],
  "placements": [
   {
-   "variant": "Floor_300x230x002",
+   "variant": "Floor_292x232x002",
    "label": "BLK_Floor_001",
    "folder": "Blockout/Floors",
    "location_cm": [
-    2600.0,
-    1450.0,
+    2587.5,
+    1462.5,
     -10.0
    ],
    "rotation_deg": {
@@ -767,18 +1121,18 @@
     "yaw": 0.0
    },
    "scale": [
-    30.0,
-    23.0,
+    29.25,
+    23.25,
     0.2
    ]
   },
   {
-   "variant": "Floor_100x130x002",
+   "variant": "Floor_097x127x002",
    "label": "BLK_Floor_002",
    "folder": "Blockout/Floors",
    "location_cm": [
-    600.0,
-    1450.0,
+    637.5,
+    1462.5,
     -10.0
    ],
    "rotation_deg": {
@@ -787,18 +1141,18 @@
     "yaw": 0.0
    },
    "scale": [
-    10.0,
-    13.0,
+    9.75,
+    12.75,
     0.2
    ]
   },
   {
-   "variant": "Floor_100x130x002",
+   "variant": "Floor_097x127x002",
    "label": "BLK_Floor_003",
    "folder": "Blockout/Floors",
    "location_cm": [
-    4600.0,
-    1450.0,
+    4537.5,
+    1462.5,
     -10.0
    ],
    "rotation_deg": {
@@ -807,18 +1161,18 @@
     "yaw": 0.0
    },
    "scale": [
-    10.0,
-    13.0,
+    9.75,
+    12.75,
     0.2
    ]
   },
   {
-   "variant": "Floor_060x030x002",
+   "variant": "Floor_060x022x002",
    "label": "BLK_Floor_004",
    "folder": "Blockout/Floors",
    "location_cm": [
-    2600.0,
-    2750.0,
+    1350.0,
+    2737.5,
     -10.0
    ],
    "rotation_deg": {
@@ -828,17 +1182,17 @@
    },
    "scale": [
     6.0,
-    3.0,
+    2.25,
     0.2
    ]
   },
   {
-   "variant": "Floor_070x020x002",
+   "variant": "Floor_060x022x002",
    "label": "BLK_Floor_005",
    "folder": "Blockout/Floors",
    "location_cm": [
-    1350.0,
-    2700.0,
+    2625.0,
+    2737.5,
     -10.0
    ],
    "rotation_deg": {
@@ -847,18 +1201,18 @@
     "yaw": 0.0
    },
    "scale": [
-    7.0,
-    2.0,
+    6.0,
+    2.25,
     0.2
    ]
   },
   {
-   "variant": "Floor_070x020x002",
+   "variant": "Floor_060x022x002",
    "label": "BLK_Floor_006",
    "folder": "Blockout/Floors",
    "location_cm": [
-    3850.0,
-    2700.0,
+    3825.0,
+    2737.5,
     -10.0
    ],
    "rotation_deg": {
@@ -867,18 +1221,18 @@
     "yaw": 0.0
    },
    "scale": [
-    7.0,
-    2.0,
+    6.0,
+    2.25,
     0.2
    ]
   },
   {
-   "variant": "Floor_050x020x002",
+   "variant": "Floor_060x015x002",
    "label": "BLK_Floor_007",
    "folder": "Blockout/Floors",
    "location_cm": [
     1350.0,
-    200.0,
+    225.0,
     -10.0
    ],
    "rotation_deg": {
@@ -887,18 +1241,18 @@
     "yaw": 0.0
    },
    "scale": [
-    5.0,
-    2.0,
+    6.0,
+    1.5,
     0.2
    ]
   },
   {
-   "variant": "Floor_050x020x002",
+   "variant": "Floor_060x015x002",
    "label": "BLK_Floor_008",
    "folder": "Blockout/Floors",
    "location_cm": [
-    3850.0,
-    200.0,
+    3825.0,
+    225.0,
     -10.0
    ],
    "rotation_deg": {
@@ -907,18 +1261,18 @@
     "yaw": 0.0
    },
    "scale": [
-    5.0,
-    2.0,
+    6.0,
+    1.5,
     0.2
    ]
   },
   {
-   "variant": "Floor_020x030x002",
+   "variant": "Floor_015x052x002",
    "label": "BLK_Floor_009",
    "folder": "Blockout/Floors",
    "location_cm": [
-    2300.0,
-    150.0,
+    1050.0,
+    2362.5,
     -10.0
    ],
    "rotation_deg": {
@@ -927,18 +1281,18 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    3.0,
+    1.5,
+    5.25,
     0.2
    ]
   },
   {
-   "variant": "Floor_020x030x002",
+   "variant": "Floor_015x052x002",
    "label": "BLK_Floor_010",
    "folder": "Blockout/Floors",
    "location_cm": [
-    2900.0,
-    150.0,
+    4125.0,
+    2362.5,
     -10.0
    ],
    "rotation_deg": {
@@ -947,18 +1301,18 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    3.0,
+    1.5,
+    5.25,
     0.2
    ]
   },
   {
-   "variant": "Floor_050x010x002",
+   "variant": "Floor_030x022x002",
    "label": "BLK_Floor_011",
    "folder": "Blockout/Floors",
    "location_cm": [
-    450.0,
-    2150.0,
+    2250.0,
+    187.5,
     -10.0
    ],
    "rotation_deg": {
@@ -967,18 +1321,18 @@
     "yaw": 0.0
    },
    "scale": [
-    5.0,
-    1.0,
+    3.0,
+    2.25,
     0.2
    ]
   },
   {
-   "variant": "Floor_050x010x002",
+   "variant": "Floor_030x022x002",
    "label": "BLK_Floor_012",
    "folder": "Blockout/Floors",
    "location_cm": [
-    4750.0,
-    2150.0,
+    2925.0,
+    187.5,
     -10.0
    ],
    "rotation_deg": {
@@ -987,18 +1341,18 @@
     "yaw": 0.0
    },
    "scale": [
-    5.0,
-    1.0,
+    3.0,
+    2.25,
     0.2
    ]
   },
   {
-   "variant": "Floor_010x050x002",
+   "variant": "Floor_015x045x002",
    "label": "BLK_Floor_013",
    "folder": "Blockout/Floors",
    "location_cm": [
-    1050.0,
-    2350.0,
+    5100.0,
+    1500.0,
     -10.0
    ],
    "rotation_deg": {
@@ -1007,18 +1361,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    5.0,
+    1.5,
+    4.5,
     0.2
    ]
   },
   {
-   "variant": "Floor_010x050x002",
+   "variant": "Floor_015x037x002",
    "label": "BLK_Floor_014",
    "folder": "Blockout/Floors",
    "location_cm": [
-    4150.0,
-    2350.0,
+    75.0,
+    1462.5,
     -10.0
    ],
    "rotation_deg": {
@@ -1027,18 +1381,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    5.0,
+    1.5,
+    3.75,
     0.2
    ]
   },
   {
-   "variant": "Floor_010x040x002",
+   "variant": "Floor_037x015x002",
    "label": "BLK_Floor_015",
    "folder": "Blockout/Floors",
    "location_cm": [
-    50.0,
-    1500.0,
+    4762.5,
+    2175.0,
     -10.0
    ],
    "rotation_deg": {
@@ -1047,18 +1401,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    4.0,
+    3.75,
+    1.5,
     0.2
    ]
   },
   {
-   "variant": "Floor_010x040x002",
+   "variant": "Floor_060x007x002",
    "label": "BLK_Floor_016",
    "folder": "Blockout/Floors",
    "location_cm": [
-    5150.0,
-    1500.0,
+    450.0,
+    2137.5,
     -10.0
    ],
    "rotation_deg": {
@@ -1067,18 +1421,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    4.0,
+    6.0,
+    0.75,
     0.2
    ]
   },
   {
-   "variant": "Floor_040x010x002",
+   "variant": "Floor_030x015x002",
    "label": "BLK_Floor_017",
    "folder": "Blockout/Floors",
    "location_cm": [
-    2100.0,
-    2650.0,
+    2625.0,
+    2925.0,
     -10.0
    ],
    "rotation_deg": {
@@ -1087,18 +1441,18 @@
     "yaw": 0.0
    },
    "scale": [
-    4.0,
-    1.0,
+    3.0,
+    1.5,
     0.2
    ]
   },
   {
-   "variant": "Floor_040x010x002",
+   "variant": "Floor_052x007x002",
    "label": "BLK_Floor_018",
    "folder": "Blockout/Floors",
    "location_cm": [
-    3100.0,
-    2650.0,
+    412.5,
+    787.5,
     -10.0
    ],
    "rotation_deg": {
@@ -1107,18 +1461,18 @@
     "yaw": 0.0
    },
    "scale": [
-    4.0,
-    1.0,
+    5.25,
+    0.75,
     0.2
    ]
   },
   {
-   "variant": "Floor_020x020x002",
+   "variant": "Floor_052x007x002",
    "label": "BLK_Floor_019",
    "folder": "Blockout/Floors",
    "location_cm": [
-    1500.0,
-    2900.0,
+    4762.5,
+    787.5,
     -10.0
    ],
    "rotation_deg": {
@@ -1127,18 +1481,18 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    2.0,
+    5.25,
+    0.75,
     0.2
    ]
   },
   {
-   "variant": "Floor_040x010x002",
+   "variant": "Floor_045x007x002",
    "label": "BLK_Floor_020",
    "folder": "Blockout/Floors",
    "location_cm": [
-    2600.0,
-    2950.0,
+    2100.0,
+    2662.5,
     -10.0
    ],
    "rotation_deg": {
@@ -1147,18 +1501,18 @@
     "yaw": 0.0
    },
    "scale": [
-    4.0,
-    1.0,
+    4.5,
+    0.75,
     0.2
    ]
   },
   {
-   "variant": "Floor_020x020x002",
+   "variant": "Floor_022x015x002",
    "label": "BLK_Floor_021",
    "folder": "Blockout/Floors",
    "location_cm": [
-    3700.0,
-    2900.0,
+    1462.5,
+    2925.0,
     -10.0
    ],
    "rotation_deg": {
@@ -1167,18 +1521,18 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    2.0,
+    2.25,
+    1.5,
     0.2
    ]
   },
   {
-   "variant": "Floor_010x020x002",
+   "variant": "Floor_022x015x002",
    "label": "BLK_Floor_022",
    "folder": "Blockout/Floors",
    "location_cm": [
-    2150.0,
-    200.0,
+    3712.5,
+    2925.0,
     -10.0
    ],
    "rotation_deg": {
@@ -1187,18 +1541,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    2.0,
+    2.25,
+    1.5,
     0.2
    ]
   },
   {
-   "variant": "Floor_010x020x002",
+   "variant": "Floor_037x007x002",
    "label": "BLK_Floor_023",
    "folder": "Blockout/Floors",
    "location_cm": [
-    3050.0,
-    200.0,
+    3112.5,
+    2662.5,
     -10.0
    ],
    "rotation_deg": {
@@ -1207,18 +1561,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    2.0,
+    3.75,
+    0.75,
     0.2
    ]
   },
   {
-   "variant": "Floor_010x010x002",
+   "variant": "Floor_015x015x002",
    "label": "BLK_Floor_024",
    "folder": "Blockout/Floors",
    "location_cm": [
-    1250.0,
-    50.0,
+    1275.0,
+    75.0,
     -10.0
    ],
    "rotation_deg": {
@@ -1227,18 +1581,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    1.5,
+    1.5,
     0.2
    ]
   },
   {
-   "variant": "Floor_010x010x002",
+   "variant": "Floor_030x007x002",
    "label": "BLK_Floor_025",
    "folder": "Blockout/Floors",
    "location_cm": [
-    3950.0,
-    50.0,
+    3900.0,
+    112.5,
     -10.0
    ],
    "rotation_deg": {
@@ -1247,18 +1601,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    3.0,
+    0.75,
     0.2
    ]
   },
   {
-   "variant": "Floor_010x010x002",
+   "variant": "Floor_007x030x002",
    "label": "BLK_Floor_026",
    "folder": "Blockout/Floors",
    "location_cm": [
-    1050.0,
-    250.0,
+    5062.5,
+    975.0,
     -10.0
    ],
    "rotation_deg": {
@@ -1267,18 +1621,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    3.0,
     0.2
    ]
   },
   {
-   "variant": "Floor_010x010x002",
+   "variant": "Floor_030x007x002",
    "label": "BLK_Floor_027",
    "folder": "Blockout/Floors",
    "location_cm": [
-    1650.0,
-    250.0,
+    450.0,
+    2212.5,
     -10.0
    ],
    "rotation_deg": {
@@ -1287,18 +1641,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    3.0,
+    0.75,
     0.2
    ]
   },
   {
-   "variant": "Floor_010x010x002",
+   "variant": "Floor_007x022x002",
    "label": "BLK_Floor_028",
    "folder": "Blockout/Floors",
    "location_cm": [
-    3550.0,
-    250.0,
+    5062.5,
+    1987.5,
     -10.0
    ],
    "rotation_deg": {
@@ -1307,18 +1661,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    2.25,
     0.2
    ]
   },
   {
-   "variant": "Floor_010x010x002",
+   "variant": "Floor_015x007x002",
    "label": "BLK_Floor_029",
    "folder": "Blockout/Floors",
    "location_cm": [
-    4150.0,
-    250.0,
+    4500.0,
+    2137.5,
     -10.0
    ],
    "rotation_deg": {
@@ -1327,18 +1681,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    1.5,
+    0.75,
     0.2
    ]
   },
   {
-   "variant": "Floor_010x010x002",
+   "variant": "Floor_015x007x002",
    "label": "BLK_Floor_030",
    "folder": "Blockout/Floors",
    "location_cm": [
-    950.0,
-    2150.0,
+    1725.0,
+    2662.5,
     -10.0
    ],
    "rotation_deg": {
@@ -1347,18 +1701,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    1.5,
+    0.75,
     0.2
    ]
   },
   {
-   "variant": "Floor_010x010x002",
+   "variant": "Floor_015x007x002",
    "label": "BLK_Floor_031",
    "folder": "Blockout/Floors",
    "location_cm": [
-    4250.0,
-    2150.0,
+    3450.0,
+    2662.5,
     -10.0
    ],
    "rotation_deg": {
@@ -1367,18 +1721,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    1.5,
+    0.75,
     0.2
    ]
   },
   {
-   "variant": "Floor_010x010x002",
+   "variant": "Floor_007x015x002",
    "label": "BLK_Floor_032",
    "folder": "Blockout/Floors",
    "location_cm": [
-    1750.0,
-    2650.0,
+    1012.5,
+    2700.0,
     -10.0
    ],
    "rotation_deg": {
@@ -1387,18 +1741,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    1.5,
     0.2
    ]
   },
   {
-   "variant": "Floor_010x010x002",
+   "variant": "Floor_007x015x002",
    "label": "BLK_Floor_033",
    "folder": "Blockout/Floors",
    "location_cm": [
-    3450.0,
-    2650.0,
+    4162.5,
+    2700.0,
     -10.0
    ],
    "rotation_deg": {
@@ -1407,18 +1761,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    1.5,
     0.2
    ]
   },
   {
-   "variant": "Floor_010x010x002",
+   "variant": "Floor_007x007x002",
    "label": "BLK_Floor_034",
    "folder": "Blockout/Floors",
    "location_cm": [
-    2250.0,
-    2750.0,
+    3937.5,
+    37.5,
     -10.0
    ],
    "rotation_deg": {
@@ -1427,18 +1781,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    0.75,
     0.2
    ]
   },
   {
-   "variant": "Floor_010x010x002",
+   "variant": "Floor_007x007x002",
    "label": "BLK_Floor_035",
    "folder": "Blockout/Floors",
    "location_cm": [
-    2950.0,
-    2750.0,
+    1162.5,
+    112.5,
     -10.0
    ],
    "rotation_deg": {
@@ -1447,18 +1801,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    0.75,
     0.2
    ]
   },
   {
-   "variant": "Floor_010x010x002",
+   "variant": "Floor_007x007x002",
    "label": "BLK_Floor_036",
    "folder": "Blockout/Floors",
    "location_cm": [
-    1350.0,
-    2850.0,
+    1387.5,
+    112.5,
     -10.0
    ],
    "rotation_deg": {
@@ -1467,18 +1821,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    0.75,
     0.2
    ]
   },
   {
-   "variant": "Floor_010x010x002",
+   "variant": "Floor_007x007x002",
    "label": "BLK_Floor_037",
    "folder": "Blockout/Floors",
    "location_cm": [
-    3850.0,
-    2850.0,
+    1687.5,
+    262.5,
     -10.0
    ],
    "rotation_deg": {
@@ -1487,18 +1841,338 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    0.75,
     0.2
    ]
   },
   {
-   "variant": "Deck_040x160x004",
+   "variant": "Floor_007x007x002",
+   "label": "BLK_Floor_038",
+   "folder": "Blockout/Floors",
+   "location_cm": [
+    3112.5,
+    262.5,
+    -10.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.2
+   ]
+  },
+  {
+   "variant": "Floor_007x007x002",
+   "label": "BLK_Floor_039",
+   "folder": "Blockout/Floors",
+   "location_cm": [
+    1087.5,
+    787.5,
+    -10.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.2
+   ]
+  },
+  {
+   "variant": "Floor_007x007x002",
+   "label": "BLK_Floor_040",
+   "folder": "Blockout/Floors",
+   "location_cm": [
+    4087.5,
+    787.5,
+    -10.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.2
+   ]
+  },
+  {
+   "variant": "Floor_007x007x002",
+   "label": "BLK_Floor_041",
+   "folder": "Blockout/Floors",
+   "location_cm": [
+    112.5,
+    1237.5,
+    -10.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.2
+   ]
+  },
+  {
+   "variant": "Floor_007x007x002",
+   "label": "BLK_Floor_042",
+   "folder": "Blockout/Floors",
+   "location_cm": [
+    5062.5,
+    1237.5,
+    -10.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.2
+   ]
+  },
+  {
+   "variant": "Floor_007x007x002",
+   "label": "BLK_Floor_043",
+   "folder": "Blockout/Floors",
+   "location_cm": [
+    112.5,
+    1687.5,
+    -10.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.2
+   ]
+  },
+  {
+   "variant": "Floor_007x007x002",
+   "label": "BLK_Floor_044",
+   "folder": "Blockout/Floors",
+   "location_cm": [
+    5062.5,
+    1762.5,
+    -10.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.2
+   ]
+  },
+  {
+   "variant": "Floor_007x007x002",
+   "label": "BLK_Floor_045",
+   "folder": "Blockout/Floors",
+   "location_cm": [
+    937.5,
+    2137.5,
+    -10.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.2
+   ]
+  },
+  {
+   "variant": "Floor_007x007x002",
+   "label": "BLK_Floor_046",
+   "folder": "Blockout/Floors",
+   "location_cm": [
+    4237.5,
+    2137.5,
+    -10.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.2
+   ]
+  },
+  {
+   "variant": "Floor_007x007x002",
+   "label": "BLK_Floor_047",
+   "folder": "Blockout/Floors",
+   "location_cm": [
+    4987.5,
+    2137.5,
+    -10.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.2
+   ]
+  },
+  {
+   "variant": "Floor_007x007x002",
+   "label": "BLK_Floor_048",
+   "folder": "Blockout/Floors",
+   "location_cm": [
+    1687.5,
+    2737.5,
+    -10.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.2
+   ]
+  },
+  {
+   "variant": "Floor_007x007x002",
+   "label": "BLK_Floor_049",
+   "folder": "Blockout/Floors",
+   "location_cm": [
+    2287.5,
+    2737.5,
+    -10.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.2
+   ]
+  },
+  {
+   "variant": "Floor_007x007x002",
+   "label": "BLK_Floor_050",
+   "folder": "Blockout/Floors",
+   "location_cm": [
+    2962.5,
+    2737.5,
+    -10.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.2
+   ]
+  },
+  {
+   "variant": "Floor_007x007x002",
+   "label": "BLK_Floor_051",
+   "folder": "Blockout/Floors",
+   "location_cm": [
+    3487.5,
+    2737.5,
+    -10.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.2
+   ]
+  },
+  {
+   "variant": "Floor_007x007x002",
+   "label": "BLK_Floor_052",
+   "folder": "Blockout/Floors",
+   "location_cm": [
+    1612.5,
+    2887.5,
+    -10.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.2
+   ]
+  },
+  {
+   "variant": "Floor_007x007x002",
+   "label": "BLK_Floor_053",
+   "folder": "Blockout/Floors",
+   "location_cm": [
+    2437.5,
+    2887.5,
+    -10.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.2
+   ]
+  },
+  {
+   "variant": "Deck_037x157x004",
    "label": "BLK_Deck_001",
    "folder": "Blockout/Decks",
    "location_cm": [
-    2600.0,
-    1600.0,
+    2587.5,
+    1612.5,
     380.0
    ],
    "rotation_deg": {
@@ -1507,17 +2181,17 @@
     "yaw": 0.0
    },
    "scale": [
-    4.0,
-    16.0,
+    3.75,
+    15.75,
     0.4
    ]
   },
   {
-   "variant": "Deck_040x140x004",
+   "variant": "Deck_037x135x004",
    "label": "BLK_Deck_002",
    "folder": "Blockout/Decks",
    "location_cm": [
-    500.0,
+    487.5,
     1500.0,
     380.0
    ],
@@ -1527,17 +2201,17 @@
     "yaw": 0.0
    },
    "scale": [
-    4.0,
-    14.0,
+    3.75,
+    13.5,
     0.4
    ]
   },
   {
-   "variant": "Deck_040x140x004",
+   "variant": "Deck_037x135x004",
    "label": "BLK_Deck_003",
    "folder": "Blockout/Decks",
    "location_cm": [
-    4700.0,
+    4687.5,
     1500.0,
     380.0
    ],
@@ -1547,18 +2221,18 @@
     "yaw": 0.0
    },
    "scale": [
-    4.0,
-    14.0,
+    3.75,
+    13.5,
     0.4
    ]
   },
   {
-   "variant": "Deck_020x150x004",
+   "variant": "Deck_060x045x004",
    "label": "BLK_Deck_004",
    "folder": "Blockout/Decks",
    "location_cm": [
-    1100.0,
-    1950.0,
+    975.0,
+    1500.0,
     380.0
    ],
    "rotation_deg": {
@@ -1567,18 +2241,18 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    15.0,
+    6.0,
+    4.5,
     0.4
    ]
   },
   {
-   "variant": "Deck_020x150x004",
+   "variant": "Deck_060x045x004",
    "label": "BLK_Deck_005",
    "folder": "Blockout/Decks",
    "location_cm": [
-    4100.0,
-    1950.0,
+    4200.0,
+    1500.0,
     380.0
    ],
    "rotation_deg": {
@@ -1587,18 +2261,18 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    15.0,
+    6.0,
+    4.5,
     0.4
    ]
   },
   {
-   "variant": "Deck_040x030x004",
+   "variant": "Deck_142x015x004",
    "label": "BLK_Deck_006",
    "folder": "Blockout/Decks",
    "location_cm": [
-    2300.0,
-    650.0,
+    3487.5,
+    2250.0,
     380.0
    ],
    "rotation_deg": {
@@ -1607,18 +2281,18 @@
     "yaw": 0.0
    },
    "scale": [
-    4.0,
-    3.0,
+    14.25,
+    1.5,
     0.4
    ]
   },
   {
-   "variant": "Deck_040x030x004",
+   "variant": "Deck_135x015x004",
    "label": "BLK_Deck_007",
    "folder": "Blockout/Decks",
    "location_cm": [
-    2900.0,
-    650.0,
+    1725.0,
+    2250.0,
     380.0
    ],
    "rotation_deg": {
@@ -1627,18 +2301,18 @@
     "yaw": 0.0
    },
    "scale": [
-    4.0,
-    3.0,
+    13.5,
+    1.5,
     0.4
    ]
   },
   {
-   "variant": "Deck_030x040x004",
+   "variant": "Deck_052x022x004",
    "label": "BLK_Deck_008",
    "folder": "Blockout/Decks",
    "location_cm": [
-    850.0,
-    1500.0,
+    2212.5,
+    637.5,
     380.0
    ],
    "rotation_deg": {
@@ -1647,18 +2321,18 @@
     "yaw": 0.0
    },
    "scale": [
-    3.0,
-    4.0,
+    5.25,
+    2.25,
     0.4
    ]
   },
   {
-   "variant": "Deck_030x040x004",
+   "variant": "Deck_052x022x004",
    "label": "BLK_Deck_009",
    "folder": "Blockout/Decks",
    "location_cm": [
-    4350.0,
-    1500.0,
+    2962.5,
+    637.5,
     380.0
    ],
    "rotation_deg": {
@@ -1667,18 +2341,18 @@
     "yaw": 0.0
    },
    "scale": [
-    3.0,
-    4.0,
+    5.25,
+    2.25,
     0.4
    ]
   },
   {
-   "variant": "Deck_120x010x004",
+   "variant": "Deck_015x067x004",
    "label": "BLK_Deck_010",
    "folder": "Blockout/Decks",
    "location_cm": [
-    1800.0,
-    2250.0,
+    4950.0,
+    1837.5,
     380.0
    ],
    "rotation_deg": {
@@ -1687,18 +2361,18 @@
     "yaw": 0.0
    },
    "scale": [
-    12.0,
-    1.0,
+    1.5,
+    6.75,
     0.4
    ]
   },
   {
-   "variant": "Deck_120x010x004",
+   "variant": "Deck_015x060x004",
    "label": "BLK_Deck_011",
    "folder": "Blockout/Decks",
    "location_cm": [
-    3400.0,
-    2250.0,
+    4950.0,
+    1125.0,
     380.0
    ],
    "rotation_deg": {
@@ -1707,18 +2381,18 @@
     "yaw": 0.0
    },
    "scale": [
-    12.0,
-    1.0,
+    1.5,
+    6.0,
     0.4
    ]
   },
   {
-   "variant": "Deck_040x020x004",
+   "variant": "Deck_037x022x004",
    "label": "BLK_Deck_012",
    "folder": "Blockout/Decks",
    "location_cm": [
-    2600.0,
-    400.0,
+    862.5,
+    937.5,
     380.0
    ],
    "rotation_deg": {
@@ -1727,18 +2401,18 @@
     "yaw": 0.0
    },
    "scale": [
-    4.0,
-    2.0,
+    3.75,
+    2.25,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x080x004",
+   "variant": "Deck_037x022x004",
    "label": "BLK_Deck_013",
    "folder": "Blockout/Decks",
    "location_cm": [
-    1250.0,
-    500.0,
+    4312.5,
+    937.5,
     380.0
    ],
    "rotation_deg": {
@@ -1747,18 +2421,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    8.0,
+    3.75,
+    2.25,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x080x004",
+   "variant": "Deck_052x015x004",
    "label": "BLK_Deck_014",
    "folder": "Blockout/Decks",
    "location_cm": [
-    3950.0,
-    500.0,
+    2587.5,
+    450.0,
     380.0
    ],
    "rotation_deg": {
@@ -1767,18 +2441,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    8.0,
+    5.25,
+    1.5,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x070x004",
+   "variant": "Deck_030x022x004",
    "label": "BLK_Deck_015",
    "folder": "Blockout/Decks",
    "location_cm": [
-    250.0,
-    1850.0,
+    3900.0,
+    262.5,
     380.0
    ],
    "rotation_deg": {
@@ -1787,18 +2461,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    7.0,
+    3.0,
+    2.25,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x070x004",
+   "variant": "Deck_030x022x004",
    "label": "BLK_Deck_016",
    "folder": "Blockout/Decks",
    "location_cm": [
-    4950.0,
-    1850.0,
+    2925.0,
+    2062.5,
     380.0
    ],
    "rotation_deg": {
@@ -1807,18 +2481,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    7.0,
+    3.0,
+    2.25,
     0.4
    ]
   },
   {
-   "variant": "Deck_030x020x004",
+   "variant": "Deck_015x045x004",
    "label": "BLK_Deck_017",
    "folder": "Blockout/Decks",
    "location_cm": [
-    850.0,
-    1000.0,
+    4125.0,
+    1950.0,
     380.0
    ],
    "rotation_deg": {
@@ -1827,18 +2501,18 @@
     "yaw": 0.0
    },
    "scale": [
-    3.0,
-    2.0,
+    1.5,
+    4.5,
     0.4
    ]
   },
   {
-   "variant": "Deck_030x020x004",
+   "variant": "Deck_007x082x004",
    "label": "BLK_Deck_018",
    "folder": "Blockout/Decks",
    "location_cm": [
-    4350.0,
-    1000.0,
+    2812.5,
+    1162.5,
     380.0
    ],
    "rotation_deg": {
@@ -1847,18 +2521,18 @@
     "yaw": 0.0
    },
    "scale": [
-    3.0,
-    2.0,
+    0.75,
+    8.25,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x060x004",
+   "variant": "Deck_015x037x004",
    "label": "BLK_Deck_019",
    "folder": "Blockout/Decks",
    "location_cm": [
-    250.0,
-    1100.0,
+    4125.0,
+    2512.5,
     380.0
    ],
    "rotation_deg": {
@@ -1867,18 +2541,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    6.0,
+    1.5,
+    3.75,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x060x004",
+   "variant": "Deck_022x022x004",
    "label": "BLK_Deck_020",
    "folder": "Blockout/Decks",
    "location_cm": [
-    4950.0,
-    1100.0,
+    1312.5,
+    262.5,
     380.0
    ],
    "rotation_deg": {
@@ -1887,18 +2561,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    6.0,
+    2.25,
+    2.25,
     0.4
    ]
   },
   {
-   "variant": "Deck_020x030x004",
+   "variant": "Deck_022x022x004",
    "label": "BLK_Deck_021",
    "folder": "Blockout/Decks",
    "location_cm": [
-    2300.0,
-    2050.0,
+    2287.5,
+    862.5,
     380.0
    ],
    "rotation_deg": {
@@ -1907,18 +2581,18 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    3.0,
+    2.25,
+    2.25,
     0.4
    ]
   },
   {
-   "variant": "Deck_020x030x004",
+   "variant": "Deck_022x022x004",
    "label": "BLK_Deck_022",
    "folder": "Blockout/Decks",
    "location_cm": [
-    2900.0,
-    2050.0,
+    187.5,
+    1612.5,
     380.0
    ],
    "rotation_deg": {
@@ -1927,18 +2601,18 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    3.0,
+    2.25,
+    2.25,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x050x004",
+   "variant": "Deck_022x022x004",
    "label": "BLK_Deck_023",
    "folder": "Blockout/Decks",
    "location_cm": [
-    1250.0,
-    1450.0,
+    2287.5,
+    2062.5,
     380.0
    ],
    "rotation_deg": {
@@ -1947,18 +2621,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    5.0,
+    2.25,
+    2.25,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x050x004",
+   "variant": "Deck_007x060x004",
    "label": "BLK_Deck_024",
    "folder": "Blockout/Decks",
    "location_cm": [
-    3950.0,
-    1450.0,
+    262.5,
+    1125.0,
     380.0
    ],
    "rotation_deg": {
@@ -1967,18 +2641,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    5.0,
+    0.75,
+    6.0,
     0.4
    ]
   },
   {
-   "variant": "Deck_020x020x004",
+   "variant": "Deck_015x030x004",
    "label": "BLK_Deck_025",
    "folder": "Blockout/Decks",
    "location_cm": [
-    1100.0,
-    900.0,
+    225.0,
+    2025.0,
     380.0
    ],
    "rotation_deg": {
@@ -1987,18 +2661,18 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    2.0,
+    1.5,
+    3.0,
     0.4
    ]
   },
   {
-   "variant": "Deck_020x020x004",
+   "variant": "Deck_015x030x004",
    "label": "BLK_Deck_026",
    "folder": "Blockout/Decks",
    "location_cm": [
-    2300.0,
-    900.0,
+    1125.0,
+    2625.0,
     380.0
    ],
    "rotation_deg": {
@@ -2007,18 +2681,18 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    2.0,
+    1.5,
+    3.0,
     0.4
    ]
   },
   {
-   "variant": "Deck_020x020x004",
+   "variant": "Deck_007x045x004",
    "label": "BLK_Deck_027",
    "folder": "Blockout/Decks",
    "location_cm": [
-    2900.0,
-    900.0,
+    3937.5,
+    600.0,
     380.0
    ],
    "rotation_deg": {
@@ -2027,18 +2701,18 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    2.0,
+    0.75,
+    4.5,
     0.4
    ]
   },
   {
-   "variant": "Deck_020x020x004",
+   "variant": "Deck_015x022x004",
    "label": "BLK_Deck_028",
    "folder": "Blockout/Decks",
    "location_cm": [
-    4100.0,
-    900.0,
+    2925.0,
+    862.5,
     380.0
    ],
    "rotation_deg": {
@@ -2047,18 +2721,18 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    2.0,
+    1.5,
+    2.25,
     0.4
    ]
   },
   {
-   "variant": "Deck_020x020x004",
+   "variant": "Deck_015x022x004",
    "label": "BLK_Deck_029",
    "folder": "Blockout/Decks",
    "location_cm": [
-    800.0,
-    2000.0,
+    750.0,
+    1987.5,
     380.0
    ],
    "rotation_deg": {
@@ -2067,18 +2741,18 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    2.0,
+    1.5,
+    2.25,
     0.4
    ]
   },
   {
-   "variant": "Deck_020x020x004",
+   "variant": "Deck_015x022x004",
    "label": "BLK_Deck_030",
    "folder": "Blockout/Decks",
    "location_cm": [
-    4400.0,
-    2000.0,
+    4425.0,
+    1987.5,
     380.0
    ],
    "rotation_deg": {
@@ -2087,18 +2761,18 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    2.0,
+    1.5,
+    2.25,
     0.4
    ]
   },
   {
-   "variant": "Deck_040x010x004",
+   "variant": "Deck_007x045x004",
    "label": "BLK_Deck_031",
    "folder": "Blockout/Decks",
    "location_cm": [
-    2600.0,
-    2850.0,
+    1087.5,
+    1950.0,
     380.0
    ],
    "rotation_deg": {
@@ -2107,18 +2781,18 @@
     "yaw": 0.0
    },
    "scale": [
-    4.0,
-    1.0,
+    0.75,
+    4.5,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x030x004",
+   "variant": "Deck_045x007x004",
    "label": "BLK_Deck_032",
    "folder": "Blockout/Decks",
    "location_cm": [
-    1350.0,
-    250.0,
+    2625.0,
+    2812.5,
     380.0
    ],
    "rotation_deg": {
@@ -2127,18 +2801,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    3.0,
+    4.5,
+    0.75,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x030x004",
+   "variant": "Deck_037x007x004",
    "label": "BLK_Deck_033",
    "folder": "Blockout/Decks",
    "location_cm": [
-    3850.0,
-    250.0,
+    1087.5,
+    1237.5,
     380.0
    ],
    "rotation_deg": {
@@ -2147,18 +2821,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    3.0,
+    3.75,
+    0.75,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x030x004",
+   "variant": "Deck_037x007x004",
    "label": "BLK_Deck_034",
    "folder": "Blockout/Decks",
    "location_cm": [
-    50.0,
-    1450.0,
+    4162.5,
+    1237.5,
     380.0
    ],
    "rotation_deg": {
@@ -2167,18 +2841,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    3.0,
+    3.75,
+    0.75,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x030x004",
+   "variant": "Deck_015x015x004",
    "label": "BLK_Deck_035",
    "folder": "Blockout/Decks",
    "location_cm": [
-    2350.0,
-    1450.0,
+    1275.0,
+    675.0,
     380.0
    ],
    "rotation_deg": {
@@ -2187,18 +2861,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    3.0,
+    1.5,
+    1.5,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x030x004",
+   "variant": "Deck_015x015x004",
    "label": "BLK_Deck_036",
    "folder": "Blockout/Decks",
    "location_cm": [
-    2850.0,
-    1450.0,
+    1200.0,
+    825.0,
     380.0
    ],
    "rotation_deg": {
@@ -2207,18 +2881,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    3.0,
+    1.5,
+    1.5,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x030x004",
+   "variant": "Deck_015x015x004",
    "label": "BLK_Deck_037",
    "folder": "Blockout/Decks",
    "location_cm": [
-    5150.0,
-    1450.0,
+    4050.0,
+    825.0,
     380.0
    ],
    "rotation_deg": {
@@ -2227,18 +2901,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    3.0,
+    1.5,
+    1.5,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x020x004",
+   "variant": "Deck_015x015x004",
    "label": "BLK_Deck_038",
    "folder": "Blockout/Decks",
    "location_cm": [
-    2050.0,
-    600.0,
+    150.0,
+    1350.0,
     380.0
    ],
    "rotation_deg": {
@@ -2247,18 +2921,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    2.0,
+    1.5,
+    1.5,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x020x004",
+   "variant": "Deck_007x030x004",
    "label": "BLK_Deck_039",
    "folder": "Blockout/Decks",
    "location_cm": [
-    3150.0,
-    600.0,
+    2362.5,
+    1425.0,
     380.0
    ],
    "rotation_deg": {
@@ -2267,18 +2941,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    2.0,
+    0.75,
+    3.0,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x020x004",
+   "variant": "Deck_007x030x004",
    "label": "BLK_Deck_040",
    "folder": "Blockout/Decks",
    "location_cm": [
-    2350.0,
-    1100.0,
+    5137.5,
+    1500.0,
     380.0
    ],
    "rotation_deg": {
@@ -2287,18 +2961,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    2.0,
+    0.75,
+    3.0,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x020x004",
+   "variant": "Deck_007x030x004",
    "label": "BLK_Deck_041",
    "folder": "Blockout/Decks",
    "location_cm": [
-    2850.0,
-    1100.0,
+    2362.5,
+    1800.0,
     380.0
    ],
    "rotation_deg": {
@@ -2307,18 +2981,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    2.0,
+    0.75,
+    3.0,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x020x004",
+   "variant": "Deck_007x030x004",
    "label": "BLK_Deck_042",
    "folder": "Blockout/Decks",
    "location_cm": [
-    150.0,
-    1300.0,
+    2812.5,
+    1800.0,
     380.0
    ],
    "rotation_deg": {
@@ -2327,18 +3001,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    2.0,
+    0.75,
+    3.0,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x020x004",
+   "variant": "Deck_015x015x004",
    "label": "BLK_Deck_043",
    "folder": "Blockout/Decks",
    "location_cm": [
-    5050.0,
-    1300.0,
+    2925.0,
+    2625.0,
     380.0
    ],
    "rotation_deg": {
@@ -2347,18 +3021,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    2.0,
+    1.5,
+    1.5,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x020x004",
+   "variant": "Deck_015x015x004",
    "label": "BLK_Deck_044",
    "folder": "Blockout/Decks",
    "location_cm": [
-    150.0,
-    1600.0,
+    2400.0,
+    2700.0,
     380.0
    ],
    "rotation_deg": {
@@ -2367,18 +3041,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    2.0,
+    1.5,
+    1.5,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x020x004",
+   "variant": "Deck_007x022x004",
    "label": "BLK_Deck_045",
    "folder": "Blockout/Decks",
    "location_cm": [
-    5050.0,
-    1600.0,
+    187.5,
+    937.5,
     380.0
    ],
    "rotation_deg": {
@@ -2387,18 +3061,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    2.0,
+    0.75,
+    2.25,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x020x004",
+   "variant": "Deck_007x022x004",
    "label": "BLK_Deck_046",
    "folder": "Blockout/Decks",
    "location_cm": [
-    2350.0,
-    1800.0,
+    2362.5,
+    1087.5,
     380.0
    ],
    "rotation_deg": {
@@ -2407,17 +3081,277 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    2.0,
+    0.75,
+    2.25,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x020x004",
+   "variant": "Deck_007x022x004",
    "label": "BLK_Deck_047",
    "folder": "Blockout/Decks",
    "location_cm": [
-    2850.0,
+    5062.5,
+    1612.5,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    2.25,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_022x007x004",
+   "label": "BLK_Deck_048",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    2812.5,
+    2737.5,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.25,
+    0.75,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_022x007x004",
+   "label": "BLK_Deck_049",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    2587.5,
+    2887.5,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.25,
+    0.75,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_015x007x004",
+   "label": "BLK_Deck_050",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    1275.0,
+    112.5,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    1.5,
+    0.75,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_015x007x004",
+   "label": "BLK_Deck_051",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    3900.0,
+    112.5,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    1.5,
+    0.75,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_015x007x004",
+   "label": "BLK_Deck_052",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    1500.0,
+    187.5,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    1.5,
+    0.75,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_015x007x004",
+   "label": "BLK_Deck_053",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    3675.0,
+    187.5,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    1.5,
+    0.75,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_007x015x004",
+   "label": "BLK_Deck_054",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    3262.5,
+    675.0,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    1.5,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_015x007x004",
+   "label": "BLK_Deck_055",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    2475.0,
+    787.5,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    1.5,
+    0.75,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_007x015x004",
+   "label": "BLK_Deck_056",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    1087.5,
+    900.0,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    1.5,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_007x015x004",
+   "label": "BLK_Deck_057",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    5062.5,
+    1350.0,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    1.5,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_015x007x004",
+   "label": "BLK_Deck_058",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    975.0,
+    1762.5,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    1.5,
+    0.75,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_015x007x004",
+   "label": "BLK_Deck_059",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    4275.0,
+    1762.5,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    1.5,
+    0.75,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_007x015x004",
+   "label": "BLK_Deck_060",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    262.5,
     1800.0,
     380.0
    ],
@@ -2427,278 +3361,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    2.0,
+    0.75,
+    1.5,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x020x004",
-   "label": "BLK_Deck_048",
-   "folder": "Blockout/Decks",
-   "location_cm": [
-    2150.0,
-    2100.0,
-    380.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 0.0
-   },
-   "scale": [
-    1.0,
-    2.0,
-    0.4
-   ]
-  },
-  {
-   "variant": "Deck_010x020x004",
-   "label": "BLK_Deck_049",
-   "folder": "Blockout/Decks",
-   "location_cm": [
-    3050.0,
-    2100.0,
-    380.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 0.0
-   },
-   "scale": [
-    1.0,
-    2.0,
-    0.4
-   ]
-  },
-  {
-   "variant": "Deck_020x010x004",
-   "label": "BLK_Deck_050",
-   "folder": "Blockout/Decks",
-   "location_cm": [
-    1700.0,
-    2350.0,
-    380.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 0.0
-   },
-   "scale": [
-    2.0,
-    1.0,
-    0.4
-   ]
-  },
-  {
-   "variant": "Deck_020x010x004",
-   "label": "BLK_Deck_051",
-   "folder": "Blockout/Decks",
-   "location_cm": [
-    3500.0,
-    2350.0,
-    380.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 0.0
-   },
-   "scale": [
-    2.0,
-    1.0,
-    0.4
-   ]
-  },
-  {
-   "variant": "Deck_010x020x004",
-   "label": "BLK_Deck_052",
-   "folder": "Blockout/Decks",
-   "location_cm": [
-    2250.0,
-    2600.0,
-    380.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 0.0
-   },
-   "scale": [
-    1.0,
-    2.0,
-    0.4
-   ]
-  },
-  {
-   "variant": "Deck_010x020x004",
-   "label": "BLK_Deck_053",
-   "folder": "Blockout/Decks",
-   "location_cm": [
-    2950.0,
-    2600.0,
-    380.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 0.0
-   },
-   "scale": [
-    1.0,
-    2.0,
-    0.4
-   ]
-  },
-  {
-   "variant": "Deck_010x020x004",
-   "label": "BLK_Deck_054",
-   "folder": "Blockout/Decks",
-   "location_cm": [
-    2350.0,
-    2700.0,
-    380.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 0.0
-   },
-   "scale": [
-    1.0,
-    2.0,
-    0.4
-   ]
-  },
-  {
-   "variant": "Deck_010x020x004",
-   "label": "BLK_Deck_055",
-   "folder": "Blockout/Decks",
-   "location_cm": [
-    2850.0,
-    2700.0,
-    380.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 0.0
-   },
-   "scale": [
-    1.0,
-    2.0,
-    0.4
-   ]
-  },
-  {
-   "variant": "Deck_010x010x004",
-   "label": "BLK_Deck_056",
-   "folder": "Blockout/Decks",
-   "location_cm": [
-    1150.0,
-    250.0,
-    380.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 0.0
-   },
-   "scale": [
-    1.0,
-    1.0,
-    0.4
-   ]
-  },
-  {
-   "variant": "Deck_010x010x004",
-   "label": "BLK_Deck_057",
-   "folder": "Blockout/Decks",
-   "location_cm": [
-    1550.0,
-    250.0,
-    380.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 0.0
-   },
-   "scale": [
-    1.0,
-    1.0,
-    0.4
-   ]
-  },
-  {
-   "variant": "Deck_010x010x004",
-   "label": "BLK_Deck_058",
-   "folder": "Blockout/Decks",
-   "location_cm": [
-    3650.0,
-    250.0,
-    380.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 0.0
-   },
-   "scale": [
-    1.0,
-    1.0,
-    0.4
-   ]
-  },
-  {
-   "variant": "Deck_010x010x004",
-   "label": "BLK_Deck_059",
-   "folder": "Blockout/Decks",
-   "location_cm": [
-    4050.0,
-    250.0,
-    380.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 0.0
-   },
-   "scale": [
-    1.0,
-    1.0,
-    0.4
-   ]
-  },
-  {
-   "variant": "Deck_010x010x004",
-   "label": "BLK_Deck_060",
-   "folder": "Blockout/Decks",
-   "location_cm": [
-    2350.0,
-    450.0,
-    380.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 0.0
-   },
-   "scale": [
-    1.0,
-    1.0,
-    0.4
-   ]
-  },
-  {
-   "variant": "Deck_010x010x004",
+   "variant": "Deck_007x015x004",
    "label": "BLK_Deck_061",
    "folder": "Blockout/Decks",
    "location_cm": [
-    2850.0,
-    450.0,
+    862.5,
+    2025.0,
     380.0
    ],
    "rotation_deg": {
@@ -2707,18 +3381,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    1.5,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x010x004",
+   "variant": "Deck_007x015x004",
    "label": "BLK_Deck_062",
    "folder": "Blockout/Decks",
    "location_cm": [
-    1950.0,
-    650.0,
+    2137.5,
+    2100.0,
     380.0
    ],
    "rotation_deg": {
@@ -2727,18 +3401,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    1.5,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x010x004",
+   "variant": "Deck_015x007x004",
    "label": "BLK_Deck_063",
    "folder": "Blockout/Decks",
    "location_cm": [
-    3250.0,
-    650.0,
+    1125.0,
+    2362.5,
     380.0
    ],
    "rotation_deg": {
@@ -2747,18 +3421,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    1.5,
+    0.75,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x010x004",
+   "variant": "Deck_015x007x004",
    "label": "BLK_Deck_064",
    "folder": "Blockout/Decks",
    "location_cm": [
-    950.0,
-    1250.0,
+    1725.0,
+    2362.5,
     380.0
    ],
    "rotation_deg": {
@@ -2767,18 +3441,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    1.5,
+    0.75,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x010x004",
+   "variant": "Deck_015x007x004",
    "label": "BLK_Deck_065",
    "folder": "Blockout/Decks",
    "location_cm": [
-    4250.0,
-    1250.0,
+    3525.0,
+    2362.5,
     380.0
    ],
    "rotation_deg": {
@@ -2787,18 +3461,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    1.5,
+    0.75,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x010x004",
+   "variant": "Deck_015x007x004",
    "label": "BLK_Deck_066",
    "folder": "Blockout/Decks",
    "location_cm": [
-    950.0,
-    1750.0,
+    2250.0,
+    2587.5,
     380.0
    ],
    "rotation_deg": {
@@ -2807,18 +3481,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    1.5,
+    0.75,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x010x004",
+   "variant": "Deck_007x007x004",
    "label": "BLK_Deck_067",
    "folder": "Blockout/Decks",
    "location_cm": [
-    4250.0,
-    1750.0,
+    1162.5,
+    262.5,
     380.0
    ],
    "rotation_deg": {
@@ -2827,18 +3501,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    0.75,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x010x004",
+   "variant": "Deck_007x007x004",
    "label": "BLK_Deck_068",
    "folder": "Blockout/Decks",
    "location_cm": [
-    2050.0,
-    2150.0,
+    1537.5,
+    262.5,
     380.0
    ],
    "rotation_deg": {
@@ -2847,18 +3521,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    0.75,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x010x004",
+   "variant": "Deck_007x007x004",
    "label": "BLK_Deck_069",
    "folder": "Blockout/Decks",
    "location_cm": [
-    3150.0,
-    2150.0,
+    3637.5,
+    262.5,
     380.0
    ],
    "rotation_deg": {
@@ -2867,18 +3541,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    0.75,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x010x004",
+   "variant": "Deck_007x007x004",
    "label": "BLK_Deck_070",
    "folder": "Blockout/Decks",
    "location_cm": [
-    2350.0,
-    2350.0,
+    1237.5,
+    412.5,
     380.0
    ],
    "rotation_deg": {
@@ -2887,18 +3561,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    0.75,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x010x004",
+   "variant": "Deck_007x007x004",
    "label": "BLK_Deck_071",
    "folder": "Blockout/Decks",
    "location_cm": [
-    2850.0,
-    2350.0,
+    1387.5,
+    412.5,
     380.0
    ],
    "rotation_deg": {
@@ -2907,18 +3581,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    0.75,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x010x004",
+   "variant": "Deck_007x007x004",
    "label": "BLK_Deck_072",
    "folder": "Blockout/Decks",
    "location_cm": [
-    1150.0,
-    2750.0,
+    1312.5,
+    487.5,
     380.0
    ],
    "rotation_deg": {
@@ -2927,18 +3601,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    0.75,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x010x004",
+   "variant": "Deck_007x007x004",
    "label": "BLK_Deck_073",
    "folder": "Blockout/Decks",
    "location_cm": [
-    2450.0,
-    2750.0,
+    2287.5,
+    487.5,
     380.0
    ],
    "rotation_deg": {
@@ -2947,18 +3621,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    0.75,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x010x004",
+   "variant": "Deck_007x007x004",
    "label": "BLK_Deck_074",
    "folder": "Blockout/Decks",
    "location_cm": [
-    2750.0,
-    2750.0,
+    2887.5,
+    487.5,
     380.0
    ],
    "rotation_deg": {
@@ -2967,18 +3641,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    0.75,
     0.4
    ]
   },
   {
-   "variant": "Deck_010x010x004",
+   "variant": "Deck_007x007x004",
    "label": "BLK_Deck_075",
    "folder": "Blockout/Decks",
    "location_cm": [
-    4050.0,
-    2750.0,
+    2512.5,
+    562.5,
     380.0
    ],
    "rotation_deg": {
@@ -2987,18 +3661,458 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    0.75,
     0.4
    ]
   },
   {
-   "variant": "Wall_100x010x080",
+   "variant": "Deck_007x007x004",
+   "label": "BLK_Deck_076",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    2737.5,
+    787.5,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_007x007x004",
+   "label": "BLK_Deck_077",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    1162.5,
+    937.5,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_007x007x004",
+   "label": "BLK_Deck_078",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    4087.5,
+    937.5,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_007x007x004",
+   "label": "BLK_Deck_079",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    2887.5,
+    1012.5,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_007x007x004",
+   "label": "BLK_Deck_080",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    712.5,
+    1087.5,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_007x007x004",
+   "label": "BLK_Deck_081",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    187.5,
+    1237.5,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_007x007x004",
+   "label": "BLK_Deck_082",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    37.5,
+    1387.5,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_007x007x004",
+   "label": "BLK_Deck_083",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    1312.5,
+    1462.5,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_007x007x004",
+   "label": "BLK_Deck_084",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    1162.5,
+    1762.5,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_007x007x004",
+   "label": "BLK_Deck_085",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    4012.5,
+    1762.5,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_007x007x004",
+   "label": "BLK_Deck_086",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    2287.5,
+    1912.5,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_007x007x004",
+   "label": "BLK_Deck_087",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    2887.5,
+    1912.5,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_007x007x004",
+   "label": "BLK_Deck_088",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    1162.5,
+    2137.5,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_007x007x004",
+   "label": "BLK_Deck_089",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    2062.5,
+    2137.5,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_007x007x004",
+   "label": "BLK_Deck_090",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    3112.5,
+    2137.5,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_007x007x004",
+   "label": "BLK_Deck_091",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    2362.5,
+    2362.5,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_007x007x004",
+   "label": "BLK_Deck_092",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    2812.5,
+    2362.5,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_007x007x004",
+   "label": "BLK_Deck_093",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    1087.5,
+    2437.5,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_007x007x004",
+   "label": "BLK_Deck_094",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    4012.5,
+    2587.5,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_007x007x004",
+   "label": "BLK_Deck_095",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    2287.5,
+    2662.5,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_007x007x004",
+   "label": "BLK_Deck_096",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    2812.5,
+    2662.5,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.4
+   ]
+  },
+  {
+   "variant": "Deck_007x007x004",
+   "label": "BLK_Deck_097",
+   "folder": "Blockout/Decks",
+   "location_cm": [
+    4087.5,
+    2737.5,
+    380.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    0.4
+   ]
+  },
+  {
+   "variant": "Wall_097x007x080",
    "label": "BLK_Wall_001",
    "folder": "Blockout/Walls",
    "location_cm": [
-    600.0,
-    2150.0,
+    4612.5,
+    2137.5,
     400.0
    ],
    "rotation_deg": {
@@ -3007,18 +4121,18 @@
     "yaw": 0.0
    },
    "scale": [
-    10.0,
-    1.0,
+    9.75,
+    0.75,
     8.0
    ]
   },
   {
-   "variant": "Wall_100x010x080",
+   "variant": "Wall_090x007x080",
    "label": "BLK_Wall_002",
    "folder": "Blockout/Walls",
    "location_cm": [
-    4600.0,
-    2150.0,
+    600.0,
+    2137.5,
     400.0
    ],
    "rotation_deg": {
@@ -3027,18 +4141,18 @@
     "yaw": 0.0
    },
    "scale": [
-    10.0,
-    1.0,
+    9.0,
+    0.75,
     8.0
    ]
   },
   {
-   "variant": "Wall_010x060x080",
+   "variant": "Wall_060x007x080",
    "label": "BLK_Wall_003",
    "folder": "Blockout/Walls",
    "location_cm": [
-    1050.0,
-    2500.0,
+    450.0,
+    787.5,
     400.0
    ],
    "rotation_deg": {
@@ -3047,18 +4161,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
     6.0,
+    0.75,
     8.0
    ]
   },
   {
-   "variant": "Wall_010x060x080",
+   "variant": "Wall_007x060x080",
    "label": "BLK_Wall_004",
    "folder": "Blockout/Walls",
    "location_cm": [
-    4150.0,
-    2500.0,
+    1012.5,
+    2475.0,
     400.0
    ],
    "rotation_deg": {
@@ -3067,18 +4181,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
+    0.75,
     6.0,
     8.0
    ]
   },
   {
-   "variant": "Wall_030x020x080",
+   "variant": "Wall_007x060x080",
    "label": "BLK_Wall_005",
    "folder": "Blockout/Walls",
    "location_cm": [
-    1250.0,
-    2800.0,
+    4162.5,
+    2475.0,
     400.0
    ],
    "rotation_deg": {
@@ -3087,18 +4201,18 @@
     "yaw": 0.0
    },
    "scale": [
-    3.0,
-    2.0,
+    0.75,
+    6.0,
     8.0
    ]
   },
   {
-   "variant": "Wall_030x020x080",
+   "variant": "Wall_030x015x080",
    "label": "BLK_Wall_006",
    "folder": "Blockout/Walls",
    "location_cm": [
-    3950.0,
-    2800.0,
+    1500.0,
+    2925.0,
     400.0
    ],
    "rotation_deg": {
@@ -3108,17 +4222,17 @@
    },
    "scale": [
     3.0,
-    2.0,
+    1.5,
     8.0
    ]
   },
   {
-   "variant": "Wall_050x010x080",
+   "variant": "Wall_052x007x080",
    "label": "BLK_Wall_007",
    "folder": "Blockout/Walls",
    "location_cm": [
-    450.0,
-    750.0,
+    2587.5,
+    337.5,
     400.0
    ],
    "rotation_deg": {
@@ -3127,18 +4241,18 @@
     "yaw": 0.0
    },
    "scale": [
-    5.0,
-    1.0,
+    5.25,
+    0.75,
     8.0
    ]
   },
   {
-   "variant": "Wall_010x050x080",
+   "variant": "Wall_052x007x080",
    "label": "BLK_Wall_008",
    "folder": "Blockout/Walls",
    "location_cm": [
-    1150.0,
-    550.0,
+    4762.5,
+    787.5,
     400.0
    ],
    "rotation_deg": {
@@ -3147,18 +4261,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    5.0,
+    5.25,
+    0.75,
     8.0
    ]
   },
   {
-   "variant": "Wall_010x050x080",
+   "variant": "Wall_045x007x080",
    "label": "BLK_Wall_009",
    "folder": "Blockout/Walls",
    "location_cm": [
-    4050.0,
-    550.0,
+    1875.0,
+    337.5,
     400.0
    ],
    "rotation_deg": {
@@ -3167,18 +4281,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    5.0,
+    4.5,
+    0.75,
     8.0
    ]
   },
   {
-   "variant": "Wall_050x010x080",
+   "variant": "Wall_045x007x080",
    "label": "BLK_Wall_010",
    "folder": "Blockout/Walls",
    "location_cm": [
-    4750.0,
-    750.0,
+    3300.0,
+    337.5,
     400.0
    ],
    "rotation_deg": {
@@ -3187,18 +4301,18 @@
     "yaw": 0.0
    },
    "scale": [
-    5.0,
-    1.0,
+    4.5,
+    0.75,
     8.0
    ]
   },
   {
-   "variant": "Wall_050x010x080",
+   "variant": "Wall_007x045x080",
    "label": "BLK_Wall_011",
    "folder": "Blockout/Walls",
    "location_cm": [
-    850.0,
-    850.0,
+    1162.5,
+    525.0,
     400.0
    ],
    "rotation_deg": {
@@ -3207,18 +4321,18 @@
     "yaw": 0.0
    },
    "scale": [
-    5.0,
-    1.0,
+    0.75,
+    4.5,
     8.0
    ]
   },
   {
-   "variant": "Wall_050x010x080",
+   "variant": "Wall_007x045x080",
    "label": "BLK_Wall_012",
    "folder": "Blockout/Walls",
    "location_cm": [
-    4350.0,
-    850.0,
+    4012.5,
+    525.0,
     400.0
    ],
    "rotation_deg": {
@@ -3227,17 +4341,17 @@
     "yaw": 0.0
    },
    "scale": [
-    5.0,
-    1.0,
+    0.75,
+    4.5,
     8.0
    ]
   },
   {
-   "variant": "Wall_010x050x080",
+   "variant": "Wall_007x045x080",
    "label": "BLK_Wall_013",
    "folder": "Blockout/Walls",
    "location_cm": [
-    150.0,
+    5062.5,
     1050.0,
     400.0
    ],
@@ -3247,18 +4361,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    5.0,
+    0.75,
+    4.5,
     8.0
    ]
   },
   {
-   "variant": "Wall_010x050x080",
+   "variant": "Wall_007x045x080",
    "label": "BLK_Wall_014",
    "folder": "Blockout/Walls",
    "location_cm": [
-    5050.0,
-    1050.0,
+    37.5,
+    1500.0,
     400.0
    ],
    "rotation_deg": {
@@ -3267,18 +4381,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    5.0,
+    0.75,
+    4.5,
     8.0
    ]
   },
   {
-   "variant": "Wall_010x050x080",
+   "variant": "Wall_007x045x080",
    "label": "BLK_Wall_015",
    "folder": "Blockout/Walls",
    "location_cm": [
-    50.0,
-    1450.0,
+    5062.5,
+    1875.0,
     400.0
    ],
    "rotation_deg": {
@@ -3287,18 +4401,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    5.0,
+    0.75,
+    4.5,
     8.0
    ]
   },
   {
-   "variant": "Wall_010x050x080",
+   "variant": "Wall_045x007x080",
    "label": "BLK_Wall_016",
    "folder": "Blockout/Walls",
    "location_cm": [
-    5150.0,
-    1450.0,
+    450.0,
+    2212.5,
     400.0
    ],
    "rotation_deg": {
@@ -3307,18 +4421,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    5.0,
+    4.5,
+    0.75,
     8.0
    ]
   },
   {
-   "variant": "Wall_050x010x080",
+   "variant": "Wall_045x007x080",
    "label": "BLK_Wall_017",
    "folder": "Blockout/Walls",
    "location_cm": [
-    1950.0,
-    2650.0,
+    1275.0,
+    2812.5,
     400.0
    ],
    "rotation_deg": {
@@ -3327,18 +4441,18 @@
     "yaw": 0.0
    },
    "scale": [
-    5.0,
-    1.0,
+    4.5,
+    0.75,
     8.0
    ]
   },
   {
-   "variant": "Wall_050x010x080",
+   "variant": "Wall_045x007x080",
    "label": "BLK_Wall_018",
    "folder": "Blockout/Walls",
    "location_cm": [
-    3250.0,
-    2650.0,
+    3900.0,
+    2812.5,
     400.0
    ],
    "rotation_deg": {
@@ -3347,18 +4461,18 @@
     "yaw": 0.0
    },
    "scale": [
-    5.0,
-    1.0,
+    4.5,
+    0.75,
     8.0
    ]
   },
   {
-   "variant": "Wall_040x010x080",
+   "variant": "Wall_022x015x080",
    "label": "BLK_Wall_019",
    "folder": "Blockout/Walls",
    "location_cm": [
-    1500.0,
-    150.0,
+    3712.5,
+    2925.0,
     400.0
    ],
    "rotation_deg": {
@@ -3367,18 +4481,18 @@
     "yaw": 0.0
    },
    "scale": [
-    4.0,
-    1.0,
+    2.25,
+    1.5,
     8.0
    ]
   },
   {
-   "variant": "Wall_040x010x080",
+   "variant": "Wall_037x007x080",
    "label": "BLK_Wall_020",
    "folder": "Blockout/Walls",
    "location_cm": [
-    3700.0,
-    150.0,
+    862.5,
+    862.5,
     400.0
    ],
    "rotation_deg": {
@@ -3387,18 +4501,18 @@
     "yaw": 0.0
    },
    "scale": [
-    4.0,
-    1.0,
+    3.75,
+    0.75,
     8.0
    ]
   },
   {
-   "variant": "Wall_040x010x080",
+   "variant": "Wall_037x007x080",
    "label": "BLK_Wall_021",
    "folder": "Blockout/Walls",
    "location_cm": [
-    1900.0,
-    350.0,
+    4312.5,
+    862.5,
     400.0
    ],
    "rotation_deg": {
@@ -3407,18 +4521,18 @@
     "yaw": 0.0
    },
    "scale": [
-    4.0,
-    1.0,
+    3.75,
+    0.75,
     8.0
    ]
   },
   {
-   "variant": "Wall_040x010x080",
+   "variant": "Wall_037x007x080",
    "label": "BLK_Wall_022",
    "folder": "Blockout/Walls",
    "location_cm": [
-    2600.0,
-    350.0,
+    4762.5,
+    2212.5,
     400.0
    ],
    "rotation_deg": {
@@ -3427,18 +4541,18 @@
     "yaw": 0.0
    },
    "scale": [
-    4.0,
-    1.0,
+    3.75,
+    0.75,
     8.0
    ]
   },
   {
-   "variant": "Wall_040x010x080",
+   "variant": "Wall_037x007x080",
    "label": "BLK_Wall_023",
    "folder": "Blockout/Walls",
    "location_cm": [
-    3300.0,
-    350.0,
+    2062.5,
+    2662.5,
     400.0
    ],
    "rotation_deg": {
@@ -3447,18 +4561,18 @@
     "yaw": 0.0
    },
    "scale": [
-    4.0,
-    1.0,
+    3.75,
+    0.75,
     8.0
    ]
   },
   {
-   "variant": "Wall_010x040x080",
+   "variant": "Wall_037x007x080",
    "label": "BLK_Wall_024",
    "folder": "Blockout/Walls",
    "location_cm": [
-    150.0,
-    1900.0,
+    3112.5,
+    2662.5,
     400.0
    ],
    "rotation_deg": {
@@ -3467,18 +4581,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    4.0,
+    3.75,
+    0.75,
     8.0
    ]
   },
   {
-   "variant": "Wall_010x040x080",
+   "variant": "Wall_037x007x080",
    "label": "BLK_Wall_025",
    "folder": "Blockout/Walls",
    "location_cm": [
-    5050.0,
-    1900.0,
+    2587.5,
+    2962.5,
     400.0
    ],
    "rotation_deg": {
@@ -3487,18 +4601,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    4.0,
+    3.75,
+    0.75,
     8.0
    ]
   },
   {
-   "variant": "Wall_020x020x080",
+   "variant": "Wall_030x007x080",
    "label": "BLK_Wall_026",
    "folder": "Blockout/Walls",
    "location_cm": [
-    1500.0,
-    2900.0,
+    1425.0,
+    112.5,
     400.0
    ],
    "rotation_deg": {
@@ -3507,18 +4621,18 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    2.0,
+    3.0,
+    0.75,
     8.0
    ]
   },
   {
-   "variant": "Wall_040x010x080",
+   "variant": "Wall_030x007x080",
    "label": "BLK_Wall_027",
    "folder": "Blockout/Walls",
    "location_cm": [
-    2600.0,
-    2950.0,
+    3750.0,
+    112.5,
     400.0
    ],
    "rotation_deg": {
@@ -3527,18 +4641,18 @@
     "yaw": 0.0
    },
    "scale": [
-    4.0,
-    1.0,
+    3.0,
+    0.75,
     8.0
    ]
   },
   {
-   "variant": "Wall_020x020x080",
+   "variant": "Wall_007x030x080",
    "label": "BLK_Wall_028",
    "folder": "Blockout/Walls",
    "location_cm": [
-    3700.0,
-    2900.0,
+    2362.5,
+    150.0,
     400.0
    ],
    "rotation_deg": {
@@ -3547,18 +4661,18 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    2.0,
+    0.75,
+    3.0,
     8.0
    ]
   },
   {
-   "variant": "Wall_030x010x080",
+   "variant": "Wall_015x015x080",
    "label": "BLK_Wall_029",
    "folder": "Blockout/Walls",
    "location_cm": [
-    2250.0,
-    50.0,
+    5175.0,
+    1425.0,
     400.0
    ],
    "rotation_deg": {
@@ -3567,18 +4681,18 @@
     "yaw": 0.0
    },
    "scale": [
-    3.0,
-    1.0,
+    1.5,
+    1.5,
     8.0
    ]
   },
   {
-   "variant": "Wall_030x010x080",
+   "variant": "Wall_007x022x080",
    "label": "BLK_Wall_030",
    "folder": "Blockout/Walls",
    "location_cm": [
-    2950.0,
-    50.0,
+    2137.5,
+    187.5,
     400.0
    ],
    "rotation_deg": {
@@ -3587,18 +4701,18 @@
     "yaw": 0.0
    },
    "scale": [
-    3.0,
-    1.0,
+    0.75,
+    2.25,
     8.0
    ]
   },
   {
-   "variant": "Wall_020x010x080",
+   "variant": "Wall_007x022x080",
    "label": "BLK_Wall_031",
    "folder": "Blockout/Walls",
    "location_cm": [
-    1300.0,
-    50.0,
+    2812.5,
+    187.5,
     400.0
    ],
    "rotation_deg": {
@@ -3607,18 +4721,18 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    1.0,
+    0.75,
+    2.25,
     8.0
    ]
   },
   {
-   "variant": "Wall_020x010x080",
+   "variant": "Wall_007x022x080",
    "label": "BLK_Wall_032",
    "folder": "Blockout/Walls",
    "location_cm": [
-    3900.0,
-    50.0,
+    4087.5,
+    262.5,
     400.0
    ],
    "rotation_deg": {
@@ -3627,18 +4741,18 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    1.0,
+    0.75,
+    2.25,
     8.0
    ]
   },
   {
-   "variant": "Wall_010x020x080",
+   "variant": "Wall_007x022x080",
    "label": "BLK_Wall_033",
    "folder": "Blockout/Walls",
    "location_cm": [
-    2150.0,
-    200.0,
+    112.5,
+    937.5,
     400.0
    ],
    "rotation_deg": {
@@ -3647,18 +4761,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    2.0,
+    0.75,
+    2.25,
     8.0
    ]
   },
   {
-   "variant": "Wall_010x020x080",
+   "variant": "Wall_007x022x080",
    "label": "BLK_Wall_034",
    "folder": "Blockout/Walls",
    "location_cm": [
-    2350.0,
-    200.0,
+    187.5,
+    1162.5,
     400.0
    ],
    "rotation_deg": {
@@ -3667,18 +4781,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    2.0,
+    0.75,
+    2.25,
     8.0
    ]
   },
   {
-   "variant": "Wall_010x020x080",
+   "variant": "Wall_007x022x080",
    "label": "BLK_Wall_035",
    "folder": "Blockout/Walls",
    "location_cm": [
-    2850.0,
-    200.0,
+    187.5,
+    1837.5,
     400.0
    ],
    "rotation_deg": {
@@ -3687,18 +4801,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    2.0,
+    0.75,
+    2.25,
     8.0
    ]
   },
   {
-   "variant": "Wall_010x020x080",
+   "variant": "Wall_007x022x080",
    "label": "BLK_Wall_036",
    "folder": "Blockout/Walls",
    "location_cm": [
-    3050.0,
-    200.0,
+    112.5,
+    1987.5,
     400.0
    ],
    "rotation_deg": {
@@ -3707,18 +4821,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    2.0,
+    0.75,
+    2.25,
     8.0
    ]
   },
   {
-   "variant": "Wall_020x010x080",
+   "variant": "Wall_022x007x080",
    "label": "BLK_Wall_037",
    "folder": "Blockout/Walls",
    "location_cm": [
-    1700.0,
-    2750.0,
+    1837.5,
+    2587.5,
     400.0
    ],
    "rotation_deg": {
@@ -3727,18 +4841,18 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    1.0,
+    2.25,
+    0.75,
     8.0
    ]
   },
   {
-   "variant": "Wall_020x010x080",
+   "variant": "Wall_022x007x080",
    "label": "BLK_Wall_038",
    "folder": "Blockout/Walls",
    "location_cm": [
-    2300.0,
-    2750.0,
+    3337.5,
+    2587.5,
     400.0
    ],
    "rotation_deg": {
@@ -3747,18 +4861,18 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    1.0,
+    2.25,
+    0.75,
     8.0
    ]
   },
   {
-   "variant": "Wall_020x010x080",
+   "variant": "Wall_015x007x080",
    "label": "BLK_Wall_039",
    "folder": "Blockout/Walls",
    "location_cm": [
-    2900.0,
-    2750.0,
+    1275.0,
+    37.5,
     400.0
    ],
    "rotation_deg": {
@@ -3767,18 +4881,18 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    1.0,
+    1.5,
+    0.75,
     8.0
    ]
   },
   {
-   "variant": "Wall_020x010x080",
+   "variant": "Wall_015x007x080",
    "label": "BLK_Wall_040",
    "folder": "Blockout/Walls",
    "location_cm": [
-    3500.0,
-    2750.0,
+    2250.0,
+    37.5,
     400.0
    ],
    "rotation_deg": {
@@ -3787,18 +4901,18 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    1.0,
+    1.5,
+    0.75,
     8.0
    ]
   },
   {
-   "variant": "Wall_020x010x080",
+   "variant": "Wall_015x007x080",
    "label": "BLK_Wall_041",
    "folder": "Blockout/Walls",
    "location_cm": [
-    2800.0,
-    2850.0,
+    2925.0,
+    37.5,
     400.0
    ],
    "rotation_deg": {
@@ -3807,18 +4921,18 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    1.0,
+    1.5,
+    0.75,
     8.0
    ]
   },
   {
-   "variant": "Wall_010x010x080",
+   "variant": "Wall_015x007x080",
    "label": "BLK_Wall_042",
    "folder": "Blockout/Walls",
    "location_cm": [
-    1150.0,
-    150.0,
+    3975.0,
+    37.5,
     400.0
    ],
    "rotation_deg": {
@@ -3827,17 +4941,17 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    1.5,
+    0.75,
     8.0
    ]
   },
   {
-   "variant": "Wall_010x010x080",
+   "variant": "Wall_007x015x080",
    "label": "BLK_Wall_043",
    "folder": "Blockout/Walls",
    "location_cm": [
-    4050.0,
+    3037.5,
     150.0,
     400.0
    ],
@@ -3847,18 +4961,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    1.5,
     8.0
    ]
   },
   {
-   "variant": "Wall_010x010x080",
+   "variant": "Wall_007x015x080",
    "label": "BLK_Wall_044",
    "folder": "Blockout/Walls",
    "location_cm": [
-    1050.0,
-    250.0,
+    1087.5,
+    225.0,
     400.0
    ],
    "rotation_deg": {
@@ -3867,18 +4981,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    1.5,
     8.0
    ]
   },
   {
-   "variant": "Wall_010x010x080",
+   "variant": "Wall_007x015x080",
    "label": "BLK_Wall_045",
    "folder": "Blockout/Walls",
    "location_cm": [
-    1650.0,
-    250.0,
+    1612.5,
+    225.0,
     400.0
    ],
    "rotation_deg": {
@@ -3887,18 +5001,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    1.5,
     8.0
    ]
   },
   {
-   "variant": "Wall_010x010x080",
+   "variant": "Wall_007x015x080",
    "label": "BLK_Wall_046",
    "folder": "Blockout/Walls",
    "location_cm": [
-    2050.0,
-    250.0,
+    3562.5,
+    225.0,
     400.0
    ],
    "rotation_deg": {
@@ -3907,18 +5021,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    1.5,
     8.0
    ]
   },
   {
-   "variant": "Wall_010x010x080",
+   "variant": "Wall_007x015x080",
    "label": "BLK_Wall_047",
    "folder": "Blockout/Walls",
    "location_cm": [
-    3150.0,
-    250.0,
+    4087.5,
+    750.0,
     400.0
    ],
    "rotation_deg": {
@@ -3927,18 +5041,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    1.5,
     8.0
    ]
   },
   {
-   "variant": "Wall_010x010x080",
+   "variant": "Wall_007x015x080",
    "label": "BLK_Wall_048",
    "folder": "Blockout/Walls",
    "location_cm": [
-    3550.0,
-    250.0,
+    4987.5,
+    1125.0,
     400.0
    ],
    "rotation_deg": {
@@ -3947,18 +5061,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    1.5,
     8.0
    ]
   },
   {
-   "variant": "Wall_010x010x080",
+   "variant": "Wall_007x015x080",
    "label": "BLK_Wall_049",
    "folder": "Blockout/Walls",
    "location_cm": [
-    4150.0,
-    250.0,
+    5212.5,
+    1575.0,
     400.0
    ],
    "rotation_deg": {
@@ -3967,18 +5081,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    1.5,
     8.0
    ]
   },
   {
-   "variant": "Wall_010x010x080",
+   "variant": "Wall_007x015x080",
    "label": "BLK_Wall_050",
    "folder": "Blockout/Walls",
    "location_cm": [
-    1050.0,
-    750.0,
+    5137.5,
+    1650.0,
     400.0
    ],
    "rotation_deg": {
@@ -3987,18 +5101,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    1.5,
     8.0
    ]
   },
   {
-   "variant": "Wall_010x010x080",
+   "variant": "Wall_007x015x080",
    "label": "BLK_Wall_051",
    "folder": "Blockout/Walls",
    "location_cm": [
-    4150.0,
-    750.0,
+    112.5,
+    1725.0,
     400.0
    ],
    "rotation_deg": {
@@ -4007,18 +5121,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    1.5,
     8.0
    ]
   },
   {
-   "variant": "Wall_010x010x080",
+   "variant": "Wall_007x015x080",
    "label": "BLK_Wall_052",
    "folder": "Blockout/Walls",
    "location_cm": [
-    250.0,
-    1150.0,
+    4987.5,
+    1800.0,
     400.0
    ],
    "rotation_deg": {
@@ -4027,18 +5141,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    1.5,
     8.0
    ]
   },
   {
-   "variant": "Wall_010x010x080",
+   "variant": "Wall_007x015x080",
    "label": "BLK_Wall_053",
    "folder": "Blockout/Walls",
    "location_cm": [
-    4950.0,
-    1150.0,
+    1762.5,
+    2700.0,
     400.0
    ],
    "rotation_deg": {
@@ -4047,18 +5161,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    1.5,
     8.0
    ]
   },
   {
-   "variant": "Wall_010x010x080",
+   "variant": "Wall_015x007x080",
    "label": "BLK_Wall_054",
    "folder": "Blockout/Walls",
    "location_cm": [
-    1650.0,
-    2850.0,
+    2250.0,
+    2737.5,
     400.0
    ],
    "rotation_deg": {
@@ -4067,18 +5181,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    1.5,
+    0.75,
     8.0
    ]
   },
   {
-   "variant": "Wall_010x010x080",
+   "variant": "Wall_015x007x080",
    "label": "BLK_Wall_055",
    "folder": "Blockout/Walls",
    "location_cm": [
-    2350.0,
-    2850.0,
+    2925.0,
+    2737.5,
     400.0
    ],
    "rotation_deg": {
@@ -4087,17 +5201,77 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    1.5,
+    0.75,
     8.0
    ]
   },
   {
-   "variant": "Wall_010x010x080",
+   "variant": "Wall_015x007x080",
    "label": "BLK_Wall_056",
    "folder": "Blockout/Walls",
    "location_cm": [
-    3550.0,
+    2325.0,
+    2812.5,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    1.5,
+    0.75,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_015x007x080",
+   "label": "BLK_Wall_057",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    2850.0,
+    2812.5,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    1.5,
+    0.75,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_015x007x080",
+   "label": "BLK_Wall_058",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    2775.0,
+    2887.5,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    1.5,
+    0.75,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_007x015x080",
+   "label": "BLK_Wall_059",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    3562.5,
     2850.0,
     400.0
    ],
@@ -4107,18 +5281,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    1.5,
     8.0
    ]
   },
   {
-   "variant": "Wall_010x010x080",
-   "label": "BLK_Wall_057",
+   "variant": "Wall_007x007x080",
+   "label": "BLK_Wall_060",
    "folder": "Blockout/Walls",
    "location_cm": [
-    1350.0,
-    2950.0,
+    1162.5,
+    112.5,
     400.0
    ],
    "rotation_deg": {
@@ -4127,18 +5301,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    0.75,
     8.0
    ]
   },
   {
-   "variant": "Wall_010x010x080",
-   "label": "BLK_Wall_058",
+   "variant": "Wall_007x007x080",
+   "label": "BLK_Wall_061",
    "folder": "Blockout/Walls",
    "location_cm": [
-    3850.0,
-    2950.0,
+    1687.5,
+    262.5,
     400.0
    ],
    "rotation_deg": {
@@ -4147,18 +5321,318 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    0.75,
     8.0
    ]
   },
   {
-   "variant": "Tower_050x050x065",
+   "variant": "Wall_007x007x080",
+   "label": "BLK_Wall_062",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    2062.5,
+    262.5,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_007x007x080",
+   "label": "BLK_Wall_063",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    2437.5,
+    262.5,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_007x007x080",
+   "label": "BLK_Wall_064",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    3112.5,
+    262.5,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_007x007x080",
+   "label": "BLK_Wall_065",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    3487.5,
+    262.5,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_007x007x080",
+   "label": "BLK_Wall_066",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    1087.5,
+    787.5,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_007x007x080",
+   "label": "BLK_Wall_067",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    4162.5,
+    787.5,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_007x007x080",
+   "label": "BLK_Wall_068",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    187.5,
+    862.5,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_007x007x080",
+   "label": "BLK_Wall_069",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    112.5,
+    1237.5,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_007x007x080",
+   "label": "BLK_Wall_070",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    5137.5,
+    1312.5,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_007x007x080",
+   "label": "BLK_Wall_071",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    3412.5,
+    2662.5,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_007x007x080",
+   "label": "BLK_Wall_072",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    1687.5,
+    2737.5,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_007x007x080",
+   "label": "BLK_Wall_073",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    3487.5,
+    2737.5,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_007x007x080",
+   "label": "BLK_Wall_074",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    1612.5,
+    2812.5,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_007x007x080",
+   "label": "BLK_Wall_075",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    2437.5,
+    2887.5,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_007x007x080",
+   "label": "BLK_Wall_076",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    3862.5,
+    2887.5,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    8.0
+   ]
+  },
+  {
+   "variant": "Tower_052x045x065",
    "label": "BLK_Tower_001",
    "folder": "Blockout/Towers",
    "location_cm": [
-    1950.0,
-    2250.0,
+    1912.5,
+    2175.0,
     325.0
    ],
    "rotation_deg": {
@@ -4167,18 +5641,18 @@
     "yaw": 0.0
    },
    "scale": [
-    5.0,
-    5.0,
+    5.25,
+    4.5,
     6.5
    ]
   },
   {
-   "variant": "Tower_050x050x065",
+   "variant": "Tower_045x052x065",
    "label": "BLK_Tower_002",
    "folder": "Blockout/Towers",
    "location_cm": [
-    3250.0,
-    2250.0,
+    3300.0,
+    2212.5,
     325.0
    ],
    "rotation_deg": {
@@ -4187,18 +5661,18 @@
     "yaw": 0.0
    },
    "scale": [
-    5.0,
-    5.0,
+    4.5,
+    5.25,
     6.5
    ]
   },
   {
-   "variant": "Tower_030x060x065",
+   "variant": "Tower_037x052x065",
    "label": "BLK_Tower_003",
    "folder": "Blockout/Towers",
    "location_cm": [
-    1850.0,
-    800.0,
+    3337.5,
+    787.5,
     325.0
    ],
    "rotation_deg": {
@@ -4207,18 +5681,18 @@
     "yaw": 0.0
    },
    "scale": [
-    3.0,
-    6.0,
+    3.75,
+    5.25,
     6.5
    ]
   },
   {
-   "variant": "Tower_030x060x065",
+   "variant": "Tower_037x045x065",
    "label": "BLK_Tower_004",
    "folder": "Blockout/Towers",
    "location_cm": [
-    3350.0,
-    800.0,
+    1912.5,
+    825.0,
     325.0
    ],
    "rotation_deg": {
@@ -4227,17 +5701,77 @@
     "yaw": 0.0
    },
    "scale": [
-    3.0,
-    6.0,
+    3.75,
+    4.5,
     6.5
    ]
   },
   {
-   "variant": "Tower_040x020x065",
+   "variant": "Tower_052x015x065",
    "label": "BLK_Tower_005",
    "folder": "Blockout/Towers",
    "location_cm": [
-    2600.0,
+    4237.5,
+    1125.0,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    5.25,
+    1.5,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_045x015x065",
+   "label": "BLK_Tower_006",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    975.0,
+    1125.0,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    4.5,
+    1.5,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_022x030x065",
+   "label": "BLK_Tower_007",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    2962.5,
+    2325.0,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    2.25,
+    3.0,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_037x015x065",
+   "label": "BLK_Tower_008",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    2587.5,
     600.0,
     325.0
    ],
@@ -4247,78 +5781,18 @@
     "yaw": 0.0
    },
    "scale": [
-    4.0,
-    2.0,
+    3.75,
+    1.5,
     6.5
    ]
   },
   {
-   "variant": "Tower_050x010x065",
-   "label": "BLK_Tower_006",
-   "folder": "Blockout/Towers",
-   "location_cm": [
-    950.0,
-    1150.0,
-    325.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 0.0
-   },
-   "scale": [
-    5.0,
-    1.0,
-    6.5
-   ]
-  },
-  {
-   "variant": "Tower_050x010x065",
-   "label": "BLK_Tower_007",
-   "folder": "Blockout/Towers",
-   "location_cm": [
-    4250.0,
-    1150.0,
-    325.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 0.0
-   },
-   "scale": [
-    5.0,
-    1.0,
-    6.5
-   ]
-  },
-  {
-   "variant": "Tower_020x020x065",
-   "label": "BLK_Tower_008",
-   "folder": "Blockout/Towers",
-   "location_cm": [
-    2100.0,
-    800.0,
-    325.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 0.0
-   },
-   "scale": [
-    2.0,
-    2.0,
-    6.5
-   ]
-  },
-  {
-   "variant": "Tower_020x020x065",
+   "variant": "Tower_015x037x065",
    "label": "BLK_Tower_009",
    "folder": "Blockout/Towers",
    "location_cm": [
-    3100.0,
-    800.0,
+    2250.0,
+    2287.5,
     325.0
    ],
    "rotation_deg": {
@@ -4327,18 +5801,18 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    2.0,
+    1.5,
+    3.75,
     6.5
    ]
   },
   {
-   "variant": "Tower_020x020x065",
+   "variant": "Tower_022x022x065",
    "label": "BLK_Tower_010",
    "folder": "Blockout/Towers",
    "location_cm": [
-    1600.0,
-    900.0,
+    1612.5,
+    862.5,
     325.0
    ],
    "rotation_deg": {
@@ -4347,13 +5821,13 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    2.0,
+    2.25,
+    2.25,
     6.5
    ]
   },
   {
-   "variant": "Tower_020x020x065",
+   "variant": "Tower_015x030x065",
    "label": "BLK_Tower_011",
    "folder": "Blockout/Towers",
    "location_cm": [
@@ -4367,17 +5841,17 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    2.0,
+    1.5,
+    3.0,
     6.5
    ]
   },
   {
-   "variant": "Tower_020x020x065",
+   "variant": "Tower_022x015x065",
    "label": "BLK_Tower_012",
    "folder": "Blockout/Towers",
    "location_cm": [
-    800.0,
+    787.5,
     1800.0,
     325.0
    ],
@@ -4387,17 +5861,17 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    2.0,
+    2.25,
+    1.5,
     6.5
    ]
   },
   {
-   "variant": "Tower_020x020x065",
+   "variant": "Tower_022x015x065",
    "label": "BLK_Tower_013",
    "folder": "Blockout/Towers",
    "location_cm": [
-    4400.0,
+    4387.5,
     1800.0,
     325.0
    ],
@@ -4407,18 +5881,18 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    2.0,
+    2.25,
+    1.5,
     6.5
    ]
   },
   {
-   "variant": "Tower_020x020x065",
+   "variant": "Tower_045x007x065",
    "label": "BLK_Tower_014",
    "folder": "Blockout/Towers",
    "location_cm": [
-    1900.0,
-    1900.0,
+    1950.0,
+    2437.5,
     325.0
    ],
    "rotation_deg": {
@@ -4427,117 +5901,17 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    2.0,
+    4.5,
+    0.75,
     6.5
    ]
   },
   {
-   "variant": "Tower_020x020x065",
+   "variant": "Tower_022x015x065",
    "label": "BLK_Tower_015",
    "folder": "Blockout/Towers",
    "location_cm": [
-    3300.0,
-    1900.0,
-    325.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 0.0
-   },
-   "scale": [
-    2.0,
-    2.0,
-    6.5
-   ]
-  },
-  {
-   "variant": "Tower_010x040x065",
-   "label": "BLK_Tower_016",
-   "folder": "Blockout/Towers",
-   "location_cm": [
-    1650.0,
-    2200.0,
-    325.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 0.0
-   },
-   "scale": [
-    1.0,
-    4.0,
-    6.5
-   ]
-  },
-  {
-   "variant": "Tower_020x020x065",
-   "label": "BLK_Tower_017",
-   "folder": "Blockout/Towers",
-   "location_cm": [
-    2300.0,
-    2300.0,
-    325.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 0.0
-   },
-   "scale": [
-    2.0,
-    2.0,
-    6.5
-   ]
-  },
-  {
-   "variant": "Tower_020x020x065",
-   "label": "BLK_Tower_018",
-   "folder": "Blockout/Towers",
-   "location_cm": [
-    2900.0,
-    2300.0,
-    325.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 0.0
-   },
-   "scale": [
-    2.0,
-    2.0,
-    6.5
-   ]
-  },
-  {
-   "variant": "Tower_010x040x065",
-   "label": "BLK_Tower_019",
-   "folder": "Blockout/Towers",
-   "location_cm": [
-    3550.0,
-    2200.0,
-    325.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 0.0
-   },
-   "scale": [
-    1.0,
-    4.0,
-    6.5
-   ]
-  },
-  {
-   "variant": "Tower_020x020x065",
-   "label": "BLK_Tower_020",
-   "folder": "Blockout/Towers",
-   "location_cm": [
-    2600.0,
+    2587.5,
     2700.0,
     325.0
    ],
@@ -4547,18 +5921,118 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    2.0,
+    2.25,
+    1.5,
     6.5
    ]
   },
   {
-   "variant": "Tower_020x010x065",
+   "variant": "Tower_007x037x065",
+   "label": "BLK_Tower_016",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    3112.5,
+    787.5,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    3.75,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_037x007x065",
+   "label": "BLK_Tower_017",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    1912.5,
+    1912.5,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    3.75,
+    0.75,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_007x037x065",
+   "label": "BLK_Tower_018",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    3562.5,
+    2212.5,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    3.75,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_030x007x065",
+   "label": "BLK_Tower_019",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    1875.0,
+    562.5,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    3.0,
+    0.75,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_007x030x065",
+   "label": "BLK_Tower_020",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    2137.5,
+    825.0,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    3.0,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_015x015x065",
    "label": "BLK_Tower_021",
    "folder": "Blockout/Towers",
    "location_cm": [
-    1100.0,
-    1050.0,
+    225.0,
+    1500.0,
     325.0
    ],
    "rotation_deg": {
@@ -4567,18 +6041,18 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    1.0,
+    1.5,
+    1.5,
     6.5
    ]
   },
   {
-   "variant": "Tower_020x010x065",
+   "variant": "Tower_015x015x065",
    "label": "BLK_Tower_022",
    "folder": "Blockout/Towers",
    "location_cm": [
-    4100.0,
-    1050.0,
+    3300.0,
+    1875.0,
     325.0
    ],
    "rotation_deg": {
@@ -4587,18 +6061,18 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    1.0,
+    1.5,
+    1.5,
     6.5
    ]
   },
   {
-   "variant": "Tower_020x010x065",
+   "variant": "Tower_007x030x065",
    "label": "BLK_Tower_023",
    "folder": "Blockout/Towers",
    "location_cm": [
-    800.0,
-    1250.0,
+    1612.5,
+    2175.0,
     325.0
    ],
    "rotation_deg": {
@@ -4607,18 +6081,18 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    1.0,
+    0.75,
+    3.0,
     6.5
    ]
   },
   {
-   "variant": "Tower_020x010x065",
+   "variant": "Tower_022x007x065",
    "label": "BLK_Tower_024",
    "folder": "Blockout/Towers",
    "location_cm": [
-    4400.0,
-    1250.0,
+    2587.5,
+    712.5,
     325.0
    ],
    "rotation_deg": {
@@ -4627,18 +6101,18 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    1.0,
+    2.25,
+    0.75,
     6.5
    ]
   },
   {
-   "variant": "Tower_020x010x065",
+   "variant": "Tower_022x007x065",
    "label": "BLK_Tower_025",
    "folder": "Blockout/Towers",
    "location_cm": [
-    200.0,
-    1450.0,
+    1837.5,
+    1087.5,
     325.0
    ],
    "rotation_deg": {
@@ -4647,18 +6121,18 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    1.0,
+    2.25,
+    0.75,
     6.5
    ]
   },
   {
-   "variant": "Tower_020x010x065",
+   "variant": "Tower_022x007x065",
    "label": "BLK_Tower_026",
    "folder": "Blockout/Towers",
    "location_cm": [
-    5000.0,
-    1450.0,
+    3337.5,
+    1087.5,
     325.0
    ],
    "rotation_deg": {
@@ -4667,18 +6141,18 @@
     "yaw": 0.0
    },
    "scale": [
-    2.0,
-    1.0,
+    2.25,
+    0.75,
     6.5
    ]
   },
   {
-   "variant": "Tower_010x010x065",
+   "variant": "Tower_022x007x065",
    "label": "BLK_Tower_027",
    "folder": "Blockout/Towers",
    "location_cm": [
-    2050.0,
-    650.0,
+    787.5,
+    1237.5,
     325.0
    ],
    "rotation_deg": {
@@ -4687,18 +6161,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    2.25,
+    0.75,
     6.5
    ]
   },
   {
-   "variant": "Tower_010x010x065",
+   "variant": "Tower_022x007x065",
    "label": "BLK_Tower_028",
    "folder": "Blockout/Towers",
    "location_cm": [
-    3150.0,
-    650.0,
+    4387.5,
+    1237.5,
     325.0
    ],
    "rotation_deg": {
@@ -4707,18 +6181,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    2.25,
+    0.75,
     6.5
    ]
   },
   {
-   "variant": "Tower_010x010x065",
+   "variant": "Tower_022x007x065",
    "label": "BLK_Tower_029",
    "folder": "Blockout/Towers",
    "location_cm": [
-    1650.0,
-    750.0,
+    4987.5,
+    1462.5,
     325.0
    ],
    "rotation_deg": {
@@ -4727,18 +6201,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    2.25,
+    0.75,
     6.5
    ]
   },
   {
-   "variant": "Tower_010x010x065",
+   "variant": "Tower_007x015x065",
    "label": "BLK_Tower_030",
    "folder": "Blockout/Towers",
    "location_cm": [
-    3550.0,
-    750.0,
+    3037.5,
+    825.0,
     325.0
    ],
    "rotation_deg": {
@@ -4747,18 +6221,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    1.5,
     6.5
    ]
   },
   {
-   "variant": "Tower_010x010x065",
+   "variant": "Tower_015x007x065",
    "label": "BLK_Tower_031",
    "folder": "Blockout/Towers",
    "location_cm": [
-    2050.0,
-    950.0,
+    1650.0,
+    1012.5,
     325.0
    ],
    "rotation_deg": {
@@ -4767,18 +6241,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    1.5,
+    0.75,
     6.5
    ]
   },
   {
-   "variant": "Tower_010x010x065",
+   "variant": "Tower_015x007x065",
    "label": "BLK_Tower_032",
    "folder": "Blockout/Towers",
    "location_cm": [
-    3150.0,
-    950.0,
+    975.0,
+    1837.5,
     325.0
    ],
    "rotation_deg": {
@@ -4787,18 +6261,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    1.5,
+    0.75,
     6.5
    ]
   },
   {
-   "variant": "Tower_010x010x065",
+   "variant": "Tower_007x015x065",
    "label": "BLK_Tower_033",
    "folder": "Blockout/Towers",
    "location_cm": [
-    1650.0,
-    1050.0,
+    3037.5,
+    2100.0,
     325.0
    ],
    "rotation_deg": {
@@ -4807,18 +6281,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    1.5,
     6.5
    ]
   },
   {
-   "variant": "Tower_010x010x065",
+   "variant": "Tower_007x015x065",
    "label": "BLK_Tower_034",
    "folder": "Blockout/Towers",
    "location_cm": [
-    3550.0,
-    1050.0,
+    3637.5,
+    2175.0,
     325.0
    ],
    "rotation_deg": {
@@ -4827,18 +6301,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    1.5,
     6.5
    ]
   },
   {
-   "variant": "Tower_010x010x065",
+   "variant": "Tower_007x015x065",
    "label": "BLK_Tower_035",
    "folder": "Blockout/Towers",
    "location_cm": [
-    950.0,
-    1850.0,
+    2362.5,
+    2325.0,
     325.0
    ],
    "rotation_deg": {
@@ -4847,18 +6321,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    1.5,
     6.5
    ]
   },
   {
-   "variant": "Tower_010x010x065",
+   "variant": "Tower_007x015x065",
    "label": "BLK_Tower_036",
    "folder": "Blockout/Towers",
    "location_cm": [
-    4250.0,
-    1850.0,
+    2812.5,
+    2325.0,
     325.0
    ],
    "rotation_deg": {
@@ -4867,18 +6341,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    1.5,
     6.5
    ]
   },
   {
-   "variant": "Tower_010x010x065",
+   "variant": "Tower_007x007x065",
    "label": "BLK_Tower_037",
    "folder": "Blockout/Towers",
    "location_cm": [
-    1750.0,
-    1950.0,
+    1312.5,
+    412.5,
     325.0
    ],
    "rotation_deg": {
@@ -4887,18 +6361,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    0.75,
     6.5
    ]
   },
   {
-   "variant": "Tower_010x010x065",
+   "variant": "Tower_007x007x065",
    "label": "BLK_Tower_038",
    "folder": "Blockout/Towers",
    "location_cm": [
-    2050.0,
-    1950.0,
+    3862.5,
+    412.5,
     325.0
    ],
    "rotation_deg": {
@@ -4907,18 +6381,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    0.75,
     6.5
    ]
   },
   {
-   "variant": "Tower_010x010x065",
+   "variant": "Tower_007x007x065",
    "label": "BLK_Tower_039",
    "folder": "Blockout/Towers",
    "location_cm": [
-    3150.0,
-    1950.0,
+    1687.5,
+    712.5,
     325.0
    ],
    "rotation_deg": {
@@ -4927,18 +6401,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    0.75,
     6.5
    ]
   },
   {
-   "variant": "Tower_010x010x065",
+   "variant": "Tower_007x007x065",
    "label": "BLK_Tower_040",
    "folder": "Blockout/Towers",
    "location_cm": [
-    3450.0,
-    1950.0,
+    1087.5,
+    1012.5,
     325.0
    ],
    "rotation_deg": {
@@ -4947,18 +6421,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    0.75,
     6.5
    ]
   },
   {
-   "variant": "Tower_010x010x065",
+   "variant": "Tower_007x007x065",
    "label": "BLK_Tower_041",
    "folder": "Blockout/Towers",
    "location_cm": [
-    2250.0,
-    2150.0,
+    4087.5,
+    1012.5,
     325.0
    ],
    "rotation_deg": {
@@ -4967,18 +6441,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    0.75,
     6.5
    ]
   },
   {
-   "variant": "Tower_010x010x065",
+   "variant": "Tower_007x007x065",
    "label": "BLK_Tower_042",
    "folder": "Blockout/Towers",
    "location_cm": [
-    2950.0,
-    2150.0,
+    712.5,
+    1162.5,
     325.0
    ],
    "rotation_deg": {
@@ -4987,18 +6461,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    0.75,
     6.5
    ]
   },
   {
-   "variant": "Tower_010x010x065",
+   "variant": "Tower_007x007x065",
    "label": "BLK_Tower_043",
    "folder": "Blockout/Towers",
    "location_cm": [
-    2250.0,
-    2450.0,
+    112.5,
+    1462.5,
     325.0
    ],
    "rotation_deg": {
@@ -5007,18 +6481,18 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    0.75,
     6.5
    ]
   },
   {
-   "variant": "Tower_010x010x065",
+   "variant": "Tower_007x007x065",
    "label": "BLK_Tower_044",
    "folder": "Blockout/Towers",
    "location_cm": [
-    2950.0,
-    2450.0,
+    4987.5,
+    1537.5,
     325.0
    ],
    "rotation_deg": {
@@ -5027,17 +6501,217 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    1.0,
+    0.75,
+    0.75,
     6.5
    ]
   },
   {
-   "variant": "Support_040x040x036",
+   "variant": "Tower_007x007x065",
+   "label": "BLK_Tower_045",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    1312.5,
+    1612.5,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_007x007x065",
+   "label": "BLK_Tower_046",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    1912.5,
+    1837.5,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_007x007x065",
+   "label": "BLK_Tower_047",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    4237.5,
+    1837.5,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_007x007x065",
+   "label": "BLK_Tower_048",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    3187.5,
+    1912.5,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_007x007x065",
+   "label": "BLK_Tower_049",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    3412.5,
+    1912.5,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_007x007x065",
+   "label": "BLK_Tower_050",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    2212.5,
+    2062.5,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_007x007x065",
+   "label": "BLK_Tower_051",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    2962.5,
+    2137.5,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_007x007x065",
+   "label": "BLK_Tower_052",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    1237.5,
+    2212.5,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_007x007x065",
+   "label": "BLK_Tower_053",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    3937.5,
+    2212.5,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    6.5
+   ]
+  },
+  {
+   "variant": "Tower_007x007x065",
+   "label": "BLK_Tower_054",
+   "folder": "Blockout/Towers",
+   "location_cm": [
+    2737.5,
+    2662.5,
+    325.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    0.75,
+    0.75,
+    6.5
+   ]
+  },
+  {
+   "variant": "Support_052x030x036",
    "label": "BLK_Support_001",
    "folder": "Blockout/Supports",
    "location_cm": [
-    2600.0,
+    2587.5,
     1200.0,
     180.0
    ],
@@ -5047,18 +6721,18 @@
     "yaw": 0.0
    },
    "scale": [
-    4.0,
-    4.0,
+    5.25,
+    3.0,
     3.6
    ]
   },
   {
-   "variant": "Support_060x020x036",
+   "variant": "Support_052x030x036",
    "label": "BLK_Support_002",
    "folder": "Blockout/Supports",
    "location_cm": [
-    2600.0,
-    1700.0,
+    2587.5,
+    1725.0,
     180.0
    ],
    "rotation_deg": {
@@ -5067,18 +6741,18 @@
     "yaw": 0.0
    },
    "scale": [
-    6.0,
-    2.0,
+    5.25,
+    3.0,
     3.6
    ]
   },
   {
-   "variant": "Support_040x010x036",
+   "variant": "Support_037x007x036",
    "label": "BLK_Support_003",
    "folder": "Blockout/Supports",
    "location_cm": [
-    2600.0,
-    1850.0,
+    2587.5,
+    1012.5,
     180.0
    ],
    "rotation_deg": {
@@ -5087,18 +6761,18 @@
     "yaw": 0.0
    },
    "scale": [
-    4.0,
-    1.0,
+    3.75,
+    0.75,
     3.6
    ]
   },
   {
-   "variant": "Support_010x020x036",
+   "variant": "Support_037x007x036",
    "label": "BLK_Support_004",
    "folder": "Blockout/Supports",
    "location_cm": [
-    2350.0,
-    1200.0,
+    2587.5,
+    1912.5,
     180.0
    ],
    "rotation_deg": {
@@ -5107,77 +6781,57 @@
     "yaw": 0.0
    },
    "scale": [
-    1.0,
-    2.0,
+    3.75,
+    0.75,
     3.6
    ]
   },
   {
-   "variant": "Support_010x020x036",
-   "label": "BLK_Support_005",
-   "folder": "Blockout/Supports",
-   "location_cm": [
-    2850.0,
-    1200.0,
-    180.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 0.0
-   },
-   "scale": [
-    1.0,
-    2.0,
-    3.6
-   ]
-  },
-  {
-   "variant": "Ramp_078x030x003",
+   "variant": "Ramp_063x007x003",
    "label": "BLK_Ramp_001",
    "folder": "Blockout/Ramps",
    "location_cm": [
-    1172.0,
-    2344.5,
+    1212.4,
+    2488.1,
     212.5
    ],
    "rotation_deg": {
     "roll": 0.0,
-    "pitch": 28.66,
+    "pitch": 36.27,
     "yaw": -90.0
    },
    "scale": [
-    7.82,
-    3.0,
+    6.34,
+    0.75,
     0.3
    ]
   },
   {
-   "variant": "Ramp_061x010x003",
+   "variant": "Ramp_082x007x003",
    "label": "BLK_Ramp_002",
    "folder": "Blockout/Ramps",
    "location_cm": [
-    1212.4,
-    2425.6,
+    1401.0,
+    589.4,
     212.5
    ],
    "rotation_deg": {
     "roll": 0.0,
-    "pitch": 37.66,
+    "pitch": 27.0,
     "yaw": -90.0
    },
    "scale": [
-    6.14,
-    1.0,
+    8.26,
+    0.75,
     0.3
    ]
   },
   {
-   "variant": "Ramp_082x010x003",
+   "variant": "Ramp_082x007x003",
    "label": "BLK_Ramp_003",
    "folder": "Blockout/Ramps",
    "location_cm": [
-    2076.1,
+    2051.1,
     1522.3,
     212.5
    ],
@@ -5188,16 +6842,16 @@
    },
    "scale": [
     8.26,
-    1.0,
+    0.75,
     0.3
    ]
   },
   {
-   "variant": "Ramp_082x010x003",
+   "variant": "Ramp_082x007x003",
    "label": "BLK_Ramp_004",
    "folder": "Blockout/Ramps",
    "location_cm": [
-    3123.9,
+    3111.4,
     1522.3,
     212.5
    ],
@@ -5208,47 +6862,87 @@
    },
    "scale": [
     8.26,
-    1.0,
+    0.75,
     0.3
    ]
   },
   {
-   "variant": "Ramp_078x030x003",
+   "variant": "Ramp_082x007x003",
    "label": "BLK_Ramp_005",
    "folder": "Blockout/Ramps",
    "location_cm": [
-    4028.0,
-    2344.5,
+    3799.0,
+    589.4,
     212.5
    ],
    "rotation_deg": {
     "roll": 0.0,
-    "pitch": 28.66,
+    "pitch": 27.0,
     "yaw": -90.0
    },
    "scale": [
-    7.82,
-    3.0,
+    8.26,
+    0.75,
     0.3
    ]
   },
   {
-   "variant": "Ramp_061x010x003",
+   "variant": "Ramp_063x007x003",
    "label": "BLK_Ramp_006",
    "folder": "Blockout/Ramps",
    "location_cm": [
     3987.6,
-    2425.6,
+    2488.1,
     212.5
    ],
    "rotation_deg": {
     "roll": 0.0,
-    "pitch": 37.66,
+    "pitch": 36.27,
     "yaw": -90.0
    },
    "scale": [
-    6.14,
-    1.0,
+    6.34,
+    0.75,
+    0.3
+   ]
+  },
+  {
+   "variant": "Ramp_082x007x003",
+   "label": "BLK_Ramp_007",
+   "folder": "Blockout/Ramps",
+   "location_cm": [
+    480.5,
+    1312.5,
+    212.5
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 27.0,
+    "yaw": 180.0
+   },
+   "scale": [
+    8.26,
+    0.75,
+    0.3
+   ]
+  },
+  {
+   "variant": "Ramp_082x007x003",
+   "label": "BLK_Ramp_008",
+   "folder": "Blockout/Ramps",
+   "location_cm": [
+    2580.5,
+    2587.5,
+    212.5
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 27.0,
+    "yaw": 180.0
+   },
+   "scale": [
+    8.26,
+    0.75,
     0.3
    ]
   }
