@@ -1,5 +1,7 @@
 # TICKET — BN34: make it PLAY, and make it 1:1 (TERMINAL, iterative)
 
+> STATUS: in-progress — mac terminal 30 Aug 2026 (256ed547). Gated on BN33.
+
 > OWNER: **terminal**, with the cloud regenerating data between rounds.
 > DEPENDS ON BN33. This is the ticket the founder actually cares about:
 > "he needs to make the level playable… we want to stick with the

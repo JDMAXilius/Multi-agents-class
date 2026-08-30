@@ -244,3 +244,36 @@ self-graded IoU of 0.66 is not 1:1. Both raised:
 VERDICT: **PASS, 0 fail, 2 warn, on ten checks.** The honesty line is
 unchanged and unmoved: capsule walk, nav mesh generation and fun are the
 in-editor rung, still open.
+
+### 30 Aug — the metrics gym, MEASURED (terminal, Unreal MCP)
+
+Third "done when" box closed. The editor was down (`unreal-mcp` lives inside
+the editor process, so the MCP server was simply absent); relaunched with
+`-ModelContextProtocolStartServer` and driven over its JSON-RPC endpoint.
+Numbers read off the SHIPPED pawn's CDO — `/Game/BN/Characters/BP_BNCharacter`
+(`CharMoveComp`, `CollisionCylinder`) — not off the C++ class, not off engine
+defaults. Full sheet is now in `docs/design/BLOCKOUT-KIT.md` §1.1.
+
+Three things the measurement changed:
+
+- **The capsule is 96 hh, not 88.** The body is **1.92 m**; the whole
+  document had been reasoning about 1.76 m. No current kit piece breaks
+  (min overhead 3.60 m, doorway 2.40 m) but every clearance margin quoted so
+  far was 16 cm optimistic. It also puts us at Halo's Spartan scale, which
+  retroactively justifies importing 343's Forge metrics.
+- **The navmesh agent is 1.44 m against a 1.92 m body.** Recast will floor a
+  gap the capsule cannot enter and route bots into it. Nothing violates it
+  today; it is now kit law that nothing may (or `AgentHeight` goes to 192).
+  This is the same class of defect as AIB9's drop-link gap — nav promising
+  what the body cannot keep — and worth checking before pass-2 railings.
+- **The traversal band is 0.45-0.90 m** (step 45, jump apex 90 from JumpZ 420
+  / gravity 1, no clamber, JumpMaxCount 1). Audited all 15 kit pieces: the
+  band is EMPTY — Curb 0.15 and Pedestal 0.40 walk-on, everything else
+  (HalfWall 1.10, Rail 1.00, Crate 1.00, Battery 1.20) sits above the apex as
+  a hard block. Clean by luck; recorded as a rule. Forces one catalog
+  correction: Battery_240 and Crate_100 are labelled *mantle height* and
+  there is no mantle in BN — they are cover, not traversal.
+
+Also confirmed: `/Game/Maps` holds **only `BR_Arena01`**. `BR_Aquarius` does
+not exist — the builder still has not been run, so the first "done when" box
+stays open, and with it the walk rung, the nav rung and fun.

@@ -1,18 +1,12 @@
 {
- "ticket": "BN-teamcolors",
+ "ticket": "BN31-BN34-aquarius-level",
  "owner_path": [
-  "Source/BreachpointNext/Characters/",
-  "Source/BreachpointNext/Weapons/",
-  "Source/BreachpointNext/AbilitySystem/",
-  "Source/BreachpointNext/Tests/",
-  "Config/",
-  "Tools/bn/",
-  "docs/",
-  "Source/BreachpointNext/QA/",
-  "Source/BreachpointNext/AIBotAdapter/",
-  "Plugins/AIBot/Source/AIBot/",
-  "Source/BreachpointNext/Animation/",
-  "Source/BreachpointNext/Match/"
+  "Tools/blockout/",
+  "Content/Blockout/",
+  "Content/Maps/",
+  "Content/Data/",
+  "docs/tickets/",
+  "docs/design/"
  ],
- "note": "QA/ added ONLY for the one-line BN27 build unblock, authorised by the founder 28 Aug"
+ "note": "Terminal work order BN31->BN34 (the Aquarius level). Editor-live; R29: one editor, one driver, no C++ build while it is open."
 }

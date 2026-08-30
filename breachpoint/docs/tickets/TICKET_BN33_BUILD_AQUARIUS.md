@@ -1,5 +1,7 @@
 # TICKET — BN33: build BR_Aquarius from the kit (TERMINAL)
 
+> STATUS: in-progress — mac terminal 30 Aug 2026 (256ed547). Gated on BN31.
+
 > OWNER: **terminal**. DEPENDS ON BN31 (the 15 assets).
 > This is the first time the level exists in the engine.
 

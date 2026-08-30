@@ -21,14 +21,70 @@ A blockout is built against a locked METRIC SHEET, measured in-engine (the
 "metrics gym": a test level of steps, gaps, ramps and crawl heights), never
 copied blind. The numbers that matter, with UE 5 baselines:
 
+### THE SHEET — MEASURED, 30 Aug 2026 [solid]
+
+No longer "UE defaults, verify later". Read straight off the shipped pawn's
+CDO (`/Game/BN/Characters/BP_BNCharacter`, its `CharMoveComp` and
+`CollisionCylinder`) through the in-editor Unreal MCP server. This is OUR
+sheet; the [thin] tags below it are retired.
+
+| Metric | MEASURED | Source |
+|---|---|---|
+| Capsule standing | r 34 x hh **96** cm = **1.92 m** | CollisionCylinder |
+| Capsule crouched | r 34 x hh 40 cm = **0.80 m** | CrouchedHalfHeight 40 |
+| Eye height | **1.60 m** standing / **0.72 m** crouched | BaseEyeHeight 64, Crouched 32 |
+| Walk speed | 600 cm/s (crouched **300**) | MaxWalkSpeed / Crouched |
+| Accel / braking | 2048 / 2048 cm/s2 | MaxAcceleration |
+| JumpZ | 420, GravityScale 1, JumpMaxCount **1** | -> apex **0.90 m**, air 0.857 s |
+| Flat jump reach | **5.14 m** at 600 cm/s | 600 x 0.857 |
+| Max step | **45 cm** | MaxStepHeight |
+| Walkable slope | **44.765 deg** | WalkableFloorAngle (Z 0.71) |
+| Air control | 0.5 | AirControl |
+| Clamber / fall damage | **NONE** | BN has neither |
+| Grapple | **22 m**, 4 s cooldown | `BNGA_Grapple.h` MaxRangeUU 2200 |
+| NAV agent | r 34, height **144 cm**, slope 44 deg | RecastNavMesh CDO |
+
+**Three findings the measurement produced, all of them kit law now:**
+
+1. **The body is 1.92 m, not the 1.76 m this document assumed.** Every
+   clearance number above was written against a character 16 cm shorter.
+   Nothing in the current kit breaks (min overhead is the 3.60 m under-deck,
+   the doorway is 2.40 m) but the margin was never as big as claimed.
+   Our Spartan-ish 1.92 m is also why Halo's own metrics port cleanly — we
+   are at Halo scale (2.0-2.2 m), not mannequin scale.
+2. **NAV PROMISES WHAT THE BODY CANNOT DO.** The navmesh agent is 1.44 m
+   tall against a 1.92 m capsule, so Recast will happily floor any gap
+   1.44-1.92 m high and route a bot into a beam it cannot fit under.
+   **No kit piece may ever create an overhead in the 1.44-1.92 m band**, or
+   `AgentHeight` gets raised to 192 to match the body. Nothing violates it
+   today; pass-2 (railings, low ducts) is exactly where it would happen.
+3. **The traversal band is 0.45-0.90 m, and it is EMPTY — keep it that way.**
+   Walked up to 45 cm (step); jumped up to 90 cm (apex); nothing above that
+   without the grapple, because there is no clamber. So a top face in
+   0.45-0.90 m is an unintended climb. Audit of the 15-piece kit: Curb 0.15
+   and Pedestal 0.40 are walk-ons (below the step); HalfWall 1.10, Rail 1.00,
+   Crate 1.00 and Battery 1.20 are all hard blocks (above the apex). The band
+   is clean by luck, not by rule. It is a rule now.
+
+   Correction it forces: the catalog calls Battery_240 (1.20 m) and
+   Crate_100 (1.00 m) *mantle height*. There is no mantle in BN and both sit
+   above the 0.90 m apex — they are COVER, not traversal. The "never scales"
+   rule on them is right; the reason written beside it was wrong.
+
+Cover math, now exact: a 1.10 m HalfWall hides the 0.80 m crouched body with
+0.30 m to spare, and leaves 0.50 m of the 1.60 m standing eye line exposed —
+chest-high cover, as intended.
+
+For reference, the UE 5 baselines this replaces:
+
 | Metric | UE default | Note |
 |---|---|---|
 | Capsule | r 34 x hh 88 cm (176 cm) | mannequin 180 cm [solid] |
-| Crouch | hh 40 cm (80 cm) | [thin] - measure ours |
+| Crouch | hh 40 cm (80 cm) | [solid] - ours matches |
 | Walk speed | 600 cm/s | [solid] |
-| JumpZ | 420 (templates often 700) | [thin] - measure ours |
-| Max step | 45 cm | [thin] |
-| Walkable slope | 44.765 deg | [thin] - the hard ramp limit |
+| JumpZ | 420 (templates often 700) | [solid] - ours is 420 |
+| Max step | 45 cm | [solid] |
+| Walkable slope | 44.765 deg | [solid] - the hard ramp limit |
 
 Halo's own numbers (343's official Forge map requirements, [solid]): 1 Forge
 unit = 1 ft; jump WITHOUT clamber 8 u (~2.4 m); comfortable clamber 12 u

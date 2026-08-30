@@ -1,5 +1,7 @@
 # TICKET — BN31: author the FIFTEEN blockout kit assets (TERMINAL)
 
+> STATUS: in-progress — mac terminal 30 Aug 2026 (256ed547). Claimed with BN32-BN34 as one work order.
+
 > OWNER: **terminal** (needs a live UE 5.8 editor). Cloud has prepared
 > everything except the editor work.
 > BLOCKS: BN33 (level build). Do this FIRST — the founder's directive:

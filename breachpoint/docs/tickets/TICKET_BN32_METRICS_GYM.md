@@ -1,5 +1,7 @@
 # TICKET — BN32: the metrics gym (TERMINAL, small, do it early)
 
+> STATUS: in-progress — mac terminal 30 Aug 2026 (256ed547). CDO measurement already done this session; rig script outstanding.
+
 > OWNER: **terminal**. 30 minutes. Everything downstream quietly assumes
 > these numbers; right now they are UE defaults from research, tagged
 > [thin], not OUR measured values.
