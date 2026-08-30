@@ -1,5 +1,32 @@
 # HANDOFF — the Aquarius level: terminal work order (BN31 -> BN34)
 
+> ## READY FOR TERMINAL — 30 Aug, on `main` at `0e9e0cf`. PULL BEFORE YOU RUN.
+>
+> Terminal's last known worktree was `809e3f6` (behind). `git pull --rebase`
+> first — the builder, the kit spec and all four tickets changed.
+>
+> **Three things that bite, before you touch the editor:**
+> 1. **Do BN31 FIRST.** `build_aquarius_blockout.py` now places instances of
+>    `/Game/Blockout/Meshes/SM_BLK_*`. If those assets do not exist it falls
+>    back to scaled engine cubes and PRINTS a NOTE — if you see that note,
+>    record it in BN31 before calling the build kit-built.
+> 2. **`make_kit_assets.py` deliberately raises** on its one mesh-creation
+>    call. That is not a bug: this repo has no compiled precedent for
+>    authoring a StaticMesh from Python and I will not invent an engine API.
+>    Discover the real path with
+>    `describe_toolset("editor_toolset.toolsets.static_mesh.StaticMeshTools")`,
+>    fix the script, commit the fix. A written-down fallback is fine.
+> 3. **Frame trap:** the arena manifest is +y NORTH, the kit is +y SOUTH.
+>    Spawns come from `kit["spawn_points"]` (already converted and snapped
+>    onto walkable ground); the rocket node uses `bounds.y - y`. The builder
+>    does this — do not "simplify" it. `validate_aquarius_blockout.py`
+>    catches a regression as `P3_FRAME`.
+>
+> **Data state:** `aquarius_blockout_kit.json` = 292 placements, 0.75 m grid,
+> validator **PASS (0 fail, 2 warn)** on ten checks. Run
+> `python3 Tools/blockout/validate_aquarius_blockout.py --png` before AND
+> after any data change; it exits non-zero on FAIL.
+
 > Founder, 30 Aug: "create cloud terminal tickets in order for cloud terminal
 > to use the MCP tools… he needs to create the fifteen modular assets
 > separate first and then use it throughout the level itself… he needs to
