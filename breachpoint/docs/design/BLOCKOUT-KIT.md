@@ -86,7 +86,8 @@ canon list) · building multiple passes between playtests.
 ## 2. OUR kit — TWELVE assets (K-101 / K-102)
 
 Founder correction (30 Aug): the kit is its INDIVIDUAL assets, no more than
-twelve. `Tools/blockout/gen_kit_catalog.py` renders the catalog — two sheets,
+twelve — extended to FIFTEEN on request (30 Aug: 'any extra individual
+modular assets?'). `Tools/blockout/gen_kit_catalog.py` renders the catalog — three sheets,
 one card per asset, each with canonical dims and its scaling rule:
 
 | # | Asset | Canonical size (m) | Scaling rule |
@@ -103,6 +104,9 @@ one card per asset, each with canonical dims and its scaling rule:
 | 10 | BLK_Battery_240 | 2.4 dia x 1.2 octagon | never (mantle height) |
 | 11 | BLK_Rail_400 | 4.0 x 0.1 x 1.0 | L only |
 | 12 | BLK_Curb_400 | 4.0 x 0.3 x 0.15 | L only |
+| 13 | BLK_Wall45_200 | 2.0 chord x 0.5 x 4.0 at 45 deg | H only - chord fixed (connection) |
+| 14 | BLK_GlassWall_400 | 4.0 x 0.3 x 4.0 | L/H - stays see-through (sightline) |
+| 15 | BLK_Pedestal_120 | 1.2 dia x 0.4 octagon | never (pickup read height) |
 
 The Aquarius placement manifest maps onto these via `asset_map` (Floor/Deck
 -> 01, Wall/Tower -> 02, Support -> 08, Ramp -> 05); HalfWall, Doorway,

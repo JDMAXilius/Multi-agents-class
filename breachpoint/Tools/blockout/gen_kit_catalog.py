@@ -5,8 +5,8 @@
 
 Founder correction (30 Aug): "have the individual assets into a couple
 screenshots, not the level. There should not be more than 12 modular
-individual assets." This renders exactly that: TWO catalog sheets (K-101,
-K-102), six asset cards each — every card one asset drawn alone in 3/4,
+individual assets" - then (30 Aug, later): "any extra individual modular
+assets? Fix the stairs geometry." Now THREE catalog sheets (K-101..K-103) — every card one asset drawn alone in 3/4,
 with its name, canonical dimensions and its scaling rule.
 
 THE TWELVE (dims in metres, from the research sheet + the level schedule):
@@ -157,7 +157,7 @@ ASSETS = [
     ("BLK_Stair_200", "3.00 run x 2.00 w, rise 2.00 (10 steps 0.20/0.30)",
      "steps for short hops; treads are gameplay metric",
      "NEVER SCALES - new rise:run = new asset", 28,
-     [box(0, 0, 3 - i * 0.3, 2, 0, (i + 1) * 0.2) for i in range(10)]),
+     [box(i * 0.3, 0, 0.3, 2, 0, (10 - i) * 0.2) for i in range(10)]),
     ("BLK_Column_100", "0.90 dia x 4.00 m octagon",
      "free-standing, never wall-touching (orbitable - notes 21-25)",
      "SCALES: H only", 30,
@@ -183,11 +183,37 @@ ASSETS = [
      "trim / edge lip: reads edges, channels movement",
      "SCALES: L only", 34,
      [box(0, 0, 4, 0.3, 0, 0.15)]),
+    ("BLK_Wall45_200", "2.00 chord x 0.50 x 4.00 m at 45 deg",
+     "the corner piece: true diagonals for the octagonal chamfers",
+     "SCALES: H only - chord fixed (connection piece)", 26,
+     [([(0.0, 1.414), (1.414, 0.0), (1.768, 0.354), (0.354, 1.768)], 0, 4)]),
+    ("BLK_GlassWall_400", "4.00 x 0.30 x 4.00 m",
+     "hydro-tower glazing: blocks movement, SHOWS the sightline",
+     "SCALES: L/H - stays see-through (gameplay)", 26,
+     "GLASS"),
+    ("BLK_Pedestal_120", "1.20 dia x 0.40 m octagon",
+     "weapon / power-up pedestal (shot11; the rocket node)",
+     "DOES NOT SCALE - pickup read height", 40,
+     [(octagon(0.6, 0.6, 0.6), 0, 0.4)]),
 ]
+
+
+def rot_geo(geo, deg):
+    c, sn = math.cos(math.radians(deg)), math.sin(math.radians(deg))
+    out = []
+    for poly, z0, z1 in geo:
+        out.append(([(px * c - py * sn, px * sn + py * c) for px, py in poly],
+                    z0, z1))
+    return out
 
 
 def card(o, ox, oy, cw, ch, asset, idx):
     name, dims, role, rule, _S, geo = asset
+    if name == "BLK_Wall45_200":
+        # the 45-deg chord lies exactly on the camera diagonal and projects
+        # flat; rotate the DISPLAY only so the piece reads in 3D
+        geo = rot_geo(geo, -22.5)
+        role = "corner piece: true diagonals (display rotated)"
     o.append('<rect class="frame" x="%d" y="%d" width="%d" height="%d"/>'
              % (ox, oy, cw, ch))
     o.append('<text class="small" x="%d" y="%d">%02d</text>' % (ox + 10, oy + 20, idx))
@@ -203,6 +229,10 @@ def card(o, ox, oy, cw, ch, asset, idx):
         corners = [(x, y, z) for x in (0, 4) for y in (0, 0.5) for z in (0, 4)]
         fx = [0, 4]
         fy = [0, 0.5]
+    elif geo == "GLASS":
+        corners = [(x, y, z) for x in (0, 4) for y in (0, 0.3) for z in (0, 4)]
+        fx = [0, 4]
+        fy = [0, 0.3]
     else:
         corners = [(px, py, z) for poly, z0, z1 in geo
                    for z in (z0, z1) for px, py in poly]
@@ -233,6 +263,21 @@ def card(o, ox, oy, cw, ch, asset, idx):
                  % (lo[0] + dx, lo[1] + dy, hi[0] + dx, hi[1] + dy))
         o.append('<text class="rule" x="%.1f" y="%.1f">UP</text>'
                  % (hi[0] + dx + 6, hi[1] + dy - 4))
+    elif geo == "GLASS":
+        poly, z0, z1 = box(0, 0, 4, 0.3, 0, 4)
+        prism(o, poly, z0, z1, S, dx, dy)
+        for i in range(1, 4):
+            t = i * 1.0
+            pa = P(t, 0.3, 0.3, S)
+            pb = P(t, 0.3, 3.7, S)
+            o.append('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" '
+                     'stroke="#888" stroke-width="1.0"/>'
+                     % (pa[0] + dx, pa[1] + dy, pb[0] + dx, pb[1] + dy))
+        ga = P(0.4, 0.3, 2.0, S)
+        gb = P(3.6, 0.3, 2.0, S)
+        o.append('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" '
+                 'stroke="#888" stroke-width="1.0"/>'
+                 % (ga[0] + dx, ga[1] + dy, gb[0] + dx, gb[1] + dy))
     elif geo == "DOORWAY":
         poly, z0, z1 = box(0, 0, 4, 0.5, 0, 4)
         prism(o, poly, z0, z1, S, dx, dy)
@@ -252,7 +297,8 @@ def card(o, ox, oy, cw, ch, asset, idx):
 
 def sheet(fname, no, title, assets, start_idx):
     cw, ch = 470, 430
-    cols, rows = 3, 2
+    cols = 3
+    rows = (len(assets) + cols - 1) // cols
     w = cols * cw + 4 * 24
     h = rows * ch + 24 * 3 + 150
     o = ['<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" '
@@ -303,8 +349,10 @@ def main():
     sheet("K101_kit_catalog_1", "K-101", "MODULAR BLOCKOUT KIT — ASSETS 01-06",
           ASSETS[:6], 1)
     sheet("K102_kit_catalog_2", "K-102", "MODULAR BLOCKOUT KIT — ASSETS 07-12",
-          ASSETS[6:], 7)
-    print("wrote K-101 / K-102 (12 assets)")
+          ASSETS[6:12], 7)
+    sheet("K103_kit_catalog_3", "K-103", "MODULAR BLOCKOUT KIT — ASSETS 13-15",
+          ASSETS[12:], 13)
+    print("wrote K-101 / K-102 / K-103 (%d assets)" % len(ASSETS))
     if args.png:
         rasterize()
 

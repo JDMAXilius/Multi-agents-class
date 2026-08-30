@@ -105,3 +105,15 @@
   side face sorted far-to-near, so front faces overpaint back faces and a
   sign mistake can no longer delete geometry; normals only pick the tone.
   Unit-cube and A-301 center crops verified closed.
+
+### 30 Aug — founder: extras + stair fix (kit now FIFTEEN, K-103 added)
+
+- Stair geometry rebuilt as true adjacent step columns DESCENDING toward
+  the camera (risers + treads face the viewer); the earlier nested-slab
+  construction read as a fan. Verified at zoom.
+- Three extras, each demanded by the references, kit at 15 (inside the
+  researched under-~15 ceiling): BLK_Wall45_200 (the corner piece - kills
+  the stepped-diagonal pass-2 debt; drawn display-rotated because a 45 deg
+  chord lies on the camera diagonal), BLK_GlassWall_400 (hydro-tower
+  glazing - blocks movement, shows the sightline), BLK_Pedestal_120
+  (shot11's power-up / the rocket node read height).

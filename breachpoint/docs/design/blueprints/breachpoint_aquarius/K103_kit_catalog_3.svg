@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1506" height="652" viewBox="0 0 1506 652">
+<style>
+  .paper{fill:#ffffff}
+  .frame{fill:none;stroke:#000;stroke-width:1.4}
+  .border{fill:none;stroke:#000;stroke-width:2.6}
+  .top{fill:#ededed;stroke:#000;stroke-width:1.1;stroke-linejoin:round}
+  .east{fill:#ffffff;stroke:#000;stroke-width:1.1;stroke-linejoin:round}
+  .north{fill:#d2d2d2;stroke:#000;stroke-width:1.1;stroke-linejoin:round}
+  .shadow{fill:#f0f0f0;stroke:none}
+  .name{font:bold 15px monospace;fill:#000;letter-spacing:1px}
+  .dims{font:12px monospace;fill:#000}
+  .role{font:11px monospace;fill:#333}
+  .rule{font:bold 11px monospace;fill:#000}
+  .big{font:bold 17px monospace;fill:#000;letter-spacing:1px}
+  .small{font:9px monospace;fill:#000}
+  .tread{stroke:#000;stroke-width:0.7;fill:none}
+</style>
+<rect class="paper" width="1506" height="652"/>
+<rect class="border" x="8" y="8" width="1490" height="636"/>
+<text class="big" x="28" y="46">MODULAR BLOCKOUT KIT — ASSETS 13-15</text>
+<text class="small" x="28" y="66">BREACHPOINT BN30 · the modular blockout set · 12 assets total · grey = form only, grid 0.5 m · 2026-08-30 · sheet K-103</text>
+<rect class="frame" x="24" y="84" width="470" height="430"/>
+<text class="small" x="34" y="104">13</text>
+<text class="name" x="54" y="106">BLK_Wall45_200</text>
+<path class="shadow" d="M 273.9 266.6 L 348.5 309.7 L 244.1 370.0 L 169.5 326.9 Z"/>
+<path class="east" d="M 302.1 299.9 L 312.0 313.8 L 312.0 143.9 L 302.1 130.0 Z"/>
+<path class="north" d="M 206.0 322.9 L 302.1 299.9 L 302.1 130.0 L 206.0 153.0 Z"/>
+<path class="east" d="M 312.0 313.8 L 215.9 336.8 L 215.9 166.9 L 312.0 143.9 Z"/>
+<path class="north" d="M 215.9 336.8 L 206.0 322.9 L 206.0 153.0 L 215.9 166.9 Z"/>
+<path class="top" d="M 206.0 153.0 L 302.1 130.0 L 312.0 143.9 L 215.9 166.9 Z"/>
+<text class="dims" x="38" y="456">2.00 chord x 0.50 x 4.00 m at 45 deg</text>
+<text class="role" x="38" y="476">corner piece: true diagonals (display rotated)</text>
+<text class="rule" x="38" y="498">SCALES: H only - chord fixed (connection piece)</text>
+<rect class="frame" x="518" y="84" width="470" height="430"/>
+<text class="small" x="528" y="104">14</text>
+<text class="name" x="548" y="106">BLK_GlassWall_400</text>
+<path class="shadow" d="M 694.3 261.9 L 846.6 349.8 L 811.7 370.0 L 659.4 282.1 Z"/>
+<path class="north" d="M 684.8 282.1 L 694.3 276.6 L 694.3 130.0 L 684.8 135.5 Z"/>
+<path class="east" d="M 694.3 276.6 L 821.2 349.8 L 821.2 203.3 L 694.3 130.0 Z"/>
+<path class="north" d="M 811.7 355.3 L 684.8 282.1 L 684.8 135.5 L 811.7 208.8 Z"/>
+<path class="east" d="M 821.2 349.8 L 811.7 355.3 L 811.7 208.8 L 821.2 203.3 Z"/>
+<path class="top" d="M 694.3 130.0 L 821.2 203.3 L 811.7 208.8 L 684.8 135.5 Z"/>
+<line x1="716.5" y1="289.4" x2="716.5" y2="164.8" stroke="#888" stroke-width="1.0"/>
+<line x1="748.2" y1="307.7" x2="748.2" y2="183.1" stroke="#888" stroke-width="1.0"/>
+<line x1="780.0" y1="326.0" x2="780.0" y2="201.5" stroke="#888" stroke-width="1.0"/>
+<line x1="697.5" y1="216.1" x2="799.0" y2="274.7" stroke="#888" stroke-width="1.0"/>
+<text class="dims" x="532" y="456">4.00 x 0.30 x 4.00 m</text>
+<text class="role" x="532" y="476">hydro-tower glazing: blocks movement, SHOWS the sightline</text>
+<text class="rule" x="532" y="498">SCALES: L/H - stays see-through (gameplay)</text>
+<rect class="frame" x="1012" y="84" width="470" height="430"/>
+<text class="small" x="1022" y="104">15</text>
+<text class="name" x="1042" y="106">BLK_Pedestal_120</text>
+<path class="shadow" d="M 1247.0 206.1 L 1323.0 250.0 L 1247.0 293.9 L 1171.0 250.0 Z"/>
+<path class="north" d="M 1234.1 232.0 L 1259.9 232.0 L 1259.9 213.6 L 1234.1 213.6 Z"/>
+<path class="north" d="M 1215.8 242.5 L 1234.1 232.0 L 1234.1 213.6 L 1215.8 224.1 Z"/>
+<path class="east" d="M 1259.9 232.0 L 1278.2 242.5 L 1278.2 224.1 L 1259.9 213.6 Z"/>
+<path class="east" d="M 1278.2 242.5 L 1278.2 257.5 L 1278.2 239.1 L 1278.2 224.1 Z"/>
+<path class="north" d="M 1215.8 257.5 L 1215.8 242.5 L 1215.8 224.1 L 1215.8 239.1 Z"/>
+<path class="east" d="M 1278.2 257.5 L 1259.9 268.0 L 1259.9 249.6 L 1278.2 239.1 Z"/>
+<path class="north" d="M 1234.1 268.0 L 1215.8 257.5 L 1215.8 239.1 L 1234.1 249.6 Z"/>
+<path class="east" d="M 1259.9 268.0 L 1234.1 268.0 L 1234.1 249.6 L 1259.9 249.6 Z"/>
+<path class="top" d="M 1259.9 249.6 L 1234.1 249.6 L 1215.8 239.1 L 1215.8 224.1 L 1234.1 213.6 L 1259.9 213.6 L 1278.2 224.1 L 1278.2 239.1 Z"/>
+<text class="dims" x="1026" y="456">1.20 dia x 0.40 m octagon</text>
+<text class="role" x="1026" y="476">weapon / power-up pedestal (shot11; the rocket node)</text>
+<text class="rule" x="1026" y="498">DOES NOT SCALE - pickup read height</text>
+<text class="small" x="28" y="624">SCALING LAW: plates, walls, columns, piers, rails, curbs scale · STAIRS and DOOR OPENINGS never scale (rise:run and clearances are gameplay) · ramps re-length, never steepen past 45 deg · everything snaps to the 0.5 m grid</text>
+</svg>
