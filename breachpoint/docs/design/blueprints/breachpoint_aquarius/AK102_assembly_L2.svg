@@ -271,7 +271,6 @@
 <rect class="mwall" x="732" y="852" width="52" height="26"/>
 <rect class="mwall" x="888" y="852" width="52" height="26"/>
 <rect class="mwall" x="1044" y="852" width="52" height="26"/>
-<rect class="mwall" x="758" y="878" width="52" height="26"/>
 <rect class="mwall" x="862" y="878" width="52" height="26"/>
 <rect class="mwall" x="446" y="176" width="26" height="26"/>
 <rect class="mwall" x="1200" y="176" width="26" height="26"/>
@@ -286,6 +285,7 @@
 <rect class="mwall" x="212" y="436" width="26" height="26"/>
 <rect class="mwall" x="1434" y="436" width="26" height="26"/>
 <rect class="mwall" x="576" y="878" width="26" height="26"/>
+<rect class="mwall" x="758" y="878" width="26" height="26"/>
 <rect class="mwall" x="1070" y="878" width="26" height="26"/>
 <rect class="mwall" x="498" y="904" width="26" height="26"/>
 <rect class="mwall" x="1148" y="904" width="26" height="26"/>
@@ -333,18 +333,12 @@
 <rect class="mtower" x="914" y="696" width="26" height="26"/>
 <rect class="mtower" x="732" y="774" width="26" height="26"/>
 <rect class="mtower" x="914" y="774" width="26" height="26"/>
-<rect class="over" x="361.5" y="744.958" width="206.44" height="78"/>
-<rect class="over" x="462.224" y="806.006" width="26" height="26"/>
-<rect class="over" x="511.26" y="231.562" width="26" height="26"/>
-<rect class="over" x="574.31" y="214.064" width="26" height="26"/>
-<rect class="over" x="721.08" y="809.022" width="229.84" height="104"/>
-<rect class="over" x="752.956" y="532.798" width="26" height="26"/>
-<rect class="over" x="754.75" y="505.784" width="162.5" height="52"/>
-<rect class="over" x="893.044" y="532.798" width="26" height="26"/>
-<rect class="over" x="1071.69" y="214.064" width="26" height="26"/>
-<rect class="over" x="1134.74" y="231.562" width="26" height="26"/>
-<rect class="over" x="1104.06" y="744.958" width="206.44" height="78"/>
-<rect class="over" x="1183.78" y="806.006" width="26" height="26"/>
+<rect class="over" x="363.06" y="720.57" width="203.32" height="78"/>
+<rect class="over" x="395.404" y="767.656" width="159.64" height="26"/>
+<rect class="over" x="592.406" y="532.798" width="214.76" height="26"/>
+<rect class="over" x="864.834" y="532.798" width="214.76" height="26"/>
+<rect class="over" x="1105.62" y="720.57" width="203.32" height="78"/>
+<rect class="over" x="1116.96" y="767.656" width="159.64" height="26"/>
 <line class="dim" x1="160" y1="86" x2="1512" y2="86"/>
 <line class="dim" x1="160" y1="82" x2="160" y2="90"/>
 <line class="dim" x1="1512" y1="82" x2="1512" y2="90"/>
@@ -386,14 +380,14 @@
 <text class="roomd" x="1882" y="236">x20</text>
 <text class="roomd" x="1582" y="253">Tower_010x010x065</text>
 <text class="roomd" x="1882" y="253">x18</text>
-<text class="roomd" x="1582" y="270">Deck_010x020x004</text>
-<text class="roomd" x="1882" y="270">x16</text>
-<text class="roomd" x="1582" y="287">Wall_010x010x080</text>
+<text class="roomd" x="1582" y="270">Wall_010x010x080</text>
+<text class="roomd" x="1882" y="270">x17</text>
+<text class="roomd" x="1582" y="287">Deck_010x020x004</text>
 <text class="roomd" x="1882" y="287">x16</text>
 <text class="roomd" x="1582" y="304">Tower_020x020x065</text>
 <text class="roomd" x="1882" y="304">x11</text>
 <text class="roomd" x="1582" y="321">Wall_020x010x080</text>
-<text class="roomd" x="1882" y="321">x8</text>
+<text class="roomd" x="1882" y="321">x7</text>
 <text class="roomd" x="1582" y="338">Deck_020x020x004</text>
 <text class="roomd" x="1882" y="338">x6</text>
 <text class="roomd" x="1582" y="355">Deck_010x030x004</text>

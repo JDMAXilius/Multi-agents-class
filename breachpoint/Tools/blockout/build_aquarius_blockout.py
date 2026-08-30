@@ -89,25 +89,30 @@ def main():
     print("placed %d kit instances (%d variants)"
           % (count, len(kit["variants"])))
 
-    # spawns + rocket from the arena manifest (METRES -> cm at this boundary)
+    # spawns come from the KIT (already converted into the kit frame and
+    # snapped onto walkable ground). The arena manifest is +y NORTH while the
+    # kit is +y SOUTH - reading spawns straight from the arena manifest
+    # mirrors them, which validate_aquarius_blockout.py catches as P3_FRAME.
     man = load_json(MANIFEST_PATH)
-    for sp in man.get("spawn_points", []):
-        L = sp["location"]
-        loc = unreal.Vector(L["x"] * M_TO_UU, L["y"] * M_TO_UU,
-                            L["z"] * M_TO_UU + 10.0)
-        rot = unreal.Rotator(0.0, 0.0, float(sp.get("facing", 0)))
+    for sp in kit.get("spawn_points", []):
+        loc = unreal.Vector(*sp["location_cm"])
+        rot = unreal.Rotator(0.0, 0.0, float(sp.get("yaw_deg", 0.0)))
         ps = actor_ss.spawn_actor_from_class(unreal.PlayerStart, loc, rot)
         ps.set_actor_label("Spawn_%s_%s" % (sp.get("pool", "n"), sp["id"]))
-        ps.tags.append(unreal.Name(TAG))
+        tag(ps)
         ps.set_folder_path(unreal.Name("Blockout/Spawns"))
+    print("placed %d spawn points from the kit" % len(kit.get("spawn_points", [])))
+
     rk = man.get("rocket_node")
     if rk:
-        loc = unreal.Vector(rk["x"] * M_TO_UU, rk["y"] * M_TO_UU,
+        b = man["bounds"]
+        loc = unreal.Vector(rk["x"] * M_TO_UU,
+                            (b["y"] - rk["y"]) * M_TO_UU,   # north -> south
                             rk["z"] * M_TO_UU + 20.0)
         mk = actor_ss.spawn_actor_from_class(unreal.TargetPoint, loc,
                                              unreal.Rotator(0, 0, 0))
         mk.set_actor_label("ROCKET_Node")
-        mk.tags.append(unreal.Name(TAG))
+        tag(mk)
         mk.set_folder_path(unreal.Name("Blockout/Markers"))
 
     # nav bounds over the whole footprint (+2 m margin), bots from day one
@@ -119,7 +124,7 @@ def main():
         unreal.Rotator(0, 0, 0))
     nav.set_actor_scale3d(unreal.Vector(b["x"] + 4, b["y"] + 4, b["z"] + 4))
     nav.set_actor_label("Nav_Aquarius")
-    nav.tags.append(unreal.Name(TAG))
+    tag(nav)
     nav.set_folder_path(unreal.Name("Blockout/Nav"))
 
     level_ss.save_current_level()

@@ -7,7 +7,7 @@
    50,
    100
   ],
-  "actual": 105,
+  "actual": 99,
   "basis": "BLOCKOUT-KIT.md piece-count research: massing 50-100, greybox 200-400 (soft ceiling 500, red line ~650 - the Halo 3/Reach complete-map cap)"
  },
  "units": "location cm (1uu), scale = metres of a 100 cm unit mesh",
@@ -326,34 +326,24 @@
    "count": 2
   },
   {
-   "id": "Ramp_070x020x003",
+   "id": "Ramp_057x020x003",
    "family": "Ramp",
    "size_m": [
-    7.08,
+    5.75,
     2.0,
     0.3
    ],
-   "count": 3
+   "count": 2
   },
   {
-   "id": "Ramp_020x020x040",
+   "id": "Ramp_082x020x003",
    "family": "Ramp",
    "size_m": [
+    8.26,
     2.0,
-    2.0,
-    4.0
-   ],
-   "count": 8
-  },
-  {
-   "id": "Ramp_088x040x003",
-   "family": "Ramp",
-   "size_m": [
-    8.84,
-    4.0,
     0.3
    ],
-   "count": 1
+   "count": 4
   }
  ],
  "level_schedule_m": {
@@ -369,21 +359,122 @@
    4.0
   ]
  },
- "doubts": [
-  "BLK_Ramp_002: slope 62 deg exceeds walkable 45 - placed as solid block pending channel (b)",
-  "BLK_Ramp_003: slope 62 deg exceeds walkable 45 - placed as solid block pending channel (b)",
-  "BLK_Ramp_004: slope 62 deg exceeds walkable 45 - placed as solid block pending channel (b)",
-  "BLK_Ramp_006: slope 62 deg exceeds walkable 45 - placed as solid block pending channel (b)",
-  "BLK_Ramp_008: slope 62 deg exceeds walkable 45 - placed as solid block pending channel (b)",
-  "BLK_Ramp_009: slope 62 deg exceeds walkable 45 - placed as solid block pending channel (b)",
-  "BLK_Ramp_010: slope 62 deg exceeds walkable 45 - placed as solid block pending channel (b)",
-  "BLK_Ramp_012: slope 62 deg exceeds walkable 45 - placed as solid block pending channel (b)"
- ],
+ "doubts": [],
  "pass2_owed": [
   "yaw-45 wall variants where the trace shows true diagonals (stepped at 0.5 m this pass)",
   "free-standing columns (BLK_Cylinder), battery octagons at the base mouths, lane crates - reference notes 16-25 anchors",
   "railings on deck edges the reference shows railed",
   "sunken center trench below grade (channel b)"
+ ],
+ "spawn_points": [
+  {
+   "id": "SP1",
+   "pool": "team_a",
+   "location_cm": [
+    1300.0,
+    2300.0,
+    410.0
+   ],
+   "yaw_deg": -0.0
+  },
+  {
+   "id": "SP2",
+   "pool": "team_a",
+   "location_cm": [
+    1220.0,
+    350.0,
+    410.0
+   ],
+   "yaw_deg": -0.0
+  },
+  {
+   "id": "SP3",
+   "pool": "team_b",
+   "location_cm": [
+    3900.0,
+    300.0,
+    410.0
+   ],
+   "yaw_deg": -180.0
+  },
+  {
+   "id": "SP4",
+   "pool": "team_b",
+   "location_cm": [
+    3900.0,
+    2300.0,
+    410.0
+   ],
+   "yaw_deg": -180.0
+  },
+  {
+   "id": "SP5",
+   "pool": "neutral",
+   "location_cm": [
+    2100.0,
+    1900.0,
+    10.0
+   ],
+   "yaw_deg": -45.0
+  },
+  {
+   "id": "SP6",
+   "pool": "neutral",
+   "location_cm": [
+    2100.0,
+    1100.0,
+    10.0
+   ],
+   "yaw_deg": 45.0
+  },
+  {
+   "id": "SP7",
+   "pool": "neutral",
+   "location_cm": [
+    3500.0,
+    1100.0,
+    10.0
+   ],
+   "yaw_deg": 135.0
+  },
+  {
+   "id": "SP8",
+   "pool": "neutral",
+   "location_cm": [
+    3500.0,
+    1900.0,
+    10.0
+   ],
+   "yaw_deg": -135.0
+  }
+ ],
+ "spawn_note": "converted from Content/Data/aquarius_manifest.json into the KIT FRAME (+y south, cm) and snapped onto walkable ground; the builder must use THESE, not the arena manifest's north-up coordinates.",
+ "repairs": [
+  "SP1 snapped 2.7 m onto walkable ground",
+  "SP3 snapped 1.2 m onto walkable ground",
+  "SP4 snapped 2.9 m onto walkable ground",
+  "SP5 snapped 2.6 m onto walkable ground",
+  "SP6 snapped 2.7 m onto walkable ground",
+  "SP7 snapped 2.1 m onto walkable ground",
+  "SP8 snapped 2.0 m onto walkable ground",
+  "ACCESS RAMP synthesised: a 104 m2 upper region had no route up after quantisation",
+  "ACCESS RAMP synthesised: a 104 m2 upper region had no route up after quantisation"
+ ],
+ "unresolved_capsules": [
+  "traced capsule at (11.7, 24.4) could not be anchored as a walkable ramp at this quantisation - left OPEN, channel (b) rules",
+  "traced capsule at (14.0, 3.6) could not be anchored as a walkable ramp at this quantisation - left OPEN, channel (b) rules",
+  "traced capsule at (16.4, 3.0) could not be anchored as a walkable ramp at this quantisation - left OPEN, channel (b) rules",
+  "traced capsule at (26.0, 27.3) could not be anchored as a walkable ramp at this quantisation - left OPEN, channel (b) rules",
+  "traced capsule at (26.0, 14.7) could not be anchored as a walkable ramp at this quantisation - left OPEN, channel (b) rules",
+  "traced capsule at (35.6, 3.0) could not be anchored as a walkable ramp at this quantisation - left OPEN, channel (b) rules",
+  "traced capsule at (38.0, 3.6) could not be anchored as a walkable ramp at this quantisation - left OPEN, channel (b) rules",
+  "traced capsule at (40.3, 24.4) could not be anchored as a walkable ramp at this quantisation - left OPEN, channel (b) rules",
+  "run extended 3.6 m beyond the traced capsule to reach a walkable 41 deg",
+  "run extended 7.1 m beyond the traced capsule to reach a walkable 27 deg",
+  "run extended 7.1 m beyond the traced capsule to reach a walkable 27 deg",
+  "run extended 3.6 m beyond the traced capsule to reach a walkable 41 deg",
+  "ACCESS RAMP synthesised: a 104 m2 upper region had no route up after quantisation",
+  "ACCESS RAMP synthesised: a 104 m2 upper region had no route up after quantisation"
  ],
  "placements": [
   {
@@ -2247,252 +2338,124 @@
    ]
   },
   {
-   "variant": "Ramp_070x020x003",
+   "variant": "Ramp_057x020x003",
    "label": "BLK_Ramp_001",
    "folder": "Blockout/Ramps",
    "location_cm": [
-    1172.0,
-    2438.3,
+    1212.4,
+    2350.6,
     212.5
    ],
    "rotation_deg": {
     "roll": 0.0,
-    "pitch": 32.01,
+    "pitch": 40.7,
     "yaw": -90.0
    },
    "scale": [
-    7.08,
+    5.75,
     2.0,
     0.3
    ]
   },
   {
-   "variant": "Ramp_020x020x040",
+   "variant": "Ramp_082x020x003",
    "label": "BLK_Ramp_002",
    "folder": "Blockout/Ramps",
    "location_cm": [
-    1212.4,
-    2573.1,
-    200.0
+    2276.1,
+    1522.3,
+    212.5
    ],
    "rotation_deg": {
     "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 90.0
+    "pitch": 27.0,
+    "yaw": 0.0
    },
    "scale": [
+    8.26,
     2.0,
-    2.0,
-    4.0
-   ],
-   "suspect": "slope 62 deg exceeds walkable 45 - placed as solid block pending channel (b)"
+    0.3
+   ]
   },
   {
-   "variant": "Ramp_020x020x040",
+   "variant": "Ramp_082x020x003",
    "label": "BLK_Ramp_003",
    "folder": "Blockout/Ramps",
    "location_cm": [
-    1401.0,
-    363.7,
-    200.0
+    2923.9,
+    1522.3,
+    212.5
    ],
    "rotation_deg": {
     "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 90.0
+    "pitch": 27.0,
+    "yaw": 180.0
    },
    "scale": [
+    8.26,
     2.0,
-    2.0,
-    4.0
-   ],
-   "suspect": "slope 62 deg exceeds walkable 45 - placed as solid block pending channel (b)"
+    0.3
+   ]
   },
   {
-   "variant": "Ramp_020x020x040",
+   "variant": "Ramp_057x020x003",
    "label": "BLK_Ramp_004",
    "folder": "Blockout/Ramps",
    "location_cm": [
-    1643.5,
-    296.4,
-    200.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 0.0
-   },
-   "scale": [
-    2.0,
-    2.0,
-    4.0
-   ],
-   "suspect": "slope 62 deg exceeds walkable 45 - placed as solid block pending channel (b)"
-  },
-  {
-   "variant": "Ramp_088x040x003",
-   "label": "BLK_Ramp_005",
-   "folder": "Blockout/Ramps",
-   "location_cm": [
-    2600.0,
-    2734.7,
+    3987.6,
+    2350.6,
     212.5
    ],
    "rotation_deg": {
     "roll": 0.0,
-    "pitch": 25.11,
-    "yaw": 0.0
-   },
-   "scale": [
-    8.84,
-    4.0,
-    0.3
-   ]
-  },
-  {
-   "variant": "Ramp_020x020x040",
-   "label": "BLK_Ramp_006",
-   "folder": "Blockout/Ramps",
-   "location_cm": [
-    2330.6,
-    1522.3,
-    200.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 0.0
-   },
-   "scale": [
-    2.0,
-    2.0,
-    4.0
-   ],
-   "suspect": "slope 62 deg exceeds walkable 45 - placed as solid block pending channel (b)"
-  },
-  {
-   "variant": "Ramp_070x020x003",
-   "label": "BLK_Ramp_007",
-   "folder": "Blockout/Ramps",
-   "location_cm": [
-    2600.0,
-    1468.4,
-    212.5
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 32.01,
-    "yaw": 0.0
-   },
-   "scale": [
-    7.08,
-    2.0,
-    0.3
-   ]
-  },
-  {
-   "variant": "Ramp_020x020x040",
-   "label": "BLK_Ramp_008",
-   "folder": "Blockout/Ramps",
-   "location_cm": [
-    2869.4,
-    1522.3,
-    200.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 0.0
-   },
-   "scale": [
-    2.0,
-    2.0,
-    4.0
-   ],
-   "suspect": "slope 62 deg exceeds walkable 45 - placed as solid block pending channel (b)"
-  },
-  {
-   "variant": "Ramp_020x020x040",
-   "label": "BLK_Ramp_009",
-   "folder": "Blockout/Ramps",
-   "location_cm": [
-    3556.5,
-    296.4,
-    200.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 0.0
-   },
-   "scale": [
-    2.0,
-    2.0,
-    4.0
-   ],
-   "suspect": "slope 62 deg exceeds walkable 45 - placed as solid block pending channel (b)"
-  },
-  {
-   "variant": "Ramp_020x020x040",
-   "label": "BLK_Ramp_010",
-   "folder": "Blockout/Ramps",
-   "location_cm": [
-    3799.0,
-    363.7,
-    200.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 90.0
-   },
-   "scale": [
-    2.0,
-    2.0,
-    4.0
-   ],
-   "suspect": "slope 62 deg exceeds walkable 45 - placed as solid block pending channel (b)"
-  },
-  {
-   "variant": "Ramp_070x020x003",
-   "label": "BLK_Ramp_011",
-   "folder": "Blockout/Ramps",
-   "location_cm": [
-    4028.0,
-    2438.3,
-    212.5
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 32.01,
+    "pitch": 40.7,
     "yaw": -90.0
    },
    "scale": [
-    7.08,
+    5.75,
     2.0,
     0.3
    ]
   },
   {
-   "variant": "Ramp_020x020x040",
-   "label": "BLK_Ramp_012",
+   "variant": "Ramp_082x020x003",
+   "label": "BLK_Ramp_005",
    "folder": "Blockout/Ramps",
    "location_cm": [
-    3987.6,
-    2573.1,
-    200.0
+    3532.0,
+    1500.0,
+    212.5
    ],
    "rotation_deg": {
     "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 90.0
+    "pitch": 27.0,
+    "yaw": 0.0
    },
    "scale": [
+    8.26,
     2.0,
-    2.0,
-    4.0
+    0.3
+   ]
+  },
+  {
+   "variant": "Ramp_082x020x003",
+   "label": "BLK_Ramp_006",
+   "folder": "Blockout/Ramps",
+   "location_cm": [
+    300.0,
+    1268.0,
+    212.5
    ],
-   "suspect": "slope 62 deg exceeds walkable 45 - placed as solid block pending channel (b)"
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 27.0,
+    "yaw": -90.0
+   },
+   "scale": [
+    8.26,
+    2.0,
+    0.3
+   ]
   }
  ]
 }

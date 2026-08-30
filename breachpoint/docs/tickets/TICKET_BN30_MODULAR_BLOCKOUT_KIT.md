@@ -176,3 +176,42 @@ Three faults, one of them geometric (not just a drawing bug):
   fenceposts (now 16). Counts stay in band: massing 105, greybox 231.
 - Sheet finished with an assembly summary (per-family counts + the budget
   band) and a tone key in a left gutter.
+
+### 30 Aug — founder: "playable and 1:1" — a validator, and what it caught
+
+New `Tools/blockout/validate_aquarius_blockout.py`: builds the walkable graph
+from the kit manifest and checks connectivity, level-to-level reach, spawn
+placement, capsule-passable widths (erosion test), head clearance, ramp
+slopes, perimeter closure, plus FIDELITY (per-class IoU vs the traced
+reference, dimensions, symmetry). Emits a colour diagnostic. Exit 1 on FAIL.
+
+It failed the level on first run, and every failure was real:
+
+- **P3_SPAWN_AXIS — the frame bug.** The arena manifest is +y NORTH; the kit
+  is +y SOUTH. The builder was reading spawns straight from the arena
+  manifest, which would have MIRRORED every spawn into the wrong half of the
+  map. The kit now converts once and carries `spawn_points` in kit frame,
+  snapped onto walkable ground; the builder reads those, and the rocket node
+  gets the same conversion.
+- **RAMP_ORPHAN x3 — ramps to nowhere.** Two ran their foot into the
+  perimeter wall, one ended in mid-air. Ramp placement rewritten: each ramp
+  is anchored at BOTH ends (head pushed until it overlaps the deck it serves,
+  foot placed on free floor at the run a 27 deg slope needs), both directions
+  evaluated end-to-end, and the head overlap fixed for an off-by-one that
+  stopped ramps a cell short of their deck.
+- **The bridge was unreachable.** Capsules that could not be converted were
+  being placed as 4 m SOLID blocks - and they sat exactly in the doorways
+  where the bridge's ramps land, sealing the whole central deck (67% deck
+  reach). A capsule we cannot anchor was never proven to be a wall either:
+  they are now left OPEN and listed in `unresolved_capsules` (10 of them) for
+  the reference walk. Deck reach went 67% -> 97%.
+- **P1 pocket** sealed by quantisation: the generator now carves the doorway
+  back where the REFERENCE has it open (reference-driven, never invented).
+- My first width metric was wrong (it flagged every corridor EDGE); replaced
+  with the correct test - erode by the capsule radius, then check the ground
+  is still one region.
+
+VERDICT now **PASS (0 fail, 2 warn)**: ground one region 723 m2, decks 97%
+reachable, 8/8 spawns good, ramps <= 37.7 deg, perimeter closed; fidelity
+IoU 0.66 structure / 0.84 decks, dims 0.0%/0.3% off, symmetry 1.000.
+Honesty line unchanged: capsule walk, nav mesh and fun are the in-editor rung.

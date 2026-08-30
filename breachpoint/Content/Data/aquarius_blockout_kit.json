@@ -7,7 +7,7 @@
    200,
    400
   ],
-  "actual": 231,
+  "actual": 225,
   "basis": "BLOCKOUT-KIT.md piece-count research: massing 50-100, greybox 200-400 (soft ceiling 500, red line ~650 - the Halo 3/Reach complete-map cap)"
  },
  "units": "location cm (1uu), scale = metres of a 100 cm unit mesh",
@@ -453,7 +453,7 @@
     1.0,
     8.0
    ],
-   "count": 8
+   "count": 7
   },
   {
    "id": "Wall_010x020x080",
@@ -473,7 +473,7 @@
     1.0,
     8.0
    ],
-   "count": 16
+   "count": 17
   },
   {
    "id": "Tower_050x050x065",
@@ -596,44 +596,34 @@
    "count": 2
   },
   {
-   "id": "Ramp_079x030x003",
+   "id": "Ramp_078x030x003",
    "family": "Ramp",
    "size_m": [
-    7.94,
+    7.82,
     3.0,
     0.3
    ],
    "count": 2
   },
   {
-   "id": "Ramp_010x010x040",
+   "id": "Ramp_061x010x003",
    "family": "Ramp",
    "size_m": [
+    6.14,
     1.0,
-    1.0,
-    4.0
-   ],
-   "count": 8
-  },
-  {
-   "id": "Ramp_088x040x003",
-   "family": "Ramp",
-   "size_m": [
-    8.84,
-    4.0,
     0.3
    ],
-   "count": 1
+   "count": 2
   },
   {
-   "id": "Ramp_062x020x003",
+   "id": "Ramp_082x010x003",
    "family": "Ramp",
    "size_m": [
-    6.25,
-    2.0,
+    8.26,
+    1.0,
     0.3
    ],
-   "count": 1
+   "count": 2
   }
  ],
  "level_schedule_m": {
@@ -649,21 +639,117 @@
    4.0
   ]
  },
- "doubts": [
-  "BLK_Ramp_002: slope 75 deg exceeds walkable 45 - placed as solid block pending channel (b)",
-  "BLK_Ramp_003: slope 75 deg exceeds walkable 45 - placed as solid block pending channel (b)",
-  "BLK_Ramp_004: slope 75 deg exceeds walkable 45 - placed as solid block pending channel (b)",
-  "BLK_Ramp_006: slope 75 deg exceeds walkable 45 - placed as solid block pending channel (b)",
-  "BLK_Ramp_008: slope 75 deg exceeds walkable 45 - placed as solid block pending channel (b)",
-  "BLK_Ramp_009: slope 75 deg exceeds walkable 45 - placed as solid block pending channel (b)",
-  "BLK_Ramp_010: slope 75 deg exceeds walkable 45 - placed as solid block pending channel (b)",
-  "BLK_Ramp_012: slope 75 deg exceeds walkable 45 - placed as solid block pending channel (b)"
- ],
+ "doubts": [],
  "pass2_owed": [
   "yaw-45 wall variants where the trace shows true diagonals (stepped at 0.5 m this pass)",
   "free-standing columns (BLK_Cylinder), battery octagons at the base mouths, lane crates - reference notes 16-25 anchors",
   "railings on deck edges the reference shows railed",
   "sunken center trench below grade (channel b)"
+ ],
+ "spawn_points": [
+  {
+   "id": "SP1",
+   "pool": "team_a",
+   "location_cm": [
+    1150.0,
+    2550.0,
+    410.0
+   ],
+   "yaw_deg": -0.0
+  },
+  {
+   "id": "SP2",
+   "pool": "team_a",
+   "location_cm": [
+    1220.0,
+    350.0,
+    410.0
+   ],
+   "yaw_deg": -0.0
+  },
+  {
+   "id": "SP3",
+   "pool": "team_b",
+   "location_cm": [
+    3950.0,
+    450.0,
+    410.0
+   ],
+   "yaw_deg": -180.0
+  },
+  {
+   "id": "SP4",
+   "pool": "team_b",
+   "location_cm": [
+    4050.0,
+    2550.0,
+    410.0
+   ],
+   "yaw_deg": -180.0
+  },
+  {
+   "id": "SP5",
+   "pool": "neutral",
+   "location_cm": [
+    2150.0,
+    1950.0,
+    10.0
+   ],
+   "yaw_deg": -45.0
+  },
+  {
+   "id": "SP6",
+   "pool": "neutral",
+   "location_cm": [
+    2050.0,
+    1050.0,
+    10.0
+   ],
+   "yaw_deg": 45.0
+  },
+  {
+   "id": "SP7",
+   "pool": "neutral",
+   "location_cm": [
+    3350.0,
+    1150.0,
+    10.0
+   ],
+   "yaw_deg": 135.0
+  },
+  {
+   "id": "SP8",
+   "pool": "neutral",
+   "location_cm": [
+    3550.0,
+    1950.0,
+    10.0
+   ],
+   "yaw_deg": -135.0
+  }
+ ],
+ "spawn_note": "converted from Content/Data/aquarius_manifest.json into the KIT FRAME (+y south, cm) and snapped onto walkable ground; the builder must use THESE, not the arena manifest's north-up coordinates.",
+ "repairs": [
+  "carved 1 bin(s) to reconnect a 2 m2 pocket",
+  "SP1 snapped 1.0 m onto walkable ground",
+  "SP3 snapped 1.2 m onto walkable ground",
+  "SP4 snapped 1.2 m onto walkable ground",
+  "SP5 snapped 2.8 m onto walkable ground",
+  "SP6 snapped 2.0 m onto walkable ground",
+  "SP7 snapped 2.0 m onto walkable ground",
+  "SP8 snapped 2.2 m onto walkable ground"
+ ],
+ "unresolved_capsules": [
+  "traced capsule at (14.0, 3.6) could not be anchored as a walkable ramp at this quantisation - left OPEN, channel (b) rules",
+  "traced capsule at (16.4, 3.0) could not be anchored as a walkable ramp at this quantisation - left OPEN, channel (b) rules",
+  "traced capsule at (26.0, 27.3) could not be anchored as a walkable ramp at this quantisation - left OPEN, channel (b) rules",
+  "traced capsule at (26.0, 14.7) could not be anchored as a walkable ramp at this quantisation - left OPEN, channel (b) rules",
+  "traced capsule at (35.6, 3.0) could not be anchored as a walkable ramp at this quantisation - left OPEN, channel (b) rules",
+  "traced capsule at (38.0, 3.6) could not be anchored as a walkable ramp at this quantisation - left OPEN, channel (b) rules",
+  "run extended 4.1 m beyond the traced capsule to reach a walkable 38 deg",
+  "run extended 7.1 m beyond the traced capsule to reach a walkable 27 deg",
+  "run extended 7.1 m beyond the traced capsule to reach a walkable 27 deg",
+  "run extended 4.1 m beyond the traced capsule to reach a walkable 38 deg"
  ],
  "placements": [
   {
@@ -3711,26 +3797,6 @@
    "label": "BLK_Wall_041",
    "folder": "Blockout/Walls",
    "location_cm": [
-    2400.0,
-    2850.0,
-    400.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 0.0
-   },
-   "scale": [
-    2.0,
-    1.0,
-    8.0
-   ]
-  },
-  {
-   "variant": "Wall_020x010x080",
-   "label": "BLK_Wall_042",
-   "folder": "Blockout/Walls",
-   "location_cm": [
     2800.0,
     2850.0,
     400.0
@@ -3748,7 +3814,7 @@
   },
   {
    "variant": "Wall_010x010x080",
-   "label": "BLK_Wall_043",
+   "label": "BLK_Wall_042",
    "folder": "Blockout/Walls",
    "location_cm": [
     1150.0,
@@ -3768,7 +3834,7 @@
   },
   {
    "variant": "Wall_010x010x080",
-   "label": "BLK_Wall_044",
+   "label": "BLK_Wall_043",
    "folder": "Blockout/Walls",
    "location_cm": [
     4050.0,
@@ -3788,10 +3854,30 @@
   },
   {
    "variant": "Wall_010x010x080",
-   "label": "BLK_Wall_045",
+   "label": "BLK_Wall_044",
    "folder": "Blockout/Walls",
    "location_cm": [
     1050.0,
+    250.0,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    1.0,
+    1.0,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_010x010x080",
+   "label": "BLK_Wall_045",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    1650.0,
     250.0,
     400.0
    ],
@@ -3811,7 +3897,7 @@
    "label": "BLK_Wall_046",
    "folder": "Blockout/Walls",
    "location_cm": [
-    1650.0,
+    2050.0,
     250.0,
     400.0
    ],
@@ -3831,7 +3917,7 @@
    "label": "BLK_Wall_047",
    "folder": "Blockout/Walls",
    "location_cm": [
-    2050.0,
+    3150.0,
     250.0,
     400.0
    ],
@@ -3851,7 +3937,7 @@
    "label": "BLK_Wall_048",
    "folder": "Blockout/Walls",
    "location_cm": [
-    3150.0,
+    3550.0,
     250.0,
     400.0
    ],
@@ -3871,7 +3957,7 @@
    "label": "BLK_Wall_049",
    "folder": "Blockout/Walls",
    "location_cm": [
-    3550.0,
+    4150.0,
     250.0,
     400.0
    ],
@@ -3891,8 +3977,8 @@
    "label": "BLK_Wall_050",
    "folder": "Blockout/Walls",
    "location_cm": [
-    4150.0,
-    250.0,
+    1050.0,
+    750.0,
     400.0
    ],
    "rotation_deg": {
@@ -3911,7 +3997,7 @@
    "label": "BLK_Wall_051",
    "folder": "Blockout/Walls",
    "location_cm": [
-    1050.0,
+    4150.0,
     750.0,
     400.0
    ],
@@ -3931,26 +4017,6 @@
    "label": "BLK_Wall_052",
    "folder": "Blockout/Walls",
    "location_cm": [
-    4150.0,
-    750.0,
-    400.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 0.0
-   },
-   "scale": [
-    1.0,
-    1.0,
-    8.0
-   ]
-  },
-  {
-   "variant": "Wall_010x010x080",
-   "label": "BLK_Wall_053",
-   "folder": "Blockout/Walls",
-   "location_cm": [
     250.0,
     1150.0,
     400.0
@@ -3968,7 +4034,7 @@
   },
   {
    "variant": "Wall_010x010x080",
-   "label": "BLK_Wall_054",
+   "label": "BLK_Wall_053",
    "folder": "Blockout/Walls",
    "location_cm": [
     4950.0,
@@ -3988,10 +4054,30 @@
   },
   {
    "variant": "Wall_010x010x080",
-   "label": "BLK_Wall_055",
+   "label": "BLK_Wall_054",
    "folder": "Blockout/Walls",
    "location_cm": [
     1650.0,
+    2850.0,
+    400.0
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    1.0,
+    1.0,
+    8.0
+   ]
+  },
+  {
+   "variant": "Wall_010x010x080",
+   "label": "BLK_Wall_055",
+   "folder": "Blockout/Walls",
+   "location_cm": [
+    2350.0,
     2850.0,
     400.0
    ],
@@ -5047,252 +5133,124 @@
    ]
   },
   {
-   "variant": "Ramp_079x030x003",
+   "variant": "Ramp_078x030x003",
    "label": "BLK_Ramp_001",
    "folder": "Blockout/Ramps",
    "location_cm": [
     1172.0,
-    2438.3,
+    2344.5,
     212.5
    ],
    "rotation_deg": {
     "roll": 0.0,
-    "pitch": 28.18,
+    "pitch": 28.66,
     "yaw": -90.0
    },
    "scale": [
-    7.94,
+    7.82,
     3.0,
     0.3
    ]
   },
   {
-   "variant": "Ramp_010x010x040",
+   "variant": "Ramp_061x010x003",
    "label": "BLK_Ramp_002",
    "folder": "Blockout/Ramps",
    "location_cm": [
     1212.4,
-    2573.1,
-    200.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 90.0
-   },
-   "scale": [
-    1.0,
-    1.0,
-    4.0
-   ],
-   "suspect": "slope 75 deg exceeds walkable 45 - placed as solid block pending channel (b)"
-  },
-  {
-   "variant": "Ramp_010x010x040",
-   "label": "BLK_Ramp_003",
-   "folder": "Blockout/Ramps",
-   "location_cm": [
-    1401.0,
-    363.7,
-    200.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 90.0
-   },
-   "scale": [
-    1.0,
-    1.0,
-    4.0
-   ],
-   "suspect": "slope 75 deg exceeds walkable 45 - placed as solid block pending channel (b)"
-  },
-  {
-   "variant": "Ramp_010x010x040",
-   "label": "BLK_Ramp_004",
-   "folder": "Blockout/Ramps",
-   "location_cm": [
-    1643.5,
-    296.4,
-    200.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 0.0
-   },
-   "scale": [
-    1.0,
-    1.0,
-    4.0
-   ],
-   "suspect": "slope 75 deg exceeds walkable 45 - placed as solid block pending channel (b)"
-  },
-  {
-   "variant": "Ramp_088x040x003",
-   "label": "BLK_Ramp_005",
-   "folder": "Blockout/Ramps",
-   "location_cm": [
-    2600.0,
-    2734.7,
+    2425.6,
     212.5
    ],
    "rotation_deg": {
     "roll": 0.0,
-    "pitch": 25.11,
-    "yaw": 0.0
-   },
-   "scale": [
-    8.84,
-    4.0,
-    0.3
-   ]
-  },
-  {
-   "variant": "Ramp_010x010x040",
-   "label": "BLK_Ramp_006",
-   "folder": "Blockout/Ramps",
-   "location_cm": [
-    2330.6,
-    1522.3,
-    200.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 0.0
-   },
-   "scale": [
-    1.0,
-    1.0,
-    4.0
-   ],
-   "suspect": "slope 75 deg exceeds walkable 45 - placed as solid block pending channel (b)"
-  },
-  {
-   "variant": "Ramp_062x020x003",
-   "label": "BLK_Ramp_007",
-   "folder": "Blockout/Ramps",
-   "location_cm": [
-    2600.0,
-    1468.4,
-    212.5
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 36.87,
-    "yaw": 0.0
-   },
-   "scale": [
-    6.25,
-    2.0,
-    0.3
-   ]
-  },
-  {
-   "variant": "Ramp_010x010x040",
-   "label": "BLK_Ramp_008",
-   "folder": "Blockout/Ramps",
-   "location_cm": [
-    2869.4,
-    1522.3,
-    200.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 0.0
-   },
-   "scale": [
-    1.0,
-    1.0,
-    4.0
-   ],
-   "suspect": "slope 75 deg exceeds walkable 45 - placed as solid block pending channel (b)"
-  },
-  {
-   "variant": "Ramp_010x010x040",
-   "label": "BLK_Ramp_009",
-   "folder": "Blockout/Ramps",
-   "location_cm": [
-    3556.5,
-    296.4,
-    200.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 0.0
-   },
-   "scale": [
-    1.0,
-    1.0,
-    4.0
-   ],
-   "suspect": "slope 75 deg exceeds walkable 45 - placed as solid block pending channel (b)"
-  },
-  {
-   "variant": "Ramp_010x010x040",
-   "label": "BLK_Ramp_010",
-   "folder": "Blockout/Ramps",
-   "location_cm": [
-    3799.0,
-    363.7,
-    200.0
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 90.0
-   },
-   "scale": [
-    1.0,
-    1.0,
-    4.0
-   ],
-   "suspect": "slope 75 deg exceeds walkable 45 - placed as solid block pending channel (b)"
-  },
-  {
-   "variant": "Ramp_079x030x003",
-   "label": "BLK_Ramp_011",
-   "folder": "Blockout/Ramps",
-   "location_cm": [
-    4028.0,
-    2438.3,
-    212.5
-   ],
-   "rotation_deg": {
-    "roll": 0.0,
-    "pitch": 28.18,
+    "pitch": 37.66,
     "yaw": -90.0
    },
    "scale": [
-    7.94,
+    6.14,
+    1.0,
+    0.3
+   ]
+  },
+  {
+   "variant": "Ramp_082x010x003",
+   "label": "BLK_Ramp_003",
+   "folder": "Blockout/Ramps",
+   "location_cm": [
+    2076.1,
+    1522.3,
+    212.5
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 27.0,
+    "yaw": 0.0
+   },
+   "scale": [
+    8.26,
+    1.0,
+    0.3
+   ]
+  },
+  {
+   "variant": "Ramp_082x010x003",
+   "label": "BLK_Ramp_004",
+   "folder": "Blockout/Ramps",
+   "location_cm": [
+    3123.9,
+    1522.3,
+    212.5
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 27.0,
+    "yaw": 180.0
+   },
+   "scale": [
+    8.26,
+    1.0,
+    0.3
+   ]
+  },
+  {
+   "variant": "Ramp_078x030x003",
+   "label": "BLK_Ramp_005",
+   "folder": "Blockout/Ramps",
+   "location_cm": [
+    4028.0,
+    2344.5,
+    212.5
+   ],
+   "rotation_deg": {
+    "roll": 0.0,
+    "pitch": 28.66,
+    "yaw": -90.0
+   },
+   "scale": [
+    7.82,
     3.0,
     0.3
    ]
   },
   {
-   "variant": "Ramp_010x010x040",
-   "label": "BLK_Ramp_012",
+   "variant": "Ramp_061x010x003",
+   "label": "BLK_Ramp_006",
    "folder": "Blockout/Ramps",
    "location_cm": [
     3987.6,
-    2573.1,
-    200.0
+    2425.6,
+    212.5
    ],
    "rotation_deg": {
     "roll": 0.0,
-    "pitch": 0.0,
-    "yaw": 90.0
+    "pitch": 37.66,
+    "yaw": -90.0
    },
    "scale": [
+    6.14,
     1.0,
-    1.0,
-    4.0
-   ],
-   "suspect": "slope 75 deg exceeds walkable 45 - placed as solid block pending channel (b)"
+    0.3
+   ]
   }
  ]
 }

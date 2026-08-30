@@ -181,6 +181,34 @@ map [thin]; doctrine: "big simple shapes, cheap to throw away" [solid].
   plates running hidden under structure, and the 1.0 m pass grid absorbing
   the 0.5 m trace-edge slivers (368 of the old 878 were slivers).
 
+### Playability + fidelity, PROVEN at the geometry rung
+
+`Tools/blockout/validate_aquarius_blockout.py` (founder: "make sure the level
+is playable and is 1:1") builds the walkable graph from the kit manifest and
+reports PASS/WARN/FAIL. Current verdict **PASS (0 fail, 2 warn)**:
+
+- ground floor is ONE walkable region, 723 m2; all three big deck regions
+  (both side rings + the bridge) reachable, 97% of deck area
+- the 0.68 m capsule reaches 86% of the ground in one eroded region
+- all 8 spawns on walkable ground in the main region; all 6 ramps <= 37.7 deg;
+  head clearance 3.60 m under decks; perimeter one closed ring
+- FIDELITY: structure IoU 0.66 / decks IoU 0.84 against the traced reference,
+  83-88% of the reference covered; 52.0 x 30.0 m vs traced 52.0 x 29.9 m
+  (0.0% / 0.3%); mirror symmetry 1.000
+- WARN carried: 13 m2 of deck slivers (largest 4 m2) sit behind towers, and
+  100 m2 of ground lies within a capsule radius of structure (corridor edges)
+
+Defects this validator FOUND and the generator now fixes: spawns were being
+read in the wrong Y frame (arena manifest is +y north, the kit +y south -
+they would have mirrored); three ramps ran into walls or ended in mid-air;
+and unconvertible capsules, placed as 4 m solids, were sealing the bridge's
+own ramp mouths - they are now left OPEN and recorded in
+`unresolved_capsules`, because a capsule we could not anchor was never
+proven to be a wall either.
+
+**NOT proven here:** the capsule actually walking, nav mesh generation, and
+whether it is fun. Those are the in-editor rung and stay open.
+
 ## 3. The pipeline (doctrine: ue-editor skill, law 7)
 
 ```

@@ -42,6 +42,7 @@ import argparse
 import json
 import math
 import sys
+from collections import deque
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -133,6 +134,106 @@ def merge_rects(cells):
     return rects
 
 
+
+def repair_connectivity(qfloor, fam_bins, ref_walk, G):
+    """Quantisation can SEAL a pocket the reference has open (measured: the
+    south bay). Carve the doorway back: for every walkable pocket cut off
+    from the main region, if the REFERENCE connects it, remove the thinnest
+    run of blocker bins (<= 2 m) between them. Reference-driven, so the level
+    stays 1:1 - we restore an opening, we never invent one."""
+    blockers = set().union(*fam_bins.values()) if fam_bins else set()
+    walk = qfloor - blockers
+    comps = []
+    cs = set(walk)
+    while cs:
+        seed = cs.pop()
+        comp, q = {seed}, deque([seed])
+        while q:
+            x, y = q.popleft()
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                n = (x + dx, y + dy)
+                if n in cs:
+                    cs.discard(n)
+                    comp.add(n)
+                    q.append(n)
+        comps.append(comp)
+    if len(comps) <= 1:
+        return set(), []
+    comps.sort(key=len, reverse=True)
+    main = comps[0]
+    carved, log = set(), []
+    for pocket in comps[1:]:
+        if not (pocket & ref_walk) or not (main & ref_walk):
+            continue                       # reference says it is not a room
+        # BFS out of the pocket, paying 1 per blocker bin crossed
+        best = None
+        seen = {c: 0 for c in pocket}
+        q = deque((c, 0, ()) for c in pocket)
+        while q and best is None:
+            c, cost, path = q.popleft()
+            if cost > 2:
+                continue
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                n = (c[0] + dx, c[1] + dy)
+                if n in main and cost > 0:
+                    best = path
+                    break
+                if n in blockers and n not in carved:
+                    nc = cost + 1
+                    if seen.get(n, 99) > nc and nc <= 2:
+                        seen[n] = nc
+                        q.append((n, nc, path + (n,)))
+                elif n in walk and n not in seen:
+                    seen[n] = cost
+                    q.append((n, cost, path))
+        if best:
+            carved |= set(best)
+            log.append("carved %d bin(s) to reconnect a %.0f m2 pocket"
+                       % (len(best), len(pocket) * G * G))
+    for fam, bins in fam_bins.items():
+        bins -= carved
+    return carved, log
+
+
+def snap_ramp(rec, qdeck, qfloor, G):
+    """Guarantee a ramp MEETS what it serves: extend the high end until it
+    overlaps a deck bin and the low end until it overlaps a floor bin.
+    Ramps that only ALMOST touch are ramps to nowhere (measured: 3 of them)."""
+    cx, cy = rec["center_m"][0], rec["center_m"][1]
+    run, width = rec["run_m"], rec["size_m"][1]
+    yaw = rec["yaw_deg"]
+    ax = 0 if int(round(yaw)) % 180 == 0 else 1        # 0 = along x
+    sgn = 1.0 if int(round(yaw)) in (0, 90) else -1.0
+
+    def bin_at(x, y):
+        return (int(x / G), int(y / G))
+
+    def probe(dist, target):
+        x = cx + (sgn * dist if ax == 0 else 0.0)
+        y = cy + (sgn * dist if ax == 1 else 0.0)
+        return bin_at(x, y) in target
+
+    grow_hi = 0.0
+    while grow_hi < 2.0 and not probe(run / 2 + grow_hi, qdeck):
+        grow_hi += G / 2
+    grow_lo = 0.0
+    while grow_lo < 1.5 and not probe(-(run / 2 + grow_lo), qfloor):
+        grow_lo += G / 2
+    if grow_hi >= 2.0:
+        grow_hi = 0.0                                  # no deck that way
+    if grow_lo >= 1.5:
+        grow_lo = 0.0
+    if grow_hi or grow_lo:
+        newrun = run + grow_hi + grow_lo
+        shift = (grow_hi - grow_lo) / 2 * sgn
+        rec["run_m"] = round(newrun, 2)
+        rec["center_m"][ax] = round(rec["center_m"][ax] + shift, 3)
+        rise = rec["rise_m"]
+        rec["size_m"][0] = round(math.hypot(newrun, rise), 2)
+        rec["pitch_deg"] = round(math.degrees(math.atan2(rise, newrun)), 2)
+    return rec
+
+
 def decompose(bins, family, z0, z1, G):
     """Grid bins -> modular box instances as MAXIMAL rects (research: big
     simple shapes, few pieces; reuse = the same mesh scaled)."""
@@ -148,62 +249,196 @@ def decompose(bins, family, z0, z1, G):
     return inst
 
 
-def ramp_instances(solids, deckcells, cell_m):
-    """Each traced ramp -> ONE BLK_Cube instance pitched into a slab wedge.
-    Low end at the arena floor, high end against whichever bbox edge touches
-    the deck mask (the same orientation test the A-301 blockout view uses)."""
-    out = []
-    for s in (s for s in solids if s.kind == "stair"):
-        x0, y0, x1, y1 = s.bbox
+def ramp_instances(solids, deckcells, cell_m, qdeck, qwalk, qblock, G):
+    """Place each traced capsule as a ramp that ACTUALLY CONNECTS.
+
+    The first pass trusted the capsule's own length and produced ramps into
+    walls and ramps to nowhere (caught by validate_aquarius_blockout.py: 3
+    orphans, and the deck regions they served were unreachable). Now each
+    ramp is anchored at BOTH ends: the head is pushed until it overlaps the
+    deck it serves, the foot is placed on free floor at whatever run the
+    walkable-slope limit demands. A run longer than the traced capsule is a
+    FIDELITY deviation and is recorded as such - the reference walk rules.
+    A capsule that cannot be anchored within 45 deg stays a flagged solid.
+    """
+    DESIRED = 27.0                       # comfortable ramp slope, degrees
+    rise = DECK[1] - RAMP_Z0
+    out, unresolved = [], []
+    for s_ in (s_ for s_ in solids if s_.kind == "stair"):
+        x0, y0, x1, y1 = s_.bbox
         horiz = (x1 - x0) >= (y1 - y0)
-
-        def touch(edge):
-            return sum(1 for c in edge if c in deckcells)
-
-        if horiz:
-            lo = touch((x0 - 1, y) for y in range(y0, y1))
-            hi = touch((x1, y) for y in range(y0, y1))
-            run = (x1 - x0) * cell_m
-            width = (y1 - y0) * cell_m
-            yaw = 0.0 if hi >= lo else 180.0     # +X toward the high end
-        else:
-            lo = touch((x, y0 - 1) for x in range(x0, x1))
-            hi = touch((x, y1) for x in range(x0, x1))
-            run = (y1 - y0) * cell_m
-            width = (x1 - x0) * cell_m
-            yaw = 90.0 if hi >= lo else -90.0    # +Y(south) / -Y toward high
-        run = max(GRID_M, round(run / GRID_M) * GRID_M)
-        width = max(GRID_M, round(width / GRID_M) * GRID_M)
-        rise = DECK[1] - RAMP_Z0
-        slope = math.degrees(math.atan2(rise, run))
+        ax = 0 if horiz else 1
         cx = (x0 + x1) / 2 * cell_m
         cy = (y0 + y1) / 2 * cell_m
-        if slope > 45.0:
-            # NOT a ramp: a capsule too short to climb 4 m within the UE
-            # walkable-slope limit (~44.8 deg). The trace shows a thin light
-            # sliver here, not a runnable ramp - place an unpitched block so
-            # the mass exists, flag it, and let channel (b) say what it is.
-            out.append({"family": "Ramp",
-                        "size_m": [round(run, 2), round(width, 2),
-                                   round(DECK[1], 2)],
-                        "center_m": [round(cx, 3), round(cy, 3),
-                                     round(DECK[1] / 2, 3)],
-                        "yaw_deg": 0.0 if horiz else 90.0, "pitch_deg": 0.0,
-                        "run_m": round(run, 2), "rise_m": rise,
-                        "suspect": "slope %.0f deg exceeds walkable 45 - "
-                                   "placed as solid block pending channel (b)"
-                                   % slope})
+        span = ((x1 - x0) if horiz else (y1 - y0)) * cell_m
+        width = max(G, round((((y1 - y0) if horiz else (x1 - x0)) * cell_m) / G) * G)
+        centre = cx if ax == 0 else cy
+        other = cy if ax == 0 else cx
+
+        def binat(pos, o=None):
+            o = other if o is None else o
+            x, y = (pos, o) if ax == 0 else (o, pos)
+            return (int(x / G), int(y / G))
+
+        # Evaluate BOTH directions END TO END and keep only a configuration
+        # that anchors at both ends: a head on deck (never inside structure)
+        # and a foot on free floor. Marching to the merely NEAREST deck put
+        # two ramp heads inside the perimeter wall.
+        def head_anchor(sgn):
+            d = span / 2
+            while d < span / 2 + 3.0:
+                b = binat(centre + sgn * d)
+                if b in qblock:
+                    return None                  # structure that way, stop
+                if b in qdeck:
+                    # push a FULL bin into the deck and verify the head bin
+                    # itself lands on deck (a half-bin push overshot thin
+                    # deck strips and the head served nothing)
+                    # the ramp's LAST cell row sits just BEFORE its head
+                    # point, so a head verified exactly on a deck bin stopped
+                    # short of it - push half a bin further so the ramp body
+                    # genuinely overlaps the deck it serves
+                    for push in (G / 2, G, G * 1.5):
+                        h = centre + sgn * (d + push)
+                        if binat(h) in qdeck:
+                            return h + sgn * (G / 2)
+                    return None
+                d += G / 2
+            return None
+
+        want = rise / math.tan(math.radians(DESIRED))
+        chosen = None
+        for sgn in (1, -1):
+            head = head_anchor(sgn)
+            if head is None:
+                continue
+            for run in [want] + [want - k * G / 2 for k in range(1, 9)]:
+                if run < rise / math.tan(math.radians(45.0)):
+                    break
+                foot = head - sgn * run
+                # the foot AND the ground just outside it must be walkable -
+                # the validator links a ramp by its outward neighbour, so a
+                # foot that merely sits on floor while facing a wall is a
+                # ramp to nowhere
+                lat = [binat(foot, other + G), binat(foot, other - G)]
+                if (binat(foot) in qwalk and binat(foot + sgn * G / 2) in qwalk
+                        and any(b in qwalk for b in
+                                [binat(foot - sgn * G)] + lat)):
+                    cand = (math.degrees(math.atan2(rise, run)), sgn, run, head)
+                    if chosen is None or cand[0] < chosen[0]:
+                        chosen = cand
+                    break
+        if chosen is None:
+            # A capsule we cannot anchor as a walkable ramp was never proven
+            # to be a SOLID either - and placing 4 m blocks here sealed the
+            # bridge's own ramp mouths (caught by the validator). Emit NO
+            # geometry; record the doubt and let the reference walk rule.
+            unresolved.append("traced capsule at (%.1f, %.1f) could not be "
+                              "anchored as a walkable ramp at this "
+                              "quantisation - left OPEN, channel (b) rules"
+                              % (cx, cy))
             continue
-        slab = math.hypot(run, rise)
-        out.append({"family": "Ramp",
-                    "size_m": [round(slab, 2), round(width, 2), RAMP_T],
-                    "center_m": [round(cx, 3), round(cy, 3),
-                                 round((RAMP_Z0 + DECK[1]) / 2, 3)],
-                    "yaw_deg": yaw,
-                    # UE rotator: positive pitch = nose up toward local +X
-                    "pitch_deg": round(slope, 2),
-                    "run_m": round(run, 2), "rise_m": round(rise, 2)})
-    return out
+        slope, sgn, run, head = chosen
+        foot = head - sgn * run
+        mid = (head + foot) / 2
+        rec = {"family": "Ramp",
+               "size_m": [round(math.hypot(run, rise), 2), round(width, 2),
+                          RAMP_T],
+               "center_m": [round(mid if ax == 0 else cx, 3),
+                            round(cy if ax == 0 else mid, 3),
+                            round((RAMP_Z0 + DECK[1]) / 2, 3)],
+               "yaw_deg": (0.0 if sgn > 0 else 180.0) if ax == 0
+                          else (90.0 if sgn > 0 else -90.0),
+               "pitch_deg": round(slope, 2),
+               "run_m": round(run, 2), "rise_m": round(rise, 2)}
+        if run > span + 1.0:
+            rec["deviation"] = ("run extended %.1f m beyond the traced capsule "
+                                "to reach a walkable %.0f deg" % (run - span, slope))
+        out.append(rec)
+    return out, unresolved
+
+
+
+def add_access_ramps(inst, qdeck, qwalk, qblock, G):
+    """PLAYABILITY GUARANTEE: every sizeable upper region must have a way up.
+
+    Six of the twelve traced capsules could not be anchored as ramps at this
+    quantisation, which left deck regions with no route. Rather than ship an
+    unreachable upper floor, synthesise the missing ramp: from the region's
+    own edge, down a walkable slope, onto free ground. These are DEVIATIONS -
+    the reference walk (channel b) replaces them with the real geometry.
+    """
+    DESIRED, rise = 27.0, DECK[1] - RAMP_Z0
+    run = rise / math.tan(math.radians(DESIRED))
+    nbins = int(math.ceil(run / G))
+
+    served = set()
+    for r in inst:
+        if r["family"] != "Ramp" or r["pitch_deg"] <= 0.01:
+            continue
+        ax = 0 if int(round(r["yaw_deg"])) % 180 == 0 else 1
+        sgn = 1 if int(round(r["yaw_deg"])) in (0, 90) else -1
+        head = r["center_m"][ax] + sgn * r["run_m"] / 2
+        o = r["center_m"][1 - ax]
+        # only the head bin itself counts as served - a lateral brush is not
+        # a route (a region "served" that way still validated unreachable)
+        x, y = ((head, o) if ax == 0 else (o, head))
+        served.add((int(x / G), int(y / G)))
+
+    regions, cs = [], set(qdeck)
+    while cs:
+        seed = cs.pop()
+        comp, q = {seed}, deque([seed])
+        while q:
+            x, y = q.popleft()
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                n = (x + dx, y + dy)
+                if n in cs:
+                    cs.discard(n)
+                    comp.add(n)
+                    q.append(n)
+        regions.append(comp)
+
+    added = []
+    for reg in regions:
+        if len(reg) < 8 or (reg & served):
+            continue
+        best = None
+        for (bx, by) in sorted(reg):
+            for ax, sgn in ((0, 1), (0, -1), (1, 1), (1, -1)):
+                ok = True
+                for k in range(1, nbins + 1):
+                    b = ((bx - sgn * k, by) if ax == 0 else (bx, by - sgn * k))
+                    if b in qblock or b not in qwalk:
+                        ok = False
+                        break
+                if ok:
+                    best = (bx, by, ax, sgn)
+                    break
+            if best:
+                break
+        if not best:
+            continue
+        bx, by, ax, sgn = best
+        head = ((bx + 0.5) * G if ax == 0 else (by + 0.5) * G)
+        foot = head - sgn * run
+        mid = (head + foot) / 2
+        cxy = [(bx + 0.5) * G, (by + 0.5) * G]
+        cxy[ax] = mid
+        rec = {"family": "Ramp",
+               "size_m": [round(math.hypot(run, rise), 2), round(G, 2), RAMP_T],
+               "center_m": [round(cxy[0], 3), round(cxy[1], 3),
+                            round((RAMP_Z0 + DECK[1]) / 2, 3)],
+               "yaw_deg": (0.0 if sgn > 0 else 180.0) if ax == 0
+                          else (90.0 if sgn > 0 else -90.0),
+               "pitch_deg": round(DESIRED, 2),
+               "run_m": round(run, 2), "rise_m": round(rise, 2),
+               "deviation": "ACCESS RAMP synthesised: a %.0f m2 upper region "
+                            "had no route up after quantisation"
+                            % (len(reg) * G * G)}
+        inst.append(rec)
+        added.append(rec["deviation"])
+    return added
 
 
 def main():
@@ -236,12 +471,24 @@ def main():
     qfloor, _, _ = quantize(floor | masks["wall"] | masks["tower"]
                             | masks["support"], W, H, cell_m, cfg["floor_t"], G)
 
+    # PLAYABILITY REPAIR (founder: "make sure the level is playable"):
+    # the reference's own walkable set decides which pockets must stay open.
+    ref_walk, _, _ = quantize(floor, W, H, cell_m, 0.40, G)
+    fam_bins = {"Wall": qwall, "Tower": qtower, "Support": qsup}
+    carved, carve_log = repair_connectivity(qfloor, fam_bins, ref_walk, G)
+    qwall, qtower, qsup = fam_bins["Wall"], fam_bins["Tower"], fam_bins["Support"]
+
     inst += decompose(qfloor, "Floor", *FAMILIES["Floor"][:2], G)
     inst += decompose(qdeck, "Deck", *FAMILIES["Deck"][:2], G)
     inst += decompose(qwall, "Wall", *FAMILIES["Wall"][:2], G)
     inst += decompose(qtower, "Tower", *FAMILIES["Tower"][:2], G)
     inst += decompose(qsup, "Support", *FAMILIES["Support"][:2], G)
-    inst += ramp_instances(solids, deckcells, cell_m)
+    qblock = qwall | qtower | qsup
+    ramps_built, unresolved = ramp_instances(solids, deckcells, cell_m, qdeck,
+                                             qfloor - qblock, qblock, G)
+    inst += ramps_built
+    access_log = add_access_ramps(inst, qdeck - (qwall | qtower),
+                                  qfloor - qblock, qblock, G)
 
     # variants: the modular catalogue - unique (family, size)
     variants, order = {}, []
@@ -277,6 +524,40 @@ def main():
         if "suspect" in it:
             entry["suspect"] = it["suspect"]
         placements.append(entry)
+
+    # ---- spawns, converted into the kit frame and proven walkable --------
+    Wm_k = max((p["center_m"][0] + p["size_m"][0] / 2) for p in inst)
+    Hm_k = max((p["center_m"][1] + p["size_m"][1] / 2) for p in inst)
+    blockers_all = qwall | qtower | qsup
+    walk_bins = qfloor - blockers_all
+    deck_bins = qdeck - (qwall | qtower)
+    manp = GAME / "Content" / "Data" / "aquarius_manifest.json"
+    spawns_kit, spawn_notes = [], []
+    if manp.exists():
+        arena = json.loads(manp.read_text(encoding="utf-8"))
+        for sp in arena.get("spawn_points", []):
+            L = sp["location"]
+            # THE FRAME CONVERSION, done once, here: the arena manifest is
+            # +y NORTH; the kit is +y SOUTH. Skipping this mirrors every
+            # spawn (caught by validate_aquarius_blockout.py).
+            x, y = L["x"], Hm_k - L["y"]
+            upper = L.get("z", 0) > 2
+            target = deck_bins if upper else walk_bins
+            b = (int(x / G), int(y / G))
+            if b not in target:            # snap to the nearest walkable bin
+                cand = min(target, key=lambda c: (c[0] - x / G) ** 2
+                           + (c[1] - y / G) ** 2, default=None)
+                if cand is None:
+                    continue
+                moved = math.hypot((cand[0] + .5) * G - x, (cand[1] + .5) * G - y)
+                x, y = (cand[0] + 0.5) * G, (cand[1] + 0.5) * G
+                spawn_notes.append("%s snapped %.1f m onto walkable ground"
+                                   % (sp["id"], moved))
+            spawns_kit.append({
+                "id": sp["id"], "pool": sp.get("pool", "neutral"),
+                "location_cm": [round(x * 100, 1), round(y * 100, 1),
+                                round((DECK[1] if upper else 0.0) * 100 + 10, 1)],
+                "yaw_deg": round(-float(sp.get("facing", 0)), 1)})
 
     lo, hi = cfg["budget"]
     kit = {
@@ -323,6 +604,14 @@ def main():
             "railings on deck edges the reference shows railed",
             "sunken center trench below grade (channel b)",
         ],
+        "spawn_points": spawns_kit,
+        "spawn_note": "converted from Content/Data/aquarius_manifest.json into "
+                      "the KIT FRAME (+y south, cm) and snapped onto walkable "
+                      "ground; the builder must use THESE, not the arena "
+                      "manifest's north-up coordinates.",
+        "repairs": carve_log + spawn_notes + access_log,
+        "unresolved_capsules": unresolved
+                   + [i["deviation"] for i in inst if "deviation" in i],
         "placements": placements,
     }
     out = OUT if args.pass_name == "greybox" else \
