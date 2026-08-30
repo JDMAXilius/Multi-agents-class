@@ -29,10 +29,32 @@ import math
 
 import unreal
 
-KIT_PATH = "Content/Data/aquarius_blockout_kit.json"
-MANIFEST_PATH = "Content/Data/aquarius_manifest.json"
-MAP_PATH = "/Game/Maps/BR_Aquarius"
-TAG = "BN30_BlockoutGenerated"
+# One builder, one level per invocation:  py build_aquarius_blockout.py rallypoint
+import sys
+
+LEVELS = {
+    "aquarius": {
+        "kit": "Content/Data/aquarius_blockout_kit.json",
+        "arena": "Content/Data/aquarius_manifest.json",
+        "map": "/Game/Maps/BR_Aquarius",
+        "tag": "BN30_BlockoutGenerated",
+    },
+    "rallypoint": {
+        "kit": "Content/Data/rallypoint_blockout_kit.json",
+        "arena": None,                      # no arena manifest for this one
+        "map": "/Game/Maps/BR_RallyPoint_Blockout",
+        "tag": "BN36_RallyPointBlockout",
+    },
+}
+WHICH = (sys.argv[1].lower() if len(sys.argv) > 1 else "aquarius")
+if WHICH not in LEVELS:
+    raise SystemExit("unknown level %r; choose %s" % (WHICH, sorted(LEVELS)))
+_L = LEVELS[WHICH]
+
+KIT_PATH = _L["kit"]
+MANIFEST_PATH = _L["arena"]
+MAP_PATH = _L["map"]
+TAG = _L["tag"]
 M_TO_UU = 100.0                      # manifest metres -> UE cm, converted ONCE
 
 
@@ -172,7 +194,7 @@ def main():
     # snapped onto walkable ground). The arena manifest is +y NORTH while the
     # kit is +y SOUTH - reading spawns straight from the arena manifest
     # mirrors them, which validate_aquarius_blockout.py catches as P3_FRAME.
-    man = load_json(MANIFEST_PATH)
+    man = load_json(MANIFEST_PATH) if MANIFEST_PATH else None
     for sp in kit.get("spawn_points", []):
         loc = unreal.Vector(*sp["location_cm"])
         rot = unreal.Rotator(0.0, 0.0, float(sp.get("yaw_deg", 0.0)))
@@ -182,7 +204,7 @@ def main():
         ps.set_folder_path(unreal.Name("Blockout/Spawns"))
     print("placed %d spawn points from the kit" % len(kit.get("spawn_points", [])))
 
-    rk = man.get("rocket_node")
+    rk = man.get("rocket_node") if man else None
     if rk:
         b = man["bounds"]
         loc = unreal.Vector(rk["x"] * M_TO_UU,
@@ -194,12 +216,25 @@ def main():
         tag(mk)
         mk.set_folder_path(unreal.Name("Blockout/Markers"))
 
-    # nav bounds over the whole footprint (+2 m margin), bots from day one
-    b = man["bounds"]
+    # nav bounds over the whole footprint (+2 m margin), bots from day one.
+    # With no arena manifest, derive the footprint from the placements we just
+    # landed - that is the level, by definition.
+    if man:
+        b = man["bounds"]
+    else:
+        xs = [p["location_cm"][0] / 100.0 for p in kit["placements"]]
+        ys = [p["location_cm"][1] / 100.0 for p in kit["placements"]]
+        zs = [p["location_cm"][2] / 100.0 for p in kit["placements"]]
+        b = {"x": max(xs) - min(xs) + 8, "y": max(ys) - min(ys) + 8,
+             "z": max(zs) - min(zs) + 12}
+        nav_centre = unreal.Vector((min(xs) + max(xs)) * 50.0,
+                                   (min(ys) + max(ys)) * 50.0,
+                                   (min(zs) + max(zs)) * 50.0)
     nav = actor_ss.spawn_actor_from_class(
         unreal.NavMeshBoundsVolume,
-        unreal.Vector(b["x"] * M_TO_UU / 2, b["y"] * M_TO_UU / 2,
-                      b["z"] * M_TO_UU / 2),
+        (nav_centre if not man else
+         unreal.Vector(b["x"] * M_TO_UU / 2, b["y"] * M_TO_UU / 2,
+                       b["z"] * M_TO_UU / 2)),
         unreal.Rotator(0, 0, 0))
     # A volume's default brush is a 200 uu cube, NOT 100 - measured 30 Aug:
     # scale (b+4) gave an 112 x 68 m volume over a 52 x 30 m map (4x the area
