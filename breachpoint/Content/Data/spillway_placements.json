@@ -1,0 +1,5791 @@
+{
+ "tag": "SpillwayGenerated",
+ "map": "/Game/Maps/BR_Spillway",
+ "elements": [
+  {
+   "kind": "box",
+   "label": "SPW_Culvert_Chamber",
+   "folder": "Spillway/05_Culvert",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Deck",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "loc": [
+    -1400.0,
+    -1400.0,
+    -600.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    28.0,
+    28.0,
+    1.0
+   ],
+   "aabb": [
+    -1400.0,
+    -1400.0,
+    -600.0,
+    1400.0,
+    1400.0,
+    -500.0
+   ],
+   "index": 0,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Culvert_Tunnel_W",
+   "folder": "Spillway/05_Culvert",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Deck",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "loc": [
+    -3200.0,
+    -600.0,
+    -600.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    18.0,
+    12.0,
+    1.0
+   ],
+   "aabb": [
+    -3200.0,
+    -600.0,
+    -600.0,
+    -1400.0,
+    600.0,
+    -500.0
+   ],
+   "index": 1,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Culvert_Tunnel_E",
+   "folder": "Spillway/05_Culvert",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Deck",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "loc": [
+    1400.0,
+    -600.0,
+    -600.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    18.0,
+    12.0,
+    1.0
+   ],
+   "aabb": [
+    1400.0,
+    -600.0,
+    -600.0,
+    3200.0,
+    600.0,
+    -500.0
+   ],
+   "index": 2,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Culvert_Tunnel_S",
+   "folder": "Spillway/05_Culvert",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Deck",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "loc": [
+    -1400.0,
+    -2800.0,
+    -600.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    10.0,
+    14.0,
+    1.0
+   ],
+   "aabb": [
+    -1400.0,
+    -2800.0,
+    -600.0,
+    -400.0,
+    -1400.0,
+    -500.0
+   ],
+   "index": 3,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Culvert_Wall_00",
+   "folder": "Spillway/05_Culvert",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -1400,
+    1400,
+    -500.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    28.0,
+    1.0,
+    4.0
+   ],
+   "aabb": [
+    -1400,
+    1400,
+    -500.0,
+    1400,
+    1500,
+    -100.0
+   ],
+   "index": 4,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Culvert_Wall_01",
+   "folder": "Spillway/05_Culvert",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -400,
+    -1500,
+    -500.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    18.0,
+    1.0,
+    4.0
+   ],
+   "aabb": [
+    -400,
+    -1500,
+    -500.0,
+    1400,
+    -1400,
+    -100.0
+   ],
+   "index": 5,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Culvert_Wall_02",
+   "folder": "Spillway/05_Culvert",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -1500,
+    -1400,
+    -500.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    8.0,
+    4.0
+   ],
+   "aabb": [
+    -1500,
+    -1400,
+    -500.0,
+    -1400,
+    -600,
+    -100.0
+   ],
+   "index": 6,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Culvert_Wall_03",
+   "folder": "Spillway/05_Culvert",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -1500,
+    600,
+    -500.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    8.0,
+    4.0
+   ],
+   "aabb": [
+    -1500,
+    600,
+    -500.0,
+    -1400,
+    1400,
+    -100.0
+   ],
+   "index": 7,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Culvert_Wall_04",
+   "folder": "Spillway/05_Culvert",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    1400,
+    -1400,
+    -500.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    8.0,
+    4.0
+   ],
+   "aabb": [
+    1400,
+    -1400,
+    -500.0,
+    1500,
+    -600,
+    -100.0
+   ],
+   "index": 8,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Culvert_Wall_05",
+   "folder": "Spillway/05_Culvert",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    1400,
+    600,
+    -500.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    8.0,
+    4.0
+   ],
+   "aabb": [
+    1400,
+    600,
+    -500.0,
+    1500,
+    1400,
+    -100.0
+   ],
+   "index": 9,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Culvert_Wall_06",
+   "folder": "Spillway/05_Culvert",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -3200,
+    600,
+    -500.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    17.0,
+    1.0,
+    4.0
+   ],
+   "aabb": [
+    -3200,
+    600,
+    -500.0,
+    -1500,
+    700,
+    -100.0
+   ],
+   "index": 10,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Culvert_Wall_07",
+   "folder": "Spillway/05_Culvert",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -3200,
+    -700,
+    -500.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    17.0,
+    1.0,
+    4.0
+   ],
+   "aabb": [
+    -3200,
+    -700,
+    -500.0,
+    -1500,
+    -600,
+    -100.0
+   ],
+   "index": 11,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Culvert_Wall_08",
+   "folder": "Spillway/05_Culvert",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -3300,
+    -600,
+    -500.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    12.0,
+    4.0
+   ],
+   "aabb": [
+    -3300,
+    -600,
+    -500.0,
+    -3200,
+    600,
+    -100.0
+   ],
+   "index": 12,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Culvert_Wall_09",
+   "folder": "Spillway/05_Culvert",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    1500,
+    600,
+    -500.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    17.0,
+    1.0,
+    4.0
+   ],
+   "aabb": [
+    1500,
+    600,
+    -500.0,
+    3200,
+    700,
+    -100.0
+   ],
+   "index": 13,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Culvert_Wall_10",
+   "folder": "Spillway/05_Culvert",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    1500,
+    -700,
+    -500.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    17.0,
+    1.0,
+    4.0
+   ],
+   "aabb": [
+    1500,
+    -700,
+    -500.0,
+    3200,
+    -600,
+    -100.0
+   ],
+   "index": 14,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Culvert_Wall_11",
+   "folder": "Spillway/05_Culvert",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    3200,
+    -600,
+    -500.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    12.0,
+    4.0
+   ],
+   "aabb": [
+    3200,
+    -600,
+    -500.0,
+    3300,
+    600,
+    -100.0
+   ],
+   "index": 15,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Culvert_Wall_12",
+   "folder": "Spillway/05_Culvert",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -1500,
+    -2800,
+    -500.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    13.0,
+    4.0
+   ],
+   "aabb": [
+    -1500,
+    -2800,
+    -500.0,
+    -1400,
+    -1500,
+    -100.0
+   ],
+   "index": 16,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Culvert_Wall_13",
+   "folder": "Spillway/05_Culvert",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -400,
+    -2800,
+    -500.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    13.0,
+    4.0
+   ],
+   "aabb": [
+    -400,
+    -2800,
+    -500.0,
+    -300,
+    -1500,
+    -100.0
+   ],
+   "index": 17,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Culvert_Wall_14",
+   "folder": "Spillway/05_Culvert",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -1400,
+    -2900,
+    -500.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    10.0,
+    1.0,
+    4.0
+   ],
+   "aabb": [
+    -1400,
+    -2900,
+    -500.0,
+    -400,
+    -2800,
+    -100.0
+   ],
+   "index": 18,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_Culvert_Pier_-900_-900",
+   "folder": "Spillway/05_Culvert",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -900,
+    -900,
+    -500.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.8,
+    1.8,
+    4.0
+   ],
+   "aabb": [
+    -990.0,
+    -990.0,
+    -500.0,
+    -810.0,
+    -810.0,
+    -100.0
+   ],
+   "index": 19,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_Culvert_Pier_900_-900",
+   "folder": "Spillway/05_Culvert",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    900,
+    -900,
+    -500.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.8,
+    1.8,
+    4.0
+   ],
+   "aabb": [
+    810.0,
+    -990.0,
+    -500.0,
+    990.0,
+    -810.0,
+    -100.0
+   ],
+   "index": 20,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_Culvert_Pier_-900_900",
+   "folder": "Spillway/05_Culvert",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -900,
+    900,
+    -500.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.8,
+    1.8,
+    4.0
+   ],
+   "aabb": [
+    -990.0,
+    810.0,
+    -500.0,
+    -810.0,
+    990.0,
+    -100.0
+   ],
+   "index": 21,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_Culvert_Pier_900_900",
+   "folder": "Spillway/05_Culvert",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    900,
+    900,
+    -500.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.8,
+    1.8,
+    4.0
+   ],
+   "aabb": [
+    810.0,
+    810.0,
+    -500.0,
+    990.0,
+    990.0,
+    -100.0
+   ],
+   "index": 22,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "crate",
+   "label": "SPW_Culvert_Crate_0",
+   "folder": "Spillway/05_Culvert",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Crate",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    400,
+    -1100,
+    -380.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    2.4,
+    2.4,
+    2.4
+   ],
+   "aabb": [
+    280.0,
+    -1220.0,
+    -500.0,
+    520.0,
+    -980.0,
+    -260.0
+   ],
+   "index": 23,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_ChamferCube"
+  },
+  {
+   "kind": "crate",
+   "label": "SPW_Culvert_Crate_1",
+   "folder": "Spillway/05_Culvert",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Crate",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    -400,
+    1100,
+    -380.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    2.4,
+    2.4,
+    2.4
+   ],
+   "aabb": [
+    -520.0,
+    980.0,
+    -500.0,
+    -280.0,
+    1220.0,
+    -260.0
+   ],
+   "index": 24,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_ChamferCube"
+  },
+  {
+   "kind": "crate",
+   "label": "SPW_Culvert_Crate_2",
+   "folder": "Spillway/05_Culvert",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Crate",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    -1800,
+    0,
+    -380.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    2.4,
+    2.4,
+    2.4
+   ],
+   "aabb": [
+    -1920.0,
+    -120.0,
+    -500.0,
+    -1680.0,
+    120.0,
+    -260.0
+   ],
+   "index": 25,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_ChamferCube"
+  },
+  {
+   "kind": "crate",
+   "label": "SPW_Culvert_Crate_3",
+   "folder": "Spillway/05_Culvert",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Crate",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    1800,
+    0,
+    -380.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    2.4,
+    2.4,
+    2.4
+   ],
+   "aabb": [
+    1680.0,
+    -120.0,
+    -500.0,
+    1920.0,
+    120.0,
+    -260.0
+   ],
+   "index": 26,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_ChamferCube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Culvert_Cover_0",
+   "folder": "Spillway/05_Culvert",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -1200,
+    -200,
+    -500.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    7.0,
+    1.2,
+    1.1
+   ],
+   "aabb": [
+    -1200,
+    -200,
+    -500.0,
+    -500,
+    -80,
+    -390.0
+   ],
+   "index": 27,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Culvert_Cover_1",
+   "folder": "Spillway/05_Culvert",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    500,
+    80,
+    -500.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    7.0,
+    1.2,
+    1.1
+   ],
+   "aabb": [
+    500,
+    80,
+    -500.0,
+    1200,
+    200,
+    -390.0
+   ],
+   "index": 28,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "ramp",
+   "label": "SPW_Shaft_W_Ramp",
+   "folder": "Spillway/05_Culvert",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Ramp",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    -3000.0,
+    0.0,
+    -500.0
+   ],
+   "rot": [
+    0.0,
+    -90.0,
+    0.0
+   ],
+   "scale": [
+    6.0,
+    10.0,
+    5.0
+   ],
+   "aabb": [
+    -3000.0,
+    -600.0,
+    -500.0,
+    -2000.0,
+    0.0,
+    0.0
+   ],
+   "slope_deg": 26.57,
+   "up": "-X",
+   "width_uu": 600.0,
+   "index": 29,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Ramp"
+  },
+  {
+   "kind": "ramp",
+   "label": "SPW_Shaft_E_Ramp",
+   "folder": "Spillway/05_Culvert",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Ramp",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    3000.0,
+    0.0,
+    -500.0
+   ],
+   "rot": [
+    0.0,
+    90.0,
+    0.0
+   ],
+   "scale": [
+    6.0,
+    10.0,
+    5.0
+   ],
+   "aabb": [
+    2000.0,
+    0.0,
+    -500.0,
+    3000.0,
+    600.0,
+    0.0
+   ],
+   "slope_deg": 26.57,
+   "up": "+X",
+   "width_uu": 600.0,
+   "index": 30,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Ramp"
+  },
+  {
+   "kind": "ramp",
+   "label": "SPW_Shaft_S_Ramp",
+   "folder": "Spillway/05_Culvert",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Ramp",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    -1400.0,
+    -2800.0,
+    -500.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    6.0,
+    10.0,
+    5.0
+   ],
+   "aabb": [
+    -1400.0,
+    -2800.0,
+    -500.0,
+    -800.0,
+    -1800.0,
+    0.0
+   ],
+   "slope_deg": 26.57,
+   "up": "-Y",
+   "width_uu": 600.0,
+   "index": 31,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Ramp"
+  },
+  {
+   "kind": "ramp",
+   "label": "SPW_Shaft_Core_Ramp",
+   "folder": "Spillway/05_Culvert",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Ramp",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    100.0,
+    400.0,
+    -500.0
+   ],
+   "rot": [
+    0.0,
+    180.0,
+    0.0
+   ],
+   "scale": [
+    6.0,
+    10.0,
+    5.0
+   ],
+   "aabb": [
+    -500.0,
+    -600.0,
+    -500.0,
+    100.0,
+    400.0,
+    0.0
+   ],
+   "slope_deg": 26.57,
+   "up": "+Y",
+   "width_uu": 600.0,
+   "index": 32,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Ramp"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Ground_00",
+   "folder": "Spillway/00_Envelope",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Deck",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "loc": [
+    -4400.0,
+    -4000.0,
+    -100.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    88.0,
+    12.0,
+    1.0
+   ],
+   "aabb": [
+    -4400.0,
+    -4000.0,
+    -100.0,
+    4400.0,
+    -2800.0,
+    0.0
+   ],
+   "index": 33,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Ground_01",
+   "folder": "Spillway/00_Envelope",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Deck",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "loc": [
+    -4400.0,
+    -2800.0,
+    -100.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    30.0,
+    10.0,
+    1.0
+   ],
+   "aabb": [
+    -4400.0,
+    -2800.0,
+    -100.0,
+    -1400.0,
+    -1800.0,
+    0.0
+   ],
+   "index": 34,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Ground_02",
+   "folder": "Spillway/00_Envelope",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Deck",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "loc": [
+    -800.0,
+    -2800.0,
+    -100.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    52.0,
+    10.0,
+    1.0
+   ],
+   "aabb": [
+    -800.0,
+    -2800.0,
+    -100.0,
+    4400.0,
+    -1800.0,
+    0.0
+   ],
+   "index": 35,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Ground_03",
+   "folder": "Spillway/00_Envelope",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Deck",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "loc": [
+    -4400.0,
+    -1800.0,
+    -100.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    88.0,
+    12.0,
+    1.0
+   ],
+   "aabb": [
+    -4400.0,
+    -1800.0,
+    -100.0,
+    4400.0,
+    -600.0,
+    0.0
+   ],
+   "index": 36,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Ground_04",
+   "folder": "Spillway/00_Envelope",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Deck",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "loc": [
+    -4400.0,
+    -600.0,
+    -100.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    14.0,
+    6.0,
+    1.0
+   ],
+   "aabb": [
+    -4400.0,
+    -600.0,
+    -100.0,
+    -3000.0,
+    0.0,
+    0.0
+   ],
+   "index": 37,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Ground_05",
+   "folder": "Spillway/00_Envelope",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Deck",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "loc": [
+    -2000.0,
+    -600.0,
+    -100.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    15.0,
+    6.0,
+    1.0
+   ],
+   "aabb": [
+    -2000.0,
+    -600.0,
+    -100.0,
+    -500.0,
+    0.0,
+    0.0
+   ],
+   "index": 38,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Ground_06",
+   "folder": "Spillway/00_Envelope",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Deck",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "loc": [
+    100.0,
+    -600.0,
+    -100.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    43.0,
+    6.0,
+    1.0
+   ],
+   "aabb": [
+    100.0,
+    -600.0,
+    -100.0,
+    4400.0,
+    0.0,
+    0.0
+   ],
+   "index": 39,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Ground_07",
+   "folder": "Spillway/00_Envelope",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Deck",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "loc": [
+    -4400.0,
+    0.0,
+    -100.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    39.0,
+    4.0,
+    1.0
+   ],
+   "aabb": [
+    -4400.0,
+    0.0,
+    -100.0,
+    -500.0,
+    400.0,
+    0.0
+   ],
+   "index": 40,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Ground_08",
+   "folder": "Spillway/00_Envelope",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Deck",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "loc": [
+    100.0,
+    0.0,
+    -100.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    19.0,
+    4.0,
+    1.0
+   ],
+   "aabb": [
+    100.0,
+    0.0,
+    -100.0,
+    2000.0,
+    400.0,
+    0.0
+   ],
+   "index": 41,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Ground_09",
+   "folder": "Spillway/00_Envelope",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Deck",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "loc": [
+    3000.0,
+    0.0,
+    -100.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    14.0,
+    4.0,
+    1.0
+   ],
+   "aabb": [
+    3000.0,
+    0.0,
+    -100.0,
+    4400.0,
+    400.0,
+    0.0
+   ],
+   "index": 42,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Ground_10",
+   "folder": "Spillway/00_Envelope",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Deck",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "loc": [
+    -4400.0,
+    400.0,
+    -100.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    64.0,
+    2.0,
+    1.0
+   ],
+   "aabb": [
+    -4400.0,
+    400.0,
+    -100.0,
+    2000.0,
+    600.0,
+    0.0
+   ],
+   "index": 43,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Ground_11",
+   "folder": "Spillway/00_Envelope",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Deck",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "loc": [
+    3000.0,
+    400.0,
+    -100.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    14.0,
+    2.0,
+    1.0
+   ],
+   "aabb": [
+    3000.0,
+    400.0,
+    -100.0,
+    4400.0,
+    600.0,
+    0.0
+   ],
+   "index": 44,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Ground_12",
+   "folder": "Spillway/00_Envelope",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Deck",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "loc": [
+    -4400.0,
+    600.0,
+    -100.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    88.0,
+    34.0,
+    1.0
+   ],
+   "aabb": [
+    -4400.0,
+    600.0,
+    -100.0,
+    4400.0,
+    4000.0,
+    0.0
+   ],
+   "index": 45,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Wall_S",
+   "folder": "Spillway/00_Envelope",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -4500.0,
+    -4100.0,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    90.0,
+    1.0,
+    10.0
+   ],
+   "aabb": [
+    -4500.0,
+    -4100.0,
+    0.0,
+    4500.0,
+    -4000.0,
+    1000.0
+   ],
+   "index": 46,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Wall_N",
+   "folder": "Spillway/00_Envelope",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -4500.0,
+    4000.0,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    90.0,
+    1.0,
+    10.0
+   ],
+   "aabb": [
+    -4500.0,
+    4000.0,
+    0.0,
+    4500.0,
+    4100.0,
+    1000.0
+   ],
+   "index": 47,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Wall_W",
+   "folder": "Spillway/00_Envelope",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -4500.0,
+    -4000.0,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    80.0,
+    10.0
+   ],
+   "aabb": [
+    -4500.0,
+    -4000.0,
+    0.0,
+    -4400.0,
+    4000.0,
+    1000.0
+   ],
+   "index": 48,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Wall_E",
+   "folder": "Spillway/00_Envelope",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    4400.0,
+    -4000.0,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    80.0,
+    10.0
+   ],
+   "aabb": [
+    4400.0,
+    -4000.0,
+    0.0,
+    4500.0,
+    4000.0,
+    1000.0
+   ],
+   "index": 49,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Core_S_a",
+   "folder": "Spillway/10_Tower",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -700.0,
+    -700.0,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    4.5,
+    1.0,
+    3.0
+   ],
+   "aabb": [
+    -700.0,
+    -700.0,
+    0.0,
+    -250.0,
+    -600.0,
+    300.0
+   ],
+   "index": 50,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Core_S_b",
+   "folder": "Spillway/10_Tower",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    250.0,
+    -700.0,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    4.5,
+    1.0,
+    3.0
+   ],
+   "aabb": [
+    250.0,
+    -700.0,
+    0.0,
+    700.0,
+    -600.0,
+    300.0
+   ],
+   "index": 51,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Core_N_a",
+   "folder": "Spillway/10_Tower",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -700.0,
+    600.0,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    4.5,
+    1.0,
+    3.0
+   ],
+   "aabb": [
+    -700.0,
+    600.0,
+    0.0,
+    -250.0,
+    700.0,
+    300.0
+   ],
+   "index": 52,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Core_N_b",
+   "folder": "Spillway/10_Tower",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    250.0,
+    600.0,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    4.5,
+    1.0,
+    3.0
+   ],
+   "aabb": [
+    250.0,
+    600.0,
+    0.0,
+    700.0,
+    700.0,
+    300.0
+   ],
+   "index": 53,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Core_W",
+   "folder": "Spillway/10_Tower",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -700.0,
+    -600.0,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    12.0,
+    3.0
+   ],
+   "aabb": [
+    -700.0,
+    -600.0,
+    0.0,
+    -600.0,
+    600.0,
+    300.0
+   ],
+   "index": 54,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Core_E",
+   "folder": "Spillway/10_Tower",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    600.0,
+    -600.0,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    12.0,
+    3.0
+   ],
+   "aabb": [
+    600.0,
+    -600.0,
+    0.0,
+    700.0,
+    600.0,
+    300.0
+   ],
+   "index": 55,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Tower_Corner_SW",
+   "folder": "Spillway/10_Tower",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -1400.0,
+    -1400.0,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    7.0,
+    7.0,
+    3.0
+   ],
+   "aabb": [
+    -1400.0,
+    -1400.0,
+    0.0,
+    -700.0,
+    -700.0,
+    300.0
+   ],
+   "index": 56,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Tower_Corner_NE",
+   "folder": "Spillway/10_Tower",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    700.0,
+    700.0,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    7.0,
+    7.0,
+    3.0
+   ],
+   "aabb": [
+    700.0,
+    700.0,
+    0.0,
+    1400.0,
+    1400.0,
+    300.0
+   ],
+   "index": 57,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_Tower_Col_1050_-1050",
+   "folder": "Spillway/10_Tower",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    1050,
+    -1050,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.7,
+    1.7,
+    3.0
+   ],
+   "aabb": [
+    965.0,
+    -1135.0,
+    0.0,
+    1135.0,
+    -965.0,
+    300.0
+   ],
+   "index": 58,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_Tower_Col_350_-1250",
+   "folder": "Spillway/10_Tower",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    350,
+    -1250,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.7,
+    1.7,
+    3.0
+   ],
+   "aabb": [
+    265.0,
+    -1335.0,
+    0.0,
+    435.0,
+    -1165.0,
+    300.0
+   ],
+   "index": 59,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_Tower_Col_-350_-1250",
+   "folder": "Spillway/10_Tower",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -350,
+    -1250,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.7,
+    1.7,
+    3.0
+   ],
+   "aabb": [
+    -435.0,
+    -1335.0,
+    0.0,
+    -265.0,
+    -1165.0,
+    300.0
+   ],
+   "index": 60,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_Tower_Col_-1050_1050",
+   "folder": "Spillway/10_Tower",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -1050,
+    1050,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.7,
+    1.7,
+    3.0
+   ],
+   "aabb": [
+    -1135.0,
+    965.0,
+    0.0,
+    -965.0,
+    1135.0,
+    300.0
+   ],
+   "index": 61,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_Tower_Col_350_1250",
+   "folder": "Spillway/10_Tower",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    350,
+    1250,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.7,
+    1.7,
+    3.0
+   ],
+   "aabb": [
+    265.0,
+    1165.0,
+    0.0,
+    435.0,
+    1335.0,
+    300.0
+   ],
+   "index": 62,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_Tower_Col_-350_1250",
+   "folder": "Spillway/10_Tower",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -350,
+    1250,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.7,
+    1.7,
+    3.0
+   ],
+   "aabb": [
+    -435.0,
+    1165.0,
+    0.0,
+    -265.0,
+    1335.0,
+    300.0
+   ],
+   "index": 63,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Tower_Deck_T1",
+   "folder": "Spillway/10_Tower",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Deck",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "loc": [
+    -1400.0,
+    -1400.0,
+    300.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    28.0,
+    28.0,
+    1.0
+   ],
+   "aabb": [
+    -1400.0,
+    -1400.0,
+    300.0,
+    1400.0,
+    1400.0,
+    400.0
+   ],
+   "index": 64,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Tower_Core_T1",
+   "folder": "Spillway/10_Tower",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -700.0,
+    -700.0,
+    400.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    14.0,
+    14.0,
+    3.0
+   ],
+   "aabb": [
+    -700.0,
+    -700.0,
+    400.0,
+    700.0,
+    700.0,
+    700.0
+   ],
+   "index": 65,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Tower_Mass_S",
+   "folder": "Spillway/10_Tower",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -1400.0,
+    -1400.0,
+    400.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    11.0,
+    4.0,
+    3.0
+   ],
+   "aabb": [
+    -1400.0,
+    -1400.0,
+    400.0,
+    -300,
+    -1000,
+    700.0
+   ],
+   "index": 66,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Tower_Mass_N",
+   "folder": "Spillway/10_Tower",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    300,
+    1000,
+    400.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    11.0,
+    4.0,
+    3.0
+   ],
+   "aabb": [
+    300,
+    1000,
+    400.0,
+    1400.0,
+    1400.0,
+    700.0
+   ],
+   "index": 67,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "ramp",
+   "label": "SPW_Tower_Ramp_T1_T2",
+   "folder": "Spillway/10_Tower",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Ramp",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    -800.0,
+    100,
+    400.0
+   ],
+   "rot": [
+    0.0,
+    180.0,
+    0.0
+   ],
+   "scale": [
+    6.0,
+    8.0,
+    4.0
+   ],
+   "aabb": [
+    -1400.0,
+    -700,
+    400.0,
+    -800.0,
+    100,
+    800.0
+   ],
+   "slope_deg": 26.57,
+   "up": "+Y",
+   "width_uu": 600.0,
+   "index": 68,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Ramp"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Tower_Deck_T2",
+   "folder": "Spillway/10_Tower",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Deck",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "loc": [
+    -1400.0,
+    100,
+    700.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    28.0,
+    13.0,
+    1.0
+   ],
+   "aabb": [
+    -1400.0,
+    100,
+    700.0,
+    1400.0,
+    1400.0,
+    800.0
+   ],
+   "index": 69,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "ramp",
+   "label": "SPW_Tower_Ramp_T2_T3",
+   "folder": "Spillway/10_Tower",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Ramp",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    800.0,
+    0,
+    800.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    6.0,
+    8.0,
+    4.0
+   ],
+   "aabb": [
+    800.0,
+    0,
+    800.0,
+    1400.0,
+    800,
+    1200.0
+   ],
+   "slope_deg": 26.57,
+   "up": "-Y",
+   "width_uu": 600.0,
+   "index": 70,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Ramp"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Tower_Crown",
+   "folder": "Spillway/10_Tower",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Deck",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "loc": [
+    -1200,
+    -1200,
+    1100.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    24.0,
+    12.0,
+    1.0
+   ],
+   "aabb": [
+    -1200,
+    -1200,
+    1100.0,
+    1200,
+    0,
+    1200.0
+   ],
+   "index": 71,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_Tower_Pillar_-1100",
+   "folder": "Spillway/10_Tower",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -1100,
+    -900,
+    400.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.5,
+    1.5,
+    7.0
+   ],
+   "aabb": [
+    -1175.0,
+    -975.0,
+    400.0,
+    -1025.0,
+    -825.0,
+    1100.0
+   ],
+   "index": 72,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_Tower_Pillar_-400",
+   "folder": "Spillway/10_Tower",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -400,
+    -900,
+    400.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.5,
+    1.5,
+    7.0
+   ],
+   "aabb": [
+    -475.0,
+    -975.0,
+    400.0,
+    -325.0,
+    -825.0,
+    1100.0
+   ],
+   "index": 73,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_Tower_Pillar_400",
+   "folder": "Spillway/10_Tower",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    400,
+    -900,
+    400.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.5,
+    1.5,
+    7.0
+   ],
+   "aabb": [
+    325.0,
+    -975.0,
+    400.0,
+    475.0,
+    -825.0,
+    1100.0
+   ],
+   "index": 74,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_Tower_Pillar_1100",
+   "folder": "Spillway/10_Tower",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    1100,
+    -900,
+    400.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.5,
+    1.5,
+    7.0
+   ],
+   "aabb": [
+    1025.0,
+    -975.0,
+    400.0,
+    1175.0,
+    -825.0,
+    1100.0
+   ],
+   "index": 75,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Crown_Parapet_S",
+   "folder": "Spillway/10_Tower",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Accent",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    -1200,
+    -1200,
+    1200.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    24.0,
+    0.4,
+    1.1
+   ],
+   "aabb": [
+    -1200,
+    -1200,
+    1200.0,
+    1200,
+    -1160.0,
+    1310.0
+   ],
+   "index": 76,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Crown_Parapet_W",
+   "folder": "Spillway/10_Tower",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Accent",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    -1200,
+    -1200,
+    1200.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    0.4,
+    12.0,
+    1.1
+   ],
+   "aabb": [
+    -1200,
+    -1200,
+    1200.0,
+    -1160.0,
+    0,
+    1310.0
+   ],
+   "index": 77,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Crown_Parapet_E",
+   "folder": "Spillway/10_Tower",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Accent",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    1160.0,
+    -1200,
+    1200.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    0.4,
+    12.0,
+    1.1
+   ],
+   "aabb": [
+    1160.0,
+    -1200,
+    1200.0,
+    1200,
+    0,
+    1310.0
+   ],
+   "index": 78,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Crown_Plinth",
+   "folder": "Spillway/10_Tower",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Accent",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    -150,
+    -600,
+    1200.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    3.0,
+    3.0,
+    0.4
+   ],
+   "aabb": [
+    -150,
+    -600,
+    1200.0,
+    150,
+    -300,
+    1240.0
+   ],
+   "index": 79,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Crown_Mast",
+   "folder": "Spillway/10_Tower",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -1000,
+    -1000,
+    1200.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    5.0,
+    5.0,
+    4.0
+   ],
+   "aabb": [
+    -1000,
+    -1000,
+    1200.0,
+    -500,
+    -500,
+    1600.0
+   ],
+   "index": 80,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "ramp",
+   "label": "SPW_Tower_Ramp_W",
+   "folder": "Spillway/10_Tower",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Ramp",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    -1400.0,
+    400,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    90.0,
+    0.0
+   ],
+   "scale": [
+    6.0,
+    8.0,
+    4.0
+   ],
+   "aabb": [
+    -2200,
+    400,
+    0.0,
+    -1400.0,
+    1000,
+    400.0
+   ],
+   "slope_deg": 26.57,
+   "up": "+X",
+   "width_uu": 600,
+   "index": 81,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Ramp"
+  },
+  {
+   "kind": "ramp",
+   "label": "SPW_Tower_Ramp_E",
+   "folder": "Spillway/10_Tower",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Ramp",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    1400.0,
+    -400,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    -90.0,
+    0.0
+   ],
+   "scale": [
+    6.0,
+    8.0,
+    4.0
+   ],
+   "aabb": [
+    1400.0,
+    -1000,
+    0.0,
+    2200,
+    -400,
+    400.0
+   ],
+   "slope_deg": 26.57,
+   "up": "-X",
+   "width_uu": 600,
+   "index": 82,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Ramp"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_West_Roof",
+   "folder": "Spillway/20_Base_West",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Deck",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "loc": [
+    -4400,
+    -2000,
+    300.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    14.0,
+    40.0,
+    1.0
+   ],
+   "aabb": [
+    -4400,
+    -2000,
+    300.0,
+    -3000,
+    2000,
+    400.0
+   ],
+   "index": 83,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_West_Backsplash",
+   "folder": "Spillway/20_Base_West",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Accent",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    -4390,
+    -1900,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    0.9,
+    38.0,
+    3.0
+   ],
+   "aabb": [
+    -4390,
+    -1900,
+    0.0,
+    -4300,
+    1900,
+    300.0
+   ],
+   "index": 84,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_West_Pillar_0",
+   "folder": "Spillway/20_Base_West",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -3100,
+    -1250,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.9,
+    1.9,
+    3.0
+   ],
+   "aabb": [
+    -3195.0,
+    -1345.0,
+    0.0,
+    -3005.0,
+    -1155.0,
+    300.0
+   ],
+   "index": 85,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_West_Pillar_1",
+   "folder": "Spillway/20_Base_West",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -3100,
+    -400,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.9,
+    1.9,
+    3.0
+   ],
+   "aabb": [
+    -3195.0,
+    -495.0,
+    0.0,
+    -3005.0,
+    -305.0,
+    300.0
+   ],
+   "index": 86,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_West_Pillar_2",
+   "folder": "Spillway/20_Base_West",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -3100,
+    400,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.9,
+    1.9,
+    3.0
+   ],
+   "aabb": [
+    -3195.0,
+    305.0,
+    0.0,
+    -3005.0,
+    495.0,
+    300.0
+   ],
+   "index": 87,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_West_Pillar_3",
+   "folder": "Spillway/20_Base_West",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -3100,
+    1250,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.9,
+    1.9,
+    3.0
+   ],
+   "aabb": [
+    -3195.0,
+    1155.0,
+    0.0,
+    -3005.0,
+    1345.0,
+    300.0
+   ],
+   "index": 88,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_West_Pillar_4",
+   "folder": "Spillway/20_Base_West",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -3750,
+    -1950,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.9,
+    1.9,
+    3.0
+   ],
+   "aabb": [
+    -3845.0,
+    -2045.0,
+    0.0,
+    -3655.0,
+    -1855.0,
+    300.0
+   ],
+   "index": 89,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_West_Pillar_5",
+   "folder": "Spillway/20_Base_West",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -3750,
+    1950,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.9,
+    1.9,
+    3.0
+   ],
+   "aabb": [
+    -3845.0,
+    1855.0,
+    0.0,
+    -3655.0,
+    2045.0,
+    300.0
+   ],
+   "index": 90,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "ramp",
+   "label": "SPW_West_Ramp_A",
+   "folder": "Spillway/20_Base_West",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Ramp",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    -3000,
+    -1400,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    -90.0,
+    0.0
+   ],
+   "scale": [
+    6.0,
+    8.0,
+    4.0
+   ],
+   "aabb": [
+    -3000,
+    -2000,
+    0.0,
+    -2200,
+    -1400,
+    400.0
+   ],
+   "slope_deg": 26.57,
+   "up": "-X",
+   "width_uu": 600,
+   "index": 91,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Ramp"
+  },
+  {
+   "kind": "ramp",
+   "label": "SPW_West_Ramp_B",
+   "folder": "Spillway/20_Base_West",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Ramp",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    -3000,
+    2000,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    -90.0,
+    0.0
+   ],
+   "scale": [
+    6.0,
+    8.0,
+    4.0
+   ],
+   "aabb": [
+    -3000,
+    1400,
+    0.0,
+    -2200,
+    2000,
+    400.0
+   ],
+   "slope_deg": 26.57,
+   "up": "-X",
+   "width_uu": 600,
+   "index": 92,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Ramp"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_West_Roof_Cover",
+   "folder": "Spillway/20_Base_West",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -3800,
+    -900,
+    400.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    18.0,
+    1.1
+   ],
+   "aabb": [
+    -3800,
+    -900,
+    400.0,
+    -3700,
+    900,
+    510.0
+   ],
+   "index": 93,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_West_Bridge",
+   "folder": "Spillway/20_Base_West",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Deck",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "loc": [
+    -3000,
+    -300,
+    300.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    16.0,
+    6.0,
+    1.0
+   ],
+   "aabb": [
+    -3000,
+    -300,
+    300.0,
+    -1400.0,
+    300,
+    400.0
+   ],
+   "index": 94,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_East_Roof",
+   "folder": "Spillway/20_Base_East",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Deck",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "loc": [
+    3000,
+    -2000,
+    300.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    14.0,
+    40.0,
+    1.0
+   ],
+   "aabb": [
+    3000,
+    -2000,
+    300.0,
+    4400,
+    2000,
+    400.0
+   ],
+   "index": 95,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_East_Backsplash",
+   "folder": "Spillway/20_Base_East",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Accent",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    4300,
+    -1900,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    0.9,
+    38.0,
+    3.0
+   ],
+   "aabb": [
+    4300,
+    -1900,
+    0.0,
+    4390,
+    1900,
+    300.0
+   ],
+   "index": 96,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_East_Pillar_0",
+   "folder": "Spillway/20_Base_East",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    3099,
+    1249,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.9,
+    1.9,
+    3.0
+   ],
+   "aabb": [
+    3004.0,
+    1154.0,
+    0.0,
+    3194.0,
+    1344.0,
+    300.0
+   ],
+   "index": 97,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_East_Pillar_1",
+   "folder": "Spillway/20_Base_East",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    3099,
+    399,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.9,
+    1.9,
+    3.0
+   ],
+   "aabb": [
+    3004.0,
+    304.0,
+    0.0,
+    3194.0,
+    494.0,
+    300.0
+   ],
+   "index": 98,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_East_Pillar_2",
+   "folder": "Spillway/20_Base_East",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    3099,
+    -401,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.9,
+    1.9,
+    3.0
+   ],
+   "aabb": [
+    3004.0,
+    -496.0,
+    0.0,
+    3194.0,
+    -306.0,
+    300.0
+   ],
+   "index": 99,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_East_Pillar_3",
+   "folder": "Spillway/20_Base_East",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    3099,
+    -1251,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.9,
+    1.9,
+    3.0
+   ],
+   "aabb": [
+    3004.0,
+    -1346.0,
+    0.0,
+    3194.0,
+    -1156.0,
+    300.0
+   ],
+   "index": 100,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_East_Pillar_4",
+   "folder": "Spillway/20_Base_East",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    3749,
+    1949,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.9,
+    1.9,
+    3.0
+   ],
+   "aabb": [
+    3654.0,
+    1854.0,
+    0.0,
+    3844.0,
+    2044.0,
+    300.0
+   ],
+   "index": 101,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_East_Pillar_5",
+   "folder": "Spillway/20_Base_East",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    3749,
+    -1951,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.9,
+    1.9,
+    3.0
+   ],
+   "aabb": [
+    3654.0,
+    -2046.0,
+    0.0,
+    3844.0,
+    -1856.0,
+    300.0
+   ],
+   "index": 102,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "ramp",
+   "label": "SPW_East_Ramp_A",
+   "folder": "Spillway/20_Base_East",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Ramp",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    3000,
+    1400,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    90.0,
+    0.0
+   ],
+   "scale": [
+    6.0,
+    8.0,
+    4.0
+   ],
+   "aabb": [
+    2200,
+    1400,
+    0.0,
+    3000,
+    2000,
+    400.0
+   ],
+   "slope_deg": 26.57,
+   "up": "+X",
+   "width_uu": 600,
+   "index": 103,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Ramp"
+  },
+  {
+   "kind": "ramp",
+   "label": "SPW_East_Ramp_B",
+   "folder": "Spillway/20_Base_East",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Ramp",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    3000,
+    -2000,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    90.0,
+    0.0
+   ],
+   "scale": [
+    6.0,
+    8.0,
+    4.0
+   ],
+   "aabb": [
+    2200,
+    -2000,
+    0.0,
+    3000,
+    -1400,
+    400.0
+   ],
+   "slope_deg": 26.57,
+   "up": "+X",
+   "width_uu": 600,
+   "index": 104,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Ramp"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_East_Roof_Cover",
+   "folder": "Spillway/20_Base_East",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    3700,
+    -900,
+    400.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    18.0,
+    1.1
+   ],
+   "aabb": [
+    3700,
+    -900,
+    400.0,
+    3800,
+    900,
+    510.0
+   ],
+   "index": 105,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_East_Bridge",
+   "folder": "Spillway/20_Base_East",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Deck",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "loc": [
+    1400.0,
+    -300,
+    300.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    16.0,
+    6.0,
+    1.0
+   ],
+   "aabb": [
+    1400.0,
+    -300,
+    300.0,
+    3000,
+    300,
+    400.0
+   ],
+   "index": 106,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Block_S_a",
+   "folder": "Spillway/30_SouthLane",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -800,
+    -3100,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    5.0,
+    1.0,
+    3.0
+   ],
+   "aabb": [
+    -800,
+    -3100,
+    0.0,
+    -300,
+    -3000,
+    300.0
+   ],
+   "index": 107,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Block_S_b",
+   "folder": "Spillway/30_SouthLane",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    300,
+    -3100,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    5.0,
+    1.0,
+    3.0
+   ],
+   "aabb": [
+    300,
+    -3100,
+    0.0,
+    800,
+    -3000,
+    300.0
+   ],
+   "index": 108,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Block_N_a",
+   "folder": "Spillway/30_SouthLane",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -800,
+    -2400,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    5.0,
+    1.0,
+    3.0
+   ],
+   "aabb": [
+    -800,
+    -2400,
+    0.0,
+    -300,
+    -2300,
+    300.0
+   ],
+   "index": 109,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Block_N_b",
+   "folder": "Spillway/30_SouthLane",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    300,
+    -2400,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    5.0,
+    1.0,
+    3.0
+   ],
+   "aabb": [
+    300,
+    -2400,
+    0.0,
+    800,
+    -2300,
+    300.0
+   ],
+   "index": 110,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Block_W",
+   "folder": "Spillway/30_SouthLane",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -800,
+    -3000,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    6.0,
+    3.0
+   ],
+   "aabb": [
+    -800,
+    -3000,
+    0.0,
+    -700,
+    -2400,
+    300.0
+   ],
+   "index": 111,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Block_E",
+   "folder": "Spillway/30_SouthLane",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    700,
+    -3000,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    6.0,
+    3.0
+   ],
+   "aabb": [
+    700,
+    -3000,
+    0.0,
+    800,
+    -2400,
+    300.0
+   ],
+   "index": 112,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Block_Roof",
+   "folder": "Spillway/30_SouthLane",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Deck",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "loc": [
+    -800,
+    -3100,
+    300.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    16.0,
+    8.0,
+    1.0
+   ],
+   "aabb": [
+    -800,
+    -3100,
+    300.0,
+    800,
+    -2300,
+    400.0
+   ],
+   "index": 113,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "ramp",
+   "label": "SPW_Block_Ramp",
+   "folder": "Spillway/30_SouthLane",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Ramp",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    -800,
+    -3100,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    90.0,
+    0.0
+   ],
+   "scale": [
+    6.0,
+    8.0,
+    4.0
+   ],
+   "aabb": [
+    -1600,
+    -3100,
+    0.0,
+    -800,
+    -2500,
+    400.0
+   ],
+   "slope_deg": 26.57,
+   "up": "+X",
+   "width_uu": 600,
+   "index": 114,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Ramp"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Block_Cover",
+   "folder": "Spillway/30_SouthLane",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -500,
+    -2500,
+    400.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    10.0,
+    1.0,
+    1.1
+   ],
+   "aabb": [
+    -500,
+    -2500,
+    400.0,
+    500,
+    -2400,
+    510.0
+   ],
+   "index": 115,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Lane_Plinth_W",
+   "folder": "Spillway/30_SouthLane",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Deck",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "loc": [
+    -3100,
+    -3400,
+    300.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    8.0,
+    6.0,
+    1.0
+   ],
+   "aabb": [
+    -3100,
+    -3400,
+    300.0,
+    -2300,
+    -2800,
+    400.0
+   ],
+   "index": 116,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Lane_Plinth_W_base",
+   "folder": "Spillway/30_SouthLane",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -3100,
+    -3400,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    8.0,
+    6.0,
+    3.0
+   ],
+   "aabb": [
+    -3100,
+    -3400,
+    0.0,
+    -2300,
+    -2800,
+    300.0
+   ],
+   "index": 117,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Lane_Plinth_E",
+   "folder": "Spillway/30_SouthLane",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Deck",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "loc": [
+    2300,
+    -3400,
+    300.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    8.0,
+    6.0,
+    1.0
+   ],
+   "aabb": [
+    2300,
+    -3400,
+    300.0,
+    3100,
+    -2800,
+    400.0
+   ],
+   "index": 118,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Lane_Plinth_E_base",
+   "folder": "Spillway/30_SouthLane",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    2300,
+    -3400,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    8.0,
+    6.0,
+    3.0
+   ],
+   "aabb": [
+    2300,
+    -3400,
+    0.0,
+    3100,
+    -2800,
+    300.0
+   ],
+   "index": 119,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Shelf",
+   "folder": "Spillway/30_SouthLane",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Deck",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "loc": [
+    -2300,
+    -4000.0,
+    300.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    46.0,
+    6.0,
+    1.0
+   ],
+   "aabb": [
+    -2300,
+    -4000.0,
+    300.0,
+    2300,
+    -3400,
+    400.0
+   ],
+   "index": 120,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "ramp",
+   "label": "SPW_Shelf_Ramp_W",
+   "folder": "Spillway/30_SouthLane",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Ramp",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    -2300,
+    -4000.0,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    90.0,
+    0.0
+   ],
+   "scale": [
+    6.0,
+    8.0,
+    4.0
+   ],
+   "aabb": [
+    -3100,
+    -4000.0,
+    0.0,
+    -2300,
+    -3400.0,
+    400.0
+   ],
+   "slope_deg": 26.57,
+   "up": "+X",
+   "width_uu": 600.0,
+   "index": 121,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Ramp"
+  },
+  {
+   "kind": "ramp",
+   "label": "SPW_Shelf_Ramp_E",
+   "folder": "Spillway/30_SouthLane",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Ramp",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    2300,
+    -3400.0,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    -90.0,
+    0.0
+   ],
+   "scale": [
+    6.0,
+    8.0,
+    4.0
+   ],
+   "aabb": [
+    2300,
+    -4000.0,
+    0.0,
+    3100,
+    -3400.0,
+    400.0
+   ],
+   "slope_deg": 26.57,
+   "up": "-X",
+   "width_uu": 600.0,
+   "index": 122,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Ramp"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Shelf_Rail",
+   "folder": "Spillway/30_SouthLane",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Accent",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    -2300,
+    -3460,
+    400.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    46.0,
+    0.6,
+    1.1
+   ],
+   "aabb": [
+    -2300,
+    -3460,
+    400.0,
+    2300,
+    -3400,
+    510.0
+   ],
+   "index": 123,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Shelf_Cover_0",
+   "folder": "Spillway/30_SouthLane",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -1800,
+    -3800,
+    400.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    8.0,
+    1.0,
+    1.1
+   ],
+   "aabb": [
+    -1800,
+    -3800,
+    400.0,
+    -1000,
+    -3700,
+    510.0
+   ],
+   "index": 124,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Shelf_Cover_1",
+   "folder": "Spillway/30_SouthLane",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -400,
+    -3800,
+    400.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    8.0,
+    1.0,
+    1.1
+   ],
+   "aabb": [
+    -400,
+    -3800,
+    400.0,
+    400,
+    -3700,
+    510.0
+   ],
+   "index": 125,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Shelf_Cover_2",
+   "folder": "Spillway/30_SouthLane",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    1000,
+    -3800,
+    400.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    8.0,
+    1.0,
+    1.1
+   ],
+   "aabb": [
+    1000,
+    -3800,
+    400.0,
+    1800,
+    -3700,
+    510.0
+   ],
+   "index": 126,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "crate",
+   "label": "SPW_Lane_Crate_0",
+   "folder": "Spillway/30_SouthLane",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Crate",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    -1800,
+    -2600,
+    120.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    2.4,
+    2.4,
+    2.4
+   ],
+   "aabb": [
+    -1920.0,
+    -2720.0,
+    0.0,
+    -1680.0,
+    -2480.0,
+    240.0
+   ],
+   "index": 127,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_ChamferCube"
+  },
+  {
+   "kind": "crate",
+   "label": "SPW_Lane_Crate_1",
+   "folder": "Spillway/30_SouthLane",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Crate",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    1800,
+    -2600,
+    120.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    2.4,
+    2.4,
+    2.4
+   ],
+   "aabb": [
+    1680.0,
+    -2720.0,
+    0.0,
+    1920.0,
+    -2480.0,
+    240.0
+   ],
+   "index": 128,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_ChamferCube"
+  },
+  {
+   "kind": "crate",
+   "label": "SPW_Lane_Crate_2",
+   "folder": "Spillway/30_SouthLane",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Crate",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    -3700,
+    -2900,
+    120.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    2.4,
+    2.4,
+    2.4
+   ],
+   "aabb": [
+    -3820.0,
+    -3020.0,
+    0.0,
+    -3580.0,
+    -2780.0,
+    240.0
+   ],
+   "index": 129,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_ChamferCube"
+  },
+  {
+   "kind": "crate",
+   "label": "SPW_Lane_Crate_3",
+   "folder": "Spillway/30_SouthLane",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Crate",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    3700,
+    -2900,
+    120.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    2.4,
+    2.4,
+    2.4
+   ],
+   "aabb": [
+    3580.0,
+    -3020.0,
+    0.0,
+    3820.0,
+    -2780.0,
+    240.0
+   ],
+   "index": 130,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_ChamferCube"
+  },
+  {
+   "kind": "crate",
+   "label": "SPW_Lane_Crate_4",
+   "folder": "Spillway/30_SouthLane",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Crate",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    0,
+    -2000,
+    120.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    2.4,
+    2.4,
+    2.4
+   ],
+   "aabb": [
+    -120.0,
+    -2120.0,
+    0.0,
+    120.0,
+    -1880.0,
+    240.0
+   ],
+   "index": 131,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_ChamferCube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Gal_Roof",
+   "folder": "Spillway/40_Gallery",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Deck",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "loc": [
+    -3800.0,
+    1800.0,
+    700.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    76.0,
+    22.0,
+    1.0
+   ],
+   "aabb": [
+    -3800.0,
+    1800.0,
+    700.0,
+    3800.0,
+    4000.0,
+    800.0
+   ],
+   "index": 132,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_Gal_Col_0_0",
+   "folder": "Spillway/40_Gallery",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -3300,
+    2300,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.9,
+    1.9,
+    7.0
+   ],
+   "aabb": [
+    -3395.0,
+    2205.0,
+    0.0,
+    -3205.0,
+    2395.0,
+    700.0
+   ],
+   "index": 133,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_Gal_Col_0_1",
+   "folder": "Spillway/40_Gallery",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -3300,
+    3400,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.9,
+    1.9,
+    7.0
+   ],
+   "aabb": [
+    -3395.0,
+    3305.0,
+    0.0,
+    -3205.0,
+    3495.0,
+    700.0
+   ],
+   "index": 134,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_Gal_Col_1_0",
+   "folder": "Spillway/40_Gallery",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -2200,
+    2300,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.9,
+    1.9,
+    7.0
+   ],
+   "aabb": [
+    -2295.0,
+    2205.0,
+    0.0,
+    -2105.0,
+    2395.0,
+    700.0
+   ],
+   "index": 135,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_Gal_Col_1_1",
+   "folder": "Spillway/40_Gallery",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -2200,
+    3400,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.9,
+    1.9,
+    7.0
+   ],
+   "aabb": [
+    -2295.0,
+    3305.0,
+    0.0,
+    -2105.0,
+    3495.0,
+    700.0
+   ],
+   "index": 136,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_Gal_Col_2_0",
+   "folder": "Spillway/40_Gallery",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -1100,
+    2300,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.9,
+    1.9,
+    7.0
+   ],
+   "aabb": [
+    -1195.0,
+    2205.0,
+    0.0,
+    -1005.0,
+    2395.0,
+    700.0
+   ],
+   "index": 137,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_Gal_Col_2_1",
+   "folder": "Spillway/40_Gallery",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -1100,
+    3400,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.9,
+    1.9,
+    7.0
+   ],
+   "aabb": [
+    -1195.0,
+    3305.0,
+    0.0,
+    -1005.0,
+    3495.0,
+    700.0
+   ],
+   "index": 138,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_Gal_Col_3_0",
+   "folder": "Spillway/40_Gallery",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    0,
+    2300,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.9,
+    1.9,
+    7.0
+   ],
+   "aabb": [
+    -95.0,
+    2205.0,
+    0.0,
+    95.0,
+    2395.0,
+    700.0
+   ],
+   "index": 139,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_Gal_Col_3_1",
+   "folder": "Spillway/40_Gallery",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    0,
+    3400,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.9,
+    1.9,
+    7.0
+   ],
+   "aabb": [
+    -95.0,
+    3305.0,
+    0.0,
+    95.0,
+    3495.0,
+    700.0
+   ],
+   "index": 140,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_Gal_Col_4_0",
+   "folder": "Spillway/40_Gallery",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    1100,
+    2300,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.9,
+    1.9,
+    7.0
+   ],
+   "aabb": [
+    1005.0,
+    2205.0,
+    0.0,
+    1195.0,
+    2395.0,
+    700.0
+   ],
+   "index": 141,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_Gal_Col_4_1",
+   "folder": "Spillway/40_Gallery",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    1100,
+    3400,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.9,
+    1.9,
+    7.0
+   ],
+   "aabb": [
+    1005.0,
+    3305.0,
+    0.0,
+    1195.0,
+    3495.0,
+    700.0
+   ],
+   "index": 142,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_Gal_Col_5_0",
+   "folder": "Spillway/40_Gallery",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    2200,
+    2300,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.9,
+    1.9,
+    7.0
+   ],
+   "aabb": [
+    2105.0,
+    2205.0,
+    0.0,
+    2295.0,
+    2395.0,
+    700.0
+   ],
+   "index": 143,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_Gal_Col_5_1",
+   "folder": "Spillway/40_Gallery",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    2200,
+    3400,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.9,
+    1.9,
+    7.0
+   ],
+   "aabb": [
+    2105.0,
+    3305.0,
+    0.0,
+    2295.0,
+    3495.0,
+    700.0
+   ],
+   "index": 144,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_Gal_Col_6_0",
+   "folder": "Spillway/40_Gallery",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    3300,
+    2300,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.9,
+    1.9,
+    7.0
+   ],
+   "aabb": [
+    3205.0,
+    2205.0,
+    0.0,
+    3395.0,
+    2395.0,
+    700.0
+   ],
+   "index": 145,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "pillar",
+   "label": "SPW_Gal_Col_6_1",
+   "folder": "Spillway/40_Gallery",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Pillar",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    3300,
+    3400,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.9,
+    1.9,
+    7.0
+   ],
+   "aabb": [
+    3205.0,
+    3305.0,
+    0.0,
+    3395.0,
+    3495.0,
+    700.0
+   ],
+   "index": 146,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cylinder"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Gal_Fin_0",
+   "folder": "Spillway/40_Gallery",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -2900,
+    2800,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    7.0,
+    1.0,
+    1.1
+   ],
+   "aabb": [
+    -2900,
+    2800,
+    0.0,
+    -2200,
+    2900,
+    110.0
+   ],
+   "index": 147,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Gal_Fin_1",
+   "folder": "Spillway/40_Gallery",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -1300,
+    2800,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    7.0,
+    1.0,
+    1.1
+   ],
+   "aabb": [
+    -1300,
+    2800,
+    0.0,
+    -600,
+    2900,
+    110.0
+   ],
+   "index": 148,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Gal_Fin_2",
+   "folder": "Spillway/40_Gallery",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    600,
+    2800,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    7.0,
+    1.0,
+    1.1
+   ],
+   "aabb": [
+    600,
+    2800,
+    0.0,
+    1300,
+    2900,
+    110.0
+   ],
+   "index": 149,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Gal_Fin_3",
+   "folder": "Spillway/40_Gallery",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    2200,
+    2800,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    7.0,
+    1.0,
+    1.1
+   ],
+   "aabb": [
+    2200,
+    2800,
+    0.0,
+    2900,
+    2900,
+    110.0
+   ],
+   "index": 150,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "ramp",
+   "label": "SPW_Gal_Stair_W",
+   "folder": "Spillway/40_Gallery",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Ramp",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    -3800.0,
+    2600.0,
+    400.0
+   ],
+   "rot": [
+    0.0,
+    180.0,
+    0.0
+   ],
+   "scale": [
+    6.0,
+    8.0,
+    4.0
+   ],
+   "aabb": [
+    -4400.0,
+    1800.0,
+    400.0,
+    -3800.0,
+    2600.0,
+    800.0
+   ],
+   "slope_deg": 26.57,
+   "up": "+Y",
+   "width_uu": 600.0,
+   "index": 151,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Ramp"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Gal_Stair_Landing_W",
+   "folder": "Spillway/40_Gallery",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Deck",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "loc": [
+    -4400.0,
+    2600.0,
+    700.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    6.0,
+    14.0,
+    1.0
+   ],
+   "aabb": [
+    -4400.0,
+    2600.0,
+    700.0,
+    -3800.0,
+    4000.0,
+    800.0
+   ],
+   "index": 152,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "ramp",
+   "label": "SPW_Gal_Stair_E",
+   "folder": "Spillway/40_Gallery",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Ramp",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    4400.0,
+    2600.0,
+    400.0
+   ],
+   "rot": [
+    0.0,
+    180.0,
+    0.0
+   ],
+   "scale": [
+    6.0,
+    8.0,
+    4.0
+   ],
+   "aabb": [
+    3800.0,
+    1800.0,
+    400.0,
+    4400.0,
+    2600.0,
+    800.0
+   ],
+   "slope_deg": 26.57,
+   "up": "+Y",
+   "width_uu": 600.0,
+   "index": 153,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Ramp"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Gal_Stair_Landing_E",
+   "folder": "Spillway/40_Gallery",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Deck",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "loc": [
+    3800.0,
+    2600.0,
+    700.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    6.0,
+    14.0,
+    1.0
+   ],
+   "aabb": [
+    3800.0,
+    2600.0,
+    700.0,
+    4400.0,
+    4000.0,
+    800.0
+   ],
+   "index": 154,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Gal_Roof_Cover_0",
+   "folder": "Spillway/40_Gallery",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -3150,
+    2500,
+    800.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    9.0,
+    1.0,
+    1.1
+   ],
+   "aabb": [
+    -3150,
+    2500,
+    800.0,
+    -2250,
+    2600,
+    910.0
+   ],
+   "index": 155,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Gal_Roof_Cover_1",
+   "folder": "Spillway/40_Gallery",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -1850,
+    2500,
+    800.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    9.0,
+    1.0,
+    1.1
+   ],
+   "aabb": [
+    -1850,
+    2500,
+    800.0,
+    -950,
+    2600,
+    910.0
+   ],
+   "index": 156,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Gal_Roof_Cover_2",
+   "folder": "Spillway/40_Gallery",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    950,
+    2500,
+    800.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    9.0,
+    1.0,
+    1.1
+   ],
+   "aabb": [
+    950,
+    2500,
+    800.0,
+    1850,
+    2600,
+    910.0
+   ],
+   "index": 157,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Gal_Roof_Cover_3",
+   "folder": "Spillway/40_Gallery",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    2250,
+    2500,
+    800.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    9.0,
+    1.0,
+    1.1
+   ],
+   "aabb": [
+    2250,
+    2500,
+    800.0,
+    3150,
+    2600,
+    910.0
+   ],
+   "index": 158,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "crate",
+   "label": "SPW_Gal_Roof_Crate_0",
+   "folder": "Spillway/40_Gallery",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Crate",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    -2000,
+    3400,
+    920.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    2.4,
+    2.4,
+    2.4
+   ],
+   "aabb": [
+    -2120.0,
+    3280.0,
+    800.0,
+    -1880.0,
+    3520.0,
+    1040.0
+   ],
+   "index": 159,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_ChamferCube"
+  },
+  {
+   "kind": "crate",
+   "label": "SPW_Gal_Roof_Crate_1",
+   "folder": "Spillway/40_Gallery",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Crate",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    0,
+    3400,
+    920.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    2.4,
+    2.4,
+    2.4
+   ],
+   "aabb": [
+    -120.0,
+    3280.0,
+    800.0,
+    120.0,
+    3520.0,
+    1040.0
+   ],
+   "index": 160,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_ChamferCube"
+  },
+  {
+   "kind": "crate",
+   "label": "SPW_Gal_Roof_Crate_2",
+   "folder": "Spillway/40_Gallery",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Crate",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    2000,
+    3400,
+    920.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    2.4,
+    2.4,
+    2.4
+   ],
+   "aabb": [
+    1880.0,
+    3280.0,
+    800.0,
+    2120.0,
+    3520.0,
+    1040.0
+   ],
+   "index": 161,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_ChamferCube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Gal_Tower_Link",
+   "folder": "Spillway/40_Gallery",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Deck",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "loc": [
+    -300,
+    1400.0,
+    700.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    6.0,
+    4.0,
+    1.0
+   ],
+   "aabb": [
+    -300,
+    1400.0,
+    700.0,
+    300,
+    1800.0,
+    800.0
+   ],
+   "index": 162,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Yard_West_Platform_base",
+   "folder": "Spillway/50_Yard",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -2200,
+    -1900,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    8.0,
+    7.0,
+    3.0
+   ],
+   "aabb": [
+    -2200,
+    -1900,
+    0.0,
+    -1400,
+    -1200,
+    300.0
+   ],
+   "index": 163,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Yard_West_Platform",
+   "folder": "Spillway/50_Yard",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Deck",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "loc": [
+    -2200,
+    -1900,
+    300.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    8.0,
+    7.0,
+    1.0
+   ],
+   "aabb": [
+    -2200,
+    -1900,
+    300.0,
+    -1400,
+    -1200,
+    400.0
+   ],
+   "index": 164,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Yard_West_Platform_cover",
+   "folder": "Spillway/50_Yard",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -2150,
+    -1850,
+    400.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    6.0,
+    1.1
+   ],
+   "aabb": [
+    -2150,
+    -1850,
+    400.0,
+    -2050,
+    -1250,
+    510.0
+   ],
+   "index": 165,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "ramp",
+   "label": "SPW_Yard_West_Ramp",
+   "folder": "Spillway/50_Yard",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Ramp",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    -2200,
+    -1200,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    8.0,
+    8.0,
+    4.0
+   ],
+   "aabb": [
+    -2200,
+    -1200,
+    0.0,
+    -1400,
+    -400,
+    400.0
+   ],
+   "slope_deg": 26.57,
+   "up": "-Y",
+   "width_uu": 800,
+   "index": 166,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Ramp"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Yard_West_Cover_0",
+   "folder": "Spillway/50_Yard",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -2600,
+    1100,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    7.0,
+    1.0,
+    1.1
+   ],
+   "aabb": [
+    -2600,
+    1100,
+    0.0,
+    -1900,
+    1200,
+    110.0
+   ],
+   "index": 167,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Yard_West_Cover_1",
+   "folder": "Spillway/50_Yard",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    -2600,
+    200,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    8.0,
+    1.1
+   ],
+   "aabb": [
+    -2600,
+    200,
+    0.0,
+    -2500,
+    1000,
+    110.0
+   ],
+   "index": 168,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "crate",
+   "label": "SPW_Yard_West_Crate_0",
+   "folder": "Spillway/50_Yard",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Crate",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    -1800,
+    1500,
+    120.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    2.4,
+    2.4,
+    2.4
+   ],
+   "aabb": [
+    -1920.0,
+    1380.0,
+    0.0,
+    -1680.0,
+    1620.0,
+    240.0
+   ],
+   "index": 169,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_ChamferCube"
+  },
+  {
+   "kind": "crate",
+   "label": "SPW_Yard_West_Crate_2",
+   "folder": "Spillway/50_Yard",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Crate",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    -2600,
+    -900,
+    120.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    2.4,
+    2.4,
+    2.4
+   ],
+   "aabb": [
+    -2720.0,
+    -1020.0,
+    0.0,
+    -2480.0,
+    -780.0,
+    240.0
+   ],
+   "index": 170,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_ChamferCube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Yard_East_Platform_base",
+   "folder": "Spillway/50_Yard",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    1400,
+    1200,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    8.0,
+    7.0,
+    3.0
+   ],
+   "aabb": [
+    1400,
+    1200,
+    0.0,
+    2200,
+    1900,
+    300.0
+   ],
+   "index": 171,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Yard_East_Platform",
+   "folder": "Spillway/50_Yard",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Deck",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "loc": [
+    1400,
+    1200,
+    300.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    8.0,
+    7.0,
+    1.0
+   ],
+   "aabb": [
+    1400,
+    1200,
+    300.0,
+    2200,
+    1900,
+    400.0
+   ],
+   "index": 172,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Yard_East_Platform_cover",
+   "folder": "Spillway/50_Yard",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    2050,
+    1250,
+    400.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    6.0,
+    1.1
+   ],
+   "aabb": [
+    2050,
+    1250,
+    400.0,
+    2150,
+    1850,
+    510.0
+   ],
+   "index": 173,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "ramp",
+   "label": "SPW_Yard_East_Ramp",
+   "folder": "Spillway/50_Yard",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Ramp",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    2200,
+    1200,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    180.0,
+    0.0
+   ],
+   "scale": [
+    8.0,
+    8.0,
+    4.0
+   ],
+   "aabb": [
+    1400,
+    400,
+    0.0,
+    2200,
+    1200,
+    400.0
+   ],
+   "slope_deg": 26.57,
+   "up": "+Y",
+   "width_uu": 800,
+   "index": 174,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Ramp"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Yard_East_Cover_0",
+   "folder": "Spillway/50_Yard",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    1900,
+    -1200,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    7.0,
+    1.0,
+    1.1
+   ],
+   "aabb": [
+    1900,
+    -1200,
+    0.0,
+    2600,
+    -1100,
+    110.0
+   ],
+   "index": 175,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "box",
+   "label": "SPW_Yard_East_Cover_1",
+   "folder": "Spillway/50_Yard",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Wall",
+   "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "loc": [
+    2500,
+    -1000,
+    0.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    8.0,
+    1.1
+   ],
+   "aabb": [
+    2500,
+    -1000,
+    0.0,
+    2600,
+    -200,
+    110.0
+   ],
+   "index": 176,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_Cube"
+  },
+  {
+   "kind": "crate",
+   "label": "SPW_Yard_East_Crate_0",
+   "folder": "Spillway/50_Yard",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Crate",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    1799,
+    -1501,
+    120.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    2.4,
+    2.4,
+    2.4
+   ],
+   "aabb": [
+    1679.0,
+    -1621.0,
+    0.0,
+    1919.0,
+    -1381.0,
+    240.0
+   ],
+   "index": 177,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_ChamferCube"
+  },
+  {
+   "kind": "crate",
+   "label": "SPW_Yard_East_Crate_2",
+   "folder": "Spillway/50_Yard",
+   "mesh": "/Game/Spillway/Meshes/SM_SPW_Crate",
+   "material": "/Game/FirstPerson/MI_FirstPersonColorway",
+   "loc": [
+    2599,
+    899,
+    120.0
+   ],
+   "rot": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    2.4,
+    2.4,
+    2.4
+   ],
+   "aabb": [
+    2479.0,
+    779.0,
+    0.0,
+    2719.0,
+    1019.0,
+    240.0
+   ],
+   "index": 178,
+   "source_mesh": "/Game/LevelPrototyping/Meshes/SM_ChamferCube"
+  }
+ ]
+}

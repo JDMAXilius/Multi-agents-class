@@ -1,0 +1,252 @@
+{
+ "arena_id": "breachpoint_spillway",
+ "manifest_version": 2,
+ "units": "centimetres (Unreal units); authored in uu, not metres",
+ "map": "/Game/Maps/BR_Spillway",
+ "generated_by": "Tools/blockout/gen_spillway.py",
+ "generated_tag": "SpillwayGenerated",
+ "lineage": {
+  "duplicated_from": "/Game/Variant_Shooter/Lvl_Shooter",
+  "meshes_reused": [
+   "/Game/LevelPrototyping/Meshes/SM_Cube",
+   "/Game/LevelPrototyping/Meshes/SM_Ramp",
+   "/Game/LevelPrototyping/Meshes/SM_Cylinder",
+   "/Game/LevelPrototyping/Meshes/SM_ChamferCube"
+  ],
+  "materials_reused": [
+   "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_TopDark",
+   "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+   "/Game/FirstPerson/MI_FirstPersonColorway"
+  ]
+ },
+ "bounds_uu": {
+  "x": [
+   -4400.0,
+   4400.0
+  ],
+  "y": [
+   -4000.0,
+   4000.0
+  ],
+  "z": [
+   -600.0,
+   1600.0
+  ]
+ },
+ "bounds_m": {
+  "x": 88.0,
+  "y": 80.0,
+  "z": 22.0
+ },
+ "perimeter_wall_m": 10.0,
+ "highest_walkable_m": 12.0,
+ "lowest_walkable_m": -5.0,
+ "baseline_lvl_shooter_m": {
+  "x": 30.0,
+  "y": 36.0,
+  "z": 8.0
+ },
+ "footprint_ratio": 6.519,
+ "tiers_uu": [
+  -500.0,
+  0.0,
+  400.0,
+  800.0,
+  1200.0
+ ],
+ "ramp_widths_uu": {
+  "main": 600.0,
+  "side": 400.0
+ },
+ "corridor_width_uu": 600.0,
+ "culvert_rooms": [
+  {
+   "name": "Chamber",
+   "rect_uu": [
+    -1400.0,
+    -1400.0,
+    1400.0,
+    1400.0
+   ]
+  },
+  {
+   "name": "Tunnel_W",
+   "rect_uu": [
+    -3200.0,
+    -600.0,
+    -1400.0,
+    600.0
+   ]
+  },
+  {
+   "name": "Tunnel_E",
+   "rect_uu": [
+    1400.0,
+    -600.0,
+    3200.0,
+    600.0
+   ]
+  },
+  {
+   "name": "Tunnel_S",
+   "rect_uu": [
+    -1400.0,
+    -2800.0,
+    -400.0,
+    -1400.0
+   ]
+  }
+ ],
+ "shafts": [
+  {
+   "name": "Shaft_W",
+   "rect_uu": [
+    -3000.0,
+    -600.0,
+    -2000.0,
+    0.0
+   ],
+   "up": "-X"
+  },
+  {
+   "name": "Shaft_E",
+   "rect_uu": [
+    2000.0,
+    0.0,
+    3000.0,
+    600.0
+   ],
+   "up": "+X"
+  },
+  {
+   "name": "Shaft_S",
+   "rect_uu": [
+    -1400.0,
+    -2800.0,
+    -800.0,
+    -1800.0
+   ],
+   "up": "-Y"
+  },
+  {
+   "name": "Shaft_Core",
+   "rect_uu": [
+    -500.0,
+    -600.0,
+    100.0,
+    400.0
+   ],
+   "up": "+Y"
+  }
+ ],
+ "spawn_points": [
+  {
+   "id": "SP_W1",
+   "loc": [
+    -4200.0,
+    -1500.0,
+    20.0
+   ],
+   "yaw": 0.0,
+   "team": "West",
+   "tier": "ground"
+  },
+  {
+   "id": "SP_W2",
+   "loc": [
+    -4200.0,
+    1900.0,
+    20.0
+   ],
+   "yaw": 0.0,
+   "team": "West",
+   "tier": "ground"
+  },
+  {
+   "id": "SP_W3",
+   "loc": [
+    -3150.0,
+    -800.0,
+    420.0
+   ],
+   "yaw": 0.0,
+   "team": "West",
+   "tier": "deck"
+  },
+  {
+   "id": "SP_W4",
+   "loc": [
+    -3150.0,
+    1900.0,
+    420.0
+   ],
+   "yaw": 0.0,
+   "team": "West",
+   "tier": "deck"
+  },
+  {
+   "id": "SP_E1",
+   "loc": [
+    4200.0,
+    1500.0,
+    20.0
+   ],
+   "yaw": 180.0,
+   "team": "East",
+   "tier": "ground"
+  },
+  {
+   "id": "SP_E2",
+   "loc": [
+    4200.0,
+    -1900.0,
+    20.0
+   ],
+   "yaw": 180.0,
+   "team": "East",
+   "tier": "ground"
+  },
+  {
+   "id": "SP_E3",
+   "loc": [
+    3150.0,
+    800.0,
+    420.0
+   ],
+   "yaw": 180.0,
+   "team": "East",
+   "tier": "deck"
+  },
+  {
+   "id": "SP_E4",
+   "loc": [
+    3150.0,
+    -1900.0,
+    420.0
+   ],
+   "yaw": 180.0,
+   "team": "East",
+   "tier": "deck"
+  }
+ ],
+ "power_weapon_node": [
+  0.0,
+  -450.0,
+  1260.0
+ ],
+ "nav_bounds": {
+  "centre": [
+   0.0,
+   0.0,
+   600.0
+  ],
+  "size": [
+   9200.0,
+   8400.0,
+   3200.0
+  ]
+ },
+ "element_count": 179,
+ "errors": [],
+ "warnings": []
+}
