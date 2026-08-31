@@ -301,15 +301,15 @@ bool ABNBotController::HasLineOfSightToTarget() const
 
 void ABNBotController::SetCrouching(bool bWantCrouch)
 {
-	const ACharacter* Character = Cast<ACharacter>(GetPawn());
-	if (!Character)
+	const ACharacter* BotCharacter = Cast<ACharacter>(GetPawn());
+	if (!BotCharacter)
 	{
 		return;
 	}
 
 	// Mid-air the toggle only ever UNcrouches (UBNGA_Crouch's own guard), so asking for a crouch
 	// while falling would silently do the opposite of what the caller wanted.
-	const UCharacterMovementComponent* Move = Character->GetCharacterMovement();
+	const UCharacterMovementComponent* Move = BotCharacter->GetCharacterMovement();
 	if (bWantCrouch && Move && Move->IsFalling())
 	{
 		return;
@@ -318,7 +318,7 @@ void ABNBotController::SetCrouching(bool bWantCrouch)
 	// Compare against the ENGINE's replicated crouch state rather than a bool of our own: the
 	// ability, a landing, or an uncrouch forced by a low ceiling can all change it behind us, and
 	// a private mirror would drift out of step and then press at exactly the wrong moment.
-	if (Character->bIsCrouched == bWantCrouch)
+	if (BotCharacter->bIsCrouched == bWantCrouch)
 	{
 		return;
 	}
@@ -984,8 +984,8 @@ void ABNBotController::NotifyTookCover()
 bool ABNBotController::TryJump()
 {
 	const UWorld* World = GetWorld();
-	const ACharacter* Character = Cast<ACharacter>(GetPawn());
-	const UCharacterMovementComponent* MoveComp = Character ? Character->GetCharacterMovement() : nullptr;
+	const ACharacter* BotCharacter = Cast<ACharacter>(GetPawn());
+	const UCharacterMovementComponent* MoveComp = BotCharacter ? BotCharacter->GetCharacterMovement() : nullptr;
 	if (!World || !MoveComp)
 	{
 		return false;
@@ -1002,7 +1002,7 @@ bool ABNBotController::TryJump()
 		return false;
 	}
 
-	// The SAME press a spacebar makes. Not Character->Jump(): that would be a second movement path
+	// The SAME press a spacebar makes. Not BotCharacter->Jump(): that would be a second movement path
 	// with no ability, no State.Movement.Jumping tag and no landing handling — the exact split
 	// this controller exists to avoid.
 	PressInputTag(BNTags::Input_Jump);
