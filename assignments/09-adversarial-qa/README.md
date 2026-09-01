@@ -25,10 +25,18 @@ game's own source tree and the report comes from a real Play-In-Editor run.
 | Grader's guide | [`TESTING.md`](TESTING.md) |
 | The run instructions | `breachpoint/docs/tickets/TICKET_BN24_ADVERSARIAL_QA_RUN.md` |
 
-**To reproduce with the editor:** open the project, PIE, and in the console:
-`bn.aqa.start 300`. The probe spawns itself into the match, runs five minutes, and
-writes `Saved/AdversarialQA/aqa_report_*.json`. `bn.aqa.stop` ends early — the report
-writes on any stop. Without the editor, `./verify.sh` audits the committed report.
+**To reproduce with the editor:** open the project, **PIE on `Content/Maps/BR_Spillway`**,
+and in the console: `bn.aqa.start 300`. The probe spawns itself into the match, runs five
+minutes, and writes `Saved/AdversarialQA/aqa_report_*.json`. `bn.aqa.stop` ends early, and
+so does closing PIE — the report writes on any stop. Without the editor, `./verify.sh`
+audits the committed report.
+
+> **The map matters, and the obvious choice is wrong.** `BR_Arena01` is the project's
+> `EditorStartupMap`, and `bn.aqa.start` there answers `no ABNGameMode in this world`:
+> `DefaultEngine.ini` still points `GlobalDefaultGameMode` at the older `BPGameMode` lineage
+> and Arena01 carries no WorldSettings override. `BR_Spillway` sets `DefaultGameMode` to
+> `BP_BNGameMode`, which is what the probe needs. `BR_MetricsGym` and
+> `BR_RallyPoint_Blockout` do not — do not use those.
 
 ## The strategy — what the agent does, and what "broken" means
 
@@ -207,9 +215,19 @@ this one actually stands, rung by rung:
 | Rung | Claim | Status |
 |---|---|---|
 | 0 | The rule layer **executes** — 44 cases, both firing and excuse | ✅ proven, and you can re-run it |
-| 1 | The agent **compiles** into the game (Editor + Game targets) | ✅ done 28 Aug (`4a87b54e`), which found 3 real errors in my code — see below |
-| 2 | The agent **runs** in a live match and reports | ⏳ the one remaining step (TICKET_BN24) |
+| 1 | The agent **compiles** into the game (Editor + Game targets) | ✅ re-verified 31 Aug after the rule-layer split; first done 28 Aug (`4a87b54e`), which found 3 real errors — see below |
+| 1b | All **three** targets compile (incl. `BreachpointServer`) | ❌ **not claimed.** The Epic Launcher install ships no server binaries — *"Server targets are not currently supported from this engine distribution"*. A distribution limit, not a code failure, and not papered over |
+| 2 | The agent **runs** in a live match and reports | ✅ 31 Aug, `BR_Spillway`, standalone PIE, solo + bot fill — the report in `report/` is that run |
 | 3 | Multiplayer / packaged claims | ❌ not claimed, not needed here |
+
+**What rung 2 is worth, precisely.** One process, one machine, PIE with bot fill. It is *not*
+a listen-server claim, *not* a dedicated-server claim, and *not* a packaged-build claim. The
+report's own `net_mode` field says `standalone PIE` so the artifact cannot be quoted as more
+than it is. The landed run is **261.7s of a planned 300** — PIE self-terminates at random in
+this editor session (observed 3.9s, 17s, 64s, 71s, 190s, 261.7s, and once a clean 300.01s),
+with no probe in the world at all. A full 300.01s run did happen, but it predates the UTF-8
+fix and is unreadable, so the shorter readable run is the honest artifact rather than the
+flattering one.
 
 **Rung 1 cost me three real bugs, and that is worth saying plainly.** A build session
 found that `StopRun` took `const FString&` while being bound as a *timer payload*
@@ -219,9 +237,12 @@ invisible to me because I wrote this in a container with no Unreal Engine. That 
 the gap the honesty ladder exists to name — I could not have found them by re-reading my
 own code, and I did not pretend otherwise.
 
-One consequence to be straight about: the rule-layer split described above landed *after*
-that compile, so the current `.cpp` wants one more pass through the compiler before the PIE
-run. TICKET_BN24 step 1 says so.
+That re-verify is now done: the rule-layer split landed after the 28 Aug compile, and the
+31 Aug rebuild confirmed the detector call sites still compile clean (`BreachpointEditor` and
+`Breachpoint`, both relinked). **Rung 1 then cost two more bugs, both found by running rather
+than reading** — the report was written only from a timer, so any early stop produced no
+artifact at all; and it was written as UTF-16, which `json.load` and this folder's own
+`verify.sh` both refuse. Both are fixed in the code shipped here.
 
 ## Files
 
