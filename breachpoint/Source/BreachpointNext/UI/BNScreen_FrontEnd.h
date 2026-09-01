@@ -4,7 +4,9 @@
 #include "BNScreen_FrontEnd.generated.h"
 
 class UButton;
+class UImage;
 class UTextBlock;
+class UTexture2D;
 
 /**
  * THE MAIN MENU — Menu layer, Menu input, the first thing a booted game shows.
@@ -24,7 +26,7 @@ class UTextBlock;
  * PLAY therefore goes straight to the play-setup screen; there is no matchmaking search
  * and nothing here pretends there is.
  */
-UCLASS(Abstract, meta = (DisableNativeTick))
+UCLASS(Abstract, Config = Game, meta = (DisableNativeTick))
 class BREACHPOINTNEXT_API UBNScreen_FrontEnd : public UBNActivatableWidget
 {
 	GENERATED_BODY()
@@ -53,4 +55,15 @@ protected:
 	 *  moments; a WBP never types the copy. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
 	TObjectPtr<UTextBlock> DescriptionText;
+
+	/** The News card's art (349×222), painted BEHIND its title. Optional: with no texture
+	 *  configured the Image collapses and the card is a tinted panel with a headline. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
+	TObjectPtr<UImage> NewsImage;
+
+	/** The plate the News card shows. SOFT (law 3) and from ini, so swapping the featured
+	 *  arena is a config line rather than a compile — and it is OUR capture, never the
+	 *  mock's 343-owned key-art (01-MENU-MEASURED §6). */
+	UPROPERTY(Config)
+	TSoftObjectPtr<UTexture2D> NewsImageTexture;
 };

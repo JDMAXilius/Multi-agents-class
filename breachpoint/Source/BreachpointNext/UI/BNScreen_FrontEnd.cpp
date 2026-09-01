@@ -1,7 +1,9 @@
 #include "UI/BNScreen_FrontEnd.h"
 #include "BreachpointNext.h"
 #include "Components/Button.h"
+#include "Components/Image.h"
 #include "Components/TextBlock.h"
+#include "Engine/Texture2D.h"
 #include "Engine/LocalPlayer.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "UI/BNUIManager.h"
@@ -36,6 +38,23 @@ void UBNScreen_FrontEnd::NativeOnInitialized()
 	{
 		DescriptionText->SetText(LOCTEXT("FrontEndHint", "Set up a match against bots."));
 		DescriptionText->SetColorAndOpacity(FSlateColor(BNUIColors::InkDim));
+	}
+	if (NewsImage)
+	{
+		// One plate, once, on a screen that is not yet showing — synchronous is honest here
+		// and an async request would only pop the card in a frame or two later.
+		if (UTexture2D* Plate = NewsImageTexture.LoadSynchronous())
+		{
+			NewsImage->SetBrushFromTexture(Plate, /*bMatchSize*/ false);
+			NewsImage->SetVisibility(ESlateVisibility::HitTestInvisible);
+		}
+		else
+		{
+			// Unconfigured is not broken: the card falls back to its tint plus the headline.
+			NewsImage->SetVisibility(ESlateVisibility::Collapsed);
+			UE_LOG(LogBN, Verbose, TEXT("BNScreen_FrontEnd: no NewsImageTexture configured; "
+				"the news card shows its panel ground only."));
+		}
 	}
 }
 

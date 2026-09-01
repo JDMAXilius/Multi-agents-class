@@ -126,11 +126,22 @@ def frontend_plan():
          {"text": "BREACHPOINT"}, False, 30),
         ('NewsPanel', BORDER, 'FrontEndCanvas',
          {"layoutData": topleft(69, 138, 349, 222), "bAutoSize": False},  # News `I…7:7381`
-         {"brushColor": PANEL, "padding": {"left": 12.0, "top": 12.0, "right": 12.0, "bottom": 12.0}},
+         # padding 0, NOT the 12 the panel used to carry: the art bleeds to the card edge
+         # and the 12 inset moved onto the TITLE's slot below.
+         {"brushColor": PANEL, "padding": {"left": 0.0, "top": 0.0, "right": 0.0, "bottom": 0.0}},
          False, None),
-        ('NewsTitleText', TEXT, 'NewsPanel',
-         {"horizontalAlignment": "HAlign_Left", "verticalAlignment": "VAlign_Bottom",
+        # A Border holds ONE child, so the card's art and its headline share an Overlay.
+        ('NewsStack', OVERLAY, 'NewsPanel',
+         {"horizontalAlignment": "HAlign_Fill", "verticalAlignment": "VAlign_Fill",
+          "padding": {"left": 0.0, "top": 0.0, "right": 0.0, "bottom": 0.0}}, None, False, None),
+        # FIRST child = painted first = BEHIND the headline. Order is the z-order here.
+        ('NewsImage', IMAGE, 'NewsStack',
+         {"horizontalAlignment": "HAlign_Fill", "verticalAlignment": "VAlign_Fill",
           "padding": {"left": 0.0, "top": 0.0, "right": 0.0, "bottom": 0.0}},
+         {"visibility": "Collapsed"}, True, None),   # C++ sets the brush from ini and reveals it
+        ('NewsTitleText', TEXT, 'NewsStack',
+         {"horizontalAlignment": "HAlign_Left", "verticalAlignment": "VAlign_Bottom",
+          "padding": {"left": 12.0, "top": 12.0, "right": 12.0, "bottom": 12.0}},
          {"text": "NEW ARENA: SPILLWAY"}, False, 16),
         ('MenuPanel', BORDER, 'FrontEndCanvas',
          {"layoutData": topleft(69, 370, 349, 186), "bAutoSize": False},  # Menu in Border `I…7:7383`
