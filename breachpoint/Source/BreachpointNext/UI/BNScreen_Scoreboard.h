@@ -16,7 +16,7 @@ class UTextBlock;
  * blocks, my side first (see Refresh); the winner banner is the VM's phase text. No input mode
  * change: hold-to-view takes no clicks, and the post-match needs none either.
  */
-UCLASS(Abstract, meta = (DisableNativeTick))
+UCLASS(Abstract, Config = Game, meta = (DisableNativeTick))
 class BREACHPOINTNEXT_API UBNScreen_Scoreboard : public UBNActivatableWidget
 {
 	GENERATED_BODY()
@@ -32,12 +32,27 @@ protected:
 	void HandleRosterChanged();
 	void HandleMatchFieldChanged(UObject* Source, UE::FieldNotification::FFieldId FieldId);
 	void Refresh();
+
+	/** Grows the row pool to `Needed` (capped by MaxScoreRows). Returns rows available. */
+	int32 EnsureRowCapacity(int32 Needed);
+
+	/** Sizes the list box to the rows actually shown, and follows it with the bottom rule. */
+	void LayoutRowBlock(int32 VisibleRows);
 	void RefreshOutcome(const class UBNVM_Match* Match);
 	void RefreshTeamScores(const class UBNVM_Match* Match);
 
-	/** The WBP parents UBNScoreRow children under this — 8 covers FFA with headroom. */
+	/**
+	 * The WBP parents UBNScoreRow children under this. The placed children are the POOL'S
+	 * SEED, not its limit: the WBP ships 8, and anything past that is cloned at runtime from
+	 * the seed's own class (see EnsureRowCapacity), so 6v6 and 8v8 list every player without
+	 * a WBP edit. Before that, a 16-player lobby silently dropped its last 8 rows.
+	 */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "BN|HUD")
 	TObjectPtr<UPanelWidget> RowContainer;
+
+	/** The hairline under the list. Optional; when bound it follows a grown list down. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
+	TObjectPtr<UWidget> TableBottomRule;
 
 	/** Winner / warmup line during post-match; empty and hidden while the match runs. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
@@ -79,4 +94,25 @@ protected:
 	FDelegateHandle RosterHandle;
 
 	bool bWarnedRowShortage = false;
+
+	/**
+	 * Hard ceiling on cloned rows. 16 is the largest lobby the front end can start
+	 * (PlayerCountPresets tops out at 16 = 8v8); the cap exists so a runaway roster cannot
+	 * spawn widgets without bound, not to express a design limit.
+	 */
+	UPROPERTY(Config)
+	int32 MaxScoreRows = 16;
+
+	/**
+	 * One row's height, matching WBP_BNScoreRow's RootSizeBox HeightOverride (22). C++ cannot
+	 * ask the row for this before layout has run, so it is stated here and in the asset; if
+	 * the asset's SizeBox changes, this changes with it.
+	 */
+	UPROPERTY(Config)
+	float ScoreRowHeight = 22.0f;
+
+	/** The list box and rule as the WBP AUTHORED them — restored whenever the roster fits. */
+	float AuthoredListHeight = 0.0f;
+	float AuthoredRuleY = 0.0f;
+	bool bCapturedAuthoredLayout = false;
 };
