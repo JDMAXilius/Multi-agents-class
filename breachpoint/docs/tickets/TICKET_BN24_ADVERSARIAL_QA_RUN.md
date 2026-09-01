@@ -210,7 +210,13 @@ grader cannot open is not a structured report. Now `ForceUTF8WithoutBOM`. **This
 third one-source-of-truth-adjacent defect this assignment has produced and the second the
 harness caught rather than a human.**
 
-*Defect 4 — PIE terminates early when the probe joins a cold match (OPEN, cause unknown).*
+*Defect 4 — PIE self-terminates at random, probe or no probe (OPEN, cause unknown).*
+CORRECTION, 03:06 UTC: the first version of this entry blamed the probe's join, on the
+strength of an 84s control. That control was too short. PIE has since torn down at 64s with
+NO probe in the world at all, and the "let it warm ~90s first" recipe below did not survive
+contact either (a warmed match still died at 261.7s). Observed lifetimes: 3.9s, 17s, 64s,
+261.7s, 300s. The probe is exonerated; the instability is the editor session's.
+The original reasoning, kept because the controls in it are still valid evidence:
 Two runs died at 3.9s and 17s, both `EEndPlayReason::EndPlayInEditor` (reason 2) — the
 EDITOR stopped the session; no crash, no error, no game-side quit. The last thing logged
 before the silence, both times, was the probe's join building it a HUD:
