@@ -252,6 +252,7 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	// and DISTINCT from the sensorium's (a redraw must not shift reaction latencies).
 	SkillProfile.ResolveFrom(Defaults);
 	DamageLedger.Reset();
+	YawClaimedAtSeconds = -1.0;   // an absolute stamp must not cross into a new world
 	ConfidenceState = FAIBConfidenceState();
 	ConfidenceRandom.Initialize(static_cast<int32>(HashCombine(LifeSeed, 7919u)));
 
@@ -345,6 +346,7 @@ void AAIBBotController::OnUnPossess()
 	// Momentum and judgment die with the body too — a fresh spawn that still "feels"
 	// its last death's beating would flee its first fight (absolute-time stamps included).
 	DamageLedger.Reset();
+	YawClaimedAtSeconds = -1.0;   // an absolute stamp must not cross into a new world
 	ConfidenceState = FAIBConfidenceState();
 	AimState = FAIBAimState();
 	MeleeState = FAIBMeleeState();

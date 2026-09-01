@@ -101,6 +101,31 @@ public:
 	 *  site that already reports self=NO. */
 	double GetPossessedAtSeconds() const { return PossessedAtSeconds; }
 	double GetLastDamageTakenAtSeconds() const { return DamageLedger.LastTakenAtSeconds(); }
+
+	/** THE YAW CLAIM (founder, 1 Sep: bots "walking and running in reverse").
+	 *
+	 *  ABNCharacter-shaped hosts are FPS pawns — bUseControllerRotationYaw true,
+	 *  bOrientRotationToMovement false — so the BODY's facing is the CONTROL rotation and
+	 *  nothing else. Every task that aims writes it; the movers never did, so a bot
+	 *  crossing the map kept facing wherever it last looked and travelled sideways or
+	 *  backwards the whole way.
+	 *
+	 *  The mover now faces its own travel, but only when nothing better has asked for the
+	 *  yaw this tick. Rather than each mover guessing whether an aimer is running beside
+	 *  it in the branch — which is a question about a tree it cannot see — an aimer
+	 *  CLAIMS the yaw as it steers, and facing-travel is the fallback for a tick with no
+	 *  claim. Order inside the tick does not matter: whoever claims writes last or the
+	 *  mover sees the claim and stands aside, so the aim always wins and combat backpedal
+	 *  is untouched. A future task that steers is covered automatically. */
+	void NoteYawClaimed(double NowSeconds) { YawClaimedAtSeconds = NowSeconds; }
+	bool IsYawClaimed(double NowSeconds) const
+	{
+		// One think-interval of grace, not one frame: tasks tick on the tree's cadence
+		// while the mover may be stepped by a faster one, and a claim that expired
+		// between them would let the body twitch back toward its path mid-aim.
+		return YawClaimedAtSeconds >= 0.0
+			&& (NowSeconds - YawClaimedAtSeconds) <= AIB::YawClaimHoldSeconds;
+	}
 	FRandomStream& GetPolicyRandom() { return PolicyRandom; }
 
 	// -- Phase 6: the provider doors (pulled from UAIBBotManager at possession) --------
@@ -273,6 +298,9 @@ private:
 	// first consumer here (Confidence level = judgment quality); Phase 8 re-resolves it
 	// from the real tier row.
 	FAIBDamageLedger DamageLedger;
+
+	/** Last time an aimer took the yaw. -1 = never; reset with the body. */
+	double YawClaimedAtSeconds = -1.0;
 	FAIBConfidenceState ConfidenceState;
 	FAIBSkillProfile SkillProfile;
 

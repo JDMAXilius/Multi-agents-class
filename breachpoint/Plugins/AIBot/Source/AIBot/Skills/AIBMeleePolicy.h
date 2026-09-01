@@ -35,7 +35,13 @@ struct AIBOT_API FAIBMeleePolicy
 {
 	// -- the ladder --
 	/** Range (uu) inside which this level recognises the melee answer. */
-	static float CommitRangeUU(EAIBCompetence Level);
+	/** bEmptyHanded widens the RECOGNITION range — a bot with nothing to shoot reads a
+	 *  melee fight from further out, because there is nothing else it could be doing.
+	 *  It deliberately does NOT shorten RecognitionDelaySeconds: that delay is the
+	 *  FAIRPLAY-bound humaniser whose top rung IS the module floor, and a dry Spartan
+	 *  reacting faster than a loaded one is the opposite of what the fairness pass
+	 *  wanted. Decide sooner in SPACE, never faster in TIME. */
+	static float CommitRangeUU(EAIBCompetence Level, bool bEmptyHanded = false);
 	/** The beat between range-true and acting. Expert short, Novice long. */
 	static float RecognitionDelaySeconds(EAIBCompetence Level);
 
@@ -47,5 +53,6 @@ struct AIBOT_API FAIBMeleePolicy
 	 * humaniser here.
 	 */
 	static bool ShouldMelee(FAIBMeleeState& State, float DistToTargetUU,
-		bool bTargetVisible, EAIBCompetence Level, double NowSeconds);
+		bool bTargetVisible, EAIBCompetence Level, double NowSeconds,
+		bool bEmptyHanded = false);
 };

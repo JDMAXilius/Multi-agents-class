@@ -46,6 +46,7 @@ public:
 	virtual float GetAmmoNorm() const override;
 	virtual bool HasReserveAmmo() const override;
 	virtual bool CanWeaponFight() const override;
+	virtual bool HasUsableWeapon() const override;
 	virtual int32 GetGrenadeCount() const override;
 	virtual bool IsGrounded() const override;
 	virtual bool IsCrouched() const override;

@@ -46,6 +46,7 @@ BEGIN_DEFINE_SPEC(FAIBAvatarBeltSpec, "AIBot.Sim.AvatarBelt",
 		virtual float GetAmmoNorm() const override { return 1.f; }
 		virtual bool HasReserveAmmo() const override { return true; }
 		virtual bool CanWeaponFight() const override { return true; }
+		virtual bool HasUsableWeapon() const override { return true; }
 		virtual int32 GetGrenadeCount() const override { return 0; }
 		virtual bool IsGrounded() const override { return true; }
 		virtual bool IsCrouched() const override { return bCrouched; }

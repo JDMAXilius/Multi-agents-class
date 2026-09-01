@@ -10,7 +10,7 @@
  * Level() uses, so a future rung is average, never superhuman and never a crash.
  */
 
-float FAIBMeleePolicy::CommitRangeUU(EAIBCompetence Level)
+float FAIBMeleePolicy::CommitRangeUU(EAIBCompetence Level, bool bEmptyHanded)
 {
 	// WHY THESE NUMBERS: the weapon's reach is arm's length (~150uu with the lunge), but
 	// this is a RECOGNITION range, not a reach — the distance at which a level reads "this
@@ -19,14 +19,23 @@ float FAIBMeleePolicy::CommitRangeUU(EAIBCompetence Level)
 	// bot. Each rung adds ~60uu, and Expert 320 is about two strides — roughly half a
 	// second of a sprinting closer — so an Expert reads the closing fight while it is still
 	// closing and is already swinging when it arrives, while a Novice is still shooting.
+	//
+	// EMPTY-HANDED DOUBLES IT (founder, 1 Sep: "in case that doesn't have ammo, then the
+	// melee attack should be"). A bot with nothing that can fire has no competing use for
+	// the distance, so it should read the melee fight from roughly a second of closing
+	// out rather than half of one. It is a RANGE change only — the recognition delay does
+	// not move, so a dry bot decides sooner in space and still swings on the same human
+	// beat.
+	float Range = 220.f;
 	switch (Level)
 	{
-	case EAIBCompetence::Novice:  return 160.f;
-	case EAIBCompetence::Trained: return 220.f;
-	case EAIBCompetence::Skilled: return 280.f;
-	case EAIBCompetence::Expert:  return 320.f;
-	default:                      return 220.f;
+	case EAIBCompetence::Novice:  Range = 160.f; break;
+	case EAIBCompetence::Trained: Range = 220.f; break;
+	case EAIBCompetence::Skilled: Range = 280.f; break;
+	case EAIBCompetence::Expert:  Range = 320.f; break;
+	default:                      Range = 220.f; break;
 	}
+	return bEmptyHanded ? Range * AIB::EmptyHandedMeleeRangeFactor : Range;
 }
 
 float FAIBMeleePolicy::RecognitionDelaySeconds(EAIBCompetence Level)
@@ -46,7 +55,7 @@ float FAIBMeleePolicy::RecognitionDelaySeconds(EAIBCompetence Level)
 }
 
 bool FAIBMeleePolicy::ShouldMelee(FAIBMeleeState& State, float DistToTargetUU,
-	bool bTargetVisible, EAIBCompetence Level, double NowSeconds)
+	bool bTargetVisible, EAIBCompetence Level, double NowSeconds, bool bEmptyHanded)
 {
 	// The range condition, in one expression. A negative distance is the facts
 	// convention's UNKNOWN and answers false — an unknown range is not a near range. The
@@ -54,7 +63,7 @@ bool FAIBMeleePolicy::ShouldMelee(FAIBMeleeState& State, float DistToTargetUU,
 	// only refuse the melee, never grant it.
 	const bool bInRange = bTargetVisible
 		&& DistToTargetUU >= 0.f
-		&& DistToTargetUU <= CommitRangeUU(Level);
+		&& DistToTargetUU <= CommitRangeUU(Level, bEmptyHanded);
 
 	if (!bInRange)
 	{

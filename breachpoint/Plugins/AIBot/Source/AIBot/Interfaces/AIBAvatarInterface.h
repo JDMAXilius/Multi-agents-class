@@ -53,6 +53,18 @@ public:
 	virtual float GetAmmoNorm() const = 0;            // magazine fraction of held weapon
 	virtual bool HasReserveAmmo() const = 0;
 	virtual bool CanWeaponFight() const = 0;          // the assembled four-read answer
+
+	/** True when ANYTHING in the carry can fight — any slot, any range. Deliberately a
+	 *  THIRD question, distinct from both of its neighbours:
+	 *    CanWeaponFight()        - the weapon IN HAND, right now
+	 *    IsBestWeaponForRange()  - a COMPARISON, "stop cycling?"
+	 *    HasUsableWeapon()       - the POUCH, "is there any point cycling at all?"
+	 *  It exists because the bot could not tell "I am standing on the empty holster slot"
+	 *  from "my whole loadout is dry", and those need opposite answers: keep spinning the
+	 *  wheel, versus stop spinning it and swing. Conflating them is what left bots
+	 *  permanently unarmed (founder, 1 Sep). A host with no carry concept may return
+	 *  CanWeaponFight(). */
+	virtual bool HasUsableWeapon() const = 0;
 	virtual int32 GetGrenadeCount() const = 0;
 	virtual bool IsGrounded() const = 0;              // movement truth, not a tag
 	virtual bool IsCrouched() const = 0;              // the avatar's REAL crouch state.

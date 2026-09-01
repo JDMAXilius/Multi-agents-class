@@ -376,6 +376,28 @@ float UBNAIBAvatarAdapter::GetMeleeRangeUU() const
 	return Row ? FMath::Max(0.f, Row->MeleeRange) : 0.f;
 }
 
+bool UBNAIBAvatarAdapter::HasUsableWeapon() const
+{
+	// The POUCH question. Same predicate the scorer's zero-gate uses, applied to every
+	// slot instead of the held one — so "usable" means exactly what "scores above zero"
+	// means, and the two cannot drift apart into a bot that cycles for a weapon the
+	// scorer will then refuse.
+	const ABNCharacter* Character = Cast<ABNCharacter>(GetOwner());
+	const UBNEquipmentComponent* Equipment = Character ? Character->GetEquipmentComponent() : nullptr;
+	if (!Equipment)
+	{
+		return AIBWeaponCanFight(GetHeldWeapon()); // no carry concept: the hand is the answer
+	}
+	for (const TObjectPtr<ABNWeapon>& Candidate : Equipment->GetWeapons())
+	{
+		if (AIBWeaponCanFight(Candidate))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
 bool UBNAIBAvatarAdapter::IsBestWeaponForRange(float DistanceUU) const
 {
 	// READ-ONLY, AND THAT IS THE DESIGN. Nothing here writes CurrentIndex or touches

@@ -13,6 +13,7 @@
 #include "Skills/AIBAimPolicy.h"
 #include "Skills/AIBGrenadePolicy.h"
 #include "Skills/AIBMeleePolicy.h"
+#include "Skills/AIBWeaponPolicy.h"
 #include "Skills/AIBMovementPolicy.h"
 #include "StateTreeExecutionContext.h"
 #include "Team/AIBTeamCoordinator.h"
@@ -36,12 +37,18 @@ namespace
 	 *  Exists because the controller has no tick, so the engine's focus-driven turn never
 	 *  runs — the host walked into both halves of that bug (bullets into walls, bodies
 	 *  sliding sideways) before writing this shape. */
-	void SteerControlRotation(AAIController& Controller, const FVector& WorldPoint, float DegreesPerSecond, float DeltaTime)
+	void SteerControlRotation(AAIBBotController& Controller, const FVector& WorldPoint, float DegreesPerSecond, float DeltaTime)
 	{
 		APawn* Pawn = Controller.GetPawn();
 		if (!Pawn)
 		{
 			return;
+		}
+		// CLAIM THE YAW. Every aimer goes through here, so this one line is what tells the
+		// movers to stop facing their travel — see AAIBBotController::NoteYawClaimed.
+		if (const UWorld* World = Controller.GetWorld())
+		{
+			Controller.NoteYawClaimed(World->GetTimeSeconds());
 		}
 		const FVector ToPoint = WorldPoint - Pawn->GetPawnViewLocation();
 		if (ToPoint.IsNearlyZero())
@@ -312,6 +319,47 @@ namespace
 		const FVector Here = Pawn->GetActorLocation();
 		const float ToGoal = FVector::Dist(Here, Goal);
 		SetSprint(*Avatar, State.bSprintHeld, ToGoal > ArriveRadiusUU * SprintBeyondRadiusFactor);
+
+		// FACE THE WALK (founder, 1 Sep: bots "walking and running in reverse instead of
+		// like a human rotating themselves"). This host is an FPS pawn whose body yaw IS
+		// the control rotation, and until now NOTHING in a mover wrote it — so a bot
+		// crossing the map kept the heading of whatever it last aimed at and moonwalked
+		// the whole way. The sibling framework has faced its walk since R9; this module
+		// was written without it.
+		//
+		// Suppressed while an aimer holds the yaw, which is the founder's own exception:
+		// "that doesn't mean that it cannot be doing evasive actions in backwards,
+		// especially if it is in combat mode". A bot with a target to face keeps facing
+		// it and strafes and backpedals exactly as before — the claim, not a guess about
+		// which branch is running, is what decides.
+		if (!Bot.IsYawClaimed(Bot.GetWorld() ? Bot.GetWorld()->GetTimeSeconds() : 0.0)
+			&& ToGoal > ArriveRadiusUU)
+		{
+			// Velocity when there is real motion, the GOAL when there is not: a bot that
+			// has stopped, or is about to set off, should turn toward where it is going
+			// BEFORE it starts, rather than leaving sideways and correcting.
+			FVector Travel = Pawn->GetVelocity();
+			Travel.Z = 0.f;
+			if (Travel.Size() < AIB::TravelFacingMinSpeedUU)
+			{
+				Travel = Goal - Here;
+				Travel.Z = 0.f;
+			}
+			if (!Travel.IsNearlyZero())
+			{
+				// Yaw only, and LEVEL: a walking body does not pitch. Steering at a point
+				// would tilt the head at the floor on a downhill and at the sky on a ramp,
+				// which is also where the aim would start from if a target appeared.
+				const FRotator Current = Bot.GetControlRotation();
+				const FRotator Desired(0.f, Travel.Rotation().Yaw, 0.f);
+				const FRotator Stepped = FMath::RInterpConstantTo(
+					FRotator(0.f, Current.Yaw, 0.f), Desired, DeltaTime,
+					AIB::TravelFacingTurnRateDeg);
+				const FRotator Applied(Current.Pitch, Stepped.Yaw, Current.Roll);
+				Bot.SetControlRotation(Applied);
+				Pawn->FaceRotation(Applied, DeltaTime);
+			}
+		}
 
 		if (!State.bHasBestPoint || FVector::Dist(Here, State.BestPoint) > WedgeProgressUU)
 		{
@@ -675,9 +723,16 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 	// reads the closing fight early and is already swinging on arrival, a Novice only
 	// realises at point-blank and takes a beat more (the R11 reasoning, applied to the
 	// knife). Stepped EVERY tick so the continuous-range reset law holds.
+	//
+	// EMPTY-HANDED is read HERE, above the melee, because it changes two decisions and the
+	// melee is the first of them. It means the hand cannot fight AND the pouch can — the
+	// dead-end state, not a dry loadout. See the swap block below for why those differ.
+	const bool bCanFight = Avatar->CanWeaponFight();
+	const bool bHasUsableWeapon = Avatar->HasUsableWeapon();
+	const bool bEmptyHanded = !bCanFight && bHasUsableWeapon;
 	const bool bMeleeRecognised = FAIBMeleePolicy::ShouldMelee(
 		Bot->GetMeleeState(), bHasDistance ? DistanceUU : -1.f, Facts.bTargetVisible,
-		Bot->GetSkillProfile().Level(EAIBSkill::Melee), Now);
+		Bot->GetSkillProfile().Level(EAIBSkill::Melee), Now, bEmptyHanded);
 	const float MeleeRangeUU = Avatar->GetMeleeRangeUU();
 	// THE INTERRUPT. Reach and recognition both, so the swing still obeys the level's read
 	// (an Expert reads the rush early, a Novice a beat later) — the reload does not get to
@@ -774,13 +829,40 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 		return EStateTreeRunStatus::Running;
 	}
 
-	// -- SWAP: hold the right thing for this range ------------------------------------
-	// The avatar answers; this presses. Nothing here knows what a weapon is, what one is
-	// worth, or that the host's carry contains a slot holding nothing — pressing until
-	// the answer is yes walks past that slot the same way a mouse wheel does, which is
-	// why the host's equipment code needed no change to make this work.
-	if (bHasDistance && !Avatar->IsBestWeaponForRange(DistanceUU)
-		&& InstanceData.SwapPresses < MaxSwapPresses)
+	// -- SWAP: hold the right thing, and NEVER hold nothing ---------------------------
+	// The avatar answers; this presses. Nothing here knows what a weapon is or what one
+	// is worth — pressing until the answer is yes walks past the host's null holster slot
+	// the same way a mouse wheel does, which is why the host's equipment code needed no
+	// change to make this work.
+	//
+	// TWO REASONS to spin the wheel, and conflating them is what left bots standing
+	// around unarmed (founder, 1 Sep: "they tend to have not a weapon on it"):
+	//
+	//   EMPTY-HANDED — the hand cannot fight and the pouch can. A DEAD END, not a
+	//     preference. The carry contains a deliberate null Unarmed slot; a cycle that
+	//     stopped on it left IsBestWeaponForRange answering false forever (Best != Current
+	//     AND Current cannot fight), so the "settled" reset below never fired, the press
+	//     budget never refilled, and the bot was unarmed for the rest of its life. It
+	//     also does not need a TARGET: a bot holding nothing should draw while it walks,
+	//     which is why this arm ignores bHasDistance and asks at a default range.
+	//   WRONG-RANGED — the hand works, something else works better here. A preference.
+	//
+	// THE PRESS CAP BELONGS TO THE SECOND CASE ONLY. It exists to stop a bot whose whole
+	// loadout is dry from cycling for the rest of the match — and HasUsableWeapon() is
+	// that test, properly stated. "I am standing on the empty holster" is not a dry
+	// loadout, and budgeting it was the bug.
+	// THE RANGE THE QUESTION IS ASKED AT. With a target it is the real distance; without
+	// one it is a mid-map default, so a bot patrolling with the wrong tool in its hands
+	// still walks toward the general-purpose answer instead of waiting to be shot at
+	// before it thinks about its loadout. ONE range in play, asked once.
+	const float SwapRangeUU = bHasDistance ? DistanceUU : AIB::NoTargetSwapRangeUU;
+	// The two door reads are the ones taken above the melee, not fresh ones: one tick,
+	// one answer, so the melee cannot believe the hand is empty while the swap believes
+	// it is full.
+	const FAIBSwapDecision Swap = FAIBWeaponPolicy::Decide(
+		bCanFight, bHasUsableWeapon, Avatar->IsBestWeaponForRange(SwapRangeUU),
+		InstanceData.SwapPresses, MaxSwapPresses);
+	if (Swap.bCycle)
 	{
 		if (InstanceData.SwapCooldownLeft <= 0.f)
 		{
@@ -794,14 +876,21 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 			Avatar->ReleaseVerb(AIBTags::Verb_WeaponNext);
 			++InstanceData.SwapPresses;
 			InstanceData.SwapCooldownLeft = SwapSeconds;
-			UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s cycling weapons for %.0fuu (press %d/%d)."),
-				*Bot->GetName(), DistanceUU, InstanceData.SwapPresses, MaxSwapPresses);
+			UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s cycling weapons for %.0fuu (%s, press %d/%d)."),
+				*Bot->GetName(), SwapRangeUU,
+				Swap.bEmptyHanded ? TEXT("EMPTY-HANDED, uncapped") : TEXT("wrong-ranged"),
+				InstanceData.SwapPresses, MaxSwapPresses);
 		}
 		// Do NOT fire mid-cycle: the hand may be empty or holding the wrong answer, and a
 		// burst pressed into an equip montage is a burst that never leaves the barrel.
 		return EStateTreeRunStatus::Running;
 	}
-	if (bHasDistance && InstanceData.SwapPresses > 0 && Avatar->IsBestWeaponForRange(DistanceUU))
+	// SETTLED. Two conditions, because the old single one could not be met from the dead
+	// end it was supposed to release: a bot on the null slot is never "best", so the reset
+	// never fired. Something in hand that can fight is the first half of settled; being
+	// the right thing for the range is the second, and with no target there is no range
+	// to be right for.
+	if (InstanceData.SwapPresses > 0 && Swap.bSettled)
 	{
 		InstanceData.SwapPresses = 0; // settled: the next range change gets a full budget
 	}
@@ -1342,6 +1431,14 @@ EStateTreeRunStatus FAIBSweepLookTask::Tick(FStateTreeExecutionContext& Context,
 		}
 	}
 
+	// THE SWEEP OWNS THE YAW TOO, and says so. It writes the control rotation directly
+	// rather than through SteerControlRotation (it turns at a rate toward no point at
+	// all), so it must claim by hand — otherwise a mover ticking beside it would drag the
+	// body back toward the path and the search would read as a bot shaking its head.
+	if (const UWorld* SweepWorld = Bot->GetWorld())
+	{
+		Bot->NoteYawClaimed(SweepWorld->GetTimeSeconds());
+	}
 	FRotator Swept = Bot->GetControlRotation();
 	Swept.Yaw += InstanceData.SweepDegreesPerSecond * DeltaTime;
 	Swept.Normalize();

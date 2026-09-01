@@ -22,6 +22,35 @@ namespace AIB
 	 *  in two folders is how a Phase-8 Novice tier silently keeps a Marine memory. */
 	inline constexpr float DefaultMemoryFreshSeconds = 16.f;
 
+	/** How long an aimer's yaw claim suppresses facing-travel. Longer than one frame,
+	 *  shorter than a think interval: enough that a mover stepped between two aim ticks
+	 *  does not twitch the body back toward its path, short enough that the moment aiming
+	 *  stops the bot turns and runs properly. */
+	inline constexpr double YawClaimHoldSeconds = 0.25;
+
+	/** How fast a bot turns to face where it is walking. Not the aim rate: this is a body
+	 *  turning, and a body that snapped to its heading would read as a turret on rails.
+	 *  Fast enough that a corner does not produce a visible sidestep. */
+	inline constexpr float TravelFacingTurnRateDeg = 420.f;
+
+	/** Below this ground speed the velocity vector is noise, so facing follows the GOAL
+	 *  instead — which is also what makes a bot turn to face its destination before it
+	 *  starts moving, rather than setting off sideways and correcting. */
+	inline constexpr float TravelFacingMinSpeedUU = 60.f;
+
+	/** A dry bot reads a melee fight from this much further out (founder, 1 Sep). A
+	 *  multiplier rather than an absolute, so it rides the competence ladder instead of
+	 *  flattening it — an Expert with an empty hand still reads the fight before a
+	 *  Novice with one. RANGE only: no reaction time moves, at any tier. */
+	inline constexpr float EmptyHandedMeleeRangeFactor = 2.0f;
+
+	/** The range the swap scorer is asked about when the bot has NO target and therefore
+	 *  no distance to reason from. A bot holding the empty holster must still draw
+	 *  something while it walks, and "what is best at a typical engagement" is a better
+	 *  default than "stay unarmed until someone shoots me". Mid-map, deliberately: it
+	 *  should pull the general-purpose weapon, not the specialist at either extreme. */
+	inline constexpr float NoTargetSwapRangeUU = 1200.f;
+
 	/** Radius for the builder's world-query asks (POIs, ally count). Objectives are
 	 *  HUD-grade so a fair provider may ignore it; it exists so an envelope-bounded
 	 *  provider has a bound to honour. */
