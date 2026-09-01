@@ -196,3 +196,54 @@ targets pass. **A three-target rung-1 green is structurally impossible here** �
 "Rung 1 clean ×3 targets" box cannot be honestly checked on this box, and that is BN38's open
 decision (source-build the engine, or retire rung 4a), not a new finding. Recorded rather than
 worked around.
+
+### 1 Sep 2026 — rung 1 attempt 1: RED, and not for any reason this ticket owns
+
+First real `Tools/run-ubt.sh` run on this machine (no `Tools/Logs/ubt-*.log` existed from
+today before it). Result:
+
+```
+FAIL    BreachpointEditor (OtherCompilationError)
+FAIL    Breachpoint (exit 6)
+FAIL    BreachpointServer (exit 6)
+exit 1
+```
+
+**One line failed all three targets, and it is not the front-end diff:**
+
+```
+Plugins/AIBot/Source/AIBot/Execution/AIBStateTreeTasks.cpp:361:5: error: 'this' argument to
+member function 'FaceRotation' has type 'const APawn', but function is not marked const
+```
+
+`TickLocomotion` declared `const APawn* Pawn = Bot.GetPawn();` at line 315; commit `3ac96f69`
+("AIBot F1/F4/F5: face the walk...") then added `Pawn->FaceRotation(Applied, DeltaTime)` at 361.
+`FaceRotation` is non-const. **AIBot F1 was landed WRITTEN, NOT COMPILED and broke main** — the
+same failure class as BN27. Fixed by aib-builder under this session's widened claim, matching the
+file's own precedent 270 lines above (line 43 `APawn* Pawn = Controller.GetPawn();` → line 66
+`Pawn->FaceRotation(...)`): drop the `const`. No `const_cast`, no second pointer. Every other use
+of `Pawn` in that function (`GetActorLocation`, `GetVelocity`) is const-qualified, so nothing
+depended on it.
+
+Proof, verbatim, editor still open so the GAME target only (it does not link the editor dylib):
+
+```
+  PASS    Breachpoint (exit 0, touched CodeResources)
+  PARTIAL - fewer than three targets. Report as PARTIAL, not rung 1.
+```
+
+`ubt-Breachpoint.log` shows `[1/6] Compile [Apple] AIBStateTreeTasks.cpp` then
+`** BUILD SUCCEEDED **`, zero `error:` lines. **This is rung 1 for ONE of three targets: the code
+compiles. It is not a rung-1 pass, and it says nothing about whether a bot faces its walk.**
+
+Also caught by the same run, both process notes rather than code:
+- **R21 earned its keep.** A second `run-ubt.sh` launched while the first was still going was
+  refused with `BLOCKED ... Another UBT is already running` (exit 3) instead of running two UBTs
+  against global build state.
+- `Plugins/AIBot/Source/AIBot/Core/AIBBotController.h:107` has a comment naming `ABNCharacter`
+  (prose only, no include, also from `3ac96f69`). Left alone — a one-word edit for a separate
+  packet, not this one.
+
+**Still owed on this ticket:** the three-target run with the editor closed. On this launcher
+install that can only ever be `BreachpointEditor` PASS + `Breachpoint` PASS + `BreachpointServer`
+FAIL-to-link, i.e. PARTIAL — see the environment ruling above and BN38.

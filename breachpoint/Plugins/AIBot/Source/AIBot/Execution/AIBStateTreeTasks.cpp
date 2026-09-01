@@ -312,7 +312,7 @@ namespace
 		const FVector& Goal, float ArriveRadiusUU, float DeltaTime)
 	{
 		IAIBAvatarInterface* Avatar = Bot.GetAvatar();
-		const APawn* Pawn = Bot.GetPawn();
+		APawn* Pawn = Bot.GetPawn();
 		if (!Avatar || !Pawn)
 		{
 			return;
