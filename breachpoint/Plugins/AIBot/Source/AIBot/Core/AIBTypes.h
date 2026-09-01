@@ -22,6 +22,53 @@ namespace AIB
 	 *  in two folders is how a Phase-8 Novice tier silently keeps a Marine memory. */
 	inline constexpr float DefaultMemoryFreshSeconds = 16.f;
 
+	// ---- TARGET SELECTION (founder, 1 Sep) -------------------------------------------
+	// The bot had no opinion about who its enemy was: the sensorium kept one slot and the
+	// newest matured sighting overwrote it. These are the weights that give it one. They
+	// are deliberately readable as a sentence — seeing beats remembering, close beats far,
+	// being shot at beats both when nothing else is pressing, and the enemy you are
+	// already fighting keeps the benefit of the doubt.
+
+	/** Currently in sight. The largest single term that is not being-shot-at: a target you
+	 *  can see is one you can act on. */
+	inline constexpr float TargetVisibleWeight = 1.00f;
+
+	/** Closeness, linear to TargetConsiderRangeUU. The founder's "there's a possible new
+	 *  target closer" — and what keeps a bot from ignoring the person in its face. */
+	inline constexpr float TargetProximityWeight = 0.85f;
+
+	/** WHO IS SHOOTING ME. Weighted ABOVE visibility on purpose, so an unseen attacker can
+	 *  win against nothing — that is the whole complaint ("it's not knowing who is
+	 *  shooting him"). It cannot win against a visible enemy at knife range, which is
+	 *  correct: 1.20 alone loses to 1.00 + 0.85 + the incumbent's bonus. A bot being shot
+	 *  from a rooftop while someone is stabbing it deals with the knife. */
+	inline constexpr float TargetThreatWeight = 1.20f;
+
+	/** How fast being-shot-at fades. Short, because it is about the CURRENT fight: after
+	 *  ~3 half-lives the shooter is just another remembered enemy. */
+	inline constexpr float TargetThreatHalfLifeSeconds = 4.0f;
+
+	/** How recently the target was actually perceived, over the tier's memory window. */
+	inline constexpr float TargetFreshnessWeight = 0.45f;
+
+	/** THE PERSISTENCE BONUS — the founder's "I would try to be as persistent as possible,
+	 *  realistically, to kill this target." The enemy already being fought carries this,
+	 *  so a marginally better option is not a better option. */
+	inline constexpr float TargetIncumbentBonus = 0.35f;
+
+	/** And a challenger must beat the incumbent by THIS on top of the bonus. Two separate
+	 *  knobs because they answer different questions: the bonus is how much the current
+	 *  fight is worth, the margin is how much better a new one has to look before it is
+	 *  worth abandoning. Together they are what stops a bot ping-ponging between two
+	 *  enemies at similar range, which is the failure mode of every naive "nearest enemy"
+	 *  selector. */
+	inline constexpr float TargetSwitchMargin = 0.15f;
+
+	/** Beyond this, proximity scores zero. Past the sight envelope on purpose: a
+	 *  remembered or shooting enemy further out is still a candidate, just not a near
+	 *  one. */
+	inline constexpr float TargetConsiderRangeUU = 4000.f;
+
 	/** How long an aimer's yaw claim suppresses facing-travel. Longer than one frame,
 	 *  shorter than a think interval: enough that a mover stepped between two aim ticks
 	 *  does not twitch the body back toward its path, short enough that the moment aiming

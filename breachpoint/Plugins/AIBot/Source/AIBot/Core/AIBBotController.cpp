@@ -681,6 +681,17 @@ void AAIBBotController::Think()
 	}
 
 	const double Now = World->GetTimeSeconds();
+
+	// Told, never asked: the sensorium stays worldless, so the two things target
+	// selection needs from outside are pushed in here, once, right before the pump that
+	// uses them. Without the self location proximity simply does not score — the safe
+	// direction, and what the headless specs run in.
+	if (const APawn* SelfPawn = GetPawn())
+	{
+		Sensorium.SetSelfLocation(SelfPawn->GetActorLocation());
+	}
+	Sensorium.SetMemoryWindowSeconds(
+		FMath::Min(GetTierRow().MemoryFreshSeconds, AIB::MaxMemorySeconds));
 	Sensorium.Pump(Now);
 
 	// The fairness instrument (aib-verifier samples this line): one log per acquisition,
@@ -689,9 +700,19 @@ void AAIBBotController::Think()
 	AActor* Visible = Sensorium.GetVisibleTarget();
 	if (Visible && LastLoggedTarget != Visible)
 	{
+		// A CHANGE of target is now a real decision rather than "whoever was seen last",
+		// so the line says which it was and how many enemies were in the running. That
+		// is what makes the founder's persistence rule checkable from a log instead of
+		// from an impression: a bot flipping between two names every second is a
+		// hysteresis failure, and it should be visible as one.
+		const bool bSwitched = LastLoggedTarget.IsValid();
+		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s %s %s after %.3fs reaction (%d believed%s)."),
+			*GetName(), bSwitched ? TEXT("SWITCHED to") : TEXT("acquired"),
+			*Visible->GetName(), Sensorium.LastAcquisitionLatencySeconds(),
+			Sensorium.GetCandidates().Num(),
+			bSwitched ? *FString::Printf(TEXT(", was %s"), *LastLoggedTarget.Get()->GetName())
+					  : TEXT(""));
 		LastLoggedTarget = Visible;
-		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s acquired %s after %.3fs reaction."),
-			*GetName(), *Visible->GetName(), Sensorium.LastAcquisitionLatencySeconds());
 	}
 	else if (!Visible)
 	{

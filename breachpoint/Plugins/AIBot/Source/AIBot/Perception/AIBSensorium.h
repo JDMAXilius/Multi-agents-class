@@ -3,7 +3,9 @@
 #include "CoreMinimal.h"
 #include "Math/RandomStream.h"
 #include "Perception/AIBReactionClock.h"
+#include "Core/AIBTypes.h"
 #include "Perception/AIBTargetMemory.h"
+#include "Perception/AIBTargetPolicy.h"
 #include "UObject/ObjectKey.h"
 
 /** One matured, not-yet-detonated blast. A LIST, because two live grenades are two
@@ -41,6 +43,69 @@ struct AIBOT_API FAIBLiveBlast
  * lands as memory, never as current sight (a short peek whose loss drew the faster
  * reaction must not mature into live tracking of an occluded enemy — W-REVIEW P3).
  */
+/**
+ * ONE BELIEVED ENEMY, and everything the selection policy is allowed to know about it.
+ *
+ * Before 1 Sep there was no such thing: the sensorium kept a single target slot and the
+ * newest matured sighting overwrote it, so the bot had no opinion about who its enemy
+ * was — it had whoever it saw last. Every field here is written ONLY from a matured
+ * stimulus, which is what keeps scoring honest: it re-ranks enemies the bot already
+ * believes in and cannot conjure one it has never perceived.
+ */
+struct AIBOT_API FAIBTargetCandidate
+{
+	TWeakObjectPtr<AActor> Actor;
+
+	/** The belief — last seen spot, or the bearing-capped point a hit came from. Never a
+	 *  live read outside the once-per-pump re-sample of a currently visible enemy. */
+	FVector LastKnownLocation = FVector::ZeroVector;
+
+	/** Last matured PERCEPTION of this actor, of any kind. */
+	double LastSeenAtSeconds = -1.0;
+
+	/** Last matured damage FROM this actor. The founder's "who is actually shooting". */
+	double LastDamagedMeAtSeconds = -1.0;
+
+	/** Per-actor now, not global (it was one number for the whole sensorium, which two
+	 *  enemies peeking in turn could confuse): the event time of the last gain applied
+	 *  for THIS actor, which is what makes a matured loss stale or live. */
+	double LastAppliedGainEventSeconds = -1.0;
+
+	/** In sight right now: a matured gain with no matured loss since. */
+	bool bSightCurrent = false;
+
+	/** A loss has been NOTED but has not matured yet — the juke window. Sight is already
+	 *  frozen (belief, not a live track) but the enemy is still the one being fought for
+	 *  one more reaction, which is the honest human read of someone ducking a corner.
+	 *  Tracked per candidate because selection now has to know the difference between
+	 *  "gone" and "about to be gone", and the old design expressed it only by leaving a
+	 *  single slot un-cleared. */
+	bool bSightPending = false;
+
+	/** ELIGIBLE TO BE THE HELD TARGET — as opposed to merely believed in.
+	 *
+	 *  This is the line that keeps target selection from quietly changing what "I have a
+	 *  target" means. Memory alone is NOT enough: a bot that kept aiming at the last
+	 *  known spot forever would never lose anyone and never search, which is the whole
+	 *  Search ambition. Three ways in, and the third is the founder's:
+	 *    - in sight now
+	 *    - its loss is still maturing (the juke window)
+	 *    - it shot us recently enough that it is a live threat we simply cannot see
+	 *  Everything else stays a lead in TargetMemory, exactly as before. */
+	bool IsEligible(double NowSeconds) const
+	{
+		if (bSightCurrent || bSightPending)
+		{
+			return true;
+		}
+		// Three half-lives: past that the threat term has decayed to an eighth and the
+		// shooter is an old lead like any other, not someone to keep facing.
+		return LastDamagedMeAtSeconds >= 0.0
+			&& (NowSeconds - LastDamagedMeAtSeconds)
+				<= static_cast<double>(AIB::TargetThreatHalfLifeSeconds) * 3.0;
+	}
+};
+
 class AIBOT_API FAIBSensorium
 {
 public:
@@ -62,6 +127,19 @@ public:
 
 	/** Mature the queue. Called from the controller's think timer — never a tick. */
 	void Pump(double NowSeconds);
+
+	/** Where the body is, for the proximity term of target selection. Pushed in rather
+	 *  than read, because this class stays worldless — it never asks anything about the
+	 *  world, it is told. Unset means proximity simply does not score, which is the safe
+	 *  direction: a candidate the bot cannot place must not out-rank one it can. */
+	void SetSelfLocation(const FVector& Where) { SelfLocation = Where; bSelfLocationKnown = true; }
+
+	/** The tier's memory window, so a Recruit's short memory decays its stale leads
+	 *  faster than a Spartan's without a second number living anywhere else. */
+	void SetMemoryWindowSeconds(float Seconds) { MemoryWindowSeconds = Seconds; }
+
+	/** Read-only view of who the bot believes in, for the debugger and the specs. */
+	const TArray<FAIBTargetCandidate>& GetCandidates() const { return Candidates; }
 
 	// -- matured awareness out (the whole of what downstream may know) --------------
 	AActor* GetVisibleTarget() const { return VisibleTarget.Get(); }
@@ -108,10 +186,28 @@ private:
 	FAIBReactionClock Clock;
 	FAIBTargetMemory TargetMemory;
 
+	/** THE SELECTED target and its derived view. VisibleTarget is still "the target the
+	 *  bot holds" and every downstream reader is unchanged — what moved is how it is
+	 *  CHOSEN: once per pump, by score over Candidates, instead of by whichever sighting
+	 *  matured most recently. */
 	TWeakObjectPtr<AActor> VisibleTarget;
 	FVector VisibleTargetLastSeen = FVector::ZeroVector;
 	bool bSightCurrent = false;
-	double LastAppliedGainEventSeconds = -1.0;
+
+	TArray<FAIBTargetCandidate> Candidates;
+	FVector SelfLocation = FVector::ZeroVector;
+	bool bSelfLocationKnown = false;
+	float MemoryWindowSeconds = AIB::DefaultMemoryFreshSeconds;
+
+	/** Find, or start believing in, this actor. Null actors (a blast has none) are
+	 *  refused — a candidate with no identity could never be aimed at. */
+	FAIBTargetCandidate* FindOrAddCandidate(AActor* Who);
+	FAIBTargetCandidate* FindCandidate(const AActor* Who);
+
+	/** Drop the dead, the destroyed and the long forgotten, then re-rank. Both run once
+	 *  per pump, after every stimulus for this tick has been applied. */
+	void PruneCandidates(double NowSeconds);
+	void SelectTarget(double NowSeconds);
 
 	/** Per-actor event time of the latest NOTED sight loss — written at Note time, so it
 	 *  survives both a loss that matures before its own gain and a loss the clock's
