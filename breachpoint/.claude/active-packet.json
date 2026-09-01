@@ -8,7 +8,9 @@
   "Tools/bn/",
   "breachpoint/Tools/bn/",
   "docs/tickets/",
-  "docs/ui/ue-frontend/"
+  "docs/ui/ue-frontend/",
+  "Plugins/AIBot/",
+  "breachpoint/Plugins/AIBot/"
  ],
- "note": "BN41 rung 1 + the two high findings bn-critic raised against the WAVE-1 front-end M1 diff (BNUIManager stale root layout, BNPlayerController LeaveMatch on a listen host). Tools/bn/ is in scope for BN42's plan-file box corrections. LAUNCHER install: BreachpointServer cannot link on this machine, so rung 1 here is PARTIAL by environment, never a three-target green (see BN38). Previous packet BN24-adversarial-qa-run superseded - assignment #9 shipped in f387a6f2."
+ "note": "BN41 rung 1 + the two high findings bn-critic raised against the WAVE-1 front-end M1 diff (BNUIManager stale root layout, BNPlayerController LeaveMatch on a listen host). Tools/bn/ is in scope for BN42's plan-file box corrections. LAUNCHER install: BreachpointServer cannot link on this machine, so rung 1 here is PARTIAL by environment, never a three-target green (see BN38). Previous packet BN24-adversarial-qa-run superseded - assignment #9 shipped in f387a6f2. WIDENED 1 Sep: rung 1 failed ALL THREE targets on one AIBot line (AIBStateTreeTasks.cpp:361, from 3ac96f69 AIBot F1) - main does not compile, which blocks BN41/BN42/BN43 entirely. Plugins/AIBot/ added so aib-builder can land the one-word fix under this session's claim; the break is logged in BN41's Log as the reason rung 1 is red."
 }
