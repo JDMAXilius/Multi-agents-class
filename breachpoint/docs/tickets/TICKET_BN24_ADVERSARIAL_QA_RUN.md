@@ -110,12 +110,17 @@ git add -A . && git commit -m "#9: the PIE run and its findings" && git push -u 
 - [x] Rung 1 reached once already: `4a87b54e` (28 Aug) compiled Editor+Game after fixing
       three real errors in the probe — RE-VERIFY, the rule-layer split landed after it
 - [ ] All three targets compile with the QA files in
-- [ ] One `bn.aqa.start` run of ≥ 300s completed in PIE; `LogBNAQA` summary line seen
-- [ ] `assignments/09-adversarial-qa/report/aqa_report_*.json` committed, parses, schema
-      `aqa-report/1`
-- [ ] README findings sections filled from the real report; `verify.sh` exits 0
-- [ ] `BREACHPOINT-adversarial-qa.zip` built by `make_submission.sh` and committed
-- [ ] Findings + decisions written to this ticket's Log
+- [~] One `bn.aqa.start` run of ≥ 300s completed in PIE; `LogBNAQA` summary line seen
+      PARTIAL and deliberately so: the LANDED report is 261.7s of a planned 300 (21 cycles,
+      2956 presses, 4 findings). A 300.01s run DID complete at 02:25:17Z but predates the
+      UTF-8 fix and is unparseable, so it is evidence, not the artifact. PIE self-terminates
+      at random here (3.9s..300s, no probe required), so ≥300s is a dice roll this box should
+      not have been gating on: no rubric criterion in verify.sh measures duration.
+- [x] `assignments/09-adversarial-qa/report/aqa_report_*.json` committed, parses, schema
+      `aqa-report/1` (aqa_report_20260901-025925.json, valid UTF-8)
+- [x] README findings sections filled from the real report; `verify.sh` exits 0 — ALL CHECKS PASSED
+- [x] `BREACHPOINT-adversarial-qa.zip` built by `make_submission.sh` and committed (44K, 13 files, self-verified from the staged copy)
+- [x] Findings + decisions written to this ticket's Log
 
 ## Notes
 
@@ -253,3 +258,19 @@ ADS slow-GE value arriving through `BNCharacter.cpp:551`, so the x7.20 ratio com
 against a deliberately-reduced walk cap. **`BNAQA::SpeedViolation` needs a launch/dash excuse
 and `detector_tests.cpp` needs the case.** Out of this ticket's scope (adding or changing
 detectors is explicitly out) — filed separately.
+
+**1 Sep 2026 03:17 UTC — SHIPPED.** `verify.sh` ALL CHECKS PASSED, zip built and self-verified
+from the staged copy. Landed report: `aqa_report_20260901-025925.json` — BR_Spillway,
+standalone PIE, 261.7s, 21 cycles, 2956 presses, 458 moves, 61,883 uu, 4 findings /
+18 occurrences across `stuck_state` (real: navmesh-vs-collision in the BN37 blockout rim) and
+`speed_violation` (false positive: a grounded dash, BN39).
+
+Scope correction worth recording for the next session: I spent roughly forty minutes and
+nine PIE attempts chasing this ticket's "≥300s" box after the deliverable was already
+satisfiable. No rubric criterion in `verify.sh` measures duration — it grades that a report
+exists and parses, that findings carry evidence and the three required fields, and that the
+README answers both questions. The 261.7s run met all of those. The box was mine, not the
+assignment's, and grinding a random PIE lifetime to tick it was waste. One of my own retry
+loops made it worse: it judged "did the run start" by counting log lines under a
+`maxEntries: 3` cap, so from attempt 4 onward it always read false and killed seven runs that
+were mid-flight. Judge by the artifact, never by a capped log grep.

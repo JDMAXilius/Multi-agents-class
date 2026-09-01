@@ -702,7 +702,10 @@ void ABNAQAController::WriteReport()
 
 	const FString Path = FPaths::ProjectSavedDir() / TEXT("AdversarialQA")
 		/ FString::Printf(TEXT("aqa_report_%s.json"), *StartedUtc.ToString(TEXT("%Y%m%d-%H%M%S")));
-	if (FFileHelper::SaveStringToFile(Out, *Path))
+	// ForceUTF8WithoutBOM, not the default: SaveStringToFile writes UTF-16LE unless told
+	// otherwise, and a UTF-16 file is not a report anyone can read - python's json.load
+	// dies on byte 0 and so did assignments/09-adversarial-qa/verify.sh.
+	if (FFileHelper::SaveStringToFile(Out, *Path, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM))
 	{
 		UE_LOG(LogBNAQA, Log, TEXT("AQA report written: %s"), *Path);
 	}

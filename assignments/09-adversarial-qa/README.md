@@ -86,14 +86,96 @@ actually exercised the game rather than idling.
 
 ## What the agent found
 
-<!-- FILL AFTER RUN — from report/aqa_report_*.json, per TICKET_BN24 step 4: one short
-paragraph per finding class, naming the mechanic or system it occurred in. A clean run
-is a legal result: then this section says the seven detector classes held for the full
-run, with the stats that make that claim mean something. -->
+The run: **`BR_Spillway`, standalone PIE, solo + bot fill, 1 Sep 2026 02:59:25Z.** 21 behavior
+cycles, 2,956 ability presses, 458 move requests, 61,883 uu travelled, match state
+`InProgress` throughout. **Four finding records across two of the seven detector classes**,
+18 occurrences in total. The run stopped at 261.7s of a planned 300 — see the honesty note
+at the end of this section, because that is part of the answer.
+
+**`stuck_state` — 2 records, 10 occurrences — the level, not the code.** The probe issued a
+move request the navigation system *accepted*, stayed alive and unfrozen, and then sat at
+0.0 uu/s for over three seconds. Both sites are on the outer rim of the Spillway blockout:
+`(4366, 3966, 98)` during `ledge_dive`, nine times, 2,473 uu from the nearest PlayerStart,
+and `(4366, 1939, 42)` during `boundary_probe`. The mechanic is **navmesh-vs-collision
+disagreement in the BN37 blockout geometry**: a path exists across ground the pawn's capsule
+cannot actually traverse, so the character commits to a route and wedges. This is the
+failure a player finds by walking into a corner and never getting out, and it is worth
+noting the detector's excuse policy did its job here — a *rejected* move request is not a
+finding, and a frozen pawn is not a finding; this fired only where a route was granted and
+then betrayed.
+
+**`speed_violation` — 2 records, 8 occurrences — a false positive, and it matters more than
+a real one.** Both fired during `ability_mash`, both reading `ground speed 1800 uu/s vs
+MaxWalkSpeed 250 (x7.20)`, one second apart at sim 109s and 110s. This is **not** a movement
+exploit. `BNMovementAbilities.h:181` sets `DashSpeedUU = 2000.f`, and
+`BNMovementAbilities.cpp:491` launches the dash with
+`LaunchCharacter(Direction * DashSpeedUU, bXYOverride=true, bZOverride=false)` — Z is
+deliberately not overridden, so a grounded dash keeps its feet on the floor.
+`BNAQA::SpeedViolation`'s only excuse is `!bOnGround`, written for falling and grapple
+flight; a dash is a third legal envelope the policy never learned, and it is precisely the
+one that stays grounded. The `250` is not the base walk speed either — it is the ADS slow-GE's
+`MoveSpeed` arriving through `BNCharacter.cpp:551`, so the x7.20 ratio measures a dash
+against a deliberately-reduced cap. **The detector is wrong, the game is right.** Filed as
+`TICKET_BN39_AQA_DASH_EXCUSE` with the fix (a launch-recency excuse, not an absolute
+ceiling — a ceiling would bless a permanent 2000 uu/s glide, trading this false positive for
+the false negative the detector exists to catch).
+
+**The other five detector classes did not fire.** No `fell_out_of_world_alive`, no
+`escaped_playable_space`, no `attribute_anomaly`, no `teleport_discontinuity`, no
+`acted_while_dead` / `input_during_freeze` — across 2,956 presses that deliberately included
+mis-combined and dead-state input. The state gates held.
+
+**Two defects in the probe itself, found by running it.** Neither is a finding *about the
+game*, and both would have silently degraded this report, so they belong here:
+`WriteReport` was reachable only from the end timer or `bn.aqa.stop`, so a PIE session that
+ended early wrote **nothing at all** — an earlier 17s run that had already recorded a real
+`stuck_state` produced no artifact; fixed by writing from `EndPlay`, where every teardown
+path meets. And `FFileHelper::SaveStringToFile` defaults to UTF-16LE, so the first complete
+report was a "structured report" that `json.load` refused at byte 0 — and so did this
+folder's own `verify.sh`; fixed with `ForceUTF8WithoutBOM`.
+
+**Why 261.7s and not 300.** PIE in this editor session self-terminates at random —
+`EEndPlayReason::EndPlayInEditor`, no crash, no error — at observed lifetimes of 3.9s, 17s,
+64s, 71s, 190s, 261.7s and once a clean 300.01s. It does so **with no probe in the world at
+all**, which two controls established: PIE left strictly alone died at 64s, and a session
+the probe never joined died the same way. An earlier draft of my notes blamed the probe's
+join; that was wrong, and the control that would have caught it sooner was simply too short.
+The 300.01s run happened, and its numbers agree with this one (24 cycles, same two detector
+classes, the same dash false positive) — but it is the UTF-16 one, written before the
+encoding fix, so it is evidence rather than the deliverable. This report is the honest
+artifact: a real run, 87% of its planned length, with the shortfall named rather than
+rounded away.
 
 ## Was I surprised by the findings?
 
-<!-- FILL AFTER RUN — the honest answer, written against the real report. -->
+**By the game, no. By my own agent, twice.**
+
+The `stuck_state` cluster is not a surprise: `BR_Spillway` is a four-day-old blockout
+(BN37), its geometry has never been walked by anything but bots, and "navmesh says yes,
+capsule says no" is the most ordinary defect a new level has. If anything the surprise is
+how *localised* it was — nine of the ten occurrences at one rim corner, which is why the
+report deduplicates by type and 2,000uu grid cell rather than emitting 600 rows at 10 Hz.
+One bad corner reads as one bad corner.
+
+What genuinely surprised me was the shape of my own errors. I built the detectors expecting
+to argue about thresholds, and both real problems were about **excuse policy** instead — the
+question of what *legitimately* looks like a defect. `SpeedViolation` knew that falling and
+grapple flight are legal ways to exceed walk speed, and never considered that a dash is a
+legal way to exceed it *while grounded*. That is not a tuning error, it is a gap in the
+model of the game, and no amount of adjusting 1.75 would have found it. Writing 44 headless
+cases with both a firing and an excuse case for every rule made me feel thorough; the live
+run found the excuse I had not thought to write. That is the argument for running the thing
+against the real game rather than against my own imagination, and it is the assignment's
+actual lesson.
+
+The second surprise was worse and more useful: **the agent lost its own evidence.** For the
+first hour the probe could run, detect correctly, log a real finding as a warning — and then
+write no report at all, because the only path to `WriteReport` was a timer that an early PIE
+stop never reached. The README you are reading claimed "the report writes on any stop"
+before I checked whether that sentence was true. A QA agent that cannot survive its own
+environment ending is not a QA agent, and I would not have discovered it if the environment
+had been stable. The instability that cost me six runs is the reason the tool is now
+correct.
 
 ## Honesty ladder
 
