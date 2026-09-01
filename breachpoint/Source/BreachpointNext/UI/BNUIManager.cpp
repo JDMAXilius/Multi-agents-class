@@ -116,7 +116,15 @@ bool UBNUIManager::EnsureLocalPlayerUI(ULocalPlayer* LocalPlayer)
 	FBNLocalPlayerUI& UI = PerPlayerUI.FindChecked(LocalPlayer);
 	if (UI.RootLayout)
 	{
-		return true;
+		// Travel keeps this strong ref alive, but the engine already pulled the widget out of the
+		// dead world's viewport (FGameViewportWidgetSlot::bAutoRemoveOnWorldRemoved). A non-null
+		// layout that is no longer in a viewport is a sink — every push lands off-screen. Rebuild.
+		if (UI.RootLayout->IsInViewport())
+		{
+			return true;
+		}
+		UI.RootLayout->RemoveFromParent();
+		UI.RootLayout = nullptr;
 	}
 
 	UWorld* World = GetGameInstance() ? GetGameInstance()->GetWorld() : nullptr;

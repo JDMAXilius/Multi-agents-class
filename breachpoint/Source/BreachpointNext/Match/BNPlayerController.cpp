@@ -8,6 +8,7 @@
 #include "Match/BNPlayerCameraManager.h"
 #include "UI/BNHUDDirector.h"
 #include "Engine/LocalPlayer.h"
+#include "Engine/NetDriver.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "InputMappingContext.h"
@@ -340,11 +341,17 @@ void ABNPlayerController::LeaveMatch()
 	// THE HOST CASE (critic): ClientTravel is right for a remote client and destructive for the
 	// listen-server host — browsing the host away takes the server world with it and strands
 	// every connected client. The old module routed this through a session subsystem's
-	// ReturnToMainMenu(); BN has no session layer yet, so the honest move is to say so out loud
-	// rather than pretend the two cases are one. (Dormant today: the ini key ships unset.)
-	if (GetNetMode() == NM_ListenServer)
+	// ReturnToMainMenu(); BN has no session layer yet, so a host with clients simply cannot leave.
+	// Alone on the listen server (or in PIE), there is nobody to strand and travel is allowed.
+	if (HasAuthority())
 	{
-		UE_LOG(LogBN, Warning, TEXT("BNPlayerController: LeaveMatch on the LISTEN HOST — this ends the match for every connected client. BN has no session layer to hand the server off."));
+		const UNetDriver* NetDriver = GetWorld() ? GetWorld()->GetNetDriver() : nullptr;
+		if (NetDriver && NetDriver->ClientConnections.Num() > 0)
+		{
+			UE_LOG(LogBN, Warning, TEXT("BNPlayerController: LeaveMatch REFUSED on the LISTEN HOST — %d client(s) connected, and travelling would end the match for all of them. BN has no session layer to hand the server off."),
+				NetDriver->ClientConnections.Num());
+			return;
+		}
 	}
 
 	UE_LOG(LogBN, Log, TEXT("BNPlayerController: leaving the match -> %s"), *LeaveMatchMapPath);
