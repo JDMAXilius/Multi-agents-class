@@ -34,7 +34,11 @@ real findings-or-clean-result lands — that failure is the gate working, not a 
 0. **Free sanity check before you build anything** (30 seconds, no engine):
    `cd assignments/09-adversarial-qa && ./verify.sh` — must exit 0 with the 44 detector
    cases green. If that fails, the rule layer regressed and the PIE run would be wasted.
-1. **Compile** all three targets (`Tools/run-ubt.ps1`). The probe is `BNAdversarialAgent.h/.cpp`
+1. **Compile** all three targets (`Tools/run-ubt.ps1`). NOTE: `4a87b54e` already compiled
+   this probe on 28 Aug (Editor+Game succeeded) after fixing three errors in it — but the
+   rule-layer split (`BNAQADetectors.h`, 1 Sep) changed the `.cpp` afterwards, so this is a
+   re-verify, not a first build. Expect it to be clean; if it is not, the break is in the
+   detector CALL SITES, since nothing else moved. The probe is `BNAdversarialAgent.h/.cpp`
    plus `BNAQADetectors.h` in `Source/BreachpointNext/QA/`, and one PrivateDependency line
    (`Json`) in the Build.cs — fix trivial breaks in the QA files only; anything outside the
    owner path is a `contract_gap`, filed here, STOP. Note `BNAQADetectors.h` is deliberately
@@ -63,6 +67,8 @@ real findings-or-clean-result lands — that failure is the gate working, not a 
       green (DONE 1 Sep, cloud — re-runnable anywhere with g++)
 - [x] The zip builds and self-verifies from a clean extract with no repo and no engine
       (DONE 1 Sep, cloud)
+- [x] Rung 1 reached once already: `4a87b54e` (28 Aug) compiled Editor+Game after fixing
+      three real errors in the probe — RE-VERIFY, the rule-layer split landed after it
 - [ ] All three targets compile with the QA files in
 - [ ] One `bn.aqa.start` run of ≥ 300s completed in PIE; `LogBNAQA` summary line seen
 - [ ] `assignments/09-adversarial-qa/report/aqa_report_*.json` committed, parses, schema

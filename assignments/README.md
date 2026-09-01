@@ -171,9 +171,13 @@ the capstone's source tree, joins a match through the same doors a bot does and 
 to break it — cycling five behaviors (boundary walks, ledge dives, grapple abuse, ability
 mashing) against seven precisely-defined detector classes, and writing a structured JSON
 report (location + error type + game context per finding) from inside the run.
-`./verify.sh` audits the committed report without needing Unreal; the run itself needs the
-editor once — `docs/tickets/TICKET_BN24_ADVERSARIAL_QA_RUN.md` is the recipe, and
-`verify.sh` deliberately fails until that real report lands.
+**It is testable without Unreal Engine**, which matters because a grader may not have it:
+the detector rules live in an engine-free header, and `./verify.sh` compiles that header
+with stock `g++` and *executes* all 44 rule cases — each detector tested on the defect it
+catches and on the legitimate twin it must not report. [`TESTING.md`](09-adversarial-qa/TESTING.md)
+is the grader's guide. The live run itself needs the editor once
+(`docs/tickets/TICKET_BN24_ADVERSARIAL_QA_RUN.md`); until then `verify.sh` marks those
+rubric items PENDING rather than inventing them.
 
 ---
 
@@ -246,7 +250,7 @@ Per-assignment submission checklists, where they exist:
 | 6 | ✅ | **not yet** | due 18 Aug — **needs a short late note on submission** |
 | 7 | ✅ | **not yet** | due 20 Aug — **needs a short late note on submission** |
 | 8 | ✅ | **not yet** | due 25 Aug — **needs a short late note on submission** |
-| 9 | agent code + harness ✅ | **not yet** | due 27 Aug — **needs the one PIE run (TICKET_BN24) before the zip can build** |
+| 9 | ✅ (rules proven + compiles) | **not yet** | due 27 Aug — testable without UE (`./verify.sh`, 44 cases); Findings await one PIE run (TICKET_BN24) |
 
 **Honesty note that applies to all of these:** none of the generated C++ or CSV has been
 compiled or imported into a running build of the game. The container these ran in has no

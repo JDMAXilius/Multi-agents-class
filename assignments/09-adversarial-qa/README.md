@@ -97,10 +97,28 @@ run, with the stats that make that claim mean something. -->
 
 ## Honesty ladder
 
-Per the project's law: the code in this folder's zip is the code that ran; the report
-names its net mode (`standalone PIE` / `listen server`). This is a PIE claim, not a
-packaged-build or multiplayer claim — the assignment needs one real test run, and that
-is exactly what the report is.
+The project I am building has a written rule — *compiles ≠ works · PIE ≠ multiplayer ·
+listen ≠ dedicated · editor ≠ packaged* — and it applies to my own submissions. Where
+this one actually stands, rung by rung:
+
+| Rung | Claim | Status |
+|---|---|---|
+| 0 | The rule layer **executes** — 44 cases, both firing and excuse | ✅ proven, and you can re-run it |
+| 1 | The agent **compiles** into the game (Editor + Game targets) | ✅ done 28 Aug (`4a87b54e`), which found 3 real errors in my code — see below |
+| 2 | The agent **runs** in a live match and reports | ⏳ the one remaining step (TICKET_BN24) |
+| 3 | Multiplayer / packaged claims | ❌ not claimed, not needed here |
+
+**Rung 1 cost me three real bugs, and that is worth saying plainly.** A build session
+found that `StopRun` took `const FString&` while being bound as a *timer payload*
+(payload delegates bind by value), and that two of my `TActorIterator` loops `return`
+on the first hit, leaving the increment unreachable and failing `-Werror`. All three were
+invisible to me because I wrote this in a container with no Unreal Engine. That is exactly
+the gap the honesty ladder exists to name — I could not have found them by re-reading my
+own code, and I did not pretend otherwise.
+
+One consequence to be straight about: the rule-layer split described above landed *after*
+that compile, so the current `.cpp` wants one more pass through the compiler before the PIE
+run. TICKET_BN24 step 1 says so.
 
 ## Files
 
