@@ -43,4 +43,19 @@ public:
 protected:
 	/** Re-seats the weapon when the socket is retyped in the details panel. */
 	virtual void OnConstruction(const FTransform& Transform) override;
+
+	/** Runs once the level's saved mesh is on Body — the first moment the socket exists. */
+	virtual void PostRegisterAllComponents() override;
+
+private:
+	/**
+	 * Attaches Weapon to Body at WeaponSocket, but ONLY when that socket really exists.
+	 *
+	 * This guard is the whole lesson of BN43: AttachToComponent does not fail on a missing
+	 * socket, it warns and attaches to the component ORIGIN, and the socket name is gone
+	 * after that. Body has no mesh during the constructor, so the first attach silently
+	 * degraded and the rifle sat on the floor at the hero's feet. Attaching only when the
+	 * socket resolves is what keeps it in the hand.
+	 */
+	void AttachWeaponToSocket();
 };

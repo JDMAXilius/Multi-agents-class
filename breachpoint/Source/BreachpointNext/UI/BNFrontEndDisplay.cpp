@@ -22,13 +22,32 @@ ABNFrontEndDisplay::ABNFrontEndDisplay()
 void ABNFrontEndDisplay::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
+	// Covers a socket retyped in the details panel, or a mesh swapped on the instance.
+	AttachWeaponToSocket();
+}
 
-	// The constructor socketed against the DEFAULT socket name. If an instance retypes
-	// WeaponSocket (a different skeleton, a left-hand carry), re-seat against the new one —
-	// otherwise the details-panel field would silently do nothing after the first build.
-	if (Weapon && Body)
+void ABNFrontEndDisplay::PostRegisterAllComponents()
+{
+	Super::PostRegisterAllComponents();
+	// The level's saved Body mesh is present by now, which is the earliest the skeleton -
+	// and therefore the socket - actually exists. The constructor's SetupAttachment ran long
+	// before that and could not resolve it.
+	AttachWeaponToSocket();
+}
+
+void ABNFrontEndDisplay::AttachWeaponToSocket()
+{
+	if (!Weapon || !Body)
 	{
-		Weapon->AttachToComponent(Body,
-			FAttachmentTransformRules::SnapToTargetIncludingScale, WeaponSocket);
+		return;
 	}
+	// DoesSocketExist is the load-bearing check, not politeness: AttachToComponent treats a
+	// missing socket as "attach to the origin" and drops the name, so attaching too early
+	// does not fail loudly - it quietly parks the weapon at the hero's feet forever.
+	if (!Body->GetSkeletalMeshAsset() || !Body->DoesSocketExist(WeaponSocket))
+	{
+		return;
+	}
+	Weapon->AttachToComponent(Body,
+		FAttachmentTransformRules::SnapToTargetIncludingScale, WeaponSocket);
 }
