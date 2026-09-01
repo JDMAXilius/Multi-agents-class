@@ -72,6 +72,19 @@ def stretch():
             "alignment": {"x": 0.0, "y": 0.0}}
 
 
+# referee §1 "Menu in Border" `I…7:7383`: the 349 chassis carries a 3px border inset
+# (Menu List 343 wide) and THEN a 16,16 content inset -> contents are 311 wide, which is
+# exactly the §1 Text Button width. Both insets are this Border's padding, so 311 falls out
+# of 349 - 2*MENU_PAD instead of being a magic number.
+MENU_BORDER_INSET = 3.0     # §1: "3px border inset; Menu List 343 wide"
+MENU_CONTENT_INSET = 16.0   # §1: "contents inset 16,16, width 311"
+MENU_PAD = MENU_BORDER_INSET + MENU_CONTENT_INSET   # 19 -> 349 - 38 = 311
+
+
+def menu_pad():
+    return {"left": MENU_PAD, "top": MENU_PAD, "right": MENU_PAD, "bottom": MENU_PAD}
+
+
 def row_pitch(bottom=12.0):
     # 28-high rows at pitch 40 (referee §1 Text Button): the 12 lives in the slot.
     return {"padding": {"left": 0.0, "top": 0.0, "right": 0.0, "bottom": float(bottom)},
@@ -90,7 +103,9 @@ def frontend_plan():
         ('Scrim', IMAGE, 'FrontEndCanvas', {"layoutData": stretch(), "bAutoSize": False},
          {"colorAndOpacity": SCRIM}, False, None),
         ('TitleText', TEXT, 'FrontEndCanvas',
-         {"layoutData": topleft(33, 38, 500, 44), "bAutoSize": False},   # Nav Bar slot `21:32864`
+         # Navigation Bar `21:32864` is 33,45 666x30. M1 has no tabs, so the wordmark stands
+         # in for PLAY/CREATE/COMMUNITY/SHOP in that slot until M2 builds them.
+         {"layoutData": topleft(33, 45, 666, 30), "bAutoSize": False},
          {"text": "BREACHPOINT"}, False, 30),
         ('NewsPanel', BORDER, 'FrontEndCanvas',
          {"layoutData": topleft(69, 138, 349, 222), "bAutoSize": False},  # News `I…7:7381`
@@ -102,7 +117,7 @@ def frontend_plan():
          {"text": "NEW ARENA: SPILLWAY"}, False, 16),
         ('MenuPanel', BORDER, 'FrontEndCanvas',
          {"layoutData": topleft(69, 370, 349, 186), "bAutoSize": False},  # Menu in Border `I…7:7383`
-         {"brushColor": PANEL, "padding": {"left": 16.0, "top": 16.0, "right": 16.0, "bottom": 16.0}},
+         {"brushColor": PANEL, "padding": menu_pad()},
          False, None),
         ('MenuColumn', VBOX, 'MenuPanel',
          {"horizontalAlignment": "HAlign_Fill", "verticalAlignment": "VAlign_Fill",
@@ -131,6 +146,8 @@ def frontend_plan():
          {"text": "FIRETEAM — LOCAL"}, False, 14),
         ('ProfileBar', BORDER, 'FrontEndCanvas',
          {"layoutData": topleft(0, 670, 1280, 50), "bAutoSize": False},    # Profile Bar `21:32862`
+         # 15 top/bottom is derived, not chosen: Prompts `21:32863` sit at y685 h20 inside a
+         # bar at y670 h50 -> 670+15=685 and 50-15-15=20. Same number on both screens.
          {"brushColor": BAND, "padding": {"left": 60.0, "top": 15.0, "right": 60.0, "bottom": 15.0}},
          False, None),
         ('PromptText', TEXT, 'ProfileBar',
@@ -159,16 +176,20 @@ def value_row(prefix, label):
 
 def playsetup_plan():
     """CG_Lobby `21:43019` — referee §4. Menu Combo at (69,76): preview 349x196.7, menu
-    at y+206.7 -> (69,283), description at y+483 -> (69,559); Breakdown (466,76) 349x332."""
+    at y+206.7 -> (69,282.7), description at y+483 -> (69,559); Breakdown (466,76) 349x332."""
     plan = [
         ('SetupCanvas', CANVAS, None, None, None, False, None),
         ('Scrim', IMAGE, 'SetupCanvas', {"layoutData": stretch(), "bAutoSize": False},
          {"colorAndOpacity": SCRIM}, False, None),
         ('PageTitleText', TEXT, 'SetupCanvas',
-         {"layoutData": topleft(33, 22, 700, 40), "bAutoSize": False},    # Page Title `21:43048`
+         # Page Title `21:43048` is 0,0 1280x75; its Title Frame `I21:43048;577:4124` is
+         # 70,15 630x54 and the title text inside it is h31 at y+11.5 -> absolute y 26.5.
+         # Figma splits a breadcrumb ("CUSTOMIZE ▸ ARMOR HALL", second part at x134); M1
+         # renders ONE title string, so we take the frame box, not the split.
+         {"layoutData": topleft(70, 26, 630, 31), "bAutoSize": False},
          {"text": "PLAY  ▸  CUSTOM GAME"}, False, 22),
         ('PreviewPanel', BORDER, 'SetupCanvas',
-         {"layoutData": topleft(69, 76, 349, 197), "bAutoSize": False},   # Preview `I…7:7382`
+         {"layoutData": topleft(69, 76, 349, 196.7), "bAutoSize": False},  # Preview `I…7:7382`
          {"brushColor": PANEL, "padding": {"left": 0.0, "top": 0.0, "right": 0.0, "bottom": 0.0}},
          False, None),
         ('PreviewImage', IMAGE, 'PreviewPanel',
@@ -176,8 +197,8 @@ def playsetup_plan():
           "padding": {"left": 0.0, "top": 0.0, "right": 0.0, "bottom": 0.0}},
          {"visibility": "Collapsed"}, False, None),                        # BN43 wires the art
         ('MenuPanel', BORDER, 'SetupCanvas',
-         {"layoutData": topleft(69, 283, 349, 186), "bAutoSize": False},  # Menu in Border
-         {"brushColor": PANEL, "padding": {"left": 16.0, "top": 16.0, "right": 16.0, "bottom": 16.0}},
+         {"layoutData": topleft(69, 282.7, 349, 186), "bAutoSize": False},  # Menu in Border
+         {"brushColor": PANEL, "padding": menu_pad()},
          False, None),
         ('MenuColumn', VBOX, 'MenuPanel',
          {"horizontalAlignment": "HAlign_Fill", "verticalAlignment": "VAlign_Fill",
@@ -203,11 +224,14 @@ def playsetup_plan():
          False, None),
         ('DescriptionText', TEXT, 'DescriptionPanel', None, {"text": ""}, True, 12),
         ('ProfileBar', BORDER, 'SetupCanvas',
-         {"layoutData": topleft(0, 670, 1280, 50), "bAutoSize": False},
-         {"brushColor": BAND, "padding": {"left": 60.0, "top": 12.0, "right": 60.0, "bottom": 12.0}},
+         {"layoutData": topleft(0, 670, 1280, 50), "bAutoSize": False},   # Profile Bar `21:32862`
+         # 15, same derivation as FrontEnd: Prompts `21:32863` y685 h20 inside 670..720.
+         {"brushColor": BAND, "padding": {"left": 60.0, "top": 15.0, "right": 60.0, "bottom": 15.0}},
          False, None),
         ('BackButton', BUTTON, 'SetupCanvas',                              # bound OPTIONAL in C++
-         {"layoutData": topleft(60, 682, 150, 26), "bAutoSize": False, "zOrder": 1}, None, True, None),
+         # Button Prompts `21:32863`: x60 y685 h20. Width is NOT measured — the referee says
+         # it varies with prompt count (62–227), so 150 is a bounded pick, not a reading.
+         {"layoutData": topleft(60, 685, 150, 20), "bAutoSize": False, "zOrder": 1}, None, True, None),
         ('BackLabel', TEXT, 'BackButton', None, {"text": "ESC — BACK"}, False, 11),
     ]
     return plan

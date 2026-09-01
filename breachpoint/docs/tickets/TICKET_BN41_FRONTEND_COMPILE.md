@@ -170,3 +170,29 @@ from under connected clients. Adds `#include "Engine/NetDriver.h"`.
 
 Applied-and-verified copies of both whole files (post-fix) are staged at
 `scratchpad/b/BNUIManager.cpp` and `scratchpad/b/BNPlayerController.cpp` for this session.
+
+### Resolution of the contract_gap above
+
+The gap was real and the refusal was correct: `.claude/active-packet.json` still claimed
+**BN24-adversarial-qa-run**, a packet whose work shipped in `f387a6f2` but whose claim nobody
+ever released. Two crew agents (bn-builder on `Source/BreachpointNext/`, bn-editor on
+`Tools/bn/`) hit it independently and BOTH filed a contract_gap rather than edit the claim file
+to unblock themselves — law 5 behaving exactly as written. **The board's real defect here is not
+this ticket: ten finished tickets still read `in-progress`/`BUILT`/`FIXED` without being
+archived, and a stale claim among them blocks every agent on every ticket until a human notices.**
+
+Re-claimed lawfully through the tickets skill (`tickets: pick up BN41`), owner_path
+`Source/BreachpointNext/` · `Config/` · `Tools/bn/` · `docs/tickets/` · `docs/ui/ue-frontend/`,
+with the wave-2 scope (BN41+BN42+BN43 in one terminal pass) written into the claim's own `note`
+rather than left as a chat-only understanding. Both fixes then landed unmodified and are
+committed. **WRITTEN, NOT COMPILED** until the rung-1 line below says otherwise.
+
+### Environment ruling for this ticket's rung 1
+
+`Tools/env.local` points at a **launcher** UE 5.8 (no `Engine/Build/SourceDistribution.txt`),
+which ships no `UnrealServer` binaries. `BreachpointServer` therefore cannot link on this
+machine, and `run-ubt.sh` correctly reports PARTIAL and exits non-zero when fewer than three
+targets pass. **A three-target rung-1 green is structurally impossible here** — this ticket's
+"Rung 1 clean ×3 targets" box cannot be honestly checked on this box, and that is BN38's open
+decision (source-build the engine, or retire rung 4a), not a new finding. Recorded rather than
+worked around.
