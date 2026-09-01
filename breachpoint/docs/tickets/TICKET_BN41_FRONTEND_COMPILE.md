@@ -1,6 +1,7 @@
 # TICKET — BN41: front-end C++ — compile it, then own it
 
-> STATUS: open — cut 1 Sep 2026 by the cloud lead. OWNER: **terminal**.
+> STATUS: in-progress — claimed 1 Sep 2026, terminal session (macOS, UE_5.8 launcher
+> install at Tools/env.local). OWNER: **terminal**.
 > requires: engine-installed (rung 1) — no editor needed for step 1.
 > Plan: docs/ui/ue-frontend/BN-FRONTEND-PLAN.md · Layout truth: 01-MENU-MEASURED.md.
 
