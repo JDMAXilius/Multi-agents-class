@@ -1,16 +1,18 @@
 {
- "ticket": "BN41-frontend-compile",
+ "ticket": "BN42-frontend-widgets",
  "owner_path": [
   "Source/BreachpointNext/",
   "breachpoint/Source/BreachpointNext/",
+  "Content/BN/",
+  "breachpoint/Content/BN/",
+  "Content/Maps/",
+  "breachpoint/Content/Maps/",
   "Config/",
   "breachpoint/Config/",
   "Tools/bn/",
   "breachpoint/Tools/bn/",
   "docs/tickets/",
-  "docs/ui/ue-frontend/",
-  "Plugins/AIBot/",
-  "breachpoint/Plugins/AIBot/"
+  "docs/ui/ue-frontend/"
  ],
- "note": "BN41 rung 1 + the two high findings bn-critic raised against the WAVE-1 front-end M1 diff (BNUIManager stale root layout, BNPlayerController LeaveMatch on a listen host). Tools/bn/ is in scope for BN42's plan-file box corrections. LAUNCHER install: BreachpointServer cannot link on this machine, so rung 1 here is PARTIAL by environment, never a three-target green (see BN38). Previous packet BN24-adversarial-qa-run superseded - assignment #9 shipped in f387a6f2. WIDENED 1 Sep: rung 1 failed ALL THREE targets on one AIBot line (AIBStateTreeTasks.cpp:361, from 3ac96f69 AIBot F1) - main does not compile, which blocks BN41/BN42/BN43 entirely. Plugins/AIBot/ added so aib-builder can land the one-word fix under this session's claim; the break is logged in BN41's Log as the reason rung 1 is red."
+ "note": "BN42 editor pass: build WBP_BNScreen_FrontEnd (21) and WBP_BNScreen_PlaySetup (28) under /Game/BN/UI via direct unreal-mcp calls per founder ruling R46, plus the FE_MainMenu level with BNFrontEndGameMode. Resumed 1 Sep block: the MCP registry fault is GONE - list_toolsets returns UMGToolSet/ObjectTools/AssetTools on this session. BN41 closed; binaries fresh. Content/BN/ and Content/Maps/ added because this packet is the one writing those .uasset/.umap (law 7: one owner per binary asset, locked here)."
 }
