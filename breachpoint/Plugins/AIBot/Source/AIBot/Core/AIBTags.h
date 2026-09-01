@@ -1,5 +1,6 @@
 #pragma once
 
+#include "GameplayTagContainer.h"
 #include "NativeGameplayTags.h"
 
 /**
@@ -32,6 +33,22 @@ namespace AIBTags
 	AIBOT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Verb_Aim);
 	AIBOT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Verb_Grapple);
 	AIBOT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Verb_Dash);
+
+	/**
+	 * THE HELD VERBS — the ones this module presses and does NOT release in the same
+	 * call. Everything else in the list above is a tap (press then release, adjacent),
+	 * and a tap cannot leak.
+	 *
+	 * This exists because "which verbs are held" was an ASSERTION IN A COMMENT and went
+	 * stale: the unpossess belt released Fire alone while Phase 4 had since added a held
+	 * Sprint and a held Aim (aib-critic M1). It is a list now, in one place, so a new
+	 * held verb is one line away from being given back correctly — and the belt walks
+	 * this, so forgetting the belt is no longer possible, only forgetting the line.
+	 *
+	 * Crouch is deliberately ABSENT: it is a toggle, not a hold, and a release does not
+	 * put it down. AIB::ReleaseHeldVerbs handles it separately, by tapping.
+	 */
+	AIBOT_API const TArray<FGameplayTag>& HeldVerbs();
 
 	// -- ambitions (the core set; modes add their own) ----------------------------
 	AIBOT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ambition_Engage);

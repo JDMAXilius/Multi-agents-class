@@ -1,6 +1,8 @@
 # AIB21 — the Halo-fidelity audit, and what it found
 
-> STATUS: in-progress — 8 of 9 findings closed (H3, L3 closed 29 Aug); M1 open
+> STATUS: **ALL NINE FINDINGS CLOSED.** H3 and L3 closed 29 Aug; M1 written 1 Sep 2026
+> (cloud lead) — **WRITTEN, NOT COMPILED**, with a headless spec that pins it. The
+> ticket closes when the terminal runs rung 1 and `AIBot.Sim.AvatarBelt`.
 
 `aib-critic` audited the whole module against the Halo-Infinite-1:1 bar. Verdict:
 containment PASS, server-only PASS, F1/F4/F8 PASS, arbitration sound. The stuck-state
@@ -30,7 +32,8 @@ surface failed.
   works. The critic's proposed fix needs no new node: a `BlastSecondsToDetonation`
   consideration on Retreat, and `FleeFromBelief` using the blast centre as its threat
   point when `bIncomingBlast`.
-- **M1 — the unpossess belt releases Fire only.** Its comment asserts Fire is the only held
+- ~~**M1 — the unpossess belt releases Fire only.**~~ **CLOSED 1 Sep — see the Log.**
+- **M1 (as filed):** Its comment asserts Fire is the only held
   verb; since Phase 4 the module also holds Sprint, Aim and a crouch toggle. The host
   backstops it today, which is exactly the dependency the containment law forbids.
 - **L3 — a zero-score ambition can win.** `SelectionScore > BestSelectionScore` starting at
@@ -134,3 +137,50 @@ Measured, one match against the run before it — Engage's share of all selectio
 Bots fight more. Retreat's small drop is the same correction seen from the other side —
 it had been winning partly because Engage was structurally depressed. Evade is unchanged, as
 expected: one consideration, so it is uncompensated by construction. Zero unserved wants.
+
+**1 Sep — M1 closed. The fix is a list, because the bug was a comment.**
+
+Confirmed the leak is real before writing anything. Every press crosses the door into
+`UBNAIBAvatarAdapter::PressVerb`, which calls `ASC->AbilityInputTagPressed(InputTag)` on
+an ASC the adapter itself resolves as *"pawn -> PlayerState -> the one ASC that outlives
+the body"*. So a held verb at unpossession is not untidy — it is state parked on an
+object that survives into the bot's next life. `SetSprint`'s own comment already said so
+(*"a leaked hold rides the persistent ASC into the next life"*) about the sprint it was
+careful to balance; the belt underneath it was not.
+
+Held verbs, counted rather than remembered — every `PressVerb` site in
+`AIBStateTreeTasks.cpp` whose `ReleaseVerb` is NOT the adjacent line:
+
+| Verb | Site | Shape |
+|---|---|---|
+| Fire | 930 | held, released at 912/923/951 |
+| Sprint | 261 | held, `SetSprint` rising/falling edge |
+| Aim | 882 | held, re-asserted (release-then-press) |
+
+Everything else — Jump, Crouch, Melee, Grenade, Reload, WeaponNext, Grapple, Dash — is a
+press and a release on adjacent lines. **A tap cannot leak.** Crouch is the interesting
+one: it is rented, but it is a TOGGLE, so releasing it gives nothing back.
+
+**The fix.** `AIBTags::HeldVerbs()` is now a real list next to the tags, and
+`AIB::ReleaseHeldVerbs()` (new `Interfaces/AIBAvatarInterface.cpp`) walks it and then
+taps the crouch back up if — and only if — the avatar's own `IsCrouched()` says it is
+down. Both belts, `OnUnPossess` and `EndPlay`, call that one function and nothing else.
+Adding a held verb is now one line in one place, and the belt cannot go stale behind a
+comment again, which is the actual defect: the code was correct when written and the
+comment kept asserting it afterwards.
+
+**The proof, headless:** `AIBot.Sim.AvatarBelt` (`Tests/AIBAvatarBeltSpec.cpp`), six
+pins on a fake avatar that journals every press and release —
+(1) the list names Fire/Sprint/Aim and excludes every tap, Crouch included;
+(2) the belt releases every verb in the list exactly once, whatever is added later;
+(3) a hard-coded Fire AND Sprint AND Aim pin, so shrinking the list back to Fire fails
+here rather than in a match;
+(4) a standing bot's crouch is not touched;
+(5) a squatting bot is tapped up exactly once, and the trigger comes back FIRST;
+(6) idempotent, because unpossess-then-EndPlay is a normal sequence and both belts run.
+
+**Rung: WRITTEN, NOT COMPILED.** The cloud has no engine. Terminal owes rung 1 on all
+three targets plus `AIBot.Sim.AvatarBelt`. One thing worth an eye during the run: the
+fake avatar implements the interface on a plain struct, which relies on
+`GENERATED_BODY()`'s I-class destructor being reachable from a derived type — correct as
+read, unverified by a compiler.

@@ -299,10 +299,15 @@ void AAIBBotController::OnUnPossess()
 	// synchronously is an engine fact this module must not bet a held trigger on. The
 	// release is idempotent at the adapter, the avatar door is still valid HERE, and a
 	// verb held on the persistent PlayerState outliving the body is the one leak F6
-	// names by shape. Fire is the only HELD verb Phase 3 authors.
+	// names by shape.
+	// CORRECTED 1 Sep 2026 (aib-critic M1): this released Fire alone, under a comment
+	// asserting Fire was the only held verb. That was true when Phase 3 wrote it and
+	// false from Phase 4 on — Sprint and Aim are held too, and the crouch toggle is
+	// rented. AIB::ReleaseHeldVerbs walks AIBTags::HeldVerbs() so the belt can no longer
+	// go stale behind a comment.
 	if (IAIBAvatarInterface* AvatarDoor = GetAvatar())
 	{
-		AvatarDoor->ReleaseVerb(AIBTags::Verb_Fire);
+		AIB::ReleaseHeldVerbs(*AvatarDoor);
 	}
 	// The host's proven guard: unpossession during world teardown has no timer manager.
 	if (UWorld* World = GetWorld())
@@ -359,7 +364,8 @@ void AAIBBotController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	}
 	if (IAIBAvatarInterface* AvatarDoor = GetAvatar())
 	{
-		AvatarDoor->ReleaseVerb(AIBTags::Verb_Fire);
+		// Same belt, same reason (aib-critic M1): every held verb, not just the trigger.
+		AIB::ReleaseHeldVerbs(*AvatarDoor);
 	}
 	if (UWorld* World = GetWorld())
 	{

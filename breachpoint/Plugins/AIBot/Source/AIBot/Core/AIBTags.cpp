@@ -27,4 +27,21 @@ namespace AIBTags
 	UE_DEFINE_GAMEPLAY_TAG(Ambition_Roam, "AIBot.Ambition.Roam");
 	UE_DEFINE_GAMEPLAY_TAG(Ambition_Mode, "AIBot.Ambition.Mode");
 
+	const TArray<FGameplayTag>& HeldVerbs()
+	{
+		// Built once, on first use, rather than as a namespace-scope array: native tags
+		// register at module load and a static initialiser racing that order is exactly
+		// the class of bug that produces a silently EMPTY tag. By first call the module
+		// is up.
+		static const TArray<FGameplayTag> Held = []
+		{
+			TArray<FGameplayTag> Out;
+			Out.Add(Verb_Fire);    // the trigger (Phase 3)
+			Out.Add(Verb_Sprint);  // the legs   (Phase 4 - SetSprint's rising/falling edge)
+			Out.Add(Verb_Aim);     // the sights (Phase 4 - ADS, founder 27 Aug)
+			return Out;
+		}();
+		return Held;
+	}
+
 }

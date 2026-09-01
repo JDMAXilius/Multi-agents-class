@@ -98,3 +98,31 @@ public:
 	virtual float GetHealthNormOf(const AActor* Other) const = 0;
 	virtual bool IsAliveTarget(const AActor* Other) const = 0;
 };
+
+/**
+ * THE TEARDOWN BELT, in one place.
+ *
+ * Give back EVERY verb the module is holding, and put the crouch toggle back down.
+ * AAIBBotController calls this from both teardown paths (OnUnPossess and EndPlay) and
+ * from nowhere else, so "what does the bot still have its finger on" is answered by
+ * AIBTags::HeldVerbs() rather than by a comment.
+ *
+ * Why a released Fire was not enough (aib-critic M1). Presses cross the door into a
+ * host input surface whose state lives on something that OUTLIVES THE BODY - in the
+ * audited host, an ability system on the PlayerState. A Sprint or an Aim still held
+ * when the pawn is taken away therefore rides that surface into the bot's next life and
+ * re-asserts itself on a body that never pressed it. The host currently cleans this up
+ * on its own, which is precisely the dependency FAIRPLAY F6's containment forbids: the
+ * module must not need the game to be tidy on its behalf.
+ *
+ * Idempotent by construction, which matters because the two belts can BOTH run: a
+ * release of a verb that is not held is a no-op at the adapter, and the crouch tap is
+ * gated on the avatar's real crouch state, so the second call does nothing.
+ *
+ * Safe to call with a dying pawn - it only reads and presses through the door, which
+ * both belts keep valid at their call site.
+ */
+namespace AIB
+{
+	AIBOT_API void ReleaseHeldVerbs(IAIBAvatarInterface& Avatar);
+}
