@@ -23,7 +23,9 @@ game.
    `BNUIColors` tokens only.
 
 ## Done when
-- [ ] Three previews + backdrop + news card, all from our renders, landed by script
+- [ ] Three previews + backdrop + news card, all from our renders, landed via direct
+      unreal-mcp calls (R46 — screenshot/import/set-brush through the toolsets; a script
+      only as a LOGGED fallback)
 - [ ] Side-by-side screenshots to the founder
 
 ## Log

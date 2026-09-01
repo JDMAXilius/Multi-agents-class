@@ -1,4 +1,11 @@
-"""BN41/BN42 — build the two front-end screens' WBPs at the referee's boxes.
+"""BN41/BN42 — the two front-end screens' WBPs: the PLAN, and the batch FALLBACK.
+
+R46 (founder, 1 Sep): editor jobs run through the unreal-mcp tools DIRECTLY from the
+editor session; a Python driver is the fallback, not the path. This file's standing under
+that ruling: `frontend_plan()` / `playsetup_plan()` are the committed, diffable widget
+tables TICKET_BN42's direct MCP calls walk (and bn41_selftest.py checks against the C++),
+and `build()` below is the batch fallback — run it only if the direct path is blocked,
+and say so in the ticket's Log.
 
     (live editor with the MCP server up)
     python3 Tools/bn/bn41_frontend_wbps.py             # build both, delete-first

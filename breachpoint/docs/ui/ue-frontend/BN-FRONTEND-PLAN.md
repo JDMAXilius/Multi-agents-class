@@ -63,8 +63,9 @@ value-right, which is exactly what a cycler looks like.
 
 **WAVE 1 — cloud, DONE this morning:** everything above, pushed to main.
 
-**WAVE 2 — terminal, editor, ~2h (BN41+BN42+BN43):** compile rung 1 → build the four WBPs
-by script at the referee's boxes → build FE_MainMenu.umap → capture map previews → walk
+**WAVE 2 — terminal, editor, ~2h (BN41+BN42+BN43):** compile rung 1 → build the WBPs
+**with the unreal-mcp tools directly** (R46 — the bn41 scripts are the reviewable plan and
+the fallback, not the path) at the referee's boxes → build FE_MainMenu.umap → capture map previews → walk
 the loop in PIE. Gate: **the loop, not the look** — boot→menu→setup→match with the right
 bot count and mode→leave→menu. Ship ugly-but-exact over pretty-but-broken.
 

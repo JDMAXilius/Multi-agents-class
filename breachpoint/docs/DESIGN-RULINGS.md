@@ -726,3 +726,27 @@ re-litigated inside a packet.
   `sightlines.cap_ruling: "R45"`; `arena_plan.py` accepts a cited ruling LOUDLY
   (warning naming the ruling on every affected finding — an audited exception,
   never a quiet weakening). GDD §2.6's cap stands untouched for every other arena.
+
+- **R46 (front end M1). EDITOR JOBS ARE DRIVEN WITH THE UNREAL-MCP TOOLS, DIRECTLY,
+  FROM THE EDITOR SESSION — TICKETS FIRST, PYTHON ONLY WHERE MCP CANNOT.** Founder
+  directive, 1 Sep 2026, verbatim intent: "if it's a job for the cloud terminal, it's
+  in unreal MCP tools. Make sure you create a ticket. Do not go ahead and create
+  Python scripts unless it's not doable. Primary focus of using unreal MCP tools
+  directly from the editor." Applied as three rules:
+  1. **A ticket precedes the work.** Every editor job the cloud hands the terminal is a
+     `TICKET_BN*.md` naming the toolsets, the call sequence, and the receipts owed —
+     never an instruction living only in chat or only inside a script.
+  2. **The primary execution path is `list_toolsets` → `describe_toolset` → `call_tool`**
+     from the editor session, with every write read back (an unverified write is not a
+     write). The ticket's Log plus the `GetWidgetDescription`/read-back receipts are the
+     reproducibility record — this is how law 7's intent (nothing hand-placed, everything
+     reviewable) is satisfied on the MCP path.
+  3. **A Python script is the FALLBACK, not the default**, lawful only where the MCP
+     surface genuinely cannot do the job (no toolset exposes the operation) or for
+     HEADLESS validation that never touches the editor (selftests, plan checks). Using
+     the fallback is recorded in the ticket's Log with the toolset listing that forced
+     it. Existing committed scripts remain as the reviewable PLAN artifact and as batch
+     fallback; new editor work does not start as a script.
+  Amends the practical reading of law 7 for editor-tool work; blockout GEOMETRY
+  generators (manifest -> builder pipelines like BN30/BN33) are unchanged — they are
+  data pipelines, not editor-authoring sessions, and their scripts stay the law.

@@ -1,4 +1,9 @@
-"""BN42 step 5 — FE_MainMenu.umap: the front-end stage.
+"""BN42 step 5 — FE_MainMenu.umap: the front-end stage. FALLBACK ONLY (R46).
+
+The PRIMARY path is direct unreal-mcp calls from the editor session — TICKET_BN42 names
+them (level toolset for new-level/save, ObjectTools for the WorldSettings game-mode
+override, read back). Run this raw-python builder only if the MCP surface genuinely lacks
+a level create/save operation, and record the toolset listing that forced it in the Log.
 
     UnrealEditor-Cmd ... -ExecutePythonScript="Tools/bn/bn41_fe_map.py"
     (or paste into the live editor's Python console — see the BN21 lesson below)
