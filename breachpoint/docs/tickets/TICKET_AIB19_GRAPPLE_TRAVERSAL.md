@@ -172,3 +172,65 @@ Boxes 3 and 4 stay `[ ]`. Box 3 is a THREE-part observation and only the first p
 happened: nobody has watched a bot step off the lip, and no Recruit-tier match has been
 run to prove the skill gate logs zero climbs. Box 4 needs BN23's human proof list, which
 is itself unrun.
+
+### 1 Sep (cloud) — the finding is now MEASURABLE. Instrument landed, diagnosis owed.
+
+The open finding said the remedy branches on a correlation nobody had run, and the
+reason nobody had run it was that **the correlation was not loggable**: `GetGrappleRoute`
+returned two vectors and no name, so every traverse line named only the bot. Two whiffs
+on GP7 and two on GP5 read identically in the log, and they need opposite fixes.
+
+**What changed — the route's own name travels the whole way:**
+
+| Layer | Change |
+|---|---|
+| `Tools/blockout/gen_grapple_routes.py` | emits `Id="GP1"`..`Id="GP8"` from the manifest's own `gp["id"]` — generated, never hand-typed |
+| `Config/DefaultGame.ini` | the block is regenerated; all 8 routes carry `Id=` |
+| `FBNGrappleRoute` | a `UPROPERTY(Config) FName Id` — an older ini with no `Id=` still loads and logs `?` |
+| `IAIBWorldQuery::GetGrappleRoute` | fourth out-param `FName& OutRouteId`; a host that names nothing may leave it `NAME_None` |
+| traverse instance data | `RouteId`, set at the pick, read at every outcome |
+| every traverse log line | now carries the route |
+
+**And the failure line was split, which is the other half of the problem.** One message
+— "hook did not take" — covered two failures with opposite remedies. `bAirborneSeen`
+already knew the difference and nothing asked it:
+
+```
+AIBot: <bot> traverse FAILED on GP7 (REFUSED - never left the ground, rose 3uu of 400uu)
+AIBot: <bot> traverse FAILED on GP7 (SHORT - rode the hook, landed under the lip, rose 260uu of 400uu)
+```
+
+- **REFUSED** = the host's own range/LOS/cooldown validation said no. The bot never
+  left the ground, so the **stand-off** is wrong → `STANDOFF_CAP_M` / `DECK_STANDOFF_M`
+  in the generator, one rerun.
+- **SHORT** = it rode the hook and landed under the lip. The **anchor** is wrong →
+  the manifest (and for GP7/GP8 specifically, the ticket's own standing ruling: the true
+  front lip is the deck's south edge at y 12, filed to the manifest owner).
+
+Raised from `Verbose` to `Log` deliberately: a whiff IS the measurement, and a
+diagnostic that nobody's default verbosity prints is not an instrument.
+
+**The success lines carry the shortfall too** — `made the deck on GP3 (760uu up, wanted
+800uu)` — so a route that technically succeeds while consistently landing 40 cm low is
+visible before it becomes a whiff.
+
+### What the terminal owes now — one match, one grep, and the branch resolves
+
+```
+grep 'AIBot:.* traverse FAILED on ' <log> | sed 's/.*on \(GP[0-9]*\).*(\([A-Z]*\).*/\1 \2/' | sort | uniq -c
+```
+
+Tally REFUSED and SHORT per route id and paste it here. Then:
+
+- **failures concentrate on GP7/GP8** → the blind prediction was right, the manifest
+  ruling stands, file the anchor fix to the manifest owner. Do NOT teach the generator
+  to second-guess authored anchors.
+- **REFUSED dominates across routes** → stand-off, not anchors. Retune the generator
+  constants and rerun; the C++ needs nothing (the generator's docstring says so).
+- **SHORT dominates across routes** → the pull cannot carry the authored rises. That is
+  a BN23 tuning conversation, not a bot bug, and it goes to the founder as one.
+
+**Rung: WRITTEN, NOT COMPILED.** The signature change touches four files; only one
+call site exists and it is updated. The generator's dry-run output was verified and the
+ini block regenerated from it in this session.
+

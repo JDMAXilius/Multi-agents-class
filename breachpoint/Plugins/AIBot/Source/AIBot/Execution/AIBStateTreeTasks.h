@@ -580,6 +580,9 @@ struct FAIBMoveToPOITaskInstanceData
 	uint8 TraversePhase = 0;
 	FVector RouteApproach = FVector::ZeroVector;
 	FVector RouteAnchor = FVector::ZeroVector;
+	/** The host's name for the route in flight, carried from the pick to every outcome
+	 *  line so one grep correlates whiffs against route (AIB19's open finding). */
+	FName RouteId = NAME_None;
 	float PhaseSeconds = 0.f;
 	double NextTraverseAllowedSeconds = 0.0;
 	bool bAirborneSeen = false;

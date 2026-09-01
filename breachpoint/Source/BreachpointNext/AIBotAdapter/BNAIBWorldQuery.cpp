@@ -204,7 +204,7 @@ bool UBNAIBWorldQuery::AreAllies(const AActor* A, const AActor* B) const
 }
 
 bool UBNAIBWorldQuery::GetGrappleRoute(const FVector& NearLocation, FVector& OutApproachPoint,
-	FVector& OutAnchorPoint) const
+	FVector& OutAnchorPoint, FName& OutRouteId) const
 {
 	// Nearest by EITHER end (the ticket's decision): a ground bot is near an approach,
 	// a deck bot is near an anchor, and the same query hands each its own direction.
@@ -227,5 +227,6 @@ bool UBNAIBWorldQuery::GetGrappleRoute(const FVector& NearLocation, FVector& Out
 	}
 	OutApproachPoint = Best->Approach;
 	OutAnchorPoint = Best->Anchor;
+	OutRouteId = Best->Id;
 	return true;
 }

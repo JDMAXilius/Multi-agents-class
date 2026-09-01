@@ -247,6 +247,16 @@ namespace
 	constexpr float SwapSeconds = 0.6f;
 	constexpr int32 MaxSwapPresses = 5;
 
+	/** The host's name for a route, or "?" when the host names none. AIB19's open finding
+	 *  is that ~half of grapple attempts fail to reach the standoff and NOBODY CAN SAY
+	 *  WHICH ROUTES — every line named only the bot, so the remedy (a manifest fix for a
+	 *  bad authored anchor vs a generator retune for a physics shortfall) had nothing to
+	 *  branch on. Every traverse line carries this now. */
+	FString RouteLabel(const FName RouteId)
+	{
+		return RouteId.IsNone() ? FString(TEXT("?")) : RouteId.ToString();
+	}
+
 	/** Sprint is a HOLD: press the rising edge, release the falling one, re-press nothing.
 	 *  A leaked hold rides the persistent ASC into the next life (the host's own leak). */
 	void SetSprint(IAIBAvatarInterface& Avatar, bool& bHeld, bool bWant)
@@ -1366,10 +1376,11 @@ EStateTreeRunStatus FAIBMoveToPOITask::EnterState(FStateTreeExecutionContext& Co
 		IAIBAvatarInterface* Avatar = Bot->GetAvatar();
 		const double Now = Bot->GetWorld()->GetTimeSeconds();
 		FVector Approach, Anchor;
+		FName RouteId = NAME_None;
 		if (Query && Avatar && Avatar->IsGrounded()
 			&& Now >= InstanceData.NextTraverseAllowedSeconds
 			&& Bot->GetSkillProfile().Level(EAIBSkill::Movement) >= EAIBCompetence::Trained
-			&& Query->GetGrappleRoute(Pawn->GetActorLocation(), Approach, Anchor))
+			&& Query->GetGrappleRoute(Pawn->GetActorLocation(), Approach, Anchor, RouteId))
 		{
 			const float SelfZ = Pawn->GetActorLocation().Z;
 			FRandomStream& Random = Bot->GetPolicyRandom();
@@ -1378,6 +1389,7 @@ EStateTreeRunStatus FAIBMoveToPOITask::EnterState(FStateTreeExecutionContext& Co
 			{
 				InstanceData.RouteApproach = Approach;
 				InstanceData.RouteAnchor = Anchor;
+				InstanceData.RouteId = RouteId;
 				InstanceData.Goal = Approach;
 				InstanceData.bHasGoal = true;
 				InstanceData.TraversePhase = 1;
@@ -1387,6 +1399,7 @@ EStateTreeRunStatus FAIBMoveToPOITask::EnterState(FStateTreeExecutionContext& Co
 			{
 				InstanceData.RouteApproach = Approach;
 				InstanceData.RouteAnchor = Anchor;
+				InstanceData.RouteId = RouteId;
 				// The lip: the anchor's spot at the bot's own height — on this deck's
 				// navmesh island by construction, so the walk there is an ordinary walk.
 				InstanceData.Goal = FVector(Anchor.X, Anchor.Y, SelfZ);
@@ -1572,8 +1585,9 @@ EStateTreeRunStatus FAIBMoveToPOITask::TickTraverse(AAIBBotController& Bot, APaw
 		else if ((InstanceData.SecondsWithoutProgress += DeltaTime)
 			>= InstanceData.GiveUpAfterNoProgressSeconds)
 		{
-			UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s could not reach the grapple %s — back to wandering."),
-				*Bot.GetName(), InstanceData.TraversePhase == 1 ? TEXT("approach") : TEXT("lip"));
+			UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s could not reach the grapple %s on %s — back to wandering."),
+				*Bot.GetName(), InstanceData.TraversePhase == 1 ? TEXT("approach") : TEXT("lip"),
+				*RouteLabel(InstanceData.RouteId));
 			InstanceData.TraversePhase = 0;
 			InstanceData.NextTraverseAllowedSeconds = Now + RetrySoonSeconds;
 			return EStateTreeRunStatus::Failed;
@@ -1594,8 +1608,9 @@ EStateTreeRunStatus FAIBMoveToPOITask::TickTraverse(AAIBBotController& Bot, APaw
 			// validation judges it — range, LOS, cooldown — like any player's press.
 			Avatar->PressVerb(AIBTags::Verb_Grapple);
 			Avatar->ReleaseVerb(AIBTags::Verb_Grapple);
-			UE_LOG(LogAIBot, Log, TEXT("AIBot: %s grapples for the high ground (rise %.0fuu)."),
-				*Bot.GetName(), InstanceData.RouteAnchor.Z - Here.Z);
+			UE_LOG(LogAIBot, Log, TEXT("AIBot: %s grapples for the high ground on %s (rise %.0fuu)."),
+				*Bot.GetName(), *RouteLabel(InstanceData.RouteId),
+				InstanceData.RouteAnchor.Z - Here.Z);
 			InstanceData.TraversePhase = 3;
 			InstanceData.PhaseSeconds = 0.f;
 			InstanceData.bAirborneSeen = false;
@@ -1603,8 +1618,8 @@ EStateTreeRunStatus FAIBMoveToPOITask::TickTraverse(AAIBBotController& Bot, APaw
 		}
 		if ((InstanceData.PhaseSeconds += DeltaTime) >= InstanceData.AimTimeoutSeconds)
 		{
-			UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s hook shot never lined up — back to wandering."),
-				*Bot.GetName());
+			UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s hook shot never lined up on %s — back to wandering."),
+				*Bot.GetName(), *RouteLabel(InstanceData.RouteId));
 			InstanceData.TraversePhase = 0;
 			InstanceData.NextTraverseAllowedSeconds = Now + RetrySoonSeconds;
 			return EStateTreeRunStatus::Succeeded;
@@ -1640,16 +1655,33 @@ EStateTreeRunStatus FAIBMoveToPOITask::TickTraverse(AAIBBotController& Bot, APaw
 			: RiseUU < InstanceData.MinTraverseRiseUU * 0.5f);
 		if (bMadeIt && bClimb)
 		{
-			UE_LOG(LogAIBot, Log, TEXT("AIBot: %s made the deck (%.0fuu up)."), *Bot.GetName(), RiseUU);
+			UE_LOG(LogAIBot, Log, TEXT("AIBot: %s made the deck on %s (%.0fuu up, wanted %.0fuu)."),
+				*Bot.GetName(), *RouteLabel(InstanceData.RouteId), RiseUU,
+				InstanceData.RouteAnchor.Z - InstanceData.RouteApproach.Z);
 		}
 		else if (bMadeIt)
 		{
-			UE_LOG(LogAIBot, Log, TEXT("AIBot: %s dropped back down."), *Bot.GetName());
+			UE_LOG(LogAIBot, Log, TEXT("AIBot: %s dropped back down on %s (%.0fuu)."),
+				*Bot.GetName(), *RouteLabel(InstanceData.RouteId), RiseUU);
 		}
 		else
 		{
-			UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s %s — back to wandering."), *Bot.GetName(),
-				bClimb ? TEXT("hook did not take") : TEXT("drop never left the deck"));
+			// TWO DIFFERENT FAILURES wore one message, which is the other half of why
+			// AIB19's finding could not be acted on. bAirborneSeen separates them and
+			// they have OPPOSITE remedies:
+			//   REFUSED    - never left the ground. The host's own range/LOS/cooldown
+			//                validation said no, so the STANDOFF is wrong (generator).
+			//   SHORT      - rode the hook and landed under the lip. The ANCHOR is wrong
+			//                (manifest), or the pull cannot carry that rise.
+			// Logged at Log, not Verbose: a whiff is the thing being measured, and a
+			// diagnostic nobody's default verbosity prints is not an instrument.
+			UE_LOG(LogAIBot, Log,
+				TEXT("AIBot: %s traverse FAILED on %s (%s, rose %.0fuu of %.0fuu) — back to wandering."),
+				*Bot.GetName(), *RouteLabel(InstanceData.RouteId),
+				!InstanceData.bAirborneSeen ? TEXT("REFUSED - never left the ground")
+					: (bClimb ? TEXT("SHORT - rode the hook, landed under the lip")
+							  : TEXT("SHORT - drop never cleared the deck")),
+				RiseUU, InstanceData.RouteAnchor.Z - InstanceData.RouteApproach.Z);
 		}
 		InstanceData.TraversePhase = 0;
 		InstanceData.NextTraverseAllowedSeconds = Now

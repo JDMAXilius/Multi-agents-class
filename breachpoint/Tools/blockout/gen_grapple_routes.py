@@ -73,6 +73,10 @@ def derive(gp: dict) -> tuple[dict, str]:
     standoff = DECK_STANDOFF_M if az > 0 else min(rise, STANDOFF_CAP_M)
 
     route = {
+        # The manifest's own id travels all the way to the bot's log lines (AIB19): a
+        # whiff that names no route cannot tell a bad authored anchor from a physics
+        # shortfall, and those have opposite remedies.
+        "id": gid,
         "approach": (float(loc["x"]), float(loc["y"]) + dir_y * standoff, az),
         "anchor": (float(loc["x"]), float(loc["y"]), float(loc["z"])),
     }
@@ -103,7 +107,8 @@ def main():
         route, why = derive(gp)
         print("  " + why)
         lines.append(f"; {why}")
-        lines.append(f"+GrappleRoutes=(Approach={vec(route['approach'])},Anchor={vec(route['anchor'])})")
+        lines.append(f"+GrappleRoutes=(Id=\"{route['id']}\","
+                     f"Approach={vec(route['approach'])},Anchor={vec(route['anchor'])})")
     lines.append(END)
     block = "\n".join(lines)
 

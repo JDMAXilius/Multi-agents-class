@@ -27,6 +27,12 @@ struct FBNGrappleRoute
 {
 	GENERATED_BODY()
 
+	/** The manifest's own name for this point ("GP1".."GP8"), carried into every bot log
+	 *  line about it. Generated, never hand-typed — see gen_grapple_routes.py. A route
+	 *  from an older ini with no Id= still loads; it just logs as "?". */
+	UPROPERTY(Config)
+	FName Id;
+
 	/** Walkable stand-off point a bot paths to before taking the shot. */
 	UPROPERTY(Config)
 	FVector Approach = FVector::ZeroVector;
@@ -99,7 +105,7 @@ public:
 	 *  bot's nearest APPROACH is its way up, a deck bot's nearest ANCHOR is its way
 	 *  down, and the module never names either. Empty table = false = bots walk. */
 	virtual bool GetGrappleRoute(const FVector& NearLocation, FVector& OutApproachPoint,
-		FVector& OutAnchorPoint) const override;
+		FVector& OutAnchorPoint, FName& OutRouteId) const override;
 
 private:
 	TArray<TWeakObjectPtr<ABNHillPoint>> Hills;

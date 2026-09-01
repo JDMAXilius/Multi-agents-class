@@ -99,8 +99,15 @@ public:
 	 *  learns HOW the host's hook works; it stands at the approach, aims at the anchor,
 	 *  presses AIBot.Verb.Grapple, and the host's own authority validation judges the
 	 *  shot like any player's. */
+	/** OutRouteId is the host's OWN NAME for the route it just handed back (the manifest
+	 *  id, "GP7"), and it exists to make an outcome diagnosable rather than merely
+	 *  countable. AIB19 measured ~half of grapple attempts failing to reach the standoff
+	 *  and could not act on it: the remedy branches on WHICH routes fail — a bad authored
+	 *  anchor is a manifest fix, a physics shortfall is a generator retune — and every log
+	 *  line named only the bot. A host that has no names may leave it NAME_None; the
+	 *  module logs it as "?" and nothing else changes. */
 	virtual bool GetGrappleRoute(const FVector& NearLocation, FVector& OutApproachPoint,
-		FVector& OutAnchorPoint) const { return false; }
+		FVector& OutAnchorPoint, FName& OutRouteId) const { return false; }
 
 	/** Alliance WITHOUT liveness: true iff the game says A and B stand on the same side
 	 *  — a dead teammate is still a teammate, a dead enemy is still an enemy. Exists
