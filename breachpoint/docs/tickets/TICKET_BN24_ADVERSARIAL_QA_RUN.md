@@ -1,8 +1,8 @@
 # TICKET — Compile the adversarial QA probe, run it in PIE, land its report
 
-> STATUS: open — cut by the cloud lead, 28 Aug 2026. Needs one local session with the
-> editor: compile, one PIE run of `bn.aqa.start`, copy the JSON report into
-> `assignments/09-adversarial-qa/report/`.
+> STATUS: open, READY TO RUN — cut by the cloud lead 28 Aug 2026, terminal-ready 1 Sep.
+> Step 0 runs on ANY terminal in 30 seconds. Steps 1–2 need the editor: compile, one PIE
+> run of `bn.aqa.start 300`, then copy the JSON into `assignments/09-adversarial-qa/report/`.
 >
 > UPDATE 1 Sep 2026 (cloud): the RULE LAYER is now split into `QA/BNAQADetectors.h`
 > (engine-free) and proven headless — `assignments/09-adversarial-qa/tests/detector_tests.cpp`
@@ -12,28 +12,47 @@
 > UE and drive a live match.
 
 Founder directive: Assignment #9 (Adversarial QA Agent) requires a structured report
-from **at least one real test run** against BREACHPOINT. The agent code is written
-(`Source/BreachpointNext/QA/BNAdversarialAgent.*`) and is currently **WRITTEN, NOT
-COMPILED** — honesty ladder rung 0. This ticket climbs it to "ran in PIE" and produces
-the report the assignment cannot honestly ship without. The probe is QA-only: dormant
-unless `bn.aqa.start` is issued, never spawned by the mode.
+from **at least one real test run** against BREACHPOINT. This ticket produces that report.
+The probe is QA-only: dormant unless `bn.aqa.start` is issued, never spawned by the mode.
 
 **Ordering law:** compile gates the run; the run gates the assignment's README findings
-section and zip (`assignments/09-adversarial-qa/verify.sh` FAILS until a real report with
-real findings-or-clean-result lands — that failure is the gate working, not a defect).
+section and the zip's FULL-mode verification.
+
+---
+
+## WHICH TERMINAL RUNS WHAT — read this first
+
+| Step | Any terminal (cloud, laptop, no engine) | Local box with UE 5.8 |
+|---|---|---|
+| 0 · rule tests + rubric harness | ✅ **yes** — 30 seconds | yes |
+| 1 · compile the probe | ❌ no engine | ✅ **only here** |
+| 2 · the PIE run | ❌ | ✅ **only here** |
+| 3–5 · land report, README, zip | ✅ yes (needs the report from step 2) | yes |
+
+**If you are on the cloud terminal right now, run step 0 and stop.** It is the whole
+checkable surface; steps 1–2 will fail for lack of an engine, and that is not a defect.
+
+```bash
+# STEP 0 — copy-paste, any terminal:
+cd assignments/09-adversarial-qa && ./verify.sh
+# expect: exit 0 · "44 checks, 0 failure" · "ALL 7 CHECKABLE CRITERIA PASS"
+#         plus 4 PEND lines naming this ticket. PEND is not failure.
+```
 
 ## Kickoff (machine-checkable — the tickets skill verifies these BEFORE a claim)
 
-- requires: editor-live
+- requires: **files-only for step 0** · **editor-live for steps 1–2** (split deliberately:
+  the rule layer was made engine-free so most of this ticket is claimable anywhere)
 - `Source/BreachpointNext/QA/BNAdversarialAgent.cpp` exists and `BreachpointNext.Build.cs`
   lists `"Json"` (both landed with this ticket's cut)
 - owner_path: `Source/BreachpointNext/QA/` `assignments/09-adversarial-qa/`
 
 ## Steps (in order)
 
-0. **Free sanity check before you build anything** (30 seconds, no engine):
-   `cd assignments/09-adversarial-qa && ./verify.sh` — must exit 0 with the 44 detector
-   cases green. If that fails, the rule layer regressed and the PIE run would be wasted.
+0. **The free check, any terminal** (30 seconds, no engine) — command block above. Must
+   exit 0 with the 44 detector cases green. If it fails, the rule layer regressed and a
+   PIE run would be wasted, so fix that first. Needs `python3` and `g++`/`clang++`; if no
+   compiler is present the detector line reads PEND, not FAIL, and everything else still runs.
 1. **Compile** all three targets (`Tools/run-ubt.ps1`). NOTE: `4a87b54e` already compiled
    this probe on 28 Aug (Editor+Game succeeded) after fixing three errors in it — but the
    rule-layer split (`BNAQADetectors.h`, 1 Sep) changed the `.cpp` afterwards, so this is a
@@ -60,6 +79,26 @@ real findings-or-clean-result lands — that failure is the gate working, not a 
    then says the seven detector classes held, which is itself the answer.
 5. **Verify + package**: `cd assignments/09-adversarial-qa && ./verify.sh` (exit 0), then
    `./make_submission.sh`. Commit the zip like #6–#8.
+
+```bash
+# STEPS 3-5 — copy-paste on the machine that did the PIE run:
+cp breachpoint/Saved/AdversarialQA/aqa_report_*.json assignments/09-adversarial-qa/report/
+cd assignments/09-adversarial-qa && ./verify.sh      # now runs in FULL mode
+#   -> "README findings still pending" is EXPECTED here; do step 4, then re-run.
+$EDITOR README.md                                    # fill the two FILL AFTER RUN blocks
+./verify.sh && ./make_submission.sh                  # exit 0, then the zip
+git add -A . && git commit -m "#9: the PIE run and its findings" && git push -u origin main
+```
+
+### If the run misbehaves
+
+| Symptom | Cause / fix |
+|---|---|
+| `bn.aqa.start: no ABNGameMode in this world` | You are not in a BN map. Start PIE on the BN arena. |
+| `authority worlds only` | You typed it on a client window. Use the server/PIE window. |
+| Probe spawns but never moves | No navmesh — `roam` needs one; `boundary_probe`/`ledge_dive` are un-pathed and still work. Not a bug in the probe; note it in the Log. |
+| Zero findings after 300s | A legal result. Rerun once at `bn.aqa.start 600` before accepting it; if still clean, README step 4 says so plainly and that IS the answer. |
+| A finding you know is bogus | That is a false positive and it matters more than the finding. Record it in this Log — its excuse case belongs in `detector_tests.cpp`. |
 
 ## Done when
 
