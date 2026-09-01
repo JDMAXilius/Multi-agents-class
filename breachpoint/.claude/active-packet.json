@@ -1,10 +1,14 @@
 {
- "ticket": "BN24-adversarial-qa-run",
+ "ticket": "BN41-frontend-compile",
  "owner_path": [
-  "Source/BreachpointNext/QA/",
-  "breachpoint/Source/BreachpointNext/QA/",
-  "assignments/09-adversarial-qa/",
-  "docs/tickets/"
+  "Source/BreachpointNext/",
+  "breachpoint/Source/BreachpointNext/",
+  "Config/",
+  "breachpoint/Config/",
+  "Tools/bn/",
+  "breachpoint/Tools/bn/",
+  "docs/tickets/",
+  "docs/ui/ue-frontend/"
  ],
- "note": "Assignment #9 PIE run. Step 0 files-only (done). Step 1 engine-installed (build). Step 2 editor-live: R29 one editor, one driver, no C++ build while it is open. Previous packet BN31-BN34 superseded; recover from git if resumed."
+ "note": "BN41 rung 1 + the two high findings bn-critic raised against the WAVE-1 front-end M1 diff (BNUIManager stale root layout, BNPlayerController LeaveMatch on a listen host). Tools/bn/ is in scope for BN42's plan-file box corrections. LAUNCHER install: BreachpointServer cannot link on this machine, so rung 1 here is PARTIAL by environment, never a three-target green (see BN38). Previous packet BN24-adversarial-qa-run superseded - assignment #9 shipped in f387a6f2."
 }
