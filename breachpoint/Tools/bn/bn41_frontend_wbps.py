@@ -51,6 +51,7 @@ VBOX = '/Script/UMG.VerticalBox'
 BUTTON = '/Script/UMG.Button'
 IMAGE = '/Script/UMG.Image'
 TEXT = '/Script/CommonUI.CommonTextBlock'
+SIZEBOX = '/Script/UMG.SizeBox'
 
 # hud/panel #0A1018 at 0.88 and the scrim — the two grounds this file is allowed to tint
 # (00-HUD-MEASURED colour table; the referee's notch language ships M2, a flat panel M1).
@@ -86,9 +87,25 @@ def menu_pad():
 
 
 def row_pitch(bottom=12.0):
-    # 28-high rows at pitch 40 (referee §1 Text Button): the 12 lives in the slot.
+    # 28-high rows at pitch 40 (referee §1 Text Button): the 12 lives in the slot, and the
+    # 28 lives in the row's SizeBox below — it is NOT free. MEASURED in the editor 1 Sep:
+    # a bare UButton auto-sizing to its 14pt label renders 311x31, so four rows came to 160
+    # and OVERFLOWED the 148 content box of the 186-high menu panel (186 - 2*19). With the
+    # SizeBox: 4*28 + 3*12 = 148 exactly. That arithmetic is why 28 is load-bearing, not a nit.
     return {"padding": {"left": 0.0, "top": 0.0, "right": 0.0, "bottom": float(bottom)},
             "horizontalAlignment": "HAlign_Fill", "verticalAlignment": "VAlign_Top"}
+
+
+ROW_H = 28.0   # referee §1 Text Button height; enforced, never inherited from the font
+
+
+def row_box(name, bottom=12.0):
+    """The SizeBox that PINS a menu row to 28. Wraps the button; the button then fills it."""
+    return (name, SIZEBOX, 'MenuColumn', row_pitch(bottom),
+            {"bOverride_HeightOverride": True, "heightOverride": ROW_H}, False, None)
+
+
+BTN_FILL = {"horizontalAlignment": "HAlign_Fill", "verticalAlignment": "VAlign_Fill"}
 
 
 # Node schema: (name, class, parent, slotProps, widgetProps, bind, fontSize)
@@ -122,14 +139,19 @@ def frontend_plan():
         ('MenuColumn', VBOX, 'MenuPanel',
          {"horizontalAlignment": "HAlign_Fill", "verticalAlignment": "VAlign_Fill",
           "padding": {"left": 0.0, "top": 0.0, "right": 0.0, "bottom": 0.0}}, None, False, None),
-        # rows 311x28 pitch 40 (`I…21:32897..900`): PLAY live, two dead, QUIT live
-        ('PlayButton', BUTTON, 'MenuColumn', row_pitch(), None, True, None),
+        # rows 311x28 pitch 40 (`I…21:32897..900`): PLAY live, two dead, QUIT live.
+        # The SizeBox is what makes 28 true — see row_pitch's note; without it the row is 31.
+        row_box('PlayRowBox'),
+        ('PlayButton', BUTTON, 'PlayRowBox', BTN_FILL, None, True, None),
         ('PlayLabel', TEXT, 'PlayButton', None, {"text": "PLAY"}, False, 14),
-        ('CustomsButton', BUTTON, 'MenuColumn', row_pitch(), {"bIsEnabled": False}, False, None),
+        row_box('CustomsRowBox'),
+        ('CustomsButton', BUTTON, 'CustomsRowBox', BTN_FILL, {"bIsEnabled": False}, False, None),
         ('CustomsLabel', TEXT, 'CustomsButton', None, {"text": "CUSTOM GAMES"}, False, 14),
-        ('AcademyButton', BUTTON, 'MenuColumn', row_pitch(), {"bIsEnabled": False}, False, None),
+        row_box('AcademyRowBox'),
+        ('AcademyButton', BUTTON, 'AcademyRowBox', BTN_FILL, {"bIsEnabled": False}, False, None),
         ('AcademyLabel', TEXT, 'AcademyButton', None, {"text": "ACADEMY"}, False, 14),
-        ('QuitButton', BUTTON, 'MenuColumn', row_pitch(0.0), None, True, None),
+        row_box('QuitRowBox', 0.0),
+        ('QuitButton', BUTTON, 'QuitRowBox', BTN_FILL, None, True, None),
         ('QuitLabel', TEXT, 'QuitButton', None, {"text": "QUIT"}, False, 14),
         ('DescriptionPanel', BORDER, 'FrontEndCanvas',
          {"layoutData": topleft(69, 611, 349, 37), "bAutoSize": False},   # Description `I…7:7384`
@@ -161,8 +183,13 @@ def value_row(prefix, label):
     """One MAP/MODE/BOTS row: a bound Button whose child Overlay carries the label left
     and the BOUND value right — the reference UI's label-left / value-right row."""
     return [
-        (prefix + 'Button', BUTTON, 'MenuColumn', row_pitch(), None, True, None),
-        (prefix + 'Row', OVERLAY, prefix + 'Button', None, None, False, None),
+        row_box(prefix + 'RowBox'),
+        (prefix + 'Button', BUTTON, prefix + 'RowBox', BTN_FILL, None, True, None),
+        # MEASURED 1 Sep: with the ButtonSlot left at its default (Center) the Overlay
+        # shrink-wraps to its widest child, so HAlign_Left/Right resolve INSIDE that shrunk
+        # box and label and value land on top of each other (MapLabel x97 vs MapValue x95).
+        # Filling the ButtonSlot is what makes label-left / value-right an actual split.
+        (prefix + 'Row', OVERLAY, prefix + 'Button', BTN_FILL, None, False, None),
         (prefix + 'Label', TEXT, prefix + 'Row',
          {"horizontalAlignment": "HAlign_Left", "verticalAlignment": "VAlign_Center",
           "padding": {"left": 4.0, "top": 0.0, "right": 0.0, "bottom": 0.0}},
@@ -208,7 +235,8 @@ def playsetup_plan():
     plan += value_row('Mode', 'MODE')
     plan += value_row('Bots', 'PLAYERS')
     plan += [
-        ('StartButton', BUTTON, 'MenuColumn', row_pitch(0.0), None, True, None),
+        row_box('StartRowBox', 0.0),
+        ('StartButton', BUTTON, 'StartRowBox', BTN_FILL, None, True, None),
         ('StartLabel', TEXT, 'StartButton', None, {"text": "START GAME"}, False, 14),
         ('BreakdownPanel', BORDER, 'SetupCanvas',
          {"layoutData": topleft(466, 76, 349, 332), "bAutoSize": False},  # Breakdown `21:43050`

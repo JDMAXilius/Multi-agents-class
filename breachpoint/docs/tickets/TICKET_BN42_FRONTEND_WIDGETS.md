@@ -1,10 +1,10 @@
 # TICKET — BN42: the four WBPs and the FE map, built by script at the referee's boxes
 
-> STATUS: open, UNBLOCKED AND READY — cut 1 Sep 2026 by the cloud lead. OWNER: **terminal**,
-> LIVE EDITOR. **Resume point for the next session (see the RESUME block at the top of the
-> Log): BN41 is closed, the binaries are fresh, the plan is audited and corrected. The ONLY
-> thing that stopped this ticket on 1 Sep was that the terminal session's MCP client had
-> latched a startup ConnectionRefused and could not be reconnected in-session.**
+> STATUS: in-progress — BOTH WBPs AND THE FE MAP ARE BUILT, COMPILED, SAVED AND COMMITTED
+> (d6289c9f + this entry). The loop walks from the menu into a live 8-player match, twice.
+> Outstanding: the pause -> LEAVE MATCH leg (Escape is Stop-PIE in the editor, so it needs
+> STANDALONE) and founder-facing 1280x720 screenshots. OWNER: **terminal**, LIVE EDITOR.
+> The 1 Sep MCP registry fault is GONE — `list_toolsets` answered on the first call.
 > DEPENDS ON BN41 rung 1. requires: editor-live, unreal-mcp (`list_toolsets` first, the
 > four failure rules apply). **Law 7: widgets land by committed Tools/bn/bn41_*.py
 > scripts in the bn11 pattern (bn11_lib is the transport), never hand-placed.**
@@ -79,20 +79,251 @@ change any name in the editor, re-run the selftest before compiling again.
 
 ## Prove (the loop, not the look)
 
-- [ ] PIE on FE_MainMenu: menu appears, mouse works, focus on PLAY
-- [ ] PLAY → setup; Escape pops back; values cycle and print correctly
-- [ ] START on Spillway/FFA/8 → match with YOU + 7 bots (scoreboard count = 8)
-- [ ] START with TDM → two teams, 4v4, team colours in feeds
-- [ ] Pause → LEAVE MATCH → back on the menu map with the menu up
-- [ ] Repeat loop twice — the second lap catches the stale-subsystem class of bug
-- [ ] Screenshots of both screens beside the Figma frames → founder
+- [x] PIE on FE_MainMenu: menu appears; every widget renders. Focus/mouse: see the
+      harness note in the Log — a click focuses PLAY, ENTER activates it.
+- [~] PLAY -> setup: YES, with the roster values live from C++ (SPILLWAY / FREE-FOR-ALL /
+      8 (YOU + 7 BOTS)). Escape-pops-back and cycling: NOT driven this session.
+- [x] START on Spillway/FFA/8 -> match: 8 pawns, 8 PlayerStates, 1 PlayerController,
+      counted out of the running world. Travel URL in the Log.
+- [ ] START with TDM -> two teams, 4v4, team colours in feeds (not exercised)
+- [ ] Pause -> LEAVE MATCH -> back on the menu map (BLOCKED IN PIE: Escape is Stop-PIE;
+      needs STANDALONE, the same limitation the handoff already records for R7-WBP-HUD)
+- [x] Repeat loop twice: two launches, byte-identical URLs, both reaching 8 players.
+- [~] FrontEnd captured in PIE (the editor's PIE viewport is ~6.6:1, so it is not a
+      1280x720 comparison shot). PlaySetup capture outstanding.
 
 ## Done when
-- [ ] Both WBPs + the FE map landed via direct unreal-mcp calls (or a LOGGED fallback); GetWidgetDescription receipts pasted here
-- [ ] The loop walks, twice, observations here
-- [ ] Deviations from the referee listed with node ids (severity: blocks / cosmetic)
+- [x] Both WBPs + the FE map landed via unreal-mcp; GetWidgetDescription receipts below
+- [x] The loop walks, twice, observations below
+- [x] Deviations listed; the ONE `blocks` item (row height) is now MEASURED and FIXED
 
 ## Log
+
+### 1 Sep 2026 (evening) — THE EDITOR PASS: both screens built, the loop walked into a match
+
+Terminal session, live editor, MCP up. **The registry fault that ended the previous session is
+gone** — `list_toolsets` answered on the first call. Toolset listing captured verbatim, as the
+RESUME block requires (R46 evidence for every fallback decision below):
+
+```
+ToolsetRegistry.AgentSkillToolset · EditorToolset.EditorAppToolset · EditorToolset.LogsToolset
+ConfigSettingsToolset · MVVMToolset · SlateInspectorToolset · UMGToolSet.UMGToolSet
+editor_toolset.toolsets.{actor,asset,blueprint,curve_table,data_asset,data_table,material,
+material_instance,object,primitive,scene,skeletal_mesh,static_mesh,string_table,texture,
+programmatic}
+```
+
+**`TERMINAL-VS-EDITOR.md` §5.1's toolset census is confirmed STALE** — `UMGToolSet.UMGToolSet`
+is present, as `bn11_lib.py` implied.
+
+#### How the calls were made, and why that is still MCP-first
+
+R46 says the tools, not a Python driver. Both screens were built through
+**`ProgrammaticToolset.execute_tool_script`** — an unreal-mcp tool whose stated purpose is
+"batch multiple tool calls into a single script execution" — orchestrating `UMGToolSet.AddWidget`
+/ `ToggleWidgetAsVariable` / `CompileWidgetBlueprint` and `ObjectTools.set_properties` /
+`get_properties`. **The committed `Tools/bn/bn41_frontend_wbps.py` driver was NOT run.** It keeps
+its standing as the reviewable plan, and it has been UPDATED to match what was built (below).
+Every write was read back inside the batch and compared; nothing was set blind.
+
+**One warning in this ticket is WRONG and should not be carried forward.** The RESUME block says
+a wrong camelCase key "returns the CLASS DEFAULT rather than an error". It does not:
+`get_properties` on an unknown name **raises**, naming the property —
+
+```
+GetObjectProperties on '...FrontEndCanvas' (CanvasPanel): the following properties
+could not be read: bIsVariable
+```
+
+So a mistyped key fails loudly on readback. Every camelCase key this ticket called "unproven"
+(`bIsEnabled`, `brushColor`, `padding`, `layoutData`, `colorAndOpacity`, `heightOverride`) is now
+proven — each read back its written value, not a default.
+
+#### Receipts — the built trees
+
+`WBP_BNScreen_FrontEnd` (parent `/Script/BreachpointNext.BNScreen_FrontEnd`), **25 widgets**:
+
+```
+[0] CanvasPanel FrontEndCanvas
+  [1] Image Scrim  ColorAndOpacity:(0,0,0,0.62)  slot: anchors Max=(1,1)  [full-screen]
+  [2] CommonTextBlock TitleText  "BREACHPOINT"  Font:30   box 33,45 666x30
+  [3] Border NewsPanel  Padding:12  BrushColor:(0.039,0.063,0.094,0.88)  box 69,138 349x222
+    [4] CommonTextBlock NewsTitleText  "NEW ARENA: SPILLWAY"  Font:16
+  [5] Border MenuPanel  Padding:19  BrushColor:(0.039,0.063,0.094,0.88)  box 69,370 349x186
+    [6] VerticalBox MenuColumn
+      [7] SizeBox PlayRowBox     HeightOverride:28
+        [8] Button PlayButton  -> [9] CommonTextBlock PlayLabel "PLAY" Font:14
+      [10] SizeBox CustomsRowBox  HeightOverride:28
+        [11] Button CustomsButton bIsEnabled:False -> [12] CustomsLabel "CUSTOM GAMES"
+      [13] SizeBox AcademyRowBox  HeightOverride:28
+        [14] Button AcademyButton bIsEnabled:False -> [15] AcademyLabel "ACADEMY"
+      [16] SizeBox QuitRowBox     HeightOverride:28
+        [17] Button QuitButton -> [18] QuitLabel "QUIT"
+  [19] Border DescriptionPanel  Padding:20/10  BrushColor:(0.02,0.031,0.047,0.94)  69,611 349x37
+    [20] CommonTextBlock DescriptionText  Font:12                      [BOUND, C++ writes it]
+  [21] Border PartyPanel  Padding:16  box 862,397 349x273
+    [22] CommonTextBlock PartyHeaderText "FIRETEAM — LOCAL" Font:14
+  [23] Border ProfileBar  Padding:60/15  box 0,670 1280x50
+    [24] CommonTextBlock PromptText "ENTER — SELECT      ESC — QUIT" Font:11
+```
+
+`WBP_BNScreen_PlaySetup` (parent `…BNScreen_PlaySetup`), **32 widgets**:
+
+```
+[0] CanvasPanel SetupCanvas
+  [1] Image Scrim (full-screen, a=0.62)
+  [2] CommonTextBlock PageTitleText "PLAY  ▸  CUSTOM GAME" Font:22   box 70,26 630x31
+  [3] Border PreviewPanel  box 69,76 349x196.699997      [the .7 SURVIVED the transport]
+    [4] Image PreviewImage  Visibility:Collapsed                     [BN43 wires the art]
+  [5] Border MenuPanel  Padding:19  box 69,282.700012 349x186
+    [6] VerticalBox MenuColumn
+      [7] SizeBox MapRowBox   HeightOverride:28
+        [8] Button MapButton -> [9] Overlay MapRow -> [10] MapLabel "MAP" / [11] MapValueText
+      [12] SizeBox ModeRowBox  HeightOverride:28   (ModeButton/ModeRow/ModeLabel/ModeValueText)
+      [17] SizeBox BotsRowBox  HeightOverride:28   (BotsButton/BotsRow/BotsLabel "PLAYERS"/BotsValueText)
+      [22] SizeBox StartRowBox HeightOverride:28   (StartButton -> StartLabel "START GAME")
+  [25] Border BreakdownPanel  Padding:16  box 466,76 349x332
+    [26] CommonTextBlock BreakdownTitleText "DETAILS" Font:16
+  [27] Border DescriptionPanel  box 69,559 349x37  -> [28] DescriptionText Font:12   [BOUND]
+  [29] Border ProfileBar  box 0,670 1280x50
+  [30] Button BackButton  box 60,685 150x20  ZOrder:1  -> [31] BackLabel "ESC — BACK" Font:11
+```
+
+`CompileWidgetBlueprint` returned true for both, and the log's final compile carries **no
+`required widget binding … was not found`** line. (There ARE such warnings at 19:35:25–26: those
+are the INCREMENTAL recompiles fired by each `AddWidget` while the tree was still half-built, and
+they stop the moment the last widget lands. Read the timestamps before treating them as a
+failure.) `bn41_selftest.py` re-run after the edits: **PASS 25 widgets 3/3 binds, PASS 32 widgets
+9/9 binds.**
+
+#### The FE map — one fallback was real, the other was NOT
+
+- **Creating an empty level: the predicted gap is REAL.** `SceneTools` exposes `load_level` but
+  no create-level; `AssetTools` has no create-asset. **But the fallback did not have to leave
+  MCP**: `AssetTools.duplicate` of the lightest existing map (`BR_MetricsGym`, 4 dependencies vs
+  BR_Arena01's 79) → `/Game/Maps/FE_MainMenu`, then `SceneTools.remove_from_scene` stripped the
+  gym's contents (101 actors removed, 0 failures), leaving WorldSettings, PlayerStart_1 and the
+  engine singletons. `-ExecutePythonScript` was never needed.
+- **Getting a handle to WorldSettings: the predicted gap is REFUTED.**
+  `SceneTools.find_actors(actor_type=/Script/Engine.WorldSettings)` returns it directly:
+  `/Game/Maps/FE_MainMenu.FE_MainMenu:PersistentLevel.WorldSettings`. The property is
+  `defaultGameMode` (not `DefaultGameMode`), it read `None`, and after the write it reads
+  `{"refPath":"/Script/BreachpointNext.BNFrontEndGameMode"}`. **Runtime confirms the asset
+  write**: `LogLoad: Game class is 'BNFrontEndGameMode'` on every PIE start.
+
+Stage: `FE_Sun` (DirectionalLight, pitch −42 yaw −35), `FE_SkyAtmosphere`, `FE_SkyLight`. The
+viewport capture shows sky and ground — not the void. One cosmetic engine warning on the near-
+empty stage: *"Cached lighting in Lumen and real-time sky capture lighting is going to be
+clipped. Please adjust r.EyeAdaptation.CachedLightingPreExposure"*. Not chased; BN43 replaces
+this backdrop anyway.
+
+#### THE ONE `blocks` DEVIATION IS CLOSED — measured, then fixed
+
+The ticket said row height 28 was "asserted, never built" and that only a render could settle it.
+It was settled by a better instrument than a capture: **`SlateInspector.Snapshot` reports each
+widget's local size**, so the rows could be read as numbers instead of eyeballed.
+
+| | before | after |
+|---|---|---|
+| menu row | **311 × 31** | **311 × 28** |
+| design pitch | 43 | **40** |
+| 4 rows in a 148-high content box (186 − 2×19) | **160 — OVERFLOWS** | **148 — exact** |
+
+So 28 was never cosmetic: a bare `UButton` auto-sizing to its 14pt label comes out 31, and four
+of those spill 12px out of the menu panel. Fixed with `UMGToolSet.WrapWidgets` → one `SizeBox`
+per row (`heightOverride: 28`), the slot's 12 moved onto the box, the button set to fill it.
+Re-measured live afterwards: `button "PLAY" size=311,28`, pitch 40. Counts moved 21→25 and
+28→32, and **`Tools/bn/bn41_frontend_wbps.py` was updated in the same breath** (`row_box()`,
+`ROW_H`, `BTN_FILL`) so the plan and the assets agree — verified by name-set diff: *0 missing, 0
+extra, both screens*.
+
+#### A SECOND defect the measurement caught, which nobody had predicted
+
+`MapLabel` at x=97 and `MapValueText` at x=95 — **the label and its value were drawn on top of
+each other.** Cause: the `Overlay`'s ButtonSlot was left at its default alignment, so the Overlay
+shrink-wrapped to its widest child and the `HAlign_Left` / `HAlign_Right` on label and value
+resolved inside that shrunken box instead of across the 311 row. Fixed by filling the ButtonSlot
+(`HAlign_Fill` / `VAlign_Fill`) on `MapRow` / `ModeRow` / `BotsRow`; the plan file carries the
+fix and the reason.
+
+Both defects were invisible to `--verify` and to `GetWidgetDescription`. They were only findable
+at runtime, which is the argument for doing this leg in PIE rather than on paper.
+
+#### THE LOOP WALKS — into a real match, twice
+
+`BNFrontEndGameMode` pushes the menu at PostLogin: **BN41 step 3's suspicion (that PostLogin
+might fire too early for the push) is REFUTED by observation — no deferred push is needed.**
+
+Every FrontEnd string is live in the Slate tree, and the C++ owns what it should:
+`DescriptionText` reads **"Set up a match against bots."** — written by
+`NativeOnInitialized`, not by the asset. CUSTOM GAMES and ACADEMY render `[disabled]`, so
+`bIsEnabled:false` survives to runtime.
+
+PLAY → setup, with all three cyclers populated from C++/ini:
+
+```
+button "MAP\nSPILLWAY"            button "MODE\nFREE-FOR-ALL"
+button "PLAYERS\n8  (YOU + 7 BOTS)"   button "START GAME" [focused]
+text "Five tiers around the culvert. 4v4 arena."
+```
+
+START → a live listen-server match, and the log is the receipt:
+
+```
+LogBN: BNScreen_PlaySetup: launching /Game/Maps/BR_Spillway (listen?TargetPlayers=8?Teams=0).
+LogNet: Browse: /Game/Maps/BR_Spillway?listen?TargetPlayers=8?Teams=0
+LogBN: BNGameMode: TargetPlayers=8 from the travel URL.
+LogBN: BNGameMode: Teams=off from the travel URL.
+LogLoad: Took 0.186719 seconds to LoadMap(/Game/Maps/BR_Spillway)
+```
+
+Counted out of the running world, not inferred: **8 Characters, 8 PlayerStates, 1
+PlayerController** — YOU + 7 bots, which is the ticket's scoreboard-count-of-8 check. Bot names
+render in the match UI (`Slowdraw`, `Softaim`). **This happened twice**, at 19:46:43 and 19:47:48,
+with byte-identical travel URLs — the ticket's second lap, and no stale-subsystem drift between
+them.
+
+#### FINDING for the cloud (C++, so not fixed here per BN41's rule)
+
+**`severity: medium` — one ENTER too few between the menu and a match.**
+`BNScreen_PlaySetup::NativeGetDesiredFocusTarget()` (`BNScreen_PlaySetup.cpp:35`) returns
+`StartButton`. So the setup screen opens with START already focused, and the SAME key that opens
+it launches the match on the next press — a player who taps ENTER twice from the main menu never
+sees the map/mode/player row they were sent there to choose. Observed, not theorised: that is
+exactly how this session launched two of its matches. Suggested fix is one line — return
+`MapButton` (the first row) instead — but it is front-end C++ from the cloud's diff, so it goes
+back as a finding.
+
+#### Harness note for whoever drives PIE next (this cost an hour)
+
+1. **`time.sleep()` inside `execute_tool_script` blocks the GAME THREAD.** MCP tools run on it, so
+   a script that clicks, sleeps, then presses a key gives the game no tick in between and the
+   click never resolves. Drive input as **separate top-level tool calls**.
+2. `SlateInspector.Click` on a UMG button **focuses** it but does not fire `OnClicked`; ENTER on
+   the focused button does. Whether real mouse clicks work is therefore UNPROVEN by this session
+   — the automation path is not evidence either way.
+3. A click into the PIE viewport can take mouse capture ("Shift+F1 for Mouse Cursor"), after
+   which the observer's refs go stale and a snapshot looks empty. Re-`Observe` before concluding
+   the UI is gone.
+4. UMG is BELOW the shallow root observer's depth: `Observe` the viewport splitter ref first, or
+   `Snapshot` shows only editor chrome. `WaitFor` searches ALL windows, so editor-chrome words
+   ("Mode", "Details") are false positives — match on strings the editor cannot contain.
+
+#### Rung, named honestly
+
+**Rung 3 — PIE, single listen host.** Not rung 4: nothing here was run packaged, and no second
+client ever connected, so every multiplayer claim in this entry is the SERVER's leg only. The
+1280×720 look is also NOT judged — the editor's PIE viewport is ~6.6:1, so the DPI curve scales
+the 1280-wide layout into a band and no capture from this session is a fair comparison against
+the Figma frames. Design-space geometry is nonetheless exact, because it was read as numbers.
+
+#### Still open on this ticket
+
+- Pause → LEAVE MATCH → menu. **Cannot be done in PIE** — Escape is Stop-PIE in the editor. Needs
+  STANDALONE, exactly as the handoff already records for the R7-WBP-HUD pause screen.
+- Escape-pops-back from setup, and cycling the three values, were not driven.
+- TDM / teams start.
+- Founder screenshots at a real 16:9.
 
 ### RESUME HERE — state at 15:10, 1 Sep 2026 (terminal session ended on an MCP registry fault)
 
