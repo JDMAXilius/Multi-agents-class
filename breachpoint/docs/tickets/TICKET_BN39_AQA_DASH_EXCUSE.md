@@ -1,7 +1,9 @@
-# TICKET — Give the speed detector a launch excuse, and pin it with a test
+# TICKET — The speed detector convicts a GROUNDED GRAPPLE PULL. Fix the excuse, or the pull.
 
-> STATUS: open — cut by the mac terminal 31 Aug 2026, from BN24's first real run. Small,
-> files-only, and the test proves it without an engine.
+> STATUS: open — cut 31 Aug 2026 from BN24's run. **REWRITTEN 03:2x UTC: the original cut
+> blamed the DASH and was wrong.** The convicting number is 1800 uu/s, which is
+> `GrapplePullSpeedUU`, not `DashSpeedUU` (2000) — and the probe never presses `Input.Dash`.
+> Step 1 is now a design question, not a detector tweak.
 
 Founder directive: BN24's 300s run produced two `speed_violation` findings that are **false
 positives**, and a false positive in a QA agent is worse than a missed bug — it teaches the
@@ -101,3 +103,73 @@ plus the movement ability source before the claim was made; the first reading of
 rows was "a movement exploit", and reading `LaunchCharacter`'s `bZOverride=false` is what
 turned it into a detector bug instead. Recorded because the direction of that correction is
 the point: the probe was right that something was odd, and wrong about what.
+
+
+---
+
+## REWRITE, 31 Aug 2026 — the original diagnosis was wrong
+
+**What I got wrong.** The first cut of this ticket said the two `speed_violation` findings
+were a grounded *dash*, and proposed a launch-recency excuse. Wrong mechanic, wrong fix. The
+evidence that settles it:
+
+| | |
+|---|---|
+| finding says | `ground speed 1800 uu/s vs MaxWalkSpeed 250 (x7.20)` |
+| `BNCharacterMovementComponent.h:89` | `GrapplePullSpeedUU = 1800.f` ← exact match |
+| `BNMovementAbilities.h:181` | `DashSpeedUU = 2000.f` ← not this |
+| the probe's press lists | press `Input_Grapple` (grapple_abuse, ability_mash); **never** `Input_Dash` |
+| `LaunchCharacter` in the module | exactly one call site, the dash — so the 1800 is not a launch at all |
+
+**The real mechanism.** `UBNCharacterMovementComponent::StartGrapplePull` leaves walking
+**only at pull start**:
+
+```cpp
+// Off the ground first: a grounded MoveToForce fights floor snapping every frame.
+if (IsMovingOnGround()) { SetMovementMode(MOVE_Falling); }
+```
+
+Nothing re-airborne-s the character if it lands mid-pull, so the root-motion source keeps
+driving it ALONG THE GROUND at 1800 uu/s. Not a landing blip either: the two records are
+1,905 uu apart, 1s apart, both at 1800 — roughly a second of grounded travel at 7.2x the
+walk cap.
+
+## Step 1, replacing the original — this is a DESIGN question, and it is the founder's
+
+Is a grounded 1800 uu/s grapple slide **intended**?
+
+- **A · intended** (the pull owns the character until it completes, ground or air). Then the
+  detector is wrong and the fix is one excuse: pass
+  `UBNCharacterMovementComponent::IsGrapplePullActive()` into `BNAQA::SpeedViolation` and
+  excuse it, exactly as `!bOnGround` excuses flight today. Root motion has its own envelope —
+  that sentence is already in the rule's comment; it just was not wired up.
+- **B · not intended** — a ground-skimming grapple that outruns every movement rule is an
+  exploit a player will find in a week. Then the detector was RIGHT, this is a real `high`
+  finding, and the fix belongs in `StartGrapplePull` (re-enter falling, or terminate the pull
+  on landing), with the detector left alone.
+
+**Recommendation: ask, do not guess.** Under A the excuse is 3 lines and 2 test cases. Under B
+adding the excuse would *hide a real exploit* — the worst outcome available here, and the
+reason the original "just add a launch window" fix was dangerous as well as wrong.
+
+`bRestrictSpeedToExpected = false` on the pull source (`BNCharacterMovementComponent.cpp:151`)
+is a hint the speed is deliberate, but a hint is not a ruling.
+
+## Steps, replacing the original 2-5
+
+2. **(A only)** `BNAQA::SpeedViolation` takes a fourth argument — an "under root motion"
+   bool — and excuses it. Keep the header engine-free: the CALL SITE reads
+   `IsGrapplePullActive()`, the rule just receives a bool.
+3. **(A only)** `tests/detector_tests.cpp`: grounded + over-envelope + root motion = excused;
+   grounded + over-envelope + no root motion = still convicts. Both halves, as every rule.
+4. **(B only)** Fix `StartGrapplePull`/`StopGrapplePull` so the pull cannot drive a grounded
+   character, and re-run BN24's probe to confirm the finding disappears for the right reason.
+5. Either way: `assignments/09-adversarial-qa/README.md` already carries the corrected
+   explanation and names this fork — update it with whichever way the ruling goes.
+
+## Log, appended
+
+**31 Aug 2026 — the correction.** Caught by asking why the probe would dash when it never
+presses dash. The lesson is the ticket's own: the first explanation fit the physics (a
+grounded impulse beyond the walk cap) and was still the wrong mechanic, because I matched a
+*shape* instead of the *number*. 1800 was in the report the whole time.

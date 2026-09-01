@@ -104,21 +104,41 @@ noting the detector's excuse policy did its job here — a *rejected* move reque
 finding, and a frozen pawn is not a finding; this fired only where a route was granted and
 then betrayed.
 
-**`speed_violation` — 2 records, 8 occurrences — a false positive, and it matters more than
-a real one.** Both fired during `ability_mash`, both reading `ground speed 1800 uu/s vs
-MaxWalkSpeed 250 (x7.20)`, one second apart at sim 109s and 110s. This is **not** a movement
-exploit. `BNMovementAbilities.h:181` sets `DashSpeedUU = 2000.f`, and
-`BNMovementAbilities.cpp:491` launches the dash with
-`LaunchCharacter(Direction * DashSpeedUU, bXYOverride=true, bZOverride=false)` — Z is
-deliberately not overridden, so a grounded dash keeps its feet on the floor.
-`BNAQA::SpeedViolation`'s only excuse is `!bOnGround`, written for falling and grapple
-flight; a dash is a third legal envelope the policy never learned, and it is precisely the
-one that stays grounded. The `250` is not the base walk speed either — it is the ADS slow-GE's
-`MoveSpeed` arriving through `BNCharacter.cpp:551`, so the x7.20 ratio measures a dash
-against a deliberately-reduced cap. **The detector is wrong, the game is right.** Filed as
-`TICKET_BN39_AQA_DASH_EXCUSE` with the fix (a launch-recency excuse, not an absolute
-ceiling — a ceiling would bless a permanent 2000 uu/s glide, trading this false positive for
-the false negative the detector exists to catch).
+**`speed_violation` — 2 records, 8 occurrences — a grounded grapple pull, and the detector's
+excuse policy is wrong about it.** Both fired during `ability_mash`, both reading
+`ground speed 1800 uu/s vs MaxWalkSpeed 250 (x7.20)`, one second apart at sim 109s and 110s.
+The convicting number is `1800` exactly, and that is not a coincidence:
+`BNCharacterMovementComponent.h:89` sets `GrapplePullSpeedUU = 1800.f`. (It is *not* the dash,
+which is `DashSpeedUU = 2000.f` — and the probe never presses `Input.Dash` at all. It does
+press `Input.Grapple`, in both `grapple_abuse` and `ability_mash`.)
+
+The mechanism is in `UBNCharacterMovementComponent::StartGrapplePull`, which drops the
+character out of walking **only at the moment the pull begins**:
+
+```cpp
+// Off the ground first: a grounded MoveToForce fights floor snapping every frame.
+if (IsMovingOnGround()) { SetMovementMode(MOVE_Falling); }
+```
+
+If the character lands while the root-motion pull is still running, nothing puts it back in
+the air — the pull keeps driving it *across the ground* at full pull speed. And this was not
+a one-sample blip on landing: the two records sit 1,905 uu apart, one second apart, both at
+1800 uu/s, so the pawn really did cross the floor at 7.2x its walk cap for about a second.
+
+`BNAQA::SpeedViolation`'s only excuse is `!bOnGround`, written on the belief that "the
+grapple's regime is flight" and therefore never grounded. That belief is false, so the rule
+convicts a legal grapple. **The detector is wrong here, not the movement code** — but the
+finding is still the most valuable thing in this report, because it is the one place the run
+proved my model of the game was wrong rather than merely confirming it. Filed as
+`TICKET_BN39_AQA_DASH_EXCUSE`; the fix is to excuse an active grapple root-motion source
+(`UBNCharacterMovementComponent::IsGrapplePullActive()` already exists) rather than to excuse
+"recently launched", and certainly not to raise the tolerance until the number stops
+appearing.
+
+One honest caveat I am not qualified to close from a QA probe: whether a grounded 1800 uu/s
+slide is *intended* is a design question, not a detector question. If it is not intended,
+the excuse above would hide a real ground-skimming exploit, and the right fix is in the
+movement component instead. BN39 names that fork rather than assuming the answer.
 
 **The other five detector classes did not fire.** No `fell_out_of_world_alive`, no
 `escaped_playable_space`, no `attribute_anomaly`, no `teleport_discontinuity`, no
@@ -141,7 +161,7 @@ all**, which two controls established: PIE left strictly alone died at 64s, and 
 the probe never joined died the same way. An earlier draft of my notes blamed the probe's
 join; that was wrong, and the control that would have caught it sooner was simply too short.
 The 300.01s run happened, and its numbers agree with this one (24 cycles, same two detector
-classes, the same dash false positive) — but it is the UTF-16 one, written before the
+classes, the same grounded-grapple speed finding) — but it is the UTF-16 one, written before the
 encoding fix, so it is evidence rather than the deliverable. This report is the honest
 artifact: a real run, 87% of its planned length, with the shortfall named rather than
 rounded away.
@@ -160,8 +180,9 @@ One bad corner reads as one bad corner.
 What genuinely surprised me was the shape of my own errors. I built the detectors expecting
 to argue about thresholds, and both real problems were about **excuse policy** instead — the
 question of what *legitimately* looks like a defect. `SpeedViolation` knew that falling and
-grapple flight are legal ways to exceed walk speed, and never considered that a dash is a
-legal way to exceed it *while grounded*. That is not a tuning error, it is a gap in the
+grapple flight are legal ways to exceed walk speed, and never considered that **grapple
+flight is not always flight** — that a pull which begins in the air can finish along the
+ground, at full speed, with the pawn's feet down the whole way. That is not a tuning error, it is a gap in the
 model of the game, and no amount of adjusting 1.75 would have found it. Writing 44 headless
 cases with both a firing and an excuse case for every rule made me feel thorough; the live
 run found the excuse I had not thought to write. That is the argument for running the thing
