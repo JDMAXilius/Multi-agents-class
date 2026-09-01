@@ -1,5 +1,6 @@
 #include "QA/BNAdversarialAgent.h"
 
+#include "QA/BNAQADetectors.h"
 #include "AbilitySystem/Attributes/BNAttributeSet.h"
 #include "AbilitySystem/BNAbilitySystemComponent.h"
 #include "Abilities/GameplayAbility.h"
@@ -32,15 +33,14 @@ namespace
 	// to be abusive, probe fast enough that a 100ms discontinuity cannot hide between samples.
 	constexpr float BehaviorSeconds = 12.f;
 	constexpr float ActSeconds = 0.25f;
-	constexpr float ProbeSeconds = 0.1f;
+	constexpr float ProbeSeconds = static_cast<float>(BNAQA::Thresholds::ProbeSeconds);
 
-	// Detector thresholds. Each states its excuse policy in the detector that uses it.
-	constexpr float BelowKillZGraceS = 1.0f;    // KillZ should destroy within a frame or two
-	constexpr float StuckAfterS = 3.0f;         // commanded + alive + unfrozen + still, this long
-	constexpr float StuckSpeedUU = 10.f;
-	constexpr float SpeedTolerance = 1.75f;     // ground speed past MaxWalkSpeed * this = cheat
-	constexpr float TeleportUUPerSample = 1200.f; // 12,000 uu/s — beyond any legal mover here
-	constexpr float HullMarginUU = 4000.f;      // outside PlayerStart hull + this = escaped
+	// EVERY detector threshold lives in BNAQADetectors.h and NOWHERE else — the header is
+	// engine-free precisely so the rules can be executed and proven without an editor
+	// (assignments/09-adversarial-qa/tests/detector_tests.cpp compiles it with stock g++).
+	// This file gathers engine state, converts it to plain numbers, and asks that header.
+	// It never re-decides a rule; a second copy of a threshold here is the defect.
+	constexpr float HullMarginUU = static_cast<float>(BNAQA::Thresholds::HullMarginUU);
 
 	const TCHAR* BehaviorName(EBNAQABehavior B)
 	{
@@ -412,7 +412,7 @@ void ABNAQAController::ProbeTick()
 		{
 			BelowKillZSince = Now;
 		}
-		else if (Now - BelowKillZSince > BelowKillZGraceS)
+		else if (BNAQA::FellOutOfWorldAlive(bAlive, Here.Z, KillZ, Now - BelowKillZSince))
 		{
 			RecordFinding(TEXT("fell_out_of_world_alive"), TEXT("high"), FString::Printf(
 				TEXT("alive %.1fs below KillZ (z=%.0f, KillZ=%.0f) — the kill volume never fired"),
@@ -427,10 +427,13 @@ void ABNAQAController::ProbeTick()
 	// 2. escaped_playable_space — grounded outside the PlayerStart hull + margin.
 	//    Heuristic bounds (the evidence says so): falling past the edge is KillZ's case;
 	//    STANDING out there means walkable geometry exists outside the intended arena.
-	if (ArenaHull.IsValid && bAlive && CMC && CMC->IsMovingOnGround())
 	{
-		const FBox Expanded = ArenaHull.ExpandBy(FVector(HullMarginUU, HullMarginUU, 10000.f));
-		if (!Expanded.IsInside(Here))
+		const FBox Expanded = ArenaHull.IsValid
+			? ArenaHull.ExpandBy(FVector(HullMarginUU, HullMarginUU, 10000.f))
+			: FBox(ForceInit);
+		const bool bOutside = ArenaHull.IsValid && !Expanded.IsInside(Here);
+		if (BNAQA::EscapedPlayableSpace(bAlive, CMC && CMC->IsMovingOnGround(),
+			ArenaHull.IsValid, bOutside))
 		{
 			RecordFinding(TEXT("escaped_playable_space"), TEXT("high"), FString::Printf(
 				TEXT("standing on ground at (%.0f, %.0f, %.0f), outside the PlayerStart hull + %.0fuu margin (heuristic bounds)"),
@@ -441,13 +444,13 @@ void ABNAQAController::ProbeTick()
 	// 3. stuck_state — the game accepted a move and the body goes nowhere. Frozen is
 	//    excused (the freeze is SUPPOSED to pin us); so is having no live move request.
 	const bool bCommanded = GetMoveStatus() == EPathFollowingStatus::Moving;
-	if (bAlive && !bFrozen && bCommanded && Speed2D < StuckSpeedUU)
+	if (bAlive && !bFrozen && bCommanded && Speed2D < BNAQA::Thresholds::StuckSpeedUU)
 	{
 		if (StillSince < 0.0)
 		{
 			StillSince = Now;
 		}
-		else if (Now - StillSince > StuckAfterS)
+		else if (BNAQA::StuckState(bAlive, bFrozen, bCommanded, Speed2D, Now - StillSince))
 		{
 			RecordFinding(TEXT("stuck_state"), TEXT("medium"), FString::Printf(
 				TEXT("move request active %.1fs with speed %.1f uu/s during %s — pawn pinned by geometry or pathing"),
@@ -463,8 +466,7 @@ void ABNAQAController::ProbeTick()
 	// 4. speed_violation — ground speed far past what CMC says this body can do. Falling
 	//    and flying (the grapple's regime) are excluded: gravity and root motion have
 	//    their own legal envelopes; WALKING faster than the movement model is the cheat.
-	if (CMC && CMC->IsMovingOnGround() && CMC->MaxWalkSpeed > 0.f
-		&& Speed2D > CMC->MaxWalkSpeed * SpeedTolerance)
+	if (CMC && BNAQA::SpeedViolation(CMC->IsMovingOnGround(), Speed2D, CMC->MaxWalkSpeed))
 	{
 		RecordFinding(TEXT("speed_violation"), TEXT("medium"), FString::Printf(
 			TEXT("ground speed %.0f uu/s vs MaxWalkSpeed %.0f (x%.2f) during %s"),
@@ -478,10 +480,7 @@ void ABNAQAController::ProbeTick()
 	const float MaxHealth = ASC->GetNumericAttribute(UBNAttributeSet::GetMaxHealthAttribute());
 	const float Shield = ASC->GetNumericAttribute(UBNAttributeSet::GetShieldAttribute());
 	const float MaxShield = ASC->GetNumericAttribute(UBNAttributeSet::GetMaxShieldAttribute());
-	if (FMath::IsNaN(Health) || FMath::IsNaN(Shield)
-		|| Health < -KINDA_SMALL_NUMBER || Shield < -KINDA_SMALL_NUMBER
-		|| (MaxHealth > 0.f && Health > MaxHealth + 1.f)
-		|| (MaxShield > 0.f && Shield > MaxShield + 1.f))
+	if (BNAQA::AttributeAnomaly(Health, MaxHealth, Shield, MaxShield))
 	{
 		RecordFinding(TEXT("attribute_anomaly"), TEXT("high"), FString::Printf(
 			TEXT("health %.2f / max %.2f, shield %.2f / max %.2f — outside the attribute rails"),
@@ -490,11 +489,10 @@ void ABNAQAController::ProbeTick()
 
 	// 6. teleport_discontinuity — more distance in one 100ms sample than any legal mover
 	//    covers. Respawns never trip it: OnPossess resets the sample chain.
-	if (bHasLastSample)
 	{
-		const double Step = FVector::Dist(Here, LastSampleLocation);
+		const double Step = bHasLastSample ? FVector::Dist(Here, LastSampleLocation) : 0.0;
 		TravelledUU += Step;
-		if (Step > TeleportUUPerSample)
+		if (BNAQA::TeleportDiscontinuity(bHasLastSample, Step))
 		{
 			RecordFinding(TEXT("teleport_discontinuity"), TEXT("medium"), FString::Printf(
 				TEXT("%.0f uu in one %.0fms sample (%.0f uu/s) during %s"),
@@ -515,12 +513,15 @@ void ABNAQAController::OnAbilityActivated(UGameplayAbility* Ability)
 	{
 		return;
 	}
-	if (ASC->HasMatchingGameplayTag(BNTags::State_Dead))
+	const BNAQA::EGateBreak Break = BNAQA::GateBreak(/*bAbilityActivated=*/true,
+		ASC->HasMatchingGameplayTag(BNTags::State_Dead),
+		ASC->HasMatchingGameplayTag(BNTags::State_Match_Frozen));
+	if (Break == BNAQA::EGateBreak::ActedWhileDead)
 	{
 		RecordFinding(TEXT("acted_while_dead"), TEXT("high"), FString::Printf(
 			TEXT("%s activated while State.Dead was on the ASC"), *Ability->GetClass()->GetName()));
 	}
-	else if (ASC->HasMatchingGameplayTag(BNTags::State_Match_Frozen))
+	else if (Break == BNAQA::EGateBreak::InputDuringFreeze)
 	{
 		RecordFinding(TEXT("input_during_freeze"), TEXT("high"), FString::Printf(
 			TEXT("%s activated while State.Match.Frozen was on the ASC"), *Ability->GetClass()->GetName()));

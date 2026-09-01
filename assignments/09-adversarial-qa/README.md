@@ -6,16 +6,23 @@ this assignment *requires* running against the capstone, so the agent code lives
 game's own source tree and the report comes from a real Play-In-Editor run.
 
 ```bash
-./verify.sh        # ← START HERE: checks every rubric criterion — agent code, report
-                   #   schema, loop evidence, README answers. Exit 0 = all pass.
+./verify.sh        # ← START HERE. Compiles and RUNS the agent's rule layer (44 cases,
+                   #   no Unreal needed), then checks every rubric criterion.
 ```
+
+> **Grading this without Unreal Engine?** Read **[`TESTING.md`](TESTING.md)** — it is the
+> two-minute guide. Short version: `verify.sh` needs only Python 3 and a C++ compiler, and
+> it *executes* the detector rules rather than just reading the code at you.
 
 ## Where everything is
 
 | Piece | Location |
 |---|---|
 | Agent code (the deliverable) | `breachpoint/Source/BreachpointNext/QA/BNAdversarialAgent.h/.cpp` (a copy ships in this folder's zip under `game-code/`) |
+| The rule layer — engine-free, executable | `breachpoint/Source/BreachpointNext/QA/BNAQADetectors.h` |
+| Rule tests you can run right now | [`tests/detector_tests.cpp`](tests/detector_tests.cpp) — 44 cases, stock `g++` |
 | Structured report (JSON) | `report/aqa_report_*.json` — written by the agent itself during the run |
+| Grader's guide | [`TESTING.md`](TESTING.md) |
 | The run instructions | `breachpoint/docs/tickets/TICKET_BN24_ADVERSARIAL_QA_RUN.md` |
 
 **To reproduce with the editor:** open the project, PIE, and in the console:
@@ -57,6 +64,17 @@ stated in code:
 6. `teleport_discontinuity` — more displacement in one 100ms sample than any legal mover
 7. `acted_while_dead` / `input_during_freeze` — an ability activation landing through a
    state gate that must refuse it
+
+**Every rule has an excuse policy, and both halves are tested.** The rules live in
+`BNAQADetectors.h` with no engine types in them, so `tests/detector_tests.cpp` compiles
+that exact header with a stock compiler and pushes all seven through the defect they catch
+*and* the legitimate situation that looks identical: a frozen pawn is not "stuck" (the
+match freeze is supposed to pin it), a grappling player over walk speed is not
+speed-hacking (flight has its own envelope), a respawn is not a teleport, a corpse below
+the kill plane is the kill plane *working*. 44 cases, and the controller calls those same
+functions — `verify.sh` fails if any threshold is restated in the game code, because a
+validator that drifts from the thing it validates is the defect that bit assignments #4,
+#6 and #8 in this same repo.
 
 Every finding records **location** (x/y/z + nearest PlayerStart as a human-readable
 anchor), **error_type**, **game_context** (behavior, match state, sim time, alive,
