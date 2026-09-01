@@ -27,9 +27,12 @@ The cloud landed the whole M1 front-end flow WRITTEN, NOT COMPILED:
    on the next tick, and it goes in BNFrontEndGameMode with a comment, not in the manager.
 
 ## Done when
-- [ ] Rung 1 clean ×3 targets, recorded here
-- [ ] No-options launch byte-identical (log excerpt here)
-- [ ] Findings (if any) filed for the cloud
+- [~] Rung 1: **2 of 3 PASS, third impossible on this machine** — recorded below. Cannot be
+      honestly checked as written; see the environment ruling and BN38.
+- [x] No-options launch byte-identical — settled by CODE, not a log excerpt (the `HasOption`
+      gate + CDO config-load order); see the step-2 entry in the Log.
+- [x] Findings filed for the cloud — 2 fixed here (both `high`), 1 left for the cloud
+      (PlayerCountPresets 12/16 vs 8 PlayerStarts).
 
 ## Log
 
@@ -247,3 +250,40 @@ Also caught by the same run, both process notes rather than code:
 **Still owed on this ticket:** the three-target run with the editor closed. On this launcher
 install that can only ever be `BreachpointEditor` PASS + `Breachpoint` PASS + `BreachpointServer`
 FAIL-to-link, i.e. PARTIAL — see the environment ruling above and BN38.
+
+### 1 Sep 2026 — rung 1 attempt 2: GREEN on everything this machine can build
+
+Editor closed, full `Tools/run-ubt.sh`, verbatim:
+
+```
+== RUNG 1 SUMMARY ==
+  PASS    BreachpointEditor (exit 0, touched libUnrealEditor-BreachpointNext.dylib)
+  PASS    Breachpoint (exit 0, touched CodeResources)
+  FAIL    BreachpointServer (exit 6) - Tools/Logs/ubt-BreachpointServer.log
+exit 1
+```
+
+**Both buildable targets PASS, and R19 is satisfied on both** — each names the binary it
+actually touched, so neither is an up-to-date no-op being read as a green. This is the first
+compile of the WAVE-1 front-end code (`BNScreen_FrontEnd`, `BNScreen_PlaySetup`,
+`BNFrontEndGameMode`, the BNUIManager config classes, the `InitGame` URL parse) together with
+this session's two `high` fixes. **The front-end diff compiles clean: zero errors attributable
+to it.**
+
+`BreachpointServer` failed in 0.83s with, verbatim:
+
+```
+Server targets are not currently supported from this engine distribution.
+```
+
+That is UBT refusing before it compiles a line — the launcher install ships no `UnrealServer`
+binaries. **Not a code failure and not fixable in this ticket.** The exit 1 is `run-ubt.sh`
+correctly refusing to call a two-of-three run a rung-1 pass.
+
+**Ladder rung claimed, precisely: rung 1 PARTIAL by environment — the code compiles for editor
+and game on macOS.** Not claimed: that it compiles for a dedicated server, that it runs, that
+the menu appears, or that anything works in PIE. The next rung is BN42's editor pass.
+
+The `- [ ]` box "Rung 1 clean ×3 targets" is marked `[~]`, not `[x]`: it can never be true on
+this machine, and checking it would be the exact dishonesty the ladder exists to prevent. BN38
+is the ticket that decides whether to source-build the engine or retire rung 4a.
