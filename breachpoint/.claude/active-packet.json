@@ -1,12 +1,10 @@
 {
- "ticket": "BN31-BN34-aquarius-level",
+ "ticket": "BN24-adversarial-qa-run",
  "owner_path": [
-  "Tools/blockout/",
-  "Content/Blockout/",
-  "Content/Maps/",
-  "Content/Data/",
-  "docs/tickets/",
-  "docs/design/"
+  "Source/BreachpointNext/QA/",
+  "breachpoint/Source/BreachpointNext/QA/",
+  "assignments/09-adversarial-qa/",
+  "docs/tickets/"
  ],
- "note": "Terminal work order BN31->BN34 (the Aquarius level). Editor-live; R29: one editor, one driver, no C++ build while it is open."
+ "note": "Assignment #9 PIE run. Step 0 files-only (done). Step 1 engine-installed (build). Step 2 editor-live: R29 one editor, one driver, no C++ build while it is open. Previous packet BN31-BN34 superseded; recover from git if resumed."
 }

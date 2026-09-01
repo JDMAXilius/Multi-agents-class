@@ -1,6 +1,7 @@
 # TICKET — Compile the adversarial QA probe, run it in PIE, land its report
 
-> STATUS: open, READY TO RUN — cut by the cloud lead 28 Aug 2026, terminal-ready 1 Sep.
+> STATUS: in-progress — mac terminal 31 Aug 2026 (07c18df3)
+> Cut by the cloud lead 28 Aug 2026; terminal-ready 1 Sep.
 > Step 0 runs on ANY terminal in 30 seconds. Steps 1–2 need the editor: compile, one PIE
 > run of `bn.aqa.start 300`, then copy the JSON into `assignments/09-adversarial-qa/report/`.
 >
