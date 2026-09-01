@@ -173,3 +173,77 @@ warns about exactly this before it starts. `docs/contracts/testing.md` wants all
 targets against a SOURCE build; `~/UnrealEngine` exists but has no built Mac binaries.
 Filed as an environment `contract_gap` here rather than routed around — the "all three
 targets" box stays UNCHECKED, because two of three is not three.
+
+**31 Aug 2026 (02:00-02:40 UTC) — mac terminal, steps 2-3. Four defects found before the
+run produced a usable artifact; three of them were in the probe itself.**
+
+*Driving the editor.* The registered `unreal-mcp` MCP client was dead for the whole session
+(ConnectionRefused at startup, because the server lives inside the editor process and no
+editor was open then; Claude Code does not re-establish MCP mid-session). Worked around by
+speaking the same protocol to the same endpoint with curl at `127.0.0.1:8000/mcp` —
+`list_toolsets` / `describe_toolset` / `call_tool`, per the `unreal-mcp` skill. Console
+commands went in through `SlateInspectorToolset.Type` on the status-bar console box, which
+does route to the PIE world. **Next session: open the editor BEFORE starting the agent and
+the native tools work.**
+
+*Defect 1 — the ticket names the wrong map.* Step 2 says "PIE as listen server" without a
+map, and the obvious choice, `BR_Arena01` (the `EditorStartupMap`), yields
+`bn.aqa.start: no ABNGameMode in this world`. `DefaultEngine.ini` still sets
+`GlobalDefaultGameMode=/Script/Breachpoint.BPGameMode` — the old BP lineage — and Arena01
+carries no WorldSettings override. **`BR_Spillway` is the map**: `Tools/blockout/land_spillway.py:35`
+sets its `DefaultGameMode` to `/Game/BN/Core/BP_BNGameMode.BP_BNGameMode_C`. BR_Aquarius
+also references it; BR_MetricsGym and BR_RallyPoint_Blockout do not.
+
+*Defect 2 — the report was lost on any early stop (FIXED).* `WriteReport` was called only
+from `StopRun`, and `StopRun` only from the end timer or `bn.aqa.stop`. There was no
+`EndPlay` override, so a PIE session that ended early wrote NOTHING — a 17s run that had
+already recorded a real `stuck_state` produced no artifact at all. The README's claim that
+"the report writes on any stop" was false. Fixed at the point every teardown path meets:
+`ABNAQAController::EndPlay` writes the report and stands aside, skipping StopRun's
+unpossess/destroy tail because the world is already tearing those actors down.
+
+*Defect 3 — the report was UTF-16 and unparseable (FIXED).* `FFileHelper::SaveStringToFile`
+defaults to UTF-16LE. `python3 -c json.load` dies on byte 0 with
+`'utf-8' codec can't decode byte 0xff in position 0`, and so did `verify.sh` — three of its
+FULL-mode checks failed on the encoding alone, not on the content. A structured report the
+grader cannot open is not a structured report. Now `ForceUTF8WithoutBOM`. **This is the
+third one-source-of-truth-adjacent defect this assignment has produced and the second the
+harness caught rather than a human.**
+
+*Defect 4 — PIE terminates early when the probe joins a cold match (OPEN, cause unknown).*
+Two runs died at 3.9s and 17s, both `EEndPlayReason::EndPlayInEditor` (reason 2) — the
+EDITOR stopped the session; no crash, no error, no game-side quit. The last thing logged
+before the silence, both times, was the probe's join building it a HUD:
+`LogUIActionRouter: [User 0] No focus target for leaf-most node [WBP_BNHUD_C_0], and the
+widget isn't focusable - focusing the game viewport`. Controls run before blaming anything:
+PIE left strictly alone survived 84s untouched, and a harmless `stat fps` typed through the
+same status-bar box did not disturb it — so neither the editor session nor the console
+interaction is the cause. The empirical workaround, from three samples: **let PIE run ~90s
+before issuing `bn.aqa.start`.** The run that completed had a match live ~140s first; the
+two that died had the probe join within ~10s of PIE start. That is correlation, not a
+mechanism, and it deserves its own ticket.
+
+*Process violation, recorded because the alternative is hiding it.* One rebuild was run with
+the editor still open, against R21/R29. UBT could not overwrite the loaded dylib and emitted
+`libUnrealEditor-BreachpointNext-0001.dylib`; the running editor kept executing the old code,
+so that build proved nothing. Redone properly with the editor closed
+(`touched libUnrealEditor-BreachpointNext.dylib`, unsuffixed).
+
+*The 300s run (02:25:17-02:30:17, BR_Spillway, standalone PIE, solo + bot fill).* Completed
+`duration_s 300.01`, 24 behavior cycles, 3858 ability presses, 494 move requests, 2 deaths,
+69,972 uu travelled; match states seen InProgress / WaitingPostMatch / WaitingToStart.
+**7 finding records across 2 detector classes** — 5 x `stuck_state` (14 occurrences) and
+2 x `speed_violation`. Its report is the UTF-16 one, so it is evidence, not the deliverable;
+the re-run under the UTF-8 fix supersedes it.
+
+*A false positive, which matters more than a finding.* Both `speed_violation` rows fired in
+`ability_mash` — `1800 uu/s vs MaxWalkSpeed 250 (x7.20)` at sim 177.8, then `656 uu/s (x2.62)`
+at sim 178.9, 1.1s apart: one dash and its decay. They are NOT a movement exploit.
+`BNMovementAbilities.h:181` sets `DashSpeedUU = 2000.f` and `:491` calls
+`LaunchCharacter(Direction * DashSpeedUU, bXYOverride=true, bZOverride=false)` — Z is not
+overridden, so the pawn stays grounded, `IsMovingOnGround()` stays true, and the detector's
+only excuse (`!bOnGround`, for fall and grapple flight) never opens. The `250` cap is the
+ADS slow-GE value arriving through `BNCharacter.cpp:551`, so the x7.20 ratio compares a dash
+against a deliberately-reduced walk cap. **`BNAQA::SpeedViolation` needs a launch/dash excuse
+and `detector_tests.cpp` needs the case.** Out of this ticket's scope (adding or changing
+detectors is explicitly out) — filed separately.
