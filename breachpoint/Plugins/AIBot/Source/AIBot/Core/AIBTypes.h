@@ -22,6 +22,46 @@ namespace AIB
 	 *  in two folders is how a Phase-8 Novice tier silently keeps a Marine memory. */
 	inline constexpr float DefaultMemoryFreshSeconds = 16.f;
 
+	// ---- TRAVERSAL REACH (founder, 1 Sep) --------------------------------------------
+	// "make sure that they are able to go up, down one platform to one platform by just
+	// jumping or doing dash... if it's possible to just dash to that platform, that will
+	// be something that the AI should be capable of doing."
+	//
+	// THREE OF THESE FOUR ARE [thin] AND SAY SO. BN32's rig is committed and unrun, and
+	// it owns them — see TICKET_BN32's "the four numbers F2 is waiting on". A traversal
+	// behaviour built on guessed reach is how the Aquarius blockout got ramps to nowhere,
+	// so the chooser is deliberately CONSERVATIVE until they are measured: it refuses a
+	// crossing it is not sure of, and a refused crossing is the wander the bot was doing
+	// anyway.
+
+	/** [MEASURED, BN32 CDO read] JumpZ 420 against gravity 1 gives a 0.90 m apex — which
+	 *  is also why BN_Climb's navlink can only express a 0.70 m climb. */
+	inline constexpr float JumpReachUpUU = 90.f;
+
+	/** [thin] Sprint speed x airtime, arithmetic, never observed. BN32 owes the walked
+	 *  and the sprinted number; the chooser must take the SMALLER, because a bot that
+	 *  decides to jump from a standstill must not fall in the gap. */
+	inline constexpr float JumpReachAcrossUU = 260.f;
+
+	/** [thin] A COMMENT in the blast-scatter code says the dash "covers ~500uu in a
+	 *  quarter second". A comment is not a measurement, and this is the constant the
+	 *  whole gap-crossing behaviour rests on. */
+	inline constexpr float DashReachUU = 500.f;
+
+	/** Derived from BN_Drop's JumpMaxDepth in DefaultEngine.ini — a navlink's WILLINGNESS
+	 *  to path a drop, which is not the same as a proven survivable fall. BN32 owes the
+	 *  height where damage starts and the height that kills. */
+	inline constexpr float SafeDropUU = 1000.f;
+
+	/** A crossing shorter than this is not a crossing — the navmesh has it, and a bot
+	 *  hopping over every doorstep reads as broken rather than agile. */
+	inline constexpr float TraversalMinGapUU = 120.f;
+
+	/** Safety fraction applied to every reach above. The bot commits at 80% of what it
+	 *  can do, because landing exactly on a lip is landing in the gap half the time and
+	 *  the cost of being wrong is a death, not a delay. */
+	inline constexpr float TraversalCommitFraction = 0.80f;
+
 	// ---- TARGET SELECTION (founder, 1 Sep) -------------------------------------------
 	// The bot had no opinion about who its enemy was: the sensorium kept one slot and the
 	// newest matured sighting overwrote it. These are the weights that give it one. They

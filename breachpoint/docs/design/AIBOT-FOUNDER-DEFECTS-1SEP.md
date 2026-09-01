@@ -227,3 +227,43 @@ The failure is in the **cycling**, in two places:
 **One honest note on all of it.** 1, 2, 3 and 5 are cloud-writable today. 4 needs a spec
 the cloud can also write. **None of them are proven until someone runs a match** — the
 cloud has no engine, and every claim below the PIE rung is "written", not "works".
+
+---
+
+# WHAT LANDED — 1 Sep, all six, in the recommended order
+
+Founder: *"Do all that."* Every item below is **WRITTEN, NOT COMPILED** — the cloud has
+no engine. Terminal owes rung 1 on all three targets plus four new headless suites.
+
+| # | Item | What landed | New suite |
+|---|---|---|---|
+| 1 | F4 tier | `BotTier=ODST` + the reasoning table in the ini | — |
+| 2 | F5 weapons | `HasUsableWeapon()` on the door; `FAIBWeaponPolicy::Decide` extracted; targetless swap at a default range; dry hand widens melee RANGE (not reaction) | `AIBot.Sim.WeaponPolicy` |
+| 3 | F1 facing | facing-travel in `TickLocomotion`, suppressed by a YAW CLAIM taken by every aimer | — |
+| 4 | F3 targets | `FAIBTargetCandidate` table + `FAIBTargetPolicy` scoring with two hysteresis knobs; damage can now name a target; SWITCHED log line | `AIBot.Sim.TargetPolicy` |
+| 5 | BN32 rig | ticket now names the **four numbers F2 is blocked on**, three of them [thin] | — |
+| 6 | F2 traversal | `FAIBTraversalPolicy` chooser (drop/jump/dash/grapple), wired to the stall path | `AIBot.Sim.TraversalPolicy` |
+
+Plus `AIBot.Sim.AvatarBelt` from AIB21 M1 earlier the same day — four new suites in total.
+
+## Three things the founder should know, stated plainly
+
+**1. F2 is landed but deliberately timid.** Three of its four reach constants are
+`[thin]` — `DashReachUU` in particular rests on *a comment* that says the dash "covers
+~500uu". The chooser commits at 80% of every reach and refuses anything it is unsure of,
+because a refused crossing costs a wander and a wrong one costs a life. **It will get
+noticeably braver the moment BN32's rig is run**, and that is a data change, not a code
+change. Until then, expect bots to cross the obvious gaps and decline the marginal ones.
+
+**2. The grapple is not offered by the stall chooser.** It needs the aim-then-press
+machine that only `MoveToPOI`'s traverse owns, and pressing it unaimed is the futile
+press the module bans. The chooser still *answers* Grapple and logs it — that line is how
+we learn the traverse should have been armed for a route it was not. Combined with AIB19's
+new REFUSED/SHORT diagnosis, one PIE match now tells us everything about the grapple.
+
+**3. Nothing here is proven.** Four suites and a lot of reasoning, but the honest rung is
+"written". Two regressions were caught in this very session by reading against the
+existing fairness pins — the juke window and the per-actor gain stamp — which is exactly
+the class of thing a compile does not catch and a match does. The next real step is a
+match, not more code.
+

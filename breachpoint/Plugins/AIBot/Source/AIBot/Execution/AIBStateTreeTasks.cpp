@@ -15,6 +15,7 @@
 #include "Skills/AIBMeleePolicy.h"
 #include "Skills/AIBWeaponPolicy.h"
 #include "Skills/AIBMovementPolicy.h"
+#include "Skills/AIBTraversalPolicy.h"
 #include "StateTreeExecutionContext.h"
 #include "Team/AIBTeamCoordinator.h"
 
@@ -377,8 +378,58 @@ namespace
 		if (!State.bTriedWedgeJump && State.StallSeconds >= WedgeStallSeconds && Avatar->IsGrounded())
 		{
 			State.bTriedWedgeJump = true;
-			Avatar->PressVerb(AIBTags::Verb_Jump);
-			Avatar->ReleaseVerb(AIBTags::Verb_Jump);
+
+			// THE TRAVERSAL CHOOSER (founder, 1 Sep). A stall IS the question "I want to
+			// be over there and walking will not get me there" — the navmesh has already
+			// said it has no path — so this is where the answer belongs. Before today the
+			// answer was always the same reflex jump, which is right for a doorstep and
+			// useless for a two-metre gap between platforms.
+			//
+			// GRAPPLE IS DELIBERATELY NOT OFFERED HERE. It needs the aim-then-press
+			// machine that only MoveToPOI's traverse owns, and pressing it unaimed is
+			// exactly the futile press F7 bans. The chooser may still ANSWER Grapple; the
+			// log says so, and that line is how we find out the traverse should have been
+			// armed for a route it was not.
+			FAIBTraversalRequest Request;
+			Request.HorizontalUU = static_cast<float>(FVector::Dist2D(Here, Goal));
+			Request.VerticalUU = static_cast<float>(Goal.Z - Here.Z);
+			Request.bGrounded = true;   // gated above
+			Request.bCanDash = Bot.CanDash();
+			Request.bGrappleRouteServes = false;
+			const EAIBTraversal Verb = FAIBTraversalPolicy::Choose(Request);
+
+			switch (Verb)
+			{
+			case EAIBTraversal::Dash:
+				// The gap-crosser finally used to GO somewhere rather than only to escape
+				// a grenade. Direction is the mover's — the dash launches along the
+				// movement input already set, so it lengthens this step rather than
+				// offering a second opinion about where the bot is headed.
+				Avatar->PressVerb(AIBTags::Verb_Dash);
+				Avatar->ReleaseVerb(AIBTags::Verb_Dash);
+				break;
+			case EAIBTraversal::Jump:
+			case EAIBTraversal::Drop:
+				// Both press jump: a hop up a step and a hop OFF a ledge are the same
+				// verb. What the chooser bought on the Drop path is the check that the
+				// landing is survivable — the difference between stepping down and
+				// walking off a roof.
+				Avatar->PressVerb(AIBTags::Verb_Jump);
+				Avatar->ReleaseVerb(AIBTags::Verb_Jump);
+				break;
+			default:
+				// Grapple (not pressable here) or None. Still jump: the wedge case this
+				// path has always served is a bot caught on geometry, and one hop is the
+				// cheapest way out of it. The chooser's refusal is about CROSSING, not
+				// about being stuck.
+				Avatar->PressVerb(AIBTags::Verb_Jump);
+				Avatar->ReleaseVerb(AIBTags::Verb_Jump);
+				break;
+			}
+			UE_LOG(LogAIBot, Verbose,
+				TEXT("AIBot: %s stalled %.0fuu across / %.0fuu up — chose %s."),
+				*Bot.GetName(), Request.HorizontalUU, Request.VerticalUU,
+				FAIBTraversalPolicy::Name(Verb));
 
 			// AND RE-ISSUE THE MOVE. The jump alone was half the manoeuvre and the half that
 			// does nothing on its own: path following has already gone Idle at the lip the bot

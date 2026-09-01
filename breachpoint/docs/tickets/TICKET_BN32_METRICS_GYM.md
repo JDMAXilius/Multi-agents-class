@@ -49,6 +49,40 @@ used; this is the legal substitute.
 7. Also record every number in FEET. Halo authors on a 1-foot grid and the
    Aquarius schedule will be re-cut onto it (BN34 Part C).
 
+## THE FOUR NUMBERS F2 IS WAITING ON (added 1 Sep — this is now a blocker)
+
+`AIBTraversalPolicy` (the jump/dash/grapple/drop chooser, landed 1 Sep) ships with
+constants marked **[thin]** in `AIBTypes.h` because nobody has measured them. Building
+a traversal behaviour on guessed reach is how Aquarius got ramps to nowhere. The rig
+already exists and already has the geometry; what it owes is these four, each
+**[measured, <date>]**:
+
+| Constant | Today | Where today's number came from |
+|---|---|---|
+| `AIB::JumpReachUpUU` | 90 | **MEASURED** — BN32's own CDO read (JumpZ 420, gravity 1, apex 0.90 m). Confirm it with the body, not the numbers. |
+| `AIB::JumpReachAcrossUU` | 260 | **[thin]** — sprint speed x airtime, arithmetic, never observed |
+| `AIB::DashReachUU` | 500 | **[thin]** — a COMMENT in the scatter code says "~500uu in a quarter second". A comment is not a measurement, and this is the constant the whole gap-crossing behaviour rests on |
+| `AIB::SafeDropUU` | 1000 | derived from `BN_Drop`'s `JumpMaxDepth` in DefaultEngine.ini — a navlink's willingness, not a proven survivable fall |
+
+**How to measure them, in the rig you already built:**
+
+5. **Dash reach.** Stand on the flat, face a marked line, dash from rest. Record the
+   ground distance covered, and again while already sprinting — if they differ, the
+   policy needs the SMALLER one, because a bot deciding to dash from a standstill must
+   not fall in the gap.
+6. **Jump across.** The gap row (0.50-4.00 m) is already in the rig. Walk-jump each gap
+   and record the widest cleared, then sprint-jump and record that. Same rule: the
+   policy takes the conservative one.
+7. **Safe drop.** The ledge row inverted — drop from each height and record where damage
+   starts and where it kills. A bot must be willing to take a drop that costs nothing and
+   must refuse one that costs a life.
+8. **Jump up.** Confirm the 0.90 m apex against real ledges. If the body clears less than
+   the arithmetic says, the arithmetic is wrong and BN_Climb's 0.70 m navlink is already
+   optimistic.
+
+Write all four into `BLOCKOUT-KIT.md` §1.1 AND say so here, with the date. The cloud
+then replaces the [thin] constants in one commit and the chooser stops guessing.
+
 ## Done when
 
 - [x] Rig script committed; measured sheet written into BLOCKOUT-KIT.md
@@ -56,6 +90,7 @@ used; this is the legal substitute.
 - [x] Contradictions with the current kit listed here for the cloud
 - [ ] Lyra `L_ShooterGym` measured alongside ours, both columns in the sheet
 - [ ] Every number also expressed in feet (BN35: Halo authors on a 1-foot grid)
+- [ ] **The four traversal numbers measured and reported — F2 is blocked on them**
 
 ### 30 Aug — measured off the CDO, and the rig that will confirm it
 
