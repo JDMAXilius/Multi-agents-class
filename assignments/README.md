@@ -175,9 +175,14 @@ report (location + error type + game context per finding) from inside the run.
 the detector rules live in an engine-free header, and `./verify.sh` compiles that header
 with stock `g++` and *executes* all 44 rule cases — each detector tested on the defect it
 catches and on the legitimate twin it must not report. [`TESTING.md`](09-adversarial-qa/TESTING.md)
-is the grader's guide. The live run itself needs the editor once
-(`docs/tickets/TICKET_BN24_ADVERSARIAL_QA_RUN.md`); until then `verify.sh` marks those
-rubric items PENDING rather than inventing them.
+is the grader's guide.
+
+The live run happened on 1 Sep (`BR_Spillway`, PIE, 262s, 2,956 ability presses) and found
+**four records across two classes**: a `stuck_state` cluster where the new blockout's navmesh
+grants a route the capsule cannot walk, and a `speed_violation` that turned out to be the
+agent's own excuse policy being wrong — a grapple pull that *begins* airborne can finish
+along the ground at 1800 uu/s with feet down, which the rule had not modelled. Writing 44
+headless cases felt thorough; the live run found the excuse I hadn't thought to write.
 
 ---
 
@@ -250,7 +255,7 @@ Per-assignment submission checklists, where they exist:
 | 6 | ✅ | **not yet** | due 18 Aug — **needs a short late note on submission** |
 | 7 | ✅ | **not yet** | due 20 Aug — **needs a short late note on submission** |
 | 8 | ✅ | **not yet** | due 25 Aug — **needs a short late note on submission** |
-| 9 | ✅ (rules proven + compiles) | **not yet** | due 27 Aug — testable without UE (`./verify.sh`, 44 cases); Findings await one PIE run (TICKET_BN24) |
+| 9 | ✅ | **not yet** | due 27 Aug — **complete**: PIE run done 1 Sep, 4 findings, `verify.sh` exits 0 in FULL mode |
 
 **Honesty note that applies to all of these:** none of the generated C++ or CSV has been
 compiled or imported into a running build of the game. The container these ran in has no
