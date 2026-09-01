@@ -78,6 +78,8 @@ public:
 	const TSoftClassPtr<UBNActivatableWidget>& GetDeathScreenClass() const { return DeathScreenClass; }
 	const TSoftClassPtr<UBNActivatableWidget>& GetScoreboardClass() const { return ScoreboardClass; }
 	const TSoftClassPtr<UBNActivatableWidget>& GetPauseScreenClass() const { return PauseScreenClass; }
+	const TSoftClassPtr<UBNActivatableWidget>& GetFrontEndScreenClass() const { return FrontEndScreenClass; }
+	const TSoftClassPtr<UBNActivatableWidget>& GetPlaySetupScreenClass() const { return PlaySetupScreenClass; }
 
 protected:
 	void HandleLocalPlayerAdded(ULocalPlayer* LocalPlayer);
@@ -102,6 +104,15 @@ protected:
 
 	UPROPERTY(Config)
 	TSoftClassPtr<UBNActivatableWidget> PauseScreenClass;
+
+	/** The front end (M1, 1 Sep). Not in PreloadMidMatchClasses on purpose: both are
+	 *  pushed from a menu map where a sync load hides inside the boot, and keeping them
+	 *  resident for a whole match would be paying for a screen the match cannot show. */
+	UPROPERTY(Config)
+	TSoftClassPtr<UBNActivatableWidget> FrontEndScreenClass;
+
+	UPROPERTY(Config)
+	TSoftClassPtr<UBNActivatableWidget> PlaySetupScreenClass;
 
 	UPROPERTY()
 	TMap<TObjectPtr<ULocalPlayer>, FBNLocalPlayerUI> PerPlayerUI;

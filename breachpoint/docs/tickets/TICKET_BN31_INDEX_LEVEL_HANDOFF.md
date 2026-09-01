@@ -1,5 +1,14 @@
 # HANDOFF — the Aquarius level: terminal work order (BN31 -> BN34)
 
+> ## 1 SEP — TODAY'S PRIORITY IS THE FRONT END, NOT THIS FILE.
+> Founder call: main menu ships today. Order of work for a terminal session:
+> **BN40 (Windows package, 11:59 PM ET gate) · BN41 -> BN42 -> BN43 (front end)** —
+> plan at `docs/ui/ue-frontend/BN-FRONTEND-PLAN.md`, layout truth at
+> `Source/BreachpointNext/UI/Content/BN/UI/Assets/01-MENU-MEASURED.md`.
+> The AI-bot session also owes rung 1 + four new suites (AIBot.Sim.AvatarBelt /
+> WeaponPolicy / TargetPolicy / TraversalPolicy) — fold into BN41's compile.
+> This Aquarius handoff stays valid and queued BEHIND those.
+
 > ## READY FOR TERMINAL — 30 Aug, on `main` at `0e9e0cf`. PULL BEFORE YOU RUN.
 >
 > Terminal's last known worktree was `809e3f6` (behind). `git pull --rebase`

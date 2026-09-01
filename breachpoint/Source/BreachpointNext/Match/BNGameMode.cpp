@@ -5,6 +5,7 @@
 #include "Characters/BNCharacter.h"
 #include "Core/AIBBotManager.h"
 #include "Core/BNGameplayTags.h"
+#include "Kismet/GameplayStatics.h"
 #include "Match/BNGameState.h"
 #include "Match/BNHillPoint.h"
 #include "Match/BNPlayerController.h"
@@ -54,6 +55,25 @@ void ABNGameMode::InitGame(const FString& MapName, const FString& Options, FStri
 	// TASK-R4-GAMESTATE-CLASS editor ticket: no dropdown on BP_BNGameMode can undo it, so the
 	// match state, the clock and every score always land on the GameState the game reads.
 	GameStateClass = ABNGameState::StaticClass();
+
+	// THE TRAVEL URL OVERRIDES THE INI (front end M1, 1 Sep). The menu's whole launch
+	// surface is two options — ?TargetPlayers=N?Teams=0|1 — parsed here, after the ini's
+	// serialisation, before anything reads either value (the fill converges in
+	// HandleMatchIsWaitingToStart; teams assign at login). Absent options change nothing,
+	// so every existing boot path — PIE straight into a map, the packaged BR_Spillway
+	// default, the gauntlet — is byte-identical. Clamped because a URL is user input:
+	// 1 is a lonely walk which is lawful, 0 or negative is not a match.
+	if (UGameplayStatics::HasOption(Options, TEXT("TargetPlayers")))
+	{
+		const int32 Wanted = UGameplayStatics::GetIntOption(Options, TEXT("TargetPlayers"), TargetPlayers);
+		TargetPlayers = FMath::Clamp(Wanted, 1, 32);
+		UE_LOG(LogBN, Log, TEXT("BNGameMode: TargetPlayers=%d from the travel URL."), TargetPlayers);
+	}
+	if (UGameplayStatics::HasOption(Options, TEXT("Teams")))
+	{
+		bTeamsEnabled = UGameplayStatics::GetIntOption(Options, TEXT("Teams"), bTeamsEnabled ? 1 : 0) != 0;
+		UE_LOG(LogBN, Log, TEXT("BNGameMode: Teams=%s from the travel URL."), bTeamsEnabled ? TEXT("on") : TEXT("off"));
+	}
 
 	// The ini names the pawn; the dropdown is only what you see. This assignment is the one the
 	// DefaultGame.ini comment promises — it was found commented out on 19 Aug and restored, with
