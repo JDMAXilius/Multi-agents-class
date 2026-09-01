@@ -152,3 +152,24 @@ by staging a synthetic report in scratchpad (went green), then corrupting its sc
 red) — the synthetic file was never committed and no finding in this repo is fabricated.
 
 Remaining is strictly engine work: steps 1–5 below. Nothing about them is blocked.
+
+**31 Aug 2026 — mac terminal (step 0 + step 1).** Step 0 re-run in-repo: `verify.sh` exit 0,
+44/44 detector cases green, 7 checkable rubric criteria PASS, 4 PEND on the run. Step 1
+re-verified the rule-layer split against a real compiler:
+
+```
+BreachpointEditor   PASS (exit 0, relinked libUnrealEditor-BreachpointNext.dylib)
+Breachpoint         PASS (exit 0, relinked CodeResources)
+BreachpointServer   FAIL (exit 6) — "Server targets are not currently supported from
+                    this engine distribution"
+```
+
+Editor and Game compiled clean with `BNAdversarialAgent.cpp` calling into the engine-free
+`BNAQADetectors.h` — the 1 Sep split introduced no call-site breaks, which was the open
+question. **Rung 1 holds for Editor+Game.** The Server failure is not a code defect and not
+in this ticket's owner path: `Tools/env.local` points at the Epic Launcher install
+`/Users/Shared/Epic Games/UE_5.8`, which ships no `UnrealServer` binaries, and `run-ubt.sh`
+warns about exactly this before it starts. `docs/contracts/testing.md` wants all three
+targets against a SOURCE build; `~/UnrealEngine` exists but has no built Mac binaries.
+Filed as an environment `contract_gap` here rather than routed around — the "all three
+targets" box stays UNCHECKED, because two of three is not three.
