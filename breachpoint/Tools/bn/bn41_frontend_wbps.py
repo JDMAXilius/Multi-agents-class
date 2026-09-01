@@ -222,7 +222,10 @@ def playsetup_plan():
         ('PreviewImage', IMAGE, 'PreviewPanel',
          {"horizontalAlignment": "HAlign_Fill", "verticalAlignment": "VAlign_Fill",
           "padding": {"left": 0.0, "top": 0.0, "right": 0.0, "bottom": 0.0}},
-         {"visibility": "Collapsed"}, False, None),                        # BN43 wires the art
+         # BOUND as of the BN43 art pass: RefreshDisplay sets the brush from the selected
+         # map's soft PreviewTexture and un-collapses it. Collapsed here is the no-plate
+         # resting state, which is also what an empty ini entry leaves it at.
+         {"visibility": "Collapsed"}, True, None),
         ('MenuPanel', BORDER, 'SetupCanvas',
          {"layoutData": topleft(69, 282.7, 349, 186), "bAutoSize": False},  # Menu in Border
          {"brushColor": PANEL, "padding": menu_pad()},

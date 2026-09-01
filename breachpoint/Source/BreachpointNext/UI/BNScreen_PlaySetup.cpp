@@ -1,7 +1,9 @@
 #include "UI/BNScreen_PlaySetup.h"
 #include "BreachpointNext.h"
 #include "Components/Button.h"
+#include "Components/Image.h"
 #include "Components/TextBlock.h"
+#include "Engine/Texture2D.h"
 #include "InputCoreTypes.h"
 #include "Kismet/GameplayStatics.h"
 #include "UI/BNUITypes.h"
@@ -154,6 +156,23 @@ void UBNScreen_PlaySetup::RefreshDisplay()
 			? FText::FromString(Maps[MapIndex].Description)
 			: LOCTEXT("PlaySetupHint", "Select a map to play in."));
 		DescriptionText->SetColorAndOpacity(FSlateColor(BNUIColors::InkDim));
+	}
+	if (PreviewImage)
+	{
+		// Synchronous load, and that is deliberate: this fires on a menu keypress, one 698x393
+		// plate at a time, with nothing on screen depending on the frame. An async request here
+		// would land AFTER the player had already cycled past the map it belongs to.
+		UTexture2D* Plate = bHasMap ? Maps[MapIndex].PreviewTexture.LoadSynchronous() : nullptr;
+		if (Plate)
+		{
+			PreviewImage->SetBrushFromTexture(Plate, /*bMatchSize*/ false);
+			PreviewImage->SetVisibility(ESlateVisibility::HitTestInvisible);
+		}
+		else
+		{
+			// No plate configured is not an error - the panel ground stands on its own.
+			PreviewImage->SetVisibility(ESlateVisibility::Collapsed);
+		}
 	}
 }
 

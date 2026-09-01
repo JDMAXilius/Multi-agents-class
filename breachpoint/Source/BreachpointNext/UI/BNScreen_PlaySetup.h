@@ -4,7 +4,9 @@
 #include "BNScreen_PlaySetup.generated.h"
 
 class UButton;
+class UImage;
 class UTextBlock;
+class UTexture2D;
 
 /**
  * One playable map on the front end. DATA, not code (law 3): the roster lives in
@@ -28,6 +30,12 @@ struct FBNFrontEndMapEntry
 	/** Long package name, e.g. /Game/Maps/BR_Spillway. */
 	UPROPERTY(Config)
 	FString MapPath;
+
+	/** The 349x196.7 preview plate for this map. SOFT (law 3): the front end is the only
+	 *  thing that ever loads it, and it must not drag a map's art into every cook. Empty
+	 *  is legal and means "no plate" — the Image collapses rather than showing a white box. */
+	UPROPERTY(Config)
+	TSoftObjectPtr<UTexture2D> PreviewTexture;
 };
 
 /**
@@ -115,6 +123,10 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
 	TObjectPtr<UTextBlock> DescriptionText;
+
+	/** The map plate. Optional so a WBP without one still compiles and still plays. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
+	TObjectPtr<UImage> PreviewImage;
 
 	// -- data + state ------------------------------------------------------------------
 
