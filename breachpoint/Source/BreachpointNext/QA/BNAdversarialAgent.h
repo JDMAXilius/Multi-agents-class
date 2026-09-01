@@ -95,6 +95,11 @@ public:
 
 	virtual void OnPossess(APawn* InPawn) override;
 
+	/** A PIE stop, a level travel, or any world teardown is a STOP: the run's evidence
+	 *  must not die with the world. StopRun is only ever reached from the end timer or
+	 *  bn.aqa.stop, so before this override a session ended early wrote no report at all. */
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
 protected:
 	// -- the loop -------------------------------------------------------------------
 	void AdvanceBehavior();          // BehaviorTimer: next EBNAQABehavior, reset per-behavior state

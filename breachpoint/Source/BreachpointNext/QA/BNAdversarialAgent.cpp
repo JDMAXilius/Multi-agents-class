@@ -202,6 +202,23 @@ void ABNAQAController::StopRun(FString Reason)
 	Destroy();
 }
 
+void ABNAQAController::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	// StopRun's tail unpossesses and destroys the pawn and this controller. That order is
+	// right for a run that ends on its own; it is wrong here, because the world is already
+	// tearing those actors down around us. So this writes the report and stands aside.
+	// Timers do not need clearing - they die with the world's timer manager.
+	if (EndTimer.IsValid())
+	{
+		EndTimer.Invalidate();
+		WriteReport();
+		UE_LOG(LogBNAQA, Log, TEXT("AQA run stopped (world teardown, reason %d): %d finding class(es), %d behavior cycles, %d presses, %d moves, %d deaths."),
+			static_cast<int32>(EndPlayReason), Findings.Num(), BehaviorCycles, Presses, MoveRequests, Deaths);
+	}
+
+	Super::EndPlay(EndPlayReason);
+}
+
 void ABNAQAController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
