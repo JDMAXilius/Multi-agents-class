@@ -36,6 +36,17 @@ struct FBNFrontEndMapEntry
 	 *  is legal and means "no plate" — the Image collapses rather than showing a white box. */
 	UPROPERTY(Config)
 	TSoftObjectPtr<UTexture2D> PreviewTexture;
+
+	/**
+	 * The DETAILS panel's lines for this map, one entry per line, straight from ini.
+	 *
+	 * Free-form on purpose: the breakdown is the one place a map says something a schema
+	 * cannot predict ("FIVE TIERS", "SPAWNS  16"), and inventing typed fields for it would
+	 * mean a compile every time a map wants to say something new. Empty is legal — the panel
+	 * falls back to its title alone.
+	 */
+	UPROPERTY(Config)
+	TArray<FString> Details;
 };
 
 /**
@@ -128,6 +139,10 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
 	TObjectPtr<UImage> PreviewImage;
 
+	/** The DETAILS panel's body — the selected map's own lines, rewritten as MAP cycles. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
+	TObjectPtr<UTextBlock> BreakdownText;
+
 	// -- data + state ------------------------------------------------------------------
 
 	/** The menu's map roster, from ini. Empty = the designed miss: START logs and refuses,
@@ -140,7 +155,15 @@ protected:
 	UPROPERTY(Config)
 	TArray<int32> PlayerCountPresets = { 4, 8, 12, 16 };
 
+	/**
+	 * TEAM DEATHMATCH is what the menu opens on (founder, 1 Sep: "team deathmatch should be
+	 * default on mainmenu"). Config rather than a literal so the default is an ini line, and
+	 * because a headless test wanting the FFA path should not have to fake a click.
+	 */
+	UPROPERTY(Config)
+	bool bDefaultTeams = true;
+
 	int32 MapIndex = 0;
-	bool bTeams = false;
+	bool bTeams = true;
 	int32 TotalPlayers = 8;
 };

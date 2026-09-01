@@ -269,10 +269,20 @@ def playsetup_plan():
          {"layoutData": topleft(466, 76, 349, 332), "bAutoSize": False},  # Breakdown `21:43050`
          {"brushColor": PANEL, "padding": {"left": 16.0, "top": 16.0, "right": 16.0, "bottom": 16.0}},
          False, None),
-        ('BreakdownTitleText', TEXT, 'BreakdownPanel',
+        # A Border holds ONE child, so the title and the per-map body share a column.
+        ('BreakdownStack', VBOX, 'BreakdownPanel',
+         {"horizontalAlignment": "HAlign_Fill", "verticalAlignment": "VAlign_Fill",
+          "padding": {"left": 0.0, "top": 0.0, "right": 0.0, "bottom": 0.0}}, None, False, None),
+        ('BreakdownTitleText', TEXT, 'BreakdownStack',
          {"horizontalAlignment": "HAlign_Left", "verticalAlignment": "VAlign_Top",
-          "padding": {"left": 0.0, "top": 0.0, "right": 0.0, "bottom": 0.0}},
+          "padding": {"left": 0.0, "top": 0.0, "right": 0.0, "bottom": 12.0}},
          {"text": "DETAILS"}, False, 16),
+        # BOUND and EMPTY here: the lines are the selected map's, written by RefreshDisplay
+        # from that map's ini Details, so the panel changes as the MAP row cycles.
+        ('BreakdownText', TEXT, 'BreakdownStack',
+         {"horizontalAlignment": "HAlign_Fill", "verticalAlignment": "VAlign_Top",
+          "padding": {"left": 0.0, "top": 0.0, "right": 0.0, "bottom": 0.0}},
+         {"text": ""}, True, 14),
         ('DescriptionPanel', BORDER, 'SetupCanvas',
          {"layoutData": topleft(69, 559, 349, 37), "bAutoSize": False},
          {"brushColor": BAND, "padding": {"left": 20.0, "top": 10.0, "right": 20.0, "bottom": 10.0}},

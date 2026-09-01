@@ -28,6 +28,9 @@ void UBNScreen_PlaySetup::NativeOnInitialized()
 	if (StartButton) { StartButton->OnClicked.AddUniqueDynamic(this, &UBNScreen_PlaySetup::HandleStartClicked); }
 	if (BackButton)  { BackButton->OnClicked.AddUniqueDynamic(this, &UBNScreen_PlaySetup::HandleBackClicked); }
 
+	// The menu opens on the founder's default mode, and the lobby size follows FROM it -
+	// same derivation a mode change uses, so boot and a toggle can never disagree.
+	bTeams = bDefaultTeams;
 	TotalPlayers = DefaultPlayersForMode(bTeams);
 	RefreshDisplay();
 }
@@ -156,6 +159,29 @@ void UBNScreen_PlaySetup::RefreshDisplay()
 			? FText::FromString(Maps[MapIndex].Description)
 			: LOCTEXT("PlaySetupHint", "Select a map to play in."));
 		DescriptionText->SetColorAndOpacity(FSlateColor(BNUIColors::InkDim));
+	}
+	if (BreakdownText)
+	{
+		// The panel is the selected MAP's, so it is rebuilt from that map's own ini lines
+		// every time the row cycles - this is the "changes based on the level" surface.
+		FString Body;
+		if (bHasMap)
+		{
+			for (const FString& Line : Maps[MapIndex].Details)
+			{
+				if (!Body.IsEmpty())
+				{
+					Body.Append(LINE_TERMINATOR);
+				}
+				Body.Append(Line);
+			}
+		}
+		BreakdownText->SetText(FText::FromString(Body));
+		// A map with no Details lines leaves the panel showing its title alone rather than
+		// an empty block holding layout open.
+		BreakdownText->SetVisibility(Body.IsEmpty()
+			? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
+		BreakdownText->SetColorAndOpacity(FSlateColor(BNUIColors::InkDim));
 	}
 	if (PreviewImage)
 	{
