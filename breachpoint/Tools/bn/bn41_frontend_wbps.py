@@ -50,6 +50,19 @@ OVERLAY = '/Script/UMG.Overlay'
 VBOX = '/Script/UMG.VerticalBox'
 BUTTON = '/Script/UMG.Button'
 IMAGE = '/Script/UMG.Image'
+
+# Level art. These are DESIGN-TIME brushes and they are not decoration: an Image with
+# resourceObject None and visibility Collapsed shows NOTHING when you open the WBP, which is
+# exactly what the founder hit ("I do not see the levels images here at all"). C++ still owns
+# the runtime value - PlaySetup swaps the plate per map - but the asset now carries a real
+# default so the widget is legible on its own.
+NEWS_TEX = '/Game/BN/UI/Art/T_News_Spillway.T_News_Spillway'
+PREVIEW_TEX = '/Game/BN/UI/Art/T_Preview_Spillway.T_Preview_Spillway'
+
+
+def brush(tex, w, h):
+    return {"resourceObject": {"refPath": tex}, "drawAs": "Image",
+            "imageSize": {"x": float(w), "y": float(h)}}
 TEXT = '/Script/CommonUI.CommonTextBlock'
 SIZEBOX = '/Script/UMG.SizeBox'
 
@@ -138,7 +151,7 @@ def frontend_plan():
         ('NewsImage', IMAGE, 'NewsStack',
          {"horizontalAlignment": "HAlign_Fill", "verticalAlignment": "VAlign_Fill",
           "padding": {"left": 0.0, "top": 0.0, "right": 0.0, "bottom": 0.0}},
-         {"visibility": "Collapsed"}, True, None),   # C++ sets the brush from ini and reveals it
+         {"brush": brush(NEWS_TEX, 349, 222), "visibility": "HitTestInvisible"}, True, None),
         ('NewsTitleText', TEXT, 'NewsStack',
          {"horizontalAlignment": "HAlign_Left", "verticalAlignment": "VAlign_Bottom",
           "padding": {"left": 12.0, "top": 12.0, "right": 12.0, "bottom": 12.0}},
@@ -233,10 +246,10 @@ def playsetup_plan():
         ('PreviewImage', IMAGE, 'PreviewPanel',
          {"horizontalAlignment": "HAlign_Fill", "verticalAlignment": "VAlign_Fill",
           "padding": {"left": 0.0, "top": 0.0, "right": 0.0, "bottom": 0.0}},
-         # BOUND as of the BN43 art pass: RefreshDisplay sets the brush from the selected
-         # map's soft PreviewTexture and un-collapses it. Collapsed here is the no-plate
-         # resting state, which is also what an empty ini entry leaves it at.
-         {"visibility": "Collapsed"}, True, None),
+         # BOUND as of the BN43 art pass: RefreshDisplay swaps this brush per selected map.
+         # The default here is Spillway, the first roster entry, so the Designer shows the
+         # real thing instead of an empty box.
+         {"brush": brush(PREVIEW_TEX, 349, 196.7), "visibility": "HitTestInvisible"}, True, None),
         ('MenuPanel', BORDER, 'SetupCanvas',
          {"layoutData": topleft(69, 282.7, 349, 186), "bAutoSize": False},  # Menu in Border
          {"brushColor": PANEL, "padding": menu_pad()},
