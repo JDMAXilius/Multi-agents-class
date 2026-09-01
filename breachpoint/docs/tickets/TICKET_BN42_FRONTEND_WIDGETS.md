@@ -1,6 +1,10 @@
 # TICKET — BN42: the four WBPs and the FE map, built by script at the referee's boxes
 
-> STATUS: open — cut 1 Sep 2026 by the cloud lead. OWNER: **terminal**, LIVE EDITOR.
+> STATUS: open, UNBLOCKED AND READY — cut 1 Sep 2026 by the cloud lead. OWNER: **terminal**,
+> LIVE EDITOR. **Resume point for the next session (see the RESUME block at the top of the
+> Log): BN41 is closed, the binaries are fresh, the plan is audited and corrected. The ONLY
+> thing that stopped this ticket on 1 Sep was that the terminal session's MCP client had
+> latched a startup ConnectionRefused and could not be reconnected in-session.**
 > DEPENDS ON BN41 rung 1. requires: editor-live, unreal-mcp (`list_toolsets` first, the
 > four failure rules apply). **Law 7: widgets land by committed Tools/bn/bn41_*.py
 > scripts in the bn11 pattern (bn11_lib is the transport), never hand-placed.**
@@ -89,6 +93,47 @@ change any name in the editor, re-run the selftest before compiling again.
 - [ ] Deviations from the referee listed with node ids (severity: blocks / cosmetic)
 
 ## Log
+
+### RESUME HERE — state at 15:10, 1 Sep 2026 (terminal session ended on an MCP registry fault)
+
+Everything blocking this ticket is cleared EXCEPT one thing that needed a Claude Code restart.
+
+**Done and pushed:**
+- BN41 closed to the limit of this machine. Rung 1: `PASS BreachpointEditor` (touched
+  `libUnrealEditor-BreachpointNext.dylib`) + `PASS Breachpoint` (touched `CodeResources`);
+  `BreachpointServer` refused by the launcher distribution before compiling. R19 satisfied on
+  both passes.
+- A build break on `main` that failed ALL THREE targets was found and fixed:
+  `AIBStateTreeTasks.cpp:361` called non-const `FaceRotation` on a `const APawn*` (from
+  `3ac96f69`, AIBot F1, landed WRITTEN-NOT-COMPILED).
+- Two `high` findings fixed in the front-end diff: the root layout not surviving map travel
+  (`BNUIManager::EnsureLocalPlayerUI`, now guarded on `IsInViewport()`), and LeaveMatch
+  travelling out from under connected clients on a listen host (`BNPlayerController`).
+- `Tools/bn/bn41_frontend_wbps.py` audited against the referee and corrected in six places
+  (contents 317→311, ProfileBar padding 12→15, BackButton y682/h26→685/h20, PageTitleText
+  →70,26 630×31, FE TitleText →33,45 666×30, floats 196.7/282.7). `bn41_selftest.py` PASS,
+  21/28 widgets, 3/3 and 9/9 binds.
+
+**The binaries are fresh: the editor now knows `BNScreen_FrontEnd` and `BNScreen_PlaySetup`
+exist.** That was the hard blocker and it is gone. `CreateWidgetBlueprint` can point at
+`/Script/BreachpointNext.BNScreen_FrontEnd` as this ticket's step 2 requires.
+
+**Start here, in this order:**
+1. `list_toolsets` — confirm `UMGToolSet.UMGToolSet`, `editor_toolset.toolsets.object.ObjectTools`,
+   `editor_toolset.toolsets.asset.AssetTools`. **Capture this listing verbatim into the Log** —
+   R46 requires it as the evidence for any fallback decision, and `TERMINAL-VS-EDITOR.md` §5.1's
+   toolset census is stale (it claims no UMG toolset; `bn11_lib.py` disproves that).
+2. Build both WBPs per the call sequence already in this ticket, walking the corrected plan file.
+3. The FE map. Expect the two genuine fallbacks named in the R46 section of this Log — creating
+   an empty level, and getting a handle to WorldSettings. Log the toolset listing that forces
+   each, per the ticket's own rule.
+4. The `blocks` deviation — row height 28 is asserted, never built — needs a 1280×720 viewport
+   capture measured against the Figma frame BEFORE deciding whether to add per-row SizeBoxes.
+
+**Do not trust `--verify` as the receipt.** It compares widget NAME SETS only. A wrong camelCase
+key returns the CLASS DEFAULT rather than an error, so a default-valued readback IS the failure
+signature (`brushColor` should read back `{0.039,0.063,0.094,0.88}`; white `1,1,1,1` is the tell).
+
 
 ### 1 Sep 2026 — pre-editor audit: the referee claim did not hold, and six boxes were corrected
 
