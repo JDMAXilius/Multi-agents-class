@@ -256,6 +256,7 @@ void UBNHUDDirector::RecomputeScores()
 		Row.PlayerName = BNPS->GetPlayerName();
 		Row.Kills = BNPS->GetKills();
 		Row.Deaths = BNPS->GetDeaths();
+		Row.Score = BNPS->GetScore();
 		Row.bIsSelf = BNPS == MyPS;
 		Row.bIsWinner = Winner && BNPS == Winner;
 		// The row's one team fact, RELATIVE — None in FFA and on the honest-unknown frames,

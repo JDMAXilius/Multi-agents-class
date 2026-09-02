@@ -1,4 +1,6 @@
 #include "UI/BNScreen_Scoreboard.h"
+#include "GameFramework/GameState.h"
+#include "Kismet/GameplayStatics.h"
 #include "Components/Image.h"
 #include "BreachpointNext.h"
 #include "Components/CanvasPanelSlot.h"
@@ -235,7 +237,9 @@ void UBNScreen_Scoreboard::Refresh()
 
 	if (BannerText && Match)
 	{
-		const FText Banner = Match->GetPhaseBannerText();
+		// `43:8/10` put mode · map where the winner sentence used to sit; once the header
+		// leaves exist the sentence yields (the result line carries the outcome instead).
+		const FText Banner = (ModeText || ResultLineText) ? FText::GetEmpty() : Match->GetPhaseBannerText();
 		BannerText->SetText(Banner);
 		BannerText->SetVisibility(Banner.IsEmpty() ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
 		BannerText->SetColorAndOpacity(FSlateColor(BNUIColors::Self));
@@ -243,6 +247,7 @@ void UBNScreen_Scoreboard::Refresh()
 
 	RefreshTeamScores(Match);
 	RefreshOutcome(Match);
+	RefreshHeader(Match);
 }
 
 void UBNScreen_Scoreboard::RefreshTeamScores(const UBNVM_Match* Match)
@@ -317,6 +322,75 @@ void UBNScreen_Scoreboard::RefreshOutcome(const UBNVM_Match* Match)
 	{
 		OutcomeAccent->SetColorAndOpacity(Tint);
 		OutcomeAccent->SetVisibility(Vis);
+	}
+}
+
+void UBNScreen_Scoreboard::RefreshHeader(const UBNVM_Match* Match)
+{
+	if (!ModeText && !MapText && !ResultLineText && !MyTeamNameText && !EnemyTeamNameText)
+	{
+		return;
+	}
+	const bool bTeams = Match && Match->IsTeamsMode();
+
+	if (ModeText)
+	{
+		// The same two names the lobby prints, so the board and the menu never disagree.
+		ModeText->SetText(bTeams ? LOCTEXT("BoardModeTeams", "ARENA: TEAM DEATHMATCH")
+		                         : LOCTEXT("BoardModeFFA", "ARENA: FREE-FOR-ALL"));
+	}
+	if (MapText)
+	{
+		// The level's own name, minus the BR_ prefix, upper-cased: SPILLWAY. No lookup table
+		// to keep in step with the map list — the package name IS the data.
+		FString Level = UGameplayStatics::GetCurrentLevelName(this, /*bRemovePrefixString*/ true);
+		Level.RemoveFromStart(TEXT("BR_"));
+		MapText->SetText(FText::FromString(Level.ToUpper()));
+	}
+	if (ResultLineText)
+	{
+		FText Result;
+		switch (Match ? Match->GetOutcome() : EBNMatchOutcome::Undecided)
+		{
+		case EBNMatchOutcome::Victory: Result = LOCTEXT("ResultWon", "MATCH WON"); break;
+		case EBNMatchOutcome::Defeat:  Result = LOCTEXT("ResultLost", "MATCH LOST"); break;
+		case EBNMatchOutcome::Draw:    Result = LOCTEXT("ResultDraw", "MATCH DRAWN"); break;
+		default:                       Result = LOCTEXT("ResultLive", "IN PROGRESS"); break;
+		}
+		// Duration is the engine's replicated ElapsedTime — a stamp the server already ships,
+		// read at refresh; no clock of our own, no Tick (law 4).
+		// ElapsedTime lives on AGameState (the match-state flavour), which ABNGameState is.
+		const AGameState* GS = GetWorld() ? GetWorld()->GetGameState<AGameState>() : nullptr;
+		const int32 Elapsed = GS ? FMath::Max(0, GS->ElapsedTime) : 0;
+		const FText Duration = FText::FromString(FString::Printf(TEXT("%d:%02d"), Elapsed / 60, Elapsed % 60));
+		ResultLineText->SetText(bTeams
+			? FText::Format(LOCTEXT("ResultLineTeams", "{0}  \u00B7  SCORE: {1}-{2}  \u00B7  DURATION: {3}"),
+				Result, FText::AsNumber(Match->GetMyTeamScore()), FText::AsNumber(Match->GetEnemyTeamScore()), Duration)
+			: FText::Format(LOCTEXT("ResultLineFFA", "{0}  \u00B7  DURATION: {1}"), Result, Duration));
+	}
+	const ESlateVisibility CardVis = bTeams ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed;
+	// Colour-free chrome from the layout script, tinted in the one place colours live.
+	if (HeaderTick)   { HeaderTick->SetColorAndOpacity(BNUIColors::Self); }
+	if (ColumnTintA)  { ColumnTintA->SetColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, 0.06f)); }
+	if (ColumnTintB)  { ColumnTintB->SetColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, 0.06f)); }
+	if (TeamDivider)
+	{
+		TeamDivider->SetColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, 0.35f));
+		TeamDivider->SetVisibility(CardVis);
+	}
+	if (MyTeamAccent)    { MyTeamAccent->SetColorAndOpacity(BNUIColors::Ally);   MyTeamAccent->SetVisibility(CardVis); }
+	if (EnemyTeamAccent) { EnemyTeamAccent->SetColorAndOpacity(BNUIColors::Threat); EnemyTeamAccent->SetVisibility(CardVis); }
+	if (MyTeamNameText)
+	{
+		MyTeamNameText->SetText(LOCTEXT("CardMyTeam", "YOUR TEAM"));
+		MyTeamNameText->SetColorAndOpacity(FSlateColor(BNUIColors::Self));
+		MyTeamNameText->SetVisibility(CardVis);
+	}
+	if (EnemyTeamNameText)
+	{
+		EnemyTeamNameText->SetText(LOCTEXT("CardEnemyTeam", "ENEMY TEAM"));
+		EnemyTeamNameText->SetColorAndOpacity(FSlateColor(BNUIColors::Self));
+		EnemyTeamNameText->SetVisibility(CardVis);
 	}
 }
 

@@ -158,6 +158,18 @@ struct FBNScoreRowView
 	UPROPERTY()
 	int32 Deaths = 0;
 
+	/** `43:29` SCORE — `ABNPlayerState::GetScore()` (kills + objective points). */
+	UPROPERTY()
+	int32 Score = 0;
+
+	/** `43:31` ASSISTS. -1 = not tracked yet (no PlayerState field); the row prints a dash. */
+	UPROPERTY()
+	int32 Assists = -1;
+
+	/** `43:40` service tag `[S420]` — empty until identity carries one; the row hides it. */
+	UPROPERTY()
+	FString ServiceTag;
+
 	UPROPERTY()
 	bool bIsSelf = false;
 

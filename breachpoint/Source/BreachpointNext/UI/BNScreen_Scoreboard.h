@@ -41,6 +41,9 @@ protected:
 	void RefreshOutcome(const class UBNVM_Match* Match);
 	void RefreshTeamScores(const class UBNVM_Match* Match);
 
+	/** `43:8/10/12/14`: mode · map, and the result line "MATCH WON · SCORE: a-b · DURATION: m:ss". */
+	void RefreshHeader(const class UBNVM_Match* Match);
+
 	/**
 	 * The WBP parents UBNScoreRow children under this. The placed children are the POOL'S
 	 * SEED, not its limit: the WBP ships 8, and anything past that is cloned at runtime from
@@ -85,6 +88,42 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
 	TObjectPtr<UTextBlock> EnemyTeamScoreText;
+
+	// -- `43:2` header and team cards; Optional so the pre-BN44 WBP still binds.
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
+	TObjectPtr<UTextBlock> ModeText;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
+	TObjectPtr<UTextBlock> MapText;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
+	TObjectPtr<UTextBlock> ResultLineText;
+
+	/** Relative by law (`EBNUITeamRelation`): YOUR TEAM / ENEMY TEAM until a ruling on literals. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
+	TObjectPtr<UTextBlock> MyTeamNameText;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
+	TObjectPtr<UTextBlock> EnemyTeamNameText;
+
+	/** Chrome the layout script places with NO colour (ASSET-RULES §5); tinted here. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
+	TObjectPtr<class UImage> HeaderTick;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
+	TObjectPtr<class UImage> ColumnTintA;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
+	TObjectPtr<class UImage> ColumnTintB;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
+	TObjectPtr<class UImage> TeamDivider;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
+	TObjectPtr<class UImage> MyTeamAccent;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
+	TObjectPtr<class UImage> EnemyTeamAccent;
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UBNScoreRow>> Rows;
