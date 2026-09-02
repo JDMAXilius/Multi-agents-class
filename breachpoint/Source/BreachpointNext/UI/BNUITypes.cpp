@@ -28,8 +28,14 @@ namespace
 		// GetWidgetFromName because these four are BP-tree widgets with no C++ binding: that
 		// missing binding IS the gap. A null return is the correct no-op for any WBP that
 		// does not carry the Figma line textures.
+		// MEASURED off the founder's hover reference, sampled rather than eyeballed: the plate
+		// and ALL FOUR border edges come back 108-109 against a 21 page, i.e. every one of them
+		// is white at the same ~43% capture dimming, with the label at a true 0. So hover is not
+		// "the bottom line brightens" - the WHOLE frame lights with the plate. Idle keeps the
+		// COMPONENT-SPECS split: top 1.0, bottom and both ticks 0.3.
 		const TCHAR* const Names[] = { TEXT("EdgeTop"), TEXT("EdgeBottom"), TEXT("EdgeLeft"), TEXT("EdgeRight") };
-		const float Opacities[] = { EdgeBright, bActive ? EdgeBright : EdgeDim, EdgeDim, EdgeDim };
+		const float EdgeAlpha = bActive ? EdgeBright : EdgeDim;
+		const float Opacities[] = { EdgeBright, EdgeAlpha, EdgeAlpha, EdgeAlpha };
 
 		for (int32 Index = 0; Index < UE_ARRAY_COUNT(Names); ++Index)
 		{
