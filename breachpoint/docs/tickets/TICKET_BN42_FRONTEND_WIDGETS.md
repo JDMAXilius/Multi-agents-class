@@ -775,3 +775,47 @@ project are correct and are already wired; re-importing would have duplicated th
 3. **The progress bar is a flat gold**, `#E5BF76`. The reference is a *gradient* orange→gold
    ramp; `UProgressBar` takes one fill colour, so a true gradient needs a material.
 4. **The rank is Corporal art under Sergeant text** — see above.
+
+---
+
+## Menu Combo rebuilt to node `21:32877` · the scrim material (2 Sep 2026)
+
+`get_metadata` on `21:32877` "Menu Combo" (69,138 349 × 510). **The outer layout was already
+exactly right** — every box matched on the first read, so nothing was touched:
+
+| node | measured screen | BN had |
+|---|---|---|
+| `News Button` | 69,138 349 × 222 | ✓ |
+| `Menu in Border` | 69,370 349 × 186 | ✓ |
+| `Rectangle 258` (top notch) | 199,373 88 × 4.727 | ✓ |
+| `Rectangle 259` (bottom notch) | 287,553 88 × 4.727 | ✓ |
+| `Rectangle 278` (left caret) | 68,431 3 × 65 | ✓ |
+| `Contents` (rows 311 × 28, pitch 40) | 16,16 inside Menu List | ✓ |
+| `Decription Frame` | 69,611 349 × 37 | ✓ |
+
+What was wrong was **inside the news card**, against `1769:23147` (MCP-BUILD-PLANS §B2): BN had
+the image at inset 0 with a caption padded 12, i.e. a caption floating on a full-bleed image.
+The measured card is a four-layer overlay — ground `#000000@0.5` at inset 7, image full-bleed at
+inset 7, a transparent→black **vertical gradient from the midpoint down**, and a 40-tall caption
+box anchored to the bottom of that same inset-7 frame with text pad (20,10,20,10). And the
+**dots own the bottom 22** of the 222, so the image region is 200 tall, not 222. All five now
+built; the dots are 4 × 6px at gap 6, centred, first one active.
+
+### The material
+
+**`M_UI_CardScrim`** — `MD_UI`, `BLEND_Translucent`, built through `MaterialTools`:
+`TextureCoordinate → ComponentMask(G) → Subtract 0.5 → Multiply 2 → MP_Opacity`, with a flat
+black `Constant3Vector` on `MP_EmissiveColor`. The ramp lives entirely in **opacity**, not
+colour — "transparent → black" means the art shows through the top half untouched, so tinting
+the colour instead would grey the whole image. `Subtract 0.5 → ×2` is what makes the gradient
+start at the midpoint rather than at the top.
+
+### The progress bar is NOT a gradient — corrected
+
+The founder asked for a gradient material on the rank bar. The export says otherwise:
+`r8.svg` from node `21:32826` is `<path id="Rectangle 22" d="M0 0H104V7H0V0Z" fill="#FFC11C"/>`
+— a **flat amber on a 104 × 7 rect**, and there is no `linearGradient` anywhere in the
+progress-bar vectors. The ramp the reference photo appears to show is that screenshot's own
+vignette. A gradient there would move *away* from 1:1, so the bar is set to the measured
+`#FFC11C` (sRGB→linear converted) and no material was built for it. The material went where the
+measurement actually calls for one — the card scrim.
