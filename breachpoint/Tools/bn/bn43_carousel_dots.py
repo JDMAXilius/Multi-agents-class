@@ -32,7 +32,10 @@ from PIL import Image, ImageDraw
 
 BOX = 7          # the SVG viewBox, in design pixels
 SS = 32          # supersample factor; 7*32 = 224 px before the downsample
-OUT_PX = 112     # final texture edge (16x the design box, power-of-two friendly enough)
+OUT_PX = 28      # 4x the 7px design box, and 224 -> 28 is an EXACT 8:1 box reduction.
+                 # 112 was tried first and the ring read as a SQUARE on screen: 112 -> 7
+                 # display px is a 16:1 non-integer-phase reduction, and a one-design-pixel
+                 # stroke does not survive it. Keep the texture near its display size.
 
 REPO = Path(__file__).resolve().parents[2]
 OUT = REPO.parent / "Saved" / "FigmaExport"
