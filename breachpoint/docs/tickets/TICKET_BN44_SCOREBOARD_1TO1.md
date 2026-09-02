@@ -52,3 +52,9 @@ layout script lands the WBP when an editor is live. Nothing here touches `Source
   the editor's game thread stalls under lock (every MCP call times out). Next unlocked session:
   run bn51, PIE post-match (teams + FFA), capture, then tick the boxes.
 - Open rulings: literal team names/emblems vs relative; assists/service tag = netcode packet.
+- 2026-09-02 (later): `bn51` run against the live editor — 17 new board leaves + 5 row leaves
+  placed, both WBPs compiled and saved. Lesson folded into the script: leaves that a C++
+  BindWidget owns must NOT stay Blueprint variables, or the UMG compiler tries to create the
+  property twice ("Tried to create a property HeaderTick ... already exists"). A PIE match was
+  run to reach the post-match board; at 2-2 with 2:55 left the founder asked for PIE to stop, so
+  the post-match capture is still owed. Box 2 ticked; box 3 open.

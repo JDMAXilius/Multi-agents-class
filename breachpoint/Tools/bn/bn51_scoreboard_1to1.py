@@ -117,6 +117,10 @@ def place(wbp, canvas, plan):
         print('== %s' % display)
         info = B.ensure(wbp, display, cls, canvas, -1)
         widget, slot = info['widget'], info['slot']
+        # A BindWidget resolves by NAME at init. Leaving the leaf flagged as a Blueprint variable
+        # makes the UMG compiler try to CREATE a property the C++ class already owns:
+        #   "Tried to create a property HeaderTick ... but another object already exists there"
+        B.mcp.call(B.UMG, 'ToggleWidgetAsVariable', widgetBlueprint=B.wbp(wbp), widget=widget, bIsVariable=False)
         wprops = {}
         if 'font_size' in extra:
             wprops['font'] = B.font_sized(widget, extra['font_size'])

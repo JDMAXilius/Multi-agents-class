@@ -920,3 +920,13 @@ Rung: editor + game builds PASS. PIE verification PENDING — the Mac's session 
 times out. Editor closed so the machine is free. Verify on the next unlocked session.
 Lesson: a UBT run can finish compiling and then sit at 0% CPU on the link for 11 minutes under
 memory pressure; kill and rerun — the second link took 2s.
+- 2026-09-02 (unlocked session) PIE capture of the composite pass: LB/RB pills, nav box states,
+  chevrons, bare italic hint and the crown all render. TWO corrections: (a) `T_BN_Fig_Board_FeatureCard`
+  is a whole card render (its own art + "RECOMMENDED"), not a frame — it covered the news image;
+  replaced by a `BRHairlineBorder` box over the card (style-coloured, no colour stored).
+  (b) "Invite Only" ran into "IN MENUS" — the shared header lays Count beside Label; the Count text
+  is now right-justified in `SetHeaderStatus` (rebuild pending).
+- ROOT CAUSE of the "editor stalls under lock" note above: it was NOT the lock. Force-quitting the
+  editor leaves `Saved/Autosaves/PackageRestoreData.json`, and the next launch parks the game
+  thread in a modal "Restore packages?" prompt (`FPackageAutoSaver::OfferToRestorePackages`) before
+  any MCP call can run. Delete that file after a `kill -9`, or quit cleanly.

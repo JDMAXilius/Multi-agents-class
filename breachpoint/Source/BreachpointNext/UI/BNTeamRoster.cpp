@@ -78,6 +78,9 @@ void UBNTeamRoster::SetHeaderStatus(const FText& InStatus)
 		if (UCommonTextBlock* Count = Cast<UCommonTextBlock>(Header->GetWidgetFromName(TEXT("Count"))))
 		{
 			Count->SetText(InStatus);
+			// The shared header lays Count out beside Label; right-justified it reads at the
+			// header's right end ("IN MENUS ........ Invite Only") instead of running into the label.
+			Count->SetJustification(ETextJustify::Right);
 			Count->SetVisibility(InStatus.IsEmpty() ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
 		}
 	}
