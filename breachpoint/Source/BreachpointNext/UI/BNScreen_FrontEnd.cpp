@@ -3,6 +3,7 @@
 #include "Components/Image.h"
 #include "Components/ProgressBar.h"
 #include "UI/BNProfileBar.h"
+#include "UI/Styles/BRUITokens.h"
 #include "UI/Components/BRButton.h"
 #include "UI/Components/BRRosterPanel.h"
 #include "Components/TextBlock.h"
@@ -41,17 +42,22 @@ void UBNScreen_FrontEnd::NativeOnInitialized()
 		QuitButton->OnClicked().AddUObject(this, &UBNScreen_FrontEnd::HandleQuitClicked);
 		QuitButton->SetLabelText(LOCTEXT("MenuQuit", "QUIT"));
 	}
-	// The design's four-slot rail, with the two that do nothing shipped disabled and named —
-	// what the reference game does with locked entries, and what this class's comment promises.
+	// The design's four-slot rail. The two that lead nowhere are DIMMED, not disabled — and the
+	// difference is the whole reason hover looked dead. `SetIsEnabled(false)` on a
+	// `UCommonButtonBase` stops it receiving hover AT ALL, so five of this screen's eight
+	// buttons never fired `OnHovered` and never inverted; only PLAY and QUIT ever could. The
+	// reference does not grey these out either — it renders them at the measured
+	// `OpacityNavTabInactive` 0.6 so the current entry reads as current. Dimming gets that look
+	// AND keeps the hover, which is what was actually wanted.
 	if (CustomsButton)
 	{
 		CustomsButton->SetLabelText(LOCTEXT("MenuCustoms", "CUSTOM GAMES"));
-		CustomsButton->SetIsEnabled(false);
+		CustomsButton->SetRenderOpacity(BR::Tokens::OpacityNavTabInactive);
 	}
 	if (AcademyButton)
 	{
 		AcademyButton->SetLabelText(LOCTEXT("MenuAcademy", "ACADEMY"));
-		AcademyButton->SetIsEnabled(false);
+		AcademyButton->SetRenderOpacity(BR::Tokens::OpacityNavTabInactive);
 	}
 	if (DescriptionText)
 	{
@@ -65,9 +71,8 @@ void UBNScreen_FrontEnd::NativeOnInitialized()
 		PromptText->SetText(LOCTEXT("FrontEndPrompts", "ENTER \u2014 SELECT      ESC \u2014 QUIT"));
 		PromptText->SetColorAndOpacity(FSlateColor(BNUIColors::InkDim));
 	}
-	// THE NAV BAR. PLAY is where we already are, so it is selected, not clickable-to-nowhere.
-	// The other three are named and disabled: the band's 666 width is design, and hiding the
-	// tabs would quietly change the header's balance.
+	// THE NAV BAR. PLAY is where we already are, so it is selected. The other three are dimmed
+	// rather than disabled, for the same reason as the rail above: disabled kills hover.
 	if (NavPlayTab)
 	{
 		NavPlayTab->SetLabelText(LOCTEXT("NavPlay", "PLAY"));
@@ -76,17 +81,17 @@ void UBNScreen_FrontEnd::NativeOnInitialized()
 	if (NavCreateTab)
 	{
 		NavCreateTab->SetLabelText(LOCTEXT("NavCreate", "CREATE"));
-		NavCreateTab->SetIsEnabled(false);
+		NavCreateTab->SetRenderOpacity(BR::Tokens::OpacityNavTabInactive);
 	}
 	if (NavCommunityTab)
 	{
 		NavCommunityTab->SetLabelText(LOCTEXT("NavCommunity", "COMMUNITY"));
-		NavCommunityTab->SetIsEnabled(false);
+		NavCommunityTab->SetRenderOpacity(BR::Tokens::OpacityNavTabInactive);
 	}
 	if (NavShopTab)
 	{
 		NavShopTab->SetLabelText(LOCTEXT("NavShop", "SHOP"));
-		NavShopTab->SetIsEnabled(false);
+		NavShopTab->SetRenderOpacity(BR::Tokens::OpacityNavTabInactive);
 	}
 	// The Idle→Hover edge transition the shared component drops on the floor — see
 	// BNButtonEdges. LAST in the button block, and deliberately: it reads GetSelected(), so
