@@ -69,6 +69,24 @@ void UBNTeamRoster::SetHeaderText(const FText& InLabel, int32 InCapacity)
 	}
 }
 
+void UBNTeamRoster::SetHeaderStatus(const FText& InStatus)
+{
+	// `UBRRosterHeader` exposes Label + Count only; the reference's "Invite Only" is the Count
+	// slot's text, reached by name like every other shared-component gap in this packet.
+	if (Header)
+	{
+		if (UCommonTextBlock* Count = Cast<UCommonTextBlock>(Header->GetWidgetFromName(TEXT("Count"))))
+		{
+			Count->SetText(InStatus);
+			Count->SetVisibility(InStatus.IsEmpty() ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
+		}
+	}
+	if (HeaderIcon)
+	{
+		HeaderIcon->SetVisibility(InStatus.IsEmpty() ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
+	}
+}
+
 void UBNTeamRoster::SetTeams(const TArray<FBNRosterTeam>& InTeams)
 {
 	Teams = InTeams;

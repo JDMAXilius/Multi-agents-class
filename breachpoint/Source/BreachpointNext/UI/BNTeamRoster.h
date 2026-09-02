@@ -130,6 +130,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "BN|UI")
 	void SetHeaderText(const FText& InLabel, int32 InCapacity = -1);
 
+	/** The header's right-hand status (`Invite Only` on the front end) and its people glyph.
+	 *  Empty hides both; the lobby passes nothing and keeps the header's own count/dash. */
+	UFUNCTION(BlueprintCallable, Category = "BN|UI")
+	void SetHeaderStatus(const FText& InStatus);
+
 protected:
 	virtual void NativeOnInitialized() override;
 
@@ -151,6 +156,10 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
 	TObjectPtr<UBRRosterHeader> Header;
+
+	/** `Roster Group Header` -> people glyph at its right end. Shown by SetHeaderStatus. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
+	TObjectPtr<UImage> HeaderIcon;
 
 	/** Ships EMPTY and that is correct — C++ owns every child. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "BN|UI")

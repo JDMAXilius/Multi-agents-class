@@ -6,6 +6,7 @@
 #include "UI/Styles/BRUITokens.h"
 #include "UI/Components/BRButton.h"
 #include "UI/BNTeamRoster.h"
+#include "UI/BNPromptButton.h"
 #include "Components/TextBlock.h"
 #include "Engine/Texture2D.h"
 #include "Engine/LocalPlayer.h"
@@ -62,12 +63,13 @@ void UBNScreen_FrontEnd::NativeOnInitialized()
 		DescriptionText->SetText(LOCTEXT("FrontEndHint", "Set up a match against bots."));
 		DescriptionText->SetColorAndOpacity(FSlateColor(BNUIColors::InkDim));
 	}
-	if (PromptText)
+	if (MenuPrompt)
 	{
-		// In C++, not typed into the .uasset: the old one was a literal inside the binary, which
-		// no reviewer can grep and no localisation pass can reach.
-		PromptText->SetText(LOCTEXT("FrontEndPrompts", "ENTER \u2014 SELECT      ESC \u2014 QUIT"));
-		PromptText->SetColorAndOpacity(FSlateColor(BNUIColors::InkDim));
+		// PLACEHOLDER ACTION, flagged: the front end has no system menu yet. Until one exists
+		// the button does the one honest thing a "Menu" control can do here — puts focus on the
+		// menu rail — rather than quitting the game as the old ESC legend did.
+		MenuPrompt->SetVerbText(LOCTEXT("PromptMenu", "Menu"));
+		MenuPrompt->OnClicked().AddUObject(this, &UBNScreen_FrontEnd::HandleMenuPromptClicked);
 	}
 	// THE NAV BAR. PLAY is where we already are, so it is selected. The other three are dimmed
 	// rather than disabled, for the same reason as the rail above: disabled kills hover.
@@ -141,6 +143,7 @@ void UBNScreen_FrontEnd::NativeOnInitialized()
 		// Capacity -1 = print no count. We have no party, so "IN MENUS 1/6" would be a lie
 		// dressed as a feature.
 		RosterPanel->SetHeaderText(LOCTEXT("RosterInMenus", "IN MENUS"), -1);
+		RosterPanel->SetHeaderStatus(LOCTEXT("RosterInviteOnly", "Invite Only"));
 	}
 	// THE PROGRESSION PANEL, fed from ini rather than invented. Unconfigured is the honest
 	// default here — this project has no ranks, so the line collapses and the bar reads 0
@@ -201,6 +204,15 @@ void UBNScreen_FrontEnd::HandlePlayClicked()
 void UBNScreen_FrontEnd::HandleQuitClicked()
 {
 	UKismetSystemLibrary::QuitGame(this, GetOwningPlayer(), EQuitPreference::Quit, /*bIgnorePlatformRestrictions*/ false);
+}
+
+
+void UBNScreen_FrontEnd::HandleMenuPromptClicked()
+{
+	if (PlayButton)
+	{
+		PlayButton->SetFocus();
+	}
 }
 
 #undef LOCTEXT_NAMESPACE

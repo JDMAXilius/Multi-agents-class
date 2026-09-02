@@ -37,7 +37,9 @@ namespace
 		// Hover is the same full bright box for both profiles. Idle is where they part: a boxed
 		// button keeps its top line and dim ticks; a menu-list row shows the bottom rule ALONE.
 		const bool bMenuRow = (Chrome == BNButtonEdges::EChrome::MenuRow);
-		const float Top = bActive ? EdgeBright : (bMenuRow ? 0.0f : EdgeBright);
+		// Reference nav (2 Sep crop): unselected tabs are a UNIFORM dim box; the selected one
+		// and a hovered one light all four edges.
+		const float Top = bActive ? EdgeBright : (bMenuRow ? 0.0f : EdgeDim);
 		const float Bottom = bActive ? EdgeBright : EdgeDim;
 		const float Side = bActive ? EdgeBright : (bMenuRow ? 0.0f : EdgeDim);
 		const float Opacities[] = { Top, Bottom, Side, Side };
@@ -63,6 +65,11 @@ void BNButtonEdges::Bind(UBRButton* Button, EChrome Chrome)
 	// rebuilt (the scoreboard grows its list) must not leave a dangling handler behind.
 	Button->OnHovered().AddWeakLambda(Button, [Button, Chrome]() { ApplyEdges(Button, true, Chrome); });
 	Button->OnUnhovered().AddWeakLambda(Button, [Button, Chrome]() { ApplyEdges(Button, false, Chrome); });
+	// Selection (the nav's current tab) lights the box exactly like hover does.
+	Button->OnIsSelectedChanged().AddLambda([Chrome, Weak = TWeakObjectPtr<UBRButton>(Button)](bool /*bSelected*/)
+	{
+		if (UBRButton* Owner = Weak.Get()) { ApplyEdges(Owner, Owner->IsHovered(), Chrome); }
+	});
 
 	// The idle pass. Callers bind AFTER SetIsSelected so a selected tab starts lit.
 	ApplyEdges(Button, false, Chrome);

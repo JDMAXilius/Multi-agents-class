@@ -895,3 +895,28 @@ Count only; the lobby ships the same dash and the founder accepted it there.
   prompts are ZOrder 10. CommonUI's `bApplyAlphaOnDisable` was ruled out by measurement first
   (turned off, still 127) and stays off — a prompt should never half-dim. Verified: idle 255 text
   on a 0.10 plate, hover plate at 0.35 (measured 105 over a 23 bar).
+
+### 2026-09-02 — front end deconstructed against the founder's UI/UX composite; eight deltas landed
+
+Reference: founder's "BREACHPOINT — UI/UX System" composite (2 Sep). Its frame is 1280x812, not
+720 — every block sits ~92 lower than the measured 1280x720 nodes and the widths agree, so the
+measured positions stand; only structural deltas were chased:
+1. News card: `T_BN_Fig_Board_FeatureCard` (Figma `Board_FeatureCard`) now overlays the card as
+   `NewsBoard` — the bracket corners and frame.
+2. Dot row: paging chevrons either side (`T_BN_CarouselArrow`, drawn by `bn50_carousel_arrow.py`,
+   the right one is the same image mirrored by RenderTransform).
+3. LB / RB: dark rounded pills (`RoundedBox` brush, no asset) under the existing labels.
+4. Nav tabs: unselected = uniform dim box, selected (or hovered) = full bright box.
+   `BNButtonEdges` re-applies on `OnIsSelectedChanged`.
+5. Hint: bare italic text; the boxed band's background is transparent.
+6. Bottom-left legend -> `MenuPrompt` (`WBP_BNPromptButton`). PLACEHOLDER ACTION, flagged: no
+   system menu exists on the front end yet, so it focuses the rail rather than quitting.
+7. Roster header: "Invite Only" in the header's Count slot (by name) + people glyph
+   (`T_UI_Glyph_Friends_24`) via `UBNTeamRoster::SetHeaderStatus`; the lobby passes nothing.
+8. Party-leader crown: was clipped by the roster's ScrollBox. The scroll area is 34 wider to
+   the left with the list padded back, so the shared row's out-of-bounds crown draws.
+Rung: editor + game builds PASS. PIE verification PENDING — the Mac's session locked mid-pass
+(CGSSessionScreenIsLocked) and the editor's game thread stalls under lock, so every MCP call
+times out. Editor closed so the machine is free. Verify on the next unlocked session.
+Lesson: a UBT run can finish compiling and then sit at 0% CPU on the link for 11 minutes under
+memory pressure; kill and rerun — the second link took 2s.

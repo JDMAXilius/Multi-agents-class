@@ -6,6 +6,7 @@
 class UBNProfileBar;
 class UBRButton;
 class UBNTeamRoster;
+class UBNPromptButton;
 class UImage;
 class UProgressBar;
 class UTextBlock;
@@ -125,8 +126,12 @@ protected:
 
 	/** The ESC/ENTER hint. Screen chrome, not part of the identity card — so it is NOT in the
 	 *  component: a scoreboard or a settings page wants the same bar with different prompts. */
+	/** The bottom-left `Menu` prompt (reference `Button Prompts`), a real button since 2 Sep. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
-	TObjectPtr<UTextBlock> PromptText;
+	TObjectPtr<UBNPromptButton> MenuPrompt;
+
+	UFUNCTION()
+	void HandleMenuPromptClicked();
 
 	/** The News card's art (349×222), painted BEHIND its title. Optional: with no texture
 	 *  configured the Image collapses and the card is a tinted panel with a headline. */
