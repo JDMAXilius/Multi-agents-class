@@ -48,7 +48,10 @@ CANVAS = '/Script/UMG.CanvasPanel'
 BORDER = '/Script/UMG.Border'
 OVERLAY = '/Script/UMG.Overlay'
 VBOX = '/Script/UMG.VerticalBox'
-BUTTON = '/Script/UMG.Button'
+# THE MEASURED MENU ROW, not /Script/UMG.Button. UBRButton is the component Figma sheet
+# 12:724 was measured against: the Idle->Hover INVERSION, the 28-high row, the token palette.
+# An engine UButton renders the grey capsule the founder was looking at.
+BUTTON = '/Game/UI/Components/Buttons/WBP_ButtonDefault.WBP_ButtonDefault_C'
 IMAGE = '/Script/UMG.Image'
 
 # Level art. These are DESIGN-TIME brushes and they are not decoration: an Image with
@@ -165,18 +168,17 @@ def frontend_plan():
           "padding": {"left": 0.0, "top": 0.0, "right": 0.0, "bottom": 0.0}}, None, False, None),
         # rows 311x28 pitch 40 (`I…21:32897..900`): PLAY live, two dead, QUIT live.
         # The SizeBox is what makes 28 true — see row_pitch's note; without it the row is 31.
+        # No *Label children: the component owns its label and C++ sets it with SetLabelText,
+        # so the WBP still types no strings and a menu row is ONE widget again. The two dead
+        # slots are bound now too — C++ disables them, rather than an asset property doing it.
         row_box('PlayRowBox'),
         ('PlayButton', BUTTON, 'PlayRowBox', BTN_FILL, None, True, None),
-        ('PlayLabel', TEXT, 'PlayButton', None, {"text": "PLAY"}, False, 14),
         row_box('CustomsRowBox'),
-        ('CustomsButton', BUTTON, 'CustomsRowBox', BTN_FILL, {"bIsEnabled": False}, False, None),
-        ('CustomsLabel', TEXT, 'CustomsButton', None, {"text": "CUSTOM GAMES"}, False, 14),
+        ('CustomsButton', BUTTON, 'CustomsRowBox', BTN_FILL, None, True, None),
         row_box('AcademyRowBox'),
-        ('AcademyButton', BUTTON, 'AcademyRowBox', BTN_FILL, {"bIsEnabled": False}, False, None),
-        ('AcademyLabel', TEXT, 'AcademyButton', None, {"text": "ACADEMY"}, False, 14),
+        ('AcademyButton', BUTTON, 'AcademyRowBox', BTN_FILL, None, True, None),
         row_box('QuitRowBox', 0.0),
         ('QuitButton', BUTTON, 'QuitRowBox', BTN_FILL, None, True, None),
-        ('QuitLabel', TEXT, 'QuitButton', None, {"text": "QUIT"}, False, 14),
         ('DescriptionPanel', BORDER, 'FrontEndCanvas',
          {"layoutData": topleft(69, 611, 349, 37), "bAutoSize": False},   # Description `I…7:7384`
          {"brushColor": BAND, "padding": {"left": 20.0, "top": 10.0, "right": 20.0, "bottom": 10.0}},
@@ -204,24 +206,16 @@ def frontend_plan():
 
 
 def value_row(prefix, label):
-    """One MAP/MODE/BOTS row: a bound Button whose child Overlay carries the label left
-    and the BOUND value right — the reference UI's label-left / value-right row."""
+    """One MAP/MODE/BOTS row — now a SINGLE widget.
+
+    The Overlay plus a label CommonTextBlock plus a value CommonTextBlock is GONE. UBRButton
+    already carries both halves of a settings row (Label left, Selection right), and
+    BNScreen_PlaySetup drives them with SetLabelText / SetSelectionText. `label` survives as a
+    parameter only so the caller still reads as a table of rows; the string itself is C++'s.
+    """
     return [
         row_box(prefix + 'RowBox'),
         (prefix + 'Button', BUTTON, prefix + 'RowBox', BTN_FILL, None, True, None),
-        # MEASURED 1 Sep: with the ButtonSlot left at its default (Center) the Overlay
-        # shrink-wraps to its widest child, so HAlign_Left/Right resolve INSIDE that shrunk
-        # box and label and value land on top of each other (MapLabel x97 vs MapValue x95).
-        # Filling the ButtonSlot is what makes label-left / value-right an actual split.
-        (prefix + 'Row', OVERLAY, prefix + 'Button', BTN_FILL, None, False, None),
-        (prefix + 'Label', TEXT, prefix + 'Row',
-         {"horizontalAlignment": "HAlign_Left", "verticalAlignment": "VAlign_Center",
-          "padding": {"left": 4.0, "top": 0.0, "right": 0.0, "bottom": 0.0}},
-         {"text": label}, False, 14),
-        (prefix + 'ValueText', TEXT, prefix + 'Row',
-         {"horizontalAlignment": "HAlign_Right", "verticalAlignment": "VAlign_Center",
-          "padding": {"left": 0.0, "top": 0.0, "right": 4.0, "bottom": 0.0}},
-         {"text": ""}, True, 14),
     ]
 
 
@@ -264,7 +258,6 @@ def playsetup_plan():
     plan += [
         row_box('StartRowBox', 0.0),
         ('StartButton', BUTTON, 'StartRowBox', BTN_FILL, None, True, None),
-        ('StartLabel', TEXT, 'StartButton', None, {"text": "START GAME"}, False, 14),
         ('BreakdownPanel', BORDER, 'SetupCanvas',
          {"layoutData": topleft(466, 76, 349, 332), "bAutoSize": False},  # Breakdown `21:43050`
          {"brushColor": PANEL, "padding": {"left": 16.0, "top": 16.0, "right": 16.0, "bottom": 16.0}},
@@ -297,7 +290,6 @@ def playsetup_plan():
          # Button Prompts `21:32863`: x60 y685 h20. Width is NOT measured — the referee says
          # it varies with prompt count (62–227), so 150 is a bounded pick, not a reading.
          {"layoutData": topleft(60, 685, 150, 20), "bAutoSize": False, "zOrder": 1}, None, True, None),
-        ('BackLabel', TEXT, 'BackButton', None, {"text": "ESC — BACK"}, False, 11),
     ]
     return plan
 

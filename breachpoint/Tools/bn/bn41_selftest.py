@@ -73,8 +73,14 @@ def check(name, header, plan):
     for member in sorted(binds & set(cpp)):
         cls = next(c for (n, c, *_r) in plan if n == member).rsplit('.', 1)[-1]
         want = cpp[member][1]
-        # CommonTextBlock satisfies a UTextBlock member (it derives it); exact match otherwise.
-        if cls != want and not (want == 'TextBlock' and cls == 'CommonTextBlock'):
+        # A member is satisfied by its own class OR by a SUBCLASS of it. Two such pairs
+        # exist in this project, and both are real derivations, not fudges:
+        #   CommonTextBlock -> UTextBlock
+        #   WBP_ButtonDefault_C -> UBRButton  (the measured Menu Row; verified in the editor,
+        #                                      GetWidgets reports its parentClass as BRButton)
+        DERIVES = {('TextBlock', 'CommonTextBlock'),
+                   ('BRButton', 'WBP_ButtonDefault_C')}
+        if cls != want and (want, cls) not in DERIVES:
             fails.append('%s is a %s in the plan but a U%s in %s' % (member, cls, want, header))
 
     tag = 'PASS' if not fails else 'FAIL'
