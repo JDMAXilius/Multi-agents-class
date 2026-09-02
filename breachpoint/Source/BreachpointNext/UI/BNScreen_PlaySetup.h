@@ -6,6 +6,8 @@
 #include "BNScreen_PlaySetup.generated.h"
 
 class UBNProfileBar;
+class UBNTeamRoster;
+class UBRHighlightButton;
 class UBRButton;
 class UBRPageTitle;
 class UImage;
@@ -130,8 +132,15 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "BN|UI")
 	TObjectPtr<UBRButton> BotsButton;
 
+	/**
+	 * START GAME is the reference's `Action Button`, not a fourth menu row — the affirmative
+	 * action on the screen, and the one row the design treats differently. `UBRHighlightButton`
+	 * is that class; it is a `UCommonButtonBase` like `UBRButton`, so `OnClicked()` is
+	 * unchanged, but it carries the amber/inverted highlight treatment instead of the row
+	 * inversion. It has no `SetSelectionText`, which is fine — this row prints no value.
+	 */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "BN|UI")
-	TObjectPtr<UBRButton> StartButton;
+	TObjectPtr<UBRHighlightButton> StartButton;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
 	TObjectPtr<UBRButton> BackButton;
@@ -162,6 +171,10 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
 	TObjectPtr<UBNProfileBar> ProfileBar;
 
+	/** The third column, `Menu in Border` `21:43056` at (863,38) 349 x 599. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
+	TObjectPtr<UBNTeamRoster> TeamRoster;
+
 	/**
 	 * The gamemode icon shown on the settings card. SOFT (law 3) and set from ini, so the
 	 * mode's art is data — a new mode is an ini line, not a compile.
@@ -171,6 +184,26 @@ protected:
 
 	UPROPERTY(Config)
 	TSoftObjectPtr<UTexture2D> FreeForAllModeIcon;
+
+	/**
+	 * Who the lobby lists. Config, not literals in the .uasset — the same rule the front end's
+	 * roster follows. Entry 0 is the local player. Names beyond the selected player count are
+	 * simply not shown, so one list serves 4v4 and 8v8 without a second array.
+	 */
+	UPROPERTY(Config)
+	TArray<FString> LobbyPlayerNames;
+
+	/** One per team, in order. Two entries = two teams; FFA uses only the first. */
+	UPROPERTY(Config)
+	TArray<FLinearColor> TeamColors;
+
+	/** One per team, in order — COBRA, EAGLE. Parallel to TeamColors. */
+	UPROPERTY(Config)
+	TArray<FString> TeamNames;
+
+	/** Shared roster emblem. SOFT (law 3); a FRAME, not a portrait. */
+	UPROPERTY(Config)
+	TSoftObjectPtr<UTexture2D> RosterEmblem;
 
 	// -- data + state ------------------------------------------------------------------
 

@@ -17,6 +17,10 @@ namespace
 	/** The section header's own label — 20 tall over a 3px underline, per `Decorative Line`. */
 	constexpr int32 HeaderFontSize = 14;
 	constexpr int32 RowFontSize = 12;
+
+	/** A long label must never run into its value. The Fill slot right-aligns the value but
+	 *  does not stop the label growing underneath it, so the gap is explicit. */
+	constexpr float LabelValueGap = 12.0f;
 }
 
 void UBNSettingsPanel::NativeOnInitialized()
@@ -25,8 +29,10 @@ void UBNSettingsPanel::NativeOnInitialized()
 
 	if (RootSizeBox)
 	{
+		// WIDTH only. The column is 349 by design — it is one of three 349 columns — but its
+		// HEIGHT is whatever the mode's text and its section count come to. Pinning 332 here is
+		// what made a long mode name clip instead of pushing the sections down.
 		RootSizeBox->SetWidthOverride(PanelWidth);
-		RootSizeBox->SetHeightOverride(PanelHeight);
 	}
 }
 
@@ -101,6 +107,10 @@ void UBNSettingsPanel::BuildSection(const FBNSettingSection& InSection)
 		UCommonTextBlock* Header = NewObject<UCommonTextBlock>(this);
 		Header->SetText(InSection.Header);
 		Header->SetColorAndOpacity(FSlateColor(BNUIColors::Self));
+		// The measured header text is 20 tall inside a 23-tall Decorative Line.
+		FSlateFontInfo HeaderFont = Header->GetFont();
+		HeaderFont.Size = HeaderFontSize;
+		Header->SetFont(HeaderFont);
 		if (UVerticalBoxSlot* HeaderSlot = SectionBox->AddChildToVerticalBox(Header))
 		{
 			// `Decorative Line` sits 23 tall and the list starts at +32, so the 9 below the
@@ -121,9 +131,13 @@ void UBNSettingsPanel::BuildSection(const FBNSettingSection& InSection)
 		UCommonTextBlock* Label = NewObject<UCommonTextBlock>(this);
 		Label->SetText(Row.Label);
 		Label->SetColorAndOpacity(FSlateColor(BNUIColors::InkDim));
+		FSlateFontInfo RowFont = Label->GetFont();
+		RowFont.Size = RowFontSize;
+		Label->SetFont(RowFont);
 		if (UHorizontalBoxSlot* LabelSlot = Line->AddChildToHorizontalBox(Label))
 		{
 			LabelSlot->SetVerticalAlignment(VAlign_Center);
+			LabelSlot->SetPadding(FMargin(0.0f, 0.0f, LabelValueGap, 0.0f));
 		}
 
 		// The value is right-aligned to the panel edge, so the label column can be any width
@@ -135,6 +149,7 @@ void UBNSettingsPanel::BuildSection(const FBNSettingSection& InSection)
 			Value->SetText(Row.Value);
 			Value->SetColorAndOpacity(FSlateColor(BNUIColors::Self));
 			Value->SetJustification(ETextJustify::Right);
+			Value->SetFont(RowFont);
 			if (UHorizontalBoxSlot* ValueSlot = Line->AddChildToHorizontalBox(Value))
 			{
 				ValueSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));

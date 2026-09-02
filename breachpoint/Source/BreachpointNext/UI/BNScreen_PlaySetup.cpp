@@ -7,6 +7,7 @@
 #include "InputCoreTypes.h"
 #include "Kismet/GameplayStatics.h"
 #include "UI/BNUITypes.h"
+#include "UI/BNTeamRoster.h"
 #include "UI/Components/BRPageTitle.h"
 
 #define LOCTEXT_NAMESPACE "BreachpointNextUI"
@@ -52,7 +53,7 @@ void UBNScreen_PlaySetup::NativeOnInitialized()
 	}
 	// The Idle→Hover edge transition the shared component drops on the floor — see BNButtonEdges.
 	for (UBRButton* Button : { MapButton.Get(), ModeButton.Get(), BotsButton.Get(),
-		StartButton.Get(), BackButton.Get() })
+		BackButton.Get() })
 	{
 		BNButtonEdges::Bind(Button);
 	}
@@ -233,6 +234,43 @@ void UBNScreen_PlaySetup::RefreshDisplay()
 		                           : LOCTEXT("OverrideTeamsOff", "NONE");
 
 		SettingsPanel->SetSections(Sections);
+	}
+
+	if (TeamRoster)
+	{
+		// The lobby list mirrors the PLAYERS row exactly: cycle 4v4 -> 8v8 and the roster grows
+		// with it, because both read TotalPlayers rather than keeping their own count.
+		const int32 Shown = FMath::Clamp(TotalPlayers, 0, LobbyPlayerNames.Num());
+		const int32 TeamCount = bTeams ? FMath::Max(1, TeamNames.Num()) : 1;
+
+		TArray<FBNRosterTeam> Lobby;
+		Lobby.SetNum(TeamCount);
+		for (int32 Team = 0; Team < TeamCount; ++Team)
+		{
+			Lobby[Team].Name = TeamNames.IsValidIndex(Team)
+				? FText::FromString(TeamNames[Team])
+				: LOCTEXT("LobbyFFA", "PLAYERS");
+			Lobby[Team].Color = TeamColors.IsValidIndex(Team) ? TeamColors[Team] : FLinearColor::Transparent;
+		}
+
+		for (int32 Index = 0; Index < Shown; ++Index)
+		{
+			// Alternating rather than blocked: it keeps both teams the same size as the count
+			// grows, which is what "4v4 and 8v8" means and what a block split would get wrong
+			// on an odd count.
+			FBNRosterTeam& Team = Lobby[Index % TeamCount];
+			FBRRosterMemberView& Member = Team.Members.AddDefaulted_GetRef();
+			Member.Gamertag = FText::FromString(LobbyPlayerNames[Index]);
+			Member.Emblem = RosterEmblem;
+			Member.MicState = EBRRosterMicState::Idle;
+			Member.bIsLocalPlayer = Member.bIsPartyLeader = (Index == 0);
+			// Transparent: the reference's nameplate banners are 343-owned art and the IP line
+			// keeps them out until we author our own.
+			Member.TeamFillColor = FLinearColor::Transparent;
+		}
+
+		TeamRoster->SetTeams(Lobby);
+		TeamRoster->SetHeaderText(LOCTEXT("LobbyHeader", "LOBBY"), Shown);
 	}
 	if (PreviewImage)
 	{
