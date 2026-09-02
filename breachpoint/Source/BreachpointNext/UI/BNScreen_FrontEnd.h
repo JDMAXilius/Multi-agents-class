@@ -5,6 +5,7 @@
 
 class UBRButton;
 class UImage;
+class UProgressBar;
 class UTextBlock;
 class UTexture2D;
 
@@ -57,6 +58,48 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "BN|UI")
 	TObjectPtr<UBRButton> QuitButton;
+
+	/**
+	 * THE NAVIGATION BAR — `21:32864`, 33,45 666x30: four "Menu Slider Button" tabs,
+	 * 138x26 at pitch 150 (x 39/189/339/489 inside the bar).
+	 *
+	 * Only PLAY has a screen behind it. The other three ship DISABLED with their design
+	 * names rather than absent, for the same reason the rail's two dead rows do: a tab that
+	 * opens nothing is worse than a tab that is visibly not ready, and deleting them would
+	 * lose the measured 666-wide band the design balances the header on.
+	 */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
+	TObjectPtr<UBRButton> NavPlayTab;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
+	TObjectPtr<UBRButton> NavCreateTab;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
+	TObjectPtr<UBRButton> NavCommunityTab;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
+	TObjectPtr<UBRButton> NavShopTab;
+
+	/**
+	 * THE PROGRESSION PANEL — `21:32826`, 869,55 334x115 (title above a 334x94 border).
+	 *
+	 * There is NO progression system in this project. So the rank line and its bar are fed
+	 * from ini, not invented in code: with nothing configured the line collapses and the bar
+	 * reads zero, and the panel is honest chrome rather than a fake Sergeant Grade 1.
+	 */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
+	TObjectPtr<UTextBlock> RankText;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
+	TObjectPtr<UProgressBar> RankProgress;
+
+	/** The career line, e.g. "SERGEANT  GRADE 1". EMPTY by default — we have no ranks yet. */
+	UPROPERTY(Config)
+	FString CareerRankLine;
+
+	/** 0..1 fill for the rank bar. Meaningless until CareerRankLine is configured. */
+	UPROPERTY(Config)
+	float CareerRankFraction = 0.0f;
 
 	/** The two design slots that have no action yet. Disabled, per the class comment. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")

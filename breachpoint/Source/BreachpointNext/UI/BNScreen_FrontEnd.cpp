@@ -1,6 +1,7 @@
 #include "UI/BNScreen_FrontEnd.h"
 #include "BreachpointNext.h"
 #include "Components/Image.h"
+#include "Components/ProgressBar.h"
 #include "UI/Components/BRButton.h"
 #include "Components/TextBlock.h"
 #include "Engine/Texture2D.h"
@@ -54,6 +55,43 @@ void UBNScreen_FrontEnd::NativeOnInitialized()
 	{
 		DescriptionText->SetText(LOCTEXT("FrontEndHint", "Set up a match against bots."));
 		DescriptionText->SetColorAndOpacity(FSlateColor(BNUIColors::InkDim));
+	}
+	// THE NAV BAR. PLAY is where we already are, so it is selected, not clickable-to-nowhere.
+	// The other three are named and disabled: the band's 666 width is design, and hiding the
+	// tabs would quietly change the header's balance.
+	if (NavPlayTab)
+	{
+		NavPlayTab->SetLabelText(LOCTEXT("NavPlay", "PLAY"));
+		NavPlayTab->SetIsSelected(true);
+	}
+	if (NavCreateTab)
+	{
+		NavCreateTab->SetLabelText(LOCTEXT("NavCreate", "CREATE"));
+		NavCreateTab->SetIsEnabled(false);
+	}
+	if (NavCommunityTab)
+	{
+		NavCommunityTab->SetLabelText(LOCTEXT("NavCommunity", "COMMUNITY"));
+		NavCommunityTab->SetIsEnabled(false);
+	}
+	if (NavShopTab)
+	{
+		NavShopTab->SetLabelText(LOCTEXT("NavShop", "SHOP"));
+		NavShopTab->SetIsEnabled(false);
+	}
+	// THE PROGRESSION PANEL, fed from ini rather than invented. Unconfigured is the honest
+	// default here — this project has no ranks, so the line collapses and the bar reads 0
+	// instead of printing a career the player has not got.
+	if (RankText)
+	{
+		RankText->SetText(FText::FromString(CareerRankLine));
+		RankText->SetVisibility(CareerRankLine.IsEmpty()
+			? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
+		RankText->SetColorAndOpacity(FSlateColor(BNUIColors::Self));
+	}
+	if (RankProgress)
+	{
+		RankProgress->SetPercent(FMath::Clamp(CareerRankFraction, 0.0f, 1.0f));
 	}
 	if (NewsImage)
 	{

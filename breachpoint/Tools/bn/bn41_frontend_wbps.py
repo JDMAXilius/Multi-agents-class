@@ -78,6 +78,8 @@ SCRIM = {"r": 0.0, "g": 0.0, "b": 0.0, "a": 0.62}
 # ours (the referee carries no colour for them) — same standing as the panel alphas.
 NOTCH = {"r": 0.75, "g": 0.80, "b": 0.86, "a": 0.90}
 CARET = {"r": 0.90, "g": 0.94, "b": 1.00, "a": 1.00}
+DIM = {"r": 0.514, "g": 0.592, "b": 0.663, "a": 1.0}   # BNUIColors::InkDim, as a literal
+BAR = '/Script/UMG.ProgressBar'
 
 
 def topleft(x, y, w, h):
@@ -139,11 +141,25 @@ def frontend_plan():
         ('FrontEndCanvas', CANVAS, None, None, None, False, None),
         ('Scrim', IMAGE, 'FrontEndCanvas', {"layoutData": stretch(), "bAutoSize": False},
          {"colorAndOpacity": SCRIM}, False, None),
-        ('TitleText', TEXT, 'FrontEndCanvas',
-         # Navigation Bar `21:32864` is 33,45 666x30. M1 has no tabs, so the wordmark stands
-         # in for PLAY/CREATE/COMMUNITY/SHOP in that slot until M2 builds them.
-         {"layoutData": topleft(33, 45, 666, 30), "bAutoSize": False},
-         {"text": "BREACHPOINT"}, False, 30),
+        # THE NAVIGATION BAR, `21:32864` at 33,45 666x30. The wordmark that used to stand in
+        # this slot is GONE — these are the real tabs. Read off the node: four "Menu Slider
+        # Button" at 138x26, bar-local x 39/189/339/489, i.e. pitch 150 with a 12 gap; the
+        # LB/RB prompt glyphs are 27x15 at bar-local 27 and 639.
+        # Only PLAY has a screen. C++ selects it and disables the other three by name.
+        ('NavPlayTab', BUTTON, 'FrontEndCanvas',
+         {"layoutData": topleft(33 + 39, 47, 138, 26), "bAutoSize": False, "zOrder": 2}, None, True, None),
+        ('NavCreateTab', BUTTON, 'FrontEndCanvas',
+         {"layoutData": topleft(33 + 189, 47, 138, 26), "bAutoSize": False, "zOrder": 2}, None, True, None),
+        ('NavCommunityTab', BUTTON, 'FrontEndCanvas',
+         {"layoutData": topleft(33 + 339, 47, 138, 26), "bAutoSize": False, "zOrder": 2}, None, True, None),
+        ('NavShopTab', BUTTON, 'FrontEndCanvas',
+         {"layoutData": topleft(33 + 489, 47, 138, 26), "bAutoSize": False, "zOrder": 2}, None, True, None),
+        ('NavPromptLeft', TEXT, 'FrontEndCanvas',
+         {"layoutData": topleft(33 + 27, 52.5, 27, 15), "bAutoSize": False, "zOrder": 3},
+         {"text": "LB", "colorAndOpacity": DIM}, False, 11),
+        ('NavPromptRight', TEXT, 'FrontEndCanvas',
+         {"layoutData": topleft(33 + 639, 52.5, 27, 15), "bAutoSize": False, "zOrder": 3},
+         {"text": "RB", "colorAndOpacity": DIM}, False, 11),
         ('NewsPanel', BORDER, 'FrontEndCanvas',
          {"layoutData": topleft(69, 138, 349, 222), "bAutoSize": False},  # News `I…7:7381`
          # padding 0, NOT the 12 the panel used to carry: the art bleeds to the card edge
@@ -227,6 +243,33 @@ def frontend_plan():
         ('PartyNotchBottom', IMAGE, 'FrontEndCanvas',
          {"layoutData": topleft(1080.5, 667, 88, 4), "bAutoSize": False, "zOrder": 2},
          {"colorAndOpacity": NOTCH, "visibility": "HitTestInvisible"}, False, None),
+        # THE PROGRESSION PANEL, `21:32826` at 869,55 334x115. The title sits ABOVE the border
+        # (node y -5 relative, i.e. absolute 50) and the border is 334x94 at y76; the switcher
+        # dots hang BELOW at 999,176 72x10 and the prompt glyph at 836,113 20x20.
+        # There is no progression system: RankText and RankProgress are fed from ini and
+        # collapse to nothing when unset, rather than printing an invented rank.
+        ('ProgressionTitle', TEXT, 'FrontEndCanvas',
+         {"layoutData": topleft(869, 50, 108, 21), "bAutoSize": False, "zOrder": 2},
+         {"text": "CAREER RANK", "colorAndOpacity": DIM}, False, 12),
+        ('ProgressionPanel', BORDER, 'FrontEndCanvas',
+         {"layoutData": topleft(869, 76, 334, 94), "bAutoSize": False, "zOrder": 1},
+         {"brushColor": PANEL, "padding": {"left": 0.0, "top": 0.0, "right": 0.0, "bottom": 0.0}},
+         False, None),
+        ('ProgressionNotchTop', IMAGE, 'FrontEndCanvas',
+         {"layoutData": topleft(869 + 123, 76, 88, 4), "bAutoSize": False, "zOrder": 2},
+         {"colorAndOpacity": NOTCH}, False, None),
+        ('ProgressionNotchBottom', IMAGE, 'FrontEndCanvas',
+         {"layoutData": topleft(869 + 123, 166, 88, 4), "bAutoSize": False, "zOrder": 2},
+         {"colorAndOpacity": NOTCH}, False, None),
+        # Right Side of the panel is 167 wide from x1036; the line and its bar live in it.
+        ('RankText', TEXT, 'FrontEndCanvas',
+         {"layoutData": topleft(1046, 92, 147, 22), "bAutoSize": False, "zOrder": 2},
+         {"text": ""}, True, 14),
+        ('RankProgress', BAR, 'FrontEndCanvas',
+         {"layoutData": topleft(1046, 120, 147, 8), "bAutoSize": False, "zOrder": 2}, None, True, None),
+        ('ProgressionSwitcher', IMAGE, 'FrontEndCanvas',
+         {"layoutData": topleft(999, 176, 72, 10), "bAutoSize": False, "zOrder": 2},
+         {"colorAndOpacity": DIM}, False, None),
         ('PromptText', TEXT, 'ProfileBar',
          {"horizontalAlignment": "HAlign_Left", "verticalAlignment": "VAlign_Center",
           "padding": {"left": 0.0, "top": 0.0, "right": 0.0, "bottom": 0.0}},
