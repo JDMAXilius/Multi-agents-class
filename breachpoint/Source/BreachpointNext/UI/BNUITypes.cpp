@@ -13,7 +13,7 @@ namespace
 	// bHovered is PASSED, not read back: the hover flag on the outer UUserWidget is not
 	// guaranteed to be set yet at the moment CommonUI fires OnHovered, and a state machine that
 	// samples its own trigger is the kind of thing that works on the desk and flickers in play.
-	void ApplyEdges(UBRButton* Button, bool bHovered)
+	void ApplyEdges(UBRButton* Button, bool bHovered, BNButtonEdges::EChrome Chrome)
 	{
 		if (!Button)
 		{
@@ -34,8 +34,13 @@ namespace
 		// "the bottom line brightens" - the WHOLE frame lights with the plate. Idle keeps the
 		// COMPONENT-SPECS split: top 1.0, bottom and both ticks 0.3.
 		const TCHAR* const Names[] = { TEXT("EdgeTop"), TEXT("EdgeBottom"), TEXT("EdgeLeft"), TEXT("EdgeRight") };
-		const float EdgeAlpha = bActive ? EdgeBright : EdgeDim;
-		const float Opacities[] = { EdgeBright, EdgeAlpha, EdgeAlpha, EdgeAlpha };
+		// Hover is the same full bright box for both profiles. Idle is where they part: a boxed
+		// button keeps its top line and dim ticks; a menu-list row shows the bottom rule ALONE.
+		const bool bMenuRow = (Chrome == BNButtonEdges::EChrome::MenuRow);
+		const float Top = bActive ? EdgeBright : (bMenuRow ? 0.0f : EdgeBright);
+		const float Bottom = bActive ? EdgeBright : EdgeDim;
+		const float Side = bActive ? EdgeBright : (bMenuRow ? 0.0f : EdgeDim);
+		const float Opacities[] = { Top, Bottom, Side, Side };
 
 		for (int32 Index = 0; Index < UE_ARRAY_COUNT(Names); ++Index)
 		{
@@ -47,7 +52,7 @@ namespace
 	}
 }
 
-void BNButtonEdges::Bind(UBRButton* Button)
+void BNButtonEdges::Bind(UBRButton* Button, EChrome Chrome)
 {
 	if (!Button)
 	{
@@ -56,9 +61,9 @@ void BNButtonEdges::Bind(UBRButton* Button)
 
 	// AddWeakLambda keyed on the button: the screen outlives its rows, but a row torn down and
 	// rebuilt (the scoreboard grows its list) must not leave a dangling handler behind.
-	Button->OnHovered().AddWeakLambda(Button, [Button]() { ApplyEdges(Button, true); });
-	Button->OnUnhovered().AddWeakLambda(Button, [Button]() { ApplyEdges(Button, false); });
+	Button->OnHovered().AddWeakLambda(Button, [Button, Chrome]() { ApplyEdges(Button, true, Chrome); });
+	Button->OnUnhovered().AddWeakLambda(Button, [Button, Chrome]() { ApplyEdges(Button, false, Chrome); });
 
 	// The idle pass. Callers bind AFTER SetIsSelected so a selected tab starts lit.
-	ApplyEdges(Button, false);
+	ApplyEdges(Button, false, Chrome);
 }

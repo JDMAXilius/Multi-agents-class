@@ -96,10 +96,15 @@ void UBNScreen_FrontEnd::NativeOnInitialized()
 	// the rules and the text all keep drawing on top of it, unchanged. Nothing here touches the
 	// button's own opacity: dimming the whole widget would take the lines and the label with it,
 	// which is not what the reference does.
-	for (UBRButton* Button : { PlayButton.Get(), CustomsButton.Get(), AcademyButton.Get(), QuitButton.Get(),
-		NavPlayTab.Get(), NavCreateTab.Get(), NavCommunityTab.Get(), NavShopTab.Get() })
+	// Two chromes, both measured. The rail rows live inside a Menu List and rest on a bottom
+	// rule alone; the nav tabs are standalone boxes and keep their top line and ticks.
+	for (UBRButton* Button : { PlayButton.Get(), CustomsButton.Get(), AcademyButton.Get(), QuitButton.Get() })
 	{
-		BNButtonEdges::Bind(Button);
+		BNButtonEdges::Bind(Button, BNButtonEdges::EChrome::MenuRow);
+	}
+	for (UBRButton* Button : { NavPlayTab.Get(), NavCreateTab.Get(), NavCommunityTab.Get(), NavShopTab.Get() })
+	{
+		BNButtonEdges::Bind(Button, BNButtonEdges::EChrome::Boxed);
 	}
 	// THE ROSTER. One measured component where 23 canvas widgets used to be. The panel owns its
 	// own geometry - we hand it data and nothing else, which is the whole reason to use it.

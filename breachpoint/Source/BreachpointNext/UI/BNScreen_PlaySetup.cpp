@@ -53,7 +53,7 @@ void UBNScreen_PlaySetup::NativeOnInitialized()
 	// The Idle→Hover edge transition the shared component drops on the floor — see BNButtonEdges.
 	for (UBRButton* Button : { MapButton.Get(), ModeButton.Get(), BotsButton.Get() })
 	{
-		BNButtonEdges::Bind(Button);
+		BNButtonEdges::Bind(Button, BNButtonEdges::EChrome::MenuRow);
 	}
 
 	// The menu opens on the founder's default mode, and the lobby size follows FROM it -

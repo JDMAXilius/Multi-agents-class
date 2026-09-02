@@ -819,3 +819,31 @@ progress-bar vectors. The ramp the reference photo appears to show is that scree
 vignette. A gradient there would move *away* from 1:1, so the bar is set to the measured
 `#FFC11C` (sRGB→linear converted) and no material was built for it. The material went where the
 measurement actually calls for one — the card scrim.
+
+### 2026-09-02 — `Menu in Border` becomes ONE component (`UBNPanelChassis`)
+
+Sampled Figma's own render of `I21:43047;7:7383` (values are the render's greys on its board):
+plate 85 · frame a 3px band at 142 with a 1px core at 165 · both notches (`Rectangle 258/259`,
+88 x 4.727 at list-local x127 / x215) read 142 straight through — they are FRAME-COLOURED TABS,
+not the 90%-white bars BN had been drawing · caret (`Rectangle 278`, 3 x 65 at list-local -4,58)
+reads 165/183/165 — brighter than the frame, one pixel proud of its edge.
+
+Landed: `UBNPanelChassis` + `WBP_BNPanelChassis` (RootSizeBox w349 → Ground #000@0.5, four 3px
+frame bands @0.35 with 1px cores @0.55, NotchTop/NotchBottom, Caret, `Content` NamedSlot inset 19).
+Front end menu, lobby menu and the lobby roster all sit on it now; the loose canvas plates,
+notches and carets in three WBPs are deleted. `BNButtonEdges::EChrome{Boxed,MenuRow}` gives rail
+rows bottom-rule-only chrome at idle (all four edges on hover), nav tabs keep the full box.
+
+Verified (PIE in-viewport, editor build): front end rail and lobby menu render the chassis; lobby
+roster renders on it; light nameplates carry dark gamertags (`FBNRosterPlate.bLightPlate`).
+
+**Ticks kept, on evidence.** The founder's photo of the shipped game (2026-09-02) shows short
+end-ticks on every menu row. A change that stripped the shared `Border` hairline's side edges
+for MenuRow chrome was written and reverted the same hour. Delta that remains: the game's ticks
+are short (~1/3 row height, rising from the bottom rule); ours are full-height at 0.3 from the
+shared `UBRHairlineBorder`. Shortening them is a `Source/Breachpoint/UI/Components/` change —
+`contract_gap`, founder's call.
+
+Tooling notes: `SlateInspector.Snapshot` DOES see into the chassis NamedSlot at `maxDepth` 80
+(it did not at 40/60); `PressKey` lands on the editor, not the PIE viewport — navigate with
+`Click{ref}`. The editor raised a macOS memory-pressure warning during this pass.

@@ -228,6 +228,18 @@ namespace BNUIColors
  */
 namespace BNButtonEdges
 {
+	/**
+	 * How a button's four edge lines rest. Both hover to a full bright box; they differ ONLY at
+	 * idle, and the difference is measured, not stylistic:
+	 *
+	 *   Boxed    the standalone button (`12:725`): top 1.0, bottom 0.3, side ticks 0.3.
+	 *            The nav tabs.
+	 *   MenuRow  the same button inside a Menu List (`I21:43047;7:7383`, sampled off Figma's
+	 *            own render): the top edge reads as PLATE — no top line, no side ticks — and
+	 *            only the bottom rule shows. The rail rows on the front end and the lobby.
+	 */
+	enum class EChrome : uint8 { Boxed, MenuRow };
+
 	/** Wires hover/unhover and applies the idle state once. Call AFTER SetIsSelected. */
-	BREACHPOINTNEXT_API void Bind(UBRButton* Button);
+	BREACHPOINTNEXT_API void Bind(UBRButton* Button, EChrome Chrome = EChrome::Boxed);
 }
