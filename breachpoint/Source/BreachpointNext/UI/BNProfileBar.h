@@ -95,9 +95,13 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "BN|UI")
 	TObjectPtr<UCommonTextBlock> Gamertag;
 
-	/** The three glyph cells. C++ only sizes it; the cells themselves are the WBP's. */
+	/** The three glyph cells, at their measured offsets. C++ never re-lays them out. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
 	TObjectPtr<UPanelWidget> ButtonsBox;
+
+	/** The `6` beside the friends glyph — measured 8 x 18 at Buttons-local (68,8). */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
+	TObjectPtr<UCommonTextBlock> FriendCount;
 
 	/** Config, so the footer's identity is data and not a string typed into a .uasset. */
 	UPROPERTY(Config)
@@ -105,6 +109,10 @@ protected:
 
 	UPROPERTY(Config)
 	TSoftObjectPtr<UTexture2D> DefaultAvatar;
+
+	/** Placeholder until a presence system exists. 0 collapses the number entirely. */
+	UPROPERTY(Config)
+	int32 DefaultFriendCount = 0;
 
 private:
 	/** Held so a late `SetIdentity` cannot be clobbered by a stale async avatar load. */

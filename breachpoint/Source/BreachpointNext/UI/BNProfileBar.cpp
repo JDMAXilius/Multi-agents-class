@@ -27,6 +27,15 @@ void UBNProfileBar::NativeOnInitialized()
 		Ground->SetColorAndOpacity(FLinearColor(0.0f, 0.0f, 0.0f, 0.5f));
 	}
 
+	if (FriendCount)
+	{
+		// Zero collapses rather than printing "0" — an honest empty beats a confident nothing,
+		// and there is no presence system behind this yet.
+		FriendCount->SetText(FText::AsNumber(DefaultFriendCount));
+		FriendCount->SetVisibility(DefaultFriendCount > 0
+			? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+	}
+
 	// Boot from config so the footer is never a string typed into the .uasset.
 	SetIdentity(FText::FromString(DefaultGamertag), DefaultAvatar);
 }
