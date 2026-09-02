@@ -2,6 +2,7 @@
 #include "BreachpointNext.h"
 #include "Components/Image.h"
 #include "Components/ProgressBar.h"
+#include "UI/BNProfileBar.h"
 #include "UI/Components/BRButton.h"
 #include "UI/Components/BRRosterPanel.h"
 #include "Components/TextBlock.h"
@@ -56,6 +57,13 @@ void UBNScreen_FrontEnd::NativeOnInitialized()
 	{
 		DescriptionText->SetText(LOCTEXT("FrontEndHint", "Set up a match against bots."));
 		DescriptionText->SetColorAndOpacity(FSlateColor(BNUIColors::InkDim));
+	}
+	if (PromptText)
+	{
+		// In C++, not typed into the .uasset: the old one was a literal inside the binary, which
+		// no reviewer can grep and no localisation pass can reach.
+		PromptText->SetText(LOCTEXT("FrontEndPrompts", "ENTER \u2014 SELECT      ESC \u2014 QUIT"));
+		PromptText->SetColorAndOpacity(FSlateColor(BNUIColors::InkDim));
 	}
 	// THE NAV BAR. PLAY is where we already are, so it is selected, not clickable-to-nowhere.
 	// The other three are named and disabled: the band's 666 width is design, and hiding the

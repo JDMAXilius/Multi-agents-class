@@ -3,6 +3,7 @@
 #include "UI/BNActivatableWidget.h"
 #include "BNScreen_FrontEnd.generated.h"
 
+class UBNProfileBar;
 class UBRButton;
 class UBRRosterPanel;
 class UImage;
@@ -113,6 +114,19 @@ protected:
 	 *  moments; a WBP never types the copy. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
 	TObjectPtr<UTextBlock> DescriptionText;
+
+	/**
+	 * The footer identity strip — one component, replacing six hand-placed canvas widgets.
+	 * `UBNProfileBar` owns the measured boxes (bar 1280 x 50 at y670; the card at x862, 349 x 50;
+	 * avatar 40 x 40 at (5,5); gamertag at (55,17)); the screen only decides where the bar sits.
+	 */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
+	TObjectPtr<UBNProfileBar> ProfileBar;
+
+	/** The ESC/ENTER hint. Screen chrome, not part of the identity card — so it is NOT in the
+	 *  component: a scoreboard or a settings page wants the same bar with different prompts. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
+	TObjectPtr<UTextBlock> PromptText;
 
 	/** The News card's art (349×222), painted BEHIND its title. Optional: with no texture
 	 *  configured the Image collapses and the card is a tinted panel with a headline. */
