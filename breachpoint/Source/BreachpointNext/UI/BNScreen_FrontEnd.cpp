@@ -52,12 +52,10 @@ void UBNScreen_FrontEnd::NativeOnInitialized()
 	if (CustomsButton)
 	{
 		CustomsButton->SetLabelText(LOCTEXT("MenuCustoms", "CUSTOM GAMES"));
-		CustomsButton->SetRenderOpacity(BR::Tokens::OpacityNavTabInactive);
 	}
 	if (AcademyButton)
 	{
 		AcademyButton->SetLabelText(LOCTEXT("MenuAcademy", "ACADEMY"));
-		AcademyButton->SetRenderOpacity(BR::Tokens::OpacityNavTabInactive);
 	}
 	if (DescriptionText)
 	{
@@ -81,21 +79,23 @@ void UBNScreen_FrontEnd::NativeOnInitialized()
 	if (NavCreateTab)
 	{
 		NavCreateTab->SetLabelText(LOCTEXT("NavCreate", "CREATE"));
-		NavCreateTab->SetRenderOpacity(BR::Tokens::OpacityNavTabInactive);
 	}
 	if (NavCommunityTab)
 	{
 		NavCommunityTab->SetLabelText(LOCTEXT("NavCommunity", "COMMUNITY"));
-		NavCommunityTab->SetRenderOpacity(BR::Tokens::OpacityNavTabInactive);
 	}
 	if (NavShopTab)
 	{
 		NavShopTab->SetLabelText(LOCTEXT("NavShop", "SHOP"));
-		NavShopTab->SetRenderOpacity(BR::Tokens::OpacityNavTabInactive);
 	}
 	// The Idle→Hover edge transition the shared component drops on the floor — see
 	// BNButtonEdges. LAST in the button block, and deliberately: it reads GetSelected(), so
 	// binding before NavPlayTab->SetIsSelected(true) would start the selected tab dim.
+	// Hover changes the BACKGROUND PLATE ONLY. The plate (`TextFrameFill`) sits at overlay
+	// index 1 — under the border, under the four edge lines, under the label — so the corners,
+	// the rules and the text all keep drawing on top of it, unchanged. Nothing here touches the
+	// button's own opacity: dimming the whole widget would take the lines and the label with it,
+	// which is not what the reference does.
 	for (UBRButton* Button : { PlayButton.Get(), CustomsButton.Get(), AcademyButton.Get(), QuitButton.Get(),
 		NavPlayTab.Get(), NavCreateTab.Get(), NavCommunityTab.Get(), NavShopTab.Get() })
 	{
