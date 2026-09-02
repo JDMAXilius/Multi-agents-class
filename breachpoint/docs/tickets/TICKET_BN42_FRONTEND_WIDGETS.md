@@ -507,3 +507,92 @@ for one (`BRHairlineBorder`'s "the single biggest asset-count saving in the fron
 Whoever lands the `UBRButton` fix should decide whether `Border` or the Figma textures is the
 one that survives; the founder has asked for the Figma assets, which argues for the textures and
 for `Border` going `edges 0` in this WBP.
+
+---
+
+## The front-end asset list, with real status (written down 2 Sep 2026)
+
+This list only ever existed in chat, which is the failure CLAUDE.md names outright. Committing
+it. Status is from a filesystem inventory of `Content/UI` (756 uassets, 167 of them icons), not
+from memory.
+
+### Landed from the Figma MCP as new textures — 1 item
+
+| item | Figma node | route | state |
+|---|---|---|---|
+| Carousel Dot, Active + Inactive | `12:38169` | SVG → `Tools/bn/bn43_carousel_dots.py` → `T_CarouselDot_Active/Inactive` | **done, in the WBP** |
+
+The SVG is the only faithful source: `download_assets` on those symbol nodes returns a fully
+opaque PNG (min AND max alpha 255 — Figma bakes the white artboard in), so the "dot" imports as
+a white square. Verified, then rasterised from the SVG numbers instead.
+
+### NOT exported from Figma — the project already ships them
+
+The founder's correction on 1 Sep ("we already have multiple assets here that you could use
+`/Game/UI` and `/Game/UI/Components/Buttons`") is the ruling. Re-exporting any of these from
+Figma would be duplicate art with a second owner.
+
+| item | what already exists | state |
+|---|---|---|
+| the button + its four rules | `WBP_ButtonDefault` + `Assets/Sides/{Top,Bottom,Left,Right}_Line` | **in use** |
+| menu-row ornaments | `Assets/MenuRow_{Arrows,Dot,Hatch,Tick,Triangle}` | exist, **not wired** |
+| career rank crest | `Icons/Ranks/T_UI_Rank_01..14` (13 crests) | **in use** — `04_Sergeant` |
+| profile glyphs | `Icons/Glyphs/T_UI_Glyph_{Chat,Friends,Settings}_24` | **in use** |
+| roster avatar frame | `Icons/Containers/T_UI_Icon_Container_Hex` | **in use** |
+| roster trailing icons | `T_UI_Icon_Currency_Token`, `T_UI_Glyph_Speaking_24`, `T_UI_Glyph_PartyLeader_24`, `T_UI_Glyph_Muted_24` | exist, **not wired** |
+| mode / gametype icons for level select | `Icons/Mode/*` (24), `Icons/Gametype/*` (8) | exist, **not wired** |
+| difficulty icons for the bots row | `Icons/Difficulty/*` (8) | exist, **not wired** |
+
+### The finding that matters most — whole COMPONENTS already exist, and BN42 did not use them
+
+`/Game/UI/Components/` ships measured WBPs over `BR` C++ classes. BN42 hand-built plain
+`UBorder`s in their place. This is why the panels still do not read 1:1 and no amount of Figma
+export will fix it.
+
+| BN42 built by hand | the component that already exists | its C++ |
+|---|---|---|
+| `NewsPanel` — Border + Overlay + Image + Text | **`WBP_FeatureCard`** | `UBRFeatureCard` |
+| four `Nav*Tab` buttons on a canvas | **`WBP_NavBar`** / **`WBP_NavTab`** | `UBRNavBar` |
+| `PartyPanel` + six hand-made rows | **`WBP_RosterPanel`** / **`WBP_RosterRow`** / **`WBP_RosterHeader`** | `UBRRosterPanel` |
+| `RankProgress` — a bare `UProgressBar` | **`WBP_ProgressBar`** | `UBRProgressBar` |
+| `MenuPanel`, `PreviewPanel`, `BreakdownPanel` | **`WBP_Panel`** (notch chassis) | `UBRPanel` |
+| `NavPromptLeft/Right` — TextBlocks reading "LB"/"RB" | **`WBP_ButtonPrompt`** | `UBRButtonPrompt` |
+
+Referencing these is in-bounds: law 7 governs EDITING a binary asset, not instancing one.
+
+### Generated from OUR game, never from Figma — and never to be
+
+`T_News_Spillway`, `T_Preview_Spillway`, `T_Preview_Arena01`. The IP line
+(`01-MENU-MEASURED.md` §6, binding): from Figma take NUMBERS and authored geometry; every image
+asset is rendered from this game. No Halo screenshots, no Spartan renders, no playlist key-art.
+
+### Genuinely missing — nothing in the project covers these
+
+| item | note |
+|---|---|
+| LB / RB shoulder keycaps | no keycap texture in `Icons/`. `CommonInputData/ControllerData_Gamepad` is the place to look before authoring one. |
+| feature-card scrim | transparent → black VERTICAL gradient from the 50% mark (measured, `1769:23147`). No gradient brush exists in Slate — needs a generated strip texture, same route as the dots. |
+| panel notch chassis | 88 × 4.727 chamfers top and bottom. Proceduralisable — `UBRHairlineBorder` / `UBRLeftRail` already carry the constants; check `WBP_Panel` before authoring art. |
+
+### Measured geometry now in hand and NOT yet applied
+
+Off `1769:23147` `News Button` 349×222 — the card is **not** a caption band under an image:
+ground `#000000@0.5` at inset 7 · image full-bleed at inset 7 · scrim gradient on top from the
+midpoint down · caption a 40-tall box anchored to the bottom of that same inset-7 box, text pad
+(20,10,20,10), Rajdhani SemiBold 16 / ls 100 / UPPER / white · the **dots own the bottom 22** of
+the 222, so the image region is inset `[0,0,22,0]` = 200 tall.
+
+`ImageHeight = 196.7f` in `BRFeatureCard.h:62` is **suspect** — the only 196.709 node in the
+reference is `Preview Photo` `0:1027`, which is HIDDEN. The visible card's image is inset 7
+inside a 200-tall region, i.e. 186. Filed as open item B4 in `DECISIONS-OWED.md:869`.
+
+`Button Border` `12:1337` (100×100, the progression tile chrome) is fully recorded in
+`Content/UI/Components/Buttons/Assets/03-DropDown-ButtonBorder-SliderRowWide.md:37-67` — six
+variants, and **hover thickens the stroke 2 → 4 and pushes the bracket out 2px**; it is not a
+colour change. The fade variants drop the bottom line entirely and need gradient strokes.
+
+**Game Settings Panel — resolved, no change owed.** `349 × 332 at (466,76)` is correct for the
+screen instance (`01-MENU-MEASURED.md:91`, node `21:43050`, the designated referee). The
+`349 × 469` in `REFERENCE-EXTRACTION.md:230` is a component-board figure from a DIFFERENT Figma
+file (`Kn87U5sy2VD0lP8K7h4LcQ`) and is explicitly unsampled. Same discrepancy class as the
+feature card's 330-vs-349. The build already matches the referee.
