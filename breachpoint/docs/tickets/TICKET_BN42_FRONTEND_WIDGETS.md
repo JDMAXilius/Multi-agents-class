@@ -456,3 +456,54 @@ signature, not a missing one**. Specifically expect `brushColor` back as
 `UCommonTextBlock` with a Style applies it in `SynchronizeProperties` and overrides `font`. The
 honest M1 claim is "font property persisted", not "renders at 30".
 
+
+---
+
+## contract_gap — the shared button never shows a hover state (filed 2 Sep 2026)
+
+**Symptom, as the founder reported it:** "the hover and click still not change with correct
+assets", then "make sure all buttons hover are like you did with play button from navigation."
+
+**Root cause, measured in the editor 2 Sep via the Unreal MCP, not inferred.**
+`/Game/UI/Components/Buttons/WBP_ButtonDefault` (parent class `BRButton`, landed by BP80 and
+committed — `git status Content/UI` is clean, this packet did not author it) draws its four
+rules **twice**:
+
+| slot | widget | driven by |
+|---|---|---|
+| OverlaySlot_2 | `Border` — `UBRHairlineBorder`, `edges 15`, `dimmedEdges 14` | `UBRButton::ApplyInvertedState` → `Border->SetEdgeDimmed(Bottom, !bInverted)` — the measured 0.3 → 1.0 |
+| OverlaySlot_4..7 | `EdgeTop/EdgeBottom/EdgeLeft/EdgeRight` — `UImage`, brushes `Assets/Sides/{Top,Bottom,Left,Right}_Line` | **nothing** — `colorAndOpacity 1,1,1,1`, `renderOpacity 1`, constant |
+
+The four images sit **above** the border and paint the same four lines at a hard full white, so
+they mask the transition happening underneath. `ApplyInversionToSubtree` does not reach them
+either — it is called on `TypeBody`, which is null in this WBP; the edges are siblings under
+`RowOverlay`. Net effect: **every button in the project renders an identical box in idle, hover,
+pressed and selected.** The nav PLAY tab only looked different because C++ calls
+`SetIsSelected(true)` on it, which moves the plate, not the edges.
+
+**Where the fix belongs:** `UBRButton::ApplyInvertedState`, on the line beside the
+`Border->SetEdgeDimmed` call it already makes — four `BindWidgetOptional` `UImage`s and one
+opacity write, one place, every button, every screen.
+
+**Why it was not done there:** `Source/Breachpoint/UI/Components/` is outside this packet's
+owner path (law 5). Widening the claim the way BN41 did was **refused by the permission
+classifier** — `.claude/active-packet.json` could not be edited — so the packet did not edit
+shared code to unblock itself.
+
+**What landed instead:** `BNButtonEdges::Bind` in `Source/BreachpointNext/UI/BNUITypes.{h,cpp}`
+— in-bounds, ~30 lines, reads CommonUI's own hover/selected state and moves opacity only
+(`EdgeTop 1.0`, `EdgeBottom 0.3 → 1.0 on hover`, side ticks `0.3`, per COMPONENT-SPECS §2, the
+same numbers `FBRHairlineStyle`'s defaults already encode). Wired for all 8 front-end buttons
+and all 5 play-setup buttons. It reaches the widgets by `GetWidgetFromName` **because the C++
+binding is the thing that is missing** — that call is the gap made visible, and it should be
+deleted the day the fix lands in `UBRButton`.
+
+**Second finding, not fixed, same asset, same owner:** `EdgeLeft`'s brush is `Right_Line` and
+`EdgeRight`'s brush is `Left_Line` — **swapped**. Both are 1×20 solid white, so nothing renders
+wrong today; it will bite the moment either texture stops being symmetric.
+
+**Third, noted not fixed:** eight draw calls per button where the component's own header argues
+for one (`BRHairlineBorder`'s "the single biggest asset-count saving in the front-end plan").
+Whoever lands the `UBRButton` fix should decide whether `Border` or the Figma textures is the
+one that survives; the founder has asked for the Figma assets, which argues for the textures and
+for `Border` going `edges 0` in this WBP.

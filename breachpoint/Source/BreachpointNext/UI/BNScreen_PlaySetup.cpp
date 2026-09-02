@@ -49,6 +49,12 @@ void UBNScreen_PlaySetup::NativeOnInitialized()
 		BackButton->OnClicked().AddUObject(this, &UBNScreen_PlaySetup::HandleBackClicked);
 		BackButton->SetLabelText(LOCTEXT("RowBack", "ESC — BACK"));
 	}
+	// The Idle→Hover edge transition the shared component drops on the floor — see BNButtonEdges.
+	for (UBRButton* Button : { MapButton.Get(), ModeButton.Get(), BotsButton.Get(),
+		StartButton.Get(), BackButton.Get() })
+	{
+		BNButtonEdges::Bind(Button);
+	}
 
 	// The menu opens on the founder's default mode, and the lobby size follows FROM it -
 	// same derivation a mode change uses, so boot and a toggle can never disagree.

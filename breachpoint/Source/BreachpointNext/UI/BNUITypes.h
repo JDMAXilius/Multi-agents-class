@@ -5,6 +5,7 @@
 #include "UITag.h"
 #include "BNUITypes.generated.h"
 
+class UBRButton;
 class UTexture2D;
 
 /** The CommonUI layer tags — a SECOND registrar beside BNTags, because it has to be: the stacks
@@ -202,4 +203,31 @@ namespace BNUIColors
 	inline const FLinearColor InkDim  { 0.514f, 0.592f, 0.663f };  // #8397A9
 	/** Dead/dimmed: the Unknown state's dashes, a departed player's row. */
 	inline const FLinearColor Dead    { 0.290f, 0.353f, 0.420f };  // #4A5A6B
+}
+
+/**
+ * The button EDGE state — the measured Idle→Hover transition, applied from BN because it is
+ * missing from the shared component.
+ *
+ * THE BUG THIS EXISTS FOR. `WBP_ButtonDefault` (BP80, `/Game/UI/Components/Buttons/`) draws its
+ * four rules TWICE: once as the inherited `Border` (`UBRHairlineBorder`, whose Edges/DimmedEdges
+ * masks C++ already drives — bottom 0.3 → 1.0 on hover), and again as four `EdgeTop/Bottom/
+ * Left/Right` UImages carrying the Figma line textures. The four images sit in OverlaySlots 4-7,
+ * ABOVE the border at slot 2, at a hard-coded full-white tint that nothing ever moves. They
+ * therefore MASK the transition underneath them: measured in the editor 2 Sep, every button in
+ * the game renders an identical box in idle, hover, pressed and selected.
+ *
+ * WHERE THE FIX BELONGS. In `UBRButton::ApplyInvertedState`, beside the `Border->SetEdgeDimmed`
+ * call it already makes — one place, every button, every screen. That is `Source/Breachpoint/`,
+ * outside this packet's owner path (law 5), and the claim could not be widened, so the fix is
+ * filed as a contract_gap on BN42 and this is the BN-side stand-in until it lands. It is NOT a
+ * second state machine: it reads CommonUI's own hover/selected state and moves opacity only.
+ *
+ * Numbers are COMPONENT-SPECS §2, the same ones `FBRHairlineStyle`'s defaults encode: top line
+ * at 1.0, bottom line and both side ticks at 0.3, and hover lifts the BOTTOM line alone to 1.0.
+ */
+namespace BNButtonEdges
+{
+	/** Wires hover/unhover and applies the idle state once. Call AFTER SetIsSelected. */
+	BREACHPOINTNEXT_API void Bind(UBRButton* Button);
 }

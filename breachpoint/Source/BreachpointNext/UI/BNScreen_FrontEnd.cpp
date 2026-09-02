@@ -79,6 +79,14 @@ void UBNScreen_FrontEnd::NativeOnInitialized()
 		NavShopTab->SetLabelText(LOCTEXT("NavShop", "SHOP"));
 		NavShopTab->SetIsEnabled(false);
 	}
+	// The Idle→Hover edge transition the shared component drops on the floor — see
+	// BNButtonEdges. LAST in the button block, and deliberately: it reads GetSelected(), so
+	// binding before NavPlayTab->SetIsSelected(true) would start the selected tab dim.
+	for (UBRButton* Button : { PlayButton.Get(), CustomsButton.Get(), AcademyButton.Get(), QuitButton.Get(),
+		NavPlayTab.Get(), NavCreateTab.Get(), NavCommunityTab.Get(), NavShopTab.Get() })
+	{
+		BNButtonEdges::Bind(Button);
+	}
 	// THE PROGRESSION PANEL, fed from ini rather than invented. Unconfigured is the honest
 	// default here — this project has no ranks, so the line collapses and the bar reads 0
 	// instead of printing a career the player has not got.
