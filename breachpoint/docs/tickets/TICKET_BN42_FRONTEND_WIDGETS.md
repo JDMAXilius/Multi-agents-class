@@ -654,3 +654,66 @@ our own.
 black text. That is `UBRRosterHeader`'s `GroundToken = SurfaceInverted` / `TextToken =
 TextInverted`, and it matches the Figma render. The gamertag font also checks out — the Figma
 Gamertag frame is 191 × 17 inside a 26-tall content row, which is what renders.
+
+---
+
+## finding — FOUR dead config lines in `Source/Breachpoint/UI/` (swept 2 Sep 2026)
+
+`Config/DefaultGame.ini:175-178` carries this comment:
+
+> *"Every one of these was null until 3 Aug 2026, which is why a nav bar drew no tabs and a
+> roster drew no rows"*
+
+**They are all still null.** The ini section headers were added; the `UPROPERTY(Config)`
+specifier and the `UCLASS(Config = Game)` on the owning classes never were. The comment
+documents a fix that did not land — which is exactly why BN42 hit that symptom twice today,
+once on the roster and once on the nav bar.
+
+| # | property | declared | specifier | class | dead ini line |
+|---|---|---|---|---|---|
+| 1 | `UBRNavBar::TabWidgetClass` | `BRNavBar.h:261` | `EditDefaultsOnly` | `BRNavBar.h:165` — no Config | `DefaultGame.ini:180` |
+| 2 | `UBRRosterPanel::RowWidgetClass` | `BRRosterPanel.h:549` | `EditAnywhere` | `BRRosterPanel.h:412` — no Config | `DefaultGame.ini:183` |
+| 3 | `UBRScreen_FrontEnd::MenuRowWidgetClass` | `BRScreen_FrontEnd.h:234` | `EditDefaultsOnly` | `BRScreen_FrontEnd.h:106` — no Config | `DefaultGame.ini:186` |
+| 4 | `UBRModal_Options::RowWidgetClass` | `BRModal_Options.h:152` | `EditDefaultsOnly` | `BRModal_Options.h:100` — no Config | `DefaultGame.ini:192` |
+
+What each one costs when it stays null — and every one of these fails **silently**, because an
+empty container is indistinguishable from a container that has not been given data yet:
+
+1. the nav bar draws its 666×30 band and its bumpers and **zero tabs** — no navigation, no
+   `UCommonButtonGroupBase` members, no gamepad routing into the header;
+2. the roster draws its 349×273 chassis and header and **no rows**;
+3. the front end's left rail draws **no menu rows at all** — no PLAY, no QUIT — and
+   `NativeGetDesiredFocusTarget` then has nothing to focus, so keyboard/gamepad entry dies too;
+4. every options popup raised through `UBRModal_Options` is a **blank frame** the player can
+   only back out of.
+
+**The fix is two specifiers per class** — `UCLASS(Config = Game)` and `UPROPERTY(Config)` — and
+the template is already in this repo twice: `UBRUISettings` (`BRUISettings.h:14`) and BN's own
+`UBNScreen_FrontEnd` (`BNScreen_FrontEnd.h:32`), whose six config properties all work. It is
+`Source/Breachpoint/UI/`, outside this packet's owner path, so it is filed rather than done.
+BN42 worked around 1 and 2 with instance overrides on its own WBP; 3 and 4 are untouched and
+will bite the old `Breachpoint` front end the moment anyone opens it.
+
+**Related, not the same defect** (no ini line at all, so nothing "thinks it works"):
+`UBRNavBar::PreviousTabAction` / `NextTabAction` (`BRNavBar.h:265`, `:268`) have no
+`DefaultGame.ini` entry — which is why the bar's LB/RB bumper prompts render no glyph.
+
+### Also settled by the same sweep
+
+- **Career-rank panel** = `WBP_RecordPanel`, Figma `21:32826`, in-screen **869, 55 · 334 × 115**
+  (`01-MENU-MEASURED.md:30`). Its parent class is **`UBRFeatureCard`**, not a
+  `UBRProgressionButton` — that class "does not exist, will not"
+  (`MCP-BUILD-PLANS.md:297`). The asset already carries all seven BindWidget names. The gold bar
+  wants a `UBRProgressBar`, which is NOT in the record panel's tree today.
+- **Profile bar** has **no WBP and no C++ class** — `UBRProfileBar` was cut
+  (`MCP-BUILD-PLANS.md:339-343`). And the premise is wrong in a way worth catching before anyone
+  builds it: `Profile Bar 119:1525` is 1280×50 containing exactly ONE child, `Player Card` at
+  **x862, 349 × 50** — column 3's origin and width. A 1280-wide HBox stretches a 349-wide design.
+  Card internals: avatar **40 × 40 square** at (5,5), gamertag 107 × 17 at (55,17), buttons block
+  122 × 50 at (211,0), card padding (5,5,16,5). The glyph sizes, the circles and the divider
+  positions are **NOT RECORDED**.
+- **`WBP_CarouselDots` does not exist on disk** and is called UNMEASURED
+  (`COMPONENT-BREAKDOWN.md:514`). The dot itself IS measured (`12:38169`) and BN already ships
+  both textures.
+- **No standalone career-rank crest, gold bar or dot exists in the `21:32824` export** — they are
+  baked into the 2560×1440 board render only. That slot needs a targeted re-export.
