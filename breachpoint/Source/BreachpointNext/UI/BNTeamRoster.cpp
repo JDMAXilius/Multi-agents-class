@@ -2,6 +2,7 @@
 
 #include "CommonTextBlock.h"
 #include "Components/Image.h"
+#include "Engine/Texture2D.h"
 #include "Components/Overlay.h"
 #include "Components/OverlaySlot.h"
 #include "Components/SizeBox.h"
@@ -62,6 +63,7 @@ void UBNTeamRoster::SetTeams(const TArray<FBNRosterTeam>& InTeams)
 	}
 
 	TeamBox->ClearChildren();
+	RowCounter = 0;
 
 	const int32 LastIndex = Teams.Num() - 1;
 	for (int32 Index = 0; Index <= LastIndex; ++Index)
@@ -126,7 +128,48 @@ void UBNTeamRoster::BuildTeam(const FBNRosterTeam& InTeam, bool bIsLast)
 			break;
 		}
 
-		Row->SetMember(InTeam.Members[Index]);
+		// Per-row art, cycled on a counter that runs across ALL teams so the pattern does not
+		// restart at every label and give two adjacent rows the same plate.
+		FBRRosterMemberView Member = InTeam.Members[Index];
+		if (Emblems.Num() > 0)
+		{
+			Member.Emblem = Emblems[RowCounter % Emblems.Num()];
+		}
+
+		// TeamFillColor is a TONE HINT here, not a tint: the real fill is the nameplate texture
+		// applied below, and a photograph has no single colour for ComputeTextTone to read. Feed
+		// it white for a light plate and near-black for a dark one and the row's own luminance
+		// rule lands on the right answer without a second copy of it living here.
+		const FBNRosterPlate* RowPlate = Nameplates.Num() > 0
+			? &Nameplates[RowCounter % Nameplates.Num()] : nullptr;
+		Member.TeamFillColor = (RowPlate && RowPlate->bLightPlate)
+			? FLinearColor::White : FLinearColor(0.05f, 0.05f, 0.05f, 1.0f);
+		if (!RankInsignia.IsNull())
+		{
+			Member.RankInsignia = RankInsignia;
+		}
+		Row->SetMember(Member);
+
+		// The nameplate goes on by hand: `ApplyMember` only TINTS TeamFill, and the view struct
+		// has no texture field for it (see the header note). Reached by name because that
+		// missing field IS the gap. Tinted white so the art is not multiplied down by the hint.
+		if (RowPlate && !RowPlate->Texture.IsNull())
+		{
+			if (UTexture2D* PlateTex = RowPlate->Texture.LoadSynchronous())
+			{
+				if (UImage* Fill = Cast<UImage>(Row->GetWidgetFromName(TEXT("TeamFill"))))
+				{
+					Fill->SetBrushFromTexture(PlateTex, /*bMatchSize*/ false);
+					Fill->SetColorAndOpacity(FLinearColor::White);
+					Fill->SetVisibility(ESlateVisibility::HitTestInvisible);
+				}
+			}
+		}
+
+		// The nameplate has to go on by hand: `ApplyMember` only TINTS TeamFill, and the view
+		// struct has no texture field for it (see the header note). Reached by name because
+		// that missing field IS the gap — a null entry simply leaves the tint alone.
+		++RowCounter;
 
 		USizeBox* RowBox = NewObject<USizeBox>(this);
 		RowBox->SetHeightOverride(RowHeight);

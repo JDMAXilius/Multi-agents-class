@@ -8,6 +8,7 @@ class UBRRosterHeader;
 class UBRRosterRow;
 class UBRScrollBar;
 class UImage;
+class UTexture2D;
 class USizeBox;
 class UVerticalBox;
 
@@ -33,6 +34,29 @@ struct FBNRosterTeam
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN|UI")
 	TArray<FBRRosterMemberView> Members;
+};
+
+/**
+ * One nameplate and the tone its art demands.
+ *
+ * WHY THE BOOL. `UBRRosterRow::ComputeTextTone` decides black-or-white from the fill COLOUR,
+ * which works when the fill is a flat tint and cannot work when it is a photograph — a texture
+ * has no single colour to read. The reference's own sheet shows both cases: dark plates carry
+ * white gamertags, light plates carry black ones. So the plate declares its own tone here
+ * rather than the row guessing, and `TeamFillColor` becomes the hint that feeds ComputeTextTone
+ * instead of a literal tint.
+ */
+USTRUCT(BlueprintType)
+struct FBNRosterPlate
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN|UI")
+	TSoftObjectPtr<UTexture2D> Texture;
+
+	/** True when the art is light enough that the gamertag has to go black to be read. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BN|UI")
+	bool bLightPlate = false;
 };
 
 /**
@@ -130,7 +154,32 @@ protected:
 	UPROPERTY(Config)
 	TSoftClassPtr<UBRRosterRow> RowWidgetClass;
 
+	/**
+	 * Per-row art, cycled by row index so no two adjacent players share a plate.
+	 *
+	 * `Nameplates` has to be applied by hand rather than pushed through the view struct:
+	 * `FBRRosterMemberView` carries an `Emblem` and a `RankInsignia` but NO nameplate, and
+	 * `UBRRosterRow::ApplyMember` only ever TINTS `TeamFill` — it never gives it a brush. So the
+	 * struct cannot express "this row's background is this texture". Adding the field is a
+	 * `Source/Breachpoint/` change, outside this packet's owner path, so it is filed and the
+	 * brush is set on the row's own `TeamFill` here instead. Delete this the day the struct
+	 * grows the field.
+	 */
+	UPROPERTY(Config)
+	TArray<FBNRosterPlate> Nameplates;
+
+	UPROPERTY(Config)
+	TArray<TSoftObjectPtr<UTexture2D>> Emblems;
+
+	/** One crest for everyone: this project has no per-player rank, and six different ones
+	 *  would be fiction. */
+	UPROPERTY(Config)
+	TSoftObjectPtr<UTexture2D> RankInsignia;
+
 private:
+	/** Runs across ALL teams, so the art cycle does not restart at every team label. */
+	int32 RowCounter = 0;
+
 	UPROPERTY(Transient)
 	TSubclassOf<UBRRosterRow> ResolvedRowClass;
 
