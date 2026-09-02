@@ -3,7 +3,6 @@
 #include "Components/Image.h"
 #include "Components/ProgressBar.h"
 #include "UI/Components/BRButton.h"
-#include "UI/Components/BRNavBar.h"
 #include "UI/Components/BRRosterPanel.h"
 #include "Components/TextBlock.h"
 #include "Engine/Texture2D.h"
@@ -58,25 +57,34 @@ void UBNScreen_FrontEnd::NativeOnInitialized()
 		DescriptionText->SetText(LOCTEXT("FrontEndHint", "Set up a match against bots."));
 		DescriptionText->SetColorAndOpacity(FSlateColor(BNUIColors::InkDim));
 	}
-	// THE NAV BAR. Four tab definitions in, one strip out — the bar owns the 666x30 band, the
-	// 39/150/12 tab arithmetic, the button group and the bumper prompts. PLAY is where we
-	// already are, so it starts selected; the other three are named because the band's width is
-	// design and hiding them would quietly change the header's balance.
-	if (NavBar)
+	// THE NAV BAR. PLAY is where we already are, so it is selected, not clickable-to-nowhere.
+	// The other three are named and disabled: the band's 666 width is design, and hiding the
+	// tabs would quietly change the header's balance.
+	if (NavPlayTab)
 	{
-		TArray<FBRNavTabDefinition> NavTabs;
-		for (const FText& Label : { LOCTEXT("NavPlay", "PLAY"), LOCTEXT("NavCreate", "CREATE"),
-			LOCTEXT("NavCommunity", "COMMUNITY"), LOCTEXT("NavShop", "SHOP") })
-		{
-			NavTabs.AddDefaulted_GetRef().Label = Label;
-		}
-		NavBar->SetTabs(NavTabs);
-		NavBar->SetSelectedTabIndex(0);
+		NavPlayTab->SetLabelText(LOCTEXT("NavPlay", "PLAY"));
+		NavPlayTab->SetIsSelected(true);
+	}
+	if (NavCreateTab)
+	{
+		NavCreateTab->SetLabelText(LOCTEXT("NavCreate", "CREATE"));
+		NavCreateTab->SetIsEnabled(false);
+	}
+	if (NavCommunityTab)
+	{
+		NavCommunityTab->SetLabelText(LOCTEXT("NavCommunity", "COMMUNITY"));
+		NavCommunityTab->SetIsEnabled(false);
+	}
+	if (NavShopTab)
+	{
+		NavShopTab->SetLabelText(LOCTEXT("NavShop", "SHOP"));
+		NavShopTab->SetIsEnabled(false);
 	}
 	// The Idle→Hover edge transition the shared component drops on the floor — see
-	// BNButtonEdges. The nav tabs are NOT in this list any more: they are `UBRNavTab`s created
-	// by the bar, not `UBRButton`s on our canvas, and they carry their own state.
-	for (UBRButton* Button : { PlayButton.Get(), CustomsButton.Get(), AcademyButton.Get(), QuitButton.Get() })
+	// BNButtonEdges. LAST in the button block, and deliberately: it reads GetSelected(), so
+	// binding before NavPlayTab->SetIsSelected(true) would start the selected tab dim.
+	for (UBRButton* Button : { PlayButton.Get(), CustomsButton.Get(), AcademyButton.Get(), QuitButton.Get(),
+		NavPlayTab.Get(), NavCreateTab.Get(), NavCommunityTab.Get(), NavShopTab.Get() })
 	{
 		BNButtonEdges::Bind(Button);
 	}
