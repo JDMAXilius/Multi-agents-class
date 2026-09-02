@@ -74,6 +74,10 @@ SIZEBOX = '/Script/UMG.SizeBox'
 PANEL = {"r": 0.039, "g": 0.063, "b": 0.094, "a": 0.88}
 BAND = {"r": 0.020, "g": 0.031, "b": 0.047, "a": 0.94}
 SCRIM = {"r": 0.0, "g": 0.0, "b": 0.0, "a": 0.62}
+# The chassis accent bars and the selection caret. Geometry is measured; these two tints are
+# ours (the referee carries no colour for them) — same standing as the panel alphas.
+NOTCH = {"r": 0.75, "g": 0.80, "b": 0.86, "a": 0.90}
+CARET = {"r": 0.90, "g": 0.94, "b": 1.00, "a": 1.00}
 
 
 def topleft(x, y, w, h):
@@ -198,6 +202,31 @@ def frontend_plan():
          # bar at y670 h50 -> 670+15=685 and 50-15-15=20. Same number on both screens.
          {"brushColor": BAND, "padding": {"left": 60.0, "top": 15.0, "right": 60.0, "bottom": 15.0}},
          False, None),
+        # THE NOTCH LANGUAGE, read off `21:32824` rather than deferred to "M2". The panel
+        # chassis in Figma is a rounded rect with two 88x4.73 bars biting its top and bottom
+        # edges at DIFFERENT x (top 127, bottom 215) — the asymmetry is the design, not a
+        # mistake. Menu in Border is at 69,370 and its Menu List insets 3, so the bars land at
+        # absolute x 199 / 287. Plain tinted Images: no texture, no material, no Tier-4 asset.
+        ('MenuNotchTop', IMAGE, 'FrontEndCanvas',
+         {"layoutData": topleft(199, 373, 88, 4.73), "bAutoSize": False, "zOrder": 2},
+         {"colorAndOpacity": NOTCH, "visibility": "HitTestInvisible"}, False, None),
+        ('MenuNotchBottom', IMAGE, 'FrontEndCanvas',
+         {"layoutData": topleft(287, 553, 88, 4.73), "bAutoSize": False, "zOrder": 2},
+         {"colorAndOpacity": NOTCH, "visibility": "HitTestInvisible"}, False, None),
+        # Selection caret `I…7:7398` "Rectangle 278": 3x65 at x-4 of the Menu List, i.e. it
+        # HANGS OUTSIDE the panel's left edge. Static here; moving it with the focused row is
+        # C++'s job the day the rail gets keyboard nav.
+        ('MenuCaret', IMAGE, 'FrontEndCanvas',
+         {"layoutData": topleft(68, 431, 3, 65), "bAutoSize": False, "zOrder": 2},
+         {"colorAndOpacity": CARET, "visibility": "HitTestInvisible"}, False, None),
+        # Party List carries the same two bars (`I21:32861;7:4097/4098`), 88x4, top x130.5
+        # bottom x218.5 within a panel at 862,397.
+        ('PartyNotchTop', IMAGE, 'FrontEndCanvas',
+         {"layoutData": topleft(992.5, 400, 88, 4), "bAutoSize": False, "zOrder": 2},
+         {"colorAndOpacity": NOTCH, "visibility": "HitTestInvisible"}, False, None),
+        ('PartyNotchBottom', IMAGE, 'FrontEndCanvas',
+         {"layoutData": topleft(1080.5, 667, 88, 4), "bAutoSize": False, "zOrder": 2},
+         {"colorAndOpacity": NOTCH, "visibility": "HitTestInvisible"}, False, None),
         ('PromptText', TEXT, 'ProfileBar',
          {"horizontalAlignment": "HAlign_Left", "verticalAlignment": "VAlign_Center",
           "padding": {"left": 0.0, "top": 0.0, "right": 0.0, "bottom": 0.0}},
@@ -287,9 +316,9 @@ def playsetup_plan():
          {"brushColor": BAND, "padding": {"left": 60.0, "top": 15.0, "right": 60.0, "bottom": 15.0}},
          False, None),
         ('BackButton', BUTTON, 'SetupCanvas',                              # bound OPTIONAL in C++
-         # Button Prompts `21:32863`: x60 y685 h20. Width is NOT measured — the referee says
-         # it varies with prompt count (62–227), so 150 is a bounded pick, not a reading.
-         {"layoutData": topleft(60, 685, 150, 20), "bAutoSize": False, "zOrder": 1}, None, True, None),
+         # Button Prompts `21:32863` READ OFF THE NODE 1 Sep: 60,685 62x20. The 150 that stood
+         # here was a bounded GUESS and it was simply wrong — the frame is 62 wide.
+         {"layoutData": topleft(60, 685, 62, 20), "bAutoSize": False, "zOrder": 1}, None, True, None),
     ]
     return plan
 
