@@ -153,4 +153,13 @@ protected:
 	/** Shared roster emblem. SOFT (law 3), and it is a FRAME, not a portrait — we have no avatars. */
 	UPROPERTY(Config)
 	TSoftObjectPtr<UTexture2D> RosterEmblem;
+
+	/**
+	 * The rank diamond, rendered from Figma `12:39621`'s own path data by
+	 * `Tools/bn/bn46_roster_icons.py`. Shared across the roster because this project has no
+	 * per-player rank: one placeholder crest is honest, six different ones would be fiction.
+	 * SOFT, and null simply collapses the rank cell — `SetShown(RankFrame, !RankInsignia.IsNull())`.
+	 */
+	UPROPERTY(Config)
+	TSoftObjectPtr<UTexture2D> RosterRankInsignia;
 };

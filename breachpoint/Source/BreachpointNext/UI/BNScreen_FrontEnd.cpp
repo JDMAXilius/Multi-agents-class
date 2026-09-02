@@ -99,6 +99,13 @@ void UBNScreen_FrontEnd::NativeOnInitialized()
 			FBRRosterMemberView& Member = Members.AddDefaulted_GetRef();
 			Member.Gamertag = FText::FromString(Name);
 			Member.Emblem = RosterEmblem;
+			Member.RankInsignia = RosterRankInsignia;
+			// Idle, not Unknown. Unknown is the RIGHT default in a match — the class's own note
+			// says a row that renders "not speaking" before voice state arrives is telling the
+			// player something false — but this menu has no voice system at all and the whole
+			// roster is ini placeholder beside it. Idle here means "this is a mock", which is
+			// what every other value in this list already means.
+			Member.MicState = EBRRosterMicState::Idle;
 			// Entry 0 is us: the row that gets the leader crown and the current-player mark.
 			Member.bIsLocalPlayer = Member.bIsPartyLeader = (Members.Num() == 1);
 			// Transparent, deliberately. TeamFillColor paints the nameplate banner, and in the
