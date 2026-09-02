@@ -46,14 +46,12 @@ void UBNScreen_PlaySetup::NativeOnInitialized()
 		StartButton->OnClicked().AddUObject(this, &UBNScreen_PlaySetup::HandleStartClicked);
 		StartButton->SetLabelText(LOCTEXT("RowStart", "START GAME"));
 	}
-	if (BackButton)
-	{
-		BackButton->OnClicked().AddUObject(this, &UBNScreen_PlaySetup::HandleBackClicked);
-		BackButton->SetLabelText(LOCTEXT("RowBack", "ESC — BACK"));
-	}
+	// NO BackButton any more. `Button Prompts` `21:43024` is a LEGEND, not a control — two
+	// glyph+label pairs that name the keys, and the reference draws no clickable affordance
+	// there. Escape is already caught in NativeOnKeyDown, so removing the button costs nothing:
+	// the way back is the key the legend names, which is the point of a legend.
 	// The Idle→Hover edge transition the shared component drops on the floor — see BNButtonEdges.
-	for (UBRButton* Button : { MapButton.Get(), ModeButton.Get(), BotsButton.Get(),
-		BackButton.Get() })
+	for (UBRButton* Button : { MapButton.Get(), ModeButton.Get(), BotsButton.Get() })
 	{
 		BNButtonEdges::Bind(Button);
 	}

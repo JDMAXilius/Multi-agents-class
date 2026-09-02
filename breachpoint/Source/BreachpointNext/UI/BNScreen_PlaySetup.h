@@ -142,8 +142,6 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "BN|UI")
 	TObjectPtr<UBRHighlightButton> StartButton;
 
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
-	TObjectPtr<UBRButton> BackButton;
 
 	// -- the values those rows print, and the breakdown panel's mirrors ----------------
 
