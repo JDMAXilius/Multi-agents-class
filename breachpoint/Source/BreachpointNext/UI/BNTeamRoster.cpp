@@ -18,11 +18,13 @@ void UBNTeamRoster::NativeOnInitialized()
 
 	if (RootSizeBox)
 	{
-		// Width pinned to the measured column, height left to the team blocks. A 4v4 lobby and
-		// an 8v8 lobby are different heights and both are correct; 599 is the design maximum,
-		// not a floor to hold open with empty space.
+		// BOUNDED, deliberately, and this is the correction to the previous pass: a list that
+		// sizes to its content cannot scroll, it just grows past the panel and over the footer -
+		// which is exactly what a 16-player lobby did. The column is a fixed 349 x 599 window
+		// and `TeamScroll` moves the content inside it. "Dynamic" belongs to the CONTENT here,
+		// not the frame.
 		RootSizeBox->SetWidthOverride(PanelWidth);
-		RootSizeBox->SetMaxDesiredHeight(PanelHeight);
+		RootSizeBox->SetHeightOverride(PanelHeight);
 	}
 
 	if (ScrollBar)
