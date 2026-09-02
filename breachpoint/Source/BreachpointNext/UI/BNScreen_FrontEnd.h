@@ -5,7 +5,7 @@
 
 class UBNProfileBar;
 class UBRButton;
-class UBRRosterPanel;
+class UBNTeamRoster;
 class UImage;
 class UProgressBar;
 class UTextBlock;
@@ -150,7 +150,7 @@ protected:
 	 * on a canvas was the mistake; the component is the measurement.
 	 */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
-	TObjectPtr<UBRRosterPanel> RosterPanel;
+	TObjectPtr<UBNTeamRoster> RosterPanel;
 
 	/**
 	 * Who the roster lists. Config, not literals in the WBP — the six names used to be typed

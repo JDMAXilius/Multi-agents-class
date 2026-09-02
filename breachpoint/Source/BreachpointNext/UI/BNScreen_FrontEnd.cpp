@@ -5,7 +5,7 @@
 #include "UI/BNProfileBar.h"
 #include "UI/Styles/BRUITokens.h"
 #include "UI/Components/BRButton.h"
-#include "UI/Components/BRRosterPanel.h"
+#include "UI/BNTeamRoster.h"
 #include "Components/TextBlock.h"
 #include "Engine/Texture2D.h"
 #include "Engine/LocalPlayer.h"
@@ -130,9 +130,14 @@ void UBNScreen_FrontEnd::NativeOnInitialized()
 			// reference that banner is 343-owned art - the IP line (01-MENU-MEASURED sec 6)
 			// says every image in this game is rendered from this game, so the plate stays
 			// empty until we author our own rather than borrowing theirs.
-			Member.TeamFillColor = FLinearColor::Transparent;
+			// The nameplate brush and text tone are the roster's (BuildTeam); IP caveat in the ticket.
 		}
-		RosterPanel->SetMembers(Members);
+		// Since 2 Sep the front end draws the SAME `UBNTeamRoster` the lobby does (founder: "we
+		// have it on the lobby... now we want it on the main menu as well"): nameplates, emblems
+		// and rank cycle from the [BNTeamRoster] ini; one unnamed team is a flat list.
+		FBNRosterTeam Flat;
+		Flat.Members = MoveTemp(Members);
+		RosterPanel->SetTeams({ Flat });
 		// Capacity -1 = print no count. We have no party, so "IN MENUS 1/6" would be a lie
 		// dressed as a feature.
 		RosterPanel->SetHeaderText(LOCTEXT("RosterInMenus", "IN MENUS"), -1);

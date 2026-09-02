@@ -6,6 +6,7 @@
 #include "Components/Overlay.h"
 #include "Components/OverlaySlot.h"
 #include "Components/SizeBox.h"
+#include "Components/CanvasPanelSlot.h"
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
 #include "UI/BNUITypes.h"
@@ -25,7 +26,22 @@ void UBNTeamRoster::NativeOnInitialized()
 		// and `TeamScroll` moves the content inside it. "Dynamic" belongs to the CONTENT here,
 		// not the frame.
 		RootSizeBox->SetWidthOverride(PanelWidth);
-		RootSizeBox->SetHeightOverride(PanelHeight);
+		RootSizeBox->SetHeightOverride(PanelHeightOverride);
+	}
+	// The WBP is authored at 599; a shorter instance shrinks the fixed-height canvas children by
+	// the same amount so each keeps its bottom margin.
+	const float Delta = PanelHeightOverride - PanelHeight;
+	if (!FMath::IsNearlyZero(Delta))
+	{
+		TArray<UWidget*> Tall = { GetWidgetFromName(TEXT("Chassis")), GetWidgetFromName(TEXT("TeamScroll")), ScrollBar.Get() };
+		for (UWidget* Child : Tall)
+		{
+			if (UCanvasPanelSlot* ChildSlot = Child ? Cast<UCanvasPanelSlot>(Child->Slot) : nullptr)
+			{
+				const FVector2D Size = ChildSlot->GetSize();
+				ChildSlot->SetSize(FVector2D(Size.X, FMath::Max(0.0f, Size.Y + Delta)));
+			}
+		}
 	}
 
 	if (ScrollBar)
@@ -75,6 +91,9 @@ void UBNTeamRoster::SetTeams(const TArray<FBNRosterTeam>& InTeams)
 void UBNTeamRoster::BuildTeam(const FBNRosterTeam& InTeam, bool bIsLast)
 {
 	// --- the team label: a coloured plate with the team name on it ------------------------
+	// A team with no name is a FLAT list (the front end's IN MENUS): rows only, no label plate.
+	if (!InTeam.Name.IsEmpty())
+	{
 	UOverlay* Label = NewObject<UOverlay>(this);
 
 	UImage* Plate = NewObject<UImage>(this);
@@ -114,6 +133,8 @@ void UBNTeamRoster::BuildTeam(const FBNRosterTeam& InTeam, bool bIsLast)
 	}
 
 	// --- the member rows: the SAME WBP_RosterRow the front end uses ----------------------
+	}
+
 	if (!ResolvedRowClass)
 	{
 		return;

@@ -114,6 +114,15 @@ public:
 	static constexpr float ScrollBarWidth = 13.0f;
 	static constexpr float ScrollBarX = 351.0f;
 
+	/**
+	 * The front end's `IN MENUS` list is this same panel at 273 tall (`12:39611`), the lobby's is
+	 * 599. Per instance, set in the host screen's WBP; the canvas children (chassis, scroll,
+	 * scroll bar) keep their bottom margins from the 599 layout. `PanelHeight` stays the design
+	 * height the WBP was authored to.
+	 */
+	UPROPERTY(EditAnywhere, Category = "BN|UI")
+	float PanelHeightOverride = PanelHeight;
+
 	/** The whole feed. Rebuilds the blocks; safe to call whenever the lobby changes. */
 	UFUNCTION(BlueprintCallable, Category = "BN|UI")
 	void SetTeams(const TArray<FBNRosterTeam>& InTeams);

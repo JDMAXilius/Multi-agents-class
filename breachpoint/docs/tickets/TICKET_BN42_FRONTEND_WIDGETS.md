@@ -873,3 +873,16 @@ old instance Style — set to `BRButtonStyleBase` on the instance); OVERRIDES pr
 clicking the `Back` prompt returns to the front end. The `ReplaceWidgetWithTemplate` lesson: it
 copies EVERY matching property from the old instance, Style included — re-set what the new
 template is supposed to own.
+
+### 2026-09-02 — front end IN MENUS becomes the lobby's `UBNTeamRoster`
+
+Founder: the lobby roster "is perfectly how we want it... now we want it on the main menu as
+well." The front end drew `UBRRosterPanel` (shared, six fixed rows, plates deliberately empty).
+It now draws the same `WBP_BNTeamRoster` the lobby does, as ONE unnamed team: `BuildTeam` skips
+the label plate when the team has no name, and `PanelHeightOverride` (EditAnywhere, per instance)
+lets the instance sit at the measured 273 while the WBP stays authored at 599 — the chassis,
+scroll and scroll bar shrink by the same delta so their bottom margins hold. Nameplates, emblems
+and the rank crest come from the [BNTeamRoster] ini cycle, so both screens agree without a second
+art list. `RosterEmblem` / `RosterRankInsignia` on the front end remain as the pre-cycle defaults.
+Not done: the reference header's "Invite Only" + people glyph — `UBRRosterHeader` has Label and
+Count only; the lobby ships the same dash and the founder accepted it there.
