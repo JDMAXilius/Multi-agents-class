@@ -18,7 +18,7 @@ class USizeBox;
  *     frame      a 3px band all the way round (142) with a
  *                1px brighter core at x1 (165)                  -> ChromeStroke, dim + core
  *     notches    `Rectangle 258` 88 x 4.727 at list-local (127, 0)
- *                `Rectangle 259` 88 x 4.727 at list-local (215, 180)
+ *                `Rectangle 259` 88 x 4.727 at list-local (127, 180)
  *                — they are FRAME-COLOURED TABS reaching into the plate, not bright bars.
  *                The render is unambiguous: the notch reads 142 straight down through y1..y6,
  *                the same value as the frame, where BN had been drawing a 90%-white bar.
@@ -54,7 +54,10 @@ public:
 	static constexpr float NotchWidth = 88.0f;
 	static constexpr float NotchHeight = 4.727f;
 	static constexpr float NotchTopX = 127.0f;
-	static constexpr float NotchBottomX = 215.0f;
+	/** Figma metadata put `Rectangle 259` at x215; the founder's crop of the render (2 Sep 2026)
+	 *  shows BOTH tabs at image x385..655 on a 1050-wide crop = design 128..218. The render wins:
+	 *  the metadata x was the rectangle's un-mirrored frame, not where it draws. */
+	static constexpr float NotchBottomX = 127.0f;
 
 	/** `Rectangle 278`: 3 x 65 at list-local (-4, 58). The -4 puts it 1px proud of the frame. */
 	static constexpr float CaretWidth = 3.0f;

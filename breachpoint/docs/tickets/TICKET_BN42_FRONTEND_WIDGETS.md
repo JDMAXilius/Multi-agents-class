@@ -847,3 +847,29 @@ shared `UBRHairlineBorder`. Shortening them is a `Source/Breachpoint/UI/Componen
 Tooling notes: `SlateInspector.Snapshot` DOES see into the chassis NamedSlot at `maxDepth` 80
 (it did not at 40/60); `PressKey` lands on the editor, not the PIE viewport — navigate with
 `Click{ref}`. The editor raised a macOS memory-pressure warning during this pass.
+
+### 2026-09-02 — lobby menu 1:1 with the founder's `Menu in Border` crop; SCORE/TIME rows; legend as buttons
+
+Sampled the founder's 1050x570 crop (scale 3.009/px) of `I21:43047;7:7383`:
+- both notch tabs sit at design x128..218 — the bottom one was at 215 from Figma metadata and
+  is now 127 (`UBNPanelChassis::NotchBottomX`), matching the render.
+- START GAME row (y140..169, 30 tall): 1px white @0.75, 1px white @0.25, a 25px plate running
+  sRGB (10,13,14) -> (27,105,123) top to bottom, one plate px, then 1px (55,167,193). The plate
+  is a vertical gradient, so it is a material: `M_BN_StartPlate` (MD_UI opaque, TexCoord.G ->
+  Lerp of the two sampled constants). New `WBP_BNStartButton` (class `UBRHighlightButton`,
+  style `BRButtonStyleBase` so no amber plate draws underneath): Plate / Fill / Border / three
+  lines / Label. The lobby's `StartButton` is now this WBP; the shared `WBP_HighlightButton`
+  is untouched.
+- Rows: SCORE LIMIT (10/20/30 kills) and TIME LIMIT (5/10/15/20 min) between MODE and PLAYERS,
+  cycling on click like the others; presets are ini arrays on `BNScreen_PlaySetup`; the travel
+  URL gains `?ScoreLimit=N?TimeLimit=S` (seconds) and `ABNGameMode::InitGame` parses both,
+  clamped. Panel height 186 -> 266 (two more 40px rows). Both also print in OVERRIDES.
+- The legend (`Button Prompts`) is now clickable: `UBNPromptButton` (CommonButtonBase, transparent
+  style, per-instance soft glyph texture). Both `BackPrompt` and `MenuPrompt` return to the
+  front end (DeactivateWidget); the visual is the same glyph + Roboto Bold 12 verb.
+Verified (PIE in-viewport, editor + game builds PASS, server not attempted): six-row lobby menu on
+the 266-tall chassis; START GAME gradient/lines with no amber (the template swap had copied the
+old instance Style — set to `BRButtonStyleBase` on the instance); OVERRIDES prints Score/Time;
+clicking the `Back` prompt returns to the front end. The `ReplaceWidgetWithTemplate` lesson: it
+copies EVERY matching property from the old instance, Style included — re-set what the new
+template is supposed to own.

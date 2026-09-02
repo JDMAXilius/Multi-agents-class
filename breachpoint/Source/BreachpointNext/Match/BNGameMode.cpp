@@ -69,6 +69,19 @@ void ABNGameMode::InitGame(const FString& MapName, const FString& Options, FStri
 		TargetPlayers = FMath::Clamp(Wanted, 1, 32);
 		UE_LOG(LogBN, Log, TEXT("BNGameMode: TargetPlayers=%d from the travel URL."), TargetPlayers);
 	}
+	// The lobby's SCORE LIMIT / TIME LIMIT rows (founder, 2 Sep 2026: kills 10/20/30, minutes
+	// 5/10/15/20). Same shape as the two above: absent = ini stands, present = clamped user input.
+	if (UGameplayStatics::HasOption(Options, TEXT("ScoreLimit")))
+	{
+		ScoreLimit = FMath::Clamp(UGameplayStatics::GetIntOption(Options, TEXT("ScoreLimit"), ScoreLimit), 1, 500);
+		UE_LOG(LogBN, Log, TEXT("BNGameMode: ScoreLimit=%d from the travel URL."), ScoreLimit);
+	}
+	if (UGameplayStatics::HasOption(Options, TEXT("TimeLimit")))
+	{
+		// Seconds on the wire, so the URL and the ini speak the same unit.
+		TimeLimit = FMath::Clamp(static_cast<float>(UGameplayStatics::GetIntOption(Options, TEXT("TimeLimit"), FMath::RoundToInt(TimeLimit))), 30.f, 3600.f);
+		UE_LOG(LogBN, Log, TEXT("BNGameMode: TimeLimit=%.0fs from the travel URL."), TimeLimit);
+	}
 	if (UGameplayStatics::HasOption(Options, TEXT("Teams")))
 	{
 		bTeamsEnabled = UGameplayStatics::GetIntOption(Options, TEXT("Teams"), bTeamsEnabled ? 1 : 0) != 0;

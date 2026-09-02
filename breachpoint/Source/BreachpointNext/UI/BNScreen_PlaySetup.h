@@ -6,6 +6,7 @@
 #include "BNScreen_PlaySetup.generated.h"
 
 class UBNProfileBar;
+class UBNPromptButton;
 class UBNTeamRoster;
 class UBRHighlightButton;
 class UBRButton;
@@ -100,6 +101,12 @@ protected:
 	void HandleBotsClicked();
 
 	UFUNCTION()
+	void HandleScoreLimitClicked();
+
+	UFUNCTION()
+	void HandleTimeLimitClicked();
+
+	UFUNCTION()
 	void HandleStartClicked();
 
 	UFUNCTION()
@@ -131,6 +138,21 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "BN|UI")
 	TObjectPtr<UBRButton> BotsButton;
+
+	/** SCORE LIMIT / TIME LIMIT (founder, 2 Sep 2026). Same row, same cycle-on-click. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "BN|UI")
+	TObjectPtr<UBRButton> ScoreLimitButton;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "BN|UI")
+	TObjectPtr<UBRButton> TimeLimitButton;
+
+	/** `Button Prompts` `21:43024` as controls: both return to the front end. Optional so the
+	 *  front end's own copy of the legend (which has no "back") can share the class. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
+	TObjectPtr<UBNPromptButton> BackPrompt;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
+	TObjectPtr<UBNPromptButton> MenuPrompt;
 
 	/**
 	 * START GAME is the reference's `Action Button`, not a fourth menu row — the affirmative
@@ -215,6 +237,14 @@ protected:
 	UPROPERTY(Config)
 	TArray<int32> PlayerCountPresets = { 4, 8, 12, 16 };
 
+	/** Kills to win. Founder's list; ini-editable like the player counts. */
+	UPROPERTY(Config)
+	TArray<int32> ScoreLimitPresets = { 10, 20, 30 };
+
+	/** Minutes on the clock. Travels as seconds (`?TimeLimit=`), shown as minutes. */
+	UPROPERTY(Config)
+	TArray<int32> TimeLimitPresets = { 5, 10, 15, 20 };
+
 	/**
 	 * TEAM DEATHMATCH is what the menu opens on (founder, 1 Sep: "team deathmatch should be
 	 * default on mainmenu"). Config rather than a literal so the default is an ini line, and
@@ -226,4 +256,6 @@ protected:
 	int32 MapIndex = 0;
 	bool bTeams = true;
 	int32 TotalPlayers = 8;
+	int32 ScoreLimitIndex = 0;
+	int32 TimeLimitIndex = 1;   // 10 minutes — the ini's 600s default, so the URL and a plain boot agree
 };

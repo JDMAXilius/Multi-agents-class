@@ -8,6 +8,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "UI/BNUITypes.h"
 #include "UI/BNTeamRoster.h"
+#include "UI/BNPromptButton.h"
 #include "UI/Components/BRPageTitle.h"
 
 #define LOCTEXT_NAMESPACE "BreachpointNextUI"
@@ -41,17 +42,35 @@ void UBNScreen_PlaySetup::NativeOnInitialized()
 		BotsButton->OnClicked().AddUObject(this, &UBNScreen_PlaySetup::HandleBotsClicked);
 		BotsButton->SetLabelText(LOCTEXT("RowPlayers", "PLAYERS"));
 	}
+	if (ScoreLimitButton)
+	{
+		ScoreLimitButton->OnClicked().AddUObject(this, &UBNScreen_PlaySetup::HandleScoreLimitClicked);
+		ScoreLimitButton->SetLabelText(LOCTEXT("RowScoreLimit", "SCORE LIMIT"));
+	}
+	if (TimeLimitButton)
+	{
+		TimeLimitButton->OnClicked().AddUObject(this, &UBNScreen_PlaySetup::HandleTimeLimitClicked);
+		TimeLimitButton->SetLabelText(LOCTEXT("RowTimeLimit", "TIME LIMIT"));
+	}
 	if (StartButton)
 	{
 		StartButton->OnClicked().AddUObject(this, &UBNScreen_PlaySetup::HandleStartClicked);
 		StartButton->SetLabelText(LOCTEXT("RowStart", "START GAME"));
 	}
-	// NO BackButton any more. `Button Prompts` `21:43024` is a LEGEND, not a control — two
-	// glyph+label pairs that name the keys, and the reference draws no clickable affordance
-	// there. Escape is already caught in NativeOnKeyDown, so removing the button costs nothing:
-	// the way back is the key the legend names, which is the point of a legend.
+	// The legend (`Button Prompts` `21:43024`) is clickable since 2 Sep: same glyph, same verb,
+	// and either one is the way back. Escape in NativeOnKeyDown stays the keyboard route.
+	for (UBNPromptButton* Prompt : { BackPrompt.Get(), MenuPrompt.Get() })
+	{
+		if (Prompt)
+		{
+			Prompt->OnClicked().AddUObject(this, &UBNScreen_PlaySetup::HandleBackClicked);
+		}
+	}
+	if (BackPrompt) { BackPrompt->SetVerbText(LOCTEXT("PromptBack", "Back")); }
+	if (MenuPrompt) { MenuPrompt->SetVerbText(LOCTEXT("PromptMenu", "Menu")); }
 	// The Idle→Hover edge transition the shared component drops on the floor — see BNButtonEdges.
-	for (UBRButton* Button : { MapButton.Get(), ModeButton.Get(), BotsButton.Get() })
+	for (UBRButton* Button : { MapButton.Get(), ModeButton.Get(), BotsButton.Get(),
+	                           ScoreLimitButton.Get(), TimeLimitButton.Get() })
 	{
 		BNButtonEdges::Bind(Button, BNButtonEdges::EChrome::MenuRow);
 	}
@@ -129,6 +148,24 @@ void UBNScreen_PlaySetup::HandleBotsClicked()
 	RefreshDisplay();
 }
 
+void UBNScreen_PlaySetup::HandleScoreLimitClicked()
+{
+	if (ScoreLimitPresets.Num() > 0)
+	{
+		ScoreLimitIndex = (ScoreLimitIndex + 1) % ScoreLimitPresets.Num();
+	}
+	RefreshDisplay();
+}
+
+void UBNScreen_PlaySetup::HandleTimeLimitClicked()
+{
+	if (TimeLimitPresets.Num() > 0)
+	{
+		TimeLimitIndex = (TimeLimitIndex + 1) % TimeLimitPresets.Num();
+	}
+	RefreshDisplay();
+}
+
 void UBNScreen_PlaySetup::HandleStartClicked()
 {
 	if (!Maps.IsValidIndex(MapIndex) || Maps[MapIndex].MapPath.IsEmpty())
@@ -150,8 +187,17 @@ void UBNScreen_PlaySetup::HandleStartClicked()
 	// TargetPlayers, team assignment, HUD, bots) already exists and is match-proven.
 	// ?listen is deliberate: free in standalone, and the day sessions arrive this same
 	// screen hosts one without a change.
-	const FString Options = FString::Printf(TEXT("listen?TargetPlayers=%d?Teams=%d"),
-		TotalPlayers, bTeams ? 1 : 0);
+	// ScoreLimit / TimeLimit are OMITTED when the presets are empty, so an ini that clears them
+	// falls back to the game mode's own numbers rather than sending zero.
+	FString Options = FString::Printf(TEXT("listen?TargetPlayers=%d?Teams=%d"), TotalPlayers, bTeams ? 1 : 0);
+	if (ScoreLimitPresets.IsValidIndex(ScoreLimitIndex))
+	{
+		Options += FString::Printf(TEXT("?ScoreLimit=%d"), ScoreLimitPresets[ScoreLimitIndex]);
+	}
+	if (TimeLimitPresets.IsValidIndex(TimeLimitIndex))
+	{
+		Options += FString::Printf(TEXT("?TimeLimit=%d"), TimeLimitPresets[TimeLimitIndex] * 60);
+	}
 	UE_LOG(LogBN, Log, TEXT("BNScreen_PlaySetup: launching %s (%s)."),
 		*Maps[MapIndex].MapPath, *Options);
 	UGameplayStatics::OpenLevel(this, FName(*Maps[MapIndex].MapPath), /*bAbsolute*/ true, Options);
@@ -189,6 +235,18 @@ void UBNScreen_PlaySetup::RefreshDisplay()
 				FText::AsNumber((TotalPlayers + 1) / 2), FText::AsNumber(TotalPlayers / 2))
 			: FText::Format(LOCTEXT("BotsFFA", "{0}  (YOU + {1} BOTS)"),
 				FText::AsNumber(TotalPlayers), FText::AsNumber(FMath::Max(0, TotalPlayers - 1))));
+	}
+	if (ScoreLimitButton)
+	{
+		ScoreLimitButton->SetSelectionText(ScoreLimitPresets.IsValidIndex(ScoreLimitIndex)
+			? FText::Format(LOCTEXT("ScoreLimitValue", "{0} KILLS"), FText::AsNumber(ScoreLimitPresets[ScoreLimitIndex]))
+			: LOCTEXT("LimitDefault", "DEFAULT"));
+	}
+	if (TimeLimitButton)
+	{
+		TimeLimitButton->SetSelectionText(TimeLimitPresets.IsValidIndex(TimeLimitIndex)
+			? FText::Format(LOCTEXT("TimeLimitValue", "{0} MIN"), FText::AsNumber(TimeLimitPresets[TimeLimitIndex]))
+			: LOCTEXT("LimitDefault", "DEFAULT"));
 	}
 	if (DescriptionText)
 	{
@@ -230,6 +288,18 @@ void UBNScreen_PlaySetup::RefreshDisplay()
 		TeamRow.Label = LOCTEXT("OverrideTeams", "Team Layout");
 		TeamRow.Value = bTeamsMode ? LOCTEXT("OverrideTeamsOn", "TWO TEAMS")
 		                           : LOCTEXT("OverrideTeamsOff", "NONE");
+		if (ScoreLimitPresets.IsValidIndex(ScoreLimitIndex))
+		{
+			FBNSettingRow& ScoreRow = Overrides.Rows.AddDefaulted_GetRef();
+			ScoreRow.Label = LOCTEXT("OverrideScore", "Score Limit");
+			ScoreRow.Value = FText::AsNumber(ScoreLimitPresets[ScoreLimitIndex]);
+		}
+		if (TimeLimitPresets.IsValidIndex(TimeLimitIndex))
+		{
+			FBNSettingRow& TimeRow = Overrides.Rows.AddDefaulted_GetRef();
+			TimeRow.Label = LOCTEXT("OverrideTime", "Time Limit");
+			TimeRow.Value = FText::Format(LOCTEXT("OverrideTimeValue", "{0} MIN"), FText::AsNumber(TimeLimitPresets[TimeLimitIndex]));
+		}
 
 		SettingsPanel->SetSections(Sections);
 	}
