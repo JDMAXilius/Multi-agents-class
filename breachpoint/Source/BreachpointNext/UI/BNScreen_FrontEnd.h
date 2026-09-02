@@ -4,6 +4,7 @@
 #include "BNScreen_FrontEnd.generated.h"
 
 class UBRButton;
+class UBRRosterPanel;
 class UImage;
 class UProgressBar;
 class UTextBlock;
@@ -123,4 +124,33 @@ protected:
 	 *  mock's 343-owned key-art (01-MENU-MEASURED §6). */
 	UPROPERTY(Config)
 	TSoftObjectPtr<UTexture2D> NewsImageTexture;
+
+	/**
+	 * The "IN MENUS" roster — ONE instance of the measured component, in place of the 23
+	 * hand-built canvas widgets BN42 originally put here (a Border, a header, six plates, six
+	 * avatars, six names, two notches and a privacy label).
+	 *
+	 * `UBRRosterPanel`'s own constants ARE the Figma numbers off `12:39611` — PanelOriginX 862,
+	 * PanelOriginY 397, 349 x 273, BackgroundInset 3, ContentInset 16, HeaderY 16, FirstRowY 52,
+	 * MaxVisibleRows 6, and `UBRRosterRow`'s RowHeight 30 / RowPitch 35. Re-deriving any of that
+	 * on a canvas was the mistake; the component is the measurement.
+	 */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
+	TObjectPtr<UBRRosterPanel> RosterPanel;
+
+	/**
+	 * Who the roster lists. Config, not literals in the WBP — the six names used to be typed
+	 * into six CommonTextBlocks inside the asset, which is a string in a binary the C++ cannot
+	 * see. Entry 0 is the local player and the party leader.
+	 *
+	 * There is no party system yet (`GAP: UBRVM_Lobby`, SCREEN-MANIFEST §Screens). When one
+	 * lands it replaces this array; until then the honest fill is data a human wrote down, not
+	 * a roster C++ invented.
+	 */
+	UPROPERTY(Config)
+	TArray<FString> RosterNames;
+
+	/** Shared roster emblem. SOFT (law 3), and it is a FRAME, not a portrait — we have no avatars. */
+	UPROPERTY(Config)
+	TSoftObjectPtr<UTexture2D> RosterEmblem;
 };

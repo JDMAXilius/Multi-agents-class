@@ -596,3 +596,61 @@ screen instance (`01-MENU-MEASURED.md:91`, node `21:43050`, the designated refer
 `349 × 469` in `REFERENCE-EXTRACTION.md:230` is a component-board figure from a DIFFERENT Figma
 file (`Kn87U5sy2VD0lP8K7h4LcQ`) and is explicitly unsampled. Same discrepancy class as the
 feature card's 330-vs-349. The build already matches the referee.
+
+---
+
+## Roster swap — 23 hand-built widgets → 1 measured component (2 Sep 2026)
+
+Pulled `Roster Panel` `12:39611` and `Roster Row` `12:39621` through the Figma MCP off the
+working file `yznvnVdOFDADaugZSeomfP`, as the founder asked. **The read confirmed the components
+already in the repo are the measurement**, number for number:
+
+| Figma `12:39611` | `UBRRosterPanel` constant |
+|---|---|
+| panel 349 × 273 at (80,220) on its board, (862,397) in-screen | `PanelWidthMainMenu 349` · `PanelHeight 273` · `PanelOriginX 862` · `PanelOriginY 397` |
+| Background boolean-op: rounded rect 343 × 267 at inset 3 | `BackgroundInset 3.0f` |
+| Content slot inset 16; header at y16; first row y52 | `ContentInset 16` · `HeaderY 16` · `FirstRowY 52` |
+| six rows, y 52/87/122/157/192/227 | `MaxVisibleRows 6`, pitch 35 |
+| Roster Group Header 317 × 31 | `UBRRosterHeader::HeaderHeight 31.0f` |
+| row 317 × 30, Content 313 × 26 at inset 2 | `UBRRosterRow::RowHeight 30` · `RowPitch 35` · `ContentInset 2` |
+| Party Leader Frame 30 × 30, sitting OUTSIDE the row to its left | `PartyLeaderIconSize 30.0f` · `ExternalIconsGap -5.0f` |
+
+So the fix was not to export art — it was to stop re-deriving geometry on a canvas. `PartyPanel`,
+`PartyHeaderText`, `PartyNotchTop/Bottom`, `PartyPrivacyText`, `RosterPlate0-5`,
+`RosterAvatar0-5`, `RosterName0-5` — **23 widgets deleted**, one `WBP_RosterPanel` instance
+added at the measured box. The screen went 68 → 46 widgets.
+
+The six names were **literal strings typed into six CommonTextBlocks inside the .uasset** — a
+string in a binary no reviewer can grep. They are `UPROPERTY(Config) TArray<FString> RosterNames`
+now, drawn from the same Recruit/Marine pool `BNGameMode::BotNames` uses so the menu and the
+match agree. Entry 0 is the local player and takes the leader crown.
+
+`TeamFillColor` is deliberately transparent. In the reference each row carries a coloured
+nameplate banner, and that banner is 343-owned art — the IP line (`01-MENU-MEASURED.md` §6) says
+every image in this game is rendered from this game, so the plate stays empty until we author
+our own.
+
+### Findings against `/Game/UI/Components/WBP_RosterPanel` and `WBP_RosterRow` — NOT this packet's assets
+
+1. **`WBP_RosterPanel` ships with `RowWidgetClass` unset, so it renders zero rows out of the
+   box.** Confirmed from the log, not inferred:
+   `Logbreachpoint: Warning: UBRRosterPanel 'RosterPanel' has no RowWidgetClass; 6 roster members cannot be shown.`
+   Worked around by overriding `rowWidgetClass` on **this packet's instance** (in-bounds — an
+   instance default on our own WBP, not the shared asset's default). The shared asset should
+   carry the default so the next consumer is not blocked the same way.
+2. **`WBP_RosterRow` is missing four of its optional bind widgets**: `Emblem`, `RankFrame` /
+   `RankInsignia`, `MicSwitcher`, and the `ExternalIcons` overlay with `PartyLeaderIcon` /
+   `CurrentPlayerIcon`. The C++ binds them `BindWidgetOptional` and the Figma row has all four
+   (emblem 26×26 at x5, rank frame 30×26 at x242, mic 16×18 at x282, party-leader 30×30 outside
+   the row at x-42). So the row currently renders as fill + border + gamertag only, and the
+   gamertag starts at the row edge instead of at the measured x41.
+3. **The 88 × 4 notches are still not drawn.** `12:39611`'s Background is a boolean op — a
+   rounded rect MINUS `Top` 88×4 at x130.5 and `Bottom` 88×4 at x218.5. `PanelBorder` is a
+   `UBRHairlineBorder`, which draws four straight lines and has no notch. The constants exist
+   (`BRLeftRail.h:113-114`, `NotchWidth 88.0f` / `NotchHeight 4.727f`) but nothing consumes them
+   for a panel chassis.
+
+**Not a bug, recorded so nobody "fixes" it:** the header band renders as a solid WHITE plate with
+black text. That is `UBRRosterHeader`'s `GroundToken = SurfaceInverted` / `TextToken =
+TextInverted`, and it matches the Figma render. The gamertag font also checks out — the Figma
+Gamertag frame is 191 × 17 inside a 26-tall content row, which is what renders.

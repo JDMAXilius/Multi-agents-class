@@ -3,6 +3,7 @@
 #include "Components/Image.h"
 #include "Components/ProgressBar.h"
 #include "UI/Components/BRButton.h"
+#include "UI/Components/BRRosterPanel.h"
 #include "Components/TextBlock.h"
 #include "Engine/Texture2D.h"
 #include "Engine/LocalPlayer.h"
@@ -86,6 +87,30 @@ void UBNScreen_FrontEnd::NativeOnInitialized()
 		NavPlayTab.Get(), NavCreateTab.Get(), NavCommunityTab.Get(), NavShopTab.Get() })
 	{
 		BNButtonEdges::Bind(Button);
+	}
+	// THE ROSTER. One measured component where 23 canvas widgets used to be. The panel owns its
+	// own geometry - we hand it data and nothing else, which is the whole reason to use it.
+	if (RosterPanel)
+	{
+		TArray<FBRRosterMemberView> Members;
+		Members.Reserve(RosterNames.Num());
+		for (const FString& Name : RosterNames)
+		{
+			FBRRosterMemberView& Member = Members.AddDefaulted_GetRef();
+			Member.Gamertag = FText::FromString(Name);
+			Member.Emblem = RosterEmblem;
+			// Entry 0 is us: the row that gets the leader crown and the current-player mark.
+			Member.bIsLocalPlayer = Member.bIsPartyLeader = (Members.Num() == 1);
+			// Transparent, deliberately. TeamFillColor paints the nameplate banner, and in the
+			// reference that banner is 343-owned art - the IP line (01-MENU-MEASURED sec 6)
+			// says every image in this game is rendered from this game, so the plate stays
+			// empty until we author our own rather than borrowing theirs.
+			Member.TeamFillColor = FLinearColor::Transparent;
+		}
+		RosterPanel->SetMembers(Members);
+		// Capacity -1 = print no count. We have no party, so "IN MENUS 1/6" would be a lie
+		// dressed as a feature.
+		RosterPanel->SetHeaderText(LOCTEXT("RosterInMenus", "IN MENUS"), -1);
 	}
 	// THE PROGRESSION PANEL, fed from ini rather than invented. Unconfigured is the honest
 	// default here — this project has no ranks, so the line collapses and the bar reads 0
