@@ -717,3 +717,61 @@ will bite the old `Breachpoint` front end the moment anyone opens it.
   both textures.
 - **No standalone career-rank crest, gold bar or dot exists in the `21:32824` export** — they are
   baked into the 2560×1440 board render only. That slot needs a targeted re-export.
+
+---
+
+## Career Rank panel rebuilt to the measured node (2 Sep 2026)
+
+`get_metadata` (Figma MCP) on `21:32826` "Progression Button" and its `Content` child gave the
+internals nobody had recorded. Progression origin (869,55); Content sits at +(5,26), so content
+origin is (874,81) and everything below converts from there:
+
+| Figma node | content-local | screen | BN had |
+|---|---|---|---|
+| `UNSC LOGO` | 140 × 140 @ (92, −43) | **966, 38** | 90 × 90 @ 936,78 (guessed) |
+| `Text & Progress Bar` | 213 × 40 @ (96, 22) | **970, 103** | — |
+| ↳ `Rank` (title+grade) | 213 × 18 @ +(0, 5.5) | **970, 108.5** | 147 wide @ **1046**, 92 |
+| ↳ `Progress Bar` | 213 × 11 @ +(0, 23.5) | **970, 126.5** | 147 × 8 @ **1046**, 120 |
+| `Outer Level` (crest bracket) | 60 × 40 @ (22, 22) | **896, 103** | absent |
+| `Corporal Grade I` (crest) | 52 × 92 @ outer +(4, −17) | **900, 86** | a chevron icon |
+| `Button Prompts` | 20 × 20 @ (−33, 58) | **836, 113** | absent |
+| `Switcher` (dots) | 72 × 10 @ (130, 121) | 999, 176 | ✓ already right |
+
+The rank block was at the wrong x AND the wrong width — 147 @ 1046 against a measured 213 @ 970
+— which is why it read as floating right of centre instead of filling the panel's right half.
+Fixed, along with the plate fill: `#000000 @ 0.5` per COMPONENT-SPECS, not the slate PANEL token
+BN had reused from the menu panels, which made the whole block sit forward of the page.
+
+### The crest
+
+`download_assets` on `21:32826` returns two raw images. One is the 512² UNSC eagle already
+imported (md5-identical to `T_BN_Fig_Watermark_01`, so not re-imported). The other is the crest
+— and Figma hands it back as a **JPEG on a white board**, no alpha. Imported raw it is a white
+rectangle with a crest floating in it. `Tools/bn/bn47_rank_crest.py` keys it: pure-white → alpha
+0, ≤200 luminance → opaque, a linear ramp between so the silhouette keeps a soft edge, and three
+asserts that fail loudly if the key inverts or does not fire. Output 104 × 184 (exact 2× of the
+measured 52 × 92; both edges multiples of 4, which the importer requires).
+
+It is `Corporal Grade I`, not Sergeant — the `5. Sergeant Grade 1` instance in the same frame is
+**hidden in the source**. Shipping what the node draws rather than what the placeholder text
+says; if that reads wrong it is an ini data mismatch, not art to redraw.
+
+### Carousel dots — no new asset needed
+
+`r5.svg` from this export is `<circle cx=3.5 cy=3.5 r=3 stroke=white opacity=0.5/>` on a 7 × 7
+box — byte-for-byte the spec `Tools/bn/bn43_carousel_dots.py` already renders. The dots in the
+project are correct and are already wired; re-importing would have duplicated them.
+
+### PLACEHOLDERS, flagged so they are not mistaken for finished work
+
+1. **The "X" button prompt** at (836,113) is a hairline ring + a `CommonTextBlock` reading "X",
+   not a real `UBRButtonPrompt`. A real one needs a `UInputAction`, and `UBRNavBar`'s own
+   `PreviousTabAction`/`NextTabAction` have no ini entry at all (filed above). The box is at the
+   measured 20 × 20 so the composition reads 1:1 today; swapping in a `CommonActionWidget` later
+   is a widget change, not a layout change.
+2. **The crest bracket** (`RankCrestFrame`) is a plain `UBRHairlineBorder` rectangle. The
+   reference's bracket has corner returns, which is `Button Border 12:1337` geometry — recorded
+   in `03-DropDown-ButtonBorder-SliderRowWide.md:44-52`, not yet built.
+3. **The progress bar is a flat gold**, `#E5BF76`. The reference is a *gradient* orange→gold
+   ramp; `UProgressBar` takes one fill colour, so a true gradient needs a material.
+4. **The rank is Corporal art under Sergeant text** — see above.
