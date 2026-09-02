@@ -1,9 +1,13 @@
 #pragma once
 
+#include "UI/BNSettingsPanel.h"
+
 #include "UI/BNActivatableWidget.h"
 #include "BNScreen_PlaySetup.generated.h"
 
+class UBNProfileBar;
 class UBRButton;
+class UBRPageTitle;
 class UImage;
 class UTextBlock;
 class UTexture2D;
@@ -38,15 +42,18 @@ struct FBNFrontEndMapEntry
 	TSoftObjectPtr<UTexture2D> PreviewTexture;
 
 	/**
-	 * The DETAILS panel's lines for this map, one entry per line, straight from ini.
+	 * The DETAILS panel's rows for this map — LABEL and VALUE, not one packed string.
 	 *
-	 * Free-form on purpose: the breakdown is the one place a map says something a schema
-	 * cannot predict ("FIVE TIERS", "SPAWNS  16"), and inventing typed fields for it would
-	 * mean a compile every time a map wants to say something new. Empty is legal — the panel
-	 * falls back to its title alone.
+	 * WAS `TArray<FString>` of free-form lines padded with spaces ("SPAWNS        16"), which
+	 * only lined up because a monospaced-ish font and hand-counted padding happened to agree.
+	 * Node `21:43050` right-ALIGNS the value to the panel's 349 edge, so the two halves are two
+	 * fields; packing them into one string cannot reproduce that at any label width, and the
+	 * founder asked for details that space themselves correctly.
+	 *
+	 * Empty is legal — the section collapses rather than printing an empty rule.
 	 */
 	UPROPERTY(Config)
-	TArray<FString> Details;
+	TArray<FBNSettingRow> Details;
 };
 
 /**
@@ -138,9 +145,32 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
 	TObjectPtr<UImage> PreviewImage;
 
-	/** The DETAILS panel's body — the selected map's own lines, rewritten as MAP cycles. */
+	/**
+	 * The centre column, `Game Settings Breakdown` `21:43050` — one measured component where a
+	 * Border + a "DETAILS" label + one packed TextBlock used to be. It owns the gamemode card
+	 * and lays its own rows out at the measured pitch 23, so a map with three details and a map
+	 * with nine both space correctly without touching the WBP.
+	 */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
-	TObjectPtr<UTextBlock> BreakdownText;
+	TObjectPtr<UBNSettingsPanel> SettingsPanel;
+
+	/** The 1280x75 band, `Page Title` `21:43048`. Reused, not re-authored. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
+	TObjectPtr<UBRPageTitle> PageTitle;
+
+	/** The footer strip — the SAME component the front end uses. Modularity is the point. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
+	TObjectPtr<UBNProfileBar> ProfileBar;
+
+	/**
+	 * The gamemode icon shown on the settings card. SOFT (law 3) and set from ini, so the
+	 * mode's art is data — a new mode is an ini line, not a compile.
+	 */
+	UPROPERTY(Config)
+	TSoftObjectPtr<UTexture2D> TeamsModeIcon;
+
+	UPROPERTY(Config)
+	TSoftObjectPtr<UTexture2D> FreeForAllModeIcon;
 
 	// -- data + state ------------------------------------------------------------------
 

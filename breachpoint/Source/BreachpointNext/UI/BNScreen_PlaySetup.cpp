@@ -7,6 +7,7 @@
 #include "InputCoreTypes.h"
 #include "Kismet/GameplayStatics.h"
 #include "UI/BNUITypes.h"
+#include "UI/Components/BRPageTitle.h"
 
 #define LOCTEXT_NAMESPACE "BreachpointNextUI"
 
@@ -58,7 +59,16 @@ void UBNScreen_PlaySetup::NativeOnInitialized()
 
 	// The menu opens on the founder's default mode, and the lobby size follows FROM it -
 	// same derivation a mode change uses, so boot and a toggle can never disagree.
-	bTeams = bDefaultTeams;
+	if (PageTitle)
+	{
+		// The band is `UBRPageTitle`'s; we only hand it the two strings. Figma splits the
+		// breadcrumb from the page name (`CUSTOMIZE` then `ARMOR HALL` at x134), and the class
+		// already models that split, so it goes in as two fields rather than one packed line.
+		PageTitle->SetBreadcrumbText(LOCTEXT("CrumbCreate", "CREATE"));
+		PageTitle->SetTitleText(LOCTEXT("TitleCustomGame", "CUSTOM GAME"));
+	}
+
+		bTeams = bDefaultTeams;
 	TotalPlayers = DefaultPlayersForMode(bTeams);
 	RefreshDisplay();
 }
@@ -188,28 +198,41 @@ void UBNScreen_PlaySetup::RefreshDisplay()
 			: LOCTEXT("PlaySetupHint", "Select a map to play in."));
 		DescriptionText->SetColorAndOpacity(FSlateColor(BNUIColors::InkDim));
 	}
-	if (BreakdownText)
+	if (SettingsPanel)
 	{
-		// The panel is the selected MAP's, so it is rebuilt from that map's own ini lines
-		// every time the row cycles - this is the "changes based on the level" surface.
-		FString Body;
+		// The gamemode card mirrors the MODE row, so the centre column and the left rail can
+		// never disagree about what is selected.
+		const bool bTeamsMode = bTeams;
+		SettingsPanel->SetGamemode(
+			bTeamsMode ? LOCTEXT("ModeTeamsTitle", "ARENA: TEAM DEATHMATCH")
+			           : LOCTEXT("ModeFFATitle", "ARENA: FREE-FOR-ALL"),
+			bTeamsMode ? LOCTEXT("ModeTeamsBody", "Two fireteams. Highest score when the clock runs out takes it.")
+			           : LOCTEXT("ModeFFABody", "Every player for themselves. First to the score cap wins."),
+			bTeamsMode ? TeamsModeIcon : FreeForAllModeIcon,
+			LOCTEXT("ModeVersion", "v1.0"));
+
+		// DETAILS is the map's own rows; OVERRIDES is what THIS lobby changed. Two entries in
+		// one array, not two panels - the component stacks whatever it is handed.
+		TArray<FBNSettingSection> Sections;
+
+		FBNSettingSection& Details = Sections.AddDefaulted_GetRef();
+		Details.Header = LOCTEXT("SectionDetails", "DETAILS");
 		if (bHasMap)
 		{
-			for (const FString& Line : Maps[MapIndex].Details)
-			{
-				if (!Body.IsEmpty())
-				{
-					Body.Append(LINE_TERMINATOR);
-				}
-				Body.Append(Line);
-			}
+			Details.Rows = Maps[MapIndex].Details;
 		}
-		BreakdownText->SetText(FText::FromString(Body));
-		// A map with no Details lines leaves the panel showing its title alone rather than
-		// an empty block holding layout open.
-		BreakdownText->SetVisibility(Body.IsEmpty()
-			? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
-		BreakdownText->SetColorAndOpacity(FSlateColor(BNUIColors::InkDim));
+
+		FBNSettingSection& Overrides = Sections.AddDefaulted_GetRef();
+		Overrides.Header = LOCTEXT("SectionOverrides", "OVERRIDES");
+		FBNSettingRow& CountRow = Overrides.Rows.AddDefaulted_GetRef();
+		CountRow.Label = LOCTEXT("OverrideBotCount", "Bot Count");
+		CountRow.Value = FText::AsNumber(FMath::Max(0, TotalPlayers - 1));
+		FBNSettingRow& TeamRow = Overrides.Rows.AddDefaulted_GetRef();
+		TeamRow.Label = LOCTEXT("OverrideTeams", "Team Layout");
+		TeamRow.Value = bTeamsMode ? LOCTEXT("OverrideTeamsOn", "TWO TEAMS")
+		                           : LOCTEXT("OverrideTeamsOff", "NONE");
+
+		SettingsPanel->SetSections(Sections);
 	}
 	if (PreviewImage)
 	{
