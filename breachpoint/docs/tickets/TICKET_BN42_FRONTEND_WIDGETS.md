@@ -886,3 +886,12 @@ and the rank crest come from the [BNTeamRoster] ini cycle, so both screens agree
 art list. `RosterEmblem` / `RosterRankInsignia` on the front end remain as the pre-cycle defaults.
 Not done: the reference header's "Invite Only" + people glyph — `UBRRosterHeader` has Label and
 Count only; the lobby ships the same dash and the founder accepted it there.
+- Prompt buttons read as buttons now (founder: "noticeable... if I hover it should highlight"):
+  `UBNButtonStyle_Prompt` — white @0.10 plate at idle, @0.35 on hover, START-cyan on press,
+  padding 8/3/12/3 so the plate is a pill around glyph + verb. Set on `WBP_BNPromptButton`.
+  ROOT CAUSE of "kinda gray": not the style. `BNProfileBar` paints a full-width black @0.5 ground
+  at ZOrder 1, and the prompts sat at ZOrder 0 beneath it — everything under it, glyph, verb and
+  plate, measured at exactly half (127 vs the bar's own text at 255). Fixed by draw order: the
+  prompts are ZOrder 10. CommonUI's `bApplyAlphaOnDisable` was ruled out by measurement first
+  (turned off, still 127) and stays off — a prompt should never half-dim. Verified: idle 255 text
+  on a 0.10 plate, hover plate at 0.35 (measured 105 over a 23 bar).

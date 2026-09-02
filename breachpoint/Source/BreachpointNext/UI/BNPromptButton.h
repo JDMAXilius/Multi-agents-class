@@ -1,11 +1,28 @@
 #pragma once
 
 #include "CommonButtonBase.h"
+#include "UI/Components/BRButton.h"
 #include "BNPromptButton.generated.h"
 
 class UCommonTextBlock;
 class UImage;
 class UTexture2D;
+
+/**
+ * The prompt's own style (founder, 2 Sep 2026: "make sure this is a noticeable button... if I
+ * hover on that, it should highlight... make it look as an actual button"). A faint plate at
+ * idle says "clickable"; hover lifts it; pressed goes to the START row's cyan. Flat, sharp
+ * tints like every other fill in the front end. Padding makes the plate a pill around the
+ * glyph and verb rather than a box hugging the text.
+ */
+UCLASS()
+class BREACHPOINTNEXT_API UBNButtonStyle_Prompt : public UBRButtonStyleBase
+{
+	GENERATED_BODY()
+
+public:
+	UBNButtonStyle_Prompt();
+};
 
 /**
  * `UBNPromptButton` — one entry of `Button Prompts` `21:43024` (a 20px glyph disc and a verb),
