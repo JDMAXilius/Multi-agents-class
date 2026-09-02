@@ -4,6 +4,7 @@
 #include "BNScreen_FrontEnd.generated.h"
 
 class UBRButton;
+class UBRNavBar;
 class UBRRosterPanel;
 class UImage;
 class UProgressBar;
@@ -69,17 +70,22 @@ protected:
 	 * opens nothing is worse than a tab that is visibly not ready, and deleting them would
 	 * lose the measured 666-wide band the design balances the header on.
 	 */
+	/**
+	 * The top nav strip — ONE measured component where four hand-placed canvas buttons and two
+	 * "LB"/"RB" TextBlocks used to sit.
+	 *
+	 * `UBRNavBar` owns the geometry the canvas was re-deriving: BarWidth 666, BarHeight 30,
+	 * FirstTabOffsetX 39, TabPitch 150, TabGap 12, tab 138 x 26 — node `21:32864`. It also owns
+	 * what the canvas could not do at all: the tabs go in a `UCommonButtonGroupBase`, so
+	 * selection exclusivity and gamepad routing are CommonUI's rather than hand-rolled, and the
+	 * bumper prompts are `UBRButtonPrompt`s whose `CommonActionWidget` swaps LB/RB per platform
+	 * instead of two hardcoded English strings.
+	 *
+	 * Tabs are DATA: `SetTabs` builds them at runtime from `TabWidgetClass`. The WBP ships an
+	 * empty container and that is correct, not unfinished.
+	 */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
-	TObjectPtr<UBRButton> NavPlayTab;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
-	TObjectPtr<UBRButton> NavCreateTab;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
-	TObjectPtr<UBRButton> NavCommunityTab;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
-	TObjectPtr<UBRButton> NavShopTab;
+	TObjectPtr<UBRNavBar> NavBar;
 
 	/**
 	 * THE PROGRESSION PANEL — `21:32826`, 869,55 334x115 (title above a 334x94 border).
