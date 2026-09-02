@@ -46,7 +46,16 @@ public class BreachpointNext : ModuleRules
 			"SlateCore",
 			"CommonUI",
 			"CommonInput",
-			"ModelViewViewModel"
+			"ModelViewViewModel",
+
+			// The MEASURED button component (UBRButton and its BRButtonStyle_* set) lives in
+			// the old module, and the front-end screens bind it directly so their rows are the
+			// component the Figma sheet was measured against rather than an engine UButton.
+			// This is UI infrastructure, not gameplay coupling: Breachpoint.Build.cs names
+			// BreachpointNext nowhere, so the edge is one-way and cannot cycle. The scoreboard
+			// WBP already leaned on BRRule/BRHairlineBorder at the ASSET level; this is the same
+			// borrowing, made honest in the module graph because C++ now names the type.
+			"Breachpoint"
 		});
 
 		// PRIVATE: QA/BNAdversarialAgent.cpp serialises its findings report through the

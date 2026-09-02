@@ -3,7 +3,7 @@
 #include "UI/BNActivatableWidget.h"
 #include "BNScreen_PlaySetup.generated.h"
 
-class UButton;
+class UBRButton;
 class UImage;
 class UTextBlock;
 class UTexture2D;
@@ -106,31 +106,30 @@ protected:
 
 	// -- the three selectors -----------------------------------------------------------
 
+	/**
+	 * The three cyclers and START, as the MEASURED Menu Row component (Figma `12:724`).
+	 *
+	 * UBRButton carries BOTH halves of a settings row — SetLabelText on the left, and
+	 * SetSelectionText on the right — which is exactly the label/value split this screen
+	 * used to fake with an Overlay holding two CommonTextBlocks. Those are gone: the row
+	 * is one widget again, and the value can never drift out of alignment with its label.
+	 */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "BN|UI")
-	TObjectPtr<UButton> MapButton;
+	TObjectPtr<UBRButton> MapButton;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "BN|UI")
-	TObjectPtr<UButton> ModeButton;
+	TObjectPtr<UBRButton> ModeButton;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "BN|UI")
-	TObjectPtr<UButton> BotsButton;
+	TObjectPtr<UBRButton> BotsButton;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "BN|UI")
-	TObjectPtr<UButton> StartButton;
+	TObjectPtr<UBRButton> StartButton;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
-	TObjectPtr<UButton> BackButton;
+	TObjectPtr<UBRButton> BackButton;
 
 	// -- the values those rows print, and the breakdown panel's mirrors ----------------
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "BN|UI")
-	TObjectPtr<UTextBlock> MapValueText;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "BN|UI")
-	TObjectPtr<UTextBlock> ModeValueText;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "BN|UI")
-	TObjectPtr<UTextBlock> BotsValueText;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
 	TObjectPtr<UTextBlock> DescriptionText;

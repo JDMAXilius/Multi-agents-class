@@ -1,7 +1,7 @@
 #include "UI/BNScreen_FrontEnd.h"
 #include "BreachpointNext.h"
-#include "Components/Button.h"
 #include "Components/Image.h"
+#include "UI/Components/BRButton.h"
 #include "Components/TextBlock.h"
 #include "Engine/Texture2D.h"
 #include "Engine/LocalPlayer.h"
@@ -26,13 +26,29 @@ void UBNScreen_FrontEnd::NativeOnInitialized()
 	// FOR clicking, like the pause screen — the two proven mouse screens share this shape.
 	SetVisibility(ESlateVisibility::Visible);
 
+	// CommonUI's C++ hook is the NATIVE event OnClicked(), not the dynamic multicast — the
+	// dynamic one is private with AllowPrivateAccess, reachable from Blueprint only.
 	if (PlayButton)
 	{
-		PlayButton->OnClicked.AddUniqueDynamic(this, &UBNScreen_FrontEnd::HandlePlayClicked);
+		PlayButton->OnClicked().AddUObject(this, &UBNScreen_FrontEnd::HandlePlayClicked);
+		PlayButton->SetLabelText(LOCTEXT("MenuPlay", "PLAY"));
 	}
 	if (QuitButton)
 	{
-		QuitButton->OnClicked.AddUniqueDynamic(this, &UBNScreen_FrontEnd::HandleQuitClicked);
+		QuitButton->OnClicked().AddUObject(this, &UBNScreen_FrontEnd::HandleQuitClicked);
+		QuitButton->SetLabelText(LOCTEXT("MenuQuit", "QUIT"));
+	}
+	// The design's four-slot rail, with the two that do nothing shipped disabled and named —
+	// what the reference game does with locked entries, and what this class's comment promises.
+	if (CustomsButton)
+	{
+		CustomsButton->SetLabelText(LOCTEXT("MenuCustoms", "CUSTOM GAMES"));
+		CustomsButton->SetIsEnabled(false);
+	}
+	if (AcademyButton)
+	{
+		AcademyButton->SetLabelText(LOCTEXT("MenuAcademy", "ACADEMY"));
+		AcademyButton->SetIsEnabled(false);
 	}
 	if (DescriptionText)
 	{

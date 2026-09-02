@@ -1,7 +1,7 @@
 #include "UI/BNScreen_PlaySetup.h"
 #include "BreachpointNext.h"
-#include "Components/Button.h"
 #include "Components/Image.h"
+#include "UI/Components/BRButton.h"
 #include "Components/TextBlock.h"
 #include "Engine/Texture2D.h"
 #include "InputCoreTypes.h"
@@ -22,11 +22,33 @@ void UBNScreen_PlaySetup::NativeOnInitialized()
 	Super::NativeOnInitialized();
 	SetVisibility(ESlateVisibility::Visible);
 
-	if (MapButton)   { MapButton->OnClicked.AddUniqueDynamic(this, &UBNScreen_PlaySetup::HandleMapClicked); }
-	if (ModeButton)  { ModeButton->OnClicked.AddUniqueDynamic(this, &UBNScreen_PlaySetup::HandleModeClicked); }
-	if (BotsButton)  { BotsButton->OnClicked.AddUniqueDynamic(this, &UBNScreen_PlaySetup::HandleBotsClicked); }
-	if (StartButton) { StartButton->OnClicked.AddUniqueDynamic(this, &UBNScreen_PlaySetup::HandleStartClicked); }
-	if (BackButton)  { BackButton->OnClicked.AddUniqueDynamic(this, &UBNScreen_PlaySetup::HandleBackClicked); }
+	// The NATIVE OnClicked() event, per CommonUI — the dynamic one is private to Blueprint.
+	// Labels are set here too, so the WBP still types no strings (the pause screen's law).
+	if (MapButton)
+	{
+		MapButton->OnClicked().AddUObject(this, &UBNScreen_PlaySetup::HandleMapClicked);
+		MapButton->SetLabelText(LOCTEXT("RowMap", "MAP"));
+	}
+	if (ModeButton)
+	{
+		ModeButton->OnClicked().AddUObject(this, &UBNScreen_PlaySetup::HandleModeClicked);
+		ModeButton->SetLabelText(LOCTEXT("RowMode", "MODE"));
+	}
+	if (BotsButton)
+	{
+		BotsButton->OnClicked().AddUObject(this, &UBNScreen_PlaySetup::HandleBotsClicked);
+		BotsButton->SetLabelText(LOCTEXT("RowPlayers", "PLAYERS"));
+	}
+	if (StartButton)
+	{
+		StartButton->OnClicked().AddUObject(this, &UBNScreen_PlaySetup::HandleStartClicked);
+		StartButton->SetLabelText(LOCTEXT("RowStart", "START GAME"));
+	}
+	if (BackButton)
+	{
+		BackButton->OnClicked().AddUObject(this, &UBNScreen_PlaySetup::HandleBackClicked);
+		BackButton->SetLabelText(LOCTEXT("RowBack", "ESC — BACK"));
+	}
 
 	// The menu opens on the founder's default mode, and the lobby size follows FROM it -
 	// same derivation a mode change uses, so boot and a toggle can never disagree.
@@ -131,23 +153,23 @@ void UBNScreen_PlaySetup::HandleBackClicked()
 void UBNScreen_PlaySetup::RefreshDisplay()
 {
 	const bool bHasMap = Maps.IsValidIndex(MapIndex);
-	if (MapValueText)
+	if (MapButton)
 	{
-		MapValueText->SetText(bHasMap
+		MapButton->SetSelectionText(bHasMap
 			? FText::FromString(Maps[MapIndex].DisplayName.ToUpper())
 			: LOCTEXT("NoMapValue", "NONE"));
 	}
-	if (ModeValueText)
+	if (ModeButton)
 	{
-		ModeValueText->SetText(bTeams
+		ModeButton->SetSelectionText(bTeams
 			? LOCTEXT("ModeTeams", "TEAM DEATHMATCH")
 			: LOCTEXT("ModeFFA", "FREE-FOR-ALL"));
 	}
-	if (BotsValueText)
+	if (BotsButton)
 	{
 		// Printed the way a player thinks about it, not the way the option travels: the
 		// URL carries a TOTAL, the row says what that total means in this mode.
-		BotsValueText->SetText(bTeams
+		BotsButton->SetSelectionText(bTeams
 			? FText::Format(LOCTEXT("BotsTeams", "{0} V {1}"),
 				FText::AsNumber((TotalPlayers + 1) / 2), FText::AsNumber(TotalPlayers / 2))
 			: FText::Format(LOCTEXT("BotsFFA", "{0}  (YOU + {1} BOTS)"),

@@ -3,7 +3,7 @@
 #include "UI/BNActivatableWidget.h"
 #include "BNScreen_FrontEnd.generated.h"
 
-class UButton;
+class UBRButton;
 class UImage;
 class UTextBlock;
 class UTexture2D;
@@ -44,12 +44,26 @@ protected:
 	UFUNCTION()
 	void HandleQuitClicked();
 
-	/** PLAY — pushes the play-setup screen on the same Menu stack, so back pops home. */
+	/**
+	 * PLAY — pushes the play-setup screen on the same Menu stack, so back pops home.
+	 *
+	 * UBRButton, not UButton: this is the Menu Row component measured 1:1 against Figma
+	 * `12:724`, and it is what carries the design's Idle→Hover INVERSION, the 28-high row and
+	 * the token palette. An engine UButton renders the grey capsule the founder was seeing.
+	 * The label is set from C++ through SetLabelText, so the WBP still types no strings.
+	 */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "BN|UI")
-	TObjectPtr<UButton> PlayButton;
+	TObjectPtr<UBRButton> PlayButton;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "BN|UI")
-	TObjectPtr<UButton> QuitButton;
+	TObjectPtr<UBRButton> QuitButton;
+
+	/** The two design slots that have no action yet. Disabled, per the class comment. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
+	TObjectPtr<UBRButton> CustomsButton;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|UI")
+	TObjectPtr<UBRButton> AcademyButton;
 
 	/** The rail's hint strip (Description Frame, 349×37). Set from C++ on focus-worthy
 	 *  moments; a WBP never types the copy. */
