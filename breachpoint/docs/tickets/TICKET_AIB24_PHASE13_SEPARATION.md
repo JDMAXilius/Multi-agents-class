@@ -103,3 +103,9 @@ phase's baseline. Metrics for this phase land BEFORE its behaviour (§4 of the r
   `UCrowdManager` only when HasAuthority && APlayerController (bots never double-register),
   unregistered on UnPossessed/EndPlay; verified against 5.8 source that a non-follower agent is
   a moving obstacle the bots see and is never steered. Building.
+- 2026-09-03 rung 1 on main with EVERYTHING merged (AIB22 fix #4, Phases 12/13/14/15, the BN
+  retirement, the game-side crowd/seed hooks): BreachpointEditor PASS, Breachpoint PASS (server
+  target unbuildable on this engine). Merge compile fixes by the lead: duplicate `BotIndex`
+  member/accessor (Phase 14 owns the seed triple), `MatchSeed` shadow, Flank task on the
+  controller-held locomotion signature, spec literal/lambda fixes, `FAIBOverlapEpisode` closing
+  braces. Specs running; W-REVIEW x4 dispatched on the merged commits.

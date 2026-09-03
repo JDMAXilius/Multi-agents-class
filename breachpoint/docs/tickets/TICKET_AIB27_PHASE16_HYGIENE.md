@@ -71,3 +71,9 @@ CONTRACT_GAP raised to the founder (outside every AIB owner path):
   editor pass: `FBNBotTuningRow`/`FBNBotAmbitionRow` after DT_BNBot*/ST_BNBot are deleted.
   Stale prose to scrub later: aib-verifier.md:24 (A/B match), run-specs.sh:13 usage example,
   70_aib_assets.py:7 docstring.
+- 2026-09-03 rung 1 on main with EVERYTHING merged (AIB22 fix #4, Phases 12/13/14/15, the BN
+  retirement, the game-side crowd/seed hooks): BreachpointEditor PASS, Breachpoint PASS (server
+  target unbuildable on this engine). Merge compile fixes by the lead: duplicate `BotIndex`
+  member/accessor (Phase 14 owns the seed triple), `MatchSeed` shadow, Flank task on the
+  controller-held locomotion signature, spec literal/lambda fixes, `FAIBOverlapEpisode` closing
+  braces. Specs running; W-REVIEW x4 dispatched on the merged commits.

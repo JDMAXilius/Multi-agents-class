@@ -93,3 +93,9 @@ phase's baseline. Metrics for this phase land BEFORE its behaviour (§4 of the r
   `Hash(MapName, UtcTicks)` to `UAIBBotManager::SetMatchSeed` unless `-AIBSeed=` is on the command
   line; one `BNGameMode: match seed %d (source=%s)` line. Parser regexes for the three route
   lines landed. Building with Phases 12/15.
+- 2026-09-03 rung 1 on main with EVERYTHING merged (AIB22 fix #4, Phases 12/13/14/15, the BN
+  retirement, the game-side crowd/seed hooks): BreachpointEditor PASS, Breachpoint PASS (server
+  target unbuildable on this engine). Merge compile fixes by the lead: duplicate `BotIndex`
+  member/accessor (Phase 14 owns the seed triple), `MatchSeed` shadow, Flank task on the
+  controller-held locomotion signature, spec literal/lambda fixes, `FAIBOverlapEpisode` closing
+  braces. Specs running; W-REVIEW x4 dispatched on the merged commits.
