@@ -315,9 +315,8 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	{
 		PlayerStartLocations.Add(It->GetActorLocation());
 	}
-	bHasLastFullPathGoal = false; // #3 H3: no full-path move has completed this life yet
-	PendingMoveRequestId = 0;
 	EgressMoveRequestId = 0;
+	bEgressMoveInFlight = false;
 	bStopOnLanding = false;
 	Locomotion = FAIBLocomotionState(); // R3: one stall clock per body, born clean
 	LastLinkJumpAtSeconds = -1.0;
@@ -885,15 +884,10 @@ void AAIBBotController::ArmStopOnLanding()
 
 FPathFollowingRequestResult AAIBBotController::MoveTo(const FAIMoveRequest& MoveRequest, FNavPathSharedPtr* OutPath)
 {
-	// Dropped BEFORE Super: the request it replaces is aborted inside, and an
-	// already-at-goal request completes inside — neither may claim this destination.
-	PendingMoveRequestId = 0;
 	const FPathFollowingRequestResult Result = Super::MoveTo(MoveRequest, OutPath);
 	if (MoveRequest.IsUsingPathfinding() && Result.Code == EPathFollowingRequestResult::RequestSuccessful)
 	{
-		PendingMoveGoal = MoveRequest.GetDestination();
-		PendingMoveRequestId = Result.MoveId.GetID();
-		LogRouteIfChanged(PendingMoveGoal);
+		LogRouteIfChanged(MoveRequest.GetDestination());
 	}
 	return Result;
 }
@@ -901,10 +895,6 @@ FPathFollowingRequestResult AAIBBotController::MoveTo(const FAIMoveRequest& Move
 void AAIBBotController::MarkEgressMove()
 {
 	EgressMoveRequestId = GetCurrentMoveRequestID().GetID();
-	if (PendingMoveRequestId == EgressMoveRequestId)
-	{
-		PendingMoveRequestId = 0; // never the anchor either
-	}
 }
 
 void AAIBBotController::LogRouteIfChanged(const FVector& Goal)
@@ -959,12 +949,17 @@ void AAIBBotController::LogRouteIfChanged(const FVector& Goal)
 void AAIBBotController::OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result)
 {
 	Super::OnMoveCompleted(RequestID, Result);
-	// Fix #4 R8: Egress's own moves prove nothing about the mainland — the lip walk is a
-	// full path ON the island by construction, and its completion cleared the latch one
-	// tick before the step-off (the PIE gantry watch).
+	// Fix #4 R8 / #6 F6-2: Egress's own moves prove nothing about the mainland — the lip
+	// walk is a full path ON the island by construction, and its completion cleared the
+	// latch one tick before the step-off (the PIE gantry watch). The flag covers the whole
+	// of Egress: a short lip walk completes inside the request, before the id mark exists.
 	if (EgressMoveRequestId != 0 && RequestID.GetID() == EgressMoveRequestId)
 	{
 		EgressMoveRequestId = 0;
+		return;
+	}
+	if (bEgressMoveInFlight)
+	{
 		return;
 	}
 	// DidMoveReachGoal is Success AND not a partial path, computed by the follower before
@@ -973,14 +968,6 @@ void AAIBBotController::OnMoveCompleted(FAIRequestID RequestID, const FPathFollo
 	if (!Follow || !Follow->DidMoveReachGoal())
 	{
 		return;
-	}
-	// W-REVIEW #3 H3: the goal of the last completed PATHED full-path move is the island
-	// anchor — a bot on healthy ground refreshes it every move, a bot on an island never.
-	if (PendingMoveRequestId != 0 && RequestID.GetID() == PendingMoveRequestId)
-	{
-		LastFullPathGoal = PendingMoveGoal;
-		bHasLastFullPathGoal = true;
-		PendingMoveRequestId = 0;
 	}
 	if (IslandLatch.bOnIsland || IslandLatch.bStranded)
 	{
@@ -1023,10 +1010,6 @@ void AAIBBotController::GetIslandAnchors(TArray<FAIBIslandAnchor>& OutAnchors) c
 		{
 			OutAnchors.Add({ LastKnown, TEXT("last-known") });
 		}
-	}
-	if (bHasLastFullPathGoal)
-	{
-		OutAnchors.Add({ LastFullPathGoal, TEXT("last full-path move") });
 	}
 	for (const FVector& Start : PlayerStartLocations)
 	{

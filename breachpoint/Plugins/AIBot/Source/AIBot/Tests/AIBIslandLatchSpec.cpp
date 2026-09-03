@@ -247,7 +247,8 @@ void FAIBIslandLatchSpec::Define()
 			return Latch;
 		};
 
-		// The corner spawn pad: the objective, the last move and every PlayerStart all fail.
+		// The corner spawn pad: the objective and every PlayerStart all fail (fix #6 F6-1:
+		// the last full-path move is no anchor — Egress's own lip walk was that move).
 		{
 			FAIBIslandLatch Latch = Latched();
 			const bool NoneReach[] = { false, false, false, false };

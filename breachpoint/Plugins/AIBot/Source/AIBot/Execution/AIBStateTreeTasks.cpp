@@ -904,6 +904,24 @@ EStateTreeRunStatus FAIBAmbitionSentinelTask::Tick(FStateTreeExecutionContext& C
 		? EStateTreeRunStatus::Running : EStateTreeRunStatus::Succeeded;
 }
 
+void FAIBAmbitionSentinelTask::ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
+{
+	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	if (AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller))
+	{
+		Bot->ClearStillTactics();
+	}
+}
+
+void FAIBTacticSentinelTask::ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
+{
+	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	if (AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller))
+	{
+		Bot->ClearStillTactics(EAIBStillTactic::Reload);
+	}
+}
+
 ////////////////////////////////////////////////////////////////////
 
 EStateTreeRunStatus FAIBFaceBeliefTask::EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
@@ -2904,6 +2922,9 @@ EStateTreeRunStatus FAIBEgressTask::EnterState(FStateTreeExecutionContext& Conte
 	InstanceData.SecondsSinceEnter = 0.f;
 	InstanceData.MoverIdleSeconds = 0.f;
 	InstanceData.StrandedSinceSeconds = Bot->GetIslandLatch().LatchedAtSeconds;
+	// F6-2: up BEFORE any of Egress's moves (recovery, lip walk, step-off) is issued — a lip
+	// walk inside acceptance completes inside the request, before MarkEgressMove's id exists.
+	Bot->SetEgressMoveInFlight(true);
 
 	// GROUNDED IS THE AVATAR'S MOVEMENT STATE (fix #4 R6), never the nav projection. In
 	// the air (a grapple ride, a knock): nothing to measure yet — Tick begins on landing
@@ -3079,6 +3100,7 @@ void FAIBEgressTask::ExitState(FStateTreeExecutionContext& Context, const FState
 		return;
 	}
 	ReleaseLocomotion(*Bot);
+	Bot->SetEgressMoveInFlight(false); // F6-2: the id mark (R8) stays as belt for a step-off still falling
 	// NEVER CANCELS A FALL (critic M5): a body in the air finishes arriving like a human
 	// would; only a grounded walk is stopped. Airborne, the unpathed step-off request is
 	// handed to the controller's one-shot (W-REVIEW M6): stopped on the first grounded

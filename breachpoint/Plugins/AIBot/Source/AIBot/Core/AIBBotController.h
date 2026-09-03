@@ -571,19 +571,25 @@ public:
 	const FAIBIslandLatch& GetIslandLatch() const { return IslandLatch; }
 
 	/** THE ISLAND ANCHORS (fix #4 R1, replacing #3 H3's single anchor): in test order, the
-	 *  CURRENT want's goal (the mode objective POIs, or Search/Seek's fresh last-known),
-	 *  the goal of the last completed full-path move, and every PlayerStart in the level
-	 *  (cached at possession). Raw locations; the gate projects them. The island verdict
-	 *  is FAIBIslandLatch::Confirm over the whole list — one anchor on the bot's own
-	 *  island (a corner spawn pad) can no longer refute by itself. */
+	 *  CURRENT want's goal (the mode objective POIs, or Search/Seek's fresh last-known)
+	 *  and every PlayerStart in the level (cached at possession). Raw locations; the gate
+	 *  projects them. The island verdict is FAIBIslandLatch::Confirm over the whole list —
+	 *  one anchor on the bot's own island (a corner spawn pad) can no longer refute by
+	 *  itself. Fix #6 F6-1 dropped the last full-path move's goal: Egress's lip walk WAS
+	 *  that move, so the anchor sat on the island and refuted the latch through itself. */
 	void GetIslandAnchors(TArray<FAIBIslandAnchor>& OutAnchors) const;
 
 	/** Fix #4 R8: Egress calls this right after each move it issues (the lip walk and the
-	 *  step-off) — the move now in flight is EGRESS'S OWN, so its completion neither
-	 *  clears the latch (the lip walk completing on the island cleared the fact one tick
-	 *  before the step-off, the gate went false, ExitState stopped the bot on top) nor
-	 *  becomes the island anchor. */
+	 *  step-off) — the move now in flight is EGRESS'S OWN, so its completion does not
+	 *  clear the latch (the lip walk completing on the island cleared the fact one tick
+	 *  before the step-off, the gate went false, ExitState stopped the bot on top). */
 	void MarkEgressMove();
+
+	/** Fix #6 F6-2: the id mark above is recorded AFTER the request, and a short lip walk
+	 *  (inside acceptance) completes synchronously INSIDE it — the completion cleared the
+	 *  latch before the id existed. Egress raises this on enter, before it issues anything,
+	 *  and drops it on exit; OnMoveCompleted clears no latch while it is up. */
+	void SetEgressMoveInFlight(bool bInFlight) { bEgressMoveInFlight = bInFlight; }
 
 	/** Fix #4 R3: the ONE stall clock — see FAIBLocomotionState. */
 	FAIBLocomotionState& GetLocomotion() { return Locomotion; }
@@ -593,10 +599,8 @@ public:
 	void NoteLinkJumped(double NowSeconds) { LastLinkJumpAtSeconds = NowSeconds; }
 	double GetLastLinkJumpAtSeconds() const { return LastLinkJumpAtSeconds; }
 
-	/** W-REVIEW #3 H3: every move funnels through here (MoveToLocation/MoveToActor both
-	 *  call it), so this is where a PATHED request's destination is remembered for
-	 *  OnMoveCompleted — the follower has Reset() its path before it broadcasts. An
-	 *  already-at-goal request had no path and records nothing. */
+	/** Every move funnels through here (MoveToLocation/MoveToActor both call it): a PATHED
+	 *  request that found a path logs its route (Phase 14). */
 	virtual FPathFollowingRequestResult MoveTo(const FAIMoveRequest& MoveRequest, FNavPathSharedPtr* OutPath = nullptr) override;
 
 	/** ONE-SHOT STOP ON LANDING (W-REVIEW M6). Egress's ExitState mid-fall must not cancel
@@ -626,6 +630,9 @@ public:
 		StillTactics = static_cast<uint8>(bActive ? (StillTactics | Bit) : (StillTactics & ~Bit));
 	}
 	bool HasStillTactic(EAIBStillTactic Tactic) const { return (StillTactics & static_cast<uint8>(Tactic)) != 0; }
+	/** Fix #6 F6-3: a state's exit drops every bit but Keep — a label never outlives the
+	 *  state that set it (Think re-mirrors Stranded/Crowd from the world each sample). */
+	void ClearStillTactics(EAIBStillTactic Keep = EAIBStillTactic::None) { StillTactics &= static_cast<uint8>(Keep); }
 
 	/** The executor's live leaf state name (NAME_None when nothing runs). */
 	FName GetActiveStateName() const;
@@ -699,8 +706,8 @@ public:
 
 	/** AIB22 W-REVIEW M3: the one place a move's completion is observed. A move that
 	 *  reached its goal on a NON-partial path proves the feet are on connected ground
-	 *  and clears the island latch (and Stranded), whatever state issued it; a PATHED
-	 *  one also becomes the island anchor (#3 H3). */
+	 *  and clears the island latch (and Stranded), whatever state issued it — except
+	 *  Egress's own (R8 / F6-2), which run on the island by construction. */
 	virtual void OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result) override;
 
 protected:
@@ -875,14 +882,11 @@ private:
 	FAIBIslandLatch IslandLatch;
 	FAIBLocomotionState Locomotion;
 	double LastLinkJumpAtSeconds = -1.0;
-	/** See GetIslandAnchors / MoveTo / MarkEgressMove / ArmStopOnLanding. All of it dies
-	 *  with the body. */
+	/** See GetIslandAnchors / MarkEgressMove / SetEgressMoveInFlight / ArmStopOnLanding.
+	 *  All of it dies with the body. */
 	TArray<FVector> PlayerStartLocations;
-	FVector PendingMoveGoal = FVector::ZeroVector;
-	uint32 PendingMoveRequestId = 0;
 	uint32 EgressMoveRequestId = 0;
-	FVector LastFullPathGoal = FVector::ZeroVector;
-	bool bHasLastFullPathGoal = false;
+	bool bEgressMoveInFlight = false;
 	bool bStopOnLanding = false;
 	uint32 StopOnLandingRequestId = 0;
 	/** Fix #4 R7: no arbitration, no tree, no move until the pawn has projected onto the

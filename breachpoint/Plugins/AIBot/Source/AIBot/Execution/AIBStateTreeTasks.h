@@ -182,6 +182,10 @@ struct FAIBAmbitionSentinelTask : public FStateTreeTaskCommonBase
 
 	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
 	virtual EStateTreeRunStatus Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const override;
+	/** AIB22 fix #6 F6-3: the sentinel rides in EVERY branch, so its exit is the one hook
+	 *  that runs on every state exit — it drops every still-tactic bit (`idle over —
+	 *  state=Egress tactic=Hold` read a Hold that outlived its state). */
+	virtual void ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
 
 	/** Which engine's current want this sentinel watches (AIB26: the tactic sentinel
 	 *  reads the second engine). */
@@ -194,6 +198,9 @@ USTRUCT(meta = (DisplayName = "AIB Tactic Sentinel", Category = "AIBot"))
 struct FAIBTacticSentinelTask : public FAIBAmbitionSentinelTask
 {
 	GENERATED_BODY()
+	/** A child's exit keeps Reload: the gun (FireWhenAble) lives on the Engage PARENT and
+	 *  is still crouched mid-reload when the legs swap tactic. */
+	virtual void ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
 	virtual const UAIBAmbitionEngine* ResolveEngine(const class AAIBBotController& Bot) const override;
 };
 
