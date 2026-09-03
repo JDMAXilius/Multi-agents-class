@@ -125,4 +125,30 @@ struct AIBOT_API FAIBTierRow : public FTableRowBase
 	 *  only project: every tier carries the same value. */
 	UPROPERTY(EditAnywhere, Category = "Route")
 	float RouteLaneWeightSpread = 0.3f;
+
+	// -- separation (Phase 13, AIB24): Detour Crowd owns steering during moves --------
+	/** Detour Crowd's separation weight, applied on the crowd follower at possession.
+	 *  Below the crowd's own 2.0: with the ini's SeparationDirClamp a pair still parts in
+	 *  a doorway without braking for a teammate behind it (the conga). */
+	UPROPERTY(EditAnywhere, Category = "Separation")
+	float CrowdSeparationWeight = 1.5f;
+
+	/** A teammate inside this radius (two 35uu capsules plus slack) is an OVERLAP for the
+	 *  metric and a BODY — not geometry — for the wedge watchdog. HUD-grade: the count
+	 *  comes through IAIBWorldQuery::CountNearbyAllies, never positions. */
+	UPROPERTY(EditAnywhere, Category = "Separation")
+	float TeammateYieldRadiusUU = 80.f;
+
+	/** How long a wedged bot YIELDS to a teammate inside that radius — sprint released,
+	 *  the stall clock paused, the crowd's separation left to steer — before the stall
+	 *  counts again. One window per wedge; moving 50uu re-arms it. */
+	UPROPERTY(EditAnywhere, Category = "Separation")
+	float TeammateYieldSeconds = 1.f;
+
+	/** The hill hold's footwork ring as a fraction of the objective's reach radius: strafe
+	 *  legs orbit the objective centre at most this far out, so a 55-degree chord's inward
+	 *  dip never carries the body off the objective (AIB22 LOW-7: a hold is footwork with
+	 *  planted legs, not a statue). */
+	UPROPERTY(EditAnywhere, Category = "Separation")
+	float HillStrafeRadiusFraction = 0.6f;
 };

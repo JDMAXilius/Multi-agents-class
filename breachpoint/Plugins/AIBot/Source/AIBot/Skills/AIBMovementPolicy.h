@@ -56,6 +56,15 @@ struct AIBOT_API FAIBMovementState
 	bool bLastLegWasJuke = false;
 };
 
+/** One arc step's answer (see FAIBMovementPolicy::ArcStep). */
+struct AIBOT_API FAIBArcStep
+{
+	FVector Destination = FVector::ZeroVector;
+	float ArcRadians = 0.f;
+	/** Range the step was measured at (before the band clamp). */
+	float RangeUU = 0.f;
+};
+
 struct AIBOT_API FAIBMovementPolicy
 {
 	// -- the ladder --
@@ -88,4 +97,18 @@ struct AIBOT_API FAIBMovementPolicy
 	 */
 	static EAIBStrafeIntent StepStrafe(FAIBMovementState& State, EAIBCompetence Level,
 		FRandomStream& Rng, double NowSeconds);
+
+	/**
+	 * THE STRAFE STEP'S GEOMETRY, worldless (Phase 13 lifted it out of the strafe task so
+	 * the hill hold can share it — AIB22 LOW-7). Rotates the bot's own bearing about Pivot
+	 * by min(MaxArcDegrees, StepUU / range) — range is INVARIANT under an arc step, which is
+	 * what keeps footwork inside its gate however long the leg — then re-bands the range
+	 * into [MinRangeUU, MaxRangeUU] (the spiral fix: chords dip inward and legs expire
+	 * mid-chord). Standing ON the pivot, the bearing is ForwardFallback (the body's forward,
+	 * flattened); with no usable bearing at all the step is refused. Z is the pivot's; the
+	 * mover projects the destination onto the navmesh.
+	 */
+	static bool ArcStep(const FVector& From, const FVector& Pivot, const FVector& ForwardFallback,
+		bool bRight, float StepUU, float MaxArcDegrees, float MinRangeUU, float MaxRangeUU,
+		FAIBArcStep& Out);
 };

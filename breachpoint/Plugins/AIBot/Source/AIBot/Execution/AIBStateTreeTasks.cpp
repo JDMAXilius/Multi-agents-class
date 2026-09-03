@@ -348,6 +348,70 @@ namespace
 			*Bot.GetName(), WorldSeconds(Bot), Via, From.X, From.Y, From.Z, StrandedSeconds);
 	}
 
+	/** FACE THE WALK (founder, 1 Sep: bots "walking and running in reverse instead of
+	 *  like a human rotating themselves"). This host is an FPS pawn whose body yaw IS
+	 *  the control rotation, and until now NOTHING in a mover wrote it — so a bot
+	 *  crossing the map kept the heading of whatever it last aimed at and moonwalked
+	 *  the whole way. The sibling framework has faced its walk since R9; this module
+	 *  was written without it.
+	 *
+	 *  Suppressed while an aimer holds the yaw, which is the founder's own exception:
+	 *  "that doesn't mean that it cannot be doing evasive actions in backwards,
+	 *  especially if it is in combat mode". A bot with a target to face keeps facing
+	 *  it and strafes and backpedals exactly as before — the claim, not a guess about
+	 *  which branch is running, is what decides. Phase 13 lifted it out of
+	 *  TickLocomotion so the hill hold's footwork (no mover, no stall clock) faces its
+	 *  legs too. */
+	void FaceTravel(AAIBBotController& Bot, APawn& Pawn, const FVector& Goal, float DeltaTime)
+	{
+		if (Bot.IsYawClaimed(WorldSeconds(Bot)))
+		{
+			return;
+		}
+		const FVector Here = Pawn.GetActorLocation();
+		// Velocity when there is real motion, the GOAL when there is not: a bot that
+		// has stopped, or is about to set off, should turn toward where it is going
+		// BEFORE it starts, rather than leaving sideways and correcting.
+		FVector Travel = Pawn.GetVelocity();
+		Travel.Z = 0.f;
+		if (Travel.Size() < AIB::TravelFacingMinSpeedUU)
+		{
+			Travel = Goal - Here;
+			Travel.Z = 0.f;
+		}
+		if (Travel.IsNearlyZero())
+		{
+			return;
+		}
+		// Yaw only, and LEVEL: a walking body does not pitch. Steering at a point
+		// would tilt the head at the floor on a downhill and at the sky on a ramp,
+		// which is also where the aim would start from if a target appeared.
+		//
+		// Plus the SWEEP'S PAN (AIB22, F9): a searching bot looks about as it walks.
+		// The offset is SweepLook's, applied HERE rather than written by it, because
+		// two writers on one yaw fight per tick — this block would have dragged any
+		// separately-written pan back to the path at 420 deg/s. Zero for every mover
+		// that is not walking beside a sweep.
+		const FRotator Current = Bot.GetControlRotation();
+		const FRotator Desired(0.f, Travel.Rotation().Yaw + Bot.GetTravelPanDegrees(), 0.f);
+		const FRotator Stepped = FMath::RInterpConstantTo(
+			FRotator(0.f, Current.Yaw, 0.f), Desired, DeltaTime,
+			AIB::TravelFacingTurnRateDeg);
+		const FRotator Applied(Current.Pitch, Stepped.Yaw, Current.Roll);
+		Bot.SetControlRotation(Applied);
+		Pawn.FaceRotation(Applied, DeltaTime);
+	}
+
+	/** Phase 13: the teammate yield's end — window lapsed or the body moved. */
+	void EndYield(AAIBBotController& Bot, FAIBLocomotionState& State)
+	{
+		if (State.YieldUntilSeconds > 0.0)
+		{
+			State.YieldUntilSeconds = 0.0;
+			Bot.SetStillTactic(EAIBStillTactic::Yield, false);
+		}
+	}
+
 	/** One call per mover tick: hold sprint while there is ground to cover, face the walk,
 	 *  and keep the stall clocks. NAVLINKS AND JUMPS ARE NOT THIS FUNCTION'S JOB — the
 	 *  path follower presses them on link/jump-area segments (UAIBPathFollowingComponent);
@@ -376,53 +440,13 @@ namespace
 			State.Goal = Goal;
 			State.GoalSetAtSeconds = Now;
 		}
-		SetSprint(*Avatar, State.bSprintHeld, ToGoal > ArriveRadiusUU * SprintBeyondRadiusFactor);
+		// Phase 13: no sprint into a teammate's back while yielding (see below).
+		const bool bYielding = State.YieldUntilSeconds > 0.0 && WorldSeconds(Bot) < State.YieldUntilSeconds;
+		SetSprint(*Avatar, State.bSprintHeld, !bYielding && ToGoal > ArriveRadiusUU * SprintBeyondRadiusFactor);
 
-		// FACE THE WALK (founder, 1 Sep: bots "walking and running in reverse instead of
-		// like a human rotating themselves"). This host is an FPS pawn whose body yaw IS
-		// the control rotation, and until now NOTHING in a mover wrote it — so a bot
-		// crossing the map kept the heading of whatever it last aimed at and moonwalked
-		// the whole way. The sibling framework has faced its walk since R9; this module
-		// was written without it.
-		//
-		// Suppressed while an aimer holds the yaw, which is the founder's own exception:
-		// "that doesn't mean that it cannot be doing evasive actions in backwards,
-		// especially if it is in combat mode". A bot with a target to face keeps facing
-		// it and strafes and backpedals exactly as before — the claim, not a guess about
-		// which branch is running, is what decides.
-		if (!Bot.IsYawClaimed(Bot.GetWorld() ? Bot.GetWorld()->GetTimeSeconds() : 0.0)
-			&& ToGoal > ArriveRadiusUU)
+		if (ToGoal > ArriveRadiusUU)
 		{
-			// Velocity when there is real motion, the GOAL when there is not: a bot that
-			// has stopped, or is about to set off, should turn toward where it is going
-			// BEFORE it starts, rather than leaving sideways and correcting.
-			FVector Travel = Pawn->GetVelocity();
-			Travel.Z = 0.f;
-			if (Travel.Size() < AIB::TravelFacingMinSpeedUU)
-			{
-				Travel = Goal - Here;
-				Travel.Z = 0.f;
-			}
-			if (!Travel.IsNearlyZero())
-			{
-				// Yaw only, and LEVEL: a walking body does not pitch. Steering at a point
-				// would tilt the head at the floor on a downhill and at the sky on a ramp,
-				// which is also where the aim would start from if a target appeared.
-				//
-				// Plus the SWEEP'S PAN (AIB22, F9): a searching bot looks about as it walks.
-				// The offset is SweepLook's, applied HERE rather than written by it, because
-				// two writers on one yaw fight per tick — this block would have dragged any
-				// separately-written pan back to the path at 420 deg/s. Zero for every mover
-				// that is not walking beside a sweep.
-				const FRotator Current = Bot.GetControlRotation();
-				const FRotator Desired(0.f, Travel.Rotation().Yaw + Bot.GetTravelPanDegrees(), 0.f);
-				const FRotator Stepped = FMath::RInterpConstantTo(
-					FRotator(0.f, Current.Yaw, 0.f), Desired, DeltaTime,
-					AIB::TravelFacingTurnRateDeg);
-				const FRotator Applied(Current.Pitch, Stepped.Yaw, Current.Roll);
-				Bot.SetControlRotation(Applied);
-				Pawn->FaceRotation(Applied, DeltaTime);
-			}
+			FaceTravel(Bot, *Pawn, Goal, DeltaTime);
 		}
 
 		if (!State.bHasBestPoint || FVector::Dist(Here, State.BestPoint) > WedgeProgressUU)
@@ -432,6 +456,7 @@ namespace
 				EndStall(Bot, State, TEXT("moved"));
 			}
 			// REAL PROGRESS — the only thing that resets the clocks (R3).
+			EndYield(Bot, State);
 			State.BestPoint = Here;
 			State.bHasBestPoint = true;
 			State.StallSeconds = 0.f;
@@ -444,6 +469,15 @@ namespace
 		{
 			return false; // standing AT the goal is station-keeping, not being stuck
 		}
+		// PHASE 13: yielding to a teammate. The stall clock waits (these seconds are the
+		// yield line's, not `stuck_seconds`), sprint stays released, and the crowd's
+		// separation does the stepping — no verb, no re-issue (a re-issued MoveTo resets
+		// the crowd corridor).
+		if (bYielding)
+		{
+			return;
+		}
+		EndYield(Bot, State);
 		State.StallSeconds += DeltaTime;
 		if (!State.bStallOpen && State.StallSeconds - State.StallReportedSeconds >= StallReportSeconds)
 		{
@@ -451,6 +485,37 @@ namespace
 		}
 		if (State.StallSeconds < WedgeStallSeconds)
 		{
+			// NO BLIND HOP, NO RE-ISSUE (AIB22 step 4). Traversal verbs fire from the path
+			// itself now (UAIBPathFollowingComponent: custom links and jump-area segments),
+			// and a re-issued move only reset the corridor the follower was already on. A
+			// stall with nothing traversable ahead is either an island (the Egress tactic's,
+			// step 5) or a body wedged on geometry; both are the mover's give-up window to
+			// end, and ReleaseLocomotion closes the episode as resolved=abandoned when it does.
+			//
+			// PHASE 13 (AIB24): a TEAMMATE inside the capsule sum is a body, not geometry —
+			// the wedge yields once, for one bounded window, and lets separation part them.
+			// The count is HUD-grade (CountNearbyAllies); GetNearbyAgentLocations is the
+			// rejected door (enemy positions, no LOS bound).
+			State.bTriedWedgeJump = true;
+			const FAIBTierRow& Tier = Bot.GetTierRow();
+			const IAIBWorldQuery* Query = Bot.GetWorldQuery();
+			const int32 AlliesInside = Query ? Query->CountNearbyAllies(Pawn, Tier.TeammateYieldRadiusUU) : 0;
+			if (AlliesInside > 0)
+			{
+				State.YieldUntilSeconds = WorldSeconds(Bot) + FMath::Max(Tier.TeammateYieldSeconds, 0.f);
+				Bot.SetStillTactic(EAIBStillTactic::Yield, true);
+				SetSprint(*Avatar, State.bSprintHeld, false);
+				UE_LOG(LogAIBot, Log,
+					TEXT("AIBot: %s t=%.1f yields to teammate — %d inside %.0fuu, %.1fs window at (%.0f,%.0f,%.0f)"),
+					*Bot.GetName(), WorldSeconds(Bot), AlliesInside, Tier.TeammateYieldRadiusUU,
+					Tier.TeammateYieldSeconds, Here.X, Here.Y, Here.Z);
+				return false; // yielding is not an abandon
+			}
+			const UPathFollowingComponent* Follow = Bot.GetPathFollowingComponent();
+			UE_LOG(LogAIBot, Verbose,
+				TEXT("AIBot: %s stalled %.0fuu across / %.0fuu up — link=%s; the mover's give-up window decides."),
+				*Bot.GetName(), FVector::Dist2D(Here, Goal), Goal.Z - Here.Z,
+				(Follow && Follow->IsFollowingNavLink()) ? TEXT("yes") : TEXT("no"));
 			return false;
 		}
 		// NO BLIND HOP, NO RE-ISSUE (AIB22 step 4, R9). Traversal verbs fire from the path
@@ -497,6 +562,7 @@ namespace
 		{
 			EndStall(Bot, State, TEXT("abandoned"));
 		}
+		EndYield(Bot, State);
 		if (IAIBAvatarInterface* Avatar = Bot.GetAvatar())
 		{
 			SetSprint(*Avatar, State.bSprintHeld, false);
@@ -2653,6 +2719,105 @@ void FAIBEgressTask::ExitState(FStateTreeExecutionContext& Context, const FState
 
 namespace
 {
+	/** ONE STRAFE LEG'S STEP, actuated: the policy's worldless arc geometry
+	 *  (FAIBMovementPolicy::ArcStep — range-invariant, arc-capped, re-banded) fed with the
+	 *  leg actually in flight and issued as a navmesh-projected move. Shared by the
+	 *  Engage/Retreat strafe task (pivot = the belief) and the Mode hill hold (pivot = the
+	 *  objective centre, Phase 13 / AIB22 LOW-7).
+	 *
+	 *  FILL THE LEG. One step is issued per leg, so a constant distance can only ever suit
+	 *  one rung: at 600uu/s a leg covers 210..1200uu across the ladder, against the old
+	 *  fixed 220 — tuned for Expert's SHORTEST leg, leaving every other rung standing for
+	 *  60-80% of its own leg. Derive it from the leg actually in flight instead. The arc is
+	 *  capped, not the distance: a long leg at close range would otherwise swing the bot
+	 *  most of the way around the pivot, which reads as orbiting, not footwork.
+	 *
+	 *  THE SPIRAL FIX (founder's strafe review, 26 Aug), rebanded for the fight range.
+	 *  Only the ENDPOINTS of an arc step sit on the range circle — the walk between them
+	 *  is the CHORD, dipping inward by R(1-cos(arc/2)) at midpoint. Legs are TIME-driven
+	 *  and routinely expire mid-chord, so the next leg re-measures range from the dip and
+	 *  keeps it. Over the wide fight range the ratchet is kept ON PURPOSE as gradual
+	 *  pressure — a jinking bot slowly working closer is the Halo read — and the floor is
+	 *  what stops it at stand-off instead of at melee-accident range. Returns the
+	 *  destination through OutGoal when a move was issued. */
+	bool StrafeArcStep(AAIBBotController& Bot, const APawn& Pawn, const FVector& Pivot,
+		EAIBStrafeIntent Intent, const FAIBStrafeTaskInstanceData& Params,
+		float MinRangeUU, float MaxRangeUU, FVector& OutGoal)
+	{
+		const FAIBMovementState& MovementState = Bot.GetMovementState();
+		const float LegRemainingSeconds = FMath::Max(0.f,
+			static_cast<float>(MovementState.NextDecisionAtSeconds - WorldSeconds(Bot)));
+		float StepUU = Params.StepDistanceUU;
+		if (const UPawnMovementComponent* MoveComp = Pawn.GetMovementComponent())
+		{
+			const float Speed = MoveComp->GetMaxSpeed();
+			if (Speed > 0.f && LegRemainingSeconds > 0.f)
+			{
+				StepUU = FMath::Max(Params.StepDistanceUU, Speed * LegRemainingSeconds);
+			}
+		}
+		FAIBArcStep Step;
+		if (!FAIBMovementPolicy::ArcStep(Pawn.GetActorLocation(), Pivot, Pawn.GetActorForwardVector(),
+				Intent == EAIBStrafeIntent::Right, StepUU, Params.MaxArcDegrees, MinRangeUU, MaxRangeUU, Step))
+		{
+			return false;
+		}
+		// Projected onto the navmesh by the move itself: a step into a wall or off a ledge
+		// resolves to the nearest legal point instead of failing (the host's proven call).
+		if (Bot.MoveToLocation(Step.Destination, /*AcceptanceRadius=*/50.f, /*bStopOnOverlap=*/true,
+				/*bUsePathfinding=*/true, /*bProjectDestinationToNavigation=*/true, /*bCanStrafe=*/true)
+			== EPathFollowingRequestResult::Failed)
+		{
+			UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s strafe step refused — holding this leg."), *Bot.GetName());
+			return false;
+		}
+		// The measurement the founder's report needed and nobody had: how far one leg
+		// actually carries the bot, and at what range. Range is printed because the arc
+		// is supposed to hold it constant — a drifting range means the geometry is wrong.
+		UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s strafe leg — %.0fuu of arc at range %.0fuu (%.0f deg, %.2fs left)."),
+			*Bot.GetName(), Step.ArcRadians * Step.RangeUU, Step.RangeUU,
+			FMath::RadiansToDegrees(Step.ArcRadians), LegRemainingSeconds);
+		OutGoal = Step.Destination;
+		return true;
+	}
+
+	/** THE HILL IS HELD WITH FOOTWORK (Phase 13, AIB22 LOW-7: "Hold is a label on standing
+	 *  still"). Mode on its objective runs the SAME rhythm as the fight — the policy's
+	 *  strafe legs on the controller's per-life state, a planted leg the named StrafeHold
+	 *  with the existing StopMovement asymmetry — about the objective centre instead of a
+	 *  belief, on a ring inside the objective's reach so no chord dip leaves it. No mover
+	 *  and no stall clock: a plant is a plant, not a wedge. The Hold flag stays up beside
+	 *  it so SweepLook's unbudgeted guard scan owns the planted legs. */
+	void HoldHillWithFootwork(AAIBBotController& Bot, APawn& Pawn,
+		FAIBMoveToObjectiveTaskInstanceData& InstanceData, float DeltaTime)
+	{
+		FAIBMovementState& MovementState = Bot.GetMovementState();
+		const EAIBStrafeIntent Intent = FAIBMovementPolicy::StepStrafe(
+			MovementState, Bot.GetSkillProfile().Level(EAIBSkill::Movement),
+			Bot.GetPolicyRandom(), WorldSeconds(Bot));
+		if (MovementState.NextDecisionAtSeconds != MovementState.LastActuatedLegStamp)
+		{
+			MovementState.LastActuatedLegStamp = MovementState.NextDecisionAtSeconds;
+			Bot.SetStillTactic(EAIBStillTactic::StrafeHold, Intent == EAIBStrafeIntent::Hold);
+			if (Intent == EAIBStrafeIntent::Hold)
+			{
+				Bot.StopMovement();
+			}
+			else
+			{
+				// The strafe task's own node defaults (step floor, arc cap) — one ladder,
+				// not a second one restated for the hill.
+				const FAIBStrafeTaskInstanceData Footwork;
+				const float RingUU = InstanceData.GoalReachUU * FMath::Clamp(Bot.GetTierRow().HillStrafeRadiusFraction, 0.f, 1.f);
+				StrafeArcStep(Bot, Pawn, InstanceData.Goal, Intent, Footwork, RingUU * 0.5f, RingUU, InstanceData.StrafeLegGoal);
+			}
+		}
+		if (!Bot.HasStillTactic(EAIBStillTactic::StrafeHold))
+		{
+			FaceTravel(Bot, Pawn, InstanceData.StrafeLegGoal, DeltaTime);
+		}
+	}
+
 	/** The objective pick, callable from Tick as well as EnterState (BN22 W-REVIEW H1:
 	 *  a goal snapshotted once was written for a hill that never moves, and Rally POIs
 	 *  are PAWNS — a bot "arrived" at a teammate's abandoned spot stood there forever
@@ -2819,10 +2984,33 @@ EStateTreeRunStatus FAIBMoveToObjectiveTask::Tick(FStateTreeExecutionContext& Co
 	// it as a tactic and SweepLook beside it runs the unbudgeted slow scan instead of a
 	// budget that spends once and freezes the head. The sentinel or the want's own decay
 	// ends the branch, never arrival.
+	// PHASE 13 (AIB22 LOW-7): the hill is held with FOOTWORK — the fight's strafe legs
+	// about the objective centre, planted legs named StrafeHold; the Hold flag stays up
+	// for SweepLook's guard scan. One `hill strafe-hold` line per arrival; a leg whose
+	// projection carried the body off the hill walks back through the ordinary mover.
 	const bool bOnObjective = IsWithin(*Bot, InstanceData.Goal, InstanceData.GoalReachUU);
 	Bot->SetStillTactic(EAIBStillTactic::Hold, bOnObjective);
+	if (bOnObjective != InstanceData.bWasOnObjective)
+	{
+		InstanceData.bWasOnObjective = bOnObjective;
+		if (bOnObjective)
+		{
+			InstanceData.StrafeLegGoal = Pawn->GetActorLocation();
+			UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f hill strafe-hold — ring %.0fuu of reach %.0fuu at (%.0f,%.0f,%.0f)"),
+				*Bot->GetName(), WorldSeconds(*Bot),
+				InstanceData.GoalReachUU * Bot->GetTierRow().HillStrafeRadiusFraction, InstanceData.GoalReachUU,
+				InstanceData.Goal.X, InstanceData.Goal.Y, InstanceData.Goal.Z);
+		}
+		else
+		{
+			Bot->SetStillTactic(EAIBStillTactic::StrafeHold, false);
+			InstanceData.ClosestSoFarUU = FVector::Dist(Pawn->GetActorLocation(), InstanceData.Goal);
+			MoveToNavPoint(*Bot, InstanceData.Goal, InstanceData.GoalReachUU);
+		}
+	}
 	if (bOnObjective)
 	{
+		HoldHillWithFootwork(*Bot, *Bot->GetPawn(), InstanceData, DeltaTime);
 		return EStateTreeRunStatus::Running;
 	}
 
@@ -2856,6 +3044,7 @@ void FAIBMoveToObjectiveTask::ExitState(FStateTreeExecutionContext& Context, con
 	if (AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller))
 	{
 		Bot->SetStillTactic(EAIBStillTactic::Hold, false);
+		Bot->SetStillTactic(EAIBStillTactic::StrafeHold, false);
 		ReleaseLocomotion(*Bot);
 		Bot->StopMovement();
 	}
@@ -3032,74 +3221,14 @@ EStateTreeRunStatus FAIBStrafeTask::Tick(FStateTreeExecutionContext& Context, co
 
 	// ON AN ARC AROUND THE BELIEF, not perpendicular to it. A perpendicular step always
 	// LENGTHENS range — from distance d a lateral L lands at sqrt(d^2 + L^2) — so it
-	// walks itself out of this task's own EngagedRadius gate and MoveNearBelief drags it
-	// back. That thrash was the "strafe is far too short" report: at d=340 inside a 350
-	// gate there are only 83uu of room, and at d=350 there are none at all.
-	//
-	// Rotating the bot's own bearing about the belief keeps range CONSTANT by
-	// construction, so the step can never leave the gate however long it is — and it is
-	// what strafing physically is, circling an opponent rather than backing away sideways.
-	FVector FromBelief = Pawn->GetActorLocation() - Belief;
-	FromBelief.Z = 0.f;
-	const float RangeUU = FromBelief.Size();
-	if (RangeUU <= KINDA_SMALL_NUMBER)
-	{
-		return EStateTreeRunStatus::Running; // standing on the belief: no bearing to rotate
-	}
-
-	// FILL THE LEG. One step is issued per leg, so a constant distance can only ever suit
-	// one rung: at 600uu/s a leg covers 210..1200uu across the ladder, against the old
-	// fixed 220 — tuned for Expert's SHORTEST leg, leaving every other rung standing for
-	// 60-80% of its own leg. Derive it from the leg actually in flight instead.
-	const float LegRemainingSeconds = FMath::Max(0.f,
-		static_cast<float>(MovementState.NextDecisionAtSeconds - Bot->GetWorld()->GetTimeSeconds()));
-	float StepUU = InstanceData.StepDistanceUU;
-	if (const UPawnMovementComponent* MoveComp = Pawn->GetMovementComponent())
-	{
-		const float Speed = MoveComp->GetMaxSpeed();
-		if (Speed > 0.f && LegRemainingSeconds > 0.f)
-		{
-			StepUU = FMath::Max(InstanceData.StepDistanceUU, Speed * LegRemainingSeconds);
-		}
-	}
-
-	// Cap the ARC, not the distance: a long leg at close range would otherwise swing the
-	// bot most of the way around the target, which reads as orbiting, not footwork.
-	// (The arc also retires the review's M2 clamp: range is invariant under an arc step
-	// by construction, so the step can never escape the engaged circle at all.)
-	const float ArcRadians = FMath::Min(FMath::DegreesToRadians(InstanceData.MaxArcDegrees), StepUU / RangeUU);
-	const float Signed = ArcRadians * (Intent == EAIBStrafeIntent::Right ? 1.f : -1.f);
-	const FVector Rotated = FromBelief.GetSafeNormal().RotateAngleAxisRad(Signed, FVector::UpVector);
-
-	// THE SPIRAL FIX (founder's strafe review, 26 Aug), rebanded for the fight range.
-	// Only the ENDPOINTS of an arc step sit on the range circle — the walk between them
-	// is the CHORD, dipping inward by R(1-cos(arc/2)) at midpoint. Legs are TIME-driven
-	// and routinely expire mid-chord, so the next leg re-measures range from the dip and
-	// keeps it. Over the old NARROW band that compounded into the target's face; over
-	// the wide fight range the same ratchet is kept ON PURPOSE as gradual pressure — a
-	// jinking bot slowly working closer is the Halo read — and the floor is what stops
-	// it at stand-off instead of at melee-accident range.
-	const float DesiredRangeUU = FMath::Clamp(RangeUU,
-		FMath::Min(InstanceData.StandOffMinUU, InstanceData.FightRangeUU), InstanceData.FightRangeUU);
-	const FVector Destination = Belief + Rotated * DesiredRangeUU;
-
-	// Projected onto the navmesh by the move itself: a step into a wall or off a ledge
-	// resolves to the nearest legal point instead of failing (the host's proven call).
-	if (Bot->MoveToLocation(Destination, /*AcceptanceRadius=*/50.f, /*bStopOnOverlap=*/true,
-			/*bUsePathfinding=*/true, /*bProjectDestinationToNavigation=*/true, /*bCanStrafe=*/true)
-		== EPathFollowingRequestResult::Failed)
-	{
-		UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s strafe step refused — holding this leg."), *Bot->GetName());
-	}
-	else
-	{
-		// The measurement the founder's report needed and nobody had: how far one leg
-		// actually carries the bot, and at what range. Range is printed because the arc
-		// is supposed to hold it constant — a drifting range means the geometry is wrong.
-		UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s strafe leg — %.0fuu of arc at range %.0fuu (%.0f deg, %.2fs left)."),
-			*Bot->GetName(), ArcRadians * RangeUU, RangeUU,
-			FMath::RadiansToDegrees(ArcRadians), LegRemainingSeconds);
-	}
+	// walks itself out of this task's own FightRange gate and MoveNearBelief drags it
+	// back. Rotating the bot's own bearing about the belief keeps range CONSTANT by
+	// construction (StrafeArcStep; the geometry is the policy's, worldless and spec'd),
+	// and it is what strafing physically is. Standing ON the belief, the body's forward
+	// is the bearing (Phase 13) — the old early return stood there, which F9 forbids.
+	FVector LegGoal;
+	StrafeArcStep(*Bot, *Pawn, Belief, Intent, InstanceData,
+		FMath::Min(InstanceData.StandOffMinUU, InstanceData.FightRangeUU), InstanceData.FightRangeUU, LegGoal);
 	return EStateTreeRunStatus::Running;
 }
 

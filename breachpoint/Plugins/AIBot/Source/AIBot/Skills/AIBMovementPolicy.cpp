@@ -161,3 +161,30 @@ EAIBStrafeIntent FAIBMovementPolicy::StepStrafe(FAIBMovementState& State, EAIBCo
 
 	return State.Current;
 }
+
+bool FAIBMovementPolicy::ArcStep(const FVector& From, const FVector& Pivot, const FVector& ForwardFallback,
+	bool bRight, float StepUU, float MaxArcDegrees, float MinRangeUU, float MaxRangeUU,
+	FAIBArcStep& Out)
+{
+	FVector FromPivot = From - Pivot;
+	FromPivot.Z = 0.f;
+	Out.RangeUU = static_cast<float>(FromPivot.Size());
+	FVector Bearing = FromPivot.GetSafeNormal();
+	if (Bearing.IsNearlyZero())
+	{
+		Bearing = FVector(ForwardFallback.X, ForwardFallback.Y, 0.f).GetSafeNormal();
+		if (Bearing.IsNearlyZero())
+		{
+			return false;
+		}
+	}
+	const float MaxArcRadians = FMath::DegreesToRadians(FMath::Max(MaxArcDegrees, 0.f));
+	Out.ArcRadians = Out.RangeUU > KINDA_SMALL_NUMBER
+		? FMath::Min(MaxArcRadians, FMath::Max(StepUU, 0.f) / Out.RangeUU)
+		: MaxArcRadians;
+	const FVector Rotated = Bearing.RotateAngleAxisRad(bRight ? Out.ArcRadians : -Out.ArcRadians, FVector::UpVector);
+	const float Ceiling = FMath::Max(MaxRangeUU, 0.f);
+	const float DesiredRangeUU = FMath::Clamp(Out.RangeUU, FMath::Min(FMath::Max(MinRangeUU, 0.f), Ceiling), Ceiling);
+	Out.Destination = Pivot + Rotated * DesiredRangeUU;
+	return true;
+}

@@ -706,6 +706,13 @@ struct FAIBMoveToObjectiveTaskInstanceData
 	UPROPERTY(EditAnywhere, Category = "Parameter")
 	float RepollIntervalSeconds = 0.5f;
 	float RepollCooldown = 0.f;
+
+	/** Phase 13 (AIB22 LOW-7): the hill hold is FOOTWORK. The last strafe leg's goal (what
+	 *  the walking body faces) and the on-objective edge for the one `hill strafe-hold`
+	 *  line and the walk-back when a leg's projection carried the body off the hill. */
+	FVector StrafeLegGoal = FVector::ZeroVector;
+	bool bWasOnObjective = false;
+
 };
 
 /** The MODE branch's mover (Phase 6): walks to the best world-query POI whose Kind is

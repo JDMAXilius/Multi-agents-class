@@ -46,6 +46,10 @@ enum class EAIBStillTactic : uint8
 	 *  which Wander draws nothing; Think mirrors it from the latch each sample, so it
 	 *  drops when the cooldown lapses or any full-path move completes. */
 	Stranded   = 1 << 4,
+	/** Phase 13 (AIB24): a wedged mover with a TEAMMATE inside TeammateYieldRadiusUU waits
+	 *  one bounded window for the crowd's separation to part them — a body, not geometry,
+	 *  so no jump and no re-issued move. Up for TeammateYieldSeconds at most. */
+	Yield      = 1 << 5,
 };
 
 /** AIB22 H1/F9 — the STATIONARY sweep's budget. Held by the controller, never by the
@@ -113,6 +117,11 @@ struct AIBOT_API FAIBLocomotionState
 	bool bStallOpen = false;
 	float StallReportedSeconds = 0.f;
 	FVector Goal = FVector::ZeroVector;
+
+	/** Phase 13: world seconds until which this wedge YIELDS to a teammate (0 = not
+	 *  yielding). While it runs the stall clock is paused and sprint is released; the
+	 *  crowd's separation does the stepping. */
+	double YieldUntilSeconds = 0.0;
 };
 
 /** AIB22 fix #4 R1: one confirmation anchor — a point that is connected ground IF the bot
@@ -243,6 +252,50 @@ struct AIBOT_API FAIBIslandLatch
 	{
 		Clear();
 		NoLatchBeforeSeconds = -1.0;
+	}
+};
+
+/** Phase 13 (AIB24) `teammate_overlap_events`: a teammate inside the capsule sum, as an
+ *  EPISODE sampled at think cadence — opens on the first sample with an ally inside,
+ *  tracks the peak count, closes on the first without (or with the body). The controller
+ *  writes the `teammate overlap over` line only for spells past
+ *  AIB::TeammateOverlapReportSeconds. Worldless: the spec drives it with plain seconds. */
+struct AIBOT_API FAIBOverlapEpisode
+{
+	double SinceSeconds = -1.0;
+	int32 PeakCount = 0;
+
+	/** One sample. True when this sample CLOSED an episode (Out* filled). */
+	bool Note(int32 AlliesInside, double NowSeconds, float& OutSeconds, int32& OutPeak)
+	{
+		if (AlliesInside > 0)
+		{
+			if (SinceSeconds < 0.0)
+			{
+				SinceSeconds = NowSeconds;
+				PeakCount = 0;
+			}
+			PeakCount = FMath::Max(PeakCount, AlliesInside);
+			return false;
+		}
+		return Close(NowSeconds, OutSeconds, OutPeak);
+	}
+	/** The body-gone close. True when an episode was open. */
+	bool Close(double NowSeconds, float& OutSeconds, int32& OutPeak)
+	{
+		if (SinceSeconds < 0.0)
+		{
+			return false;
+		}
+		OutSeconds = static_cast<float>(NowSeconds - SinceSeconds);
+		OutPeak = PeakCount;
+		Reset();
+		return true;
+	}
+	void Reset()
+	{
+		SinceSeconds = -1.0;
+		PeakCount = 0;
 	}
 };
 
@@ -547,6 +600,10 @@ private:
 	 *  repath on the belief's drift). */
 	void LogRouteIfChanged(const FVector& Goal);
 
+	/** Phase 13 `teammate_overlap_events`: emit the open overlap spell (if any, and past
+	 *  the report threshold) and clear it. */
+	void CloseOverlapEpisode(double NowSeconds);
+
 	UPROPERTY(VisibleAnywhere, Category = "AIBot")
 	TObjectPtr<UAIPerceptionComponent> BotPerception;
 
@@ -651,6 +708,11 @@ private:
 	double IdleSinceSeconds = -1.0;
 	uint8 StillTactics = 0;
 	uint8 IdleTactics = 0;
+
+	/** Phase 13 instruments (see FAIBOverlapEpisode / AIB::PositionSampleSeconds). Both die
+	 *  with the body. */
+	FAIBOverlapEpisode OverlapEpisode;
+	double LastPositionSampleSeconds = -1.0;
 
 	/** AIB22 H1/F9: see GetSweepBudget / SetTravelPanDegrees. Both die with the body. */
 	FAIBSweepBudget SweepBudget;

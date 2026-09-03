@@ -22,6 +22,7 @@
 #include "NavMesh/NavMeshPath.h"
 #include "NavMesh/RecastNavMesh.h"
 #include "Navigation/PathFollowingComponent.h"
+#include "Navigation/CrowdFollowingComponent.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Hearing.h"
 #include "Perception/AISense_Hearing.h"
@@ -252,6 +253,22 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 		static_cast<int32>(ResolvedTier.Confidence), static_cast<int32>(ResolvedTier.Teamwork),
 		ResolvedTier.ReactionSecondsMin, ResolvedTier.ReactionSecondsMax);
 
+	// PHASE 13 (AIB24) — Detour Crowd owns steering during moves: separation on (the
+	// crowd's default is off), weight from the row, medium avoidance, path offset so a
+	// pair parts in a corridor. Query range 400, obstacle avoidance, RotateToVelocity and
+	// AffectFallingVelocity=false stay at the component's defaults (F6: a fall is the
+	// fall). NEVER the SetAvoidanceGroup family — that is the RVO path, and mixing the
+	// two is forbidden. Players become crowd OBSTACLES game-side (ICrowdAgentInterface on
+	// the player pawn, authority + player-controller gated); this module registers
+	// nothing but its own follower.
+	if (UCrowdFollowingComponent* Crowd = Cast<UCrowdFollowingComponent>(GetPathFollowingComponent()))
+	{
+		Crowd->SetCrowdSeparation(true);
+		Crowd->SetCrowdSeparationWeight(ResolvedTier.CrowdSeparationWeight);
+		Crowd->SetCrowdAvoidanceQuality(ECrowdAvoidanceQuality::Medium);
+		Crowd->SetCrowdPathOffset(true);
+	}
+
 	const FAIBTierRow& Defaults = ResolvedTier;
 	Sensorium.Reset();
 	Sensorium.Configure(Defaults.ReactionSecondsMin, Defaults.ReactionSecondsMax);
@@ -312,6 +329,8 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	IdleSinceSeconds = -1.0; // a fresh body has stood still for nothing yet
 	StillTactics = 0;
 	IdleTactics = 0;
+	OverlapEpisode.Reset();  // and has brushed nobody yet (Phase 13)
+	LastPositionSampleSeconds = -1.0;
 	SweepBudget.Reset();     // a fresh body has looked at nothing yet (AIB22)
 	TravelPanDegrees = 0.f;
 	IslandLatch.Reset();     // and stands on no island it has measured yet (cooldown stamp too)
@@ -348,6 +367,7 @@ void AAIBBotController::OnUnPossess()
 	if (const UWorld* IdleWorld = GetWorld())
 	{
 		CloseIdleEpisode(IdleWorld->GetTimeSeconds());
+		CloseOverlapEpisode(IdleWorld->GetTimeSeconds());
 	}
 	StillTactics = 0;
 	// The executor first: no task may run one more evaluation against a dead body.
@@ -430,6 +450,7 @@ void AAIBBotController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	if (const UWorld* IdleWorld = GetWorld())
 	{
 		CloseIdleEpisode(IdleWorld->GetTimeSeconds());
+		CloseOverlapEpisode(IdleWorld->GetTimeSeconds());
 	}
 	StillTactics = 0;
 	if (Executor)
@@ -540,12 +561,24 @@ void AAIBBotController::CloseIdleEpisode(double NowSeconds)
 	else if (IdleTactics & static_cast<uint8>(EAIBStillTactic::Hold))       { Tactic = TEXT("Hold"); }
 	else if (IdleTactics & static_cast<uint8>(EAIBStillTactic::Sweep))      { Tactic = TEXT("Sweep"); }
 	else if (IdleTactics & static_cast<uint8>(EAIBStillTactic::Stranded))   { Tactic = TEXT("Stranded"); }
+	else if (IdleTactics & static_cast<uint8>(EAIBStillTactic::Yield))      { Tactic = TEXT("Yield"); }
 	const FName State = GetActiveStateName();
 	UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f idle over — %.1fs state=%s tactic=%s"),
 		*GetName(), NowSeconds, NowSeconds - IdleSinceSeconds,
 		State.IsNone() ? TEXT("?") : *State.ToString(), Tactic);
 	IdleSinceSeconds = -1.0;
 	IdleTactics = 0;
+}
+
+void AAIBBotController::CloseOverlapEpisode(double NowSeconds)
+{
+	float Seconds = 0.f;
+	int32 Peak = 0;
+	if (OverlapEpisode.Close(NowSeconds, Seconds, Peak) && Seconds >= AIB::TeammateOverlapReportSeconds)
+	{
+		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f teammate overlap over — %.1fs, %d inside %.0fuu"),
+			*GetName(), NowSeconds, Seconds, Peak, GetTierRow().TeammateYieldRadiusUU);
+	}
 }
 
 FGameplayTag AAIBBotController::GetObjectiveKindForCurrentAmbition() const
@@ -997,6 +1030,32 @@ void AAIBBotController::Think()
 			if (GetCurrentMoveRequestID().GetID() == StopOnLandingRequestId)
 			{
 				StopMovement();
+			}
+		}
+
+		// PHASE 13's two instruments, on the same sample. The overlap is an EPISODE (a
+		// teammate inside the capsule sum, closed on the first sample without one — the
+		// line only past the report threshold); the position sample is what the harness
+		// pairs across a team for `mean_pairwise_teammate_distance` (bots know no team id;
+		// the game mode's assignment line names it). Ally COUNTS only, through the
+		// HUD-grade door — never a position, never an enemy.
+		if (IAIBWorldQuery* Query = SelfPawn && Door && Door->IsAlive() ? GetWorldQuery() : nullptr)
+		{
+			const float OverlapRadiusUU = GetTierRow().TeammateYieldRadiusUU;
+			const int32 Inside = Query->CountNearbyAllies(SelfPawn, OverlapRadiusUU);
+			float Seconds = 0.f;
+			int32 Peak = 0;
+			if (OverlapEpisode.Note(Inside, Now, Seconds, Peak) && Seconds >= AIB::TeammateOverlapReportSeconds)
+			{
+				UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f teammate overlap over — %.1fs, %d inside %.0fuu"),
+					*GetName(), Now, Seconds, Peak, OverlapRadiusUU);
+			}
+			if (LastPositionSampleSeconds < 0.0 || Now - LastPositionSampleSeconds >= AIB::PositionSampleSeconds)
+			{
+				LastPositionSampleSeconds = Now;
+				const FVector Here = SelfPawn->GetActorLocation();
+				UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f position (%.0f,%.0f,%.0f) allies within %.0fuu: %d"),
+					*GetName(), Now, Here.X, Here.Y, Here.Z, OverlapRadiusUU, Inside);
 			}
 		}
 	}
