@@ -4,6 +4,7 @@
 #include "GameFramework/GameMode.h"
 #include "GameplayEffectTypes.h"
 #include "Interfaces/AIBAmbitionProvider.h"
+#include "Math/RandomStream.h"
 #include "UObject/SoftObjectPath.h"
 #include "UObject/SoftObjectPtr.h"
 #include "BNGameMode.generated.h"
@@ -16,6 +17,7 @@
 class AAIController;
 class ABNHillPoint;
 class ABNPlayerState;
+class APlayerStart;
 
 /** AGameMode, not GameModeBase: the match machine is the ENGINE'S — the replicated MatchState
  *  FNames, StartMatch/EndMatch, the Handle* transition hooks, and FGameModeEvents that the old
@@ -78,10 +80,21 @@ public:
 	 *  itself is the parent's poll asking ReadyToStartMatch — nothing to call by hand. */
 	virtual void OnPostLogin(AController* NewPlayer) override;
 
-	/** TEAMS (BN15): tagged starts when teams are on — a start whose PlayerStartTag is
-	 *  "Team0"/"Team1" serves only that side; untagged starts serve anyone; NoTeam and
-	 *  teams-off fall through to Super. Never fails a spawn over a missing tag. */
+	/** SPAWN SCORING (3 Sep). The one door every body comes through — human, bot, warmup
+	 *  stand-up, respawn, round rebody all reach here via RestartPlayer. Hard: no start within
+	 *  MinSpawnDistanceUU of any living body, none drawn twice inside SpawnReuseWindowSeconds.
+	 *  Soft: a seeded draw among the SpawnCandidatePoolSize starts farthest from the nearest
+	 *  living enemy, weighted by that distance. BN15's Team0/Team1 tag partition is opt-in
+	 *  (bUseTeamStartTags, off). Never fails a spawn: no start at all falls through to Super. */
 	virtual AActor* ChoosePlayerStart_Implementation(AController* Player) override;
+
+	/** Always false. The engine caches a controller's first start as StartSpot and FindPlayerStart
+	 *  hands it straight back on every later RestartPlayer without asking ChoosePlayerStart — so
+	 *  a respawn, and the match-start rebody, would return to the login-time spot forever. That
+	 *  spot is chosen while World Partition has streamed in one start of nineteen (measured 3 Sep:
+	 *  the human and bot 0 shared it). Every body re-chooses; the PIE "Play From Here" start still
+	 *  wins because ChoosePlayerStart returns it before anything else. */
+	virtual bool ShouldSpawnAtStartSpot(AController* Player) override;
 
 	/** The other edge of the seat math: a human leaving warmup opens a seat a bot should take.
 	 *  Deferred one tick because inside Logout the leaver is still iterable and every count is
@@ -205,6 +218,49 @@ protected:
 
 	UPROPERTY(Config)
 	float RespawnDelay = 3.f;
+
+	/** SPAWN SCORING knobs (ChoosePlayerStart). Hard radius around every living body — R6's
+	 *  8 m spawn spacing, in the units the map is built in. */
+	UPROPERTY(Config)
+	float MinSpawnDistanceUU = 800.f;
+
+	/** A start drawn this recently is skipped even if nobody stands on it yet — the guard for
+	 *  a body that failed to appear or died where it landed. */
+	UPROPERTY(Config)
+	float SpawnReuseWindowSeconds = 3.f;
+
+	/** Teams-on only: the fraction of the legal pool CLOSEST to a living enemy that is dropped
+	 *  before the uniform draw. This is the whole "a little bit based on teams" rule — a mild
+	 *  nudge away from the enemy's lap, NOT a farthest-wins bias, because farthest-wins herds a
+	 *  whole side onto the one end of the map furthest from the other side, which is the
+	 *  clustering it was supposed to prevent. 0 disables it; 1 is clamped so a pick always exists. */
+	UPROPERTY(Config)
+	float SpawnEnemyProximityCullFraction = 0.25f;
+
+	/** When no start is clear of an enemy at all, draw from this many of the roomiest instead of
+	 *  taking the single best — a deterministic fallback funnels every respawn of a crowded
+	 *  match onto the one most remote start. */
+	UPROPERTY(Config)
+	int32 SpawnRelaxedPoolSize = 5;
+
+	/** BN15's partition: Team0/Team1 PlayerStartTags fence each side to its own starts. Off, so
+	 *  everyone draws from the whole map and the scoring, not a tag, keeps sides apart. */
+	UPROPERTY(Config)
+	bool bUseTeamStartTags = false;
+
+	/** Seeded off the match seed in InitGame — the same match replays the same spawns, which is
+	 *  what makes a spawn complaint reproducible. The only FRandomStream in this module. */
+	FRandomStream SpawnRandom;
+
+	/** Server-only: world-seconds each start was last handed out. Bounded by the start count. */
+	TMap<TWeakObjectPtr<APlayerStart>, double> SpawnLastUsed;
+
+	/** Every PlayerStart this mode has EVER seen in the level, unioned across calls. World
+	 *  Partition registers actors a few ms after LoadMap, and the first spawns land inside that
+	 *  window: measured 3 Sep 2026, the human and bot 0 both saw a world holding ONE start and
+	 *  therefore both took it. A live scan is unioned into this set every call, so a later
+	 *  spawn can never see fewer starts than an earlier one did. */
+	TArray<TWeakObjectPtr<APlayerStart>> KnownStarts;
 
 	/** EditDefaultsOnly so BP_BNGameMode's details panel can dial this per-Blueprint (R26: a BP
 	 *  child holding default values only). TESTING DEFAULT — 3, not a tuning decision, so a

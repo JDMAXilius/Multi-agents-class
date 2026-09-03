@@ -18,6 +18,10 @@
 #include "BreachpointNext.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
+// AAIController is only FORWARD-declared by the header (see its note), and this file was
+// reaching the definition through the unity blob alone. An adaptive non-unity build --
+// which any edit to this file triggers -- compiles it standalone, so the include is ours.
+#include "AIController.h"
 // FOverlapResult is FORWARD-DECLARED by Engine/World.h, not defined there. The hill's
 // OverlapMultiByChannel stores them in a TArray, which needs the complete type for
 // sizeof/destruct -- so the definition has to come in explicitly.
@@ -59,17 +63,24 @@ void ABNGameMode::InitGame(const FString& MapName, const FString& Options, FStri
 
 	// Phase 14: every bot's per-life draw hashes off this seed, so it lands once per world load,
 	// ahead of the first possession. -AIBSeed is the manager's own override and wins.
+	// The spawn draw (ChoosePlayerStart) shares the seed, so it is resolved here whether or not
+	// the bot manager is present to receive it.
+	int32 Seed = 0;
+	const bool bFromCommandLine = FParse::Value(FCommandLine::Get(), TEXT("AIBSeed="), Seed);
+	if (!bFromCommandLine)
+	{
+		Seed = static_cast<int32>(HashCombine(GetTypeHash(MapName), GetTypeHash(FDateTime::UtcNow().GetTicks())));
+	}
 	if (UAIBBotManager* Manager = GetWorld()->GetSubsystem<UAIBBotManager>())
 	{
-		int32 Seed = 0;
-		const bool bFromCommandLine = FParse::Value(FCommandLine::Get(), TEXT("AIBSeed="), Seed);
 		if (!bFromCommandLine)
 		{
-			Seed = static_cast<int32>(HashCombine(GetTypeHash(MapName), GetTypeHash(FDateTime::UtcNow().GetTicks())));
 			Manager->SetMatchSeed(Seed);
 		}
 		UE_LOG(LogBN, Log, TEXT("BNGameMode: match seed %d (source=%s)"), Seed, bFromCommandLine ? TEXT("cmdline") : TEXT("map+clock"));
 	}
+	// A distinct stream, salted so spawn draws never march in step with a bot's own life draws.
+	SpawnRandom.Initialize(static_cast<int32>(HashCombine(static_cast<uint32>(Seed), GetTypeHash(FName(TEXT("BNSpawn"))))));
 
 	// THE TRAVEL URL OVERRIDES THE INI (front end M1, 1 Sep). The menu's whole launch
 	// surface is two options — ?TargetPlayers=N?Teams=0|1 — parsed here, after the ini's
@@ -228,11 +239,20 @@ void ABNGameMode::HandleMatchHasStarted()
 	// so the respawn's State.* sweep finds no freeze handles left to stale. Known cost, accepted:
 	// on a restart, a corpse Super just stood up is destroyed and stood up again — one redundant
 	// spawn per corpse per round beats a special case in the one path that must never miss anyone.
+	//
+	// 3 Sep 2026: the FIRST match now rebodies everyone too, and the "visible hitch for nothing"
+	// above turned out to be for something. Warmup spawns are placed while World Partition is
+	// still registering the level's actors, so the earliest bodies choose from a world holding
+	// one PlayerStart of nineteen and land on top of each other (measured: the human and bot 0
+	// took the same start, 2 ms apart). Re-placing every body at the kickoff — when all starts
+	// exist and every live body is visible to the min-distance rule — is what makes "sixteen
+	// players on sixteen different spawns" true at the only moment it matters. The hitch is
+	// inside the match-start transition, where a body is already being thawed and re-armed.
 	TArray<TObjectPtr<APlayerState>> Players = GS->PlayerArray;
 	for (APlayerState* PS : Players)
 	{
 		AController* Controller = PS ? Cast<AController>(PS->GetOwner()) : nullptr;
-		if (Controller && (MatchGeneration > 1 || !Controller->GetPawn()))
+		if (Controller)
 		{
 			RespawnPlayer(TWeakObjectPtr<AController>(Controller));
 		}
@@ -471,22 +491,49 @@ uint8 ABNGameMode::GetLowestPopulationTeam() const
 
 AActor* ABNGameMode::ChoosePlayerStart_Implementation(AController* Player)
 {
-	// Teams off, or a player honestly reading NoTeam (nothing past the assignment seam should,
-	// but a spawn must never fail over it): the engine's own choice stands.
-	const ABNPlayerState* PS = Player ? Player->GetPlayerState<ABNPlayerState>() : nullptr;
-	const FGenericTeamId Team = PS ? PS->GetGenericTeamId() : FGenericTeamId::NoTeam;
 	UWorld* World = GetWorld();
-	if (!bTeamsEnabled || Team == FGenericTeamId::NoTeam || !World)
+	if (!World)
 	{
 		return Super::ChoosePlayerStart_Implementation(Player);
 	}
+	const ABNPlayerState* PS = Player ? Player->GetPlayerState<ABNPlayerState>() : nullptr;
+	const FGenericTeamId Team = PS ? PS->GetGenericTeamId() : FGenericTeamId::NoTeam;
 
-	// A start whose PlayerStartTag is None serves anyone; "Team0"/"Team1" serves that side
-	// only (the tags Tools/bn/tag_team_starts.py writes). The iterator is the StartHill
-	// precedent — and the body conditionally COLLECTS, never unconditionally breaks, so the
-	// increment is reachable (the AIB11 -Wunreachable-code-loop-increment lesson).
+	// SPAWN SELECTION (3 Sep, founder: "sixteen spawns, sixteen players, each one lands on its
+	// own individual spawn ... spread through the entire map, not one location"). Every body in
+	// a match — human, bot, warmup stand-up, respawn, round rebody — is created by RestartPlayer,
+	// and RestartPlayer asks here, so this is the one place that decides where anyone appears:
+	//
+	//   HARD (a start failing either of these is not a candidate at all)
+	//     1. nothing living within MinSpawnDistanceUU of it — friend OR foe, because two
+	//        teammates landing on top of each other is the complaint, not just two enemies;
+	//     2. not handed out inside SpawnReuseWindowSeconds — this is what makes a 16-body fill
+	//        take 16 DIFFERENT starts, since the whole fill happens inside a few milliseconds
+	//        and rule 1 alone cannot see a body that has not spawned yet.
+	//   SOFT (teams on)
+	//     drop the SpawnEnemyProximityCullFraction of the legal pool nearest a living enemy,
+	//     then draw UNIFORMLY from what is left.
+	//
+	// The uniform draw is the point. The first cut of this function drew from the starts
+	// FARTHEST from the nearest enemy, and that is worse than random: it walks an entire side
+	// onto whichever end of the map the other side is not on, which is precisely the "both
+	// teammates spawn on top of each other in one corner" the founder reported. A mild cull of
+	// the most-exposed starts keeps the team read ("a little bit based on the teams") without
+	// ever collapsing the choice toward one place.
+	//
+	// Teams off, or NoTeam: everybody is hostile (BNTeams::AreFriendly's NoTeam guard), so FFA
+	// gets the same spreading. BN15's Team0/Team1 tag partition is opt-in (bUseTeamStartTags)
+	// and OFF: fencing each side to half the starts is itself a clustering machine, and the
+	// founder placed these starts around the whole map to be used as a whole map.
+	// The iterator body conditionally COLLECTS, never unconditionally breaks, so the increment
+	// is reachable (the AIB11 -Wunreachable-code-loop-increment lesson).
+	const bool bPartitionByTag = bUseTeamStartTags && bTeamsEnabled && Team != FGenericTeamId::NoTeam;
 	const FName TeamTag(*FString::Printf(TEXT("Team%d"), Team.GetId()));
-	TArray<APlayerStart*> Matches;
+
+	// Live scan, unioned into KnownStarts. World Partition registers the level's actors a few
+	// milliseconds after LoadMap and the first spawn requests arrive inside that window, so a
+	// scan alone answered "one start exists" and put two bodies on it. Remembering every start
+	// ever seen makes the pool monotonic.
 	for (TActorIterator<APlayerStart> It(World); It; ++It)
 	{
 		APlayerStart* Start = *It;
@@ -500,13 +547,21 @@ AActor* ABNGameMode::ChoosePlayerStart_Implementation(AController* Player)
 		{
 			return Start;
 		}
-		if (Start->PlayerStartTag.IsNone() || Start->PlayerStartTag == TeamTag)
+		KnownStarts.AddUnique(Start);
+	}
+	KnownStarts.RemoveAll([](const TWeakObjectPtr<APlayerStart>& Weak) { return !Weak.IsValid(); });
+
+	TArray<APlayerStart*> Matches;
+	for (const TWeakObjectPtr<APlayerStart>& Weak : KnownStarts)
+	{
+		APlayerStart* Start = Weak.Get();
+		if (Start && (!bPartitionByTag || Start->PlayerStartTag.IsNone() || Start->PlayerStartTag == TeamTag))
 		{
 			Matches.Add(Start);
 		}
 	}
 
-	// No tagged or untagged start matched — a mis-tagged level is Super's problem, never a
+	// No start at all (or, partitioned, none for this side) — a level's problem, never a
 	// failed spawn.
 	if (Matches.Num() == 0)
 	{
@@ -535,10 +590,150 @@ AActor* ABNGameMode::ChoosePlayerStart_Implementation(AController* Player)
 	}
 	TArray<APlayerStart*>& Pool = Unblocked.Num() > 0 ? Unblocked : Matches;
 
-	// Random among the pool (the HitReact montage-pick pattern), not first-match: first-match
-	// would funnel a whole side through one start every respawn, and spreading the picks is
-	// what keeps spawns unclumped.
-	return Pool[FMath::RandRange(0, Pool.Num() - 1)];
+	// THE LIVING. A pawn counts when it carries a PlayerState (a body without one is not a
+	// player) and is not State.Dead — the read GetObjectiveUrgency makes. The asker's own old
+	// body is already destroyed by RespawnPlayer, and a warmup stand-up never had one, so the
+	// asker is never in this list; the controller check is belt to that brace. Everyone
+	// counts for the hard radius; only enemies score the soft distance.
+	struct FBody
+	{
+		FVector Location;
+		bool bEnemy;
+	};
+	TArray<FBody> Bodies;
+	bool bAnyEnemy = false;
+	for (TActorIterator<APawn> It(World); It; ++It)
+	{
+		APawn* Candidate = *It;
+		if (!IsValid(Candidate) || Candidate->GetController() == Player)
+		{
+			continue;
+		}
+		const ABNPlayerState* BodyPS = Candidate->GetPlayerState<ABNPlayerState>();
+		if (!BodyPS)
+		{
+			continue;
+		}
+		const UAbilitySystemComponent* ASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Candidate);
+		if (!ASC || ASC->HasMatchingGameplayTag(BNTags::State_Dead))
+		{
+			continue;
+		}
+		const bool bEnemy = !BNTeams::AreFriendly(Team, BodyPS->GetGenericTeamId());
+		bAnyEnemy |= bEnemy;
+		Bodies.Add({Candidate->GetActorLocation(), bEnemy});
+	}
+
+	// Score every start the encroachment pass left in.
+	struct FScoredStart
+	{
+		APlayerStart* Start;
+		float NearestBodyUU;
+		float NearestEnemyUU;
+		bool bEnemyClear;   // no living ENEMY inside MinSpawnDistanceUU — the hard rule
+		bool bBodyClear;    // no living body at all inside it — a preference
+		bool bRecentlyUsed;
+	};
+	const double Now = World->GetTimeSeconds();
+	const float MinDistSq = FMath::Square(MinSpawnDistanceUU);
+	TArray<FScoredStart> Scored;
+	Scored.Reserve(Pool.Num());
+	for (APlayerStart* Start : Pool)
+	{
+		const FVector Loc = Start->GetActorLocation();
+		float NearestBodySq = TNumericLimits<float>::Max();
+		float NearestEnemySq = TNumericLimits<float>::Max();
+		for (const FBody& Body : Bodies)
+		{
+			const float DistSq = static_cast<float>(FVector::DistSquared(Loc, Body.Location));
+			NearestBodySq = FMath::Min(NearestBodySq, DistSq);
+			if (Body.bEnemy)
+			{
+				NearestEnemySq = FMath::Min(NearestEnemySq, DistSq);
+			}
+		}
+		const double* LastUsed = SpawnLastUsed.Find(Start);
+		Scored.Add({Start, FMath::Sqrt(NearestBodySq), FMath::Sqrt(NearestEnemySq),
+			NearestEnemySq >= MinDistSq, NearestBodySq >= MinDistSq,
+			LastUsed && (Now - *LastUsed) < SpawnReuseWindowSeconds});
+	}
+
+	// HARD RULE: no living ENEMY inside MinSpawnDistanceUU. Only the enemy distance is hard.
+	// Landing beside a teammate costs nothing but a moment's crowding; landing beside an enemy
+	// is a spawn kill, and they are not the same rule. Measured 3 Sep, when BOTH counted as
+	// hard: with 15 bodies alive on 19 starts exactly ONE start had nobody within 6 m of it, so
+	// every single respawn in the match went to that one start — a funnel, which is the
+	// clustering complaint wearing a different hat.
+	TArray<FScoredStart> Candidates = Scored.FilterByPredicate([](const FScoredStart& S) { return S.bEnemyClear; });
+	const bool bRelaxed = Candidates.Num() == 0;
+	if (bRelaxed)
+	{
+		// No start on the map is clear of an enemy: fall back to the roomiest FEW and still draw
+		// among them. Taking the single roomiest is what turns a crowded match into a funnel —
+		// measured 3 Sep, one start took 8 of the match's respawns because it was the most
+		// remote and the fallback was deterministic. Keeping a handful preserves the spread
+		// that is the whole point, and spawning clumped still beats not spawning (Super's own
+		// fallback shape, and R6's).
+		Candidates = Scored;
+		Candidates.Sort([](const FScoredStart& A, const FScoredStart& B) { return A.NearestBodyUU > B.NearestBodyUU; });
+		Candidates.SetNum(FMath::Min(SpawnRelaxedPoolSize, Candidates.Num()));
+	}
+	const int32 LegalCount = Candidates.Num();
+
+	// PREFERENCES, strongest first, each falling through the moment it would empty the pool:
+	//   1. clear of EVERY body and not just used  — the ideal, and what a fresh fill gets;
+	//   2. clear of every body                    — crowded map, still nobody underfoot;
+	//   3. not just used                          — spread beats elbow room;
+	//   4. anything enemy-clear                   — the floor.
+	// Freshness must never be a hard rule: 33 placements (a 16-bot fill plus the match-start
+	// rebody of all 16, plus the human) land inside two seconds, so as a rule it marks all 19
+	// starts used and empties the pool for the entire rebody. A preference degrades; a rule
+	// collapses.
+	auto Narrow = [&Candidates](TFunctionRef<bool(const FScoredStart&)> Pred) -> bool
+	{
+		TArray<FScoredStart> Kept = Candidates.FilterByPredicate(Pred);
+		if (Kept.Num() > 0)
+		{
+			Candidates = MoveTemp(Kept);
+			return true;
+		}
+		return false;
+	};
+	const bool bIdeal = !bRelaxed && Narrow([](const FScoredStart& S) { return S.bBodyClear && !S.bRecentlyUsed; });
+	const bool bRoomy = bIdeal || (!bRelaxed && Narrow([](const FScoredStart& S) { return S.bBodyClear; }));
+	const bool bFresh = bIdeal || (!bRelaxed && !bRoomy && Narrow([](const FScoredStart& S) { return !S.bRecentlyUsed; }));
+
+	// SOFT RULE, teams on only: cull the most enemy-exposed slice, then draw uniformly. Never
+	// culls the whole pool — one start always survives.
+	int32 Culled = 0;
+	if (!bRelaxed && bAnyEnemy && Candidates.Num() > 1 && SpawnEnemyProximityCullFraction > 0.f)
+	{
+		Candidates.Sort([](const FScoredStart& A, const FScoredStart& B) { return A.NearestEnemyUU > B.NearestEnemyUU; });
+		const int32 Keep = FMath::Clamp(
+			FMath::CeilToInt(Candidates.Num() * (1.f - FMath::Min(SpawnEnemyProximityCullFraction, 1.f))),
+			1, Candidates.Num());
+		Culled = Candidates.Num() - Keep;
+		Candidates.SetNum(Keep);
+	}
+
+	// UNIFORM. Every legal start is equally likely — the spread is the feature.
+	const int32 Pick = SpawnRandom.RandRange(0, Candidates.Num() - 1);
+	APlayerStart* Chosen = Candidates[Pick].Start;
+	SpawnLastUsed.Add(Chosen, Now);
+	UE_LOG(LogBN, Verbose, TEXT("BNGameMode: spawn %-22s -> %-46s (nearest body %6.0f uu, enemy %6.0f uu | %d live | %d enemy-clear of %d, tier %d, %d culled, drew from %d%s%s | %d known)"),
+		*GetNameSafe(Player), *GetNameSafe(Chosen),
+		Bodies.Num() > 0 ? Candidates[Pick].NearestBodyUU : -1.f,
+		bAnyEnemy ? Candidates[Pick].NearestEnemyUU : -1.f,
+		Bodies.Num(), LegalCount, Scored.Num(), bIdeal ? 3 : (bRoomy ? 2 : (bFresh ? 1 : 0)),
+		Culled, Candidates.Num(),
+		bRelaxed ? TEXT(", RELAXED") : TEXT(""), TEXT(""),
+		KnownStarts.Num());
+	return Chosen;
+}
+
+bool ABNGameMode::ShouldSpawnAtStartSpot(AController* Player)
+{
+	return false;
 }
 
 void ABNGameMode::Logout(AController* Exiting)
