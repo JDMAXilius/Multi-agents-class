@@ -475,7 +475,7 @@ namespace
 		// the crowd corridor).
 		if (bYielding)
 		{
-			return;
+			return false; // yielding is not an abandon
 		}
 		EndYield(Bot, State);
 		State.StallSeconds += DeltaTime;
@@ -496,7 +496,6 @@ namespace
 			// the wedge yields once, for one bounded window, and lets separation part them.
 			// The count is HUD-grade (CountNearbyAllies); GetNearbyAgentLocations is the
 			// rejected door (enemy positions, no LOS bound).
-			State.bTriedWedgeJump = true;
 			const FAIBTierRow& Tier = Bot.GetTierRow();
 			const IAIBWorldQuery* Query = Bot.GetWorldQuery();
 			const int32 AlliesInside = Query ? Query->CountNearbyAllies(Pawn, Tier.TeammateYieldRadiusUU) : 0;

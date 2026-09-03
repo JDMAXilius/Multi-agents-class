@@ -35,7 +35,7 @@ void FAIBSeparationSpec::Define()
 		const FVector From = Pivot + FVector(500.f, 0.f, 0.f);
 		FAIBArcStep Step;
 		TestTrue(TEXT("stepped"), FAIBMovementPolicy::ArcStep(From, Pivot, Forward, true, 220.f, 55.f, 280.f, 900.f, Step));
-		TestEqual(TEXT("range invariant"), Range2D(Step.Destination, Pivot), 500.f, 0.5f);
+		TestEqual(TEXT("range invariant"), (double)Range2D(Step.Destination, Pivot), 500.0, 0.5);
 		TestEqual(TEXT("arc = step / range"), Step.ArcRadians, 220.f / 500.f, 1e-4f);
 		TestEqual(TEXT("z is the pivot's"), Step.Destination.Z, Pivot.Z, 1e-3f);
 		// The chord this step walks is StepUU long to first order.
@@ -67,8 +67,8 @@ void FAIBSeparationSpec::Define()
 		FAIBArcStep Right, Left;
 		FAIBMovementPolicy::ArcStep(From, Pivot, Forward, true, 220.f, 55.f, 0.f, 900.f, Right);
 		FAIBMovementPolicy::ArcStep(From, Pivot, Forward, false, 220.f, 55.f, 0.f, 900.f, Left);
-		TestEqual(TEXT("same X"), Right.Destination.X, Left.Destination.X, 0.5f);
-		TestEqual(TEXT("opposite Y"), Right.Destination.Y - Pivot.Y, -(Left.Destination.Y - Pivot.Y), 0.5f);
+		TestEqual(TEXT("same X"), (double)Right.Destination.X, (double)Left.Destination.X, 0.5);
+		TestEqual(TEXT("opposite Y"), (double)(Right.Destination.Y - Pivot.Y), (double)(-(Left.Destination.Y - Pivot.Y)), 0.5);
 		TestTrue(TEXT("right is +Y about +X (up-axis rotation)"), Right.Destination.Y > Pivot.Y);
 	});
 
@@ -79,7 +79,7 @@ void FAIBSeparationSpec::Define()
 		TestEqual(TEXT("lands on the band floor"), Range2D(Step.Destination, Pivot), 150.f, 0.5f);
 		TestEqual(TEXT("full arc off the forward"), Step.ArcRadians, FMath::DegreesToRadians(55.f), 1e-4f);
 		const FVector Bearing = (Step.Destination - Pivot).GetSafeNormal2D();
-		TestEqual(TEXT("55 deg off +Y"), FMath::RadiansToDegrees(FMath::Acos(FVector::DotProduct(Bearing, FVector(0.f, 1.f, 0.f)))), 55.f, 0.1f);
+		TestEqual(TEXT("55 deg off +Y"), (double)FMath::RadiansToDegrees(FMath::Acos(FVector::DotProduct(Bearing, FVector(0.f, 1.f, 0.f)))), 55.0, 0.1);
 		FAIBArcStep Refused;
 		TestFalse(TEXT("no bearing at all is refused"), FAIBMovementPolicy::ArcStep(Pivot, Pivot, FVector(0.f, 0.f, 1.f), true, 220.f, 55.f, 150.f, 300.f, Refused));
 	});
