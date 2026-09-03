@@ -30,3 +30,42 @@ phase's baseline. Metrics for this phase land BEFORE its behaviour (§4 of the r
 - [ ] The phase's metric gate PASSES vs the previous baseline; kills/min not worse
 
 ## Log
+### W-AUDIT (aib-critic) — merged by the lead, 2 Sep
+Buildable on existing seams, no new subsystem. Two deviations ADOPTED by the lead under the
+founder's "do what you think is best" (recorded for the founder):
+- No `UAIBTeamMind` yet: `UAIBTeamCoordinator` already IS the server-only per-alliance
+  `UWorldSubsystem` (NM_Client guard, injected ally predicate, release belts wired). Add
+  `FAIBSightingLedger` + `FAIBTargetClaims` as headless members; rename to Team Mind in Phase 15
+  when the heat grids arrive.
+- Ring spread by claim ORDINAL (`angle = Hash(target) + Ordinal*PI`), not `hash(bot,target)`:
+  two attackers land on opposite sides by construction. Radius = FightRangeUU (900), not the 350
+  acceptance. Samples base/±40°/±80° through the existing projection; no TestPathSync per sample.
+Seams: publish sightings at `AIBBotController.cpp:698` after `Sensorium.Pump` — ONLY candidates
+with `bSightCurrent`, carrying THEIR `LastSeenAtSeconds` (never Now); consume before the pump via
+a new `Sensorium.NoteTeamReport` modelled on `NoteSound` (enters the reaction clock, lands as a
+lead). `IsEligible` is NOT widened (a report never becomes a held target = the wallhack line).
+Claims: route pawns at `AIBTeamCoordinator.cpp:46-53` to `FAIBTargetClaims` (cap 2 per target per
+alliance); grant in the Think commit block (`:775-800`) when Engage wins AND `HasVisibleTarget`,
+never in MoveNearBelief::EnterState (re-enters on belief blinks). Renew per think; release by
+non-renewal at TTL (reuse 5.0 s), on unpossess/EndPlay, and on target death via the injected
+liveness (`AreEnemies` folds "a corpse is nobody's enemy"; `IsAliveTarget`) — no GAS door.
+Score: `AlliesOnTarget` (n EXCLUDES self) → ×1/(1+n); the THREAT term is added after the
+multiplier, unscaled (never turn a bot away from the man shooting it). Fed from claims only.
+Numbers: ClaimCap 2 = module constant (never csv — §5.2); ClaimTtl 5.0 (existing);
+ClaimMinHoldSeconds 2.0 (new csv column, DT_AIBTiers reimport by aib-editor script);
+IncumbentBonus 0.35 / SwitchMargin 0.15 unchanged. TARGET CLAIMS ARE UNGATED BY TEAMWORK (the
+Phase 7 slot-claim gate must not be copied — a non-claiming bot would reopen the pile).
+Third bot (F9): denial affects SCORE only, never eligibility. A second enemy → automatic; cap
+full with one enemy → `Facts.bTargetClaimSaturated` (negative-only, at `AIBFactsBuilder.cpp:129`)
+lets Roam/Objective outscore Engage — Roam moves, so F9 holds; NO "HoldBack" ambition. Lone
+enemy, nothing else → engage at 0.33× (correct). Watch the 5 s release-to-reclaim dither at
+W-REVIEW; the ambition commit window must exceed it — measure, do not assume.
+FAIRPLAY amendment draft text is in the agent report (callout = current sight only, original
+stamp, hearing-grade, memory only; claims = negative-only intent, never enumerable, never carry
+position/health; death release accepted on the 25-Aug terms). Lead adopts it verbatim for W-BUILD.
+W-BUILD ×2 file lists (disjoint): A = SightingLedger/TargetClaims (new) + Coordinator +
+Sensorium + BotController.cpp + AIBTypes.h + Claims/Sensorium specs (A commits its constants
+FIRST); B = TargetPolicy + FactsBuilder + StateTreeTasks + TreeAuthoring + TargetPolicy spec +
+DT_AIBTiers (aib-editor) + AIBDataRows.h. Prerequisite: metrics parsers for
+claim_grant/claim_deny/target_pileup_count BEFORE the fix. Phase 12 W-BUILD waits for Phase 11's
+builds (shared files).
