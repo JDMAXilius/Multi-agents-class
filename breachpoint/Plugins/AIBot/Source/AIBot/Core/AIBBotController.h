@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "AIController.h"
 #include "Brain/AIBConfidenceModel.h"
+#include "Core/AIBRouteBias.h"
 #include "Core/AIBTypes.h"
 #include "GameplayTagContainer.h"
 #include "Interfaces/AIBAmbitionProvider.h"
@@ -365,6 +366,20 @@ public:
 	}
 	FRandomStream& GetPolicyRandom() { return PolicyRandom; }
 
+	/** Phase 14 — THE SEED TRIPLE. BotIndex is the manager's stable spawn slot (-1 with
+	 *  no manager, i.e. headless); LifeSeed = HashCombine(HashCombine(MatchSeed, BotIndex),
+	 *  LifeIndex) is what every per-life stream hashes off, so two -AIBSeed=N runs draw the
+	 *  same first jink, the same latency, the same lanes. Phase 15's `decide` line keys on
+	 *  BotIndex, never on a name or a UniqueID. */
+	int32 GetBotIndex() const { return BotIndex; }
+	uint32 GetLifeSeed() const { return LifeSeed; }
+
+	/** Phase 14 — see FAIBRouteBias. Drawn once per life; UAIBQueryFilter reads the
+	 *  per-lane cost through GetRouteLaneCost on every query this controller issues.
+	 *  Route heat (lane C) multiplies in HERE, never in the filter. */
+	const FAIBRouteBias& GetRouteBias() const { return RouteBias; }
+	float GetRouteLaneCost(int32 LaneId) const { return RouteBias.CostOf(LaneId); }
+
 	/** AIB22 H1/F9 — see FAIBSweepBudget. SweepLook spends it only while the body is
 	 *  still; Think resets it the moment the body moves, and a NEW post refills it. */
 	FAIBSweepBudget& GetSweepBudget() { return SweepBudget; }
@@ -527,6 +542,11 @@ private:
 	/** AIB22 `idle_seconds`: emit the open still spell (if any) and clear it. */
 	void CloseIdleEpisode(double NowSeconds);
 
+	/** Phase 14 `route` line: the lane sequence the follower's current path crosses,
+	 *  logged when it differs from the last one logged this life (a NEW route, not every
+	 *  repath on the belief's drift). */
+	void LogRouteIfChanged(const FVector& Goal);
+
 	UPROPERTY(VisibleAnywhere, Category = "AIBot")
 	TObjectPtr<UAIPerceptionComponent> BotPerception;
 
@@ -608,6 +628,13 @@ private:
 	 *  life — the same first jink, the same reaction latency, a learnable tell that
 	 *  reset on death (W-REVIEW P4+5 H5). Deterministic given (bot, life). */
 	int32 LifeIndex = 0;
+
+	/** Phase 14: see GetBotIndex / GetLifeSeed / GetRouteBias. The signature is the last
+	 *  `route` line's lane sequence; reset per life. */
+	int32 BotIndex = INDEX_NONE;
+	uint32 LifeSeed = 0;
+	FAIBRouteBias RouteBias;
+	FString LastRouteSignature;
 
 	// Phase 5: momentum + judgment. The ledger is the damage-history facts' source; the
 	// model turns facts into ConfidenceNorm at think cadence. Phase 4's profile gets its

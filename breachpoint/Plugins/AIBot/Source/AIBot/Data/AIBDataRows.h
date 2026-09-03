@@ -117,4 +117,12 @@ struct AIBOT_API FAIBTierRow : public FTableRowBase
 	 *  must not cash a culvert's latch out as a step off T2. */
 	UPROPERTY(EditAnywhere, Category = "Roam")
 	float LatchMaxAgeSeconds = 10.f;
+
+	// -- route variety (Phase 14) ---------------------------------------------------
+	/** Half-width of the per-life lane weight draw: each lane's travel cost is
+	 *  1 ± this before normalisation (the cheapest lane always costs exactly 1). 0 = every
+	 *  bot takes the shortest corridor (the conga line); clamped at read to 0.9. Spartan-
+	 *  only project: every tier carries the same value. */
+	UPROPERTY(EditAnywhere, Category = "Route")
+	float RouteLaneWeightSpread = 0.3f;
 };
