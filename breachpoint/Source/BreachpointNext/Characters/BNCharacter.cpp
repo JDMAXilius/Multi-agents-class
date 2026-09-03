@@ -14,6 +14,7 @@
 #include "Match/BNPlayerState.h"
 #include "Match/BNTeams.h"
 #include "Materials/MaterialInterface.h"
+#include "Navigation/CrowdManager.h"
 #include "Weapons/BNEquipmentComponent.h"
 #include "Animation/AnimInstance.h"
 #include "Animation/BNLAnimInstance.h"
@@ -392,6 +393,11 @@ void ABNCharacter::OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdj
 
 void ABNCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	if (UCrowdManager* Crowd = UCrowdManager::GetCurrent(this))
+	{
+		Crowd->UnregisterAgent(this);
+	}
+
 	if (UAbilitySystemComponent* ASC = CachedAbilitySystem.Get())
 	{
 		if (MoveSpeedChangedHandle.IsValid())
@@ -450,6 +456,14 @@ void ABNCharacter::PossessedBy(AController* NewController)
 	// never carry it; the call is a no-op for them.
 	UBNAIBAvatarAdapter::EnsureOn(this, NewController);
 
+	if (HasAuthority() && Cast<APlayerController>(NewController))
+	{
+		if (UCrowdManager* Crowd = UCrowdManager::GetCurrent(this))
+		{
+			Crowd->RegisterAgent(this);
+		}
+	}
+
 	InitializeAbilitySystem();
 	InitializeAnimLayer();
 
@@ -465,6 +479,35 @@ void ABNCharacter::PossessedBy(AController* NewController)
 
 	EnsureTeamSubscriptions();
 	RefreshTeamColors();
+}
+
+void ABNCharacter::UnPossessed()
+{
+	if (UCrowdManager* Crowd = UCrowdManager::GetCurrent(this))
+	{
+		Crowd->UnregisterAgent(this);
+	}
+	Super::UnPossessed();
+}
+
+FVector ABNCharacter::GetCrowdAgentLocation() const
+{
+	return GetNavAgentLocation();
+}
+
+FVector ABNCharacter::GetCrowdAgentVelocity() const
+{
+	return GetVelocity();
+}
+
+void ABNCharacter::GetCrowdAgentCollisions(float& CylinderRadius, float& CylinderHalfHeight) const
+{
+	GetCapsuleComponent()->CalcBoundingCylinder(CylinderRadius, CylinderHalfHeight);
+}
+
+float ABNCharacter::GetCrowdAgentMaxSpeed() const
+{
+	return GetCharacterMovement()->GetMaxSpeed();
 }
 
 void ABNCharacter::OnRep_PlayerState()
