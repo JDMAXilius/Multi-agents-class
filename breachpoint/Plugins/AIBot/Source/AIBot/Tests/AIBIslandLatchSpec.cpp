@@ -4,6 +4,7 @@
 #if WITH_DEV_AUTOMATION_TESTS
 
 #include "Core/AIBBotController.h"
+#include "Core/AIBTypes.h"
 #include "Data/AIBDataRows.h"
 
 /**
@@ -289,6 +290,21 @@ void FAIBIslandLatchSpec::Define()
 			Latch.Confirm(SpawnOnly, 1.0, 5.f);
 			TestTrue(TEXT("one failing anchor still confirms — the LIST must carry the objective and the PlayerStarts"), Latch.Confirmation == EConfirm::Island);
 		}
+	});
+
+	It("F7-3: a landing inside the fan's footprint at the step-off height is the same island", [this]()
+	{
+		// The gantry top as the fan measures it: x 1000–1400, y 1800–2200, nav and feet at z 810.
+		FBox Footprint(ForceInit);
+		Footprint += FVector(1000.0, 1800.0, 810.0);
+		Footprint += FVector(1400.0, 2200.0, 810.0);
+		TestTrue(TEXT("inside, same height"), AIB::LandedOnSameIsland(Footprint, FVector(1289.0, 1950.0, 812.0)));
+		TestTrue(TEXT("40uu past the edge is inside the ±50 slack"), AIB::LandedOnSameIsland(Footprint, FVector(1440.0, 1950.0, 810.0)));
+		TestTrue(TEXT("29uu higher is the same height"), AIB::LandedOnSameIsland(Footprint, FVector(1200.0, 2000.0, 839.0)));
+		TestFalse(TEXT("60uu past the edge left it"), AIB::LandedOnSameIsland(Footprint, FVector(1460.0, 1950.0, 810.0)));
+		TestFalse(TEXT("453uu below is the floor, whatever the XY"), AIB::LandedOnSameIsland(Footprint, FVector(1289.0, 1950.0, 357.0)));
+		TestFalse(TEXT("31uu higher is another deck"), AIB::LandedOnSameIsland(Footprint, FVector(1200.0, 2000.0, 841.0)));
+		TestFalse(TEXT("an unmeasured footprint says nothing"), AIB::LandedOnSameIsland(FBox(ForceInit), FVector(1200.0, 2000.0, 810.0)));
 	});
 
 	It("defaults the row to the ruled numbers — the csv mirrors these", [this]()

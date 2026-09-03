@@ -2782,10 +2782,42 @@ namespace
 	 *  least MinDrop below the probe point just past it. OutLip is the on-mesh walk goal
 	 *  (standoff inside the boundary); OutBeyond the step-off's straight-line target, at
 	 *  the lower ground's height, which the fall reaches on its own. */
-	bool FindIslandLip(const AAIBBotController& Bot, const FVector& Feet, FVector& OutLip, FVector& OutBeyond, float& OutDropUU)
+	struct FAIBLipCandidate
+	{
+		FVector Hit, Dir, Beyond, Landing;
+		float DropUU, DistSq;
+	};
+
+	/** F7-1: a lip is LEGAL only if its LANDING is off the island — one cost-unlimited
+	 *  path test from the projected landing to the nearest anchor the gate already found
+	 *  unreachable from the feet. No full path = the landing is still this island (the
+	 *  gantry top's pillar cut) or an unreachable ledge. No anchor on the mesh = nothing
+	 *  to measure = legal, as before F7. */
+	bool LandingLeavesIsland(const AAIBBotController& Bot, UNavigationSystemV1& NavSys, const FVector& Landing)
+	{
+		TArray<FAIBIslandAnchor> Anchors;
+		Bot.GetIslandAnchors(Anchors);
+		Anchors.Sort([&Landing](const FAIBIslandAnchor& A, const FAIBIslandAnchor& B)
+		{
+			return FVector::DistSquared(A.Location, Landing) < FVector::DistSquared(B.Location, Landing);
+		});
+		const ANavigationData* NavData = NavSys.GetDefaultNavDataInstance();
+		for (const FAIBIslandAnchor& Anchor : Anchors)
+		{
+			FVector AnchorOnNav;
+			if (NavData && ProjectToNav(Bot.GetWorld(), Anchor.Location, AnchorOnNav))
+			{
+				return NavSys.TestPathSync(FPathFindingQuery(&Bot, *NavData, Landing, AnchorOnNav));
+			}
+		}
+		return true;
+	}
+
+	bool FindIslandLip(const AAIBBotController& Bot, const FVector& Feet, FVector& OutLip, FVector& OutBeyond, float& OutDropUU, FBox& OutFootprint)
 	{
 		UWorld* World = Bot.GetWorld();
 		UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(World);
+		OutFootprint = FBox(ForceInit);
 		if (!NavSys)
 		{
 			return false;
@@ -2797,13 +2829,16 @@ namespace
 		// lower navmesh qualifies — a same-level neighbour behind a thin wall is not a lip.
 		const float DropLimitUU = AIB::SafeDropUU;
 		const FVector ProbeExtent(Tier.IslandLipProbeUU * 0.5f, Tier.IslandLipProbeUU * 0.5f, DropLimitUU * 0.5f);
-		float BestDistSq = TNumericLimits<float>::Max();
-		bool bFound = false;
+		TArray<FAIBLipCandidate> Candidates;
+		OutFootprint += Feet;
 		for (int32 Ray = 0; Ray < IslandLipRays; ++Ray)
 		{
 			const FVector Dir = FRotator(0.f, 360.f * Ray / IslandLipRays, 0.f).Vector();
+			const FVector End = Feet + Dir * IslandLipReachUU;
 			FVector Hit;
-			if (!UNavigationSystemV1::NavigationRaycast(World, Feet, Feet + Dir * IslandLipReachUU, Hit))
+			const bool bHit = UNavigationSystemV1::NavigationRaycast(World, Feet, End, Hit);
+			OutFootprint += bHit ? Hit : End; // F7-3: the surface's extent this way
+			if (!bHit)
 			{
 				continue; // open ground this way
 			}
@@ -2829,17 +2864,24 @@ namespace
 			{
 				continue;
 			}
-			const float DistSq = FVector::DistSquared2D(Feet, Hit);
-			if (DistSq < BestDistSq)
-			{
-				BestDistSq = DistSq;
-				bFound = true;
-				OutLip = Hit - Dir * Tier.IslandLipStandoffUU;
-				OutBeyond = FVector(Probe.X, Probe.Y, Below.Location.Z);
-				OutDropUU = DropUU;
-			}
+			Candidates.Add({ Hit, Dir, FVector(Probe.X, Probe.Y, Below.Location.Z), Below.Location, DropUU, static_cast<float>(FVector::DistSquared2D(Feet, Hit)) });
 		}
-		return bFound;
+		// NEAREST LEGAL (F7-1): nearest first, one landing path test each until one leaves.
+		Candidates.Sort([](const FAIBLipCandidate& A, const FAIBLipCandidate& B) { return A.DistSq < B.DistSq; });
+		for (const FAIBLipCandidate& Candidate : Candidates)
+		{
+			if (!LandingLeavesIsland(Bot, *NavSys, Candidate.Landing))
+			{
+				UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s lip at (%.0f,%.0f,%.0f) skipped — landing still islanded"),
+					*Bot.GetName(), Candidate.Hit.X, Candidate.Hit.Y, Candidate.Hit.Z);
+				continue;
+			}
+			OutLip = Candidate.Hit - Candidate.Dir * Tier.IslandLipStandoffUU;
+			OutBeyond = Candidate.Beyond;
+			OutDropUU = Candidate.DropUU;
+			return true;
+		}
+		return false;
 	}
 }
 
@@ -2861,7 +2903,7 @@ namespace
 		FVector Feet;
 		float DropUU = 0.f;
 		const bool bOnMesh = ProjectToNav(Bot.GetWorld(), FeetOf(Pawn), Feet);
-		if (!bOnMesh || !FindIslandLip(Bot, Feet, InstanceData.Lip, InstanceData.Beyond, DropUU))
+		if (!bOnMesh || !FindIslandLip(Bot, Feet, InstanceData.Lip, InstanceData.Beyond, DropUU, InstanceData.Footprint))
 		{
 			if (bOnMesh && Latch.Confirmation == FAIBIslandLatch::EConfirm::Island)
 			{
@@ -2882,13 +2924,18 @@ namespace
 			Latch.ClearWithCooldown(Now, Cooldown);
 			return EStateTreeRunStatus::Failed;
 		}
+		InstanceData.Footprint += FeetOf(Pawn); // the real feet's height, not the nav projection's
 		InstanceData.ClosestSoFarUU = FVector::Dist(Pawn.GetActorLocation(), InstanceData.Lip);
-		UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s t=%.1f island egress starts — lip (%.0f,%.0f,%.0f) %.0fuu away, drop %.0fuu"),
+		// F7-2: under the agent radius + standoff HORIZONTALLY from the FEET (IsWithin reads
+		// 3D from the centre — a body standing on the lip is 88uu "away"): the walk cannot
+		// be made; the body is at the lip already and only the step-off remains.
+		InstanceData.bAtLipOnEntry = FVector::Dist2D(Feet, InstanceData.Lip) < AIB::AgentRadiusUU + Bot.GetTierRow().IslandLipStandoffUU;
+		UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s t=%.1f island egress starts — lip (%.0f,%.0f,%.0f) %.0fuu away, drop %.0fuu%s"),
 			*Bot.GetName(), Now, InstanceData.Lip.X, InstanceData.Lip.Y, InstanceData.Lip.Z,
-			InstanceData.ClosestSoFarUU, DropUU);
+			InstanceData.ClosestSoFarUU, DropUU, InstanceData.bAtLipOnEntry ? TEXT(" (at the lip, F7-2)") : TEXT(""));
 		// Already at the lip: Tick steps off this frame. Otherwise an ordinary on-mesh walk
 		// — EGRESS'S OWN (R8): its completion on the island must not clear the latch.
-		if (!IsWithin(Bot, InstanceData.Lip, InstanceData.LipReachUU))
+		if (!InstanceData.bAtLipOnEntry && !IsWithin(Bot, InstanceData.Lip, InstanceData.LipReachUU))
 		{
 			if (MoveToNavPoint(Bot, InstanceData.Lip, InstanceData.LipReachUU) == EPathFollowingRequestResult::Failed)
 			{
@@ -2914,6 +2961,7 @@ EStateTreeRunStatus FAIBEgressTask::EnterState(FStateTreeExecutionContext& Conte
 	}
 	InstanceData.bAirborneSeen = false;
 	InstanceData.bSteppedOff = false;
+	InstanceData.bAtLipOnEntry = false;
 	InstanceData.bBegun = false;
 	InstanceData.bRecovering = false;
 	InstanceData.RecoverySeconds = 0.f;
@@ -3022,7 +3070,17 @@ EStateTreeRunStatus FAIBEgressTask::Tick(FStateTreeExecutionContext& Context, co
 	{
 		FAIBIslandLatch& Latch = Bot->GetIslandLatch();
 		const float StrandedSeconds = InstanceData.StrandedSinceSeconds >= 0.0 ? static_cast<float>(Now - InstanceData.StrandedSinceSeconds) : 0.f;
-		const float DropUU = InstanceData.Lip.Z - FeetOf(*Pawn).Z; // F5-3: lip (nav) vs the FEET
+		const FVector FeetNow = FeetOf(*Pawn);
+		const float DropUU = InstanceData.Lip.Z - FeetNow.Z; // F5-3: lip (nav) vs the FEET
+		if (AIB::LandedOnSameIsland(InstanceData.Footprint, FeetNow))
+		{
+			// F7-3: inside the fan's footprint at the step-off's height — the same island. The
+			// cooldown lets Wander re-draw; the next fan skips this lip (F7-1), never re-issued.
+			Latch.ClearWithCooldown(Now, Tier.EgressCooldownSeconds);
+			UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f island egress FAILED — landed on the same island (F7) — latch cleared, %.0fs cooldown."),
+				*Bot->GetName(), Now, Tier.EgressCooldownSeconds);
+			return EStateTreeRunStatus::Failed;
+		}
 		if (DropUU >= Tier.IslandMinDropUU)
 		{
 			Latch.Clear();
@@ -3040,7 +3098,8 @@ EStateTreeRunStatus FAIBEgressTask::Tick(FStateTreeExecutionContext& Context, co
 	// mover is not already carrying it (a step that ended on the ground gets pushed again
 	// until the timeout says the body cannot leave here).
 	const bool bMoverIdle = Bot->GetMoveStatus() == EPathFollowingStatus::Idle;
-	const bool bAtLip = IsWithin(*Bot, InstanceData.Lip, InstanceData.LipReachUU)
+	const bool bAtLip = InstanceData.bAtLipOnEntry // F7-2
+		|| IsWithin(*Bot, InstanceData.Lip, InstanceData.LipReachUU)
 		|| (bMoverIdle && IsWithin(*Bot, InstanceData.Lip, InstanceData.LipReachUU * 1.5f));
 	if (bAtLip)
 	{
