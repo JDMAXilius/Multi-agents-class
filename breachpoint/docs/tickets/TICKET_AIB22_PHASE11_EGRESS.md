@@ -561,3 +561,17 @@ Refined steps (replace §Steps):
   idle)`. Observed for W-VERIFY v5: veto flip-flops between Roam (0.20) and Mode.Rally (0.00)
   several times a second on some bots — measure `ambition_switches` per minute vs baseline.
   The earlier PIE match ran to the 7-kill score limit and travelled to the front end on its own.
+- 2026-09-03 W-VERIFY v5 (5 x 2 maps at f92e6346 = everything but fix #6; logs
+  Tools/Logs/aib22-verify-*-v5-*.log): matches END ON THE 7-KILL SCORE LIMIT in 50–93 s
+  (Spillway kills/min median 9.2 vs baseline 1.0; Arena01 13.0 vs 1.8 — one Arena01 match ran
+  300 s). Per bot per match (medians): idle tactic=none 7.0 s Spillway / 9.4 s Arena01 (v4 116 /
+  98; baseline 72 / 199); stuck 19.7 / 15.5; refusals 0 / 0; stall abandoned 2 / 1 (v4 ≈2,000
+  per frame); state flaps 19 / 15 (v4 86,000); longest single sweep 2.0 PASS both; egress 0,
+  latches 0 (no islands in normal play — the gantry is a placed-bot case); Phase 13 overlap 0 /
+  1.6 s, yields 0 / 0; Phase 14 route changes 28 / 42 per bot with real lane ids; Phase 15
+  flanks 0, holds 0 (the tactic layer stayed on Push in these fights). FAIL: idle HARD (worst
+  18.3 s Spillway; Arena01 log 1 = the 300 s match, bot 0 idle 126.8 s / stuck 168 s); target
+  pile-up buckets 8 / 9 (HARD 0 — Phase 12's claims cap is not holding in 1 s buckets); stuck
+  and single-stall PROVISIONAL bars; sweep fraction 0.15 / 0.17 (the bar assumes 300 s matches
+  — v6 runs with `?ScoreLimit=200` so matches go to the time limit). Verifier breakdown
+  dispatched; fix #6 building.

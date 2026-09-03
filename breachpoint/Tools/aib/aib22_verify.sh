@@ -8,7 +8,7 @@ TAG=${1:-$(date +%Y%m%d-%H%M)}
 run_map() {
   local map=$1 name=$2
   for i in 1 2 3 4 5; do
-    "$ENG" "$REPO/Breachpoint.uproject" "/Game/Maps/$map?TargetPlayers=8?Teams=1?TimeLimit=300" \
+    "$ENG" "$REPO/Breachpoint.uproject" "/Game/Maps/$map?TargetPlayers=8?Teams=1?TimeLimit=300?ScoreLimit=200" \
       -game -windowed -ResX=640 -ResY=480 -nullrhi -unattended -nopause -nosplash -log -SECONDS=330 \
       -BENCHMARK -FPS=60 "-ini:Game:[/Script/BreachpointNext.BNGameMode]:MinPlayers=0" \
       -LogCmds="LogAIBot Verbose" -abslog="$REPO/Tools/Logs/aib22-verify-$name-$TAG-$i.log" >/dev/null 2>&1
