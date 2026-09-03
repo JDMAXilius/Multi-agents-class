@@ -105,3 +105,35 @@ corner because its quarry died elsewhere, unperceived) and it is ACCEPTED: the
 alternative — bots searching for the dead — reads as broken faster than the leak reads
 as unfair, and no position or health information flows through it. Revisit if bots ever
 visibly abandon a search at the moment of an unseen kill.
+
+---
+**Amendment, 2 Sep 2026 — Phase 12 ruling (F3/F5 scope; REPLACES "agents are never claimable").
+Founder rulings in `docs/AIBOT-ROADMAP-2.md` §5; text from the Phase 12 W-AUDIT; binding on
+TICKET_AIB23's W-BUILD, effective when that packet lands.**
+
+**Shared sightings.** A team report is a CALLOUT, and it carries only what a teammate actually
+sensed. Three binding conditions: (1) it may be published only from a candidate whose sight is
+CURRENT at publish time — a lead, a sound, or a bearing from damage is never relayed, because
+relaying belief manufactures belief no one had; (2) it carries the ORIGINAL observation stamp, so
+F5 decay measures from the seeing, not the telling — a report cannot refresh itself around the
+team; (3) it enters the receiving bot's reaction clock as a hearing-grade stimulus and lands as
+MEMORY. It never sets sight-current, never makes a candidate ELIGIBLE to be a held target, and
+never aims a weapon. A bot that has only a team report must go and look. Shared sightings are
+NOT gated by tier (there is one tier: Spartan).
+
+**Target claims.** Agents ARE claimable, capped at 2 per target per alliance, and the cap is the
+new invariant (a module constant, never data). A claim remains negative-only teammate INTENT: it
+may lower the score of a target the reader already believes in through its own envelope, and it
+may never be enumerated, never reveal that a target exists, never carry a position, a claimant
+location, or a health read. No bot may learn a target's position through a claim alone. Target
+claims are NOT gated by Teamwork tier (a non-claiming bot would reopen the pile).
+
+**Death release.** Releasing a claim when the target dies unperceived is the same omniscience
+channel the 25-Aug UObject-lifetime amendment accepted, and it is accepted on the same terms: no
+position or vitals flow through it, and bots fighting a corpse read as broken faster than the
+leak reads as unfair.
+
+**F9 — MOTION IS THE DEFAULT (founder, 2 Sep 2026).** A bot is either moving or executing a NAMED
+stillness tactic (Hold at fight range, a reload behind cover, a planted strafe hold, an ability
+wind-up) for a bounded time. Standing to "look for a target" is banned by name; a search sweeps
+while moving. `idle_seconds` outside a named tactic is a HARD gate at 0 from Phase 11 on.
