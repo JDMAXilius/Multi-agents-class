@@ -1,4 +1,5 @@
 #include "UI/BNTeamRoster.h"
+#include "Components/TextBlock.h"
 
 #include "CommonTextBlock.h"
 #include "Components/Image.h"
@@ -71,22 +72,28 @@ void UBNTeamRoster::SetHeaderText(const FText& InLabel, int32 InCapacity)
 
 void UBNTeamRoster::SetHeaderStatus(const FText& InStatus)
 {
-	// `UBRRosterHeader` exposes Label + Count only; the reference's "Invite Only" is the Count
-	// slot's text, reached by name like every other shared-component gap in this packet.
+	// The shared header's Count text sits at a fixed spot right after the label, so no amount of
+	// justification or min-width moves it: "IN MENUSInvite Only" (captured twice, 2 Sep). The
+	// status is this widget's own right-aligned text over the header instead — `HeaderStatus`,
+	// placed by the roster's WBP at the header's right end — and Count is hidden while a status
+	// is shown. The lobby passes nothing and keeps the header's own count/dash.
+	const bool bShow = !InStatus.IsEmpty();
+	if (UTextBlock* Status = Cast<UTextBlock>(GetWidgetFromName(TEXT("HeaderStatus"))))
+	{
+		Status->SetText(InStatus);
+		Status->SetColorAndOpacity(FSlateColor(FLinearColor::Black));   // the header plate is white; its label is black
+		Status->SetVisibility(bShow ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+	}
 	if (Header)
 	{
-		if (UCommonTextBlock* Count = Cast<UCommonTextBlock>(Header->GetWidgetFromName(TEXT("Count"))))
+		if (UWidget* Count = Header->GetWidgetFromName(TEXT("Count")))
 		{
-			Count->SetText(InStatus);
-			// The shared header lays Count out beside Label; right-justified it reads at the
-			// header's right end ("IN MENUS ........ Invite Only") instead of running into the label.
-			Count->SetJustification(ETextJustify::Right);
-			Count->SetVisibility(InStatus.IsEmpty() ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
+			Count->SetVisibility(bShow ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
 		}
 	}
 	if (HeaderIcon)
 	{
-		HeaderIcon->SetVisibility(InStatus.IsEmpty() ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
+		HeaderIcon->SetVisibility(bShow ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 	}
 }
 

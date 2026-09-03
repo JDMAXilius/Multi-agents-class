@@ -930,3 +930,6 @@ memory pressure; kill and rerun — the second link took 2s.
   editor leaves `Saved/Autosaves/PackageRestoreData.json`, and the next launch parks the game
   thread in a modal "Restore packages?" prompt (`FPackageAutoSaver::OfferToRestorePackages`) before
   any MCP call can run. Delete that file after a `kill -9`, or quit cleanly.
+- 2026-09-02 (late): "Invite Only" sits at the header's right end at last — the shared header
+  fixes Count right after Label, so the status is the roster's OWN `HeaderStatus` text (right
+  aligned, black on the white plate) and Count hides while a status shows. Captured in PIE.
