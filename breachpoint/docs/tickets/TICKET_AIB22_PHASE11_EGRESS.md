@@ -48,7 +48,8 @@ packet introduces in its minimal form).
 ## Done when
 - [x] Baseline report (5 runs, medians + spread) committed under Tools/aib/ before step 2 — `Tools/aib/baselines/aib22-*-v2.json`
 - [ ] Every platform on Spillway and Arena01 has a way down; the floor has a way up (link count)
-- [ ] `idle_seconds == 0` outside named tactics; `sweep_seconds == 0`; `stuck_seconds` per bot
+- [ ] `idle_seconds == 0` outside named tactics; stationary sweep: longest single ≤ 2.5 s and
+      ≤ 5 % of the match per bot (re-based 2026-09-02, W-REVIEW M5); `stuck_seconds` per bot
       under the gate the verifier proposes; kills/min not worse than baseline
 - [ ] PIE: a bot placed on the top platform leaves it within 5 s (captured)
 - [ ] W-REVIEW: no `high`

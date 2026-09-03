@@ -126,7 +126,7 @@ RX = {
 }
 
 # The per-bot metrics derived from the five AIB22 lines (seconds are sums per bot per match).
-BOT_METRICS = ("no_path_requests", "stuck_seconds", "max_stall_seconds", "sweep_seconds",
+BOT_METRICS = ("no_path_requests", "stuck_seconds", "max_stall_seconds", "sweep_seconds", "max_single_sweep",
                "idle_seconds", "idle_seconds_tactical", "island_egress_count",
                # AIB23: ttl-release -> re-grant on the same target inside THRASH_WINDOW_SECONDS,
                # and what a DENIED bot did instead.
@@ -158,7 +158,10 @@ DEFAULT_BARS = {
     "min_logs_for_baseline": 5,
     # AIB22 egress gates (W-AUDIT member 3). idle/sweep are HARD; the stall pair PROVISIONAL.
     "idle_seconds": 0.0,            # per bot per match, tactic=none only
-    "sweep_seconds": 0.0,           # per bot per match
+    # Re-based 2026-09-02 (W-REVIEW lane A, M5): the `sweep over` line now reports STATIONARY sweep
+    # seconds only and a bounded per-post sweep is designed in, so zero is no longer the bar.
+    "sweep_fraction": 0.05,         # per bot: stationary sweep seconds / match seconds
+    "max_single_sweep": 2.5,        # longest single stationary sweep, any bot (SweepMaxSeconds + 0.5)
     "stuck_seconds_per_bot": 10.0,  # sum of stall-over seconds, worst bot
     "max_stall_seconds": 3.0,       # longest single stall, any bot
     "refusal_ratio_vs_baseline": 0.5,  # median no_path_requests per bot <= this x baseline median
@@ -208,7 +211,10 @@ def per_bot_summary(counts):
         bot["stuck_seconds"] += seconds
         bot["max_stall_seconds"] = max(bot["max_stall_seconds"], seconds)
     for hit in counts["sweep_over"]:
-        row(hit["bot"])["sweep_seconds"] += float(hit["seconds"])
+        seconds = float(hit["seconds"])
+        bot = row(hit["bot"])
+        bot["sweep_seconds"] += seconds
+        bot["max_single_sweep"] = max(bot["max_single_sweep"], seconds)
     for hit in counts["idle_over"]:
         key = "idle_seconds" if hit["tactic"] == "none" else "idle_seconds_tactical"
         row(hit["bot"])[key] += float(hit["seconds"])
@@ -439,7 +445,7 @@ def judge(matches, bars, baseline=None):
         return max(rows) if rows else None
 
     for name, key, bar_key, kind in (("idle seconds (tactic=none)", "idle_seconds", "idle_seconds", "HARD"),
-                                     ("sweep seconds", "sweep_seconds", "sweep_seconds", "HARD"),
+                                     ("longest single sweep", "max_single_sweep", "max_single_sweep", "HARD"),
                                      ("stuck seconds per bot", "stuck_seconds", "stuck_seconds_per_bot", "PROVISIONAL"),
                                      ("longest single stall", "max_stall_seconds", "max_stall_seconds", "PROVISIONAL"),
                                      ("claim thrash per bot", "claim_thrash", "claim_thrash_per_bot", "PROVISIONAL")):
@@ -449,6 +455,14 @@ def judge(matches, bars, baseline=None):
         value, bot, match_no = worst
         bar_line(name, value <= bars[bar_key],
                  f"worst {value} ({bot}, log {match_no}) vs {kind} bar {bars[bar_key]} (per bot per match)")
+
+    # Sweep as a fraction of the match, worst bot (a per-bot-per-match number needs the match length).
+    frac_rows = [(round(bot["sweep_seconds"] / m["match_seconds"], 4), name, i + 1)
+                 for i, m in enumerate(matches) if m["match_seconds"] for name, bot in m["per_bot"].items()]
+    if frac_rows:
+        value, bot, match_no = max(frac_rows)
+        bar_line("sweep fraction of match", value <= bars["sweep_fraction"],
+                 f"worst {value} ({bot}, log {match_no}) vs HARD bar {bars['sweep_fraction']} (stationary sweep s / match s)")
 
     if baseline is not None:
         current = lobby_spread(matches)
@@ -621,10 +635,10 @@ def selftest():
 
     match = per_match_summary(counts)
     expect = {
-        "Alpha": {"no_path_requests": 2, "stuck_seconds": 6.5, "max_stall_seconds": 4.0, "sweep_seconds": 3.0,
+        "Alpha": {"no_path_requests": 2, "stuck_seconds": 6.5, "max_stall_seconds": 4.0, "sweep_seconds": 3.0, "max_single_sweep": 3.0,
                   "idle_seconds": 2.0, "idle_seconds_tactical": 1.5, "island_egress_count": 1,
                   "claim_thrash": 0, "denied_roam": 0, "denied_engage_anyway": 0},
-        "Bravo": {"no_path_requests": 1, "stuck_seconds": 1.5, "max_stall_seconds": 1.5, "sweep_seconds": 3.25,
+        "Bravo": {"no_path_requests": 1, "stuck_seconds": 1.5, "max_stall_seconds": 1.5, "sweep_seconds": 3.25, "max_single_sweep": 2.0,
                   "idle_seconds": 3.0, "idle_seconds_tactical": 0.5, "island_egress_count": 1,
                   "claim_thrash": 0, "denied_roam": 0, "denied_engage_anyway": 0},
     }
@@ -644,7 +658,7 @@ def selftest():
     verdicts = {name: verdict for verdict, name, _ in judge([match], DEFAULT_BARS, {"lobby_spread": lobby})}
     assert verdicts == {
         "F1 reaction floor": "PASS", "unserved wants": "PASS", "wiring warnings": "PASS", "FFA claim grants": "PASS",
-        "idle seconds (tactic=none)": "FAIL", "sweep seconds": "FAIL",
+        "idle seconds (tactic=none)": "FAIL", "longest single sweep": "FAIL", "sweep fraction of match": "PASS",
         "stuck seconds per bot": "PASS", "longest single stall": "FAIL",
         "target pile-up buckets": "PASS", "claim thrash per bot": "PASS",
         "move refusals vs baseline": "FAIL",   # 1.5 > 0.5 x 1.5
