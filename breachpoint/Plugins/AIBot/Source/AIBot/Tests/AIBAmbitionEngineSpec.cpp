@@ -970,6 +970,10 @@ void FAIBAmbitionEngineSpec::Define()
 		Ideal.RecentDamageTakenNorm = 0.5f;    // being shot: go around
 		Ideal.bCrowdKnown = true;
 		Ideal.NearbyAllies = 2;                // teammates on the target
+		// A FULL magazine, stated: FAIBFacts defaults AmmoNorm to 0 (a pass-through fact
+		// with no known-flag), and a dry gun at 800uu is exactly Hold's case — it out-
+		// scored Push here and its 2s commit then held the latched Flank out too.
+		Ideal.AmmoNorm = 1.f;
 		TestTag(TEXT("no latched point: silent, Push fights"), Engine->Rescore(Ideal, 1.0), AIBTags::Tactic_Push);
 		TestEqual(TEXT("Flank reads exactly zero"), ScoreOf(*Engine, AIBTags::Tactic_Flank), 0.f, 0.0001f);
 
