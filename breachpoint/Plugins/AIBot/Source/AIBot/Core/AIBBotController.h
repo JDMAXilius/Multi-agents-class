@@ -296,6 +296,8 @@ struct AIBOT_API FAIBOverlapEpisode
 	{
 		SinceSeconds = -1.0;
 		PeakCount = 0;
+	}
+};
 
 /** AIB26 — THE FLANK LATCH. Flank's want may reach zero ONLY through this (the audit's
  *  VETO-bypass rule): a hidden, reachable point off the fight line, found ONCE by the

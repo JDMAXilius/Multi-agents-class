@@ -151,7 +151,7 @@ RX = {
 
 # The per-bot metrics derived from the five AIB22 lines (seconds are sums per bot per match).
 BOT_METRICS = ("no_path_requests", "stuck_seconds", "max_stall_seconds", "sweep_seconds", "max_single_sweep",
-               "idle_seconds", "idle_seconds_tactical", "island_egress_count", "island_latch_count", "egress_failed_count", "stranded_count", "stall_abandoned_count", "offmesh_recovery_count", "overlap_seconds", "yield_count", "route_changes", "flank_count", "flank_stalled", "hold_seconds",
+               "idle_seconds", "idle_seconds_tactical", "island_egress_count", "island_latch_count", "egress_failed_count", "stranded_count", "stall_abandoned_count", "offmesh_recovery_count", "overlap_seconds", "yield_count", "route_changes", "flank_count", "flank_stalled", "hold_seconds", "state_flaps",
                # AIB23: ttl-release -> re-grant on the same target inside THRASH_WINDOW_SECONDS,
                # and what a DENIED bot did instead.
                "claim_thrash", "denied_roam", "denied_engage_anyway")
@@ -237,8 +237,12 @@ def per_bot_summary(counts):
     for hit in counts["sweep_over"]:
         seconds = float(hit["seconds"])
         bot = row(hit["bot"])
+        if seconds == 0.0:
+            bot["state_flaps"] += 1        # a state entered and left in one frame (v4 verifier 7e)
+            continue
         bot["sweep_seconds"] += seconds
-        bot["max_single_sweep"] = max(bot["max_single_sweep"], seconds)
+        if float(hit["moved"]) <= 50.0:    # STATIONARY sweeps only (v4 verifier 7c)
+            bot["max_single_sweep"] = max(bot["max_single_sweep"], seconds)
     for hit in counts["idle_over"]:
         key = "idle_seconds" if hit["tactic"] == "none" else "idle_seconds_tactical"
         row(hit["bot"])[key] += float(hit["seconds"])
@@ -250,12 +254,20 @@ def per_bot_summary(counts):
         row(hit["bot"])["egress_failed_count"] += 1
     for hit in counts["stranded"]:   # a MAP defect made visible: reported, not gated
         row(hit["bot"])["stranded_count"] += 1
-    for hit in counts["stall_abandoned"]:   # the abandon IS a stall end: its seconds are stuck seconds
-        seconds = float(hit["seconds"])
+    # `stall abandoned` reports ONE running clock and (fix #4) re-fired every frame: an EPISODE is
+    # a run of lines whose clock keeps rising with no gap > 1 s; the episode's seconds are its last
+    # reading. The `stall over … resolved=abandoned` line closes the same episode, so it is NOT
+    # added again here (v4 verifier 7a/7b).
+    last_by_bot = {}
+    for hit in counts["stall_abandoned"]:
+        seconds, t = float(hit["seconds"]), float(hit["t"])
         bot = row(hit["bot"])
-        bot["stall_abandoned_count"] += 1
-        bot["stuck_seconds"] += seconds
+        prev = last_by_bot.get(hit["bot"])
+        new_episode = prev is None or seconds < prev[0] or t - prev[1] > 1.0
+        if new_episode:
+            bot["stall_abandoned_count"] += 1
         bot["max_stall_seconds"] = max(bot["max_stall_seconds"], seconds)
+        last_by_bot[hit["bot"]] = (seconds, t)
     for hit in counts["offmesh_recovery"]:
         row(hit["bot"])["offmesh_recovery_count"] += 1
     for hit in counts["teammate_overlap"]:   # Phase 13: seconds with a teammate inside the radius
@@ -710,17 +722,17 @@ def selftest():
 
     match = per_match_summary(counts)
     expect = {
-        "Alpha": {"no_path_requests": 2, "stuck_seconds": 8.0, "max_stall_seconds": 4.0, "sweep_seconds": 3.0, "max_single_sweep": 3.0,
-                  "idle_seconds": 2.0, "idle_seconds_tactical": 1.5, "island_egress_count": 1, "island_latch_count": 1, "egress_failed_count": 0, "stranded_count": 0, "stall_abandoned_count": 1, "offmesh_recovery_count": 1, "overlap_seconds": 1.5, "yield_count": 0, "route_changes": 1, "flank_count": 1, "flank_stalled": 0, "hold_seconds": 0.0,
+        "Alpha": {"no_path_requests": 2, "stuck_seconds": 6.5, "max_stall_seconds": 4.0, "sweep_seconds": 3.0, "max_single_sweep": 0.0,
+                  "idle_seconds": 2.0, "idle_seconds_tactical": 1.5, "island_egress_count": 1, "island_latch_count": 1, "egress_failed_count": 0, "stranded_count": 0, "stall_abandoned_count": 1, "offmesh_recovery_count": 1, "overlap_seconds": 1.5, "yield_count": 0, "route_changes": 1, "flank_count": 1, "flank_stalled": 0, "hold_seconds": 0.0, "state_flaps": 0,
                   "claim_thrash": 0, "denied_roam": 0, "denied_engage_anyway": 0},
         "Bravo": {"no_path_requests": 1, "stuck_seconds": 1.5, "max_stall_seconds": 1.5, "sweep_seconds": 3.25, "max_single_sweep": 2.0,
-                  "idle_seconds": 3.0, "idle_seconds_tactical": 0.5, "island_egress_count": 1, "island_latch_count": 0, "egress_failed_count": 1, "stranded_count": 1, "stall_abandoned_count": 0, "offmesh_recovery_count": 0, "overlap_seconds": 0.0, "yield_count": 1, "route_changes": 0, "flank_count": 0, "flank_stalled": 0, "hold_seconds": 2.5,
+                  "idle_seconds": 3.0, "idle_seconds_tactical": 0.5, "island_egress_count": 1, "island_latch_count": 0, "egress_failed_count": 1, "stranded_count": 1, "stall_abandoned_count": 0, "offmesh_recovery_count": 0, "overlap_seconds": 0.0, "yield_count": 1, "route_changes": 0, "flank_count": 0, "flank_stalled": 0, "hold_seconds": 2.5, "state_flaps": 0,
                   "claim_thrash": 0, "denied_roam": 0, "denied_engage_anyway": 0},
     }
     assert match["per_bot"] == expect, match["per_bot"]
     assert match["kills"] == 2 and match["match_seconds"] == 90.0 and match["kills_per_min"] == 1.333, match
     assert match["bot_spread"]["no_path_requests"]["median"] == 1.5
-    assert match["bot_spread"]["stuck_seconds"] == {"mean": 4.75, "median": 4.75, "min": 1.5, "max": 8.0, "n": 2}
+    assert match["bot_spread"]["stuck_seconds"] == {"mean": 4.0, "median": 4.0, "min": 1.5, "max": 6.5, "n": 2}
     assert match["f7_failures"] == 2 and match["f7_by_shape"] == {"POI path refused": 1, "could not path to the belief": 1}
     assert match["acquisitions"] == 3 and match["reaction_sentinels"] == 1 and match["latency_min"] == 0.267, match
     assert match["acquisitions_by_verb"] == {"acquired": 2, "SWITCHED to": 1} and match["wiring_pois"] == 1
@@ -733,7 +745,7 @@ def selftest():
     verdicts = {name: verdict for verdict, name, _ in judge([match], DEFAULT_BARS, {"lobby_spread": lobby})}
     assert verdicts == {
         "F1 reaction floor": "PASS", "unserved wants": "PASS", "wiring warnings": "PASS", "FFA claim grants": "PASS",
-        "idle seconds (tactic=none)": "FAIL", "longest single sweep": "FAIL", "sweep fraction of match": "PASS",
+        "idle seconds (tactic=none)": "FAIL", "longest single sweep": "PASS", "sweep fraction of match": "PASS",
         "stuck seconds per bot": "PASS", "longest single stall": "FAIL",
         "target pile-up buckets": "PASS", "claim thrash per bot": "PASS",
         "move refusals vs baseline": "FAIL",   # 1.5 > 0.5 x 1.5
