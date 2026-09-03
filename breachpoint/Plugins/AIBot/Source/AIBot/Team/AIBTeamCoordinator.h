@@ -3,6 +3,9 @@
 #include "CoreMinimal.h"
 #include "Subsystems/WorldSubsystem.h"
 #include "Team/AIBClaimsBoard.h"
+#include "Team/AIBSightingLedger.h"
+#include "Team/AIBTargetClaims.h"
+#include "Team/AIBVisitHeat.h"
 #include "AIBTeamCoordinator.generated.h"
 
 class AAIBBotController;
@@ -25,8 +28,13 @@ class AAIBBotController;
  *
  * The board itself is FAIBClaimsBoard (headless — the specs run there); this shell only
  * supplies time, the hostility predicate, and the refusals that need a world: authority,
- * and pawn-backed targets (agents are never claimable — a shared enemy-assignment board
- * is the coordinated-omniscience F-3.7 bans).
+ * and pawn-backed SLOTS (a provider marking a body a slot is a wiring bug).
+ *
+ * PHASE 12 (AIB23, W-AUDIT deviation adopted): this IS the server-only per-alliance Team
+ * Mind — no new subsystem. Three headless members ride beside the slot board: the TARGET
+ * CLAIMS (agents claimable, cap AIB::TargetClaimCap, FAIRPLAY amendment 2 Sep — the
+ * "never claimable" rule is REPLACED, deliberately), the SIGHTING LEDGER (callouts), and
+ * the VISIT HEAT grid (team-only footsteps). Rename to Team Mind in Phase 15.
  */
 UCLASS()
 class AIBOT_API UAIBTeamCoordinator : public UWorldSubsystem
@@ -53,6 +61,35 @@ public:
 	/** The instrument's count (grep-able proof lines are the call sites'). */
 	int32 NumLiveClaims() const;
 
+	// -- Phase 12: target claims (ungated by tier). The caller logs GRANTED/DENIED (it
+	//    knows what it does next); this shell logs every RELEASED with its reason. -------
+	EAIBTargetClaimResult TryClaimTarget(const AAIBBotController& Claimant, const AActor& Target, int32& OutHolders);
+	/** Allied OTHERS holding Target (self excluded): the AlliesOnTarget term and the
+	 *  saturation fact. A per-target read for a target the asker already believes in. */
+	int32 CountAlliesOnTarget(const AAIBBotController& Asker, const AActor& Target) const;
+	bool HoldsTargetClaim(const AAIBBotController& Asker, const AActor& Target) const;
+	/** 0 = first holder, 1 = second, INDEX_NONE = holds nothing — the ring-spread seed. */
+	int32 GetTargetClaimOrdinal(const AAIBBotController& Asker, const AActor& Target) const;
+	/** Engage no longer winning: claims held ≥ MinHold release now (reason=exit), the
+	 *  rest lapse by TTL. */
+	void ReleaseTargetClaimsOnExit(const AAIBBotController& Claimant, float MinHoldSeconds);
+
+	// -- Phase 12: shared sightings (current sight only, original stamp). --------------
+	void PublishSighting(const AAIBBotController& Reporter, AActor& Target, const FVector& Where, double SeenAtSeconds);
+	void ForEachTeamReport(const AAIBBotController& Asker, float StaleSeconds,
+		TFunctionRef<void(const FAIBSighting&)> Visit) const;
+
+	// -- Phase 12: the team visit heat grid. --------------------------------------------
+	void StampVisit(const AAIBBotController& Visitor, const FVector& Where, float CellUU, float DecaySeconds);
+	float VisitHeatAt(const AAIBBotController& Asker, const FVector& Where, float CellUU, float DecaySeconds) const;
+
 private:
+	/** TTL and death releases, logged. Every mutating path calls it. */
+	void PruneTargetClaims(double Now);
+	void LogReleases(double Now, const TArray<FAIBReleasedTargetClaim>& Released) const;
+
 	FAIBClaimsBoard Board;
+	FAIBTargetClaims TargetClaims;
+	FAIBSightingLedger Sightings;
+	FAIBVisitHeat VisitHeat;
 };

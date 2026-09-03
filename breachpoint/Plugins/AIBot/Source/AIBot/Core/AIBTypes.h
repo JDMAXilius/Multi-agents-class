@@ -187,6 +187,18 @@ namespace AIB
 	 *  for seconds, not a fight (W-AUDIT P7 ruling, 26 Aug 2026). */
 	inline constexpr float ClaimTtlSeconds = 5.f;
 
+	/** PHASE 12 (founder ruling, 2 Sep 2026 — FAIRPLAY amendment): attackers per target
+	 *  per alliance. A MODULE CONSTANT, never data (roadmap §5.2): the cap is the new
+	 *  invariant that replaced "agents are never claimable", and an invariant a csv can
+	 *  raise is not one. Reuses ClaimTtlSeconds for the lease. */
+	inline constexpr int32 TargetClaimCap = 2;
+
+	/** Engage's want on a SATURATED target, as the curve value the engine's make-up
+	 *  turns into ≈1/(1+TargetClaimCap): five Engage terms compensate at 0.8, and
+	 *  0.20 + 0.8·0.20·(1−0.20) = 0.33. Score-only (F9): a third attacker wants the
+	 *  fight less, never nothing — with nothing else to want it engages at a third. */
+	inline constexpr float EngageSaturatedWant = 0.20f;
+
 	/** The reaction clock's queue cap (drop-oldest). An unpossessed bot must not grow
 	 *  an unbounded stimulus backlog for the rest of a match (W-REVIEW F-1.2). */
 	inline constexpr int32 MaxPendingStimuli = 64;
@@ -348,6 +360,11 @@ struct AIBOT_API FAIBFacts
 	bool bCrowdKnown = false;
 	int32 NearbyAllies = 0;
 	int32 NearbyEnemies = 0;           // "am I outnumbered" — the textbook confidence input
+	/** PHASE 12: the held target already has AIB::TargetClaimCap allied claims and none of
+	 *  them is mine. NEGATIVE-ONLY teammate intent from the claims board: it can only lower
+	 *  Engage's want for a target this bot already believes in through its own envelope; it
+	 *  never says a target exists, where it is, or who holds it. Ungated by tier. */
+	bool bTargetClaimSaturated = false;
 
 	// -- the judgment (Phase 5): the confidence model's output, written by the
 	//    controller AFTER the builder runs and BEFORE the brain scores — the one fact

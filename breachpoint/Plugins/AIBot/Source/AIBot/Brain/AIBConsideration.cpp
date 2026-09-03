@@ -66,6 +66,8 @@ namespace
 		case EAIBFactSelector::ObjectiveClaimedElsewhere:
 			return MatchedObjective
 				? TOptional<float>(MatchedObjective->bClaimedElsewhere ? 1.f : 0.f) : TOptional<float>();
+		case EAIBFactSelector::TargetClaimSaturated:
+			return Facts.bHasTarget ? TOptional<float>(Facts.bTargetClaimSaturated ? 1.f : 0.f) : TOptional<float>();
 		}
 		return TOptional<float>();
 	}

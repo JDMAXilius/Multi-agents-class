@@ -12,7 +12,11 @@ enum class EAIBStimulusKind : uint8
 	SightLost,
 	Sound,
 	Damage,
-	IncomingBlast
+	IncomingBlast,
+	/** PHASE 12: a teammate's CALLOUT (FAIRPLAY 2 Sep). Hearing-grade — same clock, same
+	 *  draw; PayloadSeconds carries the reporter's ORIGINAL observation stamp so F5 decay
+	 *  measures from the seeing, not the telling. Lands as a lead, never as sight. */
+	TeamReport
 };
 
 /** One noticed thing, waiting to be reacted to. */

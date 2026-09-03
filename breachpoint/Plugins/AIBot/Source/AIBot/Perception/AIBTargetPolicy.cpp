@@ -22,15 +22,6 @@ float FAIBTargetPolicy::Score(const FAIBTargetScoreInput& In, float MemoryWindow
 		Total += AIB::TargetProximityWeight * Near;
 	}
 
-	// WHO IS SHOOTING ME, decaying by halves. Exponential rather than linear because
-	// being shot at is about the CURRENT exchange: it should dominate for a few seconds
-	// and then stop mattering, not fade politely over the whole memory window.
-	if (In.SecondsSinceDamagedMe >= 0.f)
-	{
-		const float Halves = In.SecondsSinceDamagedMe / FMath::Max(0.01f, AIB::TargetThreatHalfLifeSeconds);
-		Total += AIB::TargetThreatWeight * FMath::Pow(0.5f, Halves);
-	}
-
 	// FRESHNESS over the tier's own memory window, so a Recruit's short memory makes its
 	// stale leads decay faster than a Spartan's without a second number anywhere.
 	if (In.SecondsSinceSeen >= 0.f)
@@ -38,6 +29,21 @@ float FAIBTargetPolicy::Score(const FAIBTargetScoreInput& In, float MemoryWindow
 		const float Window = FMath::Max(0.01f, MemoryWindowSeconds);
 		const float Fresh = 1.f - FMath::Clamp(In.SecondsSinceSeen / Window, 0.f, 1.f);
 		Total += AIB::TargetFreshnessWeight * Fresh;
+	}
+
+	// PHASE 12 — TEAMMATES ALREADY ON HIM (AIB23 W-AUDIT): ×1/(1+n) over the three terms
+	// above, so a target two allies hold is worth a third to a third bot, and the pile
+	// dissolves by score rather than by prohibition (F9: denial is a score, never a veto).
+	Total /= 1.f + static_cast<float>(FMath::Max(In.AlliesOnTarget, 0));
+
+	// WHO IS SHOOTING ME, decaying by halves. Exponential rather than linear because
+	// being shot at is about the CURRENT exchange: it should dominate for a few seconds
+	// and then stop mattering, not fade politely over the whole memory window. Added
+	// AFTER the crowd divisor, unscaled: never turn a bot away from the man shooting it.
+	if (In.SecondsSinceDamagedMe >= 0.f)
+	{
+		const float Halves = In.SecondsSinceDamagedMe / FMath::Max(0.01f, AIB::TargetThreatHalfLifeSeconds);
+		Total += AIB::TargetThreatWeight * FMath::Pow(0.5f, Halves);
 	}
 
 	return Total;

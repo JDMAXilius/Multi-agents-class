@@ -43,6 +43,12 @@ struct AIBOT_API FAIBTargetScoreInput
 
 	/** Since this actor last damaged us. Negative = never. */
 	float SecondsSinceDamagedMe = -1.f;
+
+	/** PHASE 12: allied claims already on this target — SELF EXCLUDED, from the claims
+	 *  board only (negative-only teammate intent: it lowers, never conjures). Scales the
+	 *  sight/proximity/freshness sum by 1/(1+n); the THREAT term is added after, unscaled
+	 *  — a bot is never turned away from the man shooting it. */
+	int32 AlliesOnTarget = 0;
 };
 
 struct AIBOT_API FAIBTargetPolicy

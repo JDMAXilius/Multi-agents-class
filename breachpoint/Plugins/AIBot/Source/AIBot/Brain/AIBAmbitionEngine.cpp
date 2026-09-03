@@ -327,6 +327,21 @@ void UAIBAmbitionEngine::BuildDefaultCoreAmbitions(TArray<FAIBAmbitionSpec>& Out
 			C->AddKey(1.f, 1.f);
 		}
 		Nerve.ValueWhenUnknown = 1.f;
+
+		// PHASE 12 — TWO TEAMMATES ARE ALREADY ON HIM (AIB23): the cap's SCORE-ONLY hand.
+		// Saturated, Engage keeps ≈1/(1+TargetClaimCap) of itself after the make-up (the
+		// constant's comment shows the arithmetic) — enough for a mode want or a fresh Roam
+		// to outbid it, never a veto (F9: a bot denied a target moves, it does not idle;
+		// with nothing else to want it engages at a third, which is the audit's ruling).
+		FAIBConsideration& Crowd = Engage.Considerations.AddDefaulted_GetRef();
+		Crowd.Selector = EAIBFactSelector::TargetClaimSaturated;
+		{
+			FRichCurve* C = Crowd.Curve.GetRichCurve();
+			C->Reset();
+			C->AddKey(0.f, 1.f);
+			C->AddKey(1.f, AIB::EngageSaturatedWant);
+		}
+		Crowd.ValueWhenUnknown = 1.f;
 	}
 
 	// RETREAT — hurt and being hurt. Damage history has no source until Phase 3, so

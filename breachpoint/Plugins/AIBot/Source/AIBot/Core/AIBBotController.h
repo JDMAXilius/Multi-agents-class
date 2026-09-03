@@ -750,6 +750,12 @@ private:
 
 	/** AIB17 — see GetAllyFightMemory. Reset at possession: a fresh life heard nothing. */
 	FAIBAllyFightMemory AllyFightMemory;
+
+	/** PHASE 12 — the `target claim DENIED` line is edge-triggered per target (one per
+	 *  denial episode, not per think); the report throttle is per target (world seconds
+	 *  of the last report taken). Both die with the body. */
+	TWeakObjectPtr<AActor> LastDeniedTarget;
+	TMap<FObjectKey, double> TeamReportTakenAt;
 	FRandomStream PolicyRandom;
 
 	/** The misjudge draws. Its OWN stream, seeded per bot beside the sensorium's:

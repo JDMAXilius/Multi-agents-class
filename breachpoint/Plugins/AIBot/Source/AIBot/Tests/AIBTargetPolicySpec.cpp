@@ -164,6 +164,29 @@ void FAIBTargetPolicySpec::Define()
 		});
 	});
 
+	Describe("teammates already on him (Phase 12)", [this]()
+	{
+		It("scores a target two allies hold at a third — and never at nothing", [this]()
+		{
+			FAIBTargetScoreInput Crowded = Seen(600.f);
+			Crowded.AlliesOnTarget = 2;
+			const float Alone = FAIBTargetPolicy::Score(Seen(600.f), Window);
+			const float Shared = FAIBTargetPolicy::Score(Crowded, Window);
+			TestEqual(TEXT("×1/(1+2)"), Shared, Alone / 3.f, 0.001f);
+			TestTrue(TEXT("still a target"), Shared > 0.f);
+		});
+
+		It("never turns a bot away from the man shooting it — the threat term is unscaled", [this]()
+		{
+			FAIBTargetScoreInput CrowdedShooter = Shooter(2000.f, 0.f);
+			CrowdedShooter.AlliesOnTarget = 2;
+			const float ThreatOnly = FAIBTargetPolicy::Score(Shooter(2000.f, 0.f), Window)
+				- FAIBTargetPolicy::Score(Remembered(2000.f, 0.f), Window);
+			TestTrue(TEXT("the whole threat term survives the crowd"),
+				FAIBTargetPolicy::Score(CrowdedShooter, Window) >= ThreatOnly - 0.001f);
+		});
+	});
+
 	Describe("the memory window is the tier's", [this]()
 	{
 		It("decays a stale lead faster for a short memory than a long one", [this]()

@@ -121,6 +121,10 @@ public:
 	void NoteSightingLost(AActor* Who, const FVector& LastSeenAt, double NowSeconds);
 	void NoteSound(AActor* Who, const FVector& Where, double NowSeconds);
 	void NoteDamageFrom(AActor* Who, const FVector& Where, double NowSeconds);
+	/** PHASE 12 — a teammate's CALLOUT (FAIRPLAY 2 Sep): hearing-grade, same clock, same
+	 *  draw. SeenAtSeconds is the reporter's ORIGINAL stamp and travels in the payload;
+	 *  it lands as a lead (position + stamp), never as sight, never as eligibility. */
+	void NoteTeamReport(AActor* Who, const FVector& Where, double SeenAtSeconds, double NowSeconds);
 	void NoteIncomingBlast(const FVector& Center, float Radius, double DetonateAtSeconds, double NowSeconds);
 	/** Engine perception aged the actor out entirely: a loss at the last seen spot. */
 	void NoteForgotten(AActor* Who, double NowSeconds);
@@ -137,6 +141,12 @@ public:
 	/** The tier's memory window, so a Recruit's short memory decays its stale leads
 	 *  faster than a Spartan's without a second number living anywhere else. */
 	void SetMemoryWindowSeconds(float Seconds) { MemoryWindowSeconds = Seconds; }
+
+	/** PHASE 12 — pushed per think from the claims board, one count per candidate the bot
+	 *  ALREADY believes in (a per-target read, never an enumeration): allied claims on
+	 *  Who, self excluded. Scores ×1/(1+n) in selection; nothing else reads it. */
+	void SetAlliesOnTarget(const AActor* Who, int32 Count) { if (Who) { AlliesOnTarget.Add(FObjectKey(Who), Count); } }
+	void ClearAlliesOnTargets() { AlliesOnTarget.Reset(); }
 
 	/** Read-only view of who the bot believes in, for the debugger and the specs. */
 	const TArray<FAIBTargetCandidate>& GetCandidates() const { return Candidates; }
@@ -219,4 +229,6 @@ private:
 
 	TArray<FAIBLiveBlast> LiveBlasts;
 	float LastAcquisitionLatency = -1.f;
+	/** See SetAlliesOnTarget. */
+	TMap<FObjectKey, int32> AlliesOnTarget;
 };
