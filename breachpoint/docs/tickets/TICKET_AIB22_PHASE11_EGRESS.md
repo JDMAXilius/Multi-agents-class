@@ -1,6 +1,6 @@
 # TICKET — AIB22: Phase 11 EGRESS — no bot stands on a platform sweeping; roam the whole level
 
-> STATUS: in-progress — claimed — Claude (session 014esNfHwPnkiAJkRKBMwR7b), lead, 2026-09-02. Founder rulings
+> STATUS: in-progress — mac terminal (lead, session 014esNfHwPnkiAJkRKBMwR7b) 2 Sep 2026 (061f8f82). Founder rulings and law F9 in `docs/AIBOT-ROADMAP-2.md` §5. Waves per `docs/AIBOT-WAVES.md`.
 > and law F9 (motion is the default) in `docs/AIBOT-ROADMAP-2.md` §5. Waves per `docs/AIBOT-WAVES.md`.
 
 Founder: a bot on a raised platform with no path off it turns in place "looking for a target".

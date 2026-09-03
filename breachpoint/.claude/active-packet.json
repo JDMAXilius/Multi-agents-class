@@ -1,18 +1,23 @@
 {
- "ticket": "BN42-frontend-widgets",
+ "ticket": "AIB22-phase11-egress",
  "owner_path": [
-  "Source/BreachpointNext/",
-  "breachpoint/Source/BreachpointNext/",
-  "Content/BN/",
-  "breachpoint/Content/BN/",
-  "Content/Maps/",
-  "breachpoint/Content/Maps/",
+  "Plugins/AIBot/Source/AIBot/",
+  "breachpoint/Plugins/AIBot/Source/AIBot/",
+  "Content/AIBot/",
+  "breachpoint/Content/AIBot/",
+  "Tools/aib/",
+  "breachpoint/Tools/aib/",
+  "Tools/blockout/",
+  "breachpoint/Tools/blockout/",
   "Config/",
   "breachpoint/Config/",
-  "Tools/bn/",
-  "breachpoint/Tools/bn/",
+  "Source/BreachpointNext/",
+  "breachpoint/Source/BreachpointNext/",
+  "Content/Maps/",
+  "breachpoint/Content/Maps/",
   "docs/tickets/",
-  "docs/ui/ue-frontend/"
+  "docs/",
+  ".claude/agents/"
  ],
- "note": "BN42 editor pass: build WBP_BNScreen_FrontEnd (21) and WBP_BNScreen_PlaySetup (28) under /Game/BN/UI via direct unreal-mcp calls per founder ruling R46, plus the FE_MainMenu level with BNFrontEndGameMode. Resumed 1 Sep block: the MCP registry fault is GONE - list_toolsets returns UMGToolSet/ObjectTools/AssetTools on this session. BN41 closed; binaries fresh. Content/BN/ and Content/Maps/ added because this packet is the one writing those .uasset/.umap (law 7: one owner per binary asset, locked here)."
+ "note": "AIBOT-ROADMAP-2 execution (founder: 'run the roadmap', 2 Sep). AIB22 Phase 11 EGRESS is the active packet; AIB23-27 audits merge into their tickets under the same claim. Writers: aib-builder (Plugins/AIBot), aib-editor (Content/AIBot, Tools/aib, Tools/blockout), lead (Config, docs, and the declared game-side dependencies in Source/BreachpointNext: seed handoff, crowd obstacle interface, BN legacy retirement). Content/Maps for the nav-link/isolation editor steps (one owner per umap, locked here)."
 }
