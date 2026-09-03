@@ -4,6 +4,7 @@
 #include "BNScoreRow.generated.h"
 
 class UImage;
+class UTexture2D;
 class UTextBlock;
 struct FBNScoreRowView;
 
@@ -18,6 +19,8 @@ class BREACHPOINTNEXT_API UBNScoreRow : public UCommonUserWidget
 
 public:
 	void SetRow(const FBNScoreRowView& View);
+	/** The row's emblem (cycled by the board from its ini list; no per-player art exists yet). */
+	void SetEmblem(const TSoftObjectPtr<UTexture2D>& InEmblem);
 	void ClearRow();
 
 protected:
@@ -42,11 +45,13 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
 	TObjectPtr<UTextBlock> TagText;
 
-	/** `43:39` — the local player's row is a FILL, not a tint. */
+	/** Founder's capture (2 Sep): KDA = (K + A/3) − D; assists unknown → K − D, said so in the ticket. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
-	TObjectPtr<UImage> HighlightFill;
+	TObjectPtr<UTextBlock> KdaText;
 
-	/** `43:57` — 4x22 accent standing 5px proud of the row's left edge. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
-	TObjectPtr<UImage> HighlightAccent;
+	TObjectPtr<UImage> Emblem;
+
+	// RowFill / SelfBar / SelfCaret / CellTint0..3 are reached BY NAME in SetRow (type-safe Cast),
+	// the lesson of the 2 Sep RefreshHeader crash.
 };

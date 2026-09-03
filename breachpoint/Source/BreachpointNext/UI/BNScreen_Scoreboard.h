@@ -4,7 +4,10 @@
 #include "UI/BNActivatableWidget.h"
 #include "BNScreen_Scoreboard.generated.h"
 
+class UBNPromptButton;
 class UBNScoreRow;
+class UBRButton;
+class UTexture2D;
 class UBNVM_Match;
 class UPanelWidget;
 class UTextBlock;
@@ -43,6 +46,11 @@ protected:
 
 	/** `43:8/10/12/14`: mode · map, and the result line "MATCH WON · SCORE: a-b · DURATION: m:ss". */
 	void RefreshHeader(const class UBNVM_Match* Match);
+
+	/** Close = leave the match (the pause screen's own route). The other prompts are the
+	 *  capture's legend, verbs only, until their screens exist. */
+	UFUNCTION()
+	void HandleClosePrompt();
 
 	/**
 	 * The WBP parents UBNScoreRow children under this. The placed children are the POOL'S
@@ -106,24 +114,49 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
 	TObjectPtr<UTextBlock> EnemyTeamNameText;
 
-	/** Chrome the layout script places with NO colour (ASSET-RULES §5); tinted here. */
+	/** The capture's tab bar. Only SCOREBOARD is a page today; the other two are placed, dim. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
-	TObjectPtr<class UImage> HeaderTick;
+	TObjectPtr<UBRButton> TabRecap;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
-	TObjectPtr<class UImage> ColumnTintA;
+	TObjectPtr<UBRButton> TabLineup;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
-	TObjectPtr<class UImage> ColumnTintB;
+	TObjectPtr<UBRButton> TabBoard;
+
+	/** Team card rank digits: 1 for the leading team, 2 for the other. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
+	TObjectPtr<UTextBlock> MyTeamRankText;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
-	TObjectPtr<class UImage> TeamDivider;
+	TObjectPtr<UTextBlock> EnemyTeamRankText;
+
+	/** Bottom legend, as buttons. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
+	TObjectPtr<UBNPromptButton> ClosePrompt;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
-	TObjectPtr<class UImage> MyTeamAccent;
+	TObjectPtr<UBNPromptButton> ViewPrompt;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
-	TObjectPtr<class UImage> EnemyTeamAccent;
+	TObjectPtr<UBNPromptButton> MatchmakingPrompt;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
+	TObjectPtr<UBNPromptButton> ReportPrompt;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "BN|HUD")
+	TObjectPtr<UBNPromptButton> CyclePrompt;
+
+	/** Row emblems, cycled by row index — no per-player art exists yet (SOFT, law 3). */
+	UPROPERTY(Config)
+	TArray<TSoftObjectPtr<UTexture2D>> RowEmblems;
+
+	/** The capture: a gap with a 1px divider between the two team blocks. */
+	UPROPERTY(Config)
+	float TeamGap = 9.0f;
+
+	// Chrome images (HeaderTick, ColumnTintA/B, TeamDivider, My/EnemyTeamAccent) are reached BY
+	// NAME in RefreshHeader — see the note there; no typed binds for them.
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UBNScoreRow>> Rows;

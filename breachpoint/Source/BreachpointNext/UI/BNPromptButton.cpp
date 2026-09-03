@@ -27,10 +27,14 @@ void UBNPromptButton::NativeOnInitialized()
 	// handle here would be machinery for a stall nobody can measure.
 	if (Glyph)
 	{
-		if (UTexture2D* Texture = GlyphTexture.LoadSynchronous())
+		UTexture2D* Texture = GlyphTexture.IsNull() ? nullptr : GlyphTexture.LoadSynchronous();
+		if (Texture)
 		{
 			Glyph->SetBrushFromTexture(Texture, /*bMatchSize*/ false);
 		}
+		// A text-only prompt (the scoreboard's Close / View / ...) has no disc: an Image with no
+		// brush would draw the engine's white square, so it collapses instead.
+		Glyph->SetVisibility(Texture ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 	}
 }
 

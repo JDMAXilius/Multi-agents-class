@@ -58,3 +58,43 @@ layout script lands the WBP when an editor is live. Nothing here touches `Source
   property twice ("Tried to create a property HeaderTick ... already exists"). A PIE match was
   run to reach the post-match board; at 2-2 with 2:55 left the founder asked for PIE to stop, so
   the post-match capture is still owed. Box 2 ticked; box 3 open.
+
+### 2026-09-02 — founder's 1:1 target changes from the Figma frame to the shipped scoreboard capture
+
+Founder (2 Sep): "Make our scoreboard look one to one like this" — a 2560x1440 capture of the
+shipped post-game SCOREBOARD tab (scale 2.0 → 1280x720 design). Where it differs from `43:2`,
+THIS wins. Measured in design px:
+- Tabs top-left: PLAYER RECAP 52.5,31 111.5x20 · TEAM LINEUP from 171 · SCOREBOARD 288.5..397.5
+  (selected = bright box, others dim box). No LB/RB glyphs on this screen.
+- Header, RIGHT-aligned to x923: line 1 y60..74 "SQUAD:KING OF THE HILL · RAT'S NEST" (map name
+  in cyan) + mode glyph at 937.5,66.5; line 2 y79..89 "MATCH LOST · SCORE: 2-1 · DURATION: 9:52".
+- Team cards left: card 1 48.5,246 212.5x35 (rank digit at x36, emblem box 48.5..88 darker,
+  name from x92, score block 209..261 lighter), card 2 at y291 (pitch 45), ▸ caret at x22 on the
+  local team.
+- Table 332.5..947.5 (615 wide), rows from y160, pitch ~17.2, row h ~17; red block then a 1px
+  divider at y307 then blue block; four value cells right-aligned to the table edge, 72.5 wide
+  each (KILLS · DEATHS · ASSISTS · KDA), headers at y145.5 centred on x697.5/770/842.5/916.
+  Row: emblem x340 (16), gamertag x355.5 with dim [tag]; italic numbers. Self row 350..367.5:
+  lighter fill, white 2px bar at x330, ▸ caret at x320. Top row framed (hovered).
+- Scrollbar x956.5 y160..454 with arrows; page dots y471 centred on 640 with ‹ ›.
+- Bottom band from y521.5: text prompts Close · View · Start Matchmaking · Report Player ·
+  Cycle Pages at y542; profile card 774..1000 (the existing `UBNProfileBar` band).
+Columns: the capture shows KDA, the Figma frame showed SCORE. KDA = (K + A/3) − D; assists are
+unknown here, so KDA prints (K − D) until assists replicate — stated on the row, not hidden.
+Deltas vs the pass just landed: whole-board re-layout (table/cards/header move), KDA column,
+tab bar, carets, rank digits, scrollbar, dots, prompt bar. bn51's PLAN is rewritten to these
+numbers; the Figma-only leaves (ColScore, ModeIcon at x33, HeaderTick) are retired.
+CRASH (PIE, 2 Sep 19:29): SIGSEGV in `RefreshHeader` → `SImage::SetColorAndOpacity` on a chrome
+image bind. Fixed by resolving those images by name with `Cast<UImage>`; typed binds removed.
+- 2026-09-02 (evening): re-laid out to the founder's capture and VERIFIED in PIE post-match
+  (two matches, watcher-captured — the board lives only for PostMatchDuration = 10 s, so a poll
+  slower than that misses it): right-aligned header (mode · cyan map + glyph; MATCH DRAWN ·
+  SCORE · DURATION), KILLS/DEATHS/ASSISTS/KDA cells with team-tinted plates, emblem + gamertag
+  rows, the self row lifted with bar + caret, the 9px gap + divider, team cards with rank digit /
+  emblem box / name / score block, page dots with arrows, bottom band with the five prompts and
+  the profile card. Corrections after the first capture: tabs widened to 130 (our tab type
+  overflows the capture's 111.5 — deviation), the shared scroll bar replaced by a 1px track (it
+  ignored its height and painted a full white column), Report/Cycle prompts +16. Second
+  capture caught the board mid-fade; geometry unchanged. Rung: PIE, single machine.
+- Crash fixed and re-verified: the SIGSEGV was `RefreshHeader` tinting through a mis-bound
+  `UImage` bind; every chrome tint is now a by-name `Cast<UImage>`.

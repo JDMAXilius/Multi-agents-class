@@ -1,4 +1,8 @@
 #include "UI/BNScreen_Scoreboard.h"
+#include "Match/BNPlayerController.h"
+#include "Components/VerticalBoxSlot.h"
+#include "UI/Components/BRButton.h"
+#include "UI/BNPromptButton.h"
 #include "GameFramework/GameState.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/Image.h"
@@ -37,6 +41,20 @@ void UBNScreen_Scoreboard::NativeOnInitialized()
 			}
 		}
 	}
+	// The capture's tab bar: labels from C++ (the WBP types no strings), the board tab selected,
+	// the two pages that do not exist yet placed and dim rather than invented.
+	if (TabRecap)  { TabRecap->SetLabelText(LOCTEXT("TabRecap", "PLAYER RECAP")); BNButtonEdges::Bind(TabRecap, BNButtonEdges::EChrome::Boxed); }
+	if (TabLineup) { TabLineup->SetLabelText(LOCTEXT("TabLineup", "TEAM LINEUP")); BNButtonEdges::Bind(TabLineup, BNButtonEdges::EChrome::Boxed); }
+	if (TabBoard)  { TabBoard->SetLabelText(LOCTEXT("TabBoard", "SCOREBOARD")); BNButtonEdges::Bind(TabBoard, BNButtonEdges::EChrome::Boxed); TabBoard->SetIsSelected(true); }
+	if (ClosePrompt)
+	{
+		ClosePrompt->SetVerbText(LOCTEXT("PromptClose", "Close"));
+		ClosePrompt->OnClicked().AddUObject(this, &UBNScreen_Scoreboard::HandleClosePrompt);
+	}
+	if (ViewPrompt)        { ViewPrompt->SetVerbText(LOCTEXT("PromptView", "View")); }
+	if (MatchmakingPrompt) { MatchmakingPrompt->SetVerbText(LOCTEXT("PromptMatchmaking", "Start Matchmaking")); }
+	if (ReportPrompt)      { ReportPrompt->SetVerbText(LOCTEXT("PromptReport", "Report Player")); }
+	if (CyclePrompt)       { CyclePrompt->SetVerbText(LOCTEXT("PromptCycle", "Cycle Pages")); }
 	if (Rows.Num() == 0)
 	{
 		UE_LOG(LogBN, Warning, TEXT("BNScoreboard: the WBP placed no UBNScoreRow rows in RowContainer — the board will render nothing. TASK-R7-WBP-HUD names the tree."));
@@ -156,7 +174,7 @@ void UBNScreen_Scoreboard::LayoutRowBlock(int32 VisibleRows)
 	// the founder signed off on that spacing — a board that resized itself for every 4-player
 	// match would redesign an approved screen. Past what the box holds the rows would simply
 	// render through the rule below, so from there the block earns its extra height.
-	const float Needed = VisibleRows * ScoreRowHeight;
+	const float Needed = VisibleRows * ScoreRowHeight + TeamGap;   // one gap between the blocks
 	const float Height = FMath::Max(Needed, AuthoredListHeight);
 	const FVector2D Size = ListSlot->GetSize();
 	if (!FMath::IsNearlyEqual(Size.Y, Height))
@@ -227,7 +245,29 @@ void UBNScreen_Scoreboard::Refresh()
 		}
 		if (RowIndex < Shown)
 		{
-			Row->SetRow((*Roster)[Order[RowIndex]]);
+			const FBNScoreRowView& View = (*Roster)[Order[RowIndex]];
+			Row->SetRow(View);
+			Row->SetEmblem(RowEmblems.Num() > 0 ? RowEmblems[RowIndex % RowEmblems.Num()] : TSoftObjectPtr<UTexture2D>());
+			// The capture separates the two team blocks with a gap and a 1px rule: the first
+			// enemy row carries the gap as top padding; the rule sits in the gap.
+			const bool bFirstEnemy = View.Relation == EBNUITeamRelation::Enemy
+				&& (RowIndex == 0 || (*Roster)[Order[RowIndex - 1]].Relation != EBNUITeamRelation::Enemy);
+			if (UVerticalBoxSlot* VSlot = Cast<UVerticalBoxSlot>(Row->Slot))
+			{
+				VSlot->SetPadding(FMargin(0.f, bFirstEnemy ? TeamGap : 0.f, 0.f, 0.f));
+			}
+			if (bFirstEnemy)
+			{
+				if (UImage* Divider = Cast<UImage>(GetWidgetFromName(TEXT("TeamDivider"))))
+				{
+					if (UCanvasPanelSlot* DSlot = Cast<UCanvasPanelSlot>(Divider->Slot))
+					{
+						UCanvasPanelSlot* ListSlot = RowContainer ? Cast<UCanvasPanelSlot>(RowContainer->Slot) : nullptr;
+						const float ListTop = ListSlot ? ListSlot->GetPosition().Y : 0.f;
+						DSlot->SetPosition(FVector2D(DSlot->GetPosition().X, ListTop + RowIndex * ScoreRowHeight + TeamGap * 0.5f));
+					}
+				}
+			}
 		}
 		else
 		{
@@ -341,6 +381,7 @@ void UBNScreen_Scoreboard::RefreshHeader(const UBNVM_Match* Match)
 	}
 	if (MapText)
 	{
+		MapText->SetColorAndOpacity(FSlateColor(BNUIColors::Shield));   // the capture's cyan map name
 		// The level's own name, minus the BR_ prefix, upper-cased: SPILLWAY. No lookup table
 		// to keep in step with the map list — the package name IS the data.
 		FString Level = UGameplayStatics::GetCurrentLevelName(this, /*bRemovePrefixString*/ true);
@@ -370,16 +411,40 @@ void UBNScreen_Scoreboard::RefreshHeader(const UBNVM_Match* Match)
 	}
 	const ESlateVisibility CardVis = bTeams ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed;
 	// Colour-free chrome from the layout script, tinted in the one place colours live.
-	if (HeaderTick)   { HeaderTick->SetColorAndOpacity(BNUIColors::Self); }
-	if (ColumnTintA)  { ColumnTintA->SetColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, 0.06f)); }
-	if (ColumnTintB)  { ColumnTintB->SetColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, 0.06f)); }
-	if (TeamDivider)
+	// RESOLVED BY NAME WITH A CAST, not through the typed binds: the 2 Sep PIE run crashed in
+	// SImage::SetColorAndOpacity from here (SIGSEGV, garbage `this`) — a bind that did not hold a
+	// UImage. Cast<> on a by-name lookup is type-safe where a mis-bound TObjectPtr is not.
+	auto Tint = [this](const TCHAR* Name, const FLinearColor& Colour, TOptional<ESlateVisibility> Vis)
 	{
-		TeamDivider->SetColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, 0.35f));
-		TeamDivider->SetVisibility(CardVis);
+		if (UImage* Img = Cast<UImage>(GetWidgetFromName(Name)))
+		{
+			Img->SetColorAndOpacity(Colour);
+			if (Vis.IsSet()) { Img->SetVisibility(Vis.GetValue()); }
+		}
+	};
+	Tint(TEXT("HeaderTick"), BNUIColors::Self, {});
+	Tint(TEXT("ColumnTintA"), FLinearColor(1.f, 1.f, 1.f, 0.06f), {});
+	Tint(TEXT("ColumnTintB"), FLinearColor(1.f, 1.f, 1.f, 0.06f), {});
+	Tint(TEXT("TeamDivider"), FLinearColor(1.f, 1.f, 1.f, 0.35f), CardVis);
+	Tint(TEXT("MyTeamAccent"), BNUIColors::Ally, CardVis);
+	Tint(TEXT("EnemyTeamAccent"), BNUIColors::Threat, CardVis);
+	// The capture's team cards: plate, darker emblem box, lighter score block, rank digit.
+	const FLinearColor A = BNUIColors::Ally, T = BNUIColors::Threat;
+	Tint(TEXT("MyTeamFill"),        FLinearColor(A.R, A.G, A.B, 0.70f), CardVis);
+	Tint(TEXT("MyTeamEmblemBox"),   FLinearColor(A.R * 0.6f, A.G * 0.6f, A.B * 0.6f, 0.85f), CardVis);
+	Tint(TEXT("MyTeamScoreBlock"),  FLinearColor(A.R, A.G, A.B, 0.90f), CardVis);
+	Tint(TEXT("EnemyTeamFill"),      FLinearColor(T.R, T.G, T.B, 0.70f), CardVis);
+	Tint(TEXT("EnemyTeamEmblemBox"), FLinearColor(T.R * 0.6f, T.G * 0.6f, T.B * 0.6f, 0.85f), CardVis);
+	Tint(TEXT("EnemyTeamScoreBlock"), FLinearColor(T.R, T.G, T.B, 0.90f), CardVis);
+	Tint(TEXT("MyTeamCaret"), BNUIColors::Self, CardVis);   // the caret marks OUR card
+	Tint(TEXT("BottomBand"), FLinearColor(0.f, 0.f, 0.f, 0.6f), {});
+	Tint(TEXT("ScrollTrack"), FLinearColor(1.f, 1.f, 1.f, 0.35f), {});   // the capture's thin track
+	if (MyTeamRankText || EnemyTeamRankText)
+	{
+		const bool bMineLeads = bTeams && Match->GetMyTeamScore() >= Match->GetEnemyTeamScore();
+		if (MyTeamRankText)    { MyTeamRankText->SetText(FText::AsNumber(bMineLeads ? 1 : 2));    MyTeamRankText->SetVisibility(CardVis); }
+		if (EnemyTeamRankText) { EnemyTeamRankText->SetText(FText::AsNumber(bMineLeads ? 2 : 1)); EnemyTeamRankText->SetVisibility(CardVis); }
 	}
-	if (MyTeamAccent)    { MyTeamAccent->SetColorAndOpacity(BNUIColors::Ally);   MyTeamAccent->SetVisibility(CardVis); }
-	if (EnemyTeamAccent) { EnemyTeamAccent->SetColorAndOpacity(BNUIColors::Threat); EnemyTeamAccent->SetVisibility(CardVis); }
 	if (MyTeamNameText)
 	{
 		MyTeamNameText->SetText(LOCTEXT("CardMyTeam", "YOUR TEAM"));
@@ -391,6 +456,14 @@ void UBNScreen_Scoreboard::RefreshHeader(const UBNVM_Match* Match)
 		EnemyTeamNameText->SetText(LOCTEXT("CardEnemyTeam", "ENEMY TEAM"));
 		EnemyTeamNameText->SetColorAndOpacity(FSlateColor(BNUIColors::Self));
 		EnemyTeamNameText->SetVisibility(CardVis);
+	}
+}
+
+void UBNScreen_Scoreboard::HandleClosePrompt()
+{
+	if (ABNPlayerController* PC = GetOwningPlayer<ABNPlayerController>())
+	{
+		PC->LeaveMatch();
 	}
 }
 
