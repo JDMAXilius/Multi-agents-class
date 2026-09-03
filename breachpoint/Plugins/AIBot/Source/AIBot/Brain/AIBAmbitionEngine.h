@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Brain/AIBAmbition.h"
+#include "Core/AIBTags.h"
 #include "Core/AIBTypes.h"
 #include "UObject/Object.h"
 #include "AIBAmbitionEngine.generated.h"
@@ -17,7 +18,8 @@ enum class EAIBSwitchReason : uint8
 	First,      // no incumbent yet — a fresh life's first pick
 	Merit,      // the challenger beat the incumbent through the hysteresis
 	Veto,       // the incumbent scored 0 (impossible, or suppressed) and released itself
-	Interrupt   // a hard interrupt voided a live commit
+	Interrupt,  // a hard interrupt voided a live commit
+	Fallback    // every want scored 0: the floor (FallbackTag) took it, never the incumbent (F5-1)
 };
 
 /**
@@ -164,6 +166,13 @@ public:
 	/** A clean spell this long forgets the strike count entirely. */
 	UPROPERTY()
 	float FailureForgetSeconds = 10.f;
+
+	/** AIB22 F5-1(b): the FLOOR an all-zero board falls to — suppression and all. Keeping
+	 *  the incumbent instead re-entered its branch every frame (a Mode enter+exit per
+	 *  frame, 86k `sweep over — 0.0s` lines per map) and re-fired the one stall clock as
+	 *  a per-frame `stall abandoned` storm. Unregistered = nothing elected (empty tag).
+	 *  The tactic engine sets Tactic_Push. */
+	FGameplayTag FallbackTag = AIBTags::Ambition_Roam;
 
 private:
 	bool IsHardInterrupt(const FAIBFacts& Facts) const;

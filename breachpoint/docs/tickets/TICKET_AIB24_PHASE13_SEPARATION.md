@@ -109,3 +109,32 @@ phase's baseline. Metrics for this phase land BEFORE its behaviour (§4 of the r
   member/accessor (Phase 14 owns the seed triple), `MatchSeed` shadow, Flank task on the
   controller-held locomotion signature, spec literal/lambda fixes, `FAIBOverlapEpisode` closing
   braces. Specs running; W-REVIEW x4 dispatched on the merged commits.
+- 2026-09-03 W-REVIEW (aib-critic on 19aa5be1/a2a825e2/75829200/312184b8): TWO HIGH, six MEDIUM.
+  H1 the yield arms one tick after any BestPoint reset (inside `StallSeconds < 1.5`), so any bot
+     travelling with a teammate inside 80 uu never sprints and presses the sprint verb ~8x/s.
+     RULING: the yield arms only when the stall clock has reached `WedgeStallSeconds` (a real
+     wedge), never on the first stalled tick; sprint is released only inside the window.
+  H2 the yield re-arms without limit and the early return skips the stall clock: two bots
+     wedged in a doorway need ~90 s of wall time to reach the 1.5 s abandon; `stuck_seconds`
+     reads ~0.03 s for a 90 s stand (the phase's gate improves by construction). RULING: ONE
+     yield per wedge (controller-held latch cleared by ≥50 uu progress); the stall clock KEEPS
+     RUNNING through the yield (only the sprint and the verdict are deferred, for the window);
+     the abandon fires on schedule.
+  M1 crowd simulation can be Disabled silently (late navmesh / no manager). RULING: one
+     `crowd simulation DISABLED` Log line at possession when `IsCrowdSimulationEnabled()` is
+     false. M2 `bResolveCollisions=True` is a no-op (base `ApplyCrowdAgentPosition` does
+     nothing) — RULING: removed from the ini; separation is the whole mechanism. M3 the
+     jump-area half of the AIB22 link hook fires ~15x less under crowd and `UAIBNavArea_Jump`
+     is unreferenced (the BN_Drop config uses NavArea_Default). RULING: BN_Drop's
+     `DownDirectionAreaClass` becomes `/Script/AIBot.AIBNavArea_Jump` (Config, lead) so the
+     link half carries the verb; the segment half is accepted as reduced. M4 `CountNearbyAllies`
+     is a per-think TActorIterator scan (adapter, Source/BreachpointNext) — risk register, cache
+     per frame later. M5 every bot on a hill orbits the same ring with no phase offset (the
+     phase's own overlap metric is dominated by hill co-orbiting). RULING: per-bot seeded ring
+     phase (same as AIB23 M5). M6 crowd-brake seconds land as `tactic=none` idle. RULING: an
+     idle sample with an active move request whose crowd velocity is zero is `tactic=Crowd`.
+  L1–L3 Novice hill = ~30 s statue (StrafeChance 0.05), inverted guard scan, head-snap tell —
+  risk register (tier tuning, AIB13). L4 the suite cannot tell (worldless). L5 crowd
+  registration silently no-ops without a manager — log it. PASS: containment, the AIB22 jump
+  hook survives the rebase (CrowdManager.cpp:862), fairness, server-only, players are real
+  obstacles never steered, no RVO, no Tick, match seed correct.

@@ -219,6 +219,7 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	if (!TacticEngine)
 	{
 		TacticEngine = NewObject<UAIBAmbitionEngine>(this);
+		TacticEngine->FallbackTag = AIBTags::Tactic_Push; // F5-1(b): the tactic board's floor
 	}
 	LastLoggedAmbition = FGameplayTag();
 	LastLoggedTactic = FGameplayTag();
