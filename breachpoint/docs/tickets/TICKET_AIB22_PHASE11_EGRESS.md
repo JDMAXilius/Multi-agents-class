@@ -188,3 +188,25 @@ Refined steps (replace §Steps):
   `StartUsingCustomLink(INavLinkCustomInterface*, const FVector&)` → press JUMP verb, and for
   jump AREAS reads the corridor (`NavMeshPath->PathCorridor[PathStartIndex]` + `GetLinkEndPoints`).
   Built once, survives the crowd rebase.
+### Step 2 — BASELINE (aib-verifier, 2 Sep, rung 3 headless `-game` fallback; JSON in Tools/aib/baselines/)
+- The audited `-server` form starts and ENDS the match at frame 0 with 0 bots possessed (match
+  over, tie, 1.2 s) — bot fill does not happen without a human in `-server`. Game-side defect,
+  lead packet later. Fallback `-game -windowed -nullrhi` = 7 bots + 1 idle human, 4/4 teams,
+  ~30 s wall per 300 s match under -BENCHMARK. 7/10 runs hit the 300 s limit; 3 ended on
+  ScoreLimit=7 (~110 s) and the parser stamps 300 s for them (kills/min understated ~2.6×).
+- `-FixedSeed -BENCHMARK -FPS=60` does NOT reproduce a match (first divergence at ambition line 5).
+  Phase 14's MatchSeed + BotIndex is required for any replay claim.
+- Spillway medians (per bot, 300 s): idle 72 s (worst 199), sweep 30 s (worst 76), stuck 194 s
+  (worst 250), max stall 9 s (worst 32), refusals 70/bot, egress 0, kills/min 1.0.
+- Arena01 medians: idle 199 s (worst 305 = the whole match), sweep 46 s (worst 135), stuck 198 s
+  (worst 302), max stall 8 s (worst 33), refusals median 0 but WORST 34,072 (Ctrl_4 log 4: goal
+  21 uu below, both ends on mesh, no path — 30 refusals per 0.1 s for 114 s) = the island case at
+  frame rate; kills/min 1.8. Fairness: 0 acquisitions under the 200 ms floor across 2,367 samples.
+- Gates (expected FAIL, they ARE the defect): idle HARD, sweep HARD, stuck PROV, stall PROV,
+  arena01 refusals/switch 9.88 vs 1.0. PASS: unserved, wiring, FFA grants, pile-up, thrash.
+- Parser gaps found on live logs (to fix before W-VERIFY): `sweep over` only accepts
+  state=Search|Roam (Mode sweeps uncounted → sweep UNDERCOUNT); `acquire` regex misses
+  "(N believed)." → acquisitions=0 and the F1 gate is silently absent; two F7-labelled refusal
+  lines (`POI path refused`, `could not path to the belief`) outside the f7 alternation;
+  `match_seconds` ignores the match-over time; `after -1.000s reaction` sentinel unparsed;
+  `has no POI provider for kind None` (688/log) is an unclassified wiring-shaped warning.

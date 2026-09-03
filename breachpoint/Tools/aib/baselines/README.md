@@ -25,3 +25,5 @@ is in `docs/tickets/TICKET_AIB22_PHASE11_EGRESS.md` (W-AUDIT member 3); logs go 
 Adds two gates: median per-bot `no_path_requests` <= 0.5 x baseline median, and lobby kills/min
 >= baseline median - (baseline max - min). The file must be this script's own `--json` output
 (it reads `lobby_spread`); a hand-edited baseline is a finding, never truth.
+
+- 2026-09-02 (AIB22 step 2): `aib22-spillway-2026-09-02.json`, `aib22-arena01-2026-09-02.json` — 5 x 2 maps, `-game -windowed` fallback (the `-server` form ends the match at frame 0), 7 bots + local player, ScoreLimit=7 ended 3 of 10 early. Rung 3.
