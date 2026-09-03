@@ -37,7 +37,7 @@ void FAIBSeparationSpec::Define()
 		TestTrue(TEXT("stepped"), FAIBMovementPolicy::ArcStep(From, Pivot, Forward, true, 220.f, 55.f, 280.f, 900.f, Step));
 		TestEqual(TEXT("range invariant"), (double)Range2D(Step.Destination, Pivot), 500.0, 0.5);
 		TestEqual(TEXT("arc = step / range"), Step.ArcRadians, 220.f / 500.f, 1e-4f);
-		TestEqual(TEXT("z is the pivot's"), Step.Destination.Z, Pivot.Z, 1e-3f);
+		TestEqual(TEXT("z is the pivot's"), (double)Step.Destination.Z, (double)Pivot.Z, 1e-3);
 		// The chord this step walks is StepUU long to first order.
 		TestEqual(TEXT("chord ~ step"), Range2D(Step.Destination, From), 2.f * 500.f * FMath::Sin(0.22f), 1.f);
 	});
