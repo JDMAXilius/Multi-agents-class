@@ -125,3 +125,9 @@ phase's baseline. Metrics for this phase land BEFORE its behaviour (§4 of the r
   `Content/__ExternalActors__/`). CONTRACT GAP (Tools/blockout): `land_spillway.py` clears by tag
   `SpillwayGenerated` and would delete the six Spillway volumes on a re-land — a re-land must be
   followed by `aib25_lane_volumes.py place`. The phase's route-diversity gate can now be measured.
+- 2026-09-03 review-fix packet (aib-builder on main, 21 files, commit "review fixes"): every HIGH
+  and MEDIUM ruling in this ticket's W-REVIEW entry is closed on disk (see the packet's per-ruling
+  lines in the commit); AIB26 H1 CHANGED THE TREE (tactic children complete to Engage, gun tasks
+  `bShouldStateChangeOnReselect=false`) — ST_AIBBot rebuild queued. New/changed shapes: `decide …
+  tcommit= treason=` (Verbose unless `-AIBReplay`), `target claim RELEASED … reason=switch`,
+  `idle over … tactic=Crowd`, `crowd simulation DISABLED — …`. Building (editor closed).

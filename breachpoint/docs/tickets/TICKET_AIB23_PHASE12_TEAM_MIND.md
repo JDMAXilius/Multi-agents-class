@@ -115,3 +115,9 @@ builds (shared files).
      third claim — risk register. Specs cannot see H1/M2–M4 — add the report-onto-eligible and
      target-switch cases. PASS: F1 floor, F5 relay laundering, claims as information, death
      release via injected liveness, heat team-only, server-only, no Tick.
+- 2026-09-03 review-fix packet (aib-builder on main, 21 files, commit "review fixes"): every HIGH
+  and MEDIUM ruling in this ticket's W-REVIEW entry is closed on disk (see the packet's per-ruling
+  lines in the commit); AIB26 H1 CHANGED THE TREE (tactic children complete to Engage, gun tasks
+  `bShouldStateChangeOnReselect=false`) — ST_AIBBot rebuild queued. New/changed shapes: `decide …
+  tcommit= treason=` (Verbose unless `-AIBReplay`), `target claim RELEASED … reason=switch`,
+  `idle over … tactic=Crowd`, `crowd simulation DISABLED — …`. Building (editor closed).

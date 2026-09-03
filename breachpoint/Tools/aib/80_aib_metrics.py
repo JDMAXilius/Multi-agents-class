@@ -132,6 +132,7 @@ RX = {
     "flank_start":    re.compile(_AIB + r"flank starts [—-] point " + _VEC + r" detour (?P<detour>" + _NUM + r")uu"),
     "flank_over":     re.compile(_AIB + r"flank over [—-] (?P<outcome>arrived|stalled) after (?P<seconds>" + _NUM + r")s"),
     "hold_over":      re.compile(_AIB + r"hold over [—-] (?P<seconds>" + _NUM + r")s at station"),
+    "crowd_disabled": re.compile(r"AIBot: (?P<bot>\S+) crowd simulation DISABLED"),
     "egress_failed":  re.compile(_AIB + r"island egress FAILED [—-] (?P<why>.+)$"),
     "island_egress": re.compile(_AIB + r"island egress [—-] via (?P<via>drop|link|jump|grapple) from " + _VEC + r" after (?P<seconds>" + _NUM + r")s stranded"),
     # AIB23 (Phase 12): the target-claim board and the team report, each on the t= prefix.
@@ -139,7 +140,7 @@ RX = {
     # the refused bot did instead; the report is the shared-belief broadcast.
     "target_grant":   re.compile(_AIB + r"target claim GRANTED on (?P<target>\S+) \((?P<k>\d+)/(?P<cap>\d+)\)"),
     "target_deny":    re.compile(_AIB + r"target claim DENIED on (?P<target>\S+) \((?P<k>\d+)/(?P<cap>\d+)\) -> (?P<then>\S+)"),
-    "target_release": re.compile(_AIB + r"target claim RELEASED on (?P<target>\S+) reason=(?P<reason>ttl|exit|death|unpossess)"),
+    "target_release": re.compile(_AIB + r"target claim RELEASED on (?P<target>\S+) reason=(?P<reason>ttl|exit|death|unpossess|switch)"),
     "team_report":    re.compile(_AIB + r"team report (?P<target>\S+) at " + _VEC + r" seen_t=(?P<seen_t>" + _NUM + r") from (?P<ally>\S+)"),
     # Kills/min inputs (LogBN, formats from BNGameMode.cpp): one line per credited kill,
     # and the travel-URL TimeLimit that the headless protocol always passes.

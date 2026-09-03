@@ -138,3 +138,9 @@ phase's baseline. Metrics for this phase land BEFORE its behaviour (§4 of the r
   registration silently no-ops without a manager — log it. PASS: containment, the AIB22 jump
   hook survives the rebase (CrowdManager.cpp:862), fairness, server-only, players are real
   obstacles never steered, no RVO, no Tick, match seed correct.
+- 2026-09-03 review-fix packet (aib-builder on main, 21 files, commit "review fixes"): every HIGH
+  and MEDIUM ruling in this ticket's W-REVIEW entry is closed on disk (see the packet's per-ruling
+  lines in the commit); AIB26 H1 CHANGED THE TREE (tactic children complete to Engage, gun tasks
+  `bShouldStateChangeOnReselect=false`) — ST_AIBBot rebuild queued. New/changed shapes: `decide …
+  tcommit= treason=` (Verbose unless `-AIBReplay`), `target claim RELEASED … reason=switch`,
+  `idle over … tactic=Crowd`, `crowd simulation DISABLED — …`. Building (editor closed).

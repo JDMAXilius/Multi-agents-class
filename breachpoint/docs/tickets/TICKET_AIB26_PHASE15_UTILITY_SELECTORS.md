@@ -117,3 +117,9 @@ DecisionRandom) · D aib-editor (decide regex + --replay-diff, AIB_Tactics.csv).
   Fix #5 interplay: the all-zero fallback must be a per-engine registered floor (Push for the
      tactic engine, Roam for the ambition engine), never a hardcoded ambition tag. PASS:
      containment, server-only, no Tick, FAIRPLAY F1/F2/F4/F5, header repair well-formed.
+- 2026-09-03 review-fix packet (aib-builder on main, 21 files, commit "review fixes"): every HIGH
+  and MEDIUM ruling in this ticket's W-REVIEW entry is closed on disk (see the packet's per-ruling
+  lines in the commit); AIB26 H1 CHANGED THE TREE (tactic children complete to Engage, gun tasks
+  `bShouldStateChangeOnReselect=false`) — ST_AIBBot rebuild queued. New/changed shapes: `decide …
+  tcommit= treason=` (Verbose unless `-AIBReplay`), `target claim RELEASED … reason=switch`,
+  `idle over … tactic=Crowd`, `crowd simulation DISABLED — …`. Building (editor closed).
