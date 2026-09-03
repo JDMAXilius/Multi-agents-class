@@ -323,3 +323,11 @@ Refined steps (replace §Steps):
      qualifies. L8 ramp heads PASS (merged cluster, no hit). L9 the IslandLatch re-entry case
      has the same defect as the sweep one — negative cases added to BOTH specs.
   PASS verified: server-only, fairness, controller-held latch survives completion transitions.
+- 2026-09-02 lane A fix packet (aib-builder) at rung "compiles" (BreachpointEditor PASS; specs
+  running): H1 refused path keeps the lead + arms `NoteCurrentAmbitionFailed` (Forget only on
+  swept/give-up, both suppressed); H2 `FAIBSweepBudget::ArriveAt(Post)` refills per post, Mode's
+  stand is `EAIBStillTactic::Hold` with an unbudgeted 40°/s scan; M3 since-enter 0.5 s AND Idle
+  0.3 s consecutive; M4 spec remodelled (owner vs recreated scratch, negative case, ArriveAt
+  cases — 8); M5 `EAIBStillTactic::Sweep` while spending, `sweep over` reports stationary
+  seconds; L6 denial steers only when standing and spends. Tree unchanged. Builder flagged:
+  lane B's Egress lip-walk has the same M3 ratchet shape (:2226) — folded into the lane B fix.

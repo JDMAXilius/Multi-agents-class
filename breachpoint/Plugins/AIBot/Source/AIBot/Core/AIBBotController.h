@@ -36,6 +36,10 @@ enum class EAIBStillTactic : uint8
 	Hold       = 1 << 0,
 	Reload     = 1 << 1,
 	StrafeHold = 1 << 2,
+	/** AIB22 M5: the budgeted stationary sweep at a search post. Up only while the
+	 *  budget is being SPENT, so the idle gate excludes exactly the seconds the
+	 *  `sweep over` line reports. */
+	Sweep      = 1 << 3,
 };
 
 /** AIB22 H1/F9 — the STATIONARY sweep's budget. Held by the controller, never by the
@@ -47,10 +51,29 @@ enum class EAIBStillTactic : uint8
 struct AIBOT_API FAIBSweepBudget
 {
 	float SpentSeconds = 0.f;
+	/** AIB22 W-REVIEW H2: the budget is per POST, not per still spell. The post last
+	 *  swept (valid while bHasPost); ArriveAt a post farther than the mover's acceptance
+	 *  radius from it refills, the same post does not — so a Search that begins inside
+	 *  acceptance of a NEW lead gets its look, and re-entering on the old one does not. */
+	FVector LastSweptPost = FVector::ZeroVector;
+	bool bHasPost = false;
 
 	bool HasBudget(float MaxSeconds) const { return SpentSeconds < MaxSeconds; }
 	void Spend(float DeltaTime) { SpentSeconds += FMath::Max(DeltaTime, 0.f); }
+	/** The motion refill: the body moved, the next stop is a new look. */
 	void Reset() { SpentSeconds = 0.f; }
+	/** The post refill. True when Post is a new post (and the budget refilled). */
+	bool ArriveAt(const FVector& Post, float RadiusUU)
+	{
+		if (bHasPost && FVector::DistSquared(Post, LastSweptPost) <= FMath::Square(RadiusUU))
+		{
+			return false;
+		}
+		LastSweptPost = Post;
+		bHasPost = true;
+		SpentSeconds = 0.f;
+		return true;
+	}
 };
 
 /** AIB22 5(B) — THE ISLAND FACT, as a latch. Roam's wander draws a NAVIGABLE point and
@@ -189,7 +212,7 @@ public:
 
 	/** THE YAW CLAIM (founder, 1 Sep: bots "walking and running in reverse").
 	 *
-	 *  ABNCharacter-shaped hosts are FPS pawns — bUseControllerRotationYaw true,
+	 *  The adapter-hosted pawns are FPS pawns — bUseControllerRotationYaw true,
 	 *  bOrientRotationToMovement false — so the BODY's facing is the CONTROL rotation and
 	 *  nothing else. Every task that aims writes it; the movers never did, so a bot
 	 *  crossing the map kept facing wherever it last looked and travelled sideways or
@@ -214,7 +237,7 @@ public:
 	FRandomStream& GetPolicyRandom() { return PolicyRandom; }
 
 	/** AIB22 H1/F9 — see FAIBSweepBudget. SweepLook spends it only while the body is
-	 *  still; Think resets it the moment the body moves. */
+	 *  still; Think resets it the moment the body moves, and a NEW post refills it. */
 	FAIBSweepBudget& GetSweepBudget() { return SweepBudget; }
 
 	/** AIB22 5(B) — see FAIBIslandLatch. Wander notes every draw; the Egress gate reads
@@ -229,10 +252,11 @@ public:
 	void SetTravelPanDegrees(float Degrees) { TravelPanDegrees = Degrees; }
 	float GetTravelPanDegrees() const { return TravelPanDegrees; }
 
-	/** AIB22 H1 — END THE WANT. A search that cannot reach its post, or has swept it
-	 *  and found nothing, forgets the lead: MemoryFreshness reads 0 on the next Think,
-	 *  Search vetoes its own commit, and Roam wins — instead of Search re-entering with
-	 *  the same fresh memory every failure delay. Logs the abandonment once. */
+	/** AIB22 H1 — END THE WANT. A search that has swept its post and found nothing, or
+	 *  gave up short of it after walking, forgets the lead: MemoryFreshness reads 0 on the
+	 *  next Think, Search vetoes its own commit, and Roam wins. NOT for a refused path
+	 *  (W-REVIEW H1): a refusal is the off-mesh-self case and says nothing about the
+	 *  lead — that arms NoteCurrentAmbitionFailed instead. Logs the abandonment once. */
 	void ForgetSearchMemory(const TCHAR* Why, float AfterSeconds);
 
 	/** AIB22: see EAIBStillTactic. Idempotent per flag. */
@@ -241,6 +265,7 @@ public:
 		const uint8 Bit = static_cast<uint8>(Tactic);
 		StillTactics = static_cast<uint8>(bActive ? (StillTactics | Bit) : (StillTactics & ~Bit));
 	}
+	bool HasStillTactic(EAIBStillTactic Tactic) const { return (StillTactics & static_cast<uint8>(Tactic)) != 0; }
 
 	/** The executor's live leaf state name (NAME_None when nothing runs). */
 	FName GetActiveStateName() const;

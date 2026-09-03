@@ -125,6 +125,12 @@ namespace AIB
 	 *  starts moving, rather than setting off sideways and correcting. */
 	inline constexpr float TravelFacingMinSpeedUU = 60.f;
 
+	/** AIB22 W-REVIEW H2: the scan a bot holding an objective makes — the founder's
+	 *  named-hold exception, UNBUDGETED because a hill is held by standing on it, and
+	 *  slow because a guard looks about, it does not spin. Search's post sweep is the
+	 *  budgeted one (SweepDegreesPerSecond, SweepMaxSeconds). */
+	inline constexpr float HoldScanDegreesPerSecond = 40.f;
+
 	/** A dry bot reads a melee fight from this much further out (founder, 1 Sep). A
 	 *  multiplier rather than an absolute, so it rides the competence ladder instead of
 	 *  flattening it — an Expert with an empty hand still reads the fight before a

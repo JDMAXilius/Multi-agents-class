@@ -248,19 +248,23 @@ FString UAIBTreeAuthoring::BuildBotStateTree()
 	// bounded look at the post — reads as hunting. AIB22 (law F9) semantics, same node set:
 	// SweepLook pans ±SweepArcDegrees around the TRAVEL heading while walking and never
 	// claims the yaw on the move; the full-circle sweep runs only once the mover is
-	// standing at the post and only for the controller-held SweepMaxSeconds, after which
-	// the mover FORGETS the lead and fails — as it does on a refused path or a give-up —
-	// so Root cannot re-select Search on the same memory. The branch also ends when the
-	// memory stales, someone appears (mover succeeds), or the want moves on.
+	// standing at the post and only for the controller-held SweepMaxSeconds (refilled per
+	// NEW post), after which the mover FORGETS the lead and fails — as it does on a
+	// give-up after walking; a REFUSED path keeps the lead (it says nothing about it)
+	// and rests the want through NoteCurrentAmbitionFailed instead (W-REVIEW H1) — so
+	// Root cannot re-select Search on the same memory at the failure delay. The branch
+	// also ends when the memory stales, someone appears (mover succeeds), or the want
+	// moves on.
 	UStateTreeState& Search = Root.AddChildState(TEXT("Search"));
 	Search.AddEnterCondition<FAIBGateSearchCondition>();
 	Search.AddTask<FAIBAmbitionSentinelTask>();
 	Search.AddTask<FAIBMoveToLastKnownTask>();
 	Search.AddTask<FAIBSweepLookTask>();
 	AddCompletionTransition(Search, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
-	// 0.1s, down from 0.5s (AIB22): every Search failure now forgets the lead first, so
-	// the want it guarded moves on within ONE Think (0.1s) — the delay only has to cover
-	// that, and each extra tenth was dead standing (idle_seconds) after a finished search.
+	// 0.1s, down from 0.5s (AIB22): every Search failure now either forgets the lead or
+	// suppresses the want first, so the want it guarded moves on within ONE Think (0.1s)
+	// — the delay only has to cover that, and each extra tenth was dead standing
+	// (idle_seconds) after a finished search.
 	AddCompletionTransition(Search, Root, EStateTreeTransitionTrigger::OnStateFailed, 0.1f);
 
 	// ---- Seek: I have somewhere to be — go there ---------------------------------------

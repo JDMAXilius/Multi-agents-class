@@ -460,15 +460,20 @@ struct FAIBMoveToLastKnownTaskInstanceData
 
 	float ClosestSoFarUU = 0.f;
 	float SecondsWithoutProgress = 0.f;
+	/** AIB22 W-REVIEW M3: the short-path give-up needs BOTH a since-enter grace and a
+	 *  consecutive Idle spell — a ratchet alone fired on one Idle frame after any detour. */
+	float SecondsSinceEnter = 0.f;
+	float MoverIdleSeconds = 0.f;
 	FAIBLocomotionState Locomotion;
 };
 
 /** Walks to the memory's fresh last-known spot while SweepLook pans beside it, then
  *  stands at the post only as long as the controller's sweep budget allows. SUCCEEDS on
  *  spotting someone (arbitration is already swinging). FAILS when the memory has gone
- *  stale, AND — AIB22 H1 — every other failure ENDS THE WANT first: a refused path, a
- *  give-up short of the post, or a post swept with nothing found all call
- *  ForgetSearchMemory, so Root cannot re-select Search on the same fresh lead. Never
+ *  stale; on a REFUSED path it arms the want's failure suppression and keeps the lead
+ *  (W-REVIEW H1: a refusal is about the mesh under me, not the lead); a give-up after
+ *  walking, or a post swept with nothing found, ENDS THE WANT — ForgetSearchMemory plus
+ *  the same suppression — so Root cannot re-select Search on the same lead. Never
  *  completes just for arriving: that would re-select the branch per frame. */
 USTRUCT(meta = (DisplayName = "AIB Move To Last Known", Category = "AIBot"))
 struct FAIBMoveToLastKnownTask : public FStateTreeTaskCommonBase
@@ -507,15 +512,20 @@ struct FAIBSweepLookTaskInstanceData
 	 *  re-entry is harmless, unlike the budget, which lives on the controller. */
 	float PanPhaseDegrees = 0.f;
 	bool bBudgetSpentLogged = false;
+	/** AIB22 W-REVIEW M5: budget spent during THIS run — what `sweep over` reports. */
+	float StationarySeconds = 0.f;
 };
 
 /** The searching look, under law F9 (AIB22 H2). WALKING: no yaw claim at all — the
  *  mover faces its travel and this task bends that heading by a bounded pan
  *  (±SweepArcDegrees, tier data) at SweepDegreesPerSecond, handed over as an offset.
- *  STANDING with the mover arrived: the full-circle sweep, claiming the yaw, but only
- *  while the controller's SweepMaxSeconds budget lasts; past it the task is a no-op that
- *  releases the yaw and stays Running — NEVER Failed, since Any-completion would take
- *  the whole state down with it. Never completes on its own. */
+ *  STANDING with the mover arrived: the full-circle sweep, claiming the yaw and naming
+ *  the stillness (Sweep), but only while the controller's SweepMaxSeconds budget lasts;
+ *  past it the task is a no-op that releases the yaw and stays Running — NEVER Failed,
+ *  since Any-completion would take the whole state down with it. STANDING under a
+ *  named Hold (Mode on its objective): the unbudgeted slow scan instead — a guard looks
+ *  about (W-REVIEW H2). Area denial steers only while standing (L6). Never completes
+ *  on its own. */
 USTRUCT(meta = (DisplayName = "AIB Sweep Look", Category = "AIBot"))
 struct FAIBSweepLookTask : public FStateTreeTaskCommonBase
 {

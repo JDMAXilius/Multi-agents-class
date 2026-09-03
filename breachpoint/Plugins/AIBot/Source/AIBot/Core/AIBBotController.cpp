@@ -489,6 +489,7 @@ void AAIBBotController::CloseIdleEpisode(double NowSeconds)
 	if (IdleTacticsSeen & static_cast<uint8>(EAIBStillTactic::Reload))          { Tactic = TEXT("Reload"); }
 	else if (IdleTacticsSeen & static_cast<uint8>(EAIBStillTactic::StrafeHold)) { Tactic = TEXT("StrafeHold"); }
 	else if (IdleTacticsSeen & static_cast<uint8>(EAIBStillTactic::Hold))       { Tactic = TEXT("Hold"); }
+	else if (IdleTacticsSeen & static_cast<uint8>(EAIBStillTactic::Sweep))      { Tactic = TEXT("Sweep"); }
 	const FName State = GetActiveStateName();
 	UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f idle over — %.1fs state=%s tactic=%s"),
 		*GetName(), NowSeconds, NowSeconds - IdleSinceSeconds,
@@ -774,7 +775,8 @@ void AAIBBotController::Think()
 			}
 		}
 		// The sweep budget bounds a still SPELL (AIB22 H1): the same sample that says the
-		// body moved is what earns the next stop its own look.
+		// body moved is what earns the next stop its own look. The other refill — a NEW
+		// post — is the mover's (FAIBSweepBudget::ArriveAt).
 		if (!bStill)
 		{
 			SweepBudget.Reset();
