@@ -75,3 +75,16 @@ phase's baseline. Metrics for this phase land BEFORE its behaviour (§4 of the r
   :176-189) ∥ C heat (Team/AIBRouteHeat new, Coordinator registration line) ∥ D aib-editor
   (gen/land_spillway, AIB_Tactics.csv, AIB_Lanes.csv, metrics regexes). Seed handoff in
   BNGameMode = lead packet.
+- 2026-09-03 lane A (aib-builder, worktree bbbfafbb, merged into main f57d5700 with the
+  AIBBotController.cpp conflicts vs AIB22 fix #4 resolved by the lead): `UAIBQueryFilter` as the
+  controller's `DefaultNavigationFilterClass` (per-bot lane costs via `GetRouteLaneCost`, min lane
+  = 1 so the heuristic stays admissible); `UAIBNavArea_Lane1..6` + `AAIBLaneVolume` (plugin-side
+  nav modifier, DefaultCost 1 for non-bots); `-AIBSeed=N` parsed by `UAIBBotManager`, `SetMatchSeed`
+  host hook, `AssignBotIndex`, `LifeSeed = Hash(MatchSeed, BotIndex, LifeIndex)` now feeds
+  Sensorium/Confidence/Policy; `FAIBRouteBias::Draw` once per life, row
+  `RouteLaneWeightSpread` 0.3. Lines: `AIBot: match seed N (source=cmdline|host|clock).`,
+  `route bias — bot= life= seed= lanes=1:1.00,...`, `route — lanes=2>4>1 len= direct= goal=`.
+  Spec `AIBot.Sim.RouteBias` 8 cases. Tree unchanged. NOT compiled yet (building with the rest).
+  Contract gaps: BNGameMode -> `SetMatchSeed` (lead, Source/BreachpointNext); aib-editor
+  `land_spillway.py` lane volumes; parser regexes (lead). Lanes B/C/D (heat/flank/tactics)
+  are the next packets.

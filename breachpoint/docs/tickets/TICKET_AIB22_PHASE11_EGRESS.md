@@ -493,3 +493,5 @@ Refined steps (replace §Steps):
   both maps: `stall abandoned` ≈2,000 lines per bot per match (≈7/s) and the parser's stuck
   sum explodes (tens of thousands of seconds) — R3's storey abandon re-fires on the same goal.
   Verifier breakdown dispatched (v4). All HARD gates still FAIL; kills/min PASS both maps.
+- 2026-09-03 fix #4 specs (lead): AIBot 189 success / 0 fail (Tools/Logs/specs-20260903-062523.log),
+  BreachpointNext 45 / 0 (specs-20260903-062629.log).
