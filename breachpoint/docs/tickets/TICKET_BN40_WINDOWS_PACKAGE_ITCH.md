@@ -130,3 +130,7 @@ claim.
 layout is generated and audited (77/77) but was never held — the smoke runs registered
 KBM only. Keyboard and mouse are proven; the pad is not.
 
+**Gamepad:** the layout ships generated and audited but was never held — see
+`TICKET_BN46_GAMEPAD_VERIFY.md`. Until that ticket closes, the honest line for the
+submission stays "keyboard and mouse proven; gamepad supported but untested".
+
