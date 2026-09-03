@@ -3,16 +3,51 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "AIBotAdapter/BNAIBModeTags.h"
+#include "BreachpointNext.h"
 #include "Core/BNGameplayTags.h"
 #include "EngineUtils.h"
 #include "GameFramework/Pawn.h"
 #include "Match/BNHillPoint.h"
 #include "Match/BNPlayerState.h"
 #include "Match/BNTeams.h"
+#include "NavigationSystem.h"
 
 bool UBNAIBWorldQuery::DoesSupportWorldType(const EWorldType::Type WorldType) const
 {
 	return WorldType == EWorldType::Game || WorldType == EWorldType::PIE;
+}
+
+void UBNAIBWorldQuery::OnWorldBeginPlay(UWorld& InWorld)
+{
+	Super::OnWorldBeginPlay(InWorld);
+
+	const FName MapName(*UWorld::RemovePIEPrefix(InWorld.GetMapName()));
+	const int32 Loaded = GrappleRoutes.Num();
+	GrappleRoutes.RemoveAll([MapName](const FBNGrappleRoute& Route)
+	{
+		return !Route.Map.IsNone() && Route.Map != MapName;
+	});
+
+	UNavigationSystemV1* Nav = FNavigationSystem::GetCurrent<UNavigationSystemV1>(&InWorld);
+	const FVector Extent(100.f, 100.f, 300.f);
+	GrappleRoutes.RemoveAll([&](FBNGrappleRoute& Route)
+	{
+		FNavLocation Approach, Anchor;
+		const bool bApproach = Nav && Nav->ProjectPointToNavigation(Route.Approach, Approach, Extent);
+		const bool bAnchor = Nav && Nav->ProjectPointToNavigation(Route.Anchor, Anchor, Extent);
+		if (!bApproach || !bAnchor)
+		{
+			UE_LOG(LogBN, Warning, TEXT("BNAIBWorldQuery: dropped grapple route %s on %s (%s does not project to navmesh)"),
+				*Route.Id.ToString(), *MapName.ToString(), !bApproach ? TEXT("approach") : TEXT("anchor"));
+			return true;
+		}
+		Route.Approach = Approach.Location;
+		Route.Anchor = Anchor.Location;
+		return false;
+	});
+
+	UE_LOG(LogBN, Log, TEXT("BNAIBWorldQuery: %d grapple routes for %s (%d filtered out)"),
+		GrappleRoutes.Num(), *MapName.ToString(), Loaded - GrappleRoutes.Num());
 }
 
 void UBNAIBWorldQuery::RegisterHill(ABNHillPoint* Hill)
