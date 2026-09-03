@@ -1,6 +1,6 @@
 # TICKET AIB28 — Arena01 connectivity: spawn pads, catwalk stairs, gantry/core tops
 
-> STATUS: in-progress — lead 2026-09-03 (01edba3b): step 1 (arena-architect analysis) dispatched. Was: open — cut by lead (AIB22 W-VERIFY v3) 2026-09-03. Needs the editor (census +
+> STATUS: open — stairs CONNECTED (19 uu default nav cells, both maps saved), crate/gantry PlayerStarts moved, lane volumes placed; still open: no generated BN_Drop exists on Arena01 (gantry/core islands) and the link-generation question named in the Log. Earlier: in-progress — lead 2026-09-03 (01edba3b): step 1 (arena-architect analysis) dispatched. Was: open — cut by lead (AIB22 W-VERIFY v3) 2026-09-03. Needs the editor (census +
 > regen); gated by nothing, but AIB22's Arena01 gates cannot pass until this lands.
 
 The AIB22 census and verification matches measured three MAP defects on `BR_Arena01` that no

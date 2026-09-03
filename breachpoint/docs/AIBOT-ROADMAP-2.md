@@ -176,3 +176,26 @@ WHILE moving. Standing to "look for a target" is exactly the defect and is banne
 what the phase could add beyond its fix (abilities/actions used tactically, environment awareness
 — ledges, sightlines, pickups — and teammate intent), and the aib-critic scores those additions
 for fairness before they are built.
+
+## Status as of 3 Sep 2026 (lead, session 014esNfHwPnkiAJkRKBMwR7b)
+
+Every phase ran W-AUDIT → W-BUILD → W-REVIEW → W-VERIFY on one merged tree (main at fadfd8b8+).
+Headless acceptance = `Tools/aib/aib22_verify.sh` (5 × 300 s matches per map) judged by
+`Tools/aib/80_aib_metrics.py` against the 2 Sep v2 baselines; editor acceptance = a real PIE
+session with placed bots, samples and captures (`docs/tickets/evidence/aib22-2026-09-03/`).
+
+| Phase | Ticket | State | v6 evidence (per bot per 300 s, medians) |
+|---|---|---|---|
+| 11 Egress | AIB22 | OPEN — idle HARD bar (0) not met | idle tactic=none 25.6 s Spillway / 44.9 s Arena01 (baseline 72 / 199; v3 56 / 276); refusals 0; longest stall 3–4 s (baseline 8–9); kills/min 11 / 14 (baseline 1.0 / 1.8); gantry: 6 of 7 placed bots off within 36 s, one interior-lip residual |
+| 12 Team mind | AIB23 | DONE (archived) | claim cap 2 never breached instant-level in 20/20 matches; corpse re-grants 40 % → 2 %; team reports live |
+| 13 Separation | AIB24 | DONE in the absolute sense | separation on for 100 % of lives (fix #8); overlap 12.7 / 3.1 s, yields 3.9 / 1.5 per bot; needs a v3 baseline for the "vs baseline" clause |
+| 14 Route variety | AIB25 | DONE (archived) | lane volumes on both maps; 124 / 226 route lines per bot with real lane ids; `lanes=none` 18 % / 0 % |
+| 15 Utility selectors | AIB26 | OPEN — flanks never complete | tactic layer runs (Push first, 123 flank starts) but the ambition-layer clear bypasses the hold; empty-hand melee floor needs a held weapon (game-side swap defect) |
+| 16 Hygiene | AIB27 | DONE (archived) | BN bot system retired (code, assets, structs, prose); four founder decisions in HANDOFF.md |
+| map | AIB28 | OPEN — gantry drop links | Arena01 stairs fixed (19 uu nav cells), crate/gantry spawns moved; no generated BN_Drop exists on the map |
+
+Named follow-ups: (a) walk toward a fresh draw during the 3 s give-up instead of standing;
+(b) Retreat's DEFEND hold as a named still tactic or strafe-hold; (c) interior-lip blacklist;
+(d) the flank clear reads `bFlankHolding`; (e) game side: the empty-hand weapon swap never lands
+(bn-builder, high) and the Rally urgency shape inside RallyNearUU; (f) `ambition_switches`
+~42–45 per bot-min (veto-dominated); (g) the server target cannot build on the launcher engine.

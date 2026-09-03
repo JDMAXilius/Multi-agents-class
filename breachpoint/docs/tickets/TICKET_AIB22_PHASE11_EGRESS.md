@@ -1,6 +1,6 @@
 # TICKET — AIB22: Phase 11 EGRESS — no bot stands on a platform sweeping; roam the whole level
 
-> STATUS: in-progress — mac terminal (lead, session 014esNfHwPnkiAJkRKBMwR7b) 2 Sep 2026 (061f8f82). Founder rulings and law F9 in `docs/AIBOT-ROADMAP-2.md` §5. Waves per `docs/AIBOT-WAVES.md`.
+> STATUS: open, VERIFIED 2026-09-03 — the idle HARD bar (0) is not met: idle tactic=none 25.6 s Spillway / 44.9 s Arena01 per bot per 300 s (baseline 72 / 199), refusals 0, stalls ≤ 4 s, kills/min 11 / 14 (baseline 1 / 1.8); three named follow-ups in the Log close-out. Earlier: in-progress — mac terminal (lead, session 014esNfHwPnkiAJkRKBMwR7b) 2 Sep 2026 (061f8f82). Founder rulings and law F9 in `docs/AIBOT-ROADMAP-2.md` §5. Waves per `docs/AIBOT-WAVES.md`.
 > and law F9 (motion is the default) in `docs/AIBOT-ROADMAP-2.md` §5. Waves per `docs/AIBOT-WAVES.md`.
 
 Founder: a bot on a raised platform with no path off it turns in place "looking for a target".
@@ -666,3 +666,32 @@ Refined steps (replace §Steps):
   the session a fresh match ended in 23 s on the 7-kill limit (recap screen captured).
   RESIDUAL for a follow-up: a lip whose step-off never leaves the ground must be blacklisted
   for the cooldown (the fan re-picks it); the founder's 5 s bar for box 4 stays FAIL.
+- 2026-09-03 W-VERIFY v6 breakdown (aib-verifier, final build): idle tactic=none 25.6 / 44.9 s
+  per bot-match, 43 / 34 % of it in sub-1 s transition spells, 0 stalls > 4 s (the 8 s give-up
+  window is gone; v5 max 33 s). Causes: (1) the 3 s give-up STAND at a Wander goal — 152 / 319 s
+  (the bot stands still for the whole window before abandoning; `AIBStateTreeTasks.cpp:608`);
+  (2) untagged Retreat stands (`broke contact — holding to DEFEND`, `strafe held — outside the
+  engaged radius`) 66 / 97 s; (3) give-up stalls in Search/Mode/Retreat 78 / 210 s. Tactical idle
+  41 / 46 s is honest (Sweep ≤ 2.1–2.5 s, StrafeHold ≤ 3.1, Hold ≤ 4.1, all row-bounded).
+  Fix #8 verified: crowd re-enabled 230/230 · 267/267 lives (F8-1); corpse re-grants 40 % -> 2 %
+  (F8-2); abandons 56 / 39 % at exactly 3.0 s (F8-3); F8-4 NOT effective: `ammo=0.00` lines never
+  want Engage (0 of 109,289) because `bMeleeAvailable` needs a HELD WEAPON
+  (`BNAIBAvatarAdapter.cpp:370-376`) and the empty-hand case has none — `SwapNext` never lands a
+  weapon (EMPTY-HANDED cycling 1/5..3/5): a GAME-SIDE equipment defect, filed as high for
+  bn-builder; F8-5 NOT effective: `ClearFlankLatch("the fight ended")` at
+  `AIBBotController.cpp:1159` fires whenever the AMBITION leaves Engage (Retreat/Roam veto) and
+  never reads `bFlankHolding` — flank_count 2 / 0 of 123 starts. Switches 42 / 45 per bot-min
+  (baseline 16 / 28), veto 60 %: the Roam<->Rally triplet 2.1 / 2.6 per bot-min = Rally urgency 0
+  inside `RallyNearUU` (`BNGameMode.cpp:1340`) -> veto -> Roam -> drift -> Rally (game-side
+  objective shape). Per-map routes confirmed (`0 grapple routes for BR_Spillway (8 filtered
+  out)`); Arena's projected approach points still 15 % of stall seconds. Stuck = 65 stalls x
+  ~1.3 s per bot-match; the 10 s bar needs < 8 stalls, not a shorter cap. Pile-up PASS instant-
+  level in 10/10. Phase 13 overlap 12.7 / 3.1 s, yields 3.9 / 1.5 per bot; Phase 14 `lanes=none`
+  18 % Spillway / 0 % Arena01. Baselines carry no overlap/route/flank keys — "vs baseline" for
+  Phases 13–15 is absolute-only until a v3 baseline is cut.
+  CLOSE-OUT (lead): boxes 1, 2 ticked; box 3 idle/stuck/fraction FAIL, single sweep + kills
+  PASS; box 4 FAIL at 5 s (6 of 7 within 36 s); box 5 no open high in the plugin. Phase 11 stays
+  OPEN on the idle HARD bar with three named follow-ups: (a) walk toward a fresh draw during the
+  3 s give-up instead of standing (or abandon at 1 s when no progress at all); (b) Retreat's
+  DEFEND hold = a named still tactic or a strafe-hold; (c) the interior-lip blacklist. Game side:
+  the empty-hand weapon swap (bn-builder, high) and the Rally urgency shape at RallyNearUU.

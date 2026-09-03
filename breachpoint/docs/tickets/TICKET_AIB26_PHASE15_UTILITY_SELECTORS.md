@@ -1,6 +1,6 @@
 # TICKET — AIB26: Phase 15 UTILITY SELECTORS
 
-> STATUS: in-progress — lead (Mac, session 014esNfHwPnkiAJkRKBMwR7b) 2026-09-03 (8e324dce), founder ruling: all phases run in parallel with Phase 11, W-BUILD in isolated worktrees, merged serially behind AIB22 fix #4. Was: open — cut 2 Sep 2026 by the lead (session 014esNfHwPnkiAJkRKBMwR7b) from
+> STATUS: open, VERIFIED 2026-09-03 — the tactic layer runs on the final build but flanks never complete (`flank over` 2 of 123 starts): the ambition-layer flank clear bypasses the hold, and the empty-hand melee floor needs a held weapon (game-side swap defect). Two named follow-ups in the Log. Earlier: in-progress — lead (Mac, session 014esNfHwPnkiAJkRKBMwR7b) 2026-09-03 (8e324dce), founder ruling: all phases run in parallel with Phase 11, W-BUILD in isolated worktrees, merged serially behind AIB22 fix #4. Was: open — cut 2 Sep 2026 by the lead (session 014esNfHwPnkiAJkRKBMwR7b) from
 > `docs/AIBOT-ROADMAP-2.md` (approved; rulings in §5; law F9 motion is the default). Claimed
 > when its W-AUDIT merge lands here.
 
@@ -130,3 +130,16 @@ DecisionRandom) · D aib-editor (decide regex + --replay-diff, AIB_Tactics.csv).
   bot (21k lines in a 300 s match, Verbose). Switch reasons: veto dominates (Roam<->Rally on a
   stalled Rally goal — the adapter's per-map grapple routes remove the stall). Engage vanished
   for 270 s in the one long match (want 0 with acquisitions) — F8-4.
+- 2026-09-03 W-VERIFY v6 (final build): tactic layer live (Push first 36–73 per match, Flank
+  starts 45 / 78 per 5 matches, latch lifetime median 4.1 s vs 1.3 in v5) but `flank over`
+  2 / 0 — `ClearFlankLatch("the fight ended")` (`AIBBotController.cpp:1159`) fires whenever the
+  AMBITION leaves Engage (Retreat/Roam veto) and never consults `bFlankHolding`, so F8-5's hold
+  is bypassed by the ambition layer. F8-4's melee floor never fires empty-handed:
+  `bMeleeAvailable` requires a held weapon (`BNAIBAvatarAdapter.cpp:370-376`) and the
+  empty-hand case has none (`SwapNext` never lands a weapon — game-side equipment defect,
+  high, bn-builder) — `ammo=0.00` decide lines never want Engage (0 of 109,289). Switch rate
+  42 / 45 per bot-min (baseline 16 / 28), veto 60 %, Roam<->Rally triplet 2.1 / 2.6 per bot-min
+  = Rally urgency 0 inside RallyNearUU (`BNGameMode.cpp:1340`), a game-side objective shape.
+  CLOSE-OUT (lead): builds/specs/no-high met; the metric-gate box is NOT met (flanks never
+  complete). Two follow-ups: the ambition-layer flank clear must read `bFlankHolding` (plugin,
+  one line) and the empty-hand weapon swap (game, bn-builder).

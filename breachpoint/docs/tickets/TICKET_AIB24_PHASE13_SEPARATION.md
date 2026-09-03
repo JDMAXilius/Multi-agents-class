@@ -1,6 +1,6 @@
 # TICKET — AIB24: Phase 13 SEPARATION
 
-> STATUS: in-progress — lead (Mac, session 014esNfHwPnkiAJkRKBMwR7b) 2026-09-03 (8e324dce), founder ruling: all phases run in parallel with Phase 11, W-BUILD in isolated worktrees, merged serially behind AIB22 fix #4. Was: open — cut 2 Sep 2026 by the lead (session 014esNfHwPnkiAJkRKBMwR7b) from
+> STATUS: done (absolute), VERIFIED 2026-09-03 — separation on for 100 % of lives after fix #8, overlap/yield/hill lines measured on v6; the "vs baseline" clause needs a v3 baseline with Phase 13 keys (verifier follow-up). Earlier: in-progress — lead (Mac, session 014esNfHwPnkiAJkRKBMwR7b) 2026-09-03 (8e324dce), founder ruling: all phases run in parallel with Phase 11, W-BUILD in isolated worktrees, merged serially behind AIB22 fix #4. Was: open — cut 2 Sep 2026 by the lead (session 014esNfHwPnkiAJkRKBMwR7b) from
 > `docs/AIBOT-ROADMAP-2.md` (approved; rulings in §5; law F9 motion is the default). Claimed
 > when its W-AUDIT merge lands here.
 
@@ -150,3 +150,12 @@ phase's baseline. Metrics for this phase land BEFORE its behaviour (§4 of the r
   Arena01 lives — separation was OFF for half the bots (respawns possess before the crowd
   manager/nav is up). Verdict INCONCLUSIVE until fix #8 F8-1 (re-enable on the first on-nav
   Think) lands; the v6 batch re-measures. Players registered as crowd obstacles (game side).
+- 2026-09-03 W-VERIFY v6 (final build, 5 x 300 s per map): `crowd simulation ENABLED late`
+  230/230 Spillway lives, 267/267 Arena01 — separation ON for 100 % of lives (F8-1 verified);
+  overlap 12.7 / 3.1 s per bot-match, yields 3.9 / 1.5, hill strafe-hold lines live; the yield
+  stands are named (`tactic=Yield` ≤ 1.0 s). "vs the previous baseline" cannot be computed —
+  the v2 baseline carries no overlap/yield keys; absolute evidence only. Both HIGHs (yield
+  arming, yield re-arm) closed in the review-fix packet and confirmed by the v6 yield counts.
+  CLOSE-OUT (lead): builds/specs/no-high met; the metric-gate box is met in the absolute sense
+  (separation on, overlap measured, no unbounded yield) and cannot be judged vs baseline until
+  a v3 baseline with the Phase 13 keys is cut (next verifier step).
