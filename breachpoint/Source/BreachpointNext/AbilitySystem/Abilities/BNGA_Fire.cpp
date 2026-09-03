@@ -10,6 +10,7 @@
 #include "Weapons/BNEquipmentComponent.h"
 #include "Perception/AISense_Hearing.h"
 #include "Weapons/BNWeapon.h"
+#include "AbilitySystem/BNAbilitySystemComponent.h"
 #include "AbilitySystemComponent.h"
 #include "Abilities/GameplayAbilityTargetTypes.h"
 #include "AbilitySystem/Tasks/BNAbilityTask_ServerWaitClientTargetData.h"
@@ -142,7 +143,19 @@ void UBNGA_Fire::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 	// keep it in.
 	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
 	{
+		// AUTO-RELOAD. This is the exact moment "the trigger was pulled and the magazine is
+		// empty" is known, and it is reached identically by a human's key and a bot's
+		// PressVerb(Verb_Fire) — so hooking it here serves both without a second code path.
+		// The ability must END first: the reload is refused while this one still holds the
+		// prediction window, and CanActivateAbility blocks fire on State.Weapon.Reloading
+		// anyway. CommitAbility also fails on COOLDOWN, which must not reload — ShouldAutoReload
+		// asks the magazine, never the commit's verdict.
+		const bool bAutoReload = ShouldAutoReload(ActorInfo);
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		if (bAutoReload)
+		{
+			RequestAutoReload(ActorInfo);
+		}
 		return;
 	}
 
@@ -230,11 +243,75 @@ void UBNGA_Fire::FireTick()
 	const bool bBurstDone = bAlive && Row->FireMode == EBNFireMode::Burst && ShotsFired >= FMath::Max(1, Row->BurstShotCount);
 	if (!bAlive || bBurstDone || !CheckCost(CurrentSpecHandle, ActorInfo))
 	{
+		// Ran dry mid-burst, holding the trigger: the founder asked for hold-to-auto-reload, so
+		// the reload starts here rather than waiting for a release and a fresh pull. A burst that
+		// simply finished its count is NOT dry — ShouldAutoReload reads the magazine and says no.
+		const bool bAutoReload = ShouldAutoReload(ActorInfo);
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+		if (bAutoReload)
+		{
+			RequestAutoReload(ActorInfo);
+		}
 		return;
 	}
 
 	FireShot();
+}
+
+void UBNGA_Fire::OnActivationRefused(const FGameplayAbilityActorInfo* ActorInfo) const
+{
+	// A refused fire has many causes — cooldown between shots is by far the most common, and
+	// reloading on that would cancel the cadence. ShouldAutoReload asks the MAGAZINE, so only a
+	// genuinely empty one answers yes.
+	if (ShouldAutoReload(ActorInfo))
+	{
+		RequestAutoReload(ActorInfo);
+	}
+}
+
+bool UBNGA_Fire::ShouldAutoReload(const FGameplayAbilityActorInfo* ActorInfo) const
+{
+	// LOCALLY-CONTROLLED ONLY, the rule this ability already runs its cadence by. Fire is
+	// LocalPredicted, so ActivateAbility runs on both the owning client and the server; pressing
+	// reload on both would activate it twice. The owning client predicts and the server hears the
+	// replicated press; a bot IS locally controlled on the server, so it takes the same branch.
+	if (!ActorInfo || !ActorInfo->IsLocallyControlled())
+	{
+		return false;
+	}
+
+	const ABNWeapon* Weapon = BNFireGetWeapon(ActorInfo);
+	if (!Weapon || Weapon->HasAmmo(1))
+	{
+		// Still has a round: the commit failed for some other reason — cooldown, most often —
+		// and a reload would be wrong and would cancel a perfectly good fire cadence.
+		return false;
+	}
+
+	// EMPTY RESERVE IS A DRY CLICK (founder's call). UBNGA_Reload::CanActivateAbility only
+	// checks CurrentAmmo < MagazineSize, so without this the reload WOULD activate on a truly
+	// empty loadout, run its full ReloadTime timer and transfer nothing — a dead two seconds
+	// that reads as a broken weapon.
+	return Weapon->GetAmmoReserve() > 0;
+}
+
+void UBNGA_Fire::RequestAutoReload(const FGameplayAbilityActorInfo* ActorInfo) const
+{
+	// Through the INPUT tag, not TryActivateAbilityByClass: Input.Weapon.Reload is what the
+	// player's key and the bot's Verb_Reload both raise, it is where the grant lives
+	// (BNPlayerState), and it is the one place an activation verdict is already logged. An
+	// auto-reload that took a private route would be the one reload nobody could see refused.
+	if (UBNAbilitySystemComponent* ASC = Cast<UBNAbilitySystemComponent>(ActorInfo->AbilitySystemComponent.Get()))
+	{
+		// Named, because the bot ALSO reloads on its own at a quarter magazine
+		// (AIBStateTreeTasks' bWantsReload) and the ASC's own line cannot tell the two apart.
+		// Without this, "reloads happen" is not evidence that THIS reloads anything.
+		const ABNWeapon* Weapon = BNFireGetWeapon(ActorInfo);
+		UE_LOG(LogBN, Log, TEXT("BNGA_Fire: AUTO-RELOAD on empty magazine for %s (mag %d, reserve %d)"),
+			*GetNameSafe(ActorInfo->AvatarActor.Get()),
+			Weapon ? Weapon->GetCurrentAmmo() : -1, Weapon ? Weapon->GetAmmoReserve() : -1);
+		ASC->AbilityInputTagPressed(BNTags::Input_Weapon_Reload);
+	}
 }
 
 void UBNGA_Fire::PlayShotEffects()

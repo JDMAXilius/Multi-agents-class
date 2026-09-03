@@ -16,6 +16,14 @@ public:
 	 *  what is already running, and it must not cancel the abilities that ignore it. */
 	bool IgnoresMatchFreeze() const { return bIgnoreMatchFreeze; }
 
+	/** Called on the CDO by the ASC when an input press could NOT activate this ability, after the
+	 *  ability-list lock has been released. The refusal is the only place some answers exist:
+	 *  CanActivateAbility runs CheckCost, so "the trigger was pulled on an empty magazine" never
+	 *  reaches ActivateAbility at all — it is refused upstream and, without this, silently.
+	 *  Default does nothing; an override must be cheap, must not assume it is instanced, and must
+	 *  not re-enter the ability list synchronously. */
+	virtual void OnActivationRefused(const FGameplayAbilityActorInfo* ActorInfo) const {}
+
 protected:
 	virtual bool CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags = nullptr, const FGameplayTagContainer* TargetTags = nullptr, FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
 

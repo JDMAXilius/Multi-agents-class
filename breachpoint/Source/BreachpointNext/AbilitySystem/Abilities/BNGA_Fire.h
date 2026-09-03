@@ -55,6 +55,22 @@ protected:
 	/** The repeat behind Auto and Burst, on the locally-controlled machine only. */
 	void FireTick();
 
+	/** AUTO-RELOAD (founder, 3 Sep). Pulling the trigger on an empty magazine reloads instead of
+	 *  doing nothing. True only when the magazine is the reason the shot failed AND the reserve
+	 *  can actually refill it — an empty reserve is a dry click, by the founder's call, not a
+	 *  two-second reload that transfers nothing. */
+	bool ShouldAutoReload(const FGameplayAbilityActorInfo* ActorInfo) const;
+
+	/** The seam that actually catches the empty magazine. CanActivateAbility runs CheckCost, so a
+	 *  trigger pull with no round is REFUSED before ActivateAbility is ever entered — measured
+	 *  3 Sep, which is why the first cut of this feature (hooked on the CommitAbility failure)
+	 *  could never fire. */
+	virtual void OnActivationRefused(const FGameplayAbilityActorInfo* ActorInfo) const override;
+
+	/** Presses Input.Weapon.Reload on the ASC — the SAME door the player's key and the bot's
+	 *  Verb_Reload go through, so both get this from one place and neither gets a private path. */
+	void RequestAutoReload(const FGameplayAbilityActorInfo* ActorInfo) const;
+
 	/** Montage and muzzle cue — what every machine must see. */
 	void PlayShotEffects();
 

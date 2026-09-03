@@ -12,6 +12,11 @@ void UBNAbilitySystemComponent::AbilityInputTagPressed(FGameplayTag InputTag)
 	}
 
 	bool bAnySpecListens = false;
+	// Refusals are acted on AFTER the lock: a handler is allowed to press another input (the fire
+	// ability answers an empty magazine with a reload), and doing that inside ABILITYLIST_SCOPE_LOCK
+	// would re-enter the very list being iterated.
+	TArray<const UBNGameplayAbility*> RefusedAbilities;
+	{
 	ABILITYLIST_SCOPE_LOCK();
 	for (FGameplayAbilitySpec& Spec : ActivatableAbilities.Items)
 	{
@@ -37,7 +42,20 @@ void UBNAbilitySystemComponent::AbilityInputTagPressed(FGameplayTag InputTag)
 			UE_LOG(LogBN, Log, TEXT("BNInput: %s -> %s : %s"),
 				*InputTag.ToString(), *GetNameSafe(Spec.Ability),
 				bActivated ? TEXT("ACTIVATED") : TEXT("REFUSED (blocked by tags, cost/cooldown, dead, or CanActivate said no)"));
+			if (!bActivated)
+			{
+				if (const UBNGameplayAbility* BNAbility = Cast<UBNGameplayAbility>(Spec.Ability))
+				{
+					RefusedAbilities.Add(BNAbility);
+				}
+			}
 		}
+	}
+	} // ABILITYLIST_SCOPE_LOCK released — handlers below may touch the ability list.
+
+	for (const UBNGameplayAbility* Refused : RefusedAbilities)
+	{
+		Refused->OnActivationRefused(AbilityActorInfo.Get());
 	}
 
 	// The gap between "the key works" and "the ability exists": the press crossed the input assets
