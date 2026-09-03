@@ -110,3 +110,13 @@ scripts (law 7) — every fix here is a generator change + regen, never a hand e
   PlayerStarts move to the floor beside their crate (script), SP7/8 off the gantry until the
   gantry has a way down; (3) the three v4-verified wall-top perches need no change (bots
   arrive by grapple only).
+- 2026-09-03 ROOT CAUSE CONFIRMED (lead, editor-live): the Default nav resolution's cell size
+  was 38 uu (the two finer resolutions 19) — a 42 uu tread is ONE cell and erosion at agent
+  radius 35 removes it entirely, so the flights never meshed. Cell height was already 10
+  (ruling (1) withdrawn). Live test on `RecastNavMesh-Default` (`Tools/aib/aib28_cellsize.py 19`
+  + RebuildNavigation): query A floor -> tread 7 FULL (392 uu, goal nav z 227 = ON the tread),
+  D floor -> mezzanine tier FULL (1398 uu), B and C still FULL. No generator change needed for
+  the stairs. Applied to BR_Arena01 (saved) and BR_Spillway (same setting, saved); ini default
+  added for future maps. Remaining AIB28 items: the four 8v8 crate PlayerStarts (move by
+  script), SP7/8 on the gantry, and the generated BN_Drop links from the gantry (re-census after
+  the rebuild decides).
