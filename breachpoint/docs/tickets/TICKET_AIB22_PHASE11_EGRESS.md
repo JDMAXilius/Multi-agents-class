@@ -458,3 +458,17 @@ Refined steps (replace §Steps):
   Map defects filed for the arena-architect (NOT Phase 11 code): Arena01 corner spawn pads are
   islands; the catwalk stairs read at floor height (no climb to the mezzanine); gantry/core top
   geometry sits above its navmesh.
+- 2026-09-03 PIE gantry watch at fix #3 (Arena01, `aib22_pie_gantry_watch.py`, 7 bots placed on
+  `BR_LM_The_Gantry_01` top z 800): at t+15.5 s six were on the floor (z 98), one still on
+  (z 898) — box 4 FAIL as measured, and the six LEFT BY THE WRONG MECHANISM: `stall over —
+  3.4–4.5s … jumped=yes` = the stall watchdog's blind hop off an 800 uu edge with no policy
+  check (step 4 was meant to retire it). Bot 3 ran the designed path: `island latched` ->
+  `CONFIRMED — no full path to the last full-path move anchor` -> `egress starts — lip 89uu
+  away, drop 800uu` -> but the LIP WALK completing fired `island latch cleared — a full-path
+  move completed` (fix #3 M3) one tick before `steps off the island's lip`, the gate went
+  false, ExitState stopped the grounded bot, and it stayed on top (stalled again at z 898).
+  RULINGS (added to fix packet #4):
+  R8 Egress's own moves (lip walk, step-off) never clear the latch — the controller knows the
+     request ids Egress issued; the completion-clear skips them.
+  R9 the stall watchdog never jumps blind: a stall with `link=no` abandons (R3); the only
+     jumps are link segments (step 4) and the traversal policy's verbs. Remove the hop.
