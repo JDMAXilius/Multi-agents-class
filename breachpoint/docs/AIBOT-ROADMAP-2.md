@@ -119,7 +119,7 @@ REVIEW · aib-critic: utility pathologies (visible stupid detours), fairness (fl
          reachable and seen-from nothing the bot has not sensed).
 VERIFY · `path_share_ratio` per pair, flank usage share, kills/min A/B vs Phase 13.
 
-### Phase 15 — BRAIN ON UTILITY SELECTORS (the "advanced" layer, after 11–14 are measured)
+### Phase 15 — BRAIN ON UTILITY (the "advanced" layer, after 11–14 are measured) — AUDITED 2 Sep: the worldless UAIBAmbitionEngine STAYS (native StateTree utility selectors rejected on evidence, see TICKET_AIB26); tactics = a second engine instance bound under Engage; deterministic replay via the `decide` line + MatchSeed
 BUILD  · Ambition and tactic selection move onto StateTree utility selectors (Try Select Children
          With Highest Utility) with C++ Considerations reading the Team Mind, the pawn's GAS
          attributes (read-only), and csv response curves; `MinDwell` per ambition; seeded random

@@ -30,3 +30,40 @@ phase's baseline. Metrics for this phase land BEFORE its behaviour (§4 of the r
 - [ ] The phase's metric gate PASSES vs the previous baseline; kills/min not worse
 
 ## Log
+### W-AUDIT (aib-critic) — merged by the lead, 2 Sep; the roadmap's Phase 15 text is REPLACED
+VERDICT ADOPTED: keep the worldless `UAIBAmbitionEngine` (utility + hysteresis + commit + VETO,
+835 lines of headless spec) and bind the tree to it; do NOT move selection onto StateTree's
+native utility selectors. Evidence: the native random stream is seeded from wall-clock
+(`StateTreeExecutionContext.cpp:1513`; `UStateTreeComponent::StartTree` never sets RandomSeed and
+the seam is module-private) → seeded weighted selection is unreachable; highest-utility picks the
+FIRST child on an all-zero board (the exact bug `AIBAmbitionEngine.cpp:239` fixed); the weighted
+variant filters score-0 children so Roam's floor and the ungated Fallback vanish → TreeRunStatus
+Failed ("seven bots, seven errors"); native utility is stateless at selection (no hysteresis /
+commit / VETO — consideration memory is alloca'd per evaluation, so MinDwell cannot live there);
+combination semantics differ (Min/Max/Multiply, no make-up); testability collapses into a
+binary asset; F8's type-level quarantine (`FAIBConsideration::Evaluate(const FAIBFacts&)` cannot
+touch the world) becomes a review convention. Native considerations could also score Engage
+before `DrawReactionSeconds` matures (R11/F1 `high`).
+Design: tactic layer = a SECOND engine instance on the controller (per AIB25) with Push/Flank/Hold
+specs; one nested level under Engage in `AIBTreeAuthoring.cpp:176-189` gated by
+`FAIBGateTacticCondition` (copy of the ambition gate at `AIBStateTreeTasks.cpp:535-557`); root
+stays TrySelectChildrenInOrder. "MinDwell" already exists as `CommitSeconds` + `SwitchCostFactor`
+— no new knob; Flank CommitSeconds 3–4 s and MEASURE the VETO bypass (Flank's gate must return 0
+only on a LATCHED failure or it dithers through its own commit). Weighted non-argmax selection:
+~15 lines in Rescore over a controller-owned FRandomStream seeded from MatchSeed+BotIndex — skip
+until argmax reads robotic in the log.
+Replay: one `AIBot: decide bot=<BotIndex> seq= want= s= over= rs= tac= ts= commit=<ticks
+remaining> rng=<stream call count> facts=<crc32 of quantised facts>` per decision, keyed on the
+stable BotIndex (never GetName/UniqueID); diff excludes wall-clock, absolutes, object ids; scores
+3 dp. Verifier: two `-AIBSeed=N` runs, `grep " decide "`, sort (bot,seq), diff; `--replay-diff`
+in the metrics script. DEPENDS ON AIB25's match seed; `-FixedSeed -BENCHMARK` alone is not enough.
+Influence-map deferral criterion: build only if after Phase 11's recency roam, over 5 runs × 2
+maps, `roam_coverage_300 < 0.60` OR `roam_revisit_ratio > 0.35` (one extra `roam goal — cell=
+age=` line at the wander draw), with idle==0 and sweep==0 already passing.
+Containment note: the roadmap said considerations read "GAS attributes read-only" — the plugin
+has NO GAS dep; facts arrive through `IAIBAvatarInterface`/`FAIBFacts` only (a direct ASC read =
+`high`). Brain/ and Skills/ contain no UWorld/AActor today and must stay so.
+W-BUILD (after Phase 12 A and Phase 14 B, which own AIBBotController.cpp / AIBTypes.h /
+TreeAuthoring): A Brain (AIBTactic.h tags, AmbitionEngine, its spec) · B Execution (tactic gate,
+TreeAuthoring, new TacticGate spec) · C Core (second engine, tactic clocks, decide line,
+DecisionRandom) · D aib-editor (decide regex + --replay-diff, AIB_Tactics.csv).
