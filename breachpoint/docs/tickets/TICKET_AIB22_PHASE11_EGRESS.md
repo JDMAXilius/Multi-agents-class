@@ -217,3 +217,22 @@ Refined steps (replace §Steps):
   6.9 kills/min, not 2.6); `wiring_pois` (no POI provider for kind None) 500–690 per Spillway
   log, 0 on Arena01 — visible, ungated; `POI walk stalled — giving up (F7)` is a third shape
   still outside the alternation (one word, next parser touch).
+- 2026-09-02 step 3 (lead, editor-live over the Unreal MCP — the Slate inspector typed the two `py`
+  lines into the status-bar console; python remote-exec never advertised, see DefaultEngine.ini):
+  (a) `BR_NavIsolation` measured with the live recast agent (radius 35, step 35, cell 38/19/19,
+  tile 1000): A_Abut (coplanar ramp head, the BN34-defect-3 control) floor->deck valid, NOT partial,
+  1648 uu; B_Fix 1658 uu; all 10 probe points on nav. **Coplanar-merge hypothesis REFUTED** —
+  the generator's ramp heads merge. (b) SKIPPED on that evidence (no ramp overlap / sink change,
+  no yard-ramp x0 change, no regen). (c) `Tools/aib/aib22_nav_bounds.py` on both maps: Spillway
+  one volume ±4600/±5250/−600..1800 vs geometry — every top inside it except SM_SkySphere; the 26
+  covered-but-not-on-nav tops are walls, parapets, fins, roof/shelf covers (too thin for r35) and
+  the three sunken shaft ramps (AABB top-centre is mid-air over the slope — probe artefact, not a
+  gap). Arena01 BR_NavBounds −200..4200 × −200..1400 covers the −100..4100 geometry; only the four
+  walls lack a top. **Bounds PASS.** (d) link-draw walkthrough is visual — folded into the step-8
+  PIE watch; NO proxies placed. Open: Arena01's "goal 21 uu below, both ends on mesh, no path"
+  island (baseline Ctrl_4) is therefore NOT a coplanar merge — first suspect is now the drop-link
+  direction (one-way BN_Drop with no climb back), to be read off the PIE link-draw.
+- 2026-09-02 lane A (aib-builder) reported: Search/Sweep written, NOT compiled (7 files +
+  `Tests/AIBSweepBudgetSpec.cpp`); `ForgetSearchMemory` uses a const_cast pending a one-line
+  `ForgetMemory()` on the sensorium (lane B's serial step); parser's `sweep over` still counts
+  task-active seconds — W-VERIFY must key the sweep gate on the new `sweep budget spent` line.

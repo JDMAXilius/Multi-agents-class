@@ -62,8 +62,14 @@ REMOTE_EXEC = os.path.join(UE_ROOT, "Engine", "Plugins", "Experimental", "Python
                            "Content", "Python")
 EXTENT = (50.0, 50.0, 200.0)
 LEGS = (("floor", "deck"), ("floor", "ramp_mid"), ("ramp_mid", "deck"))
-RECAST_PROPS = ("cell_size", "cell_height", "agent_max_step_height", "agent_radius",
-                "agent_height", "agent_max_slope", "tile_size_uu")
+RECAST_PROPS = ("nav_mesh_resolution_params", "agent_radius", "agent_height",
+                "agent_max_slope", "tile_size_uu")   # 5.8: cell_size/cell_height/step live in
+                                                   # nav_mesh_resolution_params (per resolution)
+# the same numbers through ObjectTools (its property names are camelCase; verified 2026-09-02)
+RECAST_PROPS_MCP = ["navMeshResolutionParams", "agentRadius", "agentHeight", "agentMaxSlope",
+                    "tileSizeUU", "mergeRegionSize", "minRegionArea", "ledgeSlopeFilterMode",
+                    "bFilterLowSpanSequences", "runtimeGeneration"]
+RECAST_CLASS = "/Script/NavigationSystem.RecastNavMesh"
 
 
 def json_path(date=None):
@@ -76,7 +82,9 @@ def report_lines(data):
     out = []
     for p in data["pairs"]:
         leg = p["legs"]["floor->deck"]
-        out.append("deck=%s connected=%s" % (p["deck"], "yes" if leg["connected"] else "no"))
+        c = leg["connected"]
+        out.append("deck=%s connected=%s" % (p["deck"], "UNMEASURED" if c is None
+                                             else "yes" if c else "no"))
     return out
 
 
@@ -186,7 +194,42 @@ def mcp_readback(into_gym):
                 p["name"], k, z, hit, "OK" if ok else "DRIFT",
                 "" if d is not None else "  (%s)" % str(raw)[:80]))
     print("geometry read-back: %s" % ("PASS" if not drift else "FAIL (%d)" % drift))
-    return 1 if drift else 0
+    if drift:
+        return 1, None
+    OBJ = "editor_toolset.toolsets.object.ObjectTools"
+    navs, _ = m.call(SCENE, "find_actors", {"root": None, "name": "", "actor_type": RECAST_CLASS,
+                                            "tag": "", "bounds": None, "collision_channels": []})
+    agent = {}
+    for nav in navs or []:
+        bb, _ = m.call(ACTOR, "get_actor_bounds", {"actor": nav})
+        got, raw = m.call(OBJ, "get_properties", {"instance": nav, "properties": RECAST_PROPS_MCP})
+        agent = json.loads(got) if isinstance(got, str) else (got or {"error": raw[:200]})
+        agent["actor"] = nav["refPath"].rsplit(".", 1)[-1]
+        agent["tile_bounds"] = [[round(bb["min"][k]) for k in "xyz"], [round(bb["max"][k]) for k in "xyz"]]
+        break
+    print("RecastNavMesh (live actor): %s" % (json.dumps(agent) if agent else "NONE in level"))
+    return 0, agent
+
+
+def write_unmeasured(into_gym, agent):
+    """The transport cannot ask the nav system: save what WAS read (geometry, agent numbers)
+    with every leg UNMEASURED, so --report and the ticket Log say so instead of 'no'."""
+    data = {"date": datetime.date.today().isoformat(),
+            "map": ISO.TEMPLATE_MAP if into_gym else ISO.MAP_PATH, "measured": False,
+            "why": "no console-command / python-exec MCP tool and Python remote execution is "
+                   "off; the two --in-editor lines were not run", "nav_agent": agent,
+            "extent": list(EXTENT), "pairs": []}
+    for p, pts in probes(into_gym):
+        data["pairs"].append({"name": p["name"], "deck": "NI_%s_Deck" % p["name"],
+                              "points": {k: {"query": list(v), "on_nav": None, "projected": None}
+                                         for k, v in pts.items()},
+                              "legs": {"%s->%s" % (a, b): {"valid": None, "partial": None,
+                                                           "length": None, "connected": None}
+                                       for a, b in LEGS}})
+    os.makedirs(BASELINES, exist_ok=True)
+    with open(json_path(), "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=1, default=str)
+    print("wrote %s (legs UNMEASURED)" % json_path())
 
 
 def dispatch(into_gym):
@@ -238,6 +281,8 @@ def selftest():
                       {"deck": "NI_B_Fix_Deck", "legs": {"floor->deck": {"connected": True}}}]}
     assert report_lines(fake) == ["deck=NI_A_Abut_Deck connected=no",
                                   "deck=NI_B_Fix_Deck connected=yes"]
+    fake["pairs"][0]["legs"]["floor->deck"]["connected"] = None
+    assert report_lines(fake)[0] == "deck=NI_A_Abut_Deck connected=UNMEASURED"
     assert json_path("2026-09-02").endswith("baselines/nav-isolation-2026-09-02.json")
     for p, pts in probes(True):
         assert pts["floor"][1] == ISO.probe_points(p)["floor"][1] + ISO.ORIGIN_GYM[1]
@@ -258,10 +303,11 @@ def main():
     if args.in_editor:
         return in_editor(args.rebuild, args.into_gym)
     if not args.report:
-        rc = mcp_readback(args.into_gym)
+        rc, agent = mcp_readback(args.into_gym)
         if rc:
             return rc
         if not dispatch(args.into_gym):
+            write_unmeasured(args.into_gym, agent)
             return 3
     path = json_path()
     if not os.path.exists(path):
@@ -270,6 +316,8 @@ def main():
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
     print("nav agent: %s" % json.dumps(data.get("nav_agent"), default=str))
+    if data.get("measured") is False:
+        print("UNMEASURED: %s" % data.get("why"))
     for p in data["pairs"]:
         for k, v in p["legs"].items():
             print("  %-6s %-16s valid=%s partial=%s length=%s" % (p["name"], k, v["valid"],

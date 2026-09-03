@@ -1,0 +1,207 @@
+{
+ "date": "2026-09-02",
+ "map": "/Game/Maps/BR_NavIsolation",
+ "level_loaded": "/Game/Maps/BR_NavIsolation",
+ "nav_agent": {
+  "nav_mesh_resolution_params": "[{}, {}, {}]",
+  "agent_radius": 35.0,
+  "agent_height": 144.0,
+  "agent_max_slope": 44.0,
+  "tile_size_uu": 1000.0
+ },
+ "extent": [
+  50.0,
+  50.0,
+  200.0
+ ],
+ "pairs": [
+  {
+   "name": "A_Abut",
+   "deck": "NI_A_Abut_Deck",
+   "points": {
+    "floor": {
+     "query": [
+      -300.0,
+      300.0,
+      0.0
+     ],
+     "on_nav": true,
+     "projected": [
+      -300.0,
+      300.0,
+      14.55535390199637
+     ]
+    },
+    "deck": {
+     "query": [
+      1300.0,
+      300.0,
+      400.0
+     ],
+     "on_nav": true,
+     "projected": [
+      1300.0,
+      300.0,
+      410.0
+     ]
+    },
+    "ramp_foot": {
+     "query": [
+      100.0,
+      300.0,
+      50.0
+     ],
+     "on_nav": true,
+     "projected": [
+      100.0,
+      300.0,
+      61.95854449955759
+     ]
+    },
+    "ramp_mid": {
+     "query": [
+      400.0,
+      300.0,
+      200.0
+     ],
+     "on_nav": true,
+     "projected": [
+      400.0,
+      300.0,
+      216.64691491821586
+     ]
+    },
+    "ramp_head": {
+     "query": [
+      740.0,
+      300.0,
+      370.0
+     ],
+     "on_nav": true,
+     "projected": [
+      740.0,
+      300.0,
+      373.94286846101363
+     ]
+    }
+   },
+   "legs": {
+    "floor->deck": {
+     "valid": true,
+     "partial": false,
+     "length": 1648.1,
+     "points": 2,
+     "connected": true
+    },
+    "floor->ramp_mid": {
+     "valid": true,
+     "partial": false,
+     "length": 728.6,
+     "points": 2,
+     "connected": true
+    },
+    "ramp_mid->deck": {
+     "valid": true,
+     "partial": false,
+     "length": 920.5,
+     "points": 2,
+     "connected": true
+    }
+   }
+  },
+  {
+   "name": "B_Fix",
+   "deck": "NI_B_Fix_Deck",
+   "points": {
+    "floor": {
+     "query": [
+      -300.0,
+      1700.0,
+      0.0
+     ],
+     "on_nav": true,
+     "projected": [
+      -300.0,
+      1700.0,
+      10.0
+     ]
+    },
+    "deck": {
+     "query": [
+      1300.0,
+      1700.0,
+      400.0
+     ],
+     "on_nav": true,
+     "projected": [
+      1300.0,
+      1700.0,
+      410.0
+     ]
+    },
+    "ramp_foot": {
+     "query": [
+      150.0,
+      1700.0,
+      46.0
+     ],
+     "on_nav": true,
+     "projected": [
+      150.0,
+      1700.0,
+      59.75179787437153
+     ]
+    },
+    "ramp_mid": {
+     "query": [
+      450.0,
+      1700.0,
+      196.0
+     ],
+     "on_nav": true,
+     "projected": [
+      450.0,
+      1700.0,
+      217.776740237691
+     ]
+    },
+    "ramp_head": {
+     "query": [
+      740.0,
+      1700.0,
+      341.0
+     ],
+     "on_nav": true,
+     "projected": [
+      740.0,
+      1700.0,
+      350.38154512244625
+     ]
+    }
+   },
+   "legs": {
+    "floor->deck": {
+     "valid": true,
+     "partial": false,
+     "length": 1657.9,
+     "points": 4,
+     "connected": true
+    },
+    "floor->ramp_mid": {
+     "valid": true,
+     "partial": false,
+     "length": 778.2,
+     "points": 2,
+     "connected": true
+    },
+    "ramp_mid->deck": {
+     "valid": true,
+     "partial": false,
+     "length": 885.1,
+     "points": 4,
+     "connected": true
+    }
+   }
+  }
+ ]
+}
