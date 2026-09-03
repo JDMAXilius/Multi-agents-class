@@ -1,6 +1,6 @@
 # TICKET AIB28 — Arena01 connectivity: spawn pads, catwalk stairs, gantry/core tops
 
-> STATUS: open — cut by lead (AIB22 W-VERIFY v3) 2026-09-03. Needs the editor (census +
+> STATUS: in-progress — lead 2026-09-03 (01edba3b): step 1 (arena-architect analysis) dispatched. Was: open — cut by lead (AIB22 W-VERIFY v3) 2026-09-03. Needs the editor (census +
 > regen); gated by nothing, but AIB22's Arena01 gates cannot pass until this lands.
 
 The AIB22 census and verification matches measured three MAP defects on `BR_Arena01` that no

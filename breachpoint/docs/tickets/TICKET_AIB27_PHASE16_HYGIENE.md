@@ -1,6 +1,6 @@
 # TICKET — AIB27: Phase 16 HYGIENE
 
-> STATUS: open — cut 2 Sep 2026 by the lead (session 014esNfHwPnkiAJkRKBMwR7b) from
+> STATUS: in-progress — lead 2026-09-03 (01edba3b): BN legacy retirement (files-only half) dispatched to bn-builder in a worktree; editor half (uasset deletes + row structs) after it merges. Was: open — cut 2 Sep 2026 by the lead (session 014esNfHwPnkiAJkRKBMwR7b) from
 > `docs/AIBOT-ROADMAP-2.md` (approved; rulings in §5; law F9 motion is the default). Claimed
 > when its W-AUDIT merge lands here.
 
