@@ -423,3 +423,38 @@ Refined steps (replace §Steps):
   "BorderForLinks (23 vx) exceeds tileSize (0 vx)" is cosmetic (RecastNavMeshGenerator.cpp:3682
   still takes the max border). Every catwalk step reads at floor height — suspect the stair
   generator lays the steps flat, i.e. Arena01 has NO climb to its own spawn/objective tier.
+- 2026-09-03 W-VERIFY v3 breakdown (aib-verifier) — Spillway improved (idle −22 %, stuck −12 %,
+  kills 1.8 vs 1.0) but FAIL; Arena01 regressed (idle +39 %, stuck +49 %, kills 0.0 vs 1.8).
+  Causes ranked by seconds: C1 the island confirmation refutes ITSELF — Arena01's corner spawn
+  pads (z 218) are islands, so feet->spawn is a path within the island (276 of 316
+  refutations), and the last-full-path-move anchor refutes the same way when that move was on
+  the island (40 more); ~4,900 s of 5 Arena matches. C2 a 170 lines/s refusal storm on a tier
+  island: `POI path refused` every frame — MoveToPOI never arms suppression (25,182 refusals,
+  one bot). C3 Mode stands `tactic=none` while the mover stalls 3–8 s against `link=no`
+  (give-up window resets on acquire/SWITCHED: 21.9 s and 46.5 s stalls), and SweepLook refills
+  on the POST moving, not the bot (7.0 s single sweep). Also: bots grappled onto the gantry/core
+  read `grounded=no` (feet 959–1217 vs nav 910) so Egress REFUSES on the exact platform the
+  ticket exists for; Spillway's extra refusals are 95 % the t<2 s spawn burst before the mesh
+  exists (`self=NO`), not the new code; parser `idle over` regex dropped `tactic=Sweep|Stranded`
+  (fixed: `\S+`); `wiring_pois` 4,297 Spillway / 1,355 Arena (bots on z≥800).
+  RULINGS (fix packet #4):
+  R1 confirmation anchors are a LIST and "island" means NONE has a full path: the current
+     ambition's goal (objective / POI / last-known), every PlayerStart in the level, and the
+     last full-path goal — a spawn pad that is itself an island then confirms correctly and a
+     floor bot refutes via the objective.
+  R2 MoveToPOI (and every mover) arms `NoteCurrentAmbitionFailed` on a refused path, exactly as
+     Search does since fix #1 — no per-frame retry anywhere.
+  R3 a stall whose diagnosis is `link=no` (goal a storey away, no link) abandons on the FIRST
+     read, arms suppression, and the give-up window never resets on perception events.
+  R4 SweepLook refill keys on the BOT having moved ≥1.5R since the last refill, not the post.
+  R5 Mode outside GoalReach with the objective unreachable is not a hold: it fails (R3) —
+     Mode's `Hold` stays only for the on-objective stand.
+  R6 Egress grounding = the avatar's movement state (not the nav projection): a bot standing on
+     geometry above the mesh is grounded and OFF-MESH; Egress first walks (pathfinding off) to
+     the nearest nav point within IslandLipProbeUU, then runs the lip fan; lips are searched
+     from that on-mesh point. This is also the off-mesh-self recovery.
+  R7 no Think/move issue before the pawn projects onto nav once (kills the spawn-burst
+     refusals); log one `waiting for nav` line.
+  Map defects filed for the arena-architect (NOT Phase 11 code): Arena01 corner spawn pads are
+  islands; the catwalk stairs read at floor height (no climb to the mezzanine); gantry/core top
+  geometry sits above its navmesh.

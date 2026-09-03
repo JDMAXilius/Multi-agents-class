@@ -107,7 +107,7 @@ RX = {
     "stall_over":    re.compile(_AIB + r"stall over [—-] (?P<seconds>" + _NUM + r")s at " + _VEC + r" goal=" + _VEC
                                 + r" jumped=(?P<jumped>yes|no) resolved=(?P<resolved>moved|abandoned)"),
     "sweep_over":    re.compile(_AIB + r"sweep over [—-] (?P<seconds>" + _NUM + r")s, moved (?P<moved>" + _NUM + r")uu, state=(?P<state>\S+)"),
-    "idle_over":     re.compile(_AIB + r"idle over [—-] (?P<seconds>" + _NUM + r")s state=(?P<state>\S+) tactic=(?P<tactic>Hold|Reload|StrafeHold|none)"),
+    "idle_over":     re.compile(_AIB + r"idle over [—-] (?P<seconds>" + _NUM + r")s state=(?P<state>\S+) tactic=(?P<tactic>\S+)"),
     # AIB22 lane B (2026-09-02): the latch and the egress start, so stranded time has a denominator.
     "island_latched": re.compile(_AIB + r"island latched [—-] (?P<draws>\d+) draws with no full path inside (?P<radius>" + _NUM + r")uu at " + _VEC),
     "egress_start":   re.compile(_AIB + r"island egress starts [—-] lip " + _VEC + r" (?P<dist>" + _NUM + r")uu away, drop (?P<drop>" + _NUM + r")uu"),
