@@ -639,3 +639,4 @@ Refined steps (replace §Steps):
   cycling, 45–152 lines per match) — Engage now floors at Roam + 0.05 with a target and a melee
   available, `decide` prints `ammo=`; F8-5 `bFlankHolding` keeps Engage's Sees at 1 while a
   young latch stands. Tree unchanged. Then: specs, v6 (300 s matches), the last editor session.
+- 2026-09-03 rung 1 at fix #8 (bd5a31c5+): BreachpointEditor PASS, Breachpoint PASS. Specs running.
