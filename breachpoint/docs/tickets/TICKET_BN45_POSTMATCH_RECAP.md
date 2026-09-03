@@ -97,3 +97,15 @@ STILL FIXED — front end / lobby (from the earlier passes):
     label — no ellipsis on the value.
 DATA, NOT LAYOUT (needs the netcode packet or a ruling): assists, medals, service tags, literal
 team names/emblems, per-player emblems, the "1/6" header counts.
+
+### 2026-09-02 — match end = recap, then everybody to the front end (founder's flow)
+
+`ABNGameMode::TravelToFrontEnd` replaces RestartMatch when `PostMatchMapPath` is set (ini:
+/Game/Maps/FE_MainMenu). Armed by HandleMatchHasEnded after `PostMatchDuration` (ini: 5 s, the
+recap's time on screen). Scores/winner/killfeed are wiped first because seamless travel carries
+PlayerStates. Non-PIE: `World->ServerTravel(path, absolute)` — one call, every connection
+follows. PIE: `OpenLevel` (a ServerTravel ends the PIE session, measured 25 Aug); the log names
+which path ran. Empty path = the old restart-in-place, so nothing existing changes by accident.
+Verified PIE: recap up at match end, front end (rail + IN MENUS) present 4.4 s later. Rung: PIE,
+single machine — the ServerTravel branch itself is the packaged/listen path and is NOT exercised
+in PIE by design; it needs the listen-server rung (host + client) before a multiplayer claim.

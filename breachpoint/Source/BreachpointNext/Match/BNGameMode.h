@@ -161,6 +161,14 @@ protected:
 	 *  and correct: the old code restarted an empty match. */
 	void RestartMatch();
 
+	/**
+	 * FOUNDER, 2 Sep 2026: "instead of resetting the match, send everybody to the main menu.
+	 * Server travel. You see the win or lose widget for three to five seconds, then you travel to
+	 * the main menu and start over." Armed by HandleMatchHasEnded in place of RestartMatch when
+	 * `PostMatchMapPath` is set; RestartMatch stays as the fallback for an empty path.
+	 */
+	void TravelToFrontEnd();
+
 	/** The freeze, as GAS state: a UBNGE_State spec carrying State.Match.Frozen. The tag rides the
 	 *  SPEC, never a CDO container — native tags are not guaranteed registered while CDOs build. */
 	void SetPlayerFrozen(ABNPlayerState* InPlayerState, bool bFrozen);
@@ -247,6 +255,10 @@ protected:
 
 	UPROPERTY(Config)
 	float PostMatchDuration = 10.f;
+
+	/** Where the whole session goes when the post-match window ends. Empty = restart in place. */
+	UPROPERTY(Config)
+	FString PostMatchMapPath;
 
 	/** Bumped by every match start; 1 is the first match, above 1 is a restart. A respawn timer
 	 *  armed in an older generation is dropped when it fires rather than destroying a pawn that

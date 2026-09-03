@@ -270,8 +270,55 @@ void ABNGameMode::HandleMatchHasEnded()
 			Winner ? *Winner->GetPlayerName() : TEXT("none (tie)"));
 	}
 
-	World->GetTimerManager().SetTimer(PostMatchTimerHandle, this, &ABNGameMode::RestartMatch,
-		FMath::Max(1.f, PostMatchDuration), /*bLoop=*/false);
+	// The post-match window is the recap's time on screen (founder: three to five seconds, the ini
+	// says how many). Then everybody travels to the front end; a restart in place is only the
+	// fallback for a build with no menu map configured.
+	if (PostMatchMapPath.IsEmpty())
+	{
+		World->GetTimerManager().SetTimer(PostMatchTimerHandle, this, &ABNGameMode::RestartMatch,
+			FMath::Max(1.f, PostMatchDuration), /*bLoop=*/false);
+	}
+	else
+	{
+		World->GetTimerManager().SetTimer(PostMatchTimerHandle, this, &ABNGameMode::TravelToFrontEnd,
+			FMath::Max(1.f, PostMatchDuration), /*bLoop=*/false);
+	}
+}
+
+void ABNGameMode::TravelToFrontEnd()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+	// Seamless travel CARRIES PlayerStates, so the scores are wiped here exactly as a restart
+	// wipes them — the next match must not open with this one's kills already on the board.
+	if (ABNGameState* GS = GetGameState<ABNGameState>())
+	{
+		GS->SetWinner(nullptr);
+		GS->SetWinningTeamId(FGenericTeamId::NoTeam.GetId());
+		GS->ResetTeamScores();
+		GS->ResetKillfeed();
+		for (APlayerState* PS : GS->PlayerArray)
+		{
+			if (ABNPlayerState* BNPS = Cast<ABNPlayerState>(PS))
+			{
+				BNPS->ResetScore();
+			}
+		}
+	}
+	// ServerTravel is the real path: one call, every connection follows (seamless). It ENDS a
+	// Play-In-Editor session (measured 25 Aug), so PIE takes the lobby's own route to a map —
+	// OpenLevel on the local world — and the log names which one ran (honesty ladder).
+	if (!World->IsPlayInEditor())
+	{
+		UE_LOG(LogBN, Log, TEXT("BNGameMode: post-match over — ServerTravel to %s."), *PostMatchMapPath);
+		World->ServerTravel(PostMatchMapPath, /*bAbsolute*/ true);
+		return;
+	}
+	UE_LOG(LogBN, Log, TEXT("BNGameMode: post-match over — PIE: OpenLevel %s (ServerTravel would end the session)."), *PostMatchMapPath);
+	UGameplayStatics::OpenLevel(World, FName(*PostMatchMapPath), /*bAbsolute*/ true);
 }
 
 void ABNGameMode::GenericPlayerInitialization(AController* C)
