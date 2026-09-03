@@ -176,17 +176,50 @@ FString UAIBTreeAuthoring::BuildBotStateTree()
 	UStateTreeState& Engage = Root.AddChildState(TEXT("Engage"));
 	Engage.AddEnterCondition<FAIBGateEngageCondition>();
 	Engage.AddTask<FAIBAmbitionSentinelTask>();
+	// THE GUN stays on the parent (a parent's tasks run beside the active child): facing
+	// and firing are the fight whatever the tactic; only the LEGS differ below.
 	Engage.AddTask<FAIBFaceBeliefTask>();
-	Engage.AddTask<FAIBMoveNearBeliefTask>();
 	Engage.AddTask<FAIBFireWhenAbleTask>();
-	// Phase 4's footwork rides BESIDE the burst (the host's R9 shape): the movement
-	// policy decides the rhythm, the task steps laterally only while station-keeping,
-	// and it never completes — the fight's other tasks own the state's fate.
-	Engage.AddTask<FAIBStrafeTask>();
 	AddCompletionTransition(Engage, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
 	// Failure here is a lost belief (both belief tasks fail on visibility loss). The beat
 	// before re-selecting is the human "wait — where'd he go", not a tuning accident.
 	AddCompletionTransition(Engage, Root, EStateTreeTransitionTrigger::OnStateFailed, 0.2f);
+
+	// THREE TACTICS UNDER ONE WANT (AIB26 / Phase 15): Engage selects its children in
+	// order, each gated on the controller's SECOND engine — Push/Flank/Hold scored by the
+	// same worldless utility, hysteresis, commit and VETO as the ambitions (the native
+	// StateTree utility selectors were rejected on evidence: wall-clock RNG, first child
+	// on an all-zero board, no memory between evaluations). Flank and Hold are gated;
+	// Push is the ungated floor LAST, so Engage always has a child to select and the
+	// tree never reaches TreeRunStatus Failed on a tactic board. A tactic sentinel in
+	// each child ends it when the tactic moves on; completions land on Root exactly as
+	// Egress's do, at the fight's own delays.
+	{
+		UStateTreeState& Flank = Engage.AddChildState(TEXT("Flank"));
+		Flank.AddEnterCondition<FAIBGateTacticFlankCondition>();
+		Flank.AddTask<FAIBTacticSentinelTask>();
+		Flank.AddTask<FAIBFlankTask>();
+		AddCompletionTransition(Flank, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
+		AddCompletionTransition(Flank, Root, EStateTreeTransitionTrigger::OnStateFailed, 0.2f);
+
+		UStateTreeState& Hold = Engage.AddChildState(TEXT("Hold"));
+		Hold.AddEnterCondition<FAIBGateTacticHoldCondition>();
+		Hold.AddTask<FAIBTacticSentinelTask>();
+		Hold.AddTask<FAIBHoldStationTask>();
+		AddCompletionTransition(Hold, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
+		AddCompletionTransition(Hold, Root, EStateTreeTransitionTrigger::OnStateFailed, 0.2f);
+
+		// PUSH = the Engage legs as they were: close, then footwork owns the fight.
+		UStateTreeState& Push = Engage.AddChildState(TEXT("Push"));
+		Push.AddTask<FAIBTacticSentinelTask>();
+		Push.AddTask<FAIBMoveNearBeliefTask>();
+		// Phase 4's footwork rides BESIDE the burst (the host's R9 shape): the movement
+		// policy decides the rhythm, the task steps laterally only while station-keeping,
+		// and it never completes — the fight's other tasks own the state's fate.
+		Push.AddTask<FAIBStrafeTask>();
+		AddCompletionTransition(Push, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
+		AddCompletionTransition(Push, Root, EStateTreeTransitionTrigger::OnStateFailed, 0.2f);
+	}
 
 	// ---- Retreat: the brain wants out --------------------------------------------------
 	UStateTreeState& Retreat = Root.AddChildState(TEXT("Retreat"));
@@ -346,7 +379,7 @@ FString UAIBTreeAuthoring::BuildBotStateTree()
 	AddCompletionTransition(Fallback, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
 	AddCompletionTransition(Fallback, Root, EStateTreeTransitionTrigger::OnStateFailed, 1.0f);
 
-	Report.Add(TEXT("states     : Root > [Evade, Engage, Retreat, Search, Seek, Roam > [Egress, Wander], Mode, Fallback] (every ambition gated — Mode by hierarchy — the ungated Fallback floor last, sentinel in each; Egress gated on the island latch)"));
+	Report.Add(TEXT("states     : Root > [Evade, Engage > [Flank, Hold, Push], Retreat, Search, Seek, Roam > [Egress, Wander], Mode, Fallback] (every ambition gated — Mode by hierarchy — the ungated Fallback floor last, sentinel in each; Egress gated on the island latch; Flank/Hold gated on the tactic engine, Push the ungated tactic floor)"));
 	Report.Add(TEXT("seek       : AIBot.Ambition.Seek — deliberate movement (belief -> POI -> reachable point). SeekWeapon is RETIRED: no pickups in this game."));
 
 	// An uncompiled StateTree runs NOTHING — the asset would exist, the ini would resolve,

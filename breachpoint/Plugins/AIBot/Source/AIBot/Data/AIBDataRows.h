@@ -117,4 +117,27 @@ struct AIBOT_API FAIBTierRow : public FTableRowBase
 	 *  must not cash a culvert's latch out as a step off T2. */
 	UPROPERTY(EditAnywhere, Category = "Roam")
 	float LatchMaxAgeSeconds = 10.f;
+
+	// -- Engage tactics (AIB26 / Phase 15: Push · Flank · Hold on the second engine) ----
+	/** Flank's commit — the LONGEST of the three, because a flank abandoned halfway is a
+	 *  bot standing in the open between two positions. "MinDwell" is this plus the
+	 *  engine's SwitchCostFactor; there is no third knob (W-AUDIT P15). */
+	UPROPERTY(EditAnywhere, Category = "Tactics")
+	float FlankCommitSeconds = 3.5f;
+
+	/** Ring radius, around the midpoint between the feet and the belief, on which the
+	 *  eight flank candidates are sampled. */
+	UPROPERTY(EditAnywhere, Category = "Tactics")
+	float FlankRadiusUU = 700.f;
+
+	/** A flank route (path to the point + point to the belief) longer than this times
+	 *  the direct distance is a visible stupid detour: the candidate is dropped, and with
+	 *  no candidate left Flank scores 0 (the VETO). Load-bearing (W-AUDIT P14). */
+	UPROPERTY(EditAnywhere, Category = "Tactics")
+	float FlankMaxDetourFactor = 1.5f;
+
+	/** Hold is a NAMED stillness tactic (law F9) and therefore BOUNDED: past this the
+	 *  hold ends and the tactic is suppressed, so a bot cannot hold a ledge all match. */
+	UPROPERTY(EditAnywhere, Category = "Tactics")
+	float HoldMaxSeconds = 4.f;
 };

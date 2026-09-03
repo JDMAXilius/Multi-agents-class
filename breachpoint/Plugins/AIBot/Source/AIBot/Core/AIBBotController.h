@@ -180,6 +180,39 @@ struct AIBOT_API FAIBIslandLatch
 	}
 };
 
+/** AIB26 — THE FLANK LATCH. Flank's want may reach zero ONLY through this (the audit's
+ *  VETO-bypass rule): a hidden, reachable point off the fight line, found ONCE by the
+ *  controller's bounded search and held here until a definitive event — arrival, a
+ *  refused or stalled walk, the belief drifting a ring radius from where it was measured,
+ *  or the ambition leaving the fight. Never re-traced per think: a per-think trace that
+ *  went dark for one tick would veto Flank's own commit and dither the bot through the
+ *  manoeuvre. Controller-held for the AIB22 reason (task instance data is recreated on
+ *  re-entry). Worldless: the spec drives it with vectors and seconds. */
+struct AIBOT_API FAIBFlankLatch
+{
+	FVector Point = FVector::ZeroVector;
+	FVector BeliefAtLatch = FVector::ZeroVector;
+	float DetourUU = 0.f;
+	double LatchedAtSeconds = -1.0;
+	bool bHasPoint = false;
+
+	void Latch(const FVector& InPoint, const FVector& InBelief, float InDetourUU, double NowSeconds)
+	{
+		Point = InPoint;
+		BeliefAtLatch = InBelief;
+		DetourUU = InDetourUU;
+		LatchedAtSeconds = NowSeconds;
+		bHasPoint = true;
+	}
+	void Clear() { bHasPoint = false; LatchedAtSeconds = -1.0; }
+	/** The point was hidden from WHERE THE BELIEF WAS; a belief that moved a ring radius
+	 *  has made it a guess, and a guess is cleared, not walked. */
+	bool IsStale(const FVector& BeliefNow, float DriftUU) const
+	{
+		return bHasPoint && FVector::DistSquared(BeliefNow, BeliefAtLatch) > FMath::Square(DriftUU);
+	}
+};
+
 namespace AIBSweep
 {
 	/** The walking pan: a triangle wave in [-Arc, +Arc] over an unwrapped phase in
@@ -228,6 +261,36 @@ public:
 
 	/** The arbitration layer; valid while possessing on the authority. */
 	UAIBAmbitionEngine* GetAmbitionEngine() const { return AmbitionEngine; }
+
+	/** AIB26: the SECOND engine — Push/Flank/Hold under Engage (Brain/AIBTactic.h). Same
+	 *  class, same laws (hysteresis, commit, VETO, suppression); scored right after the
+	 *  ambition each Think against the same facts plus the flank latch's objective fact. */
+	UAIBAmbitionEngine* GetTacticEngine() const { return TacticEngine; }
+
+	/** AIB26 replay identity. The host's match seed and this bot's STABLE spawn slot
+	 *  (GetUniqueID is not stable across runs) key the `decide` line and seed
+	 *  DecisionRandom. Until the manager hands them over (AIB25's seam) the index reads
+	 *  -1 and the decision stream falls back to the per-life hash — deterministic, not
+	 *  replayable across runs. */
+	void SetMatchSeed(int32 InSeed) { MatchSeed = InSeed; }
+	void SetBotIndex(int32 InIndex) { BotIndex = InIndex; }
+	int32 GetBotIndex() const { return BotIndex; }
+
+	/** AIB26: see FAIBFlankLatch. The Flank task walks it and clears it on arrival or
+	 *  failure (Why is logged); Think clears it when the belief drifts or the fight ends. */
+	const FAIBFlankLatch& GetFlankLatch() const { return FlankLatch; }
+	void ClearFlankLatch(const TCHAR* Why);
+
+	/** AIB26: the tactic's mirror of NoteCurrentAmbitionFailed — a tactic child that
+	 *  could not run (or a Hold that reached HoldMaxSeconds) rests that tactic on the
+	 *  tactic engine so the next one gets its turn. */
+	void NoteCurrentTacticFailed(const TCHAR* Why);
+
+	/** AIB26: Hold's clock, controller-held so an Engage flap re-entering Hold cannot
+	 *  restart it (the grenade-cooldown lesson). Entered sets it once; Think clears it
+	 *  the moment the tactic is no longer Hold. -1 = not holding. */
+	void NoteHoldEntered(double NowSeconds) { if (HoldSinceSeconds < 0.0) { HoldSinceSeconds = NowSeconds; } }
+	double GetHoldSinceSeconds() const { return HoldSinceSeconds; }
 
 	/** The execution surface (Phase 3). The executor drives it; nothing else touches it. */
 	UStateTreeAIComponent* GetStateTreeComponent() const { return StateTreeComponent; }
@@ -447,6 +510,16 @@ private:
 	/** AIB22 `idle_seconds`: emit the open still spell (if any) and clear it. */
 	void CloseIdleEpisode(double NowSeconds);
 
+	/** AIB26: one bounded search for a flank point — eight ring samples around the
+	 *  midpoint between the feet and the BELIEF (never the live actor: F2-B), kept when
+	 *  nav-projected, reachable on a full path, hidden from the belief's eye line, and
+	 *  inside the detour clamp; the shortest detour latches. None found = Flank noted
+	 *  failed on the tactic engine (suppression is what throttles the next search). */
+	void SearchFlankPoint(const FVector& Belief, double NowSeconds);
+
+	/** AIB26: the tactic layer's Think — latch upkeep, the second rescore, its log line. */
+	void ThinkTactic(FGameplayTag Ambition, double NowSeconds);
+
 	UPROPERTY(VisibleAnywhere, Category = "AIBot")
 	TObjectPtr<UAIPerceptionComponent> BotPerception;
 
@@ -504,6 +577,22 @@ private:
 
 	/** For the one ambition-switch log line per change (the verifier's instrument). */
 	FGameplayTag LastLoggedAmbition;
+
+	// -- AIB26: the tactic layer and the replay instrument ---------------------------
+	UPROPERTY()
+	TObjectPtr<UAIBAmbitionEngine> TacticEngine;
+	FGameplayTag LastLoggedTactic;
+	FAIBFlankLatch FlankLatch;
+	double HoldSinceSeconds = -1.0;
+	int32 MatchSeed = 0;
+	int32 BotIndex = -1;
+	/** Never reset per life: the replay diff sorts on (bot, seq) across a whole match. */
+	uint32 DecisionSeq = 0;
+	/** The decision stream — today only the flank ring's offset draws from it; every
+	 *  draw is counted for the `rng=` field so two runs that consumed the stream
+	 *  differently show it on the line. */
+	FRandomStream DecisionRandom;
+	int32 DecisionRandomDraws = 0;
 
 	/** For the one fairness log line per acquisition (aib-verifier's sample). */
 	TWeakObjectPtr<AActor> LastLoggedTarget;

@@ -6,6 +6,20 @@
 #include "UObject/Object.h"
 #include "AIBAmbitionEngine.generated.h"
 
+/** WHY the winner changed on the last rescore (AIB26 — the utility-pathology instrument).
+ *  A dither reads as a run of Merit switches; a Flank that vetoes itself mid-commit reads
+ *  as Veto with a commit still live; a state-shaped interrupt would read as Interrupt every
+ *  think. None = the incumbent held or nothing was elected. */
+UENUM()
+enum class EAIBSwitchReason : uint8
+{
+	None,
+	First,      // no incumbent yet — a fresh life's first pick
+	Merit,      // the challenger beat the incumbent through the hysteresis
+	Veto,       // the incumbent scored 0 (impossible, or suppressed) and released itself
+	Interrupt   // a hard interrupt voided a live commit
+};
+
 /**
  * The arbitration layer — Halo's Utility AI, worldless. Registered ambitions are scored
  * against FAIBFacts; the highest wins and becomes the executor's active branch. All of
@@ -101,6 +115,16 @@ public:
 	const FAIBScoredAmbition& GetLastRunnerUp() const { return LastRunnerUp; }
 	bool WasLastRescoreInterrupted() const { return bLastRescoreInterrupted; }
 
+	/** AIB26: why the last rescore switched (None when it did not). */
+	EAIBSwitchReason GetLastSwitchReason() const { return LastSwitchReason; }
+	static const TCHAR* SwitchReasonName(EAIBSwitchReason Reason);
+
+	/** AIB26 — the replay fingerprint: a CRC32 over the facts QUANTISED to 3 dp, so two
+	 *  seeded runs whose floats differ in the noise still agree and any real divergence
+	 *  shows on the first `decide` line that carries it. Tags hash by NAME (an FName's
+	 *  index is not stable across runs). Worldless; the spec pins the quantisation. */
+	static uint32 FactsCrc32(const FAIBFacts& Facts);
+
 	/** Clears arbitration state — winner, commit, cliff baseline, scoreboard — and
 	 *  KEEPS the registry. The brain must die with the body: called at unpossession so
 	 *  a respawned bot cannot resume a dead life's commit, and so an absolute-time
@@ -154,6 +178,7 @@ private:
 	float LastRescoreHealthNorm = -1.f;   // for the cliff's "crossed since last" edge
 	bool bBlastWasImminent = false;       // for the blast's rising edge
 	bool bLastRescoreInterrupted = false;
+	EAIBSwitchReason LastSwitchReason = EAIBSwitchReason::None;
 
 	TArray<FAIBScoredAmbition> LastScores;
 	FAIBScoredAmbition LastRunnerUp;

@@ -8,6 +8,7 @@
 
 class AAIController;
 class APawn;
+class UAIBAmbitionEngine;
 
 /**
  * The tree's C++ vocabulary — the host's proven mechanical shape (plain instance-data
@@ -144,6 +145,31 @@ struct FAIBGateModeCondition : public FAIBAmbitionGateCondition
 	virtual bool Matches(const FGameplayTag& Current) const override;
 };
 
+/** AIB26 — the TACTIC gate: the ambition gate's exact shape read against the controller's
+ *  SECOND engine (Push/Flank/Hold under Engage). Exact match, one derived struct per
+ *  tactic, the branch's identity in the type — nothing serialised. Push has no gate: it
+ *  is the tactic engine's floor and the child that keeps Engage always-selectable. */
+USTRUCT(meta = (Hidden))
+struct FAIBTacticGateCondition : public FAIBAmbitionGateCondition
+{
+	GENERATED_BODY()
+	virtual bool TestCondition(FStateTreeExecutionContext& Context) const override;
+};
+
+USTRUCT(meta = (DisplayName = "AIB Gate: Tactic Flank", Category = "AIBot"))
+struct FAIBGateTacticFlankCondition : public FAIBTacticGateCondition
+{
+	GENERATED_BODY()
+	virtual FGameplayTag GetBranchTag() const override;
+};
+
+USTRUCT(meta = (DisplayName = "AIB Gate: Tactic Hold", Category = "AIBot"))
+struct FAIBGateTacticHoldCondition : public FAIBTacticGateCondition
+{
+	GENERATED_BODY()
+	virtual FGameplayTag GetBranchTag() const override;
+};
+
 ////////////////////////////////////////////////////////////////////
 
 USTRUCT()
@@ -175,6 +201,19 @@ struct FAIBAmbitionSentinelTask : public FStateTreeTaskCommonBase
 
 	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
 	virtual EStateTreeRunStatus Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const override;
+
+	/** Which engine's current want this sentinel watches (AIB26: the tactic sentinel
+	 *  reads the second engine). */
+	virtual const UAIBAmbitionEngine* ResolveEngine(const class AAIBBotController& Bot) const;
+};
+
+/** AIB26: rides beside every Engage CHILD and succeeds the moment the tactic moves on —
+ *  Engage re-selects its children in order and the new tactic's gate takes it. */
+USTRUCT(meta = (DisplayName = "AIB Tactic Sentinel", Category = "AIBot"))
+struct FAIBTacticSentinelTask : public FAIBAmbitionSentinelTask
+{
+	GENERATED_BODY()
+	virtual const UAIBAmbitionEngine* ResolveEngine(const class AAIBBotController& Bot) const override;
 };
 
 ////////////////////////////////////////////////////////////////////
@@ -859,6 +898,70 @@ struct FAIBWanderTask : public FAIBMoveToPOITask
 	GENERATED_BODY()
 	virtual bool ShouldWanderWithoutProvider() const override { return true; }
 	virtual bool MayGrappleTraverse() const override { return true; }
+};
+
+////////////////////////////////////////////////////////////////////
+
+USTRUCT()
+struct FAIBFlankTaskInstanceData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Context")
+	TObjectPtr<AAIController> Controller;
+
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float AcceptanceRadiusUU = 100.f;
+
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float GiveUpAfterNoProgressSeconds = 6.f;
+
+	FVector Goal = FVector::ZeroVector;
+	float ClosestSoFarUU = 0.f;
+	float SecondsWithoutProgress = 0.f;
+	double EnteredAtSeconds = 0.0;
+	FAIBLocomotionState Locomotion;
+};
+
+/** AIB26 — FLANK's legs: walks the controller's LATCHED flank point (never a point of its
+ *  own — the point is the tactic's fact, found once by the controller). Arrival clears the
+ *  latch and SUCCEEDS: Flank's point term reads 0 on the next Think, the tactic engine
+ *  vetoes it, and Push takes the fight from the new angle. A refused or stalled walk
+ *  clears the latch, rests the tactic (NoteCurrentTacticFailed) and FAILS loudly (F7).
+ *  The parent Engage's FaceBelief/FireWhenAble keep running beside it. */
+USTRUCT(meta = (DisplayName = "AIB Flank", Category = "AIBot"))
+struct FAIBFlankTask : public FStateTreeTaskCommonBase
+{
+	GENERATED_BODY()
+
+	using FInstanceDataType = FAIBFlankTaskInstanceData;
+	virtual const UStruct* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
+
+	FAIBFlankTask() { bShouldCallTick = true; }
+
+	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
+	virtual EStateTreeRunStatus Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const override;
+	virtual void ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
+};
+
+/** AIB26 — HOLD: the NAMED stillness tactic (law F9). Plants the body at its station —
+ *  no mover, no footwork; the parent's FaceBelief/FireWhenAble own the gun — for at most
+ *  the tier row's HoldMaxSeconds on the CONTROLLER's clock (an Engage flap re-entering
+ *  here cannot restart it). At the cap it rests the tactic and SUCCEEDS: the hold is over,
+ *  Push or Flank takes the next turn. */
+USTRUCT(meta = (DisplayName = "AIB Hold Station", Category = "AIBot"))
+struct FAIBHoldStationTask : public FStateTreeTaskCommonBase
+{
+	GENERATED_BODY()
+
+	using FInstanceDataType = FAIBAmbitionGateConditionInstanceData;
+	virtual const UStruct* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
+
+	FAIBHoldStationTask() { bShouldCallTick = true; }
+
+	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
+	virtual EStateTreeRunStatus Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const override;
+	virtual void ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
 };
 
 ////////////////////////////////////////////////////////////////////

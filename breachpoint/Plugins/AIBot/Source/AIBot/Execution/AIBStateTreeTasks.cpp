@@ -4,6 +4,7 @@
 
 #include "AIBotModule.h"
 #include "Brain/AIBAmbitionEngine.h"
+#include "Brain/AIBTactic.h"
 #include "Core/AIBBotController.h"
 #include "Core/AIBTags.h"
 #include "Interfaces/AIBAvatarInterface.h"
@@ -521,13 +522,29 @@ bool FAIBGateModeCondition::Matches(const FGameplayTag& Current) const
 	return Current.MatchesTag(AIBTags::Ambition_Mode);
 }
 
+bool FAIBTacticGateCondition::TestCondition(FStateTreeExecutionContext& Context) const
+{
+	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	const AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller);
+	const UAIBAmbitionEngine* Engine = Bot ? Bot->GetTacticEngine() : nullptr;
+	if (!Engine)
+	{
+		return false;
+	}
+	const FGameplayTag Current = Engine->GetCurrent();
+	return Current.IsValid() && Matches(Current);
+}
+
+FGameplayTag FAIBGateTacticFlankCondition::GetBranchTag() const { return AIBTags::Tactic_Flank; }
+FGameplayTag FAIBGateTacticHoldCondition::GetBranchTag() const  { return AIBTags::Tactic_Hold; }
+
 ////////////////////////////////////////////////////////////////////
 
 EStateTreeRunStatus FAIBAmbitionSentinelTask::EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
 {
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	const AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller);
-	const UAIBAmbitionEngine* Engine = Bot ? Bot->GetAmbitionEngine() : nullptr;
+	const UAIBAmbitionEngine* Engine = Bot ? ResolveEngine(*Bot) : nullptr;
 	if (!Engine)
 	{
 		return EStateTreeRunStatus::Failed;
@@ -536,11 +553,14 @@ EStateTreeRunStatus FAIBAmbitionSentinelTask::EnterState(FStateTreeExecutionCont
 	return EStateTreeRunStatus::Running;
 }
 
+const UAIBAmbitionEngine* FAIBAmbitionSentinelTask::ResolveEngine(const AAIBBotController& Bot) const { return Bot.GetAmbitionEngine(); }
+const UAIBAmbitionEngine* FAIBTacticSentinelTask::ResolveEngine(const AAIBBotController& Bot) const   { return Bot.GetTacticEngine(); }
+
 EStateTreeRunStatus FAIBAmbitionSentinelTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
 {
 	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	const AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller);
-	const UAIBAmbitionEngine* Engine = Bot ? Bot->GetAmbitionEngine() : nullptr;
+	const UAIBAmbitionEngine* Engine = Bot ? ResolveEngine(*Bot) : nullptr;
 	if (!Engine)
 	{
 		return EStateTreeRunStatus::Failed;
@@ -2074,6 +2094,131 @@ EStateTreeRunStatus FAIBMoveToPOITask::TickTraverse(AAIBBotController& Bot, APaw
 
 FGameplayTag FAIBMoveToPOITask::GetPOIKind() const           { return FGameplayTag(); }
 bool FAIBMoveToPOITask::ShouldWanderWithoutProvider() const  { return false; }
+
+////////////////////////////////////////////////////////////////////
+
+EStateTreeRunStatus FAIBFlankTask::EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
+{
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller);
+	APawn* Pawn = Bot ? Bot->GetPawn() : nullptr;
+	if (!Pawn)
+	{
+		return EStateTreeRunStatus::Failed;
+	}
+	const FAIBFlankLatch& Latch = Bot->GetFlankLatch();
+	if (!Latch.bHasPoint)
+	{
+		// The gate passed on the tactic, the latch is gone: a one-think race. Rest the
+		// tactic so the next selection reads the board the latch's absence produces.
+		Bot->NoteCurrentTacticFailed(TEXT("no latched flank point"));
+		return EStateTreeRunStatus::Failed;
+	}
+	InstanceData.Goal = Latch.Point;
+	InstanceData.ClosestSoFarUU = FVector::Dist(Pawn->GetActorLocation(), InstanceData.Goal);
+	InstanceData.SecondsWithoutProgress = 0.f;
+	InstanceData.EnteredAtSeconds = WorldSeconds(*Bot);
+	if (MoveToNavPoint(*Bot, InstanceData.Goal, InstanceData.AcceptanceRadiusUU) == EPathFollowingRequestResult::Failed)
+	{
+		Bot->ClearFlankLatch(TEXT("refused"));
+		Bot->NoteCurrentTacticFailed(TEXT("flank path refused"));
+		return EStateTreeRunStatus::Failed;
+	}
+	UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f flank starts — point (%.0f,%.0f,%.0f) detour %.0fuu"),
+		*Bot->GetName(), InstanceData.EnteredAtSeconds, InstanceData.Goal.X, InstanceData.Goal.Y, InstanceData.Goal.Z, Latch.DetourUU);
+	return EStateTreeRunStatus::Running;
+}
+
+EStateTreeRunStatus FAIBFlankTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
+{
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller);
+	APawn* Pawn = Bot ? Bot->GetPawn() : nullptr;
+	if (!Pawn)
+	{
+		return EStateTreeRunStatus::Failed;
+	}
+	const double Now = WorldSeconds(*Bot);
+	if (IsWithin(*Bot, InstanceData.Goal, InstanceData.AcceptanceRadiusUU))
+	{
+		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f flank over — arrived after %.1fs"),
+			*Bot->GetName(), Now, Now - InstanceData.EnteredAtSeconds);
+		Bot->ClearFlankLatch(TEXT("arrived"));
+		return EStateTreeRunStatus::Succeeded;
+	}
+	const float DistNow = FVector::Dist(Pawn->GetActorLocation(), InstanceData.Goal);
+	if (DistNow < InstanceData.ClosestSoFarUU - 1.f)
+	{
+		InstanceData.ClosestSoFarUU = DistNow;
+		InstanceData.SecondsWithoutProgress = 0.f;
+	}
+	else if ((InstanceData.SecondsWithoutProgress += DeltaTime) >= InstanceData.GiveUpAfterNoProgressSeconds)
+	{
+		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f flank over — stalled after %.1fs (F7)"),
+			*Bot->GetName(), Now, Now - InstanceData.EnteredAtSeconds);
+		Bot->ClearFlankLatch(TEXT("stalled"));
+		Bot->NoteCurrentTacticFailed(TEXT("flank walk stalled"));
+		return EStateTreeRunStatus::Failed;
+	}
+	TickLocomotion(*Bot, InstanceData.Locomotion, InstanceData.Goal, InstanceData.AcceptanceRadiusUU, DeltaTime);
+	return EStateTreeRunStatus::Running;
+}
+
+void FAIBFlankTask::ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
+{
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	if (AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller))
+	{
+		ReleaseLocomotion(*Bot, InstanceData.Locomotion);
+		Bot->StopMovement();
+	}
+}
+
+////////////////////////////////////////////////////////////////////
+
+EStateTreeRunStatus FAIBHoldStationTask::EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
+{
+	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller);
+	if (!Bot || !Bot->GetPawn())
+	{
+		return EStateTreeRunStatus::Failed;
+	}
+	Bot->NoteHoldEntered(WorldSeconds(*Bot));
+	Bot->StopMovement();
+	Bot->SetStillTactic(EAIBStillTactic::Hold, true); // F9: the stand is named
+	return EStateTreeRunStatus::Running;
+}
+
+EStateTreeRunStatus FAIBHoldStationTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
+{
+	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller);
+	if (!Bot || !Bot->GetPawn())
+	{
+		return EStateTreeRunStatus::Failed;
+	}
+	const double Now = WorldSeconds(*Bot);
+	const double Since = Bot->GetHoldSinceSeconds();
+	if (Since >= 0.0 && Now - Since >= Bot->GetTierRow().HoldMaxSeconds)
+	{
+		// BOUNDED (F9): the hold is over, not broken — Succeeded, and the tactic rests
+		// so the next selection is Push or Flank rather than the same station again.
+		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f hold over — %.1fs at station"), *Bot->GetName(), Now, Now - Since);
+		Bot->NoteCurrentTacticFailed(TEXT("hold reached HoldMaxSeconds"));
+		return EStateTreeRunStatus::Succeeded;
+	}
+	return EStateTreeRunStatus::Running;
+}
+
+void FAIBHoldStationTask::ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
+{
+	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	if (AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller))
+	{
+		Bot->SetStillTactic(EAIBStillTactic::Hold, false);
+	}
+}
 
 ////////////////////////////////////////////////////////////////////
 
