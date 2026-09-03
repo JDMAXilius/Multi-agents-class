@@ -331,3 +331,5 @@ Refined steps (replace §Steps):
   cases — 8); M5 `EAIBStillTactic::Sweep` while spending, `sweep over` reports stationary
   seconds; L6 denial steers only when standing and spends. Tree unchanged. Builder flagged:
   lane B's Egress lip-walk has the same M3 ratchet shape (:2226) — folded into the lane B fix.
+- 2026-09-02 lane A fix specs (lead): 181 success / 0 fail, `AIBot.Sim.SweepBudget` now 8 cases
+  incl. the negative task-held one (Tools/Logs/specs-20260902-234905.log).
