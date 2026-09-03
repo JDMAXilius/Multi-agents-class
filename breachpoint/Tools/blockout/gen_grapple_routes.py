@@ -107,7 +107,8 @@ def main():
         route, why = derive(gp)
         print("  " + why)
         lines.append(f"; {why}")
-        lines.append(f"+GrappleRoutes=(Id=\"{route['id']}\","
+        # 3 Sep 2026 (AIB22 v5): routes are scoped per map — the adapter filters by level name.
+        lines.append(f"+GrappleRoutes=(Map=\"BR_Arena01\",Id=\"{route['id']}\","
                      f"Approach={vec(route['approach'])},Anchor={vec(route['anchor'])})")
     lines.append(END)
     block = "\n".join(lines)

@@ -42,7 +42,7 @@ void UBNAIBWorldQuery::OnWorldBeginPlay(UWorld& InWorld)
 			return true;
 		}
 		Route.Approach = Approach.Location;
-		Route.Anchor = Anchor.Location;
+		// Anchor kept as authored (below the lip so the hook trace hits the face); projection is a validity gate only.
 		return false;
 	});
 
