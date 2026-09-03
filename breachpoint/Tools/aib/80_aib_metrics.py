@@ -335,11 +335,20 @@ def target_pileups(counts, ttl):
             closed.append((target, start, min(t, expiry)))
     closed += [(target, start, expiry) for (target, _), (start, expiry) in live.items()]
     cap = cap or 2
-    holders = {}
-    for target, start, end in closed:          # [start, end) covers bucket b iff start < b+1 and end > b
-        for bucket in range(math.floor(start), math.ceil(end)):
-            holders[(target, bucket)] = holders.get((target, bucket), 0) + 1
-    return sum(1 for n in holders.values() if n > cap), cap
+    # INSTANT-level (v5 verifier 2): a bucket counts only if at some instant inside it more than
+    # `cap` claims on the target are live AT ONCE — a hand-off inside one second (A releases at
+    # 4.8, C is granted at 4.8) is not a pile-up. Sweep the interval endpoints per target.
+    by_target = {}
+    for target, start, end in closed:
+        by_target.setdefault(target, []).append((start, end))
+    buckets = set()
+    for target, spans in by_target.items():
+        points = sorted({s for s, _ in spans} | {e for _, e in spans})
+        for t in points:
+            live_now = sum(1 for s, e in spans if s <= t < e)
+            if live_now > cap:
+                buckets.add((target, math.floor(t)))
+    return len(buckets), cap
 
 
 def per_match_summary(counts, ttl=CLAIM_TTL_SECONDS):
