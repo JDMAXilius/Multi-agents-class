@@ -615,3 +615,11 @@ Refined steps (replace §Steps):
   ends when the belief ages out, not when the flank breaks LOS). Adapter: grapple routes
   per map (`Map=` on the ini rows) and approach/anchor points projected to nav at load.
   Parser: pile-up counts distinct concurrent holders per instant (next); sweep sum stationary.
+- 2026-09-03 PIE observations at fix #6 (real MCP session, captures on file): Arena01 fresh
+  match, 3 samples over 61 s before the 7-kill end — path per bot 1602 / 3574 / 2022 / 1616 /
+  2378 / 3652 / 1620 uu, five bots with no still spell, two with one 50 s low-speed gap between
+  samples (dead or planted — three samples cannot tell). Spillway, 4 samples over 140 s (gaps of
+  95 s while agents were dispatched — too sparse for still spells): path per bot 6945 / 2082 /
+  3119 / 4359 / 3204 / 8375 / 2438 uu, z from the culvert (−402) to the tower (271). The
+  headless batch (v6, 300 s matches) is the honest idle measure; the captures show live fights
+  on both maps (kill feed, grenades, score).
