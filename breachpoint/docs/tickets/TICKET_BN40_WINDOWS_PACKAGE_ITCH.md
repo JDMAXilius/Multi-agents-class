@@ -95,3 +95,38 @@ gates the upload; an unplayable link scores worse than an honest absence.
   is beats an implication it cannot support.
 
 ## Log
+
+### 3 Sep (cloud) — the BUILD is done; the SUBMISSION is not. Two fields and an upload.
+
+Commit `8f442386` closes every technical step this ticket asked for, verified on the
+packaged `.exe` rather than the editor: boots to `FE_MainMenu` on `BNFrontEndGameMode`,
+PLAY reaches `BR_Spillway`, the match runs and returns to the menu, and the bots carry the
+pipeline callsigns (Dulledge, Evenkeel, Midpace, Shakygrip, Slowdraw, Softaim, Wideshot)
+rather than the old hand-typed names — which is the Pipeline-to-Game Connection criterion
+demonstrated, on the artifact that gets graded.
+
+Steps 1–5 of this ticket are therefore DONE. **Steps 6 and 7 are not, and they are the two
+that the grade actually reads:**
+
+- [ ] **6. Publish.** itch.io → new project → kind **Downloadable** → upload the zipped
+      archive → set it **Public**, not draft (a draft link 404s for the grader, which reads
+      as a broken link and triggers the same cap as no link at all). Confirm it downloads
+      in a private browser window.
+- [ ] **7. Record it.** `assignments/10-ai-dev-pipeline/README.md` still reads `PENDING` at
+      **line 19** (Deliverable 1, the playable link) and **line 39** (the pipeline run
+      video). Both are graded fields.
+
+Neither needs an engine or a build — they need a browser and a screen recording, and they
+are the whole distance between a working game and a submitted one.
+
+**Two things worth carrying into the run video**, both now true and both cheap to show:
+the scoreboard with the generated callsigns on it (that single frame IS the pipeline
+claim), and the menu → match → menu loop (the thing a stranger does in the first two
+minutes). The honest caption for the link stays what the README already says: a packaged
+**Windows client, single player against bots** — not a browser build and not a multiplayer
+claim.
+
+**One caveat to state in the submission, because it is true and cheap to say:** the gamepad
+layout is generated and audited (77/77) but was never held — the smoke runs registered
+KBM only. Keyboard and mouse are proven; the pad is not.
+
