@@ -19,7 +19,7 @@ END_DEFINE_SPEC(FAIBTacticGateSpec)
 
 void FAIBTacticGateSpec::Define()
 {
-	It("mirrors the tactic engine's winner exactly — one tactic, one gate", []()
+	It(TEXT("mirrors the tactic engine's winner exactly — one tactic, one gate", []()
 	{
 		const FAIBGateTacticFlankCondition FlankGate;
 		const FAIBGateTacticHoldCondition HoldGate;
@@ -31,7 +31,7 @@ void FAIBTacticGateSpec::Define()
 		TestFalse(TEXT("an invalid want opens nothing"), HoldGate.Matches(FGameplayTag()));
 	});
 
-	It("never lets the layers cross — a tactic tag opens no ambition branch and vice versa", []()
+	It(TEXT("never lets the layers cross — a tactic tag opens no ambition branch and vice versa", []()
 	{
 		const FAIBGateEngageCondition EngageGate;
 		const FAIBGateTacticFlankCondition FlankGate;
@@ -39,7 +39,7 @@ void FAIBTacticGateSpec::Define()
 		TestFalse(TEXT("Flank gate refuses an ambition"), FlankGate.Matches(AIBTags::Ambition_Engage));
 	});
 
-	It("registers Push as the floor: no commit, and it is last in the builder's order", []()
+	It(TEXT("registers Push as the floor: no commit, and it is last in the builder's order", []()
 	{
 		// The tree's Push child is ungated and LAST; the builder's order is what the
 		// controller registers, and the floor carrying a commit would starve a latched

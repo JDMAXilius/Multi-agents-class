@@ -2448,7 +2448,7 @@ EStateTreeRunStatus FAIBFlankTask::Tick(FStateTreeExecutionContext& Context, con
 		Bot->NoteCurrentTacticFailed(TEXT("flank walk stalled"));
 		return EStateTreeRunStatus::Failed;
 	}
-	TickLocomotion(*Bot, InstanceData.Locomotion, InstanceData.Goal, InstanceData.AcceptanceRadiusUU, DeltaTime);
+	TickLocomotion(*Bot, InstanceData.Goal, InstanceData.AcceptanceRadiusUU, DeltaTime, /*GiveUpSeconds=*/0.f);
 	return EStateTreeRunStatus::Running;
 }
 
@@ -2457,7 +2457,7 @@ void FAIBFlankTask::ExitState(FStateTreeExecutionContext& Context, const FStateT
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	if (AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller))
 	{
-		ReleaseLocomotion(*Bot, InstanceData.Locomotion);
+		ReleaseLocomotion(*Bot);
 		Bot->StopMovement();
 	}
 }

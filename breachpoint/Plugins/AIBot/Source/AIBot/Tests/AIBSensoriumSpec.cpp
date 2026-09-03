@@ -494,7 +494,7 @@ void FAIBSensoriumSpec::Define()
 				const FAIBTargetCandidate& C = Sensorium.GetCandidates()[0];
 				TestFalse(TEXT("not sight"), C.bSightCurrent);
 				TestEqual(TEXT("the SEEING's stamp, not the telling's"), C.LastSeenAtSeconds, 4.0);
-				TestEqual(TEXT("the reported spot, not the live actor"), C.LastKnownLocation.X, 500.f, 0.01f);
+				TestEqual(TEXT("the reported spot, not the live actor"), (double)C.LastKnownLocation.X, 500.0, 0.01);
 			}
 			TestEqual(TEXT("memory ages from the seeing (F5)"), Sensorium.MemoryAgeSeconds(10.30), 6.3f, 0.01f);
 		});

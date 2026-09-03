@@ -197,7 +197,7 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	WorldQueryObject = nullptr;
 	// Phase 14: the match seed and this controller's stable slot ride the same pull. No
 	// manager (a headless world) leaves seed 0 / slot -1 — still deterministic.
-	int32 MatchSeed = 0;
+	MatchSeed = 0; // the Phase 15 member, not a shadow
 	BotIndex = INDEX_NONE;
 	if (UAIBBotManager* Manager = GetWorld() ? GetWorld()->GetSubsystem<UAIBBotManager>() : nullptr)
 	{
