@@ -89,3 +89,10 @@ phase's baseline. Metrics for this phase land BEFORE its behaviour (§4 of the r
   `mean_pairwise_teammate_distance` first). CONTRACT GAPS (lead): `[/Script/AIModule.CrowdManager]`
   ini + `bResolveCollisions=True`; players as crowd obstacles (`ICrowdAgentInterface` on the
   player pawn, HasAuthority && APlayerController gate) in Source/BreachpointNext.
+- 2026-09-03 merged into main (lead): six conflicts vs AIB22 fix #4 resolved — the locomotion
+  state stays on the controller (fix #4 R3) and gains `YieldUntilSeconds`; the yield branch
+  returns the abandon verdict (false); fix #4's retired `bTriedWedgeJump` flag dropped from the
+  yield block; `AIBSeparationSpec` TestEqual calls made unambiguous (double literals).
+  `[/Script/AIModule.CrowdManager] bResolveCollisions=True SeparationDirClamp=0.2` added to
+  DefaultEngine.ini (contract gap closed). Players-as-crowd-obstacles + BNGameMode match-seed
+  hook dispatched to bn-builder (worktree). Build running.
