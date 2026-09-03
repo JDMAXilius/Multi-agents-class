@@ -933,3 +933,19 @@ memory pressure; kill and rerun — the second link took 2s.
 - 2026-09-02 (late): "Invite Only" sits at the header's right end at last — the shared header
   fixes Count right after Label, so the status is the roster's OWN `HeaderStatus` text (right
   aligned, black on the white plate) and Count hides while a status shows. Captured in PIE.
+
+### 3 Sep (cloud) — the fallback plan is STALE behind the shipped C++, says the selftest
+
+`bn41_selftest.py` now FAILS on WBP_BNScreen_PlaySetup — which is the desync detector
+working, aimed at the wrong artifact: the LIVE assets were PIE-verified (4c1a2eaf), and
+what drifted is the FALLBACK plan in `bn41_frontend_wbps.py`, which still describes the
+1-Sep screen while the C++ grew ScoreLimitButton / TimeLimitButton, dropped BackButton /
+BreakdownText, and retyped StartButton to UBRHighlightButton with WBP_ButtonDefault rows.
+
+Owner of the current screen shape is the terminal (BN42/43 sessions). Two lawful
+closures, terminal's pick: (a) update the two plan functions to the shipped tree so the
+batch fallback works again and the selftest goes green, or (b) declare the fallback
+retired now that the assets exist and repoint the selftest at GetWidgetDescription
+output instead of the plan. Leaving it red is the one wrong option — a failing check
+nobody intends to fix trains everyone to ignore checks.
+

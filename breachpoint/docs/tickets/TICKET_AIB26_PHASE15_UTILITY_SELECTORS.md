@@ -143,3 +143,35 @@ DecisionRandom) · D aib-editor (decide regex + --replay-diff, AIB_Tactics.csv).
   CLOSE-OUT (lead): builds/specs/no-high met; the metric-gate box is NOT met (flanks never
   complete). Two follow-ups: the ambition-layer flank clear must read `bFlankHolding` (plugin,
   one line) and the empty-hand weapon swap (game, bn-builder).
+
+### 3 Sep (cloud) — both named follow-ups landed, plus the third from the status list
+
+**WRITTEN, NOT COMPILED**, all three; terminal owes rung 1 + a v7 verify pass.
+
+1. **The empty-hand swap — the `high`, and it was a CIRCLE, not an equipment defect.**
+   Traced end to end: `BNGA_SwapNext` and `EquipNext()` are sound; every life begins on
+   the null Unarmed slot (`EquipIndex(0)` at loadout); the only swap press in the module
+   lived in `FireWhenAble`, which the tree runs under Engage and Retreat alone; the v6
+   ambitions score Engage from weapon facts. Need Engage to draw, need a weapon to want
+   Engage — 0 Engage wants in 109,289 decide lines is that circle, measured. Fix: **the
+   draw reflex** in `AAIBBotController::Think` — ambition-blind, empty hand + usable
+   pouch + alive → press the cycle verb at the equip's own 0.6 s beat. FAIBWeaponPolicy
+   still owns the decision; the task's empty-hand arm now DEFERS (one presser per cause,
+   or two throttles interleave into a cycle that skips every other weapon) and keeps only
+   its don't-fire-into-the-montage duty.
+2. **The flank clear consults `bFlankHolding`** (`ThinkTactic`): a veto's half-second
+   excursion out of Engage no longer clears a young latch or resets the tactic engine —
+   the latch ages out of the hold via FlankCommitSeconds in the facts builder, and only
+   then does a non-Engage ambition clear as "the fight ended". Expect `flank over` to
+   finally move off 2/123.
+3. **The Rally edge is a ramp, not a cliff** (`BNGameMode::GetObjectiveUrgency` +
+   `BNAIB::RallyBlendUU=300`): the 0-or-0.3 step at RallyNearUU snapped across Roam's
+   0.2 floor every boundary crossing — the measured Roam<->Rally triplet at 2.1/2.6 per
+   bot-min, 60% veto share. The want now rises 0→0.3 across the 300uu shoulder, so the
+   ambition engine's own hysteresis decides. BN22 W-REVIEW M1's kilometre-out annulus is
+   NOT reopened: the only sub-0.3 zone added is the arrival shoulder, and beyond it M1's
+   floor stands untouched.
+
+v7 gates to read: `flank over` > 2; Roam<->Rally triplet and ambition_switches/bot-min
+down from 42/45; `ammo=0.00` lines vanish within ~2 s of every spawn; kills/min not worse.
+

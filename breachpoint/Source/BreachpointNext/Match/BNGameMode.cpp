@@ -1384,13 +1384,34 @@ float ABNGameMode::GetObjectiveUrgency(const AActor* Bot, FGameplayTag AmbitionT
 			return 0.f;
 		}
 		const float NearestAlly = FMath::Sqrt(NearestAllySq);
+		// THE EDGE IS A RAMP, NOT A CLIFF (AIB26 v6 follow-up f). The floored shape —
+		// exactly 0 inside NearUU, 0.3 one step outside — was a switch generator: a bot
+		// orbiting its team crossed the boundary every few seconds and the want snapped
+		// 0 <-> 0.3 across Roam's 0.2 floor, measured as the Roam<->Rally triplet at
+		// 2.1/2.6 per bot-min and 60% veto share. Across RallyBlendUU the want now rises
+		// 0 -> 0.3 continuously, so near the boundary it passes THROUGH Roam's floor and
+		// the ambition engine's own hysteresis (incumbent bonus, dwell) decides — a
+		// continuous input is what those knobs exist for; a step defeats them.
+		//
+		// BN22 W-REVIEW M1's floor concern is preserved, not reopened: M1's annulus was a
+		// mid-rally bot losing the want ~1470uu out — a KILOMETRE from its team. The only
+		// sub-0.3 zone this ramp adds is the 300uu shoulder at the arrival edge, where
+		// "the want fades as you pull in" is the intended behaviour, and beyond the blend
+		// the 0.3 floor stands exactly as M1 left it. Arrival inside NearUU still reads
+		// exactly 0 and quiets the want cleanly.
+		if (NearestAlly <= BNAIB::RallyNearUU)
+		{
+			return 0.f;
+		}
+		const float ShoulderEndUU = BNAIB::RallyNearUU + BNAIB::RallyBlendUU;
+		if (NearestAlly < ShoulderEndUU)
+		{
+			return FMath::Lerp(0.f, 0.3f,
+				(NearestAlly - BNAIB::RallyNearUU) / FMath::Max(1.f, BNAIB::RallyBlendUU));
+		}
 		const float Alone = FMath::Clamp(
-			(NearestAlly - BNAIB::RallyNearUU) / FMath::Max(1.f, BNAIB::RallyFarUU - BNAIB::RallyNearUU), 0.f, 1.f);
-		// FLOORED at 0.3 the moment it is nonzero (BN22 W-REVIEW M1): a 0-to-0.55 ramp
-		// dipped below Roam's 0.2 floor at ~1470uu, so a mid-rally bot lost the want a
-		// kilometre short and hovered in an annulus around its team — half a regroup.
-		// Exactly 0 inside the near radius stays: arrival still quiets the want cleanly.
-		return Alone > 0.f ? FMath::Lerp(0.3f, 0.55f, Alone) : 0.f;
+			(NearestAlly - ShoulderEndUU) / FMath::Max(1.f, BNAIB::RallyFarUU - ShoulderEndUU), 0.f, 1.f);
+		return FMath::Lerp(0.3f, 0.55f, Alone);
 	}
 
 	if (!bHillEnabled || AmbitionTag != BNAIBTags::Ambition_Mode_Hold)

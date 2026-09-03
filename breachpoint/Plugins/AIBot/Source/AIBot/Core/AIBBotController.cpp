@@ -340,6 +340,7 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	SkillProfile.ResolveFrom(Defaults);
 	DamageLedger.Reset();
 	YawClaimedAtSeconds = -1.0;   // an absolute stamp must not cross into a new world
+	NextDrawPressSeconds = 0.0;   // same rule for the draw reflex's throttle
 	ConfidenceState = FAIBConfidenceState();
 	ConfidenceRandom.Initialize(static_cast<int32>(HashCombine(LifeSeed, 7919u)));
 
@@ -463,6 +464,7 @@ void AAIBBotController::OnUnPossess()
 	// its last death's beating would flee its first fight (absolute-time stamps included).
 	DamageLedger.Reset();
 	YawClaimedAtSeconds = -1.0;   // an absolute stamp must not cross into a new world
+	NextDrawPressSeconds = 0.0;   // same rule for the draw reflex's throttle
 	SweepBudget.Reset();
 	TravelPanDegrees = 0.f;
 	IslandLatch.Reset();
@@ -1154,7 +1156,15 @@ void AAIBBotController::ThinkTactic(FGameplayTag Ambition, double NowSeconds)
 	// is a different life of the fight and the tactic layer starts over.
 	if (Ambition != AIBTags::Ambition_Engage)
 	{
-		if (Ambition != AIBTags::Ambition_Search)
+		// AIB26 v6, the named one-liner: a young latch is a MANOEUVRE IN PROGRESS, and
+		// vetoes (a blast, a beating) step the ambition out of Engage for half a second
+		// by design. Clearing on that step was what bypassed F8-5's hold — 123 flank
+		// starts, 2 completions, every one cleared as "the fight ended" within 0.5s.
+		// While the facts still read bFlankHolding the latch (and the tactic state that
+		// will resume it) survives the excursion; a latch that outlives the tier's
+		// FlankCommitSeconds ages out of the hold in the facts builder, and THEN a
+		// non-Engage ambition really does end the fight and clears here.
+		if (Ambition != AIBTags::Ambition_Search && !LastFacts.bFlankHolding)
 		{
 			ClearFlankLatch(TEXT("the fight ended"));
 			TacticEngine->ResetArbitration();
@@ -1476,6 +1486,34 @@ void AAIBBotController::Think()
 		// Cached, not local: executor tasks read GetLastFacts() between pumps, so the
 		// whole frame's execution sees the same matured snapshot (F3, one sample site).
 		LastFacts = AIBFactsBuilder::Build(*this, Now);
+
+		// THE DRAW REFLEX (AIB26 v6's `high`, traced to its real shape). Every life
+		// begins on the host's null Unarmed slot — EquipIndex(0) at loadout — and until
+		// now the ONLY swap press in this module lived in FireWhenAble, which the tree
+		// runs under Engage and Retreat alone. The v6 ambitions score Engage from weapon
+		// facts, so an unarmed bot can never want the one ambition whose branch would arm
+		// it: need Engage to draw, need a weapon to want Engage. 0 Engage wants in
+		// 109,289 decide lines is that circle, measured.
+		//
+		// Drawing is not a combat decision — it is what a human's hands do while they
+		// think about anything else. So it lives HERE, on the think, ambition-blind:
+		// empty hand + usable pouch + alive = press the cycle verb, at the same 0.6s
+		// cadence the task's cycler uses (the equip needs the beat to take — pressing
+		// again next frame cancels the montage). FAIBWeaponPolicy still owns the
+		// decision; this is only its ambition-independent call site, and the task's own
+		// empty-hand arm now defers to it (one presser per cause, or two throttles
+		// interleave into a cycle that skips every other weapon).
+		if (IAIBAvatarInterface* DrawDoor = GetAvatar())
+		{
+			if (DrawDoor->IsAlive() && Now >= NextDrawPressSeconds
+				&& !DrawDoor->CanWeaponFight() && DrawDoor->HasUsableWeapon())
+			{
+				DrawDoor->PressVerb(AIBTags::Verb_WeaponNext);
+				DrawDoor->ReleaseVerb(AIBTags::Verb_WeaponNext);
+				NextDrawPressSeconds = Now + 0.6;
+				UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s draw reflex — empty hand, cycling."), *GetName());
+			}
+		}
 
 		// Phase 5, in order: the ledger sources the damage-history facts, then the
 		// model judges the fight FROM the finished facts, then the brain scores.

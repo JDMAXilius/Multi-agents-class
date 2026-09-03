@@ -864,6 +864,10 @@ private:
 	/** Last time an aimer took the yaw. -1 = never; reset with the body. */
 	double YawClaimedAtSeconds = -1.0;
 
+	/** The draw reflex's throttle (see Think) — the 0.6s beat an equip needs to take.
+	 *  Absolute time; reset with the body like every other stamp. */
+	double NextDrawPressSeconds = 0.0;
+
 	/** AIB22 idle instrument: when the current no-input spell began (-1 = none open),
 	 *  the tactic flags up NOW, and the set the open spell is attributed to — a spell is
 	 *  ONE set; the set changing closes it (W-REVIEW #3 H1). */

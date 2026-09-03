@@ -1312,6 +1312,16 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 	const FAIBSwapDecision Swap = FAIBWeaponPolicy::Decide(
 		bCanFight, bHasUsableWeapon, Avatar->IsBestWeaponForRange(SwapRangeUU),
 		InstanceData.SwapPresses, MaxSwapPresses);
+	if (Swap.bEmptyHanded)
+	{
+		// ONE PRESSER PER CAUSE (AIB26 v6). The controller's ambition-blind draw reflex
+		// owns the empty hand now — it runs whether or not this branch does, which is the
+		// whole fix (this task only ticks under Engage/Retreat, ambitions an unarmed bot
+		// could never want). Pressing here TOO would interleave two 0.6s throttles into a
+		// cycle that skips every other weapon. This task's remaining duty on an empty
+		// hand is the one below: do NOT fire into an equip montage.
+		return EStateTreeRunStatus::Running;
+	}
 	if (Swap.bCycle)
 	{
 		if (InstanceData.SwapCooldownLeft <= 0.f)

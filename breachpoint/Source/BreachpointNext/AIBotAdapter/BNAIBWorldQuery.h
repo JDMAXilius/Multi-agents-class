@@ -16,6 +16,11 @@ namespace BNAIB
 {
 	inline constexpr float RallyNearUU = 600.f;
 	inline constexpr float RallyFarUU = 3000.f;
+
+	/** AIB26 v6 (f): the band just outside RallyNearUU across which the regroup want
+	 *  ramps 0 -> 0.3 instead of stepping. The step was a switch generator — see
+	 *  GetObjectiveUrgency's comment for the measured thrash. */
+	inline constexpr float RallyBlendUU = 300.f;
 }
 
 /** One grapple traversal route (AIB19): where a bot stands, what it aims at. GENERATED
