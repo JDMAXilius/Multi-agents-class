@@ -393,3 +393,7 @@ Refined steps (replace §Steps):
   RULING: box 2 re-scoped — a platform's "way down" is a generated link OR the Egress
   step-off; the PIE top-platform watch (box 4) is the measurement, on the gantry. The link
   generator question is filed for the arena-architect (not Phase 11 code).
+- 2026-09-03 ST_AIBBot + DT_AIBTiers rebuilt editor-live (`Tools/aib/70_aib_assets.py build`,
+  read-back in the editor log): states `Root > [Evade, Engage, Retreat, Search, Seek,
+  Roam > [Egress, Wander], Mode, Fallback]`, compiled YES, saved OK; DT_AIBTiers 5 rows
+  mirrored from the C++ registry (new Search/Roam fields at their defaults). Committed.
