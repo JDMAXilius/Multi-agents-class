@@ -524,3 +524,7 @@ Refined steps (replace §Steps):
   their way down is Egress (fix #5's lip fan) or a generated BN_Drop that the map does not
   produce; measured by the PIE watch and W-VERIFY v5. Box 2 ticked for stairs/tiers; the
   gantry/core remain in AIB28.
+- 2026-09-03 rung 1 on main at 9bddc1bf (fix #5 + the Phase 12–15 review-fix packet + everything
+  before): BreachpointEditor PASS, Breachpoint PASS (server target unbuildable on this engine).
+  Specs running; then the editor session (ST_AIBBot rebuild for the tactic-child wiring, the
+  gantry PIE watch with captures, the 60 s PIE observation) and W-VERIFY v5.
