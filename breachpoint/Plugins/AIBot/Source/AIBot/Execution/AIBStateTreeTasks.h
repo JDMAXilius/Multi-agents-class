@@ -900,7 +900,12 @@ struct FAIBEgressTaskInstanceData
 	FVector Beyond = FVector::ZeroVector;
 	float ClosestSoFarUU = 0.f;
 	float SecondsWithoutProgress = 0.f;
+	float SecondsSinceEnter = 0.f;
+	float MoverIdleSeconds = 0.f;
 	float LipSeconds = 0.f;
+	/** The latch's stamp at entry — the lip walk itself is a full-path move and clears
+	 *  the latch (W-REVIEW M3) before the landing line needs the stranded clock. */
+	double StrandedSinceSeconds = -1.0;
 	bool bAirborneSeen = false;
 	bool bSteppedOff = false;
 	FAIBLocomotionState Locomotion;

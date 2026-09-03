@@ -10,15 +10,22 @@
  * AIB22 5(B), proven headless. The island fact is a CONTROLLER-held latch: exactly
  * IslandLatchDraws consecutive draws with no full path latch it (1), one full draw resets
  * the count (2), a task re-entry that recreates the task's scratch cannot lose the count
- * or the latch (3), Egress's gate — the bare bOnIsland read — is false until the latch
- * and after every clear (4), the latching draw reports itself exactly once (5), and the
- * row defaults are what the csv must mirror (6).
+ * or the latch (3) and a latch COPIED into the scratch does not survive (4 — the negative
+ * the W-REVIEW asked for), Egress's gate is false until the latch and after every clear
+ * (5), the latching draw reports itself exactly once (6), an Egress-failure cooldown
+ * blocks latching (7), a latch past LatchMaxAgeSeconds reads unlatched and clears (8), a
+ * completed full-path move clears (9), and the row defaults are what the csv must
+ * mirror (10).
  */
 BEGIN_DEFINE_SPEC(FAIBIslandLatchSpec, "AIBot.Sim.IslandLatch",
 	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
 
-	/** A stand-in for Wander's instance data: rebuilt on every re-entry, unlike the latch. */
-	struct FTaskScratch { int32 DrawsThisEntry = 0; bool bHasGoal = false; };
+	/** The controller: lives for the body's whole life, owns the latch. */
+	struct FOwner { FAIBIslandLatch Latch; };
+	/** A stand-in for Wander's instance data: rebuilt on every re-entry, unlike the latch.
+	 *  The right scratch reads the owner's latch through a pointer; the wrong one holds a copy. */
+	struct FTaskScratch { FAIBIslandLatch* Latch = nullptr; int32 DrawsThisEntry = 0; };
+	struct FBadTaskScratch { FAIBIslandLatch Latch; int32 DrawsThisEntry = 0; };
 
 	static constexpr int32 Draws = 3;
 
@@ -56,25 +63,38 @@ void FAIBIslandLatchSpec::Define()
 
 	It("survives a task re-entry — the scratch is recreated, the controller's latch is not", [this]()
 	{
-		FAIBIslandLatch Latch; // the controller's
+		FOwner Owner; // the controller's
 		{
-			FTaskScratch Scratch; // first EnterState: one bad draw, then the want moves on
-			Latch.NoteDraw(false, Draws, 5.0);
+			FTaskScratch Scratch{ &Owner.Latch }; // first EnterState: one bad draw, then the want moves on
+			Scratch.Latch->NoteDraw(false, Draws, 5.0);
 			++Scratch.DrawsThisEntry;
 			TestEqual(TEXT("one draw this entry"), Scratch.DrawsThisEntry, 1);
 		}
 		{
-			FTaskScratch Scratch; // re-entry: fresh instance data
+			FTaskScratch Scratch{ &Owner.Latch }; // re-entry: fresh instance data, same owner
 			TestEqual(TEXT("scratch reset"), Scratch.DrawsThisEntry, 0);
-			TestEqual(TEXT("the count survived the re-entry"), Latch.BadDraws, 1);
-			Latch.NoteDraw(false, Draws, 6.0);
-			TestTrue(TEXT("two more latch — three across two entries"), Latch.NoteDraw(false, Draws, 6.1));
+			TestEqual(TEXT("the count survived the re-entry"), Scratch.Latch->BadDraws, 1);
+			Scratch.Latch->NoteDraw(false, Draws, 6.0);
+			TestTrue(TEXT("two more latch — three across two entries"), Scratch.Latch->NoteDraw(false, Draws, 6.1));
 		}
 		{
-			FTaskScratch Scratch; // Egress's own re-entry mid-tactic
-			TestTrue(TEXT("the latch survived too"), Latch.bOnIsland);
-			TestEqual(TEXT("with its stranded clock"), Latch.LatchedAtSeconds, 6.1);
+			FTaskScratch Scratch{ &Owner.Latch }; // Egress's own re-entry mid-tactic
+			TestTrue(TEXT("the latch survived too"), Scratch.Latch->bOnIsland);
+			TestEqual(TEXT("with its stranded clock"), Scratch.Latch->LatchedAtSeconds, 6.1);
 		}
+	});
+
+	It("does NOT survive a re-entry when the task holds its own copy — the design the owner exists to forbid", [this]()
+	{
+		int32 Latches = 0;
+		for (int32 Entry = 0; Entry < 6; ++Entry)
+		{
+			FBadTaskScratch Scratch; // every re-entry: a fresh copy, a fresh count
+			TestEqual(TEXT("the copy starts empty on every entry"), Scratch.Latch.BadDraws, 0);
+			Latches += Scratch.Latch.NoteDraw(false, Draws, Entry * 1.0) ? 1 : 0; // one draw per entry
+			TestFalse(TEXT("one draw per entry never reaches three"), Scratch.Latch.bOnIsland);
+		}
+		TestEqual(TEXT("six bad draws across six entries, no latch — the fact never forms"), Latches, 0);
 	});
 
 	It("never gates Egress in while unlatched, and lets go on every clear", [this]()
@@ -104,6 +124,57 @@ void FAIBIslandLatchSpec::Define()
 		TestTrue(TEXT("an authored 0 clamps to 1, never to never"), Degenerate.NoteDraw(false, 0, 0.0));
 	});
 
+	It("does not latch during the Egress cooldown, and measures again after it", [this]()
+	{
+		FAIBIslandLatch Latch;
+		Latch.NoteDraw(false, Draws, 0.0);
+		Latch.NoteDraw(false, Draws, 0.1);
+		Latch.NoteDraw(false, Draws, 0.2);
+		TestTrue(TEXT("latched"), Latch.bOnIsland);
+		Latch.ClearWithCooldown(1.0, 5.f); // Egress failed: no lip
+		TestFalse(TEXT("cleared"), Latch.bOnIsland);
+		for (int32 Draw = 0; Draw < 10; ++Draw)
+		{
+			TestFalse(TEXT("a draw inside the cooldown never latches"), Latch.NoteDraw(false, Draws, 1.0 + Draw * 0.4));
+		}
+		TestFalse(TEXT("still clear at 4.6s"), Latch.bOnIsland);
+		TestEqual(TEXT("and nothing counted toward the next latch"), Latch.BadDraws, 0);
+		Latch.NoteDraw(false, Draws, 6.0);
+		Latch.NoteDraw(false, Draws, 6.1);
+		TestTrue(TEXT("three draws after the cooldown latch again"), Latch.NoteDraw(false, Draws, 6.2));
+		Latch.Reset();
+		TestEqual(TEXT("possession drops the cooldown stamp too"), Latch.NoLatchBeforeSeconds, -1.0);
+	});
+
+	It("reads a latch older than LatchMaxAgeSeconds as unlatched, and clears it", [this]()
+	{
+		FAIBIslandLatch Latch;
+		Latch.NoteDraw(false, Draws, 0.0);
+		Latch.NoteDraw(false, Draws, 0.0);
+		Latch.NoteDraw(false, Draws, 0.0);
+		TestTrue(TEXT("fresh: latched"), Latch.ReadLatched(9.9, 10.f));
+		TestTrue(TEXT("ageless (0) never expires"), Latch.ReadLatched(1000.0, 0.f));
+		TestFalse(TEXT("past the age: reads unlatched"), Latch.ReadLatched(10.1, 10.f));
+		TestFalse(TEXT("and it cleared"), Latch.bOnIsland);
+		TestEqual(TEXT("count with it"), Latch.BadDraws, 0);
+		TestEqual(TEXT("clock with it"), Latch.LatchedAtSeconds, -1.0);
+	});
+
+	It("clears on a completed full-path move — any state, no cooldown", [this]()
+	{
+		FAIBIslandLatch Latch;
+		Latch.NoteDraw(false, Draws, 0.0);
+		Latch.NoteDraw(false, Draws, 0.0);
+		Latch.NoteDraw(false, Draws, 0.0);
+		TestTrue(TEXT("latched"), Latch.bOnIsland);
+		Latch.Clear(); // OnMoveCompleted: DidMoveReachGoal
+		TestFalse(TEXT("cleared"), Latch.bOnIsland);
+		TestEqual(TEXT("no cooldown from a clear"), Latch.NoLatchBeforeSeconds, -1.0);
+		Latch.NoteDraw(false, Draws, 0.5);
+		Latch.NoteDraw(false, Draws, 0.6);
+		TestTrue(TEXT("the next three draws may latch at once"), Latch.NoteDraw(false, Draws, 0.7));
+	});
+
 	It("defaults the row to the ruled numbers — the csv mirrors these", [this]()
 	{
 		const FAIBTierRow Row;
@@ -111,6 +182,8 @@ void FAIBIslandLatchSpec::Define()
 		TestEqual(TEXT("IslandLipStandoffUU"), Row.IslandLipStandoffUU, 60.f);
 		TestEqual(TEXT("IslandLipProbeUU"), Row.IslandLipProbeUU, 150.f);
 		TestEqual(TEXT("IslandMinDropUU"), Row.IslandMinDropUU, 120.f);
+		TestEqual(TEXT("EgressCooldownSeconds"), Row.EgressCooldownSeconds, 5.f);
+		TestEqual(TEXT("LatchMaxAgeSeconds"), Row.LatchMaxAgeSeconds, 10.f);
 	});
 }
 

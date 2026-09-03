@@ -77,27 +77,35 @@ struct AIBOT_API FAIBSweepBudget
 };
 
 /** AIB22 5(B) — THE ISLAND FACT, as a latch. Roam's wander draws a NAVIGABLE point and
- *  walks it only on a FULL path; a partial or refused path is what an island looks like
- *  from the inside (islands do not refuse, they deliver you to the edge — the audit's
- *  corrected premise). IslandLatchDraws consecutive bad draws latch bOnIsland; ONE full
- *  draw clears it, as does the Egress landing. Held by the controller for the same reason
- *  as the sweep budget: a StateTree recreates task instance data on every completion
- *  transition, so a count kept in Wander's scratch would restart at every re-entry and
- *  never reach three. Worldless: the spec drives it with plain bools. */
+ *  prefers a FULL path; a partial path is what an island looks like from the inside
+ *  (islands do not refuse, they deliver you to the edge — the audit's corrected premise).
+ *  IslandLatchDraws consecutive bad draws latch bOnIsland. The latch is a HYPOTHESIS
+ *  (W-REVIEW H2): the Egress gate confirms it against the spawn before acting on it.
+ *  Cleared by: one full draw, any COMPLETED full-path move (M3), a landing, age past
+ *  LatchMaxAgeSeconds, or a refuted hypothesis. An Egress failure clears AND arms a
+ *  cooldown during which draws do not latch (H1). Held by the controller for the same
+ *  reason as the sweep budget: a StateTree recreates task instance data on every
+ *  completion transition. Worldless: the spec drives it with plain seconds and bools. */
 struct AIBOT_API FAIBIslandLatch
 {
 	int32 BadDraws = 0;
 	bool bOnIsland = false;
 	/** World seconds at the latch (-1 = not latched): the egress line's stranded clock. */
 	double LatchedAtSeconds = -1.0;
+	/** World seconds before which draws do not latch (-1 = no cooldown). */
+	double NoLatchBeforeSeconds = -1.0;
 
 	/** True on the ONE draw that latches — the caller logs it once. */
 	bool NoteDraw(bool bFullPath, int32 LatchAfterDraws, double NowSeconds)
 	{
 		if (bFullPath)
 		{
-			Reset();
+			Clear();
 			return false;
+		}
+		if (NowSeconds < NoLatchBeforeSeconds)
+		{
+			return false; // the Egress cooldown: walk, do not measure
 		}
 		++BadDraws;
 		if (!bOnIsland && BadDraws >= FMath::Max(LatchAfterDraws, 1))
@@ -108,11 +116,33 @@ struct AIBOT_API FAIBIslandLatch
 		}
 		return false;
 	}
-	void Reset()
+	/** The gate's read: a latch older than MaxAgeSeconds (0 = ageless) is stale and clears. */
+	bool ReadLatched(double NowSeconds, float MaxAgeSeconds)
+	{
+		if (bOnIsland && MaxAgeSeconds > 0.f && NowSeconds - LatchedAtSeconds > MaxAgeSeconds)
+		{
+			Clear();
+		}
+		return bOnIsland;
+	}
+	/** A completed full-path move, a landing, a full draw: the fact is gone, no cooldown. */
+	void Clear()
 	{
 		BadDraws = 0;
 		bOnIsland = false;
 		LatchedAtSeconds = -1.0;
+	}
+	/** An Egress failure or a refuted hypothesis: gone, and not re-measured for a while. */
+	void ClearWithCooldown(double NowSeconds, float CooldownSeconds)
+	{
+		Clear();
+		NoLatchBeforeSeconds = NowSeconds + FMath::Max(CooldownSeconds, 0.f);
+	}
+	/** Possession: everything, the absolute cooldown stamp included. */
+	void Reset()
+	{
+		Clear();
+		NoLatchBeforeSeconds = -1.0;
 	}
 };
 
@@ -241,9 +271,26 @@ public:
 	FAIBSweepBudget& GetSweepBudget() { return SweepBudget; }
 
 	/** AIB22 5(B) — see FAIBIslandLatch. Wander notes every draw; the Egress gate reads
-	 *  bOnIsland; Egress's landing (or a full draw) clears it. */
+	 *  and confirms it; Egress's landing, a full draw, or any completed full-path move
+	 *  (OnMoveCompleted) clears it. */
 	FAIBIslandLatch& GetIslandLatch() { return IslandLatch; }
 	const FAIBIslandLatch& GetIslandLatch() const { return IslandLatch; }
+
+	/** THE SPAWN ANCHOR (W-REVIEW H2): where this life began — reachable ground by
+	 *  definition, so one path test from the feet to it is the island hypothesis's
+	 *  confirmation. Raw pawn location at OnPossess; the gate projects it. False before
+	 *  the first possession of a life. */
+	bool GetSpawnLocation(FVector& OutLocation) const
+	{
+		OutLocation = SpawnLocation;
+		return bHasSpawnLocation;
+	}
+
+	/** ONE-SHOT STOP ON LANDING (W-REVIEW M6). Egress's ExitState mid-fall must not cancel
+	 *  the fall, but the unpathed step-off request would otherwise outlive the landing.
+	 *  Arms against the move in flight NOW; Think consumes it on the first grounded
+	 *  sample and stops the mover only if that same request is still the current one. */
+	void ArmStopOnLanding();
 
 	/** SweepLook's pan while WALKING: the yaw offset the movers' facing block adds to the
 	 *  travel heading (see TickLocomotion). 0 when nothing sweeps; SweepLook zeroes it on
@@ -336,6 +383,11 @@ public:
 	// hostility decided per-pawn. A team system replaces these two overrides.
 	virtual FGenericTeamId GetGenericTeamId() const override { return FGenericTeamId(255); }
 	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;
+
+	/** AIB22 W-REVIEW M3: the one place a move's completion is observed. A move that
+	 *  reached its goal on a NON-partial path proves the feet are on connected ground
+	 *  and clears the island latch, whatever state issued it. */
+	virtual void OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result) override;
 
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
@@ -457,6 +509,11 @@ private:
 	FAIBSweepBudget SweepBudget;
 	float TravelPanDegrees = 0.f;
 	FAIBIslandLatch IslandLatch;
+	/** See GetSpawnLocation / ArmStopOnLanding. All three die with the body. */
+	FVector SpawnLocation = FVector::ZeroVector;
+	bool bHasSpawnLocation = false;
+	bool bStopOnLanding = false;
+	uint32 StopOnLandingRequestId = 0;
 	FAIBConfidenceState ConfidenceState;
 	FAIBSkillProfile SkillProfile;
 

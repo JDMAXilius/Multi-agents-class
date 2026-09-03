@@ -301,22 +301,24 @@ FString UAIBTreeAuthoring::BuildBotStateTree()
 	// data cannot lose the fact; the tactic's own commitment is re-derived from the
 	// world each tick (falling / landed / at the lip), never stored. Egress completes
 	// straight back to Root: a landing is a new place to draw from, a failure has already
-	// cleared the latch, and the delay is only the no-navmesh quiet.
+	// cleared the latch and armed its cooldown (W-REVIEW H1), so the failure delay is
+	// one think — the bot is walking again, not standing out a timer.
 	UStateTreeState& Egress = Roam.AddChildState(TEXT("Egress"));
 	Egress.AddEnterCondition<FAIBOnIslandCondition>();
 	Egress.AddTask<FAIBEgressTask>();
 	AddCompletionTransition(Egress, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
-	AddCompletionTransition(Egress, Root, EStateTreeTransitionTrigger::OnStateFailed, 2.0f);
+	AddCompletionTransition(Egress, Root, EStateTreeTransitionTrigger::OnStateFailed, 0.1f);
 	UStateTreeState& Wander = Roam.AddChildState(TEXT("Wander"));
 	Wander.AddTask<FAIBWanderTask>();
 	// Wander's completions bubble up to these (the engine walks completion transitions
 	// from the completed leaf to the root). Arrived: re-select, draw a new point. The
 	// small success delay exists for the degenerate nav island whose every draw lands
 	// inside acceptance — instant succeed would be a pathfind per bot per FRAME (W-REVIEW
-	// P3 M4). A world with no navmesh fails instead — that delay keeps it quiet, the log
-	// says why. The sentinel's completion lands here too.
+	// P3 M4). Wander now never fails with a goal in hand (W-REVIEW H1: it walks its
+	// longest partial draw), so a failure is a no-navmesh or off-mesh moment and the
+	// delay is one think, not a 2s stand. The sentinel's completion lands here too.
 	AddCompletionTransition(Roam, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.25f);
-	AddCompletionTransition(Roam, Root, EStateTreeTransitionTrigger::OnStateFailed, 2.0f);
+	AddCompletionTransition(Roam, Root, EStateTreeTransitionTrigger::OnStateFailed, 0.1f);
 
 	// ---- Mode: the game mode's want (Phase 6) ------------------------------------------
 	// ONE branch serves every AIBot.Ambition.Mode.* want (the gate widens matching to

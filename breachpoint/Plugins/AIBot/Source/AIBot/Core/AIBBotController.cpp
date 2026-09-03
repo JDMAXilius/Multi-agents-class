@@ -247,6 +247,10 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	// they actually need.
 	++LifeIndex;
 	PossessedAtSeconds = GetWorld()->GetTimeSeconds();
+	// W-REVIEW H2: the life's birthplace, the island hypothesis's confirmation anchor.
+	SpawnLocation = InPawn->GetActorLocation();
+	bHasSpawnLocation = true;
+	bStopOnLanding = false;
 	const uint32 LifeSeed = HashCombine(GetTypeHash(GetUniqueID()), GetTypeHash(LifeIndex));
 	Sensorium.SetRandomSeed(static_cast<int32>(LifeSeed));
 
@@ -271,7 +275,7 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	IdleTacticsSeen = 0;
 	SweepBudget.Reset();     // a fresh body has looked at nothing yet (AIB22)
 	TravelPanDegrees = 0.f;
-	IslandLatch.Reset();     // and stands on no island it has measured yet
+	IslandLatch.Reset();     // and stands on no island it has measured yet (cooldown stamp too)
 
 	GetWorldTimerManager().SetTimer(ThinkTimer, this, &AAIBBotController::Think,
 		FMath::Max(ThinkIntervalSeconds, 0.02f), /*bLoop=*/true);
@@ -365,6 +369,8 @@ void AAIBBotController::OnUnPossess()
 	SweepBudget.Reset();
 	TravelPanDegrees = 0.f;
 	IslandLatch.Reset();
+	bHasSpawnLocation = false;
+	bStopOnLanding = false;
 	ConfidenceState = FAIBConfidenceState();
 	AimState = FAIBAimState();
 	MeleeState = FAIBMeleeState();
@@ -743,6 +749,26 @@ void AAIBBotController::NoteIncomingBlast(const FVector& Center, float Radius, d
 	Sensorium.NoteIncomingBlast(Center, Radius, DetonateAtSeconds, World->GetTimeSeconds());
 }
 
+void AAIBBotController::ArmStopOnLanding()
+{
+	const FAIRequestID InFlight = GetCurrentMoveRequestID();
+	bStopOnLanding = InFlight.IsValid();
+	StopOnLandingRequestId = InFlight.GetID();
+}
+
+void AAIBBotController::OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result)
+{
+	Super::OnMoveCompleted(RequestID, Result);
+	// DidMoveReachGoal is Success AND not a partial path, computed by the follower before
+	// its Reset — a partial path's end is the island's edge, never proof of the mainland.
+	const UPathFollowingComponent* Follow = GetPathFollowingComponent();
+	if (IslandLatch.bOnIsland && Follow && Follow->DidMoveReachGoal())
+	{
+		IslandLatch.Clear();
+		UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s island latch cleared — a full-path move completed."), *GetName());
+	}
+}
+
 void AAIBBotController::Think()
 {
 	UWorld* World = GetWorld();
@@ -780,6 +806,16 @@ void AAIBBotController::Think()
 		if (!bStill)
 		{
 			SweepBudget.Reset();
+		}
+		// W-REVIEW M6: the step-off request Egress left in flight, stopped on the first
+		// grounded sample — unless something newer already owns the mover.
+		if (bStopOnLanding && Door && Door->IsGrounded())
+		{
+			bStopOnLanding = false;
+			if (GetCurrentMoveRequestID().GetID() == StopOnLandingRequestId)
+			{
+				StopMovement();
+			}
 		}
 	}
 

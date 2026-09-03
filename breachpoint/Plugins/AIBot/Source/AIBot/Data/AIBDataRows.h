@@ -105,4 +105,16 @@ struct AIBOT_API FAIBTierRow : public FTableRowBase
 	 *  at least this far below; the same number says a landing left the island. */
 	UPROPERTY(EditAnywhere, Category = "Roam")
 	float IslandMinDropUU = 120.f;
+
+	/** After an Egress FAILURE (no lip, a walk short of it, a body that never left) wander
+	 *  draws do not latch for this long (W-REVIEW H1): the bot walks its longest partial
+	 *  draws instead of standing in a latch/fail/latch oscillator. */
+	UPROPERTY(EditAnywhere, Category = "Roam")
+	float EgressCooldownSeconds = 5.f;
+
+	/** A latch older than this reads as unlatched and clears (W-REVIEW M3): the island
+	 *  fact was measured where the feet were then, and a bot that chased up a tier since
+	 *  must not cash a culvert's latch out as a step off T2. */
+	UPROPERTY(EditAnywhere, Category = "Roam")
+	float LatchMaxAgeSeconds = 10.f;
 };

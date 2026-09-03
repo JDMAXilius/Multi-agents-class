@@ -17,6 +17,7 @@
 #include "Skills/AIBMeleePolicy.h"
 #include "Skills/AIBWeaponPolicy.h"
 #include "Skills/AIBMovementPolicy.h"
+#include "Skills/AIBTraversalPolicy.h"
 #include "StateTreeExecutionContext.h"
 #include "Team/AIBTeamCoordinator.h"
 
@@ -1733,16 +1734,21 @@ EStateTreeRunStatus FAIBMoveToPOITask::EnterState(FStateTreeExecutionContext& Co
 	// A world-query provider is Phase 6's registration, and its POIs land here between
 	// the belief and the wander. Until one exists, a mover that may wander does so and
 	// every other FAILS loudly (F7) rather than improvising.
+	TOptional<FVector> MoveTarget; // set only when the mover's goal differs from the arrival goal
 	if (!InstanceData.bHasGoal && ShouldWanderWithoutProvider())
 	{
 		// THE DRAW IS FROM THE PAWN, AND IT IS NAVIGABLE, NOT REACHABLE (AIB22 5(B)).
 		// A reachable draw can only ever land on the island the bot stands on — that was
 		// the private patrol — and a draw centred on the heard fight (AIB17) was a
 		// partial path, an 8s stall and a dead Roam on its own (H3). Now: any navmesh
-		// point in the radius, from where the feet are; walked ONLY on a full path; and
-		// every draw is a measurement — IslandLatchDraws consecutive draws with no full
-		// path latch the island fact on the controller, where a re-entry cannot reset it.
-		// The fight bias survives as a preference between two self-centred draws.
+		// point in the radius, from where the feet are; a full path wins outright; with
+		// none, the LONGEST partial is walked to its end (W-REVIEW H1: Wander never fails
+		// with a goal in hand — on an island that motion is toward the edge, which is the
+		// point). Every draw is a measurement — IslandLatchDraws consecutive draws with no
+		// full path latch the island fact on the controller, where a re-entry cannot
+		// reset it; the path test carries NO cost limit (H2: a capped search reads "far
+		// but reachable" as partial and false-latches open ground). The fight bias
+		// survives as a preference between two self-centred draws.
 		UWorld* World = Bot->GetWorld();
 		UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(World);
 		const ANavigationData* NavData = NavSys ? NavSys->GetDefaultNavDataInstance() : nullptr;
@@ -1755,6 +1761,8 @@ EStateTreeRunStatus FAIBMoveToPOITask::EnterState(FStateTreeExecutionContext& Co
 			const FAIBAllyFightMemory& AllyFight = Bot->GetAllyFightMemory();
 			const bool bTowardFight = AllyFight.IsFresh(Now);
 			const int32 LatchDraws = FMath::Max(Bot->GetTierRow().IslandLatchDraws, 1);
+			double LongestPartialUU = -1.0;
+			FVector PartialEnd = FVector::ZeroVector;
 			for (int32 Draw = 0; Draw < LatchDraws && !InstanceData.bHasGoal; ++Draw)
 			{
 				FNavLocation Candidate;
@@ -1768,12 +1776,9 @@ EStateTreeRunStatus FAIBMoveToPOITask::EnterState(FStateTreeExecutionContext& Co
 				{
 					Candidate = Other;
 				}
-				// The cost limit bounds the one expensive case — an unreachable goal
-				// explores everything reachable before it admits it — to a few laps of
-				// the draw radius; a search that hits it reads as partial, which it is.
-				const FPathFindingResult Found = NavSys->FindPathSync(FPathFindingQuery(Bot, *NavData, Feet, Candidate.Location,
-					nullptr, nullptr, InstanceData.WanderRadiusUU * 4.f));
-				const bool bFull = Found.IsSuccessful() && Found.Path.IsValid() && !Found.Path->IsPartial();
+				const FPathFindingResult Found = NavSys->FindPathSync(FPathFindingQuery(Bot, *NavData, Feet, Candidate.Location));
+				const bool bPathed = Found.IsSuccessful() && Found.Path.IsValid();
+				const bool bFull = bPathed && !Found.Path->IsPartial();
 				if (Bot->GetIslandLatch().NoteDraw(bFull, LatchDraws, Now))
 				{
 					UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s t=%.1f island latched — %d draws with no full path inside %.0fuu at (%.0f,%.0f,%.0f)"),
@@ -1783,11 +1788,28 @@ EStateTreeRunStatus FAIBMoveToPOITask::EnterState(FStateTreeExecutionContext& Co
 				{
 					InstanceData.Goal = Candidate.Location;
 					InstanceData.bHasGoal = true;
+					MoveTarget.Reset(); // a full draw walks itself; forget any earlier partial
 					if (bTowardFight)
 					{
 						UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s wandering toward the team's fight."), *Bot->GetName());
 					}
 				}
+				else if (bPathed && Found.Path->GetLength() > LongestPartialUU)
+				{
+					LongestPartialUU = Found.Path->GetLength();
+					PartialEnd = Found.Path->GetEndLocation();
+					MoveTarget = Candidate.Location;
+				}
+			}
+			if (!InstanceData.bHasGoal && LongestPartialUU >= 0.0)
+			{
+				// The arrival test is the partial's END; the mover is handed the draw
+				// itself so the path it follows stays PARTIAL — a full-path completion
+				// clears the latch (M3), and the edge of an island must not.
+				InstanceData.Goal = PartialEnd;
+				InstanceData.bHasGoal = true;
+				UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s t=%.1f wander walks its longest partial draw — %.0fuu to (%.0f,%.0f,%.0f)"),
+					*Bot->GetName(), Now, LongestPartialUU, PartialEnd.X, PartialEnd.Y, PartialEnd.Z);
 			}
 		}
 	}
@@ -1801,7 +1823,7 @@ EStateTreeRunStatus FAIBMoveToPOITask::EnterState(FStateTreeExecutionContext& Co
 
 	InstanceData.ClosestSoFarUU = FVector::Dist(Pawn->GetActorLocation(), InstanceData.Goal);
 	InstanceData.SecondsWithoutProgress = 0.f;
-	if (MoveToNavPoint(*Bot, InstanceData.Goal, InstanceData.AcceptanceRadiusUU)
+	if (MoveToNavPoint(*Bot, MoveTarget.IsSet() ? MoveTarget.GetValue() : InstanceData.Goal, InstanceData.AcceptanceRadiusUU)
 		== EPathFollowingRequestResult::Failed)
 	{
 		UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s POI path refused — branch fails (F7). %s"), *Bot->GetName(), *DescribeMoveFailure(*Bot, InstanceData.Goal));
@@ -2038,8 +2060,48 @@ bool FAIBMoveToPOITask::ShouldWanderWithoutProvider() const  { return false; }
 bool FAIBOnIslandCondition::TestCondition(FStateTreeExecutionContext& Context) const
 {
 	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
-	const AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller);
-	return Bot && Bot->GetIslandLatch().bOnIsland;
+	AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller);
+	if (!Bot)
+	{
+		return false;
+	}
+	const double Now = WorldSeconds(*Bot);
+	const FAIBTierRow& Tier = Bot->GetTierRow();
+	FAIBIslandLatch& Latch = Bot->GetIslandLatch();
+	if (!Latch.ReadLatched(Now, Tier.LatchMaxAgeSeconds))
+	{
+		return false;
+	}
+	// THE HYPOTHESIS, CONFIRMED (W-REVIEW H2): one cost-unlimited path test from the feet
+	// to where this life spawned — reachable ground by definition. Recast reports a
+	// partial as a failed test, so "true" here is a FULL path to the mainland: the latch
+	// was a false read on open ground, cleared with the cooldown so the next draws walk
+	// instead of re-latching. Off the mesh nothing can be tested: gate closed, latch
+	// kept, Wander re-measures once the feet are back on it.
+	const APawn* Pawn = Bot->GetPawn();
+	UWorld* World = Bot->GetWorld();
+	UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(World);
+	const ANavigationData* NavData = NavSys ? NavSys->GetDefaultNavDataInstance() : nullptr;
+	FVector Feet;
+	if (!Pawn || !NavData || !ProjectToNav(World, Pawn->GetActorLocation(), Feet))
+	{
+		return false;
+	}
+	FVector Spawn, SpawnOnNav;
+	if (!Bot->GetSpawnLocation(Spawn) || !ProjectToNav(World, Spawn, SpawnOnNav))
+	{
+		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f island latch unconfirmed — spawn anchor unknown or off-mesh; acting on the latch alone."),
+			*Bot->GetName(), Now);
+		return true;
+	}
+	if (NavSys->TestPathSync(FPathFindingQuery(Bot, *NavData, Feet, SpawnOnNav)))
+	{
+		Latch.ClearWithCooldown(Now, Tier.EgressCooldownSeconds);
+		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f island latch REFUTED — full path to the spawn from (%.0f,%.0f,%.0f); cleared, %.0fs cooldown."),
+			*Bot->GetName(), Now, Feet.X, Feet.Y, Feet.Z, Tier.EgressCooldownSeconds);
+		return false;
+	}
+	return true;
 }
 
 namespace
@@ -2066,7 +2128,11 @@ namespace
 			return false;
 		}
 		const FAIBTierRow& Tier = Bot.GetTierRow();
-		const FVector ProbeExtent(Tier.IslandLipProbeUU * 0.5f, Tier.IslandLipProbeUU * 0.5f, AIB::SafeDropUU);
+		// The probe box is the traversal policy's own drop envelope (W-REVIEW M5), and it
+		// hangs BELOW the probe point (L7) so only lower navmesh qualifies — a same-level
+		// neighbour behind a thin wall is not a lip.
+		const float DropLimitUU = AIB::SafeDropUU * AIB::TraversalCommitFraction;
+		const FVector ProbeExtent(Tier.IslandLipProbeUU * 0.5f, Tier.IslandLipProbeUU * 0.5f, DropLimitUU * 0.5f);
 		float BestDistSq = TNumericLimits<float>::Max();
 		bool bFound = false;
 		for (int32 Ray = 0; Ray < IslandLipRays; ++Ray)
@@ -2079,14 +2145,23 @@ namespace
 			}
 			const FVector Probe = Hit + Dir * Tier.IslandLipProbeUU;
 			FNavLocation Below;
-			if (!NavSys->ProjectPointToNavigation(Probe, Below, ProbeExtent))
+			if (!NavSys->ProjectPointToNavigation(Probe - FVector(0.f, 0.f, DropLimitUU * 0.5f), Below, ProbeExtent))
 			{
-				continue; // a wall, or a pit with no floor in the safe-drop envelope
+				continue; // a wall, or a pit with no floor in the drop envelope
 			}
 			const float DropUU = Hit.Z - Below.Location.Z;
 			if (DropUU < Tier.IslandMinDropUU)
 			{
 				continue; // a step, a seam, the same deck
+			}
+			// The chooser has the last word on every crossing (M5): a lip it refuses —
+			// too far down, too far out — is a wall to this bot.
+			FAIBTraversalRequest Crossing;
+			Crossing.HorizontalUU = static_cast<float>(FVector::Dist2D(Hit, Below.Location));
+			Crossing.VerticalUU = -DropUU;
+			if (FAIBTraversalPolicy::Choose(Crossing) != EAIBTraversal::Drop)
+			{
+				continue;
 			}
 			const float DistSq = FVector::DistSquared2D(Feet, Hit);
 			if (DistSq < BestDistSq)
@@ -2116,19 +2191,23 @@ EStateTreeRunStatus FAIBEgressTask::EnterState(FStateTreeExecutionContext& Conte
 	InstanceData.bSteppedOff = false;
 	InstanceData.LipSeconds = 0.f;
 	InstanceData.SecondsWithoutProgress = 0.f;
+	InstanceData.SecondsSinceEnter = 0.f;
+	InstanceData.MoverIdleSeconds = 0.f;
+	InstanceData.StrandedSinceSeconds = Bot->GetIslandLatch().LatchedAtSeconds;
+	const float Cooldown = Bot->GetTierRow().EgressCooldownSeconds;
 
 	FVector Feet;
 	float DropUU = 0.f;
 	if (!Avatar->IsGrounded() || !ProjectToNav(Bot->GetWorld(), Pawn->GetActorLocation(), Feet)
 		|| !FindIslandLip(*Bot, Feet, InstanceData.Lip, InstanceData.Beyond, DropUU))
 	{
-		// Off the mesh, or an island with no drop-lip in the safe envelope (walled, or a
-		// false latch on open ground beside an unreachable deck). Either way this tactic
-		// has nothing to offer: clear the latch so Wander measures again rather than
-		// Egress re-selecting into the same nothing every failure delay.
-		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f island egress FAILED — no lip with a drop within %.0fuu (grounded=%s) — latch cleared (F7)."),
-			*Bot->GetName(), WorldSeconds(*Bot), IslandLipReachUU, Avatar->IsGrounded() ? TEXT("yes") : TEXT("no"));
-		Bot->GetIslandLatch().Reset();
+		// Off the mesh, or an island with no drop-lip in the envelope (walled, or the
+		// culvert). This tactic has nothing to offer: clear the latch AND arm the cooldown
+		// (W-REVIEW H1) so Wander walks its partial draws instead of re-latching into the
+		// same nothing every failure delay.
+		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f island egress FAILED — no lip with a drop within %.0fuu (grounded=%s) — latch cleared, %.0fs cooldown (F7)."),
+			*Bot->GetName(), WorldSeconds(*Bot), IslandLipReachUU, Avatar->IsGrounded() ? TEXT("yes") : TEXT("no"), Cooldown);
+		Bot->GetIslandLatch().ClearWithCooldown(WorldSeconds(*Bot), Cooldown);
 		return EStateTreeRunStatus::Failed;
 	}
 	InstanceData.ClosestSoFarUU = FVector::Dist(Pawn->GetActorLocation(), InstanceData.Lip);
@@ -2139,7 +2218,7 @@ EStateTreeRunStatus FAIBEgressTask::EnterState(FStateTreeExecutionContext& Conte
 	if (!IsWithin(*Bot, InstanceData.Lip, InstanceData.LipReachUU)
 		&& MoveToNavPoint(*Bot, InstanceData.Lip, InstanceData.LipReachUU) == EPathFollowingRequestResult::Failed)
 	{
-		Bot->GetIslandLatch().Reset();
+		Bot->GetIslandLatch().ClearWithCooldown(WorldSeconds(*Bot), Cooldown);
 		return EStateTreeRunStatus::Failed;
 	}
 	return EStateTreeRunStatus::Running;
@@ -2157,30 +2236,36 @@ EStateTreeRunStatus FAIBEgressTask::Tick(FStateTreeExecutionContext& Context, co
 	}
 	const FVector Here = Pawn->GetActorLocation();
 	const double Now = WorldSeconds(*Bot);
+	const FAIBTierRow& Tier = Bot->GetTierRow();
+	InstanceData.SecondsSinceEnter += DeltaTime;
 
 	// FALLING: the fall is the move. Nothing to press, nothing to steer, nothing to cancel.
+	// Counts as the drop only after the step-off (W-REVIEW M4): one ungrounded frame on
+	// the walk — a seam, a bump — is not a landing to judge.
 	if (!Avatar->IsGrounded())
 	{
-		InstanceData.bAirborneSeen = true;
+		InstanceData.bAirborneSeen = InstanceData.bSteppedOff;
 		return EStateTreeRunStatus::Running;
 	}
 
 	// LANDED. Below the lip by the drop number = off the island: the parsed egress line
 	// and the latch cleared. At the lip's height = the step-off never left this island
-	// (a rail, a thin ledge past the boundary): cleared anyway, so Wander re-measures.
+	// (a rail, a thin ledge past the boundary): cleared with the cooldown, so Wander
+	// walks rather than re-latching here.
 	if (InstanceData.bAirborneSeen)
 	{
 		FAIBIslandLatch& Latch = Bot->GetIslandLatch();
-		const float StrandedSeconds = Latch.LatchedAtSeconds >= 0.0 ? static_cast<float>(Now - Latch.LatchedAtSeconds) : 0.f;
+		const float StrandedSeconds = InstanceData.StrandedSinceSeconds >= 0.0 ? static_cast<float>(Now - InstanceData.StrandedSinceSeconds) : 0.f;
 		const float DropUU = InstanceData.Lip.Z - Here.Z;
-		Latch.Reset();
-		if (DropUU >= Bot->GetTierRow().IslandMinDropUU)
+		if (DropUU >= Tier.IslandMinDropUU)
 		{
+			Latch.Clear();
 			LogIslandEgress(*Bot, TEXT("drop"), InstanceData.Lip, StrandedSeconds);
 			return EStateTreeRunStatus::Succeeded;
 		}
-		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f island egress FAILED — landed %.0fuu below the lip, still on it — latch cleared (F7)."),
-			*Bot->GetName(), Now, DropUU);
+		Latch.ClearWithCooldown(Now, Tier.EgressCooldownSeconds);
+		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f island egress FAILED — landed %.0fuu below the lip, still on it — latch cleared, %.0fs cooldown (F7)."),
+			*Bot->GetName(), Now, DropUU, Tier.EgressCooldownSeconds);
 		return EStateTreeRunStatus::Failed;
 	}
 
@@ -2204,16 +2289,18 @@ EStateTreeRunStatus FAIBEgressTask::Tick(FStateTreeExecutionContext& Context, co
 		}
 		if ((InstanceData.LipSeconds += DeltaTime) >= InstanceData.DropTimeoutSeconds)
 		{
-			UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f island egress FAILED — %.1fs at the lip, never left the ground — latch cleared (F7)."),
-				*Bot->GetName(), Now, InstanceData.LipSeconds);
-			Bot->GetIslandLatch().Reset();
+			UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f island egress FAILED — %.1fs at the lip, never left the ground — latch cleared, %.0fs cooldown (F7)."),
+				*Bot->GetName(), Now, InstanceData.LipSeconds, Tier.EgressCooldownSeconds);
+			Bot->GetIslandLatch().ClearWithCooldown(Now, Tier.EgressCooldownSeconds);
 			return EStateTreeRunStatus::Failed;
 		}
 		return EStateTreeRunStatus::Running;
 	}
 
-	// WALKING TO THE LIP: the ordinary mover bookkeeping (lane A's short-path read too —
-	// a mover that went Idle short of the lip is a partial path, not eight seconds' news).
+	// WALKING TO THE LIP: the ordinary mover bookkeeping. The short-path read is lane A's
+	// M3 shape, not a no-progress ratchet: 0.5s since ENTER and Idle for 0.3s CONSECUTIVE
+	// — a single Idle frame between a detour's path and its re-issue is not a finished path.
+	InstanceData.MoverIdleSeconds = bMoverIdle ? InstanceData.MoverIdleSeconds + DeltaTime : 0.f;
 	const float DistNow = FVector::Dist(Here, InstanceData.Lip);
 	if (DistNow < InstanceData.ClosestSoFarUU - 1.f)
 	{
@@ -2223,14 +2310,14 @@ EStateTreeRunStatus FAIBEgressTask::Tick(FStateTreeExecutionContext& Context, co
 	else
 	{
 		InstanceData.SecondsWithoutProgress += DeltaTime;
-		const bool bMoverDoneShort = bMoverIdle && InstanceData.SecondsWithoutProgress >= 0.5f;
-		if (bMoverDoneShort || InstanceData.SecondsWithoutProgress >= InstanceData.GiveUpAfterNoProgressSeconds)
-		{
-			UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f island egress FAILED — lip %.0fuu short (mover %s) — latch cleared (F7)."),
-				*Bot->GetName(), Now, DistNow, bMoverDoneShort ? TEXT("idle") : TEXT("stalled"));
-			Bot->GetIslandLatch().Reset();
-			return EStateTreeRunStatus::Failed;
-		}
+	}
+	const bool bMoverDoneShort = InstanceData.SecondsSinceEnter >= 0.5f && InstanceData.MoverIdleSeconds >= 0.3f;
+	if (bMoverDoneShort || InstanceData.SecondsWithoutProgress >= InstanceData.GiveUpAfterNoProgressSeconds)
+	{
+		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f island egress FAILED — lip %.0fuu short (mover %s) — latch cleared, %.0fs cooldown (F7)."),
+			*Bot->GetName(), Now, DistNow, bMoverDoneShort ? TEXT("idle") : TEXT("stalled"), Tier.EgressCooldownSeconds);
+		Bot->GetIslandLatch().ClearWithCooldown(Now, Tier.EgressCooldownSeconds);
+		return EStateTreeRunStatus::Failed;
 	}
 	TickLocomotion(*Bot, InstanceData.Locomotion, InstanceData.Lip, InstanceData.LipReachUU, DeltaTime);
 	return EStateTreeRunStatus::Running;
@@ -2246,12 +2333,18 @@ void FAIBEgressTask::ExitState(FStateTreeExecutionContext& Context, const FState
 	}
 	ReleaseLocomotion(*Bot, InstanceData.Locomotion);
 	// NEVER CANCELS A FALL (critic M5): a body in the air finishes arriving like a human
-	// would; only a grounded walk is stopped. The latch stays — Wander's next full draw,
-	// or the next Egress landing, clears it from the world, not from this exit.
+	// would; only a grounded walk is stopped. Airborne, the unpathed step-off request is
+	// handed to the controller's one-shot (W-REVIEW M6): stopped on the first grounded
+	// sample unless a newer move owns the mover by then. The latch stays — a landing, a
+	// full draw, or a completed full-path move clears it from the world, not this exit.
 	const IAIBAvatarInterface* Avatar = Bot->GetAvatar();
 	if (!Avatar || Avatar->IsGrounded())
 	{
 		Bot->StopMovement();
+	}
+	else
+	{
+		Bot->ArmStopOnLanding();
 	}
 }
 
