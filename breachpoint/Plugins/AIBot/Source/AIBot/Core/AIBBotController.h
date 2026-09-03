@@ -393,7 +393,7 @@ public:
 	 *  replayable across runs. */
 	void SetMatchSeed(int32 InSeed) { MatchSeed = InSeed; }
 	void SetBotIndex(int32 InIndex) { BotIndex = InIndex; }
-	int32 GetBotIndex() const { return BotIndex; }
+	// GetBotIndex / GetLifeSeed: Phase 14's seed triple below (one declaration).
 
 	/** AIB26: see FAIBFlankLatch. The Flank task walks it and clears it on arrival or
 	 *  failure (Why is logged); Think clears it when the belief drifts or the fight ends. */
@@ -742,7 +742,7 @@ private:
 	FAIBFlankLatch FlankLatch;
 	double HoldSinceSeconds = -1.0;
 	int32 MatchSeed = 0;
-	int32 BotIndex = -1;
+	// BotIndex: Phase 14's member below (INDEX_NONE until the manager assigns it).
 	/** Never reset per life: the replay diff sorts on (bot, seq) across a whole match. */
 	uint32 DecisionSeq = 0;
 	/** The decision stream — today only the flank ring's offset draws from it; every
