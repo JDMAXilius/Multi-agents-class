@@ -623,3 +623,12 @@ Refined steps (replace §Steps):
   3119 / 4359 / 3204 / 8375 / 2438 uu, z from the culvert (−402) to the tower (271). The
   headless batch (v6, 300 s matches) is the honest idle measure; the captures show live fights
   on both maps (kill feed, grenades, score).
+- 2026-09-03 fix #7 merged (ba24bbea) and the editor target PASS: `FindIslandLip` takes the
+  nearest lip whose landing has a full path to an island anchor (`LandingLeavesIsland`),
+  skipped lips logged at Verbose; a body already at the lip (35 uu + standoff) skips the walk
+  (root cause of the 88 uu "away": IsWithin measures 3D from the capsule centre); landing back
+  inside the platform's footprint (+50/+30) is `island egress FAILED — landed on the same
+  island (F7)` with the cooldown. Per-map grapple routes merged (9f5f85f5, adapter + ini +
+  generator). Fix #8 (crowd re-enable, no corpse claims, 3 s give-up, Engage floor with melee,
+  flank holds Engage) in flight; then the final build, specs, v6 (300 s matches) and the last
+  editor session.
