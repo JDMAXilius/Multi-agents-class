@@ -2206,7 +2206,7 @@ EStateTreeRunStatus FAIBMoveToPOITask::EnterState(FStateTreeExecutionContext& Co
 				// AIB25 W-REVIEW M3: the bot's OWN filter ranks the draws' lengths — the
 				// island test (the anchor walk) stays unfiltered: reachability, not taste.
 				const FPathFindingResult Found = NavSys->FindPathSync(FPathFindingQuery(Bot, *NavData, Feet, Candidate.Location,
-					UNavigationQueryFilter::GetQueryFilter(*NavData, Bot, Bot->DefaultNavigationFilterClass)));
+					UNavigationQueryFilter::GetQueryFilter(*NavData, Bot, Bot->GetDefaultNavigationFilterClass())));
 				const bool bPathed = Found.IsSuccessful() && Found.Path.IsValid();
 				const bool bFull = bPathed && !Found.Path->IsPartial();
 				if (Bot->GetIslandLatch().NoteDraw(bFull, LatchDraws, Now))
