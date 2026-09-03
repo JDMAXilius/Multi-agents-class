@@ -695,3 +695,48 @@ Refined steps (replace §Steps):
   3 s give-up instead of standing (or abandon at 1 s when no progress at all); (b) Retreat's
   DEFEND hold = a named still tactic or a strafe-hold; (c) the interior-lip blacklist. Game side:
   the empty-hand weapon swap (bn-builder, high) and the Rally urgency shape at RallyNearUU.
+
+### 3 Sep (cloud) — follow-ups (a), (b) and (c), all three
+
+**WRITTEN, NOT COMPILED.** Terminal owes rung 1, `AIBot.Sim.IslandLatch` (six new pins),
+and a v7 run against the v6 medians. These attack the one HARD bar still unmet — idle
+`tactic=none` 25.6 s Spillway / 44.9 s Arena01 per bot per 300 s, against a bar of 0 —
+from three directions, and one of them is a measurement correction rather than a fix.
+
+**(b) Retreat's DEFEND stand-down is now a named still tactic** (`EAIBStillTactic::Defend`,
+bit 7). This is the SMALLEST change and possibly the largest number: breaking contact to
+the band's floor with the threat in sight and standing to fight is the design's own answer
+(founder, 28 Aug — stop jogging away with your back turned), and every second of it was
+being charged to `tactic=none`. Every other intentional stand already had a name; this was
+the last one that did not. Expect a real drop in the idle figure that is **bookkeeping, not
+behaviour** — read it as such, and if the v7 idle number falls mostly on this, the bar was
+partly measuring a decision.
+
+**(a) The drift reflex** — the actual behaviour fix. A bot that abandons a goal takes a
+failure strike, its want rests for the suppression window, and until something scores
+again it stands with no tactic at all. That nameless remainder is the bug, and no branch
+can fix it from the inside *because the failure is that no ambition is running*. So it
+sits in `Think` beside the draw reflex, ambition-blind: no named stand, no move in flight,
+still for `DriftAfterIdleSeconds` (1.5 s) → walk to a fresh reachable point within 1200 uu,
+throttled to one nav query per 2 s. A mover issuing its own goal next tick simply wins —
+this is filler, not a decision. **`Stranded` is excluded by the tactic gate deliberately**:
+a confirmed island with no legal lip is a MAP defect the verifier must keep seeing, and a
+bot shuffling contentedly around its island would hide it.
+
+**(c) The interior-lip blacklist** — the gantry residual. The lip fan is deterministic from
+the same feet *by design* ("the same feet must find the same lip"), which is exactly why a
+failure had to be remembered: without it the bot re-picks the one door that does not open
+on every entry. A failed lip is refused for 20 s within 120 uu, held in a four-slot ring on
+the island latch (both movers run this recovery, and a StateTree recreates task instance
+data — the same reason the sweep budget and the flank latch live there). Bounded three
+ways on purpose: an unbounded blacklist is a leak that would eventually refuse every lip on
+the map and strand the bot by the mechanism meant to free it. Two rules keep it honest —
+only a lip the bot was **actually trying** is blamed (a horizontal walk to the mesh has no
+lip), and a lip the body **successfully left** (airborne off the edge) is never blacklisted
+whatever the landing turns out to be.
+
+v7 gates: idle `tactic=none` down, with the Defend share reported SEPARATELY so the
+bookkeeping and the behaviour can be told apart; `drift` lines present and each followed by
+motion; no bot blacklisting more than a few lips per life; longest stall not worse; the
+gantry's one interior-lip bot leaves.
+

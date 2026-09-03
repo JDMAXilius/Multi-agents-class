@@ -53,6 +53,13 @@ enum class EAIBStillTactic : uint8
 	/** Phase 13 W-REVIEW M6: a live move request the crowd has braked to zero velocity —
 	 *  the crowd is doing the stepping, not the bot standing. Mirrored each Think. */
 	Crowd      = 1 << 6,
+	/** AIB22 follow-up (b): Retreat's DEFEND stand-down — contact broken to the band's
+	 *  floor with the threat IN SIGHT, so the mover stops and the footwork beside it takes
+	 *  the legs. This is a bot CHOOSING to stand and fight (founder, 28 Aug), and it was
+	 *  booking as `tactic=none` — idle seconds charged against a behaviour the design
+	 *  asked for. Naming it moves those seconds out of the idle gate and into a countable
+	 *  line, which is the difference between measuring a defect and measuring a decision. */
+	Defend     = 1 << 7,
 };
 
 /** AIB22 H1/F9 — the STATIONARY sweep's budget. Held by the controller, never by the
@@ -203,6 +210,75 @@ struct AIBOT_API FAIBIslandLatch
 	/** World seconds before which draws do not latch (-1 = no cooldown). */
 	double NoLatchBeforeSeconds = -1.0;
 
+	/** AIB22 follow-up (c) — THE INTERIOR-LIP BLACKLIST.
+	 *
+	 *  The gantry watch's residual: one bot on an interior lip stepped off, failed to
+	 *  leave the island (fix #7 judges a same-island landing a failure), and on the next
+	 *  entry the lip fan — fixed headings, deterministically the same from the same feet —
+	 *  handed back THE SAME LIP. A body that cannot learn which door does not open tries
+	 *  that door until the match ends.
+	 *
+	 *  So a lip that failed is refused for a while. Bounded three ways, because an
+	 *  unbounded blacklist is a memory leak that also eventually refuses every lip on the
+	 *  map: a small ring (oldest evicted), a per-entry expiry, and a radius test rather
+	 *  than an exact match, since the fan re-derives a lip from slightly different feet
+	 *  each time. Cleared with the latch — a bot that got off the island has no grudge. */
+	static constexpr int32 MaxFailedLips = 4;
+	FVector FailedLips[MaxFailedLips] = {};
+	double FailedLipUntil[MaxFailedLips] = {};
+	int32 NextFailedLip = 0;
+
+	/** The lip a step-off is being attempted from RIGHT NOW. Held on the latch rather
+	 *  than in task instance data because both movers run this recovery and a StateTree
+	 *  recreates instance data on every completion transition — the same reason the sweep
+	 *  budget and the flank latch live here. Consumed by the failure, cleared by success. */
+	FVector PendingLip = FVector::ZeroVector;
+	bool bHasPendingLip = false;
+
+	void NotePendingLip(const FVector& Lip) { PendingLip = Lip; bHasPendingLip = true; }
+
+	/** The attempt failed: remember THIS door, and only if we know which one it was (a
+	 *  horizontal walk to the mesh has no lip, and blacklisting its target would refuse a
+	 *  legitimate lip that happened to sit near it). */
+	void NotePendingLipFailed(double NowSeconds, float ForSeconds)
+	{
+		if (bHasPendingLip)
+		{
+			NoteLipFailed(PendingLip, NowSeconds, ForSeconds);
+			bHasPendingLip = false;
+		}
+	}
+
+	void NoteLipFailed(const FVector& Lip, double NowSeconds, float ForSeconds)
+	{
+		FailedLips[NextFailedLip] = Lip;
+		FailedLipUntil[NextFailedLip] = NowSeconds + FMath::Max(ForSeconds, 0.f);
+		NextFailedLip = (NextFailedLip + 1) % MaxFailedLips;
+	}
+
+	bool RefusesLip(const FVector& Lip, double NowSeconds, float SameLipUU) const
+	{
+		for (int32 i = 0; i < MaxFailedLips; ++i)
+		{
+			if (NowSeconds < FailedLipUntil[i]
+				&& FVector::DistSquared2D(FailedLips[i], Lip) <= SameLipUU * SameLipUU)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	void ForgetFailedLips()
+	{
+		for (int32 i = 0; i < MaxFailedLips; ++i)
+		{
+			FailedLipUntil[i] = 0.0;
+		}
+		NextFailedLip = 0;
+		bHasPendingLip = false;
+	}
+
 	/** True on the ONE draw that latches — the caller logs it once. */
 	bool NoteDraw(bool bFullPath, int32 LatchAfterDraws, double NowSeconds)
 	{
@@ -267,6 +343,7 @@ struct AIBOT_API FAIBIslandLatch
 		LatchedAtSeconds = -1.0;
 		Confirmation = EConfirm::Untested;
 		bStranded = false;
+		ForgetFailedLips();   // off the island: no grudge against any door
 	}
 	/** An Egress failure or a refuted hypothesis: gone, and not re-measured for a while. */
 	void ClearWithCooldown(double NowSeconds, float CooldownSeconds)
@@ -867,6 +944,10 @@ private:
 	/** The draw reflex's throttle (see Think) — the 0.6s beat an equip needs to take.
 	 *  Absolute time; reset with the body like every other stamp. */
 	double NextDrawPressSeconds = 0.0;
+
+	/** The drift reflex's throttle (see Think): a nav query per think would be waste, and
+	 *  a move re-issued every think would cancel itself. Absolute; reset with the body. */
+	double NextDriftSeconds = 0.0;
 
 	/** AIB22 idle instrument: when the current no-input spell began (-1 = none open),
 	 *  the tactic flags up NOW, and the set the open spell is attributed to — a spell is

@@ -138,6 +138,41 @@ namespace AIB
 	 *  starts moving, rather than setting off sideways and correcting. */
 	inline constexpr float TravelFacingMinSpeedUU = 60.f;
 
+	// ---- THE DRIFT REFLEX (AIB22 follow-up (a), law F9's "motion is the default") -------
+	// A bot that abandons a goal takes a failure strike, the ambition rests for the
+	// suppression window, and until some want scores again it stands with NO tactic at
+	// all. Measured as idle tactic=none 25.6s Spillway / 44.9s Arena01 per bot per 300s
+	// against a HARD bar of 0. Standing there is not a decision the design ever asked
+	// for — every intentional stand already has a name (Hold, Reload, StrafeHold, Sweep,
+	// Yield, Crowd, Stranded, and now Defend) — so the nameless remainder is the bug.
+	//
+	// The reflex walks it off: no tactic, no move in flight, still for this long, and the
+	// body takes a short walk to a fresh reachable point while the brain sorts itself out.
+	// Ambition-blind on purpose, like the draw reflex — the whole failure is that no
+	// ambition is running to issue a goal, so a fix inside any branch cannot reach it.
+
+	/** How long a bot may stand with NO still tactic before the body walks anyway. Long
+	 *  enough that a normal beat between goals is untouched; short enough that a human
+	 *  watching never reads it as frozen. */
+	inline constexpr float DriftAfterIdleSeconds = 1.5f;
+
+	/** How far a drift walk goes. Short deliberately: this is filler the brain should
+	 *  reclaim within a couple of thinks, not a cross-map trek that outlives the reason. */
+	inline constexpr float DriftRadiusUU = 1200.f;
+
+	/** Arrival tolerance for a drift walk — loose, since nothing depends on the spot. */
+	inline constexpr float DriftAcceptanceUU = 150.f;
+
+	/** Between drift attempts, whether or not the draw found anything: one nav query per
+	 *  think is waste, and a move re-issued every think cancels itself. */
+	inline constexpr float DriftRetrySeconds = 2.0f;
+
+	/** How long a failed step-off lip is refused, and how close counts as the same lip.
+	 *  See FAIBIslandLatch's blacklist — the fan is deterministic from the same feet, so
+	 *  without this a bot retries the one door that does not open until the match ends. */
+	inline constexpr float FailedLipRefuseSeconds = 20.f;
+	inline constexpr float SameLipUU = 120.f;
+
 	/** AIB22 W-REVIEW H2: the scan a bot holding an objective makes — the founder's
 	 *  named-hold exception, UNBUDGETED because a hill is held by standing on it, and
 	 *  slow because a guard looks about, it does not spin. Search's post sweep is the

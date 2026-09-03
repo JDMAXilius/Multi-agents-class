@@ -713,12 +713,22 @@ namespace
 			{
 				continue;
 			}
+			// AIB22 follow-up (c): a lip that already failed is not offered again. The fan
+			// is deterministic from the same feet by design (the comment above says so —
+			// "the same feet must find the same lip"), which is exactly why a failure had
+			// to be remembered somewhere: without this the bot re-picks the one door that
+			// does not open, every entry, for the rest of the match.
+			const FVector Candidate(Probe.X, Probe.Y, Below.Location.Z);
+			if (Bot.GetIslandLatch().RefusesLip(Candidate, WorldSeconds(Bot), AIB::SameLipUU))
+			{
+				continue;
+			}
 			const float OffsetSq = static_cast<float>(FVector::DistSquared2D(Probe, Below.Location));
 			if (OffsetSq < BestOffsetSq)
 			{
 				BestOffsetSq = OffsetSq;
 				bFound = true;
-				OutBeyond = FVector(Probe.X, Probe.Y, Below.Location.Z);
+				OutBeyond = Candidate;
 			}
 		}
 		return bFound;
@@ -769,6 +779,8 @@ namespace
 			Bot.GetIslandLatch().Strand(Now, Tier.EgressCooldownSeconds);
 			return EAIBOffMeshRecovery::Failed;
 		}
+		// AIB22 (c): remember which door we are trying, so its failure can be learned from.
+		Bot.GetIslandLatch().NotePendingLip(OutTarget);
 		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f off-mesh recovery — vertical gap %.0fuu, stepping off %.0fuu to the mesh"),
 			*Bot.GetName(), Now, GapUU, FVector::Dist2D(Feet, OutTarget));
 		Bot.MoveToLocation(OutTarget, /*AcceptanceRadius=*/80.f, /*bStopOnOverlap=*/true,
@@ -789,6 +801,13 @@ namespace
 		const IAIBAvatarInterface* Avatar = Bot.GetAvatar();
 		if (!Avatar || !Avatar->IsGrounded())
 		{
+			// AIB22 (c): AIRBORNE OFF THE EDGE means the lip did its job — the body left.
+			// Whatever happens to the landing (fix #7 judges a same-island landing a
+			// failure, and that verdict is the caller's) it is not this door's fault, so
+			// the pending record is dropped rather than blamed. Without this the blacklist
+			// would fill with lips that worked, and a bot on a small island would run out
+			// of doors it is allowed to use.
+			Bot.GetIslandLatch().bHasPendingLip = false;
 			return 0;
 		}
 		FVector Feet, OnNav;
@@ -799,6 +818,10 @@ namespace
 		if (Seconds >= OffMeshRecoveryTimeoutSeconds
 			|| (Seconds > 0.5f && Bot.GetMoveStatus() == EPathFollowingStatus::Idle))
 		{
+			// AIB22 (c): the door did not open. Refuse it for a while so the next entry's
+			// fan — deterministic from the same feet — offers a DIFFERENT one instead of
+			// this one again. A horizontal walk has no pending lip and records nothing.
+			Bot.GetIslandLatch().NotePendingLipFailed(WorldSeconds(Bot), AIB::FailedLipRefuseSeconds);
 			Bot.GetIslandLatch().Strand(WorldSeconds(Bot), Bot.GetTierRow().EgressCooldownSeconds);
 			return -1;
 		}
@@ -1690,6 +1713,12 @@ EStateTreeRunStatus FAIBFleeFromBeliefTask::Tick(FStateTreeExecutionContext& Con
 			// the bot would stand rooted — the exact "doing nothing" this change exists to end.
 			InstanceData.bStoodDownToDefend = true;
 			Bot->StopMovement();
+			// AIB22 follow-up (b): NAME IT. This stand is the design's own answer (founder,
+			// 28 Aug: stop jogging away with your back turned and fight), and unnamed it
+			// charged every second of it to `tactic=none` — idle seconds against a hard bar
+			// of 0, for doing exactly what was asked. Every other intentional stand carries
+			// a name; this was the last one that did not.
+			Bot->SetStillTactic(EAIBStillTactic::Defend, true);
 			UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s broke contact — holding to DEFEND (%.0fuu out)."),
 				*Bot->GetName(), FVector::Dist(Pawn->GetActorLocation(), Bot->GetSensorium().GetLastSeenLocation()));
 		}
@@ -1710,6 +1739,7 @@ EStateTreeRunStatus FAIBFleeFromBeliefTask::Tick(FStateTreeExecutionContext& Con
 		// midpoint dips inward by ~11% at MaxArcDegrees 55, so two legs from 700-790uu put the
 		// bot back under the floor by construction.
 		InstanceData.bStoodDownToDefend = false;
+		Bot->SetStillTactic(EAIBStillTactic::Defend, false);
 		MoveToNavPoint(*Bot, InstanceData.FleeGoal, 150.f);
 		UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s fell back inside the defend band — resuming the break."), *Bot->GetName());
 	}

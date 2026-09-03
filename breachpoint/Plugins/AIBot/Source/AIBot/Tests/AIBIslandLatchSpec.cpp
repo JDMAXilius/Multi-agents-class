@@ -317,6 +317,94 @@ void FAIBIslandLatchSpec::Define()
 		TestEqual(TEXT("EgressCooldownSeconds"), Row.EgressCooldownSeconds, 5.f);
 		TestEqual(TEXT("LatchMaxAgeSeconds"), Row.LatchMaxAgeSeconds, 10.f);
 	});
+
+	Describe("the interior-lip blacklist (AIB22 follow-up (c))", [this]()
+	{
+		// The gantry residual. The lip fan is DETERMINISTIC from the same feet BY DESIGN
+		// ("the same feet must find the same lip"), so a lip that failed is handed back on
+		// the next entry, and the next, until the match ends. A body that cannot learn
+		// which door does not open keeps trying that door.
+
+		It("refuses a failed lip, and only inside the window", [this]()
+		{
+			FAIBIslandLatch Latch;
+			const FVector Door(1000.f, 0.f, 400.f);
+			TestFalse(TEXT("nothing refused yet"), Latch.RefusesLip(Door, 1.0, 120.f));
+			Latch.NoteLipFailed(Door, 1.0, 20.f);
+			TestTrue(TEXT("refused on the next entry"), Latch.RefusesLip(Door, 1.5, 120.f));
+			TestTrue(TEXT("still refused inside the window"), Latch.RefusesLip(Door, 20.0, 120.f));
+			TestFalse(TEXT("the window lapses"), Latch.RefusesLip(Door, 21.5, 120.f));
+		});
+
+		It("refuses by RADIUS, because the fan re-derives a lip from shifted feet", [this]()
+		{
+			FAIBIslandLatch Latch;
+			Latch.NoteLipFailed(FVector(1000.f, 0.f, 400.f), 1.0, 20.f);
+			TestTrue(TEXT("60uu away is the same door"),
+				Latch.RefusesLip(FVector(1060.f, 0.f, 400.f), 2.0, 120.f));
+			TestFalse(TEXT("300uu away is a different door"),
+				Latch.RefusesLip(FVector(1300.f, 0.f, 400.f), 2.0, 120.f));
+		});
+
+		It("holds only a few doors — the oldest is evicted, never an unbounded list", [this]()
+		{
+			// An unbounded blacklist is a leak that ALSO eventually refuses every lip on
+			// the map, which would strand the bot by the very mechanism meant to free it.
+			FAIBIslandLatch Latch;
+			for (int32 i = 0; i < FAIBIslandLatch::MaxFailedLips + 1; ++i)
+			{
+				Latch.NoteLipFailed(FVector(1000.f + i * 500.f, 0.f, 400.f), 1.0, 20.f);
+			}
+			TestFalse(TEXT("the oldest was evicted"),
+				Latch.RefusesLip(FVector(1000.f, 0.f, 400.f), 2.0, 120.f));
+			TestTrue(TEXT("the newest is held"),
+				Latch.RefusesLip(FVector(1000.f + FAIBIslandLatch::MaxFailedLips * 500.f, 0.f, 400.f),
+					2.0, 120.f));
+		});
+
+		It("only blames a door it was actually trying", [this]()
+		{
+			// A HORIZONTAL walk to the mesh has no lip at all; blacklisting its target
+			// would refuse a legitimate lip that happened to sit near it.
+			FAIBIslandLatch Latch;
+			Latch.NotePendingLipFailed(1.0, 20.f);
+			TestFalse(TEXT("nothing pending, nothing recorded"),
+				Latch.RefusesLip(FVector::ZeroVector, 2.0, 120.f));
+
+			Latch.NotePendingLip(FVector(1000.f, 0.f, 400.f));
+			Latch.NotePendingLipFailed(1.0, 20.f);
+			TestTrue(TEXT("the door it was trying is refused"),
+				Latch.RefusesLip(FVector(1000.f, 0.f, 400.f), 2.0, 120.f));
+
+			// Consumed ONCE: a later report with nothing pending must not re-blame the
+			// same door and silently extend its sentence past the window.
+			Latch.NotePendingLipFailed(50.0, 20.f);
+			TestFalse(TEXT("the sentence was not extended"),
+				Latch.RefusesLip(FVector(1000.f, 0.f, 400.f), 25.0, 120.f));
+		});
+
+		It("drops the pending record when the body actually leaves", [this]()
+		{
+			// Airborne off the edge = the lip worked. Whatever the landing turns out to
+			// be, this door is not to blame — or the blacklist fills with lips that work.
+			FAIBIslandLatch Latch;
+			Latch.NotePendingLip(FVector(1000.f, 0.f, 400.f));
+			Latch.bHasPendingLip = false;                 // what the airborne tick does
+			Latch.NotePendingLipFailed(2.0, 20.f);        // a later, unrelated failure
+			TestFalse(TEXT("a lip that worked is never blacklisted"),
+				Latch.RefusesLip(FVector(1000.f, 0.f, 400.f), 3.0, 120.f));
+		});
+
+		It("forgets every grudge the moment the bot is off the island", [this]()
+		{
+			FAIBIslandLatch Latch;
+			Latch.NoteLipFailed(FVector(1000.f, 0.f, 400.f), 1.0, 20.f);
+			Latch.Clear();
+			TestFalse(TEXT("off the island: no grudge"),
+				Latch.RefusesLip(FVector(1000.f, 0.f, 400.f), 2.0, 120.f));
+		});
+	});
+
 }
 
 #endif // WITH_DEV_AUTOMATION_TESTS

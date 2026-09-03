@@ -1515,6 +1515,46 @@ void AAIBBotController::Think()
 			}
 		}
 
+		// THE DRIFT REFLEX (AIB22 follow-up (a)). Same shape and same reason as the draw
+		// reflex above: the failure is that NO ambition is running, so no branch can fix
+		// it from the inside. A bot that abandoned a goal rests its want for the
+		// suppression window and, until something scores again, stands with no tactic at
+		// all — 25.6s Spillway / 44.9s Arena01 per bot per 300s against a hard bar of 0.
+		//
+		// Every stand the design ASKED for already carries a name (Hold, Reload,
+		// StrafeHold, Sweep, Yield, Crowd, Stranded, Defend), so `StillTactics == None` is
+		// exactly the nameless remainder — and that is what this walks off. Gated on no
+		// move in flight, so it never fights a mover; a task issuing its own goal next
+		// tick simply wins, which is correct — this is filler, not a decision.
+		//
+		// Stranded is excluded BY the tactic gate, deliberately: a confirmed island with
+		// no legal lip is a MAP defect the verifier must keep seeing, and a bot shuffling
+		// contentedly around its island would hide it.
+		if (const APawn* DriftPawn = GetPawn())
+		{
+			const IAIBAvatarInterface* DriftDoor = GetAvatar();
+			if (DriftDoor && DriftDoor->IsAlive()
+				&& StillTactics == 0   // the bitmask, not the enum: NO named stand is up
+				&& IdleSinceSeconds >= 0.0 && Now - IdleSinceSeconds >= AIB::DriftAfterIdleSeconds
+				&& Now >= NextDriftSeconds
+				&& GetMoveStatus() != EPathFollowingStatus::Moving)
+			{
+				// Throttled whether or not the draw lands: a nav query per think is waste.
+				NextDriftSeconds = Now + AIB::DriftRetrySeconds;
+				UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(World);
+				FNavLocation Drift;
+				if (NavSys && NavSys->GetRandomReachablePointInRadius(
+						DriftPawn->GetActorLocation(), AIB::DriftRadiusUU, Drift))
+				{
+					MoveToLocation(Drift.Location, AIB::DriftAcceptanceUU);
+					UE_LOG(LogAIBot, Log,
+						TEXT("AIBot: %s t=%.1f drift — %.1fs still with no tactic, walking %.0fuu"),
+						*GetName(), Now, static_cast<float>(Now - IdleSinceSeconds),
+						FVector::Dist(DriftPawn->GetActorLocation(), Drift.Location));
+				}
+			}
+		}
+
 		// Phase 5, in order: the ledger sources the damage-history facts, then the
 		// model judges the fight FROM the finished facts, then the brain scores.
 		// History is KNOWN only once the host's seam has ever spoken — a host that
