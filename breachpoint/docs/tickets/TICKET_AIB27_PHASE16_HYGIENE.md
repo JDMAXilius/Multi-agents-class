@@ -60,3 +60,14 @@ CONTRACT_GAP raised to the founder (outside every AIB owner path):
   the wrapper is Win64/RunUAT.bat-only with no Mac counterpart, and the scenario is a dedicated-
   server test whose survival hangs on BN38's unwritten BreachpointServer ruling. PIE is not a
   substitute.
+- 2026-09-03 BN legacy retirement, files-only half (bn-builder, worktree, merged e3a7eca8):
+  `Source/BreachpointNext/AI/` + `Tests/BNBotBrainSpec.cpp` + `Tools/bn/60-62` deleted; BNGameMode
+  loses `BotSystem`/`BotControllerClass` (AIB class only, same spawn path); BNProjectile drops
+  the BN branch; BNGameData drops both Find*Row + tables (now `UCLASS()`); BNAssetSettings loses
+  the `bRebuildBotAssets` button (a third consumer the ticket missed); Build.cs drops the
+  UnrealEd block AND `StateTreeModule`/`GameplayStateTreeModule` (BN-bot-only); ini keys gone
+  (`AIBBotControllerClass` kept). 34 files, +11/−6402. NOT yet compiled — rung 1 on all
+  buildable targets runs with AIB22 fix #4 once the v4 batch frees the machine. Left for the
+  editor pass: `FBNBotTuningRow`/`FBNBotAmbitionRow` after DT_BNBot*/ST_BNBot are deleted.
+  Stale prose to scrub later: aib-verifier.md:24 (A/B match), run-specs.sh:13 usage example,
+  70_aib_assets.py:7 docstring.
