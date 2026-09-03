@@ -115,7 +115,8 @@ RX = {
     # AIB22 fix #4 (2026-09-03): a link=no stall abandons at once; off-mesh bodies walk to the mesh.
     "stall_abandoned": re.compile(_AIB + r"stall abandoned [—-] (?P<seconds>" + _NUM + r")s, (?P<across>" + _NUM + r")uu across / (?P<up>-?" + _NUM + r")uu up, link=(?P<link>\S+) \((?P<why>[^)]*), F7\)"),
     "offmesh_recovery": re.compile(_AIB + r"off-mesh recovery [—-] walking (?P<dist>" + _NUM + r")uu to the mesh"),
-    "offmesh_failed":  re.compile(_AIB + r"off-mesh recovery FAILED [—-] (?P<seconds>" + _NUM + r")s"),
+    "offmesh_failed":  re.compile(_AIB + r"off-mesh recovery FAILED [—-] (?:(?P<seconds>" + _NUM + r")s|vertical gap (?P<gap>" + _NUM + r")uu, no lip)"),
+    "offmesh_stepoff": re.compile(_AIB + r"off-mesh recovery [—-] vertical gap (?P<gap>" + _NUM + r")uu, stepping off (?P<drop>" + _NUM + r")uu to the mesh"),
     "waiting_nav":     re.compile(_AIB + r"waiting for nav [—-] "),
     # Phase 13 (AIB24) separation lines and Phase 14 (AIB25) route lines (2026-09-03).
     "teammate_overlap": re.compile(_AIB + r"teammate overlap over [—-] (?P<seconds>" + _NUM + r")s, (?P<n>\d+) inside (?P<r>" + _NUM + r")uu"),
@@ -127,7 +128,7 @@ RX = {
     "route":          re.compile(_AIB + r"route [—-] lanes=(?P<lanes>\S+) len=(?P<len>" + _NUM + r")uu direct=(?P<direct>" + _NUM + r")uu goal=" + _VEC),
     # Phase 15 (AIB26) tactic layer lines (2026-09-03).
     "decide":         re.compile(r"AIBot: decide bot=(?P<bot_index>-?\d+) seq=(?P<seq>\d+) want=(?P<want>\S+) s=(?P<s>" + _NUM + r") over=(?P<over>\S+) rs=(?P<rs>" + _NUM + r") tac=(?P<tac>\S+) ts=(?P<ts>" + _NUM + r") commit=(?P<commit>-?\d+) rng=(?P<rng>\d+) facts=(?P<facts>[0-9a-f]{8})"),
-    "tactic_switch":  re.compile(r"AIBot: (?P<bot>\S+) tactic -> (?P<tag>\S+) \((?P<score>" + _NUM + r")\) over (?P<over>\S+) \((?P<over_score>" + _NUM + r")\) reason=(?P<reason>first|merit|veto|interrupt)"),
+    "tactic_switch":  re.compile(r"AIBot: (?P<bot>\S+) tactic -> (?P<tag>\S+) \((?P<score>" + _NUM + r")\) over (?P<over>\S+) \((?P<over_score>" + _NUM + r")\) reason=(?P<reason>first|merit|veto|interrupt|fallback)"),
     "flank_start":    re.compile(_AIB + r"flank starts [—-] point " + _VEC + r" detour (?P<detour>" + _NUM + r")uu"),
     "flank_over":     re.compile(_AIB + r"flank over [—-] (?P<outcome>arrived|stalled) after (?P<seconds>" + _NUM + r")s"),
     "hold_over":      re.compile(_AIB + r"hold over [—-] (?P<seconds>" + _NUM + r")s at station"),
@@ -644,6 +645,8 @@ AIBot: Bravo t=77.0 island egress FAILED — no lip within 150uu
 AIBot: Bravo t=78.0 stranded — no legal lip within 4000uu (drops ≤ 1000uu)
 AIBot: Alpha t=79.0 stall abandoned — 1.5s, 532uu across / -218uu up, link=no (a storey with no link, F7)
 AIBot: Alpha t=79.2 off-mesh recovery — walking 120uu to the mesh
+AIBot: Bravo t=80.0 off-mesh recovery — vertical gap 240uu, stepping off 150uu to the mesh
+AIBot: Bravo t=81.0 off-mesh recovery FAILED — vertical gap 900uu, no lip (F7)
 AIBot: Bravo t=0.3 waiting for nav — no decisions until the pawn projects onto the mesh
 AIBot: match seed -123456 (source=cmdline).
 AIBot: Alpha t=0.5 route bias — bot=3 life=1 seed=2891734112 lanes=1:1.00,2:1.23,3:1.07,4:1.41,5:1.00,6:1.15
@@ -699,12 +702,12 @@ AIBot: Alpha t=112.0 target claim GRANTED on Enemy1 (1/2)
 
 def selftest():
     lines = SELFTEST_LOG.splitlines()
-    assert len(lines) == 47, len(lines)
+    assert len(lines) == 49, len(lines)
     counts = parse_lines(lines)
     hits = {key: len(counts[key]) for key in ("move_refused", "stall_over", "sweep_over", "idle_over",
                                               "island_egress", "kill", "time_limit", "possess", "acquire", "f7",
                                               "wiring_pois", "match_over")}
-    assert counts["stranded"][0]["limit"] == "1000"
+    assert counts["stranded"][0]["limit"] == "1000" and counts["offmesh_stepoff"][0]["drop"] == "150" and counts["offmesh_failed"][0]["gap"] == "900"
     assert counts["decide"][0]["facts"] == "0a1b2c3d" and counts["tactic_switch"][0]["reason"] == "merit" and counts["flank_over"][0]["outcome"] == "arrived" and counts["hold_over"][0]["seconds"] == "2.5"
     assert counts["match_seed"][0]["source"] == "cmdline" and counts["route_bias"][0]["bot_index"] == "3" and counts["route"][0]["lanes"] == "2>4>1"
     assert counts["teammate_overlap"][0]["n"] == "2" and counts["yield"][0]["seconds"] == "1.0" and counts["hill_strafe"][0]["r"] == "180" and counts["position"][0]["n"] == "1"
