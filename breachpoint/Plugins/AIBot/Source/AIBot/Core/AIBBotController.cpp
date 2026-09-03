@@ -276,19 +276,16 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	// two is forbidden. Players become crowd OBSTACLES game-side (ICrowdAgentInterface on
 	// the player pawn, authority + player-controller gated); this module registers
 	// nothing but its own follower.
-	if (UCrowdFollowingComponent* Crowd = Cast<UCrowdFollowingComponent>(GetPathFollowingComponent()))
+	bCrowdRetryPending = false;
+	if (Cast<UCrowdFollowingComponent>(GetPathFollowingComponent()) && !ApplyCrowdSettings())
 	{
-		Crowd->SetCrowdSeparation(true);
-		Crowd->SetCrowdSeparationWeight(ResolvedTier.CrowdSeparationWeight);
-		Crowd->SetCrowdAvoidanceQuality(ECrowdAvoidanceQuality::Medium);
-		Crowd->SetCrowdPathOffset(true);
 		// W-REVIEW M1/L5: the crowd can silently fall back to plain path following (no
 		// manager, a late navmesh) — then separation is a comment, not a mechanism.
-		if (!Crowd->IsCrowdSimulationEnabled())
-		{
-			UE_LOG(LogAIBot, Log, TEXT("AIBot: %s crowd simulation DISABLED — no crowd manager or navmesh at possession; separation is off for this life."),
-				*GetName());
-		}
+		// AIB24 F8-1: on a respawn the follower initialises before the manager/navmesh
+		// exist, so the first on-nav Think (the R7 gate) retries once — see Think.
+		bCrowdRetryPending = true;
+		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s crowd simulation DISABLED — no crowd manager or navmesh at possession; separation is off for this life."),
+			*GetName());
 	}
 
 	const FAIBTierRow& Defaults = ResolvedTier;
@@ -1017,6 +1014,20 @@ void AAIBBotController::GetIslandAnchors(TArray<FAIBIslandAnchor>& OutAnchors) c
 	}
 }
 
+bool AAIBBotController::ApplyCrowdSettings()
+{
+	UCrowdFollowingComponent* Crowd = Cast<UCrowdFollowingComponent>(GetPathFollowingComponent());
+	if (!Crowd)
+	{
+		return false;
+	}
+	Crowd->SetCrowdSeparation(true);
+	Crowd->SetCrowdSeparationWeight(ResolvedTier.CrowdSeparationWeight);
+	Crowd->SetCrowdAvoidanceQuality(ECrowdAvoidanceQuality::Medium);
+	Crowd->SetCrowdPathOffset(true);
+	return Crowd->IsCrowdSimulationEnabled();
+}
+
 void AAIBBotController::ClearFlankLatch(const TCHAR* Why)
 {
 	if (FlankLatch.bHasPoint)
@@ -1306,6 +1317,21 @@ void AAIBBotController::Think()
 	}
 	Sensorium.SetMemoryWindowSeconds(
 		FMath::Min(GetTierRow().MemoryFreshSeconds, AIB::MaxMemorySeconds));
+	// AIB23 F8-2: the corpse door — the claims board's own per-target liveness read
+	// (AreEnemies folds "a corpse is nobody's enemy"), pushed in for the candidates the bot
+	// ALREADY believes in. Never an enumeration, never a position: a bot that kept
+	// selecting a corpse re-granted its claim seven times in 0.6 s.
+	if (const IAIBWorldQuery* Query = GetPawn() ? GetWorldQuery() : nullptr)
+	{
+		for (const FAIBTargetCandidate& C : Sensorium.GetCandidates())
+		{
+			const AActor* Believed = C.Actor.Get();
+			if (Believed && !Query->AreEnemies(GetPawn(), Believed))
+			{
+				Sensorium.MarkDead(Believed);
+			}
+		}
+	}
 
 	// PHASE 12 — THE TEAM MIND, BEFORE THE PUMP (AIB23 W-AUDIT seams). (a) Teammates'
 	// callouts enter THIS bot's reaction clock now, so they mature on its own draw and
@@ -1423,6 +1449,23 @@ void AAIBBotController::Think()
 		{
 			UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s t=%.1f on nav after %.1fs"), *GetName(), Now, Now - PossessedAtSeconds);
 		}
+		// AIB24 F8-1: the follower that found no crowd manager at possession asks again now
+		// that the feet are on the mesh. The follower is Idle here (R7: no move before this
+		// think), which is SetCrowdSimulationState's precondition; the setters re-apply the
+		// agent params. Still impossible: the possession DISABLED line stands, unamended.
+		if (bCrowdRetryPending)
+		{
+			bCrowdRetryPending = false;
+			if (UCrowdFollowingComponent* Crowd = Cast<UCrowdFollowingComponent>(GetPathFollowingComponent()))
+			{
+				Crowd->SetCrowdSimulationState(ECrowdSimulationState::Enabled);
+				if (ApplyCrowdSettings())
+				{
+					UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f crowd simulation ENABLED late — on the first on-nav think, %.1fs after possession"),
+						*GetName(), Now, Now - PossessedAtSeconds);
+				}
+			}
+		}
 	}
 
 	// Facts -> arbitration. The winner is the executor's gate at Phase 3; today the
@@ -1487,14 +1530,15 @@ void AAIBBotController::Think()
 				return Left > 0.0 ? FMath::CeilToInt(Left / FMath::Max(ThinkIntervalSeconds, 0.02f)) : 0;
 			};
 			const FString Line = FString::Printf(
-				TEXT("AIBot: decide bot=%d seq=%u want=%s s=%.3f over=%s rs=%.3f tac=%s ts=%.3f commit=%d rng=%d facts=%08x tcommit=%d treason=%s"),
+				TEXT("AIBot: decide bot=%d seq=%u want=%s s=%.3f over=%s rs=%.3f tac=%s ts=%.3f commit=%d rng=%d facts=%08x tcommit=%d treason=%s ammo=%.2f"),
 				BotIndex, ++DecisionSeq,
 				Ambition.IsValid() ? *Ambition.ToString() : TEXT("none"), AmbitionEngine->GetCurrentScore(),
 				RunnerUp.Tag.IsValid() ? *RunnerUp.Tag.ToString() : TEXT("none"), RunnerUp.Score,
 				Tactic.IsValid() ? *Tactic.ToString() : TEXT("none"), TacticEngine ? TacticEngine->GetCurrentScore() : 0.f,
 				TicksLeft(AmbitionEngine->GetCommitEndSeconds()), DecisionRandomDraws, UAIBAmbitionEngine::FactsCrc32(LastFacts),
 				TacticEngine ? TicksLeft(TacticEngine->GetCommitEndSeconds()) : 0,
-				UAIBAmbitionEngine::SwitchReasonName(TacticEngine ? TacticEngine->GetLastSwitchReason() : EAIBSwitchReason::None));
+				UAIBAmbitionEngine::SwitchReasonName(TacticEngine ? TacticEngine->GetLastSwitchReason() : EAIBSwitchReason::None),
+				LastFacts.AmmoNorm); // F8-4: so the next batch can name the dry-gun veto
 			if (bReplay)
 			{
 				UE_LOG(LogAIBot, Log, TEXT("%s"), *Line);

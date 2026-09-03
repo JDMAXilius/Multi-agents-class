@@ -15,13 +15,17 @@ namespace
 }
 
 EAIBTargetClaimResult FAIBTargetClaims::TryClaim(FObjectKey Claimant, const AActor* ClaimantPawn, const AActor* Target,
-	double Now, float TtlSeconds, FAreAllies AreAllies, int32& OutHolders, float ClaimantPhaseDeg,
-	const FString& ClaimantName, const FString& TargetName)
+	double Now, float TtlSeconds, FAreAllies AreAllies, FIsLiveEnemy IsLiveEnemy, int32& OutHolders,
+	float ClaimantPhaseDeg, const FString& ClaimantName, const FString& TargetName)
 {
 	OutHolders = 0;
 	if (!Target || TtlSeconds <= 0.f)
 	{
 		return EAIBTargetClaimResult::Denied;
+	}
+	if (!IsLiveEnemy(ClaimantPawn, Target))
+	{
+		return EAIBTargetClaimResult::Dead; // F8-2: a corpse is never claimed, and never DENIED
 	}
 
 	FAIBTargetClaim* Mine = nullptr;
@@ -193,8 +197,7 @@ void FAIBTargetClaims::ReleaseAll(FObjectKey Claimant, TArray<FAIBReleasedTarget
 	});
 }
 
-void FAIBTargetClaims::Prune(double Now, TFunctionRef<bool(const AActor*, const AActor*)> IsLiveEnemy,
-	TArray<FAIBReleasedTargetClaim>& OutReleased)
+void FAIBTargetClaims::Prune(double Now, FIsLiveEnemy IsLiveEnemy, TArray<FAIBReleasedTargetClaim>& OutReleased)
 {
 	Claims.RemoveAll([&](const FAIBTargetClaim& Claim)
 	{

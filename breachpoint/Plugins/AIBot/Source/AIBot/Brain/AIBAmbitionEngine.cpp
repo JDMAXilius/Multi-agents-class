@@ -108,10 +108,10 @@ uint32 UAIBAmbitionEngine::FactsCrc32(const FAIBFacts& F)
 	const auto AddUU = [&Q](float V) { Q.Add(FMath::RoundToInt(V / AIB::ReplayDistanceQuantumUU)); };
 	const auto AddB = [&Q](bool B) { Q.Add(B ? 1 : 0); };
 	AddB(F.bVitalsKnown); Add(F.HealthNorm); Add(F.ShieldNorm); Add(F.AmmoNorm);
-	AddB(F.bHasReserveAmmo); AddB(F.bWeaponCanFight); Q.Add(F.GrenadeCount); AddB(F.bGrounded);
+	AddB(F.bHasReserveAmmo); AddB(F.bWeaponCanFight); AddB(F.bMeleeAvailable); Q.Add(F.GrenadeCount); AddB(F.bGrounded);
 	AddB(F.bHasTarget); AddB(F.bTargetVisible); AddB(F.bTargetAlive); AddB(F.bTargetFactsFromMemory);
 	AddB(F.bTargetVitalsKnown); Add(F.TargetHealthNorm); AddUU(F.DistToTargetUU); AddUU(F.HeightAdvantageUU);
-	AddB(F.bHasMemory); Add(F.LastKnownAgeSeconds); Add(F.MemoryFreshWindowSeconds);
+	AddB(F.bHasMemory); Add(F.LastKnownAgeSeconds); Add(F.MemoryFreshWindowSeconds); AddB(F.bFlankHolding);
 	AddB(F.bIncomingBlast); Add(F.BlastSecondsToDetonation);
 	AddUU(F.BlastCenterRelative.X); AddUU(F.BlastCenterRelative.Y); AddUU(F.BlastCenterRelative.Z); AddUU(F.BlastRadius);
 	AddB(F.bDamageHistoryKnown); Add(F.RecentDamageTakenNorm); Add(F.RecentDamageDealtNorm);
@@ -250,6 +250,12 @@ FGameplayTag UAIBAmbitionEngine::Rescore(const FAIBFacts& Facts, double NowSecon
 			const float MakeUp = (1.f - Value) * ModificationFactor;
 			Raw *= Value + (MakeUp * Value);
 		}
+		// AIB22 F8-4: the melee floor — see FAIBAmbitionSpec::MeleeFloorUtility. Before the
+		// suppression zero below, never over it.
+		if (Spec.MeleeFloorUtility > 0.f && Facts.bHasTarget && Facts.bMeleeAvailable)
+		{
+			Raw = FMath::Max(Raw, Spec.MeleeFloorUtility);
+		}
 
 		// A want whose branch just failed scores ZERO for its window — see
 		// NoteAmbitionFailed. Applied HERE, to the raw score, so the scoreboard the
@@ -348,6 +354,7 @@ FGameplayTag UAIBAmbitionEngine::Rescore(const FAIBFacts& Facts, double NowSecon
 void UAIBAmbitionEngine::BuildDefaultCoreAmbitions(TArray<FAIBAmbitionSpec>& OutSpecs)
 {
 	OutSpecs.Reset();
+	constexpr float RoamFloorUtility = 0.2f;
 
 	// ENGAGE — someone visible, a working gun. The range band is NAMED module
 	// constants sourced to the default sight envelope (AIB::EngageFullAppetiteUU /
@@ -358,6 +365,7 @@ void UAIBAmbitionEngine::BuildDefaultCoreAmbitions(TArray<FAIBAmbitionSpec>& Out
 		Engage.Tag = AIBTags::Ambition_Engage;
 		Engage.BaseUtility = 1.0f;
 		Engage.CommitSeconds = 5.f;
+		Engage.MeleeFloorUtility = RoamFloorUtility + 0.05f; // F8-4: above the floor, below everything real
 
 		FAIBConsideration& Sees = Engage.Considerations.AddDefaulted_GetRef();
 		Sees.Selector = EAIBFactSelector::TargetVisible;
@@ -582,7 +590,7 @@ void UAIBAmbitionEngine::BuildDefaultCoreAmbitions(TArray<FAIBAmbitionSpec>& Out
 	{
 		FAIBAmbitionSpec& Roam = OutSpecs.AddDefaulted_GetRef();
 		Roam.Tag = AIBTags::Ambition_Roam;
-		Roam.BaseUtility = 0.2f;
+		Roam.BaseUtility = RoamFloorUtility;
 		Roam.CommitSeconds = 0.f;
 	}
 }

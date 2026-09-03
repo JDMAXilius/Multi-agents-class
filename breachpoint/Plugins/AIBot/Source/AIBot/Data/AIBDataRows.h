@@ -118,6 +118,14 @@ struct AIBOT_API FAIBTierRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, Category = "Roam")
 	float LatchMaxAgeSeconds = 10.f;
 
+	// -- the mover (AIB22 F8-3) -------------------------------------------------------
+	/** The mover's give-up window: a same-level wedge (no storey, no link) that gains no
+	 *  ground for this long abandons its goal (`stall abandoned — … give-up window`). Every
+	 *  task authored a flat 8 s — a third of Arena01's idle; AIB22's stall bar is 3 s. The
+	 *  storey abandon (1.5 s) is the mover's own constant and stays. */
+	UPROPERTY(EditAnywhere, Category = "Move")
+	float MoveGiveUpSeconds = 3.f;
+
 	// -- route variety (Phase 14) ---------------------------------------------------
 	/** Half-width of the per-life lane weight draw: each lane's travel cost is
 	 *  1 ± this before normalisation (the cheapest lane always costs exactly 1). 0 = every

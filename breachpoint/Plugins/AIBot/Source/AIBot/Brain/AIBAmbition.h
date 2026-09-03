@@ -31,6 +31,13 @@ struct AIBOT_API FAIBAmbitionSpec
 	 *  interrupt (the engine's, not the spec's) may break it early. */
 	UPROPERTY(EditAnywhere, Category = "Ambition")
 	float CommitSeconds = 3.f;
+
+	/** AIB22 F8-4: with a target held and a melee in hand the want never scores below this
+	 *  (0 = no floor). Applied to the raw product BEFORE suppression, so a suppressed want
+	 *  stays at 0. Engage's is the Roam floor + 0.05: a dry bot with an enemy in front of it
+	 *  closes to punch instead of wandering (WeaponCanFight=0 vetoed it for 270 s). */
+	UPROPERTY(EditAnywhere, Category = "Ambition")
+	float MeleeFloorUtility = 0.f;
 };
 
 /** One ambition's outcome from a rescore — the introspection row the gameplay

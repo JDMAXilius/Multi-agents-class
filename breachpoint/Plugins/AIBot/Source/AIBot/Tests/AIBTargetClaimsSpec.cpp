@@ -15,7 +15,8 @@
  * asker's own claim never counts against it (2); ordinals follow grant order — the ring
  * spread's seed (3); a TTL lapse reopens the slot (4); Engage exit releases only after the
  * dwell on a non-Engage ambition — a blink never releases (5, W-REVIEW M3); death releases
- * through the injected liveness alone — no position, no vitals (6); the unpossess belt (7);
+ * through the injected liveness alone — no position, no vitals (6), and the same door refuses
+ * a corpse at TryClaim (6b, F8-2); the unpossess belt (7);
  * enemies never bind — each alliance runs its own book, an all-hostile host is inert (8);
  * a target SWITCH releases the previous claim (9, M2); and the ring bearing: holders
  * opposite on the first holder's phase, non-holders on their own (10, M5/L3).
@@ -37,7 +38,7 @@ BEGIN_DEFINE_SPEC(FAIBTargetClaimsSpec, "AIBot.Sim.TargetClaims",
 	EAIBTargetClaimResult Claim(FAIBTargetClaims& Board, UObject* Bot, double Now, int32* OutHolders = nullptr)
 	{
 		int32 Holders = 0;
-		const EAIBTargetClaimResult R = Board.TryClaim(FObjectKey(Bot), nullptr, Enemy, Now, 5.f, &Allies, Holders);
+		const EAIBTargetClaimResult R = Board.TryClaim(FObjectKey(Bot), nullptr, Enemy, Now, 5.f, &Allies, &Alive, Holders);
 		if (OutHolders) { *OutHolders = Holders; }
 		return R;
 	}
@@ -161,8 +162,8 @@ void FAIBTargetClaimsSpec::Define()
 	{
 		FAIBTargetClaims Board;
 		int32 Holders = 0;
-		Board.TryClaim(FObjectKey(BotA), nullptr, Enemy, 0.0, 5.f, &Allies, Holders, /*PhaseDeg*/ 30.f);
-		Board.TryClaim(FObjectKey(BotB), nullptr, Enemy, 0.5, 5.f, &Allies, Holders, /*PhaseDeg*/ 200.f);
+		Board.TryClaim(FObjectKey(BotA), nullptr, Enemy, 0.0, 5.f, &Allies, &Alive, Holders, /*PhaseDeg*/ 30.f);
+		Board.TryClaim(FObjectKey(BotB), nullptr, Enemy, 0.5, 5.f, &Allies, &Alive, Holders, /*PhaseDeg*/ 200.f);
 		TestEqual(TEXT("the first holder stands on its own phase"),
 			Board.RingAngleDeg(FObjectKey(BotA), nullptr, Enemy, 1.0, &Allies, 30.f), 30.f, 1e-3f);
 		TestEqual(TEXT("the second stands OPPOSITE the first — the first's phase, not its own"),
@@ -184,6 +185,23 @@ void FAIBTargetClaimsSpec::Define()
 		TestEqual(TEXT("book empty"), Board.NumLive(1.1), 0);
 	});
 
+	It("refuses a corpse outright — no grant, no holder, and not a denial either (F8-2)", [this]()
+	{
+		// The pile: Prune released reason=death, the next think's TryClaim re-granted the
+		// same corpse, seven GRANTED/RELEASED pairs in 0.6 s. The liveness door answers
+		// BEFORE the cap now, and the answer is its own result so the caller logs nothing.
+		FAIBTargetClaims Board;
+		int32 Holders = 7;
+		TestEqual(TEXT("dead: refused"),
+			static_cast<int32>(Board.TryClaim(FObjectKey(BotA), nullptr, Enemy, 0.0, 5.f, &Allies, &Dead, Holders)),
+			static_cast<int32>(EAIBTargetClaimResult::Dead));
+		TestEqual(TEXT("nobody holds him"), Holders, 0);
+		TestEqual(TEXT("book empty"), Board.NumLive(0.0), 0);
+		TestFalse(TEXT("A holds nothing"), Board.Holds(FObjectKey(BotA), Enemy, 0.0));
+		TestEqual(TEXT("alive again (a respawn): granted as before"),
+			static_cast<int32>(Claim(Board, BotA, 0.1)), static_cast<int32>(EAIBTargetClaimResult::Granted));
+	});
+
 	It("releases everything for a finished claimant at once — reason=unpossess", [this]()
 	{
 		FAIBTargetClaims Board;
@@ -202,7 +220,7 @@ void FAIBTargetClaimsSpec::Define()
 		for (UObject* Bot : { BotA, BotB, BotC })
 		{
 			TestEqual(TEXT("every stranger is granted"),
-				static_cast<int32>(Board.TryClaim(FObjectKey(Bot), nullptr, Enemy, 0.0, 5.f, &Enemies, Holders)),
+				static_cast<int32>(Board.TryClaim(FObjectKey(Bot), nullptr, Enemy, 0.0, 5.f, &Enemies, &Alive, Holders)),
 				static_cast<int32>(EAIBTargetClaimResult::Granted));
 			TestEqual(TEXT("and each counts only itself"), Holders, 1);
 		}

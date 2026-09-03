@@ -154,6 +154,11 @@ public:
 	void SetAlliesOnTarget(const AActor* Who, int32 Count) { if (Who) { AlliesOnTarget.Add(FObjectKey(Who), Count); } }
 	void ClearAlliesOnTargets() { AlliesOnTarget.Reset(); }
 
+	/** AIB23 F8-2: the owner's liveness door (the claims board's own — AreEnemies folds "a
+	 *  corpse is nobody's enemy") says Who is dead. Dropped at the next prune, never
+	 *  selected. Pushed per think like the ally count; consumed by the pump. */
+	void MarkDead(const AActor* Who) { if (Who) { Dead.Add(FObjectKey(Who)); } }
+
 	/** Read-only view of who the bot believes in, for the debugger and the specs. */
 	const TArray<FAIBTargetCandidate>& GetCandidates() const { return Candidates; }
 
@@ -241,4 +246,6 @@ private:
 	float LastAcquisitionLatency = -1.f;
 	/** See SetAlliesOnTarget. */
 	TMap<FObjectKey, int32> AlliesOnTarget;
+	/** See MarkDead. */
+	TSet<FObjectKey> Dead;
 };
