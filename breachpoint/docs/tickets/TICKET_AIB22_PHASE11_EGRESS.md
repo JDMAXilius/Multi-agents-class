@@ -291,3 +291,6 @@ Refined steps (replace §Steps):
   be rebuilt** (`Tools/aib/70_aib_assets.py`, editor-live) — new states/nodes are not
   default-on-load. Parser (lead): `island latched`, `island egress starts`, `island egress
   FAILED` regexes + per-bot latch/failed counts, selftest updated.
+- 2026-09-02 lane B specs (lead): `Tools/run-specs.sh AIBot` 179 success / 0 fail incl. the six
+  `AIBot.Sim.IslandLatch` cases (Tools/Logs/specs-20260902-234016.log). Fix packet for the lane A
+  review dispatched; lane B under W-REVIEW.
