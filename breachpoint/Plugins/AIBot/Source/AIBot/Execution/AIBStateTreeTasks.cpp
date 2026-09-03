@@ -83,6 +83,13 @@ namespace
 		return false;
 	}
 
+	/** `t=` on every AIB22 metric line: world seconds, 0 with no world. */
+	double WorldSeconds(const AAIBBotController& Bot)
+	{
+		const UWorld* World = Bot.GetWorld();
+		return World ? World->GetTimeSeconds() : 0.0;
+	}
+
 	/** WHY a move was refused, in the three facts that separate causes a bare "refused"
 	 *  cannot. Off-mesh and unreachable are different defects with different fixes, and a
 	 *  log that says only "refused" sends the reader guessing — which is how a half-fix
@@ -161,7 +168,15 @@ namespace
 		{
 			Target = Goal;
 		}
-		return Bot.MoveToLocation(Target, AcceptanceUU);
+		const EPathFollowingRequestResult::Type Result = Bot.MoveToLocation(Target, AcceptanceUU);
+		if (Result == EPathFollowingRequestResult::Failed)
+		{
+			// AIB22 `no_path_requests`: ONE site, because every mover's goal comes through
+			// this door. Callers keep their own F7 lines; this one is the harness's.
+			UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f move REFUSED goal=(%.0f,%.0f,%.0f) %s"),
+				*Bot.GetName(), WorldSeconds(Bot), Goal.X, Goal.Y, Goal.Z, *DescribeMoveFailure(Bot, Goal));
+		}
+		return Result;
 	}
 
 	bool IsWithin(const AAIController& Controller, const FVector& Point, float RadiusUU)
@@ -202,6 +217,9 @@ namespace
 	 *  jump clears, and it costs nothing to find out. */
 	constexpr float WedgeProgressUU = 50.f;
 	constexpr float WedgeStallSeconds = 1.5f;
+	/** AIB22: a stall EPISODE opens this long after progress stopped — a third of the
+	 *  watchdog's own patience, so the metric sees the wedge before the jump answers it. */
+	constexpr float StallReportSeconds = 0.5f;
 
 	/** AIB19: the traverse aim's turn rate. Faster than combat facing on purpose — the
 	 *  anchor is scenery that cannot dodge, and a slow pan here is seconds spent as a
@@ -302,6 +320,30 @@ namespace
 		Avatar.ReleaseVerb(AIBTags::Verb_Crouch);
 	}
 
+	/** AIB22 `stuck_seconds`, closing half. jumped= is the watchdog's one spent press
+	 *  (whichever verb the chooser picked); resolved= says whether the body got moving
+	 *  or the mover let go first. Bookkeeping only — the watchdog's clocks are untouched. */
+	void EndStall(AAIBBotController& Bot, FAIBLocomotionState& State, const TCHAR* Resolved)
+	{
+		State.bStallOpen = false;
+		UE_LOG(LogAIBot, Log,
+			TEXT("AIBot: %s t=%.1f stall over — %.1fs at (%.0f,%.0f,%.0f) goal=(%.0f,%.0f,%.0f) jumped=%s resolved=%s"),
+			*Bot.GetName(), WorldSeconds(Bot), State.StallSeconds - State.StallReportedSeconds,
+			State.BestPoint.X, State.BestPoint.Y, State.BestPoint.Z,
+			State.Goal.X, State.Goal.Y, State.Goal.Z,
+			State.bTriedWedgeJump ? TEXT("yes") : TEXT("no"), Resolved);
+		State.StallReportedSeconds = State.StallSeconds;
+	}
+
+	/** AIB22 `island_egress_count`: ONE format for every way off an island. Today only
+	 *  the AIB19 grapple-route drop calls it (via=grapple); the drop/link/jump callers and
+	 *  the island fact's real stranded clock land with the Egress tactic (step 4). */
+	void LogIslandEgress(const AAIBBotController& Bot, const TCHAR* Via, const FVector& From, float StrandedSeconds)
+	{
+		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f island egress — via %s from (%.0f,%.0f,%.0f) after %.1fs stranded"),
+			*Bot.GetName(), WorldSeconds(Bot), Via, From.X, From.Y, From.Z, StrandedSeconds);
+	}
+
 	/** One call per mover tick: hold sprint while there is ground to cover, and spend one
 	 *  jump when a path that reports Moving stops producing any. NAVLINKS ARE NOT THIS
 	 *  FUNCTION'S JOB and need no AI work at all — drop and climb traversal is a property
@@ -319,6 +361,7 @@ namespace
 		}
 		const FVector Here = Pawn->GetActorLocation();
 		const float ToGoal = FVector::Dist(Here, Goal);
+		State.Goal = Goal;
 		SetSprint(*Avatar, State.bSprintHeld, ToGoal > ArriveRadiusUU * SprintBeyondRadiusFactor);
 
 		// FACE THE WALK (founder, 1 Sep: bots "walking and running in reverse instead of
@@ -364,9 +407,14 @@ namespace
 
 		if (!State.bHasBestPoint || FVector::Dist(Here, State.BestPoint) > WedgeProgressUU)
 		{
+			if (State.bStallOpen)
+			{
+				EndStall(Bot, State, TEXT("moved"));
+			}
 			State.BestPoint = Here;
 			State.bHasBestPoint = true;
 			State.StallSeconds = 0.f;
+			State.StallReportedSeconds = 0.f;
 			State.bTriedWedgeJump = false; // moving again: the next wedge gets its own jump
 			return;
 		}
@@ -375,6 +423,10 @@ namespace
 			return; // standing AT the goal is station-keeping, not being stuck
 		}
 		State.StallSeconds += DeltaTime;
+		if (!State.bStallOpen && State.StallSeconds - State.StallReportedSeconds >= StallReportSeconds)
+		{
+			State.bStallOpen = true;
+		}
 		if (!State.bTriedWedgeJump && State.StallSeconds >= WedgeStallSeconds && Avatar->IsGrounded())
 		{
 			State.bTriedWedgeJump = true;
@@ -453,10 +505,24 @@ namespace
 	 *  the bot arrives in its firing position still holding the speed state. */
 	void ReleaseLocomotion(AAIBBotController& Bot, FAIBLocomotionState& State)
 	{
+		if (State.bStallOpen)
+		{
+			EndStall(Bot, State, TEXT("abandoned"));
+		}
 		if (IAIBAvatarInterface* Avatar = Bot.GetAvatar())
 		{
 			SetSprint(*Avatar, State.bSprintHeld, false);
 		}
+	}
+
+	/** The reload crouch's three tenants move together — the toggle, the task's record of
+	 *  having rented it, and the F9 tactic flag (AIB22) that says the squat is deliberate. */
+	void SetReloadCrouch(AAIBBotController& Bot, IAIBAvatarInterface& Avatar,
+		FAIBFireWhenAbleTaskInstanceData& InstanceData, bool bWant)
+	{
+		SetCrouch(Avatar, bWant);
+		InstanceData.bCrouchedToReload = bWant;
+		Bot.SetStillTactic(EAIBStillTactic::Reload, bWant);
 	}
 }
 
@@ -597,6 +663,7 @@ EStateTreeRunStatus FAIBMoveNearBeliefTask::EnterState(FStateTreeExecutionContex
 	// blink most. Inside the fight range, footwork owns the legs from the first frame.
 	if (IsWithin(*Bot, InstanceData.LastGoal, InstanceData.FightRangeUU))
 	{
+		Bot->SetStillTactic(EAIBStillTactic::Hold, true);
 		return EStateTreeRunStatus::Running;
 	}
 	// Already in position: station-keep from here (issuing a move to where we stand
@@ -629,7 +696,9 @@ EStateTreeRunStatus FAIBMoveNearBeliefTask::Tick(FStateTreeExecutionContext& Con
 	// held sprint, so yielding must release it explicitly or the bot strafes at sprint
 	// speed with the key stuck down (ReleaseLocomotion is state-guarded — free per tick).
 	const FVector Belief = Bot->GetSensorium().GetLastSeenLocation();
-	if (IsWithin(*Bot, Belief, InstanceData.FightRangeUU))
+	const bool bInFightRange = IsWithin(*Bot, Belief, InstanceData.FightRangeUU);
+	Bot->SetStillTactic(EAIBStillTactic::Hold, bInFightRange); // F9: the station is a named hold
+	if (bInFightRange)
 	{
 		ReleaseLocomotion(*Bot, InstanceData.Locomotion);
 		return EStateTreeRunStatus::Running;
@@ -664,6 +733,7 @@ void FAIBMoveNearBeliefTask::ExitState(FStateTreeExecutionContext& Context, cons
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	if (AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller))
 	{
+		Bot->SetStillTactic(EAIBStillTactic::Hold, false);
 		ReleaseLocomotion(*Bot, InstanceData.Locomotion);
 		Bot->StopMovement();
 	}
@@ -729,8 +799,7 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 		// task instance started believing it was mid-reload (aib-critic L2).
 		if (InstanceData.bCrouchedToReload)
 		{
-			SetCrouch(*Avatar, false);
-			InstanceData.bCrouchedToReload = false;
+			SetReloadCrouch(*Bot, *Avatar, InstanceData, false);
 		}
 		InstanceData.ReloadWantedSeconds = 0.f;
 		return EStateTreeRunStatus::Running;
@@ -804,8 +873,7 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 	{
 		if (InstanceData.bCrouchedToReload)
 		{
-			SetCrouch(*Avatar, false);
-			InstanceData.bCrouchedToReload = false;
+			SetReloadCrouch(*Bot, *Avatar, InstanceData, false);
 			UE_LOG(LogAIBot, Warning, TEXT("AIBot: %s wanted a reload for %.0fs and never got one (ammo %.2f, reserve %s) — standing up and fighting anyway."),
 				*Bot->GetName(), InstanceData.ReloadWantedSeconds, Facts.AmmoNorm,
 				Facts.bHasReserveAmmo ? TEXT("yes") : TEXT("no"));
@@ -826,8 +894,7 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 			Avatar->ReleaseVerb(AIBTags::Verb_Aim);
 			InstanceData.bAimHeld = false;
 		}
-		SetCrouch(*Avatar, true);
-		InstanceData.bCrouchedToReload = true;
+		SetReloadCrouch(*Bot, *Avatar, InstanceData, true);
 		if (InstanceData.ReloadCooldownLeft <= 0.f)
 		{
 			// THE CROUCH INSTRUMENT (founder, 28 Aug: "they are just staying crouched").
@@ -851,8 +918,7 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 	}
 	if (InstanceData.bCrouchedToReload)
 	{
-		SetCrouch(*Avatar, false);
-		InstanceData.bCrouchedToReload = false;
+		SetReloadCrouch(*Bot, *Avatar, InstanceData, false);
 	}
 
 	if (bMeleeRecognised && bHasDistance && MeleeRangeUU > 0.f
@@ -1126,6 +1192,7 @@ void FAIBFireWhenAbleTask::ExitState(FStateTreeExecutionContext& Context, const 
 	if (Bot)
 	{
 		Bot->GetMeleeState().InRangeSinceSeconds = -1.0;
+		Bot->SetStillTactic(EAIBStillTactic::Reload, false);
 	}
 }
 
@@ -1425,7 +1492,32 @@ void FAIBMoveToLastKnownTask::ExitState(FStateTreeExecutionContext& Context, con
 
 EStateTreeRunStatus FAIBSweepLookTask::EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
 {
+	// AIB22 `sweep_seconds` stamps. The active frames are already the new state's here
+	// (engine: frames install before any task's EnterState), so the name is this branch.
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	if (const AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller))
+	{
+		InstanceData.EnterSeconds = WorldSeconds(*Bot);
+		InstanceData.EnterLocation = Bot->GetPawn() ? Bot->GetPawn()->GetActorLocation() : FVector::ZeroVector;
+		InstanceData.StateName = Bot->GetActiveStateName();
+	}
 	return EStateTreeRunStatus::Running;
+}
+
+void FAIBSweepLookTask::ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
+{
+	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	const AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller);
+	if (!Bot)
+	{
+		return;
+	}
+	const double Now = WorldSeconds(*Bot);
+	const APawn* Pawn = Bot->GetPawn();
+	UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f sweep over — %.1fs, moved %.0fuu, state=%s"),
+		*Bot->GetName(), Now, Now - InstanceData.EnterSeconds,
+		Pawn ? FVector::Dist(Pawn->GetActorLocation(), InstanceData.EnterLocation) : 0.f,
+		InstanceData.StateName.IsNone() ? TEXT("?") : *InstanceData.StateName.ToString());
 }
 
 EStateTreeRunStatus FAIBSweepLookTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
@@ -1558,6 +1650,7 @@ EStateTreeRunStatus FAIBMoveToPOITask::EnterState(FStateTreeExecutionContext& Co
 			{
 				InstanceData.PhaseSeconds = 0.f;
 				InstanceData.bAirborneSeen = false;
+				InstanceData.TraverseArmedSeconds = Now;
 				InstanceData.NextTraverseAllowedSeconds =
 					Now + InstanceData.TraverseCooldownSeconds / 3.0;
 			}
@@ -1811,6 +1904,10 @@ EStateTreeRunStatus FAIBMoveToPOITask::TickTraverse(AAIBBotController& Bot, APaw
 		{
 			UE_LOG(LogAIBot, Log, TEXT("AIBot: %s dropped back down on %s (%.0fuu)."),
 				*Bot.GetName(), *RouteLabel(InstanceData.RouteId), RiseUU);
+			// InstanceData.Goal is still the LIP the drop stepped off (phase 5 never
+			// overwrites it); the clock is armed-to-landed until step 4's island fact.
+			LogIslandEgress(Bot, TEXT("grapple"), InstanceData.Goal,
+				static_cast<float>(Now - InstanceData.TraverseArmedSeconds));
 		}
 		else
 		{
@@ -2088,6 +2185,7 @@ EStateTreeRunStatus FAIBStrafeTask::Tick(FStateTreeExecutionContext& Context, co
 		if (Bot)
 		{
 			EndStrafeGateSpell(*Bot, TEXT("target lost"));
+			Bot->SetStillTactic(EAIBStillTactic::StrafeHold, false);
 		}
 		return EStateTreeRunStatus::Running;
 	}
@@ -2112,6 +2210,7 @@ EStateTreeRunStatus FAIBStrafeTask::Tick(FStateTreeExecutionContext& Context, co
 		// commensurate: hold spells vs stepped legs, plus denied-seconds the harness sums.
 		// A hold is not a failure, but it must be countable, or "the strafe is too short"
 		// has no measurement behind it.
+		Bot->SetStillTactic(EAIBStillTactic::StrafeHold, false); // the mover has the legs
 		FAIBMovementState& MovementState = Bot->GetMovementState();
 		if (!MovementState.bStrafeOutsideGate)
 		{
@@ -2139,6 +2238,8 @@ EStateTreeRunStatus FAIBStrafeTask::Tick(FStateTreeExecutionContext& Context, co
 		return EStateTreeRunStatus::Running; // this leg is already actuated, hold or move
 	}
 	MovementState.LastActuatedLegStamp = MovementState.NextDecisionAtSeconds;
+	// F9 (AIB22): a planted leg is a NAMED stillness for exactly one leg.
+	Bot->SetStillTactic(EAIBStillTactic::StrafeHold, Intent == EAIBStrafeIntent::Hold);
 
 	// A HOLD IS AN ACTUATION TOO (founder's strafe review, 26 Aug). The policy's hold
 	// windows only ever suppressed NEW steps — the previous leg's move request kept
@@ -2283,6 +2384,15 @@ EStateTreeRunStatus FAIBStrafeTask::Tick(FStateTreeExecutionContext& Context, co
 			FMath::RadiansToDegrees(ArcRadians), LegRemainingSeconds);
 	}
 	return EStateTreeRunStatus::Running;
+}
+
+void FAIBStrafeTask::ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
+{
+	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	if (AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller))
+	{
+		Bot->SetStillTactic(EAIBStillTactic::StrafeHold, false);
+	}
 }
 
 ////////////////////////////////////////////////////////////////////

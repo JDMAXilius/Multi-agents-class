@@ -31,6 +31,13 @@ struct FAIBLocomotionState
 	bool bHasBestPoint = false;
 	float StallSeconds = 0.f;
 	FVector BestPoint = FVector::ZeroVector;
+
+	/** AIB22 `stuck_seconds` bookkeeping — reads the watchdog's clocks, never moves them.
+	 *  An episode is OPEN once StallSeconds has run StallReportSeconds past what the last
+	 *  line reported; Goal is the mover's current target, for the line. */
+	bool bStallOpen = false;
+	float StallReportedSeconds = 0.f;
+	FVector Goal = FVector::ZeroVector;
 };
 
 ////////////////////////////////////////////////////////////////////
@@ -487,6 +494,11 @@ struct FAIBSweepLookTaskInstanceData
 
 	UPROPERTY(EditAnywhere, Category = "Parameter")
 	float SweepDegreesPerSecond = 90.f;
+
+	/** AIB22 `sweep_seconds`: stamped at enter, reported at exit. */
+	double EnterSeconds = 0.0;
+	FVector EnterLocation = FVector::ZeroVector;
+	FName StateName = NAME_None;
 };
 
 /** The searching look: swings the control yaw at a steady rate. Never completes on its
@@ -503,6 +515,7 @@ struct FAIBSweepLookTask : public FStateTreeTaskCommonBase
 
 	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
 	virtual EStateTreeRunStatus Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const override;
+	virtual void ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
 };
 
 ////////////////////////////////////////////////////////////////////
@@ -586,6 +599,9 @@ struct FAIBMoveToPOITaskInstanceData
 	float PhaseSeconds = 0.f;
 	double NextTraverseAllowedSeconds = 0.0;
 	bool bAirborneSeen = false;
+	/** AIB22: when this traverse was armed — the egress line's clock until the island
+	 *  fact (step 4) owns a real stranded stamp. */
+	double TraverseArmedSeconds = 0.0;
 };
 
 /** Walks to a point worth being at — a provider's POI when one exists, else (for the
@@ -785,6 +801,7 @@ struct FAIBStrafeTask : public FStateTreeTaskCommonBase
 
 	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
 	virtual EStateTreeRunStatus Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const override;
+	virtual void ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
 };
 
 ////////////////////////////////////////////////////////////////////

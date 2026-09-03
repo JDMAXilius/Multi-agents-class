@@ -23,6 +23,7 @@ class AIBOT_API UAIBStateTreeExecutor : public UObject, public IAIBExecutor
 public:
 	virtual void Start(AAIBBotController& Bot) override;
 	virtual void Stop() override;
+	virtual FName GetActiveStateName() const override;
 
 private:
 	TWeakObjectPtr<UStateTreeAIComponent> Component;

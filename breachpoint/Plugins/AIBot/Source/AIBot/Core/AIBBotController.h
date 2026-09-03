@@ -25,6 +25,19 @@ class UStateTree;
 class UStateTreeAIComponent;
 struct FAIStimulus;
 
+/** LAW F9's named stillness (AIB22). A task that legitimately plants the body SETS its
+ *  flag while it holds and CLEARS it when it stops; the idle instrument reports whether
+ *  ANY was up during a still spell. Flags, not a single value: three independent
+ *  holders share one fight (Hold + Reload + a planted strafe leg), and one enum slot
+ *  would let the first to clear erase the others. */
+enum class EAIBStillTactic : uint8
+{
+	None       = 0,
+	Hold       = 1 << 0,
+	Reload     = 1 << 1,
+	StrafeHold = 1 << 2,
+};
+
 /**
  * The HAND. Owns the engine perception (eyes/ears), feeds the sensorium, hosts the brain
  * (Phase 2), runs the executor (Phase 3), presses verbs — and decides nothing itself.
@@ -128,6 +141,16 @@ public:
 	}
 	FRandomStream& GetPolicyRandom() { return PolicyRandom; }
 
+	/** AIB22: see EAIBStillTactic. Idempotent per flag. */
+	void SetStillTactic(EAIBStillTactic Tactic, bool bActive)
+	{
+		const uint8 Bit = static_cast<uint8>(Tactic);
+		StillTactics = static_cast<uint8>(bActive ? (StillTactics | Bit) : (StillTactics & ~Bit));
+	}
+
+	/** The executor's live leaf state name (NAME_None when nothing runs). */
+	FName GetActiveStateName() const;
+
 	// -- Phase 6: the provider doors (pulled from UAIBBotManager at possession) --------
 	// Same twin-pointer validity rule as the avatar door: the interface half runs, the
 	// GC-tracked half decides whether it still may.
@@ -210,6 +233,9 @@ protected:
 
 private:
 	void Think();
+
+	/** AIB22 `idle_seconds`: emit the open still spell (if any) and clear it. */
+	void CloseIdleEpisode(double NowSeconds);
 
 	UPROPERTY(VisibleAnywhere, Category = "AIBot")
 	TObjectPtr<UAIPerceptionComponent> BotPerception;
@@ -301,6 +327,12 @@ private:
 
 	/** Last time an aimer took the yaw. -1 = never; reset with the body. */
 	double YawClaimedAtSeconds = -1.0;
+
+	/** AIB22 idle instrument: when the current no-input spell began (-1 = none open),
+	 *  the tactic flags up NOW, and every flag seen during the open spell. */
+	double IdleSinceSeconds = -1.0;
+	uint8 StillTactics = 0;
+	uint8 IdleTacticsSeen = 0;
 	FAIBConfidenceState ConfidenceState;
 	FAIBSkillProfile SkillProfile;
 

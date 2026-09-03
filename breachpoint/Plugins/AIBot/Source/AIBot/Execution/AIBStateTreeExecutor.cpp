@@ -41,3 +41,20 @@ void UAIBStateTreeExecutor::Stop()
 	}
 	Component = nullptr;
 }
+
+FName UAIBStateTreeExecutor::GetActiveStateName() const
+{
+	// The component's name walk is compiled only with the gameplay debugger (the engine's
+	// own guard); every metrics build carries it. Elsewhere: honest None, not a guess.
+#if WITH_GAMEPLAY_DEBUGGER
+	if (const UStateTreeAIComponent* TreeComponent = Component.Get())
+	{
+		const TArray<FName> Names = TreeComponent->GetActiveStateNames();
+		if (Names.Num() > 0)
+		{
+			return Names.Last();
+		}
+	}
+#endif
+	return NAME_None;
+}

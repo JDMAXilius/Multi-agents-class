@@ -20,4 +20,8 @@ public:
 
 	/** Possession ended: leave nothing running, nothing held. */
 	virtual void Stop() = 0;
+
+	/** The LEAF state currently running (AIB22's `state=` instrument); NAME_None when
+	 *  nothing runs or the impl cannot say. Read-only, never a copy of tree state. */
+	virtual FName GetActiveStateName() const = 0;
 };

@@ -263,6 +263,9 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	GrenadeState = FAIBGrenadeState();
 	MovementState = FAIBMovementState();
 	PolicyRandom.Initialize(static_cast<int32>(HashCombine(LifeSeed, 131u)));
+	IdleSinceSeconds = -1.0; // a fresh body has stood still for nothing yet
+	StillTactics = 0;
+	IdleTacticsSeen = 0;
 
 	GetWorldTimerManager().SetTimer(ThinkTimer, this, &AAIBBotController::Think,
 		FMath::Max(ThinkIntervalSeconds, 0.02f), /*bLoop=*/true);
@@ -290,6 +293,12 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 
 void AAIBBotController::OnUnPossess()
 {
+	// The idle spell closes BEFORE the tree stops, while the state name is still readable.
+	if (const UWorld* IdleWorld = GetWorld())
+	{
+		CloseIdleEpisode(IdleWorld->GetTimeSeconds());
+	}
+	StillTactics = 0;
 	// The executor first: no task may run one more evaluation against a dead body.
 	if (Executor)
 	{
@@ -360,6 +369,11 @@ void AAIBBotController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	// World teardown does not promise OnUnPossess, and the component-shutdown order it
 	// falls back to runs task ExitStates against half-destroyed objects. This is the
 	// ordered path: stop the tree and release the held verb while the doors still stand.
+	if (const UWorld* IdleWorld = GetWorld())
+	{
+		CloseIdleEpisode(IdleWorld->GetTimeSeconds());
+	}
+	StillTactics = 0;
 	if (Executor)
 	{
 		Executor->Stop();
@@ -425,6 +439,30 @@ void AAIBBotController::NoteCurrentAmbitionFailed()
 	AmbitionEngine->NoteAmbitionFailed(Failed, World->GetTimeSeconds());
 	UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s branch for %s failed — suppressing that want so another can run."),
 		*GetName(), *Failed.ToString());
+}
+
+FName AAIBBotController::GetActiveStateName() const
+{
+	return Executor ? Executor->GetActiveStateName() : NAME_None;
+}
+
+void AAIBBotController::CloseIdleEpisode(double NowSeconds)
+{
+	if (IdleSinceSeconds < 0.0)
+	{
+		return;
+	}
+	// One name per spell, most specific first — the harness keys on tactic=none.
+	const TCHAR* Tactic = TEXT("none");
+	if (IdleTacticsSeen & static_cast<uint8>(EAIBStillTactic::Reload))          { Tactic = TEXT("Reload"); }
+	else if (IdleTacticsSeen & static_cast<uint8>(EAIBStillTactic::StrafeHold)) { Tactic = TEXT("StrafeHold"); }
+	else if (IdleTacticsSeen & static_cast<uint8>(EAIBStillTactic::Hold))       { Tactic = TEXT("Hold"); }
+	const FName State = GetActiveStateName();
+	UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f idle over — %.1fs state=%s tactic=%s"),
+		*GetName(), NowSeconds, NowSeconds - IdleSinceSeconds,
+		State.IsNone() ? TEXT("?") : *State.ToString(), Tactic);
+	IdleSinceSeconds = -1.0;
+	IdleTacticsSeen = 0;
 }
 
 FGameplayTag AAIBBotController::GetObjectiveKindForCurrentAmbition() const
@@ -681,6 +719,29 @@ void AAIBBotController::Think()
 	}
 
 	const double Now = World->GetTimeSeconds();
+
+	// LAW F9's instrument (AIB22 `idle_seconds`), riding the think timer — no Tick. A
+	// spell opens on the first ALIVE sample with no locomotion input and closes on the
+	// first with some (or with the body: OnUnPossess/EndPlay). A corpse is not idle.
+	{
+		const APawn* SelfPawn = GetPawn();
+		const IAIBAvatarInterface* Door = GetAvatar();
+		const bool bStill = SelfPawn && Door && Door->IsAlive()
+			&& SelfPawn->GetLastMovementInputVector().IsNearlyZero();
+		if (bStill && IdleSinceSeconds < 0.0)
+		{
+			IdleSinceSeconds = Now;
+			IdleTacticsSeen = 0;
+		}
+		if (IdleSinceSeconds >= 0.0)
+		{
+			IdleTacticsSeen |= StillTactics;
+			if (!bStill)
+			{
+				CloseIdleEpisode(Now);
+			}
+		}
+	}
 
 	// Told, never asked: the sensorium stays worldless, so the two things target
 	// selection needs from outside are pushed in here, once, right before the pump that
