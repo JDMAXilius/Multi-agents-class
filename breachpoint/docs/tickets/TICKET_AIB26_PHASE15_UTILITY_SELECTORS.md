@@ -175,3 +175,16 @@ DecisionRandom) · D aib-editor (decide regex + --replay-diff, AIB_Tactics.csv).
 v7 gates to read: `flank over` > 2; Roam<->Rally triplet and ambition_switches/bot-min
 down from 42/45; `ammo=0.00` lines vanish within ~2 s of every spawn; kills/min not worse.
 
+
+### 3 Sep 2026 — v7 numbers come from the AIB22 run (mac terminal, lead)
+
+Follow-ups (d) the flank clear reads `bFlankHolding` and the Rally urgency ramp landed in
+`199941d0`. No separate batch: `Tools/aib/aib22_verify.sh v7` (started 13:41) instruments
+both maps for every phase, so this ticket's gates are read from the same logs.
+
+Gates per this ticket: `flank over` > 2 of 123 starts; Roam<->Rally triplet and
+`ambition_switches`/bot-min down from 42/45; `ammo=0.00` lines gone within ~2 s of spawn;
+kills/min not worse.
+
+The empty-hand melee floor stays open regardless of this run — it needs a held weapon, and
+the weapon swap defect is game-side (bn-builder, `high`), not in an AIB owner path.

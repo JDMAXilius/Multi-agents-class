@@ -740,3 +740,22 @@ bookkeeping and the behaviour can be told apart; `drift` lines present and each 
 motion; no bot blacklisting more than a few lips per life; longest stall not worse; the
 gantry's one interior-lip bot leaves.
 
+
+### 3 Sep 2026 — W-VERIFY v7 launched (mac terminal, lead)
+
+Follow-ups (a) drift reflex, (b) DEFEND named, (c) interior-lip blacklist landed in
+`e2bc3eb8`; the code is in and the measurement was owed. `Tools/aib/aib22_verify.sh v7`
+started 13:41 — 5 x 300 s matches per map, both maps parallel, judged by
+`80_aib_metrics.py` against the 2 Sep v2 baselines.
+
+Reading the result per this ticket's stated v7 gates: idle `tactic=none` down with the
+Defend share reported SEPARATELY (bookkeeping vs behaviour must be distinguishable);
+`drift` lines present and each followed by motion; no bot blacklisting more than a few
+lips per life; longest stall not worse; the gantry's interior-lip bot leaves.
+
+The gantry leg is EDITOR-LIVE and is NOT covered by this headless run. `unreal-mcp`
+refused connection at session start (the editor was not yet running; it is now, serving
+127.0.0.1:8000 from pid 1878). That capture stays owed until the MCP client reconnects.
+
+Also committed this session (`8b13f767`): the v4/v5/v6 verify baselines, which the
+roadmap status table already cited as evidence while they were untracked.
