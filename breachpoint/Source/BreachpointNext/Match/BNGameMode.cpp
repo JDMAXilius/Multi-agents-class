@@ -1,5 +1,4 @@
 #include "Match/BNGameMode.h"
-#include "AI/BNBotController.h"
 #include "AIBotAdapter/BNAIBModeTags.h"
 #include "AIBotAdapter/BNAIBWorldQuery.h"
 #include "Characters/BNCharacter.h"
@@ -878,22 +877,10 @@ AAIController* ABNGameMode::SpawnBot(int32 Index)
 		return nullptr;
 	}
 
-	// The A/B switch, at the ONE place a bot controller class is ever named (the seam
-	// audit's insertion point). Unknown value: warn once, fall back to BN.
-	FName System = BotSystem;
-	if (System != TEXT("BN") && System != TEXT("AIB"))
-	{
-		UE_LOG(LogBN, Warning, TEXT("BNBots: unknown BotSystem '%s' — falling back to BN."), *System.ToString());
-		System = TEXT("BN");
-	}
-
-	UClass* ControllerClass = (System == TEXT("AIB"))
-		? AIBBotControllerClass.LoadSynchronous()
-		: BotControllerClass.LoadSynchronous();
+	UClass* ControllerClass = AIBBotControllerClass.LoadSynchronous();
 	if (!ControllerClass)
 	{
-		UE_LOG(LogBN, Error, TEXT("BNBots: %s bot controller class did not resolve — no bot spawned."),
-			*System.ToString());
+		UE_LOG(LogBN, Error, TEXT("BNBots: AIBBotControllerClass did not resolve — no bot spawned."));
 		return nullptr;
 	}
 

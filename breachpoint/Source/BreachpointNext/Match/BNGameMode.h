@@ -14,7 +14,6 @@
 // consumer out of unity (an adaptive non-unity build does exactly that) breaks the header
 // with no source change of its own.
 class AAIController;
-class ABNBotController;
 class ABNHillPoint;
 class ABNPlayerState;
 
@@ -231,21 +230,9 @@ protected:
 
 	/** Soft (law 3): the ini names the C++ class path, nothing here hard-references it. */
 	UPROPERTY(Config)
-	TSoftClassPtr<ABNBotController> BotControllerClass;
-
-	/** THE A/B SWITCH: "BN" (default) spawns BotControllerClass, "AIB" spawns
-	 *  AIBBotControllerClass. Both systems live in one build; one ini line flips them,
-	 *  so any AIB regression is a one-line revert to a known-good baseline. An unknown
-	 *  value warns once and falls back to BN — ResolveTuning's discipline. */
-	UPROPERTY(Config)
-	FName BotSystem = TEXT("BN");
-
-	UPROPERTY(Config)
 	TSoftClassPtr<AAIController> AIBBotControllerClass;
 
-	/** Server-only bookkeeping — bots exist nowhere else, so nothing here replicates.
-	 *  Widened to AAIController for the switch: everything downstream (init, respawn,
-	 *  despawn, prune) was already controller-class-agnostic — the seam audit's finding. */
+	/** Server-only bookkeeping — bots exist nowhere else, so nothing here replicates. */
 	UPROPERTY()
 	TArray<TObjectPtr<AAIController>> SpawnedBots;
 
