@@ -188,3 +188,34 @@ kills/min not worse.
 
 The empty-hand melee floor stays open regardless of this run — it needs a held weapon, and
 the weapon swap defect is game-side (bn-builder, `high`), not in an AIB owner path.
+
+### 3 Sep 2026 — W-VERIFY v7 RESULT: gate NOT met. Flanks still do not complete
+
+Same headless batch as AIB22 (5 x 300 s per map). Read from the raw logs, because the
+metrics parser disagrees with them — see the defect note below.
+
+**`flank over` — the gate was > 2. Measured 1 (Spillway) and 3 (Arena01), on 113 and 245
+flank starts.** v6 was 2 of 123. Fix (d) — the flank clear reading `bFlankHolding` —
+did NOT move this. Flanks start in quantity and essentially never complete, exactly as
+v6 reported. `hold_seconds` is 0.000 on both maps: the hold the fix was built around is
+not accumulating any time at all, which is the more useful clue about why.
+
+**PARSER DEFECT, filed here so the next run is not misled:** `80_aib_metrics.py` reports
+`flank_count 0.000` and `flank_stalled 0.000` on both maps while the same logs contain
+113 / 245 `flank start` lines. The aggregate is not counting what the log plainly says.
+Any verdict taken from the JSON summary for flank metrics is currently worthless — read
+the logs. `island_egress_count` is likewise 0.000 on Arena01 and deserves the same
+suspicion before anyone trusts it.
+
+**`ammo=0.00` — the gate was "gone within ~2 s of every spawn". Measured 7,670 (Spillway)
+and 8,757 (Arena01) occurrences.** Unchanged in character. This is the known game-side
+empty-hand weapon-swap defect (bn-builder, `high`), outside every AIB owner path, and it
+will not clear from inside this ticket.
+
+`ambition_switches` remains high (1,679 in a single sampled match). `route_changes` median
+206 on Arena01 shows the route layer is alive.
+
+**Verdict: AIB26 stays OPEN.** Two of its three gates fail on measurement, one of them
+blocked behind a game-side defect this ticket cannot touch. Recommend the next pass start
+at `hold_seconds == 0` rather than at the clear, and fix the parser first so the run can
+be judged from its own summary.

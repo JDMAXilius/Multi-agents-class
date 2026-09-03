@@ -759,3 +759,48 @@ refused connection at session start (the editor was not yet running; it is now, 
 
 Also committed this session (`8b13f767`): the v4/v5/v6 verify baselines, which the
 roadmap status table already cited as evidence while they were untracked.
+
+### 3 Sep 2026 — W-VERIFY v7 RESULT: still OPEN. (a) proven, (c) unverifiable, stuck_seconds is the new headline
+
+Headless rung only: 5 x 300 s per map, `-nullrhi -unattended`, seeded batch. All ten
+matches ran the full 300 in-game seconds. NOT PIE, NOT multiplayer, NOT the gantry.
+
+**(a) drift reflex — PASSES, cleanly.** 223 drift events across both maps, **zero** with
+no motion, median walk 833 uu, minimum 100 uu. The line carries its own evidence
+(`drift — 1.5s still with no tactic, walking 567uu`), so the gate is self-proving.
+
+**(b) DEFEND named — PASSES as bookkeeping.** The split the gate asked for now exists:
+
+| | idle `tactic=none` (median) | idle tactical/DEFEND (median) | v6 idle tactic=none |
+|---|---|---|---|
+| Spillway | 22.8 s | 53.9 s | 25.6 s |
+| Arena01  | 38.5 s | 58.3 s | 44.9 s |
+
+So the naming worked and idle-with-no-tactic did fall (25.6 -> 22.8, 44.9 -> 38.5), but
+the movement is marginal and **the HARD bar is 0.0. Both maps FAIL it.** Most standing is
+now *named* rather than *eliminated* — which is what (b) was for, and is not the same
+thing as fixing it.
+
+**(c) interior-lip blacklist — UNVERIFIABLE from this run.** Zero occurrences of any
+blacklist-shaped token across all ten logs. That is either "never needed" or "never
+fires", and this run cannot tell them apart because the path emits no line. It needs a
+log line before any future run can judge it.
+
+**The headline defect is stuck_seconds, and it is not new behaviour from (a)-(c).**
+Median 63.5 s Spillway / 57.6 s Arena01 per bot per 300 s match — roughly a fifth of every
+match — worst single bot 150.1 s, against a PROVISIONAL bar of 10.0. `stall_abandoned_count`
+median 12 per match says the abandon path is firing constantly rather than exceptionally.
+
+Longest single stall: median 3.0 s (v6 3-4 s, so not worse), but worst 3.9 / 4.2 s still
+over the 3.0 bar. Sweep gates all PASS (longest single sweep 2.0 s vs 2.5 bar; sweep
+fraction 0.035 / 0.017 vs 0.05). Refusals 0 on Spillway; Arena01 REGRESSED — median
+per-bot `no_path_requests` 30.0 against a baseline median of 0.
+
+kills/min 13.2 / 16.6 vs baseline 1.0 / 1.8 — not worse, by a wide margin.
+
+**Verdict: AIB22 stays OPEN.** (a) is done and provable. (b) is done as bookkeeping and
+did not clear its bar. (c) cannot be judged. `stuck_seconds` is now the thing standing
+between this ticket and its HARD bar, and it is a bigger number than idle ever was.
+
+Evidence: `Tools/aib/baselines/aib22-{spillway,arena01}-verify-v7.json`,
+`Tools/Logs/aib22-verify-*-v7-*.log`.
