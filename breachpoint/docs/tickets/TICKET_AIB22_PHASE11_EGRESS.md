@@ -46,7 +46,7 @@ packet introduces in its minimal form).
 6. Review wave, verify wave, log, push.
 
 ## Done when
-- [ ] Baseline report (5 runs, medians + spread) committed under Tools/aib/ before step 2
+- [x] Baseline report (5 runs, medians + spread) committed under Tools/aib/ before step 2 — `Tools/aib/baselines/aib22-*-v2.json`
 - [ ] Every platform on Spillway and Arena01 has a way down; the floor has a way up (link count)
 - [ ] `idle_seconds == 0` outside named tactics; `sweep_seconds == 0`; `stuck_seconds` per bot
       under the gate the verifier proposes; kills/min not worse than baseline
@@ -239,3 +239,10 @@ Refined steps (replace §Steps):
 - 2026-09-02 lane A verified (lead): BreachpointEditor PASS (game/server targets deferred to the
   lane A+B rung-1); `Tools/run-specs.sh AIBot` 173 success / 0 fail incl. the six new
   `AIBot.Sim.SweepBudget` cases (Tools/Logs/specs-20260902-232255.log). Lane B dispatched.
+- 2026-09-02 box 2 tooling (lead): `Tools/aib/aib22_platform_census.py` — a platform has a way
+  down/up iff `find_path_to_location_synchronously` top<->floor is valid and NOT partial (the
+  BN_Drop/BN_Climb links live in the tiles; no python API lists them, a path IS the census).
+  Under `-run=pythonscript` it is meaningless (Spillway: 0 tops on nav; Arena01: 28/28 fail both
+  ways, ramps included) — the commandlet never brings the nav system up. Editor-live, next
+  editor session (with the PIE top-platform watch). Python remote-exec ini section removed: it
+  never advertised; the MCP Slate inspector typing into the console is the working route.

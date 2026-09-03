@@ -256,7 +256,7 @@ def dispatch(into_gym):
         r.stop()
         return True
     except Exception as exc:  # noqa: BLE001 - the fallback is the paste line, not a crash
-        print("remote execution unavailable (%s)." % str(exc)[:120])
+        print("remote execution unavailable (%s) - it never advertised on this Mac; the working route is the Unreal MCP Slate inspector typing the two lines into the status-bar console textbox (see TICKET_AIB22 Log 2026-09-02 step 3)." % str(exc)[:120])
         print("Paste into the editor Output Log (Cmd: Python), one after the other:")
         print("  py %s --rebuild" % cmd)
         print("  py %s" % cmd)
