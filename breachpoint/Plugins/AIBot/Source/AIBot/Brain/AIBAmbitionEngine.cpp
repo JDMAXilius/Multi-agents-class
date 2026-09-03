@@ -78,8 +78,47 @@ void UAIBAmbitionEngine::ResetArbitration()
 	LastRescoreHealthNorm = -1.f;
 	bBlastWasImminent = false;
 	bLastRescoreInterrupted = false;
+	LastSwitchReason = EAIBSwitchReason::None;
 	LastScores.Reset();
 	LastRunnerUp = FAIBScoredAmbition();
+}
+
+const TCHAR* UAIBAmbitionEngine::SwitchReasonName(EAIBSwitchReason Reason)
+{
+	switch (Reason)
+	{
+	case EAIBSwitchReason::First:     return TEXT("first");
+	case EAIBSwitchReason::Merit:     return TEXT("merit");
+	case EAIBSwitchReason::Veto:      return TEXT("veto");
+	case EAIBSwitchReason::Interrupt: return TEXT("interrupt");
+	default:                          return TEXT("none");
+	}
+}
+
+uint32 UAIBAmbitionEngine::FactsCrc32(const FAIBFacts& F)
+{
+	// Quantised to 3 dp and packed as ints: the fingerprint must survive float noise
+	// between two seeded runs and still flip on any decision-relevant change.
+	TArray<int32> Q;
+	Q.Reserve(40);
+	const auto Add = [&Q](float V) { Q.Add(FMath::RoundToInt(V * 1000.f)); };
+	const auto AddB = [&Q](bool B) { Q.Add(B ? 1 : 0); };
+	AddB(F.bVitalsKnown); Add(F.HealthNorm); Add(F.ShieldNorm); Add(F.AmmoNorm);
+	AddB(F.bHasReserveAmmo); AddB(F.bWeaponCanFight); Q.Add(F.GrenadeCount); AddB(F.bGrounded);
+	AddB(F.bHasTarget); AddB(F.bTargetVisible); AddB(F.bTargetAlive); AddB(F.bTargetFactsFromMemory);
+	AddB(F.bTargetVitalsKnown); Add(F.TargetHealthNorm); Add(F.DistToTargetUU); Add(F.HeightAdvantageUU);
+	AddB(F.bHasMemory); Add(F.LastKnownAgeSeconds); Add(F.MemoryFreshWindowSeconds);
+	AddB(F.bIncomingBlast); Add(F.BlastSecondsToDetonation);
+	Add(F.BlastCenterRelative.X); Add(F.BlastCenterRelative.Y); Add(F.BlastCenterRelative.Z); Add(F.BlastRadius);
+	AddB(F.bDamageHistoryKnown); Add(F.RecentDamageTakenNorm); Add(F.RecentDamageDealtNorm);
+	AddB(F.bCrowdKnown); Q.Add(F.NearbyAllies); Q.Add(F.NearbyEnemies);
+	AddB(F.bConfidenceKnown); Add(F.ConfidenceNorm);
+	for (const FAIBObjectiveFact& O : F.Objectives)
+	{
+		Q.Add(static_cast<int32>(FCrc::StrCrc32(*O.AmbitionTag.ToString())));
+		Add(O.DistanceUU); Add(O.Urgency); AddB(O.bClaimedElsewhere);
+	}
+	return FCrc::MemCrc32(Q.GetData(), Q.Num() * sizeof(int32));
 }
 
 bool UAIBAmbitionEngine::IsHardInterrupt(const FAIBFacts& Facts) const
@@ -259,6 +298,7 @@ FGameplayTag UAIBAmbitionEngine::Rescore(const FAIBFacts& Facts, double NowSecon
 	// corpse (W-REVIEW P2 H-2).
 	const bool bCommitted = (CommitEndSeconds > NowSeconds) && CurrentTag.IsValid()
 		&& !bInterrupted && IncumbentRawScore > 0.f;
+	LastSwitchReason = EAIBSwitchReason::None;
 	if (bCommitted)
 	{
 		CurrentScore = IncumbentRawScore; // fresh, raw — never stale across a hold
@@ -267,6 +307,12 @@ FGameplayTag UAIBAmbitionEngine::Rescore(const FAIBFacts& Facts, double NowSecon
 
 	if (Best && Best->Tag != CurrentTag)
 	{
+		// AIB26: name the cause. Veto before Interrupt — a zero incumbent would have
+		// switched with or without the edge, and that is the more useful reading.
+		LastSwitchReason = !CurrentTag.IsValid() ? EAIBSwitchReason::First
+			: IncumbentRawScore <= 0.f ? EAIBSwitchReason::Veto
+			: (bInterrupted && CommitEndSeconds > NowSeconds) ? EAIBSwitchReason::Interrupt
+			: EAIBSwitchReason::Merit;
 		CurrentTag = Best->Tag;
 		// One-shot commit ON ENTRY — and only for an ambition that asked for one. The
 		// floor ambition (no considerations, nothing to dither against) carries zero

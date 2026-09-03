@@ -57,6 +57,7 @@ the module.
     Interfaces/  IAIBAvatarInterface · IAIBWorldQuery · IAIBAmbitionProvider
     Perception/  AIBSensorium · AIBReactionClock · AIBTargetMemory      (F1/F2/F3/F5)
     Brain/       considerations · ambitions · AIBAmbitionEngine ·
+                 AIBTactic (Push/Flank/Hold on a second engine instance) ·
                  AIBConfidenceModel                                     (worldless)
     Skills/      AIBSkillProfile + Movement/Aim/Grenade/Melee policies  (worldless, F4)
     Execution/   IAIBExecutor · StateTree executor + tasks · AIBTreeAuthoring (editor-only)

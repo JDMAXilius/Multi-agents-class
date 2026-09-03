@@ -2,6 +2,7 @@
 
 #include "AIBotModule.h"
 #include "Brain/AIBAmbitionEngine.h"
+#include "Brain/AIBTactic.h"
 #include "Components/ActorComponent.h"
 #include "Components/StateTreeAIComponent.h"
 #include "Core/AIBBotManager.h"
@@ -23,6 +24,10 @@
 #include "NavMesh/RecastNavMesh.h"
 #include "Navigation/PathFollowingComponent.h"
 #include "Navigation/CrowdFollowingComponent.h"
+
+#include "NavigationData.h"
+#include "NavigationPath.h"
+#include "NavigationSystem.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Hearing.h"
 #include "Perception/AISense_Hearing.h"
@@ -211,7 +216,14 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	{
 		AmbitionEngine = NewObject<UAIBAmbitionEngine>(this);
 	}
+	if (!TacticEngine)
+	{
+		TacticEngine = NewObject<UAIBAmbitionEngine>(this);
+	}
 	LastLoggedAmbition = FGameplayTag();
+	LastLoggedTactic = FGameplayTag();
+	FlankLatch.Clear();
+	HoldSinceSeconds = -1.0;
 	LastFacts = FAIBFacts(); // a fresh life reads no stale world
 	AllyFightMemory = FAIBAllyFightMemory(); // and heard no stale fights (AIB17)
 	LastDeniedTarget = nullptr;              // and was denied nothing yet (AIB23)
@@ -328,6 +340,13 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	GrenadeState = FAIBGrenadeState();
 	MovementState = FAIBMovementState();
 	PolicyRandom.Initialize(static_cast<int32>(HashCombine(LifeSeed, 131u)));
+	// AIB26: the decision stream. Replayable only once the manager has handed over the
+	// match seed and the stable slot (AIB25); until then the per-life hash keeps bots
+	// out of lockstep (F-3.7) without pretending to be a replay.
+	DecisionRandom.Initialize(static_cast<int32>(BotIndex >= 0
+		? HashCombine(HashCombine(static_cast<uint32>(MatchSeed), static_cast<uint32>(BotIndex)), static_cast<uint32>(LifeIndex))
+		: HashCombine(LifeSeed, 977u)));
+	DecisionRandomDraws = 0;
 	IdleSinceSeconds = -1.0; // a fresh body has stood still for nothing yet
 	StillTactics = 0;
 	IdleTactics = 0;
@@ -415,6 +434,12 @@ void AAIBBotController::OnUnPossess()
 	{
 		AmbitionEngine->ResetArbitration();
 	}
+	if (TacticEngine)
+	{
+		TacticEngine->ResetArbitration();
+	}
+	FlankLatch.Clear();
+	HoldSinceSeconds = -1.0;
 	Avatar = nullptr;
 	AvatarObject = nullptr;
 	AmbitionProvider = nullptr;
@@ -616,6 +641,16 @@ void AAIBBotController::RefreshAmbitions()
 	for (const FAIBAmbitionSpec& Spec : CoreAmbitions)
 	{
 		AmbitionEngine->RegisterAmbition(Spec);
+	}
+	if (TacticEngine)
+	{
+		TacticEngine->ClearAmbitions();
+		TArray<FAIBAmbitionSpec> Tactics;
+		AIBTactic::BuildDefaultTacticSpecs(Tactics, ResolvedTier.FlankCommitSeconds);
+		for (const FAIBAmbitionSpec& Spec : Tactics)
+		{
+			TacticEngine->RegisterAmbition(Spec);
+		}
 	}
 
 	CachedModeAmbitions.Reset();
@@ -977,6 +1012,159 @@ void AAIBBotController::GetIslandAnchors(TArray<FAIBIslandAnchor>& OutAnchors) c
 	}
 }
 
+void AAIBBotController::ClearFlankLatch(const TCHAR* Why)
+{
+	if (FlankLatch.bHasPoint)
+	{
+		UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s flank point cleared — %s."), *GetName(), Why);
+	}
+	FlankLatch.Clear();
+}
+
+void AAIBBotController::NoteCurrentTacticFailed(const TCHAR* Why)
+{
+	const UWorld* World = GetWorld();
+	const FGameplayTag Failed = TacticEngine ? TacticEngine->GetCurrent() : FGameplayTag();
+	if (!World || !Failed.IsValid())
+	{
+		return;
+	}
+	TacticEngine->NoteAmbitionFailed(Failed, World->GetTimeSeconds());
+	UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s tactic %s rests — %s."), *GetName(), *Failed.ToString(), Why);
+}
+
+void AAIBBotController::SearchFlankPoint(const FVector& Belief, double NowSeconds)
+{
+	UWorld* World = GetWorld();
+	APawn* MyPawn = GetPawn();
+	UNavigationSystemV1* NavSys = World ? FNavigationSystem::GetCurrent<UNavigationSystemV1>(World) : nullptr;
+	const ANavigationData* NavData = NavSys ? NavSys->GetDefaultNavDataInstance() : nullptr;
+	if (!MyPawn || !NavData)
+	{
+		return;
+	}
+	const FVector Feet = MyPawn->GetActorLocation();
+	const float EyeZ = MyPawn->GetPawnViewLocation().Z - Feet.Z;
+	const float DirectUU = FVector::Dist2D(Feet, Belief);
+	const FVector Mid = (Feet + Belief) * 0.5f;
+	const float Radius = ResolvedTier.FlankRadiusUU;
+	const ECollisionChannel Channel = static_cast<ECollisionChannel>(FMath::Clamp<int32>(BlastPerceivabilityChannel, 0, ECC_MAX - 1));
+	FCollisionQueryParams TraceParams(SCENE_QUERY_STAT(AIBFlankHidden), /*bTraceComplex=*/false, MyPawn);
+
+	// The ring's phase is the one decision draw this phase makes — seeded, counted.
+	++DecisionRandomDraws;
+	const float Phase = DecisionRandom.FRand() * 2.f * UE_PI;
+	constexpr int32 Samples = 8;
+	float BestDetourUU = 0.f;
+	FVector BestPoint = FVector::ZeroVector;
+	bool bFound = false;
+	for (int32 i = 0; i < Samples; ++i)
+	{
+		const float A = Phase + (2.f * UE_PI * i) / Samples;
+		FNavLocation OnNav;
+		if (!NavSys->ProjectPointToNavigation(Mid + FVector(FMath::Cos(A), FMath::Sin(A), 0.f) * Radius, OnNav, FVector(300.f, 300.f, 400.f)))
+		{
+			continue;
+		}
+		// Not INTO the target (a flank is around, not through), and hidden from where the
+		// belief WAS — the trace runs from the remembered eye line, never the live actor.
+		if (FVector::Dist2D(OnNav.Location, Belief) < AIB::EngageFullAppetiteUU
+			|| !World->LineTraceTestByChannel(Belief + FVector(0.f, 0.f, EyeZ), OnNav.Location + FVector(0.f, 0.f, EyeZ), Channel, TraceParams))
+		{
+			continue;
+		}
+		const FPathFindingResult Found = NavSys->FindPathSync(FPathFindingQuery(this, *NavData, Feet, OnNav.Location));
+		if (!Found.IsSuccessful() || !Found.Path.IsValid() || Found.Path->IsPartial())
+		{
+			continue;
+		}
+		const float DetourUU = static_cast<float>(Found.Path->GetLength()) + FVector::Dist2D(OnNav.Location, Belief);
+		if (DetourUU > ResolvedTier.FlankMaxDetourFactor * FMath::Max(DirectUU, 1.f))
+		{
+			continue; // a visible stupid detour (W-AUDIT P14)
+		}
+		if (!bFound || DetourUU < BestDetourUU)
+		{
+			// ponytail: shortest detour wins; AIB25's lane heat joins this ranking.
+			bFound = true;
+			BestDetourUU = DetourUU;
+			BestPoint = OnNav.Location;
+		}
+	}
+	if (bFound)
+	{
+		FlankLatch.Latch(BestPoint, Belief, BestDetourUU, NowSeconds);
+		UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s flank point latched — (%.0f,%.0f,%.0f) detour %.0fuu over %.0fuu direct."),
+			*GetName(), BestPoint.X, BestPoint.Y, BestPoint.Z, BestDetourUU, DirectUU);
+	}
+	else if (TacticEngine)
+	{
+		// No point: Flank rests — the suppression window is what throttles the next
+		// search (escalating on repeat), so eight pathfinds never run per think.
+		TacticEngine->NoteAmbitionFailed(AIBTags::Tactic_Flank, NowSeconds);
+	}
+}
+
+void AAIBBotController::ThinkTactic(FGameplayTag Ambition, double NowSeconds)
+{
+	if (!TacticEngine)
+	{
+		return;
+	}
+	// The tactic layer lives inside the fight. Engage flaps by design (a 0.2s belief
+	// loss lands in Search and back), so Search keeps the tactic state; anything else
+	// is a different life of the fight and the tactic layer starts over.
+	if (Ambition != AIBTags::Ambition_Engage)
+	{
+		if (Ambition != AIBTags::Ambition_Search)
+		{
+			ClearFlankLatch(TEXT("the fight ended"));
+			TacticEngine->ResetArbitration();
+			LastLoggedTactic = FGameplayTag();
+		}
+		HoldSinceSeconds = -1.0;
+		return;
+	}
+
+	FAIBFacts TacticFacts = LastFacts;
+	if (Sensorium.HasVisibleTarget())
+	{
+		const FVector Belief = Sensorium.GetLastSeenLocation();
+		if (FlankLatch.IsStale(Belief, ResolvedTier.FlankRadiusUU))
+		{
+			ClearFlankLatch(TEXT("the belief drifted"));
+		}
+		if (!FlankLatch.bHasPoint && !TacticEngine->IsAmbitionSuppressed(AIBTags::Tactic_Flank, NowSeconds))
+		{
+			SearchFlankPoint(Belief, NowSeconds);
+		}
+	}
+	if (FlankLatch.bHasPoint)
+	{
+		// THE ONLY ZERO Flank can produce: the latched point, as the objective fact joined
+		// to its tag (the mode-ambition translation pattern; no new fact field).
+		FAIBObjectiveFact& Point = TacticFacts.Objectives.AddDefaulted_GetRef();
+		Point.AmbitionTag = AIBTags::Tactic_Flank;
+		Point.Urgency = 1.f;
+		Point.DistanceUU = FlankLatch.DetourUU;
+	}
+
+	const FGameplayTag Tactic = TacticEngine->Rescore(TacticFacts, NowSeconds);
+	if (Tactic != AIBTags::Tactic_Hold)
+	{
+		HoldSinceSeconds = -1.0;
+	}
+	if (Tactic.IsValid() && Tactic != LastLoggedTactic)
+	{
+		LastLoggedTactic = Tactic;
+		const FAIBScoredAmbition& RunnerUp = TacticEngine->GetLastRunnerUp();
+		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s tactic -> %s (%.2f) over %s (%.2f) reason=%s"),
+			*GetName(), *Tactic.ToString(), TacticEngine->GetCurrentScore(),
+			RunnerUp.Tag.IsValid() ? *RunnerUp.Tag.ToString() : TEXT("none"), RunnerUp.Score,
+			UAIBAmbitionEngine::SwitchReasonName(TacticEngine->GetLastSwitchReason()));
+	}
+}
+
 void AAIBBotController::Think()
 {
 	UWorld* World = GetWorld();
@@ -1225,11 +1413,32 @@ void AAIBBotController::Think()
 			// to see hysteresis and interrupts working without a playtest (the
 			// fairness pass's instrument-quality note).
 			const FAIBScoredAmbition& RunnerUp = AmbitionEngine->GetLastRunnerUp();
-			UE_LOG(LogAIBot, Log, TEXT("AIBot: %s ambition -> %s (%.2f) over %s (%.2f)%s"),
+			UE_LOG(LogAIBot, Log, TEXT("AIBot: %s ambition -> %s (%.2f) over %s (%.2f)%s reason=%s"),
 				*GetName(), *Ambition.ToString(), AmbitionEngine->GetCurrentScore(),
 				RunnerUp.Tag.IsValid() ? *RunnerUp.Tag.ToString() : TEXT("none"),
 				RunnerUp.Score,
-				AmbitionEngine->WasLastRescoreInterrupted() ? TEXT(" [interrupt]") : TEXT(""));
+				AmbitionEngine->WasLastRescoreInterrupted() ? TEXT(" [interrupt]") : TEXT(""),
+				UAIBAmbitionEngine::SwitchReasonName(AmbitionEngine->GetLastSwitchReason()));
+		}
+
+		ThinkTactic(Ambition, Now);
+
+		// AIB26 — THE REPLAY LINE, one per decision, keyed on the stable slot. Everything
+		// on it is deterministic given the seed: no wall clock, no absolutes, no object
+		// ids; scores at 3 dp; the facts as a quantised CRC. Two `-AIBSeed=N` runs sorted
+		// on (bot, seq) must diff empty.
+		{
+			const FAIBScoredAmbition& RunnerUp = AmbitionEngine->GetLastRunnerUp();
+			const FGameplayTag Tactic = TacticEngine ? TacticEngine->GetCurrent() : FGameplayTag();
+			const double CommitLeft = AmbitionEngine->GetCommitEndSeconds() - Now;
+			const int32 CommitTicks = CommitLeft > 0.0
+				? FMath::CeilToInt(CommitLeft / FMath::Max(ThinkIntervalSeconds, 0.02f)) : 0;
+			UE_LOG(LogAIBot, Log, TEXT("AIBot: decide bot=%d seq=%u want=%s s=%.3f over=%s rs=%.3f tac=%s ts=%.3f commit=%d rng=%d facts=%08x"),
+				BotIndex, ++DecisionSeq,
+				Ambition.IsValid() ? *Ambition.ToString() : TEXT("none"), AmbitionEngine->GetCurrentScore(),
+				RunnerUp.Tag.IsValid() ? *RunnerUp.Tag.ToString() : TEXT("none"), RunnerUp.Score,
+				Tactic.IsValid() ? *Tactic.ToString() : TEXT("none"), TacticEngine ? TacticEngine->GetCurrentScore() : 0.f,
+				CommitTicks, DecisionRandomDraws, UAIBAmbitionEngine::FactsCrc32(LastFacts));
 		}
 
 		// PHASE 12 — TARGET CLAIMS AT THINK-COMMIT (AIB23 W-AUDIT): grant/renew when Engage

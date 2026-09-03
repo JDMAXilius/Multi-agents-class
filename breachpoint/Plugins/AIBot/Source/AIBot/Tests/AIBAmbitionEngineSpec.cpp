@@ -4,6 +4,7 @@
 #if WITH_DEV_AUTOMATION_TESTS
 
 #include "Brain/AIBAmbitionEngine.h"
+#include "Brain/AIBTactic.h"
 #include "Core/AIBFactsBuilder.h"
 #include "Core/AIBTags.h"
 #include "Core/AIBTypes.h"
@@ -72,6 +73,39 @@ BEGIN_DEFINE_SPEC(FAIBAmbitionEngineSpec, "AIBot.Sim.AmbitionEngine",
 	bool TestTag(const TCHAR* What, FGameplayTag Actual, FGameplayTag Expected)
 	{
 		return TestEqual(What, Actual.GetTagName(), Expected.GetTagName());
+	}
+
+	/** Any tag's raw score from the last Rescore — 0 if it did not score at all. */
+	float ScoreOf(const UAIBAmbitionEngine& From, FGameplayTag Tag) const
+	{
+		for (const FAIBScoredAmbition& Row : From.GetLastScores())
+		{
+			if (Row.Tag == Tag)
+			{
+				return Row.Score;
+			}
+		}
+		return 0.f;
+	}
+
+	/** AIB26: the tactic layer as the controller registers it (FlankCommitSeconds = 3.5). */
+	void RegisterTactics(UAIBAmbitionEngine& Into) const
+	{
+		TArray<FAIBAmbitionSpec> Tactics;
+		AIBTactic::BuildDefaultTacticSpecs(Tactics, 3.5f);
+		for (const FAIBAmbitionSpec& Spec : Tactics)
+		{
+			Into.RegisterAmbition(Spec);
+		}
+	}
+
+	/** The controller's latched flank point, as the tactic engine sees it. */
+	static void LatchFlankPoint(FAIBFacts& Facts)
+	{
+		FAIBObjectiveFact& Point = Facts.Objectives.AddDefaulted_GetRef();
+		Point.AmbitionTag = AIBTags::Tactic_Flank;
+		Point.Urgency = 1.f;
+		Point.DistanceUU = 900.f;
 	}
 
 END_DEFINE_SPEC(FAIBAmbitionEngineSpec)
@@ -829,6 +863,245 @@ void FAIBAmbitionEngineSpec::Define()
 		Engine->ResetArbitration();
 		TestFalse(TEXT("respawn starts clean"),
 			Engine->IsAmbitionSuppressed(TAG_AIBSpec_Mode_Child, 600.5));
+	});
+
+	// ---- AIB26 / Phase 15: the switch-reason instrument, the replay fingerprint, the
+	//      tactic layer on the second engine, and determinism ----------------------------
+
+	It("names WHY the winner changed — first, merit, veto, interrupt", [this]()
+	{
+		// The utility-pathology instrument: a dither is a run of `merit`, a Flank that
+		// kills its own commit is `veto` with a commit live, a state-shaped interrupt
+		// would read `interrupt` every think. Each cause, produced on purpose.
+		Engine->RegisterAmbition(Constant(AIBTags::Ambition_Roam, 1.0f));
+		const FAIBFacts Quiet;
+		Engine->Rescore(Quiet, 1.0);
+		TestEqual(TEXT("a fresh life's first pick"), Engine->GetLastSwitchReason(), EAIBSwitchReason::First);
+		Engine->Rescore(Quiet, 1.1);
+		TestEqual(TEXT("holding is not a switch"), Engine->GetLastSwitchReason(), EAIBSwitchReason::None);
+
+		Engine->RegisterAmbition(Constant(AIBTags::Ambition_Search, 1.3f));
+		Engine->Rescore(Quiet, 2.0);
+		TestEqual(TEXT("beaten through the hysteresis"), Engine->GetLastSwitchReason(), EAIBSwitchReason::Merit);
+
+		// A committed incumbent that scores zero releases itself: veto, not merit.
+		Engine->ClearAmbitions();
+		Engine->RegisterAmbition(VisibleGated(AIBTags::Ambition_Engage, 2.0f, /*Commit=*/5.f));
+		Engine->RegisterAmbition(Constant(AIBTags::Ambition_Roam, 0.2f));
+		FAIBFacts Facts;
+		Facts.bTargetVisible = true;
+		Engine->Rescore(Facts, 10.0);
+		Facts.bTargetVisible = false;
+		TestTag(TEXT("the vetoed commit releases"), Engine->Rescore(Facts, 11.0), AIBTags::Ambition_Roam);
+		TestEqual(TEXT("and says veto"), Engine->GetLastSwitchReason(), EAIBSwitchReason::Veto);
+
+		// A live commit voided by the blast's edge: interrupt.
+		Engine->ClearAmbitions();
+		Engine->RegisterAmbition(Constant(AIBTags::Ambition_Roam, 1.0f, /*Commit=*/5.f));
+		FAIBFacts Blast;
+		Engine->Rescore(Blast, 20.0);
+		Engine->RegisterAmbition(Constant(AIBTags::Ambition_Retreat, 5.0f));
+		Blast.bIncomingBlast = true;
+		Blast.BlastSecondsToDetonation = 1.0f;
+		TestTag(TEXT("the edge switches"), Engine->Rescore(Blast, 21.0), AIBTags::Ambition_Retreat);
+		TestEqual(TEXT("and says interrupt"), Engine->GetLastSwitchReason(), EAIBSwitchReason::Interrupt);
+		TestEqual(TEXT("the name the log prints"), FString(UAIBAmbitionEngine::SwitchReasonName(EAIBSwitchReason::Interrupt)), FString(TEXT("interrupt")));
+	});
+
+	It("fingerprints the facts at 3 dp — noise agrees, a real change does not", [this]()
+	{
+		// The `facts=` field of the decide line. Two seeded runs whose floats differ in
+		// the last bits must still diff empty; a change the curves can see must not.
+		FAIBFacts A;
+		A.bVitalsKnown = true;
+		A.HealthNorm = 0.75f;
+		A.DistToTargetUU = 812.f;
+		FAIBObjectiveFact& Objective = A.Objectives.AddDefaulted_GetRef();
+		Objective.AmbitionTag = AIBTags::Ambition_Mode;
+		Objective.Urgency = 0.4f;
+
+		FAIBFacts B = A;
+		TestEqual(TEXT("identical facts, identical crc"), UAIBAmbitionEngine::FactsCrc32(A), UAIBAmbitionEngine::FactsCrc32(B));
+		B.HealthNorm += 0.0002f;
+		TestEqual(TEXT("sub-3dp noise is invisible"), UAIBAmbitionEngine::FactsCrc32(A), UAIBAmbitionEngine::FactsCrc32(B));
+		B.HealthNorm = 0.76f;
+		TestNotEqual(TEXT("a 3dp change shows"), UAIBAmbitionEngine::FactsCrc32(A), UAIBAmbitionEngine::FactsCrc32(B));
+
+		FAIBFacts C = A;
+		C.Objectives[0].AmbitionTag = AIBTags::Ambition_Seek;
+		TestNotEqual(TEXT("the objective's tag is part of the fingerprint"), UAIBAmbitionEngine::FactsCrc32(A), UAIBAmbitionEngine::FactsCrc32(C));
+		FAIBFacts D = A;
+		D.bTargetVisible = true;
+		TestNotEqual(TEXT("a flag flip shows"), UAIBAmbitionEngine::FactsCrc32(A), UAIBAmbitionEngine::FactsCrc32(D));
+	});
+
+	It("always elects a tactic — Push is a floor no fact can zero", [this]()
+	{
+		// The tree's Push child is UNGATED and last so Engage always has a child; that is
+		// only honest if the engine never leaves the tactic board empty. The worst facts:
+		// no nerve, no vitality, a target at full health, nothing latched.
+		RegisterTactics(*Engine);
+		TestEqual(TEXT("three tactics"), Engine->NumAmbitions(), 3);
+		FAIBFacts Worst;
+		Worst.bVitalsKnown = true;
+		Worst.HealthNorm = 0.f;
+		Worst.ShieldNorm = 0.f;
+		Worst.bConfidenceKnown = true;
+		Worst.ConfidenceNorm = 0.f;
+		Worst.bTargetVitalsKnown = true;
+		Worst.TargetHealthNorm = 1.f;
+		Worst.AmmoNorm = 1.f;
+		TestTag(TEXT("Push holds the floor"), Engine->Rescore(Worst, 1.0), AIBTags::Tactic_Push);
+		TestTrue(TEXT("and it is not zero"), ScoreOf(*Engine, AIBTags::Tactic_Push) > 0.f);
+	});
+
+	It("scores Flank to ZERO only through the latched point — the VETO-bypass rule", [this]()
+	{
+		// W-AUDIT P15: "Flank's gate must return 0 only on a LATCHED failure or it dithers
+		// through its own commit". Every other term floors above 0, by construction —
+		// pinned with the most hostile per-think facts the curves can be handed.
+		RegisterTactics(*Engine);
+
+		FAIBFacts Ideal;
+		Ideal.bHasTarget = true;
+		Ideal.bTargetVisible = true;
+		Ideal.DistToTargetUU = 800.f;          // the flank's home band
+		Ideal.bDamageHistoryKnown = true;
+		Ideal.RecentDamageTakenNorm = 0.5f;    // being shot: go around
+		Ideal.bCrowdKnown = true;
+		Ideal.NearbyAllies = 2;                // teammates on the target
+		TestTag(TEXT("no latched point: silent, Push fights"), Engine->Rescore(Ideal, 1.0), AIBTags::Tactic_Push);
+		TestEqual(TEXT("Flank reads exactly zero"), ScoreOf(*Engine, AIBTags::Tactic_Flank), 0.f, 0.0001f);
+
+		LatchFlankPoint(Ideal);
+		TestTag(TEXT("the point latched: Flank wins"), Engine->Rescore(Ideal, 2.0), AIBTags::Tactic_Flank);
+
+		FAIBFacts Hostile;
+		Hostile.bHasTarget = true;
+		Hostile.DistToTargetUU = 50.f;         // knife range
+		Hostile.bDamageHistoryKnown = true;
+		Hostile.RecentDamageTakenNorm = 0.f;   // untouched
+		Hostile.bCrowdKnown = true;
+		Hostile.NearbyAllies = 0;              // alone
+		LatchFlankPoint(Hostile);
+		Engine->ResetArbitration();
+		Engine->Rescore(Hostile, 3.0);
+		TestTrue(TEXT("hostile per-think facts cannot zero a latched Flank"), ScoreOf(*Engine, AIBTags::Tactic_Flank) > 0.f);
+	});
+
+	It("holds Flank through its commit while the point stands, and releases the moment it is gone", [this]()
+	{
+		RegisterTactics(*Engine);
+		FAIBFacts Facts;
+		Facts.bHasTarget = true;
+		Facts.DistToTargetUU = 800.f;
+		Facts.bDamageHistoryKnown = true;
+		Facts.RecentDamageTakenNorm = 0.5f;
+		LatchFlankPoint(Facts);
+		TestTag(TEXT("Flank wins"), Engine->Rescore(Facts, 10.0), AIBTags::Tactic_Flank); // committed to 13.5
+
+		// Mid-manoeuvre the facts turn against it — closer, no fresh damage — and Push
+		// would win on merit. The commit holds: the point is still latched.
+		Facts.DistToTargetUU = 200.f;
+		Facts.RecentDamageTakenNorm = 0.f;
+		TestTag(TEXT("the commit holds through a bad tick"), Engine->Rescore(Facts, 11.0), AIBTags::Tactic_Flank);
+		TestTrue(TEXT("the commit is live"), Engine->GetCommitEndSeconds() > 11.0);
+
+		// The controller clears the latch (arrived / refused / stalled): the ONE zero.
+		Facts.Objectives.Reset();
+		TestTag(TEXT("no point: Push, at once"), Engine->Rescore(Facts, 12.0), AIBTags::Tactic_Push);
+		TestEqual(TEXT("released by veto, inside the window"), Engine->GetLastSwitchReason(), EAIBSwitchReason::Veto);
+	});
+
+	It("wants Hold with a thin magazine at range on the high ground — and Push up close and full", [this]()
+	{
+		RegisterTactics(*Engine);
+		FAIBFacts Facts;
+		Facts.bHasTarget = true;
+		Facts.AmmoNorm = 1.f;
+		Facts.DistToTargetUU = 300.f;
+		Facts.HeightAdvantageUU = 0.f;
+		TestTag(TEXT("full and close: Push"), Engine->Rescore(Facts, 1.0), AIBTags::Tactic_Push);
+
+		Engine->ResetArbitration();
+		Facts.AmmoNorm = 0.1f;
+		Facts.DistToTargetUU = 900.f;
+		Facts.HeightAdvantageUU = 300.f;
+		TestTag(TEXT("thin, at range, above: Hold"), Engine->Rescore(Facts, 2.0), AIBTags::Tactic_Hold);
+	});
+
+	It("ends a Hold by the controller's clock, never by a term — bounded stillness (F9)", [this]()
+	{
+		// The controller's Hold task reports HoldMaxSeconds reached through the same
+		// failure-suppression door every branch uses; the engine's job is to move on and
+		// let Hold back only after its rest.
+		RegisterTactics(*Engine);
+		FAIBFacts Facts;
+		Facts.bHasTarget = true;
+		Facts.AmmoNorm = 0.1f;
+		Facts.DistToTargetUU = 900.f;
+		Facts.HeightAdvantageUU = 300.f;
+		TestTag(TEXT("Hold wins"), Engine->Rescore(Facts, 10.0), AIBTags::Tactic_Hold);
+		Engine->NoteAmbitionFailed(AIBTags::Tactic_Hold, 14.0); // HoldMaxSeconds reached
+		TestTag(TEXT("the hold is over: Push"), Engine->Rescore(Facts, 14.1), AIBTags::Tactic_Push);
+		TestTag(TEXT("Hold comes back after its rest"), Engine->Rescore(Facts, 18.0), AIBTags::Tactic_Hold);
+	});
+
+	It("replays byte-identical decisions for the same facts stream — the seeded-diff premise", [this]()
+	{
+		// The `decide` line diffs empty across two `-AIBSeed=N` runs only if the engine
+		// itself is a pure function of (registry, facts stream, events, clock). Two engines,
+		// one scripted stream with a suppression event in it, compared field by field
+		// exactly as the line prints them.
+		UAIBAmbitionEngine* Twin = NewObject<UAIBAmbitionEngine>(GetTransientPackage(), NAME_None, RF_Transient);
+		Twin->AddToRoot();
+		for (UAIBAmbitionEngine* E : { Engine, Twin })
+		{
+			TArray<FAIBAmbitionSpec> Defaults;
+			UAIBAmbitionEngine::BuildDefaultCoreAmbitions(Defaults);
+			for (const FAIBAmbitionSpec& Spec : Defaults)
+			{
+				E->RegisterAmbition(Spec);
+			}
+		}
+
+		const auto Step = [](UAIBAmbitionEngine& E, const FAIBFacts& F, double T)
+		{
+			const FGameplayTag Won = E.Rescore(F, T);
+			return FString::Printf(TEXT("%s s=%.3f over=%s rs=%.3f reason=%s facts=%08x"),
+				*Won.ToString(), E.GetCurrentScore(), *E.GetLastRunnerUp().Tag.ToString(),
+				E.GetLastRunnerUp().Score, UAIBAmbitionEngine::SwitchReasonName(E.GetLastSwitchReason()),
+				UAIBAmbitionEngine::FactsCrc32(F));
+		};
+
+		FAIBFacts F;
+		F.bVitalsKnown = true;
+		F.HealthNorm = 1.f;
+		F.bWeaponCanFight = true;
+		bool bIdentical = true;
+		for (int32 Tick = 0; Tick < 60; ++Tick)
+		{
+			const double T = 1.0 + Tick * 0.1;
+			// A scripted fight: contact at 1 s, wounded at 3 s, lost at 4 s, a branch
+			// failure at 4.5 s, blast at 5 s.
+			F.bHasTarget = Tick >= 10 && Tick < 40;
+			F.bTargetVisible = F.bHasTarget;
+			F.DistToTargetUU = F.bHasTarget ? 900.f - Tick * 10.f : -1.f;
+			F.HealthNorm = Tick >= 30 ? 0.3f : 1.f;
+			F.bHasMemory = Tick >= 40;
+			F.LastKnownAgeSeconds = Tick >= 40 ? (Tick - 40) * 0.1f : 0.f;
+			F.MemoryFreshWindowSeconds = 16.f;
+			F.bIncomingBlast = Tick >= 50;
+			F.BlastSecondsToDetonation = F.bIncomingBlast ? 2.f - (Tick - 50) * 0.1f : 0.f;
+			if (Tick == 45)
+			{
+				Engine->NoteAmbitionFailed(AIBTags::Ambition_Search, T);
+				Twin->NoteAmbitionFailed(AIBTags::Ambition_Search, T);
+			}
+			bIdentical &= (Step(*Engine, F, T) == Step(*Twin, F, T));
+		}
+		TestTrue(TEXT("sixty decisions, no divergence"), bIdentical);
+		Twin->RemoveFromRoot();
 	});
 }
 
