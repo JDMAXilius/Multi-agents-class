@@ -16,7 +16,7 @@ Contract clause implemented (docs/contracts/testing.md):
 STATUS OF THIS WRAPPER, STATED PLAINLY (31 Jul 2026)
   The command construction below has NEVER BEEN EXECUTED END TO END. It cannot be, yet:
     * the Gauntlet node BRGauntlet.SmokeTS2C does not exist  (BP00 step 3, builder)
-    * the map BR_Arena01 does not exist                      (BP07)
+    * the map BR_Arena01 EXISTS since BP07 — blocker cleared 2 Sep 2026
   So today this script reaches its preflight, prints exactly which pieces are missing,
   and reports BLOCKED (exit 3). It does not launch UAT, and it never reports green for a
   scenario that did not run. When step 3 lands, the first real run is expected to correct

@@ -183,3 +183,8 @@ Refined steps (replace §Steps):
    visit-heat grid (the Team Mind's first member).
 7. W-REVIEW ×4 (add: SweepLook AreaDenial alignment gate; `GetGrappleRoute` unbounded read).
 8. W-VERIFY ×2 vs baseline; PIE watch: top-platform spawn leaves within 5 s (captured).
+- STEP 4 AMENDED (from the Phase 13 audit, 2 Sep): the jump hook is NOT a `SetMoveSegment`
+  PathPoints read (dead under Detour Crowd in Phase 13). `UAIBPathFollowingComponent` overrides
+  `StartUsingCustomLink(INavLinkCustomInterface*, const FVector&)` → press JUMP verb, and for
+  jump AREAS reads the corridor (`NavMeshPath->PathCorridor[PathStartIndex]` + `GetLinkEndPoints`).
+  Built once, survives the crowd rebase.

@@ -30,3 +30,46 @@ phase's baseline. Metrics for this phase land BEFORE its behaviour (§4 of the r
 - [ ] The phase's metric gate PASSES vs the previous baseline; kills/min not worse
 
 ## Log
+### W-AUDIT (aib-critic) — merged by the lead, 2 Sep (verified against the 5.8 headers)
+- One-word plugin change: Phase 11's `UAIBPathFollowingComponent` rebases from
+  `UPathFollowingComponent` to `UCrowdFollowingComponent` (include `Navigation/CrowdFollowingComponent.h`);
+  ctor swap via `ObjectInitializer.SetDefaultSubobjectClass<UAIBPathFollowingComponent>(TEXT("PathFollowingComponent"))`
+  at `AIBBotController.cpp:24-25` (the name is a literal in AIController.cpp:44).
+- Setters (OnPossess): `SetCrowdSeparation(true)` (default false), `SetCrowdSeparationWeight(1.5, csv)`,
+  `SetCrowdAvoidanceQuality(Medium)`, `SetCrowdPathOffset(true)`; leave query range 400, obstacle
+  avoidance true, AffectFallingVelocity false (F6), RotateToVelocity true (TickLocomotion's facing
+  writer agrees). NEVER the `SetAvoidanceGroup*` family (that is the RVO path — forbidden mixing).
+- Ini: new `[/Script/AIModule.CrowdManager]` with exactly `bResolveCollisions=True` and
+  `SeparationDirClamp=0.2` (without the clamp a bot brakes for a teammate behind it = conga);
+  MaxAgents 50 stays (8 bots + 8 player obstacles).
+- Players as obstacles: `ICrowdAgentInterface` on `ABNCharacter` (game side, AIModule already a
+  dep), `RegisterAgent` in PossessedBy ONLY when `HasAuthority() && Controller is APlayerController`,
+  unregister in UnPossessed/EndPlay. THE TRAP: bot pawns are ABNCharacter too — registering them
+  makes every bot exist twice (follower + ghost obstacle at distance 0) → jitter/freeze = defect 3
+  worse. Highest-risk line of the phase.
+- Watchdog (`AIBStateTreeTasks.cpp:377-378`): `CountNearbyAllies(Pawn, ~80uu) > 0` (existing,
+  fairness-reviewed) → no jump, no traversal chooser, no re-issue (a re-issued MoveTo resets the
+  crowd corridor); log + one bounded yield window (~1 s) and let separation steer. REJECTED:
+  `UCrowdManager::GetNearbyAgentLocations` — returns ENEMY positions with no LOS bound (wallhack door).
+- Nothing in the plugin bypasses the crowd (no AddMovementInput/velocity writes; every mover is
+  MoveToLocation). Frictions: `FAIBStrafeTask` re-issues MoveToLocation per 0.2–1.2 s leg →
+  corridor churn; re-issue only when the destination moved > ~100 uu (measure
+  `mean_pairwise_teammate_distance` first). Strafe Hold's StopMovement is a correct asymmetry.
+- CROSS-PHASE, BINDING ON PHASE 11: under crowd, `UCrowdFollowingComponent::SetMoveSegment` calls
+  Super ONLY when simulation is disabled, and PathPoints hold just start+end — a jump hook that
+  reads PathPoints/segment flags goes SILENTLY DEAD. Phase 11's hook must be
+  `StartUsingCustomLink(INavLinkCustomInterface*, const FVector&)` (virtual on the base; the crowd
+  calls it by name and `FinishUsingCustomLink` resumes the agent) and/or the corridor read
+  `NavMeshPath->PathCorridor[PathStartIndex]` + `GetLinkEndPoints` for jump areas. TICKET_AIB22
+  step 4 updated below. Do not flip `SetOffmeshConnectionPruning`.
+- Replication: clean by construction; the `HasAuthority` gate on RegisterAgent is mandatory (else a
+  client crowd agent that steers nothing). Listen rung three-way claim: server separation drops
+  overlaps; acting client moves identically; observing client sees smooth bot motion and
+  `bUseAccelerationForPaths` still honoured (crowd routes through RequestPathMove).
+- "Turn off bot-vs-bot shoving" has no flag that does that (`bEnablePhysicsInteraction` is
+  pawn↔physics bodies; capsule ECC_Pawn must stay Block). Separation + `bResolveCollisions=True`
+  IS the mechanism; residual shoving = a measured follow-up, not a flag.
+- W-BUILD ×3 disjoint: (A) plugin steering — AIBPathFollowingComponent.{h,cpp}, AIBBotController.cpp,
+  AIBDataRows.h + csv row; (B) game side (LEAD, Source/BreachpointNext is this session's path) —
+  BNCharacter.{h,cpp}, DefaultEngine.ini CrowdManager section; (C) watchdog — AIBStateTreeTasks.cpp
+  :377-380 only.
