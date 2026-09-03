@@ -127,3 +127,14 @@ scripts (law 7) — every fix here is a generator change + regen, never a hand e
   under the drum (artefact — query D floor->mezzanine is FULL). Spillway unchanged (the same
   19 prop tops). Box 2 for the STAIRS: PASS. Open: link generation on Arena01 (drop from the
   roof/gantry edges), the crate PlayerStarts, SP7/8 on the gantry.
+- 2026-09-03 link test (`Tools/aib/aib28_linktest.py`, editor-live at 19 uu cells): drum roof
+  N/S edges -> floor FULL but 1995/1973 uu (the stairs, not a 400 uu drop); mezzanine deck S
+  edge -> floor FULL 2920 uu (stairs); gantry W/N edges -> floor partial len 0 (island). So NO
+  generated BN_Drop exists anywhere on Arena01 — A* would take a 400 uu link over a 2000 uu
+  walk. The link generator is not producing links despite `bGenerateNavLinks=True` and both
+  configs on the actor. Next (aib-editor, one session): (a) the nav-build warning
+  "BorderForLinks (23 vx) exceeds tileSize (0 vx)" may not be cosmetic for the LINK builder —
+  test `RuntimeGeneration=Static` on a scratch copy and read the LogNavigationDataBuild link
+  count; (b) `NavLinkJumpConfigs` are on the RecastNavMesh ACTOR (saved) — confirm they match
+  the ini after the 3 Sep `DownDirectionAreaClass` change (the actor may carry the old
+  NavArea_Default). Until then the gantry/core way down is AIB22's Egress (fix #5 lip fan).
