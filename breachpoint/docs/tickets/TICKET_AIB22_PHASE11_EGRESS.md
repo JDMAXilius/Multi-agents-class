@@ -532,3 +532,21 @@ Refined steps (replace §Steps):
   (Tools/Logs/specs-20260903-072017.log), BreachpointNext 36 / 0. Editor session next: ST_AIBBot
   rebuild (tactic children complete to Engage), the gantry PIE watch with captures, the 60 s
   PIE observation on both maps; then W-VERIFY v5 headless.
+- 2026-09-03 PIE gantry watch at the FINAL tree (Arena01, 7 bots placed on `The_Gantry_01`, real
+  MCP session): at t+13 s five of seven were off the platform (z 98/240/498), two still on
+  (bots 1, 2) — box 4 FAIL as measured, but the designed mechanism now RUNS: bot 5 `island
+  latched` -> `CONFIRMED — no full path to any of 17 anchors` -> `egress starts — lip 89uu away,
+  drop 453uu` -> `steps off the island's lip` -> off; bot 6 egress FAILED (lip 118 short, mover
+  idle) -> 5 s cooldown -> `off-mesh recovery — vertical gap 51uu, stepping off 150uu` (fix #5)
+  -> off. Two residual defects read straight off the log: (a) `island latch cleared — a
+  full-path move completed` still fires between `egress starts` and `steps off` — the LIP WALK's
+  completion (89–118 uu, inside acceptance, completes synchronously before `MarkEgressMove`
+  records its id); (b) bot 2's latch was `REFUTED — full path to the last full-path move anchor
+  (1 of 1 tested, 17 offered)` — that anchor was ON the gantry (the lip walk's goal), the list
+  stopped at the first full path. Also `idle over — 0.1s state=Egress tactic=Hold`: a still
+  tactic bit leaked across a state exit (the idle gate would exclude a stand it should count).
+  RULINGS (fix #6): F6-1 the anchor list drops the last-full-path goal entirely (PlayerStarts +
+  the want's goal are enough — 16 starts on Arena01); F6-2 Egress sets `bEgressMoveInFlight`
+  BEFORE issuing the lip walk/step-off/recovery and the completion-clear skips while it is set
+  (the id mark stays as belt); F6-3 every still-tactic bit is cleared on state exit (the
+  sentinel's ExitState), so a label never outlives the state that set it.
