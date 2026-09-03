@@ -6,7 +6,9 @@
 #include "Components/StateTreeAIComponent.h"
 #include "Core/AIBBotManager.h"
 #include "Core/AIBFactsBuilder.h"
+#include "Core/AIBNavArea_Lane.h"
 #include "Core/AIBPathFollowingComponent.h"
+#include "Core/AIBQueryFilter.h"
 #include "Core/AIBTags.h"
 #include "Data/AIBDataRows.h"
 #include "Data/AIBTiers.h"
@@ -14,6 +16,9 @@
 #include "Execution/AIBStateTreeExecutor.h"
 #include "Interfaces/AIBAvatarInterface.h"
 #include "Interfaces/AIBWorldQuery.h"
+#include "NavMesh/NavMeshPath.h"
+#include "NavMesh/RecastNavMesh.h"
+#include "Navigation/PathFollowingComponent.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Hearing.h"
 #include "Perception/AISense_Hearing.h"
@@ -72,6 +77,11 @@ AAIBBotController::AAIBBotController(const FObjectInitializer& ObjectInitializer
 	// respawn must not double-start logic.
 	StateTreeComponent = CreateDefaultSubobject<UStateTreeAIComponent>(TEXT("BotStateTree"));
 	StateTreeComponent->SetStartLogicAutomatically(false);
+
+	// Phase 14: ONE filter class for the mover door and every raw MoveToLocation — the
+	// engine substitutes it wherever a request names none (AIController.cpp:604/625), and
+	// instantiates it per query with this controller as the Querier.
+	DefaultNavigationFilterClass = UAIBQueryFilter::StaticClass();
 
 	// Delegate binding is NOT here: the shipping host binds at possession, gated and
 	// deduped, precisely to keep bindings out of serialized CDO state (W-REVIEW F-4.1).
@@ -176,12 +186,18 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	AmbitionProviderObject = nullptr;
 	WorldQuery = nullptr;
 	WorldQueryObject = nullptr;
+	// Phase 14: the match seed and this controller's stable slot ride the same pull. No
+	// manager (a headless world) leaves seed 0 / slot -1 — still deterministic.
+	int32 MatchSeed = 0;
+	BotIndex = INDEX_NONE;
 	if (UAIBBotManager* Manager = GetWorld() ? GetWorld()->GetSubsystem<UAIBBotManager>() : nullptr)
 	{
 		AmbitionProvider = Manager->GetAmbitionProvider();
 		AmbitionProviderObject = Manager->GetAmbitionProviderObject();
 		WorldQuery = Manager->GetWorldQuery();
 		WorldQueryObject = Manager->GetWorldQueryObject();
+		MatchSeed = Manager->GetMatchSeed();
+		BotIndex = Manager->AssignBotIndex(*this);
 	}
 
 	// The brain. The ENGINE object survives across lives; its REGISTRY no longer does —
@@ -245,6 +261,8 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	// LCG an evenly-spaced first-draw progression across the lobby, not independent
 	// samples. Still fully deterministic given (bot, life): specs and replays keep what
 	// they actually need.
+	// Phase 14: (bot) is the manager's BotIndex, not GetUniqueID — object ids are not
+	// stable across runs, so two -AIBSeed=N matches now replay the same draws.
 	++LifeIndex;
 	PossessedAtSeconds = GetWorld()->GetTimeSeconds();
 	// W-REVIEW H2: the life's birthplace, the island hypothesis's confirmation anchor.
@@ -253,8 +271,14 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	bHasLastFullPathGoal = false; // #3 H3: the spawn anchors until the first full-path move completes
 	PendingMoveRequestId = 0;
 	bStopOnLanding = false;
-	const uint32 LifeSeed = HashCombine(GetTypeHash(GetUniqueID()), GetTypeHash(LifeIndex));
+	LifeSeed = FAIBRouteBias::LifeSeed(MatchSeed, BotIndex, LifeIndex);
 	Sensorium.SetRandomSeed(static_cast<int32>(LifeSeed));
+
+	// Phase 14: this life's lane taste, and the line two seeded runs must agree on.
+	RouteBias.Draw(LifeSeed, ResolvedTier.RouteLaneWeightSpread);
+	LastRouteSignature.Reset();
+	UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f route bias — bot=%d life=%d seed=%u lanes=%s"),
+		*GetName(), PossessedAtSeconds, BotIndex, LifeIndex, LifeSeed, *RouteBias.Describe());
 
 	// Phase 5: a fresh life judges the fight from nothing. The profile is the same
 	// defaults row until Phase 8 resolves the real tier; the misjudge stream is per-bot
@@ -769,8 +793,49 @@ FPathFollowingRequestResult AAIBBotController::MoveTo(const FAIMoveRequest& Move
 	{
 		PendingMoveGoal = MoveRequest.GetDestination();
 		PendingMoveRequestId = Result.MoveId.GetID();
+		LogRouteIfChanged(PendingMoveGoal);
 	}
 	return Result;
+}
+
+void AAIBBotController::LogRouteIfChanged(const FVector& Goal)
+{
+	// The follower holds the path the request just found (RequestMove is synchronous);
+	// the corridor's polys, not the string-pulled points, are what cross a lane.
+	const UPathFollowingComponent* Follow = GetPathFollowingComponent();
+	const FNavPathSharedPtr Path = Follow ? Follow->GetPath() : nullptr;
+	const FNavMeshPath* NavMeshPath = Path.IsValid() ? Path->CastPath<FNavMeshPath>() : nullptr;
+	const ARecastNavMesh* NavMesh = NavMeshPath ? Cast<ARecastNavMesh>(NavMeshPath->GetNavigationDataUsed()) : nullptr;
+	if (!NavMesh)
+	{
+		return;
+	}
+	FString Lanes;
+	int32 LastLane = 0;
+	for (const NavNodeRef Poly : NavMeshPath->PathCorridor)
+	{
+		const int32 Lane = AIBLanes::LaneIdOf(NavMesh->GetAreaClass(static_cast<int32>(NavMesh->GetPolyAreaID(Poly))));
+		if (Lane != 0 && Lane != LastLane)
+		{
+			Lanes += FString::Printf(TEXT("%s%d"), Lanes.IsEmpty() ? TEXT("") : TEXT(">"), Lane);
+			LastLane = Lane;
+		}
+	}
+	if (Lanes.IsEmpty())
+	{
+		Lanes = TEXT("none");
+	}
+	if (Lanes == LastRouteSignature)
+	{
+		return; // the belief drifted, the route did not
+	}
+	LastRouteSignature = Lanes;
+	const APawn* SelfPawn = GetPawn();
+	UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f route — lanes=%s len=%.0fuu direct=%.0fuu goal=(%.0f,%.0f,%.0f)"),
+		*GetName(), GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0, *Lanes,
+		static_cast<double>(NavMeshPath->GetLength()),
+		SelfPawn ? FVector::Dist(SelfPawn->GetActorLocation(), Goal) : 0.f,
+		Goal.X, Goal.Y, Goal.Z);
 }
 
 void AAIBBotController::OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result)
