@@ -15,7 +15,6 @@
 #include "Skills/AIBMeleePolicy.h"
 #include "Skills/AIBWeaponPolicy.h"
 #include "Skills/AIBMovementPolicy.h"
-#include "Skills/AIBTraversalPolicy.h"
 #include "StateTreeExecutionContext.h"
 #include "Team/AIBTeamCoordinator.h"
 
@@ -320,9 +319,10 @@ namespace
 		Avatar.ReleaseVerb(AIBTags::Verb_Crouch);
 	}
 
-	/** AIB22 `stuck_seconds`, closing half. jumped= is the watchdog's one spent press
-	 *  (whichever verb the chooser picked); resolved= says whether the body got moving
-	 *  or the mover let go first. Bookkeeping only — the watchdog's clocks are untouched. */
+	/** AIB22 `stuck_seconds`, closing half. jumped= is kept for the parser and reads
+	 *  whether the wedge branch fired (it presses nothing since step 4 — the follower's
+	 *  `link traverse` line is where a press shows); resolved= says whether the body got
+	 *  moving or the mover let go first. Bookkeeping only — the clocks are untouched. */
 	void EndStall(AAIBBotController& Bot, FAIBLocomotionState& State, const TCHAR* Resolved)
 	{
 		State.bStallOpen = false;
@@ -344,12 +344,10 @@ namespace
 			*Bot.GetName(), WorldSeconds(Bot), Via, From.X, From.Y, From.Z, StrandedSeconds);
 	}
 
-	/** One call per mover tick: hold sprint while there is ground to cover, and spend one
-	 *  jump when a path that reports Moving stops producing any. NAVLINKS ARE NOT THIS
-	 *  FUNCTION'S JOB and need no AI work at all — drop and climb traversal is a property
-	 *  of the pawn and the navmesh (the host character's bUseAccelerationForPaths plus the
-	 *  project's generated nav links), inherited the moment a bot paths. This is only the
-	 *  wedge case, which no link covers. */
+	/** One call per mover tick: hold sprint while there is ground to cover, face the walk,
+	 *  and keep the stall clocks. NAVLINKS AND JUMPS ARE NOT THIS FUNCTION'S JOB — the
+	 *  path follower presses them on link/jump-area segments (UAIBPathFollowingComponent);
+	 *  here a stall is only measured, never hopped out of. */
 	void TickLocomotion(AAIBBotController& Bot, FAIBLocomotionState& State,
 		const FVector& Goal, float ArriveRadiusUU, float DeltaTime)
 	{
@@ -427,77 +425,22 @@ namespace
 		{
 			State.bStallOpen = true;
 		}
-		if (!State.bTriedWedgeJump && State.StallSeconds >= WedgeStallSeconds && Avatar->IsGrounded())
+		if (!State.bTriedWedgeJump && State.StallSeconds >= WedgeStallSeconds)
 		{
+			// NO BLIND HOP, NO RE-ISSUE (AIB22 step 4). Traversal verbs fire from the path
+			// itself now (UAIBPathFollowingComponent: custom links and jump-area segments),
+			// and a re-issued move only reset the corridor the follower was already on. A
+			// stall with nothing traversable ahead is either an island (the Egress tactic's,
+			// step 5) or a body wedged on geometry; both are the mover's give-up window to
+			// end, and ReleaseLocomotion closes the episode as resolved=abandoned when it does.
+			// Phase 13: CountNearbyAllies(Pawn, ~80uu) > 0 here -> log + one bounded yield
+			// window and let crowd separation steer; no verb, no re-issue.
 			State.bTriedWedgeJump = true;
-
-			// THE TRAVERSAL CHOOSER (founder, 1 Sep). A stall IS the question "I want to
-			// be over there and walking will not get me there" — the navmesh has already
-			// said it has no path — so this is where the answer belongs. Before today the
-			// answer was always the same reflex jump, which is right for a doorstep and
-			// useless for a two-metre gap between platforms.
-			//
-			// GRAPPLE IS DELIBERATELY NOT OFFERED HERE. It needs the aim-then-press
-			// machine that only MoveToPOI's traverse owns, and pressing it unaimed is
-			// exactly the futile press F7 bans. The chooser may still ANSWER Grapple; the
-			// log says so, and that line is how we find out the traverse should have been
-			// armed for a route it was not.
-			FAIBTraversalRequest Request;
-			Request.HorizontalUU = static_cast<float>(FVector::Dist2D(Here, Goal));
-			Request.VerticalUU = static_cast<float>(Goal.Z - Here.Z);
-			Request.bGrounded = true;   // gated above
-			Request.bCanDash = Bot.CanDash();
-			Request.bGrappleRouteServes = false;
-			const EAIBTraversal Verb = FAIBTraversalPolicy::Choose(Request);
-
-			switch (Verb)
-			{
-			case EAIBTraversal::Dash:
-				// The gap-crosser finally used to GO somewhere rather than only to escape
-				// a grenade. Direction is the mover's — the dash launches along the
-				// movement input already set, so it lengthens this step rather than
-				// offering a second opinion about where the bot is headed.
-				Avatar->PressVerb(AIBTags::Verb_Dash);
-				Avatar->ReleaseVerb(AIBTags::Verb_Dash);
-				break;
-			case EAIBTraversal::Jump:
-			case EAIBTraversal::Drop:
-				// Both press jump: a hop up a step and a hop OFF a ledge are the same
-				// verb. What the chooser bought on the Drop path is the check that the
-				// landing is survivable — the difference between stepping down and
-				// walking off a roof.
-				Avatar->PressVerb(AIBTags::Verb_Jump);
-				Avatar->ReleaseVerb(AIBTags::Verb_Jump);
-				break;
-			default:
-				// Grapple (not pressable here) or None. Still jump: the wedge case this
-				// path has always served is a bot caught on geometry, and one hop is the
-				// cheapest way out of it. The chooser's refusal is about CROSSING, not
-				// about being stuck.
-				Avatar->PressVerb(AIBTags::Verb_Jump);
-				Avatar->ReleaseVerb(AIBTags::Verb_Jump);
-				break;
-			}
+			const UPathFollowingComponent* Follow = Bot.GetPathFollowingComponent();
 			UE_LOG(LogAIBot, Verbose,
-				TEXT("AIBot: %s stalled %.0fuu across / %.0fuu up — chose %s."),
-				*Bot.GetName(), Request.HorizontalUU, Request.VerticalUU,
-				FAIBTraversalPolicy::Name(Verb));
-
-			// AND RE-ISSUE THE MOVE. The jump alone was half the manoeuvre and the half that
-			// does nothing on its own: path following has already gone Idle at the lip the bot
-			// stalled on, so the leap lands on the step and the bot then STANDS there against a
-			// dead request until the no-progress timer calls it "cannot reach". A body that
-			// jumped onto a stair and did not ask for a path again has not climbed anything.
-			//
-			// The sibling framework has done exactly this since R9.5 ("stopped short": jump,
-			// then MoveToActor again) and its bots cross tiers; this one jumped, landed, and
-			// gave up. Measured before this line existed: across 90 PIE samples not one pawn
-			// was ever seen at an intermediate height on either new stair flight — zero
-			// climbs, while pawns sat happily on the decks above and below.
-			const EPathFollowingRequestResult::Type Again = MoveToNavPoint(Bot, Goal, ArriveRadiusUU);
-			UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s jumped to clear whatever it is wedged on — move re-issued (%s)."),
-				*Bot.GetName(),
-				Again == EPathFollowingRequestResult::Failed ? TEXT("REFUSED") : TEXT("accepted"));
+				TEXT("AIBot: %s stalled %.0fuu across / %.0fuu up — link=%s; the mover's give-up window decides."),
+				*Bot.GetName(), FVector::Dist2D(Here, Goal), Goal.Z - Here.Z,
+				(Follow && Follow->IsFollowingNavLink()) ? TEXT("yes") : TEXT("no"));
 		}
 	}
 

@@ -6,6 +6,7 @@
 #include "Components/StateTreeAIComponent.h"
 #include "Core/AIBBotManager.h"
 #include "Core/AIBFactsBuilder.h"
+#include "Core/AIBPathFollowingComponent.h"
 #include "Core/AIBTags.h"
 #include "Data/AIBDataRows.h"
 #include "Data/AIBTiers.h"
@@ -22,7 +23,9 @@
 #include "TimerManager.h"
 
 AAIBBotController::AAIBBotController(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer)
+	// The subobject name is a literal in AIController.cpp; the swap is how a path segment
+	// gets to press a verb (AIB22 step 4).
+	: Super(ObjectInitializer.SetDefaultSubobjectClass<UAIBPathFollowingComponent>(TEXT("PathFollowingComponent")))
 {
 	// A real PlayerState: the bot joins the same match machinery a human does. (This is
 	// the module's one deliberate cause of replication — a bot IS a player at the

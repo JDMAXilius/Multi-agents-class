@@ -19,10 +19,11 @@ class APawn;
  */
 
 /**
- * Every mover's locomotion scratch: the sprint HOLD's edge state and the wedge-jump
- * watchdog. Deliberately NOT a UPROPERTY and not a USTRUCT — it is per-run state, never
- * authored and never serialized, so adding it changes nothing the StateTree compiler
- * bakes into /Game/AIBot/AI/ST_AIBBot (no node, no gate, no branch order moved).
+ * Every mover's locomotion scratch: the sprint HOLD's edge state and the stall watchdog
+ * (measures only — traversal presses live on UAIBPathFollowingComponent since AIB22).
+ * Deliberately NOT a UPROPERTY and not a USTRUCT — it is per-run state, never authored
+ * and never serialized, so adding it changes nothing the StateTree compiler bakes into
+ * /Game/AIBot/AI/ST_AIBBot (no node, no gate, no branch order moved).
  */
 struct FAIBLocomotionState
 {
