@@ -95,3 +95,18 @@ scripts (law 7) — every fix here is a generator change + regen, never a hand e
   treads at 28.6 risers for margin; top tread +0.5 m into the landing only if query B fails.
   (4) regen mechanism: plan-driven MCP placer with delete-by-label, or tag the 49 actors. (5)
   gantry/core: no change until (1). Verification is rung 3 (editor census + PIE).
+- 2026-09-03 step 2 triage (lead, editor-live, `Tools/aib/aib28_triage.py`): A floor -> tread 7:
+  the tread point (1327,2000,225) PROJECTS TO NAV AT z 410 — there is NO navmesh on the treads;
+  the path is partial, 426 uu short. B tread-13 top -> drum roof FULL (121 uu); C roof -> SP5
+  FULL (766 uu); D floor -> mezzanine tier partial, 400 short. So the flights' geometry is
+  right and the roof bridges to the decks; the treads simply never mesh. Live agent: cell
+  height 19 -> walkableClimb = ceil(35/19) = 2 voxels = 38 uu; 31 uu risers rasterise to 2
+  voxels each, at the limit — the treads fail to merge. PlayerStart dump: `PlayerStart_8v8_2/5/
+  6/7` sit ON the four cover crates ((697,697,248) etc., nav 130) — the "spawn pads" ARE the
+  crates, by PlayerStart placement (the 8v8 set), not by bot code; `BR_Spawn_SP1..4` are on the
+  floor, SP5/6 on the mezzanine, SP7/8 on the gantry (z 805!). RULING: (1) CellHeight 10 for
+  every nav resolution (Config + the maps' RecastNavMesh actors, then rebuild) — walkableClimb
+  becomes 3–4 voxels and 31 uu risers read as 2; verify with query A; (2) the four 8v8 crate
+  PlayerStarts move to the floor beside their crate (script), SP7/8 off the gantry until the
+  gantry has a way down; (3) the three v4-verified wall-top perches need no change (bots
+  arrive by grapple only).
