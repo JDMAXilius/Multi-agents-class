@@ -1,4 +1,4 @@
-# AIBOT ROADMAP 2 — "bots that move like players" (PROPOSAL, 2 Sep 2026 — nothing applied)
+# AIBOT ROADMAP 2 — "bots that move like players" (APPROVED 2 Sep 2026 — rulings in §5)
 
 Founder brief (2 Sep): audit the whole AI bot; fix what we see; make it more advanced. Observed:
 (1) a bot stranded on a raised platform turns in place "looking for a target" instead of leaving
@@ -154,15 +154,25 @@ Waves run per phase; Phase 16 hygiene runs alongside 11 with no shared files.
 worse" guard. Each phase ships its metric BEFORE its fix, so the fix is a number, not a claim.
 
 ---------------------------------------------------------------------------------------------------
-## 5. RULINGS NEEDED FROM THE FOUNDER (before W-BUILD of the phase named)
+## 5. RULINGS (founder, 2 Sep 2026 — the plan is approved on these)
 
-1. Phase 12 replaces the claims board's "agents are never claimable" rule with a capped claim —
-   a FAIRPLAY amendment. Yes/no.
-2. Phase 12 shares sightings inside a team (a bot may chase what a teammate saw). FAIRPLAY F8/F2
-   allow matured stimuli; is team-shared knowledge acceptable at all tiers, or Teamwork ≥ Trained
-   only (the existing pattern)?
-3. Phase 11 authors `NavLinkProxy` per platform edge by script — accept generated actors in the
-   blockout maps (law 7 says scripts, yes; confirming).
-4. Phase 13 uses Detour Crowd, which owns steering during MoveTo; any hand-steered behaviour
-   (strafe) has to yield to it. Accept, or keep strafe outside the crowd?
-5. Order: 11 → 12 → 13 → 14 → 15 as above, or pull 13 (collisions) ahead of 12?
+1. Capped claims on pawns: YES — FAIRPLAY amendment to be written in Phase 12's packet.
+2. Team-shared sightings: ALL tiers. "Forget about training or anything like that" — there is ONE
+   target tier, Spartan. The tier table stays as data but every bot ships at the top; awareness
+   (teammates, enemies, environment) is never gated by tier.
+3. Script-placed `NavLinkProxy` in the blockout maps: YES.
+4. Detour Crowd owns steering during moves; strafing is welcome ("as long as you're moving").
+5. Order: 11 → 12 → 13 → 14 → 15, Phase 16 alongside.
+
+**LAW F9 — MOTION IS THE DEFAULT** (founder: "what we don't want is to have AI just standing
+still... ever... unless there is a tactical way of standing still"). A bot is either moving, or
+executing a named tactic that requires stillness (Hold at fight range, an ability wind-up, a
+reload behind cover) for a bounded time. Every phase adds `idle_seconds` to its metrics: seconds
+with no locomotion input AND no active stillness-tactic; the gate is `idle_seconds == 0`
+outside named tactics. `SweepLook` in place is therefore illegal from Phase 11 on: a search sweeps
+WHILE moving. Standing to "look for a target" is exactly the defect and is banned by name.
+
+**"As advanced as possible."** Phases 11–15 are the floor, not the ceiling; each W-AUDIT lists
+what the phase could add beyond its fix (abilities/actions used tactically, environment awareness
+— ledges, sightlines, pickups — and teammate intent), and the aib-critic scores those additions
+for fairness before they are built.
