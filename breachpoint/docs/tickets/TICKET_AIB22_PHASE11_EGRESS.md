@@ -349,3 +349,34 @@ Refined steps (replace §Steps):
   BreachpointServer NOT BUILDABLE — UBT: "Server targets are not currently supported from this
   engine distribution" (launcher UE 5.8, not source-built; Tools/Logs/ubt-BreachpointServer.log).
   Reported as PARTIAL per testing.md; the server rung needs the source-built engine machine.
+- 2026-09-03 W-REVIEW #3 (aib-critic on 4caae004 + 6258a645): lane A H1/H2/M3/M4/M5/L6 CLOSED,
+  lane B M3/M4/M5/M6/L7/L9 CLOSED, B-H1/B-H2 PARTIAL; three NEW high. Rulings (lead), fix
+  packet #3:
+  HIGH-1 the idle episode ORs still tactics over the whole spell, so one 2 s `Sweep` labels a
+     280 s stand `tactic=Sweep` and both HARD gates pass on the founder's exact defect.
+     RULING: the episode CLOSES whenever the still-tactic set changes — seconds are attributed
+     to the tactic that was actually set while they elapsed; `tactic=none` resumes the moment
+     the tactic clears.
+  HIGH-2 a lipless micro-island (every partial ends inside acceptance) redraws at 4 Hz forever,
+     12 exhaustive pathfinds/s, `tactic=none`. RULING: after Egress fails on a CONFIRMED island,
+     the bot is STRANDED — `EAIBStillTactic::Stranded` named, one `stranded — no legal lip`
+     Log line, no draws for the cooldown (a stranded bot is a MAP defect the verifier must
+     see, not a silent spin); still counts against the idle gate's tactical column, reported.
+  HIGH-3 the spawn anchor is on the deck tier for four Spillway spawns (SP_W3/W4/E3/E4,
+     z 420) and the census shows the T1 deck has no full path up, so a deck-spawned bot on
+     healthy floor confirms a FALSE island and Egress walks it into a shaft pit. RULING: the
+     anchor is the goal of the LAST COMPLETED full-path move (recorded at the `DidMoveReachGoal`
+     site), spawn only until the first completion; a bot on healthy ground refreshes it every
+     move, a bot on an island never does.
+  MED-4 refill band 150–225 uu (at-post 1.5R vs refill >R). RULING: refill only beyond 1.5R.
+  MED-5 the policy's commit fraction caps Egress at 800 while the gantry is 893, and the
+     horizontal term is a probe artefact. RULING: Egress is the last resort — it asks the policy
+     with the SURVIVABLE limit (`SafeDropUU`, no commit fraction) and passes the lip standoff
+     as the horizontal, not the projection scatter.
+  MED-6 the enter condition has side effects and runs an exhaustive TestPathSync per
+     evaluation. RULING: confirm ONCE per latch (result cached on the latch, re-tested only
+     when re-latched); the condition reads the cache.
+  LOW-7 `Hold` is a label on standing still. RULING for Phase 11: risk register + `hold` seconds
+     reported ungated; Phase 13 (separation/strafing) makes the hill hold a strafe-hold with
+     the existing `FAIBStrafeTask`. LOW-8 specs are worldless — accepted, engine contract
+     verified by the critic against PathFollowingComponent.cpp:602.
