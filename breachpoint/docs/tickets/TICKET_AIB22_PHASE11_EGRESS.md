@@ -397,3 +397,12 @@ Refined steps (replace §Steps):
   read-back in the editor log): states `Root > [Evade, Engage, Retreat, Search, Seek,
   Roam > [Egress, Wander], Mode, Fallback]`, compiled YES, saved OK; DT_AIBTiers 5 rows
   mirrored from the C++ registry (new Search/Roam fields at their defaults). Committed.
+- 2026-09-03 fix packet #3 (aib-builder) written; editor closed, building: HIGH-1 idle episode
+  closes on any still-tactic set change; HIGH-2 `FAIBIslandLatch::Strand()` +
+  `EAIBStillTactic::Stranded`, one `stranded — no legal lip` line per latch, Wander holds
+  without drawing until the cooldown lapses; HIGH-3 `MoveTo` override records a pathed
+  request's destination, `OnMoveCompleted` on `DidMoveReachGoal` sets `LastFullPathGoal`,
+  anchor = last full-path goal else spawn (named in the log line); MED-4 1.5R band; MED-5
+  `Choose(Request, bLastResort)` with `SafeDropUU`, horizontal = lip standoff; MED-6
+  `EConfirm` cached per latch. Tree unchanged. Specs: IslandLatch 12, TraversalPolicy +1.
+  Parser (lead): `stranded` regex + per-bot `stranded_count`, reported not gated.
