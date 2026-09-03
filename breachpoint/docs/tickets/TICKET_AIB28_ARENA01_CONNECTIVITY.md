@@ -138,3 +138,9 @@ scripts (law 7) — every fix here is a generator change + regen, never a hand e
   count; (b) `NavLinkJumpConfigs` are on the RecastNavMesh ACTOR (saved) — confirm they match
   the ini after the 3 Sep `DownDirectionAreaClass` change (the actor may carry the old
   NavArea_Default). Until then the gantry/core way down is AIB22's Egress (fix #5 lip fan).
+- 2026-09-03 rulings (2)–(3) landed (aib-editor, 8aef0f53, `Tools/aib/aib28_playerstarts.py`):
+  `PlayerStart_8v8_2/5/6/7` moved off the crates to the floor (nav z 10, 250 uu toward the
+  centre); `BR_Spawn_SP7/SP8` off the gantry to the drum roof edge at (1700,2000)/(2300,2000)
+  nav z 408 (no z-410 nav exists west of x≈1600 along y 2000 — the stair flight). Census after:
+  the same 12 (crate props, gantry/core islands, the floor-centre artefact). Open: generated
+  BN_Drop links (none on the map).

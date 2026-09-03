@@ -117,3 +117,11 @@ phase's baseline. Metrics for this phase land BEFORE its behaviour (§4 of the r
      before `land_spillway.py` lands them) and they load on clients (`bNetLoadOnClient=false`);
      L8 the seed API has no authority guard. PASS: precedence ladder, admissibility (min lane 1),
      filter hygiene, FAIRPLAY, server-only.
+- 2026-09-03 lane volumes placed (aib-editor, 8aef0f53, `Tools/aib/aib25_lane_volumes.py place|save|
+  readback`, driver `Tools/aib/ue_console.py`): Spillway 6 volumes (Culvert 1, Tower 2, SouthLane 3,
+  Gallery 4, Yard W/E 5 — the W-AUDIT folder ordinals; bridges/gantry stay Default), Arena01 4
+  (South 1, MidGround 2, North 3, Mezzanine 4); area classes read back as `AIBNavArea_LaneN`,
+  `bNetLoadOnClient=false` on all ten, nav rebuilt, maps saved (OFPA actors under
+  `Content/__ExternalActors__/`). CONTRACT GAP (Tools/blockout): `land_spillway.py` clears by tag
+  `SpillwayGenerated` and would delete the six Spillway volumes on a re-land — a re-land must be
+  followed by `aib25_lane_volumes.py place`. The phase's route-diversity gate can now be measured.
