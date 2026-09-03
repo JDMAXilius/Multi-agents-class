@@ -495,3 +495,25 @@ Refined steps (replace §Steps):
   Verifier breakdown dispatched (v4). All HARD gates still FAIL; kills/min PASS both maps.
 - 2026-09-03 fix #4 specs (lead): AIBot 189 success / 0 fail (Tools/Logs/specs-20260903-062523.log),
   BreachpointNext 45 / 0 (specs-20260903-062629.log).
+- 2026-09-03 W-VERIFY v4 breakdown (aib-verifier): the `stall abandoned` storm is ONE running
+  stall clock re-reported every frame (77 % of consecutive lines < 0.05 s apart, `seconds` never
+  resets): `Rescore` keeps the incumbent tag when every want scores 0 (Mode.Rally and Roam both
+  suppressed), the tree re-enters the same state next frame (`sweep over — 0.0s` 86k lines per
+  map = a Mode enter+exit per frame), `StallSeconds` only resets on ≥50 uu progress, so
+  TickLocomotion returns true again — 107k lines Arena / 64k Spillway; the parser summed the
+  clock per line (stuck 10^3–10^4 x too high) and double-counted the `resolved=abandoned`
+  episode. Spillway's idle regression (+2,342 s) is the off-mesh recovery LOOP: the projection is
+  0 uu horizontal but > StepHeight above the nav, a 0 uu walk cannot close a vertical gap, 3 s
+  timeout, suppression, Wander re-enters, repeat (856 walks, 95 % FAILED, two channel spots).
+  False storeys: the diagnosis compares goal Z (nav, 10) with the PAWN CENTRE (98) — |up| 88–98
+  > 45 reads as a storey (5,908 lines). Arena latches 328 -> REFUTED 321 (nav says the pads and
+  gantry ARE connected — the body cannot walk it: map, AIB28). Early ends are real 7-kill wins
+  (max 3 kills per bot). RULINGS (fix #5): F5-1 an abandoned goal starts a FRESH clock when
+  re-issued and is refused for the suppression window; `Rescore` with every want at 0 falls
+  back to Roam with a fresh draw, never the incumbent (kills the per-frame flap). F5-2 a 0 uu
+  horizontal recovery is a VERTICAL gap: go straight to the lip fan / step-off (R6), else fail
+  once with the cooldown — never the 3 s walk loop. F5-3 storey and off-mesh Z tests use the
+  FEET (capsule bottom), never the pawn centre. Parser (lead): stall_abandoned counts EPISODES
+  (a new episode when `seconds` drops or the gap > 1 s), no per-line sum, no double count with
+  `resolved=abandoned`; sweep HARD bars key on `moved ≤ 50uu`; `sweep over — 0.0s` counted as
+  `state_flaps` (reported).
