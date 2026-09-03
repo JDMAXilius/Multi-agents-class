@@ -117,6 +117,14 @@ RX = {
     "offmesh_recovery": re.compile(_AIB + r"off-mesh recovery [—-] walking (?P<dist>" + _NUM + r")uu to the mesh"),
     "offmesh_failed":  re.compile(_AIB + r"off-mesh recovery FAILED [—-] (?P<seconds>" + _NUM + r")s"),
     "waiting_nav":     re.compile(_AIB + r"waiting for nav [—-] "),
+    # Phase 13 (AIB24) separation lines and Phase 14 (AIB25) route lines (2026-09-03).
+    "teammate_overlap": re.compile(_AIB + r"teammate overlap over [—-] (?P<seconds>" + _NUM + r")s, (?P<n>\d+) inside (?P<r>" + _NUM + r")uu"),
+    "position":       re.compile(_AIB + r"position " + _VEC + r" allies within (?P<r>" + _NUM + r")uu: (?P<n>\d+)"),
+    "yield":          re.compile(_AIB + r"yields to teammate [—-] (?P<n>\d+) inside (?P<r>" + _NUM + r")uu, (?P<seconds>" + _NUM + r")s window at " + _VEC),
+    "hill_strafe":    re.compile(_AIB + r"hill strafe-hold [—-] ring (?P<r>" + _NUM + r")uu of reach (?P<reach>" + _NUM + r")uu at " + _VEC),
+    "match_seed":     re.compile(r"AIBot: match seed (?P<seed>-?\d+) \(source=(?P<source>cmdline|host|clock)\)\."),
+    "route_bias":     re.compile(_AIB + r"route bias [—-] bot=(?P<bot_index>-?\d+) life=(?P<life>\d+) seed=(?P<seed>\d+) lanes=(?P<lanes>\S+)"),
+    "route":          re.compile(_AIB + r"route [—-] lanes=(?P<lanes>\S+) len=(?P<len>" + _NUM + r")uu direct=(?P<direct>" + _NUM + r")uu goal=" + _VEC),
     "egress_failed":  re.compile(_AIB + r"island egress FAILED [—-] (?P<why>.+)$"),
     "island_egress": re.compile(_AIB + r"island egress [—-] via (?P<via>drop|link|jump|grapple) from " + _VEC + r" after (?P<seconds>" + _NUM + r")s stranded"),
     # AIB23 (Phase 12): the target-claim board and the team report, each on the t= prefix.
@@ -137,7 +145,7 @@ RX = {
 
 # The per-bot metrics derived from the five AIB22 lines (seconds are sums per bot per match).
 BOT_METRICS = ("no_path_requests", "stuck_seconds", "max_stall_seconds", "sweep_seconds", "max_single_sweep",
-               "idle_seconds", "idle_seconds_tactical", "island_egress_count", "island_latch_count", "egress_failed_count", "stranded_count", "stall_abandoned_count", "offmesh_recovery_count",
+               "idle_seconds", "idle_seconds_tactical", "island_egress_count", "island_latch_count", "egress_failed_count", "stranded_count", "stall_abandoned_count", "offmesh_recovery_count", "overlap_seconds", "yield_count", "route_changes",
                # AIB23: ttl-release -> re-grant on the same target inside THRASH_WINDOW_SECONDS,
                # and what a DENIED bot did instead.
                "claim_thrash", "denied_roam", "denied_engage_anyway")
@@ -244,6 +252,12 @@ def per_bot_summary(counts):
         bot["max_stall_seconds"] = max(bot["max_stall_seconds"], seconds)
     for hit in counts["offmesh_recovery"]:
         row(hit["bot"])["offmesh_recovery_count"] += 1
+    for hit in counts["teammate_overlap"]:   # Phase 13: seconds with a teammate inside the radius
+        row(hit["bot"])["overlap_seconds"] += float(hit["seconds"])
+    for hit in counts["yield"]:
+        row(hit["bot"])["yield_count"] += 1
+    for hit in counts["route"]:              # Phase 14: distinct lane sequences taken per life
+        row(hit["bot"])["route_changes"] += 1
     for hit in counts["target_deny"]:
         if hit["then"] == "roam":
             row(hit["bot"])["denied_roam"] += 1
@@ -607,6 +621,13 @@ AIBot: Bravo t=78.0 stranded — no legal lip within 4000uu (drops ≤ 1000uu)
 AIBot: Alpha t=79.0 stall abandoned — 1.5s, 532uu across / -218uu up, link=no (a storey with no link, F7)
 AIBot: Alpha t=79.2 off-mesh recovery — walking 120uu to the mesh
 AIBot: Bravo t=0.3 waiting for nav — no decisions until the pawn projects onto the mesh
+AIBot: match seed -123456 (source=cmdline).
+AIBot: Alpha t=0.5 route bias — bot=3 life=1 seed=2891734112 lanes=1:1.00,2:1.23,3:1.07,4:1.41,5:1.00,6:1.15
+AIBot: Alpha t=12.0 route — lanes=2>4>1 len=2310uu direct=1780uu goal=(10,20,30)
+AIBot: Alpha t=20.0 teammate overlap over — 1.5s, 2 inside 80uu
+AIBot: Alpha t=20.5 position (10,20,30) allies within 300uu: 1
+AIBot: Bravo t=21.0 yields to teammate — 1 inside 80uu, 1.0s window at (10,20,30)
+AIBot: Bravo t=22.0 hill strafe-hold — ring 180uu of reach 300uu at (10,20,30)
 AIBot: Alpha t=80.0 island egress — via drop from (10,20,30) after 4.5s stranded
 AIBot: Bravo t=81.0 island egress — via grapple from (10,20,30) after 2.0s stranded
 BNGameMode: Alpha eliminated Bravo with 'Rifle'. (Alpha: 1 kills)
@@ -649,12 +670,14 @@ AIBot: Alpha t=112.0 target claim GRANTED on Enemy1 (1/2)
 
 def selftest():
     lines = SELFTEST_LOG.splitlines()
-    assert len(lines) == 35, len(lines)
+    assert len(lines) == 42, len(lines)
     counts = parse_lines(lines)
     hits = {key: len(counts[key]) for key in ("move_refused", "stall_over", "sweep_over", "idle_over",
                                               "island_egress", "kill", "time_limit", "possess", "acquire", "f7",
                                               "wiring_pois", "match_over")}
     assert counts["stranded"][0]["limit"] == "1000"
+    assert counts["match_seed"][0]["source"] == "cmdline" and counts["route_bias"][0]["bot_index"] == "3" and counts["route"][0]["lanes"] == "2>4>1"
+    assert counts["teammate_overlap"][0]["n"] == "2" and counts["yield"][0]["seconds"] == "1.0" and counts["hill_strafe"][0]["r"] == "180" and counts["position"][0]["n"] == "1"
     assert counts["stall_abandoned"][0]["why"] == "a storey with no link" and counts["offmesh_recovery"][0]["dist"] == "120" and len(counts["waiting_nav"]) == 1
     assert counts["island_latched"][0]["draws"] == "3" and counts["egress_start"][0]["drop"] == "300" and counts["egress_failed"][0]["why"] == "no lip within 150uu"
     assert hits == {"move_refused": 3, "stall_over": 3, "sweep_over": 3, "idle_over": 4, "island_egress": 2,
@@ -670,10 +693,10 @@ def selftest():
     match = per_match_summary(counts)
     expect = {
         "Alpha": {"no_path_requests": 2, "stuck_seconds": 8.0, "max_stall_seconds": 4.0, "sweep_seconds": 3.0, "max_single_sweep": 3.0,
-                  "idle_seconds": 2.0, "idle_seconds_tactical": 1.5, "island_egress_count": 1, "island_latch_count": 1, "egress_failed_count": 0, "stranded_count": 0, "stall_abandoned_count": 1, "offmesh_recovery_count": 1,
+                  "idle_seconds": 2.0, "idle_seconds_tactical": 1.5, "island_egress_count": 1, "island_latch_count": 1, "egress_failed_count": 0, "stranded_count": 0, "stall_abandoned_count": 1, "offmesh_recovery_count": 1, "overlap_seconds": 1.5, "yield_count": 0, "route_changes": 1,
                   "claim_thrash": 0, "denied_roam": 0, "denied_engage_anyway": 0},
         "Bravo": {"no_path_requests": 1, "stuck_seconds": 1.5, "max_stall_seconds": 1.5, "sweep_seconds": 3.25, "max_single_sweep": 2.0,
-                  "idle_seconds": 3.0, "idle_seconds_tactical": 0.5, "island_egress_count": 1, "island_latch_count": 0, "egress_failed_count": 1, "stranded_count": 1, "stall_abandoned_count": 0, "offmesh_recovery_count": 0,
+                  "idle_seconds": 3.0, "idle_seconds_tactical": 0.5, "island_egress_count": 1, "island_latch_count": 0, "egress_failed_count": 1, "stranded_count": 1, "stall_abandoned_count": 0, "offmesh_recovery_count": 0, "overlap_seconds": 0.0, "yield_count": 1, "route_changes": 0,
                   "claim_thrash": 0, "denied_roam": 0, "denied_engage_anyway": 0},
     }
     assert match["per_bot"] == expect, match["per_bot"]

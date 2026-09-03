@@ -73,3 +73,19 @@ phase's baseline. Metrics for this phase land BEFORE its behaviour (§4 of the r
   AIBDataRows.h + csv row; (B) game side (LEAD, Source/BreachpointNext is this session's path) —
   BNCharacter.{h,cpp}, DefaultEngine.ini CrowdManager section; (C) watchdog — AIBStateTreeTasks.cpp
   :377-380 only.
+- 2026-09-03 W-BUILD (aib-builder, worktree 19aa5be1, merge pending behind the current build):
+  `UAIBPathFollowingComponent` rebased on `UCrowdFollowingComponent` (Phase 11's
+  `StartUsingCustomLink` hook survives — CrowdManager.cpp:862 calls it virtually); OnPossess sets
+  separation on/weight (row `CrowdSeparationWeight` 1.5), avoidance quality Medium, path offset;
+  no RVO groups. Wedge watchdog: with an ally inside `TeammateYieldRadiusUU` (80) it opens ONE
+  `TeammateYieldSeconds` (1.0) window as still tactic `Yield` (sprint released, stall clock
+  paused, no re-issue). Mode on-objective = strafe rhythm on a `HillStrafeRadiusFraction` (0.6)
+  ring (closes Phase 11 LOW-7: planted legs `StrafeHold`, `Hold` kept for SweepLook's guard scan).
+  `FAIBMovementPolicy::ArcStep` lifted out of the task (worldless). Instruments at 0.25 s/1 Hz:
+  `teammate overlap over — <s>s, <n> inside <r>uu`, `position (x,y,z) allies within <r>uu: <n>`,
+  `yields to teammate — …`, `hill strafe-hold — ring <r>uu of reach <R>uu at (…)`; parser regexes
+  + per-bot overlap_seconds / yield_count landed (lead). Spec `AIBot.Sim.Separation` 9 cases.
+  Tree unchanged. DEFERRED per audit: strafe re-issue only on >100 uu moves (measure
+  `mean_pairwise_teammate_distance` first). CONTRACT GAPS (lead): `[/Script/AIModule.CrowdManager]`
+  ini + `bResolveCollisions=True`; players as crowd obstacles (`ICrowdAgentInterface` on the
+  player pawn, HasAuthority && APlayerController gate) in Source/BreachpointNext.
