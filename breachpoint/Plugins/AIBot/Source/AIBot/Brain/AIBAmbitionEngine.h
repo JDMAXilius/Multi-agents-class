@@ -121,7 +121,8 @@ public:
 	EAIBSwitchReason GetLastSwitchReason() const { return LastSwitchReason; }
 	static const TCHAR* SwitchReasonName(EAIBSwitchReason Reason);
 
-	/** AIB26 — the replay fingerprint: a CRC32 over the facts QUANTISED to 3 dp, so two
+	/** AIB26 — the replay fingerprint: a CRC32 over the facts QUANTISED (3 dp for
+	 *  normalised fields, AIB::ReplayDistanceQuantumUU for uu-scale ones — M5), so two
 	 *  seeded runs whose floats differ in the noise still agree and any real divergence
 	 *  shows on the first `decide` line that carries it. Tags hash by NAME (an FName's
 	 *  index is not stable across runs). Worldless; the spec pins the quantisation. */

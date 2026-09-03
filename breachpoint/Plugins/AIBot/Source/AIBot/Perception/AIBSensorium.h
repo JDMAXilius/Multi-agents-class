@@ -74,6 +74,12 @@ struct AIBOT_API FAIBTargetCandidate
 	/** In sight right now: a matured gain with no matured loss since. */
 	bool bSightCurrent = false;
 
+	/** Perceived through THIS bot's own senses — sight, sound or damage — at least once.
+	 *  AIB23 W-REVIEW H1: a team report may create or refresh a candidate ONLY while this
+	 *  is false. A callout never overwrites what the bot sensed itself by any door (a
+	 *  shooter's bearing included), so it can move the feet but never place the aim. */
+	bool bSelfSensed = false;
+
 	/** A loss has been NOTED but has not matured yet — the juke window. Sight is already
 	 *  frozen (belief, not a live track) but the enemy is still the one being fought for
 	 *  one more reaction, which is the honest human read of someone ducking a corner.
@@ -150,6 +156,10 @@ public:
 
 	/** Read-only view of who the bot believes in, for the debugger and the specs. */
 	const TArray<FAIBTargetCandidate>& GetCandidates() const { return Candidates; }
+
+	/** AIB23 M4: matured damage FROM Who inside WithinSeconds of Now — the victim read
+	 *  the saturation fact yields to. A per-actor read about a candidate already held. */
+	bool WasDamagedBy(const AActor* Who, double NowSeconds, float WithinSeconds) const;
 
 	// -- matured awareness out (the whole of what downstream may know) --------------
 	AActor* GetVisibleTarget() const { return VisibleTarget.Get(); }

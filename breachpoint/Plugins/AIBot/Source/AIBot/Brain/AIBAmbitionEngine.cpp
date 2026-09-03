@@ -98,26 +98,29 @@ const TCHAR* UAIBAmbitionEngine::SwitchReasonName(EAIBSwitchReason Reason)
 
 uint32 UAIBAmbitionEngine::FactsCrc32(const FAIBFacts& F)
 {
-	// Quantised to 3 dp and packed as ints: the fingerprint must survive float noise
-	// between two seeded runs and still flip on any decision-relevant change.
+	// Normalised fields quantised to 3 dp, uu-scale fields to AIB::ReplayDistanceQuantumUU
+	// (AIB26 M5 — feet a few uu apart between two seeded runs are noise, not a decision),
+	// packed as ints: the fingerprint must survive that noise and still flip on any
+	// decision-relevant change.
 	TArray<int32> Q;
 	Q.Reserve(40);
 	const auto Add = [&Q](float V) { Q.Add(FMath::RoundToInt(V * 1000.f)); };
+	const auto AddUU = [&Q](float V) { Q.Add(FMath::RoundToInt(V / AIB::ReplayDistanceQuantumUU)); };
 	const auto AddB = [&Q](bool B) { Q.Add(B ? 1 : 0); };
 	AddB(F.bVitalsKnown); Add(F.HealthNorm); Add(F.ShieldNorm); Add(F.AmmoNorm);
 	AddB(F.bHasReserveAmmo); AddB(F.bWeaponCanFight); Q.Add(F.GrenadeCount); AddB(F.bGrounded);
 	AddB(F.bHasTarget); AddB(F.bTargetVisible); AddB(F.bTargetAlive); AddB(F.bTargetFactsFromMemory);
-	AddB(F.bTargetVitalsKnown); Add(F.TargetHealthNorm); Add(F.DistToTargetUU); Add(F.HeightAdvantageUU);
+	AddB(F.bTargetVitalsKnown); Add(F.TargetHealthNorm); AddUU(F.DistToTargetUU); AddUU(F.HeightAdvantageUU);
 	AddB(F.bHasMemory); Add(F.LastKnownAgeSeconds); Add(F.MemoryFreshWindowSeconds);
 	AddB(F.bIncomingBlast); Add(F.BlastSecondsToDetonation);
-	Add(F.BlastCenterRelative.X); Add(F.BlastCenterRelative.Y); Add(F.BlastCenterRelative.Z); Add(F.BlastRadius);
+	AddUU(F.BlastCenterRelative.X); AddUU(F.BlastCenterRelative.Y); AddUU(F.BlastCenterRelative.Z); AddUU(F.BlastRadius);
 	AddB(F.bDamageHistoryKnown); Add(F.RecentDamageTakenNorm); Add(F.RecentDamageDealtNorm);
 	AddB(F.bCrowdKnown); Q.Add(F.NearbyAllies); Q.Add(F.NearbyEnemies);
 	AddB(F.bConfidenceKnown); Add(F.ConfidenceNorm);
 	for (const FAIBObjectiveFact& O : F.Objectives)
 	{
 		Q.Add(static_cast<int32>(FCrc::StrCrc32(*O.AmbitionTag.ToString())));
-		Add(O.DistanceUU); Add(O.Urgency); AddB(O.bClaimedElsewhere);
+		AddUU(O.DistanceUU); Add(O.Urgency); AddB(O.bClaimedElsewhere);
 	}
 	return FCrc::MemCrc32(Q.GetData(), Q.Num() * sizeof(int32));
 }

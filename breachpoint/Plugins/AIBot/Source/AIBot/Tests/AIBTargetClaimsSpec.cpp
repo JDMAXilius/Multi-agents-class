@@ -13,10 +13,12 @@
  * a parameter, alliance and liveness as injected predicates, actors as opaque handles).
  * Pins: the cap grants two and denies the third (1); a renewal is not a grant and the
  * asker's own claim never counts against it (2); ordinals follow grant order — the ring
- * spread's seed (3); a TTL lapse reopens the slot (4); Engage exit honours the minimum
- * hold: a young claim stays, an old one goes (5); death releases through the injected
- * liveness alone — no position, no vitals (6); the unpossess belt (7); and enemies never
- * bind — each alliance runs its own book, an all-hostile host is inert (8).
+ * spread's seed (3); a TTL lapse reopens the slot (4); Engage exit releases only after the
+ * dwell on a non-Engage ambition — a blink never releases (5, W-REVIEW M3); death releases
+ * through the injected liveness alone — no position, no vitals (6); the unpossess belt (7);
+ * enemies never bind — each alliance runs its own book, an all-hostile host is inert (8);
+ * a target SWITCH releases the previous claim (9, M2); and the ring bearing: holders
+ * opposite on the first holder's phase, non-holders on their own (10, M5/L3).
  */
 BEGIN_DEFINE_SPEC(FAIBTargetClaimsSpec, "AIBot.Sim.TargetClaims",
 	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
@@ -25,6 +27,7 @@ BEGIN_DEFINE_SPEC(FAIBTargetClaimsSpec, "AIBot.Sim.TargetClaims",
 	UObject* BotB = nullptr;
 	UObject* BotC = nullptr;
 	AActor* Enemy = nullptr;
+	AActor* Enemy2 = nullptr;
 
 	static bool Allies(const AActor*, const AActor*) { return true; }
 	static bool Enemies(const AActor*, const AActor*) { return false; }
@@ -51,6 +54,7 @@ void FAIBTargetClaimsSpec::Define()
 		BotB = NewObject<UAIBAmbitionEngine>(GetTransientPackage(), NAME_None, RF_Transient); BotB->AddToRoot();
 		BotC = NewObject<UAIBAmbitionEngine>(GetTransientPackage(), NAME_None, RF_Transient); BotC->AddToRoot();
 		Enemy = NewObject<AActor>(GetTransientPackage(), NAME_None, RF_Transient); Enemy->AddToRoot();
+		Enemy2 = NewObject<AActor>(GetTransientPackage(), NAME_None, RF_Transient); Enemy2->AddToRoot();
 	});
 
 	AfterEach([this]()
@@ -60,6 +64,7 @@ void FAIBTargetClaimsSpec::Define()
 			if (*O) { (*O)->RemoveFromRoot(); *O = nullptr; }
 		}
 		if (Enemy) { Enemy->RemoveFromRoot(); Enemy = nullptr; }
+		if (Enemy2) { Enemy2->RemoveFromRoot(); Enemy2 = nullptr; }
 	});
 
 	It("grants two and denies the third — the cap is the invariant", [this]()
@@ -110,18 +115,58 @@ void FAIBTargetClaimsSpec::Define()
 		TestEqual(TEXT("C takes it"), static_cast<int32>(Claim(Board, BotC, 5.1)), static_cast<int32>(EAIBTargetClaimResult::Granted));
 	});
 
-	It("releases on Engage exit only past the minimum hold — a blink keeps its claim", [this]()
+	It("releases on Engage exit only after the dwell — a blink never releases, however old the claim (M3)", [this]()
+	{
+		// The inverted hysteresis: a one-think blink at t>MinHold released the fighter's
+		// claim and the next think DENIED it. Now the exit is a DWELL on a non-Engage
+		// ambition; Engage resets it; the TTL is the only thing that lapses a blink.
+		FAIBTargetClaims Board;
+		Claim(Board, BotA, 0.0);
+		TArray<FAIBReleasedTargetClaim> Released;
+		Board.NoteAmbition(FObjectKey(BotA), /*bEngaging*/ false, 3.0, /*Dwell*/ 1.f, Released); // t>MinHold, a blink begins
+		Board.NoteAmbition(FObjectKey(BotA), false, 3.5, 1.f, Released);
+		TestEqual(TEXT("inside the dwell: kept"), Released.Num(), 0);
+		Board.NoteAmbition(FObjectKey(BotA), true, 3.7, 1.f, Released);  // back in the fight: the dwell resets
+		Board.NoteAmbition(FObjectKey(BotA), false, 4.0, 1.f, Released);
+		Board.NoteAmbition(FObjectKey(BotA), false, 4.9, 1.f, Released);
+		TestEqual(TEXT("a second blink, reset by Engage: kept"), Released.Num(), 0);
+		TestTrue(TEXT("still held"), Board.Holds(FObjectKey(BotA), Enemy, 4.9));
+		Board.NoteAmbition(FObjectKey(BotA), false, 5.05, 1.f, Released);
+		TestEqual(TEXT("the dwell met: released"), Released.Num(), 1);
+		TestTrue(TEXT("as exit"), Released.Num() == 1 && Released[0].Reason == EAIBTargetClaimRelease::Exit);
+		TestFalse(TEXT("gone"), Board.Holds(FObjectKey(BotA), Enemy, 5.05));
+	});
+
+	It("releases the previous claim on a target SWITCH — no ghost holders fill the cap (M2)", [this]()
 	{
 		FAIBTargetClaims Board;
 		Claim(Board, BotA, 0.0);
 		TArray<FAIBReleasedTargetClaim> Released;
-		Board.ReleaseOnExit(FObjectKey(BotA), 1.0, /*MinHold*/ 2.f, Released);
-		TestEqual(TEXT("too young: kept"), Released.Num(), 0);
-		TestTrue(TEXT("still held"), Board.Holds(FObjectKey(BotA), Enemy, 1.0));
-		Board.ReleaseOnExit(FObjectKey(BotA), 2.5, 2.f, Released);
-		TestEqual(TEXT("old enough: released"), Released.Num(), 1);
-		TestTrue(TEXT("as exit"), Released.Num() == 1 && Released[0].Reason == EAIBTargetClaimRelease::Exit);
-		TestFalse(TEXT("gone"), Board.Holds(FObjectKey(BotA), Enemy, 2.5));
+		Board.ReleaseOthers(FObjectKey(BotA), Enemy, 0.5, Released);
+		TestEqual(TEXT("the kept target is untouched"), Released.Num(), 0);
+		Board.ReleaseOthers(FObjectKey(BotA), Enemy2, 1.0, Released);
+		TestEqual(TEXT("the old target's claim goes"), Released.Num(), 1);
+		TestTrue(TEXT("as switch"), Released.Num() == 1 && Released[0].Reason == EAIBTargetClaimRelease::Switch);
+		TestFalse(TEXT("A no longer holds Enemy"), Board.Holds(FObjectKey(BotA), Enemy, 1.0));
+		int32 Holders = 0;
+		TestEqual(TEXT("B and C take Enemy at once — no ghost in the cap"),
+			static_cast<int32>(Claim(Board, BotB, 1.1)), static_cast<int32>(EAIBTargetClaimResult::Granted));
+		TestEqual(TEXT("C too"), static_cast<int32>(Claim(Board, BotC, 1.2, &Holders)), static_cast<int32>(EAIBTargetClaimResult::Granted));
+		TestEqual(TEXT("2/2 without A"), Holders, 2);
+	});
+
+	It("spreads the approach ring by seeded phase — holders opposite, non-holders on their own slot (M5/L3)", [this]()
+	{
+		FAIBTargetClaims Board;
+		int32 Holders = 0;
+		Board.TryClaim(FObjectKey(BotA), nullptr, Enemy, 0.0, 5.f, &Allies, Holders, /*PhaseDeg*/ 30.f);
+		Board.TryClaim(FObjectKey(BotB), nullptr, Enemy, 0.5, 5.f, &Allies, Holders, /*PhaseDeg*/ 200.f);
+		TestEqual(TEXT("the first holder stands on its own phase"),
+			Board.RingAngleDeg(FObjectKey(BotA), nullptr, Enemy, 1.0, &Allies, 30.f), 30.f, 1e-3f);
+		TestEqual(TEXT("the second stands OPPOSITE the first — the first's phase, not its own"),
+			Board.RingAngleDeg(FObjectKey(BotB), nullptr, Enemy, 1.0, &Allies, 200.f), 210.f, 1e-3f);
+		TestEqual(TEXT("a non-holder takes its OWN phase + 90 — two denied bots never stack"),
+			Board.RingAngleDeg(FObjectKey(BotC), nullptr, Enemy, 1.0, &Allies, 300.f), 390.f, 1e-3f);
 	});
 
 	It("releases on target death through the injected liveness — nothing else crosses", [this]()

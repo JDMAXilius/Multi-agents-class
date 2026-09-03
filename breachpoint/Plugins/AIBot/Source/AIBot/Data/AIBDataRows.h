@@ -154,9 +154,10 @@ struct AIBOT_API FAIBTierRow : public FTableRowBase
 
 	// -- the team mind (AIB23, Phase 12). Awareness is never tier-gated (roadmap §5.2):
 	//    every row carries the same values; they are data, not difficulty. ------------
-	/** A target claim younger than this is NOT released when Engage exits — it lapses by
-	 *  TTL instead — so an Engage that blinks out and back cannot free the slot for a
-	 *  teammate and re-take it (the claim/re-claim thrash). */
+	/** RETIRED (AIB23 W-REVIEW M3 — the hysteresis was inverted: a blink past this age
+	 *  released, then the fighter was denied). Read by nothing: the exit release is now
+	 *  AIB::ClaimExitDwellSeconds on a non-Engage ambition. Kept only so the csv column
+	 *  the table mirrors still has a home; drop with the next DT_AIBTiers reimport. */
 	UPROPERTY(EditAnywhere, Category = "Team")
 	float ClaimMinHoldSeconds = 2.f;
 

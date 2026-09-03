@@ -15,7 +15,7 @@ namespace
 }
 
 EAIBTargetClaimResult FAIBTargetClaims::TryClaim(FObjectKey Claimant, const AActor* ClaimantPawn, const AActor* Target,
-	double Now, float TtlSeconds, FAreAllies AreAllies, int32& OutHolders,
+	double Now, float TtlSeconds, FAreAllies AreAllies, int32& OutHolders, float ClaimantPhaseDeg,
 	const FString& ClaimantName, const FString& TargetName)
 {
 	OutHolders = 0;
@@ -60,6 +60,7 @@ EAIBTargetClaimResult FAIBTargetClaims::TryClaim(FObjectKey Claimant, const AAct
 	NewClaim.ClaimantPawn = ClaimantPawn;
 	NewClaim.GrantedAtSeconds = Now;
 	NewClaim.ExpiresAtSeconds = Now + TtlSeconds;
+	NewClaim.PhaseDeg = ClaimantPhaseDeg;
 	NewClaim.ClaimantName = ClaimantName;
 	NewClaim.TargetName = TargetName;
 	OutHolders = AlliedOthers + 1;
@@ -110,6 +111,28 @@ int32 FAIBTargetClaims::Ordinal(FObjectKey Asker, const AActor* AskerPawn, const
 	return Before;
 }
 
+float FAIBTargetClaims::RingAngleDeg(FObjectKey Asker, const AActor* AskerPawn, const AActor* Target,
+	double Now, FAreAllies AreAllies, float AskerPhaseDeg) const
+{
+	const int32 MyOrdinal = Ordinal(Asker, AskerPawn, Target, Now, AreAllies);
+	if (MyOrdinal == INDEX_NONE)
+	{
+		return AskerPhaseDeg + 90.f; // denied: my own slot, not everyone's perpendicular
+	}
+	// The ring's base is the EARLIEST allied holder's phase (mine, when I am first).
+	const FAIBTargetClaim* First = nullptr;
+	for (const FAIBTargetClaim& Claim : Claims)
+	{
+		if (Claim.IsLive(Now) && Claim.Target.Get() == Target
+			&& (Claim.Claimant == Asker || AreAllies(AskerPawn, Claim.ClaimantPawn.Get()))
+			&& (!First || Claim.GrantedAtSeconds < First->GrantedAtSeconds))
+		{
+			First = &Claim;
+		}
+	}
+	return (First ? First->PhaseDeg : AskerPhaseDeg) + MyOrdinal * 180.f;
+}
+
 bool FAIBTargetClaims::Holds(FObjectKey Claimant, const AActor* Target, double Now) const
 {
 	return Claims.ContainsByPredicate([&](const FAIBTargetClaim& Claim)
@@ -118,13 +141,36 @@ bool FAIBTargetClaims::Holds(FObjectKey Claimant, const AActor* Target, double N
 	});
 }
 
-void FAIBTargetClaims::ReleaseOnExit(FObjectKey Claimant, double Now, float MinHoldSeconds,
+void FAIBTargetClaims::ReleaseOthers(FObjectKey Claimant, const AActor* KeepTarget, double Now,
 	TArray<FAIBReleasedTargetClaim>& OutReleased)
 {
 	Claims.RemoveAll([&](const FAIBTargetClaim& Claim)
 	{
-		if (Claim.Claimant != Claimant || !Claim.IsLive(Now)
-			|| Now - Claim.GrantedAtSeconds < MinHoldSeconds)
+		if (Claim.Claimant != Claimant || Claim.Target.Get() == KeepTarget || !Claim.IsLive(Now))
+		{
+			return false;
+		}
+		OutReleased.Add(Released(Claim, EAIBTargetClaimRelease::Switch));
+		return true;
+	});
+}
+
+void FAIBTargetClaims::NoteAmbition(FObjectKey Claimant, bool bEngaging, double Now, float DwellSeconds,
+	TArray<FAIBReleasedTargetClaim>& OutReleased)
+{
+	if (bEngaging)
+	{
+		NonEngageSince.Remove(Claimant);
+		return;
+	}
+	const double Since = NonEngageSince.FindOrAdd(Claimant, Now);
+	if (Now - Since < static_cast<double>(FMath::Max(DwellSeconds, 0.f)))
+	{
+		return; // a blink: the TTL is the only thing that lapses it
+	}
+	Claims.RemoveAll([&](const FAIBTargetClaim& Claim)
+	{
+		if (Claim.Claimant != Claimant || !Claim.IsLive(Now))
 		{
 			return false;
 		}
@@ -135,6 +181,7 @@ void FAIBTargetClaims::ReleaseOnExit(FObjectKey Claimant, double Now, float MinH
 
 void FAIBTargetClaims::ReleaseAll(FObjectKey Claimant, TArray<FAIBReleasedTargetClaim>& OutReleased)
 {
+	NonEngageSince.Remove(Claimant);
 	Claims.RemoveAll([&](const FAIBTargetClaim& Claim)
 	{
 		if (Claim.Claimant != Claimant)

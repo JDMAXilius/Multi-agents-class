@@ -128,6 +128,16 @@ FAIBTargetCandidate* FAIBSensorium::FindCandidate(const AActor* Who)
 	});
 }
 
+bool FAIBSensorium::WasDamagedBy(const AActor* Who, double NowSeconds, float WithinSeconds) const
+{
+	const FAIBTargetCandidate* Candidate = Who ? Candidates.FindByPredicate([Who](const FAIBTargetCandidate& C)
+	{
+		return C.Actor.Get() == Who;
+	}) : nullptr;
+	return Candidate && Candidate->LastDamagedMeAtSeconds >= 0.0
+		&& NowSeconds - Candidate->LastDamagedMeAtSeconds <= static_cast<double>(WithinSeconds);
+}
+
 FAIBTargetCandidate* FAIBSensorium::FindOrAddCandidate(AActor* Who)
 {
 	if (!Who)
@@ -243,6 +253,10 @@ void FAIBSensorium::Pump(double NowSeconds)
 			// for up to SightMaxAge. Net honest outcome of gain-then-loss: a memory at
 			// the gained spot, no visible target, no acquisition recorded.
 			FAIBTargetCandidate* Candidate = FindOrAddCandidate(Stimulus.Source.Get());
+			if (Candidate)
+			{
+				Candidate->bSelfSensed = true; // AIB23 H1: my own eyes — reports may not touch him now
+			}
 			if (const double* NotedLoss = Stimulus.Source.IsValid()
 				? NotedLossEvents.Find(FObjectKey(Stimulus.Source.Get())) : nullptr)
 			{
@@ -321,6 +335,7 @@ void FAIBSensorium::Pump(double NowSeconds)
 			FAIBTargetCandidate* Candidate = FindOrAddCandidate(Stimulus.Source.Get());
 			if (Candidate)
 			{
+				Candidate->bSelfSensed = true; // AIB23 H1: my own ears or skin
 				// Only if this is NEWER than what sight already knows: a hit must not
 				// drag a currently visible enemy's belief backwards to the muzzle flash.
 				if (Stimulus.EventSeconds > Candidate->LastSeenAtSeconds)
@@ -352,12 +367,18 @@ void FAIBSensorium::Pump(double NowSeconds)
 		case EAIBStimulusKind::TeamReport:
 		{
 			// PHASE 12 — A CALLOUT LANDS AS A LEAD (FAIRPLAY 2 Sep, condition 3): a place and
-			// the teammate's ORIGINAL stamp, only where the bot does not already see or know
-			// fresher. bSightCurrent is never set and IsEligible is not widened, so a bot with
-			// only a report must go and look — the wallhack line. The held enemy's memory is
-			// never evicted (F-2.3), and a staler lead never overwrites a fresher one.
+			// the teammate's ORIGINAL stamp, on a candidate the bot has NEVER sensed itself
+			// (AIB23 W-REVIEW H1 — a report onto a shooter's bearing put a teammate's live
+			// read into a damage-eligible candidate and the bot fired through the wall).
+			// bSightCurrent is never set and IsEligible is not widened, so a bot with only a
+			// report must go and look — the wallhack line. The held enemy's memory is never
+			// evicted (F-2.3), and a staler lead never overwrites a fresher one.
 			FAIBTargetCandidate* Candidate = FindOrAddCandidate(Stimulus.Source.Get());
-			if (Candidate && !Candidate->bSightCurrent && Stimulus.PayloadSeconds >= Candidate->LastSeenAtSeconds)
+			if (!Candidate || Candidate->bSelfSensed)
+			{
+				break;
+			}
+			if (Stimulus.PayloadSeconds >= Candidate->LastSeenAtSeconds)
 			{
 				Candidate->LastKnownLocation = Stimulus.Location;
 				Candidate->LastSeenAtSeconds = Stimulus.PayloadSeconds;

@@ -50,6 +50,9 @@ enum class EAIBStillTactic : uint8
 	 *  one bounded window for the crowd's separation to part them — a body, not geometry,
 	 *  so no jump and no re-issued move. Up for TeammateYieldSeconds at most. */
 	Yield      = 1 << 5,
+	/** Phase 13 W-REVIEW M6: a live move request the crowd has braked to zero velocity —
+	 *  the crowd is doing the stepping, not the bot standing. Mirrored each Think. */
+	Crowd      = 1 << 6,
 };
 
 /** AIB22 H1/F9 — the STATIONARY sweep's budget. Held by the controller, never by the
@@ -119,9 +122,27 @@ struct AIBOT_API FAIBLocomotionState
 	FVector Goal = FVector::ZeroVector;
 
 	/** Phase 13: world seconds until which this wedge YIELDS to a teammate (0 = not
-	 *  yielding). While it runs the stall clock is paused and sprint is released; the
-	 *  crowd's separation does the stepping. */
+	 *  yielding). While it runs sprint is released and the abandon VERDICT waits; the
+	 *  stall clock keeps running (W-REVIEW H2) and the crowd's separation does the
+	 *  stepping. ONE yield per wedge: bYielded latches until real progress clears it. */
 	double YieldUntilSeconds = 0.0;
+	bool bYielded = false;
+
+	bool IsYielding(double NowSeconds) const { return YieldUntilSeconds > 0.0 && NowSeconds < YieldUntilSeconds; }
+	/** Arms the one window this wedge gets (H1: the caller arms only at a REAL wedge —
+	 *  the stall clock at WedgeStallSeconds). False when this wedge already yielded. */
+	bool TryArmYield(double NowSeconds, float WindowSeconds)
+	{
+		if (bYielded)
+		{
+			return false;
+		}
+		bYielded = true;
+		YieldUntilSeconds = NowSeconds + FMath::Max(WindowSeconds, 0.f);
+		return true;
+	}
+	/** Real progress (WedgeProgressUU gained): the wedge is over, the next one may yield. */
+	void NoteProgress() { bYielded = false; YieldUntilSeconds = 0.0; }
 
 	/** AIB22 F5-1(a): the goal the watchdog last ABANDONED, refused for the ambition's
 	 *  suppression window. The verdict used to leave the clock running, so a branch that
@@ -336,6 +357,11 @@ struct AIBOT_API FAIBFlankLatch
 	float DetourUU = 0.f;
 	double LatchedAtSeconds = -1.0;
 	bool bHasPoint = false;
+	/** AIB26 W-REVIEW M2: the point was REACHED. A Flank entry that finds this set runs
+	 *  silently until the tactic engine hands to Push (arrival zeroed the point term) —
+	 *  never a failure strike, which self-suppressed the tactic for 20 s. A new latch
+	 *  or any clear drops it. */
+	bool bDone = false;
 
 	void Latch(const FVector& InPoint, const FVector& InBelief, float InDetourUU, double NowSeconds)
 	{
@@ -344,8 +370,10 @@ struct AIBOT_API FAIBFlankLatch
 		DetourUU = InDetourUU;
 		LatchedAtSeconds = NowSeconds;
 		bHasPoint = true;
+		bDone = false;
 	}
-	void Clear() { bHasPoint = false; LatchedAtSeconds = -1.0; }
+	void Clear() { bHasPoint = false; bDone = false; LatchedAtSeconds = -1.0; }
+	void MarkDone() { Clear(); bDone = true; }
 	/** The point was hidden from WHERE THE BELIEF WAS; a belief that moved a ring radius
 	 *  has made it a guess, and a guess is cleared, not walked. */
 	bool IsStale(const FVector& BeliefNow, float DriftUU) const
@@ -421,6 +449,8 @@ public:
 	 *  failure (Why is logged); Think clears it when the belief drifts or the fight ends. */
 	const FAIBFlankLatch& GetFlankLatch() const { return FlankLatch; }
 	void ClearFlankLatch(const TCHAR* Why);
+	/** AIB26 M2: the Flank task reached the point — see FAIBFlankLatch::bDone. */
+	void MarkFlankDone() { FlankLatch.MarkDone(); }
 
 	/** AIB26: the tactic's mirror of NoteCurrentAmbitionFailed — a tactic child that
 	 *  could not run (or a Hold that reached HoldMaxSeconds) rests that tactic on the
@@ -428,10 +458,19 @@ public:
 	void NoteCurrentTacticFailed(const TCHAR* Why);
 
 	/** AIB26: Hold's clock, controller-held so an Engage flap re-entering Hold cannot
-	 *  restart it (the grenade-cooldown lesson). Entered sets it once; Think clears it
-	 *  the moment the tactic is no longer Hold. -1 = not holding. */
+	 *  restart it (the grenade-cooldown lesson). Entered sets it once; the Hold task
+	 *  clears it at HoldMaxSeconds (W-REVIEW H1 — one `hold over` per stand) and Think
+	 *  clears it the moment the tactic is no longer Hold. -1 = not holding. */
 	void NoteHoldEntered(double NowSeconds) { if (HoldSinceSeconds < 0.0) { HoldSinceSeconds = NowSeconds; } }
+	void NoteHoldOver() { HoldSinceSeconds = -1.0; }
 	double GetHoldSinceSeconds() const { return HoldSinceSeconds; }
+
+	/** AIB23 W-REVIEW H1 — THE TRIGGER'S OWN EYES. True when the bot's eyes have a clear
+	 *  line to the BELIEVED point of the held target (the sensorium's belief, never the
+	 *  live actor; the target's own body is ignored — the question is the wall). A
+	 *  callout may move the feet, never the trigger: FireWhenAble presses only on current
+	 *  sight or on this. False without a pawn, a world, or a held target. */
+	bool HasLineOfSightToBelief() const;
 
 	/** The execution surface (Phase 3). The executor drives it; nothing else touches it. */
 	UStateTreeAIComponent* GetStateTreeComponent() const { return StateTreeComponent; }
@@ -511,6 +550,9 @@ public:
 	 *  BotIndex, never on a name or a UniqueID. */
 	int32 GetBotIndex() const { return BotIndex; }
 	uint32 GetLifeSeed() const { return LifeSeed; }
+	/** AIB23 M5/L3 + AIB24 M5: this life's seeded ring phase in degrees — the approach
+	 *  ring's and the hill ring's slot, off LifeSeed (replay-stable), never a UniqueID. */
+	float GetRingPhaseDeg() const { return static_cast<float>(HashCombine(LifeSeed, 4099u) % 360u); }
 
 	/** Phase 14 — see FAIBRouteBias. Drawn once per life; UAIBQueryFilter reads the
 	 *  per-lane cost through GetRouteLaneCost on every query this controller issues.
@@ -798,11 +840,13 @@ private:
 	int32 LifeIndex = 0;
 
 	/** Phase 14: see GetBotIndex / GetLifeSeed / GetRouteBias. The signature is the last
-	 *  `route` line's lane sequence; reset per life. */
+	 *  `route` line's lane sequence; the key is the last corridor walked (AIB25 L6: the
+	 *  walk runs only for a corridor that differs). Both reset per life. */
 	int32 BotIndex = INDEX_NONE;
 	uint32 LifeSeed = 0;
 	FAIBRouteBias RouteBias;
 	FString LastRouteSignature;
+	uint32 LastRouteCorridorKey = 0;
 
 	// Phase 5: momentum + judgment. The ledger is the damage-history facts' source; the
 	// model turns facts into ConfidenceNorm at think cadence. Phase 4's profile gets its

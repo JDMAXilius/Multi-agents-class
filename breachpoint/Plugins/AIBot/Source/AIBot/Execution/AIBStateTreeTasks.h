@@ -234,7 +234,9 @@ struct FAIBFaceBeliefTask : public FStateTreeTaskCommonBase
 	using FInstanceDataType = FAIBFaceBeliefTaskInstanceData;
 	virtual const UStruct* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
 
-	FAIBFaceBeliefTask() { bShouldCallTick = true; }
+	/** AIB26 W-REVIEW H1: a tactic child's completion re-selects ENGAGE, and Engage stays
+	 *  active through it — the gun keeps its phase across that reselect. */
+	FAIBFaceBeliefTask() { bShouldCallTick = true; bShouldStateChangeOnReselect = false; }
 
 	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
 	virtual EStateTreeRunStatus Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const override;
@@ -387,7 +389,9 @@ struct FAIBFireWhenAbleTask : public FStateTreeTaskCommonBase
 	using FInstanceDataType = FAIBFireWhenAbleTaskInstanceData;
 	virtual const UStruct* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
 
-	FAIBFireWhenAbleTask() { bShouldCallTick = true; }
+	/** AIB26 W-REVIEW H1: the burst rest and the melee clock survive Engage's reselect
+	 *  when a tactic child completes (see FAIBFaceBeliefTask). */
+	FAIBFireWhenAbleTask() { bShouldCallTick = true; bShouldStateChangeOnReselect = false; }
 
 	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
 	virtual EStateTreeRunStatus Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const override;
@@ -751,7 +755,9 @@ struct FAIBMoveToObjectiveTaskInstanceData
 	 *  line and the walk-back when a leg's projection carried the body off the hill. */
 	FVector StrafeLegGoal = FVector::ZeroVector;
 	bool bWasOnObjective = false;
-
+	/** Phase 13 W-REVIEW M5: the first leg on the hill goes to THIS bot's seeded ring slot
+	 *  (controller's GetRingPhaseDeg); the arc steps take over from there. Per arrival. */
+	bool bRingSlotTaken = false;
 };
 
 /** The MODE branch's mover (Phase 6): walks to the best world-query POI whose Kind is
@@ -908,14 +914,17 @@ struct FAIBFlankTaskInstanceData
 	float ClosestSoFarUU = 0.f;
 	float SecondsWithoutProgress = 0.f;
 	double EnteredAtSeconds = 0.0;
+	/** Entered on a latch already marked done (W-REVIEW M2): stand by, no move, no strike. */
+	bool bDone = false;
 };
 
 /** AIB26 — FLANK's legs: walks the controller's LATCHED flank point (never a point of its
- *  own — the point is the tactic's fact, found once by the controller). Arrival clears the
- *  latch and SUCCEEDS: Flank's point term reads 0 on the next Think, the tactic engine
- *  vetoes it, and Push takes the fight from the new angle. A refused or stalled walk
- *  clears the latch, rests the tactic (NoteCurrentTacticFailed) and FAILS loudly (F7).
- *  The parent Engage's FaceBelief/FireWhenAble keep running beside it. */
+ *  own — the point is the tactic's fact, found once by the controller). Arrival marks the
+ *  latch DONE and SUCCEEDS: Engage re-selects, a re-entry on the done mark runs silently
+ *  (W-REVIEW M2 — no failure strike), Flank's point term reads 0 on the next Think, the
+ *  tactic engine vetoes it, and Push takes the fight from the new angle. A refused or
+ *  stalled walk clears the latch, rests the tactic (NoteCurrentTacticFailed) and FAILS
+ *  loudly (F7). The parent Engage's FaceBelief/FireWhenAble keep running beside it. */
 USTRUCT(meta = (DisplayName = "AIB Flank", Category = "AIBot"))
 struct FAIBFlankTask : public FStateTreeTaskCommonBase
 {
@@ -934,8 +943,10 @@ struct FAIBFlankTask : public FStateTreeTaskCommonBase
 /** AIB26 — HOLD: the NAMED stillness tactic (law F9). Plants the body at its station —
  *  no mover, no footwork; the parent's FaceBelief/FireWhenAble own the gun — for at most
  *  the tier row's HoldMaxSeconds on the CONTROLLER's clock (an Engage flap re-entering
- *  here cannot restart it). At the cap it rests the tactic and SUCCEEDS: the hold is over,
- *  Push or Flank takes the next turn. */
+ *  here cannot restart it). At the cap it logs `hold over` ONCE, clears its clock, rests
+ *  the tactic and keeps RUNNING until the tactic engine re-elects at the next Think — the
+ *  sentinel beside it then ends the child (W-REVIEW H1: a tactic's completion never
+ *  leaves Engage; the parent's gun tasks keep their phase). */
 USTRUCT(meta = (DisplayName = "AIB Hold Station", Category = "AIBot"))
 struct FAIBHoldStationTask : public FStateTreeTaskCommonBase
 {

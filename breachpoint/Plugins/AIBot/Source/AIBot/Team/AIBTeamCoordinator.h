@@ -63,16 +63,18 @@ public:
 
 	// -- Phase 12: target claims (ungated by tier). The caller logs GRANTED/DENIED (it
 	//    knows what it does next); this shell logs every RELEASED with its reason. -------
+	/** Claim Target; any OTHER target the claimant held releases first (reason=switch,
+	 *  AIB23 M2). The claimant's seeded ring phase rides the grant (M5/L3). */
 	EAIBTargetClaimResult TryClaimTarget(const AAIBBotController& Claimant, const AActor& Target, int32& OutHolders);
 	/** Allied OTHERS holding Target (self excluded): the AlliesOnTarget term and the
 	 *  saturation fact. A per-target read for a target the asker already believes in. */
 	int32 CountAlliesOnTarget(const AAIBBotController& Asker, const AActor& Target) const;
 	bool HoldsTargetClaim(const AAIBBotController& Asker, const AActor& Target) const;
-	/** 0 = first holder, 1 = second, INDEX_NONE = holds nothing — the ring-spread seed. */
-	int32 GetTargetClaimOrdinal(const AAIBBotController& Asker, const AActor& Target) const;
-	/** Engage no longer winning: claims held ≥ MinHold release now (reason=exit), the
-	 *  rest lapse by TTL. */
-	void ReleaseTargetClaimsOnExit(const AAIBBotController& Claimant, float MinHoldSeconds);
+	/** The approach bearing (degrees) around Target — see FAIBTargetClaims::RingAngleDeg. */
+	float GetTargetRingAngleDeg(const AAIBBotController& Asker, const AActor& Target) const;
+	/** Every Think: engaging resets the dwell; AIB::ClaimExitDwellSeconds on a non-Engage
+	 *  ambition releases the claimant's claims (reason=exit). A blink releases nothing. */
+	void NoteTargetClaimAmbition(const AAIBBotController& Claimant, bool bEngaging);
 
 	// -- Phase 12: shared sightings (current sight only, original stamp). --------------
 	void PublishSighting(const AAIBBotController& Reporter, AActor& Target, const FVector& Where, double SeenAtSeconds);

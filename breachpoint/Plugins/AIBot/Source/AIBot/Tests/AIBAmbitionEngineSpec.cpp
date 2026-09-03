@@ -975,6 +975,13 @@ void FAIBAmbitionEngineSpec::Define()
 		TestEqual(TEXT("sub-3dp noise is invisible"), UAIBAmbitionEngine::FactsCrc32(A), UAIBAmbitionEngine::FactsCrc32(B));
 		B.HealthNorm = 0.76f;
 		TestNotEqual(TEXT("a 3dp change shows"), UAIBAmbitionEngine::FactsCrc32(A), UAIBAmbitionEngine::FactsCrc32(B));
+		// AIB26 W-REVIEW M5: uu-scale fields quantise at AIB::ReplayDistanceQuantumUU —
+		// two seeded runs whose feet land a few uu apart are the same decision.
+		FAIBFacts E = A;
+		E.DistToTargetUU = 814.f;
+		TestEqual(TEXT("a few uu of drift is invisible"), UAIBAmbitionEngine::FactsCrc32(A), UAIBAmbitionEngine::FactsCrc32(E));
+		E.DistToTargetUU = 812.f + AIB::ReplayDistanceQuantumUU * 3.f;
+		TestNotEqual(TEXT("a real move shows"), UAIBAmbitionEngine::FactsCrc32(A), UAIBAmbitionEngine::FactsCrc32(E));
 
 		FAIBFacts C = A;
 		C.Objectives[0].AmbitionTag = AIBTags::Ambition_Seek;
@@ -1002,6 +1009,34 @@ void FAIBAmbitionEngineSpec::Define()
 		Worst.AmmoNorm = 1.f;
 		TestTag(TEXT("Push holds the floor"), Engine->Rescore(Worst, 1.0), AIBTags::Tactic_Push);
 		TestTrue(TEXT("and it is not zero"), ScoreOf(*Engine, AIBTags::Tactic_Push) > 0.f);
+	});
+
+	It("falls back to PUSH on an all-zero tactic board — the engine's registered floor, never a hardcoded ambition", [this]()
+	{
+		// Fix #5's rule, per engine: the controller sets FallbackTag = Tactic_Push on the
+		// tactic engine. Suppress all three (a Hold at its cap, a Flank refused, a Push
+		// that failed) and the board still elects Push — never Roam, never nothing.
+		RegisterTactics(*Engine);
+		Engine->FallbackTag = AIBTags::Tactic_Push;
+		FAIBFacts Facts;
+		Facts.bHasTarget = true;
+		Facts.AmmoNorm = 0.1f;
+		Facts.DistToTargetUU = 900.f;
+		Facts.HeightAdvantageUU = 300.f;
+		TestTag(TEXT("Hold wins the board"), Engine->Rescore(Facts, 1.0), AIBTags::Tactic_Hold);
+		Engine->NoteAmbitionFailed(AIBTags::Tactic_Hold, 2.0);
+		Engine->NoteAmbitionFailed(AIBTags::Tactic_Flank, 2.0);
+		Engine->NoteAmbitionFailed(AIBTags::Tactic_Push, 2.0);
+		TestTag(TEXT("every tactic at zero: the floor, not the incumbent"), Engine->Rescore(Facts, 2.1), AIBTags::Tactic_Push);
+		TestEqual(TEXT("and says fallback"), Engine->GetLastSwitchReason(), EAIBSwitchReason::Fallback);
+		TestTrue(TEXT("the board really was all zero"), ScoreOf(*Engine, AIBTags::Tactic_Push) == 0.f
+			&& ScoreOf(*Engine, AIBTags::Tactic_Hold) == 0.f && ScoreOf(*Engine, AIBTags::Tactic_Flank) == 0.f);
+		// The ambition engine's default floor is Roam: an engine without Push registered
+		// must not invent it.
+		UAIBAmbitionEngine* Core = NewObject<UAIBAmbitionEngine>(GetTransientPackage(), NAME_None, RF_Transient);
+		Core->AddToRoot();
+		TestTag(TEXT("the default floor is Roam"), Core->FallbackTag, AIBTags::Ambition_Roam);
+		Core->RemoveFromRoot();
 	});
 
 	It("scores Flank to ZERO only through the latched point — the VETO-bypass rule", [this]()

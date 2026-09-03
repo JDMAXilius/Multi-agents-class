@@ -193,11 +193,25 @@ namespace AIB
 	 *  raise is not one. Reuses ClaimTtlSeconds for the lease. */
 	inline constexpr int32 TargetClaimCap = 2;
 
-	/** Engage's want on a SATURATED target, as the curve value the engine's make-up
-	 *  turns into ≈1/(1+TargetClaimCap): five Engage terms compensate at 0.8, and
-	 *  0.20 + 0.8·0.20·(1−0.20) = 0.33. Score-only (F9): a third attacker wants the
-	 *  fight less, never nothing — with nothing else to want it engages at a third. */
-	inline constexpr float EngageSaturatedWant = 0.20f;
+	/** Engage's want on a SATURATED target (AIB23 W-REVIEW M4): five Engage terms
+	 *  compensate at 0.8, and 0.05 + 0.8·0.05·(1−0.05) = 0.088 — BELOW Roam's 0.2 floor,
+	 *  so the third bot leaves when nobody shoots at it. Score-only (F9): never a veto;
+	 *  and never applied to a VICTIM (ClaimVictimWindowSeconds) — the man being shot at
+	 *  always engages. */
+	inline constexpr float EngageSaturatedWant = 0.05f;
+
+	/** AIB23 M4: damage taken FROM the held target inside this window makes the bot the
+	 *  victim, and a victim is never saturated out of its own fight. */
+	inline constexpr float ClaimVictimWindowSeconds = 3.f;
+
+	/** AIB23 M3: a target claim releases on Engage exit only once the bot has stayed on a
+	 *  NON-Engage ambition this long (a belief blink through Search never releases; the
+	 *  TTL still lapses it). A founder-ruled number, not a tier knob. */
+	inline constexpr float ClaimExitDwellSeconds = 1.f;
+
+	/** AIB26 M5: the replay fingerprint quantises uu-scale facts to this step so two
+	 *  seeded runs whose feet land a few uu apart still diff empty. */
+	inline constexpr float ReplayDistanceQuantumUU = 10.f;
 
 	/** The reaction clock's queue cap (drop-oldest). An unpossessed bot must not grow
 	 *  an unbounded stimulus backlog for the rest of a match (W-REVIEW F-1.2). */

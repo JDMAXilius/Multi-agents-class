@@ -45,6 +45,7 @@ namespace
 		case EAIBTargetClaimRelease::Exit:      return TEXT("exit");
 		case EAIBTargetClaimRelease::Death:     return TEXT("death");
 		case EAIBTargetClaimRelease::Unpossess: return TEXT("unpossess");
+		case EAIBTargetClaimRelease::Switch:    return TEXT("switch");
 		default:                                return TEXT("ttl");
 		}
 	}
@@ -161,9 +162,15 @@ EAIBTargetClaimResult UAIBTeamCoordinator::TryClaimTarget(const AAIBBotControlle
 	}
 	const double Now = World->GetTimeSeconds();
 	PruneTargetClaims(Now);
+	// AIB23 M2: a switch releases the previous claim — one target at a time, no ghosts.
+	TArray<FAIBReleasedTargetClaim> Released;
+	TargetClaims.ReleaseOthers(FObjectKey(&Claimant), &Target, Now, Released);
+	LogReleases(Now, Released);
+	// M5/L3: the ring phase is the bot's LifeSeed hashed — replay-stable, never a UniqueID.
+	const float PhaseDeg = Claimant.GetRingPhaseDeg();
 	return TargetClaims.TryClaim(FObjectKey(&Claimant), Claimant.GetPawn(), &Target, Now, AIB::ClaimTtlSeconds,
 		[World](const AActor* A, const AActor* B) { return ResolveAreAllies(World, A, B); },
-		OutHolders, Claimant.GetName(), Target.GetName());
+		OutHolders, PhaseDeg, Claimant.GetName(), Target.GetName());
 }
 
 int32 UAIBTeamCoordinator::CountAlliesOnTarget(const AAIBBotController& Asker, const AActor& Target) const
@@ -183,18 +190,19 @@ bool UAIBTeamCoordinator::HoldsTargetClaim(const AAIBBotController& Asker, const
 	return World && TargetClaims.Holds(FObjectKey(&Asker), &Target, World->GetTimeSeconds());
 }
 
-int32 UAIBTeamCoordinator::GetTargetClaimOrdinal(const AAIBBotController& Asker, const AActor& Target) const
+float UAIBTeamCoordinator::GetTargetRingAngleDeg(const AAIBBotController& Asker, const AActor& Target) const
 {
 	const UWorld* World = GetWorld();
+	const float OwnPhaseDeg = Asker.GetRingPhaseDeg();
 	if (!World)
 	{
-		return INDEX_NONE;
+		return OwnPhaseDeg + 90.f;
 	}
-	return TargetClaims.Ordinal(FObjectKey(&Asker), Asker.GetPawn(), &Target, World->GetTimeSeconds(),
-		[World](const AActor* A, const AActor* B) { return ResolveAreAllies(World, A, B); });
+	return TargetClaims.RingAngleDeg(FObjectKey(&Asker), Asker.GetPawn(), &Target, World->GetTimeSeconds(),
+		[World](const AActor* A, const AActor* B) { return ResolveAreAllies(World, A, B); }, OwnPhaseDeg);
 }
 
-void UAIBTeamCoordinator::ReleaseTargetClaimsOnExit(const AAIBBotController& Claimant, float MinHoldSeconds)
+void UAIBTeamCoordinator::NoteTargetClaimAmbition(const AAIBBotController& Claimant, bool bEngaging)
 {
 	const UWorld* World = GetWorld();
 	if (!World || World->GetNetMode() == NM_Client)
@@ -204,7 +212,7 @@ void UAIBTeamCoordinator::ReleaseTargetClaimsOnExit(const AAIBBotController& Cla
 	const double Now = World->GetTimeSeconds();
 	PruneTargetClaims(Now);
 	TArray<FAIBReleasedTargetClaim> Released;
-	TargetClaims.ReleaseOnExit(FObjectKey(&Claimant), Now, MinHoldSeconds, Released);
+	TargetClaims.NoteAmbition(FObjectKey(&Claimant), bEngaging, Now, AIB::ClaimExitDwellSeconds, Released);
 	LogReleases(Now, Released);
 }
 

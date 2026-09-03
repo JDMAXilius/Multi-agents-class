@@ -499,6 +499,35 @@ void FAIBSensoriumSpec::Define()
 			TestEqual(TEXT("memory ages from the seeing (F5)"), Sensorium.MemoryAgeSeconds(10.30), 6.3f, 0.01f);
 		});
 
+		It("never lets a report touch a candidate the bot sensed ITSELF — the shooter's bearing stays (AIB23 H1)", [this]()
+		{
+			// The fairness breach: shot from behind a wall, the bot holds the shooter as a
+			// damage-eligible candidate at the bearing point; a teammate's LIVE read of him
+			// then arrived as a report, overwrote the bearing, and the bot fired at it.
+			AActor* Enemy = SpawnBody(FVector(900, 0, 0));
+			FAIBSensorium Sensorium;
+			Sensorium.Configure(0.25f, 0.25f);
+			Sensorium.NoteDamageFrom(Enemy, FVector(300, 0, 0), 1.0);
+			Sensorium.Pump(1.30);
+			TestTrue(TEXT("the shooter is held, by damage"), Sensorium.HasVisibleTarget());
+			TestFalse(TEXT("not in sight"), Sensorium.IsSightCurrent());
+			// A fresher, live-looking callout: t=2 seen at (900,0,0).
+			Sensorium.NoteTeamReport(Enemy, FVector(900, 0, 0), 2.0, 2.1);
+			Sensorium.Pump(2.40);
+			TestEqual(TEXT("still one belief"), Sensorium.GetCandidates().Num(), 1);
+			if (Sensorium.GetCandidates().Num() == 1)
+			{
+				const FAIBTargetCandidate& C = Sensorium.GetCandidates()[0];
+				TestTrue(TEXT("self-sensed"), C.bSelfSensed);
+				TestEqual(TEXT("the BEARING point, not the callout"), (double)C.LastKnownLocation.X, 300.0, 0.01);
+				TestEqual(TEXT("the bot's own stamp, not the reporter's"), C.LastSeenAtSeconds, 1.0);
+			}
+			TestEqual(TEXT("the aim point is the bearing too"), (double)Sensorium.GetLastSeenLocation().X, 300.0, 0.01);
+			TestEqual(TEXT("and the search lead ages from the hit"), Sensorium.MemoryAgeSeconds(2.40), 1.4f, 0.01f);
+			TestTrue(TEXT("a report about him was damage-recent: the victim read holds"), Sensorium.WasDamagedBy(Enemy, 2.40, 3.f));
+			TestFalse(TEXT("and lapses past the window"), Sensorium.WasDamagedBy(Enemy, 4.5, 3.f));
+		});
+
 		It("resets to blind and empty", [this]()
 		{
 			AActor* Enemy = SpawnBody();

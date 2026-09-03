@@ -10,6 +10,7 @@
 #include "Data/AIBDataRows.h"
 #include "Interfaces/AIBAvatarInterface.h"
 #include "Interfaces/AIBWorldQuery.h"
+#include "NavFilters/NavigationQueryFilter.h"
 #include "NavigationData.h"
 #include "NavigationPath.h"
 #include "NavigationSystem.h"
@@ -201,13 +202,14 @@ namespace
 	}
 
 	/** PHASE 12 — THE APPROACH SPREAD (AIB23 W-AUDIT, adopted deviation): the close-in goal
-	 *  is a ring sample around the belief, angle = Hash(target) + Ordinal·π by claim
-	 *  ORDINAL, so two attackers land on opposite sides by construction (a non-holder takes
-	 *  the perpendicular). Samples base/±40°/±80° through the existing projection only —
-	 *  no TestPathSync per sample; nothing projects -> the belief itself, as before. The
-	 *  radius is the caller's (fight range minus acceptance, so arrival is always inside
-	 *  the range the strafe owns — a ring AT the fight range plus the 350 acceptance would
-	 *  park a bot 1250uu out with tactic=none, an idle-gate defect). */
+	 *  is a ring sample around the belief at the claims book's bearing — the first holder's
+	 *  seeded phase + Ordinal·π, so two attackers land on opposite sides by construction; a
+	 *  non-holder takes its OWN seeded phase + 90° (W-REVIEW M5/L3: LifeSeed-phased, never
+	 *  a UniqueID, and denied bots never stack on one slot). Samples base/±40°/±80° through
+	 *  the existing projection only — no TestPathSync per sample; nothing projects -> the
+	 *  belief itself, as before. The radius is the caller's (fight range minus acceptance,
+	 *  so arrival is always inside the range the strafe owns — a ring AT the fight range
+	 *  plus the 350 acceptance would park a bot 1250uu out with tactic=none). */
 	FVector RingApproachGoal(AAIBBotController& Bot, const FVector& Belief, float RadiusUU)
 	{
 		const AActor* Target = Bot.GetSensorium().GetVisibleTarget();
@@ -216,9 +218,7 @@ namespace
 			return Belief;
 		}
 		const UAIBTeamCoordinator* Team = Bot.GetWorld() ? Bot.GetWorld()->GetSubsystem<UAIBTeamCoordinator>() : nullptr;
-		const int32 Ordinal = Team ? Team->GetTargetClaimOrdinal(Bot, *Target) : INDEX_NONE;
-		const float BaseDeg = static_cast<float>(GetTypeHash(Target->GetUniqueID()) % 360u);
-		const float AngleDeg = BaseDeg + (Ordinal >= 0 ? Ordinal * 180.f : 90.f);
+		const float AngleDeg = Team ? Team->GetTargetRingAngleDeg(Bot, *Target) : Bot.GetRingPhaseDeg() + 90.f;
 		static const float Offsets[] = { 0.f, 40.f, -40.f, 80.f, -80.f };
 		for (const float Offset : Offsets)
 		{
@@ -492,8 +492,9 @@ namespace
 			State.Goal = Goal;
 			State.GoalSetAtSeconds = Now;
 		}
-		// Phase 13: no sprint into a teammate's back while yielding (see below).
-		const bool bYielding = State.YieldUntilSeconds > 0.0 && WorldSeconds(Bot) < State.YieldUntilSeconds;
+		// Phase 13: no sprint into a teammate's back while yielding (see below) — and ONLY
+		// then (W-REVIEW H1: an early yield released sprint on every stalled tick).
+		const bool bYielding = State.IsYielding(Now);
 		SetSprint(*Avatar, State.bSprintHeld, !bYielding && ToGoal > ArriveRadiusUU * SprintBeyondRadiusFactor);
 
 		if (ToGoal > ArriveRadiusUU)
@@ -513,8 +514,10 @@ namespace
 			{
 				EndStall(Bot, State, TEXT("moved"));
 			}
-			// REAL PROGRESS — the only thing that resets the clocks (R3).
+			// REAL PROGRESS — the only thing that resets the clocks (R3) and re-arms the
+			// one-per-wedge yield (Phase 13 H2).
 			EndYield(Bot, State);
+			State.NoteProgress();
 			State.BestPoint = Here;
 			State.bHasBestPoint = true;
 			State.StallSeconds = 0.f;
@@ -527,15 +530,13 @@ namespace
 		{
 			return false; // standing AT the goal is station-keeping, not being stuck
 		}
-		// PHASE 13: yielding to a teammate. The stall clock waits (these seconds are the
-		// yield line's, not `stuck_seconds`), sprint stays released, and the crowd's
-		// separation does the stepping — no verb, no re-issue (a re-issued MoveTo resets
-		// the crowd corridor).
-		if (bYielding)
+		// PHASE 13 (W-REVIEW H2): the stall clock KEEPS RUNNING through a yield — only the
+		// sprint and the verdict wait for the window — so a doorway pair still reaches its
+		// abandon on schedule and `stuck_seconds` reads the whole stand, not 0.03s of it.
+		if (!bYielding)
 		{
-			return false; // yielding is not an abandon
+			EndYield(Bot, State);
 		}
-		EndYield(Bot, State);
 		State.StallSeconds += DeltaTime;
 		if (!State.bStallOpen && State.StallSeconds - State.StallReportedSeconds >= StallReportSeconds)
 		{
@@ -549,25 +550,6 @@ namespace
 			// stall with nothing traversable ahead is either an island (the Egress tactic's,
 			// step 5) or a body wedged on geometry; both are the mover's give-up window to
 			// end, and ReleaseLocomotion closes the episode as resolved=abandoned when it does.
-			//
-			// PHASE 13 (AIB24): a TEAMMATE inside the capsule sum is a body, not geometry —
-			// the wedge yields once, for one bounded window, and lets separation part them.
-			// The count is HUD-grade (CountNearbyAllies); GetNearbyAgentLocations is the
-			// rejected door (enemy positions, no LOS bound).
-			const FAIBTierRow& Tier = Bot.GetTierRow();
-			const IAIBWorldQuery* Query = Bot.GetWorldQuery();
-			const int32 AlliesInside = Query ? Query->CountNearbyAllies(Pawn, Tier.TeammateYieldRadiusUU) : 0;
-			if (AlliesInside > 0)
-			{
-				State.YieldUntilSeconds = WorldSeconds(Bot) + FMath::Max(Tier.TeammateYieldSeconds, 0.f);
-				Bot.SetStillTactic(EAIBStillTactic::Yield, true);
-				SetSprint(*Avatar, State.bSprintHeld, false);
-				UE_LOG(LogAIBot, Log,
-					TEXT("AIBot: %s t=%.1f yields to teammate — %d inside %.0fuu, %.1fs window at (%.0f,%.0f,%.0f)"),
-					*Bot.GetName(), WorldSeconds(Bot), AlliesInside, Tier.TeammateYieldRadiusUU,
-					Tier.TeammateYieldSeconds, Here.X, Here.Y, Here.Z);
-				return false; // yielding is not an abandon
-			}
 			const UPathFollowingComponent* Follow = Bot.GetPathFollowingComponent();
 			UE_LOG(LogAIBot, Verbose,
 				TEXT("AIBot: %s stalled %.0fuu across / %.0fuu up — link=%s; the mover's give-up window decides."),
@@ -575,13 +557,38 @@ namespace
 				(Follow && Follow->IsFollowingNavLink()) ? TEXT("yes") : TEXT("no"));
 			return false;
 		}
+		// PHASE 13 (AIB24, W-REVIEW H1/H2): a REAL wedge — the clock at WedgeStallSeconds,
+		// never the first stalled tick — with a TEAMMATE inside the capsule sum is a body,
+		// not geometry: ONE bounded yield per wedge (the controller-held latch, cleared only
+		// by WedgeProgressUU of progress), sprint released and the verdict deferred for the
+		// window while the crowd's separation does the stepping. No verb, no re-issue. The
+		// count is HUD-grade (CountNearbyAllies); GetNearbyAgentLocations is the rejected
+		// door (enemy positions, no LOS bound).
+		if (!bYielding && !State.bYielded)
+		{
+			const FAIBTierRow& Tier = Bot.GetTierRow();
+			const IAIBWorldQuery* Query = Bot.GetWorldQuery();
+			const int32 AlliesInside = Query ? Query->CountNearbyAllies(Pawn, Tier.TeammateYieldRadiusUU) : 0;
+			if (AlliesInside > 0 && State.TryArmYield(Now, Tier.TeammateYieldSeconds))
+			{
+				Bot.SetStillTactic(EAIBStillTactic::Yield, true);
+				SetSprint(*Avatar, State.bSprintHeld, false);
+				UE_LOG(LogAIBot, Log,
+					TEXT("AIBot: %s t=%.1f yields to teammate — %d inside %.0fuu, %.1fs window at (%.0f,%.0f,%.0f)"),
+					*Bot.GetName(), Now, AlliesInside, Tier.TeammateYieldRadiusUU,
+					Tier.TeammateYieldSeconds, Here.X, Here.Y, Here.Z);
+				return false; // the verdict waits for the window; the clock above did not
+			}
+		}
+		if (bYielding)
+		{
+			return false;
+		}
 		// NO BLIND HOP, NO RE-ISSUE (AIB22 step 4, R9). Traversal verbs fire from the path
 		// itself (UAIBPathFollowingComponent: custom links and jump-area segments); a
 		// re-issued move only reset the corridor the follower was already on. The read
 		// here is a DIAGNOSIS: a storey with no link is abandoned at once (R3 — the mezzanine
 		// stalls, 3-46s each), a same-level wedge waits out the give-up window.
-		// Phase 13: CountNearbyAllies(Pawn, ~80uu) > 0 here -> log + one bounded yield
-		// window and let crowd separation steer; no verb, no re-issue.
 		const UPathFollowingComponent* Follow = Bot.GetPathFollowingComponent();
 		const bool bOnLink = Follow && Follow->IsFollowingNavLink();
 		const float UpUU = Goal.Z - FeetOf(*Pawn).Z; // F5-3: nav goal against the FEET
@@ -1361,8 +1368,12 @@ EStateTreeRunStatus FAIBFireWhenAbleTask::Tick(FStateTreeExecutionContext& Conte
 	// The live sensorium check closes the destroyed-target frame: a corpse whose weak
 	// handle just went null must not be burst at for the rest of the fact snapshot's
 	// life (W-REVIEW P3 M1 — the facts refresh at think cadence, this task at tick).
-	const bool bMayFire = Facts.bTargetVisible && Facts.bWeaponCanFight
-		&& Bot->GetSensorium().HasVisibleTarget();
+	// AIB23 W-REVIEW H1 — THE TRIGGER'S OWN EYES: a held target the bot cannot SEE right
+	// now (a damage-eligible shooter, a juke in flight) is fired at only when the eyes
+	// have a clear line to the believed point. A callout moves the feet, never the trigger.
+	const FAIBSensorium& Senses = Bot->GetSensorium();
+	const bool bMayFire = Facts.bTargetVisible && Facts.bWeaponCanFight && Senses.HasVisibleTarget()
+		&& (Senses.IsSightCurrent() || Bot->HasLineOfSightToBelief());
 
 	if (!bMayFire)
 	{
@@ -2192,7 +2203,10 @@ EStateTreeRunStatus FAIBMoveToPOITask::EnterState(FStateTreeExecutionContext& Co
 						CandidateHeat = OtherHeat;
 					}
 				}
-				const FPathFindingResult Found = NavSys->FindPathSync(FPathFindingQuery(Bot, *NavData, Feet, Candidate.Location));
+				// AIB25 W-REVIEW M3: the bot's OWN filter ranks the draws' lengths — the
+				// island test (the anchor walk) stays unfiltered: reachability, not taste.
+				const FPathFindingResult Found = NavSys->FindPathSync(FPathFindingQuery(Bot, *NavData, Feet, Candidate.Location,
+					UNavigationQueryFilter::GetQueryFilter(*NavData, Bot, Bot->DefaultNavigationFilterClass)));
 				const bool bPathed = Found.IsSuccessful() && Found.Path.IsValid();
 				const bool bFull = bPathed && !Found.Path->IsPartial();
 				if (Bot->GetIslandLatch().NoteDraw(bFull, LatchDraws, Now))
@@ -2525,6 +2539,15 @@ EStateTreeRunStatus FAIBFlankTask::EnterState(FStateTreeExecutionContext& Contex
 		return EStateTreeRunStatus::Failed;
 	}
 	const FAIBFlankLatch& Latch = Bot->GetFlankLatch();
+	if (Latch.bDone)
+	{
+		// W-REVIEW M2: the point was REACHED this fight and Engage re-selected. Stand by
+		// silently — no move, no strike — until the next Think reads the zeroed point term
+		// and hands to Push; the sentinel beside this ends the child.
+		InstanceData.bDone = true;
+		return EStateTreeRunStatus::Running;
+	}
+	InstanceData.bDone = false;
 	if (!Latch.bHasPoint)
 	{
 		// The gate passed on the tactic, the latch is gone: a one-think race. Rest the
@@ -2556,12 +2579,16 @@ EStateTreeRunStatus FAIBFlankTask::Tick(FStateTreeExecutionContext& Context, con
 	{
 		return EStateTreeRunStatus::Failed;
 	}
+	if (InstanceData.bDone)
+	{
+		return EStateTreeRunStatus::Running; // M2: standing by for the tactic engine
+	}
 	const double Now = WorldSeconds(*Bot);
 	if (IsWithin(*Bot, InstanceData.Goal, InstanceData.AcceptanceRadiusUU))
 	{
 		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f flank over — arrived after %.1fs"),
 			*Bot->GetName(), Now, Now - InstanceData.EnteredAtSeconds);
-		Bot->ClearFlankLatch(TEXT("arrived"));
+		Bot->MarkFlankDone(); // M2: a mark, not a failure — re-entry runs silently
 		return EStateTreeRunStatus::Succeeded;
 	}
 	const float DistNow = FVector::Dist(Pawn->GetActorLocation(), InstanceData.Goal);
@@ -2625,11 +2652,14 @@ EStateTreeRunStatus FAIBHoldStationTask::Tick(FStateTreeExecutionContext& Contex
 	const double Since = Bot->GetHoldSinceSeconds();
 	if (Since >= 0.0 && Now - Since >= Bot->GetTierRow().HoldMaxSeconds)
 	{
-		// BOUNDED (F9): the hold is over, not broken — Succeeded, and the tactic rests
-		// so the next selection is Push or Flank rather than the same station again.
+		// BOUNDED (F9): the hold is over, not broken. W-REVIEW H1: NOT a completion — a
+		// Succeeded here re-selected Engage>Hold per FRAME until the next Think (the
+		// cleared clock re-armed on each re-entry: 6-12 `hold over` lines and suppression
+		// strikes per stand). The clock clears HERE, once, the tactic rests, and the child
+		// keeps running until the tactic engine re-elects and the sentinel ends it.
 		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f hold over — %.1fs at station"), *Bot->GetName(), Now, Now - Since);
+		Bot->NoteHoldOver();
 		Bot->NoteCurrentTacticFailed(TEXT("hold reached HoldMaxSeconds"));
-		return EStateTreeRunStatus::Succeeded;
 	}
 	return EStateTreeRunStatus::Running;
 }
@@ -3159,7 +3189,20 @@ namespace
 				// not a second one restated for the hill.
 				const FAIBStrafeTaskInstanceData Footwork;
 				const float RingUU = InstanceData.GoalReachUU * FMath::Clamp(Bot.GetTierRow().HillStrafeRadiusFraction, 0.f, 1.f);
-				StrafeArcStep(Bot, Pawn, InstanceData.Goal, Intent, Footwork, RingUU * 0.5f, RingUU, InstanceData.StrafeLegGoal);
+				if (!InstanceData.bRingSlotTaken)
+				{
+					// W-REVIEW M5: the first leg goes to THIS bot's seeded slot on the ring
+					// (the same LifeSeed phase as the approach ring), so two holders arriving
+					// on one bearing never orbit in lockstep; the arc steps take over from it.
+					InstanceData.bRingSlotTaken = true;
+					InstanceData.StrafeLegGoal = InstanceData.Goal
+						+ FVector(RingUU, 0.f, 0.f).RotateAngleAxis(Bot.GetRingPhaseDeg(), FVector::UpVector);
+					MoveToNavPoint(Bot, InstanceData.StrafeLegGoal, 50.f);
+				}
+				else
+				{
+					StrafeArcStep(Bot, Pawn, InstanceData.Goal, Intent, Footwork, RingUU * 0.5f, RingUU, InstanceData.StrafeLegGoal);
+				}
 			}
 		}
 		if (!Bot.HasStillTactic(EAIBStillTactic::StrafeHold))
@@ -3354,6 +3397,7 @@ EStateTreeRunStatus FAIBMoveToObjectiveTask::Tick(FStateTreeExecutionContext& Co
 		else
 		{
 			Bot->SetStillTactic(EAIBStillTactic::StrafeHold, false);
+			InstanceData.bRingSlotTaken = false; // the next arrival takes its slot afresh
 			InstanceData.ClosestSoFarUU = FVector::Dist(Pawn->GetActorLocation(), InstanceData.Goal);
 			MoveToNavPoint(*Bot, InstanceData.Goal, InstanceData.GoalReachUU);
 		}

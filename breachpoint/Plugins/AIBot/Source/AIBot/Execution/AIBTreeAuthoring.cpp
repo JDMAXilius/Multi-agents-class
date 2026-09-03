@@ -192,22 +192,30 @@ FString UAIBTreeAuthoring::BuildBotStateTree()
 	// on an all-zero board, no memory between evaluations). Flank and Hold are gated;
 	// Push is the ungated floor LAST, so Engage always has a child to select and the
 	// tree never reaches TreeRunStatus Failed on a tactic board. A tactic sentinel in
-	// each child ends it when the tactic moves on; completions land on Root exactly as
-	// Egress's do, at the fight's own delays.
+	// each child ends it when the tactic moves on.
+	//
+	// A TACTIC'S COMPLETION NEVER LEAVES ENGAGE (AIB26 W-REVIEW H1): the children's
+	// completions target ENGAGE — the parent's re-selection — not Root. Engage stays
+	// active through it (a Sustained reselect: its gate is re-tested, its children
+	// re-picked in order), and the gun tasks on the parent opt out of the reselect
+	// (bShouldStateChangeOnReselect=false), so FireWhenAble's burst rest and the melee
+	// clock keep their phase. Should Engage's gate fail at that instant, the engine walks
+	// the completion up to Engage's own transitions above and Root re-selects — the
+	// StateTree completion walk is leaf-to-root (StateTreeExecutionContext.cpp:6223-6299).
 	{
 		UStateTreeState& Flank = Engage.AddChildState(TEXT("Flank"));
 		Flank.AddEnterCondition<FAIBGateTacticFlankCondition>();
 		Flank.AddTask<FAIBTacticSentinelTask>();
 		Flank.AddTask<FAIBFlankTask>();
-		AddCompletionTransition(Flank, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
-		AddCompletionTransition(Flank, Root, EStateTreeTransitionTrigger::OnStateFailed, 0.2f);
+		AddCompletionTransition(Flank, Engage, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
+		AddCompletionTransition(Flank, Engage, EStateTreeTransitionTrigger::OnStateFailed, 0.2f);
 
 		UStateTreeState& Hold = Engage.AddChildState(TEXT("Hold"));
 		Hold.AddEnterCondition<FAIBGateTacticHoldCondition>();
 		Hold.AddTask<FAIBTacticSentinelTask>();
 		Hold.AddTask<FAIBHoldStationTask>();
-		AddCompletionTransition(Hold, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
-		AddCompletionTransition(Hold, Root, EStateTreeTransitionTrigger::OnStateFailed, 0.2f);
+		AddCompletionTransition(Hold, Engage, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
+		AddCompletionTransition(Hold, Engage, EStateTreeTransitionTrigger::OnStateFailed, 0.2f);
 
 		// PUSH = the Engage legs as they were: close, then footwork owns the fight.
 		UStateTreeState& Push = Engage.AddChildState(TEXT("Push"));
@@ -217,8 +225,8 @@ FString UAIBTreeAuthoring::BuildBotStateTree()
 		// policy decides the rhythm, the task steps laterally only while station-keeping,
 		// and it never completes — the fight's other tasks own the state's fate.
 		Push.AddTask<FAIBStrafeTask>();
-		AddCompletionTransition(Push, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
-		AddCompletionTransition(Push, Root, EStateTreeTransitionTrigger::OnStateFailed, 0.2f);
+		AddCompletionTransition(Push, Engage, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
+		AddCompletionTransition(Push, Engage, EStateTreeTransitionTrigger::OnStateFailed, 0.2f);
 	}
 
 	// ---- Retreat: the brain wants out --------------------------------------------------
@@ -379,7 +387,7 @@ FString UAIBTreeAuthoring::BuildBotStateTree()
 	AddCompletionTransition(Fallback, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
 	AddCompletionTransition(Fallback, Root, EStateTreeTransitionTrigger::OnStateFailed, 1.0f);
 
-	Report.Add(TEXT("states     : Root > [Evade, Engage > [Flank, Hold, Push], Retreat, Search, Seek, Roam > [Egress, Wander], Mode, Fallback] (every ambition gated — Mode by hierarchy — the ungated Fallback floor last, sentinel in each; Egress gated on the island latch; Flank/Hold gated on the tactic engine, Push the ungated tactic floor)"));
+	Report.Add(TEXT("states     : Root > [Evade, Engage > [Flank, Hold, Push], Retreat, Search, Seek, Roam > [Egress, Wander], Mode, Fallback] (every ambition gated — Mode by hierarchy — the ungated Fallback floor last, sentinel in each; Egress gated on the island latch; Flank/Hold gated on the tactic engine, Push the ungated tactic floor; tactic completions re-select Engage, never Root)"));
 	Report.Add(TEXT("seek       : AIBot.Ambition.Seek — deliberate movement (belief -> POI -> reachable point). SeekWeapon is RETIRED: no pickups in this game."));
 
 	// An uncompiled StateTree runs NOTHING — the asset would exist, the ini would resolve,

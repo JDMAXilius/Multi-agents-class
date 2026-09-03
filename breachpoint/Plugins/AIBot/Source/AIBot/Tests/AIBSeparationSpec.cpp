@@ -138,6 +138,22 @@ void FAIBSeparationSpec::Define()
 		TestTrue(TEXT("reset"), Episode.SinceSeconds < 0.0 && Episode.PeakCount == 0);
 	});
 
+	It("yields ONCE per wedge — the latch clears only on progress, the window is bounded (AIB24 H1/H2)", [this]()
+	{
+		FAIBLocomotionState State;
+		TestFalse(TEXT("not yielding at rest"), State.IsYielding(10.0));
+		TestTrue(TEXT("the first wedge yields"), State.TryArmYield(10.0, 1.f));
+		TestTrue(TEXT("inside the window"), State.IsYielding(10.5));
+		TestFalse(TEXT("the window lapses"), State.IsYielding(11.0));
+		TestFalse(TEXT("the same wedge never yields again — the stall clock's abandon fires on schedule"), State.TryArmYield(11.1, 1.f));
+		TestFalse(TEXT("still not yielding"), State.IsYielding(11.2));
+		State.NoteProgress();
+		TestTrue(TEXT("ground gained: the next wedge may yield"), State.TryArmYield(20.0, 1.f));
+		State = FAIBLocomotionState();
+		TestTrue(TEXT("a fresh body yields"), State.TryArmYield(0.0, 0.f));
+		TestFalse(TEXT("a zero window is no window"), State.IsYielding(0.0));
+	});
+
 	It("pins the row defaults the tier table mirrors", [this]()
 	{
 		const FAIBTierRow Row;

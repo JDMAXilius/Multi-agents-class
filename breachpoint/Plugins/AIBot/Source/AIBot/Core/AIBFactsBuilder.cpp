@@ -56,10 +56,13 @@ FAIBFacts AIBFactsBuilder::Build(const AAIBBotController& Bot, double NowSeconds
 		// Phase 7 slot gate below is deliberately not copied: a non-claiming bot would
 		// reopen the pile). A per-target read about a target this bot already holds through
 		// its own envelope — never an enumeration, never a position, never a health.
+		// AIB23 M4: NEVER for the victim — shot by that target inside the window, the bot
+		// engages whatever the book says (the saturated want would starve a bot under fire).
 		if (const UAIBTeamCoordinator* Team = Bot.GetWorld() ? Bot.GetWorld()->GetSubsystem<UAIBTeamCoordinator>() : nullptr)
 		{
 			const AActor* Target = Sensorium.GetVisibleTarget();
 			Facts.bTargetClaimSaturated = Target && !Team->HoldsTargetClaim(Bot, *Target)
+				&& !Sensorium.WasDamagedBy(Target, NowSeconds, AIB::ClaimVictimWindowSeconds)
 				&& Team->CountAlliesOnTarget(Bot, *Target) >= AIB::TargetClaimCap;
 		}
 	}

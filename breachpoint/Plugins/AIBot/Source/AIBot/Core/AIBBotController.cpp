@@ -282,6 +282,13 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 		Crowd->SetCrowdSeparationWeight(ResolvedTier.CrowdSeparationWeight);
 		Crowd->SetCrowdAvoidanceQuality(ECrowdAvoidanceQuality::Medium);
 		Crowd->SetCrowdPathOffset(true);
+		// W-REVIEW M1/L5: the crowd can silently fall back to plain path following (no
+		// manager, a late navmesh) — then separation is a comment, not a mechanism.
+		if (!Crowd->IsCrowdSimulationEnabled())
+		{
+			UE_LOG(LogAIBot, Log, TEXT("AIBot: %s crowd simulation DISABLED — no crowd manager or navmesh at possession; separation is off for this life."),
+				*GetName());
+		}
 	}
 
 	const FAIBTierRow& Defaults = ResolvedTier;
@@ -316,12 +323,18 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	LastLinkJumpAtSeconds = -1.0;
 	bNavSeen = false;                   // R7: nothing decides until the feet are on the mesh once
 	bWaitingForNavLogged = false;
-	LifeSeed = FAIBRouteBias::LifeSeed(MatchSeed, BotIndex, LifeIndex); // Phase 14: match x bot x life
+	// Phase 14: match x bot x life. AIB25 W-REVIEW M2: with NO manager (a headless or
+	// editor-preview world) every bot would read seed 0 / slot -1 and draw in lockstep,
+	// so the per-object hash of old is the fallback — deterministic per life, not replayable.
+	LifeSeed = BotIndex >= 0
+		? FAIBRouteBias::LifeSeed(MatchSeed, BotIndex, LifeIndex)
+		: HashCombine(GetTypeHash(GetUniqueID()), GetTypeHash(LifeIndex));
 	Sensorium.SetRandomSeed(static_cast<int32>(LifeSeed));
 
 	// Phase 14: this life's lane taste, and the line two seeded runs must agree on.
 	RouteBias.Draw(LifeSeed, ResolvedTier.RouteLaneWeightSpread);
 	LastRouteSignature.Reset();
+	LastRouteCorridorKey = 0;
 	UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f route bias — bot=%d life=%d seed=%u lanes=%s"),
 		*GetName(), PossessedAtSeconds, BotIndex, LifeIndex, LifeSeed, *RouteBias.Describe());
 
@@ -341,12 +354,10 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	GrenadeState = FAIBGrenadeState();
 	MovementState = FAIBMovementState();
 	PolicyRandom.Initialize(static_cast<int32>(HashCombine(LifeSeed, 131u)));
-	// AIB26: the decision stream. Replayable only once the manager has handed over the
-	// match seed and the stable slot (AIB25); until then the per-life hash keeps bots
-	// out of lockstep (F-3.7) without pretending to be a replay.
-	DecisionRandom.Initialize(static_cast<int32>(BotIndex >= 0
-		? HashCombine(HashCombine(static_cast<uint32>(MatchSeed), static_cast<uint32>(BotIndex)), static_cast<uint32>(LifeIndex))
-		: HashCombine(LifeSeed, 977u)));
+	// AIB26: the decision stream — LifeSeed under its own prime (AIB25 W-REVIEW M1: seeded
+	// with exactly LifeSeed it walked in step with the sensorium's stream). Replayable
+	// once the manager has handed over the seed triple; per-life-hashed before that.
+	DecisionRandom.Initialize(static_cast<int32>(HashCombine(LifeSeed, 977u)));
 	DecisionRandomDraws = 0;
 	IdleSinceSeconds = -1.0; // a fresh body has stood still for nothing yet
 	StillTactics = 0;
@@ -590,6 +601,7 @@ void AAIBBotController::CloseIdleEpisode(double NowSeconds)
 	else if (IdleTactics & static_cast<uint8>(EAIBStillTactic::Sweep))      { Tactic = TEXT("Sweep"); }
 	else if (IdleTactics & static_cast<uint8>(EAIBStillTactic::Stranded))   { Tactic = TEXT("Stranded"); }
 	else if (IdleTactics & static_cast<uint8>(EAIBStillTactic::Yield))      { Tactic = TEXT("Yield"); }
+	else if (IdleTactics & static_cast<uint8>(EAIBStillTactic::Crowd))      { Tactic = TEXT("Crowd"); }
 	const FName State = GetActiveStateName();
 	UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f idle over — %.1fs state=%s tactic=%s"),
 		*GetName(), NowSeconds, NowSeconds - IdleSinceSeconds,
@@ -903,10 +915,19 @@ void AAIBBotController::LogRouteIfChanged(const FVector& Goal)
 	const FNavPathSharedPtr Path = Follow ? Follow->GetPath() : nullptr;
 	const FNavMeshPath* NavMeshPath = Path.IsValid() ? Path->CastPath<FNavMeshPath>() : nullptr;
 	const ARecastNavMesh* NavMesh = NavMeshPath ? Cast<ARecastNavMesh>(NavMeshPath->GetNavigationDataUsed()) : nullptr;
-	if (!NavMesh)
+	if (!NavMesh || NavMeshPath->PathCorridor.Num() == 0)
 	{
 		return;
 	}
+	// AIB25 W-REVIEW L6: the corridor's shape (count, first and last poly) keys the walk —
+	// a repath on the belief's drift that found the same corridor walks nothing.
+	const uint32 CorridorKey = HashCombine(GetTypeHash(NavMeshPath->PathCorridor.Num()),
+		HashCombine(GetTypeHash(NavMeshPath->PathCorridor[0]), GetTypeHash(NavMeshPath->PathCorridor.Last())));
+	if (CorridorKey == LastRouteCorridorKey)
+	{
+		return;
+	}
+	LastRouteCorridorKey = CorridorKey;
 	FString Lanes;
 	int32 LastLane = 0;
 	for (const NavNodeRef Poly : NavMeshPath->PathCorridor)
@@ -1022,6 +1043,25 @@ void AAIBBotController::ClearFlankLatch(const TCHAR* Why)
 	FlankLatch.Clear();
 }
 
+bool AAIBBotController::HasLineOfSightToBelief() const
+{
+	const UWorld* World = GetWorld();
+	const APawn* MyPawn = GetPawn();
+	const AActor* Target = Sensorium.GetVisibleTarget();
+	if (!World || !MyPawn || !Target)
+	{
+		return false;
+	}
+	FVector Eyes;
+	FRotator EyesRotation;
+	MyPawn->GetActorEyesViewPoint(Eyes, EyesRotation);
+	const float EyeZ = Eyes.Z - MyPawn->GetActorLocation().Z;
+	FCollisionQueryParams TraceParams(SCENE_QUERY_STAT(AIBBeliefLineOfSight), /*bTraceComplex=*/false, MyPawn);
+	TraceParams.AddIgnoredActor(Target); // the wall is the question, not his capsule
+	return !World->LineTraceTestByChannel(Eyes, Sensorium.GetLastSeenLocation() + FVector(0.f, 0.f, EyeZ),
+		static_cast<ECollisionChannel>(FMath::Clamp<int32>(BlastPerceivabilityChannel, 0, ECC_MAX - 1)), TraceParams);
+}
+
 void AAIBBotController::NoteCurrentTacticFailed(const TCHAR* Why)
 {
 	const UWorld* World = GetWorld();
@@ -1074,7 +1114,10 @@ void AAIBBotController::SearchFlankPoint(const FVector& Belief, double NowSecond
 		{
 			continue;
 		}
-		const FPathFindingResult Found = NavSys->FindPathSync(FPathFindingQuery(this, *NavData, Feet, OnNav.Location));
+		// AIB25 W-REVIEW M3: the bot's OWN filter, or the detour clamp certifies a route
+		// the filtered mover will not take.
+		const FPathFindingResult Found = NavSys->FindPathSync(FPathFindingQuery(this, *NavData, Feet, OnNav.Location,
+			UNavigationQueryFilter::GetQueryFilter(*NavData, this, DefaultNavigationFilterClass)));
 		if (!Found.IsSuccessful() || !Found.Path.IsValid() || Found.Path->IsPartial())
 		{
 			continue;
@@ -1131,11 +1174,21 @@ void AAIBBotController::ThinkTactic(FGameplayTag Ambition, double NowSeconds)
 	if (Sensorium.HasVisibleTarget())
 	{
 		const FVector Belief = Sensorium.GetLastSeenLocation();
-		if (FlankLatch.IsStale(Belief, ResolvedTier.FlankRadiusUU))
+		// W-REVIEW M3: the enemy CLOSING is as stale as the belief drifting — a knife
+		// fight is not walked away from for a commit window. No search either: inside
+		// half the ring the detour clamp rejects every sample, eight pathfinds for nothing.
+		const bool bTooClose = LastFacts.DistToTargetUU >= 0.f
+			&& LastFacts.DistToTargetUU < ResolvedTier.FlankRadiusUU * 0.5f;
+		if (bTooClose)
+		{
+			ClearFlankLatch(TEXT("the enemy closed"));
+		}
+		else if (FlankLatch.IsStale(Belief, ResolvedTier.FlankRadiusUU))
 		{
 			ClearFlankLatch(TEXT("the belief drifted"));
 		}
-		if (!FlankLatch.bHasPoint && !TacticEngine->IsAmbitionSuppressed(AIBTags::Tactic_Flank, NowSeconds))
+		if (!bTooClose && !FlankLatch.bHasPoint && !FlankLatch.bDone
+			&& !TacticEngine->IsAmbitionSuppressed(AIBTags::Tactic_Flank, NowSeconds))
 		{
 			SearchFlankPoint(Belief, NowSeconds);
 		}
@@ -1150,10 +1203,15 @@ void AAIBBotController::ThinkTactic(FGameplayTag Ambition, double NowSeconds)
 		Point.DistanceUU = FlankLatch.DetourUU;
 	}
 
+	const FGameplayTag Before = TacticEngine->GetCurrent();
 	const FGameplayTag Tactic = TacticEngine->Rescore(TacticFacts, NowSeconds);
 	if (Tactic != AIBTags::Tactic_Hold)
 	{
 		HoldSinceSeconds = -1.0;
+	}
+	if (Before == AIBTags::Tactic_Flank && Tactic != AIBTags::Tactic_Flank)
+	{
+		ClearFlankLatch(TEXT("switched away from Flank")); // M3: the point and the done-mark both
 	}
 	if (Tactic.IsValid() && Tactic != LastLoggedTactic)
 	{
@@ -1187,6 +1245,10 @@ void AAIBBotController::Think()
 		// W-REVIEW #3 H2: Stranded mirrors the latch each sample — Egress sets it, the
 		// cooldown or a completed full-path move drops it.
 		SetStillTactic(EAIBStillTactic::Stranded, IslandLatch.IsStranded(Now));
+		// Phase 13 W-REVIEW M6: a still sample with a move REQUEST in flight is the crowd
+		// braking the body (its velocity is the input — zero velocity, zero input), not
+		// the bot standing: named Crowd so the idle gate does not read separation as idle.
+		SetStillTactic(EAIBStillTactic::Crowd, bStill && GetMoveStatus() == EPathFollowingStatus::Moving);
 		if (bStill && IdleSinceSeconds < 0.0)
 		{
 			IdleSinceSeconds = Now;
@@ -1279,10 +1341,12 @@ void AAIBBotController::Think()
 			{
 				return;
 			}
+			// W-REVIEW H1: a candidate the bot sensed ITSELF (any door, damage included)
+			// takes no report — the sensorium refuses it too; this only saves the stimulus.
 			for (const FAIBTargetCandidate& C : Sensorium.GetCandidates())
 			{
 				if (C.Actor.Get() == Target
-					&& (C.bSightCurrent || C.bSightPending || C.LastSeenAtSeconds >= Report.SeenAtSeconds))
+					&& (C.bSelfSensed || C.bSightCurrent || C.bSightPending || C.LastSeenAtSeconds >= Report.SeenAtSeconds))
 				{
 					return;
 				}
@@ -1427,19 +1491,35 @@ void AAIBBotController::Think()
 		// AIB26 — THE REPLAY LINE, one per decision, keyed on the stable slot. Everything
 		// on it is deterministic given the seed: no wall clock, no absolutes, no object
 		// ids; scores at 3 dp; the facts as a quantised CRC. Two `-AIBSeed=N` runs sorted
-		// on (bot, seq) must diff empty.
+		// on (bot, seq) must diff empty. W-REVIEW L6: Verbose unless `-AIBReplay` (ten
+		// lines a second per bot is the replay's instrument, not the match log's); L7:
+		// the tactic's commit ticks and its last switch reason ride at the end.
 		{
+			static const bool bReplay = FParse::Param(FCommandLine::Get(), TEXT("AIBReplay"));
 			const FAIBScoredAmbition& RunnerUp = AmbitionEngine->GetLastRunnerUp();
 			const FGameplayTag Tactic = TacticEngine ? TacticEngine->GetCurrent() : FGameplayTag();
-			const double CommitLeft = AmbitionEngine->GetCommitEndSeconds() - Now;
-			const int32 CommitTicks = CommitLeft > 0.0
-				? FMath::CeilToInt(CommitLeft / FMath::Max(ThinkIntervalSeconds, 0.02f)) : 0;
-			UE_LOG(LogAIBot, Log, TEXT("AIBot: decide bot=%d seq=%u want=%s s=%.3f over=%s rs=%.3f tac=%s ts=%.3f commit=%d rng=%d facts=%08x"),
+			const auto TicksLeft = [&](double CommitEndSeconds)
+			{
+				const double Left = CommitEndSeconds - Now;
+				return Left > 0.0 ? FMath::CeilToInt(Left / FMath::Max(ThinkIntervalSeconds, 0.02f)) : 0;
+			};
+			const FString Line = FString::Printf(
+				TEXT("AIBot: decide bot=%d seq=%u want=%s s=%.3f over=%s rs=%.3f tac=%s ts=%.3f commit=%d rng=%d facts=%08x tcommit=%d treason=%s"),
 				BotIndex, ++DecisionSeq,
 				Ambition.IsValid() ? *Ambition.ToString() : TEXT("none"), AmbitionEngine->GetCurrentScore(),
 				RunnerUp.Tag.IsValid() ? *RunnerUp.Tag.ToString() : TEXT("none"), RunnerUp.Score,
 				Tactic.IsValid() ? *Tactic.ToString() : TEXT("none"), TacticEngine ? TacticEngine->GetCurrentScore() : 0.f,
-				CommitTicks, DecisionRandomDraws, UAIBAmbitionEngine::FactsCrc32(LastFacts));
+				TicksLeft(AmbitionEngine->GetCommitEndSeconds()), DecisionRandomDraws, UAIBAmbitionEngine::FactsCrc32(LastFacts),
+				TacticEngine ? TicksLeft(TacticEngine->GetCommitEndSeconds()) : 0,
+				UAIBAmbitionEngine::SwitchReasonName(TacticEngine ? TacticEngine->GetLastSwitchReason() : EAIBSwitchReason::None));
+			if (bReplay)
+			{
+				UE_LOG(LogAIBot, Log, TEXT("%s"), *Line);
+			}
+			else
+			{
+				UE_LOG(LogAIBot, Verbose, TEXT("%s"), *Line);
+			}
 		}
 
 		// PHASE 12 — TARGET CLAIMS AT THINK-COMMIT (AIB23 W-AUDIT): grant/renew when Engage
@@ -1450,6 +1530,9 @@ void AAIBBotController::Think()
 		if (Team && GetPawn())
 		{
 			AActor* Held = Sensorium.GetVisibleTarget();
+			// W-REVIEW M3: the exit release is a DWELL on a non-Engage ambition, never a
+			// blink — Engage resets it; TryClaimTarget below releases on a SWITCH (M2).
+			Team->NoteTargetClaimAmbition(*this, Held && Ambition == AIBTags::Ambition_Engage);
 			if (Held && Ambition == AIBTags::Ambition_Engage)
 			{
 				int32 Holders = 0;
@@ -1474,7 +1557,6 @@ void AAIBBotController::Think()
 			}
 			else
 			{
-				Team->ReleaseTargetClaimsOnExit(*this, GetTierRow().ClaimMinHoldSeconds);
 				if (Held && LastFacts.bTargetClaimSaturated && LastDeniedTarget != Held)
 				{
 					// The third bot looked elsewhere: name where. "AIBot.Ambition.Roam" -> roam.

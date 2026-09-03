@@ -9,6 +9,8 @@ AAIBLaneVolume::AAIBLaneVolume()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	PrimaryActorTick.bStartWithTickEnabled = false;
+	// AIB25 L7: the lane paint is server navmesh only — a client never loads it.
+	bNetLoadOnClient = false;
 
 	// The modifier reads its bounds from registered, collision-enabled, nav-relevant
 	// primitives on the owner (NavModifierComponent.cpp CalculateBounds); QueryOnly with
