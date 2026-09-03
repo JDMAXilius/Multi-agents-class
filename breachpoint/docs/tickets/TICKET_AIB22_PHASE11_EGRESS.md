@@ -804,3 +804,65 @@ between this ticket and its HARD bar, and it is a bigger number than idle ever w
 
 Evidence: `Tools/aib/baselines/aib22-{spillway,arena01}-verify-v7.json`,
 `Tools/Logs/aib22-verify-*-v7-*.log`.
+
+### 3 Sep (cloud) — reading v7 back: two defects of mine fixed, and one correction to the verdict
+
+**Two defects in my own v7 code, both real, both fixed (WRITTEN, NOT COMPILED):**
+
+1. **(c) could not be judged because I never gave it a voice.** The blacklist path emitted
+   nothing, so "zero blacklist-shaped tokens across ten logs" was unfalsifiable — exactly
+   the failure AIB19's own log-level ruling names, which I wrote and then broke. Two lines
+   now: the FAILURE at `Log` (`lip blacklisted (x,y,z) for 20s — the step-off did not
+   leave the island`), which is the countable event, and the REFUSAL at `Verbose` (`lip
+   refused … trying another door`), which is the other half — a blacklist that never
+   refuses anything is doing nothing, and only that line separates the two.
+2. **The drift reflex threw away `MoveToLocation`'s result and printed its line anyway**,
+   so a REFUSED drift would have reported itself as a walk. It now branches: `drift
+   REFUSED — …reachable draw the mover would not path (F7)` against the walk line. This
+   matters for the point below.
+
+**A correction to the v7 verdict, from the committed baselines.** The write-up calls
+`stuck_seconds` "the headline defect" and says it is not new from (a)-(c) — the second half
+is right and the first is worth restating, because the numbers locate the regression
+precisely and v7 is not where it happened:
+
+| median per bot | v5 | v6 | **v7** |
+|---|---|---|---|
+| `stuck_seconds` Spillway | 19.7 | 85.9 | **66.8** |
+| `stuck_seconds` Arena01 | 14.4 | 82.2 | **56.6** |
+| `stall_abandoned_count` Spillway | 2 | 18 | **12** |
+| `stall_abandoned_count` Arena01 | 2 | 16 | **9** |
+
+`stuck_seconds` went 4-6x at **v6**, not v7 — the regression window is v5→v6 (fix #6/#7/#8
+and the crowd re-enable), and **v7 moved it back down 22% / 31%**. So the next pass should
+bisect v5→v6, not audit (a)-(c). It is the right headline; it is a v6 headline.
+
+**And one thing the write-up did not flag, which IS a v7 regression and is probably mine:**
+
+| median per bot | v5 | v6 | **v7** |
+|---|---|---|---|
+| `no_path_requests` Arena01 | 0 | 1 | **22** |
+| `no_path_requests` Spillway | 0 | 0 | **0** |
+
+Arena01 only, and Arena01 is the map AIB28 has open for missing drop links. **Prime
+suspect: the drift reflex**, by a mechanism that is not the obvious one — it does not log
+through `MoveToNavPoint`, so it cannot inflate this counter directly. What it can do is
+put bots somewhere new: a bot that used to STAND in a well-connected spot now walks
+1200 uu, and on a map with known connectivity holes the TASK moves issued from where it
+lands are what get refused. `GetRandomReachablePointInRadius` promises reachability from
+where the bot is standing, which is a weaker promise than it sounds on a map with islands.
+
+That is a hypothesis with a mechanism, not a diagnosis. What settles it, cheaply:
+- the new `drift REFUSED` line — if drifts themselves are being refused on Arena01, the
+  draw is landing on unreachable ground and the fix is the draw, not the reflex;
+- correlating `move REFUSED` timestamps against `drift` timestamps per bot;
+- one run with the reflex disabled (raise `DriftAfterIdleSeconds` past the match length).
+
+If it is the drift reflex, the fix is a tighter draw — path-test the point, or refuse to
+drift while the island latch reads `bOnIsland` (today only `Stranded` is excluded).
+
+**Parser (aib-editor's, filed not edited — law 5):** `80_aib_metrics.py` has no counter for
+any of v7's new lines. To judge the next run it needs `drift`, `drift REFUSED`, `lip
+blacklisted`, and `draw reflex` alongside the existing ones — without them (a) and (c) can
+only be read by grepping raw logs, which is how (c) went unjudgeable this round.
+

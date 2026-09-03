@@ -1546,11 +1546,26 @@ void AAIBBotController::Think()
 				if (NavSys && NavSys->GetRandomReachablePointInRadius(
 						DriftPawn->GetActorLocation(), AIB::DriftRadiusUU, Drift))
 				{
-					MoveToLocation(Drift.Location, AIB::DriftAcceptanceUU);
-					UE_LOG(LogAIBot, Log,
-						TEXT("AIBot: %s t=%.1f drift — %.1fs still with no tactic, walking %.0fuu"),
-						*GetName(), Now, static_cast<float>(Now - IdleSinceSeconds),
+					// v7 CORRECTION: the result was thrown away and the line printed
+					// regardless, so a REFUSED drift would have reported itself as a walk.
+					// A drift that cannot path is a fact about the map worth its own line —
+					// the same F7 rule every other mover here follows.
+					const EPathFollowingRequestResult::Type Result =
+						MoveToLocation(Drift.Location, AIB::DriftAcceptanceUU);
+					const float WalkUU = static_cast<float>(
 						FVector::Dist(DriftPawn->GetActorLocation(), Drift.Location));
+					if (Result == EPathFollowingRequestResult::Failed)
+					{
+						UE_LOG(LogAIBot, Log,
+							TEXT("AIBot: %s t=%.1f drift REFUSED — %.0fuu, reachable draw the mover would not path (F7)"),
+							*GetName(), Now, WalkUU);
+					}
+					else
+					{
+						UE_LOG(LogAIBot, Log,
+							TEXT("AIBot: %s t=%.1f drift — %.1fs still with no tactic, walking %.0fuu"),
+							*GetName(), Now, static_cast<float>(Now - IdleSinceSeconds), WalkUU);
+					}
 				}
 			}
 		}

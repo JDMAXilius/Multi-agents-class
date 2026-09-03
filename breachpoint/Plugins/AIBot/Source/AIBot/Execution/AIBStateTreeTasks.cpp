@@ -721,6 +721,12 @@ namespace
 			const FVector Candidate(Probe.X, Probe.Y, Below.Location.Z);
 			if (Bot.GetIslandLatch().RefusesLip(Candidate, WorldSeconds(Bot), AIB::SameLipUU))
 			{
+				// The other half of the evidence: a blacklist that never refuses anything
+				// is doing nothing, and only this line can tell the two apart. Verbose —
+				// the fan runs per ray, and the FAILURE above is the countable event.
+				UE_LOG(LogAIBot, Verbose,
+					TEXT("AIBot: %s lip refused (%.0f,%.0f,%.0f) — blacklisted, trying another door"),
+					*Bot.GetName(), Candidate.X, Candidate.Y, Candidate.Z);
 				continue;
 			}
 			const float OffsetSq = static_cast<float>(FVector::DistSquared2D(Probe, Below.Location));
@@ -821,6 +827,17 @@ namespace
 			// AIB22 (c): the door did not open. Refuse it for a while so the next entry's
 			// fan — deterministic from the same feet — offers a DIFFERENT one instead of
 			// this one again. A horizontal walk has no pending lip and records nothing.
+			// v7 CORRECTION: this path was SILENT, so the run could not tell "never needed"
+			// from "never fires" — zero blacklist-shaped tokens across ten logs and the
+			// gate was unjudgeable. AIB19's own lesson, which I wrote and then broke: a
+			// diagnostic nobody's default verbosity prints is not an instrument. At Log.
+			if (Bot.GetIslandLatch().bHasPendingLip)
+			{
+				const FVector& Door = Bot.GetIslandLatch().PendingLip;
+				UE_LOG(LogAIBot, Log,
+					TEXT("AIBot: %s t=%.1f lip blacklisted (%.0f,%.0f,%.0f) for %.0fs — the step-off did not leave the island"),
+					*Bot.GetName(), WorldSeconds(Bot), Door.X, Door.Y, Door.Z, AIB::FailedLipRefuseSeconds);
+			}
 			Bot.GetIslandLatch().NotePendingLipFailed(WorldSeconds(Bot), AIB::FailedLipRefuseSeconds);
 			Bot.GetIslandLatch().Strand(WorldSeconds(Bot), Bot.GetTierRow().EgressCooldownSeconds);
 			return -1;
