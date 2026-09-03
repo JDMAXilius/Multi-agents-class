@@ -333,3 +333,12 @@ Refined steps (replace §Steps):
   lane B's Egress lip-walk has the same M3 ratchet shape (:2226) — folded into the lane B fix.
 - 2026-09-02 lane A fix specs (lead): 181 success / 0 fail, `AIBot.Sim.SweepBudget` now 8 cases
   incl. the negative task-held one (Tools/Logs/specs-20260902-234905.log).
+- 2026-09-03 lane B fix packet (aib-builder) written; building. H1 Wander walks the LONGEST
+  partial when no full draw exists, Egress failures arm `EgressCooldownSeconds` (5) via
+  `ClearWithCooldown`, both failure delays 0.1 s; H2 no CostLimit, `FAIBOnIslandCondition`
+  confirms the latch with one cost-unlimited `TestPathSync` feet -> recorded spawn (fallback:
+  latch alone, logged); M3 `OnMoveCompleted` clears on `DidMoveReachGoal`, `LatchMaxAgeSeconds`
+  10; M4 airborne only after step-off; M5 lip filtered by `FAIBTraversalPolicy::Choose`, probe
+  Z from `SafeDropUU x TraversalCommitFraction`; M6 `ArmStopOnLanding` consumed by Think if the
+  move request id is unchanged; L7 probe box below the point; L9 spec now 10 cases. Known
+  ceiling: a single-poly island redraws in place every 0.25 s until the gate confirms.
