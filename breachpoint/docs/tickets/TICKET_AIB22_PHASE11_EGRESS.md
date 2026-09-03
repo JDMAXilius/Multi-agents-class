@@ -294,3 +294,32 @@ Refined steps (replace §Steps):
 - 2026-09-02 lane B specs (lead): `Tools/run-specs.sh AIBot` 179 success / 0 fail incl. the six
   `AIBot.Sim.IslandLatch` cases (Tools/Logs/specs-20260902-234016.log). Fix packet for the lane A
   review dispatched; lane B under W-REVIEW.
+- 2026-09-02 W-REVIEW lane B (aib-critic on d7d68d6a) — two HIGH, four MEDIUM, three LOW; fix
+  packet follows the lane A fix (same files). Rulings (lead):
+  H1 Egress<->Wander is a 4 s standing oscillator: no lip -> clear -> 2 s stand -> 3 bad draws
+     -> latch -> 2 s stand -> Egress ... (culvert case: nothing ≥120 below, every upward draw
+     partial). RULING: Wander NEVER fails with a goal in hand — when no full path exists it
+     walks the LONGEST partial draw (on an island that is motion toward the edge, which is the
+     point); an Egress failure arms a controller `EgressCooldownSeconds` (5) during which draws
+     do not latch; both failure delays 2.0 -> 0.1 s.
+  H2 `CostLimit = 4 x WanderRadius` makes "far but reachable" read as partial -> false latch on
+     open ground near any tier stack (~p^3 per entry), and Egress cashes a false latch out as a
+     real step-off — herding healthy bots into the culvert. RULING: no cost limit on the draw's
+     path test; the latch is a HYPOTHESIS — `FAIBOnIslandCondition` confirms it with one
+     cost-unlimited `TestPathSync` from the feet to the bot's own spawn point (recorded in
+     OnPossess: reachable ground by definition); no full path = island, else clear + cooldown.
+  M3 latch is stale across ambitions (latched in the culvert, chases up to T2, steps off T2).
+     RULING: any COMPLETED full-path move (any state) clears it; `LatchMaxAgeSeconds` 10.
+  M4 `bAirborneSeen` without a `bSteppedOff` guard — one ungrounded frame on the walk aborts
+     the tactic. RULING: guard on `bSteppedOff`.
+  M5 no maximum drop; `FAIBTraversalPolicy` bypassed — the only bound is ProbeExtent.Z = 1000 by
+     accident (policy says 800). RULING: Egress asks `Choose(Drop)` for each candidate lip and
+     skips refused ones; the probe extent is derived from the policy's limit, not restated.
+  M6 ExitState mid-fall leaves the unpathed MoveRequest alive after landing. RULING: controller
+     one-shot `bStopOnLanding` set by ExitState when airborne, consumed by Think on the first
+     grounded sample (StopMovement only if no newer move was issued).
+  L7 projection box finds same-level neighbours behind thin walls (lip invisible). RULING:
+     probe box centred BELOW the point (z - limit/2, half-extent limit/2) so only lower nav
+     qualifies. L8 ramp heads PASS (merged cluster, no hit). L9 the IslandLatch re-entry case
+     has the same defect as the sweep one — negative cases added to BOTH specs.
+  PASS verified: server-only, fairness, controller-held latch survives completion transitions.
