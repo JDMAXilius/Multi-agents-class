@@ -1164,13 +1164,26 @@ void AAIBBotController::ThinkTactic(FGameplayTag Ambition, double NowSeconds)
 		// will resume it) survives the excursion; a latch that outlives the tier's
 		// FlankCommitSeconds ages out of the hold in the facts builder, and THEN a
 		// non-Engage ambition really does end the fight and clears here.
-		if (Ambition != AIBTags::Ambition_Search && !LastFacts.bFlankHolding)
+		const bool bSameFight = Ambition == AIBTags::Ambition_Search || LastFacts.bFlankHolding;
+		if (!bSameFight)
 		{
 			ClearFlankLatch(TEXT("the fight ended"));
 			TacticEngine->ResetArbitration();
 			LastLoggedTactic = FGameplayTag();
 		}
-		HoldSinceSeconds = -1.0;
+		// AND THE HOLD CLOCK OBEYS THE SAME RULE — which it did not, including after I
+		// fixed the latch beside it (AIB26 v7 read-back). This line was unconditional, so
+		// every excursion out of Engage reset the clock to -1, INCLUDING the Search flap
+		// the comment above calls the same fight. With ambition switches at 42-45 per
+		// bot-minute and veto at 60%, a stand could never survive to HoldMaxSeconds:
+		// measured `hold_seconds` 0.000 on both maps and `hold over` 0 everywhere, which
+		// the v7 write-up correctly called the more useful clue about why flanks never
+		// complete. Two clears, one rule, one place — fixing only the latch left the hold
+		// broken by the identical mechanism, which is the mistake worth not repeating.
+		if (!bSameFight)
+		{
+			HoldSinceSeconds = -1.0;
+		}
 		return;
 	}
 

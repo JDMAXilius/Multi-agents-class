@@ -219,3 +219,33 @@ will not clear from inside this ticket.
 blocked behind a game-side defect this ticket cannot touch. Recommend the next pass start
 at `hold_seconds == 0` rather than at the clear, and fix the parser first so the run can
 be judged from its own summary.
+
+### 3 Sep (cloud) — `hold_seconds == 0` traced, and it is a miss in my own v7 fix
+
+The v7 write-up recommended the next pass start at `hold_seconds == 0` rather than at the
+flank clear. Following that: **the two are the same bug, and I fixed one of them and left
+the other standing right beside it.**
+
+`ThinkTactic`'s non-Engage branch carries two clears. The comment above them states the
+rule the whole block exists for — *"Engage flaps by design (a 0.2 s belief loss lands in
+Search and back), so Search keeps the tactic state; anything else is a different life of
+the fight."* v7 made the FLANK latch obey that. The line underneath it,
+`HoldSinceSeconds = -1.0;`, stayed **unconditional** — so every excursion out of Engage
+reset the hold clock, *including the Search flap the comment calls the same fight*.
+
+With `ambition_switches` at 42-45 per bot-minute and veto at 60%, a stand cannot survive
+to `HoldMaxSeconds` under that: the clock is wiped several times a second of standing.
+Hence `hold over` 0 everywhere and `hold_seconds` 0.000 on both maps — not a Hold that is
+never elected (v6 counted `Hold first` 0-2 per match, so it IS elected), but a Hold whose
+clock can never mature. And since F8-5's hold is the mechanism a flank was supposed to be
+protected by, a hold that never accumulates is a coherent explanation for flanks that
+start in quantity and never complete.
+
+**Fixed:** both clears now read one `bSameFight` predicate, in one place. Same rule, same
+line, so the next person cannot fix half of it — which is exactly what I did.
+
+**WRITTEN, NOT COMPILED.** v8 gates for this: `hold_seconds` > 0 and `hold over` lines
+present at all (the floor is "the clock matures ever", not a target number); `flank over`
+above v7's 1/3; and watch that Hold does not now overstay — `HoldMaxSeconds` is the bound,
+and if stands get long the tier row is the knob, not this predicate.
+
