@@ -83,3 +83,5 @@ DecisionRandom) · D aib-editor (decide regex + --replay-diff, AIB_Tactics.csv).
   tactic -> / flank / hold landed (lead). Gaps: `SetMatchSeed`/`SetBotIndex` callers = AIB25
   lane A's manager (merged) + BNGameMode seam (bn-builder in flight); AIB25 lane B's list also
   names `Brain/AIBTactic.h` and the Engage tasks — built HERE, lane B must not rebuild them.
+- 2026-09-03 merged into main (4b84c050; three additive conflicts kept both: row fields, the two
+  controller structs, includes). Building. ST_AIBBot rebuild queued for the next editor session.

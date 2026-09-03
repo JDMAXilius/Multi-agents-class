@@ -85,3 +85,4 @@ builds (shared files).
   Specs `AIBot.Sim.TargetClaims` 8 + `AIBot.Sim.TeamMind` 8. Tree unchanged. Off-list but
   required: `Brain/AIBConsideration.*` selector + one Engage consideration (Phase 15 touches the
   same block — merge by hand). The Wander draw edit overlaps AIB22 fix #4 R6/R7.
+- 2026-09-03 merged into main (054af0b7; one additive row-field conflict). Building with Phase 15.

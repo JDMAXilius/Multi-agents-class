@@ -88,3 +88,8 @@ phase's baseline. Metrics for this phase land BEFORE its behaviour (§4 of the r
   Contract gaps: BNGameMode -> `SetMatchSeed` (lead, Source/BreachpointNext); aib-editor
   `land_spillway.py` lane volumes; parser regexes (lead). Lanes B/C/D (heat/flank/tactics)
   are the next packets.
+- 2026-09-03 lane A compiles (rung 1 Editor + Game PASS with fix #4 + Phase 13 + retirement),
+  `AIBot.Sim.RouteBias` 8 / 0. BNGameMode seam merged (9c74bb0d): `InitGame` hands
+  `Hash(MapName, UtcTicks)` to `UAIBBotManager::SetMatchSeed` unless `-AIBSeed=` is on the command
+  line; one `BNGameMode: match seed %d (source=%s)` line. Parser regexes for the three route
+  lines landed. Building with Phases 12/15.

@@ -96,3 +96,10 @@ phase's baseline. Metrics for this phase land BEFORE its behaviour (§4 of the r
   `[/Script/AIModule.CrowdManager] bResolveCollisions=True SeparationDirClamp=0.2` added to
   DefaultEngine.ini (contract gap closed). Players-as-crowd-obstacles + BNGameMode match-seed
   hook dispatched to bn-builder (worktree). Build running.
+- 2026-09-03 rung 1 (Editor + Game PASS; server unbuildable here) and rung 2 on main with AIB22
+  fix #4 + Phase 14 + Phase 13 + the BN retirement: AIBot 206 / 0 (incl. `AIBot.Sim.Separation`
+  9, `AIBot.Sim.RouteBias` 8; Tools/Logs/specs-20260903-063537.log), BreachpointNext 36 / 0.
+  Game-side hooks merged (9c74bb0d): `ABNCharacter` is an `ICrowdAgentInterface` registered with
+  `UCrowdManager` only when HasAuthority && APlayerController (bots never double-register),
+  unregistered on UnPossessed/EndPlay; verified against 5.8 source that a non-follower agent is
+  a moving obstacle the bots see and is never steered. Building.
