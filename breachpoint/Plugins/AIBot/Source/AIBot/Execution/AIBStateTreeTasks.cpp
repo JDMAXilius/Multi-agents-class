@@ -392,8 +392,14 @@ namespace
 				// Yaw only, and LEVEL: a walking body does not pitch. Steering at a point
 				// would tilt the head at the floor on a downhill and at the sky on a ramp,
 				// which is also where the aim would start from if a target appeared.
+				//
+				// Plus the SWEEP'S PAN (AIB22, F9): a searching bot looks about as it walks.
+				// The offset is SweepLook's, applied HERE rather than written by it, because
+				// two writers on one yaw fight per tick — this block would have dragged any
+				// separately-written pan back to the path at 420 deg/s. Zero for every mover
+				// that is not walking beside a sweep.
 				const FRotator Current = Bot.GetControlRotation();
-				const FRotator Desired(0.f, Travel.Rotation().Yaw, 0.f);
+				const FRotator Desired(0.f, Travel.Rotation().Yaw + Bot.GetTravelPanDegrees(), 0.f);
 				const FRotator Stepped = FMath::RInterpConstantTo(
 					FRotator(0.f, Current.Yaw, 0.f), Desired, DeltaTime,
 					AIB::TravelFacingTurnRateDeg);
@@ -1368,6 +1374,8 @@ EStateTreeRunStatus FAIBMoveToLastKnownTask::EnterState(FStateTreeExecutionConte
 		== EPathFollowingRequestResult::Failed)
 	{
 		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s cannot path to the last-known spot — search fails loudly (F7). %s"), *Bot->GetName(), *DescribeMoveFailure(*Bot, LastKnown));
+		// A refused path re-refuses every failure delay while the lead stays fresh (H1).
+		Bot->ForgetSearchMemory(TEXT("path refused"), 0.f);
 		return EStateTreeRunStatus::Failed;
 	}
 	return EStateTreeRunStatus::Running;
@@ -1399,24 +1407,53 @@ EStateTreeRunStatus FAIBMoveToLastKnownTask::Tick(FStateTreeExecutionContext& Co
 	// arrival, which is also when SweepLook's hunt starts mattering.
 	TickLocomotion(*Bot, InstanceData.Locomotion, LastKnown, InstanceData.AcceptanceRadiusUU, DeltaTime);
 
-	// Arrived: STAND at the post and let SweepLook hunt. The branch ends when the
-	// memory stales (above), someone appears (Succeeded), or the want moves on. Short
-	// of the post, no-progress means the spot is unreachable (a catwalk memory, a nav
-	// hole): fail LOUDLY instead of "searching" motionless for the memory window (H3).
+	// Arrived: stand at the post while SweepLook spends the controller's sweep budget,
+	// then END THE WANT (AIB22 H1/F9) — a post that yielded nothing is a finished
+	// search, and standing there until the memory ages is exactly the stand F9 bans.
+	// Short of the post, no-progress means the spot is unreachable (a catwalk memory,
+	// a nav hole) — or the mover has already gone Idle at the end of a PARTIAL path
+	// (islands do not refuse, they deliver you to the edge: the audit's corrected
+	// premise), which needs no 8s to diagnose. Either way: forget the lead and fail
+	// LOUDLY instead of "searching" motionless for the memory window (H3).
 	const APawn* Pawn = Bot->GetPawn();
-	if (Pawn && !IsWithin(*Bot, LastKnown, InstanceData.AcceptanceRadiusUU))
+	if (!Pawn)
 	{
-		const float DistNow = FVector::Dist(Pawn->GetActorLocation(), LastKnown);
+		return EStateTreeRunStatus::Running;
+	}
+	const float DistNow = FVector::Dist(Pawn->GetActorLocation(), LastKnown);
+	const bool bMoverIdle = Bot->GetMoveStatus() == EPathFollowingStatus::Idle;
+	// The follower's reach test adds the agent radius to the acceptance radius, so an
+	// honest arrival can stand a body-width outside IsWithin: the mover Idle inside 1.5x
+	// acceptance IS the post (the sibling module's compiled band), not a short path.
+	const bool bAtPost = DistNow <= InstanceData.AcceptanceRadiusUU
+		|| (bMoverIdle && DistNow <= InstanceData.AcceptanceRadiusUU * 1.5f);
+	if (!bAtPost)
+	{
 		if (DistNow < InstanceData.ClosestSoFarUU - 1.f)
 		{
 			InstanceData.ClosestSoFarUU = DistNow;
 			InstanceData.SecondsWithoutProgress = 0.f;
 		}
-		else if ((InstanceData.SecondsWithoutProgress += DeltaTime) >= InstanceData.GiveUpAfterNoProgressSeconds)
+		else
 		{
-			UE_LOG(LogAIBot, Log, TEXT("AIBot: %s cannot reach the last-known spot — giving up the search loudly (F7)."), *Bot->GetName());
-			return EStateTreeRunStatus::Failed;
+			InstanceData.SecondsWithoutProgress += DeltaTime;
+			// 0.5s of grace on the Idle read: the request is synchronous, but one tick of
+			// engine ordering between issue and follow is not worth a false give-up.
+			const bool bMoverDoneShort = bMoverIdle && InstanceData.SecondsWithoutProgress >= 0.5f;
+			if (bMoverDoneShort || InstanceData.SecondsWithoutProgress >= InstanceData.GiveUpAfterNoProgressSeconds)
+			{
+				UE_LOG(LogAIBot, Log, TEXT("AIBot: %s cannot reach the last-known spot (%.0fuu short, mover %s) — giving up the search loudly (F7)."),
+					*Bot->GetName(), DistNow, bMoverDoneShort ? TEXT("idle") : TEXT("stalled"));
+				Bot->ForgetSearchMemory(bMoverDoneShort ? TEXT("path ended short") : TEXT("no progress"),
+					InstanceData.SecondsWithoutProgress);
+				return EStateTreeRunStatus::Failed;
+			}
 		}
+	}
+	else if (!Bot->GetSweepBudget().HasBudget(Bot->GetTierRow().SweepMaxSeconds))
+	{
+		Bot->ForgetSearchMemory(TEXT("post swept, nothing there"), Bot->GetSweepBudget().SpentSeconds);
+		return EStateTreeRunStatus::Failed;
 	}
 	return EStateTreeRunStatus::Running;
 }
@@ -1443,6 +1480,8 @@ EStateTreeRunStatus FAIBSweepLookTask::EnterState(FStateTreeExecutionContext& Co
 		InstanceData.EnterSeconds = WorldSeconds(*Bot);
 		InstanceData.EnterLocation = Bot->GetPawn() ? Bot->GetPawn()->GetActorLocation() : FVector::ZeroVector;
 		InstanceData.StateName = Bot->GetActiveStateName();
+		// Phase == Arc is the pan's zero crossing: the walk starts looking straight ahead.
+		InstanceData.PanPhaseDegrees = Bot->GetTierRow().SweepArcDegrees;
 	}
 	return EStateTreeRunStatus::Running;
 }
@@ -1450,11 +1489,12 @@ EStateTreeRunStatus FAIBSweepLookTask::EnterState(FStateTreeExecutionContext& Co
 void FAIBSweepLookTask::ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
 {
 	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
-	const AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller);
+	AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller);
 	if (!Bot)
 	{
 		return;
 	}
+	Bot->SetTravelPanDegrees(0.f); // the next state's mover faces its walk, not our pan
 	const double Now = WorldSeconds(*Bot);
 	const APawn* Pawn = Bot->GetPawn();
 	UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f sweep over — %.1fs, moved %.0fuu, state=%s"),
@@ -1465,7 +1505,7 @@ void FAIBSweepLookTask::ExitState(FStateTreeExecutionContext& Context, const FSt
 
 EStateTreeRunStatus FAIBSweepLookTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
 {
-	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	AAIBBotController* Bot = ResolveBot(Context, InstanceData.Controller);
 	APawn* Pawn = Bot ? Bot->GetPawn() : nullptr;
 	if (!Pawn)
@@ -1517,10 +1557,46 @@ EStateTreeRunStatus FAIBSweepLookTask::Tick(FStateTreeExecutionContext& Context,
 		}
 	}
 
-	// THE SWEEP OWNS THE YAW TOO, and says so. It writes the control rotation directly
-	// rather than through SteerControlRotation (it turns at a rate toward no point at
-	// all), so it must claim by hand — otherwise a mover ticking beside it would drag the
-	// body back toward the path and the search would read as a bot shaking its head.
+	// WALKING: NO YAW CLAIM (AIB22 H2, law F9). Before this the sweep claimed the yaw from
+	// tick one, so the mover stood aside and the bot crab-walked to its post spinning. Now
+	// the mover faces its travel and the sweep only BENDS that heading — a bounded pan
+	// handed to TickLocomotion's facing block as an offset (see there for why it is not
+	// written here). "Walking" is the mover's word plus the body's: a request still
+	// running, or real ground speed under it.
+	const FAIBTierRow& Tier = Bot->GetTierRow();
+	const bool bStationary = Bot->GetMoveStatus() == EPathFollowingStatus::Idle
+		&& Pawn->GetVelocity().Size2D() < AIB::TravelFacingMinSpeedUU;
+	if (!bStationary)
+	{
+		InstanceData.PanPhaseDegrees += InstanceData.SweepDegreesPerSecond * DeltaTime;
+		Bot->SetTravelPanDegrees(AIBSweep::PanOffsetDegrees(InstanceData.PanPhaseDegrees, Tier.SweepArcDegrees));
+		return EStateTreeRunStatus::Running;
+	}
+	Bot->SetTravelPanDegrees(0.f);
+
+	// STANDING, mover arrived: the full-circle look — bounded by the CONTROLLER's budget
+	// (H1: instance data is recreated on re-entry, so a budget here refilled itself).
+	// Spent: a no-op that stays Running. Not claiming IS releasing (the claim is a stamp
+	// that lapses in one hold window), and Failed would end the whole state under
+	// Any-completion (H2) — the mover decides what a swept, empty post means.
+	FAIBSweepBudget& Budget = Bot->GetSweepBudget();
+	if (!Budget.HasBudget(Tier.SweepMaxSeconds))
+	{
+		if (!InstanceData.bBudgetSpentLogged)
+		{
+			InstanceData.bBudgetSpentLogged = true;
+			UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f sweep budget spent — %.1fs, releasing yaw"),
+				*Bot->GetName(), WorldSeconds(*Bot), Budget.SpentSeconds);
+		}
+		return EStateTreeRunStatus::Running;
+	}
+	Budget.Spend(DeltaTime);
+
+	// THE STATIONARY SWEEP OWNS THE YAW, and says so. It writes the control rotation
+	// directly rather than through SteerControlRotation (it turns at a rate toward no
+	// point at all), so it must claim by hand — otherwise a mover ticking beside it
+	// would drag the body back toward the path and the search would read as a bot
+	// shaking its head.
 	if (const UWorld* SweepWorld = Bot->GetWorld())
 	{
 		Bot->NoteYawClaimed(SweepWorld->GetTimeSeconds());

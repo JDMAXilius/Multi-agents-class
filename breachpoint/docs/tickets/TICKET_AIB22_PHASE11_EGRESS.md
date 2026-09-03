@@ -236,3 +236,6 @@ Refined steps (replace §Steps):
   `Tests/AIBSweepBudgetSpec.cpp`); `ForgetSearchMemory` uses a const_cast pending a one-line
   `ForgetMemory()` on the sensorium (lane B's serial step); parser's `sweep over` still counts
   task-active seconds — W-VERIFY must key the sweep gate on the new `sweep budget spent` line.
+- 2026-09-02 lane A verified (lead): BreachpointEditor PASS (game/server targets deferred to the
+  lane A+B rung-1); `Tools/run-specs.sh AIBot` 173 success / 0 fail incl. the six new
+  `AIBot.Sim.SweepBudget` cases (Tools/Logs/specs-20260902-232255.log). Lane B dispatched.

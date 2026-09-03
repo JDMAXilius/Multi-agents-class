@@ -38,6 +38,38 @@ enum class EAIBStillTactic : uint8
 	StrafeHold = 1 << 2,
 };
 
+/** AIB22 H1/F9 — the STATIONARY sweep's budget. Held by the controller, never by the
+ *  task: a StateTree recreates task instance data on every completion transition, so a
+ *  budget in SweepLook's scratch refilled each time Search re-entered (the grenade-
+ *  cooldown lesson, again). It bounds a still SPELL — Think clears it on the first sample
+ *  the body moves — so arriving somewhere new earns a new look, re-entering does not.
+ *  Worldless on purpose: the spec drives it with plain seconds. */
+struct AIBOT_API FAIBSweepBudget
+{
+	float SpentSeconds = 0.f;
+
+	bool HasBudget(float MaxSeconds) const { return SpentSeconds < MaxSeconds; }
+	void Spend(float DeltaTime) { SpentSeconds += FMath::Max(DeltaTime, 0.f); }
+	void Reset() { SpentSeconds = 0.f; }
+};
+
+namespace AIBSweep
+{
+	/** The walking pan: a triangle wave in [-Arc, +Arc] over an unwrapped phase in
+	 *  degrees, starting at 0 when Phase == Arc. Continuous, so the mover's facing
+	 *  never sees a jump larger than the sweep rate. */
+	inline float PanOffsetDegrees(float PhaseDegrees, float ArcDegrees)
+	{
+		if (ArcDegrees <= 0.f)
+		{
+			return 0.f;
+		}
+		const float Period = 4.f * ArcDegrees;
+		const float P = FMath::Fmod(FMath::Fmod(PhaseDegrees, Period) + Period, Period);
+		return P < 2.f * ArcDegrees ? P - ArcDegrees : 3.f * ArcDegrees - P;
+	}
+}
+
 /**
  * The HAND. Owns the engine perception (eyes/ears), feeds the sensorium, hosts the brain
  * (Phase 2), runs the executor (Phase 3), presses verbs — and decides nothing itself.
@@ -140,6 +172,23 @@ public:
 			&& (NowSeconds - YawClaimedAtSeconds) <= AIB::YawClaimHoldSeconds;
 	}
 	FRandomStream& GetPolicyRandom() { return PolicyRandom; }
+
+	/** AIB22 H1/F9 — see FAIBSweepBudget. SweepLook spends it only while the body is
+	 *  still; Think resets it the moment the body moves. */
+	FAIBSweepBudget& GetSweepBudget() { return SweepBudget; }
+
+	/** SweepLook's pan while WALKING: the yaw offset the movers' facing block adds to the
+	 *  travel heading (see TickLocomotion). 0 when nothing sweeps; SweepLook zeroes it on
+	 *  exit so no later mover inherits a turned head. Not a yaw claim — the mover still
+	 *  owns the facing; the sweep only bends it. */
+	void SetTravelPanDegrees(float Degrees) { TravelPanDegrees = Degrees; }
+	float GetTravelPanDegrees() const { return TravelPanDegrees; }
+
+	/** AIB22 H1 — END THE WANT. A search that cannot reach its post, or has swept it
+	 *  and found nothing, forgets the lead: MemoryFreshness reads 0 on the next Think,
+	 *  Search vetoes its own commit, and Roam wins — instead of Search re-entering with
+	 *  the same fresh memory every failure delay. Logs the abandonment once. */
+	void ForgetSearchMemory(const TCHAR* Why, float AfterSeconds);
 
 	/** AIB22: see EAIBStillTactic. Idempotent per flag. */
 	void SetStillTactic(EAIBStillTactic Tactic, bool bActive)
@@ -333,6 +382,10 @@ private:
 	double IdleSinceSeconds = -1.0;
 	uint8 StillTactics = 0;
 	uint8 IdleTacticsSeen = 0;
+
+	/** AIB22 H1/F9: see GetSweepBudget / SetTravelPanDegrees. Both die with the body. */
+	FAIBSweepBudget SweepBudget;
+	float TravelPanDegrees = 0.f;
 	FAIBConfidenceState ConfidenceState;
 	FAIBSkillProfile SkillProfile;
 

@@ -269,6 +269,8 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	IdleSinceSeconds = -1.0; // a fresh body has stood still for nothing yet
 	StillTactics = 0;
 	IdleTacticsSeen = 0;
+	SweepBudget.Reset();     // a fresh body has looked at nothing yet (AIB22)
+	TravelPanDegrees = 0.f;
 
 	GetWorldTimerManager().SetTimer(ThinkTimer, this, &AAIBBotController::Think,
 		FMath::Max(ThinkIntervalSeconds, 0.02f), /*bLoop=*/true);
@@ -359,6 +361,8 @@ void AAIBBotController::OnUnPossess()
 	// its last death's beating would flee its first fight (absolute-time stamps included).
 	DamageLedger.Reset();
 	YawClaimedAtSeconds = -1.0;   // an absolute stamp must not cross into a new world
+	SweepBudget.Reset();
+	TravelPanDegrees = 0.f;
 	ConfidenceState = FAIBConfidenceState();
 	AimState = FAIBAimState();
 	MeleeState = FAIBMeleeState();
@@ -447,6 +451,33 @@ void AAIBBotController::NoteCurrentAmbitionFailed()
 FName AAIBBotController::GetActiveStateName() const
 {
 	return Executor ? Executor->GetActiveStateName() : NAME_None;
+}
+
+void AAIBBotController::ForgetSearchMemory(const TCHAR* Why, float AfterSeconds)
+{
+	const FAIBTargetMemory& Memory = Sensorium.Memory();
+	if (Memory.AgeSeconds(GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0) < 0.f)
+	{
+		return; // nothing remembered: nothing to abandon, nothing to log
+	}
+	// The lead's NAME, for the log only: the memory hides its actor by law (F2-A), so
+	// this walks the same read-only belief view the debugger draws. No decision rides it.
+	FString Who = TEXT("the lead");
+	for (const FAIBTargetCandidate& Candidate : Sensorium.GetCandidates())
+	{
+		if (Candidate.Actor.IsValid() && Memory.Remembers(Candidate.Actor.Get()))
+		{
+			Who = Candidate.Actor->GetName();
+			break;
+		}
+	}
+	UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f search abandoned — forgot %s after %.1fs (%s)"),
+		*GetName(), GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0, *Who, AfterSeconds, Why);
+	// Memory() reads const so no actor ever leaves it (F2-A); forgetting is the one write
+	// the OWNER of the sensorium may make, and it is the same call the sensorium's own
+	// Reset makes. DEBT (AIB22 W-BUILD, wave law): a FAIBSensorium::ForgetMemory() one-
+	// liner belongs in the shared header — the next serial step retires this cast.
+	const_cast<FAIBTargetMemory&>(Memory).Forget();
 }
 
 void AAIBBotController::CloseIdleEpisode(double NowSeconds)
@@ -743,6 +774,12 @@ void AAIBBotController::Think()
 			{
 				CloseIdleEpisode(Now);
 			}
+		}
+		// The sweep budget bounds a still SPELL (AIB22 H1): the same sample that says the
+		// body moved is what earns the next stop its own look.
+		if (!bStill)
+		{
+			SweepBudget.Reset();
 		}
 	}
 

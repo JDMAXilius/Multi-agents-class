@@ -70,4 +70,17 @@ struct AIBOT_API FAIBTierRow : public FTableRowBase
 	 *  infinite-sight hole three review passes flagged). */
 	UPROPERTY(EditAnywhere, Category = "Perception")
 	float SightMaxAgeSeconds = 5.f;
+
+	// -- the searching look (AIB22, law F9: motion is the default) ------------------
+	/** Half-width of the pan around the TRAVEL heading while walking (±). The sweep never
+	 *  owns the yaw on the move; it rides the mover's own facing as an offset. */
+	UPROPERTY(EditAnywhere, Category = "Search")
+	float SweepArcDegrees = 60.f;
+
+	/** Ceiling on the stationary full-circle sweep per still spell, accumulated on the
+	 *  CONTROLLER (a StateTree recreates task instance data on every re-entry). Past it
+	 *  the sweep releases the yaw and a search at its post ends the want. 0 = never stand
+	 *  to sweep. Spartan-only project: every tier carries the same value. */
+	UPROPERTY(EditAnywhere, Category = "Search")
+	float SweepMaxSeconds = 2.f;
 };

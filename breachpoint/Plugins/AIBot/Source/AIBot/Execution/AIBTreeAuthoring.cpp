@@ -244,16 +244,24 @@ FString UAIBTreeAuthoring::BuildBotStateTree()
 	AddCompletionTransition(Retreat, Root, EStateTreeTransitionTrigger::OnStateFailed, 0.5f);
 
 	// ---- Search: a fresh memory of someone ---------------------------------------------
-	// Halo's legibility lesson: walk to where they WERE, stand, sweep — reads as hunting.
-	// The mover stands at the post (never completes on arrival); the branch ends when the
-	// memory stales (mover fails), someone appears (mover succeeds), or the want moves on.
+	// Halo's legibility lesson: walk to where they WERE, looking about, and take one
+	// bounded look at the post — reads as hunting. AIB22 (law F9) semantics, same node set:
+	// SweepLook pans ±SweepArcDegrees around the TRAVEL heading while walking and never
+	// claims the yaw on the move; the full-circle sweep runs only once the mover is
+	// standing at the post and only for the controller-held SweepMaxSeconds, after which
+	// the mover FORGETS the lead and fails — as it does on a refused path or a give-up —
+	// so Root cannot re-select Search on the same memory. The branch also ends when the
+	// memory stales, someone appears (mover succeeds), or the want moves on.
 	UStateTreeState& Search = Root.AddChildState(TEXT("Search"));
 	Search.AddEnterCondition<FAIBGateSearchCondition>();
 	Search.AddTask<FAIBAmbitionSentinelTask>();
 	Search.AddTask<FAIBMoveToLastKnownTask>();
 	Search.AddTask<FAIBSweepLookTask>();
 	AddCompletionTransition(Search, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
-	AddCompletionTransition(Search, Root, EStateTreeTransitionTrigger::OnStateFailed, 0.5f);
+	// 0.1s, down from 0.5s (AIB22): every Search failure now forgets the lead first, so
+	// the want it guarded moves on within ONE Think (0.1s) — the delay only has to cover
+	// that, and each extra tenth was dead standing (idle_seconds) after a finished search.
+	AddCompletionTransition(Search, Root, EStateTreeTransitionTrigger::OnStateFailed, 0.1f);
 
 	// ---- Seek: I have somewhere to be — go there ---------------------------------------
 	// The node SET is unchanged from the SeekWeapon authoring on purpose: both structs
