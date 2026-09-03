@@ -132,6 +132,7 @@ RX = {
     "flank_start":    re.compile(_AIB + r"flank starts [—-] point " + _VEC + r" detour (?P<detour>" + _NUM + r")uu"),
     "flank_over":     re.compile(_AIB + r"flank over [—-] (?P<outcome>arrived|stalled) after (?P<seconds>" + _NUM + r")s"),
     "hold_over":      re.compile(_AIB + r"hold over [—-] (?P<seconds>" + _NUM + r")s at station"),
+    "crowd_enabled_late": re.compile(_AIB + r"crowd simulation ENABLED late [—-] on the first on-nav think, (?P<seconds>" + _NUM + r")s after possession"),
     "crowd_disabled": re.compile(r"AIBot: (?P<bot>\S+) crowd simulation DISABLED"),
     "egress_failed":  re.compile(_AIB + r"island egress FAILED [—-] (?P<why>.+)$"),
     "island_egress": re.compile(_AIB + r"island egress [—-] via (?P<via>drop|link|jump|grapple) from " + _VEC + r" after (?P<seconds>" + _NUM + r")s stranded"),

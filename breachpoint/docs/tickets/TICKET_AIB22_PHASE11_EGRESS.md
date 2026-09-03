@@ -632,3 +632,10 @@ Refined steps (replace §Steps):
   generator). Fix #8 (crowd re-enable, no corpse claims, 3 s give-up, Engage floor with melee,
   flank holds Engage) in flight; then the final build, specs, v6 (300 s matches) and the last
   editor session.
+- 2026-09-03 fix #8 merged (bd5a31c5), building: F8-1 crowd re-enabled on the first on-nav
+  Think (`crowd simulation ENABLED late — …`); F8-2 claims refuse corpses (`Dead` result, no
+  line) and the sensorium prunes dead candidates before the pump; F8-3 `MoveGiveUpSeconds` row
+  = 3 s; F8-4 root cause of the 270 s Engage absence was `WeaponCanFight=0` (EMPTY-HANDED
+  cycling, 45–152 lines per match) — Engage now floors at Roam + 0.05 with a target and a melee
+  available, `decide` prints `ammo=`; F8-5 `bFlankHolding` keeps Engage's Sees at 1 while a
+  young latch stands. Tree unchanged. Then: specs, v6 (300 s matches), the last editor session.
