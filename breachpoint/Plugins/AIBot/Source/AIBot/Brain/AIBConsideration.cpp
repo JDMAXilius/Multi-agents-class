@@ -23,7 +23,9 @@ namespace
 		case EAIBFactSelector::HasReserveAmmo:
 			return Facts.bHasReserveAmmo ? 1.f : 0.f;
 		case EAIBFactSelector::TargetVisible:
-			return Facts.bTargetVisible ? 1.f : 0.f;
+			// AIB26 F8-5: a young flank latch keeps the BELIEF in the fight (the flank
+			// broke LOS on purpose). Search's falling copy of this term reads it too.
+			return (Facts.bTargetVisible || Facts.bFlankHolding) ? 1.f : 0.f;
 		case EAIBFactSelector::TargetFactsFromMemory:
 			return Facts.bTargetFactsFromMemory ? 1.f : 0.f;
 		case EAIBFactSelector::TargetHealthNorm:

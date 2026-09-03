@@ -19,7 +19,9 @@
  * tier — a non-claiming bot would reopen the pile. Every release is returned to the shell
  * with its reason so the metric line can name it.
  */
-enum class EAIBTargetClaimResult : uint8 { Granted, Renewed, Denied };
+/** Dead (AIB23 F8-2): the injected liveness called the target a corpse — no grant, no
+ *  DENIED line (the caller's switch falls through), no holder counted. */
+enum class EAIBTargetClaimResult : uint8 { Granted, Renewed, Denied, Dead };
 enum class EAIBTargetClaimRelease : uint8 { Ttl, Exit, Death, Unpossess, Switch };
 
 struct AIBOT_API FAIBTargetClaim
@@ -49,13 +51,16 @@ struct AIBOT_API FAIBReleasedTargetClaim
 struct AIBOT_API FAIBTargetClaims
 {
 	using FAreAllies = TFunctionRef<bool(const AActor*, const AActor*)>;
+	using FIsLiveEnemy = TFunctionRef<bool(const AActor* ClaimantPawn, const AActor* Target)>;
 
 	/** Grant, renew (same claimant), or deny at the cap. Only ALLIED live claims count
 	 *  toward the cap — each alliance runs its own book. OutHolders = allied live claims
-	 *  on Target after the call, the asker's included when held (the line's k). */
+	 *  on Target after the call, the asker's included when held (the line's k). A target
+	 *  IsLiveEnemy refuses is Dead before any of that (F8-2: Prune released a corpse and
+	 *  the next think re-granted it, seven times in 0.6 s). */
 	EAIBTargetClaimResult TryClaim(FObjectKey Claimant, const AActor* ClaimantPawn, const AActor* Target,
-		double Now, float TtlSeconds, FAreAllies AreAllies, int32& OutHolders, float ClaimantPhaseDeg = 0.f,
-		const FString& ClaimantName = FString(), const FString& TargetName = FString());
+		double Now, float TtlSeconds, FAreAllies AreAllies, FIsLiveEnemy IsLiveEnemy, int32& OutHolders,
+		float ClaimantPhaseDeg = 0.f, const FString& ClaimantName = FString(), const FString& TargetName = FString());
 
 	/** Allied OTHERS holding Target now (self excluded) — the AlliesOnTarget term's source. */
 	int32 CountAlliesOn(FObjectKey Asker, const AActor* AskerPawn, const AActor* Target,
@@ -89,8 +94,7 @@ struct AIBOT_API FAIBTargetClaims
 
 	/** Expired -> Ttl; a target the predicate no longer calls a live enemy of the claimant
 	 *  (or a destroyed one) -> Death. Called by every mutating path. */
-	void Prune(double Now, TFunctionRef<bool(const AActor* ClaimantPawn, const AActor* Target)> IsLiveEnemy,
-		TArray<FAIBReleasedTargetClaim>& OutReleased);
+	void Prune(double Now, FIsLiveEnemy IsLiveEnemy, TArray<FAIBReleasedTargetClaim>& OutReleased);
 
 	int32 NumLive(double Now) const;
 

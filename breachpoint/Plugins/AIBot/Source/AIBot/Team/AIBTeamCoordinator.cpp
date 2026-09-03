@@ -170,6 +170,7 @@ EAIBTargetClaimResult UAIBTeamCoordinator::TryClaimTarget(const AAIBBotControlle
 	const float PhaseDeg = Claimant.GetRingPhaseDeg();
 	return TargetClaims.TryClaim(FObjectKey(&Claimant), Claimant.GetPawn(), &Target, Now, AIB::ClaimTtlSeconds,
 		[World](const AActor* A, const AActor* B) { return ResolveAreAllies(World, A, B); },
+		[World](const AActor* ClaimantPawn, const AActor* T) { return ResolveIsLiveEnemy(World, ClaimantPawn, T); },
 		OutHolders, PhaseDeg, Claimant.GetName(), Target.GetName());
 }
 

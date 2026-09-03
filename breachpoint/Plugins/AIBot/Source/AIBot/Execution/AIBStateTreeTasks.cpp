@@ -473,8 +473,10 @@ namespace
 	 *  flap over it. Returns TRUE when the caller must ABANDON its goal — the body has
 	 *  gained no ground for WedgeStallSeconds against a goal a STOREY away (more than a
 	 *  step above or below) with no link under the follower: nothing jumps that, so the
-	 *  give-up window would be a stand. Or the window itself (GiveUpSeconds, 0 = never)
-	 *  ran out on a same-level wedge. The caller fails its branch and arms suppression. */
+	 *  give-up window would be a stand. Or the window itself — the ROW's MoveGiveUpSeconds
+	 *  (AIB22 F8-3; the GiveUpSeconds argument keeps one meaning: 0 = this mover never
+	 *  gives up) — ran out on a same-level wedge. The caller fails its branch and arms
+	 *  suppression. */
 	bool TickLocomotion(AAIBBotController& Bot, const FVector& Goal, float ArriveRadiusUU, float DeltaTime, float GiveUpSeconds)
 	{
 		FAIBLocomotionState& State = Bot.GetLocomotion();
@@ -602,7 +604,9 @@ namespace
 				*Bot.GetName(), FVector::Dist2D(Here, Goal), UpUU, bOnLink ? TEXT("yes") : TEXT("no"),
 				bStorey ? TEXT("a storey — abandoning") : TEXT("the mover's give-up window decides."));
 		}
-		const bool bWindowOut = GiveUpSeconds > 0.f && State.StallSeconds >= GiveUpSeconds;
+		// AIB22 F8-3: the window is the row's, not the task's (every task authored 8 s).
+		const float Window = GiveUpSeconds > 0.f ? Bot.GetTierRow().MoveGiveUpSeconds : 0.f;
+		const bool bWindowOut = Window > 0.f && State.StallSeconds >= Window;
 		if (bStorey || bWindowOut)
 		{
 			UE_LOG(LogAIBot, Log,

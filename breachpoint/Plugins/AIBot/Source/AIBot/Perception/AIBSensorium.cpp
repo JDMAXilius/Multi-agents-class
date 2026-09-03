@@ -162,11 +162,11 @@ void FAIBSensorium::PruneCandidates(double NowSeconds)
 	// module ceiling so no tier can author itself an infinite memory.
 	const double Window = FMath::Min(static_cast<double>(MemoryWindowSeconds),
 		static_cast<double>(AIB::MaxMemorySeconds));
-	Candidates.RemoveAll([NowSeconds, Window](const FAIBTargetCandidate& C)
+	Candidates.RemoveAll([this, NowSeconds, Window](const FAIBTargetCandidate& C)
 	{
-		if (!C.Actor.IsValid())
+		if (!C.Actor.IsValid() || Dead.Contains(FObjectKey(C.Actor.Get())))
 		{
-			return true;
+			return true; // destroyed, or a corpse by the owner's door (F8-2)
 		}
 		if (C.bSightCurrent)
 		{
@@ -425,6 +425,7 @@ void FAIBSensorium::Pump(double NowSeconds)
 	// stimulus for this tick, so the choice is made on a settled view.
 	PruneCandidates(NowSeconds);
 	SelectTarget(NowSeconds);
+	Dead.Reset();
 
 	// Prune detonated blasts once per pump; the list stays tiny (grenades in flight).
 	LiveBlasts.RemoveAll([NowSeconds](const FAIBLiveBlast& Blast)
@@ -491,4 +492,5 @@ void FAIBSensorium::Reset()
 	LiveBlasts.Reset();
 	LastAcquisitionLatency = -1.f;
 	AlliesOnTarget.Reset();
+	Dead.Reset();
 }

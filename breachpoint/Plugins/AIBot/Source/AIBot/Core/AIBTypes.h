@@ -329,6 +329,9 @@ struct AIBOT_API FAIBFacts
 	                                   // should GO (the 25 Aug conflation)
 	int32 GrenadeCount = 0;
 	bool bGrounded = true;
+	/** AIB22 F8-4: the held weapon HAS a melee (the door's reach > 0). The engine's melee
+	 *  floor stands on this: a dry bot with an enemy in front of it closes to punch. */
+	bool bMeleeAvailable = false;
 
 	// -- the target, as perceived (not as it is) -----------------------------------
 	bool bHasTarget = false;
@@ -351,6 +354,11 @@ struct AIBOT_API FAIBFacts
 	float LastKnownAgeSeconds = 0.f;   // valid only when bHasMemory
 	float MemoryFreshWindowSeconds = 0.f; // the tier's window, so a worldless
 	                                      // consideration can normalise age against it
+	/** AIB26 F8-5: a live Flank latch younger than the tier's FlankCommitSeconds, with a
+	 *  belief no older than that. The flank breaks LOS by design; the TargetVisible
+	 *  selector reads this as still-in-fight so Engage does not end the fight it is
+	 *  manoeuvring in. Ends when the latch clears or either age runs out (the builder's). */
+	bool bFlankHolding = false;
 
 	// -- the incoming blast (the hard interrupt's facts — F-6.3) ---------------------
 	bool bIncomingBlast = false;

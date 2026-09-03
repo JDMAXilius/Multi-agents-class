@@ -1135,6 +1135,75 @@ void FAIBAmbitionEngineSpec::Define()
 		TestTag(TEXT("Hold comes back after its rest"), Engine->Rescore(Facts, 18.0), AIBTags::Tactic_Hold);
 	});
 
+	It("floors Engage above Roam for a dry bot with a melee and an enemy in front of it (F8-4)", [this]()
+	{
+		// Arena01, 300 s: Engage vanished from the board for 270 s while acquisitions kept
+		// firing — WeaponCanFight=0 (no pickups; EMPTY-HANDED cycling) vetoed it outright
+		// and Roam walked the bot away from an enemy it could have punched.
+		TArray<FAIBAmbitionSpec> Defaults;
+		UAIBAmbitionEngine::BuildDefaultCoreAmbitions(Defaults);
+		for (const FAIBAmbitionSpec& Spec : Defaults)
+		{
+			Engine->RegisterAmbition(Spec);
+		}
+		FAIBFacts Facts;
+		Facts.bVitalsKnown = true;
+		Facts.HealthNorm = 1.f;
+		Facts.bWeaponCanFight = false;
+		Facts.bHasTarget = true;
+		Facts.bTargetVisible = true;
+		Facts.DistToTargetUU = 300.f;
+		Facts.bMeleeAvailable = false;
+		TestTag(TEXT("dry, no melee: the floor"), Engine->Rescore(Facts, 1.0), AIBTags::Ambition_Roam);
+
+		Engine->ResetArbitration();
+		Facts.bMeleeAvailable = true;
+		TestTag(TEXT("dry with a melee: ENGAGE — close and punch"), Engine->Rescore(Facts, 2.0), AIBTags::Ambition_Engage);
+		TestEqual(TEXT("at exactly the Roam floor + 0.05"), Engine->GetCurrentScore(), 0.25f, 1e-3f);
+
+		// The floor never resurrects a suppressed want — the veto ruling stands.
+		Engine->NoteAmbitionFailed(AIBTags::Ambition_Engage, 2.5);
+		TestTag(TEXT("suppressed: the floor again"), Engine->Rescore(Facts, 2.6), AIBTags::Ambition_Roam);
+		TestEqual(TEXT("Engage reads 0"), ScoreOf(*Engine, AIBTags::Ambition_Engage), 0.f);
+
+		// And with no target the floor has nothing to stand on.
+		Engine->ResetArbitration();
+		Facts.bHasTarget = false;
+		Facts.bTargetVisible = false;
+		Facts.DistToTargetUU = -1.f;
+		TestTag(TEXT("no target: Roam"), Engine->Rescore(Facts, 10.0), AIBTags::Ambition_Roam);
+	});
+
+	It("holds Engage on the BELIEF while a young Flank latch stands — the flank may break LOS (F8-5)", [this]()
+	{
+		// `flank starts` 2-8 per match, `flank over` 0: the flank's own detour broke sight,
+		// Sees read 0, the fight "ended" inside 0.5 s and the point was cleared unwalked.
+		TArray<FAIBAmbitionSpec> Defaults;
+		UAIBAmbitionEngine::BuildDefaultCoreAmbitions(Defaults);
+		for (const FAIBAmbitionSpec& Spec : Defaults)
+		{
+			Engine->RegisterAmbition(Spec);
+		}
+		FAIBFacts Facts;
+		Facts.bVitalsKnown = true;
+		Facts.HealthNorm = 1.f;
+		Facts.bWeaponCanFight = true;
+		Facts.bHasMemory = true;
+		Facts.LastKnownAgeSeconds = 1.f;
+		Facts.MemoryFreshWindowSeconds = 16.f;
+		// LOS broken, no latch: Search takes the fresh memory, as before.
+		TestTag(TEXT("no latch: Search"), Engine->Rescore(Facts, 1.0), AIBTags::Ambition_Search);
+
+		Engine->ResetArbitration();
+		Facts.bFlankHolding = true;
+		TestTag(TEXT("a young latch: ENGAGE, on the belief"), Engine->Rescore(Facts, 2.0), AIBTags::Ambition_Engage);
+		TestEqual(TEXT("Search is silenced by the same read"), ScoreOf(*Engine, AIBTags::Ambition_Search), 0.f);
+
+		// The hold is the builder's to end: latch age or belief age past FlankCommitSeconds.
+		Facts.bFlankHolding = false;
+		TestTag(TEXT("hold over: Search resumes"), Engine->Rescore(Facts, 8.0), AIBTags::Ambition_Search);
+	});
+
 	It("replays byte-identical decisions for the same facts stream — the seeded-diff premise", [this]()
 	{
 		// The `decide` line diffs empty across two `-AIBSeed=N` runs only if the engine

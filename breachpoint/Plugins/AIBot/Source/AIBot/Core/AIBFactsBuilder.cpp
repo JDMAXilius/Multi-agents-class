@@ -27,6 +27,7 @@ FAIBFacts AIBFactsBuilder::Build(const AAIBBotController& Bot, double NowSeconds
 		Facts.bWeaponCanFight = Avatar->CanWeaponFight();
 		Facts.GrenadeCount = Avatar->GetGrenadeCount();
 		Facts.bGrounded = Avatar->IsGrounded();
+		Facts.bMeleeAvailable = Avatar->GetMeleeRangeUU() > 0.f;
 	}
 
 	// -- the target, as perceived ---------------------------------------------------
@@ -76,6 +77,15 @@ FAIBFacts AIBFactsBuilder::Build(const AAIBBotController& Bot, double NowSeconds
 		Facts.LastKnownAgeSeconds = MemoryAge;
 		// The BOT's resolved tier window (Phase 8) — clamped at the module ceiling (F5).
 		Facts.MemoryFreshWindowSeconds = FMath::Min(Bot.GetTierRow().MemoryFreshSeconds, AIB::MaxMemorySeconds);
+	}
+	// AIB26 F8-5: the flank hold — see FAIBFacts::bFlankHolding. Both ages against the
+	// tier's FlankCommitSeconds; a stale belief is a guess, not a fight.
+	{
+		const FAIBFlankLatch& Flank = Bot.GetFlankLatch();
+		const double Commit = Bot.GetTierRow().FlankCommitSeconds;
+		Facts.bFlankHolding = Flank.bHasPoint && Facts.bHasMemory
+			&& NowSeconds - Flank.LatchedAtSeconds < Commit
+			&& static_cast<double>(Facts.LastKnownAgeSeconds) <= Commit;
 	}
 
 	// -- the incoming blast, relative — the dodge needs no world ---------------------

@@ -895,6 +895,13 @@ private:
 	bool bNavSeen = false;
 	bool bWaitingForNavLogged = false;
 	bool bExecutorStarted = false;
+	/** AIB24 F8-1: the crowd follower found no manager/navmesh at possession (respawns,
+	 *  53-56% of lives); the first on-nav Think retries SetCrowdSimulationState once. */
+	bool bCrowdRetryPending = false;
+	/** Separation on, the row's weight, medium avoidance, path offset — the Detour Crowd
+	 *  recipe, applied at possession and again on the F8-1 retry. False when there is no
+	 *  crowd follower or its simulation is (still) disabled. */
+	bool ApplyCrowdSettings();
 	FAIBConfidenceState ConfidenceState;
 	FAIBSkillProfile SkillProfile;
 

@@ -21,7 +21,7 @@ enum class EAIBFactSelector : uint8
 	GrenadeCount,
 	WeaponCanFight,         // bool as 0/1
 	HasReserveAmmo,         // bool as 0/1
-	TargetVisible,          // bool as 0/1
+	TargetVisible,          // bool as 0/1 — or a young flank latch's belief (F8-5)
 	TargetFactsFromMemory,  // bool as 0/1 — the staleness marker, curve-readable
 	TargetHealthNorm,       // unset unless bTargetVitalsKnown
 	DistToTargetUU,         // unset when negative (unknown)
