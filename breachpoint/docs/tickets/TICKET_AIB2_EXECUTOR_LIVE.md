@@ -6,7 +6,7 @@
 > What is still owed is LIVE, not a compile: the `BotSystem=AIB` PIE excerpts (P-1/P-2/
 > P-3) and the barrier's NEEDS-LIVE-PROOF list. Open for those.
 
-> STATUS: open — cut 26 Aug 2026 by the cloud lead. Phase 3's module half was landed
+> (superseded STATUS, 26 Aug: open — cut 26 Aug 2026 by the cloud lead. Phase 3's module half was landed)
 > ~~**WRITTEN, NOT COMPILED**~~ (the cloud container had no engine — it compiles now, see
 > above). Needs the ENGINE ON DISK
 > for step 1 and a **LIVE EDITOR** from step 2 on (the MCP trigger lives inside it).

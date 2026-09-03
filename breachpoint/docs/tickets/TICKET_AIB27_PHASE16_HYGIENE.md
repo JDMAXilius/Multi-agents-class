@@ -30,3 +30,33 @@ phase's baseline. Metrics for this phase land BEFORE its behaviour (§4 of the r
 - [ ] The phase's metric gate PASSES vs the previous baseline; kills/min not worse
 
 ## Log
+### W-AUDIT (Explore) — merged by the lead, 2 Sep; small safe edits applied
+DONE NOW (lead, docs/config only): `aib-builder.md` / `aib-editor.md` owner path `Source/AIBot/` →
+`Plugins/AIBot/Source/AIBot/` (the plugin moved in Phase 10; guard-hook relevant). STATUS
+vocabulary normalised (AIB17/18/19 BUILT/landed → in-progress; AIB22 claimed → in-progress;
+AIB21 → in-progress, M1 is written-not-compiled; AIB2's duplicate 26 Aug STATUS block struck).
+Correction: every AIB ticket already HAD a STATUS line — the roadmap bullet was stale; the real
+defect was state accuracy. `run-gauntlet.ps1`: the BR_Arena01 blocker text corrected where found.
+SCHEDULED (serial packets, after Phase 11's builds because BNGameMode.cpp is shared):
+- Retire the BN legacy bot system (lead, `Source/BreachpointNext/` is in this session's owner
+  path): delete `Source/BreachpointNext/AI/` + `Tests/BNBotBrainSpec.cpp`; BNGameMode loses the
+  A/B switch (`BotSystem` gone, AIB class only); BNProjectile drops the `ABNBotController`
+  branch; BNGameData drops the two Find*Row + tables; BNDataRows drops the two structs AFTER the
+  two DT_BN* uassets and ST_BNBot are deleted (editor pass, redirectors); ini keys :341-344,
+  :352-356, :465-473, :616-622, :639 removed; Tools/bn/60,61,62 deleted; Build.cs UnrealEd block
+  loses its only consumer. Rung 1 on all targets.
+CONTRACT_GAP raised to the founder (outside every AIB owner path):
+- The BR-era bot system (`Source/Breachpoint/AI/`, `Content/AI/ST_Bot` (an empty 1 KB stub),
+  `Content/Data/DT_BotAmbitions|DT_BotTuning` + csv, `BRDataRows.h` row structs) is fully dead and
+  unreferenced but sits in `ai-builder`'s owner path under a closed ruling (DESIGN-RULINGS BP103)
+  and the `BREACHPOINT-AI-BOTS.md` design. Retiring it needs a new dated ruling + a named owner.
+- `ai-builder.md` describes code that does not exist (ST_Bot spine, `UBRSpotterSubsystem`,
+  `Breachpoint.Bots.Brain`); retire it and fix the 20 documents/agents that route to it by name.
+- The test contract names `Breachpoint.Bots.*` (testing.md:108, QUALITY-BARS:60) but the bot
+  suite is `AIBot.Sim.*` (14 specs). Options: rename three specs (Ambition/Plan/Action) — breaks
+  every citation of `AIBot.Sim.X` incl. AIB21's closing gate — or amend the contract to name
+  `AIBot.Sim.*`. Lead recommends amending the contract (one edit, law needs the founder's sign-off).
+- Gauntlet stays BLOCKED (exit 3): node `BRGauntlet.SmokeTS2C` never authored (BP00 step 3),
+  the wrapper is Win64/RunUAT.bat-only with no Mac counterpart, and the scenario is a dedicated-
+  server test whose survival hangs on BN38's unwritten BreachpointServer ruling. PIE is not a
+  substitute.

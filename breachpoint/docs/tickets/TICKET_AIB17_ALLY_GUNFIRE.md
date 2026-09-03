@@ -1,6 +1,6 @@
 # TICKET — AIB17: converge on a teammate's fight — the ally-gunfire channel
 
-> STATUS: BUILT 27 Aug 2026 (cloud lead) — ~~WRITTEN, NOT COMPILED~~ **COMPILED, 28 Aug
+> STATUS: in-progress (was: BUILT) 27 Aug 2026 (cloud lead) — ~~WRITTEN, NOT COMPILED~~ **COMPILED, 28 Aug
 > 2026: all targets clean, AIBot suite 119/119/0. The watch-list item resolved with it —
 > `FAIStimulus::Tag` is real and reads.** The BN22 barrier cleared and the held build
 > landed the same day, to this design verbatim. **UNPROVEN LIVE: no run has counted an

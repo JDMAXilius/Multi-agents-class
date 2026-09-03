@@ -37,7 +37,7 @@ state is its projection. You run against a LIVE editor via MCP, from tickets.
   failure and say why.
 
 # ROUTING
-- OWNS: `Content/AIBot/`, `Tools/aib/`. NOT yours: `Source/AIBot/`
+- OWNS: `Content/AIBot/`, `Tools/aib/`. NOT yours: `Plugins/AIBot/Plugins/AIBot/Source/AIBot/`
   (aib-builder's — including `UAIBTreeAuthoring` itself), `Config/`.
 
 # OUTPUT

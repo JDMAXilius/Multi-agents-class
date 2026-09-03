@@ -1,6 +1,6 @@
 # TICKET — AIB18: the bots aim down sights properly
 
-> STATUS: landed cloud-side 27 Aug 2026 — ~~WRITTEN, NOT COMPILED~~ **COMPILED, 28 Aug
+> STATUS: in-progress (was: landed) cloud-side 27 Aug 2026 — ~~WRITTEN, NOT COMPILED~~ **COMPILED, 28 Aug
 > 2026: all targets clean, AIBot suite 119/119/0.** Founder: "let's have the aibot doing
 > ADS properly." The host's ADS was fully built and granted to bots (a PlayerState body
 > verb) — nothing ever pressed it. **UNPROVEN LIVE: every box below is eyes-on or a log

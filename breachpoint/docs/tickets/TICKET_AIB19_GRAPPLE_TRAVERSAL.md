@@ -1,6 +1,6 @@
 # TICKET — AIB19: the climb — bots grapple up and drop down
 
-> STATUS: BUILT 27 Aug 2026 (cloud lead) — ~~WRITTEN, NOT COMPILED~~ **COMPILED and
+> STATUS: in-progress (was: BUILT) 27 Aug 2026 (cloud lead) — ~~WRITTEN, NOT COMPILED~~ **COMPILED and
 > PARTLY PROVEN LIVE, 28 Aug 2026: bots grapple. One match logged 5 ACTIVATED / 6 REFUSED,
 > so the verb, the door, the routes and the aim-then-press machine all work end to end.
 > OPEN FINDING, not a fix: roughly half of all attempts still fail to reach the standoff

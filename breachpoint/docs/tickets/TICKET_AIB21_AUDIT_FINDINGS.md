@@ -1,6 +1,6 @@
 # AIB21 — the Halo-fidelity audit, and what it found
 
-> STATUS: **ALL NINE FINDINGS CLOSED.** H3 and L3 closed 29 Aug; M1 written 1 Sep 2026
+> STATUS: in-progress — **ALL NINE FINDINGS CLOSED.** H3 and L3 closed 29 Aug; M1 written 1 Sep 2026
 > (cloud lead) — **WRITTEN, NOT COMPILED**, with a headless spec that pins it. The
 > ticket closes when the terminal runs rung 1 and `AIBot.Sim.AvatarBelt`.
 
