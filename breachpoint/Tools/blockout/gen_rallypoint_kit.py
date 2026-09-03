@@ -115,6 +115,100 @@ def maximal_rects(cells):
     return rects
 
 
+
+def connect_levels(levels, g, max_per_pair=4):
+    """Emit a ramp or stair wherever one storey ABUTS a lower one.
+
+    Quantising a real map into level bands turns every slope into a terrace, so
+    the storeys come out stacked but unreachable. This finds the places where an
+    upper level's edge actually touches a lower level in plan, and puts a real
+    connector there - which is what makes the blockout playable rather than
+    merely accurate.
+
+    Metrics are ours, measured in BN32: a 0.45 m rise is walked (MaxStepHeight),
+    the jump apex is 0.90 m, and there is no clamber - so anything above 0.45 m
+    needs geometry or it is a wall.
+    """
+    STEP_OK = 0.45              # walked, no connector needed
+    STAIR_RISE = 2.0            # BLK_Stair_200 is a fixed 2.0 m rise, never scales
+    STAIR_TOL = 0.35
+    RAMP_DEG = 27.0             # comfortable, well under the 44.765 walkable limit
+    MAX_RISE = 9.0              # above this the grapple is the intended answer
+
+    zs = sorted(levels)
+    cellset = {z: levels[z] for z in zs}
+    out = []
+    for hi_i, z_hi in enumerate(zs):
+        for z_lo in zs[:hi_i]:
+            rise = z_hi - z_lo
+            if rise <= STEP_OK or rise > MAX_RISE:
+                continue
+            lo_cells = cellset[z_lo]
+            # upper cells whose 4-neighbour is a lower cell, plus that direction
+            seams = []
+            for (cx, cy) in cellset[z_hi]:
+                for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    if (cx + dx, cy + dy) in lo_cells:
+                        seams.append((cx, cy, dx, dy))
+                        break
+            if not seams:
+                continue
+            # cluster seam cells so one doorway gets one connector, not forty
+            seams.sort()
+            used, clusters = set(), []
+            for sx, sy, dx, dy in seams:
+                if (sx, sy) in used:
+                    continue
+                stack, group = [(sx, sy)], []
+                while stack:
+                    p = stack.pop()
+                    if p in used:
+                        continue
+                    used.add(p)
+                    group.append(p)
+                    for ax, ay in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                        q = (p[0] + ax, p[1] + ay)
+                        if q not in used and any(q == (t[0], t[1]) for t in seams):
+                            stack.append(q)
+                clusters.append((group, dx, dy))
+            clusters.sort(key=lambda c: -len(c[0]))
+            for group, dx, dy in clusters[:max_per_pair]:
+                gxs = [p[0] for p in group]; gys = [p[1] for p in group]
+                cx = (min(gxs) + max(gxs) + 1) / 2.0 * g
+                cy = (min(gys) + max(gys) + 1) / 2.0 * g
+                width = max(2.0, min(4.0, (len(group) ** 0.5) * g))
+                # the connector runs from the LOWER side up to the upper edge
+                if abs(rise - STAIR_RISE) <= STAIR_TOL:
+                    kind, run, pitch = "Stair", 3.0, 0.0
+                else:
+                    kind, pitch = "Ramp", RAMP_DEG
+                    run = rise / math.tan(math.radians(RAMP_DEG))
+                # OVERLAP AND SINK, not a clean abutment.
+                #
+                # The cloud's BN34 hypothesis, tested here: a connector whose top
+                # lands EXACTLY coplanar with the deck it serves puts two
+                # separately-authored faces in the same voxel row, and Recast
+                # builds navmesh on both while merging neither. So drive the head
+                # 0.5 m INTO the deck and sink it 4 cm below the deck top, which
+                # turns a coincident plane into a clean sub-step (well under the
+                # measured 0.45 m MaxStepHeight).
+                OVERLAP, SINK = 0.5, 0.04
+                run_eff = run + OVERLAP
+                fx = cx + dx * ((run - OVERLAP) / 2.0)
+                fy = cy + dy * ((run - OVERLAP) / 2.0)
+                yaw = (0.0 if dx < 0 else 180.0) if dx else (90.0 if dy < 0 else -90.0)
+                rise_eff = (z_hi - SINK) - z_lo
+                out.append({
+                    "kind": kind, "cx": fx, "cy": fy,
+                    "cz": (z_lo + z_hi - SINK) / 2.0,
+                    "run": run_eff, "rise": rise_eff, "width": width,
+                    "pitch": math.degrees(math.atan2(rise_eff, run_eff))
+                             if kind == "Ramp" else 0.0,
+                    "yaw": yaw,
+                })
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--grid", type=float, default=2.0)
@@ -244,6 +338,26 @@ def main():
                  (x0 + w/2.0)*g, (y0 + h/2.0)*g, (zlo + zhi)/2.0,
                  w*g, h*g, max(WALL_T, zhi - zlo), nfloor + m)
 
+    # CONNECTORS: ramps and stairs so the storeys are reachable, not stacked
+    conns = connect_levels(levels, g)
+    RAMP_T = 0.30
+    nc = 0
+    for c in conns:
+        nc += 1
+        if c["kind"] == "Stair":
+            emit("Stair", "Blockout/Stairs", c["cx"], c["cy"], c["cz"],
+                 3.0, 2.0, 2.0, nfloor + m + nc)
+        else:
+            slope_len = math.hypot(c["run"], c["rise"])
+            emit("Ramp", "Blockout/Ramps", c["cx"], c["cy"], c["cz"],
+                 round(slope_len, 2), round(c["width"], 2), RAMP_T,
+                 nfloor + m + nc)
+            placements[-1]["rotation_deg"]["pitch"] = round(c["pitch"], 2)
+        placements[-1]["rotation_deg"]["yaw"] = round(c["yaw"], 2)
+    nramp = sum(1 for c in conns if c["kind"] == "Ramp")
+    nstair = sum(1 for c in conns if c["kind"] == "Stair")
+    print("  connectors: %d ramps + %d stairs" % (nramp, nstair))
+
     kit = {
         "kit_id": "rallypoint_blockout",
         "version": 1,
@@ -256,7 +370,8 @@ def main():
         "grid_m": g,
         "asset_catalog": "Content/Data/blockout_kit_assets.json",
         "asset_map": {"Floor": "BLK_Floor_400", "Deck": "BLK_Floor_400",
-                      "Wall": "BLK_Wall_400"},
+                      "Wall": "BLK_Wall_400", "Ramp": "BLK_Ramp_800",
+                      "Stair": "BLK_Stair_200"},
         "level_schedule_m": {"floor_thickness": FLOOR_T,
                              "wall_thickness": WALL_T,
                              "level_bin": LEVEL_BIN},
@@ -269,8 +384,9 @@ def main():
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump(kit, f, indent=1)
     print("wrote %s" % OUT)
-    print("  %d placements (%d floor/deck + %d wall), %d variants, grid %.1f m"
-          % (len(placements), nfloor, m, len(variants), g))
+    print("  %d placements (%d floor/deck + %d wall + %d connectors), "
+          "%d variants, grid %.1f m"
+          % (len(placements), nfloor, m, nc, len(variants), g))
 
 
 if __name__ == "__main__":

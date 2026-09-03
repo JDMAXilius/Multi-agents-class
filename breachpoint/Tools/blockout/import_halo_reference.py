@@ -38,6 +38,27 @@ LEVELS = {
         "exposure": 1.0,
         "sun": 3.0,
     },
+    "derelict": {
+        # Halo 1 (Xbox) multiplayer "Derelict" - internal Halo name `carousel`,
+        # which is the single object in the OBJ and how you know the rip is the
+        # right map. Tiny next to the others: 1,412 verts / 2,068 tris, so the
+        # import is seconds, not minutes. Raw OBJ extents X 97.6 / Y(up) 20.4 /
+        # Z 97.6 - a square, symmetrical footprint, which matches the map.
+        "src": "~/Downloads/halo-1multiplayerxboxderelict/source/"
+               "Derelict/Derelict.obj",
+        "root": "/Game/Halo1_Derelict",
+        "mesh": "Derelict",
+        "map": "MAP_Halo1_Derelict",
+        # This rip's .mtl declares 10 materials and NOT ONE map_Kd - every one is
+        # `Kd 1 1 1`, flat white, with the nine .jpeg files sitting unreferenced
+        # beside it. So the mesh renders white by design of the source, not by
+        # any import fault, and the only readability lever is lighting: keep the
+        # sun low enough that shape reads through shading instead of clipping.
+        # Wire the textures by hand (see the ticket) if the layout needs reading
+        # by material rather than by form.
+        "exposure": 0.18,
+        "sun": 1.5,
+    },
     "rallypoint": {
         "src": "~/Downloads/locationshalo-3firefightodstrally-point/source/"
                "RallyPoint/Rally Point.obj",
@@ -90,7 +111,8 @@ def imported_mesh():
     task.automated = True
     task.replace_existing = True
     task.save = True
-    unreal.log("importing 77 MB / 707k tris with materials + textures - slow")
+    unreal.log("importing %s - materials + textures, can be slow for big rips"
+               % os.path.basename(SRC))
     unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
     mesh = None
     for p in task.imported_object_paths:
