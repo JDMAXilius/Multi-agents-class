@@ -23,6 +23,7 @@ absent that, those rows honestly read "not captured", never 0.
 
 import argparse
 import json
+import math
 import re
 import statistics
 import sys
@@ -100,6 +101,13 @@ RX = {
     "sweep_over":    re.compile(_AIB + r"sweep over [—-] (?P<seconds>" + _NUM + r")s, moved (?P<moved>" + _NUM + r")uu, state=(?P<state>Search|Roam)"),
     "idle_over":     re.compile(_AIB + r"idle over [—-] (?P<seconds>" + _NUM + r")s state=(?P<state>\S+) tactic=(?P<tactic>Hold|Reload|StrafeHold|none)"),
     "island_egress": re.compile(_AIB + r"island egress [—-] via (?P<via>drop|link|jump|grapple) from " + _VEC + r" after (?P<seconds>" + _NUM + r")s stranded"),
+    # AIB23 (Phase 12): the target-claim board and the team report, each on the t= prefix.
+    # GRANTED/RELEASED bound a holder's live interval (pile-up); DENIED's arrow names what
+    # the refused bot did instead; the report is the shared-belief broadcast.
+    "target_grant":   re.compile(_AIB + r"target claim GRANTED on (?P<target>\S+) \((?P<k>\d+)/(?P<cap>\d+)\)"),
+    "target_deny":    re.compile(_AIB + r"target claim DENIED on (?P<target>\S+) \((?P<k>\d+)/(?P<cap>\d+)\) -> (?P<then>\S+)"),
+    "target_release": re.compile(_AIB + r"target claim RELEASED on (?P<target>\S+) reason=(?P<reason>ttl|exit|death|unpossess)"),
+    "team_report":    re.compile(_AIB + r"team report (?P<target>\S+) at " + _VEC + r" seen_t=(?P<seen_t>" + _NUM + r") from (?P<ally>\S+)"),
     # Kills/min inputs (LogBN, formats from BNGameMode.cpp): one line per credited kill,
     # and the travel-URL TimeLimit that the headless protocol always passes.
     "kill":       re.compile(r"BNGameMode: (?P<killer>.+) eliminated (?P<victim>.+) with '(?P<source>[^']*)'\. \(.+: (?P<kills>\d+) kills\)"),
@@ -108,7 +116,12 @@ RX = {
 
 # The per-bot metrics derived from the five AIB22 lines (seconds are sums per bot per match).
 BOT_METRICS = ("no_path_requests", "stuck_seconds", "max_stall_seconds", "sweep_seconds",
-               "idle_seconds", "idle_seconds_tactical", "island_egress_count")
+               "idle_seconds", "idle_seconds_tactical", "island_egress_count",
+               # AIB23: ttl-release -> re-grant on the same target inside THRASH_WINDOW_SECONDS,
+               # and what a DENIED bot did instead.
+               "claim_thrash", "denied_roam", "denied_engage_anyway")
+THRASH_WINDOW_SECONDS = 6.0
+CLAIM_TTL_SECONDS = 5.0   # AIB23 module constant (no ini lookup); --ttl overrides
 
 # F1's floor is a module constant (AIB::MinReactionSeconds). Restated here as a
 # checked number: if the module's floor moves, this bar must be moved WITH it.
@@ -138,6 +151,9 @@ DEFAULT_BARS = {
     "stuck_seconds_per_bot": 10.0,  # sum of stall-over seconds, worst bot
     "max_stall_seconds": 3.0,       # longest single stall, any bot
     "refusal_ratio_vs_baseline": 0.5,  # median no_path_requests per bot <= this x baseline median
+    # AIB23 target-claim gates: pile-up HARD, thrash PROVISIONAL.
+    "target_pileup_count": 0,     # 1-s buckets with more holders than cap, per match
+    "claim_thrash_per_bot": 2,    # ttl release -> re-grant within the window, worst bot
 }
 
 
@@ -164,7 +180,7 @@ def per_bot_summary(counts):
     def row(name):
         return bots.setdefault(name, {key: 0 for key in BOT_METRICS})
 
-    for key in ("possess", "tier"):
+    for key in ("possess", "tier", "target_grant"):
         for hit in counts[key]:
             row(hit["bot"])
     for hit in counts["move_refused"]:
@@ -181,6 +197,22 @@ def per_bot_summary(counts):
         row(hit["bot"])[key] += float(hit["seconds"])
     for hit in counts["island_egress"]:
         row(hit["bot"])["island_egress_count"] += 1
+    for hit in counts["target_deny"]:
+        if hit["then"] == "roam":
+            row(hit["bot"])["denied_roam"] += 1
+        elif hit["then"] == "engage-anyway":
+            row(hit["bot"])["denied_engage_anyway"] += 1
+    # Thrash: each reason=ttl release counts once if the same bot re-takes the same
+    # target within the window (0 < dt <= window).
+    grants = {}
+    for hit in counts["target_grant"]:
+        grants.setdefault((hit["bot"], hit["target"]), []).append(float(hit["t"]))
+    for hit in counts["target_release"]:
+        if hit["reason"] != "ttl":
+            continue
+        released = float(hit["t"])
+        if any(0 < t - released <= THRASH_WINDOW_SECONDS for t in grants.get((hit["bot"], hit["target"]), ())):
+            row(hit["bot"])["claim_thrash"] += 1
     for bot in bots.values():
         for key in BOT_METRICS:
             if isinstance(bot[key], float):
@@ -188,7 +220,41 @@ def per_bot_summary(counts):
     return dict(sorted(bots.items()))
 
 
-def per_match_summary(counts):
+def target_pileups(counts, ttl):
+    """AIB23: count 1-second buckets in which more bots hold a live claim on one target
+    than the cap allows. A claim lives from GRANT until RELEASE or last GRANT + ttl,
+    whichever is first; a repeat GRANT by the same holder renews the expiry. Cap is the
+    `(k/cap)` field of the last GRANT seen, 2 if none.
+    ponytail: grouped by target only — in 4v4 one target is enemy to exactly one
+    alliance, so holders of one target are always one team; key on (team, target) if
+    FFA ever runs the claim board."""
+    events = sorted([(float(h["t"]), "grant", h["bot"], h["target"], int(h["cap"])) for h in counts["target_grant"]]
+                    + [(float(h["t"]), "release", h["bot"], h["target"], None) for h in counts["target_release"]],
+                    key=lambda e: e[0])  # stable: same-t lines keep log order
+    live, closed, cap = {}, [], None      # live[(target, bot)] = [start, expiry]
+    for t, kind, bot, target, line_cap in events:
+        key = (target, bot)
+        if kind == "grant":
+            cap = line_cap
+            if key in live and live[key][1] > t:
+                live[key][1] = t + ttl
+                continue
+            if key in live:
+                closed.append((target, *live.pop(key)))
+            live[key] = [t, t + ttl]
+        elif key in live:
+            start, expiry = live.pop(key)
+            closed.append((target, start, min(t, expiry)))
+    closed += [(target, start, expiry) for (target, _), (start, expiry) in live.items()]
+    cap = cap or 2
+    holders = {}
+    for target, start, end in closed:          # [start, end) covers bucket b iff start < b+1 and end > b
+        for bucket in range(math.floor(start), math.ceil(end)):
+            holders[(target, bucket)] = holders.get((target, bucket), 0) + 1
+    return sum(1 for n in holders.values() if n > cap), cap
+
+
+def per_match_summary(counts, ttl=CLAIM_TTL_SECONDS):
     latencies = [float(hit["latency"]) for hit in counts["acquire"]]
     switches = len(counts["ambition"])
     interrupts = sum(1 for hit in counts["ambition"] if hit.get("interrupt"))
@@ -198,10 +264,12 @@ def per_match_summary(counts):
     bots = per_bot_summary(counts)
     # ponytail: match length = the URL TimeLimit, else the last t= seen on an AIB22 line.
     # A score-limit early end overstates minutes; add a "match over" t= line if that matters.
-    t_seen = [float(hit["t"]) for key in ("move_refused", "stall_over", "sweep_over", "idle_over", "island_egress")
+    t_seen = [float(hit["t"]) for key in ("move_refused", "stall_over", "sweep_over", "idle_over", "island_egress",
+                                          "target_grant", "target_deny", "target_release", "team_report")
               for hit in counts[key]]
     match_seconds = (float(counts["time_limit"][-1]["seconds"]) if counts["time_limit"]
                      else max(t_seen) if t_seen else None)
+    pileups, cap = target_pileups(counts, ttl)
     return {
         "acquisitions": len(latencies),
         "latency_mean": statistics.mean(latencies) if latencies else None,
@@ -217,6 +285,14 @@ def per_match_summary(counts):
         "claim_grants": len(counts["claim_grant"]),
         "claim_denies": len(counts["claim_deny"]),
         "claim_releases": len(counts["claim_release"]),
+        # AIB23 target claims — distinct from the Phase 7 slot-claim keys above (those feed the FFA gate).
+        "target_claim_grants": len(counts["target_grant"]),
+        "target_claim_denies": len(counts["target_deny"]),
+        "target_claim_releases": len(counts["target_release"]),
+        "team_reports": len(counts["team_report"]),
+        "target_pileup_count": pileups,
+        "claim_ttl": ttl,
+        "claim_cap": cap,
         "tiers": {tier: sorted(bots) for tier, bots in tiers.items()},
         "swings": len(counts["swing"]) or None,          # None = likely not captured
         "throws": len(counts["throw"]) or None,
@@ -316,13 +392,13 @@ def judge(matches, bars, baseline=None):
         bar_line("F1 reaction floor", worst >= bars["min_reaction_floor"] - 0.0005,
                  f"fastest acquisition {worst:.3f}s vs floor {bars['min_reaction_floor']:.2f}s (HARD bar)")
 
-    for name, key in (("unserved wants", "unserved_wants"),
-                      ("wiring warnings", "wiring_warnings"),
-                      ("FFA claim grants", "claim_grants")):
-        bar_key = "ffa_claim_grants" if key == "claim_grants" else key
+    for name, key, bar_key, kind in (("unserved wants", "unserved_wants", "unserved_wants", ""),
+                                     ("wiring warnings", "wiring_warnings", "wiring_warnings", ""),
+                                     ("FFA claim grants", "claim_grants", "ffa_claim_grants", ""),
+                                     ("target pile-up buckets", "target_pileup_count", "target_pileup_count", "HARD ")):
         worst = max(m[key] for m in matches)
         bar_line(name, worst <= bars[bar_key],
-                 f"worst match {worst} vs bar {bars[bar_key]} (per match)")
+                 f"worst match {worst} vs {kind}bar {bars[bar_key]} (per match)")
 
     rps = spread([m["refusals_per_switch"] for m in matches])
     if rps:
@@ -338,7 +414,8 @@ def judge(matches, bars, baseline=None):
     for name, key, bar_key, kind in (("idle seconds (tactic=none)", "idle_seconds", "idle_seconds", "HARD"),
                                      ("sweep seconds", "sweep_seconds", "sweep_seconds", "HARD"),
                                      ("stuck seconds per bot", "stuck_seconds", "stuck_seconds_per_bot", "PROVISIONAL"),
-                                     ("longest single stall", "max_stall_seconds", "max_stall_seconds", "PROVISIONAL")):
+                                     ("longest single stall", "max_stall_seconds", "max_stall_seconds", "PROVISIONAL"),
+                                     ("claim thrash per bot", "claim_thrash", "claim_thrash_per_bot", "PROVISIONAL")):
         worst = worst_bot(key)
         if worst is None:
             continue
@@ -370,6 +447,8 @@ def main():
     parser.add_argument("--json", action="store_true")
     parser.add_argument("--bar", action="append", default=[], metavar="KEY=VAL")
     parser.add_argument("--baseline", metavar="JSON", help="a prior --json dump to gate refusals and kills/min against")
+    parser.add_argument("--ttl", type=float, default=CLAIM_TTL_SECONDS,
+                        help="AIB23 target-claim TTL seconds (module constant; expiry when no RELEASE is logged)")
     parser.add_argument("--selftest", action="store_true")
     args = parser.parse_args()
     if args.selftest:
@@ -391,7 +470,7 @@ def main():
         if "lobby_spread" not in reference:
             sys.exit(f"{args.baseline} has no 'lobby_spread' — baselines are this script's own --json output")
 
-    matches = [per_match_summary(parse_log(path)) for path in args.logs]
+    matches = [per_match_summary(parse_log(path), args.ttl) for path in args.logs]
     baseline = len(matches) >= bars["min_logs_for_baseline"]
     verdicts = judge(matches, bars, reference)
 
@@ -463,6 +542,30 @@ BNGameMode: Bravo eliminated Alpha with 'Melee'. (Bravo: 1 kills)
 AIBot: Alpha acquired Bravo after 0.35s reaction.
 """
 
+# AIB23: cap 2, ttl 5. Alpha/Bravo hold Enemy1; Charlie is denied twice, then GRANTED at
+# 104.5 while both still hold -> bucket 104 has three holders (the one pile-up). Alpha's
+# ttl release at 105 then re-grant at 108 (dt 3) is the one thrash; Bravo's death release
+# and re-grant at 110 is neither. One team report.
+AIB23_LOG = """\
+AIBot: Alpha t=100.0 target claim GRANTED on Enemy1 (1/2)
+AIBot: Bravo t=100.5 target claim GRANTED on Enemy1 (2/2)
+AIBot: Charlie t=101.0 target claim DENIED on Enemy1 (2/2) -> roam
+AIBot: Charlie t=102.0 target claim DENIED on Enemy1 (2/2) -> engage-anyway
+AIBot: Charlie t=104.5 target claim GRANTED on Enemy1 (3/2)
+AIBot: Alpha t=105.0 target claim RELEASED on Enemy1 reason=ttl
+AIBot: Bravo t=106.0 target claim RELEASED on Enemy1 reason=death
+AIBot: Alpha t=108.0 target claim GRANTED on Enemy1 (2/2)
+AIBot: Charlie t=109.0 target claim RELEASED on Enemy1 reason=exit
+AIBot: Bravo t=110.0 target claim GRANTED on Enemy1 (2/2)
+AIBot: Delta t=110.5 team report Enemy1 at (10,20,30) seen_t=109.8 from Bravo
+"""
+
+AIB23_CLEAN_LOG = """\
+AIBot: Alpha t=100.0 target claim GRANTED on Enemy1 (1/2)
+AIBot: Alpha t=105.0 target claim RELEASED on Enemy1 reason=ttl
+AIBot: Alpha t=112.0 target claim GRANTED on Enemy1 (1/2)
+"""
+
 
 def selftest():
     lines = SELFTEST_LOG.splitlines()
@@ -479,9 +582,11 @@ def selftest():
     match = per_match_summary(counts)
     expect = {
         "Alpha": {"no_path_requests": 2, "stuck_seconds": 6.5, "max_stall_seconds": 4.0, "sweep_seconds": 3.0,
-                  "idle_seconds": 2.0, "idle_seconds_tactical": 1.5, "island_egress_count": 1},
+                  "idle_seconds": 2.0, "idle_seconds_tactical": 1.5, "island_egress_count": 1,
+                  "claim_thrash": 0, "denied_roam": 0, "denied_engage_anyway": 0},
         "Bravo": {"no_path_requests": 1, "stuck_seconds": 1.5, "max_stall_seconds": 1.5, "sweep_seconds": 1.25,
-                  "idle_seconds": 3.0, "idle_seconds_tactical": 0.5, "island_egress_count": 1},
+                  "idle_seconds": 3.0, "idle_seconds_tactical": 0.5, "island_egress_count": 1,
+                  "claim_thrash": 0, "denied_roam": 0, "denied_engage_anyway": 0},
     }
     assert match["per_bot"] == expect, match["per_bot"]
     assert match["kills"] == 2 and match["match_seconds"] == 300.0 and match["kills_per_min"] == 0.4, match
@@ -497,15 +602,37 @@ def selftest():
         "F1 reaction floor": "PASS", "unserved wants": "PASS", "wiring warnings": "PASS", "FFA claim grants": "PASS",
         "idle seconds (tactic=none)": "FAIL", "sweep seconds": "FAIL",
         "stuck seconds per bot": "PASS", "longest single stall": "FAIL",
+        "target pile-up buckets": "PASS", "claim thrash per bot": "PASS",
         "move refusals vs baseline": "FAIL",   # 1.5 > 0.5 x 1.5
         "kills/min vs baseline": "PASS",       # 0.4 >= 0.4 - 0
     }, verdicts
-    assert judge([match], DEFAULT_BARS)[-1][1] == "longest single stall"  # no baseline -> no baseline gates
+    assert not any("baseline" in name for _, name, _ in judge([match], DEFAULT_BARS))  # no baseline -> no baseline gates
+
+    # AIB23 target claims.
+    c23 = parse_lines(AIB23_LOG.splitlines())
+    assert len(AIB23_LOG.splitlines()) == 11
+    assert (len(c23["target_grant"]), len(c23["target_deny"]), len(c23["target_release"]), len(c23["team_report"])) == (5, 2, 3, 1)
+    assert c23["team_report"][0]["ally"] == "Bravo" and c23["team_report"][0]["seen_t"] == "109.8"
+    m23 = per_match_summary(c23)
+    assert m23["target_pileup_count"] == 1 and m23["claim_cap"] == 2 and m23["claim_ttl"] == 5.0, m23
+    assert m23["team_reports"] == 1 and m23["target_claim_grants"] == 5 and m23["match_seconds"] == 110.5, m23
+    assert m23["per_bot"]["Alpha"]["claim_thrash"] == 1 and m23["per_bot"]["Bravo"]["claim_thrash"] == 0, m23["per_bot"]
+    assert m23["per_bot"]["Charlie"]["denied_roam"] == 1 and m23["per_bot"]["Charlie"]["denied_engage_anyway"] == 1
+    assert m23["claim_grants"] == 0  # Phase 7 slot-claim keys untouched by target claims
+    v23 = {name: verdict for verdict, name, _ in judge([m23], DEFAULT_BARS)}
+    assert v23["target pile-up buckets"] == "FAIL" and v23["claim thrash per bot"] == "PASS", v23
+    clean = per_match_summary(parse_lines(AIB23_CLEAN_LOG.splitlines()))
+    assert clean["target_pileup_count"] == 0 and clean["per_bot"]["Alpha"]["claim_thrash"] == 0, clean
 
     for line in judge([match], DEFAULT_BARS, {"lobby_spread": lobby}):
         print(f"   [{line[0]}] {line[1]}: {line[2]}")
     print(f"SELFTEST PASS: 20 lines, {sum(hits.values())} hits, per-bot {json.dumps(match['per_bot'])}, "
           f"kills/min {match['kills_per_min']}")
+    print(f"SELFTEST PASS (AIB23): 11 lines, pileup {m23['target_pileup_count']}, "
+          f"thrash Alpha {m23['per_bot']['Alpha']['claim_thrash']}, Charlie denied roam/engage-anyway "
+          f"{m23['per_bot']['Charlie']['denied_roam']}/{m23['per_bot']['Charlie']['denied_engage_anyway']}, "
+          f"team_reports {m23['team_reports']}; clean pileup {clean['target_pileup_count']} thrash "
+          f"{clean['per_bot']['Alpha']['claim_thrash']}")
 
 
 if __name__ == "__main__":
