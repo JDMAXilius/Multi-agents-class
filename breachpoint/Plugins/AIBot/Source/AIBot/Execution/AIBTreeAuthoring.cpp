@@ -290,11 +290,27 @@ FString UAIBTreeAuthoring::BuildBotStateTree()
 	UStateTreeState& Roam = Root.AddChildState(TEXT("Roam"));
 	Roam.AddEnterCondition<FAIBGateRoamCondition>();
 	Roam.AddTask<FAIBAmbitionSentinelTask>();
-	Roam.AddTask<FAIBWanderTask>();
-	// Arrived: re-select, draw a new reachable point. The small success delay exists for
-	// the degenerate nav island whose every draw lands inside acceptance — instant
-	// succeed would be a pathfind per bot per FRAME (W-REVIEW P3 M4). A world with no
-	// navmesh fails instead — that delay keeps it quiet, the log says why.
+	// TWO TACTICS UNDER ONE WANT (AIB22 5(B)): Roam selects its children in order, so
+	// Egress — gated on the controller's island latch, nothing else — wins only while the
+	// bot has measured itself onto an island; Wander is the ungated floor. The latch is
+	// controller state, so a completion transition recreating either child's instance
+	// data cannot lose the fact; the tactic's own commitment is re-derived from the
+	// world each tick (falling / landed / at the lip), never stored. Egress completes
+	// straight back to Root: a landing is a new place to draw from, a failure has already
+	// cleared the latch, and the delay is only the no-navmesh quiet.
+	UStateTreeState& Egress = Roam.AddChildState(TEXT("Egress"));
+	Egress.AddEnterCondition<FAIBOnIslandCondition>();
+	Egress.AddTask<FAIBEgressTask>();
+	AddCompletionTransition(Egress, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
+	AddCompletionTransition(Egress, Root, EStateTreeTransitionTrigger::OnStateFailed, 2.0f);
+	UStateTreeState& Wander = Roam.AddChildState(TEXT("Wander"));
+	Wander.AddTask<FAIBWanderTask>();
+	// Wander's completions bubble up to these (the engine walks completion transitions
+	// from the completed leaf to the root). Arrived: re-select, draw a new point. The
+	// small success delay exists for the degenerate nav island whose every draw lands
+	// inside acceptance — instant succeed would be a pathfind per bot per FRAME (W-REVIEW
+	// P3 M4). A world with no navmesh fails instead — that delay keeps it quiet, the log
+	// says why. The sentinel's completion lands here too.
 	AddCompletionTransition(Roam, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.25f);
 	AddCompletionTransition(Roam, Root, EStateTreeTransitionTrigger::OnStateFailed, 2.0f);
 
@@ -324,7 +340,7 @@ FString UAIBTreeAuthoring::BuildBotStateTree()
 	AddCompletionTransition(Fallback, Root, EStateTreeTransitionTrigger::OnStateSucceeded, 0.f);
 	AddCompletionTransition(Fallback, Root, EStateTreeTransitionTrigger::OnStateFailed, 1.0f);
 
-	Report.Add(TEXT("states     : Root > [Evade, Engage, Retreat, Search, Seek, Roam, Mode, Fallback] (every ambition gated — Mode by hierarchy — the ungated Fallback floor last, sentinel in each)"));
+	Report.Add(TEXT("states     : Root > [Evade, Engage, Retreat, Search, Seek, Roam > [Egress, Wander], Mode, Fallback] (every ambition gated — Mode by hierarchy — the ungated Fallback floor last, sentinel in each; Egress gated on the island latch)"));
 	Report.Add(TEXT("seek       : AIBot.Ambition.Seek — deliberate movement (belief -> POI -> reachable point). SeekWeapon is RETIRED: no pickups in this game."));
 
 	// An uncompiled StateTree runs NOTHING — the asset would exist, the ini would resolve,

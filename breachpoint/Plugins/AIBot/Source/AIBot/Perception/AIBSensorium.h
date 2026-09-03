@@ -162,6 +162,9 @@ public:
 	bool GetIncomingBlast(double NowSeconds, FAIBLiveBlast& OutBlast) const;
 
 	const FAIBTargetMemory& Memory() const { return TargetMemory; }
+	/** END THE WANT (AIB22 H1): the one write the sensorium's owner may make to the memory
+	 *  — the same call Reset makes. Memory() stays const so no actor ever leaves it (F2-A). */
+	void ForgetMemory() { TargetMemory.Forget(); }
 	float MemoryAgeSeconds(double NowSeconds) const { return TargetMemory.AgeSeconds(NowSeconds); }
 
 	/** DIAGNOSTIC ONLY (specs, debugger). Gating behaviour on the pre-maturation queue

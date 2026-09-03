@@ -53,6 +53,46 @@ struct AIBOT_API FAIBSweepBudget
 	void Reset() { SpentSeconds = 0.f; }
 };
 
+/** AIB22 5(B) — THE ISLAND FACT, as a latch. Roam's wander draws a NAVIGABLE point and
+ *  walks it only on a FULL path; a partial or refused path is what an island looks like
+ *  from the inside (islands do not refuse, they deliver you to the edge — the audit's
+ *  corrected premise). IslandLatchDraws consecutive bad draws latch bOnIsland; ONE full
+ *  draw clears it, as does the Egress landing. Held by the controller for the same reason
+ *  as the sweep budget: a StateTree recreates task instance data on every completion
+ *  transition, so a count kept in Wander's scratch would restart at every re-entry and
+ *  never reach three. Worldless: the spec drives it with plain bools. */
+struct AIBOT_API FAIBIslandLatch
+{
+	int32 BadDraws = 0;
+	bool bOnIsland = false;
+	/** World seconds at the latch (-1 = not latched): the egress line's stranded clock. */
+	double LatchedAtSeconds = -1.0;
+
+	/** True on the ONE draw that latches — the caller logs it once. */
+	bool NoteDraw(bool bFullPath, int32 LatchAfterDraws, double NowSeconds)
+	{
+		if (bFullPath)
+		{
+			Reset();
+			return false;
+		}
+		++BadDraws;
+		if (!bOnIsland && BadDraws >= FMath::Max(LatchAfterDraws, 1))
+		{
+			bOnIsland = true;
+			LatchedAtSeconds = NowSeconds;
+			return true;
+		}
+		return false;
+	}
+	void Reset()
+	{
+		BadDraws = 0;
+		bOnIsland = false;
+		LatchedAtSeconds = -1.0;
+	}
+};
+
 namespace AIBSweep
 {
 	/** The walking pan: a triangle wave in [-Arc, +Arc] over an unwrapped phase in
@@ -176,6 +216,11 @@ public:
 	/** AIB22 H1/F9 — see FAIBSweepBudget. SweepLook spends it only while the body is
 	 *  still; Think resets it the moment the body moves. */
 	FAIBSweepBudget& GetSweepBudget() { return SweepBudget; }
+
+	/** AIB22 5(B) — see FAIBIslandLatch. Wander notes every draw; the Egress gate reads
+	 *  bOnIsland; Egress's landing (or a full draw) clears it. */
+	FAIBIslandLatch& GetIslandLatch() { return IslandLatch; }
+	const FAIBIslandLatch& GetIslandLatch() const { return IslandLatch; }
 
 	/** SweepLook's pan while WALKING: the yaw offset the movers' facing block adds to the
 	 *  travel heading (see TickLocomotion). 0 when nothing sweeps; SweepLook zeroes it on
@@ -386,6 +431,7 @@ private:
 	/** AIB22 H1/F9: see GetSweepBudget / SetTravelPanDegrees. Both die with the body. */
 	FAIBSweepBudget SweepBudget;
 	float TravelPanDegrees = 0.f;
+	FAIBIslandLatch IslandLatch;
 	FAIBConfidenceState ConfidenceState;
 	FAIBSkillProfile SkillProfile;
 

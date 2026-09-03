@@ -271,6 +271,7 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	IdleTacticsSeen = 0;
 	SweepBudget.Reset();     // a fresh body has looked at nothing yet (AIB22)
 	TravelPanDegrees = 0.f;
+	IslandLatch.Reset();     // and stands on no island it has measured yet
 
 	GetWorldTimerManager().SetTimer(ThinkTimer, this, &AAIBBotController::Think,
 		FMath::Max(ThinkIntervalSeconds, 0.02f), /*bLoop=*/true);
@@ -363,6 +364,7 @@ void AAIBBotController::OnUnPossess()
 	YawClaimedAtSeconds = -1.0;   // an absolute stamp must not cross into a new world
 	SweepBudget.Reset();
 	TravelPanDegrees = 0.f;
+	IslandLatch.Reset();
 	ConfidenceState = FAIBConfidenceState();
 	AimState = FAIBAimState();
 	MeleeState = FAIBMeleeState();
@@ -473,11 +475,7 @@ void AAIBBotController::ForgetSearchMemory(const TCHAR* Why, float AfterSeconds)
 	}
 	UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f search abandoned — forgot %s after %.1fs (%s)"),
 		*GetName(), GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0, *Who, AfterSeconds, Why);
-	// Memory() reads const so no actor ever leaves it (F2-A); forgetting is the one write
-	// the OWNER of the sensorium may make, and it is the same call the sensorium's own
-	// Reset makes. DEBT (AIB22 W-BUILD, wave law): a FAIBSensorium::ForgetMemory() one-
-	// liner belongs in the shared header — the next serial step retires this cast.
-	const_cast<FAIBTargetMemory&>(Memory).Forget();
+	Sensorium.ForgetMemory();
 }
 
 void AAIBBotController::CloseIdleEpisode(double NowSeconds)

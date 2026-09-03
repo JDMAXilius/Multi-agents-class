@@ -83,4 +83,26 @@ struct AIBOT_API FAIBTierRow : public FTableRowBase
 	 *  to sweep. Spartan-only project: every tier carries the same value. */
 	UPROPERTY(EditAnywhere, Category = "Search")
 	float SweepMaxSeconds = 2.f;
+
+	// -- the island fact and the way off it (AIB22 5(B), law F9) --------------------
+	/** Consecutive wander draws with no FULL path before the bot concludes it stands on an
+	 *  island (counted on the CONTROLLER across branch re-entries). One full draw clears. */
+	UPROPERTY(EditAnywhere, Category = "Roam")
+	int32 IslandLatchDraws = 3;
+
+	/** The walk-to-the-lip goal sits this far INSIDE the navmesh boundary (agent radius
+	 *  is 35): on-mesh, so the walk there is an ordinary path. */
+	UPROPERTY(EditAnywhere, Category = "Roam")
+	float IslandLipStandoffUU = 60.f;
+
+	/** How far BEYOND the boundary the landing probe (and the step-off's straight-line
+	 *  target) sits. The probe only asks "is there navmesh lower than the lip out there";
+	 *  the fall is the move, the landing point is never projected. */
+	UPROPERTY(EditAnywhere, Category = "Roam")
+	float IslandLipProbeUU = 150.f;
+
+	/** A boundary counts as a LIP (not a wall or a step) when the navmesh beyond it is
+	 *  at least this far below; the same number says a landing left the island. */
+	UPROPERTY(EditAnywhere, Category = "Roam")
+	float IslandMinDropUU = 120.f;
 };

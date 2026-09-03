@@ -836,12 +836,89 @@ struct FAIBUnservedWantTask : public FStateTreeTaskCommonBase
 	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
 };
 
-/** Roam's mover: any POI a provider offers, else a random reachable point — and, when
- *  the host publishes grapple routes (AIB19), sometimes the climb up or the drop down. */
+/** Roam's mover: any POI a provider offers, else a random NAVIGABLE point drawn from the
+ *  PAWN (AIB22 H3 — never from the heard point) and walked only on a FULL path; every
+ *  draw is noted on the controller's island latch (partial/refused = an island from the
+ *  inside). When the host publishes grapple routes (AIB19), sometimes the climb up. */
 USTRUCT(meta = (DisplayName = "AIB Wander", Category = "AIBot"))
 struct FAIBWanderTask : public FAIBMoveToPOITask
 {
 	GENERATED_BODY()
 	virtual bool ShouldWanderWithoutProvider() const override { return true; }
 	virtual bool MayGrappleTraverse() const override { return true; }
+};
+
+////////////////////////////////////////////////////////////////////
+
+/** Gates Roam's Egress child (AIB22 5(B)): true only while the controller's island latch
+ *  holds. Not an ambition gate — Roam is already the want; this picks the tactic. */
+USTRUCT(meta = (DisplayName = "AIB On Island", Category = "AIBot"))
+struct FAIBOnIslandCondition : public FStateTreeConditionCommonBase
+{
+	GENERATED_BODY()
+
+	using FInstanceDataType = FAIBAmbitionGateConditionInstanceData;
+	virtual const UStruct* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
+
+	virtual bool TestCondition(FStateTreeExecutionContext& Context) const override;
+};
+
+USTRUCT()
+struct FAIBEgressTaskInstanceData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Context")
+	TObjectPtr<AAIController> Controller;
+
+	/** Close enough to the lip goal to step off. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float LipReachUU = 70.f;
+
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float GiveUpAfterNoProgressSeconds = 8.f;
+
+	/** At the lip, stepping, and still on the ground after this long = a railing, a
+	 *  ledge the body cannot leave: fail loudly (F7), the latch resets, Wander re-measures. */
+	UPROPERTY(EditAnywhere, Category = "Parameter")
+	float DropTimeoutSeconds = 3.f;
+
+	// Per-run scratch. NONE of it is commitment: the phase is re-derived from the world
+	// each tick (falling / landed / at the lip / walking), so a re-entry that recreates
+	// this struct mid-tactic re-derives the same answer from the same feet.
+	FVector Lip = FVector::ZeroVector;
+	FVector Beyond = FVector::ZeroVector;
+	float ClosestSoFarUU = 0.f;
+	float SecondsWithoutProgress = 0.f;
+	float LipSeconds = 0.f;
+	bool bAirborneSeen = false;
+	bool bSteppedOff = false;
+	FAIBLocomotionState Locomotion;
+};
+
+/** THE WAY OFF AN ISLAND (AIB22 5(B), law F9). Selected under Roam only while the island
+ *  latch holds. Finds the nearest edge OF MY ISLAND — a navmesh raycast fan from where I
+ *  stand stops at the boundary of the polygon cluster under my feet and never crosses a
+ *  link (Detour skips off-mesh connections), so the lip is on the surface I can walk,
+ *  never a far-side landing — keeps only edges with navmesh at least IslandMinDropUU
+ *  below them, walks to the nearest, and reuses AIB19's step-off: a straight-line move
+ *  past the lip with pathfinding OFF and no nav projection. THE FALL IS THE MOVE. The
+ *  landing point is never projected and no MoveTo ever crosses the gap. SUCCEEDS grounded
+ *  again below the lip (the parsed `island egress — via drop` line, latch cleared); FAILS
+ *  when no lip exists, the walk stalls, or the body never leaves (latch cleared too, so
+ *  Wander re-measures rather than this tactic re-selecting the same lip forever).
+ *  ExitState never cancels a fall in progress. */
+USTRUCT(meta = (DisplayName = "AIB Egress", Category = "AIBot"))
+struct FAIBEgressTask : public FStateTreeTaskCommonBase
+{
+	GENERATED_BODY()
+
+	using FInstanceDataType = FAIBEgressTaskInstanceData;
+	virtual const UStruct* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
+
+	FAIBEgressTask() { bShouldCallTick = true; }
+
+	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
+	virtual EStateTreeRunStatus Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const override;
+	virtual void ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
 };

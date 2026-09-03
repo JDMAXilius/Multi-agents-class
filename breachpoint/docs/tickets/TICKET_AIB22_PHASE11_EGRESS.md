@@ -278,3 +278,16 @@ Refined steps (replace §Steps):
      `Remembers(Actor)` as an identity oracle for a log line — risk register, not fixed.
   PASS verified: const_cast well-defined; server-only clean; F1/F4 clean; quiet-case Forget
   design correct.
+- 2026-09-02 lane B (aib-builder) landed at rung "compiles" (BreachpointEditor PASS first build;
+  specs running, result below): wander draws from the PAWN on a full path only (H3); island
+  latch = 3 consecutive no-full-path draws, held on the controller (`FAIBIslandLatch`, same
+  pattern as the sweep budget); `Egress` under Roam behind `FAIBOnIslandCondition` — 16-ray
+  `NavigationRaycast` fan finds MY island's lip (Detour skips off-mesh links, so every hit is
+  my boundary), lip only if nav exists ≥ IslandMinDropUU below past it, step-off is AIB19's
+  exact projectionless MoveToLocation, phase re-derived from the world each Tick, ExitState
+  never cancels a fall; `ForgetMemory()` on the sensorium retires lane A's const_cast. Row
+  fields IslandLatchDraws 3 / IslandLipStandoffUU 60 / IslandLipProbeUU 150 / IslandMinDropUU
+  120 (defaults apply; DT_AIBTiers reimport only if a tier wants an override). **ST_AIBBot must
+  be rebuilt** (`Tools/aib/70_aib_assets.py`, editor-live) — new states/nodes are not
+  default-on-load. Parser (lead): `island latched`, `island egress starts`, `island egress
+  FAILED` regexes + per-bot latch/failed counts, selftest updated.
