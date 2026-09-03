@@ -550,3 +550,14 @@ Refined steps (replace §Steps):
   BEFORE issuing the lip walk/step-off/recovery and the completion-clear skips while it is set
   (the id mark stays as belt); F6-3 every still-tactic bit is cleared on state exit (the
   sentinel's ExitState), so a label never outlives the state that set it.
+- 2026-09-03 PIE observation (real MCP session, Arena01, 7 bots, `Tools/aib/aib_pie_observe.py`,
+  5 samples over 64 s, captures at 0/30 s — a live match: kill feed, grenades, score 2–5 at
+  9:13): sampled path per bot 3250 / 3952 / 3329 / 1873 / 1845 / 4565 / 3015 uu (straight-line
+  between samples = a lower bound); longest still spell 0 s for five bots, 16.3 s (bot 4) and
+  12.1 s (bot 5, mid-grapple to z 1256) for two. In the same minute the log shows every phase
+  live: `ambition -> … reason=merit|veto|interrupt|fallback`, `route — lanes=2>4 …` (real lane
+  ids), `team report … from …`, `target claim GRANTED (1/2)`, `tactic -> Push … reason=first`,
+  `hill strafe-hold — ring 360uu`, `island egress starts … FAILED — lip 111uu short (mover
+  idle)`. Observed for W-VERIFY v5: veto flip-flops between Roam (0.20) and Mode.Rally (0.00)
+  several times a second on some bots — measure `ambition_switches` per minute vs baseline.
+  The earlier PIE match ran to the 7-kill score limit and travelled to the front end on its own.

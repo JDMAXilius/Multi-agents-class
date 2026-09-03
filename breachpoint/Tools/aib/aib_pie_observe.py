@@ -23,7 +23,12 @@ def game_world():
 def bots(w):
     out = []
     for c in unreal.GameplayStatics.get_all_actors_of_class(w, unreal.AIController):
-        p = c.get_editor_property("pawn")
+        p = c.get_controlled_pawn() if hasattr(c, "get_controlled_pawn") else None
+        if p is None:
+            try:
+                p = c.get_editor_property("pawn")
+            except Exception:  # noqa: BLE001
+                p = None
         if p:
             out.append((c.get_name(), c, p))
     return out
@@ -43,7 +48,7 @@ def state_of(c):
 def sample(tag):
     os.makedirs(OUT, exist_ok=True)
     w = game_world()
-    t = w.get_time_seconds() if hasattr(w, "get_time_seconds") else time.time()
+    t = unreal.GameplayStatics.get_time_seconds(w)
     rows = []
     for name, c, p in bots(w):
         loc = p.get_actor_location()
