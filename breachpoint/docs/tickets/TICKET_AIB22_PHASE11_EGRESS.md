@@ -345,3 +345,7 @@ Refined steps (replace §Steps):
 - 2026-09-03 lane B fix specs (lead): 185 success / 0 fail, `AIBot.Sim.IslandLatch` 10 cases
   (Tools/Logs/specs-20260903-000057.log). Game + server targets building for rung 1; both fix
   packets under a second W-REVIEW.
+- 2026-09-03 rung 1 on 6258a645 (lead): BreachpointEditor PASS, Breachpoint PASS,
+  BreachpointServer NOT BUILDABLE — UBT: "Server targets are not currently supported from this
+  engine distribution" (launcher UE 5.8, not source-built; Tools/Logs/ubt-BreachpointServer.log).
+  Reported as PARTIAL per testing.md; the server rung needs the source-built engine machine.
