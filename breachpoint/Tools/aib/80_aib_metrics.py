@@ -12,6 +12,8 @@ Usage:
     python3 Tools/aib/80_aib_metrics.py Saved/Logs/Match1.log [Match2.log ...]
     ... --json          machine-readable dump instead of the table
     ... --bar KEY=VAL   override a provisional bar (repeatable), e.g. --bar refusals_per_switch=0.8
+    ... --baseline F    a prior --json dump (Tools/aib/baselines/) to gate refusals + kills/min against
+    ... --selftest      run the inline synthetic log through the parser and assert every derived number
 
 Verbosity note: acquisitions/ambitions/claims/tiers ride LogAIBot at Log verbosity
 (default-on). Melee swings, grenade throws and strafe steps are Verbose — add
@@ -28,6 +30,10 @@ import sys
 # ---------------------------------------------------------------- the vocabulary
 # One regex per instrument line, matching the exact formats compiled into the module
 # (Plugins/AIBot/Source/AIBot). A format change there MUST break here loudly — that is a feature.
+_NUM = r"-?[0-9.]+"
+_VEC = r"\(" + _NUM + r",\s*" + _NUM + r",\s*" + _NUM + r"\)"
+_AIB = r"AIBot: (?P<bot>\S+) t=(?P<t>" + _NUM + r") "
+
 RX = {
     "acquire":   re.compile(r"AIBot: (?P<bot>\S+) acquired (?P<target>\S+) after (?P<latency>[0-9.]+)s reaction\."),
     "ambition":  re.compile(r"AIBot: (?P<bot>\S+) ambition -> (?P<want>\S+) \((?P<score>[0-9.-]+)\) over (?P<runner>\S+) \((?P<rscore>[0-9.-]+)\)(?P<interrupt> \[interrupt\])?"),
@@ -85,7 +91,24 @@ RX = {
     # facts (dead = the corpse window, alive = a grant race). The done-when bar is this
     # count at ~0 across five matches.
     "no_grant": re.compile(r"BNASC: input tag (?P<tag>\S+) reached the ASC but NO granted ability carries it[^.]*\. dead=(?P<dead>yes|no) avatar=(?P<avatar>\S+)"),
+    # AIB22 step 1 (W-AUDIT member 3 spec): the five egress metrics, each carrying t= World
+    # seconds so idle/stall/sweep sum to SECONDS. The dash is U+2014 in the module; ASCII
+    # '-' accepted so a hand-typed or transcoded log still parses.
+    "move_refused":  re.compile(_AIB + r"move REFUSED goal=" + _VEC + r"(?P<text>.*)"),
+    "stall_over":    re.compile(_AIB + r"stall over [—-] (?P<seconds>" + _NUM + r")s at " + _VEC + r" goal=" + _VEC
+                                + r" jumped=(?P<jumped>yes|no) resolved=(?P<resolved>moved|abandoned)"),
+    "sweep_over":    re.compile(_AIB + r"sweep over [—-] (?P<seconds>" + _NUM + r")s, moved (?P<moved>" + _NUM + r")uu, state=(?P<state>Search|Roam)"),
+    "idle_over":     re.compile(_AIB + r"idle over [—-] (?P<seconds>" + _NUM + r")s state=(?P<state>\S+) tactic=(?P<tactic>Hold|Reload|StrafeHold|none)"),
+    "island_egress": re.compile(_AIB + r"island egress [—-] via (?P<via>drop|link|jump|grapple) from " + _VEC + r" after (?P<seconds>" + _NUM + r")s stranded"),
+    # Kills/min inputs (LogBN, formats from BNGameMode.cpp): one line per credited kill,
+    # and the travel-URL TimeLimit that the headless protocol always passes.
+    "kill":       re.compile(r"BNGameMode: (?P<killer>.+) eliminated (?P<victim>.+) with '(?P<source>[^']*)'\. \(.+: (?P<kills>\d+) kills\)"),
+    "time_limit": re.compile(r"BNGameMode: TimeLimit=(?P<seconds>\d+)s from the travel URL\."),
 }
+
+# The per-bot metrics derived from the five AIB22 lines (seconds are sums per bot per match).
+BOT_METRICS = ("no_path_requests", "stuck_seconds", "max_stall_seconds", "sweep_seconds",
+               "idle_seconds", "idle_seconds_tactical", "island_egress_count")
 
 # F1's floor is a module constant (AIB::MinReactionSeconds). Restated here as a
 # checked number: if the module's floor moves, this bar must be moved WITH it.
@@ -109,18 +132,60 @@ DEFAULT_BARS = {
     "ffa_claim_grants": 0,
     # Baseline discipline: below this many logs, no PASS/FAIL is issued at all.
     "min_logs_for_baseline": 5,
+    # AIB22 egress gates (W-AUDIT member 3). idle/sweep are HARD; the stall pair PROVISIONAL.
+    "idle_seconds": 0.0,            # per bot per match, tactic=none only
+    "sweep_seconds": 0.0,           # per bot per match
+    "stuck_seconds_per_bot": 10.0,  # sum of stall-over seconds, worst bot
+    "max_stall_seconds": 3.0,       # longest single stall, any bot
+    "refusal_ratio_vs_baseline": 0.5,  # median no_path_requests per bot <= this x baseline median
 }
 
 
-def parse_log(path):
+def parse_lines(lines):
     counts = {key: [] for key in RX}
-    with open(path, "r", encoding="utf-8", errors="replace") as handle:
-        for line in handle:
-            for key, rx in RX.items():
-                match = rx.search(line)
-                if match:
-                    counts[key].append(match.groupdict())
+    for line in lines:
+        for key, rx in RX.items():
+            match = rx.search(line)
+            if match:
+                counts[key].append(match.groupdict())
     return counts
+
+
+def parse_log(path):
+    with open(path, "r", encoding="utf-8", errors="replace") as handle:
+        return parse_lines(handle)
+
+
+def per_bot_summary(counts):
+    """AIB22: the five metrics per bot. Every possessed/tiered bot gets a row (zeros count
+    in the medians); bots seen only on the five lines are added as they appear."""
+    bots = {}
+
+    def row(name):
+        return bots.setdefault(name, {key: 0 for key in BOT_METRICS})
+
+    for key in ("possess", "tier"):
+        for hit in counts[key]:
+            row(hit["bot"])
+    for hit in counts["move_refused"]:
+        row(hit["bot"])["no_path_requests"] += 1
+    for hit in counts["stall_over"]:
+        seconds = float(hit["seconds"])
+        bot = row(hit["bot"])
+        bot["stuck_seconds"] += seconds
+        bot["max_stall_seconds"] = max(bot["max_stall_seconds"], seconds)
+    for hit in counts["sweep_over"]:
+        row(hit["bot"])["sweep_seconds"] += float(hit["seconds"])
+    for hit in counts["idle_over"]:
+        key = "idle_seconds" if hit["tactic"] == "none" else "idle_seconds_tactical"
+        row(hit["bot"])[key] += float(hit["seconds"])
+    for hit in counts["island_egress"]:
+        row(hit["bot"])["island_egress_count"] += 1
+    for bot in bots.values():
+        for key in BOT_METRICS:
+            if isinstance(bot[key], float):
+                bot[key] = round(bot[key], 3)
+    return dict(sorted(bots.items()))
 
 
 def per_match_summary(counts):
@@ -130,6 +195,13 @@ def per_match_summary(counts):
     tiers = {}
     for hit in counts["tier"]:
         tiers.setdefault(hit["tier"], set()).add(hit["bot"])
+    bots = per_bot_summary(counts)
+    # ponytail: match length = the URL TimeLimit, else the last t= seen on an AIB22 line.
+    # A score-limit early end overstates minutes; add a "match over" t= line if that matters.
+    t_seen = [float(hit["t"]) for key in ("move_refused", "stall_over", "sweep_over", "idle_over", "island_egress")
+              for hit in counts[key]]
+    match_seconds = (float(counts["time_limit"][-1]["seconds"]) if counts["time_limit"]
+                     else max(t_seen) if t_seen else None)
     return {
         "acquisitions": len(latencies),
         "latency_mean": statistics.mean(latencies) if latencies else None,
@@ -194,7 +266,29 @@ def per_match_summary(counts):
             "by_tag": {tag: sum(1 for hit in counts["no_grant"] if hit["tag"] == tag)
                 for tag in sorted({hit["tag"] for hit in counts["no_grant"]})},
         } if counts["no_grant"] else None),
+        # AIB22: per-bot egress metrics, their across-bot spread, and lobby kills/min.
+        "per_bot": bots,
+        "bot_spread": {key: spread([bot[key] for bot in bots.values()]) for key in BOT_METRICS},
+        "kills": len(counts["kill"]),
+        "match_seconds": match_seconds,
+        "kills_per_min": (round(len(counts["kill"]) / (match_seconds / 60.0), 3) if match_seconds else None),
     }
+
+
+# Lobby-wide keys whose across-match spread (mean/median/min/max) is reported and dumped;
+# the BOT_METRICS ride as the median-across-bots of each match.
+LOBBY_KEYS = ("latency_mean", "refusals_per_switch", "ambition_switches", "kills_per_min") + BOT_METRICS
+
+
+def lobby_spread(matches):
+    out = {}
+    for key in LOBBY_KEYS:
+        if key in BOT_METRICS:
+            values = [(m["bot_spread"][key] or {}).get("median") for m in matches]
+        else:
+            values = [m[key] for m in matches]
+        out[key] = spread(values)
+    return out
 
 
 def spread(values):
@@ -203,13 +297,14 @@ def spread(values):
         return None
     return {
         "mean": statistics.mean(real),
+        "median": statistics.median(real),
         "min": min(real),
         "max": max(real),
         "n": len(real),
     }
 
 
-def judge(matches, bars):
+def judge(matches, bars, baseline=None):
     verdicts = []
 
     def bar_line(name, ok, detail):
@@ -234,15 +329,53 @@ def judge(matches, bars):
         bar_line("move refusals per switch", rps["mean"] <= bars["refusals_per_switch"],
                  f"mean {rps['mean']:.2f} (spread {rps['min']:.2f}..{rps['max']:.2f}, n={rps['n']}) "
                  f"vs PROVISIONAL bar {bars['refusals_per_switch']}")
+
+    # AIB22 gates — worst bot across every match, stamped HARD or PROVISIONAL.
+    def worst_bot(key):
+        rows = [(bot[key], name, i + 1) for i, m in enumerate(matches) for name, bot in m["per_bot"].items()]
+        return max(rows) if rows else None
+
+    for name, key, bar_key, kind in (("idle seconds (tactic=none)", "idle_seconds", "idle_seconds", "HARD"),
+                                     ("sweep seconds", "sweep_seconds", "sweep_seconds", "HARD"),
+                                     ("stuck seconds per bot", "stuck_seconds", "stuck_seconds_per_bot", "PROVISIONAL"),
+                                     ("longest single stall", "max_stall_seconds", "max_stall_seconds", "PROVISIONAL")):
+        worst = worst_bot(key)
+        if worst is None:
+            continue
+        value, bot, match_no = worst
+        bar_line(name, value <= bars[bar_key],
+                 f"worst {value} ({bot}, log {match_no}) vs {kind} bar {bars[bar_key]} (per bot per match)")
+
+    if baseline is not None:
+        current = lobby_spread(matches)
+        base = baseline["lobby_spread"]
+        cur_ref, base_ref = current["no_path_requests"], base["no_path_requests"]
+        if cur_ref and base_ref:
+            ceiling = bars["refusal_ratio_vs_baseline"] * base_ref["median"]
+            bar_line("move refusals vs baseline", cur_ref["median"] <= ceiling,
+                     f"median per-bot no_path_requests {cur_ref['median']:.2f} vs {bars['refusal_ratio_vs_baseline']} x "
+                     f"baseline median {base_ref['median']:.2f} = {ceiling:.2f} (n={cur_ref['n']} vs baseline n={base_ref['n']})")
+        cur_kpm, base_kpm = current["kills_per_min"], base["kills_per_min"]
+        if cur_kpm and base_kpm:
+            floor = base_kpm["median"] - (base_kpm["max"] - base_kpm["min"])
+            bar_line("kills/min vs baseline", cur_kpm["median"] >= floor,
+                     f"median {cur_kpm['median']:.3f} vs baseline median {base_kpm['median']:.3f} - spread "
+                     f"{base_kpm['max'] - base_kpm['min']:.3f} = floor {floor:.3f}")
     return verdicts
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("logs", nargs="+", help="one or more UE log files")
+    parser.add_argument("logs", nargs="*", help="one or more UE log files")
     parser.add_argument("--json", action="store_true")
     parser.add_argument("--bar", action="append", default=[], metavar="KEY=VAL")
+    parser.add_argument("--baseline", metavar="JSON", help="a prior --json dump to gate refusals and kills/min against")
+    parser.add_argument("--selftest", action="store_true")
     args = parser.parse_args()
+    if args.selftest:
+        return selftest()
+    if not args.logs:
+        parser.error("no logs given (or use --selftest)")
 
     bars = dict(DEFAULT_BARS)
     for override in args.bar:
@@ -251,18 +384,28 @@ def main():
             sys.exit(f"unknown bar '{key}' — known: {', '.join(sorted(bars))}")
         bars[key] = type(bars[key])(float(raw)) if isinstance(bars[key], float) else int(raw)
 
+    reference = None
+    if args.baseline:
+        with open(args.baseline, "r", encoding="utf-8") as handle:
+            reference = json.load(handle)
+        if "lobby_spread" not in reference:
+            sys.exit(f"{args.baseline} has no 'lobby_spread' — baselines are this script's own --json output")
+
     matches = [per_match_summary(parse_log(path)) for path in args.logs]
     baseline = len(matches) >= bars["min_logs_for_baseline"]
-    verdicts = judge(matches, bars)
+    verdicts = judge(matches, bars, reference)
 
     if args.json:
-        print(json.dumps({"matches": matches, "verdicts": verdicts, "baseline": baseline}, indent=2))
+        print(json.dumps({"logs": args.logs, "matches": matches, "lobby_spread": lobby_spread(matches),
+                          "verdicts": verdicts, "baseline": baseline}, indent=2))
         return
 
     print("=== AIBot metrics ===")
     for path, match in zip(args.logs, matches):
         print(f"\n-- {path}")
         for key, value in match.items():
+            if key in ("per_bot", "bot_spread"):
+                continue
             if value is None:
                 value = ("not captured (Verbose off?)"
                     if key in ("swings", "throws", "throttled_throws", "denial_throws",
@@ -274,12 +417,15 @@ def main():
                         "team_kills_denied")
                     else "n/a")
             print(f"   {key:22}: {value}")
+        if match["per_bot"]:
+            print(f"   {'per bot':22}: " + " ".join(f"{key[:9]:>9}" for key in BOT_METRICS))
+            for bot, row in match["per_bot"].items():
+                print(f"     {bot[:20]:20}: " + " ".join(f"{row[key]:>9}" for key in BOT_METRICS))
 
-    print("\n=== lobby spread (across logs) ===")
-    for key in ("latency_mean", "refusals_per_switch", "ambition_switches"):
-        agg = spread([m[key] for m in matches])
+    print("\n=== lobby spread (across logs; bot metrics = median across bots per log) ===")
+    for key, agg in lobby_spread(matches).items():
         if agg:
-            print(f"   {key:22}: mean {agg['mean']:.3f}  min {agg['min']:.3f}  max {agg['max']:.3f}  n={agg['n']}")
+            print(f"   {key:22}: mean {agg['mean']:.3f}  median {agg['median']:.3f}  min {agg['min']:.3f}  max {agg['max']:.3f}  n={agg['n']}")
 
     print("\n=== bars ===")
     if not baseline:
@@ -288,6 +434,78 @@ def main():
               f"indicative only; do not paste them as a claim.")
     for verdict, name, detail in verdicts:
         print(f"   [{verdict}] {name}: {detail}")
+
+
+# ------------------------------------------------------------------- self-test
+# Twenty synthetic lines in the exact module formats (one ASCII dash on purpose), with
+# every derived number asserted. `--selftest` is the check that the regexes still match
+# the spec; a module format change must break THIS before it silently zeroes a baseline.
+SELFTEST_LOG = """\
+AIBot: Alpha possessed BP_Pawn_1, avatar door open.
+AIBot: Bravo possessed BP_Pawn_2, avatar door open.
+BNGameMode: TimeLimit=300s from the travel URL.
+AIBot: Alpha t=12.5 move REFUSED goal=(100,200,50) no path to goal
+AIBot: Alpha t=13.0 move REFUSED goal=(100,200,50) belief target off-mesh
+AIBot: Bravo t=14.25 move REFUSED goal=(-1,-2.5,3) projection failed
+AIBot: Alpha t=20.0 stall over — 2.5s at (1,2,3) goal=(4,5,6) jumped=yes resolved=moved
+AIBot: Alpha t=40.0 stall over - 4.0s at (1,2,3) goal=(4,5,6) jumped=no resolved=abandoned
+AIBot: Bravo t=41.0 stall over — 1.5s at (0,0,0) goal=(9,9,9) jumped=no resolved=moved
+AIBot: Alpha t=50.0 sweep over — 3.0s, moved 120.5uu, state=Search
+AIBot: Bravo t=51.0 sweep over — 1.25s, moved 0uu, state=Roam
+AIBot: Alpha t=60.0 idle over — 2.0s state=Roam tactic=none
+AIBot: Alpha t=70.0 idle over — 1.5s state=Engage tactic=Hold
+AIBot: Bravo t=71.0 idle over — 0.5s state=Engage tactic=Reload
+AIBot: Bravo t=72.0 idle over — 3.0s state=Search tactic=none
+AIBot: Alpha t=80.0 island egress — via drop from (10,20,30) after 4.5s stranded
+AIBot: Bravo t=81.0 island egress — via grapple from (10,20,30) after 2.0s stranded
+BNGameMode: Alpha eliminated Bravo with 'Rifle'. (Alpha: 1 kills)
+BNGameMode: Bravo eliminated Alpha with 'Melee'. (Bravo: 1 kills)
+AIBot: Alpha acquired Bravo after 0.35s reaction.
+"""
+
+
+def selftest():
+    lines = SELFTEST_LOG.splitlines()
+    assert len(lines) == 20, len(lines)
+    counts = parse_lines(lines)
+    hits = {key: len(counts[key]) for key in ("move_refused", "stall_over", "sweep_over", "idle_over",
+                                              "island_egress", "kill", "time_limit", "possess", "acquire", "f7")}
+    assert hits == {"move_refused": 3, "stall_over": 3, "sweep_over": 2, "idle_over": 4, "island_egress": 2,
+                    "kill": 2, "time_limit": 1, "possess": 2, "acquire": 1, "f7": 0}, hits
+    assert counts["stall_over"][1]["resolved"] == "abandoned" and counts["stall_over"][0]["jumped"] == "yes"
+    assert counts["island_egress"][1]["via"] == "grapple" and counts["sweep_over"][0]["moved"] == "120.5"
+    assert counts["move_refused"][0]["text"].strip() == "no path to goal"
+
+    match = per_match_summary(counts)
+    expect = {
+        "Alpha": {"no_path_requests": 2, "stuck_seconds": 6.5, "max_stall_seconds": 4.0, "sweep_seconds": 3.0,
+                  "idle_seconds": 2.0, "idle_seconds_tactical": 1.5, "island_egress_count": 1},
+        "Bravo": {"no_path_requests": 1, "stuck_seconds": 1.5, "max_stall_seconds": 1.5, "sweep_seconds": 1.25,
+                  "idle_seconds": 3.0, "idle_seconds_tactical": 0.5, "island_egress_count": 1},
+    }
+    assert match["per_bot"] == expect, match["per_bot"]
+    assert match["kills"] == 2 and match["match_seconds"] == 300.0 and match["kills_per_min"] == 0.4, match
+    assert match["bot_spread"]["no_path_requests"]["median"] == 1.5
+    assert match["bot_spread"]["stuck_seconds"] == {"mean": 4.0, "median": 4.0, "min": 1.5, "max": 6.5, "n": 2}
+    assert match["f7_failures"] == 0 and match["acquisitions"] == 1
+
+    lobby = lobby_spread([match, match])
+    assert lobby["kills_per_min"]["median"] == 0.4 and lobby["idle_seconds"]["median"] == 2.5, lobby
+
+    verdicts = {name: verdict for verdict, name, _ in judge([match], DEFAULT_BARS, {"lobby_spread": lobby})}
+    assert verdicts == {
+        "F1 reaction floor": "PASS", "unserved wants": "PASS", "wiring warnings": "PASS", "FFA claim grants": "PASS",
+        "idle seconds (tactic=none)": "FAIL", "sweep seconds": "FAIL",
+        "stuck seconds per bot": "PASS", "longest single stall": "FAIL",
+        "move refusals vs baseline": "FAIL",   # 1.5 > 0.5 x 1.5
+        "kills/min vs baseline": "PASS",       # 0.4 >= 0.4 - 0
+    }, verdicts
+    assert judge([match], DEFAULT_BARS)[-1][1] == "longest single stall"  # no baseline -> no baseline gates
+
+    for line in judge([match], DEFAULT_BARS, {"lobby_spread": lobby}):
+        print(f"   [{line[0]}] {line[1]}: {line[2]}")
+    print(f"SELFTEST PASS: 20 lines, {sum(hits.values())} hits, per-bot {json.dumps(match['per_bot'])}, "
+          f"kills/min {match['kills_per_min']}")
 
 
 if __name__ == "__main__":
