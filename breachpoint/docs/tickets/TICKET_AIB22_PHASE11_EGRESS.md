@@ -575,3 +575,5 @@ Refined steps (replace §Steps):
   and single-stall PROVISIONAL bars; sweep fraction 0.15 / 0.17 (the bar assumes 300 s matches
   — v6 runs with `?ScoreLimit=200` so matches go to the time limit). Verifier breakdown
   dispatched; fix #6 building.
+- 2026-09-03 fix #6 merged (e722f447) and rung 1 PASS (Editor + Game). Specs running; then the
+  FINAL editor verification (gantry watch + observation on both maps) and W-VERIFY v6.
