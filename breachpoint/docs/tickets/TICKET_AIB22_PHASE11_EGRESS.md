@@ -380,3 +380,16 @@ Refined steps (replace §Steps):
      reported ungated; Phase 13 (separation/strafing) makes the hill hold a strafe-hold with
      the existing `FAIBStrafeTask`. LOW-8 specs are worldless — accepted, engine contract
      verified by the critic against PathFollowingComponent.cpp:602.
+- 2026-09-03 box 2 census, editor-live over the MCP console (`Tools/aib/aib22_platform_census.py`,
+  anchor = PlayerStart, "way" = full non-partial path):
+  Spillway 94 platforms, 19 fail both ways — all prop tops (cover blocks z+400, lane crates
+  z+240, roof crates, columns, mast, tower mass) that nothing walks to; the one platform-named
+  failure, `SPW_Tower_Deck_T1`, is a 2800x2800 slab whose 5x5 top grid has NO nav (buried
+  under the tower) — the centre-point sliver was the artefact, not an island.
+  Arena01 7 platforms, 7 fail both ways: `BR_LM_The_Gantry_01/02` (z 800, 400x400, whole grid
+  nav-but-no-path either way) and `BR_LM_The_Core_02..06` (z 900). The gantry is a true island
+  in BOTH directions — no generated BN_Drop link leaves it despite an 800 drop under the 1000
+  ceiling (suspect: landing farther than JumpLength 400 from the edge / under the core mass).
+  RULING: box 2 re-scoped — a platform's "way down" is a generated link OR the Egress
+  step-off; the PIE top-platform watch (box 4) is the measurement, on the gantry. The link
+  generator question is filed for the arena-architect (not Phase 11 code).

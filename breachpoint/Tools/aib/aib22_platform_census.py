@@ -76,11 +76,6 @@ def census(level=None):
     unreal.log("  box 2 %s" % ("PASS" if not no_down and not no_up else "FAIL"))
 
 
-if __name__ == "__main__":
-    if len(sys.argv) > 2 and sys.argv[1] == "--grid":
-        detail_grid(sys.argv[2])
-    else:
-        census(sys.argv[1] if len(sys.argv) > 1 else None)
 
 
 def detail_grid(label, n=5):
@@ -108,3 +103,10 @@ def detail_grid(label, n=5):
             unreal.log("    " + r)
         return
     unreal.log("AIB22 grid: no actor labelled %s" % label)
+
+
+if __name__ == "__main__":
+    if len(sys.argv) > 2 and sys.argv[1] == "--grid":
+        detail_grid(sys.argv[2])
+    else:
+        census(sys.argv[1] if len(sys.argv) > 1 else None)
