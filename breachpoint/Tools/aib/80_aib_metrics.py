@@ -36,7 +36,12 @@ _VEC = r"\(" + _NUM + r",\s*" + _NUM + r",\s*" + _NUM + r"\)"
 _AIB = r"AIBot: (?P<bot>\S+) t=(?P<t>" + _NUM + r") "
 
 RX = {
-    "acquire":   re.compile(r"AIBot: (?P<bot>\S+) acquired (?P<target>\S+) after (?P<latency>[0-9.]+)s reaction\."),
+    # AIB22 step 2 (live-log shapes): `acquired X after Ns reaction.`, `... reaction (K believed).`
+    # and `SWITCHED to X after Ns reaction (K believed, was Y).` are all reaction samples for
+    # the F1 floor. `after -1.000s reaction` is the module's "no sample" sentinel — parsed
+    # here, counted as reaction_sentinels in the summary, never as a latency.
+    "acquire":   re.compile(r"AIBot: (?P<bot>\S+) (?P<verb>acquired|SWITCHED to) (?P<target>\S+) after (?P<latency>-?[0-9.]+)s reaction"
+                            r"(?: \((?P<believed>\d+) believed[^)]*\))?\."),
     "ambition":  re.compile(r"AIBot: (?P<bot>\S+) ambition -> (?P<want>\S+) \((?P<score>[0-9.-]+)\) over (?P<runner>\S+) \((?P<rscore>[0-9.-]+)\)(?P<interrupt> \[interrupt\])?"),
     "tier":      re.compile(r"AIBot: (?P<bot>\S+) resolved tier (?P<tier>\S+) \(Mv (?P<mv>\d) Aim (?P<aim>\d) Gr (?P<gr>\d) Me (?P<me>\d) Cf (?P<cf>\d) Tw (?P<tw>\d), react (?P<rmin>[0-9.]+)-(?P<rmax>[0-9.]+)\)\."),
     "possess":   re.compile(r"AIBot: (?P<bot>\S+) possessed (?P<pawn>\S+), avatar door open\."),
@@ -45,7 +50,7 @@ RX = {
     "claim_release": re.compile(r"AIBot: claims RELEASED for (?P<bot>\S+) \(life over\)\."),
     "mode_regs": re.compile(r"AIBot: (?P<bot>\S+) registered (?P<count>\d+) mode ambition\(s\) from the provider\."),
     # F7 failure voices — every category the module can speak.
-    "f7":        re.compile(r"AIBot: (?P<bot>\S+) (?P<what>cannot path to the last-known spot|cannot path to the objective|cannot reach the last-known spot|cannot reach the objective|flee path REFUSED|flee stalled|wants Retreat with no threat point|won a mode want but)"),
+    "f7":        re.compile(r"AIBot: (?P<bot>\S+) (?P<what>cannot path to the last-known spot|cannot path to the objective|cannot reach the last-known spot|cannot reach the objective|POI path refused|could not path to the belief|flee path REFUSED|flee stalled|wants Retreat with no threat point|won a mode want but)"),
     "unserved":  re.compile(r"AIBot: (?P<bot>\S+) wants '(?P<want>[^']+)' and NO branch serves it"),
     # AIB16's suppression (Verbose): each line is one branch-failure report reaching
     # arbitration. A handful per match = a world problem being coped with; hundreds
@@ -53,6 +58,9 @@ RX = {
     "suppressed": re.compile(r"AIBot: (?P<bot>\S+) branch for (?P<want>\S+) failed — suppressing"),
     # Wiring-class warnings: any hit is a finding, whatever the count.
     "wiring":    re.compile(r"AIBot: (?:\S+ )?(dropped a damage-(?:taken|dealt) note|dropped a blast warning|possessed on a non-authority|lost its avatar door|exited a fire state holding|tried to claim a PAWN-backed|asked for unknown tier|BotStateTree '.*' failed to load|RegisterProviders refused|claim refused on a client)"),
+    # AIB22 step 2: a POI branch asked for a provider kind nobody registered (Verbose, 688/log
+    # on the 2 Sep baseline). Wiring-shaped, but report-only — it is NOT in the wiring gate.
+    "wiring_pois": re.compile(r"AIBot: (?P<bot>\S+) has no POI provider for kind (?P<kind>\S+) [—-] branch fails"),
     # Verbose-only (counted when captured; reported as absent otherwise).
     "swing":     re.compile(r"AIBot: (?P<bot>\S+) swung at (?P<dist>[0-9.]+)uu"),
     "throw":     re.compile(r"AIBot: (?P<bot>\S+) threw \(call (?P<call>\d)\)"),
@@ -98,7 +106,7 @@ RX = {
     "move_refused":  re.compile(_AIB + r"move REFUSED goal=" + _VEC + r"(?P<text>.*)"),
     "stall_over":    re.compile(_AIB + r"stall over [—-] (?P<seconds>" + _NUM + r")s at " + _VEC + r" goal=" + _VEC
                                 + r" jumped=(?P<jumped>yes|no) resolved=(?P<resolved>moved|abandoned)"),
-    "sweep_over":    re.compile(_AIB + r"sweep over [—-] (?P<seconds>" + _NUM + r")s, moved (?P<moved>" + _NUM + r")uu, state=(?P<state>Search|Roam)"),
+    "sweep_over":    re.compile(_AIB + r"sweep over [—-] (?P<seconds>" + _NUM + r")s, moved (?P<moved>" + _NUM + r")uu, state=(?P<state>\S+)"),
     "idle_over":     re.compile(_AIB + r"idle over [—-] (?P<seconds>" + _NUM + r")s state=(?P<state>\S+) tactic=(?P<tactic>Hold|Reload|StrafeHold|none)"),
     "island_egress": re.compile(_AIB + r"island egress [—-] via (?P<via>drop|link|jump|grapple) from " + _VEC + r" after (?P<seconds>" + _NUM + r")s stranded"),
     # AIB23 (Phase 12): the target-claim board and the team report, each on the t= prefix.
@@ -112,6 +120,9 @@ RX = {
     # and the travel-URL TimeLimit that the headless protocol always passes.
     "kill":       re.compile(r"BNGameMode: (?P<killer>.+) eliminated (?P<victim>.+) with '(?P<source>[^']*)'\. \(.+: (?P<kills>\d+) kills\)"),
     "time_limit": re.compile(r"BNGameMode: TimeLimit=(?P<seconds>\d+)s from the travel URL\."),
+    # The actual end (score-limit matches end early; the URL TimeLimit overstates them).
+    # Carries no t= of its own — parse_lines stamps the last t= seen before it.
+    "match_over": re.compile(r"BNGameMode: match over\."),
 }
 
 # The per-bot metrics derived from the five AIB22 lines (seconds are sums per bot per match).
@@ -159,11 +170,17 @@ DEFAULT_BARS = {
 
 def parse_lines(lines):
     counts = {key: [] for key in RX}
+    last_t = None
     for line in lines:
         for key, rx in RX.items():
             match = rx.search(line)
             if match:
-                counts[key].append(match.groupdict())
+                hit = match.groupdict()
+                if hit.get("t") is not None:
+                    last_t = float(hit["t"])
+                elif key == "match_over":
+                    hit["t"] = last_t
+                counts[key].append(hit)
     return counts
 
 
@@ -255,33 +272,42 @@ def target_pileups(counts, ttl):
 
 
 def per_match_summary(counts, ttl=CLAIM_TTL_SECONDS):
-    latencies = [float(hit["latency"]) for hit in counts["acquire"]]
+    latencies = [float(hit["latency"]) for hit in counts["acquire"] if float(hit["latency"]) >= 0]
+    sentinels = len(counts["acquire"]) - len(latencies)
     switches = len(counts["ambition"])
     interrupts = sum(1 for hit in counts["ambition"] if hit.get("interrupt"))
     tiers = {}
     for hit in counts["tier"]:
         tiers.setdefault(hit["tier"], set()).add(hit["bot"])
     bots = per_bot_summary(counts)
-    # ponytail: match length = the URL TimeLimit, else the last t= seen on an AIB22 line.
-    # A score-limit early end overstates minutes; add a "match over" t= line if that matters.
+    # Match length: the last t= before the LogBN "match over" line (score-limit ends are real),
+    # else the URL TimeLimit, else the last t= seen on an AIB22 line.
     t_seen = [float(hit["t"]) for key in ("move_refused", "stall_over", "sweep_over", "idle_over", "island_egress",
                                           "target_grant", "target_deny", "target_release", "team_report")
               for hit in counts[key]]
-    match_seconds = (float(counts["time_limit"][-1]["seconds"]) if counts["time_limit"]
+    over_t = [hit["t"] for hit in counts["match_over"] if hit["t"] is not None]
+    match_seconds = (over_t[0] if over_t
+                     else float(counts["time_limit"][-1]["seconds"]) if counts["time_limit"]
                      else max(t_seen) if t_seen else None)
     pileups, cap = target_pileups(counts, ttl)
     return {
         "acquisitions": len(latencies),
+        "acquisitions_by_verb": {verb: sum(1 for hit in counts["acquire"] if hit["verb"] == verb and float(hit["latency"]) >= 0)
+                                 for verb in ("acquired", "SWITCHED to")},
+        "reaction_sentinels": sentinels,   # `after -1.000s reaction` — no sample, never a latency
         "latency_mean": statistics.mean(latencies) if latencies else None,
         "latency_median": statistics.median(latencies) if latencies else None,
         "latency_min": min(latencies) if latencies else None,
         "ambition_switches": switches,
         "interrupts": interrupts,
         "f7_failures": len(counts["f7"]),
+        "f7_by_shape": {what: sum(1 for hit in counts["f7"] if hit["what"] == what)
+                        for what in sorted({hit["what"] for hit in counts["f7"]})},
         "refusals_per_switch": (len(counts["f7"]) / switches) if switches else None,
         "unserved_wants": len(counts["unserved"]),
         "suppressed_wants": len(counts["suppressed"]) or None,  # Verbose-only
         "wiring_warnings": len(counts["wiring"]),
+        "wiring_pois": len(counts["wiring_pois"]),   # report-only: no POI provider for a kind
         "claim_grants": len(counts["claim_grant"]),
         "claim_denies": len(counts["claim_deny"]),
         "claim_releases": len(counts["claim_release"]),
@@ -353,7 +379,8 @@ def per_match_summary(counts, ttl=CLAIM_TTL_SECONDS):
 
 # Lobby-wide keys whose across-match spread (mean/median/min/max) is reported and dumped;
 # the BOT_METRICS ride as the median-across-bots of each match.
-LOBBY_KEYS = ("latency_mean", "refusals_per_switch", "ambition_switches", "kills_per_min") + BOT_METRICS
+LOBBY_KEYS = ("latency_mean", "latency_min", "acquisitions", "reaction_sentinels", "refusals_per_switch",
+              "ambition_switches", "match_seconds", "kills_per_min") + BOT_METRICS
 
 
 def lobby_spread(matches):
@@ -516,7 +543,7 @@ def main():
 
 
 # ------------------------------------------------------------------- self-test
-# Twenty synthetic lines in the exact module formats (one ASCII dash on purpose), with
+# Twenty-eight synthetic lines in the exact module formats (one ASCII dash on purpose), with
 # every derived number asserted. `--selftest` is the check that the regexes still match
 # the spec; a module format change must break THIS before it silently zeroes a baseline.
 SELFTEST_LOG = """\
@@ -540,6 +567,14 @@ AIBot: Bravo t=81.0 island egress — via grapple from (10,20,30) after 2.0s str
 BNGameMode: Alpha eliminated Bravo with 'Rifle'. (Alpha: 1 kills)
 BNGameMode: Bravo eliminated Alpha with 'Melee'. (Bravo: 1 kills)
 AIBot: Alpha acquired Bravo after 0.35s reaction.
+AIBot: Bravo t=90.0 sweep over — 2.0s, moved 5uu, state=Mode
+AIBot: Bravo acquired Alpha after 0.333s reaction (1 believed).
+AIBot: Alpha SWITCHED to Bravo after 0.267s reaction (2 believed, was Charlie).
+AIBot: Bravo acquired Alpha after -1.000s reaction (1 believed).
+AIBot: Alpha POI path refused — branch fails (F7). self=NO goal=yes dist=5533uu selfZ=98 goalZ=0 dz=-98 | off-mesh self at (-3804, -1359, 98) age=0.0s falling=no velZ=0 lastHit=never
+AIBot: Bravo could not path to the belief — closing refused (F7). self=yes goal=yes dist=962uu selfZ=489 goalZ=498 dz=10
+AIBot: Alpha has no POI provider for kind None — branch fails.
+BNGameMode: match over. Winning team: 0
 """
 
 # AIB23: cap 2, ttl 5. Alpha/Bravo hold Enemy1; Charlie is denied twice, then GRANTED at
@@ -569,12 +604,17 @@ AIBot: Alpha t=112.0 target claim GRANTED on Enemy1 (1/2)
 
 def selftest():
     lines = SELFTEST_LOG.splitlines()
-    assert len(lines) == 20, len(lines)
+    assert len(lines) == 28, len(lines)
     counts = parse_lines(lines)
     hits = {key: len(counts[key]) for key in ("move_refused", "stall_over", "sweep_over", "idle_over",
-                                              "island_egress", "kill", "time_limit", "possess", "acquire", "f7")}
-    assert hits == {"move_refused": 3, "stall_over": 3, "sweep_over": 2, "idle_over": 4, "island_egress": 2,
-                    "kill": 2, "time_limit": 1, "possess": 2, "acquire": 1, "f7": 0}, hits
+                                              "island_egress", "kill", "time_limit", "possess", "acquire", "f7",
+                                              "wiring_pois", "match_over")}
+    assert hits == {"move_refused": 3, "stall_over": 3, "sweep_over": 3, "idle_over": 4, "island_egress": 2,
+                    "kill": 2, "time_limit": 1, "possess": 2, "acquire": 4, "f7": 2,
+                    "wiring_pois": 1, "match_over": 1}, hits
+    assert counts["sweep_over"][2]["state"] == "Mode" and counts["acquire"][2]["verb"] == "SWITCHED to"
+    assert counts["acquire"][1]["believed"] == "1" and counts["acquire"][0]["believed"] is None
+    assert counts["match_over"][0]["t"] == 90.0 and counts["wiring_pois"][0]["kind"] == "None"
     assert counts["stall_over"][1]["resolved"] == "abandoned" and counts["stall_over"][0]["jumped"] == "yes"
     assert counts["island_egress"][1]["via"] == "grapple" and counts["sweep_over"][0]["moved"] == "120.5"
     assert counts["move_refused"][0]["text"].strip() == "no path to goal"
@@ -584,18 +624,22 @@ def selftest():
         "Alpha": {"no_path_requests": 2, "stuck_seconds": 6.5, "max_stall_seconds": 4.0, "sweep_seconds": 3.0,
                   "idle_seconds": 2.0, "idle_seconds_tactical": 1.5, "island_egress_count": 1,
                   "claim_thrash": 0, "denied_roam": 0, "denied_engage_anyway": 0},
-        "Bravo": {"no_path_requests": 1, "stuck_seconds": 1.5, "max_stall_seconds": 1.5, "sweep_seconds": 1.25,
+        "Bravo": {"no_path_requests": 1, "stuck_seconds": 1.5, "max_stall_seconds": 1.5, "sweep_seconds": 3.25,
                   "idle_seconds": 3.0, "idle_seconds_tactical": 0.5, "island_egress_count": 1,
                   "claim_thrash": 0, "denied_roam": 0, "denied_engage_anyway": 0},
     }
     assert match["per_bot"] == expect, match["per_bot"]
-    assert match["kills"] == 2 and match["match_seconds"] == 300.0 and match["kills_per_min"] == 0.4, match
+    assert match["kills"] == 2 and match["match_seconds"] == 90.0 and match["kills_per_min"] == 1.333, match
     assert match["bot_spread"]["no_path_requests"]["median"] == 1.5
     assert match["bot_spread"]["stuck_seconds"] == {"mean": 4.0, "median": 4.0, "min": 1.5, "max": 6.5, "n": 2}
-    assert match["f7_failures"] == 0 and match["acquisitions"] == 1
+    assert match["f7_failures"] == 2 and match["f7_by_shape"] == {"POI path refused": 1, "could not path to the belief": 1}
+    assert match["acquisitions"] == 3 and match["reaction_sentinels"] == 1 and match["latency_min"] == 0.267, match
+    assert match["acquisitions_by_verb"] == {"acquired": 2, "SWITCHED to": 1} and match["wiring_pois"] == 1
+    assert match["wiring_warnings"] == 0   # wiring_pois is report-only, never in the wiring gate
 
     lobby = lobby_spread([match, match])
-    assert lobby["kills_per_min"]["median"] == 0.4 and lobby["idle_seconds"]["median"] == 2.5, lobby
+    assert lobby["kills_per_min"]["median"] == 1.333 and lobby["idle_seconds"]["median"] == 2.5, lobby
+    assert lobby["match_seconds"]["median"] == 90.0 and lobby["acquisitions"]["n"] == 2, lobby
 
     verdicts = {name: verdict for verdict, name, _ in judge([match], DEFAULT_BARS, {"lobby_spread": lobby})}
     assert verdicts == {
@@ -604,7 +648,7 @@ def selftest():
         "stuck seconds per bot": "PASS", "longest single stall": "FAIL",
         "target pile-up buckets": "PASS", "claim thrash per bot": "PASS",
         "move refusals vs baseline": "FAIL",   # 1.5 > 0.5 x 1.5
-        "kills/min vs baseline": "PASS",       # 0.4 >= 0.4 - 0
+        "kills/min vs baseline": "PASS",       # 1.333 >= 1.333 - 0
     }, verdicts
     assert not any("baseline" in name for _, name, _ in judge([match], DEFAULT_BARS))  # no baseline -> no baseline gates
 
@@ -626,7 +670,9 @@ def selftest():
 
     for line in judge([match], DEFAULT_BARS, {"lobby_spread": lobby}):
         print(f"   [{line[0]}] {line[1]}: {line[2]}")
-    print(f"SELFTEST PASS: 20 lines, {sum(hits.values())} hits, per-bot {json.dumps(match['per_bot'])}, "
+    print(f"SELFTEST PASS: 28 lines, {sum(hits.values())} hits, per-bot {json.dumps(match['per_bot'])}, "
+          f"acquisitions {match['acquisitions']} (sentinels {match['reaction_sentinels']}, min {match['latency_min']}), "
+          f"f7 {match['f7_by_shape']}, wiring_pois {match['wiring_pois']}, match_seconds {match['match_seconds']}, "
           f"kills/min {match['kills_per_min']}")
     print(f"SELFTEST PASS (AIB23): 11 lines, pileup {m23['target_pileup_count']}, "
           f"thrash Alpha {m23['per_bot']['Alpha']['claim_thrash']}, Charlie denied roam/engage-anyway "

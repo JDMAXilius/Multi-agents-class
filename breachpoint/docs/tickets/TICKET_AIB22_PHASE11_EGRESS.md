@@ -210,3 +210,10 @@ Refined steps (replace §Steps):
   lines (`POI path refused`, `could not path to the belief`) outside the f7 alternation;
   `match_seconds` ignores the match-over time; `after -1.000s reaction` sentinel unparsed;
   `has no POI provider for kind None` (688/log) is an unclassified wiring-shaped warning.
+- Parser gaps fixed (aib-editor) and the baselines re-read (`*-v2.json`, the ones W-VERIFY compares
+  against): sweep_seconds median is really 104 s Spillway / 176 s Arena01 per bot (Mode-state
+  sweeps were uncounted); F1 floor now measured — fastest acquisition 0.233 s across 3,716
+  samples on both maps, PASS; match_seconds from the match-over line (score-limit matches read
+  6.9 kills/min, not 2.6); `wiring_pois` (no POI provider for kind None) 500–690 per Spillway
+  log, 0 on Arena01 — visible, ungated; `POI walk stalled — giving up (F7)` is a third shape
+  still outside the alternation (one word, next parser touch).
