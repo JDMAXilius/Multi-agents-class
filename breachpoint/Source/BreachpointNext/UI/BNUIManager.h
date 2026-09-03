@@ -77,6 +77,7 @@ public:
 	const TSoftClassPtr<UBNActivatableWidget>& GetHUDLayoutClass() const { return HUDLayoutClass; }
 	const TSoftClassPtr<UBNActivatableWidget>& GetDeathScreenClass() const { return DeathScreenClass; }
 	const TSoftClassPtr<UBNActivatableWidget>& GetScoreboardClass() const { return ScoreboardClass; }
+	const TSoftClassPtr<UBNActivatableWidget>& GetPostMatchScreenClass() const { return PostMatchScreenClass; }
 	const TSoftClassPtr<UBNActivatableWidget>& GetPauseScreenClass() const { return PauseScreenClass; }
 	const TSoftClassPtr<UBNActivatableWidget>& GetFrontEndScreenClass() const { return FrontEndScreenClass; }
 	const TSoftClassPtr<UBNActivatableWidget>& GetPlaySetupScreenClass() const { return PlaySetupScreenClass; }
@@ -101,6 +102,10 @@ protected:
 
 	UPROPERTY(Config)
 	TSoftClassPtr<UBNActivatableWidget> ScoreboardClass;
+
+	/** BN45: the PLAYER RECAP page, pushed on WaitingPostMatch. Unset = the scoreboard is pinned instead. */
+	UPROPERTY(Config)
+	TSoftClassPtr<UBNActivatableWidget> PostMatchScreenClass;
 
 	UPROPERTY(Config)
 	TSoftClassPtr<UBNActivatableWidget> PauseScreenClass;

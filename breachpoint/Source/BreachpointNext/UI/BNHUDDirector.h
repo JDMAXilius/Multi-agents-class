@@ -182,6 +182,7 @@ protected:
 	TWeakObjectPtr<UBNActivatableWidget> HUDWidget;
 	TWeakObjectPtr<UBNActivatableWidget> DeathScreenWidget;
 	TWeakObjectPtr<UBNActivatableWidget> ScoreboardWidget;
+	TWeakObjectPtr<UBNActivatableWidget> PostMatchWidget;
 	TWeakObjectPtr<UBNActivatableWidget> PauseWidget;
 
 	bool bScoreboardHeld = false;

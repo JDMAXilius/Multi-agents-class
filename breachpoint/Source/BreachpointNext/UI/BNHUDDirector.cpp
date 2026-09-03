@@ -877,7 +877,24 @@ void UBNHUDDirector::UpdateGameMenuLayer()
 void UBNHUDDirector::UpdateScoreboardVisibility()
 {
 	// ONE decision: held OR pinned by the post-match. The widget never decides its own life.
-	const bool bWantVisible = bScoreboardHeld || bPostMatch;
+	ULocalPlayer* LP = GetLocalPlayer();
+	UBNUIManager* M = LP ? UBNUIManager::Get(LP) : nullptr;
+	const bool bHasRecap = M && !M->GetPostMatchScreenClass().IsNull();
+	// BN45: the recap is the post-match screen where one is configured; the scoreboard then
+	// stays hold-to-view (and a page the recap's tab pushes). Without a recap, pin as before.
+	if (M && LP)
+	{
+		if (bPostMatch && bHasRecap && !PostMatchWidget.IsValid())
+		{
+			PostMatchWidget = M->PushWidgetToLayer(LP, FBNUITags::Get().Layer_Game, M->GetPostMatchScreenClass());
+		}
+		else if (!bPostMatch && PostMatchWidget.IsValid())
+		{
+			M->RemoveWidgetFromLayer(LP, FBNUITags::Get().Layer_Game, PostMatchWidget.Get());
+			PostMatchWidget.Reset();
+		}
+	}
+	const bool bWantVisible = bScoreboardHeld || (bPostMatch && !bHasRecap);
 
 	UBNUIManager* Manager = UBNUIManager::Get(GetLocalPlayer());
 	ULocalPlayer* LocalPlayer = GetLocalPlayer();
