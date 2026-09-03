@@ -65,8 +65,9 @@ ROW_H = 17.0
 
 # name, class, x, y, w, h, z, extra  — extra: font_size / text / just / italic / brush / flip / auto
 BOARD_PLAN = [
-    # -- tabs: the capture's are 111.5 wide; our tab type needs 130 (PLAYER RECAP overflowed), so
-    #    the bar keeps its left edge and grows right by 37. Deviation, logged in BN44.
+    # -- tabs: fixed boxes on the canvas, as in the capture (an HBox was tried and the shared
+    #    button reports its 311 design width inside one). 130 wide: our tab type overflows at the
+    #    capture's 111.5, so the bar keeps its left edge and grows right by 37. Logged in BN44.
     ('TabRecap',   BTN,  52.5, 31.0, 130.0, 20.0, 2, {"style": "/Script/Breachpoint.BRButtonStyle_NavTab"}),
     ('TabLineup',  BTN, 189.0, 31.0, 130.0, 20.0, 2, {"style": "/Script/Breachpoint.BRButtonStyle_NavTab"}),
     ('TabBoard',   BTN, 325.5, 31.0, 128.0, 20.0, 2, {"style": "/Script/Breachpoint.BRButtonStyle_NavTab"}),

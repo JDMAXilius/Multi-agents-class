@@ -7,6 +7,18 @@
 void UBNScoreRow::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
+	// DYNAMIC FIT (founder, 2 Sep): the gamertag column is whatever is left of the row before the
+	// first value cell. A long name ends in an ellipsis instead of running under KILLS, and the
+	// name row clips whatever the ellipsis cannot save (a tag after a long name).
+	if (NameText)
+	{
+		NameText->SetAutoWrapText(false);
+		NameText->SetTextOverflowPolicy(ETextOverflowPolicy::Ellipsis);
+	}
+	if (UWidget* NameRow = GetWidgetFromName(TEXT("NameRow")))
+	{
+		NameRow->SetClipping(EWidgetClipping::ClipToBounds);
+	}
 	SetVisibility(ESlateVisibility::Collapsed);
 }
 

@@ -52,6 +52,9 @@ protected:
 	UFUNCTION()
 	void HandleClosePrompt();
 
+	UFUNCTION()
+	void HandleRecapTab();
+
 	/**
 	 * The WBP parents UBNScoreRow children under this. The placed children are the POOL'S
 	 * SEED, not its limit: the WBP ships 8, and anything past that is cloned at runtime from
@@ -154,6 +157,10 @@ protected:
 	/** The capture: a gap with a 1px divider between the two team blocks. */
 	UPROPERTY(Config)
 	float TeamGap = 9.0f;
+
+	/** The page-dot row sits this far under the table's bottom edge (capture: 468 - 454). */
+	UPROPERTY(Config)
+	float DotsBelowTable = 14.0f;
 
 	// Chrome images (HeaderTick, ColumnTintA/B, TeamDivider, My/EnemyTeamAccent) are reached BY
 	// NAME in RefreshHeader — see the note there; no typed binds for them.

@@ -98,3 +98,14 @@ image bind. Fixed by resolving those images by name with `Cast<UImage>`; typed b
   capture caught the board mid-fade; geometry unchanged. Rung: PIE, single machine.
 - Crash fixed and re-verified: the SIGSEGV was `RefreshHeader` tinting through a mis-bound
   `UImage` bind; every chrome tint is now a by-name `Cast<UImage>`.
+- 2026-09-02 (late): DYNAMIC FIT (founder: "make the score bar dynamic so the text and rows can
+  fit on the panels"). Gamertags ellipsise at the first value cell and the name row clips; team
+  card names ellipsise inside their 117 box; the tabs are an auto-sized HBox (each tab sizes to
+  its label, 6.5 apart, bar anchored at the measured 52.5,31); the scroll track spans exactly the
+  row block and the page-dot row follows the table's bottom (`DotsBelowTable`, 14) — both were
+  fixed pixels before. Row block, divider and bottom rule already followed the player count.
+- 2026-09-02 (verified): dynamic fit captured in PIE post-match — long gamertags stay left of the
+  cells, the track and dots follow the table, prompts spaced. Tabs: an auto-sized HBox was tried
+  and reverted (the shared button reports its 311 design width inside one); they are fixed 130
+  boxes on the canvas, as in the capture. Team-card score text was team-coloured on a team-coloured
+  block (invisible); now white.

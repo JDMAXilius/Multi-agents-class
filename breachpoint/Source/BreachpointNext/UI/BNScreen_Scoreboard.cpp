@@ -3,6 +3,7 @@
 #include "Components/VerticalBoxSlot.h"
 #include "UI/Components/BRButton.h"
 #include "UI/BNPromptButton.h"
+#include "UI/BNUIManager.h"
 #include "GameFramework/GameState.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/Image.h"
@@ -43,7 +44,7 @@ void UBNScreen_Scoreboard::NativeOnInitialized()
 	}
 	// The capture's tab bar: labels from C++ (the WBP types no strings), the board tab selected,
 	// the two pages that do not exist yet placed and dim rather than invented.
-	if (TabRecap)  { TabRecap->SetLabelText(LOCTEXT("TabRecap", "PLAYER RECAP")); BNButtonEdges::Bind(TabRecap, BNButtonEdges::EChrome::Boxed); }
+	if (TabRecap)  { TabRecap->SetLabelText(LOCTEXT("TabRecap", "PLAYER RECAP")); BNButtonEdges::Bind(TabRecap, BNButtonEdges::EChrome::Boxed);  TabRecap->OnClicked().AddUObject(this, &UBNScreen_Scoreboard::HandleRecapTab); }
 	if (TabLineup) { TabLineup->SetLabelText(LOCTEXT("TabLineup", "TEAM LINEUP")); BNButtonEdges::Bind(TabLineup, BNButtonEdges::EChrome::Boxed); }
 	if (TabBoard)  { TabBoard->SetLabelText(LOCTEXT("TabBoard", "SCOREBOARD")); BNButtonEdges::Bind(TabBoard, BNButtonEdges::EChrome::Boxed); TabBoard->SetIsSelected(true); }
 	if (ClosePrompt)
@@ -192,6 +193,29 @@ void UBNScreen_Scoreboard::LayoutRowBlock(int32 VisibleRows)
 			RuleSlot->SetPosition(FVector2D(Pos.X, TargetY));
 		}
 	}
+
+	// Everything hung off the table's bottom follows it: the scroll track spans the rows, the
+	// page dots sit a fixed distance under the bottom rule. Measured: rule at 455, dots at 468.
+	const float TableBottom = ListSlot->GetPosition().Y + Height;
+	if (UWidget* Track = GetWidgetFromName(TEXT("ScrollTrack")))
+	{
+		if (UCanvasPanelSlot* TrackSlot = Cast<UCanvasPanelSlot>(Track->Slot))
+		{
+			TrackSlot->SetPosition(FVector2D(TrackSlot->GetPosition().X, ListSlot->GetPosition().Y));
+			TrackSlot->SetSize(FVector2D(TrackSlot->GetSize().X, Height));
+		}
+	}
+	static const TCHAR* DotsRow[] = { TEXT("DotsArrowL"), TEXT("Dot0"), TEXT("Dot1"), TEXT("Dot2"), TEXT("Dot3"), TEXT("Dot4"), TEXT("Dot5"), TEXT("DotsArrowR") };
+	for (const TCHAR* Name : DotsRow)
+	{
+		if (UWidget* Dot = GetWidgetFromName(Name))
+		{
+			if (UCanvasPanelSlot* DotSlot = Cast<UCanvasPanelSlot>(Dot->Slot))
+			{
+				DotSlot->SetPosition(FVector2D(DotSlot->GetPosition().X, TableBottom + DotsBelowTable));
+			}
+		}
+	}
 }
 
 void UBNScreen_Scoreboard::Refresh()
@@ -308,13 +332,13 @@ void UBNScreen_Scoreboard::RefreshTeamScores(const UBNVM_Match* Match)
 	if (MyTeamScoreText)
 	{
 		MyTeamScoreText->SetText(bTeams ? FText::AsNumber(Match->GetMyTeamScore()) : FText::GetEmpty());
-		MyTeamScoreText->SetColorAndOpacity(FSlateColor(BNUIColors::Ally));
+		MyTeamScoreText->SetColorAndOpacity(FSlateColor(BNUIColors::Self));   // white on the team-tinted score block
 		MyTeamScoreText->SetVisibility(Vis);
 	}
 	if (EnemyTeamScoreText)
 	{
 		EnemyTeamScoreText->SetText(bTeams ? FText::AsNumber(Match->GetEnemyTeamScore()) : FText::GetEmpty());
-		EnemyTeamScoreText->SetColorAndOpacity(FSlateColor(BNUIColors::Threat));
+		EnemyTeamScoreText->SetColorAndOpacity(FSlateColor(BNUIColors::Self));
 		EnemyTeamScoreText->SetVisibility(Vis);
 	}
 }
@@ -445,6 +469,10 @@ void UBNScreen_Scoreboard::RefreshHeader(const UBNVM_Match* Match)
 		if (MyTeamRankText)    { MyTeamRankText->SetText(FText::AsNumber(bMineLeads ? 1 : 2));    MyTeamRankText->SetVisibility(CardVis); }
 		if (EnemyTeamRankText) { EnemyTeamRankText->SetText(FText::AsNumber(bMineLeads ? 2 : 1)); EnemyTeamRankText->SetVisibility(CardVis); }
 	}
+	for (UTextBlock* CardName : { MyTeamNameText.Get(), EnemyTeamNameText.Get() })
+	{
+		if (CardName) { CardName->SetAutoWrapText(false); CardName->SetTextOverflowPolicy(ETextOverflowPolicy::Ellipsis); }
+	}
 	if (MyTeamNameText)
 	{
 		MyTeamNameText->SetText(LOCTEXT("CardMyTeam", "YOUR TEAM"));
@@ -456,6 +484,17 @@ void UBNScreen_Scoreboard::RefreshHeader(const UBNVM_Match* Match)
 		EnemyTeamNameText->SetText(LOCTEXT("CardEnemyTeam", "ENEMY TEAM"));
 		EnemyTeamNameText->SetColorAndOpacity(FSlateColor(BNUIColors::Self));
 		EnemyTeamNameText->SetVisibility(CardVis);
+	}
+}
+
+void UBNScreen_Scoreboard::HandleRecapTab()
+{
+	// Pushed over the recap by its SCOREBOARD tab; this pops it. Held-to-view boards release on key-up as before.
+	ULocalPlayer* LocalPlayer = GetOwningLocalPlayer();
+	UBNUIManager* Manager = LocalPlayer ? UBNUIManager::Get(LocalPlayer) : nullptr;
+	if (Manager && !Manager->GetPostMatchScreenClass().IsNull())
+	{
+		Manager->RemoveWidgetFromLayer(LocalPlayer, FBNUITags::Get().Layer_Game, this);
 	}
 }
 
