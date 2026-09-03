@@ -127,14 +127,16 @@ void FAIBTargetClaimsSpec::Define()
 		Board.NoteAmbition(FObjectKey(BotA), false, 3.5, 1.f, Released);
 		TestEqual(TEXT("inside the dwell: kept"), Released.Num(), 0);
 		Board.NoteAmbition(FObjectKey(BotA), true, 3.7, 1.f, Released);  // back in the fight: the dwell resets
-		Board.NoteAmbition(FObjectKey(BotA), false, 4.0, 1.f, Released);
-		Board.NoteAmbition(FObjectKey(BotA), false, 4.9, 1.f, Released);
+		// The claim's TTL is 5 s from t=0: the dwell must be met BEFORE it lapses, or the
+		// release is the TTL's, not the exit's.
+		Board.NoteAmbition(FObjectKey(BotA), false, 3.8, 1.f, Released);
+		Board.NoteAmbition(FObjectKey(BotA), false, 4.5, 1.f, Released);
 		TestEqual(TEXT("a second blink, reset by Engage: kept"), Released.Num(), 0);
-		TestTrue(TEXT("still held"), Board.Holds(FObjectKey(BotA), Enemy, 4.9));
-		Board.NoteAmbition(FObjectKey(BotA), false, 5.05, 1.f, Released);
+		TestTrue(TEXT("still held"), Board.Holds(FObjectKey(BotA), Enemy, 4.5));
+		Board.NoteAmbition(FObjectKey(BotA), false, 4.85, 1.f, Released);
 		TestEqual(TEXT("the dwell met: released"), Released.Num(), 1);
 		TestTrue(TEXT("as exit"), Released.Num() == 1 && Released[0].Reason == EAIBTargetClaimRelease::Exit);
-		TestFalse(TEXT("gone"), Board.Holds(FObjectKey(BotA), Enemy, 5.05));
+		TestFalse(TEXT("gone"), Board.Holds(FObjectKey(BotA), Enemy, 4.85));
 	});
 
 	It("releases the previous claim on a target SWITCH — no ghost holders fill the cap (M2)", [this]()
