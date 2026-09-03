@@ -12,7 +12,8 @@
  * owner outlives the task scratch (1), and a budget COPIED into the scratch does not
  * survive (2 — the negative the W-REVIEW asked for); it expires exactly at
  * SweepMaxSeconds and 0 means "never stand to sweep" (3); motion refills it (4); a NEW
- * post refills it, the same post does not (5). The walking pan stays inside ±Arc,
+ * post refills it, the same post does not — and "same" is the mover's own at-post band,
+ * 1.5x acceptance (5, W-REVIEW #3 M4). The walking pan stays inside ±Arc,
  * reaches both edges, starts straight ahead and never jumps (6). The row defaults are
  * what the csv must mirror (7).
  */
@@ -99,11 +100,16 @@ void FAIBSweepBudgetSpec::Define()
 		TestFalse(TEXT("spent at the post"), Budget.HasBudget(2.f));
 		TestFalse(TEXT("re-entering inside acceptance is the same post"), Budget.ArriveAt(FVector(100, 0, 0), Radius));
 		TestFalse(TEXT("no refill: the same post stays spent"), Budget.HasBudget(2.f));
-		TestTrue(TEXT("past acceptance is a new post"), Budget.ArriveAt(FVector(0, 200, 0), Radius));
+		// The at-post band is 1.5R (the mover reads Idle inside it as arrived): a post
+		// inside it is the same post, or the 150-225uu band refilled what it stood on.
+		TestFalse(TEXT("inside 1.5x acceptance is still the same post"), Budget.ArriveAt(FVector(0, 200, 0), Radius));
+		TestFalse(TEXT("no refill inside the band"), Budget.HasBudget(2.f));
+		TestFalse(TEXT("exactly 1.5R is the band's edge, same post"), Budget.ArriveAt(FVector(0, 225, 0), Radius));
+		TestTrue(TEXT("past 1.5x acceptance is a new post"), Budget.ArriveAt(FVector(0, 300, 0), Radius));
 		TestTrue(TEXT("a new post refills"), Budget.HasBudget(2.f));
-		TestEqual(TEXT("and becomes the last swept post"), Budget.LastSweptPost, FVector(0, 200, 0));
+		TestEqual(TEXT("and becomes the last swept post"), Budget.LastSweptPost, FVector(0, 300, 0));
 		Budget.Reset(); // motion, then back to the same post
-		TestFalse(TEXT("motion does not forget the post"), Budget.ArriveAt(FVector(0, 200, 0), Radius));
+		TestFalse(TEXT("motion does not forget the post"), Budget.ArriveAt(FVector(0, 300, 0), Radius));
 		TestTrue(TEXT("but motion already refilled it"), Budget.HasBudget(2.f));
 	});
 

@@ -14,7 +14,7 @@ const TCHAR* FAIBTraversalPolicy::Name(EAIBTraversal Verb)
 	}
 }
 
-EAIBTraversal FAIBTraversalPolicy::Choose(const FAIBTraversalRequest& Request)
+EAIBTraversal FAIBTraversalPolicy::Choose(const FAIBTraversalRequest& Request, bool bLastResort)
 {
 	// FEET ON THE GROUND. Every verb below launches the body, and a second launch
 	// mid-flight is either refused by the host or is a bot flailing across a gap it has
@@ -41,7 +41,7 @@ EAIBTraversal FAIBTraversalPolicy::Choose(const FAIBTraversalRequest& Request)
 	const float JumpUp = AIB::JumpReachUpUU * F;
 	const float JumpAcross = AIB::JumpReachAcrossUU * F;
 	const float DashAcross = AIB::DashReachUU * F;
-	const float DropLimit = AIB::SafeDropUU * F;
+	const float DropLimit = bLastResort ? AIB::SafeDropUU : AIB::SafeDropUU * F;
 
 	// -- DOWN: the free one, and the founder asked for it by name ("jumping down to get
 	//    to the platform below where it's more path"). Gravity does the work, so the

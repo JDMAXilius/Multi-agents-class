@@ -14,8 +14,10 @@
  * the W-REVIEW asked for), Egress's gate is false until the latch and after every clear
  * (5), the latching draw reports itself exactly once (6), an Egress-failure cooldown
  * blocks latching (7), a latch past LatchMaxAgeSeconds reads unlatched and clears (8), a
- * completed full-path move clears (9), and the row defaults are what the csv must
- * mirror (10).
+ * completed full-path move clears (9), the row defaults are what the csv must mirror
+ * (10), the gate's confirmation is cached once per latch and forgotten on every clear
+ * and re-latch (11, W-REVIEW #3 M6), and a lipless egress on a confirmed island STRANDS
+ * for the cooldown — dropped by the cooldown or a completed full-path move (12, #3 H2).
  */
 BEGIN_DEFINE_SPEC(FAIBIslandLatchSpec, "AIBot.Sim.IslandLatch",
 	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
@@ -173,6 +175,61 @@ void FAIBIslandLatchSpec::Define()
 		Latch.NoteDraw(false, Draws, 0.5);
 		Latch.NoteDraw(false, Draws, 0.6);
 		TestTrue(TEXT("the next three draws may latch at once"), Latch.NoteDraw(false, Draws, 0.7));
+	});
+
+	It("caches the confirmation once per latch, and forgets it on every clear and re-latch", [this]()
+	{
+		using EConfirm = FAIBIslandLatch::EConfirm;
+		FAIBIslandLatch Latch;
+		TestTrue(TEXT("fresh: untested"), Latch.Confirmation == EConfirm::Untested);
+		Latch.NoteDraw(false, Draws, 0.0);
+		Latch.NoteDraw(false, Draws, 0.1);
+		Latch.NoteDraw(false, Draws, 0.2);
+		TestTrue(TEXT("a new latch is untested — the gate runs its ONE test"), Latch.Confirmation == EConfirm::Untested);
+		Latch.Confirmation = EConfirm::Island; // the gate's one TestPathSync said island
+		TestTrue(TEXT("held while latched: every later evaluation reads it"), Latch.ReadLatched(1.0, 10.f) && Latch.Confirmation == EConfirm::Island);
+		Latch.Clear(); // a completed full-path move
+		TestTrue(TEXT("a clear forgets it"), Latch.Confirmation == EConfirm::Untested);
+		Latch.NoteDraw(false, Draws, 2.0);
+		Latch.NoteDraw(false, Draws, 2.1);
+		Latch.NoteDraw(false, Draws, 2.2);
+		Latch.ClearWithCooldown(2.3, 5.f); // the gate refuted it
+		Latch.Confirmation = EConfirm::Refuted;
+		TestFalse(TEXT("refuted is not latched"), Latch.ReadLatched(2.4, 10.f));
+		Latch.NoteDraw(false, Draws, 8.0);
+		Latch.NoteDraw(false, Draws, 8.1);
+		TestTrue(TEXT("re-latched after the cooldown"), Latch.NoteDraw(false, Draws, 8.2));
+		TestTrue(TEXT("a re-latch is untested again — never a stale verdict"), Latch.Confirmation == EConfirm::Untested);
+	});
+
+	It("strands after a lipless egress on a confirmed island — no latch, no draw — until the cooldown or a full-path move", [this]()
+	{
+		FAIBIslandLatch Latch;
+		TestFalse(TEXT("fresh: not stranded"), Latch.IsStranded(0.0));
+		Latch.NoteDraw(false, Draws, 0.0);
+		Latch.NoteDraw(false, Draws, 0.1);
+		Latch.NoteDraw(false, Draws, 0.2);
+		Latch.Confirmation = FAIBIslandLatch::EConfirm::Island;
+		Latch.Strand(1.0, 5.f); // Egress: no legal lip
+		TestFalse(TEXT("the latch is cleared"), Latch.bOnIsland);
+		TestTrue(TEXT("stranded at once"), Latch.IsStranded(1.0));
+		TestTrue(TEXT("stranded through the cooldown"), Latch.IsStranded(5.9));
+		TestFalse(TEXT("a draw inside the cooldown never latches"), Latch.NoteDraw(false, Draws, 3.0));
+		TestFalse(TEXT("the cooldown lapsing ends it"), Latch.IsStranded(6.0));
+		TestFalse(TEXT("and it stays ended"), Latch.IsStranded(7.0));
+
+		Latch.NoteDraw(false, Draws, 8.0);
+		Latch.NoteDraw(false, Draws, 8.1);
+		Latch.NoteDraw(false, Draws, 8.2);
+		Latch.Strand(9.0, 5.f);
+		TestTrue(TEXT("stranded again on the next latch"), Latch.IsStranded(9.5));
+		Latch.Clear(); // OnMoveCompleted: DidMoveReachGoal — connected ground after all
+		TestFalse(TEXT("a completed full-path move ends it early"), Latch.IsStranded(9.6));
+		TestTrue(TEXT("the cooldown stamp itself is untouched by the clear"), Latch.NoLatchBeforeSeconds == 14.0);
+
+		Latch.Strand(20.0, 5.f);
+		Latch.Reset(); // possession
+		TestFalse(TEXT("a new life is not stranded"), Latch.IsStranded(20.1));
 	});
 
 	It("defaults the row to the ruled numbers — the csv mirrors these", [this]()

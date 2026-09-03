@@ -64,8 +64,11 @@ struct AIBOT_API FAIBTraversalRequest
 struct AIBOT_API FAIBTraversalPolicy
 {
 	/** The verb, or None. Ordered by cost to the bot: a drop is free, a jump is cheap, a
-	 *  dash spends a cooldown, a grapple spends a longer one and a second of vulnerability. */
-	static EAIBTraversal Choose(const FAIBTraversalRequest& Request);
+	 *  dash spends a cooldown, a grapple spends a longer one and a second of vulnerability.
+	 *  bLastResort (AIB22 W-REVIEW #3 M5 — Egress's ask, nothing else's): the DROP commits
+	 *  at the SURVIVABLE limit (SafeDropUU, no commit fraction) — the alternative to a
+	 *  drop off an island is standing on it forever. Every other reach keeps its margin. */
+	static EAIBTraversal Choose(const FAIBTraversalRequest& Request, bool bLastResort = false);
 
 	/** For logs and the debugger — never for control flow. */
 	static const TCHAR* Name(EAIBTraversal Verb);

@@ -105,6 +105,17 @@ void FAIBTraversalPolicySpec::Define()
 				EAIBTraversal::None);
 		});
 
+		It("takes the drop up to the SURVIVABLE limit only as a last resort — Egress's ask", [this]()
+		{
+			// Between the committed limit (80%) and the survivable one: refused by every
+			// ordinary caller, taken when the alternative is standing on an island forever.
+			const FAIBTraversalRequest Lip = Gap(60.f, -AIB::SafeDropUU * 0.9f);
+			TestEqual(TEXT("ordinary: no"), FAIBTraversalPolicy::Choose(Lip), EAIBTraversal::None);
+			TestEqual(TEXT("last resort: drop"), FAIBTraversalPolicy::Choose(Lip, /*bLastResort=*/true), EAIBTraversal::Drop);
+			TestEqual(TEXT("last resort never exceeds the survivable limit"),
+				FAIBTraversalPolicy::Choose(Gap(60.f, -AIB::SafeDropUU * 1.01f), true), EAIBTraversal::None);
+		});
+
 		It("refuses a survivable drop it cannot reach the far side of", [this]()
 		{
 			// Gravity does the vertical work; it does not do the horizontal. A bot

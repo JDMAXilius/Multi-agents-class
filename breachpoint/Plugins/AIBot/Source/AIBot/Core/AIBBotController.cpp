@@ -250,6 +250,8 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	// W-REVIEW H2: the life's birthplace, the island hypothesis's confirmation anchor.
 	SpawnLocation = InPawn->GetActorLocation();
 	bHasSpawnLocation = true;
+	bHasLastFullPathGoal = false; // #3 H3: the spawn anchors until the first full-path move completes
+	PendingMoveRequestId = 0;
 	bStopOnLanding = false;
 	const uint32 LifeSeed = HashCombine(GetTypeHash(GetUniqueID()), GetTypeHash(LifeIndex));
 	Sensorium.SetRandomSeed(static_cast<int32>(LifeSeed));
@@ -272,7 +274,7 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	PolicyRandom.Initialize(static_cast<int32>(HashCombine(LifeSeed, 131u)));
 	IdleSinceSeconds = -1.0; // a fresh body has stood still for nothing yet
 	StillTactics = 0;
-	IdleTacticsSeen = 0;
+	IdleTactics = 0;
 	SweepBudget.Reset();     // a fresh body has looked at nothing yet (AIB22)
 	TravelPanDegrees = 0.f;
 	IslandLatch.Reset();     // and stands on no island it has measured yet (cooldown stamp too)
@@ -492,16 +494,17 @@ void AAIBBotController::CloseIdleEpisode(double NowSeconds)
 	}
 	// One name per spell, most specific first — the harness keys on tactic=none.
 	const TCHAR* Tactic = TEXT("none");
-	if (IdleTacticsSeen & static_cast<uint8>(EAIBStillTactic::Reload))          { Tactic = TEXT("Reload"); }
-	else if (IdleTacticsSeen & static_cast<uint8>(EAIBStillTactic::StrafeHold)) { Tactic = TEXT("StrafeHold"); }
-	else if (IdleTacticsSeen & static_cast<uint8>(EAIBStillTactic::Hold))       { Tactic = TEXT("Hold"); }
-	else if (IdleTacticsSeen & static_cast<uint8>(EAIBStillTactic::Sweep))      { Tactic = TEXT("Sweep"); }
+	if (IdleTactics & static_cast<uint8>(EAIBStillTactic::Reload))          { Tactic = TEXT("Reload"); }
+	else if (IdleTactics & static_cast<uint8>(EAIBStillTactic::StrafeHold)) { Tactic = TEXT("StrafeHold"); }
+	else if (IdleTactics & static_cast<uint8>(EAIBStillTactic::Hold))       { Tactic = TEXT("Hold"); }
+	else if (IdleTactics & static_cast<uint8>(EAIBStillTactic::Sweep))      { Tactic = TEXT("Sweep"); }
+	else if (IdleTactics & static_cast<uint8>(EAIBStillTactic::Stranded))   { Tactic = TEXT("Stranded"); }
 	const FName State = GetActiveStateName();
 	UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f idle over — %.1fs state=%s tactic=%s"),
 		*GetName(), NowSeconds, NowSeconds - IdleSinceSeconds,
 		State.IsNone() ? TEXT("?") : *State.ToString(), Tactic);
 	IdleSinceSeconds = -1.0;
-	IdleTacticsSeen = 0;
+	IdleTactics = 0;
 }
 
 FGameplayTag AAIBBotController::GetObjectiveKindForCurrentAmbition() const
@@ -756,17 +759,50 @@ void AAIBBotController::ArmStopOnLanding()
 	StopOnLandingRequestId = InFlight.GetID();
 }
 
+FPathFollowingRequestResult AAIBBotController::MoveTo(const FAIMoveRequest& MoveRequest, FNavPathSharedPtr* OutPath)
+{
+	// Dropped BEFORE Super: the request it replaces is aborted inside, and an
+	// already-at-goal request completes inside — neither may claim this destination.
+	PendingMoveRequestId = 0;
+	const FPathFollowingRequestResult Result = Super::MoveTo(MoveRequest, OutPath);
+	if (MoveRequest.IsUsingPathfinding() && Result.Code == EPathFollowingRequestResult::RequestSuccessful)
+	{
+		PendingMoveGoal = MoveRequest.GetDestination();
+		PendingMoveRequestId = Result.MoveId.GetID();
+	}
+	return Result;
+}
+
 void AAIBBotController::OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result)
 {
 	Super::OnMoveCompleted(RequestID, Result);
 	// DidMoveReachGoal is Success AND not a partial path, computed by the follower before
 	// its Reset — a partial path's end is the island's edge, never proof of the mainland.
 	const UPathFollowingComponent* Follow = GetPathFollowingComponent();
-	if (IslandLatch.bOnIsland && Follow && Follow->DidMoveReachGoal())
+	if (!Follow || !Follow->DidMoveReachGoal())
+	{
+		return;
+	}
+	// W-REVIEW #3 H3: the goal of the last completed PATHED full-path move is the island
+	// anchor — a bot on healthy ground refreshes it every move, a bot on an island never.
+	if (PendingMoveRequestId != 0 && RequestID.GetID() == PendingMoveRequestId)
+	{
+		LastFullPathGoal = PendingMoveGoal;
+		bHasLastFullPathGoal = true;
+		PendingMoveRequestId = 0;
+	}
+	if (IslandLatch.bOnIsland || IslandLatch.bStranded)
 	{
 		IslandLatch.Clear();
 		UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s island latch cleared — a full-path move completed."), *GetName());
 	}
+}
+
+bool AAIBBotController::GetIslandAnchor(FVector& OutLocation, const TCHAR*& OutAnchorName) const
+{
+	OutAnchorName = bHasLastFullPathGoal ? TEXT("last full-path move") : TEXT("spawn");
+	OutLocation = bHasLastFullPathGoal ? LastFullPathGoal : SpawnLocation;
+	return bHasLastFullPathGoal || bHasSpawnLocation;
 }
 
 void AAIBBotController::Think()
@@ -787,17 +823,25 @@ void AAIBBotController::Think()
 		const IAIBAvatarInterface* Door = GetAvatar();
 		const bool bStill = SelfPawn && Door && Door->IsAlive()
 			&& SelfPawn->GetLastMovementInputVector().IsNearlyZero();
+		// W-REVIEW #3 H2: Stranded mirrors the latch each sample — Egress sets it, the
+		// cooldown or a completed full-path move drops it.
+		SetStillTactic(EAIBStillTactic::Stranded, IslandLatch.IsStranded(Now));
 		if (bStill && IdleSinceSeconds < 0.0)
 		{
 			IdleSinceSeconds = Now;
-			IdleTacticsSeen = 0;
+			IdleTactics = StillTactics;
 		}
-		if (IdleSinceSeconds >= 0.0)
+		else if (IdleSinceSeconds >= 0.0 && (!bStill || StillTactics != IdleTactics))
 		{
-			IdleTacticsSeen |= StillTactics;
-			if (!bStill)
+			// W-REVIEW #3 H1: a spell is ONE tactic set. The set changing closes it — the
+			// seconds went to the tactics that were up while they elapsed — and a still
+			// body opens the next on the new set at once, so tactic=none resumes the
+			// sample a tactic clears (one 2s Sweep no longer names a 280s stand).
+			CloseIdleEpisode(Now);
+			if (bStill)
 			{
-				CloseIdleEpisode(Now);
+				IdleSinceSeconds = Now;
+				IdleTactics = StillTactics;
 			}
 		}
 		// The sweep budget bounds a still SPELL (AIB22 H1): the same sample that says the

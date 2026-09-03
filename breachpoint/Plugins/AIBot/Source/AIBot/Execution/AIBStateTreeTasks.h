@@ -562,6 +562,9 @@ struct FAIBMoveToPOITaskInstanceData
 
 	FVector Goal = FVector::ZeroVector;
 	bool bHasGoal = false;
+	/** AIB22 W-REVIEW #3 H2: entered stranded — no goal, no draw; Tick holds until the
+	 *  latch says the cooldown lapsed (or a full-path move completed), then Succeeds. */
+	bool bStranded = false;
 	float ClosestSoFarUU = 0.f;
 	float SecondsWithoutProgress = 0.f;
 	FAIBLocomotionState Locomotion;
@@ -861,7 +864,10 @@ struct FAIBWanderTask : public FAIBMoveToPOITask
 ////////////////////////////////////////////////////////////////////
 
 /** Gates Roam's Egress child (AIB22 5(B)): true only while the controller's island latch
- *  holds. Not an ambition gate — Roam is already the want; this picks the tactic. */
+ *  holds AND its hypothesis is confirmed — the confirmation (one exhaustive path test from
+ *  the feet to the island anchor) runs ONCE per latch and is cached on the latch
+ *  (W-REVIEW #3 M6); every later evaluation reads the cache and has no side effects.
+ *  Not an ambition gate — Roam is already the want; this picks the tactic. */
 USTRUCT(meta = (DisplayName = "AIB On Island", Category = "AIBot"))
 struct FAIBOnIslandCondition : public FStateTreeConditionCommonBase
 {
