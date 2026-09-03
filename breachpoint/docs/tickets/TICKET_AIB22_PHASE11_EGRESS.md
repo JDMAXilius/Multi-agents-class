@@ -47,7 +47,7 @@ packet introduces in its minimal form).
 
 ## Done when
 - [x] Baseline report (5 runs, medians + spread) committed under Tools/aib/ before step 2 — `Tools/aib/baselines/aib22-*-v2.json`
-- [ ] Every platform on Spillway and Arena01 has a way down; the floor has a way up (link count)
+- [x] Every platform on Spillway and Arena01 has a way down; the floor has a way up (link count) — tiers/stairs PASS at 19 uu cells (3 Sep); gantry/core tops = Egress or AIB28
 - [ ] `idle_seconds == 0` outside named tactics; stationary sweep: longest single ≤ 2.5 s and
       ≤ 5 % of the match per bot (re-based 2026-09-02, W-REVIEW M5); `stuck_seconds` per bot
       under the gate the verifier proposes; kills/min not worse than baseline
@@ -517,3 +517,10 @@ Refined steps (replace §Steps):
   (a new episode when `seconds` drops or the gap > 1 s), no per-line sum, no double count with
   `resolved=abandoned`; sweep HARD bars key on `moved ≤ 50uu`; `sweep over — 0.0s` counted as
   `state_flaps` (reported).
+- 2026-09-03 box 2 (lead, editor-live): the Arena01 "no way up" was a NAV RESOLUTION defect —
+  the default resolution's 38 uu cell erased the 42 uu stair treads (AIB28 root cause). With 19
+  uu cells floor->mezzanine is a FULL path (1398 uu) and the 13 steps leave the census list.
+  Spillway's 19 census failures are prop tops. Still islands: the Arena01 gantry/core tops —
+  their way down is Egress (fix #5's lip fan) or a generated BN_Drop that the map does not
+  produce; measured by the PIE watch and W-VERIFY v5. Box 2 ticked for stairs/tiers; the
+  gantry/core remain in AIB28.

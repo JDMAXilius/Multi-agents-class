@@ -120,3 +120,10 @@ scripts (law 7) — every fix here is a generator change + regen, never a hand e
   added for future maps. Remaining AIB28 items: the four 8v8 crate PlayerStarts (move by
   script), SP7/8 on the gantry, and the generated BN_Drop links from the gantry (re-census after
   the rebuild decides).
+- 2026-09-03 census after the 19 uu rebuild (both maps saved, 248bc5a0): Arena01 24 -> 12
+  failing tiers — every catwalk step is connected now; left: the four cover crates (props),
+  `The_Gantry_01/02` + `The_Core_02..06` (islands both ways: the generated BN_Drop from the
+  gantry edge is still absent), and `BR_Floor_Ground` whose top-CENTRE probe (2000,2000) sits
+  under the drum (artefact — query D floor->mezzanine is FULL). Spillway unchanged (the same
+  19 prop tops). Box 2 for the STAIRS: PASS. Open: link generation on Arena01 (drop from the
+  roof/gantry edges), the crate PlayerStarts, SP7/8 on the gantry.
