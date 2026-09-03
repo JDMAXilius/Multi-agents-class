@@ -242,9 +242,10 @@ def per_bot_summary(counts):
         if seconds == 0.0:
             bot["state_flaps"] += 1        # a state entered and left in one frame (v4 verifier 7e)
             continue
-        bot["sweep_seconds"] += seconds
-        if float(hit["moved"]) <= 50.0:    # STATIONARY sweeps only (v4 verifier 7c)
-            bot["max_single_sweep"] = max(bot["max_single_sweep"], seconds)
+        if float(hit["moved"]) > 50.0:
+            continue                       # a walking pan is not a sweep (v5 verifier 6)
+        bot["sweep_seconds"] += seconds    # STATIONARY sweeps only
+        bot["max_single_sweep"] = max(bot["max_single_sweep"], seconds)
     for hit in counts["idle_over"]:
         key = "idle_seconds" if hit["tactic"] == "none" else "idle_seconds_tactical"
         row(hit["bot"])[key] += float(hit["seconds"])
@@ -726,7 +727,7 @@ def selftest():
 
     match = per_match_summary(counts)
     expect = {
-        "Alpha": {"no_path_requests": 2, "stuck_seconds": 6.5, "max_stall_seconds": 4.0, "sweep_seconds": 3.0, "max_single_sweep": 0.0,
+        "Alpha": {"no_path_requests": 2, "stuck_seconds": 6.5, "max_stall_seconds": 4.0, "sweep_seconds": 0.0, "max_single_sweep": 0.0,
                   "idle_seconds": 2.0, "idle_seconds_tactical": 1.5, "island_egress_count": 1, "island_latch_count": 1, "egress_failed_count": 0, "stranded_count": 0, "stall_abandoned_count": 1, "offmesh_recovery_count": 1, "overlap_seconds": 1.5, "yield_count": 0, "route_changes": 1, "flank_count": 1, "flank_stalled": 0, "hold_seconds": 0.0, "state_flaps": 0,
                   "claim_thrash": 0, "denied_roam": 0, "denied_engage_anyway": 0},
         "Bravo": {"no_path_requests": 1, "stuck_seconds": 1.5, "max_stall_seconds": 1.5, "sweep_seconds": 3.25, "max_single_sweep": 2.0,

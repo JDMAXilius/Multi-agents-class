@@ -591,3 +591,27 @@ Refined steps (replace §Steps):
   FAIL as written; the designed mechanism clears the platform for 5 of 7 bots within ~50 s.
   Next: grid the gantry top's nav (editor, not PIE) to see the hole; the fan must skip lips
   whose landing projects back onto the SAME island (no full path away = still on it).
+- 2026-09-03 W-VERIFY v5 breakdown (aib-verifier): idle tactic=none 286 s Spillway / 907 s
+  Arena01 over 5 matches each. #1 cause: the mover's 8 s give-up window at GrappleRoutes
+  APPROACH points — `[BNAIBWorldQuery] GrappleRoutes` is a GLOBAL table whose Arena01 points
+  ((2800,3000,0) etc., z 0 under the z-10 nav) are handed to Spillway bots too (282 s). #2:
+  Arena01 log 1 (the 300 s match): Engage never appeared for 270 s while acquisitions kept
+  firing (Engage want 0 — suspect ammo 0 with no pickups). #3: stands between draws that end
+  on a `route —` (386 s Arena01). Roam<->Rally veto cycle = the Rally goal being a stalled
+  approach point. Pile-up 8/9 = PARSER: cap-2 never breached instant-level in 10/10 (hand-off
+  inside one bucket; corpse re-grant storm GRANTED/RELEASED death x7 in 0.6 s = 30–50 % of
+  grants — a real defect). Switch rate 2x baseline (veto-dominated). Phase 13: yields/overlap/
+  hill lines present but `crowd simulation DISABLED` for 53–56 % of lives — separation OFF for
+  half the bots. Phase 14: real lanes on Arena01 (teammates on different first lanes in most
+  10 s windows), Spillway 28–46 % `lanes=none`; seed source=host in 10/10. Phase 15: Push first,
+  flanks start 2–8/match but `flank over` = 0 — every flank cleared by "the fight ended" within
+  0.5 s (Engage's LOS law). Sweep fraction: the judge summed walking pans (fixed: stationary
+  only). No farming; F1 floor PASS 10/10.
+  RULINGS (fix #8, aib-builder; adapter, bn-builder): F8-1 crowd simulation re-enabled on the
+  first on-nav Think when disabled at possession; F8-2 no claims on corpses (liveness checked
+  before a grant); F8-3 give-up window 8 -> 3 s (`MoveGiveUpSeconds` row); F8-4 Engage with an
+  acquired target and a melee available never wants 0 (floor above Roam), `decide` prints
+  `ammo=`; F8-5 while a young Flank latch lives, Engage reads the belief as in-fight (the fight
+  ends when the belief ages out, not when the flank breaks LOS). Adapter: grapple routes
+  per map (`Map=` on the ini rows) and approach/anchor points projected to nav at load.
+  Parser: pile-up counts distinct concurrent holders per instant (next); sweep sum stationary.
