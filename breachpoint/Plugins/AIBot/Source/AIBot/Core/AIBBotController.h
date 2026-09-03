@@ -128,6 +128,17 @@ struct AIBOT_API FAIBLocomotionState
 	float StallReportedSeconds = 0.f;
 	FVector Goal = FVector::ZeroVector;
 
+	/** AIB22 (2026-09-03, the v5->v6 bisect): the UNION of the still-tactics that were up
+	 *  while this reported segment's seconds elapsed — `still=` on the stall line. The
+	 *  seconds alone cannot say WHY a body gained no ground, and the two instruments
+	 *  disagreed on purpose: `idle_seconds` exempts a crowd brake (the Crowd tactic),
+	 *  `stuck_seconds` counts it (Phase 13 H2 — a doorway pair must still reach its abandon
+	 *  on schedule). Crowd here is not a guess: Think sets it only on a still sample with a
+	 *  move REQUEST in flight, which is separation zeroing the velocity — a body grinding
+	 *  on geometry keeps feeding input and never earns the bit. Reset with the line, not
+	 *  with the clock: the seconds are a delta, so the names must be too. */
+	uint8 StallTactics = 0;
+
 	/** Phase 13: world seconds until which this wedge YIELDS to a teammate (0 = not
 	 *  yielding). While it runs sprint is released and the abandon VERDICT waits; the
 	 *  stall clock keeps running (W-REVIEW H2) and the crowd's separation does the
@@ -707,6 +718,8 @@ public:
 		StillTactics = static_cast<uint8>(bActive ? (StillTactics | Bit) : (StillTactics & ~Bit));
 	}
 	bool HasStillTactic(EAIBStillTactic Tactic) const { return (StillTactics & static_cast<uint8>(Tactic)) != 0; }
+	/** The whole bitmask, for an instrument that accumulates it across an episode. */
+	uint8 GetStillTactics() const { return StillTactics; }
 	/** Fix #6 F6-3: a state's exit drops every bit but Keep — a label never outlives the
 	 *  state that set it (Think re-mirrors Stranded/Crowd from the world each sample). */
 	void ClearStillTactics(EAIBStillTactic Keep = EAIBStillTactic::None) { StillTactics &= static_cast<uint8>(Keep); }

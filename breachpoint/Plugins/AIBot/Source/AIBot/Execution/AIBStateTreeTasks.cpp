@@ -374,6 +374,33 @@ namespace
 		Avatar.ReleaseVerb(AIBTags::Verb_Crouch);
 	}
 
+	/** `still=` on the stall line: every named stand that was up while the reported seconds
+	 *  elapsed, pipe-joined and space-free so the harness's \S+ keeps working. Not the idle
+	 *  line's most-specific-one: a stall is asking WHAT ELSE was true, and a stand that was
+	 *  Crowd for two seconds and Yield for one is both answers, not the louder one. */
+	FString NameStillTactics(uint8 Tactics)
+	{
+		if (Tactics == 0)
+		{
+			return TEXT("none");
+		}
+		static const TCHAR* Names[] = { TEXT("Hold"), TEXT("Reload"), TEXT("StrafeHold"), TEXT("Sweep"),
+			TEXT("Stranded"), TEXT("Yield"), TEXT("Crowd"), TEXT("Defend") };
+		FString Out;
+		for (int32 Bit = 0; Bit < 8; ++Bit)
+		{
+			if (Tactics & (1u << Bit))
+			{
+				if (!Out.IsEmpty())
+				{
+					Out.AppendChar(TEXT('|'));
+				}
+				Out.Append(Names[Bit]);
+			}
+		}
+		return Out;
+	}
+
 	/** AIB22 `stuck_seconds`, closing half. jumped= (fix #4 R9) reads whether the path
 	 *  follower pressed a LINK jump since this stall's clock restarted — the only jump
 	 *  there is; the watchdog itself never hops, and the old flag that printed "yes" at
@@ -383,12 +410,14 @@ namespace
 	{
 		State.bStallOpen = false;
 		UE_LOG(LogAIBot, Log,
-			TEXT("AIBot: %s t=%.1f stall over — %.1fs at (%.0f,%.0f,%.0f) goal=(%.0f,%.0f,%.0f) jumped=%s resolved=%s"),
+			TEXT("AIBot: %s t=%.1f stall over — %.1fs at (%.0f,%.0f,%.0f) goal=(%.0f,%.0f,%.0f) jumped=%s resolved=%s still=%s"),
 			*Bot.GetName(), WorldSeconds(Bot), State.StallSeconds - State.StallReportedSeconds,
 			State.BestPoint.X, State.BestPoint.Y, State.BestPoint.Z,
 			State.Goal.X, State.Goal.Y, State.Goal.Z,
-			Bot.GetLastLinkJumpAtSeconds() >= State.StallStartedAtSeconds ? TEXT("yes") : TEXT("no"), Resolved);
+			Bot.GetLastLinkJumpAtSeconds() >= State.StallStartedAtSeconds ? TEXT("yes") : TEXT("no"), Resolved,
+			*NameStillTactics(State.StallTactics));
 		State.StallReportedSeconds = State.StallSeconds;
+		State.StallTactics = 0; // the seconds are a delta; so are the names
 	}
 
 	/** AIB22 `island_egress_count`: ONE format for every way off an island. Today only
@@ -524,6 +553,7 @@ namespace
 			State.bHasBestPoint = true;
 			State.StallSeconds = 0.f;
 			State.StallReportedSeconds = 0.f;
+			State.StallTactics = 0;
 			State.StallStartedAtSeconds = Now;
 			State.bDiagnosed = false;
 			return false;
@@ -540,6 +570,10 @@ namespace
 			EndYield(Bot, State);
 		}
 		State.StallSeconds += DeltaTime;
+		// The WHY, gathered where the seconds are: whatever Think has named about this body
+		// on the samples that made up this segment. Read-only — the labels are not the
+		// watchdog's to set, and none of them change its verdict.
+		State.StallTactics |= Bot.GetStillTactics();
 		if (!State.bStallOpen && State.StallSeconds - State.StallReportedSeconds >= StallReportSeconds)
 		{
 			State.bStallOpen = true;

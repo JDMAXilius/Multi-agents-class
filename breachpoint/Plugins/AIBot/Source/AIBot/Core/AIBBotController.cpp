@@ -595,6 +595,7 @@ void AAIBBotController::CloseIdleEpisode(double NowSeconds)
 	const TCHAR* Tactic = TEXT("none");
 	if (IdleTactics & static_cast<uint8>(EAIBStillTactic::Reload))          { Tactic = TEXT("Reload"); }
 	else if (IdleTactics & static_cast<uint8>(EAIBStillTactic::StrafeHold)) { Tactic = TEXT("StrafeHold"); }
+	else if (IdleTactics & static_cast<uint8>(EAIBStillTactic::Defend))     { Tactic = TEXT("Defend"); }
 	else if (IdleTactics & static_cast<uint8>(EAIBStillTactic::Hold))       { Tactic = TEXT("Hold"); }
 	else if (IdleTactics & static_cast<uint8>(EAIBStillTactic::Sweep))      { Tactic = TEXT("Sweep"); }
 	else if (IdleTactics & static_cast<uint8>(EAIBStillTactic::Stranded))   { Tactic = TEXT("Stranded"); }

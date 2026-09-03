@@ -866,3 +866,71 @@ any of v7's new lines. To judge the next run it needs `drift`, `drift REFUSED`, 
 blacklisted`, and `draw reflex` alongside the existing ones — without them (a) and (c) can
 only be read by grepping raw logs, which is how (c) went unjudgeable this round.
 
+
+### Log — 2026-09-03 (cloud): the v5→v6 `stuck_seconds` bisect, and the discriminator it needs
+
+The correction above said the next pass should bisect v5→v6. This is that pass. It is a
+**code-read bisect, not a measured one** — the finding names a mechanism and the run that
+would confirm it; nothing here has been run.
+
+**The window.** `edbc094c..b84f618f` (v5→v6) carries fix #7 (lip landing validation), fix
+#8 (crowd re-enable, corpse claims, the 3 s give-up window, the Engage melee floor, the
+flank hold) and the per-map grapple routes.
+
+**The suspect: fix #8's crowd re-enable.** Before it, a bot whose crowd manager was not
+ready at possession ran with separation off *for its whole life* — the module said so
+itself (`crowd simulation DISABLED — no crowd manager or navmesh at possession; separation
+is off for this life`). Fix #8 added `ApplyCrowdSettings()` and `bCrowdRetryPending`, so
+**v6 is the first run in which crowd avoidance actually engaged for most bots.**
+
+**The mechanism, confirmed in the detector.** `TickLocomotion` measures progress as pure
+displacement (`FVector::Dist(Here, State.BestPoint) > WedgeProgressUU`). A crowd brake
+produces exactly zero displacement, so it feeds the stall clock the same as a wall does.
+That is not an oversight — Phase 13's own review made it the design: *"the stall clock
+KEEPS RUNNING through a yield — only the sprint and the verdict wait for the window — so a
+doorway pair still reaches its abandon on schedule and `stuck_seconds` reads the whole
+stand, not 0.03s of it."* Past `MoveGiveUpSeconds` the goal abandons, which is the other
+half of the v6 shape: `stall_abandoned_count` 2 → 18 / 16.
+
+**The two instruments disagree, on purpose, and nobody wrote it down.** `idle_seconds`
+EXEMPTS a crowd brake (Think names it `Crowd` so separation is not read as standing);
+`stuck_seconds` COUNTS it. So a v6 bot standing in a doorway while its neighbour clears is
+simultaneously "not idle" and "stuck". Both are defensible; together they mean
+**`stuck_seconds` is not a wedge counter, it is a no-ground-gained counter** — and a 4-6x
+jump in it across a release that switched separation on is, so far, indistinguishable from
+separation working.
+
+**Why it cannot be settled from the committed logs.** The `stall over` line carried
+seconds, position, goal, `jumped=` and `resolved=` — nothing that separates a body braked
+by a teammate from a body ground into geometry. Every v5/v6/v7 baseline is therefore
+silent on the actual question.
+
+**Landed (WRITTEN, NOT COMPILED):** `still=` on the `stall over` line — the union of the
+named stands that were up while that segment's seconds elapsed, e.g.
+`… resolved=abandoned still=Yield|Crowd`. It is not a new guess: `Crowd` is set in `Think`
+only on a still sample with a move request in flight, which is separation zeroing the
+velocity; a body grinding on geometry keeps feeding movement input and never earns the bit.
+Pipe-joined, space-free, appended at the end — the harness's existing `stall_over` regex is
+unanchored and `stuck_seconds` / `max_stall_seconds` parse unchanged (verified against both
+line shapes).
+
+**Also fixed, a gap of mine:** `Defend` (the still-tactic I added for Retreat's stand-down)
+was never added to `CloseIdleEpisode`'s naming chain, so a DEFEND stand printed
+`tactic=none` — F9's instrument reporting an unnamed stand for a stand that is named. It is
+in the chain now, ahead of `Hold`.
+
+**What the v8 run settles.** Split the v8 `stuck_seconds` by `still=`:
+- mostly `Crowd`/`Yield` → v6 is not a regression, it is separation being visible, and the
+  bar for `stuck_seconds` is wrong rather than the bots being stuck. The fix is then to the
+  METRIC (a crowd-exempt variant, matching `idle_seconds`), not to the locomotion.
+- mostly `none` → a real v6 wedge regression, and fix #7's lip landing validation is the
+  next suspect to read.
+
+**contract_gap (parser, aib-editor's path — filed, not edited).**
+`Tools/aib/80_aib_metrics.py` needs `stall_over` to capture the new `still=` group
+(optional, so old baselines still parse) and to derive two counters beside `stuck_seconds`:
+`stuck_seconds_crowded` (segments whose `still=` contains `Crowd` or `Yield`) and
+`stuck_seconds_wedged` (the rest). Without them the split above has to be done by grep,
+and the v5/v6/v7 baselines cannot be re-judged at all. This is the same filing as the v7
+one above (`drift`, `drift REFUSED`, `lip blacklisted`, `draw reflex`) — one parser pass
+covers both.
