@@ -643,3 +643,15 @@ Refined steps (replace §Steps):
 - 2026-09-03 rung 2 at fix #8: AIBot 247 / 0 (Tools/Logs/specs-20260903-080656.log),
   BreachpointNext 36 / 0. W-VERIFY v6 launched (5 x 2 maps, `?ScoreLimit=200` so matches run to
   the 300 s time limit).
+- 2026-09-03 W-VERIFY v6 — FINAL build (fix #8, bd5a31c5+), 5 x 300 s matches per map
+  (`?ScoreLimit=200`; logs Tools/Logs/aib22-verify-*-v6-*.log). Per bot per match, medians:
+  idle tactic=none 24.6 s Spillway (worst 39.6) / 42.0 s Arena01 (worst 59.4) vs baseline 72 /
+  199 and v3 56 / 276; tactical idle 42.9 / 46.0; stuck 86 / 81 (18 / 15 abandons of ≤3–4 s —
+  the 8 s window is gone, longest single stall 3.0–4.0 s vs baseline 8–9); refusals 0 / 0;
+  stationary sweep longest 2.0 PASS, fraction worst 0.067 / 0.115 (bar 0.05); kills/min 11.0 /
+  13.6 vs baseline 1.0 / 1.8; pile-up 0 PASS; egress 0, latches 0 / 1, stranded 0; Phase 13
+  overlap 10.2 / 3.0 s, yields 4 / 1; Phase 14 route changes 122 / 222 per bot; Phase 15
+  flanks 0, holds 0; switches 1505 / 1607 per match; state flaps 90 / 84. Gates: idle HARD
+  FAIL (bar 0), stuck PROV FAIL (sum of short stalls), single stall PROV 4.0 vs 3.0, sweep
+  fraction HARD FAIL narrowly; PASS: F1 floor, unserved, wiring, FFA, pile-up, refusals/switch,
+  single sweep, thrash, refusals vs baseline, kills/min. Verifier residual breakdown dispatched.
