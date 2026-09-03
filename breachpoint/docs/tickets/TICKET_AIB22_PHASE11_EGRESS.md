@@ -246,3 +246,34 @@ Refined steps (replace §Steps):
   ways, ramps included) — the commandlet never brings the nav system up. Editor-live, next
   editor session (with the PIE top-platform watch). Python remote-exec ini section removed: it
   never advertised; the MCP Slate inspector typing into the console is the working route.
+- 2026-09-02 W-REVIEW lane A (aib-critic on 9d944098) — two HIGH, three MEDIUM, two LOW; a fix
+  packet follows lane B (same file). Rulings (lead):
+  H1 Forget is not durable: a refused path Forgets the lead, an audible enemy re-supplies it,
+     Search re-wins, refused again — at the new 0.1 s delay that is ~10 refused queries/s standing
+     still; and none of the Search exits arms `NoteCurrentAmbitionFailed` (only MoveToObjective
+     does). RULING: a refused path says nothing about the LEAD — keep the memory, arm the 3 s
+     failure suppression instead; Forget only on "post swept, nothing there" and give-up-at-post,
+     and those arm suppression too.
+  H2 budget is per still-spell, not per post: Mode's hill hold never moves, so its 2 s budget
+     spends once and the bot faces one direction for the whole hold; a Search that starts inside
+     acceptance radius gets a zero-length look and Forgets on tick 1. RULING: the budget refills
+     when SweepLook enters a post more than AcceptanceRadius from the last swept post (controller
+     stores `LastSweptPost`); Mode's stand becomes a NAMED still tactic (`SetStillTactic(Hold)`)
+     with an unbudgeted slow scan — a hold is the tactical exception the founder allowed, a
+     frozen head is not.
+  M3 the 0.5 s Idle give-up is a no-progress ratchet, so one Idle frame after any detour fires
+     it. RULING: since-enter grace + Idle for 0.3 s consecutive.
+  M4 `AIBSweepBudgetSpec` case 1 asserts a local outlives an inner block; a task-held budget
+     passes it. RULING: model the controller as a long-lived owner and the task scratch as a
+     recreated copy; add the negative case (a task-local copy does NOT survive).
+  M5 the gates: `sweep over` sums the whole state duration (now mostly walking) for Mode and
+     Search alike, and SweepLook never names a still tactic, so both HARD gates are un-passable
+     by construction. RULING (gate re-based, W-VERIFY reads this): the line reports STATIONARY
+     sweep seconds only; SweepLook's stationary spell is `SetStillTactic(Sweep)`; gate becomes
+     `max single sweep ≤ SweepMaxSeconds + 0.5` and `sweep_seconds ≤ 5 % of match`, idle gate
+     unchanged (named tactics excluded).
+  L6 AreaDenial claims the yaw while walking and never spends the budget — fix in the same
+     packet (steer only when stationary, spend while aligning). L7 `ForgetSearchMemory` uses
+     `Remembers(Actor)` as an identity oracle for a log line — risk register, not fixed.
+  PASS verified: const_cast well-defined; server-only clean; F1/F4 clean; quiet-case Forget
+  design correct.
