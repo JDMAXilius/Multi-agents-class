@@ -640,3 +640,6 @@ Refined steps (replace §Steps):
   available, `decide` prints `ammo=`; F8-5 `bFlankHolding` keeps Engage's Sees at 1 while a
   young latch stands. Tree unchanged. Then: specs, v6 (300 s matches), the last editor session.
 - 2026-09-03 rung 1 at fix #8 (bd5a31c5+): BreachpointEditor PASS, Breachpoint PASS. Specs running.
+- 2026-09-03 rung 2 at fix #8: AIBot 247 / 0 (Tools/Logs/specs-20260903-080656.log),
+  BreachpointNext 36 / 0. W-VERIFY v6 launched (5 x 2 maps, `?ScoreLimit=200` so matches run to
+  the 300 s time limit).
