@@ -1013,6 +1013,12 @@ struct FAIBEgressTaskInstanceData
 	// this struct mid-tactic re-derives the same answer from the same feet.
 	FVector Lip = FVector::ZeroVector;
 	FVector Beyond = FVector::ZeroVector;
+	/** F7-3: the island as the lip fan measured it (feet, ray hits, ray ends) — a landing
+	 *  inside it is the same island (AIB::LandedOnSameIsland). */
+	FBox Footprint = FBox(ForceInit);
+	/** F7-2: the lip sat under the agent radius + standoff from the feet — no walk was
+	 *  issued; the body counts as at the lip for this run. */
+	bool bAtLipOnEntry = false;
 	float ClosestSoFarUU = 0.f;
 	float SecondsWithoutProgress = 0.f;
 	float SecondsSinceEnter = 0.f;
@@ -1037,7 +1043,10 @@ struct FAIBEgressTaskInstanceData
  *  stand stops at the boundary of the polygon cluster under my feet and never crosses a
  *  link (Detour skips off-mesh connections), so the lip is on the surface I can walk,
  *  never a far-side landing — keeps only edges with navmesh at least IslandMinDropUU
- *  below them, walks to the nearest, and reuses AIB19's step-off: a straight-line move
+ *  below them AND whose landing has a full path to an island anchor (F7-1: a boundary
+ *  inside the platform lands back on it), walks to the nearest such lip — or skips the
+ *  walk when the feet are already within the agent radius + standoff of it (F7-2) — and
+ *  reuses AIB19's step-off: a straight-line move
  *  past the lip with pathfinding OFF and no nav projection. THE FALL IS THE MOVE. The
  *  landing point is never projected and no MoveTo ever crosses the gap. SUCCEEDS grounded
  *  again below the lip (the parsed `island egress — via drop` line, latch cleared); FAILS

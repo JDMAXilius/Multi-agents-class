@@ -53,6 +53,19 @@ namespace AIB
 	 *  height where damage starts and the height that kills. */
 	inline constexpr float SafeDropUU = 1000.f;
 
+	/** The body's capsule radius on this host (AIB22 F7-2): a goal closer than this plus
+	 *  a standoff cannot be walked "to" — the body is already there. */
+	inline constexpr float AgentRadiusUU = 35.f;
+
+	/** AIB22 F7-3, pure: a landing inside the island's footprint — XY ± SlackUU, the
+	 *  step-off's height ± HeightSlackUU — never left the island. The footprint is what the
+	 *  lip fan measured: the feet, the ray hits, or the ray ends where the surface ran past
+	 *  the reach. An empty box was never measured: nothing to say. */
+	inline bool LandedOnSameIsland(const FBox& Footprint, const FVector& Feet, float SlackUU = 50.f, float HeightSlackUU = 30.f)
+	{
+		return Footprint.IsValid && Footprint.ExpandBy(FVector(SlackUU, SlackUU, HeightSlackUU)).IsInside(Feet);
+	}
+
 	/** A crossing shorter than this is not a crossing — the navmesh has it, and a bot
 	 *  hopping over every doorstep reads as broken rather than agile. */
 	inline constexpr float TraversalMinGapUU = 120.f;
