@@ -528,3 +528,7 @@ Refined steps (replace §Steps):
   before): BreachpointEditor PASS, Breachpoint PASS (server target unbuildable on this engine).
   Specs running; then the editor session (ST_AIBBot rebuild for the tactic-child wiring, the
   gantry PIE watch with captures, the 60 s PIE observation) and W-VERIFY v5.
+- 2026-09-03 rung 2 at the final tree (a7 = HEAD): AIBot 243 success / 0 fail
+  (Tools/Logs/specs-20260903-072017.log), BreachpointNext 36 / 0. Editor session next: ST_AIBBot
+  rebuild (tactic children complete to Engage), the gantry PIE watch with captures, the 60 s
+  PIE observation on both maps; then W-VERIFY v5 headless.
