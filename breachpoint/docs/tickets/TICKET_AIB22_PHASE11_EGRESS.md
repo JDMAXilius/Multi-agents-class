@@ -342,3 +342,6 @@ Refined steps (replace §Steps):
   Z from `SafeDropUU x TraversalCommitFraction`; M6 `ArmStopOnLanding` consumed by Think if the
   move request id is unchanged; L7 probe box below the point; L9 spec now 10 cases. Known
   ceiling: a single-poly island redraws in place every 0.25 s until the gate confirms.
+- 2026-09-03 lane B fix specs (lead): 185 success / 0 fail, `AIBot.Sim.IslandLatch` 10 cases
+  (Tools/Logs/specs-20260903-000057.log). Game + server targets building for rung 1; both fix
+  packets under a second W-REVIEW.
