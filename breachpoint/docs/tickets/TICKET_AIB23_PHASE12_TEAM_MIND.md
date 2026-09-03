@@ -92,3 +92,26 @@ builds (shared files).
   member/accessor (Phase 14 owns the seed triple), `MatchSeed` shadow, Flank task on the
   controller-held locomotion signature, spec literal/lambda fixes, `FAIBOverlapEpisode` closing
   braces. Specs running; W-REVIEW x4 dispatched on the merged commits.
+- 2026-09-03 W-REVIEW (aib-critic on 985d708a/054af0b7): ONE HIGH, four MEDIUM, three LOW.
+  H1 a team report writes a teammate's LIVE read of the enemy into the LastKnownLocation of a
+     candidate that is already damage-eligible (shot me within 12 s) and `bMayFire` has no
+     sight-current/LOS test — the bot fires through the wall at the callout (FAIRPLAY 2 Sep
+     condition 3). RULING: a report never overwrites a candidate the bot has sensed by ANY door
+     (damage included) and never feeds an aim point: reports create/refresh LEADS only on
+     never-sensed candidates; and `bMayFire` requires the bot's OWN current sight (or LOS to the
+     believed point) — a callout can move the feet, never the trigger.
+  M2 claims leak across a target switch (ghost holders fill the cap). RULING: switching targets
+     releases the previous claim (reason=switch).
+  M3 the MinHold hysteresis is inverted (a one-think blink at t>2 s releases; the fighter is
+     then DENIED). RULING: exit releases only when the target is DEAD or the bot has committed
+     to a non-Engage ambition for ≥1 s; a blink never releases (TTL still lapses it).
+  M4 saturation (0.328 vs Roam 0.2) does not free the third bot in the clean case and starves
+     a bot being shot at. RULING: `bTargetClaimSaturated` is FALSE whenever the bot took damage
+     from that target within 3 s (the victim always engages); the saturated Engage consideration
+     drops to 0.05 so Roam/Objective win when nobody shoots at you.
+  M5 every non-holder takes the same +90° ring slot (two denied bots stack). RULING: non-holder
+     slots spread by a seeded per-bot phase; L3 the ring angle seeds off LifeSeed, not UniqueID.
+  L1 published pair (live Where, gain-time stamp) conservative; L2 null-pawn claimant can free a
+     third claim — risk register. Specs cannot see H1/M2–M4 — add the report-onto-eligible and
+     target-switch cases. PASS: F1 floor, F5 relay laundering, claims as information, death
+     release via injected liveness, heat team-only, server-only, no Tick.

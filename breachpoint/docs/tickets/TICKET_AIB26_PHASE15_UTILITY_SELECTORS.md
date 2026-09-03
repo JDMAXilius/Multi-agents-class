@@ -91,3 +91,29 @@ DecisionRandom) · D aib-editor (decide regex + --replay-diff, AIB_Tactics.csv).
   member/accessor (Phase 14 owns the seed triple), `MatchSeed` shadow, Flank task on the
   controller-held locomotion signature, spec literal/lambda fixes, `FAIBOverlapEpisode` closing
   braces. Specs running; W-REVIEW x4 dispatched on the merged commits.
+- 2026-09-03 spec fix (aib-builder, on main, uncompiled): the failing VETO-bypass case was the
+  spec's own facts — `AmmoNorm` defaulted to 0 (an empty magazine), Hold's exact case; the
+  spec now states a full magazine. No engine change.
+- 2026-09-03 W-REVIEW (aib-critic on c2314cac/4b84c050): ONE HIGH, four MEDIUM, two LOW.
+  H1 Hold's end (`Succeeded` + `NoteCurrentTacticFailed`, clock cleared only at the next Think)
+     transitions to Root, Root re-selects Engage>Hold, per FRAME for up to 100 ms: Engage
+     exits/re-enters each frame, FireWhenAble's burst rest and the melee continuity clock reset
+     every frame, 6–12 `hold over` lines per stand, 6–12 suppression strikes. RULING: a child
+     tactic's completion NEVER leaves Engage — the Hold task clears its own clock and returns
+     Running until the tactic engine re-elects at the next Think (the gun tasks on the parent
+     keep their phase); completion transitions of tactic children target the parent's
+     re-selection, not Root; one `hold over` line per stand.
+  M2 arrival records a Flank FAILURE (re-entry without a latch strikes) → self-suppression to
+     20 s. RULING: arrival sets a `bFlankDone` mark on the controller; a Flank entry with the
+     mark set Succeeds silently and the engine hands to Push (arrival zeroes the point term).
+  M3 the latch is stale only on belief drift, never on the enemy closing (walks away from a
+     knife fight for 3.5 s, re-elects while wounded). RULING: the latch clears when the enemy's
+     distance drops below FlankRadius/2 and on ANY switch away from Flank.
+  M4 the flank goal is hidden by construction so arrival drops to Search — risk register; Push's
+     first leg re-acquires via the belief (accepted for Phase 15).
+  M5 `facts=` crc is unstable for UU-scale fields. RULING: quantise distances to 10 uu before the
+     crc. L6 `decide` at Log by default: RULING Verbose unless `-AIBReplay`. L7 the decide line
+     lacks the tactic commit + reason: add `tcommit= treason=`.
+  Fix #5 interplay: the all-zero fallback must be a per-engine registered floor (Push for the
+     tactic engine, Roam for the ambition engine), never a hardcoded ambition tag. PASS:
+     containment, server-only, no Tick, FAIRPLAY F1/F2/F4/F5, header repair well-formed.

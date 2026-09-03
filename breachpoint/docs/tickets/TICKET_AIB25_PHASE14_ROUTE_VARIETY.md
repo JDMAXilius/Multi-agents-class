@@ -99,3 +99,21 @@ phase's baseline. Metrics for this phase land BEFORE its behaviour (§4 of the r
   member/accessor (Phase 14 owns the seed triple), `MatchSeed` shadow, Flank task on the
   controller-held locomotion signature, spec literal/lambda fixes, `FAIBOverlapEpisode` closing
   braces. Specs running; W-REVIEW x4 dispatched on the merged commits.
+- 2026-09-03 W-REVIEW (aib-critic on bbbfafbb/f57d5700): NO high; three MEDIUM, five LOW.
+  M1 the merge seeded DecisionRandom with exactly LifeSeed (lost its 977 prime) → correlated
+     with the sensorium stream. RULING: `DecisionRandom.Initialize(HashCombine(LifeSeed, 977u))`.
+  M2 no manager ⇒ MatchSeed 0 / BotIndex −1 for every bot ⇒ identical LifeSeed ⇒ lockstep bots
+     in any non-Game/PIE world. RULING: with no manager, LifeSeed falls back to the old
+     `Hash(UniqueID, LifeIndex)`.
+  M3 the three raw `FPathFindingQuery` sites (flank search, wander length ranking) run
+     unfiltered so the flank detour clamp certifies a route the filtered mover will not take.
+     RULING: flank search and length ranking pass the bot's filter class; the island test stays
+     unfiltered (reachability, not preference).
+  L4 the spec proves purity, not replay (SetMatchSeed ladder and AssignBotIndex untested);
+  L5 BotIndex is a seat ordinal (replay only under an identical join/leave timeline — say so in
+     the `match seed` line); L6 `LogRouteIfChanged` walks the corridor on every accepted move
+     (dedupe before the walk); L7 lane volumes verified correct (QueryOnly + modifier does
+     recolour) but NOT PLACED yet (every route reads `lanes=none` — the phase's gate must not run
+     before `land_spillway.py` lands them) and they load on clients (`bNetLoadOnClient=false`);
+     L8 the seed API has no authority guard. PASS: precedence ladder, admissibility (min lane 1),
+     filter hygiene, FAIRPLAY, server-only.
