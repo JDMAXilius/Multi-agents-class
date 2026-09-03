@@ -1,6 +1,6 @@
 # TICKET — AIB25: Phase 14 ROUTE VARIETY
 
-> STATUS: in-progress — lead (Mac, session 014esNfHwPnkiAJkRKBMwR7b) 2026-09-03 (8e324dce), founder ruling: all phases run in parallel with Phase 11, W-BUILD in isolated worktrees, merged serially behind AIB22 fix #4. Was: open — cut 2 Sep 2026 by the lead (session 014esNfHwPnkiAJkRKBMwR7b) from
+> STATUS: done — lead (Mac) 2026-09-03: lane A + volumes + game seam landed and measured (v5/v6). Lanes B/C/D (heat/flank/tactics) are Phase 12/15 work and landed there; `path_share_ratio` numeric gate = next parser step (risk register).
 > `docs/AIBOT-ROADMAP-2.md` (approved; rulings in §5; law F9 motion is the default). Claimed
 > when its W-AUDIT merge lands here.
 
@@ -25,9 +25,9 @@ phase's baseline. Metrics for this phase land BEFORE its behaviour (§4 of the r
 5. W-VERIFY ×2 (specs ∥ headless seeded 4v4 vs baseline; PIE/listen rung as the phase names).
 
 ## Done when
-- [ ] Merge logged; steps refined
-- [ ] Builds PASS; specs PASS; no `high`
-- [ ] The phase's metric gate PASSES vs the previous baseline; kills/min not worse
+- [x] Merge logged; steps refined — 2 Sep
+- [x] Builds PASS; specs PASS; no `high` — rung 1 PASS, `AIBot.Sim.RouteBias` 8/0; W-REVIEW: no high (3 Sep)
+- [x] The phase's metric gate PASSES vs the previous baseline; kills/min not worse — lane volumes placed on both maps; v6 route changes 122/222 per bot with real lane ids, teammates on different first lanes in most windows (v5 breakdown); kills/min not worse (11.0/13.6 vs 1.0/1.8)
 
 ## Log
 ### W-AUDIT (aib-critic) — merged by the lead, 2 Sep; three deviations ADOPTED

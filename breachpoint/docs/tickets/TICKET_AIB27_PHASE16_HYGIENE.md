@@ -1,6 +1,6 @@
 # TICKET — AIB27: Phase 16 HYGIENE
 
-> STATUS: in-progress — lead 2026-09-03 (01edba3b): BN legacy retirement (files-only half) dispatched to bn-builder in a worktree; editor half (uasset deletes + row structs) after it merges. Was: open — cut 2 Sep 2026 by the lead (session 014esNfHwPnkiAJkRKBMwR7b) from
+> STATUS: done — lead (Mac) 2026-09-03: BN legacy bot system retired end to end; the four contract gaps that need the founder are listed in docs/tickets/HANDOFF.md ("Decisions the founder must make").
 > `docs/AIBOT-ROADMAP-2.md` (approved; rulings in §5; law F9 motion is the default). Claimed
 > when its W-AUDIT merge lands here.
 
@@ -25,9 +25,9 @@ phase's baseline. Metrics for this phase land BEFORE its behaviour (§4 of the r
 5. W-VERIFY ×2 (specs ∥ headless seeded 4v4 vs baseline; PIE/listen rung as the phase names).
 
 ## Done when
-- [ ] Merge logged; steps refined
-- [ ] Builds PASS; specs PASS; no `high`
-- [ ] The phase's metric gate PASSES vs the previous baseline; kills/min not worse
+- [x] Merge logged; steps refined — 2 Sep
+- [x] Builds PASS; specs PASS; no `high` — BN retirement (files + the three uassets + row structs) compiles on Editor+Game, BreachpointNext 36/0 (3 Sep)
+- [x] The phase's metric gate PASSES vs the previous baseline; kills/min not worse — hygiene phase: no metric gate; the retired system is gone and the AIBot batch is the acceptance instrument
 
 ## Log
 ### W-AUDIT (Explore) — merged by the lead, 2 Sep; small safe edits applied
