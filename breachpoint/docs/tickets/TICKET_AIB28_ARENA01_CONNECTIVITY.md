@@ -20,7 +20,12 @@ scripts (law 7) — every fix here is a generator change + regen, never a hand e
 
 - Floor `BR_Floor_Ground` and all 13 `BR_LM_Mezzanine_Catwalks_0{3,4}_step*` pieces: no full
   path to or from the PlayerStart tier (z 410) in either direction — partial ends 400–530 uu
-  short (the storey). Every step's nav top reads at floor height.
+  short (the storey). Step dump (`aib22_arena_steps.py`, 2026-09-03): the flights DO climb —
+  13 treads, tops z 31 -> 400 in 31 uu risers, each tread 42 deep x 200 wide, along y = 2000
+  (flight 03: x 1071 -> 1579; flight 04: x 2929 -> 2421). But the two catwalk decks are at
+  y 1200–1600 (`Catwalks_01`, centre (2000,1400,380), ext 600x200x20) and y 2400–2800
+  (`Catwalks_02`) — the flights top out at y 2000 with NO deck within 400 uu: stairs to
+  nowhere. Second suspect: 42 uu treads vs the 35 uu agent radius erosion.
 - Corner spawn pads (feet z 130, pawn z 218, e.g. (697,697), (3278,3269)): islands — bots
   spawn there, stall "532uu across / −218uu up — link=no", and the island confirmation refutes
   itself because the spawn IS the island (fixed in AIB22 fix #4 by an anchor list, but a
