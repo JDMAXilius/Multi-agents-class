@@ -44,6 +44,16 @@ SWIZZLE = ("InputModifierSwizzleAxis", {})               # default order YXZ: X<
 NEGATE_ALL = ("InputModifierNegate", {})
 NEGATE_Y = ("InputModifierNegate", {"x": False, "y": True, "z": False})
 
+# GAMEPAD (founder, 3 Sep 2026). A stick rests at a small non-zero magnitude, so an
+# undeadzoned Left2D walks the player and an undeadzoned Right2D drifts the camera --
+# and a drifting camera on the MAIN MENU is how a controller "presses" buttons nobody
+# touched. 0.25 matches the legacy AxisConfig dead zones in DefaultInput.ini (which
+# Enhanced Input ignores, so it has to be restated here as a modifier).
+DEADZONE = ("InputModifierDeadZone", {"lower_threshold": 0.25, "upper_threshold": 1.0})
+# Stick look is a RATE, mouse look is a DELTA, so the stick needs its own gain. 1.75 is a
+# starting value, not a measured one -- it is the one number here that wants a feel pass.
+LOOK_SCALAR = ("InputModifierScalar", {"scalar": unreal.Vector(1.75, 1.75, 1.0)})
+
 # Full combat set. Move reads Axis.Y as forward, so W/S are swizzled onto Y;
 # HandleLook feeds AddPitchInput, so Look's Y is negated. Melee is F (founder).
 ACTIONS = [
@@ -53,70 +63,75 @@ ACTIONS = [
         "value_type": "AXIS2D",
         "reuse": REUSE_ROOT + "/IA_FPST_Move",
         "keys": [("W", [SWIZZLE]), ("S", [SWIZZLE, NEGATE_ALL]),
-                 ("D", []), ("A", [NEGATE_ALL])],
+                 ("D", []), ("A", [NEGATE_ALL]),
+                 # No SWIZZLE: Gamepad_Left2D already reports X=right, Y=forward.
+                 ("Gamepad_Left2D", [DEADZONE])],
     },
     {
         "id": "Look",
         "tag": "Input.Look",
         "value_type": "AXIS2D",
         "reuse": REUSE_ROOT + "/IA_FPST_Look",
-        "keys": [("Mouse2D", [NEGATE_Y])],
+        # NEGATE_Y for the same reason the mouse needs it: HandleLook feeds AddPitchInput,
+        # where positive pitches DOWN, and a stick pushed up must look UP.
+        "keys": [("Mouse2D", [NEGATE_Y]),
+                 ("Gamepad_Right2D", [DEADZONE, LOOK_SCALAR, NEGATE_Y])],
     },
     {
         "id": "Jump",
         "tag": "Input.Jump",
         "value_type": "BOOLEAN",
         "reuse": REUSE_ROOT + "/IA_FPST_Jump",
-        "keys": [("SpaceBar", [])],
+        "keys": [("SpaceBar", []), ("Gamepad_FaceButton_Bottom", [])],  # A / cross
     },
     {
         "id": "Crouch",
         "tag": "Input.Crouch",
         "value_type": "BOOLEAN",
         "reuse": REUSE_ROOT + "/IA_FPST_Crouch",
-        "keys": [("LeftControl", [])],
+        "keys": [("LeftControl", []), ("Gamepad_RightThumbstick", [])],  # R3
     },
     {
         "id": "Sprint",
         "tag": "Input.Sprint",
         "value_type": "BOOLEAN",
         "reuse": REUSE_ROOT + "/IA_FPST_Sprint",
-        "keys": [("LeftShift", [])],
+        "keys": [("LeftShift", []), ("Gamepad_LeftThumbstick", [])],  # L3
     },
     {
         "id": "Fire",
         "tag": "Input.Weapon.Fire",
         "value_type": "BOOLEAN",
         "reuse": REUSE_ROOT + "/IA_FPST_Weapon_Fire",
-        "keys": [("LeftMouseButton", [])],
+        "keys": [("LeftMouseButton", []), ("Gamepad_RightTrigger", [])],  # R2
     },
     {
         "id": "Reload",
         "tag": "Input.Weapon.Reload",
         "value_type": "BOOLEAN",
         "reuse": REUSE_ROOT + "/IA_FPST_Weapon_Reload",
-        "keys": [("R", [])],
+        "keys": [("R", []), ("Gamepad_FaceButton_Left", [])],  # X / square
     },
     {
         "id": "ADS",
         "tag": "Input.Weapon.ADS",
         "value_type": "BOOLEAN",
         "reuse": REUSE_ROOT + "/IA_FPST_Aim",
-        "keys": [("RightMouseButton", [])],
+        "keys": [("RightMouseButton", []), ("Gamepad_LeftTrigger", [])],  # L2
     },
     {
         "id": "LeanLeft",
         "tag": "Input.Lean.Left",
         "value_type": "BOOLEAN",
         "reuse": BN_INPUT_PATH + "/IA_BN_LeanLeft",
-        "keys": [("Q", [])],
+        "keys": [("Q", []), ("Gamepad_DPad_Left", [])],  # dpad left
     },
     {
         "id": "LeanRight",
         "tag": "Input.Lean.Right",
         "value_type": "BOOLEAN",
         "reuse": BN_INPUT_PATH + "/IA_BN_LeanRight",
-        "keys": [("E", [])],
+        "keys": [("E", []), ("Gamepad_DPad_Right", [])],  # dpad right
     },
     {
         "id": "WeaponNext",
@@ -129,28 +144,28 @@ ACTIONS = [
         # they call AbilityInputTagPressed directly and never touch Enhanced Input — which is
         # exactly why this survived: the logs showed 308 successful weapon swaps while the
         # founder's wheel did nothing.
-        "keys": [("MouseScrollUp", [])],
+        "keys": [("MouseScrollUp", []), ("Gamepad_FaceButton_Top", [])],  # Y / triangle
     },
     {
         "id": "WeaponPrevious",
         "tag": "Input.Weapon.Previous",
         "value_type": "BOOLEAN",
         "reuse": BN_INPUT_PATH + "/IA_BNWeaponPrevious",
-        "keys": [("MouseScrollDown", [])],
+        "keys": [("MouseScrollDown", []), ("Gamepad_DPad_Down", [])],  # dpad down
     },
     {
         "id": "Melee",
         "tag": "Input.Melee",
         "value_type": "BOOLEAN",
         "reuse": BN_INPUT_PATH + "/IA_BN_Melee",
-        "keys": [("F", [])],
+        "keys": [("F", []), ("Gamepad_FaceButton_Right", [])],  # B / circle
     },
     {
         "id": "Grenade",
         "tag": "Input.Grenade",
         "value_type": "BOOLEAN",
         "reuse": BN_INPUT_PATH + "/IA_BN_Grenade",
-        "keys": [("G", [])],
+        "keys": [("G", []), ("Gamepad_DPad_Up", [])],  # dpad up
     },
     {
         # SCOREBOARD AND MENU — RESTORED, and their absence was a self-inflicted wound.
@@ -167,14 +182,14 @@ ACTIONS = [
         "tag": "Input.Scoreboard",
         "value_type": "BOOLEAN",
         "reuse": BN_INPUT_PATH + "/IA_BNScoreboard",
-        "keys": [("Tab", [])],
+        "keys": [("Tab", []), ("Gamepad_Special_Left", [])],  # Select / Share
     },
     {
         "id": "Menu",
         "tag": "Input.Menu",
         "value_type": "BOOLEAN",
         "reuse": BN_INPUT_PATH + "/IA_BNMenu",
-        "keys": [("Escape", [])],
+        "keys": [("Escape", []), ("Gamepad_Special_Right", [])],  # Start / Options
     },
     {
         # THE GRAPPLE (founder, 28 Aug). UBNGA_Grapple and the Input.Grapple tag already
@@ -189,7 +204,7 @@ ACTIONS = [
         "tag": "Input.Grapple",
         "value_type": "BOOLEAN",
         "reuse": BN_INPUT_PATH + "/IA_BN_Grapple",
-        "keys": [("One", [])],
+        "keys": [("One", []), ("Gamepad_LeftShoulder", [])],  # L1 - ability 1
     },
     {
         # THE DASH (founder, 29 Aug). "Two" is UE's key name for the 2 key, sitting beside
@@ -203,7 +218,7 @@ ACTIONS = [
         "tag": "Input.Dash",
         "value_type": "BOOLEAN",
         "reuse": BN_INPUT_PATH + "/IA_BN_Dash",
-        "keys": [("Two", [])],
+        "keys": [("Two", []), ("Gamepad_RightShoulder", [])],  # R1 - ability 2
     },
 ]
 

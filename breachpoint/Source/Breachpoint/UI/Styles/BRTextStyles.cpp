@@ -38,6 +38,17 @@ void UBRTextStyleBase::ResolveFont()
 	// buy nothing and open a window where a widget constructs against a null font.
 	if (UObject* Loaded = FontAsset.LoadSynchronous())
 	{
+		// ROOT IT. In a COOKED build a native class's CDO lives in the disregard-for-GC pool,
+		// and such an object may only reference objects that are themselves in that pool or in
+		// the root set -- GarbageCollectionVerification.cpp asserts exactly this. The font is
+		// loaded at post-engine-init, long after the pool has closed, so it is neither, and the
+		// hard TObjectPtr we store below makes the CDO a violator. Measured 3 Sep 2026: the
+		// first packaged Win64 build died on its first LoadMap with "Encountered 5 object(s)
+		// breaking Disregard for GC assumptions" -- these five styles. Rooting states the truth
+		// that was already implied: this font outlives every world, exactly like the CDO that
+		// holds it. The editor never populates the disregard pool, which is the whole reason
+		// this was invisible until a package existed.
+		Loaded->AddToRoot();
 		Font.FontObject = Loaded;
 	}
 }
