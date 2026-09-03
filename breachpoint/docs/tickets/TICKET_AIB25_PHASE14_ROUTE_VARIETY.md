@@ -131,3 +131,9 @@ phase's baseline. Metrics for this phase land BEFORE its behaviour (§4 of the r
   `bShouldStateChangeOnReselect=false`) — ST_AIBBot rebuild queued. New/changed shapes: `decide …
   tcommit= treason=` (Verbose unless `-AIBReplay`), `target claim RELEASED … reason=switch`,
   `idle over … tactic=Crowd`, `crowd simulation DISABLED — …`. Building (editor closed).
+- 2026-09-03 W-VERIFY v5: `match seed … (source=host)` in 10/10; `route —` lines 166–1346 per
+  match with real lane ids — Arena01 0 % `lanes=none`, teammates on DIFFERENT first lanes in
+  most 10 s windows (8–45 different vs 3–16 same); Spillway 28–46 % `lanes=none` (bridges/tower
+  link stay Default by design). Distinct lane sequences per bot 3–20 per match. The route
+  diversity signal is present on both maps; a numeric gate (path_share_ratio) is the next
+  parser step. kills/min PASS.

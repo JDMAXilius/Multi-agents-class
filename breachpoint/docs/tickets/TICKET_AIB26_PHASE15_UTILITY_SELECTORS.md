@@ -123,3 +123,10 @@ DecisionRandom) · D aib-editor (decide regex + --replay-diff, AIB_Tactics.csv).
   `bShouldStateChangeOnReselect=false`) — ST_AIBBot rebuild queued. New/changed shapes: `decide …
   tcommit= treason=` (Verbose unless `-AIBReplay`), `target claim RELEASED … reason=switch`,
   `idle over … tactic=Crowd`, `crowd simulation DISABLED — …`. Building (editor closed).
+- 2026-09-03 W-VERIFY v5: the tactic layer runs — `tactic ->` Push first 36–73 per match,
+  Flank first 1–6, Hold first 0–2; `flank starts` 2–8 per match but `flank over` 0 everywhere:
+  each flank is cleared by "the fight ended" within 0.5 s (Engage's LOS law) — fix #8 F8-5
+  keeps Engage on the belief while a young latch lives. `hold over` 0. `decide` at ~10 Hz per
+  bot (21k lines in a 300 s match, Verbose). Switch reasons: veto dominates (Roam<->Rally on a
+  stalled Rally goal — the adapter's per-map grapple routes remove the stall). Engage vanished
+  for 270 s in the one long match (want 0 with acquisitions) — F8-4.

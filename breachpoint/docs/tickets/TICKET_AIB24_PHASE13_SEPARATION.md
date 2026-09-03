@@ -144,3 +144,9 @@ phase's baseline. Metrics for this phase land BEFORE its behaviour (§4 of the r
   `bShouldStateChangeOnReselect=false`) — ST_AIBBot rebuild queued. New/changed shapes: `decide …
   tcommit= treason=` (Verbose unless `-AIBReplay`), `target claim RELEASED … reason=switch`,
   `idle over … tactic=Crowd`, `crowd simulation DISABLED — …`. Building (editor closed).
+- 2026-09-03 W-VERIFY v5 (5 x 2 maps): the phase's lines are live (`yields to teammate` 0–34
+  per match, `teammate overlap over` 0–62, `hill strafe-hold` 12–83) but `crowd simulation
+  DISABLED — no crowd manager or navmesh at possession` on 53 % of Spillway lives and 56 % of
+  Arena01 lives — separation was OFF for half the bots (respawns possess before the crowd
+  manager/nav is up). Verdict INCONCLUSIVE until fix #8 F8-1 (re-enable on the first on-nav
+  Think) lands; the v6 batch re-measures. Players registered as crowd obstacles (game side).
