@@ -949,3 +949,23 @@ retired now that the assets exist and repoint the selftest at GetWidgetDescripti
 output instead of the plan. Leaving it red is the one wrong option — a failing check
 nobody intends to fix trains everyone to ignore checks.
 
+**CLOSED by the cloud, same day.** Neither option (a) nor (b) as filed: (a) would have
+meant reconstructing a widget tree and geometry from founder crops this session never saw
+— a green check bought with a fiction — and (b) needs an editor. Taken instead, on the two
+files the cloud owns:
+
+- `bn41_selftest.py` now separates the two questions it was conflating. **The C++ contract
+  check still gates** (a header with no binds, no REQUIRED bind, a duplicate name, or a
+  bind typed as a non-widget fails the run). **The plan comparison is INFO** for the
+  screens in `RETIRED_PLANS`, because the live PIE-verified asset is the truth and the
+  1-Sep plan is history. It prints the exact drift every run rather than hiding it —
+  today: PlaySetup still names `BackButton` / `BreakdownText` the C++ dropped, and lacks
+  `ScoreLimitButton` / `TimeLimitButton` the C++ gained. Removing a screen from
+  `RETIRED_PLANS` re-arms the full original check for it.
+- New: `docs/ui/ue-frontend/FRONTEND-BIND-MANIFEST.md`, generated with `--manifest` — the
+  authoritative per-screen bind list (name · required/optional · C++ type). This is what
+  `CompileWidgetBlueprint` enforces and never lists, so it is the sheet to check a WBP
+  against when a screen loads empty. Regenerate after any header change.
+
+Run in the cloud session, exit 0: FrontEnd 15 binds (2 required), PlaySetup 14 (6 required).
+
