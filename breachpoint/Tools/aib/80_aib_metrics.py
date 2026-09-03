@@ -112,6 +112,11 @@ RX = {
     "island_latched": re.compile(_AIB + r"island latched [—-] (?P<draws>\d+) draws with no full path inside (?P<radius>" + _NUM + r")uu at " + _VEC),
     "egress_start":   re.compile(_AIB + r"island egress starts [—-] lip " + _VEC + r" (?P<dist>" + _NUM + r")uu away, drop (?P<drop>" + _NUM + r")uu"),
     "stranded":       re.compile(_AIB + r"stranded [—-] no legal lip within (?P<reach>" + _NUM + r")uu \(drops [≤<]=? ?(?P<limit>" + _NUM + r")uu\)"),
+    # AIB22 fix #4 (2026-09-03): a link=no stall abandons at once; off-mesh bodies walk to the mesh.
+    "stall_abandoned": re.compile(_AIB + r"stall abandoned [—-] (?P<seconds>" + _NUM + r")s, (?P<across>" + _NUM + r")uu across / (?P<up>-?" + _NUM + r")uu up, link=(?P<link>\S+) \((?P<why>[^)]*), F7\)"),
+    "offmesh_recovery": re.compile(_AIB + r"off-mesh recovery [—-] walking (?P<dist>" + _NUM + r")uu to the mesh"),
+    "offmesh_failed":  re.compile(_AIB + r"off-mesh recovery FAILED [—-] (?P<seconds>" + _NUM + r")s"),
+    "waiting_nav":     re.compile(_AIB + r"waiting for nav [—-] "),
     "egress_failed":  re.compile(_AIB + r"island egress FAILED [—-] (?P<why>.+)$"),
     "island_egress": re.compile(_AIB + r"island egress [—-] via (?P<via>drop|link|jump|grapple) from " + _VEC + r" after (?P<seconds>" + _NUM + r")s stranded"),
     # AIB23 (Phase 12): the target-claim board and the team report, each on the t= prefix.
@@ -132,7 +137,7 @@ RX = {
 
 # The per-bot metrics derived from the five AIB22 lines (seconds are sums per bot per match).
 BOT_METRICS = ("no_path_requests", "stuck_seconds", "max_stall_seconds", "sweep_seconds", "max_single_sweep",
-               "idle_seconds", "idle_seconds_tactical", "island_egress_count", "island_latch_count", "egress_failed_count", "stranded_count",
+               "idle_seconds", "idle_seconds_tactical", "island_egress_count", "island_latch_count", "egress_failed_count", "stranded_count", "stall_abandoned_count", "offmesh_recovery_count",
                # AIB23: ttl-release -> re-grant on the same target inside THRASH_WINDOW_SECONDS,
                # and what a DENIED bot did instead.
                "claim_thrash", "denied_roam", "denied_engage_anyway")
@@ -231,6 +236,14 @@ def per_bot_summary(counts):
         row(hit["bot"])["egress_failed_count"] += 1
     for hit in counts["stranded"]:   # a MAP defect made visible: reported, not gated
         row(hit["bot"])["stranded_count"] += 1
+    for hit in counts["stall_abandoned"]:   # the abandon IS a stall end: its seconds are stuck seconds
+        seconds = float(hit["seconds"])
+        bot = row(hit["bot"])
+        bot["stall_abandoned_count"] += 1
+        bot["stuck_seconds"] += seconds
+        bot["max_stall_seconds"] = max(bot["max_stall_seconds"], seconds)
+    for hit in counts["offmesh_recovery"]:
+        row(hit["bot"])["offmesh_recovery_count"] += 1
     for hit in counts["target_deny"]:
         if hit["then"] == "roam":
             row(hit["bot"])["denied_roam"] += 1
@@ -591,6 +604,9 @@ AIBot: Alpha t=75.5 island latched — 3 draws with no full path inside 2500uu a
 AIBot: Alpha t=76.0 island egress starts — lip (40,20,30) 120uu away, drop 300uu
 AIBot: Bravo t=77.0 island egress FAILED — no lip within 150uu
 AIBot: Bravo t=78.0 stranded — no legal lip within 4000uu (drops ≤ 1000uu)
+AIBot: Alpha t=79.0 stall abandoned — 1.5s, 532uu across / -218uu up, link=no (a storey with no link, F7)
+AIBot: Alpha t=79.2 off-mesh recovery — walking 120uu to the mesh
+AIBot: Bravo t=0.3 waiting for nav — no decisions until the pawn projects onto the mesh
 AIBot: Alpha t=80.0 island egress — via drop from (10,20,30) after 4.5s stranded
 AIBot: Bravo t=81.0 island egress — via grapple from (10,20,30) after 2.0s stranded
 BNGameMode: Alpha eliminated Bravo with 'Rifle'. (Alpha: 1 kills)
@@ -633,12 +649,13 @@ AIBot: Alpha t=112.0 target claim GRANTED on Enemy1 (1/2)
 
 def selftest():
     lines = SELFTEST_LOG.splitlines()
-    assert len(lines) == 32, len(lines)
+    assert len(lines) == 35, len(lines)
     counts = parse_lines(lines)
     hits = {key: len(counts[key]) for key in ("move_refused", "stall_over", "sweep_over", "idle_over",
                                               "island_egress", "kill", "time_limit", "possess", "acquire", "f7",
                                               "wiring_pois", "match_over")}
     assert counts["stranded"][0]["limit"] == "1000"
+    assert counts["stall_abandoned"][0]["why"] == "a storey with no link" and counts["offmesh_recovery"][0]["dist"] == "120" and len(counts["waiting_nav"]) == 1
     assert counts["island_latched"][0]["draws"] == "3" and counts["egress_start"][0]["drop"] == "300" and counts["egress_failed"][0]["why"] == "no lip within 150uu"
     assert hits == {"move_refused": 3, "stall_over": 3, "sweep_over": 3, "idle_over": 4, "island_egress": 2,
                     "kill": 2, "time_limit": 1, "possess": 2, "acquire": 4, "f7": 2,
@@ -652,17 +669,17 @@ def selftest():
 
     match = per_match_summary(counts)
     expect = {
-        "Alpha": {"no_path_requests": 2, "stuck_seconds": 6.5, "max_stall_seconds": 4.0, "sweep_seconds": 3.0, "max_single_sweep": 3.0,
-                  "idle_seconds": 2.0, "idle_seconds_tactical": 1.5, "island_egress_count": 1, "island_latch_count": 1, "egress_failed_count": 0, "stranded_count": 0,
+        "Alpha": {"no_path_requests": 2, "stuck_seconds": 8.0, "max_stall_seconds": 4.0, "sweep_seconds": 3.0, "max_single_sweep": 3.0,
+                  "idle_seconds": 2.0, "idle_seconds_tactical": 1.5, "island_egress_count": 1, "island_latch_count": 1, "egress_failed_count": 0, "stranded_count": 0, "stall_abandoned_count": 1, "offmesh_recovery_count": 1,
                   "claim_thrash": 0, "denied_roam": 0, "denied_engage_anyway": 0},
         "Bravo": {"no_path_requests": 1, "stuck_seconds": 1.5, "max_stall_seconds": 1.5, "sweep_seconds": 3.25, "max_single_sweep": 2.0,
-                  "idle_seconds": 3.0, "idle_seconds_tactical": 0.5, "island_egress_count": 1, "island_latch_count": 0, "egress_failed_count": 1, "stranded_count": 1,
+                  "idle_seconds": 3.0, "idle_seconds_tactical": 0.5, "island_egress_count": 1, "island_latch_count": 0, "egress_failed_count": 1, "stranded_count": 1, "stall_abandoned_count": 0, "offmesh_recovery_count": 0,
                   "claim_thrash": 0, "denied_roam": 0, "denied_engage_anyway": 0},
     }
     assert match["per_bot"] == expect, match["per_bot"]
     assert match["kills"] == 2 and match["match_seconds"] == 90.0 and match["kills_per_min"] == 1.333, match
     assert match["bot_spread"]["no_path_requests"]["median"] == 1.5
-    assert match["bot_spread"]["stuck_seconds"] == {"mean": 4.0, "median": 4.0, "min": 1.5, "max": 6.5, "n": 2}
+    assert match["bot_spread"]["stuck_seconds"] == {"mean": 4.75, "median": 4.75, "min": 1.5, "max": 8.0, "n": 2}
     assert match["f7_failures"] == 2 and match["f7_by_shape"] == {"POI path refused": 1, "could not path to the belief": 1}
     assert match["acquisitions"] == 3 and match["reaction_sentinels"] == 1 and match["latency_min"] == 0.267, match
     assert match["acquisitions_by_verb"] == {"acquired": 2, "SWITCHED to": 1} and match["wiring_pois"] == 1
