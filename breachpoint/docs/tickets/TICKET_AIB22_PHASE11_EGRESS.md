@@ -579,3 +579,15 @@ Refined steps (replace §Steps):
   FINAL editor verification (gantry watch + observation on both maps) and W-VERIFY v6.
 - 2026-09-03 rung 2 at fix #6 (05badaa2): AIBot 243 / 0, BreachpointNext 36 / 0. Final editor
   verification starting.
+- 2026-09-03 FINAL gantry watch (fix #6 build, Arena01, 7 bots placed on `The_Gantry_01`):
+  t+9.9 s 1 of 7 off; t+48 s 6 of 7 off (z 98/129); t+82 s 5 of 7 off — bot 5 still on the
+  gantry, bot 6 at z 1353 (a wall-top grapple perch, counted "still on" by the footprint test).
+  Fix #6 verified in the log: `CONFIRMED — no full path to any of 16 anchors` (F6-1, the
+  on-island anchor is gone); `egress starts -> steps off the island's lip` with NO
+  `latch cleared — a full-path move completed` in between (F6-2). Residual: bot 4/5 repeat
+  `egress starts — lip (1289,19xx,810) … drop 453` several times — a lip INSIDE the platform's
+  footprint (x 1000–1400): the fan hits a nav boundary on the gantry top (a hole or split in
+  the top's mesh) and the step-off lands back on the platform. Box 4 (leaves within 5 s):
+  FAIL as written; the designed mechanism clears the platform for 5 of 7 bots within ~50 s.
+  Next: grid the gantry top's nav (editor, not PIE) to see the hole; the fan must skip lips
+  whose landing projects back onto the SAME island (no full path away = still on it).
