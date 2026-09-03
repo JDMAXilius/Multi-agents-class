@@ -1,4 +1,8 @@
 #include "UI/BNUITypes.h"
+#include "Fonts/FontMeasure.h"
+#include "Framework/Application/SlateApplication.h"
+#include "Components/TextBlock.h"
+#include "Components/CanvasPanelSlot.h"
 #include "Components/Widget.h"
 #include "UI/Components/BRButton.h"
 
@@ -73,4 +77,34 @@ void BNButtonEdges::Bind(UBRButton* Button, EChrome Chrome)
 
 	// The idle pass. Callers bind AFTER SetIsSelected so a selected tab starts lit.
 	ApplyEdges(Button, false, Chrome);
+}
+
+float BNTabBar::Layout(TArrayView<UBRButton* const> Tabs, float X, float Y, float Height, float Gap, float PadX)
+{
+	float Cursor = X;
+	const TSharedRef<FSlateFontMeasure> Measure = FSlateApplication::Get().GetRenderer()->GetFontMeasureService();
+	for (UBRButton* Tab : Tabs)
+	{
+		if (!Tab)
+		{
+			continue;
+		}
+		UCanvasPanelSlot* TabSlot = Cast<UCanvasPanelSlot>(Tab->Slot);
+		if (!TabSlot)
+		{
+			continue;
+		}
+		// The label is the component's own (`Label`, BindWidget); its font is whatever style the
+		// button carries, so the measurement follows the style rather than a number typed here.
+		float Width = TabSlot->GetSize().X;
+		if (const UTextBlock* Label = Cast<UTextBlock>(Tab->GetWidgetFromName(TEXT("Label"))))
+		{
+			const FVector2D TextSize = Measure->Measure(Label->GetText(), Label->GetFont());
+			Width = FMath::CeilToFloat(TextSize.X + 2.0f * PadX);
+		}
+		TabSlot->SetPosition(FVector2D(Cursor, Y));
+		TabSlot->SetSize(FVector2D(Width, Height));
+		Cursor += Width + Gap;
+	}
+	return Cursor - X - Gap;
 }

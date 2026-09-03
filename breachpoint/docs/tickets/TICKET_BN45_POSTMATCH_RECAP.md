@@ -48,3 +48,15 @@ Team names stay relative (YOUR TEAM / ENEMY TEAM) pending the founder's ruling.
   Tabs are fixed canvas boxes at the measured widths (an HBox makes the shared button report its
   311 design width). Header line 3 prints "WINNER: <relative>" only until literal team names are
   ruled on. Rung: PIE, single machine. Boxes 1-3 ticked.
+- 2026-09-02 (later): "put the assets" — Figma has NO medal icon set (the PGCR page's medals are
+  bare ellipses; `SET Feedback / Medal Chip` 62:106 is the only medal art, a backing). Its PNG
+  export is opaque, so `bn53_medal_chip.py` draws the two hexagons from the SVG path data, CENTRED
+  (the HUD audit's imported chip had both at (0,0)), and imports `T_BN_MedalChip`; the recap's eight
+  medals use it. Team emblems, rank crest, nameplate and mode glyph were already the Figma exports.
+  Medal ICONS remain a Family-D art task (ART-PROMPT-LIBRARY), not a Figma export.
+- "make text on button dynamic": `BNTabBar::Layout` measures each tab label with the font service
+  and sizes/places the tabs from it (text + 2*pad, gap 6.5), on both the scoreboard and the recap.
+- 2026-09-02 (verified): recap + board captured post-match with the label-measured tabs (no
+  overlap on either screen, LB/RB pills hugging the bar) and the centred medal chip in all eight
+  cells; team-card scores now read (white on the tinted block). VICTORY case captured: winner line
+  "WINNER: YOUR TEAM". Rung: PIE, single machine.

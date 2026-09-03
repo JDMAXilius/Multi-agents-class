@@ -44,6 +44,7 @@ public class BreachpointNext : ModuleRules
 			// its killfeed and scoreboard are fixed pools by doctrine.
 			"UMG",
 			"SlateCore",
+			"Slate",   // FSlateApplication + the font measure service (BNTabBar)
 			"CommonUI",
 			"CommonInput",
 			"ModelViewViewModel",

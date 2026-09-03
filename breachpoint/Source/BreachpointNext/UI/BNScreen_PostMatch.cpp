@@ -34,6 +34,7 @@ void UBNScreen_PostMatch::NativeOnInitialized()
 		BNButtonEdges::Bind(TabBoard, BNButtonEdges::EChrome::Boxed);
 		TabBoard->OnClicked().AddUObject(this, &UBNScreen_PostMatch::HandleBoardTab);
 	}
+	BNTabBar::Layout({ TabRecap.Get(), TabLineup.Get(), TabBoard.Get() }, 66.7f, 38.0f, 28.7f, 6.5f, 14.0f);
 	if (ClosePrompt)
 	{
 		ClosePrompt->SetVerbText(LOCTEXT("PromptClose", "Close"));

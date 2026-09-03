@@ -238,6 +238,18 @@ namespace BNUIColors
  * Numbers are COMPONENT-SPECS §2, the same ones `FBRHairlineStyle`'s defaults encode: top line
  * at 1.0, bottom line and both side ticks at 0.3, and hover lifts the BOTTOM line alone to 1.0.
  */
+/**
+ * `BNTabBar` — lays a row of `UBRButton` tabs out from their LABELS (founder, 2 Sep: "make text
+ * on button dynamic"). The shared button's RootSizeBox carries a 311 design width, so an HBox
+ * cannot size it; this measures each label with the font service and writes the canvas slot
+ * size and the running x itself. Padding is the capture's: text + 2 x PadX, tabs Gap apart.
+ */
+namespace BNTabBar
+{
+	/** Tabs must be canvas children. Returns the bar's total width. */
+	BREACHPOINTNEXT_API float Layout(TArrayView<UBRButton* const> Tabs, float X, float Y, float Height, float Gap, float PadX);
+}
+
 namespace BNButtonEdges
 {
 	/**

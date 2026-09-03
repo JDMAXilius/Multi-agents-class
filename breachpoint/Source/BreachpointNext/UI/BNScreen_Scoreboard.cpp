@@ -47,6 +47,7 @@ void UBNScreen_Scoreboard::NativeOnInitialized()
 	if (TabRecap)  { TabRecap->SetLabelText(LOCTEXT("TabRecap", "PLAYER RECAP")); BNButtonEdges::Bind(TabRecap, BNButtonEdges::EChrome::Boxed);  TabRecap->OnClicked().AddUObject(this, &UBNScreen_Scoreboard::HandleRecapTab); }
 	if (TabLineup) { TabLineup->SetLabelText(LOCTEXT("TabLineup", "TEAM LINEUP")); BNButtonEdges::Bind(TabLineup, BNButtonEdges::EChrome::Boxed); }
 	if (TabBoard)  { TabBoard->SetLabelText(LOCTEXT("TabBoard", "SCOREBOARD")); BNButtonEdges::Bind(TabBoard, BNButtonEdges::EChrome::Boxed); TabBoard->SetIsSelected(true); }
+	BNTabBar::Layout({ TabRecap.Get(), TabLineup.Get(), TabBoard.Get() }, 52.5f, 31.0f, 20.0f, 6.5f, 12.0f);
 	if (ClosePrompt)
 	{
 		ClosePrompt->SetVerbText(LOCTEXT("PromptClose", "Close"));
