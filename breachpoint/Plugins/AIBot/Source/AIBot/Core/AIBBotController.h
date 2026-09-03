@@ -122,6 +122,28 @@ struct AIBOT_API FAIBLocomotionState
 	 *  yielding). While it runs the stall clock is paused and sprint is released; the
 	 *  crowd's separation does the stepping. */
 	double YieldUntilSeconds = 0.0;
+
+	/** AIB22 F5-1(a): the goal the watchdog last ABANDONED, refused for the ambition's
+	 *  suppression window. The verdict used to leave the clock running, so a branch that
+	 *  re-issued the same goal next frame got the verdict again — 107k `stall abandoned`
+	 *  lines from ONE clock. Now the verdict consumes the clock (a different goal runs a
+	 *  fresh one) and the same goal is refused up front, silently. Worldless, spec-driven. */
+	bool bHasAbandonedGoal = false;
+	FVector AbandonedGoal = FVector::ZeroVector;
+	double AbandonRefuseUntilSeconds = -1.0;
+
+	void NoteAbandoned(const FVector& InGoal, double NowSeconds, float WindowSeconds)
+	{
+		bHasAbandonedGoal = true;
+		AbandonedGoal = InGoal;
+		AbandonRefuseUntilSeconds = NowSeconds + FMath::Max(WindowSeconds, 0.f);
+	}
+	/** True while InGoal is the abandoned goal (within SameGoalUU) and the window is live. */
+	bool RefusesGoal(const FVector& InGoal, double NowSeconds, float SameGoalUU) const
+	{
+		return bHasAbandonedGoal && NowSeconds < AbandonRefuseUntilSeconds
+			&& AbandonedGoal.Equals(InGoal, SameGoalUU);
+	}
 };
 
 /** AIB22 fix #4 R1: one confirmation anchor — a point that is connected ground IF the bot

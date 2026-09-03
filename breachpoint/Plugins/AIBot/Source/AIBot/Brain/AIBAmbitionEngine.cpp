@@ -91,6 +91,7 @@ const TCHAR* UAIBAmbitionEngine::SwitchReasonName(EAIBSwitchReason Reason)
 	case EAIBSwitchReason::Merit:     return TEXT("merit");
 	case EAIBSwitchReason::Veto:      return TEXT("veto");
 	case EAIBSwitchReason::Interrupt: return TEXT("interrupt");
+	case EAIBSwitchReason::Fallback:  return TEXT("fallback");
 	default:                          return TEXT("none");
 	}
 }
@@ -305,7 +306,25 @@ FGameplayTag UAIBAmbitionEngine::Rescore(const FAIBFacts& Facts, double NowSecon
 		return CurrentTag;
 	}
 
-	if (Best && Best->Tag != CurrentTag)
+	// F5-1(b): NOTHING scored. The board falls to the floor — the incumbent is NEVER kept
+	// (a suppressed Mode want held as incumbent re-entered its branch every frame), and
+	// the floor is taken even while its own want is suppressed: Wander's entry draws
+	// fresh, which is the retry the suppression was standing in for. No fallback
+	// registered = nothing elected, and the tree's ungated Fallback says so.
+	if (!Best)
+	{
+		const FGameplayTag Floor = HasAmbition(FallbackTag) ? FGameplayTag(FallbackTag) : FGameplayTag();
+		if (CurrentTag != Floor)
+		{
+			LastSwitchReason = Floor.IsValid() ? EAIBSwitchReason::Fallback : EAIBSwitchReason::Veto;
+			CurrentTag = Floor;
+			CommitEndSeconds = -1.0;
+		}
+		CurrentScore = 0.f;
+		return CurrentTag;
+	}
+
+	if (Best->Tag != CurrentTag)
 	{
 		// AIB26: name the cause. Veto before Interrupt — a zero incumbent would have
 		// switched with or without the edge, and that is the more useful reading.

@@ -908,7 +908,6 @@ struct FAIBFlankTaskInstanceData
 	float ClosestSoFarUU = 0.f;
 	float SecondsWithoutProgress = 0.f;
 	double EnteredAtSeconds = 0.0;
-	FAIBLocomotionState Locomotion;
 };
 
 /** AIB26 — FLANK's legs: walks the controller's LATCHED flank point (never a point of its

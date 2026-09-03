@@ -5,6 +5,7 @@
 
 #include "Brain/AIBAmbitionEngine.h"
 #include "Brain/AIBTactic.h"
+#include "Core/AIBBotController.h"
 #include "Core/AIBFactsBuilder.h"
 #include "Core/AIBTags.h"
 #include "Core/AIBTypes.h"
@@ -863,6 +864,54 @@ void FAIBAmbitionEngineSpec::Define()
 		Engine->ResetArbitration();
 		TestFalse(TEXT("respawn starts clean"),
 			Engine->IsAmbitionSuppressed(TAG_AIBSpec_Mode_Child, 600.5));
+	});
+
+	It("falls back to Roam on an all-zero board — never the incumbent (AIB22 F5-1b)", [this]()
+	{
+		// The v4 storm: a Mode want the incumbent, then suppressed; Roam suppressed too;
+		// every want at 0 kept the Mode want in the chair and the tree re-entered its
+		// branch every frame (`sweep over — 0.0s`, 86k lines a map). The floor takes an
+		// all-zero board, its own suppression included — Wander's entry draws fresh.
+		Engine->RegisterAmbition(Constant(AIBTags::Ambition_Roam, 0.2f));
+		Engine->RegisterAmbition(Constant(TAG_AIBSpec_Mode_Child, 1.0f));
+		const FAIBFacts Quiet;
+		TestTag(TEXT("the mode want wins"), Engine->Rescore(Quiet, 1.0), TAG_AIBSpec_Mode_Child);
+
+		Engine->NoteAmbitionFailed(TAG_AIBSpec_Mode_Child, 2.0);
+		Engine->NoteAmbitionFailed(AIBTags::Ambition_Roam, 2.0);
+		TestTag(TEXT("every want at zero: the floor, not the incumbent"),
+			Engine->Rescore(Quiet, 2.1), AIBTags::Ambition_Roam);
+		TestEqual(TEXT("and says fallback"), Engine->GetLastSwitchReason(), EAIBSwitchReason::Fallback);
+		TestEqual(TEXT("the name the log prints"),
+			FString(UAIBAmbitionEngine::SwitchReasonName(EAIBSwitchReason::Fallback)), FString(TEXT("fallback")));
+		TestTrue(TEXT("Roam's own suppression still stands — the board fell through it"),
+			Engine->IsAmbitionSuppressed(AIBTags::Ambition_Roam, 2.1));
+		TestTag(TEXT("the floor holds while the board stays zero"), Engine->Rescore(Quiet, 2.2), AIBTags::Ambition_Roam);
+		TestEqual(TEXT("holding the floor is not a switch"), Engine->GetLastSwitchReason(), EAIBSwitchReason::None);
+
+		// No floor registered: nothing elected — still never the incumbent.
+		Engine->ClearAmbitions();
+		Engine->ResetArbitration();
+		Engine->RegisterAmbition(Constant(TAG_AIBSpec_Mode_Child, 1.0f));
+		TestTag(TEXT("the lone want wins"), Engine->Rescore(Quiet, 30.0), TAG_AIBSpec_Mode_Child);
+		Engine->NoteAmbitionFailed(TAG_AIBSpec_Mode_Child, 31.0);
+		TestFalse(TEXT("no floor: nothing elected, not the incumbent"), Engine->Rescore(Quiet, 31.1).IsValid());
+		TestEqual(TEXT("released by veto"), Engine->GetLastSwitchReason(), EAIBSwitchReason::Veto);
+	});
+
+	It("refuses a re-issued ABANDONED goal for the window, a different goal at once (AIB22 F5-1a)", [this]()
+	{
+		// 107k `stall abandoned` lines from ONE clock: the verdict left it running and the
+		// branch re-issued the same goal next frame. The controller's locomotion state
+		// remembers the abandoned goal, worldless.
+		FAIBLocomotionState State;
+		const FVector Storey(100.f, 0.f, 300.f);
+		TestFalse(TEXT("nothing abandoned yet"), State.RefusesGoal(Storey, 1.0, 50.f));
+		State.NoteAbandoned(Storey, 1.0, /*WindowSeconds=*/3.f);
+		TestTrue(TEXT("the same goal next frame is refused"), State.RefusesGoal(Storey, 1.02, 50.f));
+		TestTrue(TEXT("inside the goal tolerance is the same goal"), State.RefusesGoal(Storey + FVector(20.f, 0.f, 0.f), 2.0, 50.f));
+		TestFalse(TEXT("a different goal runs its own clock"), State.RefusesGoal(FVector(900.f, 0.f, 300.f), 2.0, 50.f));
+		TestFalse(TEXT("the window lapses"), State.RefusesGoal(Storey, 4.0, 50.f));
 	});
 
 	// ---- AIB26 / Phase 15: the switch-reason instrument, the replay fingerprint, the
