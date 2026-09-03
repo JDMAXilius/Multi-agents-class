@@ -577,3 +577,5 @@ Refined steps (replace §Steps):
   dispatched; fix #6 building.
 - 2026-09-03 fix #6 merged (e722f447) and rung 1 PASS (Editor + Game). Specs running; then the
   FINAL editor verification (gantry watch + observation on both maps) and W-VERIFY v6.
+- 2026-09-03 rung 2 at fix #6 (05badaa2): AIBot 243 / 0, BreachpointNext 36 / 0. Final editor
+  verification starting.
