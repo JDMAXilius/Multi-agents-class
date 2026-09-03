@@ -121,3 +121,9 @@ builds (shared files).
   `bShouldStateChangeOnReselect=false`) — ST_AIBBot rebuild queued. New/changed shapes: `decide …
   tcommit= treason=` (Verbose unless `-AIBReplay`), `target claim RELEASED … reason=switch`,
   `idle over … tactic=Crowd`, `crowd simulation DISABLED — …`. Building (editor closed).
+- 2026-09-03 W-VERIFY v5 (5 x 2 maps): cap-2 holds — instant-level concurrent holders never
+  exceeded 2 in 10/10 matches; the judge's 8/9 pile-up buckets were a parser artefact (hand-off
+  inside one second) — fixed (91e3085d), `target pile-up buckets` now PASS on both maps. Real
+  defect found: corpse re-grants (`GRANTED`/`RELEASED reason=death` alternating 7x in 0.6 s,
+  30–50 % of grants) — fix #8 F8-2 refuses claims on dead targets. Team reports and DENIED ->
+  roam|rally|retreat present; no engage-anyway. kills/min PASS both maps.
