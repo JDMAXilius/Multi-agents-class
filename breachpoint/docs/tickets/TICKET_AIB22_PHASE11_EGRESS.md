@@ -655,3 +655,14 @@ Refined steps (replace §Steps):
   FAIL (bar 0), stuck PROV FAIL (sum of short stalls), single stall PROV 4.0 vs 3.0, sweep
   fraction HARD FAIL narrowly; PASS: F1 floor, unserved, wiring, FFA, pile-up, refusals/switch,
   single sweep, thrash, refusals vs baseline, kills/min. Verifier residual breakdown dispatched.
+- 2026-09-03 FINAL editor session (fix #8 build, real MCP, captures in
+  docs/tickets/evidence/aib22-2026-09-03/): gantry watch — 7 bots placed on `The_Gantry_01`:
+  t+11 s 4 of 7 off, t+36 s 6 of 7 off, one bot loops on an interior lip that "never left the
+  ground" (fix #7's F7-2/F7-3 lines fire; a lip that cannot be fallen from is the residual —
+  named below). Dense observation, Arena01, ScoreLimit raised to 200 for the session
+  (`Tools/aib/aib_pie_scorelimit.py`), 6 samples over 68 s: path per bot 2832 / 1346 / 4544 /
+  1768 / 3201 / 2947 / 1627 uu; longest still spell 0 s for six bots, 24.3 s for one (bot 4);
+  captures at 10 / 40 / 60 s show the live fight (kill feed, score 3–2 at 9:06). Earlier in
+  the session a fresh match ended in 23 s on the 7-kill limit (recap screen captured).
+  RESIDUAL for a follow-up: a lip whose step-off never leaves the ground must be blacklisted
+  for the cooldown (the fan re-picks it); the founder's 5 s bar for box 4 stays FAIL.
