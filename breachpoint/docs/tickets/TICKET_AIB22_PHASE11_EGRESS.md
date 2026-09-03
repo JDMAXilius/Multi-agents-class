@@ -406,3 +406,20 @@ Refined steps (replace §Steps):
   `Choose(Request, bLastResort)` with `SafeDropUU`, horizontal = lip standoff; MED-6
   `EConfirm` cached per latch. Tree unchanged. Specs: IslandLatch 12, TraversalPolicy +1.
   Parser (lead): `stranded` regex + per-bot `stranded_count`, reported not gated.
+- 2026-09-03 W-VERIFY v3 (5 x 2 maps at 1b19351f, `Tools/aib/aib22_verify.sh v3`, logs
+  Tools/Logs/aib22-verify-*-v3-*.log): Spillway idle median 56 s (baseline ~150), worst 95 s;
+  longest single sweep 7.0 s; stuck worst 236 s; refusals median 95 vs baseline 70 (WORSE —
+  dominated by `self=NO` off-mesh-self refusals from one spot, 163 of 940 in log 4); egress 0,
+  latches 6, stranded 2; kills/min 1.8 (baseline 1.0). Arena01 REGRESSION: idle median 276 s
+  of 300, stuck 294 s, kills/min median 0 (baseline 1.8), one match over at 86 s; bots that
+  leave the mezzanine (spawns + objective, z 410) stall at z 218/10 "280uu up — link=no" and
+  never return. Verifier breakdown pending. All HARD gates FAIL on both maps.
+- 2026-09-03 root-cause evidence (lead, editor-live on Arena01): the extended census (tiers
+  above AND below the PlayerStart anchor) shows the floor and all 13 catwalk stair steps have
+  no full path to the mezzanine in EITHER direction (partial ends ~400–530 uu short = the
+  storey). RecastNavMesh-Default: generate_nav_links True, BN_Drop 400/1000/50 and BN_Climb
+  250/−70/90 present, runtime generation DYNAMIC. Zero `link traverse` lines in all 10
+  matches (the hook only sees custom links, so not decisive alone). The nav-build warning
+  "BorderForLinks (23 vx) exceeds tileSize (0 vx)" is cosmetic (RecastNavMeshGenerator.cpp:3682
+  still takes the max border). Every catwalk step reads at floor height — suspect the stair
+  generator lays the steps flat, i.e. Arena01 has NO climb to its own spawn/objective tier.

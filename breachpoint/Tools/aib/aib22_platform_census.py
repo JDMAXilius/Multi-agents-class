@@ -57,7 +57,9 @@ def census(level=None):
         floor = min(tops, key=lambda t: t[1].z)[1]
         unreal.log("  (no PlayerStart on nav - anchoring on the lowest nav point instead)")
     floor_z = floor.z
-    plats = [(n, p) for n, p in tops if p.z > floor_z + STOREY]
+    # Tiers ABOVE and BELOW the anchor both count: on Arena01 the spawns sit on the mezzanine
+    # (z 410) and the floor is a storey down - "the floor has a way up" is the floor->anchor leg.
+    plats = [(n, p) for n, p in tops if abs(p.z - floor_z) > STOREY]
 
     def detail(n, p, a, b):
         q = NS.find_path_to_location_synchronously(w, a, b, None, None)
@@ -67,12 +69,13 @@ def census(level=None):
         end = pts[-1] if pts else a
         return "%s z%+.0f partial, ends %.0fuu short" % (n, p.z - floor_z, (end - b).length())
 
-    no_down = [detail(n, p, p, floor) for n, p in plats if not path_ok(w, p, floor)]
-    no_up = [detail(n, p, floor, p) for n, p in plats if not path_ok(w, floor, p)]
-    unreal.log("AIB22 census %s: %d tops on nav, anchor z %.0f (%s), %d platforms above %g" % (
+    no_to = [detail(n, p, p, floor) for n, p in plats if not path_ok(w, p, floor)]
+    no_from = [detail(n, p, floor, p) for n, p in plats if not path_ok(w, floor, p)]
+    unreal.log("AIB22 census %s: %d tops on nav, anchor z %.0f (%s), %d tiers more than %g away" % (
         w.get_name(), len(tops), floor_z, "PlayerStart" if starts else "lowest", len(plats), STOREY))
-    unreal.log("  no way DOWN: %d %s" % (len(no_down), no_down))
-    unreal.log("  no way UP:   %d %s" % (len(no_up), no_up))
+    unreal.log("  no way tier->anchor: %d %s" % (len(no_to), no_to))
+    unreal.log("  no way anchor->tier: %d %s" % (len(no_from), no_from))
+    no_down, no_up = no_to, no_from
     unreal.log("  box 2 %s" % ("PASS" if not no_down and not no_up else "FAIL"))
 
 
