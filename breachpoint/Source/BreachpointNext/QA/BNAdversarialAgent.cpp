@@ -450,7 +450,7 @@ void ABNAQAController::ProbeTick()
 			: FBox(ForceInit);
 		const bool bOutside = ArenaHull.IsValid && !Expanded.IsInside(Here);
 		if (BNAQA::EscapedPlayableSpace(bAlive, CMC && CMC->IsMovingOnGround(),
-			ArenaHull.IsValid, bOutside))
+			ArenaHull.IsValid != 0, bOutside))
 		{
 			RecordFinding(TEXT("escaped_playable_space"), TEXT("high"), FString::Printf(
 				TEXT("standing on ground at (%.0f, %.0f, %.0f), outside the PlayerStart hull + %.0fuu margin (heuristic bounds)"),
