@@ -67,3 +67,19 @@ W-BUILD (after Phase 12 A and Phase 14 B, which own AIBBotController.cpp / AIBTy
 TreeAuthoring): A Brain (AIBTactic.h tags, AmbitionEngine, its spec) · B Execution (tactic gate,
 TreeAuthoring, new TacticGate spec) · C Core (second engine, tactic clocks, decide line,
 DecisionRandom) · D aib-editor (decide regex + --replay-diff, AIB_Tactics.csv).
+- 2026-09-03 W-BUILD (aib-builder, worktree c2314cac, merge pending): the tactic layer is a
+  SECOND `UAIBAmbitionEngine` instance on the controller (`TacticEngine`), tactics
+  `AIBot.Tactic.Push/Flank/Hold` as one nested level under Engage — `Engage > [Flank(gated),
+  Hold(gated), Push(ungated floor, last)]`, gun tasks stay on the Engage parent. No native utility
+  selectors, no weighted non-argmax (skipped per verdict; `DecisionRandom` seeded
+  Hash(MatchSeed,BotIndex,LifeIndex) exists, one draw = flank ring phase). Flank's gate returns 0
+  only on a LATCHED failure (`FAIBFlankLatch`, cleared on arrive/refused/stalled/drift/fight-over);
+  commit = CommitSeconds + SwitchCostFactor, no new knob; rows FlankCommitSeconds 3.5,
+  FlankRadiusUU 700, FlankMaxDetourFactor 1.5, HoldMaxSeconds 4. `EAIBSwitchReason`
+  first|merit|veto|interrupt on every switch line; `AIBot: decide bot= seq= want= s= over= rs=
+  tac= ts= commit= rng= facts=<crc32>` every Think (replay diff = sort (bot,seq) and diff).
+  Specs AmbitionEngineSpec +8, `AIBot.Sim.TacticGate` 3. **Tree CHANGED** (Engage +3 children,
+  3 new node types) — ST_AIBBot rebuild editor-live before any PIE. Parser regexes for decide /
+  tactic -> / flank / hold landed (lead). Gaps: `SetMatchSeed`/`SetBotIndex` callers = AIB25
+  lane A's manager (merged) + BNGameMode seam (bn-builder in flight); AIB25 lane B's list also
+  names `Brain/AIBTactic.h` and the Engage tasks — built HERE, lane B must not rebuild them.

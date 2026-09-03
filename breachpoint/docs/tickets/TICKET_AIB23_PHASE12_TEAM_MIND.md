@@ -69,3 +69,19 @@ FIRST); B = TargetPolicy + FactsBuilder + StateTreeTasks + TreeAuthoring + Targe
 DT_AIBTiers (aib-editor) + AIBDataRows.h. Prerequisite: metrics parsers for
 claim_grant/claim_deny/target_pileup_count BEFORE the fix. Phase 12 W-BUILD waits for Phase 11's
 builds (shared files).
+- 2026-09-03 W-BUILD (aib-builder, worktree 985d708a, merge pending behind the Phase 13 build):
+  no `UAIBTeamMind` — three headless members on `AIBTeamCoordinator` (`Team/AIBTargetClaims`,
+  `Team/AIBSightingLedger`, `Team/AIBVisitHeat`, NM_Client guards on every mutator). Claims
+  granted in the Think commit block when Engage wins with a held target (cap `AIB::TargetClaimCap`
+  2 per target per alliance), renewed per think, released by ttl / exit past
+  `ClaimMinHoldSeconds` (2) / death via injected liveness / unpossess; the third bot is score-only
+  (`bTargetClaimSaturated` -> Engage consideration 0.20 ≈ 0.33x); ring spread by claim ordinal at
+  radius FightRange − Acceptance (550, DEVIATION from 900: a 900 ring + 350 acceptance parks a bot
+  1250 out with tactic=none). Sightings published post-pump (`bSightCurrent` only, the
+  publisher's own stamp), consumed pre-pump as a lead never a sight (`TeamReport` reaction kind,
+  `TeamReportIntervalSeconds` 1, stale 0.5). Team-only visit heat grid (`VisitHeatCellUU` 500,
+  decay 30 s) stamped every Think, Wander draws best-of-3 coldest (Phase 11 step 6 debt paid).
+  Lines exactly the parser's Phase 12 shapes (GRANTED/DENIED -> x/RELEASED reason=, team report).
+  Specs `AIBot.Sim.TargetClaims` 8 + `AIBot.Sim.TeamMind` 8. Tree unchanged. Off-list but
+  required: `Brain/AIBConsideration.*` selector + one Engage consideration (Phase 15 touches the
+  same block — merge by hand). The Wander draw edit overlaps AIB22 fix #4 R6/R7.
