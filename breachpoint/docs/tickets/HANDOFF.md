@@ -224,3 +224,25 @@ Three findings in `02-MenuRow.md` remain open: Map Voting's "Winning" state (a C
 is no winning state and no bind for one), Drop Down's Active hatch (same reason — the hatch has
 no bind, so C++ cannot show or hide it per state; Dig Down gets it statically because Active is
 its only state), and `Slider Row Wide`, whose palette sits outside the token system entirely.
+
+## Decisions the founder must make (3 Sep 2026, from the Phase 16 audit and the phase reviews)
+
+These sit outside every AIB owner path or behind a closed ruling; nothing lands until one of
+them is answered.
+
+1. **Retire the BR-era bot system** (`Source/Breachpoint/AI/`, `Content/AI/ST_Bot`,
+   `Content/Data/DT_BotAmbitions|DT_BotTuning` + csv, the `BRDataRows.h` row structs): dead and
+   unreferenced, but under `ai-builder`'s owner path and DESIGN-RULINGS BP103. Needs a dated
+   ruling + a named owner. Recommended: yes, same shape as the BN retirement (AIB27).
+2. **Retire `ai-builder.md`** (describes code that does not exist) and re-route the 20
+   documents/agents that name it. Recommended: yes.
+3. **Test contract naming**: `testing.md:108` and `QUALITY-BARS:60` say `Breachpoint.Bots.*`;
+   the real suites are `AIBot.Sim.*` (19 specs today). Recommended: amend the two contract lines
+   (one edit each) rather than renaming 19 suites and every citation.
+4. **Gauntlet**: `BRGauntlet.SmokeTS2C` was never authored, the wrapper is Win64-only, and the
+   dedicated-server rung cannot build on the launcher engine (BreachpointServer: "Server targets
+   are not currently supported from this engine distribution"). Decide: source-built engine
+   machine for the server rung, or amend the ladder to listen-server only for now.
+5. **Phase 14 lane geometry**: lane volumes are placed by script from the blockout's corridor
+   names; the founder should confirm the 3–6 lanes per map read as the intended routes (a
+   10-minute PIE look with `show Navigation`).

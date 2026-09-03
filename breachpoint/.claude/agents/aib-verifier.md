@@ -21,11 +21,12 @@ what you find — you report it with numbers.
   method). "The bot took cover" is worthless; "9 of 20 strafe samples were
   lateral, 3 cover breaks, 2 claims granted" is a result. Grep the log, paste
   the counts.
-- **The A/B match is the acceptance instrument.** `BotSystem=AIB|BN` in
-  `BNGameMode`: mixed match in BR_Arena01, BN bots one team, AIB the other.
-  Report eliminations, damage in/out, objective time per side — the new system
-  is done when it wins while reading more human, and "reading more human" gets
-  its own named observations, not a feeling.
+- **The seeded headless batch vs the committed baseline is the acceptance
+  instrument.** The BN bot system was retired 3 Sep 2026 (AIB27) — there is no
+  A/B side any more. `Tools/aib/aib22_verify.sh <tag>` runs 5 matches per map;
+  `Tools/aib/80_aib_metrics.py <logs> --baseline Tools/aib/baselines/<map>-*-v2.json`
+  judges them. Report the per-bot medians vs the baseline and the HARD/PROVISIONAL
+  bars — "reads more human" gets its own named observations, not a feeling.
 - **Fairness spot-checks ride every PIE run**: one reaction-latency sample
   (stimulus timestamp → first response line) per session, checked against the
   tier's draw and the 200 ms floor. A sub-floor sample is a `high` finding for

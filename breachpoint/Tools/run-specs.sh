@@ -10,7 +10,7 @@
 # were compiled out reports "0 tests, 0 failures" and looks exactly like success.
 #
 # Default filter is the BreachpointNext suites. Pass one argument to narrow it:
-#   Tools/run-specs.sh BreachpointNext.Sim.BotBrain
+#   Tools/run-specs.sh AIBot            # or a single suite: AIBot.Sim.IslandLatch
 # =====================================================================================
 set -uo pipefail
 

@@ -4,7 +4,7 @@
     python Tools/aib/70_aib_assets.py build     # pull the trigger, then read back
     python Tools/aib/70_aib_assets.py audit     # read-back only, from a fresh load
 
-The AIBot twin of Tools/bn/62_bot_assets.py, on the same proven mechanics and the same
+Built on the mechanics the retired BN twin (Tools/bn/62, deleted 3 Sep 2026) proved, and the same
 R5 finding: a StateTree's GRAPH cannot be authored from Python or any MCP toolset (the
 states are bare Instanced UPROPERTYs PropertyAccessUtil refuses; no toolset has a
 StateTree factory; CompileStateTree is not a UFUNCTION). The graph is built by
