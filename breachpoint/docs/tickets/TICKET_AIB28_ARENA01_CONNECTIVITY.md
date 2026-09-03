@@ -62,3 +62,36 @@ scripts (law 7) — every fix here is a generator change + regen, never a hand e
 - [ ] No spawn pad is an island (each PlayerStart has a full path to the objective)
 - [ ] A bot standing on the gantry top reads grounded with its feet on nav (PIE, captured)
 - [ ] 3 headless matches: kills/min ≥ v2 baseline median, idle median < v2 baseline
+
+## Log
+- 2026-09-03 step 1 (arena-architect, read-only) — corrections to the Evidence above:
+  D1 stairs: the manifest lands both flights on the CORE DRUM ROOF (`The_Core_01`, top 400,
+  x 1600–2400 × y 1600–2400), not on the catwalk decks — the 400 uu y-gap is by design and the
+  roof's corridor/terrace strips bridge to deck_south/north coplanar at z 400 (narrowest point
+  an L-corner of 141 uu diagonal, ~3 cells after erosion — marginal). Tread depth is NOT the
+  blocker (treads + roof are one walkable area; erosion acts only on the side ledges, leaving
+  86 of 200 uu width); tread 1's riser sits exactly at walkableClimb (4 voxels, zero margin).
+  Generator drift: at HEAD `stair_steps()` returns [] for a 3 m run (run/13 < 0.40 m) so a regen
+  emits SOLID stair blocks; the umap's 13-tread flights came from `bn21_stairs_mcp.py`'s own
+  table (5.5 m runs) and it mirrored stair_east by hand — `arena_plan.py` does not. The 26 Aug
+  build report shows every box failed to spawn under -run=pythonscript and 49 actors are
+  untagged, so `build_arena.py` cannot regen this umap as-is (would double the level).
+  D2 "spawn pads": no manifest entry makes a z 130 pad — those are the four `cover[]` chest
+  crates (2x2x1.2 m, tops 120, nav 130) at (700,700) etc. PlayerStarts SP1..4 are on the floor
+  3 m away. A pawn on a crate top is either umap PlayerStart drift or a bot-side placement —
+  dump PlayerStart transforms first; no ramps to crates, no PlayerStart moves until then.
+  D3 gantry/core: single solids, no slab-over-mass; nav 910 for a 900 top is CellHeight
+  rounding. Feet 959/1217 are a pawn still in the grapple arc and the PERIMETER WALL TOP
+  (z 1200, 1 m wide, no nav) — bot-side: grounded must wait for Walking, and wall tops need a
+  policy. BN_Drop arithmetic from the west gantry: three of four edges land on open floor at
+  depth ≈810 within JumpLength — legal, so the missing link is not landing distance.
+  ORDER for aib-editor: (1) editor triage — draw/count generated links map-wide (positive
+  control: drum roof edge -> floor, depth 400); if ZERO, link generation itself is the defect
+  (DYNAMIC runtime generation vs the link builder — test Static on a scratch copy) and geometry
+  work is moot; three path queries A floor(1000,2000,10)->tread7(1327,2000,225),
+  B tread13(1579,2000,410)->roof(1700,2000,410), C roof->SP5(2000,1300,405); grid on Core_01;
+  PlayerStart dump. (2) manifest v4: stair_west x[10.5,16], stair_east x[24,29.5]. (3)
+  `stair_steps(box, high_end)` ascends toward the abutting z-matched solid/deck; optional 14
+  treads at 28.6 risers for margin; top tread +0.5 m into the landing only if query B fails.
+  (4) regen mechanism: plan-driven MCP placer with delete-by-label, or tag the 49 actors. (5)
+  gantry/core: no change until (1). Verification is rung 3 (editor census + PIE).
