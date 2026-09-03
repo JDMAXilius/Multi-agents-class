@@ -485,3 +485,11 @@ Refined steps (replace §Steps):
   off the gantry is still unexplained (suspect: the partial walk to the edge) — PIE watch v4
   decides. Tree unchanged. Parser: `stall abandoned` (counts as stuck seconds), `off-mesh
   recovery`, `waiting for nav`.
+- 2026-09-03 W-VERIFY v4 (5 x 2 maps at 8e138133 = fix #4; logs Tools/Logs/aib22-verify-*-v4-*.log):
+  Arena01 kills/min median 3.4 (v3 0.0, baseline 1.8), three matches ended on the score limit
+  (84–176 s), idle median 97.6 (v3 276, baseline 199), refusals 0 (R7 nav gate), latches 7/bot
+  median, egress 0, stranded 0, off-mesh recoveries 0. Spillway kills/min 1.8, refusals 0,
+  idle median 116 (v3 56 — worse), off-mesh recoveries 8/bot median, egress 0. NEW STORM on
+  both maps: `stall abandoned` ≈2,000 lines per bot per match (≈7/s) and the parser's stuck
+  sum explodes (tens of thousands of seconds) — R3's storey abandon re-fires on the same goal.
+  Verifier breakdown dispatched (v4). All HARD gates still FAIL; kills/min PASS both maps.
