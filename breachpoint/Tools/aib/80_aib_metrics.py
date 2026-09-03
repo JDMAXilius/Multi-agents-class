@@ -104,8 +104,13 @@ RX = {
     # seconds so idle/stall/sweep sum to SECONDS. The dash is U+2014 in the module; ASCII
     # '-' accepted so a hand-typed or transcoded log still parses.
     "move_refused":  re.compile(_AIB + r"move REFUSED goal=" + _VEC + r"(?P<text>.*)"),
+    # still= (2026-09-03) names the stands that were up while the segment's seconds
+    # elapsed — the v5->v6 bisect's discriminator. OPTIONAL on purpose: every baseline
+    # before that date has no such field, and those seconds land in `uncaused` rather
+    # than being silently attributed to either cause.
     "stall_over":    re.compile(_AIB + r"stall over [—-] (?P<seconds>" + _NUM + r")s at " + _VEC + r" goal=" + _VEC
-                                + r" jumped=(?P<jumped>yes|no) resolved=(?P<resolved>moved|abandoned)"),
+                                + r" jumped=(?P<jumped>yes|no) resolved=(?P<resolved>moved|abandoned)"
+                                + r"(?: still=(?P<still>\S+))?"),
     "sweep_over":    re.compile(_AIB + r"sweep over [—-] (?P<seconds>" + _NUM + r")s, moved (?P<moved>" + _NUM + r")uu, state=(?P<state>\S+)"),
     "idle_over":     re.compile(_AIB + r"idle over [—-] (?P<seconds>" + _NUM + r")s state=(?P<state>\S+) tactic=(?P<tactic>\S+)"),
     # AIB22 lane B (2026-09-02): the latch and the egress start, so stranded time has a denominator.
@@ -114,6 +119,18 @@ RX = {
     "stranded":       re.compile(_AIB + r"stranded [—-] no legal lip within (?P<reach>" + _NUM + r")uu \(drops [≤<]=? ?(?P<limit>" + _NUM + r")uu\)"),
     # AIB22 fix #4 (2026-09-03): a link=no stall abandons at once; off-mesh bodies walk to the mesh.
     "stall_abandoned": re.compile(_AIB + r"stall abandoned [—-] (?P<seconds>" + _NUM + r")s, (?P<across>" + _NUM + r")uu across / (?P<up>-?" + _NUM + r")uu up, link=(?P<link>\S+) \((?P<why>[^)]*), F7\)"),
+    # AIB22 v7 (2026-09-03): F9's default-motion reflex and the interior-lip blacklist.
+    # `drift` is the walk a bot takes when it has stood with NO named tactic — the count
+    # is how often F9 had to catch a silent stand; `drift REFUSED` is the same moment with
+    # the mover declining a point GetRandomReachablePointInRadius called reachable, which
+    # is the Arena01 no_path_requests suspect. `lip blacklisted` is the countable half of
+    # the blacklist (Log); `lip refused` is the other half (Verbose) — a blacklist that
+    # never refuses anything is doing nothing, and only that line separates the two.
+    "drift":          re.compile(_AIB + r"drift [—-] (?P<seconds>" + _NUM + r")s still with no tactic, walking (?P<dist>" + _NUM + r")uu"),
+    "drift_refused":  re.compile(_AIB + r"drift REFUSED [—-] (?P<dist>" + _NUM + r")uu, reachable draw the mover would not path"),
+    "lip_blacklisted": re.compile(_AIB + r"lip blacklisted " + _VEC + r" for (?P<window>" + _NUM + r")s"),
+    "lip_refused":    re.compile(r"AIBot: (?P<bot>\S+) lip refused " + _VEC + r" [—-] blacklisted"),   # Verbose
+    "draw_reflex":    re.compile(r"AIBot: (?P<bot>\S+) draw reflex [—-] empty hand, cycling"),         # Verbose
     "offmesh_recovery": re.compile(_AIB + r"off-mesh recovery [—-] walking (?P<dist>" + _NUM + r")uu to the mesh"),
     "offmesh_failed":  re.compile(_AIB + r"off-mesh recovery FAILED [—-] (?:(?P<seconds>" + _NUM + r")s|vertical gap (?P<gap>" + _NUM + r")uu, no lip)"),
     "offmesh_stepoff": re.compile(_AIB + r"off-mesh recovery [—-] vertical gap (?P<gap>" + _NUM + r")uu, stepping off (?P<drop>" + _NUM + r")uu to the mesh"),
@@ -153,7 +170,17 @@ RX = {
 }
 
 # The per-bot metrics derived from the five AIB22 lines (seconds are sums per bot per match).
-BOT_METRICS = ("no_path_requests", "stuck_seconds", "max_stall_seconds", "sweep_seconds", "max_single_sweep",
+BOT_METRICS = ("no_path_requests", "stuck_seconds",
+               # The v5->v6 bisect's split of stuck_seconds by CAUSE. crowded = the segment
+               # carried Crowd or Yield (separation braking the body: Think names Crowd only
+               # on a still sample with a move request in flight); wedged = a named stand of
+               # some other kind, or none at all, which is a body that gained no ground while
+               # feeding input — geometry. uncaused = a line from before still= existed.
+               # The three sum to stuck_seconds exactly; the self-test asserts it.
+               "stuck_seconds_crowded", "stuck_seconds_wedged", "stuck_seconds_uncaused",
+               # AIB22 v7: F9's drift reflex and the lip blacklist, per bot.
+               "drift_count", "drift_refused_count", "lip_blacklist_count",
+               "max_stall_seconds", "sweep_seconds", "max_single_sweep",
                "idle_seconds", "idle_seconds_tactical", "island_egress_count", "island_latch_count", "egress_failed_count", "stranded_count", "stall_abandoned_count", "offmesh_recovery_count", "overlap_seconds", "yield_count", "route_changes", "flank_count", "flank_stalled", "hold_seconds", "state_flaps",
                # AIB23: ttl-release -> re-grant on the same target inside THRASH_WINDOW_SECONDS,
                # and what a DENIED bot did instead.
@@ -219,6 +246,26 @@ def parse_log(path):
         return parse_lines(handle)
 
 
+# AIB22 v7: how long after a drift a move refusal still counts as downstream of it. A
+# drift walks up to DriftRadiusUU (1200uu) and the mover's next goal is issued when it
+# arrives or gives up, so the window has to cover the walk plus one decision — not so
+# wide that every refusal in a busy match lands inside one.
+DRIFT_REFUSAL_WINDOW_SECONDS = 5.0
+
+
+def count_drift_linked_refusals(counts, window=DRIFT_REFUSAL_WINDOW_SECONDS):
+    """Refusals that follow a drift by the SAME bot inside the window. Per bot, because a
+    teammate's drift says nothing about this body's path."""
+    drifts = {}
+    for hit in counts["drift"]:
+        drifts.setdefault(hit["bot"], []).append(float(hit["t"]))
+    linked = 0
+    for hit in counts["move_refused"]:
+        when = float(hit["t"])
+        linked += any(0.0 <= when - at <= window for at in drifts.get(hit["bot"], ()))
+    return linked
+
+
 def per_bot_summary(counts):
     """AIB22: the five metrics per bot. Every possessed/tiered bot gets a row (zeros count
     in the medians); bots seen only on the five lines are added as they appear."""
@@ -237,6 +284,24 @@ def per_bot_summary(counts):
         bot = row(hit["bot"])
         bot["stuck_seconds"] += seconds
         bot["max_stall_seconds"] = max(bot["max_stall_seconds"], seconds)
+        # WHY the body gained no ground. A Crowd or Yield anywhere in the segment makes it
+        # crowded: both are the module declining to push through a teammate, which is
+        # separation working, not a bot stuck on the map. Anything else — including a
+        # tactical stand like Hold — is a body that held its ground against geometry for
+        # those seconds. A line with no still= is attributed to NEITHER.
+        still = hit.get("still")
+        if still is None:
+            bot["stuck_seconds_uncaused"] += seconds
+        elif "Crowd" in still or "Yield" in still:
+            bot["stuck_seconds_crowded"] += seconds
+        else:
+            bot["stuck_seconds_wedged"] += seconds
+    for hit in counts["drift"]:
+        row(hit["bot"])["drift_count"] += 1
+    for hit in counts["drift_refused"]:
+        row(hit["bot"])["drift_refused_count"] += 1
+    for hit in counts["lip_blacklisted"]:
+        row(hit["bot"])["lip_blacklist_count"] += 1
     for hit in counts["sweep_over"]:
         seconds = float(hit["seconds"])
         bot = row(hit["bot"])
@@ -361,6 +426,7 @@ def per_match_summary(counts, ttl=CLAIM_TTL_SECONDS):
     for hit in counts["tier"]:
         tiers.setdefault(hit["tier"], set()).add(hit["bot"])
     bots = per_bot_summary(counts)
+    drift_linked_refusals = count_drift_linked_refusals(counts)
     # Match length: the last t= before the LogBN "match over" line (score-limit ends are real),
     # else the URL TimeLimit, else the last t= seen on an AIB22 line.
     t_seen = [float(hit["t"]) for key in ("move_refused", "stall_over", "sweep_over", "idle_over", "island_egress",
@@ -414,6 +480,28 @@ def per_match_summary(counts, ttl=CLAIM_TTL_SECONDS):
         # stepped legs — not the old frames-over-legs ratio.
         "strafe_denied_seconds": (round(sum(float(hit["seconds"]) for hit in counts["strafe_back"]), 1)
             if counts["strafe_back"] else None),
+        # AIB22 v7 (2026-09-03): THE ARENA01 SETTLE. no_path_requests went 0 -> 22 on
+        # Arena01 alone at v7, and the drift reflex is the suspect by an indirect mechanism:
+        # it cannot inflate this counter itself (it does not log through MoveToNavPoint), but
+        # it puts bots somewhere new, and on a map with connectivity holes the TASK moves
+        # issued from where a bot lands are what get refused. So the question is temporal,
+        # not a count: do refusals FOLLOW drifts? This bucket answers it — a refusal is
+        # "after a drift" when the SAME bot drifted within the window before it.
+        #
+        # Reading it: refusals clustered after drifts implicate the reflex, and the fix is
+        # a tighter draw. Refusals spread evenly across the match exonerate it, and the
+        # 0 -> 22 belongs to something else. Neither is proven by the ratio alone — it
+        # names which half of the map to read next, which is all a correlate can do.
+        "drift_refusal_correlation": ({
+            "window_s": DRIFT_REFUSAL_WINDOW_SECONDS,
+            "drifts": len(counts["drift"]),
+            "refusals": len(counts["move_refused"]),
+            "refusals_after_drift": drift_linked_refusals,
+        } if counts["drift"] or counts["move_refused"] else None),
+        # AIB22 v7, Verbose-only: the blacklist's refusal half and the draw reflex. Zero
+        # here reads "not captured", never "never fired" — the distinction (c) lacked.
+        "lip_refusals": len(counts["lip_refused"]) or None,
+        "draw_reflexes": len(counts["draw_reflex"]) or None,
         "ads_ins": len(counts["ads_in"]) or None,        # Verbose-only
         "ads_mean_range_uu": (round(statistics.mean(float(hit["range"]) for hit in counts["ads_in"]), 0)
             if counts["ads_in"] else None),
@@ -607,7 +695,8 @@ def main():
                         "strafe_legs", "strafe_holds", "strafe_mean_arc_uu",
                         "strafe_denied_seconds", "strafe_spell_ends", "ff_refused",
                         "offmesh_self", "offmesh_moments", "ads_ins", "ads_mean_range_uu",
-                        "ally_fights_heard", "wanders_to_fight")
+                        "ally_fights_heard", "wanders_to_fight",
+                        "lip_refusals", "draw_reflexes")
                     else "none (FFA?)" if key in ("team_assignments", "team_populations",
                         "team_kills_denied")
                     else "n/a")
@@ -632,7 +721,7 @@ def main():
 
 
 # ------------------------------------------------------------------- self-test
-# Twenty-eight synthetic lines in the exact module formats (one ASCII dash on purpose), with
+# Fifty-seven synthetic lines in the exact module formats (one ASCII dash on purpose), with
 # every derived number asserted. `--selftest` is the check that the regexes still match
 # the spec; a module format change must break THIS before it silently zeroes a baseline.
 SELFTEST_LOG = """\
@@ -645,6 +734,14 @@ AIBot: Bravo t=14.25 move REFUSED goal=(-1,-2.5,3) projection failed
 AIBot: Alpha t=20.0 stall over — 2.5s at (1,2,3) goal=(4,5,6) jumped=yes resolved=moved
 AIBot: Alpha t=40.0 stall over - 4.0s at (1,2,3) goal=(4,5,6) jumped=no resolved=abandoned
 AIBot: Bravo t=41.0 stall over — 1.5s at (0,0,0) goal=(9,9,9) jumped=no resolved=moved
+AIBot: Alpha t=42.0 stall over — 3.0s at (1,2,3) goal=(4,5,6) jumped=no resolved=moved still=Yield|Crowd
+AIBot: Bravo t=43.0 stall over — 2.0s at (0,0,0) goal=(9,9,9) jumped=no resolved=abandoned still=none
+AIBot: Alpha t=44.0 drift — 1.5s still with no tactic, walking 1200uu
+AIBot: Alpha t=45.5 move REFUSED goal=(700,800,50) no path to goal
+AIBot: Bravo t=44.5 drift REFUSED — 900uu, reachable draw the mover would not path (F7)
+AIBot: Bravo t=45.0 lip blacklisted (40,20,30) for 20s — the step-off did not leave the island
+AIBot: Alpha lip refused (40,20,30) — blacklisted, trying another door
+AIBot: Alpha draw reflex — empty hand, cycling.
 AIBot: Alpha t=50.0 sweep over — 3.0s, moved 120.5uu, state=Search
 AIBot: Bravo t=51.0 sweep over — 1.25s, moved 0uu, state=Roam
 AIBot: Alpha t=60.0 idle over — 2.0s state=Roam tactic=none
@@ -714,7 +811,7 @@ AIBot: Alpha t=112.0 target claim GRANTED on Enemy1 (1/2)
 
 def selftest():
     lines = SELFTEST_LOG.splitlines()
-    assert len(lines) == 49, len(lines)
+    assert len(lines) == 57, len(lines)
     counts = parse_lines(lines)
     hits = {key: len(counts[key]) for key in ("move_refused", "stall_over", "sweep_over", "idle_over",
                                               "island_egress", "kill", "time_limit", "possess", "acquire", "f7",
@@ -725,7 +822,7 @@ def selftest():
     assert counts["teammate_overlap"][0]["n"] == "2" and counts["yield"][0]["seconds"] == "1.0" and counts["hill_strafe"][0]["r"] == "180" and counts["position"][0]["n"] == "1"
     assert counts["stall_abandoned"][0]["why"] == "a storey with no link" and counts["offmesh_recovery"][0]["dist"] == "120" and len(counts["waiting_nav"]) == 1
     assert counts["island_latched"][0]["draws"] == "3" and counts["egress_start"][0]["drop"] == "300" and counts["egress_failed"][0]["why"] == "no lip within 150uu"
-    assert hits == {"move_refused": 3, "stall_over": 3, "sweep_over": 3, "idle_over": 4, "island_egress": 2,
+    assert hits == {"move_refused": 4, "stall_over": 5, "sweep_over": 3, "idle_over": 4, "island_egress": 2,
                     "kill": 2, "time_limit": 1, "possess": 2, "acquire": 4, "f7": 2,
                     "wiring_pois": 1, "match_over": 1}, hits
     assert counts["sweep_over"][2]["state"] == "Mode" and counts["acquire"][2]["verb"] == "SWITCHED to"
@@ -734,20 +831,44 @@ def selftest():
     assert counts["stall_over"][1]["resolved"] == "abandoned" and counts["stall_over"][0]["jumped"] == "yes"
     assert counts["island_egress"][1]["via"] == "grapple" and counts["sweep_over"][0]["moved"] == "120.5"
     assert counts["move_refused"][0]["text"].strip() == "no path to goal"
+    # still= is OPTIONAL: the three dateless lines above must still parse, with the field None.
+    assert counts["stall_over"][0]["still"] is None and counts["stall_over"][3]["still"] == "Yield|Crowd"
+    assert counts["stall_over"][4]["still"] == "none"
+    assert counts["drift"][0]["dist"] == "1200" and counts["drift_refused"][0]["dist"] == "900"
+    assert len(counts["drift"]) == 1 and len(counts["drift_refused"]) == 1   # REFUSED is not a drift
+    assert counts["lip_blacklisted"][0]["window"] == "20" and len(counts["lip_refused"]) == 1
+    assert len(counts["draw_reflex"]) == 1
 
     match = per_match_summary(counts)
     expect = {
-        "Alpha": {"no_path_requests": 2, "stuck_seconds": 6.5, "max_stall_seconds": 4.0, "sweep_seconds": 0.0, "max_single_sweep": 0.0,
+        "Alpha": {"no_path_requests": 3, "stuck_seconds": 9.5,
+                  "stuck_seconds_crowded": 3.0, "stuck_seconds_wedged": 0.0, "stuck_seconds_uncaused": 6.5,
+                  "drift_count": 1, "drift_refused_count": 0, "lip_blacklist_count": 0,
+                  "max_stall_seconds": 4.0, "sweep_seconds": 0.0, "max_single_sweep": 0.0,
                   "idle_seconds": 2.0, "idle_seconds_tactical": 1.5, "island_egress_count": 1, "island_latch_count": 1, "egress_failed_count": 0, "stranded_count": 0, "stall_abandoned_count": 1, "offmesh_recovery_count": 1, "overlap_seconds": 1.5, "yield_count": 0, "route_changes": 1, "flank_count": 1, "flank_stalled": 0, "hold_seconds": 0.0, "state_flaps": 0,
                   "claim_thrash": 0, "denied_roam": 0, "denied_engage_anyway": 0},
-        "Bravo": {"no_path_requests": 1, "stuck_seconds": 1.5, "max_stall_seconds": 1.5, "sweep_seconds": 3.25, "max_single_sweep": 2.0,
+        "Bravo": {"no_path_requests": 1, "stuck_seconds": 3.5,
+                  "stuck_seconds_crowded": 0.0, "stuck_seconds_wedged": 2.0, "stuck_seconds_uncaused": 1.5,
+                  "drift_count": 0, "drift_refused_count": 1, "lip_blacklist_count": 1,
+                  "max_stall_seconds": 2.0, "sweep_seconds": 3.25, "max_single_sweep": 2.0,
                   "idle_seconds": 3.0, "idle_seconds_tactical": 0.5, "island_egress_count": 1, "island_latch_count": 0, "egress_failed_count": 1, "stranded_count": 1, "stall_abandoned_count": 0, "offmesh_recovery_count": 0, "overlap_seconds": 0.0, "yield_count": 1, "route_changes": 0, "flank_count": 0, "flank_stalled": 0, "hold_seconds": 2.5, "state_flaps": 0,
                   "claim_thrash": 0, "denied_roam": 0, "denied_engage_anyway": 0},
     }
     assert match["per_bot"] == expect, match["per_bot"]
     assert match["kills"] == 2 and match["match_seconds"] == 90.0 and match["kills_per_min"] == 1.333, match
-    assert match["bot_spread"]["no_path_requests"]["median"] == 1.5
-    assert match["bot_spread"]["stuck_seconds"] == {"mean": 4.0, "median": 4.0, "min": 1.5, "max": 6.5, "n": 2}
+    assert match["bot_spread"]["no_path_requests"]["median"] == 2.0
+    assert match["bot_spread"]["stuck_seconds"] == {"mean": 6.5, "median": 6.5, "min": 3.5, "max": 9.5, "n": 2}
+    # THE INVARIANT: the split is a partition, not three correlates. If a future line shape
+    # slips past both arms, this is what catches it — before a baseline reads 0/0 as "no
+    # stalls" instead of "no cause recorded".
+    for name, bot in match["per_bot"].items():
+        assert round(bot["stuck_seconds_crowded"] + bot["stuck_seconds_wedged"]
+                     + bot["stuck_seconds_uncaused"], 6) == round(bot["stuck_seconds"], 6), name
+    assert match["lip_refusals"] == 1 and match["draw_reflexes"] == 1
+    # Both arms of the correlate: Alpha's t=45.5 refusal follows its t=44.0 drift (linked);
+    # the three at t=12-14 precede every drift in the log, so they are not.
+    assert match["drift_refusal_correlation"] == {
+        "window_s": 5.0, "drifts": 1, "refusals": 4, "refusals_after_drift": 1}, match["drift_refusal_correlation"]
     assert match["f7_failures"] == 2 and match["f7_by_shape"] == {"POI path refused": 1, "could not path to the belief": 1}
     assert match["acquisitions"] == 3 and match["reaction_sentinels"] == 1 and match["latency_min"] == 0.267, match
     assert match["acquisitions_by_verb"] == {"acquired": 2, "SWITCHED to": 1} and match["wiring_pois"] == 1
@@ -786,7 +907,7 @@ def selftest():
 
     for line in judge([match], DEFAULT_BARS, {"lobby_spread": lobby}):
         print(f"   [{line[0]}] {line[1]}: {line[2]}")
-    print(f"SELFTEST PASS: 28 lines, {sum(hits.values())} hits, per-bot {json.dumps(match['per_bot'])}, "
+    print(f"SELFTEST PASS: 57 lines, {sum(hits.values())} hits, per-bot {json.dumps(match['per_bot'])}, "
           f"acquisitions {match['acquisitions']} (sentinels {match['reaction_sentinels']}, min {match['latency_min']}), "
           f"f7 {match['f7_by_shape']}, wiring_pois {match['wiring_pois']}, match_seconds {match['match_seconds']}, "
           f"kills/min {match['kills_per_min']}")

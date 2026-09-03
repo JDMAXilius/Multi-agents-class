@@ -934,3 +934,48 @@ in the chain now, ahead of `Hold`.
 and the v5/v6/v7 baselines cannot be re-judged at all. This is the same filing as the v7
 one above (`drift`, `drift REFUSED`, `lip blacklisted`, `draw reflex`) — one parser pass
 covers both.
+
+### Log — 2026-09-03 (cloud): the filed parser counters, built
+
+**Lane crossing, on the record.** `Tools/aib/` is inside this packet's `owner_path`, so the
+law-5 hook permits it — the constraint was the crew's one-writer convention, which names
+aib-editor for this file. The founder's instruction ("do all that from here") is the grant;
+recording it here so the file's history has a writer's name against it. Two filings were
+open against this parser across two rounds, and neither was actionable by a run without it.
+
+**Landed in `Tools/aib/80_aib_metrics.py`** (all additive; every prior baseline still loads
+and every prior counter is byte-identical on the old line shapes — checked):
+
+1. **`still=` captured as an OPTIONAL group** on `stall_over`, and `stuck_seconds` split
+   into `stuck_seconds_crowded` / `_wedged` / `_uncaused`. Crowded = the segment carried
+   `Crowd` or `Yield`; wedged = any other named stand or none; **uncaused = a line with no
+   `still=` at all**, which is every baseline committed before today. The three sum to
+   `stuck_seconds` exactly and the self-test asserts the invariant per bot — so a future
+   line-shape change that slips past both arms fails the test instead of silently reporting
+   0/0, which a reader would take for "no stalls" rather than "no cause recorded".
+2. **The v7 lines counted**: `drift_count`, `drift_refused_count`, `lip_blacklist_count`
+   per bot (all Log level), and `lip_refusals` / `draw_reflexes` at match level with the
+   `or None` idiom — Verbose-only, so they print "not captured (Verbose off?)" rather than
+   0. That distinction is exactly the one (c) lacked when it went unjudgeable.
+3. **`drift_refusal_correlation`** — the Arena01 settle, made arithmetic. A `move REFUSED`
+   counts as downstream of a drift when the SAME bot drifted within 5 s before it (the walk
+   is up to 1200 uu plus one decision). Refusals clustered after drifts implicate the
+   reflex; refusals spread evenly exonerate it. Both arms are covered in the self-test.
+
+**What I deliberately did NOT do: fix the drift reflex.** The write-up above called the
+Arena01 `no_path_requests` 0 → 22 "a hypothesis with a mechanism, not a diagnosis", and
+tightening the draw now would be firing at it blind — a change that could move the number
+for reasons unrelated to whether the hypothesis was ever true, and that would then be
+impossible to un-confound. The three settles I named needed instruments, not edits; two of
+them now exist (the `drift REFUSED` line, landed earlier today; the correlation, landed
+here). The third — one run with the reflex disabled — is a run, not a code change.
+
+**Also documented:** `Tools/aib/baselines/README.md` now carries the caveat that every
+committed baseline reads 0 crowded / 0 wedged and 100% uncaused, and that reading that 0 as
+"separation was not involved" inverts the finding the split exists to test.
+
+**Rung: this is the harness, run and passing** — both self-tests green (57 synthetic lines
+in the module's exact formats, 31 hits), old baselines still load through `--baseline`, and
+`stuck_seconds` / `max_stall_seconds` are unchanged on the pre-`still=` line shape. The
+MODULE side of today's work (`still=`, the `Defend` naming fix) remains WRITTEN, NOT
+COMPILED — no UE toolchain in the cloud.
