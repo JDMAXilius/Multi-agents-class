@@ -51,6 +51,17 @@ FAIBFacts AIBFactsBuilder::Build(const AAIBBotController& Bot, double NowSeconds
 
 		Facts.DistToTargetUU = static_cast<float>(FVector::Dist(SelfLocation, TargetLocation));
 		Facts.HeightAdvantageUU = static_cast<float>(SelfLocation.Z - TargetLocation.Z);
+
+		// PHASE 12 — the claims board's one NEGATIVE-ONLY fact, UNGATED by Teamwork (the
+		// Phase 7 slot gate below is deliberately not copied: a non-claiming bot would
+		// reopen the pile). A per-target read about a target this bot already holds through
+		// its own envelope — never an enumeration, never a position, never a health.
+		if (const UAIBTeamCoordinator* Team = Bot.GetWorld() ? Bot.GetWorld()->GetSubsystem<UAIBTeamCoordinator>() : nullptr)
+		{
+			const AActor* Target = Sensorium.GetVisibleTarget();
+			Facts.bTargetClaimSaturated = Target && !Team->HoldsTargetClaim(Bot, *Target)
+				&& Team->CountAlliesOnTarget(Bot, *Target) >= AIB::TargetClaimCap;
+		}
 	}
 
 	// -- memory (F5): age plus the tier window, so a worldless consideration can

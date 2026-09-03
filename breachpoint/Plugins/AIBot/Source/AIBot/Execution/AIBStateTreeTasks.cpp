@@ -6,6 +6,7 @@
 #include "Brain/AIBAmbitionEngine.h"
 #include "Core/AIBBotController.h"
 #include "Core/AIBTags.h"
+#include "Data/AIBDataRows.h"
 #include "Interfaces/AIBAvatarInterface.h"
 #include "Interfaces/AIBWorldQuery.h"
 #include "NavigationData.h"
@@ -185,6 +186,38 @@ namespace
 	{
 		const APawn* Pawn = Controller.GetPawn();
 		return Pawn && FVector::Dist(Pawn->GetActorLocation(), Point) <= RadiusUU;
+	}
+
+	/** PHASE 12 — THE APPROACH SPREAD (AIB23 W-AUDIT, adopted deviation): the close-in goal
+	 *  is a ring sample around the belief, angle = Hash(target) + Ordinal·π by claim
+	 *  ORDINAL, so two attackers land on opposite sides by construction (a non-holder takes
+	 *  the perpendicular). Samples base/±40°/±80° through the existing projection only —
+	 *  no TestPathSync per sample; nothing projects -> the belief itself, as before. The
+	 *  radius is the caller's (fight range minus acceptance, so arrival is always inside
+	 *  the range the strafe owns — a ring AT the fight range plus the 350 acceptance would
+	 *  park a bot 1250uu out with tactic=none, an idle-gate defect). */
+	FVector RingApproachGoal(AAIBBotController& Bot, const FVector& Belief, float RadiusUU)
+	{
+		const AActor* Target = Bot.GetSensorium().GetVisibleTarget();
+		if (!Target || RadiusUU <= 0.f)
+		{
+			return Belief;
+		}
+		const UAIBTeamCoordinator* Team = Bot.GetWorld() ? Bot.GetWorld()->GetSubsystem<UAIBTeamCoordinator>() : nullptr;
+		const int32 Ordinal = Team ? Team->GetTargetClaimOrdinal(Bot, *Target) : INDEX_NONE;
+		const float BaseDeg = static_cast<float>(GetTypeHash(Target->GetUniqueID()) % 360u);
+		const float AngleDeg = BaseDeg + (Ordinal >= 0 ? Ordinal * 180.f : 90.f);
+		static const float Offsets[] = { 0.f, 40.f, -40.f, 80.f, -80.f };
+		for (const float Offset : Offsets)
+		{
+			const FVector Sample = Belief + FVector(RadiusUU, 0.f, 0.f).RotateAngleAxis(AngleDeg + Offset, FVector::UpVector);
+			FVector OnNav;
+			if (ProjectToNav(Bot.GetWorld(), Sample, OnNav))
+			{
+				return OnNav;
+			}
+		}
+		return Belief;
 	}
 
 	/** THE DISTANCE A TASK MAY ACT ON — this frame's, not the think's.
@@ -622,7 +655,9 @@ EStateTreeRunStatus FAIBMoveNearBeliefTask::EnterState(FStateTreeExecutionContex
 	// would complete instantly and thrash the branch — the never-succeed contract).
 	if (!IsWithin(*Bot, InstanceData.LastGoal, InstanceData.AcceptanceRadiusUU))
 	{
-		if (MoveToNavPoint(*Bot, InstanceData.LastGoal, InstanceData.AcceptanceRadiusUU)
+		const FVector Approach = RingApproachGoal(*Bot, InstanceData.LastGoal,
+			InstanceData.FightRangeUU - InstanceData.AcceptanceRadiusUU);
+		if (MoveToNavPoint(*Bot, Approach, InstanceData.AcceptanceRadiusUU)
 			== EPathFollowingRequestResult::Failed)
 		{
 			UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s could not path to the belief — closing refused (F7). %s"), *Bot->GetName(), *DescribeMoveFailure(*Bot, InstanceData.LastGoal));
@@ -666,7 +701,9 @@ EStateTreeRunStatus FAIBMoveNearBeliefTask::Tick(FStateTreeExecutionContext& Con
 	{
 		InstanceData.LastGoal = Belief;
 		InstanceData.RepathCooldown = InstanceData.RepathIntervalSeconds;
-		if (MoveToNavPoint(*Bot, Belief, InstanceData.AcceptanceRadiusUU)
+		const FVector Approach = RingApproachGoal(*Bot, Belief,
+			InstanceData.FightRangeUU - InstanceData.AcceptanceRadiusUU);
+		if (MoveToNavPoint(*Bot, Approach, InstanceData.AcceptanceRadiusUU)
 			== EPathFollowingRequestResult::Failed)
 		{
 			UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s could not path to the belief — closing refused (F7). %s"), *Bot->GetName(), *DescribeMoveFailure(*Bot, Belief));
@@ -1780,11 +1817,36 @@ EStateTreeRunStatus FAIBMoveToPOITask::EnterState(FStateTreeExecutionContext& Co
 				{
 					break; // no navmesh in reach at all: the F7 line, not the latch
 				}
-				FNavLocation Other;
-				if (bTowardFight && NavSys->GetRandomPointInNavigableRadius(Feet, InstanceData.WanderRadiusUU, Other)
-					&& FVector::DistSquared(Other.Location, AllyFight.HeardAt) < FVector::DistSquared(Candidate.Location, AllyFight.HeardAt))
+				// PHASE 12 — THE BEST OF A FEW DRAWS: toward the heard fight while one is
+				// fresh (AIB17's bias, unchanged in rank), else the COLDEST cell of the
+				// team's visit heat — exploration over re-treading, from the team's own
+				// footsteps only (F3: a visit is not an enemy). Still one path test per draw.
+				const FAIBTierRow& Row = Bot->GetTierRow();
+				const UAIBTeamCoordinator* Team = World->GetSubsystem<UAIBTeamCoordinator>();
+				auto HeatAt = [&](const FVector& Where)
 				{
-					Candidate = Other;
+					return Team ? Team->VisitHeatAt(*Bot, Where, Row.VisitHeatCellUU, Row.VisitHeatDecaySeconds) : 0.f;
+				};
+				float CandidateHeat = bTowardFight ? 0.f : HeatAt(Candidate.Location);
+				for (int32 Extra = 1; Extra < Row.VisitHeatDrawSamples; ++Extra)
+				{
+					FNavLocation Other;
+					if (!NavSys->GetRandomPointInNavigableRadius(Feet, InstanceData.WanderRadiusUU, Other))
+					{
+						break;
+					}
+					if (bTowardFight)
+					{
+						if (FVector::DistSquared(Other.Location, AllyFight.HeardAt) < FVector::DistSquared(Candidate.Location, AllyFight.HeardAt))
+						{
+							Candidate = Other;
+						}
+					}
+					else if (const float OtherHeat = HeatAt(Other.Location); OtherHeat < CandidateHeat)
+					{
+						Candidate = Other;
+						CandidateHeat = OtherHeat;
+					}
 				}
 				const FPathFindingResult Found = NavSys->FindPathSync(FPathFindingQuery(Bot, *NavData, Feet, Candidate.Location));
 				const bool bPathed = Found.IsSuccessful() && Found.Path.IsValid();
@@ -1802,6 +1864,11 @@ EStateTreeRunStatus FAIBMoveToPOITask::EnterState(FStateTreeExecutionContext& Co
 					if (bTowardFight)
 					{
 						UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s wandering toward the team's fight."), *Bot->GetName());
+					}
+					else
+					{
+						UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s t=%.1f wander picks the coldest of %d draws — heat %.2f"),
+							*Bot->GetName(), Now, FMath::Max(Row.VisitHeatDrawSamples, 1), CandidateHeat);
 					}
 				}
 				else if (bPathed && Found.Path->GetLength() > LongestPartialUU)

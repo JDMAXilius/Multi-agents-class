@@ -60,7 +60,8 @@ the module.
                  AIBConfidenceModel                                     (worldless)
     Skills/      AIBSkillProfile + Movement/Aim/Grenade/Melee policies  (worldless, F4)
     Execution/   IAIBExecutor · StateTree executor + tasks · AIBTreeAuthoring (editor-only)
-    Team/        AIBTeamCoordinator (claims board)
+    Team/        AIBTeamCoordinator (the Team Mind: slot claims board + Phase 12 target
+                 claims, sighting ledger, team visit heat — each a headless struct)
     Data/        row structs · AIBTuningData (C++ defaults are truth; assets mirror them)
     Debug/       gameplay debugger category
     Tests/       AIBot.Sim.* specs

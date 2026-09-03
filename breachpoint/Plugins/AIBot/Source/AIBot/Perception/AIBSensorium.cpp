@@ -79,6 +79,13 @@ void FAIBSensorium::NoteDamageFrom(AActor* Who, const FVector& Where, double Now
 	Clock.Push(MakeStimulus(EAIBStimulusKind::Damage, Who, Where), NowSeconds, DrawLatency());
 }
 
+void FAIBSensorium::NoteTeamReport(AActor* Who, const FVector& Where, double SeenAtSeconds, double NowSeconds)
+{
+	FAIBStimulus Stimulus = MakeStimulus(EAIBStimulusKind::TeamReport, Who, Where);
+	Stimulus.PayloadSeconds = SeenAtSeconds; // the seeing, not the telling (F5 measures from here)
+	Clock.Push(Stimulus, NowSeconds, DrawLatency());
+}
+
 void FAIBSensorium::NoteIncomingBlast(const FVector& Center, float Radius, double DetonateAtSeconds, double NowSeconds)
 {
 	// The blast rides the SAME clock as every sense (F2 — the wall-dodge ban).
@@ -195,6 +202,10 @@ void FAIBSensorium::SelectTarget(double NowSeconds)
 			? static_cast<float>(NowSeconds - C.LastSeenAtSeconds) : -1.f;
 		In.SecondsSinceDamagedMe = C.LastDamagedMeAtSeconds >= 0.0
 			? static_cast<float>(NowSeconds - C.LastDamagedMeAtSeconds) : -1.f;
+		if (const int32* Allies = C.Actor.IsValid() ? AlliesOnTarget.Find(FObjectKey(C.Actor.Get())) : nullptr)
+		{
+			In.AlliesOnTarget = *Allies; // Phase 12: teammates already on him, self excluded
+		}
 		Inputs.Add(In);
 	}
 
@@ -338,6 +349,28 @@ void FAIBSensorium::Pump(double NowSeconds)
 			break;
 		}
 
+		case EAIBStimulusKind::TeamReport:
+		{
+			// PHASE 12 — A CALLOUT LANDS AS A LEAD (FAIRPLAY 2 Sep, condition 3): a place and
+			// the teammate's ORIGINAL stamp, only where the bot does not already see or know
+			// fresher. bSightCurrent is never set and IsEligible is not widened, so a bot with
+			// only a report must go and look — the wallhack line. The held enemy's memory is
+			// never evicted (F-2.3), and a staler lead never overwrites a fresher one.
+			FAIBTargetCandidate* Candidate = FindOrAddCandidate(Stimulus.Source.Get());
+			if (Candidate && !Candidate->bSightCurrent && Stimulus.PayloadSeconds >= Candidate->LastSeenAtSeconds)
+			{
+				Candidate->LastKnownLocation = Stimulus.Location;
+				Candidate->LastSeenAtSeconds = Stimulus.PayloadSeconds;
+			}
+			const float MemoryAge = TargetMemory.AgeSeconds(NowSeconds);
+			if (!VisibleTarget.IsValid()
+				&& (MemoryAge < 0.f || NowSeconds - MemoryAge <= Stimulus.PayloadSeconds))
+			{
+				TargetMemory.Remember(Stimulus.Source.Get(), Stimulus.Location, Stimulus.PayloadSeconds);
+			}
+			break;
+		}
+
 		case EAIBStimulusKind::IncomingBlast:
 		{
 			FAIBLiveBlast Blast;
@@ -436,4 +469,5 @@ void FAIBSensorium::Reset()
 	NotedLossEvents.Reset();
 	LiveBlasts.Reset();
 	LastAcquisitionLatency = -1.f;
+	AlliesOnTarget.Reset();
 }

@@ -477,6 +477,28 @@ void FAIBSensoriumSpec::Define()
 				Sensorium.LastAcquisitionLatencySeconds(), 0.50f, 0.001f);
 		});
 
+		It("lands a team report as a LEAD — never sight, never eligible, the original stamp kept (Phase 12)", [this]()
+		{
+			AActor* Enemy = SpawnBody(FVector(900, 0, 0));
+			FAIBSensorium Sensorium;
+			Sensorium.Configure(0.25f, 0.25f);
+			// A teammate saw him at t=4 at (500,0,0); the callout reaches this bot at t=10.
+			Sensorium.NoteTeamReport(Enemy, FVector(500, 0, 0), 4.0, 10.0);
+			Sensorium.Pump(10.20);
+			TestEqual(TEXT("on the clock: nothing yet"), Sensorium.GetCandidates().Num(), 0);
+			Sensorium.Pump(10.30);
+			TestEqual(TEXT("matured: a belief exists"), Sensorium.GetCandidates().Num(), 1);
+			TestFalse(TEXT("but nobody is a TARGET — a report never makes a candidate eligible"), Sensorium.HasVisibleTarget());
+			if (Sensorium.GetCandidates().Num() == 1)
+			{
+				const FAIBTargetCandidate& C = Sensorium.GetCandidates()[0];
+				TestFalse(TEXT("not sight"), C.bSightCurrent);
+				TestEqual(TEXT("the SEEING's stamp, not the telling's"), C.LastSeenAtSeconds, 4.0);
+				TestEqual(TEXT("the reported spot, not the live actor"), C.LastKnownLocation.X, 500.f, 0.01f);
+			}
+			TestEqual(TEXT("memory ages from the seeing (F5)"), Sensorium.MemoryAgeSeconds(10.30), 6.3f, 0.01f);
+		});
+
 		It("resets to blind and empty", [this]()
 		{
 			AActor* Enemy = SpawnBody();

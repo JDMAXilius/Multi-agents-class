@@ -117,4 +117,38 @@ struct AIBOT_API FAIBTierRow : public FTableRowBase
 	 *  must not cash a culvert's latch out as a step off T2. */
 	UPROPERTY(EditAnywhere, Category = "Roam")
 	float LatchMaxAgeSeconds = 10.f;
+
+	// -- the team mind (AIB23, Phase 12). Awareness is never tier-gated (roadmap §5.2):
+	//    every row carries the same values; they are data, not difficulty. ------------
+	/** A target claim younger than this is NOT released when Engage exits — it lapses by
+	 *  TTL instead — so an Engage that blinks out and back cannot free the slot for a
+	 *  teammate and re-take it (the claim/re-claim thrash). */
+	UPROPERTY(EditAnywhere, Category = "Team")
+	float ClaimMinHoldSeconds = 2.f;
+
+	/** A bot takes at most one team report per target per this interval: a teammate's
+	 *  live sight is re-published every pump, and each report is a stimulus on the
+	 *  reaction clock (queue capped at AIB::MaxPendingStimuli). */
+	UPROPERTY(EditAnywhere, Category = "Team")
+	float TeamReportIntervalSeconds = 1.f;
+
+	/** A ledger entry not re-published within this is STALE — the reporter lost sight or
+	 *  died — and is never relayed (FAIRPLAY 2 Sep, condition 1: current sight only). */
+	UPROPERTY(EditAnywhere, Category = "Team")
+	float TeamReportStaleSeconds = 0.5f;
+
+	/** The visit heat grid's cell edge (a cube). Coarse on purpose: exploration reads
+	 *  "this corner is cold", not "this square metre". */
+	UPROPERTY(EditAnywhere, Category = "Team")
+	float VisitHeatCellUU = 500.f;
+
+	/** Heat = exp(−age/this) of the team's freshest footstep in the cell; a cell nobody
+	 *  visited reads 0 and wins every wander draw. */
+	UPROPERTY(EditAnywhere, Category = "Team")
+	float VisitHeatDecaySeconds = 30.f;
+
+	/** Wander draws this many navigable points per attempt and walks the COLDEST (or the
+	 *  one nearest a fresh heard fight — AIB17's bias outranks exploration). */
+	UPROPERTY(EditAnywhere, Category = "Team")
+	int32 VisitHeatDrawSamples = 3;
 };

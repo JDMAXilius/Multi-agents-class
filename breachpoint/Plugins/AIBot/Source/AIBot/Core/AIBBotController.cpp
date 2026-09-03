@@ -194,6 +194,8 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	LastLoggedAmbition = FGameplayTag();
 	LastFacts = FAIBFacts(); // a fresh life reads no stale world
 	AllyFightMemory = FAIBAllyFightMemory(); // and heard no stale fights (AIB17)
+	LastDeniedTarget = nullptr;              // and was denied nothing yet (AIB23)
+	TeamReportTakenAt.Reset();
 
 	// PHASE 8 — the real tier, resolved per possession from the C++ registry (the ONE
 	// source of truth; DT_AIBTiers only mirrors it). An unknown name is a config typo
@@ -873,7 +875,69 @@ void AAIBBotController::Think()
 	}
 	Sensorium.SetMemoryWindowSeconds(
 		FMath::Min(GetTierRow().MemoryFreshSeconds, AIB::MaxMemorySeconds));
+
+	// PHASE 12 — THE TEAM MIND, BEFORE THE PUMP (AIB23 W-AUDIT seams). (a) Teammates'
+	// callouts enter THIS bot's reaction clock now, so they mature on its own draw and
+	// land as leads. Skipped where the bot already sees the target, is in its juke
+	// window, or knows a stamp at least as fresh; throttled per target. (b) The claims
+	// board's one read per candidate the bot ALREADY believes in — a count, never an
+	// enumeration — pushed in so selection stays worldless. (c) The team visit stamp.
+	UAIBTeamCoordinator* Team = World->GetSubsystem<UAIBTeamCoordinator>();
+	if (Team && GetPawn())
+	{
+		const FAIBTierRow& Row = GetTierRow();
+		Team->ForEachTeamReport(*this, Row.TeamReportStaleSeconds, [&](const FAIBSighting& Report)
+		{
+			AActor* Target = Report.Target.Get();
+			if (!Target)
+			{
+				return;
+			}
+			for (const FAIBTargetCandidate& C : Sensorium.GetCandidates())
+			{
+				if (C.Actor.Get() == Target
+					&& (C.bSightCurrent || C.bSightPending || C.LastSeenAtSeconds >= Report.SeenAtSeconds))
+				{
+					return;
+				}
+			}
+			double& TakenAt = TeamReportTakenAt.FindOrAdd(FObjectKey(Target), -1.0);
+			if (TakenAt >= 0.0 && Now - TakenAt < Row.TeamReportIntervalSeconds)
+			{
+				return;
+			}
+			TakenAt = Now;
+			Sensorium.NoteTeamReport(Target, Report.Where, Report.SeenAtSeconds, Now);
+			UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f team report %s at (%.0f,%.0f,%.0f) seen_t=%.1f from %s"),
+				*GetName(), Now, *Target->GetName(), Report.Where.X, Report.Where.Y, Report.Where.Z,
+				Report.SeenAtSeconds, *Report.ReporterName);
+		});
+		Sensorium.ClearAlliesOnTargets();
+		for (const FAIBTargetCandidate& C : Sensorium.GetCandidates())
+		{
+			if (const AActor* Believed = C.Actor.Get())
+			{
+				Sensorium.SetAlliesOnTarget(Believed, Team->CountAlliesOnTarget(*this, *Believed));
+			}
+		}
+		Team->StampVisit(*this, GetPawn()->GetActorLocation(), Row.VisitHeatCellUU, Row.VisitHeatDecaySeconds);
+	}
+
 	Sensorium.Pump(Now);
+
+	// PHASE 12 — PUBLISH, after the pump (the :698 seam): ONLY candidates in CURRENT sight,
+	// at their re-sampled belief, carrying THEIR LastSeenAtSeconds — never Now (FAIRPLAY
+	// 2 Sep, conditions 1 and 2). A lead, a sound, or a damage bearing is never relayed.
+	if (Team && GetPawn())
+	{
+		for (const FAIBTargetCandidate& C : Sensorium.GetCandidates())
+		{
+			if (C.bSightCurrent && C.Actor.IsValid())
+			{
+				Team->PublishSighting(*this, *C.Actor.Get(), C.LastKnownLocation, C.LastSeenAtSeconds);
+			}
+		}
+	}
 
 	// The fairness instrument (aib-verifier samples this line): one log per acquisition,
 	// carrying the HONEST happened->surfaced latency — pump quantisation included,
@@ -941,6 +1005,60 @@ void AAIBBotController::Think()
 				RunnerUp.Tag.IsValid() ? *RunnerUp.Tag.ToString() : TEXT("none"),
 				RunnerUp.Score,
 				AmbitionEngine->WasLastRescoreInterrupted() ? TEXT(" [interrupt]") : TEXT(""));
+		}
+
+		// PHASE 12 — TARGET CLAIMS AT THINK-COMMIT (AIB23 W-AUDIT): grant/renew when Engage
+		// wins AND a target is held — never in a task's EnterState (Engage re-enters on every
+		// belief blink). UNGATED by Teamwork. Denied bots keep their target and their
+		// eligibility; only the SCORE moved (the saturation fact above), so the DENIED
+		// line's arrow names what the bot does instead — F9's proof that it moves.
+		if (Team && GetPawn())
+		{
+			AActor* Held = Sensorium.GetVisibleTarget();
+			if (Held && Ambition == AIBTags::Ambition_Engage)
+			{
+				int32 Holders = 0;
+				switch (Team->TryClaimTarget(*this, *Held, Holders))
+				{
+				case EAIBTargetClaimResult::Granted:
+					UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f target claim GRANTED on %s (%d/%d)"),
+						*GetName(), Now, *Held->GetName(), Holders, AIB::TargetClaimCap);
+					LastDeniedTarget = nullptr;
+					break;
+				case EAIBTargetClaimResult::Denied:
+					if (LastDeniedTarget != Held)
+					{
+						UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f target claim DENIED on %s (%d/%d) -> engage-anyway"),
+							*GetName(), Now, *Held->GetName(), Holders, AIB::TargetClaimCap);
+						LastDeniedTarget = Held;
+					}
+					break;
+				default:
+					break; // a renewal is cadence, not an event
+				}
+			}
+			else
+			{
+				Team->ReleaseTargetClaimsOnExit(*this, GetTierRow().ClaimMinHoldSeconds);
+				if (Held && LastFacts.bTargetClaimSaturated && LastDeniedTarget != Held)
+				{
+					// The third bot looked elsewhere: name where. "AIBot.Ambition.Roam" -> roam.
+					FString Then = Ambition.IsValid() ? Ambition.ToString() : TEXT("none");
+					int32 Dot = INDEX_NONE;
+					if (Then.FindLastChar(TEXT('.'), Dot))
+					{
+						Then = Then.Mid(Dot + 1);
+					}
+					UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f target claim DENIED on %s (%d/%d) -> %s"),
+						*GetName(), Now, *Held->GetName(), Team->CountAlliesOnTarget(*this, *Held),
+						AIB::TargetClaimCap, *Then.ToLower());
+					LastDeniedTarget = Held;
+				}
+				if (!Held)
+				{
+					LastDeniedTarget = nullptr;
+				}
+			}
 		}
 
 		// Phase 7: FILE THE CLAIM AT THINK-COMMIT, synchronously — think timers run

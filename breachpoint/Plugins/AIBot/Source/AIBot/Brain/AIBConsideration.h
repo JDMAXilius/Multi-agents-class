@@ -37,10 +37,12 @@ enum class EAIBFactSelector : uint8
 	ObjectiveDistanceUU,    // same; unset when the mode supplied no matching entry
 	ConfidenceNorm,         // Phase 5: the model's judgment; unset until the controller
 	                        // computes it (a spec-built bare facts row stays unknown)
-	ObjectiveClaimedElsewhere // Phase 7: bool as 0/1 from the matched objective fact —
+	ObjectiveClaimedElsewhere, // Phase 7: bool as 0/1 from the matched objective fact —
 	                        // 1 = every slot serving this want is spoken for. Unset
 	                        // without a matched fact (the urgency consideration already
 	                        // silences that case; this one must not double-veto it).
+	TargetClaimSaturated    // Phase 12: bool as 0/1 — the held target already carries the
+	                        // claim cap in allied claims, none mine. Unset without a target.
 };
 
 /**
