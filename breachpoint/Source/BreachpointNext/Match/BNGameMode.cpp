@@ -9,6 +9,8 @@
 #include "Match/BNHillPoint.h"
 #include "Match/BNPlayerController.h"
 #include "Match/BNPlayerState.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
 #include "Match/BNTeams.h"
 #include "AbilitySystem/BNAbilitySystemComponent.h"
 #include "AbilitySystem/Attributes/BNAttributeSet.h"
@@ -54,6 +56,20 @@ void ABNGameMode::InitGame(const FString& MapName, const FString& Options, FStri
 	// TASK-R4-GAMESTATE-CLASS editor ticket: no dropdown on BP_BNGameMode can undo it, so the
 	// match state, the clock and every score always land on the GameState the game reads.
 	GameStateClass = ABNGameState::StaticClass();
+
+	// Phase 14: every bot's per-life draw hashes off this seed, so it lands once per world load,
+	// ahead of the first possession. -AIBSeed is the manager's own override and wins.
+	if (UAIBBotManager* Manager = GetWorld()->GetSubsystem<UAIBBotManager>())
+	{
+		int32 Seed = 0;
+		const bool bFromCommandLine = FParse::Value(FCommandLine::Get(), TEXT("AIBSeed="), Seed);
+		if (!bFromCommandLine)
+		{
+			Seed = static_cast<int32>(HashCombine(GetTypeHash(MapName), GetTypeHash(FDateTime::UtcNow().GetTicks())));
+			Manager->SetMatchSeed(Seed);
+		}
+		UE_LOG(LogBN, Log, TEXT("BNGameMode: match seed %d (source=%s)"), Seed, bFromCommandLine ? TEXT("cmdline") : TEXT("map+clock"));
+	}
 
 	// THE TRAVEL URL OVERRIDES THE INI (front end M1, 1 Sep). The menu's whole launch
 	// surface is two options — ?TargetPlayers=N?Teams=0|1 — parsed here, after the ini's

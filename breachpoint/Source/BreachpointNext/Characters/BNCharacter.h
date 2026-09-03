@@ -6,6 +6,7 @@
 #include "GameplayEffectTypes.h"
 #include "UObject/SoftObjectPath.h"
 #include "GenericTeamAgentInterface.h"
+#include "Navigation/CrowdAgentInterface.h"
 #include "BNCharacter.generated.h"
 
 class ABNPlayerState;
@@ -27,7 +28,7 @@ enum class EBNBodyColorway : uint8
 };
 
 UCLASS(Config=Game)
-class BREACHPOINTNEXT_API ABNCharacter : public ACharacter, public IAbilitySystemInterface
+class BREACHPOINTNEXT_API ABNCharacter : public ACharacter, public IAbilitySystemInterface, public ICrowdAgentInterface
 {
 	GENERATED_BODY()
 
@@ -41,10 +42,19 @@ public:
 	virtual void PostInitializeComponents() override;
 	virtual void BeginPlay() override;
 	virtual void PossessedBy(AController* NewController) override;
+	virtual void UnPossessed() override;
 	virtual void OnRep_PlayerState() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
 	virtual void OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
+
+	/** Crowd OBSTACLE, never a crowd mover: a human body registers with UCrowdManager on the
+	 *  authority so bot separation steers around it. Bot bodies are registered by their own
+	 *  crowd follower — registering them here would make every bot exist twice. */
+	virtual FVector GetCrowdAgentLocation() const override;
+	virtual FVector GetCrowdAgentVelocity() const override;
+	virtual void GetCrowdAgentCollisions(float& CylinderRadius, float& CylinderHalfHeight) const override;
+	virtual float GetCrowdAgentMaxSpeed() const override;
 
 	/** THE decision behind team-coloured bodies, split out from the actor so it can be pinned
 	 *  without a world: three answers, not two. Static and pure — the material lookup, the
