@@ -131,6 +131,15 @@ namespace AIB
 	 *  budgeted one (SweepDegreesPerSecond, SweepMaxSeconds). */
 	inline constexpr float HoldScanDegreesPerSecond = 40.f;
 
+	/** Phase 13 `teammate_overlap_events`: an overlap spell shorter than this is a brush
+	 *  in a doorway, not an event — the roadmap's threshold, applied where the line is
+	 *  written so the count is the count. */
+	inline constexpr float TeammateOverlapReportSeconds = 0.25f;
+
+	/** Phase 13 `mean_pairwise_teammate_distance`: the per-bot position sample cadence.
+	 *  Instrumentation, not tuning: the harness pairs teammates' samples by t=. */
+	inline constexpr double PositionSampleSeconds = 1.0;
+
 	/** A dry bot reads a melee fight from this much further out (founder, 1 Sep). A
 	 *  multiplier rather than an absolute, so it rides the competence ladder instead of
 	 *  flattening it — an Expert with an empty hand still reads the fight before a

@@ -39,6 +39,11 @@ struct FAIBLocomotionState
 	bool bStallOpen = false;
 	float StallReportedSeconds = 0.f;
 	FVector Goal = FVector::ZeroVector;
+
+	/** Phase 13: world seconds until which this wedge YIELDS to a teammate (0 = not
+	 *  yielding). While it runs the stall clock is paused and sprint is released; the
+	 *  crowd's separation does the stepping. */
+	double YieldUntilSeconds = 0.0;
 };
 
 ////////////////////////////////////////////////////////////////////
@@ -723,6 +728,12 @@ struct FAIBMoveToObjectiveTaskInstanceData
 	UPROPERTY(EditAnywhere, Category = "Parameter")
 	float RepollIntervalSeconds = 0.5f;
 	float RepollCooldown = 0.f;
+
+	/** Phase 13 (AIB22 LOW-7): the hill hold is FOOTWORK. The last strafe leg's goal (what
+	 *  the walking body faces) and the on-objective edge for the one `hill strafe-hold`
+	 *  line and the walk-back when a leg's projection carried the body off the hill. */
+	FVector StrafeLegGoal = FVector::ZeroVector;
+	bool bWasOnObjective = false;
 
 	FAIBLocomotionState Locomotion;
 };
