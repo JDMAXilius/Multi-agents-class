@@ -60,3 +60,40 @@ Team names stay relative (YOUR TEAM / ENEMY TEAM) pending the founder's ruling.
   overlap on either screen, LB/RB pills hugging the bar) and the centred medal chip in all eight
   cells; team-card scores now read (white on the tinted block). VICTORY case captured: winner line
   "WINNER: YOUR TEAM". Rung: PIE, single machine.
+
+### 2026-09-02 — AUDIT: what is still fixed-size / not yet dynamic (founder: "audit what is left")
+
+DYNAMIC TODAY: scoreboard rows/divider/bottom rule/track/dots follow the player count; gamertags
+ellipsise + clip at the cells; team-card names ellipsise; tabs size to their labels on both
+screens; recap header lines are right-aligned auto-fit; prompts auto-size; settings panel rows
+and roster rows are built from data; profile bar collapses an empty gamertag / zero friends.
+
+STILL FIXED — recap (WBP_BNScreen_PostMatch, bn52):
+1. `NameplateName` 180 wide, no ellipsis — a 20-char gamertag (the PIE machine name did) runs
+   past the plate art. Fix: ellipsis + clip, one line each in Refresh.
+2. `RankLineText` 240 wide, 18pt, no ellipsis — a longer career line would clip hard.
+3. `ScoreValueText` 300 wide at 46pt — fits "99,999"; a 7-digit score would not. Fix: ellipsis or
+   a font-size step at 6+ digits.
+4. `MedalNameText` 500 / `MedalDescText` 500 — no wrap; a two-line medal description (the
+   reference's are one line) would clip. Fix: AutoWrap on the description only.
+5. Stats strip: six columns of 141 at 30pt — a 6-digit value would overflow its column. Fix:
+   step the font down above 5 digits (BNTabBar-style measure), or accept (kills never reach it).
+6. Medal row: fixed eight cells; more medals than eight need paging (the capture's dots row is
+   exactly that page control) — blocked on medals existing at all.
+7. Outcome word: fixed 20pt, right-aligned — fine for VICTORY / DEFEAT / DRAW; a localised long
+   word would need the same measure step.
+STILL FIXED — scoreboard (bn51):
+8. Table height is the authored 294 (17 rows); LayoutRowBlock grows past it but never shrinks
+   below it, so a 4v4 board carries empty plate under the rows. Fix: let the list shrink to the
+   row count (AuthoredListHeight floor removed) and move the bottom rule / dots with it — they
+   already follow the computed height.
+9. Team cards: fixed 212.5 wide; names ellipsise, scores are 52-wide blocks (3 digits max).
+10. Header line 1 right-aligned auto ✓; the mode glyph is a fixed 14 at x930.5 — it does not move
+    if line 1 grows taller (single line today).
+STILL FIXED — front end / lobby (from the earlier passes):
+11. Lobby DescriptionText (349x37 band): no wrap policy set — a long map description clips.
+12. Front-end news title / hint: single line, no ellipsis.
+13. Rail rows: 311 wide label + value; a long value ("TEAM DEATHMATCH") already nearly meets the
+    label — no ellipsis on the value.
+DATA, NOT LAYOUT (needs the netcode packet or a ruling): assists, medals, service tags, literal
+team names/emblems, per-player emblems, the "1/6" header counts.
