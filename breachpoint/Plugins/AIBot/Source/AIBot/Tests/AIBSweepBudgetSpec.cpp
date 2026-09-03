@@ -11,11 +11,12 @@
  * a StateTree recreating SweepLook's instance data on re-entry cannot refill it: the
  * owner outlives the task scratch (1), and a budget COPIED into the scratch does not
  * survive (2 — the negative the W-REVIEW asked for); it expires exactly at
- * SweepMaxSeconds and 0 means "never stand to sweep" (3); motion refills it (4); a NEW
- * post refills it, the same post does not — and "same" is the mover's own at-post band,
- * 1.5x acceptance (5, W-REVIEW #3 M4). The walking pan stays inside ±Arc,
- * reaches both edges, starts straight ahead and never jumps (6). The row defaults are
- * what the csv must mirror (7).
+ * SweepMaxSeconds and 0 means "never stand to sweep" (3); possession refills it (4); the
+ * BODY standing 1.5x the refill radius or farther from where it last refilled refills
+ * it — the same spot, a nudge inside the band, or a post that moved under a standing bot
+ * does not (5, fix #4 R4 over W-REVIEW #3 M4's post key). The walking pan stays inside
+ * ±Arc, reaches both edges, starts straight ahead and never jumps (6). The row defaults
+ * are what the csv must mirror (7).
  */
 BEGIN_DEFINE_SPEC(FAIBSweepBudgetSpec, "AIBot.Sim.SweepBudget",
 	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
@@ -81,36 +82,42 @@ void FAIBSweepBudgetSpec::Define()
 		TestFalse(TEXT("0 = never stand to sweep"), Budget.HasBudget(0.f));
 	});
 
-	It("refills on the motion reset — the Think sample's job", [this]()
+	It("refills on possession — a fresh body has stood nowhere", [this]()
 	{
 		FAIBSweepBudget Budget;
+		Budget.ArriveAt(FVector(0, 0, 0), 150.f);
 		Budget.Spend(2.f);
 		TestFalse(TEXT("spent"), Budget.HasBudget(2.f));
 		Budget.Reset();
-		TestTrue(TEXT("a new stop earns a new look"), Budget.HasBudget(2.f));
+		TestTrue(TEXT("a new life earns a new look"), Budget.HasBudget(2.f));
 		TestEqual(TEXT("clean"), Budget.SpentSeconds, 0.f);
+		TestTrue(TEXT("and the first stand of the new life refills — nowhere is 'the same spot'"), Budget.ArriveAt(FVector(0, 0, 0), 150.f));
 	});
 
-	It("refills on a NEW post and not on the same one — LastSweptPost is the mover's key", [this]()
+	It("refills on the BOT standing 1.5R from its last refill — never on the post moving, never on a nudge", [this]()
 	{
 		const float Radius = 150.f;
 		FAIBSweepBudget Budget;
-		TestTrue(TEXT("the first post is always new"), Budget.ArriveAt(FVector(0, 0, 0), Radius));
+		TestTrue(TEXT("the first stand is always new"), Budget.ArriveAt(FVector(0, 0, 0), Radius));
 		Budget.Spend(2.f);
 		TestFalse(TEXT("spent at the post"), Budget.HasBudget(2.f));
-		TestFalse(TEXT("re-entering inside acceptance is the same post"), Budget.ArriveAt(FVector(100, 0, 0), Radius));
-		TestFalse(TEXT("no refill: the same post stays spent"), Budget.HasBudget(2.f));
-		// The at-post band is 1.5R (the mover reads Idle inside it as arrived): a post
-		// inside it is the same post, or the 150-225uu band refilled what it stood on.
-		TestFalse(TEXT("inside 1.5x acceptance is still the same post"), Budget.ArriveAt(FVector(0, 200, 0), Radius));
-		TestFalse(TEXT("no refill inside the band"), Budget.HasBudget(2.f));
-		TestFalse(TEXT("exactly 1.5R is the band's edge, same post"), Budget.ArriveAt(FVector(0, 225, 0), Radius));
-		TestTrue(TEXT("past 1.5x acceptance is a new post"), Budget.ArriveAt(FVector(0, 300, 0), Radius));
-		TestTrue(TEXT("a new post refills"), Budget.HasBudget(2.f));
-		TestEqual(TEXT("and becomes the last swept post"), Budget.LastSweptPost, FVector(0, 300, 0));
-		Budget.Reset(); // motion, then back to the same post
-		TestFalse(TEXT("motion does not forget the post"), Budget.ArriveAt(FVector(0, 300, 0), Radius));
-		TestTrue(TEXT("but motion already refilled it"), Budget.HasBudget(2.f));
+		TestFalse(TEXT("standing where it stood is the same spot"), Budget.ArriveAt(FVector(0, 0, 0), Radius));
+		TestFalse(TEXT("a nudge inside the band is the same spot"), Budget.ArriveAt(FVector(100, 0, 0), Radius));
+		TestFalse(TEXT("no refill: the same spot stays spent"), Budget.HasBudget(2.f));
+		// The at-post band is 1.5R (the mover reads Idle inside it as arrived): the body
+		// inside it has not gone anywhere, whatever the post did.
+		TestFalse(TEXT("inside 1.5R is still the same spot"), Budget.ArriveAt(FVector(0, 200, 0), Radius));
+		TestFalse(TEXT("exactly 1.5R is the band's edge, same spot"), Budget.ArriveAt(FVector(0, 225, 0), Radius));
+		TestFalse(TEXT("still spent"), Budget.HasBudget(2.f));
+		// THE POST MOVING is not the bot moving (the 7.0s sweep): the key never sees the post.
+		TestFalse(TEXT("a body that has not moved refills nothing however the post drifts"), Budget.ArriveAt(FVector(0, 0, 0), Radius));
+		TestTrue(TEXT("past 1.5R the body stands somewhere new"), Budget.ArriveAt(FVector(0, 300, 0), Radius));
+		TestTrue(TEXT("a new stand refills"), Budget.HasBudget(2.f));
+		TestEqual(TEXT("and becomes the last refill spot"), Budget.LastRefillLocation, FVector(0, 300, 0));
+		Budget.Spend(2.f);
+		TestFalse(TEXT("walking 100 and standing again is inside the band of the new spot"), Budget.ArriveAt(FVector(0, 400, 0), Radius));
+		TestFalse(TEXT("no refill"), Budget.HasBudget(2.f));
+		TestTrue(TEXT("the key is the LAST REFILL, not the last sample: 226 from (0,300) refills"), Budget.ArriveAt(FVector(0, 526, 0), Radius));
 	});
 
 	It("pans inside ±Arc, reaches both edges, starts ahead and never jumps", [this]()

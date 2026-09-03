@@ -472,3 +472,16 @@ Refined steps (replace §Steps):
      request ids Egress issued; the completion-clear skips them.
   R9 the stall watchdog never jumps blind: a stall with `link=no` abandons (R3); the only
      jumps are link segments (step 4) and the traversal policy's verbs. Remove the hop.
+- 2026-09-03 fix packet #4 (aib-builder) at rung "compiles" (Editor + Game PASS; server target
+  unbuildable here): R1 anchor LIST (want goal + last full-path goal + every PlayerStart),
+  pure `FAIBIslandLatch::Confirm`; R2 suppression armed at every refusal/give-up site; R3
+  `FAIBLocomotionState` on the controller, `link=no` storey stalls abandon at 1.5 s, window
+  survives Engage flaps; R4 refill keyed on the BODY's displacement (≥1.5R); R5 via R3; R6
+  grounding = avatar `IsGrounded`, off-mesh recovery walk (pathfinding off) then the lip fan,
+  Wander runs the same recovery; R7 no decisions until the pawn projects onto nav once
+  (`waiting for nav`); R8 `MarkEgressMove` — Egress's requests never clear the latch nor set
+  the anchor; R9 finding: the watchdog has pressed nothing since step 4 — `jumped=yes` was a
+  bookkeeping flag; now reads whether a LINK jump was pressed. So what pushed the fix #3 bots
+  off the gantry is still unexplained (suspect: the partial walk to the edge) — PIE watch v4
+  decides. Tree unchanged. Parser: `stall abandoned` (counts as stuck seconds), `off-mesh
+  recovery`, `waiting for nav`.

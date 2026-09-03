@@ -56,38 +56,79 @@ enum class EAIBStillTactic : uint8
 struct AIBOT_API FAIBSweepBudget
 {
 	float SpentSeconds = 0.f;
-	/** AIB22 W-REVIEW H2: the budget is per POST, not per still spell. The post last
-	 *  swept (valid while bHasPost); ArriveAt a post farther than 1.5x the mover's
-	 *  acceptance radius from it refills (the mover's own at-post band — W-REVIEW #3 M4),
-	 *  the same post does not — so a Search that begins inside acceptance of a NEW lead
-	 *  gets its look, and re-entering on the old one does not. */
-	FVector LastSweptPost = FVector::ZeroVector;
-	bool bHasPost = false;
+	/** AIB22 fix #4 R4: the refill is keyed on the BOT, never on the post. Where the body
+	 *  stood at the last refill (valid while bHasRefill); ArriveAt with the body 1.5x
+	 *  RadiusUU or farther from it refills (the mover's own at-post band — W-REVIEW #3
+	 *  M4), closer does not — a post that moves under a standing bot, a nudge at the same
+	 *  post, or a re-entry refill nothing; walking somewhere new and stopping does. */
+	FVector LastRefillLocation = FVector::ZeroVector;
+	bool bHasRefill = false;
 
 	bool HasBudget(float MaxSeconds) const { return SpentSeconds < MaxSeconds; }
 	void Spend(float DeltaTime) { SpentSeconds += FMath::Max(DeltaTime, 0.f); }
-	/** The motion refill: the body moved, the next stop is a new look. */
-	void Reset() { SpentSeconds = 0.f; }
-	/** The post refill. True when Post is a new post (and the budget refilled). */
-	bool ArriveAt(const FVector& Post, float RadiusUU)
+	/** Possession: a fresh body has looked at nothing yet and stood nowhere. */
+	void Reset() { SpentSeconds = 0.f; bHasRefill = false; }
+	/** The displacement refill. True when the body stands somewhere new (and refilled). */
+	bool ArriveAt(const FVector& BotLocation, float RadiusUU)
 	{
-		if (bHasPost && FVector::DistSquared(Post, LastSweptPost) <= FMath::Square(RadiusUU * 1.5f))
+		if (bHasRefill && FVector::DistSquared(BotLocation, LastRefillLocation) <= FMath::Square(RadiusUU * 1.5f))
 		{
 			return false;
 		}
-		LastSweptPost = Post;
-		bHasPost = true;
+		LastRefillLocation = BotLocation;
+		bHasRefill = true;
 		SpentSeconds = 0.f;
 		return true;
 	}
+};
+
+/** Every mover's locomotion scratch: the sprint HOLD's edge state and the stall watchdog
+ *  (measures only — traversal presses live on UAIBPathFollowingComponent since AIB22;
+ *  fix #4 R9: the watchdog never hops). ON THE CONTROLLER since fix #4 R3: in a task's
+ *  instance data it was recreated on every branch re-entry, so a body wedged against a
+ *  storey had its give-up window reset by every acquire/SWITCHED flap through Engage —
+ *  measured 21.9s and 46.5s stalls. One body, one stall clock; only real progress
+ *  (WedgeProgressUU of ground gained) resets it. Never authored, never serialized. */
+struct AIBOT_API FAIBLocomotionState
+{
+	bool bSprintHeld = false;
+	/** The one diagnosis line per stall has printed (was bTriedWedgeJump — nothing jumps). */
+	bool bDiagnosed = false;
+	bool bHasBestPoint = false;
+	float StallSeconds = 0.f;
+	FVector BestPoint = FVector::ZeroVector;
+	/** World seconds when the stall clock last restarted — `jumped=` on the stall line
+	 *  reads whether the path follower pressed a link jump since then. */
+	double StallStartedAtSeconds = 0.0;
+	/** World seconds when the mover's GOAL last changed. The storey read (R3) needs the
+	 *  stall to be WedgeStallSeconds old against THIS goal: a fresh goal up a ramp, handed
+	 *  to a body still standing from its last stop, is not a stall against a storey. The
+	 *  give-up window (StallSeconds) does not reset with it. */
+	double GoalSetAtSeconds = 0.0;
+
+	/** AIB22 `stuck_seconds` bookkeeping — reads the watchdog's clocks, never moves them.
+	 *  An episode is OPEN once StallSeconds has run StallReportSeconds past what the last
+	 *  line reported; Goal is the mover's current target, for the line. */
+	bool bStallOpen = false;
+	float StallReportedSeconds = 0.f;
+	FVector Goal = FVector::ZeroVector;
+};
+
+/** AIB22 fix #4 R1: one confirmation anchor — a point that is connected ground IF the bot
+ *  is not on an island. The gate tests the feet against the whole list. */
+struct FAIBIslandAnchor
+{
+	FVector Location = FVector::ZeroVector;
+	const TCHAR* Name = TEXT("?");
 };
 
 /** AIB22 5(B) — THE ISLAND FACT, as a latch. Roam's wander draws a NAVIGABLE point and
  *  prefers a FULL path; a partial path is what an island looks like from the inside
  *  (islands do not refuse, they deliver you to the edge — the audit's corrected premise).
  *  IslandLatchDraws consecutive bad draws latch bOnIsland. The latch is a HYPOTHESIS
- *  (W-REVIEW H2): the Egress gate confirms it against the island anchor ONCE per latch
- *  and caches the answer here (W-REVIEW #3 M6). Cleared by: one full draw, any COMPLETED
+ *  (W-REVIEW H2): the Egress gate confirms it against the ANCHOR LIST ONCE per latch
+ *  (Confirm — island iff no anchor has a full path, fix #4 R1) and caches the answer
+ *  here (W-REVIEW #3 M6). Cleared by: one full draw, any COMPLETED
  *  full-path move (M3), a landing, age past LatchMaxAgeSeconds, or a refuted hypothesis.
  *  An Egress failure clears AND arms a cooldown during which draws do not latch (H1); a
  *  lipless failure on a CONFIRMED island also STRANDS (#3 H2) — no draws at all until the
@@ -130,6 +171,30 @@ struct AIBOT_API FAIBIslandLatch
 			return true;
 		}
 		return false;
+	}
+	/** THE ANCHOR-LIST DECISION (fix #4 R1), pure so the spec can drive it: one bool per
+	 *  anchor, "the feet have a FULL path to it". Island iff NONE does — a spawn pad that
+	 *  is itself an island cannot refute through itself while the objective anchor beside
+	 *  it still refutes a floor bot. Any full path REFUTES: cleared with the cooldown, the
+	 *  verdict cached. An EMPTY list confirms nothing (Untested: the gate acts on the
+	 *  latch alone and Egress cannot strand). Returns the refuting anchor's index, or
+	 *  INDEX_NONE. */
+	int32 Confirm(TConstArrayView<bool> FullPathToAnchor, double NowSeconds, float CooldownSeconds)
+	{
+		if (FullPathToAnchor.Num() == 0)
+		{
+			Confirmation = EConfirm::Untested;
+			return INDEX_NONE;
+		}
+		const int32 Refuter = FullPathToAnchor.IndexOfByKey(true);
+		if (Refuter != INDEX_NONE)
+		{
+			ClearWithCooldown(NowSeconds, CooldownSeconds);
+			Confirmation = EConfirm::Refuted;
+			return Refuter;
+		}
+		Confirmation = EConfirm::Island;
+		return INDEX_NONE;
 	}
 	/** The gate's read: a latch older than MaxAgeSeconds (0 = ageless) is stale and clears. */
 	bool ReadLatched(double NowSeconds, float MaxAgeSeconds)
@@ -310,13 +375,28 @@ public:
 	FAIBIslandLatch& GetIslandLatch() { return IslandLatch; }
 	const FAIBIslandLatch& GetIslandLatch() const { return IslandLatch; }
 
-	/** THE ISLAND ANCHOR (W-REVIEW #3 H3): the goal of the LAST COMPLETED full-path move —
-	 *  connected ground by proof, refreshed by every move a bot on healthy floor makes
-	 *  and never by a bot on an island. Until the first completion, where this life
-	 *  spawned (a deck-tier spawn is exactly the false anchor the last-move rule
-	 *  replaces). Raw locations; the gate projects them. OutAnchorName names which, for
-	 *  the log. False before the first possession of a life. */
-	bool GetIslandAnchor(FVector& OutLocation, const TCHAR*& OutAnchorName) const;
+	/** THE ISLAND ANCHORS (fix #4 R1, replacing #3 H3's single anchor): in test order, the
+	 *  CURRENT want's goal (the mode objective POIs, or Search/Seek's fresh last-known),
+	 *  the goal of the last completed full-path move, and every PlayerStart in the level
+	 *  (cached at possession). Raw locations; the gate projects them. The island verdict
+	 *  is FAIBIslandLatch::Confirm over the whole list — one anchor on the bot's own
+	 *  island (a corner spawn pad) can no longer refute by itself. */
+	void GetIslandAnchors(TArray<FAIBIslandAnchor>& OutAnchors) const;
+
+	/** Fix #4 R8: Egress calls this right after each move it issues (the lip walk and the
+	 *  step-off) — the move now in flight is EGRESS'S OWN, so its completion neither
+	 *  clears the latch (the lip walk completing on the island cleared the fact one tick
+	 *  before the step-off, the gate went false, ExitState stopped the bot on top) nor
+	 *  becomes the island anchor. */
+	void MarkEgressMove();
+
+	/** Fix #4 R3: the ONE stall clock — see FAIBLocomotionState. */
+	FAIBLocomotionState& GetLocomotion() { return Locomotion; }
+
+	/** Fix #4 R9's instrument: the path follower's link press stamp, so the stall line's
+	 *  `jumped=` reads whether a LINK jump fired during the stall — the only jump there is. */
+	void NoteLinkJumped(double NowSeconds) { LastLinkJumpAtSeconds = NowSeconds; }
+	double GetLastLinkJumpAtSeconds() const { return LastLinkJumpAtSeconds; }
 
 	/** W-REVIEW #3 H3: every move funnels through here (MoveToLocation/MoveToActor both
 	 *  call it), so this is where a PATHED request's destination is remembered for
@@ -549,15 +629,24 @@ private:
 	FAIBSweepBudget SweepBudget;
 	float TravelPanDegrees = 0.f;
 	FAIBIslandLatch IslandLatch;
-	/** See GetIslandAnchor / MoveTo / ArmStopOnLanding. All of it dies with the body. */
-	FVector SpawnLocation = FVector::ZeroVector;
-	bool bHasSpawnLocation = false;
+	FAIBLocomotionState Locomotion;
+	double LastLinkJumpAtSeconds = -1.0;
+	/** See GetIslandAnchors / MoveTo / MarkEgressMove / ArmStopOnLanding. All of it dies
+	 *  with the body. */
+	TArray<FVector> PlayerStartLocations;
 	FVector PendingMoveGoal = FVector::ZeroVector;
 	uint32 PendingMoveRequestId = 0;
+	uint32 EgressMoveRequestId = 0;
 	FVector LastFullPathGoal = FVector::ZeroVector;
 	bool bHasLastFullPathGoal = false;
 	bool bStopOnLanding = false;
 	uint32 StopOnLandingRequestId = 0;
+	/** Fix #4 R7: no arbitration, no tree, no move until the pawn has projected onto the
+	 *  navmesh ONCE this life (the t<2s spawn burst refused 95% of Spillway's refusals).
+	 *  The executor starts from the first on-nav Think, after that Think's rescore. */
+	bool bNavSeen = false;
+	bool bWaitingForNavLogged = false;
+	bool bExecutorStarted = false;
 	FAIBConfidenceState ConfidenceState;
 	FAIBSkillProfile SkillProfile;
 

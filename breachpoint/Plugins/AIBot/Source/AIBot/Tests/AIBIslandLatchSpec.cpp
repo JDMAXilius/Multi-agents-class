@@ -16,8 +16,11 @@
  * blocks latching (7), a latch past LatchMaxAgeSeconds reads unlatched and clears (8), a
  * completed full-path move clears (9), the row defaults are what the csv must mirror
  * (10), the gate's confirmation is cached once per latch and forgotten on every clear
- * and re-latch (11, W-REVIEW #3 M6), and a lipless egress on a confirmed island STRANDS
- * for the cooldown — dropped by the cooldown or a completed full-path move (12, #3 H2).
+ * and re-latch (11, W-REVIEW #3 M6), a lipless egress on a confirmed island STRANDS
+ * for the cooldown — dropped by the cooldown or a completed full-path move (12, #3 H2),
+ * and the confirmation is a decision over an ANCHOR LIST: island iff NO anchor has a full
+ * path, ONE full path refutes (clearing with the cooldown) and names itself, an empty
+ * list confirms nothing (13, fix #4 R1).
  */
 BEGIN_DEFINE_SPEC(FAIBIslandLatchSpec, "AIBot.Sim.IslandLatch",
 	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
@@ -230,6 +233,61 @@ void FAIBIslandLatchSpec::Define()
 		Latch.Strand(20.0, 5.f);
 		Latch.Reset(); // possession
 		TestFalse(TEXT("a new life is not stranded"), Latch.IsStranded(20.1));
+	});
+
+	It("confirms against the anchor LIST — island iff every anchor fails, one full path refutes, none confirms nothing", [this]()
+	{
+		using EConfirm = FAIBIslandLatch::EConfirm;
+		auto Latched = []()
+		{
+			FAIBIslandLatch Latch;
+			Latch.NoteDraw(false, Draws, 0.0);
+			Latch.NoteDraw(false, Draws, 0.1);
+			Latch.NoteDraw(false, Draws, 0.2);
+			return Latch;
+		};
+
+		// The corner spawn pad: the objective, the last move and every PlayerStart all fail.
+		{
+			FAIBIslandLatch Latch = Latched();
+			const bool NoneReach[] = { false, false, false, false };
+			TestEqual(TEXT("no refuter"), Latch.Confirm(NoneReach, 1.0, 5.f), static_cast<int32>(INDEX_NONE));
+			TestTrue(TEXT("island"), Latch.Confirmation == EConfirm::Island);
+			TestTrue(TEXT("still latched"), Latch.ReadLatched(1.1, 10.f));
+			TestEqual(TEXT("no cooldown from a confirmation"), Latch.NoLatchBeforeSeconds, -1.0);
+		}
+		// The floor bot: its own spawn pad is an island but the objective reaches — refuted.
+		{
+			FAIBIslandLatch Latch = Latched();
+			const bool ObjectiveReaches[] = { true, false, false };
+			TestEqual(TEXT("the first anchor refutes"), Latch.Confirm(ObjectiveReaches, 1.0, 5.f), 0);
+			TestTrue(TEXT("refuted"), Latch.Confirmation == EConfirm::Refuted);
+			TestFalse(TEXT("cleared"), Latch.bOnIsland);
+			TestEqual(TEXT("with the cooldown"), Latch.NoLatchBeforeSeconds, 6.0);
+			TestFalse(TEXT("a draw inside the cooldown does not re-latch"), Latch.NoteDraw(false, Draws, 2.0));
+		}
+		// One success anywhere in the list is enough, and it names the anchor.
+		{
+			FAIBIslandLatch Latch = Latched();
+			const bool LastPlayerStartReaches[] = { false, false, false, true };
+			TestEqual(TEXT("the fourth anchor refutes"), Latch.Confirm(LastPlayerStartReaches, 1.0, 5.f), 3);
+			TestTrue(TEXT("refuted"), Latch.Confirmation == EConfirm::Refuted);
+		}
+		// Nothing to test against (no anchor on the mesh): not a confirmation, not a refutation.
+		{
+			FAIBIslandLatch Latch = Latched();
+			TestEqual(TEXT("no refuter"), Latch.Confirm(TConstArrayView<bool>(), 1.0, 5.f), static_cast<int32>(INDEX_NONE));
+			TestTrue(TEXT("untested"), Latch.Confirmation == EConfirm::Untested);
+			TestTrue(TEXT("the latch holds — the gate acts on it alone"), Latch.bOnIsland);
+		}
+		// A spawn pad alone, failing, would have confirmed the OLD single-anchor gate on
+		// open ground as readily as on an island — the list is what makes a fail mean something.
+		{
+			FAIBIslandLatch Latch = Latched();
+			const bool SpawnOnly[] = { false };
+			Latch.Confirm(SpawnOnly, 1.0, 5.f);
+			TestTrue(TEXT("one failing anchor still confirms — the LIST must carry the objective and the PlayerStarts"), Latch.Confirmation == EConfirm::Island);
+		}
 	});
 
 	It("defaults the row to the ruled numbers — the csv mirrors these", [this]()

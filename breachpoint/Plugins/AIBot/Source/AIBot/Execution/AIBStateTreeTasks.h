@@ -18,28 +18,9 @@ class APawn;
  * Server-side only by construction: the controller exists nowhere else.
  */
 
-/**
- * Every mover's locomotion scratch: the sprint HOLD's edge state and the stall watchdog
- * (measures only — traversal presses live on UAIBPathFollowingComponent since AIB22).
- * Deliberately NOT a UPROPERTY and not a USTRUCT — it is per-run state, never authored
- * and never serialized, so adding it changes nothing the StateTree compiler bakes into
- * /Game/AIBot/AI/ST_AIBBot (no node, no gate, no branch order moved).
- */
-struct FAIBLocomotionState
-{
-	bool bSprintHeld = false;
-	bool bTriedWedgeJump = false;
-	bool bHasBestPoint = false;
-	float StallSeconds = 0.f;
-	FVector BestPoint = FVector::ZeroVector;
-
-	/** AIB22 `stuck_seconds` bookkeeping — reads the watchdog's clocks, never moves them.
-	 *  An episode is OPEN once StallSeconds has run StallReportSeconds past what the last
-	 *  line reported; Goal is the mover's current target, for the line. */
-	bool bStallOpen = false;
-	float StallReportedSeconds = 0.f;
-	FVector Goal = FVector::ZeroVector;
-};
+// The movers' locomotion scratch (FAIBLocomotionState) lives on the controller since
+// AIB22 fix #4 R3 — see Core/AIBBotController.h. Nothing here is authored or serialized,
+// so the move changed nothing the StateTree compiler bakes into ST_AIBBot.
 
 ////////////////////////////////////////////////////////////////////
 
@@ -254,7 +235,6 @@ struct FAIBMoveNearBeliefTaskInstanceData
 
 	FVector LastGoal = FVector::ZeroVector;
 	float RepathCooldown = 0.f;
-	FAIBLocomotionState Locomotion;
 };
 
 /** Closes toward the belief and then KEEPS STATION there — sprinting while there is
@@ -418,7 +398,6 @@ struct FAIBFleeFromBeliefTaskInstanceData
 	bool bStoodDownToDefend = false;
 	float ClosestSoFarUU = 0.f;
 	float SecondsWithoutProgress = 0.f;
-	FAIBLocomotionState Locomotion;
 };
 
 /** RUNS — sprinting — directly away from the threat belief; with NO threat point held at
@@ -464,7 +443,6 @@ struct FAIBMoveToLastKnownTaskInstanceData
 	 *  consecutive Idle spell — a ratchet alone fired on one Idle frame after any detour. */
 	float SecondsSinceEnter = 0.f;
 	float MoverIdleSeconds = 0.f;
-	FAIBLocomotionState Locomotion;
 };
 
 /** Walks to the memory's fresh last-known spot while SweepLook pans beside it, then
@@ -565,9 +543,14 @@ struct FAIBMoveToPOITaskInstanceData
 	/** AIB22 W-REVIEW #3 H2: entered stranded — no goal, no draw; Tick holds until the
 	 *  latch says the cooldown lapsed (or a full-path move completed), then Succeeds. */
 	bool bStranded = false;
+	/** AIB22 fix #4 R6: entered GROUNDED but OFF the mesh (the `self=NO` refusal
+	 *  population, and geometry that sits above its navmesh) — walking straight to the
+	 *  nearest nav point, pathfinding off; Succeeded there so Roam re-draws on the mesh. */
+	bool bRecovering = false;
+	FVector RecoveryTarget = FVector::ZeroVector;
+	float RecoverySeconds = 0.f;
 	float ClosestSoFarUU = 0.f;
 	float SecondsWithoutProgress = 0.f;
-	FAIBLocomotionState Locomotion;
 
 	// -- AIB19 grapple traversal (the wandering variant only; MayGrappleTraverse gates).
 	// -- New UPROPERTYs on an existing instance struct default on load: the authored
@@ -723,8 +706,6 @@ struct FAIBMoveToObjectiveTaskInstanceData
 	UPROPERTY(EditAnywhere, Category = "Parameter")
 	float RepollIntervalSeconds = 0.5f;
 	float RepollCooldown = 0.f;
-
-	FAIBLocomotionState Locomotion;
 };
 
 /** The MODE branch's mover (Phase 6): walks to the best world-query POI whose Kind is
@@ -864,9 +845,10 @@ struct FAIBWanderTask : public FAIBMoveToPOITask
 ////////////////////////////////////////////////////////////////////
 
 /** Gates Roam's Egress child (AIB22 5(B)): true only while the controller's island latch
- *  holds AND its hypothesis is confirmed — the confirmation (one exhaustive path test from
- *  the feet to the island anchor) runs ONCE per latch and is cached on the latch
- *  (W-REVIEW #3 M6); every later evaluation reads the cache and has no side effects.
+ *  holds AND its hypothesis is confirmed — the confirmation (exhaustive path tests from
+ *  the feet to the controller's ANCHOR LIST; island iff none reaches — fix #4 R1) runs
+ *  ONCE per latch and is cached on the latch (W-REVIEW #3 M6); every later evaluation
+ *  reads the cache and has no side effects.
  *  Not an ambition gate — Roam is already the want; this picks the tactic. */
 USTRUCT(meta = (DisplayName = "AIB On Island", Category = "AIBot"))
 struct FAIBOnIslandCondition : public FStateTreeConditionCommonBase
@@ -914,7 +896,13 @@ struct FAIBEgressTaskInstanceData
 	double StrandedSinceSeconds = -1.0;
 	bool bAirborneSeen = false;
 	bool bSteppedOff = false;
-	FAIBLocomotionState Locomotion;
+	/** Fix #4 R6: the lip fan has run (from an on-mesh point). Until then the task is
+	 *  waiting for the ground (grounded = the avatar's movement state, never the nav
+	 *  projection) or walking the off-mesh recovery to RecoveryTarget, pathfinding off. */
+	bool bBegun = false;
+	bool bRecovering = false;
+	FVector RecoveryTarget = FVector::ZeroVector;
+	float RecoverySeconds = 0.f;
 };
 
 /** THE WAY OFF AN ISLAND (AIB22 5(B), law F9). Selected under Roam only while the island
@@ -928,6 +916,9 @@ struct FAIBEgressTaskInstanceData
  *  again below the lip (the parsed `island egress — via drop` line, latch cleared); FAILS
  *  when no lip exists, the walk stalls, or the body never leaves (latch cleared too, so
  *  Wander re-measures rather than this tactic re-selecting the same lip forever).
+ *  Grounded is the avatar's movement state (fix #4 R6): airborne at entry it waits for
+ *  the ground; grounded with no mesh under the feet it walks the off-mesh recovery first
+ *  and fans from the mesh. Its own moves never clear the latch (R8, MarkEgressMove).
  *  ExitState never cancels a fall in progress. */
 USTRUCT(meta = (DisplayName = "AIB Egress", Category = "AIBot"))
 struct FAIBEgressTask : public FStateTreeTaskCommonBase

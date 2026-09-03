@@ -80,6 +80,7 @@ bool UAIBPathFollowingComponent::PressJump(const TCHAR* Via, const FVector& To)
 	Avatar->PressVerb(AIBTags::Verb_Jump);
 	Avatar->ReleaseVerb(AIBTags::Verb_Jump);
 	const UWorld* World = GetWorld();
+	Bot->NoteLinkJumped(World ? World->GetTimeSeconds() : 0.0); // the stall line's `jumped=` (fix #4 R9)
 	UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f link traverse — via %s from (%.0f,%.0f,%.0f) to (%.0f,%.0f,%.0f)"),
 		*Bot->GetName(), World ? World->GetTimeSeconds() : 0.0, Via,
 		From.X, From.Y, From.Z, To.X, To.Y, To.Z);

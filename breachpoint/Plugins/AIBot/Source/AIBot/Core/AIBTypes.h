@@ -131,6 +131,17 @@ namespace AIB
 	 *  budgeted one (SweepDegreesPerSecond, SweepMaxSeconds). */
 	inline constexpr float HoldScanDegreesPerSecond = 40.f;
 
+	/** AIB22 fix #4 (R3/R6): ONE STEP of the host's character — the engine's CMC
+	 *  MaxStepHeight default, [thin] not measured on the BN pawn. A stalled goal farther
+	 *  than this above or below the feet with no link ahead is a STOREY, not a wedge
+	 *  (abandon at once); navmesh farther than this under the feet is OFF-MESH (recover). */
+	inline constexpr float StepHeightUU = 45.f;
+
+	/** AIB22 fix #4 (R4): the sweep budget's refill key. The BOT — never the post —
+	 *  displaced 1.5x this since the last refill earns a new look; mirrors the search
+	 *  post's acceptance (MoveToLastKnown's 150) so "a new post" and "a new look" agree. */
+	inline constexpr float SweepRefillRadiusUU = 150.f;
+
 	/** A dry bot reads a melee fight from this much further out (founder, 1 Sep). A
 	 *  multiplier rather than an absolute, so it rides the competence ladder instead of
 	 *  flattening it — an Expert with an empty hand still reads the fight before a

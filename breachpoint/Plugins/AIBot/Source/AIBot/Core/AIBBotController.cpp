@@ -11,9 +11,12 @@
 #include "Data/AIBDataRows.h"
 #include "Data/AIBTiers.h"
 #include "Debug/AIBGameplayDebugger.h"
+#include "EngineUtils.h"
 #include "Execution/AIBStateTreeExecutor.h"
+#include "GameFramework/PlayerStart.h"
 #include "Interfaces/AIBAvatarInterface.h"
 #include "Interfaces/AIBWorldQuery.h"
+#include "NavigationSystem.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Hearing.h"
 #include "Perception/AISense_Hearing.h"
@@ -247,12 +250,22 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	// they actually need.
 	++LifeIndex;
 	PossessedAtSeconds = GetWorld()->GetTimeSeconds();
-	// W-REVIEW H2: the life's birthplace, the island hypothesis's confirmation anchor.
-	SpawnLocation = InPawn->GetActorLocation();
-	bHasSpawnLocation = true;
-	bHasLastFullPathGoal = false; // #3 H3: the spawn anchors until the first full-path move completes
+	// Fix #4 R1: every PlayerStart is a confirmation anchor (the spawn alone was the false
+	// one — Arena01's corner pads are islands themselves). Once per possession; the gate
+	// projects them when it tests.
+	PlayerStartLocations.Reset();
+	for (TActorIterator<APlayerStart> It(GetWorld()); It; ++It)
+	{
+		PlayerStartLocations.Add(It->GetActorLocation());
+	}
+	bHasLastFullPathGoal = false; // #3 H3: no full-path move has completed this life yet
 	PendingMoveRequestId = 0;
+	EgressMoveRequestId = 0;
 	bStopOnLanding = false;
+	Locomotion = FAIBLocomotionState(); // R3: one stall clock per body, born clean
+	LastLinkJumpAtSeconds = -1.0;
+	bNavSeen = false;                   // R7: nothing decides until the feet are on the mesh once
+	bWaitingForNavLogged = false;
 	const uint32 LifeSeed = HashCombine(GetTypeHash(GetUniqueID()), GetTypeHash(LifeIndex));
 	Sensorium.SetRandomSeed(static_cast<int32>(LifeSeed));
 
@@ -282,25 +295,27 @@ void AAIBBotController::OnPossess(APawn* InPawn)
 	GetWorldTimerManager().SetTimer(ThinkTimer, this, &AAIBBotController::Think,
 		FMath::Max(ThinkIntervalSeconds, 0.02f), /*bLoop=*/true);
 
-	// Registry + ONE THINK BEFORE THE TREE STARTS. RefreshAmbitions clears, registers
-	// core + the current mode's translated set, and Thinks once — the timer's first
-	// fire is a whole interval away, but StartLogic selects a state IMMEDIATELY, and a
-	// failed initial selection is TERMINAL (TreeRunStatus=Failed, Tick early-outs
-	// forever — the engine's own error, hit live). Seeding here means the first
-	// selection already mirrors arbitration. (The terminal's live diagnosis and the
-	// W-REVIEW P3 barrier landed the Think-first fix independently, same day.)
-	RefreshAmbitions();
-
-	// The executor last: by the time the tree evaluates its first gate, the brain and
-	// sensorium above are already live. Swapping StateTree for Behavior Tree is this one
-	// NewObject line — the rest of possession never changes (the IAIBExecutor seam).
+	// The executor object. Swapping StateTree for Behavior Tree is this one NewObject
+	// line — the rest of possession never changes (the IAIBExecutor seam). It STARTS from
+	// Think, not here (fix #4 R7): the first Think whose pawn projects onto the navmesh
+	// rescores and then starts the tree.
 	if (!Executor)
 	{
 		UAIBStateTreeExecutor* NewExecutor = NewObject<UAIBStateTreeExecutor>(this);
 		Executor = NewExecutor;
 		ExecutorObject = NewExecutor;
 	}
-	Executor->Start(*this);
+	bExecutorStarted = false;
+
+	// Registry + ONE THINK BEFORE THE TREE STARTS. RefreshAmbitions clears, registers
+	// core + the current mode's translated set, and Thinks once — the timer's first
+	// fire is a whole interval away, but StartLogic selects a state IMMEDIATELY, and a
+	// failed initial selection is TERMINAL (TreeRunStatus=Failed, Tick early-outs
+	// forever — the engine's own error, hit live). Seeding here means the first
+	// selection already mirrors arbitration. (The terminal's live diagnosis and the
+	// W-REVIEW P3 barrier landed the Think-first fix independently, same day.) With the
+	// feet already on the mesh at possession this Think also starts the executor.
+	RefreshAmbitions();
 }
 
 void AAIBBotController::OnUnPossess()
@@ -316,6 +331,7 @@ void AAIBBotController::OnUnPossess()
 	{
 		Executor->Stop();
 	}
+	bExecutorStarted = false;
 	// THE BELT under the tree's brace (W-REVIEW P3): FireWhenAble's ExitState releases
 	// on every exit the engine runs synchronously — but whether StopLogic exits states
 	// synchronously is an engine fact this module must not bet a held trigger on. The
@@ -371,7 +387,8 @@ void AAIBBotController::OnUnPossess()
 	SweepBudget.Reset();
 	TravelPanDegrees = 0.f;
 	IslandLatch.Reset();
-	bHasSpawnLocation = false;
+	PlayerStartLocations.Reset();
+	Locomotion = FAIBLocomotionState();
 	bStopOnLanding = false;
 	ConfidenceState = FAIBConfidenceState();
 	AimState = FAIBAimState();
@@ -773,9 +790,26 @@ FPathFollowingRequestResult AAIBBotController::MoveTo(const FAIMoveRequest& Move
 	return Result;
 }
 
+void AAIBBotController::MarkEgressMove()
+{
+	EgressMoveRequestId = GetCurrentMoveRequestID().GetID();
+	if (PendingMoveRequestId == EgressMoveRequestId)
+	{
+		PendingMoveRequestId = 0; // never the anchor either
+	}
+}
+
 void AAIBBotController::OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result)
 {
 	Super::OnMoveCompleted(RequestID, Result);
+	// Fix #4 R8: Egress's own moves prove nothing about the mainland — the lip walk is a
+	// full path ON the island by construction, and its completion cleared the latch one
+	// tick before the step-off (the PIE gantry watch).
+	if (EgressMoveRequestId != 0 && RequestID.GetID() == EgressMoveRequestId)
+	{
+		EgressMoveRequestId = 0;
+		return;
+	}
 	// DidMoveReachGoal is Success AND not a partial path, computed by the follower before
 	// its Reset — a partial path's end is the island's edge, never proof of the mainland.
 	const UPathFollowingComponent* Follow = GetPathFollowingComponent();
@@ -798,11 +832,49 @@ void AAIBBotController::OnMoveCompleted(FAIRequestID RequestID, const FPathFollo
 	}
 }
 
-bool AAIBBotController::GetIslandAnchor(FVector& OutLocation, const TCHAR*& OutAnchorName) const
+void AAIBBotController::GetIslandAnchors(TArray<FAIBIslandAnchor>& OutAnchors) const
 {
-	OutAnchorName = bHasLastFullPathGoal ? TEXT("last full-path move") : TEXT("spawn");
-	OutLocation = bHasLastFullPathGoal ? LastFullPathGoal : SpawnLocation;
-	return bHasLastFullPathGoal || bHasSpawnLocation;
+	OutAnchors.Reset();
+	// The CURRENT want's goal first — the anchor most likely to refute a floor bot in one
+	// test. A mode want: the objective POIs of its kind (the mover's own pick set, the
+	// world query's, all of them — a hill is one, a rally is a handful). Search/Seek: the
+	// fresh last-known. Fight wants chase a body, not ground; Roam has no goal.
+	const FGameplayTag Current = AmbitionEngine ? AmbitionEngine->GetCurrent() : FGameplayTag();
+	const FGameplayTag Kind = GetObjectiveKindForCurrentAmbition();
+	const APawn* SelfPawn = GetPawn();
+	if (Kind.IsValid() && SelfPawn)
+	{
+		if (IAIBWorldQuery* Query = GetWorldQuery())
+		{
+			TArray<FAIBPointOfInterest> Points;
+			Query->QueryPointsOfInterest(SelfPawn, AIB::ObjectiveQueryRadiusUU, Points);
+			for (const FAIBPointOfInterest& Point : Points)
+			{
+				if (Point.Kind == Kind)
+				{
+					OutAnchors.Add({ Point.Location, TEXT("objective") });
+				}
+			}
+		}
+	}
+	else if (Current == AIBTags::Ambition_Search || Current == AIBTags::Ambition_Seek)
+	{
+		const float Window = LastFacts.MemoryFreshWindowSeconds;
+		FVector LastKnown;
+		if (Sensorium.Memory().GetFresh(GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0,
+			Window > 0.f ? Window : AIB::DefaultMemoryFreshSeconds, LastKnown))
+		{
+			OutAnchors.Add({ LastKnown, TEXT("last-known") });
+		}
+	}
+	if (bHasLastFullPathGoal)
+	{
+		OutAnchors.Add({ LastFullPathGoal, TEXT("last full-path move") });
+	}
+	for (const FVector& Start : PlayerStartLocations)
+	{
+		OutAnchors.Add({ Start, TEXT("PlayerStart") });
+	}
 }
 
 void AAIBBotController::Think()
@@ -844,12 +916,13 @@ void AAIBBotController::Think()
 				IdleTactics = StillTactics;
 			}
 		}
-		// The sweep budget bounds a still SPELL (AIB22 H1): the same sample that says the
-		// body moved is what earns the next stop its own look. The other refill — a NEW
-		// post — is the mover's (FAIBSweepBudget::ArriveAt).
-		if (!bStill)
+		// The sweep budget refills on the BODY standing somewhere new (fix #4 R4): a still
+		// sample 1.5x SweepRefillRadiusUU or farther from where the last refill stood.
+		// Neither motion by itself (a wedged body pushing against a wall has input and no
+		// displacement — that was the 7.0s sweep) nor the post moving refills anything.
+		if (bStill && SelfPawn)
 		{
-			SweepBudget.Reset();
+			SweepBudget.ArriveAt(SelfPawn->GetActorLocation(), AIB::SweepRefillRadiusUU);
 		}
 		// W-REVIEW M6: the step-off request Egress left in flight, stopped on the first
 		// grounded sample — unless something newer already owns the mover.
@@ -898,6 +971,34 @@ void AAIBBotController::Think()
 	else if (!Visible)
 	{
 		LastLoggedTarget = nullptr;
+	}
+
+	// FIX #4 R7 — NO DECISION BEFORE THE FEET ARE ON THE MESH. The spawn burst (t<2s,
+	// the mesh not yet under a fresh pawn) was 95% of Spillway's refusals: every want
+	// that won issued a move the follower refused. Perception above keeps pumping; the
+	// arbitration below, the claims, and the tree itself wait for one successful
+	// projection this life — polled here, at think cadence, never a tick.
+	if (!bNavSeen)
+	{
+		const APawn* SelfPawn = GetPawn();
+		UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(World);
+		FNavLocation OnNav;
+		if (!SelfPawn || !NavSys
+			|| !NavSys->ProjectPointToNavigation(SelfPawn->GetActorLocation(), OnNav, FVector(300.f, 300.f, 400.f)))
+		{
+			if (!bWaitingForNavLogged)
+			{
+				bWaitingForNavLogged = true;
+				UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f waiting for nav — no decisions until the pawn projects onto the mesh"),
+					*GetName(), Now);
+			}
+			return;
+		}
+		bNavSeen = true;
+		if (bWaitingForNavLogged)
+		{
+			UE_LOG(LogAIBot, Verbose, TEXT("AIBot: %s t=%.1f on nav after %.1fs"), *GetName(), Now, Now - PossessedAtSeconds);
+		}
 	}
 
 	// Facts -> arbitration. The winner is the executor's gate at Phase 3; today the
@@ -980,6 +1081,14 @@ void AAIBBotController::Think()
 				}
 			}
 		}
+	}
+
+	// The executor, ONCE, after the first on-nav rescore (R7 + the Think-first rule): the
+	// tree's first selection already mirrors arbitration and the feet can path.
+	if (!bExecutorStarted && Executor && GetPawn())
+	{
+		bExecutorStarted = true;
+		Executor->Start(*this);
 	}
 
 	// Phase 8: the eyes-on instrument, drawn at think cadence so it breathes with the
