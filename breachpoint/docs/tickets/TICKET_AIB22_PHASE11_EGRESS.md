@@ -1441,3 +1441,49 @@ this pass because an `aib-verifier` was holding `UnrealEditor-AIBot.dll` for hea
 matches. Nothing here has been compiled and no spec has been executed; the lead sequences
 rung 1 and `run-specs.ps1`. Boundary grep over the module (`Breachpoint|BNCharacter|"BN`):
 no matches.
+
+### 3 Sep (Windows terminal, lead) — HIGH-1's fix, run up the ladder
+
+**Rung 1 — compile.** `Tools\run-ubt.ps1`, start 20:57:41.
+`RUNG1|target=Breachpoint|exit=0|mtime=20:58:25|newer_than_start=YES|verdict=PASS`
+`RUNG1|target=BreachpointServer|exit=0|mtime=20:58:58|newer_than_start=YES|verdict=PASS`
+`RUNG1|target=BreachpointEditor|exit=0|actions=14|verdict=FAIL` — the KNOWN false negative: UBT
+`Result: Succeeded`, zero compile errors, and the artifact under R19's assertion is the
+monolithic `UnrealEditor-Breachpoint.dll`, which no code in this packet touches. The binary
+that matters rebuilt: **`UnrealEditor-AIBot.dll` 20:57:53** against sources last written
+20:52:37. Reported as a FAIL because the script is right to refuse to call a stale artifact a
+pass; named here so the next reader does not chase it.
+
+**Rung 2 — headless specs.** `Tools\run-specs.ps1 -Filter AIBot.Sim.IslandLatch`:
+`RUNG2|discovered=26|passed=26|failed=0|notrun=0|editor_exit=0|seconds=18.4|verdict=PASS`
+
+The nine cases that carry HIGH-1, all Success:
+`keeps the door when the very failure that recorded it STRANDS the body` ·
+`keeps the door through an Egress failure's cooldown clear` ·
+`drops the pending record when the body actually leaves` ·
+`drops an UNJUDGED door rather than letting a later failure blame it` ·
+`only blames a door it was actually trying` ·
+`hands the fan a DIFFERENT door on the next entry, and gives up rather than repeat` ·
+`refuses a failed lip, and only inside the window` ·
+`refuses by RADIUS, because the fan re-derives a lip from shifted feet` ·
+`holds only a few doors — the oldest is evicted, never an unbounded list`
+
+**On "fails before, passes after" — be precise about which half is measured.** The passing
+half is measured, above. The failing half is **verified by inspection, not by execution**: the
+pre-fix `Clear()` called `ForgetFailedLips()` unconditionally (old `AIBBotController.h:357`,
+read by hand before the fix was dispatched), so `Strand → ClearWithCooldown → Clear` wiped the
+entry the previous statement wrote and `RefusesLip` could only return false. I did not rebuild
+the old header to watch it go red, because the new spec calls `ClearLatchOnly()`, which does not
+exist pre-fix — the experiment would have produced a compile error, not a red test, and a
+compile error is not the falsification the ruling asks for. Stated so nobody records this as a
+measured red.
+
+**The `W-REVIEW: no high` box stays UNCHECKED.** The high is fixed, compiled and
+spec-covered — but no review has run against the fixed code, and a box that says "review found
+no high" cannot be checked by the packet that caused the review. It needs a re-review pass.
+
+**What is still NOT proven, in ladder order:** that `FindIslandLip`'s real navmesh fan reaches
+the refusal branch on a live map, and that `BlameEgressLip` fires from real landings. Those are
+PIE/headless-match rungs, not rung 2, and the next batch is where `lip refused … trying another
+door` either appears or does not. Until it appears in a match log, residual (c) is landed code,
+not observed behaviour.
