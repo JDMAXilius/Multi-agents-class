@@ -1342,3 +1342,40 @@ fires." Same for `denial_throws`, `offmesh_self`, `offmesh_moments`, `ff_refused
 **VERDICT: AIB22 stays OPEN.** Four bars FAIL (idle-none, stuck_seconds, longest stall,
 Arena01 refusals-vs-baseline), and the headline has changed shape rather than size: the split
 proves `stuck_seconds` is 92-98 % geometry, not separation.
+
+### 3 Sep (Windows terminal, lead) — the review and the run met in the middle
+
+Two agents worked tonight without seeing each other's output: an `aib-critic` reading only
+source, and an `aib-verifier` running 10 headless matches. They converged, and the convergence
+is stronger evidence than either half.
+
+**The critic (W-REVIEW, `3919dc3c`) predicted a log line could not exist.** Its HIGH-1 says the
+interior-lip blacklist is inert twice over — `NotePendingLipFailed` at
+`AIBStateTreeTasks.cpp:875` writes an entry and `Strand()` on line **876** erases it via
+`ClearWithCooldown → Clear → ForgetFailedLips`, same tick; and `RefusesLip` is wired only to the
+off-mesh recovery (`:756`), never to the `FindIslandLip` fan (`:2911`) that Egress actually runs.
+Its stated falsifier: **`lip refused … trying another door` (`:761`) cannot appear in any log
+this build produces.**
+
+**The verifier, parsing 10 logs, reported `lip_refusals` as "not captured (Verbose off?)" in all
+ten** — while proving Verbose WAS on in the same batch (`draw_reflexes`, Verbose-only, captured
+831–1,625 per log).
+
+Those are the same fact. The counter did not miss the line; **the line cannot be emitted.** The
+"(Verbose off?)" guess in the harness output is the parser being honest about an absence it
+could not explain, and the explanation is a dead code path. Residual (c) has now been
+"unjudgeable" for two runs running for this reason and not for a logging reason.
+
+I verified both arms myself from source before dispatching the fix, so this is not two agents
+agreeing with each other — it is two methods and a hand check agreeing on one defect.
+
+**What this costs, stated plainly:** `lip_blacklist_count` landed in the parser TODAY and counts
+`lip blacklisted` (`:871`), which fires from the write that is erased. Had the fix not been
+dispatched first, the next v8 run would have read "the blacklist fires N times" and closed the
+residual as working. An instrument that counts an ATTEMPT certified the EFFECT. That is now a
+ruling (`49da4cb3`), not just a note.
+
+**Status of the fix: WRITTEN, NOT COMPILED at the time of writing** — an `aib-builder` holds it;
+rung 1 was deliberately withheld from that agent because the verifier's matches were still
+loading `UnrealEditor-AIBot.dll` and a rebuild mid-run would have either failed on the lock or
+silently invalidated the batch. The lead sequences rung 1 now that the batch is closed.
