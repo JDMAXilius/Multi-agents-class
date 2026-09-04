@@ -188,3 +188,63 @@ that works is the deliverable. Shipping remains available and would shrink the d
 the only two the grade reads** — the itch.io upload (Public, not draft) and the two `PENDING`
 fields at `assignments/10-ai-dev-pipeline/README.md` lines 19 and 39. Both need a browser and a
 screen recorder. Neither needs an engine.
+
+### 3 Sep (Windows terminal, lead) — the SHIPPING package, and what Shipping costs you in verification
+
+Cooked a second archive so the choice is measured rather than argued.
+`RunUAT BuildCookRun … -clientconfig=Shipping -cook -allmaps -build -stage -pak -archive
+-archivedirectory=Export/Win64-Shipping`. **`ExitCode=0` — Shipping compiles clean.** That was
+the bounded risk worth taking: a Shipping-only compile break surfaces in the build phase, before
+the cook, and there wasn't one.
+
+| | Development | Shipping |
+|---|---|---|
+| archive, symbols stripped | **1.04 GB** | **0.85 GB** |
+| game exe | 325.3 MB | **165.7 MB** |
+| staged files | 55 | 34 |
+| debug symbols (excluded) | 2.48 GB | 1.80 GB |
+| runtime log | yes | **none — stripped** |
+| honours `/Game/Maps/<X>` on the command line | **yes** | **no** |
+
+**Shipping runs.** Launched, alive past 55 s, no crash, and it renders the whole front end:
+PLAY / CREATE / COMMUNITY / SHOP, the career-rank panel, the NEW ARENA: SPILLWAY card, the
+posed character, and the roster. Screenshots: `evidence/bn40-2026-09-03/shipping-scoreboard.png`,
+`shipping-after-play.png`, `shipping-play3.png`.
+
+**Callsigns visible in the Shipping front end:** `Slowdraw` `Softaim` `Midpace` `Evenkeel`.
+`Rowan Mercer` sits above them and is NOT a stale bot name — it is `DefaultGamertag`
+(`Config/DefaultGame.ini:584`), the local player. Checked before reporting it.
+
+**TWO CONSTRAINTS SHIPPING IMPOSES ON VERIFICATION — both new, both worth knowing before anyone
+plans a test around this build:**
+
+1. **Shipping writes no log.** Every callsign/gamemode/LoadMap claim in the entry above this one
+   came from `Breachpoint.log`. Shipping produces none, so evidence there is visual only. If you
+   want a log-verified artifact, the Development build is the one.
+2. **Shipping ignores the command-line map URL.** `Breachpoint.exe /Game/Maps/BR_Spillway` boots
+   to `FE_MainMenu` (the `GameDefaultMap`) instead. Development honours it — that is exactly how
+   the match, the gamemode and all seven callsigns were verified. So in Shipping the ONLY route
+   into a match is through the menu.
+
+**And the menu could not be driven programmatically — a finding for BN46.** Synthetic keyboard
+input via `SendKeys` **navigates but does not activate**: `{UP}`/`{DOWN}` visibly moved focus
+(the tab bar took the ring, then PLAY took it — captured), while `{ENTER}` and `{SPACE}` on a
+focused PLAY did nothing. Process memory sat at 1414–1417 MB across all attempts; a travel to
+Spillway would have moved it sharply. So Slate receives the navigation keys while the CommonUI
+*accept* action does not fire from synthetic input. `SlateInspectorToolset` is editor-only, so
+**the packaged front end cannot be driven by automation from here — it needs a real hand on real
+input.** That is the same wall BN46 exists to get past, now measured rather than assumed.
+
+**THE HONEST LADDER POSITION, stated plainly because a checkbox would overstate it:**
+- Menu → match **through the PLAY button** is verified in **PIE only** (BN42's Log, a prior
+  session, loop walked twice). **I did not verify it in standalone, in either build.**
+- Match runs, gamemode is `BP_BNGameMode_C`, and all seven callsigns are present — verified in
+  **standalone Development**, by log, entering the map directly rather than through the menu.
+- Shipping is verified to **boot, render the front end, and not crash**. Its match path is
+  **unverified by me.**
+
+**Recommendation: upload the Development build (1.04 GB).** Shipping is 190 MB smaller and
+looks cleaner, but its match path is the one I could not exercise, and Development's is
+log-proven end to end. A 190 MB saving is not worth shipping the artifact whose gameplay nobody
+has confirmed. Both archives are on disk; if you press PLAY in the Shipping build yourself and
+it reaches a match, that reverses this recommendation immediately.
