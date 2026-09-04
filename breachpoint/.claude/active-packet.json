@@ -1,23 +1,24 @@
 {
- "ticket": "AIB22-phase11-egress",
+ "ticket": "SESSION-2026-09-03-WINDOWS-CREW",
  "owner_path": [
   "Plugins/AIBot/Source/AIBot/",
   "breachpoint/Plugins/AIBot/Source/AIBot/",
   "Content/AIBot/",
   "breachpoint/Content/AIBot/",
-  "Tools/aib/",
-  "breachpoint/Tools/aib/",
-  "Tools/blockout/",
-  "breachpoint/Tools/blockout/",
+  "Content/Data/",
+  "breachpoint/Content/Data/",
+  "Content/Maps/",
+  "breachpoint/Content/Maps/",
+  "Content/UI/",
+  "breachpoint/Content/UI/",
+  "Tools/",
+  "breachpoint/Tools/",
   "Config/",
   "breachpoint/Config/",
   "Source/BreachpointNext/",
   "breachpoint/Source/BreachpointNext/",
-  "Content/Maps/",
-  "breachpoint/Content/Maps/",
-  "docs/tickets/",
   "docs/",
   ".claude/agents/"
  ],
- "note": "AIBOT-ROADMAP-2 execution (founder: 'run the roadmap', 2 Sep). AIB22 Phase 11 EGRESS is the active packet; AIB23-27 audits merge into their tickets under the same claim. Writers: aib-builder (Plugins/AIBot), aib-editor (Content/AIBot, Tools/aib, Tools/blockout), lead (Config, docs, and the declared game-side dependencies in Source/BreachpointNext: seed handoff, crowd obstacle interface, BN legacy retirement). Content/Maps for the nav-link/isolation editor steps (one owner per umap, locked here)."
+ "note": "RE-SCOPED 2026-09-03 by the lead (Windows terminal, session 01KdhMQnxjRwHrb4rVyRp4Mv) ON EXPLICIT FOUNDER AUTHORISATION ('Do all that', in reply to the lead asking whether to widen owner_path for BN42/BN46). PRIOR CLAIM: AIB22-phase11-egress alone. The single-packet claim was the wrong shape for a multi-packet grant and the law-5 hook correctly refused writes no single ticket covers; the first re-scope attempt was also refused by the harness because widening owner_path widens the writer's own permissions, which is the founder's call and not the lead's. It has now been given. PACKETS: AIB22, AIB24, AIB26, AIB28, BN40 (package), BN42, BN46. WRITERS, still one per artifact: aib-builder -> Plugins/AIBot/Source/AIBot/; aib-editor -> Content/AIBot/, Tools/aib/, Tools/blockout/; bn-editor -> Tools/bn/, Content/UI/; lead -> Tools/, Config/, docs/, and the Content/Maps + Content/Data locks. R21 build lock and R29 one-editor-one-driver are enforced by the lead serialising those lanes, NOT by this file. NOTE: the editor rewrites Config/DefaultEngine.ini on its own (ServerDefaultMap and GlobalDefaultGameMode were repointed at the template scaffold this session and reverted) - check that file before every commit made from an editor-live session."
 }
