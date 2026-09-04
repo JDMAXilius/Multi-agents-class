@@ -750,3 +750,28 @@ re-litigated inside a packet.
   Amends the practical reading of law 7 for editor-tool work; blockout GEOMETRY
   generators (manifest -> builder pipelines like BN30/BN33) are unchanged — they are
   data pipelines, not editor-authoring sessions, and their scripts stay the law.
+
+### 2026-09-03 — a unit spec that calls a latch directly does not cover the call site that follows it
+
+**Context:** AIB22's W-REVIEW found the interior-lip blacklist inert: `NotePendingLipFailed`
+writes an entry and the next statement, `Strand()`, wipes it through
+`ClearWithCooldown → Clear → ForgetFailedLips`. `Tests/AIBIslandLatchSpec.cpp` covers
+`RefusesLip`/`NotePendingLip` and PASSES, because it drives the latch directly and never
+through the sequence where `Strand()` follows.
+
+**Ruling:** a spec that exercises a data structure in isolation is evidence about the data
+structure and about nothing else. Where a bug can live in the ORDER of two calls, the spec
+must drive the call site, not the type. This is not a defect in the existing spec — it tests
+what it says it tests — it is a gap in what we accepted as coverage. Any packet fixing an
+ordering defect owes a test that fails before the fix and passes after, AT THE SEAM.
+
+**Second, narrower ruling — a counter can certify its own inertness.** `lip_blacklist_count`
+counts the `lip blacklisted` log line, which fires from the write that is immediately erased.
+A v8 run would therefore have read "the blacklist fires N times" and concluded it works. When
+an instrument counts an ATTEMPT, it must not be reported as evidence of an EFFECT. The
+partner line here is `lip refused … trying another door`, which no build before today's fix
+could emit; a counter with no companion for the effect is an unproven instrument.
+
+**Scope:** these bind reviews and verification, not style. Only `high` findings block a
+landing (R13 unchanged); both rulings above are about what counts as PROOF, which is why they
+are here rather than in a ticket Log.
