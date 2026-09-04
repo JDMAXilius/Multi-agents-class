@@ -233,7 +233,11 @@ struct AIBOT_API FAIBIslandLatch
 	 *  unbounded blacklist is a memory leak that also eventually refuses every lip on the
 	 *  map: a small ring (oldest evicted), a per-entry expiry, and a radius test rather
 	 *  than an exact match, since the fan re-derives a lip from slightly different feet
-	 *  each time. Cleared with the latch — a bot that got off the island has no grudge. */
+	 *  each time. Forgotten by Clear() ALONE — a bot that got off the island has no grudge
+	 *  — and NOT by ClearWithCooldown/Strand, which fire while the body is still up there
+	 *  (HIGH-1: sharing one clear made this list unreachable from the moment it was
+	 *  written). Read by both lip fans: the on-mesh Egress fan and the off-mesh
+	 *  vertical-gap step-off. */
 	static constexpr int32 MaxFailedLips = 4;
 	FVector FailedLips[MaxFailedLips] = {};
 	double FailedLipUntil[MaxFailedLips] = {};
@@ -336,30 +340,53 @@ struct AIBOT_API FAIBIslandLatch
 		Confirmation = EConfirm::Island;
 		return INDEX_NONE;
 	}
-	/** The gate's read: a latch older than MaxAgeSeconds (0 = ageless) is stale and clears. */
+	/** The gate's read: a latch older than MaxAgeSeconds (0 = ageless) is stale and clears.
+	 *  The HYPOTHESIS expires; the door memory does NOT — an aged-out latch is not evidence
+	 *  that the body went anywhere (HIGH-1). */
 	bool ReadLatched(double NowSeconds, float MaxAgeSeconds)
 	{
 		if (bOnIsland && MaxAgeSeconds > 0.f && NowSeconds - LatchedAtSeconds > MaxAgeSeconds)
 		{
-			Clear();
+			ClearLatchOnly();
 		}
 		return bOnIsland;
 	}
-	/** A completed full-path move, a landing, a full draw: the fact is gone, no cooldown
-	 *  — and a stranded bot is stranded no longer. */
-	void Clear()
+	/** THE LATCH ITSELF — the hypothesis, its confirmation, its stranding — with the DOOR
+	 *  MEMORY left alone. Which lips did not open is a fact about the ground under this
+	 *  body, not about the hypothesis, and it has to outlive every clear that happens
+	 *  while the body is STILL UP THERE. */
+	void ClearLatchOnly()
 	{
 		BadDraws = 0;
 		bOnIsland = false;
 		LatchedAtSeconds = -1.0;
 		Confirmation = EConfirm::Untested;
 		bStranded = false;
+	}
+	/** OFF THE ISLAND — a completed full-path move, a landing, a full draw, possession.
+	 *  The fact is gone, no cooldown, a stranded bot is stranded no longer, AND the
+	 *  grudges go: this is the ONLY path that forgets doors. */
+	void Clear()
+	{
+		ClearLatchOnly();
 		ForgetFailedLips();   // off the island: no grudge against any door
 	}
-	/** An Egress failure or a refuted hypothesis: gone, and not re-measured for a while. */
+	/** STILL UP THERE, and something just failed — an Egress failure or a refuted
+	 *  hypothesis. The latch goes and is not re-measured for a while; the doors this body
+	 *  has already proved shut STAY shut, because it is standing on the same island that
+	 *  they refused to let it off.
+	 *
+	 *  HIGH-1 (3 Sep): this used to run through Clear(), so every failure path wiped the
+	 *  blacklist one statement after writing to it — NotePendingLipFailed then Strand, the
+	 *  same tick, and the ring never held an entry for a single frame. Two cases with
+	 *  opposite memory semantics were sharing one body. The PENDING record is dropped
+	 *  rather than blamed: a caller that means to blame a door says so first (the fan's
+	 *  landing verdict does), and one that does not must never leave a stale door behind
+	 *  for the next unrelated failure to blame. */
 	void ClearWithCooldown(double NowSeconds, float CooldownSeconds)
 	{
-		Clear();
+		ClearLatchOnly();
+		bHasPendingLip = false;
 		NoLatchBeforeSeconds = NowSeconds + FMath::Max(CooldownSeconds, 0.f);
 	}
 	/** W-REVIEW #3 H2: Egress found no policy-legal lip on a CONFIRMED island. The

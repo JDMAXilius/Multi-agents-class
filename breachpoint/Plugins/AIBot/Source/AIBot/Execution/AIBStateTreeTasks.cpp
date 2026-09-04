@@ -872,6 +872,11 @@ namespace
 					TEXT("AIBot: %s t=%.1f lip blacklisted (%.0f,%.0f,%.0f) for %.0fs — the step-off did not leave the island"),
 					*Bot.GetName(), WorldSeconds(Bot), Door.X, Door.Y, Door.Z, AIB::FailedLipRefuseSeconds);
 			}
+			// HIGH-1: blame, THEN strand. Until today Strand ran through Clear() and wiped
+			// the entry this line had just written, the same tick — the ring never held a
+			// door for one frame, and `lip refused` could not appear in any log the build
+			// produced. Strand now keeps the grudge (it means "still up here, and that
+			// door failed"), so this pair is honest in either order and readable in this one.
 			Bot.GetIslandLatch().NotePendingLipFailed(WorldSeconds(Bot), AIB::FailedLipRefuseSeconds);
 			Bot.GetIslandLatch().Strand(WorldSeconds(Bot), Bot.GetTierRow().EgressCooldownSeconds);
 			return -1;
@@ -2925,6 +2930,7 @@ namespace
 		const float DropLimitUU = AIB::SafeDropUU;
 		const FVector ProbeExtent(Tier.IslandLipProbeUU * 0.5f, Tier.IslandLipProbeUU * 0.5f, DropLimitUU * 0.5f);
 		TArray<FAIBLipCandidate> Candidates;
+		int32 RefusedLips = 0;
 		OutFootprint += Feet;
 		for (int32 Ray = 0; Ray < IslandLipRays; ++Ray)
 		{
@@ -2959,7 +2965,30 @@ namespace
 			{
 				continue;
 			}
+			// AIB22 follow-up (c), HIGH-1 arm (b): THIS fan — the on-mesh one Egress runs —
+			// is the one the gantry watch caught handing back the same lip every entry, and
+			// it was the one fan that never asked the blacklist. Keyed on the LIP the
+			// caller walks to, stores and logs, so `lip refused` and `egress starts` print
+			// the same coordinates and a log reads straight across.
+			const FVector Lip = Hit - Dir * Tier.IslandLipStandoffUU;
+			if (Bot.GetIslandLatch().RefusesLip(Lip, WorldSeconds(Bot), AIB::SameLipUU))
+			{
+				++RefusedLips;
+				UE_LOG(LogAIBot, Verbose,
+					TEXT("AIBot: %s lip refused (%.0f,%.0f,%.0f) — blacklisted, trying another door"),
+					*Bot.GetName(), Lip.X, Lip.Y, Lip.Z);
+				continue;
+			}
 			Candidates.Add({ Hit, Dir, FVector(Probe.X, Probe.Y, Below.Location.Z), Below.Location, DropUU, static_cast<float>(FVector::DistSquared2D(Feet, Hit)) });
+		}
+		if (Candidates.Num() == 0 && RefusedLips > 0)
+		{
+			// The caller's `stranded` line means "no legal lip" and a verifier reads that
+			// as MAP geometry. This is not geometry: every door in reach is under a
+			// sentence that lapses. Say which it is, at Log, or the two are one line.
+			UE_LOG(LogAIBot, Log,
+				TEXT("AIBot: %s t=%.1f no lip offered — all %d in reach are blacklisted (they lapse within %.0fs)"),
+				*Bot.GetName(), WorldSeconds(Bot), RefusedLips, AIB::FailedLipRefuseSeconds);
 		}
 		// NEAREST LEGAL (F7-1): nearest first, one landing path test each until one leaves.
 		Candidates.Sort([](const FAIBLipCandidate& A, const FAIBLipCandidate& B) { return A.DistSq < B.DistSq; });
@@ -2982,6 +3011,26 @@ namespace
 
 namespace
 {
+	/** AIB22 (c), HIGH-1 arm (b): the Egress fan's chosen door did not open. Said in the
+	 *  SAME words the step-off recovery uses — one countable token, one parser rule — and
+	 *  recorded BEFORE the clear that follows (which no longer wipes it, but the honest
+	 *  order is the one a reader can check). Silent when nothing was pending: a walk that
+	 *  never reached the lip failed as a WALK, and blaming the door would refuse a lip
+	 *  nobody actually tried. */
+	void BlameEgressLip(AAIBBotController& Bot, double Now, const TCHAR* Why)
+	{
+		FAIBIslandLatch& Latch = Bot.GetIslandLatch();
+		if (!Latch.bHasPendingLip)
+		{
+			return;
+		}
+		const FVector Door = Latch.PendingLip;
+		UE_LOG(LogAIBot, Log,
+			TEXT("AIBot: %s t=%.1f lip blacklisted (%.0f,%.0f,%.0f) for %.0fs — %s"),
+			*Bot.GetName(), Now, Door.X, Door.Y, Door.Z, AIB::FailedLipRefuseSeconds, Why);
+		Latch.NotePendingLipFailed(Now, AIB::FailedLipRefuseSeconds);
+	}
+
 	/** THE LIP FAN AND THE LIP WALK, run once the feet are grounded AND on the mesh (fix #4
 	 *  R6): from EnterState directly, or from Tick after the ground came back or the
 	 *  off-mesh recovery walked the body onto the mesh. */
@@ -3020,6 +3069,12 @@ namespace
 			return EStateTreeRunStatus::Failed;
 		}
 		InstanceData.Footprint += FeetOf(Pawn); // the real feet's height, not the nav projection's
+		// AIB22 (c), HIGH-1 arm (b): the door we are about to try, so the landing verdict
+		// below can blame it. The off-mesh step-off has recorded this since v7; THIS fan —
+		// the one a grounded, on-mesh bot actually runs, and the one that produced the
+		// gantry's repeating `egress starts — lip (1289,19xx,810) … drop 453` — never did,
+		// so the blacklist was wired to a fan the bot almost never reaches.
+		Latch.NotePendingLip(InstanceData.Lip);
 		InstanceData.ClosestSoFarUU = FVector::Dist(Pawn.GetActorLocation(), InstanceData.Lip);
 		// F7-2: under the agent radius + standoff HORIZONTALLY from the FEET (IsWithin reads
 		// 3D from the centre — a body standing on the lip is 88uu "away"): the walk cannot
@@ -3170,7 +3225,10 @@ EStateTreeRunStatus FAIBEgressTask::Tick(FStateTreeExecutionContext& Context, co
 		if (AIB::LandedOnSameIsland(InstanceData.Footprint, FeetNow))
 		{
 			// F7-3: inside the fan's footprint at the step-off's height — the same island. The
-			// cooldown lets Wander re-draw; the next fan skips this lip (F7-1), never re-issued.
+			// cooldown lets Wander re-draw; the next fan skips this lip (F7-1), never re-issued
+			// — which is TRUE only now that the door is blacklisted first and the clear that
+			// follows keeps the grudge (HIGH-1). This is the gantry residual's exact verdict.
+			BlameEgressLip(*Bot, Now, TEXT("the step-off landed on the same island"));
 			Latch.ClearWithCooldown(Now, Tier.EgressCooldownSeconds);
 			UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f island egress FAILED — landed on the same island (F7) — latch cleared, %.0fs cooldown."),
 				*Bot->GetName(), Now, Tier.EgressCooldownSeconds);
@@ -3182,6 +3240,7 @@ EStateTreeRunStatus FAIBEgressTask::Tick(FStateTreeExecutionContext& Context, co
 			LogIslandEgress(*Bot, TEXT("drop"), InstanceData.Lip, StrandedSeconds);
 			return EStateTreeRunStatus::Succeeded;
 		}
+		BlameEgressLip(*Bot, Now, TEXT("the step-off never cleared the lip"));
 		Latch.ClearWithCooldown(Now, Tier.EgressCooldownSeconds);
 		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f island egress FAILED — landed %.0fuu below the lip, still on it — latch cleared, %.0fs cooldown (F7)."),
 			*Bot->GetName(), Now, DropUU, Tier.EgressCooldownSeconds);
@@ -3212,6 +3271,8 @@ EStateTreeRunStatus FAIBEgressTask::Tick(FStateTreeExecutionContext& Context, co
 		{
 			UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f island egress FAILED — %.1fs at the lip, never left the ground — latch cleared, %.0fs cooldown (F7)."),
 				*Bot->GetName(), Now, InstanceData.LipSeconds, Tier.EgressCooldownSeconds);
+			// The body stood ON this door and could not fall through it: as shut as a door gets.
+			BlameEgressLip(*Bot, Now, TEXT("the body never left the ground at this lip"));
 			Bot->GetIslandLatch().ClearWithCooldown(Now, Tier.EgressCooldownSeconds);
 			return EStateTreeRunStatus::Failed;
 		}
@@ -3238,6 +3299,8 @@ EStateTreeRunStatus FAIBEgressTask::Tick(FStateTreeExecutionContext& Context, co
 	{
 		UE_LOG(LogAIBot, Log, TEXT("AIBot: %s t=%.1f island egress FAILED — lip %.0fuu short (mover %s) — latch cleared, %.0fs cooldown (F7)."),
 			*Bot->GetName(), Now, DistNow, bMoverDoneShort ? TEXT("idle") : TEXT("stalled"), Tier.EgressCooldownSeconds);
+		// NOT the door's fault: the body never got there. The clear drops the pending
+		// record unblamed, so a lip nobody tried is never refused (HIGH-1).
 		Bot->GetIslandLatch().ClearWithCooldown(Now, Tier.EgressCooldownSeconds);
 		Bot->NoteCurrentAmbitionFailed(); // R2/R3
 		return EStateTreeRunStatus::Failed;
@@ -3254,6 +3317,12 @@ void FAIBEgressTask::ExitState(FStateTreeExecutionContext& Context, const FState
 		return;
 	}
 	ReleaseLocomotion(*Bot);
+	// AIB22 (c), HIGH-1: every verdict that judges the door has already been passed by
+	// Tick (blame, then the clear). Anything else that ends this task — an interruption, a
+	// fall still in flight, a body that left another way — leaves NOBODY to judge it, and
+	// a pending door left lying about would be blamed by the next unrelated failure, in
+	// another tactic. Unjudged means dropped, never blamed.
+	Bot->GetIslandLatch().bHasPendingLip = false;
 	Bot->SetEgressMoveInFlight(false); // F6-2: the id mark (R8) stays as belt for a step-off still falling
 	// NEVER CANCELS A FALL (critic M5): a body in the air finishes arriving like a human
 	// would; only a grounded walk is stopped. Airborne, the unpathed step-off request is

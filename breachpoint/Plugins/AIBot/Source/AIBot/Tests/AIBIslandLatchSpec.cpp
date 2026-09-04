@@ -22,6 +22,12 @@
  * and the confirmation is a decision over an ANCHOR LIST: island iff NO anchor has a full
  * path, ONE full path refutes (clearing with the cooldown) and names itself, an empty
  * list confirms nothing (13, fix #4 R1).
+ *
+ * (14, HIGH-1, 3 Sep) THE FAILURE SEQUENCE, not the ring: the last block drives the two
+ * calls the CALL SITE makes in the order it makes them — blame the door, then strand or
+ * clear-with-cooldown — because every test above passed while the blacklist was inert in
+ * the shipped build. Strand and Clear were sharing one body and wanted opposite memory:
+ * "still up here and that door failed" keeps the grudge, "off the island" alone forgets.
  */
 BEGIN_DEFINE_SPEC(FAIBIslandLatchSpec, "AIBot.Sim.IslandLatch",
 	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
@@ -402,6 +408,145 @@ void FAIBIslandLatchSpec::Define()
 			Latch.Clear();
 			TestFalse(TEXT("off the island: no grudge"),
 				Latch.RefusesLip(FVector(1000.f, 0.f, 400.f), 2.0, 120.f));
+		});
+	});
+
+	Describe("the blacklist's failure SEQUENCE, not its data structure (HIGH-1)", [this]()
+	{
+		// WHY THIS BLOCK EXISTS. Everything above drives NoteLipFailed / RefusesLip
+		// DIRECTLY and proves the ring works — and all of it passed while the blacklist
+		// was inert in the shipped build, because no test ever ran the two calls the CALL
+		// SITE makes, in the order it makes them. A failure recorded a door and then
+		// stranded, and Strand cleared through Clear(), which forgets every door: the
+		// entry died one statement after it was born, every time, so `lip refused` could
+		// not appear in any log this build produced. The structure was never the bug. The
+		// SEQUENCE was, and a spec that steps over the seam is not evidence.
+
+		It("keeps the door when the very failure that recorded it STRANDS the body", [this]()
+		{
+			// THE REGRESSION. This is TickOffMeshRecovery's give-up, line for line:
+			// blame the door, then strand for the cooldown. Fails before the fix.
+			FAIBIslandLatch Latch;
+			const FVector Door(1289.f, 1950.f, 810.f);   // the gantry lip, from the watch
+			Latch.NotePendingLip(Door);
+			Latch.NotePendingLipFailed(10.0, 20.f);
+			Latch.Strand(10.0, 5.f);
+			TestTrue(TEXT("stranded is STILL UP HERE: the door stays shut"),
+				Latch.RefusesLip(Door, 10.0, 120.f));
+			TestTrue(TEXT("and on the next entry, after the cooldown"),
+				Latch.RefusesLip(Door, 16.0, 120.f));
+			TestTrue(TEXT("the stranding itself still works"), Latch.IsStranded(11.0));
+			TestFalse(TEXT("and the window still lapses on its own"),
+				Latch.RefusesLip(Door, 31.0, 120.f));
+		});
+
+		It("keeps the door through an Egress failure's cooldown clear", [this]()
+		{
+			// BeginEgress's no-lip exit, the same-island landing, the lip that never
+			// dropped: all of them ClearWithCooldown while the body is still up there.
+			FAIBIslandLatch Latch;
+			const FVector Door(1289.f, 1950.f, 810.f);
+			Latch.NotePendingLip(Door);
+			Latch.NotePendingLipFailed(10.0, 20.f);
+			Latch.ClearWithCooldown(10.0, 5.f);
+			TestTrue(TEXT("the door stays shut"), Latch.RefusesLip(Door, 12.0, 120.f));
+			TestFalse(TEXT("the latch itself is gone"), Latch.bOnIsland);
+			for (int32 i = 0; i < Draws; ++i)
+			{
+				TestFalse(TEXT("and the cooldown still blocks latching"), Latch.NoteDraw(false, Draws, 12.0));
+			}
+		});
+
+		It("does not treat a STALE latch as proof the body left", [this]()
+		{
+			// ReadLatched ages the HYPOTHESIS out. Where the body is standing is not a
+			// thing the clock knows, so the doors it proved shut are not the clock's to
+			// forgive — forgiving them here re-opens the loop with extra steps.
+			FAIBIslandLatch Latch;
+			const FVector Door(1289.f, 1950.f, 810.f);
+			for (int32 i = 0; i < Draws; ++i) { Latch.NoteDraw(false, Draws, 1.0); }
+			Latch.NoteLipFailed(Door, 1.0, 20.f);
+			TestTrue(TEXT("latched"), Latch.ReadLatched(2.0, 10.f));
+			TestFalse(TEXT("stale, so unlatched"), Latch.ReadLatched(15.0, 10.f));
+			TestTrue(TEXT("but the door is still shut"), Latch.RefusesLip(Door, 15.0, 120.f));
+		});
+
+		It("drops an UNJUDGED door rather than letting a later failure blame it", [this]()
+		{
+			// The lip walk that never reached the lip, and Egress's ExitState: nobody
+			// judged this door, so nobody may convict it — and it must not be lying
+			// around for the next failure, in another tactic, to convict by accident.
+			FAIBIslandLatch Latch;
+			const FVector Chosen(1289.f, 1950.f, 810.f);
+			const FVector Other(2500.f, 1950.f, 810.f);
+			Latch.NotePendingLip(Chosen);
+			Latch.ClearWithCooldown(10.0, 5.f);       // the walk failed, not the door
+			TestFalse(TEXT("nothing pending after the clear"), Latch.bHasPendingLip);
+			Latch.NotePendingLip(Other);
+			Latch.NotePendingLipFailed(20.0, 20.f);   // a later, unrelated door fails
+			TestFalse(TEXT("the untried door was never blamed"),
+				Latch.RefusesLip(Chosen, 21.0, 120.f));
+			TestTrue(TEXT("the door that did fail is blamed"),
+				Latch.RefusesLip(Other, 21.0, 120.f));
+		});
+
+		It("forgets only on the clear that means OFF THE ISLAND", [this]()
+		{
+			FAIBIslandLatch Latch;
+			const FVector Door(1289.f, 1950.f, 810.f);
+			Latch.NoteLipFailed(Door, 1.0, 20.f);
+			Latch.Clear();                            // a completed full-path move, a landing
+			TestFalse(TEXT("Clear forgets"), Latch.RefusesLip(Door, 2.0, 120.f));
+
+			Latch.NoteLipFailed(Door, 1.0, 20.f);
+			Latch.Reset();                            // possession: a new body, a new map
+			TestFalse(TEXT("Reset forgets"), Latch.RefusesLip(Door, 2.0, 120.f));
+		});
+
+		It("hands the fan a DIFFERENT door on the next entry, and gives up rather than repeat", [this]()
+		{
+			// ARM (b) AS A DECISION. The lip fan is deterministic from the same feet BY
+			// DESIGN, so the candidate list below is literally what the second entry sees
+			// again: nearest first, skip what the latch refuses, take the first survivor.
+			// FindIslandLip's own version of this loop is world-bound (navmesh rays,
+			// landing path tests) and only PIE can run it — what is provable headless is
+			// that the CHOICE changes once a door is blacklisted, which is the whole
+			// behaviour the gantry watch found missing.
+			const FVector Doors[] = {                 // nearest first, as the fan sorts them
+				FVector(1289.f, 1950.f, 810.f),
+				FVector(1650.f, 1950.f, 810.f),
+			};
+			FAIBIslandLatch Latch;
+			auto Fan = [&Doors, &Latch](double Now, FVector& Out) -> bool
+			{
+				for (const FVector& Door : Doors)
+				{
+					if (!Latch.RefusesLip(Door, Now, 120.f)) { Out = Door; return true; }
+				}
+				return false;
+			};
+
+			FVector First = FVector::ZeroVector;
+			TestTrue(TEXT("first entry finds a lip"), Fan(1.0, First));
+			TestTrue(TEXT("the nearest one"), First.Equals(Doors[0], 1.f));
+
+			// It failed: the step-off landed on the same island (F7-3).
+			Latch.NotePendingLip(First);
+			Latch.NotePendingLipFailed(5.0, 20.f);
+			Latch.ClearWithCooldown(5.0, 5.f);
+
+			FVector Second = FVector::ZeroVector;
+			TestTrue(TEXT("second entry still finds a lip"), Fan(11.0, Second));
+			TestFalse(TEXT("and it is NOT the door that just failed"), Second.Equals(First, 1.f));
+
+			// The other one fails too: every door in reach is shut, and the honest answer
+			// is no lip — stand for the window — not the first door for the tenth time.
+			Latch.NotePendingLip(Second);
+			Latch.NotePendingLipFailed(15.0, 20.f);
+			Latch.Strand(15.0, 5.f);
+			FVector Third = FVector::ZeroVector;
+			TestFalse(TEXT("no lip while both are shut"), Fan(20.0, Third));
+			TestTrue(TEXT("and the doors re-open when the windows lapse"), Fan(36.0, Third));
 		});
 	});
 

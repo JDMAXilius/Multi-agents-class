@@ -1379,3 +1379,65 @@ ruling (`49da4cb3`), not just a note.
 rung 1 was deliberately withheld from that agent because the verifier's matches were still
 loading `UnrealEditor-AIBot.dll` and a rebuild mid-run would have either failed on the lock or
 silently invalidated the batch. The lead sequences rung 1 now that the batch is closed.
+
+### 3 Sep (Windows terminal, aib-builder) — HIGH-1 fixed
+
+Both arms closed, plus the seam the spec was stepping over. Three files, all inside
+`Plugins/AIBot/Source/AIBot/`.
+
+**Arm (a) — the two clears wanted opposite memory and were sharing one body.**
+`Clear()`'s comment ("off the island: no grudge against any door") was right FOR `Clear()`
+and wrong for everything that reached `ForgetFailedLips()` through it. Split, in
+`Core/AIBBotController.h`:
+
+- `ClearLatchOnly()` — new, private in spirit: the hypothesis, its confirmation, its
+  stranding. Touches no door.
+- `Clear()` = `ClearLatchOnly()` + `ForgetFailedLips()`. **The only path that forgets.** It
+  means OFF THE ISLAND: a completed full-path move, a landing, a full draw, possession.
+- `ClearWithCooldown()` = `ClearLatchOnly()` + drop the PENDING record + arm the cooldown.
+  It means STILL UP THERE AND SOMETHING FAILED. The grudges survive it, so `Strand()` —
+  which is `ClearWithCooldown` + `bStranded` — now also keeps them.
+- `ReadLatched()`'s staleness clear became `ClearLatchOnly()`: a clock that ages out a
+  hypothesis knows nothing about where the body is standing, and forgiving doors there
+  re-opens the same loop with extra steps.
+
+Reordering `:875`/`:876` would have worked and taught nothing; the next caller of `Strand`
+would have rediscovered it. Dropping the pending record inside `ClearWithCooldown` is the
+other half: a caller that means to blame a door says so FIRST, and one that does not must
+not leave a door lying about for the next unrelated failure to convict.
+
+**Arm (b) — the fan Egress actually runs now uses the list.** In
+`Execution/AIBStateTreeTasks.cpp`: `FindIslandLip` skips refused lips (keyed on the LIP the
+caller walks to and logs, so `lip refused` and `egress starts` print the same coordinates
+and a log reads straight across) and emits `:761`'s line per refusal; `BeginEgress` records
+the chosen lip as pending; and the three verdicts that prove a door shut blame it through a
+new `BlameEgressLip` helper — same-island landing (the gantry residual's exact verdict),
+landed short of the drop, and `Ns at the lip, never left the ground`. The lip WALK failing
+does not blame: the body never got there. `ExitState` drops any unjudged pending.
+
+One new line guards the instrument: when every candidate was refused, `no lip offered — all
+N in reach are blacklisted` at Log, so the `stranded — no legal lip` line keeps meaning MAP
+GEOMETRY and is not read as a defect when the truth is a sentence that lapses in 20s.
+
+**The falsifier, answered.** After this change `lip refused … trying another door` CAN be
+emitted by an ordinary on-mesh Egress retry: entry 1 picks the lip and records it, the
+same-island landing blacklists it for 20s, `EgressCooldownSeconds` (5s) elapses, Wander
+re-latches, entry 2 fans from the same feet and refuses the door it just proved shut. That
+is two Egress entries inside one 20s window — the exact shape the gantry watch logged over
+and over. Verbose must be on, as before.
+
+**The spec is the deliverable too.** `Tests/AIBIslandLatchSpec.cpp` gains
+`Describe("the blacklist's failure SEQUENCE, not its data structure (HIGH-1)")`, six `It`s.
+The first, "keeps the door when the very failure that recorded it STRANDS the body", is
+`TickOffMeshRecovery`'s give-up line for line — blame, then `Strand` — and FAILS on the
+pre-fix header. The last, "hands the fan a DIFFERENT door on the next entry, and gives up
+rather than repeat", models the fan's choice over a candidate list (nearest first, skip
+refused) and asserts the choice CHANGES after a blacklisting and returns nothing while all
+doors are shut; `FindIslandLip` itself is world-bound and only PIE runs it. The rest cover
+the cooldown clear, the stale latch, the unjudged door, and `Clear`/`Reset` forgetting.
+
+**Rung: WRITTEN, NOT COMPILED.** No build was run — `Tools/run-ubt.ps1` was withheld from
+this pass because an `aib-verifier` was holding `UnrealEditor-AIBot.dll` for headless
+matches. Nothing here has been compiled and no spec has been executed; the lead sequences
+rung 1 and `run-specs.ps1`. Boundary grep over the module (`Breachpoint|BNCharacter|"BN`):
+no matches.
