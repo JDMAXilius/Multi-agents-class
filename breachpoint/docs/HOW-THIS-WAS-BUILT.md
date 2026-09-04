@@ -497,7 +497,7 @@ should not read rough art as an accident.
 | | |
 |---|---|
 | Duration | 21 July – 4 September 2026 (~6.5 weeks) |
-| Commits | 1,175 |
+| Commits | 1,198 (as of 4 September 2026) |
 | Attempts | 2 — `Source/Breachpoint/` (232 files, 48,641 lines, abandoned) and `Source/BreachpointNext/` (153 files, 26,569 lines, shipped) |
 | AI plugin | `Plugins/AIBot/` — 100 files, 21,715 lines, engine-module only |
 | Agents | 19 (16 roles + 3 curators), `.claude/agents/` |

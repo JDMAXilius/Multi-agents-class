@@ -56,9 +56,14 @@ burst that breaks an opponent's aim or clears a blast radius. Both are on cooldo
 does not. Breaking contact is therefore a real tactic rather than a retreat, and it is why
 the AI has an explicit *Retreat* ambition with a defend band (§3.2).
 
-**Match rules.** First to 7 kills or highest score at 10 minutes, both configurable per
-lobby. Free-For-All puts everyone on `NoTeam`; Team Deathmatch splits into two sides with
-automatic balancing. One combat codebase serves both — FFA is simply "everyone is on no
+**Match rules.** First to the score limit, or the highest score when the clock runs out.
+Both are chosen in the menu before launch: score cycles **10 / 20 / 30** (default 10) and
+the clock cycles **5 / 10 / 15 / 20 minutes** (default 10). `DefaultGame.ini` carries a
+separate `ScoreLimit=7`, which applies only to a boot that passes no URL option — the menu
+always passes one, so 7 is not what a player meets.
+
+**Modes.** Free-For-All puts everyone on `NoTeam`; Team Deathmatch splits into two sides
+with automatic balancing. One combat codebase serves both — FFA is simply "everyone is on no
 team", which removes an entire class of mode-branching bugs.
 
 **Content:** three weapons (AR, Magnum, Rocket) defined entirely in a data table; eleven
