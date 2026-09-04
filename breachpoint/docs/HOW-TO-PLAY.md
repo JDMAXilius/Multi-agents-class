@@ -11,10 +11,13 @@ until it is regenerated.
 
 1. The game opens on the **main menu**.
 2. **PLAY** →
-3. Set three things, each row cycles when you activate it:
-   - **MAP** — which arena
+3. Set five things, each row cycles through its options when you activate it:
+   - **MAP** — **Spillway** (five tiers around a culvert, 84 x 38 m) or **Arena 01**
+     (stacked platforms, 41 x 41 m)
    - **MODE** — Free-For-All or Team Deathmatch
-   - **PLAYERS** — total bodies in the match, you included
+   - **PLAYERS** — total bodies in the match, you included: **4 / 8 / 12 / 16**
+   - **SCORE LIMIT** — kills to win: **10 / 20 / 30**
+   - **TIME LIMIT** — minutes on the clock: **5 / 10 / 15 / 20**
 4. **START GAME**.
 
 You fill one slot; bots fill the rest. At 8 players that is you and 7 bots in Free-For-All,
@@ -70,11 +73,13 @@ still be shooting where you are going.
 |---|---|---|
 | Sides | Everyone for themselves | Two teams, split evenly |
 | You score by | Killing anyone | Killing the other team |
-| First to | **7 kills** | **7 kills** (team total) |
-| Or | highest score when the **10-minute** clock runs out | same |
+| First to | the **SCORE LIMIT** you set | the same, as a team total |
+| Or | highest score when the **TIME LIMIT** runs out | same |
 
-Score and time limits are set in the lobby before you start; the numbers above are the
-defaults. Death costs you a few seconds and you respawn — there are no lives to run out of.
+**Leave the setup screen alone and you get 10 kills on a 10-minute clock** — that is the
+URL the menu launches with. Both are rows on the setup screen, so change them there before
+you start: score cycles 10 / 20 / 30, time cycles 5 / 10 / 15 / 20 minutes. Death costs you
+a few seconds and you respawn — there are no lives to run out of.
 
 ---
 
