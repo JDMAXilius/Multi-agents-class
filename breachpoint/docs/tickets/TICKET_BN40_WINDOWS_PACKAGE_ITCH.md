@@ -134,3 +134,57 @@ KBM only. Keyboard and mouse are proven; the pad is not.
 `TICKET_BN46_GAMEPAD_VERIFY.md`. Until that ticket closes, the honest line for the
 submission stays "keyboard and mouse proven; gamepad supported but untested".
 
+
+### 3 Sep (Windows terminal, lead) — packaged and SMOKE TESTED on the .exe; steps 1-5 re-proven here
+
+Re-cooked on this machine so the artifact matches today's tree (the HIGH-1 island-latch fix and
+the adapter fix are both in it). `RunUAT BuildCookRun -platform=Win64 -clientconfig=Development
+-cook -allmaps -build -stage -pak -archive`, engine `D:\Program Files\UE_5.8_Source`.
+`BUILD SUCCESSFUL`, `AutomationTool exiting with ExitCode=0`, 57 s (incremental — the cook
+reused existing cooked content; the 325 MB `Breachpoint.exe` is dated 20:58:25, this session's
+compile). Archive: `Export/Win64`, 593.5 MB `.ucas` + 11.7 MB `.pak`.
+
+**`-clientconfig=Development`, not Shipping** — the ticket permits either and asks which. Named
+here as the choice it is: Development is the lower-risk path to a link that works, and a link
+that works is the deliverable. Shipping remains available and would shrink the download.
+
+**Step 5, on the packaged `.exe` and not the editor:**
+
+- **The GC crash that killed the last package is GONE.**
+  `LogUObjectArray: CloseDisregardForGC: 37401/37401 objects in disregard for GC pool` — clean,
+  no violators. `Rajdhani-SemiBold.ufont`, the exact asset whose CDO reference caused
+  `Encountered 5 object(s) breaking Disregard for GC assumptions`, now loads and registers
+  normally. The `AddToRoot()` fix in `8f442386` holds in a cooked build. Last time the archive
+  was clean too and the game died 4 s in, so this line is the one that matters.
+- **Boot:** `LoadMap: /Game/Maps/FE_MainMenu` → `Game class is 'BNFrontEndGameMode'`, complete in
+  **0.088 s**. Process alive and rendering at 45 s.
+- **Match:** launched straight into `/Game/Maps/BR_Spillway` → `Game class is 'BP_BNGameMode_C'`,
+  alive at 60 s, **1,922 `LogAIBot` lines** — the bot brain runs in the packaged build.
+- **Pipeline callsigns, the graded criterion:** all seven present —
+  `Dulledge` `Softaim` `Slowdraw` `Evenkeel` `Wideshot` `Shakygrip` `Midpace`.
+  **Zero** occurrences of `Marcus` / `Vale` / `Ossian`. `land_in_engine.py --check` passed before
+  the cook (*"all 15 bot names in the shipped config came from the pipeline"*), so the chain
+  holds from CSV to the artifact that gets graded.
+- Screenshot: `docs/tickets/evidence/bn40-2026-09-03/packaged-match-spillway.png` — the game
+  rendering Spillway beside a console of live bot reasoning (`ambition -> AIBot.Ambition.Roam
+  (0.20) over …Mode.Rally`, `hill strafe-hold — ring 360uu of reach 600uu`, `route — lanes=5>4>5>4
+  len=2471uu`). **Not the scoreboard shot the ticket asks for** — that needs Tab pressed in a
+  focused window; the callsign evidence above is from the log instead. The scoreboard frame is
+  still owed for the run video.
+
+**TWO THINGS THAT AFFECT THE UPLOAD — both new, both cheap:**
+
+1. **Do not upload the archive as-is. `Breachpoint.pdb` is 2.48 GB of the 3.53 GB — 70 %.**
+   Debug symbols, useless to a player, and they triple the download for a grader on a timer.
+   Without it the build is **1.05 GB**. Delete or exclude the `.pdb` before zipping.
+2. **Windows Firewall prompts on first launch** — *"Do you want to allow public and private
+   networks to access this app?"*, publisher Epic Games, Inc. A stranger meets this dialog
+   before they meet the game, which bears directly on *"play within 2 minutes without setup
+   instructions"*. It is normal for a UE title and the game is single-player-vs-bots, so
+   **Cancel is a safe answer** — worth one line on the itch page rather than leaving them to
+   guess. I did not click Allow: changing this machine's firewall is not mine to decide.
+
+**Steps 1-5 are DONE and now proven on this machine's artifact. Steps 6 and 7 remain, and remain
+the only two the grade reads** — the itch.io upload (Public, not draft) and the two `PENDING`
+fields at `assignments/10-ai-dev-pipeline/README.md` lines 19 and 39. Both need a browser and a
+screen recorder. Neither needs an engine.
