@@ -1,4 +1,4 @@
-Breachpoint/Binaries/Win64/Breachpoint.exe	2026-09-04T00:58:25.403Z
+Breachpoint/Binaries/Win64/Breachpoint.exe	2026-09-04T04:11:06.970Z
 Breachpoint/Binaries/Win64/D3D12/x64/D3D12Core.dll	2026-07-31T23:15:15.185Z
 Breachpoint/Binaries/Win64/D3D12/x64/d3d12SDKLayers.dll	2026-07-31T23:13:49.797Z
 Breachpoint/Binaries/Win64/DML/x64/DirectML.dll	2026-07-31T23:16:09.562Z
@@ -17,7 +17,7 @@ Engine/Binaries/ThirdParty/Windows/XAudio2_9/x64/xaudio2_9redist.dll	2026-07-31T
 Engine/Content/Renderer/TessellationTable.bin	2026-07-31T23:18:39.244Z
 Engine/Content/Slate/Cursor/invisible.cur	2026-07-31T23:12:52.264Z
 Engine/Plugins/NNE/NNERuntimeORT/Binaries/ThirdParty/Onnxruntime/Win64/onnxruntime.dll	2026-07-31T23:11:32.507Z
-Engine/Config/StagedBuild_Breachpoint.ini	2026-09-04T01:18:24.970Z
+Engine/Config/StagedBuild_Breachpoint.ini	2026-09-04T04:11:45.063Z
 Breachpoint/Content/Movies/LoadingScreenSequence10s.mp4	2026-08-04T03:07:36.253Z
 Breachpoint/Content/Movies/LoadingScreenSequence5s.mp4	2026-08-04T03:07:36.033Z
 Engine/Binaries/ThirdParty/Vulkan/Win64/VkLayer_api_dump.dll	2026-07-31T23:11:24.140Z
@@ -34,5 +34,5 @@ Engine/Binaries/ThirdParty/Vulkan/Win64/VkLayer_khronos_synchronization2.dll	202
 Engine/Binaries/ThirdParty/Vulkan/Win64/VkLayer_khronos_synchronization2.json	2026-07-31T23:09:06.820Z
 Engine/Binaries/ThirdParty/Vulkan/Win64/VkLayer_khronos_validation.dll	2026-07-31T23:17:34.204Z
 Engine/Binaries/ThirdParty/Vulkan/Win64/VkLayer_khronos_validation.json	2026-07-31T23:09:06.820Z
-Breachpoint.exe	2026-09-04T01:18:24.955Z
+Breachpoint.exe	2026-09-04T04:11:45.048Z
 NOTICES.txt	2026-07-31T23:10:05.201Z
