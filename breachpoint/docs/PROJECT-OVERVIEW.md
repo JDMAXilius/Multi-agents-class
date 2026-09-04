@@ -16,7 +16,9 @@ Two things are on trial here, and the document keeps them separate:
   human does.
 - **The method** — a multi-agent development process where AI agents write, review and
   verify each other's work under written law, and where **the honesty of a claim is
-  itself an artifact**.
+  itself an artifact**. §6 summarises it; **`docs/HOW-THIS-WAS-BUILT.md` is the full
+  account** — the two attempts, the crew, the waves, the MCP-first editor policy, and
+  where the method failed.
 
 Every capability below carries the rung it has actually reached. The project uses a fixed
 ladder, and no statement in this document is allowed to skip it:
@@ -232,6 +234,11 @@ Windows build that boots to the menu, plays a match against bots and returns to 
 The course subject is multi-agent systems; this project is one, and the method is a
 deliverable in its own right.
 
+> **This section is the summary.** The full account — why the project was built twice, how
+> the two Claude sessions used tickets as their protocol, the MCP-first editor policy, the
+> Figma-to-Unreal UI pipeline, and an honest reckoning of what the method cost and where it
+> failed — is **`docs/HOW-THIS-WAS-BUILT.md`**.
+
 **Separation of powers.** Nineteen specialist agents, each with a written definition and
 an *owner path* it may write inside: sixteen top-level roles — builders (simulation,
 netcode, UI, animation, AI, and two AI-plugin builders), critics, verifiers and editors —
@@ -309,7 +316,8 @@ a ticket before it was written here, which is the only reason the list can be tr
 | The AI's constitution | `Plugins/AIBot/Source/AIBot/FAIRPLAY.md` |
 | The AI's architecture and roadmap | `docs/AIBOT-ROADMAP.md`, `docs/AIBOT-ROADMAP-2.md` |
 | The project's laws | `CLAUDE.md`, `docs/contracts/`, `docs/DESIGN-RULINGS.md` |
+| **How the project was actually built** | **`docs/HOW-THIS-WAS-BUILT.md`** |
 | The crew method | `docs/CREW_PLAYBOOK.md`, `docs/AIBOT-WAVES.md`, `.claude/agents/` |
 | Measured AI evidence | `Tools/aib/baselines/*.json`, and each `docs/tickets/TICKET_AIB*.md` log |
 | UI layout ground truth | `Source/BreachpointNext/UI/Content/BN/UI/Assets/00-HUD-MEASURED.md`, `01-MENU-MEASURED.md` |
-| The work itself | `docs/tickets/` — 81 tickets with their decision logs |
+| The work itself | `docs/tickets/` — 80 tickets (50 live, 30 archived) with their decision logs |
