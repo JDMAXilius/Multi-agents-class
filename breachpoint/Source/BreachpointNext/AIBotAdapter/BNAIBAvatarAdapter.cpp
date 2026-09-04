@@ -267,20 +267,34 @@ float UBNAIBAvatarAdapter::GetAmmoNorm() const
 		// A WEAPON WITH NO MAGAZINE IS NOT AN EMPTY ONE, and reporting it as empty is what
 		// froze bots mid-match in a crouch.
 		//
-		// MEASURED (28 Aug): 51 reads of `ammo 0/0 reserve 90` in one match. GetMagazineSize
-		// returns 0 whenever GetRow() misses — a weapon whose row lookup fails still carries
-		// its replicated AmmoReserve, so it reads as "empty magazine, plenty of spare". This
-		// used to return 0.0, which is exactly the reload trigger, so the bot crouched and
-		// pressed reload once a second forever: UBNGA_Reload's own gate is
-		// CurrentAmmo < MagazineSize, and 0 < 0 is FALSE, so that press can never succeed.
-		// 65 asks, 1 activation, 65 refusals, and a Spartan squatting in the open (founder:
-		// "they are just staying crouched").
+		// MEASURED (28 Aug): 51 reads of `ammo 0/0 reserve 90` in one match. This used to
+		// return 0.0, which is exactly the reload trigger, so the bot crouched and pressed
+		// reload once a second forever: UBNGA_Reload's own gate is CurrentAmmo < MagazineSize,
+		// and 0 < 0 is FALSE, so that press can never succeed. 65 asks, 1 activation, 65
+		// refusals, and a Spartan squatting in the open (founder: "they are just staying
+		// crouched").
 		//
 		// 1.0 — "nothing to reload" — is the honest answer: you cannot reload a magazine that
 		// does not exist. Same rule as GetShieldNorm's unknowable case: an unknown must never
-		// resolve to the value that triggers an action.
-		UE_LOG(LogBN, Warning, TEXT("BNAIBAdapter: %s holds %s whose row is unresolved (MagazineSize 0, reserve %d) — reporting FULL so the bot does not crouch on a reload that can never activate."),
-			*GetNameSafe(GetOwner()), *GetNameSafe(Weapon), Weapon->GetAmmoReserve());
+		// resolve to the value that triggers an action. That answer is unchanged.
+		//
+		// WHAT WAS WRONG (3 Sep): this branch called itself "row is unresolved" and logged a
+		// Warning every time — 2,658 of them in a single 150-second match, which is a log a
+		// reader learns to scroll past. Nothing was unresolved. DT_BNWeapons' Knife row
+		// carries MagazineSize 0 because a knife HAS no magazine, so the melee weapon is the
+		// ORDINARY case here, not a fault. The 28 Aug reading inferred a failed lookup from a
+		// zero without asking whether the row was there, and the real missing-row case — the
+		// one worth a Warning — was drowned in the noise of the normal one. Ask the row.
+		if (!Weapon->GetRow())
+		{
+			UE_LOG(LogBN, Warning, TEXT("BNAIBAdapter: %s holds %s whose row '%s' is NOT IN THE WEAPON TABLE — reporting ammo FULL so the bot does not crouch on a reload that can never activate, but this weapon has no mesh, no abilities and no numbers either."),
+				*GetNameSafe(GetOwner()), *GetNameSafe(Weapon), *Weapon->GetRowName().ToString());
+		}
+		else
+		{
+			UE_LOG(LogBN, Verbose, TEXT("BNAIBAdapter: %s holds %s ('%s'), a weapon with no magazine — reporting ammo FULL, which is what a melee weapon truthfully is."),
+				*GetNameSafe(GetOwner()), *GetNameSafe(Weapon), *Weapon->GetRowName().ToString());
+		}
 		return 1.f;
 	}
 	return FMath::Clamp(static_cast<float>(Weapon->GetCurrentAmmo()) / MagazineSize, 0.f, 1.f);
