@@ -340,3 +340,55 @@ fast, so no `high` for aib-critic. Detail in the AIB22 entry.
 predicate to `HoldMaxSeconds`; gate 2 PASS on Spillway, tie on Arena01; gate 3 no overstay.
 Evidence: `Tools/Logs/aib-v8-{spillway,arena01}-{1..5}.log`,
 `Tools/aib/baselines/aib22-{spillway,arena01}-verify-v8.json`.
+
+### 3 Sep (Windows terminal, lead + tuning-curator) — the Hold gate is measuring the wrong population
+
+A `tuning-curator` was asked for `HoldMaxSeconds` rows. **It refused to propose on the v8
+evidence, and it was right to.** The finding is worth more than the numbers would have been.
+
+**`tactic=Hold` on the idle line is not the Hold tactic.** `SetStillTactic(EAIBStillTactic::Hold, …)`
+has seven call sites (`AIBStateTreeTasks.cpp:1072, 1108, 1148, 2757, 2790, 3630, 3685`; three of
+them set `false`). Only **`FAIBHoldStationTask::EnterState` (:2757)** is the Hold tactic that
+`HoldMaxSeconds` bounds. `:1072`/`:1108` are `FAIBMoveNearBeliefTask` — station-keeping inside
+`FightRangeUU` — and that task is the **Push** child (`AIBTreeAuthoring.cpp:221-223`), the ungated
+tactic floor. Verified by grep before acting on it.
+
+So the v8 reading *"3,200 Hold stands, longest 3.4 s, therefore `HoldMaxSeconds = 4.0` sits above
+the longest stand the bot ever takes"* **measured a population dominated by Push station-keeping.**
+The conclusion may still be true; nothing in that batch shows it.
+
+**The curator's own magnitude estimate is ALSO refuted, by the free check it asked for.** It
+inferred "≤ 20 Hold elections in the whole batch" from a v6 line (`Hold first 0-2`), and flagged
+that inference as a doubt to settle with one grep. I ran it on the logs already on disk —
+`grep -c 'tactic -> AIBot.Tactic.Hold'`:
+
+| | 1 | 2 | 3 | 4 | 5 | Push (same logs) |
+|---|---|---|---|---|---|---|
+| Spillway | 32 | 23 | 36 | 28 | 43 | 216–433 |
+| Arena01 | 30 | 22 | 35 | 28 | 14 | 408–444 |
+
+**~291 Hold elections across the batch, 14–43 per match — not ≤ 20 in total.** Hold is elected
+constantly. So the sharpened question is not "is Hold ever elected" but: **291 elections, and not
+one reached a 4.0 s bound.** Something ends every single stand early, and no instrument in this
+build can say what.
+
+**A third counter read as an effect.** `hold_seconds` is built from the `hold over` regex alone
+(`Tools/aib/80_aib_metrics.py:151, 352-353`), which fires only when a hold **reaches the bound**.
+So `hold_seconds == 0` is a restatement of `hold over == 0`, not evidence that the clock fails to
+accumulate — and the v7 entry's *"the hold is not accumulating any time at all"*, on which the
+cloud's `bSameFight` diagnosis was built, does not follow from it. This is the same error v8
+refuted on `flank_count`, on the neighbouring counter, for the third time this session. The
+ruling of `49da4cb3` now has three instances behind it.
+
+**RULING (lead): no `HoldMaxSeconds` value lands on this evidence.** Instrument first —
+`FAIBHoldStationTask` emits nothing on entry, so station residency has never been measured. The
+curator's ask, which I accept: a `hold start` line carrying `clock=` (≥ 0 at entry means a
+re-entry into a live clock, settling the cloud's wiped-clock hypothesis in one field) and a
+`hold end` line carrying `reason=bound|reselect|engage-left|dead` (which distinguishes "the bound
+is too high" from "something else always ends the stand" — precisely the question three runs have
+now failed to answer). Owed alongside: rename `hold_seconds` → `hold_bound_seconds` so no fourth
+reader takes a completion counter for an accumulation counter.
+
+The contingent tier table (Recruit 3.0 / Marine 2.5 / ODST 2.0 / Spartan 1.5) is on file in the
+curator's proposal and lands only if the instrumented run shows `reason=bound` absent. Noted
+against it: no telemetry exists for any tier but ODST, and every soak ran 7 ODST bots.
