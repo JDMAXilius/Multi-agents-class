@@ -120,6 +120,7 @@ any key nothing reads.
 ```
 README.md            this file — the submission document
 AUDIT.md             Deliverable 3: the one-page audit and cost analysis
+RECORD-THE-VIDEO.md  the shot list for Deliverable 2's run video (5 shots, ~3 min)
 land_in_engine.py    the landing step: pipeline output → the playable build
 verify.sh            proves the connection from the files; needs no engine
 ```
