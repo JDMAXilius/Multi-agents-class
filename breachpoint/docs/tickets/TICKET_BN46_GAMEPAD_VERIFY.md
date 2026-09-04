@@ -68,3 +68,56 @@ scoreboard (hold) · **Options** menu · sticks move/look.
 - [ ] The founder's own verdict with a pad in hand
 
 ## Log
+
+## Log — 2026-09-04 (cloud): the double-pop precondition is now real, and it is in config
+
+Sharpening this ticket from BN40's Shipping finding, without touching behaviour.
+
+**What changed under my code.** Three of my UI files carried comments asserting *"this
+project ships no `UCommonUIInputData` / `CommonInputSettings`, so CommonUI's back action is
+bound to NOTHING"*. That was true when written and is **false since 2 September**: BN43
+(`5d9fe41f`) wired `InputData=/Game/UI/CommonInputData/InputData_Default`, and the founder's
+3 Sep pass added the Windows `ControllerData` list for gamepad. The config block says so in
+its own words — *"Without this, a `UCommonButtonBase` never activates on Enter or gamepad-A…
+which is why `BNScreen_PlaySetup` had to catch Escape by hand."*
+
+That hand-catch is mine, and its justification has expired. Comments corrected in
+`BNScreen_Pause.{h,cpp}`, `BNScreen_PlaySetup.cpp`, `BNPromptButton.h`. **No behaviour
+changed** — see below for why not.
+
+**The prediction, now with a mechanism rather than a hunch.** Two screens have two live
+routes to the same exit:
+
+| Screen | Route A (now bound) | Route B (mine) |
+|---|---|---|
+| `BNScreen_Pause` | `bIsBackHandler` → `NativeOnHandleBackAction()` | `NativeOnKeyDown`: Escape, `Gamepad_FaceButton_Right`, `Gamepad_Special_Right` |
+| `BNScreen_PlaySetup` | CommonUI back action | `NativeOnKeyDown`: Escape, `Gamepad_FaceButton_Right` |
+
+Whether both fire — i.e. whether returning `FReply::Handled()` from `NativeOnKeyDown`
+suppresses CommonUI's action router, which runs on its own path — **cannot be determined
+from this repository**: no engine source is reachable from the cloud session, and I will not
+assert a routing order I cannot read. That is the measurement BN46 exists for.
+
+**Why I did NOT pre-emptively remove the redundant branch.** If `InputData_Default` does not
+actually carry B, removing my handler leaves **no gamepad exit at all** — and BN40 has just
+established that in the Shipping package the menu is the *only* route into a match. A blind
+fix here trades a cosmetic double-pop for a possible dead end on the founder's own pad. The
+one-line fix is written at the exact line, ready to apply the moment the test says apply it.
+
+**Two tests, in this order:**
+
+1. **Pad B on PLAY SETUP.** One press → does the stack pop one level (to the front end) or
+   two (past it)? Double-pop ⇒ drop `Gamepad_FaceButton_Right` from
+   `BNScreen_PlaySetup::NativeOnKeyDown`; leave Escape. Then re-test pause, which carries the
+   same shape plus `Gamepad_Special_Right`.
+2. **Keyboard ENTER on a focused PLAY.** BN40 reports ENTER/SPACE doing nothing on a focused
+   button in Shipping and attributes it to synthetic input not reaching CommonUI's router.
+   That is plausible and is probably right — but it is now *also* consistent with a second
+   cause, since `InputData_Default` has been wired since 2 Sep and Enter should activate a
+   `UCommonButtonBase`. **The split is one press of a real key:** if a human's ENTER
+   activates PLAY, BN40's conclusion holds and this is purely a synthetic-input artifact;
+   if it does not, the key mapping inside `DT_CommonInputKeyMapping` is the suspect and the
+   prompt bar's "ENTER — SELECT" is lying to the player.
+
+Test 2 costs one keypress and settles a claim BN40 could only reason about. It matters
+beyond BN46: the packaged build's front end is the only way in.

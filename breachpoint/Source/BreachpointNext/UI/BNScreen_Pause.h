@@ -35,11 +35,18 @@ protected:
 	virtual UWidget* NativeGetDesiredFocusTarget() const override;
 	virtual bool NativeOnHandleBackAction() override;
 
-	/** THE ACTUAL WAY OUT on keyboard and pad. `bIsBackHandler` is set below, but this project
-	 *  ships no `UCommonUIInputData` / `CommonInputSettings`, so CommonUI's back action is bound
-	 *  to NOTHING and `NativeOnHandleBackAction` can never fire (its own front-end roadmap says
-	 *  so). Without this override the only exit is a mouse click — and if the cursor fails to
-	 *  appear that is a soft lock. Unhandled keys bubble up from the focused button to here. */
+	/** THE WAY OUT on keyboard and pad. Written when CommonUI's back action was bound to
+	 *  NOTHING — this project shipped no `CommonInputSettings`, so `NativeOnHandleBackAction`
+	 *  could never fire and a mouse click was the only exit (a soft lock if the cursor failed
+	 *  to appear). Unhandled keys bubble up from the focused button to here.
+	 *
+	 *  THAT PREMISE EXPIRED ON 2 SEP (BN43 wired `InputData_Default`; the founder's 3 Sep pass
+	 *  added the Windows ControllerData list). CommonUI's back action is bound NOW, so this
+	 *  screen has TWO live paths to the same exit: the action router into
+	 *  `NativeOnHandleBackAction`, and this override. Whether that pops one level or two is
+	 *  UNMEASURED — it depends on whether returning `Handled()` here suppresses the router,
+	 *  which cannot be read from this repository. BN46 is the test. If it double-pops, the
+	 *  redundant half is the gamepad key below, not the action handler. */
 	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
 
 	UFUNCTION()

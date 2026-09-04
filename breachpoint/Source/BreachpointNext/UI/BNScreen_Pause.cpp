@@ -14,8 +14,9 @@ UBNScreen_Pause::UBNScreen_Pause()
 {
 	// The only screen in R7 that wants the cursor and the clicks.
 	InputMode = EBNWidgetInputMode::Menu;
-	// Kept for the day a UCommonUIInputData lands — but it binds NOTHING today (this project
-	// ships no CommonInputSettings), so NativeOnKeyDown is what actually closes this screen.
+	// The day a UCommonUIInputData lands ARRIVED (BN43, 2 Sep): CommonInputSettings is wired,
+	// so this flag is live and NativeOnHandleBackAction can now fire alongside NativeOnKeyDown.
+	// See the header — which of the two wins, and whether both run, is BN46's measurement.
 	bIsBackHandler = true;
 	// Input routing stops here while the menu is up — the shape both proven modals use.
 	bIsModal = true;

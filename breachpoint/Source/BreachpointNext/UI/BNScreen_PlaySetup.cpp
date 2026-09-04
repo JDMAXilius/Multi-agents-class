@@ -98,8 +98,14 @@ UWidget* UBNScreen_PlaySetup::NativeGetDesiredFocusTarget() const
 
 FReply UBNScreen_PlaySetup::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
 {
-	// The pause screen's lesson verbatim: no UCommonUIInputData ships, so CommonUI's back
-	// action binds to nothing and Escape must be caught by hand or the mouse is the only exit.
+	// Written from the pause screen's lesson, which has since expired: CommonUI's back action
+	// bound to nothing, so Escape had to be caught by hand or the mouse was the only exit.
+	// BN43 wired CommonInputSettings on 2 Sep, so the action is bound now and B has two routes.
+	//
+	// THE ONE-LINE FIX, IF BN46 MEASURES A DOUBLE-POP: drop `Gamepad_FaceButton_Right` from the
+	// test below and let the router own the pad. It is NOT removed pre-emptively — if the
+	// action data does not actually carry B, removing it leaves no gamepad exit at all, and
+	// this screen is the only route into a match in the Shipping package.
 	if (InKeyEvent.GetKey() == EKeys::Escape || InKeyEvent.GetKey() == EKeys::Gamepad_FaceButton_Right)
 	{
 		DeactivateWidget();   // pops this stack entry; focus lands back on the front end

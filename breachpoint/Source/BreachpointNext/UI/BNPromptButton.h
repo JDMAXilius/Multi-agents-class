@@ -29,7 +29,9 @@ public:
  * made clickable (founder, 2 Sep 2026: "convert those as buttons... doesn't change the visual").
  *
  * WHY NOT `UBRButtonPrompt`. That one is a LEGEND: a `CommonActionWidget` that draws the glyph
- * of an input action, and this project ships no `UCommonUIInputData`, so it would draw nothing.
+ * of an input action. When this was written the project shipped no `UCommonUIInputData` and it
+ * would have drawn nothing; BN43 wired one on 2 Sep, so that objection is now historical —
+ * the live reason to stay with textures is the one below (the reference's own glyph paths).
  * Its glyphs here are textures drawn from the reference's own paths (`bn49_prompt_glyphs.py`).
  *
  * WHY NOT `UBRButton`. It brings a plate, four hairlines and a two-field row; the legend has
