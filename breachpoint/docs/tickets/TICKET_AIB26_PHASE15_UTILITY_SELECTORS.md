@@ -249,3 +249,94 @@ present at all (the floor is "the clock matures ever", not a target number); `fl
 above v7's 1/3; and watch that Hold does not now overstay — `HoldMaxSeconds` is the bound,
 and if stands get long the tier row is the knob, not this predicate.
 
+
+### 3 Sep (Windows terminal, aib-verifier) — v8 measured
+
+**RUNG 3, headless seeded batch.** NOT PIE, NOT packaged, NOT listen+client, NOT a human
+playing. Same 10 logs as the AIB22 entry of this date (5 x 300 s per map, `-game -windowed
+-nullrhi -unattended`, `LogAIBot Verbose`, 7 ODST bots, no human; the `-server` form is dead
+on Windows — see AIB22 for the pilot evidence). The cloud's `bSameFight` fix is COMPILED
+here for the first time: `UnrealEditor-AIBot.dll` 20:24:01 vs `AIBBotController.cpp`
+20:13:13, and `grep bSameFight` finds it at lines 1168/1169/1184 with both clears under one
+predicate. Parser self-test PASS (exit 0).
+
+#### Gate 1 — `hold_seconds > 0` and `hold over` present at all: **FAIL**
+
+`grep -c 'hold over'` across all 10 logs = **0**. `hold_seconds` median 0.000, and per-bot
+across 70 bot-matches: **max 0, sum 0, nonzero 0**. Unchanged from v7.
+
+**But the v7 diagnosis is REFUTED by measurement, and the fix is not what is blocking it.**
+The claim was that `ambition_switches` at 42-45/bot-min wiped the clock before a stand could
+reach `HoldMaxSeconds`. Measured directly, from the idle sampler:
+
+- **3,200 Hold stands** across the 10 matches (`idle over — Ns … tactic=Hold`).
+- Longest single Hold stand in the whole batch: **3.4 s**. Second longest 3.0 s.
+- **Stands reaching `HoldMaxSeconds` (4.0 s, `AIBDataRows.h:219`): 0 of 3,200.**
+- The distribution is 1,213 stands of 0.1 s, 429 of 0.2 s, 314 of 0.3 s; only 4 stands in the
+  entire batch exceed 2.0 s. Total Hold standing 1,227.8 s = ~17.5 s per bot per match.
+
+With a perfectly-behaved clock, **not one stand in this batch would have logged `hold over`**
+— every one of them ends 0.6 s or more short of the bound. Corroborating, independently:
+`still=Hold` appears **0 times in 3,421 `stall over` lines** while `still=StrafeHold` appears
+151 times, so `FAIBHoldStationTask::EnterState` — the only caller of `NoteHoldEntered` — is
+either not entering or entering for far less than a stall segment. (Caveat named: an idle
+segment ends when the body moves, so 3.4 s is a LOWER bound on station residency, not the
+residency itself; `FAIBHoldStationTask` emits nothing on entry, so no direct count exists.
+That missing entry line is what would settle it, and its absence is why this is the second
+run that cannot.)
+
+So: the predicate fix is correct and it did not move this gate, because the gate was never
+about the predicate. **`HoldMaxSeconds = 4.0` is above the longest stand the bot ever takes.**
+The cloud wrote "if stands get long the tier row is the knob, not this predicate" — stands
+are SHORT, and the tier row is still the knob, in the other direction. NOT MINE TO FIX.
+
+#### Gate 2 — `flank over` above v7: **PASS on Spillway, FAIL (tie) on Arena01**
+
+| | v6 | v7 | **v8** | starts (v8) | completion rate |
+|---|---|---|---|---|---|
+| Spillway | — | 1 of 113 | **6** | 150 | 4.0 % |
+| Arena01 | — | 3 of 245 | **3** | 258 | 1.2 % |
+| both | 2 of 123 | 4 of 358 (1.12 %) | **9** | 408 | **2.21 %** |
+
+Against the task's aggregate framing ("above v7's 2 of 123") 9 of 408 PASSES. Against this
+ticket's own per-map wording ("above v7's 1/3") Spillway 6 > 1 PASSES and Arena01 3 = 3 does
+not clear it. Outcomes: 8 `arrived` (0.0-2.7 s), 1 `stalled after 6.4s (F7)`. Flanks still
+overwhelmingly do not complete.
+
+**The clear-cause distribution DID move, and that is the fix's real signature.** v6/v7:
+"every one cleared as 'the fight ended' within 0.5s". v8, all 10 logs:
+
+    147  flank point cleared — the belief drifted
+    114  flank point cleared — the fight ended
+     24  flank point cleared — the enemy closed
+      8  flank point cleared — stalled
+      4  flank point cleared — switched away from Flank
+
+"the fight ended" is no longer the dominant clear; belief drift is. The latch now survives the
+Engage->Search excursion as designed. It just hands the flank to a different killer.
+
+#### Gate 3 — Hold overstay: **no overstay. The opposite.**
+
+Longest Hold stand 3.4 s vs a 4.0 s bound; `idle_seconds_tactical` median rose to 62.4 / 72.5
+(v7 53.9 / 58.3), which is more NAMED standing, spread thin, never long.
+
+#### v7's "PARSER DEFECT" — **REFUTED**
+
+v7 filed `80_aib_metrics.py` as broken for reporting `flank_count 0.000` beside 113/245 flank
+starts. The parser is correct: `flank_count` is built from the `flank_over` regex
+(`80_aib_metrics.py:149-150, 348-351`) and counts **completions, not starts**. v8 per-bot
+`flank_count` sums to exactly 6 (Spillway) and 3 (Arena01), matching `grep -c 'flank over'`
+line for line. Median 0 across 35 bot-samples is the truth when only 6 samples are nonzero.
+`island_egress_count 0` is likewise real: `grep -c 'island egress'` is 0 in all 10 logs. No
+parser change is owed; the v7 note should be struck so no future run distrusts a good tool.
+
+#### Fairness spot-check
+
+7,467 acquisitions: **0 below the 0.20 s module floor, 0 below the ODST row's 0.22 s min**,
+fastest 0.233 s. PASS. 37.7 % run above the row's 0.34 s max, out to 0.433 s — slow, not
+fast, so no `high` for aib-critic. Detail in the AIB22 entry.
+
+**VERDICT: AIB26 stays OPEN.** Gate 1 FAIL with its cause now measured and relocated from the
+predicate to `HoldMaxSeconds`; gate 2 PASS on Spillway, tie on Arena01; gate 3 no overstay.
+Evidence: `Tools/Logs/aib-v8-{spillway,arena01}-{1..5}.log`,
+`Tools/aib/baselines/aib22-{spillway,arena01}-verify-v8.json`.

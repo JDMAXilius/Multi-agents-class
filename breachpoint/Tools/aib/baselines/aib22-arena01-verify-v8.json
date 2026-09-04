@@ -1,0 +1,2911 @@
+{
+  "logs": [
+    "Tools/Logs/aib-v8-arena01-1.log",
+    "Tools/Logs/aib-v8-arena01-2.log",
+    "Tools/Logs/aib-v8-arena01-3.log",
+    "Tools/Logs/aib-v8-arena01-4.log",
+    "Tools/Logs/aib-v8-arena01-5.log"
+  ],
+  "matches": [
+    {
+      "acquisitions": 1041,
+      "acquisitions_by_verb": {
+        "acquired": 564,
+        "SWITCHED to": 477
+      },
+      "reaction_sentinels": 21,
+      "latency_mean": 0.3283102785782901,
+      "latency_median": 0.333,
+      "latency_min": 0.233,
+      "ambition_switches": 1719,
+      "interrupts": 154,
+      "f7_failures": 1474,
+      "f7_by_shape": {
+        "POI path refused": 52,
+        "cannot path to the last-known spot": 120,
+        "cannot path to the objective": 120,
+        "cannot reach the last-known spot": 37,
+        "could not path to the belief": 1080,
+        "flee path REFUSED": 60,
+        "won a mode want but": 5
+      },
+      "refusals_per_switch": 0.8574752763234439,
+      "unserved_wants": 0,
+      "suppressed_wants": 482,
+      "wiring_warnings": 0,
+      "wiring_pois": 0,
+      "claim_grants": 0,
+      "claim_denies": 0,
+      "claim_releases": 0,
+      "target_claim_grants": 436,
+      "target_claim_denies": 38,
+      "target_claim_releases": 436,
+      "team_reports": 1685,
+      "target_pileup_count": 0,
+      "claim_ttl": 5.0,
+      "claim_cap": 2,
+      "tiers": {
+        "ODST": [
+          "AIBBotController_0",
+          "AIBBotController_1",
+          "AIBBotController_2",
+          "AIBBotController_3",
+          "AIBBotController_4",
+          "AIBBotController_5",
+          "AIBBotController_6"
+        ]
+      },
+      "swings": 17,
+      "throws": 140,
+      "throttled_throws": 179,
+      "denial_throws": null,
+      "strafe_legs": 806,
+      "strafe_holds": 193,
+      "strafe_mean_arc_uu": 429.2394540942928,
+      "strafe_denied_seconds": 132.5,
+      "drift_refusal_correlation": {
+        "window_s": 5.0,
+        "drifts": 15,
+        "refusals": 1434,
+        "refusals_after_drift": 0
+      },
+      "lip_refusals": null,
+      "draw_reflexes": 1606,
+      "ads_ins": 422,
+      "ads_mean_range_uu": 746.0,
+      "ally_fights_heard": 98,
+      "wanders_to_fight": 141,
+      "strafe_spell_ends": {
+        "reentered": 189,
+        "target lost": 2
+      },
+      "offmesh_self": null,
+      "offmesh_moments": null,
+      "team_assignments": 8,
+      "team_populations": {
+        "0": 4,
+        "1": 4
+      },
+      "ff_refused": null,
+      "team_kills_denied": null,
+      "no_grant_presses": 3,
+      "no_grant_split": {
+        "dead": 0,
+        "alive": 3,
+        "by_tag": {
+          "Input.Weapon.Fire": 3
+        }
+      },
+      "per_bot": {
+        "AIBBotController_0": {
+          "no_path_requests": 0,
+          "stuck_seconds": 32.6,
+          "stuck_seconds_crowded": 2.8,
+          "stuck_seconds_wedged": 29.8,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 4,
+          "drift_refused_count": 0,
+          "lip_blacklist_count": 0,
+          "max_stall_seconds": 3.0,
+          "sweep_seconds": 1.0,
+          "max_single_sweep": 0.7,
+          "idle_seconds": 17.3,
+          "idle_seconds_tactical": 76.9,
+          "island_egress_count": 0,
+          "island_latch_count": 0,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 3,
+          "offmesh_recovery_count": 0,
+          "overlap_seconds": 0.9,
+          "yield_count": 1,
+          "route_changes": 209,
+          "flank_count": 0,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 36,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 2
+        },
+        "AIBBotController_1": {
+          "no_path_requests": 63,
+          "stuck_seconds": 70.0,
+          "stuck_seconds_crowded": 0.7,
+          "stuck_seconds_wedged": 69.3,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 2,
+          "drift_refused_count": 0,
+          "lip_blacklist_count": 0,
+          "max_stall_seconds": 3.0,
+          "sweep_seconds": 0.5,
+          "max_single_sweep": 0.5,
+          "idle_seconds": 12.0,
+          "idle_seconds_tactical": 60.0,
+          "island_egress_count": 0,
+          "island_latch_count": 1,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 12,
+          "offmesh_recovery_count": 1,
+          "overlap_seconds": 0.7,
+          "yield_count": 0,
+          "route_changes": 213,
+          "flank_count": 0,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 55,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 0
+        },
+        "AIBBotController_2": {
+          "no_path_requests": 0,
+          "stuck_seconds": 56.0,
+          "stuck_seconds_crowded": 0.9,
+          "stuck_seconds_wedged": 55.1,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 1,
+          "drift_refused_count": 0,
+          "lip_blacklist_count": 0,
+          "max_stall_seconds": 3.0,
+          "sweep_seconds": 0.6,
+          "max_single_sweep": 0.4,
+          "idle_seconds": 10.9,
+          "idle_seconds_tactical": 69.3,
+          "island_egress_count": 0,
+          "island_latch_count": 0,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 6,
+          "offmesh_recovery_count": 1,
+          "overlap_seconds": 0.3,
+          "yield_count": 1,
+          "route_changes": 226,
+          "flank_count": 0,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 56,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 7
+        },
+        "AIBBotController_3": {
+          "no_path_requests": 1213,
+          "stuck_seconds": 67.0,
+          "stuck_seconds_crowded": 7.3,
+          "stuck_seconds_wedged": 59.7,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 2,
+          "drift_refused_count": 1,
+          "lip_blacklist_count": 0,
+          "max_stall_seconds": 3.0,
+          "sweep_seconds": 1.6,
+          "max_single_sweep": 0.5,
+          "idle_seconds": 13.7,
+          "idle_seconds_tactical": 76.8,
+          "island_egress_count": 0,
+          "island_latch_count": 0,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 12,
+          "offmesh_recovery_count": 0,
+          "overlap_seconds": 0.3,
+          "yield_count": 2,
+          "route_changes": 246,
+          "flank_count": 0,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 50,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 0
+        },
+        "AIBBotController_4": {
+          "no_path_requests": 30,
+          "stuck_seconds": 36.7,
+          "stuck_seconds_crowded": 0,
+          "stuck_seconds_wedged": 36.7,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 2,
+          "drift_refused_count": 0,
+          "lip_blacklist_count": 0,
+          "max_stall_seconds": 3.0,
+          "sweep_seconds": 2.2,
+          "max_single_sweep": 0.8,
+          "idle_seconds": 11.5,
+          "idle_seconds_tactical": 89.9,
+          "island_egress_count": 0,
+          "island_latch_count": 0,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 6,
+          "offmesh_recovery_count": 0,
+          "overlap_seconds": 2.2,
+          "yield_count": 0,
+          "route_changes": 190,
+          "flank_count": 1,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 42,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 1
+        },
+        "AIBBotController_5": {
+          "no_path_requests": 128,
+          "stuck_seconds": 59.2,
+          "stuck_seconds_crowded": 1.3,
+          "stuck_seconds_wedged": 57.9,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 1,
+          "drift_refused_count": 0,
+          "lip_blacklist_count": 0,
+          "max_stall_seconds": 3.0,
+          "sweep_seconds": 0.3,
+          "max_single_sweep": 0.3,
+          "idle_seconds": 10.4,
+          "idle_seconds_tactical": 62.4,
+          "island_egress_count": 0,
+          "island_latch_count": 0,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 11,
+          "offmesh_recovery_count": 9,
+          "overlap_seconds": 0.5,
+          "yield_count": 0,
+          "route_changes": 233,
+          "flank_count": 0,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 60,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 0
+        },
+        "AIBBotController_6": {
+          "no_path_requests": 0,
+          "stuck_seconds": 60.2,
+          "stuck_seconds_crowded": 2.2,
+          "stuck_seconds_wedged": 58.0,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 3,
+          "drift_refused_count": 0,
+          "lip_blacklist_count": 0,
+          "max_stall_seconds": 3.0,
+          "sweep_seconds": 1.7,
+          "max_single_sweep": 0.9,
+          "idle_seconds": 17.4,
+          "idle_seconds_tactical": 72.5,
+          "island_egress_count": 0,
+          "island_latch_count": 0,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 12,
+          "offmesh_recovery_count": 0,
+          "overlap_seconds": 2.9,
+          "yield_count": 1,
+          "route_changes": 239,
+          "flank_count": 0,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 59,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 5
+        }
+      },
+      "bot_spread": {
+        "no_path_requests": {
+          "mean": 204.85714285714286,
+          "median": 30,
+          "min": 0,
+          "max": 1213,
+          "n": 7
+        },
+        "stuck_seconds": {
+          "mean": 54.52857142857143,
+          "median": 59.2,
+          "min": 32.6,
+          "max": 70.0,
+          "n": 7
+        },
+        "stuck_seconds_crowded": {
+          "mean": 2.1714285714285713,
+          "median": 1.3,
+          "min": 0,
+          "max": 7.3,
+          "n": 7
+        },
+        "stuck_seconds_wedged": {
+          "mean": 52.35714285714286,
+          "median": 57.9,
+          "min": 29.8,
+          "max": 69.3,
+          "n": 7
+        },
+        "stuck_seconds_uncaused": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "drift_count": {
+          "mean": 2.142857142857143,
+          "median": 2,
+          "min": 1,
+          "max": 4,
+          "n": 7
+        },
+        "drift_refused_count": {
+          "mean": 0.14285714285714285,
+          "median": 0,
+          "min": 0,
+          "max": 1,
+          "n": 7
+        },
+        "lip_blacklist_count": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "max_stall_seconds": {
+          "mean": 3.0,
+          "median": 3.0,
+          "min": 3.0,
+          "max": 3.0,
+          "n": 7
+        },
+        "sweep_seconds": {
+          "mean": 1.1285714285714286,
+          "median": 1.0,
+          "min": 0.3,
+          "max": 2.2,
+          "n": 7
+        },
+        "max_single_sweep": {
+          "mean": 0.5857142857142857,
+          "median": 0.5,
+          "min": 0.3,
+          "max": 0.9,
+          "n": 7
+        },
+        "idle_seconds": {
+          "mean": 13.314285714285715,
+          "median": 12.0,
+          "min": 10.4,
+          "max": 17.4,
+          "n": 7
+        },
+        "idle_seconds_tactical": {
+          "mean": 72.54285714285714,
+          "median": 72.5,
+          "min": 60.0,
+          "max": 89.9,
+          "n": 7
+        },
+        "island_egress_count": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "island_latch_count": {
+          "mean": 0.14285714285714285,
+          "median": 0,
+          "min": 0,
+          "max": 1,
+          "n": 7
+        },
+        "egress_failed_count": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "stranded_count": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "stall_abandoned_count": {
+          "mean": 8.857142857142858,
+          "median": 11,
+          "min": 3,
+          "max": 12,
+          "n": 7
+        },
+        "offmesh_recovery_count": {
+          "mean": 1.5714285714285714,
+          "median": 0,
+          "min": 0,
+          "max": 9,
+          "n": 7
+        },
+        "overlap_seconds": {
+          "mean": 1.1142857142857143,
+          "median": 0.7,
+          "min": 0.3,
+          "max": 2.9,
+          "n": 7
+        },
+        "yield_count": {
+          "mean": 0.7142857142857143,
+          "median": 1,
+          "min": 0,
+          "max": 2,
+          "n": 7
+        },
+        "route_changes": {
+          "mean": 222.28571428571428,
+          "median": 226,
+          "min": 190,
+          "max": 246,
+          "n": 7
+        },
+        "flank_count": {
+          "mean": 0.14285714285714285,
+          "median": 0,
+          "min": 0,
+          "max": 1,
+          "n": 7
+        },
+        "flank_stalled": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "hold_seconds": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "state_flaps": {
+          "mean": 51.142857142857146,
+          "median": 55,
+          "min": 36,
+          "max": 60,
+          "n": 7
+        },
+        "claim_thrash": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "denied_roam": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "denied_engage_anyway": {
+          "mean": 2.142857142857143,
+          "median": 1,
+          "min": 0,
+          "max": 7,
+          "n": 7
+        }
+      },
+      "kills": 93,
+      "match_seconds": 300.0,
+      "kills_per_min": 18.6
+    },
+    {
+      "acquisitions": 958,
+      "acquisitions_by_verb": {
+        "acquired": 555,
+        "SWITCHED to": 403
+      },
+      "reaction_sentinels": 15,
+      "latency_mean": 0.3247954070981211,
+      "latency_median": 0.317,
+      "latency_min": 0.233,
+      "ambition_switches": 1638,
+      "interrupts": 155,
+      "f7_failures": 269,
+      "f7_by_shape": {
+        "POI path refused": 152,
+        "cannot path to the objective": 30,
+        "cannot reach the last-known spot": 36,
+        "could not path to the belief": 31,
+        "flee path REFUSED": 20
+      },
+      "refusals_per_switch": 0.16422466422466422,
+      "unserved_wants": 0,
+      "suppressed_wants": 343,
+      "wiring_warnings": 0,
+      "wiring_pois": 0,
+      "claim_grants": 0,
+      "claim_denies": 0,
+      "claim_releases": 0,
+      "target_claim_grants": 388,
+      "target_claim_denies": 33,
+      "target_claim_releases": 388,
+      "team_reports": 1658,
+      "target_pileup_count": 0,
+      "claim_ttl": 5.0,
+      "claim_cap": 2,
+      "tiers": {
+        "ODST": [
+          "AIBBotController_0",
+          "AIBBotController_1",
+          "AIBBotController_2",
+          "AIBBotController_3",
+          "AIBBotController_4",
+          "AIBBotController_5",
+          "AIBBotController_6"
+        ]
+      },
+      "swings": 29,
+      "throws": 129,
+      "throttled_throws": 177,
+      "denial_throws": null,
+      "strafe_legs": 797,
+      "strafe_holds": 175,
+      "strafe_mean_arc_uu": 424.7365119196989,
+      "strafe_denied_seconds": 135.6,
+      "drift_refusal_correlation": {
+        "window_s": 5.0,
+        "drifts": 22,
+        "refusals": 235,
+        "refusals_after_drift": 0
+      },
+      "lip_refusals": null,
+      "draw_reflexes": 1602,
+      "ads_ins": 376,
+      "ads_mean_range_uu": 743.0,
+      "ally_fights_heard": 93,
+      "wanders_to_fight": 294,
+      "strafe_spell_ends": {
+        "reentered": 169,
+        "target lost": 4
+      },
+      "offmesh_self": null,
+      "offmesh_moments": null,
+      "team_assignments": 8,
+      "team_populations": {
+        "0": 4,
+        "1": 4
+      },
+      "ff_refused": null,
+      "team_kills_denied": null,
+      "no_grant_presses": null,
+      "no_grant_split": null,
+      "per_bot": {
+        "AIBBotController_0": {
+          "no_path_requests": 0,
+          "stuck_seconds": 40.3,
+          "stuck_seconds_crowded": 0.6,
+          "stuck_seconds_wedged": 39.7,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 2,
+          "drift_refused_count": 0,
+          "lip_blacklist_count": 0,
+          "max_stall_seconds": 3.0,
+          "sweep_seconds": 0.7,
+          "max_single_sweep": 0.3,
+          "idle_seconds": 13.2,
+          "idle_seconds_tactical": 88.4,
+          "island_egress_count": 0,
+          "island_latch_count": 0,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 3,
+          "offmesh_recovery_count": 0,
+          "overlap_seconds": 5.1,
+          "yield_count": 0,
+          "route_changes": 212,
+          "flank_count": 0,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 42,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 4
+        },
+        "AIBBotController_1": {
+          "no_path_requests": 161,
+          "stuck_seconds": 79.7,
+          "stuck_seconds_crowded": 0,
+          "stuck_seconds_wedged": 79.7,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 1,
+          "drift_refused_count": 0,
+          "lip_blacklist_count": 0,
+          "max_stall_seconds": 3.0,
+          "sweep_seconds": 1.3,
+          "max_single_sweep": 0.5,
+          "idle_seconds": 9.8,
+          "idle_seconds_tactical": 56.8,
+          "island_egress_count": 0,
+          "island_latch_count": 0,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 20,
+          "offmesh_recovery_count": 0,
+          "overlap_seconds": 1.0,
+          "yield_count": 0,
+          "route_changes": 267,
+          "flank_count": 0,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 72,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 0
+        },
+        "AIBBotController_2": {
+          "no_path_requests": 0,
+          "stuck_seconds": 31.1,
+          "stuck_seconds_crowded": 1.3,
+          "stuck_seconds_wedged": 29.8,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 4,
+          "drift_refused_count": 0,
+          "lip_blacklist_count": 0,
+          "max_stall_seconds": 2.9,
+          "sweep_seconds": 1.9,
+          "max_single_sweep": 1.1,
+          "idle_seconds": 12.0,
+          "idle_seconds_tactical": 93.8,
+          "island_egress_count": 0,
+          "island_latch_count": 0,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 4,
+          "offmesh_recovery_count": 0,
+          "overlap_seconds": 1.6,
+          "yield_count": 0,
+          "route_changes": 228,
+          "flank_count": 0,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 46,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 3
+        },
+        "AIBBotController_3": {
+          "no_path_requests": 0,
+          "stuck_seconds": 78.1,
+          "stuck_seconds_crowded": 1.9,
+          "stuck_seconds_wedged": 76.2,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 2,
+          "drift_refused_count": 0,
+          "lip_blacklist_count": 0,
+          "max_stall_seconds": 3.0,
+          "sweep_seconds": 1.7,
+          "max_single_sweep": 0.6,
+          "idle_seconds": 11.7,
+          "idle_seconds_tactical": 58.9,
+          "island_egress_count": 0,
+          "island_latch_count": 0,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 13,
+          "offmesh_recovery_count": 0,
+          "overlap_seconds": 0,
+          "yield_count": 1,
+          "route_changes": 205,
+          "flank_count": 0,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 61,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 0
+        },
+        "AIBBotController_4": {
+          "no_path_requests": 1,
+          "stuck_seconds": 37.8,
+          "stuck_seconds_crowded": 0,
+          "stuck_seconds_wedged": 37.8,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 4,
+          "drift_refused_count": 0,
+          "lip_blacklist_count": 0,
+          "max_stall_seconds": 3.0,
+          "sweep_seconds": 1.0,
+          "max_single_sweep": 0.5,
+          "idle_seconds": 16.5,
+          "idle_seconds_tactical": 83.6,
+          "island_egress_count": 0,
+          "island_latch_count": 0,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 3,
+          "offmesh_recovery_count": 0,
+          "overlap_seconds": 1.4,
+          "yield_count": 0,
+          "route_changes": 221,
+          "flank_count": 0,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 42,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 5
+        },
+        "AIBBotController_5": {
+          "no_path_requests": 25,
+          "stuck_seconds": 61.4,
+          "stuck_seconds_crowded": 4.2,
+          "stuck_seconds_wedged": 57.2,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 3,
+          "drift_refused_count": 0,
+          "lip_blacklist_count": 0,
+          "max_stall_seconds": 3.0,
+          "sweep_seconds": 0.7,
+          "max_single_sweep": 0.5,
+          "idle_seconds": 7.7,
+          "idle_seconds_tactical": 81.9,
+          "island_egress_count": 0,
+          "island_latch_count": 0,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 12,
+          "offmesh_recovery_count": 0,
+          "overlap_seconds": 1.0,
+          "yield_count": 0,
+          "route_changes": 177,
+          "flank_count": 0,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 44,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 0
+        },
+        "AIBBotController_6": {
+          "no_path_requests": 48,
+          "stuck_seconds": 49.1,
+          "stuck_seconds_crowded": 0,
+          "stuck_seconds_wedged": 49.1,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 6,
+          "drift_refused_count": 0,
+          "lip_blacklist_count": 0,
+          "max_stall_seconds": 3.0,
+          "sweep_seconds": 2.2,
+          "max_single_sweep": 1.1,
+          "idle_seconds": 14.4,
+          "idle_seconds_tactical": 77.1,
+          "island_egress_count": 0,
+          "island_latch_count": 0,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 7,
+          "offmesh_recovery_count": 0,
+          "overlap_seconds": 1.0,
+          "yield_count": 0,
+          "route_changes": 222,
+          "flank_count": 0,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 59,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 4
+        }
+      },
+      "bot_spread": {
+        "no_path_requests": {
+          "mean": 33.57142857142857,
+          "median": 1,
+          "min": 0,
+          "max": 161,
+          "n": 7
+        },
+        "stuck_seconds": {
+          "mean": 53.92857142857143,
+          "median": 49.1,
+          "min": 31.1,
+          "max": 79.7,
+          "n": 7
+        },
+        "stuck_seconds_crowded": {
+          "mean": 1.1428571428571428,
+          "median": 0.6,
+          "min": 0,
+          "max": 4.2,
+          "n": 7
+        },
+        "stuck_seconds_wedged": {
+          "mean": 52.785714285714285,
+          "median": 49.1,
+          "min": 29.8,
+          "max": 79.7,
+          "n": 7
+        },
+        "stuck_seconds_uncaused": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "drift_count": {
+          "mean": 3.142857142857143,
+          "median": 3,
+          "min": 1,
+          "max": 6,
+          "n": 7
+        },
+        "drift_refused_count": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "lip_blacklist_count": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "max_stall_seconds": {
+          "mean": 2.9857142857142858,
+          "median": 3.0,
+          "min": 2.9,
+          "max": 3.0,
+          "n": 7
+        },
+        "sweep_seconds": {
+          "mean": 1.3571428571428572,
+          "median": 1.3,
+          "min": 0.7,
+          "max": 2.2,
+          "n": 7
+        },
+        "max_single_sweep": {
+          "mean": 0.6571428571428571,
+          "median": 0.5,
+          "min": 0.3,
+          "max": 1.1,
+          "n": 7
+        },
+        "idle_seconds": {
+          "mean": 12.185714285714285,
+          "median": 12.0,
+          "min": 7.7,
+          "max": 16.5,
+          "n": 7
+        },
+        "idle_seconds_tactical": {
+          "mean": 77.21428571428571,
+          "median": 81.9,
+          "min": 56.8,
+          "max": 93.8,
+          "n": 7
+        },
+        "island_egress_count": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "island_latch_count": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "egress_failed_count": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "stranded_count": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "stall_abandoned_count": {
+          "mean": 8.857142857142858,
+          "median": 7,
+          "min": 3,
+          "max": 20,
+          "n": 7
+        },
+        "offmesh_recovery_count": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "overlap_seconds": {
+          "mean": 1.5857142857142856,
+          "median": 1.0,
+          "min": 0,
+          "max": 5.1,
+          "n": 7
+        },
+        "yield_count": {
+          "mean": 0.14285714285714285,
+          "median": 0,
+          "min": 0,
+          "max": 1,
+          "n": 7
+        },
+        "route_changes": {
+          "mean": 218.85714285714286,
+          "median": 221,
+          "min": 177,
+          "max": 267,
+          "n": 7
+        },
+        "flank_count": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "flank_stalled": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "hold_seconds": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "state_flaps": {
+          "mean": 52.285714285714285,
+          "median": 46,
+          "min": 42,
+          "max": 72,
+          "n": 7
+        },
+        "claim_thrash": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "denied_roam": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "denied_engage_anyway": {
+          "mean": 2.2857142857142856,
+          "median": 3,
+          "min": 0,
+          "max": 5,
+          "n": 7
+        }
+      },
+      "kills": 87,
+      "match_seconds": 300.0,
+      "kills_per_min": 17.4
+    },
+    {
+      "acquisitions": 1019,
+      "acquisitions_by_verb": {
+        "acquired": 547,
+        "SWITCHED to": 472
+      },
+      "reaction_sentinels": 24,
+      "latency_mean": 0.32793817468105985,
+      "latency_median": 0.333,
+      "latency_min": 0.233,
+      "ambition_switches": 1646,
+      "interrupts": 142,
+      "f7_failures": 142,
+      "f7_by_shape": {
+        "POI path refused": 20,
+        "cannot path to the last-known spot": 30,
+        "cannot path to the objective": 35,
+        "cannot reach the last-known spot": 26,
+        "flee path REFUSED": 30,
+        "flee stalled": 1
+      },
+      "refusals_per_switch": 0.08626974483596597,
+      "unserved_wants": 0,
+      "suppressed_wants": 221,
+      "wiring_warnings": 0,
+      "wiring_pois": 0,
+      "claim_grants": 0,
+      "claim_denies": 0,
+      "claim_releases": 0,
+      "target_claim_grants": 417,
+      "target_claim_denies": 28,
+      "target_claim_releases": 417,
+      "team_reports": 1723,
+      "target_pileup_count": 0,
+      "claim_ttl": 5.0,
+      "claim_cap": 2,
+      "tiers": {
+        "ODST": [
+          "AIBBotController_0",
+          "AIBBotController_1",
+          "AIBBotController_2",
+          "AIBBotController_3",
+          "AIBBotController_4",
+          "AIBBotController_5",
+          "AIBBotController_6"
+        ]
+      },
+      "swings": 29,
+      "throws": 144,
+      "throttled_throws": 178,
+      "denial_throws": null,
+      "strafe_legs": 797,
+      "strafe_holds": 171,
+      "strafe_mean_arc_uu": 424.6775407779172,
+      "strafe_denied_seconds": 126.2,
+      "drift_refusal_correlation": {
+        "window_s": 5.0,
+        "drifts": 15,
+        "refusals": 116,
+        "refusals_after_drift": 0
+      },
+      "lip_refusals": null,
+      "draw_reflexes": 1625,
+      "ads_ins": 390,
+      "ads_mean_range_uu": 751.0,
+      "ally_fights_heard": 100,
+      "wanders_to_fight": 131,
+      "strafe_spell_ends": {
+        "reentered": 167,
+        "target lost": 1
+      },
+      "offmesh_self": null,
+      "offmesh_moments": null,
+      "team_assignments": 8,
+      "team_populations": {
+        "0": 4,
+        "1": 4
+      },
+      "ff_refused": null,
+      "team_kills_denied": null,
+      "no_grant_presses": 3,
+      "no_grant_split": {
+        "dead": 0,
+        "alive": 3,
+        "by_tag": {
+          "Input.Weapon.Fire": 3
+        }
+      },
+      "per_bot": {
+        "AIBBotController_0": {
+          "no_path_requests": 0,
+          "stuck_seconds": 47.0,
+          "stuck_seconds_crowded": 1.5,
+          "stuck_seconds_wedged": 45.5,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 1,
+          "drift_refused_count": 0,
+          "lip_blacklist_count": 0,
+          "max_stall_seconds": 3.0,
+          "sweep_seconds": 1.5,
+          "max_single_sweep": 1.5,
+          "idle_seconds": 6.7,
+          "idle_seconds_tactical": 73.8,
+          "island_egress_count": 0,
+          "island_latch_count": 0,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 6,
+          "offmesh_recovery_count": 0,
+          "overlap_seconds": 2.4,
+          "yield_count": 0,
+          "route_changes": 236,
+          "flank_count": 0,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 44,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 1
+        },
+        "AIBBotController_1": {
+          "no_path_requests": 115,
+          "stuck_seconds": 65.4,
+          "stuck_seconds_crowded": 0,
+          "stuck_seconds_wedged": 65.4,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 3,
+          "drift_refused_count": 0,
+          "lip_blacklist_count": 0,
+          "max_stall_seconds": 3.0,
+          "sweep_seconds": 1.9,
+          "max_single_sweep": 1.1,
+          "idle_seconds": 12.7,
+          "idle_seconds_tactical": 73.9,
+          "island_egress_count": 0,
+          "island_latch_count": 1,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 12,
+          "offmesh_recovery_count": 2,
+          "overlap_seconds": 4.6,
+          "yield_count": 0,
+          "route_changes": 202,
+          "flank_count": 0,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 51,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 0
+        },
+        "AIBBotController_2": {
+          "no_path_requests": 0,
+          "stuck_seconds": 41.0,
+          "stuck_seconds_crowded": 2.1,
+          "stuck_seconds_wedged": 38.9,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 3,
+          "drift_refused_count": 0,
+          "lip_blacklist_count": 0,
+          "max_stall_seconds": 3.0,
+          "sweep_seconds": 3.1,
+          "max_single_sweep": 1.1,
+          "idle_seconds": 11.6,
+          "idle_seconds_tactical": 85.5,
+          "island_egress_count": 0,
+          "island_latch_count": 0,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 8,
+          "offmesh_recovery_count": 0,
+          "overlap_seconds": 1.9,
+          "yield_count": 0,
+          "route_changes": 213,
+          "flank_count": 0,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 63,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 2
+        },
+        "AIBBotController_3": {
+          "no_path_requests": 0,
+          "stuck_seconds": 70.3,
+          "stuck_seconds_crowded": 4.2,
+          "stuck_seconds_wedged": 66.1,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 1,
+          "drift_refused_count": 0,
+          "lip_blacklist_count": 0,
+          "max_stall_seconds": 3.4,
+          "sweep_seconds": 1.1,
+          "max_single_sweep": 0.6,
+          "idle_seconds": 10.5,
+          "idle_seconds_tactical": 72.7,
+          "island_egress_count": 0,
+          "island_latch_count": 0,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 17,
+          "offmesh_recovery_count": 0,
+          "overlap_seconds": 2.1,
+          "yield_count": 1,
+          "route_changes": 236,
+          "flank_count": 0,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 67,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 0
+        },
+        "AIBBotController_4": {
+          "no_path_requests": 0,
+          "stuck_seconds": 48.3,
+          "stuck_seconds_crowded": 0,
+          "stuck_seconds_wedged": 48.3,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 5,
+          "drift_refused_count": 0,
+          "lip_blacklist_count": 0,
+          "max_stall_seconds": 3.0,
+          "sweep_seconds": 0.5,
+          "max_single_sweep": 0.5,
+          "idle_seconds": 21.6,
+          "idle_seconds_tactical": 78.6,
+          "island_egress_count": 0,
+          "island_latch_count": 1,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 7,
+          "offmesh_recovery_count": 0,
+          "overlap_seconds": 5.1,
+          "yield_count": 0,
+          "route_changes": 207,
+          "flank_count": 0,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 46,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 2
+        },
+        "AIBBotController_5": {
+          "no_path_requests": 0,
+          "stuck_seconds": 59.0,
+          "stuck_seconds_crowded": 0.9,
+          "stuck_seconds_wedged": 58.1,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 1,
+          "drift_refused_count": 0,
+          "lip_blacklist_count": 0,
+          "max_stall_seconds": 3.0,
+          "sweep_seconds": 0.8,
+          "max_single_sweep": 0.5,
+          "idle_seconds": 8.2,
+          "idle_seconds_tactical": 72.4,
+          "island_egress_count": 0,
+          "island_latch_count": 0,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 8,
+          "offmesh_recovery_count": 0,
+          "overlap_seconds": 0.5,
+          "yield_count": 0,
+          "route_changes": 242,
+          "flank_count": 0,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 51,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 0
+        },
+        "AIBBotController_6": {
+          "no_path_requests": 1,
+          "stuck_seconds": 35.8,
+          "stuck_seconds_crowded": 0,
+          "stuck_seconds_wedged": 35.8,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 1,
+          "drift_refused_count": 0,
+          "lip_blacklist_count": 0,
+          "max_stall_seconds": 3.0,
+          "sweep_seconds": 0.5,
+          "max_single_sweep": 0.5,
+          "idle_seconds": 8.5,
+          "idle_seconds_tactical": 90.6,
+          "island_egress_count": 0,
+          "island_latch_count": 0,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 7,
+          "offmesh_recovery_count": 0,
+          "overlap_seconds": 1.3,
+          "yield_count": 0,
+          "route_changes": 208,
+          "flank_count": 0,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 54,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 1
+        }
+      },
+      "bot_spread": {
+        "no_path_requests": {
+          "mean": 16.571428571428573,
+          "median": 0,
+          "min": 0,
+          "max": 115,
+          "n": 7
+        },
+        "stuck_seconds": {
+          "mean": 52.4,
+          "median": 48.3,
+          "min": 35.8,
+          "max": 70.3,
+          "n": 7
+        },
+        "stuck_seconds_crowded": {
+          "mean": 1.2428571428571429,
+          "median": 0.9,
+          "min": 0,
+          "max": 4.2,
+          "n": 7
+        },
+        "stuck_seconds_wedged": {
+          "mean": 51.15714285714286,
+          "median": 48.3,
+          "min": 35.8,
+          "max": 66.1,
+          "n": 7
+        },
+        "stuck_seconds_uncaused": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "drift_count": {
+          "mean": 2.142857142857143,
+          "median": 1,
+          "min": 1,
+          "max": 5,
+          "n": 7
+        },
+        "drift_refused_count": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "lip_blacklist_count": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "max_stall_seconds": {
+          "mean": 3.057142857142857,
+          "median": 3.0,
+          "min": 3.0,
+          "max": 3.4,
+          "n": 7
+        },
+        "sweep_seconds": {
+          "mean": 1.342857142857143,
+          "median": 1.1,
+          "min": 0.5,
+          "max": 3.1,
+          "n": 7
+        },
+        "max_single_sweep": {
+          "mean": 0.8285714285714286,
+          "median": 0.6,
+          "min": 0.5,
+          "max": 1.5,
+          "n": 7
+        },
+        "idle_seconds": {
+          "mean": 11.4,
+          "median": 10.5,
+          "min": 6.7,
+          "max": 21.6,
+          "n": 7
+        },
+        "idle_seconds_tactical": {
+          "mean": 78.21428571428571,
+          "median": 73.9,
+          "min": 72.4,
+          "max": 90.6,
+          "n": 7
+        },
+        "island_egress_count": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "island_latch_count": {
+          "mean": 0.2857142857142857,
+          "median": 0,
+          "min": 0,
+          "max": 1,
+          "n": 7
+        },
+        "egress_failed_count": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "stranded_count": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "stall_abandoned_count": {
+          "mean": 9.285714285714286,
+          "median": 8,
+          "min": 6,
+          "max": 17,
+          "n": 7
+        },
+        "offmesh_recovery_count": {
+          "mean": 0.2857142857142857,
+          "median": 0,
+          "min": 0,
+          "max": 2,
+          "n": 7
+        },
+        "overlap_seconds": {
+          "mean": 2.557142857142857,
+          "median": 2.1,
+          "min": 0.5,
+          "max": 5.1,
+          "n": 7
+        },
+        "yield_count": {
+          "mean": 0.14285714285714285,
+          "median": 0,
+          "min": 0,
+          "max": 1,
+          "n": 7
+        },
+        "route_changes": {
+          "mean": 220.57142857142858,
+          "median": 213,
+          "min": 202,
+          "max": 242,
+          "n": 7
+        },
+        "flank_count": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "flank_stalled": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "hold_seconds": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "state_flaps": {
+          "mean": 53.714285714285715,
+          "median": 51,
+          "min": 44,
+          "max": 67,
+          "n": 7
+        },
+        "claim_thrash": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "denied_roam": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "denied_engage_anyway": {
+          "mean": 0.8571428571428571,
+          "median": 1,
+          "min": 0,
+          "max": 2,
+          "n": 7
+        }
+      },
+      "kills": 94,
+      "match_seconds": 299.9,
+      "kills_per_min": 18.806
+    },
+    {
+      "acquisitions": 846,
+      "acquisitions_by_verb": {
+        "acquired": 521,
+        "SWITCHED to": 325
+      },
+      "reaction_sentinels": 19,
+      "latency_mean": 0.32807565011820333,
+      "latency_median": 0.333,
+      "latency_min": 0.233,
+      "ambition_switches": 1716,
+      "interrupts": 148,
+      "f7_failures": 320,
+      "f7_by_shape": {
+        "POI path refused": 45,
+        "cannot path to the last-known spot": 100,
+        "cannot path to the objective": 60,
+        "cannot reach the last-known spot": 34,
+        "flee path REFUSED": 80,
+        "flee stalled": 1
+      },
+      "refusals_per_switch": 0.1864801864801865,
+      "unserved_wants": 0,
+      "suppressed_wants": 421,
+      "wiring_warnings": 0,
+      "wiring_pois": 0,
+      "claim_grants": 0,
+      "claim_denies": 0,
+      "claim_releases": 0,
+      "target_claim_grants": 370,
+      "target_claim_denies": 33,
+      "target_claim_releases": 370,
+      "team_reports": 1309,
+      "target_pileup_count": 0,
+      "claim_ttl": 5.0,
+      "claim_cap": 2,
+      "tiers": {
+        "ODST": [
+          "AIBBotController_0",
+          "AIBBotController_1",
+          "AIBBotController_2",
+          "AIBBotController_3",
+          "AIBBotController_4",
+          "AIBBotController_5",
+          "AIBBotController_6"
+        ]
+      },
+      "swings": 29,
+      "throws": 118,
+      "throttled_throws": 133,
+      "denial_throws": null,
+      "strafe_legs": 614,
+      "strafe_holds": 138,
+      "strafe_mean_arc_uu": 415.97394136807816,
+      "strafe_denied_seconds": 157.7,
+      "drift_refusal_correlation": {
+        "window_s": 5.0,
+        "drifts": 22,
+        "refusals": 288,
+        "refusals_after_drift": 10
+      },
+      "lip_refusals": null,
+      "draw_reflexes": 1403,
+      "ads_ins": 317,
+      "ads_mean_range_uu": 745.0,
+      "ally_fights_heard": 78,
+      "wanders_to_fight": 168,
+      "strafe_spell_ends": {
+        "reentered": 133,
+        "target lost": 5
+      },
+      "offmesh_self": null,
+      "offmesh_moments": null,
+      "team_assignments": 8,
+      "team_populations": {
+        "0": 4,
+        "1": 4
+      },
+      "ff_refused": null,
+      "team_kills_denied": null,
+      "no_grant_presses": 3,
+      "no_grant_split": {
+        "dead": 0,
+        "alive": 3,
+        "by_tag": {
+          "Input.Weapon.Fire": 3
+        }
+      },
+      "per_bot": {
+        "AIBBotController_0": {
+          "no_path_requests": 20,
+          "stuck_seconds": 53.4,
+          "stuck_seconds_crowded": 1.1,
+          "stuck_seconds_wedged": 52.3,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 4,
+          "drift_refused_count": 0,
+          "lip_blacklist_count": 0,
+          "max_stall_seconds": 3.0,
+          "sweep_seconds": 1.0,
+          "max_single_sweep": 0.5,
+          "idle_seconds": 14.4,
+          "idle_seconds_tactical": 69.4,
+          "island_egress_count": 0,
+          "island_latch_count": 0,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 6,
+          "offmesh_recovery_count": 0,
+          "overlap_seconds": 6.2,
+          "yield_count": 0,
+          "route_changes": 243,
+          "flank_count": 0,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 71,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 5
+        },
+        "AIBBotController_1": {
+          "no_path_requests": 15,
+          "stuck_seconds": 70.5,
+          "stuck_seconds_crowded": 0.6,
+          "stuck_seconds_wedged": 69.9,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 6,
+          "drift_refused_count": 0,
+          "lip_blacklist_count": 0,
+          "max_stall_seconds": 3.0,
+          "sweep_seconds": 0.7,
+          "max_single_sweep": 0.5,
+          "idle_seconds": 24.8,
+          "idle_seconds_tactical": 70.1,
+          "island_egress_count": 0,
+          "island_latch_count": 0,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 15,
+          "offmesh_recovery_count": 0,
+          "overlap_seconds": 0.3,
+          "yield_count": 0,
+          "route_changes": 193,
+          "flank_count": 0,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 70,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 1
+        },
+        "AIBBotController_2": {
+          "no_path_requests": 0,
+          "stuck_seconds": 42.8,
+          "stuck_seconds_crowded": 2.6,
+          "stuck_seconds_wedged": 40.2,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 7,
+          "drift_refused_count": 0,
+          "lip_blacklist_count": 0,
+          "max_stall_seconds": 3.0,
+          "sweep_seconds": 1.7,
+          "max_single_sweep": 1.0,
+          "idle_seconds": 23.3,
+          "idle_seconds_tactical": 66.4,
+          "island_egress_count": 0,
+          "island_latch_count": 0,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 8,
+          "offmesh_recovery_count": 0,
+          "overlap_seconds": 6.1,
+          "yield_count": 1,
+          "route_changes": 206,
+          "flank_count": 1,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 58,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 1
+        },
+        "AIBBotController_3": {
+          "no_path_requests": 243,
+          "stuck_seconds": 60.0,
+          "stuck_seconds_crowded": 0.9,
+          "stuck_seconds_wedged": 59.1,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 1,
+          "drift_refused_count": 0,
+          "lip_blacklist_count": 2,
+          "max_stall_seconds": 3.0,
+          "sweep_seconds": 0.2,
+          "max_single_sweep": 0.2,
+          "idle_seconds": 8.6,
+          "idle_seconds_tactical": 77.1,
+          "island_egress_count": 0,
+          "island_latch_count": 1,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 12,
+          "offmesh_recovery_count": 3,
+          "overlap_seconds": 0.3,
+          "yield_count": 0,
+          "route_changes": 182,
+          "flank_count": 0,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 52,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 0
+        },
+        "AIBBotController_4": {
+          "no_path_requests": 10,
+          "stuck_seconds": 37.5,
+          "stuck_seconds_crowded": 0,
+          "stuck_seconds_wedged": 37.5,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 1,
+          "drift_refused_count": 0,
+          "lip_blacklist_count": 0,
+          "max_stall_seconds": 3.0,
+          "sweep_seconds": 0.3,
+          "max_single_sweep": 0.3,
+          "idle_seconds": 15.0,
+          "idle_seconds_tactical": 62.0,
+          "island_egress_count": 0,
+          "island_latch_count": 1,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 3,
+          "offmesh_recovery_count": 0,
+          "overlap_seconds": 2.3,
+          "yield_count": 0,
+          "route_changes": 221,
+          "flank_count": 0,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 61,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 3
+        },
+        "AIBBotController_5": {
+          "no_path_requests": 0,
+          "stuck_seconds": 78.2,
+          "stuck_seconds_crowded": 4.8,
+          "stuck_seconds_wedged": 73.4,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 2,
+          "drift_refused_count": 0,
+          "lip_blacklist_count": 0,
+          "max_stall_seconds": 3.0,
+          "sweep_seconds": 2.5,
+          "max_single_sweep": 1.4,
+          "idle_seconds": 13.1,
+          "idle_seconds_tactical": 74.5,
+          "island_egress_count": 0,
+          "island_latch_count": 0,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 18,
+          "offmesh_recovery_count": 0,
+          "overlap_seconds": 0.9,
+          "yield_count": 1,
+          "route_changes": 186,
+          "flank_count": 0,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 70,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 0
+        },
+        "AIBBotController_6": {
+          "no_path_requests": 0,
+          "stuck_seconds": 36.6,
+          "stuck_seconds_crowded": 0.7,
+          "stuck_seconds_wedged": 35.9,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 1,
+          "drift_refused_count": 0,
+          "lip_blacklist_count": 0,
+          "max_stall_seconds": 3.0,
+          "sweep_seconds": 1.5,
+          "max_single_sweep": 1.0,
+          "idle_seconds": 16.1,
+          "idle_seconds_tactical": 85.2,
+          "island_egress_count": 0,
+          "island_latch_count": 0,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 2,
+          "offmesh_recovery_count": 0,
+          "overlap_seconds": 2.1,
+          "yield_count": 0,
+          "route_changes": 227,
+          "flank_count": 0,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 44,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 4
+        }
+      },
+      "bot_spread": {
+        "no_path_requests": {
+          "mean": 41.142857142857146,
+          "median": 10,
+          "min": 0,
+          "max": 243,
+          "n": 7
+        },
+        "stuck_seconds": {
+          "mean": 54.142857142857146,
+          "median": 53.4,
+          "min": 36.6,
+          "max": 78.2,
+          "n": 7
+        },
+        "stuck_seconds_crowded": {
+          "mean": 1.5285714285714285,
+          "median": 0.9,
+          "min": 0,
+          "max": 4.8,
+          "n": 7
+        },
+        "stuck_seconds_wedged": {
+          "mean": 52.614285714285714,
+          "median": 52.3,
+          "min": 35.9,
+          "max": 73.4,
+          "n": 7
+        },
+        "stuck_seconds_uncaused": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "drift_count": {
+          "mean": 3.142857142857143,
+          "median": 2,
+          "min": 1,
+          "max": 7,
+          "n": 7
+        },
+        "drift_refused_count": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "lip_blacklist_count": {
+          "mean": 0.2857142857142857,
+          "median": 0,
+          "min": 0,
+          "max": 2,
+          "n": 7
+        },
+        "max_stall_seconds": {
+          "mean": 3.0,
+          "median": 3.0,
+          "min": 3.0,
+          "max": 3.0,
+          "n": 7
+        },
+        "sweep_seconds": {
+          "mean": 1.1285714285714286,
+          "median": 1.0,
+          "min": 0.2,
+          "max": 2.5,
+          "n": 7
+        },
+        "max_single_sweep": {
+          "mean": 0.7,
+          "median": 0.5,
+          "min": 0.2,
+          "max": 1.4,
+          "n": 7
+        },
+        "idle_seconds": {
+          "mean": 16.47142857142857,
+          "median": 15.0,
+          "min": 8.6,
+          "max": 24.8,
+          "n": 7
+        },
+        "idle_seconds_tactical": {
+          "mean": 72.1,
+          "median": 70.1,
+          "min": 62.0,
+          "max": 85.2,
+          "n": 7
+        },
+        "island_egress_count": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "island_latch_count": {
+          "mean": 0.2857142857142857,
+          "median": 0,
+          "min": 0,
+          "max": 1,
+          "n": 7
+        },
+        "egress_failed_count": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "stranded_count": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "stall_abandoned_count": {
+          "mean": 9.142857142857142,
+          "median": 8,
+          "min": 2,
+          "max": 18,
+          "n": 7
+        },
+        "offmesh_recovery_count": {
+          "mean": 0.42857142857142855,
+          "median": 0,
+          "min": 0,
+          "max": 3,
+          "n": 7
+        },
+        "overlap_seconds": {
+          "mean": 2.6,
+          "median": 2.1,
+          "min": 0.3,
+          "max": 6.2,
+          "n": 7
+        },
+        "yield_count": {
+          "mean": 0.2857142857142857,
+          "median": 0,
+          "min": 0,
+          "max": 1,
+          "n": 7
+        },
+        "route_changes": {
+          "mean": 208.28571428571428,
+          "median": 206,
+          "min": 182,
+          "max": 243,
+          "n": 7
+        },
+        "flank_count": {
+          "mean": 0.14285714285714285,
+          "median": 0,
+          "min": 0,
+          "max": 1,
+          "n": 7
+        },
+        "flank_stalled": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "hold_seconds": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "state_flaps": {
+          "mean": 60.857142857142854,
+          "median": 61,
+          "min": 44,
+          "max": 71,
+          "n": 7
+        },
+        "claim_thrash": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "denied_roam": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "denied_engage_anyway": {
+          "mean": 2,
+          "median": 1,
+          "min": 0,
+          "max": 5,
+          "n": 7
+        }
+      },
+      "kills": 76,
+      "match_seconds": 300.0,
+      "kills_per_min": 15.2
+    },
+    {
+      "acquisitions": 870,
+      "acquisitions_by_verb": {
+        "acquired": 445,
+        "SWITCHED to": 425
+      },
+      "reaction_sentinels": 15,
+      "latency_mean": 0.3271597701149425,
+      "latency_median": 0.333,
+      "latency_min": 0.233,
+      "ambition_switches": 1542,
+      "interrupts": 150,
+      "f7_failures": 146,
+      "f7_by_shape": {
+        "POI path refused": 63,
+        "cannot path to the objective": 30,
+        "cannot reach the last-known spot": 27,
+        "could not path to the belief": 26
+      },
+      "refusals_per_switch": 0.0946822308690013,
+      "unserved_wants": 0,
+      "suppressed_wants": 188,
+      "wiring_warnings": 0,
+      "wiring_pois": 0,
+      "claim_grants": 0,
+      "claim_denies": 0,
+      "claim_releases": 0,
+      "target_claim_grants": 426,
+      "target_claim_denies": 32,
+      "target_claim_releases": 426,
+      "team_reports": 1362,
+      "target_pileup_count": 0,
+      "claim_ttl": 5.0,
+      "claim_cap": 2,
+      "tiers": {
+        "ODST": [
+          "AIBBotController_0",
+          "AIBBotController_1",
+          "AIBBotController_2",
+          "AIBBotController_3",
+          "AIBBotController_4",
+          "AIBBotController_5",
+          "AIBBotController_6"
+        ]
+      },
+      "swings": 22,
+      "throws": 122,
+      "throttled_throws": 139,
+      "denial_throws": null,
+      "strafe_legs": 778,
+      "strafe_holds": 189,
+      "strafe_mean_arc_uu": 429.07712082262213,
+      "strafe_denied_seconds": 197.4,
+      "drift_refusal_correlation": {
+        "window_s": 5.0,
+        "drifts": 37,
+        "refusals": 119,
+        "refusals_after_drift": 93
+      },
+      "lip_refusals": null,
+      "draw_reflexes": 1564,
+      "ads_ins": 366,
+      "ads_mean_range_uu": 746.0,
+      "ally_fights_heard": 79,
+      "wanders_to_fight": 171,
+      "strafe_spell_ends": {
+        "reentered": 183,
+        "target lost": 6
+      },
+      "offmesh_self": null,
+      "offmesh_moments": null,
+      "team_assignments": 8,
+      "team_populations": {
+        "0": 4,
+        "1": 4
+      },
+      "ff_refused": null,
+      "team_kills_denied": null,
+      "no_grant_presses": null,
+      "no_grant_split": null,
+      "per_bot": {
+        "AIBBotController_0": {
+          "no_path_requests": 0,
+          "stuck_seconds": 48.7,
+          "stuck_seconds_crowded": 0,
+          "stuck_seconds_wedged": 48.7,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 6,
+          "drift_refused_count": 0,
+          "lip_blacklist_count": 0,
+          "max_stall_seconds": 3.0,
+          "sweep_seconds": 1.0,
+          "max_single_sweep": 1.0,
+          "idle_seconds": 22.6,
+          "idle_seconds_tactical": 88.6,
+          "island_egress_count": 0,
+          "island_latch_count": 1,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 4,
+          "offmesh_recovery_count": 0,
+          "overlap_seconds": 1.3,
+          "yield_count": 0,
+          "route_changes": 183,
+          "flank_count": 0,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 36,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 2
+        },
+        "AIBBotController_1": {
+          "no_path_requests": 119,
+          "stuck_seconds": 58.0,
+          "stuck_seconds_crowded": 0,
+          "stuck_seconds_wedged": 58.0,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 6,
+          "drift_refused_count": 0,
+          "lip_blacklist_count": 0,
+          "max_stall_seconds": 3.0,
+          "sweep_seconds": 0.9,
+          "max_single_sweep": 0.5,
+          "idle_seconds": 18.8,
+          "idle_seconds_tactical": 58.2,
+          "island_egress_count": 0,
+          "island_latch_count": 1,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 9,
+          "offmesh_recovery_count": 0,
+          "overlap_seconds": 1.7,
+          "yield_count": 0,
+          "route_changes": 200,
+          "flank_count": 0,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 60,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 0
+        },
+        "AIBBotController_2": {
+          "no_path_requests": 0,
+          "stuck_seconds": 53.0,
+          "stuck_seconds_crowded": 1.7,
+          "stuck_seconds_wedged": 51.3,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 10,
+          "drift_refused_count": 0,
+          "lip_blacklist_count": 0,
+          "max_stall_seconds": 3.0,
+          "sweep_seconds": 1.3,
+          "max_single_sweep": 0.5,
+          "idle_seconds": 25.6,
+          "idle_seconds_tactical": 71.3,
+          "island_egress_count": 0,
+          "island_latch_count": 0,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 7,
+          "offmesh_recovery_count": 0,
+          "overlap_seconds": 0.7,
+          "yield_count": 1,
+          "route_changes": 198,
+          "flank_count": 0,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 50,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 0
+        },
+        "AIBBotController_3": {
+          "no_path_requests": 0,
+          "stuck_seconds": 54.7,
+          "stuck_seconds_crowded": 0,
+          "stuck_seconds_wedged": 54.7,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 5,
+          "drift_refused_count": 0,
+          "lip_blacklist_count": 0,
+          "max_stall_seconds": 3.0,
+          "sweep_seconds": 0.7,
+          "max_single_sweep": 0.5,
+          "idle_seconds": 14.0,
+          "idle_seconds_tactical": 64.2,
+          "island_egress_count": 0,
+          "island_latch_count": 0,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 10,
+          "offmesh_recovery_count": 0,
+          "overlap_seconds": 0.5,
+          "yield_count": 0,
+          "route_changes": 249,
+          "flank_count": 0,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 54,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 0
+        },
+        "AIBBotController_4": {
+          "no_path_requests": 0,
+          "stuck_seconds": 41.6,
+          "stuck_seconds_crowded": 0,
+          "stuck_seconds_wedged": 41.6,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 3,
+          "drift_refused_count": 0,
+          "lip_blacklist_count": 0,
+          "max_stall_seconds": 3.0,
+          "sweep_seconds": 1.4,
+          "max_single_sweep": 0.9,
+          "idle_seconds": 19.0,
+          "idle_seconds_tactical": 76.3,
+          "island_egress_count": 0,
+          "island_latch_count": 0,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 3,
+          "offmesh_recovery_count": 0,
+          "overlap_seconds": 1.4,
+          "yield_count": 0,
+          "route_changes": 211,
+          "flank_count": 0,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 29,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 4
+        },
+        "AIBBotController_5": {
+          "no_path_requests": 0,
+          "stuck_seconds": 60.6,
+          "stuck_seconds_crowded": 2.1,
+          "stuck_seconds_wedged": 58.5,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 3,
+          "drift_refused_count": 0,
+          "lip_blacklist_count": 0,
+          "max_stall_seconds": 3.0,
+          "sweep_seconds": 0.5,
+          "max_single_sweep": 0.5,
+          "idle_seconds": 12.2,
+          "idle_seconds_tactical": 73.7,
+          "island_egress_count": 0,
+          "island_latch_count": 0,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 7,
+          "offmesh_recovery_count": 0,
+          "overlap_seconds": 1.2,
+          "yield_count": 0,
+          "route_changes": 227,
+          "flank_count": 1,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 50,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 0
+        },
+        "AIBBotController_6": {
+          "no_path_requests": 0,
+          "stuck_seconds": 48.9,
+          "stuck_seconds_crowded": 0.7,
+          "stuck_seconds_wedged": 48.2,
+          "stuck_seconds_uncaused": 0,
+          "drift_count": 4,
+          "drift_refused_count": 0,
+          "lip_blacklist_count": 0,
+          "max_stall_seconds": 3.0,
+          "sweep_seconds": 1.0,
+          "max_single_sweep": 0.5,
+          "idle_seconds": 11.4,
+          "idle_seconds_tactical": 72.2,
+          "island_egress_count": 0,
+          "island_latch_count": 0,
+          "egress_failed_count": 0,
+          "stranded_count": 0,
+          "stall_abandoned_count": 7,
+          "offmesh_recovery_count": 0,
+          "overlap_seconds": 0.7,
+          "yield_count": 0,
+          "route_changes": 260,
+          "flank_count": 0,
+          "flank_stalled": 0,
+          "hold_seconds": 0,
+          "state_flaps": 53,
+          "claim_thrash": 0,
+          "denied_roam": 0,
+          "denied_engage_anyway": 5
+        }
+      },
+      "bot_spread": {
+        "no_path_requests": {
+          "mean": 17,
+          "median": 0,
+          "min": 0,
+          "max": 119,
+          "n": 7
+        },
+        "stuck_seconds": {
+          "mean": 52.214285714285715,
+          "median": 53.0,
+          "min": 41.6,
+          "max": 60.6,
+          "n": 7
+        },
+        "stuck_seconds_crowded": {
+          "mean": 0.6428571428571429,
+          "median": 0,
+          "min": 0,
+          "max": 2.1,
+          "n": 7
+        },
+        "stuck_seconds_wedged": {
+          "mean": 51.57142857142857,
+          "median": 51.3,
+          "min": 41.6,
+          "max": 58.5,
+          "n": 7
+        },
+        "stuck_seconds_uncaused": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "drift_count": {
+          "mean": 5.285714285714286,
+          "median": 5,
+          "min": 3,
+          "max": 10,
+          "n": 7
+        },
+        "drift_refused_count": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "lip_blacklist_count": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "max_stall_seconds": {
+          "mean": 3.0,
+          "median": 3.0,
+          "min": 3.0,
+          "max": 3.0,
+          "n": 7
+        },
+        "sweep_seconds": {
+          "mean": 0.9714285714285714,
+          "median": 1.0,
+          "min": 0.5,
+          "max": 1.4,
+          "n": 7
+        },
+        "max_single_sweep": {
+          "mean": 0.6285714285714286,
+          "median": 0.5,
+          "min": 0.5,
+          "max": 1.0,
+          "n": 7
+        },
+        "idle_seconds": {
+          "mean": 17.65714285714286,
+          "median": 18.8,
+          "min": 11.4,
+          "max": 25.6,
+          "n": 7
+        },
+        "idle_seconds_tactical": {
+          "mean": 72.07142857142857,
+          "median": 72.2,
+          "min": 58.2,
+          "max": 88.6,
+          "n": 7
+        },
+        "island_egress_count": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "island_latch_count": {
+          "mean": 0.2857142857142857,
+          "median": 0,
+          "min": 0,
+          "max": 1,
+          "n": 7
+        },
+        "egress_failed_count": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "stranded_count": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "stall_abandoned_count": {
+          "mean": 6.714285714285714,
+          "median": 7,
+          "min": 3,
+          "max": 10,
+          "n": 7
+        },
+        "offmesh_recovery_count": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "overlap_seconds": {
+          "mean": 1.0714285714285714,
+          "median": 1.2,
+          "min": 0.5,
+          "max": 1.7,
+          "n": 7
+        },
+        "yield_count": {
+          "mean": 0.14285714285714285,
+          "median": 0,
+          "min": 0,
+          "max": 1,
+          "n": 7
+        },
+        "route_changes": {
+          "mean": 218.28571428571428,
+          "median": 211,
+          "min": 183,
+          "max": 260,
+          "n": 7
+        },
+        "flank_count": {
+          "mean": 0.14285714285714285,
+          "median": 0,
+          "min": 0,
+          "max": 1,
+          "n": 7
+        },
+        "flank_stalled": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "hold_seconds": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "state_flaps": {
+          "mean": 47.42857142857143,
+          "median": 50,
+          "min": 29,
+          "max": 60,
+          "n": 7
+        },
+        "claim_thrash": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "denied_roam": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "n": 7
+        },
+        "denied_engage_anyway": {
+          "mean": 1.5714285714285714,
+          "median": 0,
+          "min": 0,
+          "max": 5,
+          "n": 7
+        }
+      },
+      "kills": 75,
+      "match_seconds": 299.8,
+      "kills_per_min": 15.01
+    }
+  ],
+  "lobby_spread": {
+    "latency_mean": {
+      "mean": 0.32725585611812336,
+      "median": 0.32793817468105985,
+      "min": 0.3247954070981211,
+      "max": 0.3283102785782901,
+      "n": 5
+    },
+    "latency_min": {
+      "mean": 0.233,
+      "median": 0.233,
+      "min": 0.233,
+      "max": 0.233,
+      "n": 5
+    },
+    "acquisitions": {
+      "mean": 946.8,
+      "median": 958,
+      "min": 846,
+      "max": 1041,
+      "n": 5
+    },
+    "reaction_sentinels": {
+      "mean": 18.8,
+      "median": 19,
+      "min": 15,
+      "max": 24,
+      "n": 5
+    },
+    "refusals_per_switch": {
+      "mean": 0.27782642054665235,
+      "median": 0.16422466422466422,
+      "min": 0.08626974483596597,
+      "max": 0.8574752763234439,
+      "n": 5
+    },
+    "ambition_switches": {
+      "mean": 1652.2,
+      "median": 1646,
+      "min": 1542,
+      "max": 1719,
+      "n": 5
+    },
+    "match_seconds": {
+      "mean": 299.94,
+      "median": 300.0,
+      "min": 299.8,
+      "max": 300.0,
+      "n": 5
+    },
+    "kills_per_min": {
+      "mean": 17.0032,
+      "median": 17.4,
+      "min": 15.01,
+      "max": 18.806,
+      "n": 5
+    },
+    "no_path_requests": {
+      "mean": 8.2,
+      "median": 1,
+      "min": 0,
+      "max": 30,
+      "n": 5
+    },
+    "stuck_seconds": {
+      "mean": 52.6,
+      "median": 53.0,
+      "min": 48.3,
+      "max": 59.2,
+      "n": 5
+    },
+    "stuck_seconds_crowded": {
+      "mean": 0.74,
+      "median": 0.9,
+      "min": 0,
+      "max": 1.3,
+      "n": 5
+    },
+    "stuck_seconds_wedged": {
+      "mean": 51.78,
+      "median": 51.3,
+      "min": 48.3,
+      "max": 57.9,
+      "n": 5
+    },
+    "stuck_seconds_uncaused": {
+      "mean": 0,
+      "median": 0,
+      "min": 0,
+      "max": 0,
+      "n": 5
+    },
+    "drift_count": {
+      "mean": 2.6,
+      "median": 2,
+      "min": 1,
+      "max": 5,
+      "n": 5
+    },
+    "drift_refused_count": {
+      "mean": 0,
+      "median": 0,
+      "min": 0,
+      "max": 0,
+      "n": 5
+    },
+    "lip_blacklist_count": {
+      "mean": 0,
+      "median": 0,
+      "min": 0,
+      "max": 0,
+      "n": 5
+    },
+    "max_stall_seconds": {
+      "mean": 3.0,
+      "median": 3.0,
+      "min": 3.0,
+      "max": 3.0,
+      "n": 5
+    },
+    "sweep_seconds": {
+      "mean": 1.08,
+      "median": 1.0,
+      "min": 1.0,
+      "max": 1.3,
+      "n": 5
+    },
+    "max_single_sweep": {
+      "mean": 0.52,
+      "median": 0.5,
+      "min": 0.5,
+      "max": 0.6,
+      "n": 5
+    },
+    "idle_seconds": {
+      "mean": 13.66,
+      "median": 12.0,
+      "min": 10.5,
+      "max": 18.8,
+      "n": 5
+    },
+    "idle_seconds_tactical": {
+      "mean": 74.12,
+      "median": 72.5,
+      "min": 70.1,
+      "max": 81.9,
+      "n": 5
+    },
+    "island_egress_count": {
+      "mean": 0,
+      "median": 0,
+      "min": 0,
+      "max": 0,
+      "n": 5
+    },
+    "island_latch_count": {
+      "mean": 0,
+      "median": 0,
+      "min": 0,
+      "max": 0,
+      "n": 5
+    },
+    "egress_failed_count": {
+      "mean": 0,
+      "median": 0,
+      "min": 0,
+      "max": 0,
+      "n": 5
+    },
+    "stranded_count": {
+      "mean": 0,
+      "median": 0,
+      "min": 0,
+      "max": 0,
+      "n": 5
+    },
+    "stall_abandoned_count": {
+      "mean": 8.2,
+      "median": 8,
+      "min": 7,
+      "max": 11,
+      "n": 5
+    },
+    "offmesh_recovery_count": {
+      "mean": 0,
+      "median": 0,
+      "min": 0,
+      "max": 0,
+      "n": 5
+    },
+    "overlap_seconds": {
+      "mean": 1.42,
+      "median": 1.2,
+      "min": 0.7,
+      "max": 2.1,
+      "n": 5
+    },
+    "yield_count": {
+      "mean": 0.2,
+      "median": 0,
+      "min": 0,
+      "max": 1,
+      "n": 5
+    },
+    "route_changes": {
+      "mean": 215.4,
+      "median": 213,
+      "min": 206,
+      "max": 226,
+      "n": 5
+    },
+    "flank_count": {
+      "mean": 0,
+      "median": 0,
+      "min": 0,
+      "max": 0,
+      "n": 5
+    },
+    "flank_stalled": {
+      "mean": 0,
+      "median": 0,
+      "min": 0,
+      "max": 0,
+      "n": 5
+    },
+    "hold_seconds": {
+      "mean": 0,
+      "median": 0,
+      "min": 0,
+      "max": 0,
+      "n": 5
+    },
+    "state_flaps": {
+      "mean": 52.6,
+      "median": 51,
+      "min": 46,
+      "max": 61,
+      "n": 5
+    },
+    "claim_thrash": {
+      "mean": 0,
+      "median": 0,
+      "min": 0,
+      "max": 0,
+      "n": 5
+    },
+    "denied_roam": {
+      "mean": 0,
+      "median": 0,
+      "min": 0,
+      "max": 0,
+      "n": 5
+    },
+    "denied_engage_anyway": {
+      "mean": 1.2,
+      "median": 1,
+      "min": 0,
+      "max": 3,
+      "n": 5
+    }
+  },
+  "verdicts": [
+    [
+      "PASS",
+      "F1 reaction floor",
+      "fastest acquisition 0.233s vs floor 0.20s (HARD bar)"
+    ],
+    [
+      "PASS",
+      "unserved wants",
+      "worst match 0 vs bar 0 (per match)"
+    ],
+    [
+      "PASS",
+      "wiring warnings",
+      "worst match 0 vs bar 0 (per match)"
+    ],
+    [
+      "PASS",
+      "FFA claim grants",
+      "worst match 0 vs bar 0 (per match)"
+    ],
+    [
+      "PASS",
+      "target pile-up buckets",
+      "worst match 0 vs HARD bar 0 (per match)"
+    ],
+    [
+      "PASS",
+      "move refusals per switch",
+      "mean 0.28 (spread 0.09..0.86, n=5) vs PROVISIONAL bar 1.0"
+    ],
+    [
+      "FAIL",
+      "idle seconds (tactic=none)",
+      "worst 25.6 (AIBBotController_2, log 5) vs HARD bar 0.0 (per bot per match)"
+    ],
+    [
+      "PASS",
+      "longest single sweep",
+      "worst 1.5 (AIBBotController_0, log 3) vs HARD bar 2.5 (per bot per match)"
+    ],
+    [
+      "FAIL",
+      "stuck seconds per bot",
+      "worst 79.7 (AIBBotController_1, log 2) vs PROVISIONAL bar 10.0 (per bot per match)"
+    ],
+    [
+      "FAIL",
+      "longest single stall",
+      "worst 3.4 (AIBBotController_3, log 3) vs PROVISIONAL bar 3.0 (per bot per match)"
+    ],
+    [
+      "PASS",
+      "claim thrash per bot",
+      "worst 0 (AIBBotController_6, log 5) vs PROVISIONAL bar 2 (per bot per match)"
+    ],
+    [
+      "PASS",
+      "sweep fraction of match",
+      "worst 0.0103 (AIBBotController_2, log 3) vs HARD bar 0.05 (stationary sweep s / match s)"
+    ],
+    [
+      "FAIL",
+      "move refusals vs baseline",
+      "median per-bot no_path_requests 1.00 vs 0.5 x baseline median 0.00 = 0.00 (n=5 vs baseline n=5)"
+    ],
+    [
+      "PASS",
+      "kills/min vs baseline",
+      "median 17.400 vs baseline median 1.800 - spread 6.897 = floor -5.097"
+    ]
+  ],
+  "baseline": true
+}

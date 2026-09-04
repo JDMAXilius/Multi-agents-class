@@ -1224,3 +1224,121 @@ not an actor's. Every entry point is authority-guarded (`Think:1248`,
 provable from the code alone — no map assumption, no run needed — and it is the founder's own
 named residual (c) for the one box (4) this ticket has never met. MED-2 through LOW-7 go to
 the risk register with the artifact.
+
+### 3 Sep (Windows terminal, aib-verifier) — v8 measured
+
+**RUNG 3, headless seeded batch.** NOT PIE, NOT a packaged build, NOT listen+client, NOT a
+human playing. 5 x 300 s matches per map, `-nullrhi -unattended`, 7 ODST bots + no human,
+`MinPlayers=0`, `LogAIBot Verbose`. All 10 matches reached `match_seconds` 299.8-300.0.
+First run in which the 3 Sep cloud fixes are actually in a binary:
+`Plugins/AIBot/Binaries/Win64/UnrealEditor-AIBot.dll` 20:24:01 vs source 20:13:13.
+
+**PROTOCOL DEVIATION, declared.** The `-server` form named in this ticket's W-AUDIT member 3
+protocol is DEAD on Windows too, exactly as it was on the Mac. Pilot
+`Tools/Logs/aib-v8-pilot.log`: engine exits at frame 400 via
+`FPlatformMisc::RequestExit(0, FEngineLoop::Tick.Benchmarking)`, **4 `LogAIBot` lines total**,
+no bots. The `-game -windowed -nullrhi` fallback that `Tools/aib/aib22_verify.sh` uses gives
+~100k `LogAIBot` lines per match, so that is the form these 10 runs used — identical to v7's,
+which is what makes the v7-vs-v8 delta attributable to the code. `?ScoreLimit=200` kept, as
+v7 had it. `-FixedSeed` DROPPED: the ticket records that AIB has no match seed and the lobby
+seed is `map+clock`; pinning the global FRand risked turning n=5 into n=1.
+
+**Parser self-test: PASS** (`python Tools/aib/80_aib_metrics.py --selftest`, exit 0) — both
+blocks, 57 lines / 31 hits and the AIB23 block, including the new
+`stuck_seconds_crowded + _wedged + _uncaused == stuck_seconds` partition assertion.
+
+Evidence: `Tools/Logs/aib-v8-{spillway,arena01}-{1..5}.log`,
+`Tools/aib/baselines/aib22-{spillway,arena01}-verify-v8.json`.
+
+#### The HARD/PROVISIONAL bars
+
+| gate | Spillway | Arena01 | bar | verdict |
+|---|---|---|---|---|
+| idle `tactic=none`, median/bot/match | **15.2 s** | **12.0 s** | 0.0 HARD | **FAIL** |
+| idle `tactic=none`, worst bot | 31.4 s (bot 5, log 1) | 25.6 s (bot 2, log 5) | 0.0 HARD | **FAIL** |
+| longest single sweep | 1.9 s | 1.5 s | 2.5 HARD | PASS |
+| sweep fraction of match | 0.018 | 0.0103 | 0.05 HARD | PASS |
+| `stuck_seconds` median/bot | **72.9 s** | **53.0 s** | 10.0 PROV | **FAIL** |
+| `stuck_seconds` worst bot | 103.6 s | 79.7 s | 10.0 PROV | **FAIL** |
+| longest single stall | 4.0 s | 3.4 s | 3.0 PROV | **FAIL** |
+| claim thrash | 0 | 0 | 2 PROV | PASS |
+| refusals vs baseline (median/bot) | 0.00 vs floor 35.00 | 1.00 vs floor 0.00 | <= 0.5x base | PASS / **FAIL** |
+| kills/min vs baseline | 8.60 vs floor -5.657 | 17.40 vs floor -5.097 | >= base - spread | PASS |
+| F1 reaction floor | 0.233 s | 0.233 s | 0.20 s HARD | PASS |
+| unserved wants / wiring / FFA grants / pile-up | 0 | 0 | 0 | PASS |
+
+idle `tactic=none` is the best it has ever been and still misses a bar of zero:
+v6 24.6 / 42.0 -> v7 22.8 / 38.5 -> **v8 15.2 / 12.0**. The tactical share rose in step
+(v7 53.9 / 58.3 -> v8 62.4 / 72.5), so most of Arena01's 26.5 s drop is standing that got a
+NAME, not standing that stopped. kills/min did not regress: 8.60 / 17.40 against a v2
+baseline of 1.003 / 1.800.
+
+#### `stuck_seconds` — the split fires, and it says the OPPOSITE of the crowd hypothesis
+
+`still=` is populated on every one of the 3,421 `stall over` lines in this batch, so
+`stuck_seconds_uncaused` is **0.0 on both maps** — the field working, not a null result. Read
+per the baselines README: a committed baseline's zero-crowded is "the cause was never written
+down"; a **v8** zero-uncaused is "the cause was written down every time."
+
+Seconds-weighted (5 logs x 7 bots each):
+
+| | Spillway 2285.1 s | Arena01 1870.5 s |
+|---|---|---|
+| `still=none` | 1593.5 s (69.7 %) | 1393.2 s (74.5 %) |
+| `still=Sweep` | 395.4 s (17.3 %) | 244.6 s (13.1 %) |
+| `still=StrafeHold` | 92.8 s (4.1 %) | 176.0 s (9.4 %) |
+| `still=Yield` (+combos) | 140.9 s (6.2 %) | 22.6 s (1.2 %) |
+| `still=Crowd` (+combos) | 33.0 s (1.4 %) | 24.5 s (1.3 %) |
+| `still=Stranded` / `Reload` | 29.5 s | 4.9 s |
+| **-> CROWDED** | **173.9 s (7.6 %)** | **47.1 s (2.5 %)** |
+| **-> WEDGED** | **2111.2 s (92.4 %)** | **1823.4 s (97.5 %)** |
+
+**The crowd brake is NOT what `stuck_seconds` is measuring.** Separation accounts for 7.6 %
+and 2.5 % of it. Seventy per cent of every map's stall seconds carry `still=none` — no named
+stand of any kind was up: a body against geometry, which is what the counter was built to
+find. The v6 jump was attributed to crowd avoidance engaging for the first time; on the first
+run that can actually tell the two apart, that attribution does not hold at the seconds level.
+
+**`still=Hold` appears ZERO times in 3,421 `stall over` lines** (StrafeHold 151 lines, Sweep
+660, Crowd 37, Yield 55, Stranded 10, Reload 11). See the AIB26 entry — that is the AIB26
+finding, measured here.
+
+#### `drift_refusal_correlation` — the drift reflex is EXONERATED
+
+| map | drifts | refusals | refusals within 5 s after a drift |
+|---|---|---|---|
+| Spillway (5 logs) | 170 | 1,190 | **0** |
+| Arena01 (5 logs) | 111 | 2,192 | **103 (4.7 %)** |
+
+Spillway: not one refusal in the window, over 1,190 refusals. Arena01's 103 are all in logs
+4 and 5 (10 of 288, then 93 of 119); logs 1-3 are 0 of 1,785. Against the crude null — 15-37
+drifts x a 5 s window is 25-62 % of a 300 s match — 4.7 % is far BELOW chance, i.e. refusals
+are if anything ANTI-correlated with drifts. **The v7 hypothesis that the drift reflex drove
+Arena01's `no_path_requests` 0 -> 22 is refuted by its own instrument.** Arena01's refusal
+median also collapsed on its own: v7 30.0 -> **v8 1.00** per bot (mean 8.2, max 30, so the
+variance is a lobby-level burst, not a per-bot standing rate). It still FAILS the bar only
+because the v2 baseline median is 0 and half of 0 is 0.
+
+#### UNJUDGEABLE, not zero
+
+`lip_refusals` prints **"not captured (Verbose off?)"** in all 10 logs, and Verbose WAS on
+(`draw_reflexes` 831-1,625 per log is Verbose-only and captured). `lip_blacklist_count` is 0.
+So residual (c), the interior-lip blacklist, is **UNJUDGEABLE for the second run running** —
+the path still emits no line, and this run cannot distinguish "never needed" from "never
+fires." Same for `denial_throws`, `offmesh_self`, `offmesh_moments`, `ff_refused`.
+
+#### Fairness spot-check (rides this PIE-equivalent run)
+
+7,467 acquisition latencies, ODST draw `ReactionSecondsMin 0.22 / Max 0.34`
+(`AIBTiers.cpp::MakeODST`), module floor 0.20 s:
+- **below the 0.20 s floor: 0.** below the tier's own 0.22 min: **0**. Fastest sample
+  `0.233s` (`AIBBotController_3 acquired BP_BNCharacter_C_13 after 0.267s reaction` is a
+  typical line; 0.233 = 14 frames at the fixed 60 Hz step). **PASS.**
+- ABOVE the tier max 0.34: **2,812 of 7,467 (37.7 %)**, out to 0.433 s. That is the bot
+  reacting SLOWER than its row, never faster — not a fairness violation, so no `high`
+  finding for aib-critic. Logged as an observation: the emitted latency is quantised to the
+  frame and runs long, so the draw's stated ceiling is not the observed ceiling.
+
+**VERDICT: AIB22 stays OPEN.** Four bars FAIL (idle-none, stuck_seconds, longest stall,
+Arena01 refusals-vs-baseline), and the headline has changed shape rather than size: the split
+proves `stuck_seconds` is 92-98 % geometry, not separation.
