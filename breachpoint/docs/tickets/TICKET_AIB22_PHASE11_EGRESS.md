@@ -979,3 +979,248 @@ in the module's exact formats, 31 hits), old baselines still load through `--bas
 `stuck_seconds` / `max_stall_seconds` are unchanged on the pre-`still=` line shape. The
 MODULE side of today's work (`still=`, the `Defend` naming fix) remains WRITTEN, NOT
 COMPILED — no UE toolchain in the cloud.
+
+### 3 Sep (Windows terminal, aib-critic) — W-REVIEW
+
+Read-only pass on `640092f5` over everything AIB22 Phase 11 landed since 2026-09-01 plus
+AIB26's `bSameFight` fix, which shares the `ThinkTactic` block. Four surfaces:
+containment, fairness, utility pathologies, server-only. **ONE HIGH, four MEDIUM, two LOW.**
+
+---
+
+**HIGH-1 — follow-up (c), the interior-lip blacklist, is inert. It is erased one statement
+after it is written, and it is not wired to the fan it was written for.**
+
+`Execution/AIBStateTreeTasks.cpp:875-876` · `Core/AIBBotController.h:263-291, 350-364, 367-371`
+
+Two independent defects; either one alone makes the feature a no-op.
+
+*(a) Dead on write.* The only writer in the module is
+
+    :875   Bot.GetIslandLatch().NotePendingLipFailed(WorldSeconds(Bot), AIB::FailedLipRefuseSeconds);
+    :876   Bot.GetIslandLatch().Strand(WorldSeconds(Bot), Bot.GetTierRow().EgressCooldownSeconds);
+
+`Strand()` -> `ClearWithCooldown()` -> `Clear()` -> `ForgetFailedLips()`, which zeroes every
+`FailedLipUntil[i]` and resets `NextFailedLip`. Unconditional, same tick, next statement.
+`RefusesLip` tests `NowSeconds < FailedLipUntil[i]`; after the wipe every slot reads `0.0`,
+so it returns false for every lip, forever. The ring never holds an entry for one frame.
+
+*(b) Not wired to the Egress fan.* `RefusesLip` has exactly one caller —
+`FindVerticalGapStepOff:756`, the off-mesh **vertical-gap recovery**. `NotePendingLip` has
+exactly one caller — `StartOffMeshRecovery:823`. `FindIslandLip` (`:2911-2980`), the 16-ray
+navmesh-raycast fan the Egress task runs for a bot grounded **on** the mesh, neither records
+a pending lip nor consults the blacklist. The residual (c) exists for — the FINAL gantry
+watch's *"bot 4/5 repeat `egress starts — lip (1289,19xx,810) … drop 453` several times …
+the step-off lands back on the platform"* — runs through `FindIslandLip` and
+`LandedOnSameIsland` (`:3170-3177`), a path with no blacklist call of any kind. So even with
+(a) fixed, the gantry case stays uncovered.
+
+*Repro.* Place a bot on `BR_LM_The_Gantry_01` (Arena01, top z 800) at the current tree,
+`-LogCmds="LogAIBot Verbose"`. It latches, confirms, `FindIslandLip` returns the interior lip
+nearest the feet, steps off, `LandedOnSameIsland` fires `island egress FAILED — landed on the
+same island (F7)` + 5 s cooldown. The fan is deterministic from the same feet **by this
+file's own design statement**. After the cooldown the latch re-forms from the same feet and
+the fan hands back the same lip. Loop until the match ends — the founder's box 4 defect, by
+the mechanism (c) was written to remove.
+
+*Falsifier, cheap:* `lip refused … trying another door` (`:761`, Verbose) **cannot appear in
+any log produced by this build**. `lip blacklisted` (`:871`, Log) *can* appear, from the
+recovery path, having changed nothing. That asymmetry is the signature, and it is also a
+false instrument: `lip_blacklist_count` landed in `80_aib_metrics.py` this session and will
+count events with zero effect, so a v8 run reading "the blacklist fires N times" concludes it
+works. The v7 write-up's "zero blacklist-shaped tokens — never needed or never fires" is now
+answerable from code alone: **never fires, and could not have.**
+
+---
+
+**MED-2 — `ResetArbitration()` wipes the whole tactic engine's failure memory, so Hold's
+re-election bound and Flank's pathfind throttle are both bypassed by re-entry.**
+
+`Core/AIBBotController.cpp:1172` · `Brain/AIBAmbitionEngine.cpp:72-79` ·
+`Core/AIBBotController.cpp:1141-1146, 1208-1212` · `Execution/AIBStateTreeTasks.cpp:2766-2776`
+
+Direct answer to "verify `HoldMaxSeconds` actually bounds": it bounds one EPISODE. The clock
+fix itself is sound — `HoldSinceSeconds` now survives a Search flap, and
+`HoldStationTask::Tick` fires `NoteHoldOver` + `NoteCurrentTacticFailed` at the bar. What
+bounds *re-election* is the engine's escalating `3 s x Strikes` suppression.
+`ResetArbitration()` calls `Failures.Reset()`, whose own docstring scopes it to unpossession
+("strikes die with the body"), and `ThinkTactic` calls it on every non-Engage excursion that
+is neither Search nor flank-holding. At the measured 42-45 switches per bot-minute with veto
+at 60 %, that is ~0.7 wipes/s per bot.
+
+*Scenario A (Hold).* Engage>Hold 4 s -> `hold over` -> Hold suppressed 3 s -> one veto think
+to Retreat -> `ResetArbitration()` -> the strike record is destroyed, not aged -> back to
+Engage -> Hold re-elected on a fresh clock. `Record.Strikes` can never reach 2, so the
+3->6->9 s escalation the engine advertises never happens for any tactic.
+
+*Scenario B (Flank — the costlier one).* `SearchFlankPoint` runs whenever Ambition==Engage
+with a visible target, no latched point, no `bDone` and no suppression — it does **not**
+require Flank to be the elected tactic, so every bot in a fight pays it. Cost: 16
+`ProjectPointToNavigation` + up to 16 `LineTraceTestByChannel` + up to 16 cost-unlimited
+synchronous `FindPathSync` (`:1116`). The comment at `:1143-1145` names the invariant it
+relies on — *"the suppression window is what throttles the next search (escalating on
+repeat), so eight pathfinds never run per think."* `ResetArbitration()` breaks it: think N
+searches and takes a strike; think N+1 vetoes out of Engage and wipes it; think N+2 returns
+and searches again — a full fan every ~0.2-0.3 s per bot, synchronous, game thread, x7 bots.
+`ClearFlankLatch` on the same line also clears `bDone`, so the arrival mark is no throttle
+either.
+
+*Scoped honestly:* the AIB26 fix under review **strictly reduced** this — the wipe used to
+run on every non-Engage think and now skips Search flaps and young flank latches. This is the
+residual, not a regression. Medium because each Hold episode is bounded and the pathfind cost
+is a tail-latency hazard, not a correctness break. It becomes `high` if v8 shows per-bot
+Engage re-entries above ~1/s with `flank point latched` absent (the fan running, finding
+nothing, repeatedly).
+
+---
+
+**MED-3 — `LandingLeavesIsland` decides from ONE anchor: the shape this ticket already ruled
+`high` once (fix #6 F6-1).**
+
+`Execution/AIBStateTreeTasks.cpp:2891-2909`
+
+The loop `return`s the result of the **first anchor that projects to nav**, over a list
+sorted by distance to the landing. `FAIBIslandLatch::Confirm` (`Core/AIBBotController.h:322-338`)
+asks the mirror question over the *same* list and was explicitly rewritten by fix #4 R1 and
+fix #6 F6-1 to require ALL anchors — *"island iff NONE has a full path… a spawn pad that is
+itself an island then confirms correctly."* Two decisions, one anchor list, two rules, and
+the weaker one gates the founder's box 4.
+
+*Scenario.* Arena01. This ticket's own map filing (W-VERIFY v3 breakdown C1, filed for
+arena-architect) says **the corner spawn pads are islands**. A bot on the gantry evaluates a
+GOOD lip whose landing is healthy floor. `Anchors.Sort` puts an island spawn pad first
+because it is geometrically nearest that landing. `TestPathSync(landing -> island pad)` finds
+no full path -> `LandingLeavesIsland` returns false -> the good lip is skipped
+(`lip … skipped — landing still islanded`) -> the fan exhausts -> `Latch.Strand()` ->
+`stranded — no legal lip` -> the bot stands on the gantry for the cooldown and repeats. That
+is the FINAL gantry watch's "bot 5 still on the gantry", with a mechanism.
+
+Medium, not high, because the anchor geometry is unproven from a code read — it needs the log
+to name which anchor was tested. **One-line falsifier:** the skip line at `:2970` does not
+print the anchor it tested. Print it and the next gantry watch settles this without a guess.
+(The single-test cost motive in the docstring is real; the fix must bound the number of
+tests, not drop the bound.)
+
+---
+
+**MED-4 — the drift reflex is not an oscillator, but its trigger clock is reset by any
+one-frame flicker of any still-tactic bit, so it starves on exactly the flapping bots.**
+
+`Core/AIBBotController.cpp:1547-1585` (reflex) · `1270-1287` (episode) ·
+`Execution/AIBStateTreeTasks.cpp:1103` (an unhysteresised toggle)
+
+On the founder's question — **no drift/refuse/drift-back oscillator.** `NextDriftSeconds =
+Now + DriftRetrySeconds` is set BEFORE the draw and unconditionally, so it is one nav query
+per 2 s per bot whether the draw lands, is refused, or finds nothing; and
+`GetMoveStatus() != Moving` keeps it from fighting a mover. Attacked and did not break.
+
+What does break: the gate reads `Now - IdleSinceSeconds >= DriftAfterIdleSeconds`, and
+`IdleSinceSeconds` restarts whenever the still-tactic SET changes (fix #3 HIGH-1's rule —
+right for the instrument, wrong as a drift trigger). `FAIBMoveNearBeliefTask::Tick:1103`
+writes `SetStillTactic(Hold, bInFightRange)` from a bare `IsWithin(Belief, FightRangeUU)`
+with **no hysteresis**, every frame, against a MOVING belief. A bot whose target hovers at
+the fight-range boundary toggles the Hold bit at frame rate; each toggle closes and reopens
+the episode at the next 10 Hz Think; `Now - IdleSinceSeconds` never reaches 1.5 s and the
+reflex never fires. The same mechanism explains the v6 breakdown's *"43 / 34 % of idle is in
+sub-1 s transition spells"* — that is the instrument chopping, not the bot moving.
+
+Shape of the fix (not mine to write): the reflex wants its own "seconds since the tactic set
+was last non-empty" clock, distinct from the reporting episode; `:1103` wants a band, not a
+line.
+
+---
+
+**MED-5 — the drift reflex can walk a bot around its own island with `tactic=none` never
+accumulating, blinding this ticket's HARD gate on its own defect.**
+
+`Core/AIBBotController.cpp:1547-1554` · `Core/AIBBotController.h:360-371`
+
+The reflex is gated on `StillTactics == 0`, and (c)'s write-up says `Stranded` is excluded
+deliberately so a map defect stays visible. But `Stranded` is set only by `Latch.Strand()` —
+the lipless-confirmed-island case. Every OTHER Egress failure (`landed on the same island`,
+`lip Nuu short`, `landed N below the lip`, the lip-walk give-up) calls `ClearWithCooldown`,
+which does **not** set `bStranded`. So a bot that fails egress the ordinary way has
+`StillTactics == 0`, drifts every 2 s, and `GetRandomReachablePointInRadius` on an island
+returns island points: the bot shuffles around its platform indefinitely with
+`idle tactic=none` ~ 0. `idle_seconds == 0` is this ticket's HARD bar; a bot that never
+leaves its platform would pass it.
+
+Weakened honestly: Wander's longest-partial walk (H1) already produces motion on an island,
+so the reflex is not the sole cause, and v6/v7 measured latches at 0-1 per bot in normal play
+— this is a gantry/placed-bot case today. The mitigation is a metric (`island_seconds`
+reported beside `idle_seconds`), not a behaviour change.
+
+---
+
+**LOW-6 — the island path tests use the DEFAULT query filter; every move the bot issues uses
+its own.** `Execution/AIBStateTreeTasks.cpp:2842, 2905` build
+`FPathFindingQuery(Bot, *NavData, …)` with no filter, so the engine substitutes
+`NavData->GetDefaultQueryFilter()` (`NavigationData.cpp:49-57`). AIB25 W-REVIEW M3 ruled the
+opposite for the flank test (`AIBBotController.cpp:1116-1117` passes
+`DefaultNavigationFilterClass`). Benign TODAY: `UAIBQueryFilter::InitializeFilter`
+(`Core/AIBQueryFilter.cpp:14-30`) only calls `SetAreaCost` and never excludes an area, so
+reachability is identical under both. It stops being benign the first time a lane class is
+made impassable for a tier. Risk register.
+
+**LOW-7 — the ambition sentinel's `ClearStillTactics()` also drops the `Reload` bit.**
+`Execution/AIBStateTreeTasks.cpp:988-992` vs the tactic sentinel at `:996-1000`, which
+deliberately keeps `EAIBStillTactic::Reload`. On an ambition change while `FireWhenAble` is
+mid-reload-crouch the crouch stays rented (`bCrouchedToReload` is instance data, untouched)
+but the F9 label is dropped, so those seconds are charged to `tactic=none`. Bounded by the
+reload, and it biases the idle number PESSIMISTICALLY, so it hides nothing. Risk register.
+
+---
+
+**PASS — CONTAINMENT.** Clean at the linker and at the grep. `AIBot.Build.cs` names engine
+modules only; `GameplayAbilities` absent. Zero hits for
+`Breachpoint|BNGame|BNAIB|BRChar|ABR|UBR|GameplayAbilit|AbilitySystem` anywhere under
+`Plugins/AIBot/Source/AIBot/` outside the Build.cs comment that explains the ban. Zero
+dependencies from the plugin onto `Source/BreachpointNext/`, adapter or otherwise. `Brain/`
+and `Skills/` name no `UWorld`, no `AActor`, no `GetWorld`, no trace, no FX type — the
+headless law holds, and the new island fact does not leak into them (no island field on
+`FAIBFacts`, no island selector in `SelectFact`). *Handoff, not a finding:* four game-side
+files name AIBot symbols outside the sanctioned `AIBotAdapter/` seam —
+`Characters/BNCharacter.cpp:5`, `Characters/BNHealthComponent.cpp:6`,
+`Weapons/BNProjectile.cpp:3`, `Match/BNGameMode.h:6`. Direction is game->plugin, which the
+Build.cs explicitly permits, and all four predate this diff. Named for whoever owns the
+seam's shape.
+
+**PASS — FAIRNESS.** Attacked and did not break:
+- *R11's 200 ms floor.* One clamp site, `FMath::Max(Drawn, AIB::MinReactionSeconds)` with a
+  NaN guard, `Perception/AIBReactionClock.cpp:19-20`, `MinReactionSeconds = 0.20f`. Nothing
+  in this diff adds a stimulus path around `Push()`; the Phase 12 team callouts enter the
+  bot's OWN clock and mature on its own draw.
+- *The island fact as a wallhack.* `GetIslandAnchors` (`AIBBotController.cpp:979-1018`) reads
+  PlayerStarts, objective POIs and the bot's own remembered last-known. No live enemy
+  position, no enumeration. It is consumed by `FAIBOnIslandCondition` and Wander only — it
+  does not reach aim or target selection, which the audit's L6 required.
+- *The flank hold leaking into the trigger.* `bFlankHolding` ORs into the `TargetVisible`
+  **selector** (`Brain/AIBConsideration.cpp:25-28`), which is consideration scoring only. The
+  fire gate is `Facts.bTargetVisible && Facts.bWeaponCanFight && Senses.HasVisibleTarget()`
+  (`AIBStateTreeTasks.cpp:1481`) — the raw fact AND a live sensorium read. No shooting on a
+  belief, no grenade past a matured memory.
+- *New traversal powers.* Egress is walk + gravity: the step-off is a projectionless
+  `MoveToLocation` and the fall is unsteered. Every crossing is filtered by
+  `FAIBTraversalPolicy::Choose` (`:2955-2961`, `:743-749`); the blind watchdog hop is gone
+  (fix #4 R9). No cost is skipped that a human pays.
+- *The world query surface.* `QueryVisibleEnemies` is radius-bounded and named for
+  visibility; `CountNearbyAllies` returns a count; `AreEnemies` is a relation test on a
+  candidate the bot already believes in; `GetGrappleRoute` carries map traversal data and no
+  enemy information.
+
+**PASS — SERVER-ONLY.** Zero hits for
+`Replicated|GetLifetimeReplicatedProps|DOREPLIFETIME|NetMulticast|UFUNCTION(Server`. Zero
+FX: no `GameplayCue`, `Niagara`, `SpawnEmitter`, `PlaySound`, `UGameplayStatics` anywhere in
+the module. Law 4 holds — `PrimaryActorTick.bCanEverTick = false` on the controller
+(`:50-51`) and on `AIBLaneVolume`; thinking rides `ThinkTimer` at `ThinkIntervalSeconds`; the
+`Tick` overrides in `AIBStateTreeTasks.cpp` are `FStateTreeTaskBase::Tick`, the executor's,
+not an actor's. Every entry point is authority-guarded (`Think:1248`,
+`AIBPathFollowingComponent.cpp:70`, and the `NM_Client` early-outs across `AIBBotManager` and
+`AIBTeamCoordinator`).
+
+---
+
+**VERDICT: the `W-REVIEW: no high` box CANNOT be checked.** HIGH-1 blocks under R13. It is
+provable from the code alone — no map assumption, no run needed — and it is the founder's own
+named residual (c) for the one box (4) this ticket has never met. MED-2 through LOW-7 go to
+the risk register with the artifact.
