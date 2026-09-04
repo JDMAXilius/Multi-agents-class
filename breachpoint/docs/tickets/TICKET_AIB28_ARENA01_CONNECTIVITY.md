@@ -144,3 +144,61 @@ scripts (law 7) — every fix here is a generator change + regen, never a hand e
   nav z 408 (no z-410 nav exists west of x≈1600 along y 2000 — the stair flight). Census after:
   the same 12 (crate props, gantry/core islands, the floor-centre artefact). Open: generated
   BN_Drop links (none on the map).
+
+### 3 Sep (Windows terminal, lead) — why `link=no`: the envelope refuses the gap on BOTH axes
+
+Editor-live census of `BR_Arena01` over the MCP bridge (raw JSON-RPC; the `mcp__unreal-mcp__*`
+tools bind at Claude-session start and this session opened before the editor, so the documented
+HTTP fallback was used — recorded per R46).
+
+**Actor census — 92 actors:** 18 `PlayerStart`, 4 `AIBLaneVolume`, 7 `TargetPoint`, 1
+`NavMeshBoundsVolume`, 1 `RecastNavMesh`, 1 `BRPowerWeaponSpawner`, 49 `StaticMeshActor`.
+**Zero `NavLinkProxy`. Zero `BN_Drop`. Zero nav-link actors of any kind.** That half of the
+open box is confirmed by count, not by impression.
+
+**But the config is NOT missing, and that is the finding.** `RecastNavMesh` carries
+`bGenerateNavLinks = true` and TWO enabled jump configs:
+
+| | `BN_Drop` | `BN_Climb` |
+|---|---|---|
+| `bEnabled` | true | true |
+| `jumpLength` (horizontal reach) | **400** | **250** |
+| `jumpHeight` | 50 | **90** |
+| `jumpMaxDepth` | 1000 | −70 |
+| `jumpEndsHeightTolerance` | 80 | 40 |
+| `filterDistanceThreshold` | 80 | 80 |
+| `downDirectionAreaClass` | **None** | None |
+| `upDirectionAreaClass` | None | `NavArea_Default` |
+| `linkProxyClass` / `bLinkProxyRegistered` | None / false | None / false |
+
+Agent envelope on the same navmesh: `AgentRadius 35`, `AgentHeight 144`, `AgentMaxSlope 44`,
+`TileSizeUU 1000`, `TilePoolSize 1024`, `bMinimizeLinkPoolSize true`.
+
+**Now put the measured gap against it.** This ticket's own evidence records the corner spawn
+pads stalling at **`532uu across / −218uu up — link=no`**. Against the envelope above:
+
+- **Horizontally**: the gap is 532 uu. `BN_Drop` reaches **400** (132 uu short); `BN_Climb`
+  reaches **250** (282 uu short). Neither config can span it.
+- **Vertically**: the gap is 218 uu **UP**. `BN_Drop` is a descent config and cannot serve an
+  ascent at all. `BN_Climb` is the ascent config and its `jumpHeight` is **90** — 128 uu short.
+
+So `link=no` is not a generation failure and not a map-geometry defect. **It is the envelope
+correctly refusing a gap that is out of range on both axes simultaneously.** Every prior reading
+of this as "links failed to generate" was looking for a bug where the numbers were simply saying
+no. The fix is the envelope (or the pad placement), never a regen of the same numbers — a regen
+with these values will produce zero links again, deterministically.
+
+**Second finding, lower confidence, worth a look before any regen:** `BN_Drop` has
+`downDirectionAreaClass = None` while `BN_Climb` correctly sets `upDirectionAreaClass =
+NavArea_Default`. A generated link whose direction-of-travel area class is null is a candidate
+for being built and then discarded. This is asymmetric between the two configs in exactly the
+place that would matter, and it costs one regen to test. Not yet measured — stated as a
+suspect, not a diagnosis.
+
+**Open question this does NOT settle:** whether raising the envelope is the right call or
+whether it makes bots leap distances a human could not. That is a FAIRPLAY question and it
+belongs to the critic, not to a census. Numbers proposed by a curator, refuted by the critic,
+landed by a builder — not decided here.
+
+**Rung: editor-live read-back only.** Nothing was written to the map, nothing regenerated,
+nothing saved. These are the values as they sit on disk right now.
