@@ -314,13 +314,43 @@ def _which(cmd):
     return which(cmd)
 
 
+# Claude Sonnet list prices, $ per million tokens. Cache reads are the whole reason
+# this pipeline is affordable, so they are priced as their own line, not folded into
+# input. ONE rate table, used by the recorder, the replayer and the on-screen total.
+PRICE_PER_M = {"input": 3.00, "output": 15.00, "cache_write": 3.75, "cache_read": 0.30}
+
+
 def summarize_usage(exchanges: list) -> dict:
-    tot = {"input_tokens": 0, "output_tokens": 0, "cost_usd": 0.0, "calls": len(exchanges)}
+    """Price a run from the per-call `usage` blocks the API returned.
+
+    WHY THIS RECOMPUTES INSTEAD OF SUMMING A STORED cost_usd (3 Sep):
+    it used to add up each exchange's own `cost_usd` field, which was written without
+    itemising cache tokens -- `totals` in recording.json carries input/output/cost and
+    no cache counts at all. For the committed #4 run that summed to $4.1760, while the
+    same recording's usage blocks (80 in / 145,942 out / 211,096 cache-write /
+    2,129,120 cache-read) price to $3.6197 at the rates above. Two numbers for one run,
+    and the pipeline printed the one the audit does not use.
+
+    The usage blocks are the ground truth -- they are what the API reported per call --
+    so they are what gets priced here. The figure is LOWER than the old one, which is
+    the direction that deserves the most scrutiny, so the breakdown is returned and
+    printed itemised: anyone can multiply the four token counts by the four published
+    rates and land on the same total.
+    """
+    tot = {"input_tokens": 0, "output_tokens": 0, "cache_write_tokens": 0,
+           "cache_read_tokens": 0, "cost_usd": 0.0, "calls": len(exchanges)}
     for ex in exchanges:
         u = ex.get("usage") or {}
         tot["input_tokens"] += u.get("input_tokens", 0)
         tot["output_tokens"] += u.get("output_tokens", 0)
-        tot["cost_usd"] += u.get("cost_usd", 0.0)
+        tot["cache_write_tokens"] += u.get("cache_creation_input_tokens", 0)
+        tot["cache_read_tokens"] += u.get("cache_read_input_tokens", 0)
+    tot["cost_usd"] = (
+        tot["input_tokens"] * PRICE_PER_M["input"]
+        + tot["output_tokens"] * PRICE_PER_M["output"]
+        + tot["cache_write_tokens"] * PRICE_PER_M["cache_write"]
+        + tot["cache_read_tokens"] * PRICE_PER_M["cache_read"]
+    ) / 1_000_000
     return tot
 
 
@@ -1290,11 +1320,17 @@ def main():
         t = summarize_usage(engine.exchanges)
         log(f"spend: {t['calls']} calls · {t['input_tokens']:,} in · "
             f"{t['output_tokens']:,} out · ${t['cost_usd']:.4f}")
-    elif isinstance(engine, ReplayEngine) and engine.totals:
-        t = engine.totals
-        log(f"spend (recorded run): {t.get('calls')} calls · "
-            f"{t.get('input_tokens', 0):,} in · {t.get('output_tokens', 0):,} out · "
-            f"${t.get('cost_usd', 0):.4f}")
+    elif isinstance(engine, ReplayEngine) and engine.exchanges:
+        # Priced from the recording's own usage blocks, NOT from its stored `totals`
+        # (which predate cache itemisation -- see summarize_usage). This is the number
+        # AUDIT.md quotes, so the run and the write-up cannot disagree on screen.
+        t = summarize_usage(engine.exchanges)
+        log(f"spend (recorded run): {t['calls']} calls · "
+            f"{t['input_tokens']:,} in · {t['output_tokens']:,} out · "
+            f"{t['cache_write_tokens']:,} cache-write · {t['cache_read_tokens']:,} cache-read")
+        log(f"  priced at ${PRICE_PER_M['input']:.2f}/${PRICE_PER_M['output']:.2f}/"
+            f"${PRICE_PER_M['cache_write']:.2f}/${PRICE_PER_M['cache_read']:.2f} per M "
+            f"(in/out/cache-write/cache-read) = ${t['cost_usd']:.4f}")
     log(f"\ntrace: output/rag_trace.md · pool: output/judge_log.md · "
         f"review: output/critic_log.md · gaps: output/gap_report.md")
 

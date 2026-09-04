@@ -105,7 +105,7 @@ Sonnet rates: **$3.00/M input · $15.00/M output · $3.75/M cache write · $0.30
 | #5 goal-oriented agent | 1 | 2,192 | 0 | 0 | 61,845 | **$0.9343** |
 | #4 naive baseline (comparison) | 4 | 10 | 37,679 | 172,866 | 13,981 | **$0.4029** |
 | #7 style guide agent | 12 | 26 | 0 | 0 | 1,228 | **$0.0185** |
-| #6 GER pipeline | 12 | 0 | 0 | 0 | 291 | **$0.0044** |
+| #6 GER pipeline | 12 | 24 | 0 | 0 | 291 | **$0.0044** |
 
 ### a. Total actual run cost: **$4.98**
 
