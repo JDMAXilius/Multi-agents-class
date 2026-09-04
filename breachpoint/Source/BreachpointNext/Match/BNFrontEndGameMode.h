@@ -24,7 +24,12 @@ class BREACHPOINTNEXT_API ABNFrontEndGameMode : public AGameModeBase
 public:
 	ABNFrontEndGameMode();
 
-	virtual void PostLogin(APlayerController* NewPlayer) override;
+	/** BOTH doors, not one. The engine funnels player init through GenericPlayerInitialization,
+	 *  which PostLogin() and HandleSeamlessTravelPlayer() BOTH call (GameModeBase.cpp:1005 and
+	 *  :635). Overriding PostLogin alone showed the menu on a cold boot and NOT after a match:
+	 *  ABNGameMode sets bUseSeamlessTravel=true and ends the match with ServerTravel, and a
+	 *  seamless arrival never calls PostLogin. */
+	virtual void GenericPlayerInitialization(AController* C) override;
 
 protected:
 	/** Idempotent: builds this player's UI and pushes the front-end screen once. Loud on

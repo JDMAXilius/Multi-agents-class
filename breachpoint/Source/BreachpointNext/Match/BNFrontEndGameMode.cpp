@@ -13,13 +13,25 @@ ABNFrontEndGameMode::ABNFrontEndGameMode()
 	bStartPlayersAsSpectators = true;
 }
 
-void ABNFrontEndGameMode::PostLogin(APlayerController* NewPlayer)
+void ABNFrontEndGameMode::GenericPlayerInitialization(AController* C)
 {
-	Super::PostLogin(NewPlayer);
-	// PostLogin, not BeginPlay: the controller provably exists here, which is the one
-	// precondition the UI manager's layout build has (it resolves the layout's owning
-	// player through LocalPlayer->GetPlayerController).
-	ShowFrontEnd(NewPlayer);
+	Super::GenericPlayerInitialization(C);
+	// NOT PostLogin, and NOT BeginPlay.
+	//
+	// BeginPlay is too early -- the controller may not exist, and the UI manager's layout build
+	// needs one (it resolves the owning player through LocalPlayer->GetPlayerController).
+	//
+	// PostLogin is too NARROW, and that was the bug: the menu appeared on a cold boot and never
+	// again after a match. ABNGameMode sets bUseSeamlessTravel = true (BNGameMode.cpp:51) and
+	// ends a match with World->ServerTravel (TravelToFrontEnd), so the return trip is a SEAMLESS
+	// arrival -- the engine carries the player across and calls HandleSeamlessTravelPlayer, which
+	// never calls PostLogin. ShowFrontEnd therefore never ran, and the player landed on the menu
+	// map looking at the backdrop with no menu on it.
+	//
+	// GenericPlayerInitialization is the seam both doors share: PostLogin calls it
+	// (GameModeBase.cpp:1005) and HandleSeamlessTravelPlayer calls it (:635). One override, both
+	// arrivals, no double-push -- exactly one of the two paths runs per arrival.
+	ShowFrontEnd(Cast<APlayerController>(C));
 }
 
 void ABNFrontEndGameMode::ShowFrontEnd(APlayerController* ForPlayer)
