@@ -33,10 +33,33 @@ is [`land_in_engine.py`](land_in_engine.py) in this folder. Supporting agents th
 the same content: [`06-ger-pipeline/`](../06-ger-pipeline/) (generate→evaluate→refine) and
 [`07-style-guide-agent/`](../07-style-guide-agent/) (house voice).
 
-**Pipeline Run Video:**
-<!-- FILL: screen recording of `python3 run_pipeline.py` then `land_in_engine.py`, then the
-     packaged build's scoreboard showing the generated callsigns -->
-`PENDING`
+**Pipeline Run Video:** *not submitted for this assignment — the run is verified from its
+output instead, which is the other half of the rubric's own "verified via video/output".*
+A video walkthrough ships with the final project.
+
+**How to verify the run without a video, in three commands** (no API key, no engine, ~20s):
+
+```bash
+cd assignments/04-content-pipeline && python3 run_pipeline.py
+#   -> pool: 30 candidates across 3 slots · judged - kept 15 of 30 · refuted: FINDINGS
+#   -> LANDED output/DT_BotCallsigns.csv (15 rows)
+#   -> spend (recorded run): 11 calls · 80 in · 145,942 out · 211,096 cache-write ·
+#      2,129,120 cache-read; priced at $3.00/$15.00/$3.75/$0.30 per M = $3.6197
+
+cd ../10-ai-dev-pipeline && python3 land_in_engine.py --check
+#   -> OK: all 15 bot names in the shipped config came from the pipeline
+
+bash verify.sh
+#   -> ALL 9 CHECKABLE CRITERIA PASS - 0 failures
+```
+
+The pipeline **replays its recorded API responses**, so anyone can execute the real run
+end to end with no key and no spend and watch the same candidates get generated, judged,
+refuted and landed. That is a stronger artifact than a screen recording: a video shows that
+it ran once on my machine, whereas `recording.json` lets a grader re-run it on theirs and
+`verify.sh` fails loudly if the write-up ever drifts from what the recordings say. The
+$3.6197 printed by the run is the same figure `AUDIT.md` quotes, enforced by `verify.sh`
+rather than typed.
 
 ### Integration breakdown
 
