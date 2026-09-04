@@ -128,7 +128,11 @@ RX = {
     # never refuses anything is doing nothing, and only that line separates the two.
     "drift":          re.compile(_AIB + r"drift [—-] (?P<seconds>" + _NUM + r")s still with no tactic, walking (?P<dist>" + _NUM + r")uu"),
     "drift_refused":  re.compile(_AIB + r"drift REFUSED [—-] (?P<dist>" + _NUM + r")uu, reachable draw the mover would not path"),
-    "lip_blacklisted": re.compile(_AIB + r"lip blacklisted " + _VEC + r" for (?P<window>" + _NUM + r")s"),
+    "lip_blacklisted": re.compile(_AIB + r"lip blacklisted " + _VEC + r" for (?P<window>" + _NUM + r")s"
+                                  + r"(?: [—-] (?P<why>.+))?"),
+    # AIB22 HIGH-1 (terminal, 4 Sep): every candidate in reach refused. Distinct from
+    # `stranded — no legal lip`, which must keep meaning MAP GEOMETRY and nothing else.
+    "no_lip_offered": re.compile(_AIB + r"no lip offered [—-] all (?P<n>\d+) in reach are blacklisted"),
     "lip_refused":    re.compile(r"AIBot: (?P<bot>\S+) lip refused " + _VEC + r" [—-] blacklisted"),   # Verbose
     "draw_reflex":    re.compile(r"AIBot: (?P<bot>\S+) draw reflex [—-] empty hand, cycling"),         # Verbose
     "offmesh_recovery": re.compile(_AIB + r"off-mesh recovery [—-] walking (?P<dist>" + _NUM + r")uu to the mesh"),
@@ -179,12 +183,34 @@ BOT_METRICS = ("no_path_requests", "stuck_seconds",
                # The three sum to stuck_seconds exactly; the self-test asserts it.
                "stuck_seconds_crowded", "stuck_seconds_wedged", "stuck_seconds_uncaused",
                # AIB22 v7: F9's drift reflex and the lip blacklist, per bot.
-               "drift_count", "drift_refused_count", "lip_blacklist_count",
+               "drift_count", "drift_refused_count", "lip_blacklist_count", "no_lip_offered_count",
                "max_stall_seconds", "sweep_seconds", "max_single_sweep",
-               "idle_seconds", "idle_seconds_tactical", "island_egress_count", "island_latch_count", "egress_failed_count", "stranded_count", "stall_abandoned_count", "offmesh_recovery_count", "overlap_seconds", "yield_count", "route_changes", "flank_count", "flank_stalled", "hold_seconds", "state_flaps",
+               "idle_seconds", "idle_seconds_tactical", "island_egress_count", "island_latch_count", "egress_failed_count", "stranded_count", "stall_abandoned_count", "offmesh_recovery_count", "overlap_seconds", "yield_count", "route_changes", "flank_count", "flank_stalled",
+               # RENAMED from hold_seconds (AIB26 ruling, 4 Sep). The `hold over` line fires
+               # ONLY when a stand reaches HoldMaxSeconds, so this was never "seconds spent
+               # holding" — it is "seconds in stands that ran to the bound", and zero here
+               # restates `hold over == 0` rather than evidencing a clock that never
+               # accumulates. My 3 Sep bSameFight diagnosis rested on exactly that misread.
+               "hold_bound_seconds", "state_flaps",
                # AIB23: ttl-release -> re-grant on the same target inside THRASH_WINDOW_SECONDS,
                # and what a DENIED bot did instead.
                "claim_thrash", "denied_roam", "denied_engage_anyway")
+# Every LogAIBot line family that rides Verbose. Used for ONE inference, and it is
+# one-directional: if ANY of these fired, the category was enabled, so a zero in a
+# DIFFERENT family is a real zero — the line did not fire — not a capture failure.
+# The converse is not inferable and is not claimed: none of them firing may still mean
+# Verbose was on and the game was quiet.
+#
+# This exists because the absence of it cost a review. On the v8 batch the harness
+# printed `lip_refusals: not captured (Verbose off?)` across all ten logs while OTHER
+# Verbose-only counters in the same batch were non-zero — so the honest answer was
+# available in the data and the tool refused to say it. A reviewer had to hand-read the
+# source to learn the line could not fire at all. "Not captured" must never be printed
+# over evidence that it WAS captured and was zero.
+VERBOSE_ONLY_KEYS = ("swing", "throw", "throttled_throw", "denial_throw", "strafe_leg",
+                     "strafe_hold", "strafe_back", "ff_refused", "offmesh_self", "ads_in",
+                     "ally_heard", "wander_to_fight", "lip_refused", "draw_reflex")
+
 THRASH_WINDOW_SECONDS = 6.0
 CLAIM_TTL_SECONDS = 5.0   # AIB23 module constant (no ini lookup); --ttl overrides
 
@@ -300,8 +326,15 @@ def per_bot_summary(counts):
         row(hit["bot"])["drift_count"] += 1
     for hit in counts["drift_refused"]:
         row(hit["bot"])["drift_refused_count"] += 1
+    # COUNTS THE WRITE, NOT THE EFFECT — and that distinction cost a review. Before AIB22
+    # HIGH-1 the blacklist entry was erased one statement after it was recorded, so this
+    # counter would have certified a dead path as working. A counter on an attempted write
+    # proves the code ran, never that it did anything; the `lip refused` line is the
+    # effect, and only the two together mean the blacklist holds.
     for hit in counts["lip_blacklisted"]:
         row(hit["bot"])["lip_blacklist_count"] += 1
+    for hit in counts["no_lip_offered"]:
+        row(hit["bot"])["no_lip_offered_count"] += 1
     for hit in counts["sweep_over"]:
         seconds = float(hit["seconds"])
         bot = row(hit["bot"])
@@ -350,7 +383,7 @@ def per_bot_summary(counts):
         bot["flank_count"] += 1
         bot["flank_stalled"] += int(hit["outcome"] == "stalled")
     for hit in counts["hold_over"]:
-        row(hit["bot"])["hold_seconds"] += float(hit["seconds"])
+        row(hit["bot"])["hold_bound_seconds"] += float(hit["seconds"])
     for hit in counts["target_deny"]:
         if hit["then"] == "roam":
             row(hit["bot"])["denied_roam"] += 1
@@ -502,6 +535,9 @@ def per_match_summary(counts, ttl=CLAIM_TTL_SECONDS):
         # here reads "not captured", never "never fired" — the distinction (c) lacked.
         "lip_refusals": len(counts["lip_refused"]) or None,
         "draw_reflexes": len(counts["draw_reflex"]) or None,
+        # Whether LogAIBot Verbose was demonstrably ON for this log (see VERBOSE_ONLY_KEYS).
+        # True turns every "not captured" below into a real, reportable zero.
+        "logaibot_verbose": any(counts[key] for key in VERBOSE_ONLY_KEYS),
         "ads_ins": len(counts["ads_in"]) or None,        # Verbose-only
         "ads_mean_range_uu": (round(statistics.mean(float(hit["range"]) for hit in counts["ads_in"]), 0)
             if counts["ads_in"] else None),
@@ -690,13 +726,15 @@ def main():
             if key in ("per_bot", "bot_spread"):
                 continue
             if value is None:
-                value = ("not captured (Verbose off?)"
-                    if key in ("swings", "throws", "throttled_throws", "denial_throws",
+                verbose_row = key in ("swings", "throws", "throttled_throws", "denial_throws",
                         "strafe_legs", "strafe_holds", "strafe_mean_arc_uu",
                         "strafe_denied_seconds", "strafe_spell_ends", "ff_refused",
                         "offmesh_self", "offmesh_moments", "ads_ins", "ads_mean_range_uu",
                         "ally_fights_heard", "wanders_to_fight",
                         "lip_refusals", "draw_reflexes")
+                value = ("0 (Verbose was ON — the line never fired)"
+                    if verbose_row and match["logaibot_verbose"]
+                    else "not captured (Verbose off?)" if verbose_row
                     else "none (FFA?)" if key in ("team_assignments", "team_populations",
                         "team_kills_denied")
                     else "n/a")
@@ -721,7 +759,7 @@ def main():
 
 
 # ------------------------------------------------------------------- self-test
-# Fifty-seven synthetic lines in the exact module formats (one ASCII dash on purpose), with
+# Fifty-eight synthetic lines in the exact module formats (one ASCII dash on purpose), with
 # every derived number asserted. `--selftest` is the check that the regexes still match
 # the spec; a module format change must break THIS before it silently zeroes a baseline.
 SELFTEST_LOG = """\
@@ -740,6 +778,7 @@ AIBot: Alpha t=44.0 drift — 1.5s still with no tactic, walking 1200uu
 AIBot: Alpha t=45.5 move REFUSED goal=(700,800,50) no path to goal
 AIBot: Bravo t=44.5 drift REFUSED — 900uu, reachable draw the mover would not path (F7)
 AIBot: Bravo t=45.0 lip blacklisted (40,20,30) for 20s — the step-off did not leave the island
+AIBot: Alpha t=45.2 no lip offered — all 4 in reach are blacklisted (they lapse within 20s)
 AIBot: Alpha lip refused (40,20,30) — blacklisted, trying another door
 AIBot: Alpha draw reflex — empty hand, cycling.
 AIBot: Alpha t=50.0 sweep over — 3.0s, moved 120.5uu, state=Search
@@ -811,7 +850,7 @@ AIBot: Alpha t=112.0 target claim GRANTED on Enemy1 (1/2)
 
 def selftest():
     lines = SELFTEST_LOG.splitlines()
-    assert len(lines) == 57, len(lines)
+    assert len(lines) == 58, len(lines)
     counts = parse_lines(lines)
     hits = {key: len(counts[key]) for key in ("move_refused", "stall_over", "sweep_over", "idle_over",
                                               "island_egress", "kill", "time_limit", "possess", "acquire", "f7",
@@ -837,21 +876,24 @@ def selftest():
     assert counts["drift"][0]["dist"] == "1200" and counts["drift_refused"][0]["dist"] == "900"
     assert len(counts["drift"]) == 1 and len(counts["drift_refused"]) == 1   # REFUSED is not a drift
     assert counts["lip_blacklisted"][0]["window"] == "20" and len(counts["lip_refused"]) == 1
+    # The blacklist line now carries WHICH verdict shut the door (AIB22 HIGH-1).
+    assert counts["lip_blacklisted"][0]["why"] == "the step-off did not leave the island"
+    assert counts["no_lip_offered"][0]["n"] == "4"
     assert len(counts["draw_reflex"]) == 1
 
     match = per_match_summary(counts)
     expect = {
         "Alpha": {"no_path_requests": 3, "stuck_seconds": 9.5,
                   "stuck_seconds_crowded": 3.0, "stuck_seconds_wedged": 0.0, "stuck_seconds_uncaused": 6.5,
-                  "drift_count": 1, "drift_refused_count": 0, "lip_blacklist_count": 0,
+                  "drift_count": 1, "drift_refused_count": 0, "lip_blacklist_count": 0, "no_lip_offered_count": 1,
                   "max_stall_seconds": 4.0, "sweep_seconds": 0.0, "max_single_sweep": 0.0,
-                  "idle_seconds": 2.0, "idle_seconds_tactical": 1.5, "island_egress_count": 1, "island_latch_count": 1, "egress_failed_count": 0, "stranded_count": 0, "stall_abandoned_count": 1, "offmesh_recovery_count": 1, "overlap_seconds": 1.5, "yield_count": 0, "route_changes": 1, "flank_count": 1, "flank_stalled": 0, "hold_seconds": 0.0, "state_flaps": 0,
+                  "idle_seconds": 2.0, "idle_seconds_tactical": 1.5, "island_egress_count": 1, "island_latch_count": 1, "egress_failed_count": 0, "stranded_count": 0, "stall_abandoned_count": 1, "offmesh_recovery_count": 1, "overlap_seconds": 1.5, "yield_count": 0, "route_changes": 1, "flank_count": 1, "flank_stalled": 0, "hold_bound_seconds": 0.0, "state_flaps": 0,
                   "claim_thrash": 0, "denied_roam": 0, "denied_engage_anyway": 0},
         "Bravo": {"no_path_requests": 1, "stuck_seconds": 3.5,
                   "stuck_seconds_crowded": 0.0, "stuck_seconds_wedged": 2.0, "stuck_seconds_uncaused": 1.5,
-                  "drift_count": 0, "drift_refused_count": 1, "lip_blacklist_count": 1,
+                  "drift_count": 0, "drift_refused_count": 1, "lip_blacklist_count": 1, "no_lip_offered_count": 0,
                   "max_stall_seconds": 2.0, "sweep_seconds": 3.25, "max_single_sweep": 2.0,
-                  "idle_seconds": 3.0, "idle_seconds_tactical": 0.5, "island_egress_count": 1, "island_latch_count": 0, "egress_failed_count": 1, "stranded_count": 1, "stall_abandoned_count": 0, "offmesh_recovery_count": 0, "overlap_seconds": 0.0, "yield_count": 1, "route_changes": 0, "flank_count": 0, "flank_stalled": 0, "hold_seconds": 2.5, "state_flaps": 0,
+                  "idle_seconds": 3.0, "idle_seconds_tactical": 0.5, "island_egress_count": 1, "island_latch_count": 0, "egress_failed_count": 1, "stranded_count": 1, "stall_abandoned_count": 0, "offmesh_recovery_count": 0, "overlap_seconds": 0.0, "yield_count": 1, "route_changes": 0, "flank_count": 0, "flank_stalled": 0, "hold_bound_seconds": 2.5, "state_flaps": 0,
                   "claim_thrash": 0, "denied_roam": 0, "denied_engage_anyway": 0},
     }
     assert match["per_bot"] == expect, match["per_bot"]
@@ -865,6 +907,9 @@ def selftest():
         assert round(bot["stuck_seconds_crowded"] + bot["stuck_seconds_wedged"]
                      + bot["stuck_seconds_uncaused"], 6) == round(bot["stuck_seconds"], 6), name
     assert match["lip_refusals"] == 1 and match["draw_reflexes"] == 1
+    # Verbose-only lines are present, so the harness may report a zero elsewhere as a real
+    # zero instead of hiding behind "not captured" — the v8 review's cost, closed.
+    assert match["logaibot_verbose"] is True
     # Both arms of the correlate: Alpha's t=45.5 refusal follows its t=44.0 drift (linked);
     # the three at t=12-14 precede every drift in the log, so they are not.
     assert match["drift_refusal_correlation"] == {
@@ -907,7 +952,7 @@ def selftest():
 
     for line in judge([match], DEFAULT_BARS, {"lobby_spread": lobby}):
         print(f"   [{line[0]}] {line[1]}: {line[2]}")
-    print(f"SELFTEST PASS: 57 lines, {sum(hits.values())} hits, per-bot {json.dumps(match['per_bot'])}, "
+    print(f"SELFTEST PASS: 58 lines, {sum(hits.values())} hits, per-bot {json.dumps(match['per_bot'])}, "
           f"acquisitions {match['acquisitions']} (sentinels {match['reaction_sentinels']}, min {match['latency_min']}), "
           f"f7 {match['f7_by_shape']}, wiring_pois {match['wiring_pois']}, match_seconds {match['match_seconds']}, "
           f"kills/min {match['kills_per_min']}")

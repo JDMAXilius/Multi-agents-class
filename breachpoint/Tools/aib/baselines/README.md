@@ -48,3 +48,20 @@ feeds the clock exactly as a wall does; that is deliberate (Phase 13), and it me
 `stuck_seconds` is a no-ground-gained counter, not a wedge counter. `idle_seconds` exempts
 the same brake. The split is what tells the two apart. Full argument: the 2026-09-03 Log in
 `docs/tickets/TICKET_AIB22_PHASE11_EGRESS.md`.
+
+### The split, answered (v8, 4 September 2026)
+
+`aib22-{spillway,arena01}-verify-v8.json` are the first baselines carrying `still=`, and
+they settle it across 3,421 stall lines:
+
+| | Spillway | Arena01 |
+|---|---|---|
+| `stuck_seconds_crowded` | 7.6 % | 2.5 % |
+| `stuck_seconds_wedged` | **92.4 %** | **97.5 %** |
+| `stuck_seconds_uncaused` | 0 | 0 |
+
+**The crowd brake is not what `stuck_seconds` measures.** The hypothesis that v6's 4-6x jump
+was separation becoming visible is refuted; it is a real wedge regression, and fix #7's lip
+landing validation is the next code to read. Note also that `hold_seconds` is renamed
+`hold_bound_seconds` from this version on — the `hold over` line fires only at the bound, so
+the old name invited exactly one wrong inference, and it was made.

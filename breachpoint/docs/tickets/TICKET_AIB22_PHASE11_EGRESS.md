@@ -1487,3 +1487,65 @@ the refusal branch on a live map, and that `BlameEgressLip` fires from real land
 PIE/headless-match rungs, not rung 2, and the next batch is where `lip refused … trying another
 door` either appears or does not. Until it appears in a match log, residual (c) is landed code,
 not observed behaviour.
+
+### Log — 2026-09-04 (cloud): v8 refutes my bisect hypothesis, and three defects in my harness
+
+The v8 batch answers every question I left open, and the headline answer is that **I was
+wrong**. Recording that first, because the whole point of the instrument was to be able to
+be wrong on evidence rather than persuasive on argument.
+
+**1. The crowd hypothesis is REFUTED.** I named fix #8's crowd re-enable as the prime
+suspect for `stuck_seconds` going 4-6x at v6, and wrote the decision rule in advance:
+mostly `Crowd`/`Yield` means separation becoming visible, mostly `none` means a real wedge.
+The split, across all 3,421 stall lines: **CROWDED 7.6 % (Spillway) / 2.5 % (Arena01);
+WEDGED 92.4 % / 97.5 %; uncaused 0.** The crowd brake is not what the counter measures. By
+my own rule this is **a real v6 wedge regression**, and the next code to read is fix #7's
+lip landing validation — which is now doubly interesting, because HIGH-1 has just shown the
+interior-lip machinery it belongs to was inert.
+
+What the instrument was worth: the argument for crowd braking was mechanically sound, cited
+the Phase 13 review correctly, and was wrong. Without `still=` it would have been recorded
+as a finding.
+
+**2. The drift reflex is EXONERATED**, and the discipline paid. `drift_refusal_correlation`:
+**0 of 1,190** Spillway refusals and **103 of 2,192** Arena01 refusals fall within 5 s of a
+drift — below chance. I declined to pre-fix the draw on 3 Sep specifically so this number
+could exist; had I "tightened" it, Arena01's `no_path_requests` would have moved for
+unrelated reasons and the confound would have been permanent.
+
+**3. My `hold_seconds == 0` diagnosis rested on a misread of my own metric.** AIB26's ruling
+is right: the `hold over` line fires **only at the bound**, so `hold_seconds == 0` merely
+restates `hold over == 0` and was never evidence of a clock being wiped. The bSameFight fix
+is independently correct — the terminal confirms it "could not have moved this gate" — but I
+argued for it from a reading the data does not support. Renamed **`hold_seconds` →
+`hold_bound_seconds`** so the name cannot support that misreading again.
+
+**4. HIGH-1 is mine, and the shape of it is worth keeping.** `ForgetFailedLips()` inside
+`Clear()` — my line, my comment ("off the island: no grudge") — was reached by
+`Strand → ClearWithCooldown → Clear`, so the entry died one statement after it was written
+and the ring never held a lip for a frame. Two states wanted opposite memory and shared one
+body. The terminal's split (`ClearLatchOnly`) is the right fix and is compiled with specs
+green (26/26); nothing is left for me there. The general lesson: **a "clear everything"
+helper is where two lifetimes get silently merged.**
+
+**Three defects in the harness, all mine, all fixed here:**
+
+- **"Not captured" was printed over evidence that it WAS captured.** The v8 run reported
+  `lip_refusals: not captured (Verbose off?)` across all ten logs *while other Verbose-only
+  counters in the same batch were non-zero*. The honest answer was in the data and the tool
+  refused to say it; a reviewer hand-read the source instead. Fixed: `logaibot_verbose` is
+  now derived (if ANY Verbose-only family fired, the category was on — a one-directional
+  inference, and the converse is not claimed), and a zero then prints
+  `0 (Verbose was ON — the line never fired)`. This is the same failure as v7's unjudgeable
+  blacklist, in a new costume: I keep building instruments that cannot distinguish "absent"
+  from "silent".
+- **`lip_blacklist_count` counted the write, not the effect** — so on the next run it would
+  have certified the erased, dead path as working. The counter stays (the path is real now)
+  with the scar recorded at the code: a counter on an attempted write proves the code ran,
+  never that it did anything.
+- **The new lines had no counters.** Added `no_lip_offered_count` (every candidate refused —
+  deliberately distinct from `stranded`, which must keep meaning map geometry) and capture
+  of the blacklist verdict (`why`), so the three door-shut reasons are countable.
+
+**Rung: harness run and passing** (58 synthetic lines, both self-tests green, v8 baselines
+still load, both Verbose branches exercised). No module code changed in this entry.
