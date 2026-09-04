@@ -7,3 +7,9 @@ __pycache__/
 
 # runtime logs written by launching the packaged build - not part of the artifact
 Export/**/Saved/
+
+# Submission staging + zip: rebuildable from Export/Win64 + docs/, and 0.77 GB of LFS
+# nobody asked for. Deliberately NOT committed (3 Sep).
+Export/BREACHPOINT-Submission/
+Export/BREACHPOINT-Submission.zip
+Export/Win64-Shipping/
